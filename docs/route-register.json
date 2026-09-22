@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "781ea3e7b2bd1ecd93dc3226372b49c15d9a963b8210cabb6e0cc23a08b97a8d",
+  "briefSha256": "454ab771f1679f0fd5899ad2bf3ae7a91efc3df0568ab3aa9cb568554dbe6e03",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -216,9 +216,9 @@
       },
       "referenceChain": "data/ref/chain/GRCh37_to_GRCh38.chain.gz-with-the-version-and-hash-from-data/ref/chain/PROVENANCE.md-in-result-provenance",
       "maximumUnmappedFraction": 0.05,
-      "attemptedDenominator": "every-valid-autosomal-input-position-submitted-to-the-versioned-chain-exactly-once-after-deduplication-by-the-parser-authority",
+      "attemptedDenominator": "every-valid-input-position-permitted-by-the-source-subject-contract-submitted-to-the-versioned-chain-exactly-once-after-deduplication-by-the-parser-authority",
       "lossRule": "liftover_loss-if-and-only-if-unmapped_count-divided-by-attempted_count-is-strictly-greater-than-maximumUnmappedFraction; an-empty-attempted-set-is-empty_after_parse-not-liftover_loss",
-      "success": "persist-only-canonical-GRCh38-autosomal-positions-with-the-source-build-chain-version-attempted-count-unmapped-count-and-unmapped-fraction-in-bounded-provenance; never-persist-rejected-source-lines",
+      "success": "persist-only-canonical-GRCh38-positions-permitted-by-the-source-subject-contract-with-the-source-build-chain-version-attempted-count-unmapped-count-and-unmapped-fraction-in-bounded-provenance; never-persist-rejected-source-lines",
       "failure": "write-no-canonical-genetic-result-or-analysis-job; for-an-embryo-terminal-pre-publication-liftover-failure-mark-failure-pending-and-dispatch-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-source-or-fragment-delete-while-an-ordinary-self-or-adult-source-uses-its-separate-governing-file-disposition; return-only-the-copy-ID-for-liftover_loss",
       "thresholdCopies": "forbidden-in-routes-workers-database-UI-copy-tests-or-exports; every-consumer-imports-or-resolves-this-authority"
     },
@@ -365,7 +365,7 @@
       "readyIndex": "worker_jobs_ready_idx-(status,not_before,created_at)",
       "claim": "one-database-transaction-selects-status-queued-and-not_before-less-than-or-equal-to-now-ordered-by-created_at-then-id-FOR-UPDATE-SKIP-LOCKED-increments-attempts-and-invokes-the-worker-job-dispatch-v1-matrix-selected-resolver-with-the-exact-immutable-kind-output-target-source-binding-file_sha256-computation_revision-and-every-sourceBindingMatrix-revision; only-that-resolver-may-return-the-current-authorized-source-or-manifest",
       "retry": "after-an-attempt-failure-increment-or-use-the-atomically-incremented-attempts-value; if-attempts-is-less-than-max_attempts-return-to-queued-with-not_before=now()+interval-'30 seconds'*power(2,attempts)-and-no-partial-derived-commit-outside-the-kind-contract-otherwise-set-failed-terminal",
-      "perEmbryoPartialFailure": "split_cohort_vcf-and-score_embryo-process-each-embryo-in-a-separate-transaction; for-split_cohort_vcf-one-current-ordinal-QC-failure-deletes-only-that-ordinals-partial-or-pending-source-and-writes-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-named-reason-from-embryo-autosomal-only-v1.qcProjection-then-continues-and-only-the-whole-ordinal-terminal-transaction-promotes-that-marker-to-sourceState-qc_fail_no_source-and-the-brief-required-embryoStatus-qc_fail-with-no-source-or-result-cells-and-sets-the-job-partial-true; score_embryo-may-commit-its-qc_fail-result-column-under-its-own-current-published-source-set-transaction; stale-binding-cancellation-or-retry-exhaustion-is-not-an-ordinal-QC-failure-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-fragment-or-attempt-owned-row-delete-with-zero-publication; no-blank-or-omitted-embryo-column-is-permitted",
+      "perEmbryoPartialFailure": "split_cohort_vcf-and-score_embryo-process-each-embryo-in-a-separate-transaction; for-split_cohort_vcf-one-current-ordinal-QC-failure-deletes-only-that-ordinals-partial-or-pending-source-and-writes-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-named-reason-from-embryo-source-and-output-v2.qcProjection-then-continues-and-only-the-whole-ordinal-terminal-transaction-promotes-that-marker-to-sourceState-qc_fail_no_source-and-the-brief-required-embryoStatus-qc_fail-with-no-source-or-result-cells-and-sets-the-job-partial-true; score_embryo-may-commit-its-qc_fail-result-column-under-its-own-current-published-source-set-transaction; stale-binding-cancellation-or-retry-exhaustion-is-not-an-ordinal-QC-failure-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-fragment-or-attempt-owned-row-delete-with-zero-publication; no-blank-or-omitted-embryo-column-is-permitted",
       "progress": "write-progress-at-most-once-per-two-seconds-and-progress_note-only-as-one-closed-stage-ID-from-the-kind-implementation; sample-label-subject-cohort-file-genotype-result-error-free-text-and-private-counts-are-forbidden",
       "idempotencyVerification": "fixtures-must-prove-three-distinct-score_embryo-output_kind-values-over-the-same-cohort-source-set-create-three-distinct-keys-and-jobs-while-an-identical-full-tuple-replays-one-job; revoke-then-regrant-lifecycle-or-purpose-revision-change-computation_revision-change-every-embryo-basis-case-or-five-set-membership-revision-change-and-every-donor-slot-artifact-attribution-or-explicit-classification-change-must-create-new-keys-even-with-identical-genetic-bytes; an-injected-hash-collision-with-a-different-full-tuple-fails-closed",
       "testHook": "the-browser-suite-advances-a-queue-only-by-posting-to-a-registered-job-route-under-that-routes-own-machine-authentication; no-synchronous-drain-endpoint-exists-and-production-startup-refuses-when-E2E_TEST_HOOKS-is-set",
@@ -395,7 +395,7 @@
       "enforcement": "server-before-fetch-serialize-enqueue-or-model-call",
       "deniedState": "jurisdiction-unavailable"
     },
-    "embryo-autosomal-only-v1": {
+    "embryo-source-and-output-v2": {
       "gatable": false,
       "ingressContract": "genetic-file-ingest-v1",
       "subjectKind": "embryo",
@@ -421,7 +421,9 @@
         "19",
         "20",
         "21",
-        "22"
+        "22",
+        "X",
+        "Y"
       ],
       "ingress": {
         "directClientStorage": "deny",
@@ -436,7 +438,7 @@
           "backup"
         ],
         "normalization": "normalize-contig-aliases-then-retain-only-storedChromosomes",
-        "discard": "every-other-contig-including-X-Y-M-MT-23-24-25-PAR-unplaced-and-unknown",
+        "discard": "every-other-contig-including-M-MT-25-PAR-unplaced-and-unknown; normalize-X-Y-23-24-aliases-and-retain-the-observed-calls",
         "metadata": "regenerate-safe-headers-and-neutral-server-generated-sample-identifiers",
         "metadataForbidden": [
           "arbitrary-vcf-metadata",
@@ -444,13 +446,13 @@
           "original-filename",
           "original-sample-label"
         ],
-        "persistentCanonicalSource": "one-normalized-autosomal-only-source-object-per-embryo-subject-after-complete-validation; no-persistent-object-ever-contains-more-than-one-embryo-sample",
+        "persistentCanonicalSource": "one-normalized-autosomal-and-X-Y-source-object-per-embryo-subject-after-complete-validation; no-persistent-object-ever-contains-more-than-one-embryo-sample",
         "persistentHash": "one-sha256-per-sanitized-embryo-subject-canonical-source",
         "uploadClass": "server-set-once-from-the-resolved-subject-or-cohort-and-immutable-to-every-client-and-later-service-update",
-        "partialWrite": "already-validated-autosomal-records-partitioned-by-transient-sample-ordinal-only; a-terminal-pre-publication-embryo-abort-preserves-the-session-ingest-revision-and-embryo.ingest-session-24h-due-target-and-invokes-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-the-identical-atomic-unwind-deletes-any-fragment",
+        "partialWrite": "already-validated-records-on-storedChromosomes-partitioned-by-transient-sample-ordinal-only; a-terminal-pre-publication-embryo-abort-preserves-the-session-ingest-revision-and-embryo.ingest-session-24h-due-target-and-invokes-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-the-identical-atomic-unwind-deletes-any-fragment",
         "sanitizationFailure": "reject-with-no-object-or-genetic-row",
         "pdf": "reject-before-first-durable-byte",
-        "sideChannel": "do-not-record-presence-or-count-of-discarded-sex-chromosome-records"
+        "sideChannel": "do-not-record-presence-or-count-of-discarded-unsupported-contig-records; retained-X-Y-calls-are-source-data-not-an-inferred-sex-or-karyotype"
       },
       "heterozygosity": "autosomes-only",
       "responseSchema": "closed",
@@ -1523,7 +1525,7 @@
               "itemRule": "every-embryo_label-equals-this-display_label"
             }
           },
-          "scalarConstraints": "sanitized_variant_file_ids-is-a-deduplicated-array-of-safe-file-IDs-with-no-source-object-key-name-label-or-nonautosomal-member",
+          "scalarConstraints": "sanitized_variant_file_ids-is-a-deduplicated-array-of-safe-file-IDs-with-no-source-object-key-name-label-or-member-outside-storedChromosomes",
           "unknownFields": "reject"
         },
         "parentCarrierReportSummary": {
@@ -2103,7 +2105,7 @@
       "forbiddenSemanticTags": [
         "embryo-sex",
         "sex-proxy",
-        "non-autosomal-variant"
+        "unsupported-contig-variant"
       ],
       "filtersAndSorts": {
         "conditionFilter": "only-exact-current-data/embryo/allowed_conditions.json-condition_id-values",
@@ -2113,7 +2115,8 @@
         "computedQuantityOrdering": "forbidden",
         "sex-karyotype-rank-score-lead-count-or-composite-filter-sort-or-group": "forbidden"
       },
-      "export": "variants-and-persistent-canonical-sources-are-autosomal-only-subject-projections-never-the-multisample-upload"
+      "export": "variants-and-persistent-canonical-sources-retain-observed-calls-on-storedChromosomes-in-authorized-subject-projections-never-the-multisample-upload; do-not-add-sex-or-karyotype-results",
+      "sourceRetentionRevision": "owner-direction-2026-09-22; supersedes-embryo-autosomal-only-v1-for-source-retention; observed-X-Y-calls-are-kept-without-deriving-or-presenting-a-sex-or-karyotype-result"
     },
     "embryo-donor-attribution-v1": {
       "scope": "the-separate-revocable-attribution permission for one exact identified donor subject principal and cohort; it never establishes genetic-parent parentage upload disposition notice Record-Key restriction withdrawal identity-profile ownership account-deletion selection family-relative or future-person authority",
@@ -2438,7 +2441,7 @@
       "contracts": [
         "resource-authorization-v1",
         "canonical-source-publication-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1"
       ]
@@ -2542,7 +2545,7 @@
       "contracts": [
         "resource-authorization-v1",
         "canonical-source-publication-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1"
       ]
@@ -2855,7 +2858,7 @@
     "chat-history-projection-v1": {
       "authorization": "resolve-the-database-owned-chat-and-immutable-scope-then-re-evaluate-resource-lifecycle-purpose-jurisdiction-and-model-recipient-revisions-before-reading-each-message; for-a-cohort-scope-also-re-resolve-embryo-basis-authority-v1-basis-case-basis-revision-and-all-five-participant-set-memberships-and-set-revisions-plus-embryo-donor-attribution-v1-donor-feature-classification-slot-artifact-and-attribution-revision-or-explicit-donor-neutral-no-donor-classification-before-reading-each-paired-turn",
       "invalidMessage": "when-any-immutable-scope-target-contributor-purpose-grant-lifecycle-provider-runtime-attestation-citation-or-model-recipient-revision-or-for-a-cohort-turn-any-basis-case-basis-revision-five-participant-set-membership-or-set-revision-donor-feature-classification-donor-slot-donor-artifact-or-attribution-revision-is-stale-unreadable-missing-or-different-delete-or-omit-the-complete-user-and-assistant-turn-pair-and-every-dependent-later-message-before-serializing-any-message; a-user-row-that-quotes-revoked-genetic-context-is-never-preserved-and-partial-redaction-is-forbidden",
-      "cohortGuard": "apply-embryo-autosomal-only-v1-copilot-output-guard-v1-embryo-basis-authority-v1-and-embryo-donor-attribution-v1-to-every-persisted-and-serialized-cohort-turn-pair-and-require-identical-immutable-basis-set-and-donor-provenance-on-both-rows",
+      "cohortGuard": "apply-embryo-source-and-output-v2-copilot-output-guard-v1-embryo-basis-authority-v1-and-embryo-donor-attribution-v1-to-every-persisted-and-serialized-cohort-turn-pair-and-require-identical-immutable-basis-set-and-donor-provenance-on-both-rows",
       "closedFields": {
         "topLevel": [
           "chatId",
@@ -2884,7 +2887,7 @@
       "contracts": [
         "resource-authorization-v1",
         "copilot-output-guard-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1"
       ]
@@ -2983,7 +2986,7 @@
         "resource-authorization-v1",
         "adult-subject-confirmation-v1",
         "adult-upload-revision-confirmation-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1"
       ]
     },
@@ -3023,7 +3026,7 @@
       "durableAccountPath": "while-that-rights-session-is-live-the-approved-claimant-may-bind-the-principal-to-their-current-Inherit-account-in-api.future-person-claimant-bind; the-database-atomically-sets-lifecycle-to-claimed_bound-and-both-owner_account_id-and-subject_account_id-to-that-account-preserves-claimant_principal_id-revokes-old-owner-RLS-grants-sessions-and-exports-purges-the-unbound-reverification-hashes-and-relocates-objects-through-workerExecutionBindings.subject-object-relocation",
       "noAccountPath": "the-approved-rights-session-offers-a-one-time-claimant-Recovery-Key-through-api.future-person-recovery-key; its-SHA-256-hash-and-a-versioned-keyed-HMAC-of-the-human-verified-normalized-name-and-date-of-birth-are-retained-with-the-random-claimant-principal-under-future-person.claimant-reverification-until-request-while-contact-and-working-authentication-material-expire-under-future-person.claimed-unbound-24mo; later-re-entry-normally-requires-the-key-plus-fresh-two-document-human-reverification-and-server-HMAC-comparison-but-if-the-key-was-never-issued-or-is-lost-a-public-keyless-start-with-fresh-documents-may-restore-only-an-exactly-one-matching-claimed_unbound-principal-after-named-human-review-with-no-parent-notice; zero-or-multiple-matches-refuse; temporary-contact-expiry-or-closing-the-first-release-page-never-makes-the-subject-unreachable-and-a-prior-claim-reference-or-approval-alone-never-authenticates",
       "recordKey": "the-original-key-may-identify-an-unclaimed-record-but-is-rotated-and-invalidated-only-at-first-claim-approval-never-on-an-early-invalid-or-unresolved-attempt; every-later-no-account-session-requires-fresh-documentary-reverification-and-a-new-release-token",
-      "authorityTransition": "claim-approval-atomically-enters-the-claimed_unbound-custodial-state-invalidates-parent-ownership-delete-analysis-export-chat-download-and-account-purge-authority-over-the-claimed-subject-and-detaches-that-subjects-sanitized-autosomal-source-and-historical-agreement-slice-from-cohort-restriction; parents-retain-only-their-own-genomes-and-any-nongenetic-historical-notice-rights-explicitly-required-by-law",
+      "authorityTransition": "claim-approval-atomically-enters-the-claimed_unbound-custodial-state-invalidates-parent-ownership-delete-analysis-export-chat-download-and-account-purge-authority-over-the-claimed-subject-and-detaches-that-subjects-sanitized-autosomal-and-X-Y-source-and-historical-agreement-slice-from-cohort-restriction; parents-retain-only-their-own-genomes-and-any-nongenetic-historical-notice-rights-explicitly-required-by-law",
       "claimantRights": [
         "export-the-approved-future-person-projection",
         "submit-a-correction",
@@ -3034,7 +3037,7 @@
       "parentVeto": "forbidden-for-every-claimant-right",
       "contracts": [
         "resource-authorization-v1",
-        "embryo-autosomal-only-v1"
+        "embryo-source-and-output-v2"
       ]
     }
   },
@@ -3239,7 +3242,7 @@
           "firstDurableByteBeforeAll": "forbidden",
           "contracts": [
             "jurisdiction-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1",
             "legal-evidence-ingest-v1"
           ]
@@ -3262,7 +3265,7 @@
           "firstDurableByteBeforeAll": "forbidden",
           "contracts": [
             "jurisdiction-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1",
             "legal-evidence-ingest-v1"
           ]
@@ -3460,7 +3463,7 @@
       "transportWireV1": {
         "implementation": "src/lib/embryos/ingest-binding.ts; src/lib/embryos/ingest-lines.ts; src/lib/embryos/vcf-transport.ts; src/lib/embryos/table-transport.ts",
         "binding": "every-chunk-repeats-the-regenerated-header-with-server-resolved-reference-build-random-challenge-and-positive-revision; every-sample-handle-must-resolve-to-this-live-session-reserved-ordinal; no-source-derived-hash-or-label-in-the-header",
-        "vcf": "regenerated-VCFv4.5-header-and-exact-FORMAT-GT:DP:GQ:AD:FT:LEN; autosomal-loci-only; ID-is-rsIDs-or-dot; QUAL-is-dot; FILTER-and-FT-are-PASS-FAIL-or-dot-with-FAIL-carrying-the-original-failed-state-without-the-original-filter-name; INFO-is-only-END-or-dot; literal-ACGTN-alleles-NON_REF-unspecified-alternate-and-spanning-deletion-alleles-only; source-ploidy-partial-no-calls-and-reference-block-lengths-preserved-with-END-regenerated-per-sample-when-LEN-is-present; lowercase-sequence-alleles-normalized-to-uppercase; phase-separators-become-unphased-because-source-phase-set-metadata-is-not-retained; no-symbolic-structural-or-breakend-allele-text",
+        "vcf": "regenerated-VCFv4.5-header-and-exact-FORMAT-GT:DP:GQ:AD:FT:LEN; only-loci-on-storedChromosomes; ID-is-rsIDs-or-dot; QUAL-is-dot; FILTER-and-FT-are-PASS-FAIL-or-dot-with-FAIL-carrying-the-original-failed-state-without-the-original-filter-name; INFO-is-only-END-or-dot; literal-ACGTN-alleles-NON_REF-unspecified-alternate-and-spanning-deletion-alleles-only; source-ploidy-partial-no-calls-and-reference-block-lengths-preserved-with-END-regenerated-per-sample-when-LEN-is-present; lowercase-sequence-alleles-normalized-to-uppercase; phase-separators-become-unphased-because-source-phase-set-metadata-is-not-retained; no-symbolic-structural-or-breakend-allele-text",
         "table": "inheritTable=1-header-with-the-same-build-challenge-and-revision; exact-columns-sample-rsid-genotype-or-sample-chrom-pos-genotype-selected-by-the-stored-mapping; source-label-to-ordinal-map-is-browser-memory-only-in-first-appearance-order; rsID-loci-resolved-from-the-server-reference-store-in-the-current-build-before-retaining-any-row",
         "serverBoundary": "validate-the-whole-bounded-chunk-before-returning-any-fragment-or-row-to-a-writer; VCF-fragments-have-one-neutral-ordinal-sample-and-no-challenge-or-handle; table-rows-have-only-ordinal-chrom-pos-rsid-genotype; returned-data-is-attempt-owned-pending-input-and-never-a-publication-decision",
         "lifecycleBoundary": "pure-transport-functions-do-not-authorize-requests-or-write-storage; the-route-must-authenticate-recheck-revisions-reserve-sequence-and-cumulative-quotas-and-dispatch-attemptFailure-on-terminal-errors-before-enabling-the-upload-flow",
@@ -3468,10 +3471,10 @@
       },
       "resourceReservation": "session-creation-atomically-reserves-the-declared-capacity-against-account-and-cohort-quotas-within-payloadBoundaryContract.embryoIngestSessionLimits; before-every-chunk-an-atomic-database-update-rechecks-cumulative-uncompressed-bytes-chunk-count-record-count-sample-count-line-length-rate-and-concurrency-independent-of-client-declarations",
       "limitFailure": "a-terminal-quota-byte-chunk-record-sample-line-length-rate-concurrency-or-other-authoritative-limit-failure-marks-the-attempt-failure-pending-and-invokes-only-attemptFailure-with-zero-canonical-source-variant-result-or-job-publication; it-never-invalidates-or-deletes-the-session-due-target-or-fragments-before-the-identical-atomic-unwind-commits",
-      "serverWork": "sniff-first-chunk-require-the-exact-sanitized-canonical-header-and-stored-random-challenge-revision-parse-every-line-normalize-contigs-discard-non-autosomal-records-partition-the-retained-genotypes-by-transient-sample-ordinal-regenerate-metadata-and-write-only-per-embryo-validated-autosomal-fragment-objects-with-server-generated-filenames",
+      "serverWork": "sniff-first-chunk-require-the-exact-sanitized-canonical-header-and-stored-random-challenge-revision-parse-every-line-normalize-contigs-discard-records-outside-storedChromosomes-partition-the-retained-genotypes-by-transient-sample-ordinal-regenerate-metadata-and-write-only-per-embryo-validated-autosomal-and-X-Y-fragment-objects-with-server-generated-filenames",
       "identity": "at-session-creation-the-server-generates-one-high-entropy-random-opaque-sample-handle-per-reserved-zero-based-embryo-ordinal-and-stores-only-session_id-handle_hash-ordinal-and-expiry-under-a-unique-database-constraint; before-upload-the-browser-maps-each-source-label-or-VCF-sample-column-to-one-of-those-handles-in-ephemeral-memory-and-rewrites-the-stream-so-source-labels-and-example-values-never-cross-the-chunk-request-boundary; the-separate-mapping-endpoint-may-inspect-only-a-bounded-source-header-copy-and-must-reject-forbidden-sex-gender-karyotype-or-proxy-columns-before-any-write-then-zeroize-it; every-server-received-sample-identifier-must-be-one-exact-issued-handle-for-this-live-session-and-any-other-label-name-XX-XY-male-female-sex-gender-or-unissued-token-is-rejected-before-any-row-object-log-or-audit-write; the-map-and-challenge-are-random-and-not-derived-from-encrypted-with-hashed-with-or-HMACed-from-source-text-and-the-schema-trigger-forbids-source_label-label_hash-label_ciphertext-header_hash-header_hmac-sex-gender-and-karyotype-columns; persistent-subject-tables-store-only-the-server-generated-neutral-display-label-and-sample_ordinal",
       "completion": "verify-a-contiguous-sequence-every-record-format-boundary-and-server-issued-random-handle-map-require-the-distinct-stable-sample-ordinals-to-equal-exactly-0-through-the-cohort-drafts-immutable-embryoCount-minus-1-with-a-one-to-one-subject-reservation-and-on-zero-fewer-extra-duplicate-missing-or-other-terminal-format-header-build-mapping-or-chunk-failure-mark-failure-pending-and-dispatch-attemptFailure-before-any-session-due-target-or-fragment-delete; lock-one-immutable-sanitized-fragment-manifest-and-ingest-revision-compute-policyContracts.worker-job-enqueue-v1.sourceBindingMatrix.embryo-ingest-fragment-set.file_sha256-enqueue-exactly-one-split_cohort_vcf-ingest.normalize-job-and-mark-only-sanitization_pending-in-one-transaction; retain-the-sanitized-fragments-random-handle-to-ordinal-map-session-and-embryo.ingest-session-24h-due-target-under-the-existing-fixed-deadline-for-that-worker-and-write-no-canonical-source-genome_file-variant-result-or-downstream-analysis-job",
-      "workerCompletion": "the-split_cohort_vcf-worker-locks-and-rechecks-the-exact-ingest-session-fragment-manifest-handle-map-cohort-subject-reservations-current-uploader-current-embryo-basis-case-all-five-set-memberships-and-revisions-the-resolved-embryo-basis-authority-v1.caseArtifactMatrix-membership-artifact-and-reviewed-evidence-revisions-including-true-two-parent-zero-single-parent-artifact-state-every-and-only-requiredUploadPrincipal-jurisdiction-capability-disclosure-Charter-current-donor-slot-artifact-and-attribution-revision-or-explicit-donor-neutral-no-donor-classification-lifecycle-handle-map-and-source-binding-revisions-and-reruns-the-class-specific-analysis-eligibility-v1-normalization-common-gates-at-claim-before-every-fragment-read-before-every-per-ordinal-canonical-write-and-again-in-the-terminal-publication-transaction; for-each-stable-sample_ordinal-in-a-separate-transaction-it-either-composes-the-stream-hash-and-finalizes-exactly-one-attempt-owned-worker-only-unreadable-sanitized-canonical-autosomal-source-and-genome_file-never-a-multisample-source-or-deletes-that-ordinals-partial-and-pending-object-and-rows-and-persists-only-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-reason-from-embryo-autosomal-only-v1.qcProjection-then-continues; after-every-ordinal-is-terminal-success-or-named-QC-failure-one-terminal-transaction-rechecks-the-complete-ordinal-set-and-canonical-source-publication-v1-for-each-successful-ordinal-sets-the-database-commit-time-as-actual-uploaded_at-recomputes-its-authoritative-deadline-under-retention-id-embryo.stored-or-unknown-24mo-bumps-its-Record-Key-card-date_revision-and-enqueues-one-date-only-no-key-addendum-for-each-recorded-initial-card-recipient-when-the-provisional-date-changes-and-for-each-qc_fail_no_source-ordinal-sets-no-uploaded_at-sets-the-same-commit-time-as-that-ordinals-qc_failed_at-and-nonrenewable-no-source-retention-anchor-recomputes-the-authoritative-deadline-under-the-explicit-no-source-branch-of-the-same-retention-ID-bumps-date_revision-and-enqueues-the-separate-date-only-no-key-addendum-stating-that-no-genetic-source-was-retained-without-borrowing-a-sibling-timestamp; it-atomically-publishes-only-the-complete-successful-source-member-set-under-one-readable-publication_revision-marks-each-exact-published-source-revision-normalization_complete-as-the-output-of-this-ingest.normalize-operation-promotes-every-attempt-owned-provisional-QC-marker-to-sourceState-qc_fail_no_source-plus-embryoStatus-qc_fail-with-a-closed-reason-no-source-and-no-result-cells-marks-the-job-partial-when-any-failed-inserts-upload-time-rights-notice-v1-outbox-rows-and-audit-events-only-for-the-valid-published-set-and-terminalizes-the-fragment-manifest-and-atomically-cancels-the-exact-embryo.ingest-session-24h-retention-due-phase-for-this-ingest-revision-or-writes-none-of-those-success-transitions; only-after-that-commit-may-all-fragment-objects-and-the-random-handle-map-be-deleted-and-current-purpose-specific-score-jobs-for-the-identical-current-normalization_complete-publication_revision-and-valid-published-set-be-evaluated-through-analysis-eligibility-v1-and-enqueued; every-terminal-pre-publication-format-header-build-mapping-chunk-quota-limit-cancel-abort-auth-stale-binding-or-retry-exhaustion-failure-dispatches-attemptFailure-before-any-session-due-target-fragment-handle-map-or-attempt-owned-unpublished-row-deletion-and-never-publishes-a-subset-normalization-state-or-downstream-job; only-the-success-or-partial-terminal-publication-transaction-atomically-cancels-the-exact-embryo.ingest-session-24h-due-target",
+      "workerCompletion": "the-split_cohort_vcf-worker-locks-and-rechecks-the-exact-ingest-session-fragment-manifest-handle-map-cohort-subject-reservations-current-uploader-current-embryo-basis-case-all-five-set-memberships-and-revisions-the-resolved-embryo-basis-authority-v1.caseArtifactMatrix-membership-artifact-and-reviewed-evidence-revisions-including-true-two-parent-zero-single-parent-artifact-state-every-and-only-requiredUploadPrincipal-jurisdiction-capability-disclosure-Charter-current-donor-slot-artifact-and-attribution-revision-or-explicit-donor-neutral-no-donor-classification-lifecycle-handle-map-and-source-binding-revisions-and-reruns-the-class-specific-analysis-eligibility-v1-normalization-common-gates-at-claim-before-every-fragment-read-before-every-per-ordinal-canonical-write-and-again-in-the-terminal-publication-transaction; for-each-stable-sample_ordinal-in-a-separate-transaction-it-either-composes-the-stream-hash-and-finalizes-exactly-one-attempt-owned-worker-only-unreadable-sanitized-canonical-autosomal-and-X-Y-source-and-genome_file-never-a-multisample-source-or-deletes-that-ordinals-partial-and-pending-object-and-rows-and-persists-only-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-reason-from-embryo-source-and-output-v2.qcProjection-then-continues; after-every-ordinal-is-terminal-success-or-named-QC-failure-one-terminal-transaction-rechecks-the-complete-ordinal-set-and-canonical-source-publication-v1-for-each-successful-ordinal-sets-the-database-commit-time-as-actual-uploaded_at-recomputes-its-authoritative-deadline-under-retention-id-embryo.stored-or-unknown-24mo-bumps-its-Record-Key-card-date_revision-and-enqueues-one-date-only-no-key-addendum-for-each-recorded-initial-card-recipient-when-the-provisional-date-changes-and-for-each-qc_fail_no_source-ordinal-sets-no-uploaded_at-sets-the-same-commit-time-as-that-ordinals-qc_failed_at-and-nonrenewable-no-source-retention-anchor-recomputes-the-authoritative-deadline-under-the-explicit-no-source-branch-of-the-same-retention-ID-bumps-date_revision-and-enqueues-the-separate-date-only-no-key-addendum-stating-that-no-genetic-source-was-retained-without-borrowing-a-sibling-timestamp; it-atomically-publishes-only-the-complete-successful-source-member-set-under-one-readable-publication_revision-marks-each-exact-published-source-revision-normalization_complete-as-the-output-of-this-ingest.normalize-operation-promotes-every-attempt-owned-provisional-QC-marker-to-sourceState-qc_fail_no_source-plus-embryoStatus-qc_fail-with-a-closed-reason-no-source-and-no-result-cells-marks-the-job-partial-when-any-failed-inserts-upload-time-rights-notice-v1-outbox-rows-and-audit-events-only-for-the-valid-published-set-and-terminalizes-the-fragment-manifest-and-atomically-cancels-the-exact-embryo.ingest-session-24h-retention-due-phase-for-this-ingest-revision-or-writes-none-of-those-success-transitions; only-after-that-commit-may-all-fragment-objects-and-the-random-handle-map-be-deleted-and-current-purpose-specific-score-jobs-for-the-identical-current-normalization_complete-publication_revision-and-valid-published-set-be-evaluated-through-analysis-eligibility-v1-and-enqueued; every-terminal-pre-publication-format-header-build-mapping-chunk-quota-limit-cancel-abort-auth-stale-binding-or-retry-exhaustion-failure-dispatches-attemptFailure-before-any-session-due-target-fragment-handle-map-or-attempt-owned-unpublished-row-deletion-and-never-publishes-a-subset-normalization-state-or-downstream-job; only-the-success-or-partial-terminal-publication-transaction-atomically-cancels-the-exact-embryo.ingest-session-24h-due-target",
       "terminalResolutionBranches": {
         "authority": "tokenSecurityContract.futurePersonRecordKey.initialDateFinalization",
         "success": "normal-terminal-publication-branch-and-addendum-only-on-date-change-that-atomically-cancels-the-exact-ingest-due-target",
@@ -3508,7 +3511,7 @@
         "genetic-file-ingest-v1",
         "resource-authorization-v1",
         "jurisdiction-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1"
       ]
@@ -3728,7 +3731,7 @@
           "trueTwoParentRule": "attestation.embryo-single-parent-basis-is-forbidden-and-must-be-absent",
           "contracts": [
             "jurisdiction-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1"
           ]
         },
@@ -3746,7 +3749,7 @@
           "excludes": "uploader-owner-donor-subject-provider-and-reviewer-from-every-parent-grant-set",
           "contracts": [
             "jurisdiction-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1"
           ]
         }
@@ -3811,7 +3814,7 @@
           "completionContract": "policyResolvers.embryo-ingest-session-v1.workerCompletion",
           "contracts": [
             "genetic-file-ingest-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1",
             "genome-build-inference-v1",
             "genome-liftover-v1",
@@ -3828,7 +3831,7 @@
           "authorityResolver": "embryo-basis-authority-v1",
           "donorClassification": "embryo-donor-attribution-v1",
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1"
           ]
         },
@@ -4237,7 +4240,7 @@
             "allowedActionIds",
             "findings"
           ],
-          "resultProjection": "findings-is-a-zero-or-more-array-of-the-exact-policyContracts.embryo-autosomal-only-v1.closedShapes.EmbryoFinding-leaf-covered-by-the-current-withdrawing-parent-authority; every-other-parent-identity-contact-raw-genome-source-object-key-sibling-cross-row-and-claimed-detached-subject-field-is-redacted",
+          "resultProjection": "findings-is-a-zero-or-more-array-of-the-exact-policyContracts.embryo-source-and-output-v2.closedShapes.EmbryoFinding-leaf-covered-by-the-current-withdrawing-parent-authority; every-other-parent-identity-contact-raw-genome-source-object-key-sibling-cross-row-and-claimed-detached-subject-field-is-redacted",
           "rawVariantsOriginalFilesFuturePersonIdentityOrClaimData": "forbidden"
         },
         "embryo-record-key-card-delivery": {
@@ -4382,7 +4385,7 @@
           "contracts": [
             "pre-consent-quarantine-v1",
             "resource-authorization-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "jurisdiction-v1"
           ]
         },
@@ -4396,7 +4399,7 @@
           "silenceExpiry": "normalize-the-intent-to-anonymous-without-a-global-refusal-bar-and-preserve-the-draft",
           "contracts": [
             "resource-authorization-v1",
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-donor-attribution-v1",
             "jurisdiction-v1"
           ]
@@ -4501,7 +4504,7 @@
           "mode": "right",
           "jurisdictionBypass": true,
           "contracts": [
-            "embryo-autosomal-only-v1"
+            "embryo-source-and-output-v2"
           ]
         }
       },
@@ -4808,7 +4811,7 @@
             "history-read"
           ],
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1",
             "embryo-donor-attribution-v1"
           ]
@@ -4830,7 +4833,7 @@
             "history-read"
           ],
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1",
             "embryo-donor-attribution-v1"
           ]
@@ -4853,7 +4856,7 @@
             "history-read"
           ],
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1",
             "embryo-donor-attribution-v1"
           ]
@@ -4957,7 +4960,7 @@
             "embryo_analysis"
           ],
           "contracts": [
-            "embryo-autosomal-only-v1"
+            "embryo-source-and-output-v2"
           ]
         },
         "export.share-link": {
@@ -5032,7 +5035,7 @@
             "embryo_analysis"
           ],
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1"
           ]
         },
@@ -5044,7 +5047,7 @@
             "embryo_analysis"
           ],
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1"
           ]
         },
@@ -5055,7 +5058,7 @@
           "presentationToken": "bound-to-cohortDraftId-principal-basis-case-basis-revision-artifact-version-body-hash-expiry-and-nonce",
           "donorUploaderOwnerProviderReviewerOrNonparent": "absolute-deny",
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1",
             "embryo-donor-attribution-v1"
           ]
@@ -5067,7 +5070,7 @@
           "presentationToken": "bound-to-target-principal-basis-case-basis-revision-disposition-authority-set-revision-artifact-version-body-hash-expiry-and-nonce",
           "donorUploaderOwnerProviderReviewerOrNonparent": "absolute-deny",
           "contracts": [
-            "embryo-autosomal-only-v1",
+            "embryo-source-and-output-v2",
             "embryo-basis-authority-v1"
           ]
         },
@@ -5129,7 +5132,7 @@
           "consumerRoute": "api.embryo-cohorts",
           "effect": "one-current-full-artifact-key-version-and-body-hash-acknowledgement-bound-to-this-draft-and-consumed-only-in-the-cohort-finalization-transaction",
           "contracts": [
-            "embryo-autosomal-only-v1"
+            "embryo-source-and-output-v2"
           ]
         },
         "sign-artifact:disclosure.insurance-and-discrimination": {
@@ -5207,7 +5210,7 @@
         "self": "byte-identical-upload",
         "nonSelfAdult": "only-when-raw-export-grant-v1-covers-the-file",
         "embryo": {
-          "contract": "embryo-autosomal-only-v1",
+          "contract": "embryo-source-and-output-v2",
           "meaning": "clearly-labelled-sanitized-subject-projection",
           "manifest": {
             "byte_identical_to_upload": false
@@ -5251,7 +5254,7 @@
         },
         "claimed-bound-future-person": {
           "when": "subject-kind-embryo-lifecycle-claimed_bound-and-owner_account_id-equals-subject_account_id-equals-the-acting-account",
-          "scope": "account-holders-own-claimed-Future-Person-subject-and-use-approved-future-person-export-v1-for-full-subject-autosomal-canonical-source-derived-results-provenance-and-historical-agreement-slice",
+          "scope": "account-holders-own-claimed-Future-Person-subject-and-use-approved-future-person-export-v1-for-full-subject-autosomal-and-X-Y-canonical-source-derived-results-provenance-and-historical-agreement-slice",
           "authorizationOverride": "the-approved-claim-and-current-claimed_bound-owner-subject-account-binding-replace-any-parent-grant-or-raw-export-share-tuple; parent-genomes-contacts-conversations-siblings-and-joint-results-remain-excluded"
         },
         "selection": "server-classify-each-requiredPartition-under-exactly-one-case-before-any-member-read; claimed_bound-never-falls-through-to-nonSelfSubject-or-futureOrCohortProjection"
@@ -5305,7 +5308,7 @@
       "deliveryContract": "largeExportDeliveryContract",
       "subjectScope": "the-one-claimed-embryo-subject-only-with-no-sibling-parent-or-cohort-row-except-the-agreement-projection-below",
       "includes": [
-        "the-embryo-subjects-autosomal-variant-calls",
+        "the-embryo-subjects-observed-autosomal-and-X-Y-variant-calls",
         "every-report-derived-from-that-subject",
         "the-subjects-provenance-record",
         "the-subjects-consent-signature-attestation-and-legal_audit_log-slices"
@@ -5326,7 +5329,7 @@
         "unrelated-audit-events-or-consents"
       ],
       "contracts": [
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "resource-authorization-v1"
       ]
     },
@@ -5676,9 +5679,9 @@
         "nonparent-required-uploader-basis-loss": "only-the-current-class-D-nonparent-uploader-principal-revoking-or-losing-its-exact-current-consent.upload-embryo-signature-for-this-cohort-including-through-its-account-deletion; this-trigger-recognizes-loss-of-a-required-upload-basis-and-grants-no-parent-role-disposition-choice-claim-right-or-authority-over-any-other-cohort",
         "system-fixed-deadline": "one-current-due-canonical-retention-or-contradiction-disposition-row-for-the-whole-cohort"
       },
-      "effect": "set-the-parent-controlled-cohort-restricted-for-every-current-member-of-the-locked-policyResolvers.embryo-basis-authority-v1-five-output-sets-and-queue-the-canonical-purge-for-joint-parent-fields-parent-only-material-and-every-unclaimed-embryo; preserve-each-detached-claimed-subjects-autosomal-source-historical-agreement-slice-and-claimant-authority",
+      "effect": "set-the-parent-controlled-cohort-restricted-for-every-current-member-of-the-locked-policyResolvers.embryo-basis-authority-v1-five-output-sets-and-queue-the-canonical-purge-for-joint-parent-fields-parent-only-material-and-every-unclaimed-embryo; preserve-each-detached-claimed-subjects-autosomal-and-X-Y-source-historical-agreement-slice-and-claimant-authority",
       "noticeRecipients": "enqueue-one-minimal-deduplicated-notice-to-every-exact-current-member-of-the-locked-pre-effect-policyResolvers.embryo-basis-authority-v1.noticeRecipients-set-and-never-to-a-donor-subject-only-principal-nonparent-uploader-custody-owner-provider-or-reviewer-unless-that-principal-has-a-separate-nonparent-notice-required-by-its-own-trigger",
-      "claimedSubjectIsolation": "a-parental-restriction-never-deletes-suspends-or-changes-a-claimed-future-person-subject; any-shared-source-was-already-split-into-the-claimed-subjects-sanitized-autosomal-projection-before-claim-approval",
+      "claimedSubjectIsolation": "a-parental-restriction-never-deletes-suspends-or-changes-a-claimed-future-person-subject; any-shared-source-was-already-split-into-the-claimed-subjects-sanitized-autosomal-and-X-Y-projection-before-claim-approval",
       "retentionIds": [
         "cohort.restriction-whole",
         "access.revocation-immediate",
@@ -5688,7 +5691,7 @@
       "authority": "docs/retention.md",
       "contracts": [
         "revocation-and-purge-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1"
       ]
     },
@@ -6980,7 +6983,7 @@
       "zeroResidualVerification": "after-each-batch-and-before-phase-completion-use-a-service-role-only-SECURITY-DEFINER-verifier-under-the-same-target-and-manifest-revision-to-count-every-prohibited-row-and-DB-joined-current-or-legacy-storage-object-across-all-orderedTargets; completion-requires-zero-for-every-applicable-targetId-and-a-nonzero-unknown-unclassified-or-unverifiable-count-fails-closed; only-after-that-proof-atomically-terminalize-but-do-not-delete-the-exact-active-retention-disposition-phase-manifest-and-worker-control-rows-with-coded-counts-for-crash-recovery-and-replay-defense; any-later-control-tombstone-cleanup-requires-a-separate-registered-nonauthorizing-housekeeping-retention-ID",
       "contracts": [
         "resource-authorization-v1",
-        "embryo-autosomal-only-v1"
+        "embryo-source-and-output-v2"
       ]
     },
     "revocation-disposition-purge-v1": {
@@ -7017,7 +7020,7 @@
               "exact-cohort-plus-donor-subject-principal-plus-donor-slot-plus-attribution-revision"
             ]
           },
-          "targets": "only-derived-results-figures-report-artifacts-paired-chat-turns-context-tokens-model-authority-and-generated-exports-attributable-to-that-exact-subject-purpose-family-pair-purpose-cohort-purpose-grant-or-donor-specific-tuple; the-cohort-purpose-grant-case-selects-only-members-bearing-the-identical-cohort-purpose-key-granting-principal-and-purpose-grant-revision; canonical-source-raw-autosomal-parent-neutral-donor-neutral-and-unrelated-purpose-or-grant-members-are-forbidden",
+          "targets": "only-derived-results-figures-report-artifacts-paired-chat-turns-context-tokens-model-authority-and-generated-exports-attributable-to-that-exact-subject-purpose-family-pair-purpose-cohort-purpose-grant-or-donor-specific-tuple; the-cohort-purpose-grant-case-selects-only-members-bearing-the-identical-cohort-purpose-key-granting-principal-and-purpose-grant-revision; canonical-source-raw-source-variant-parent-neutral-donor-neutral-and-unrelated-purpose-or-grant-members-are-forbidden",
           "holdRule": "no-source-contradiction-document-review-or-unrelated-purpose-hold-can-delay-this-phase"
         },
         "source.revocation-7d": {
@@ -7026,7 +7029,7 @@
           },
           "executionClass": "inlineEventDriven",
           "decided": "2026-09-18-D-126: no-worker-phase-claims-this-row; its-targets-are-deleted-inline-by-the-existing-paths-(self-file-deletion-cohort-restriction-account-deletion)-and-a-stranded-self-file-deletion-is-redone-by-jobs.retention-under-claim_due_genome_file_deletion_v1-and-finish_genome_file_deletion_claimed_v1-within-the-seven-day-bound; wording-immediately-and-within-7-days-at-the-latest",
-          "targets": "only-exact-target-canonical-source-rows-random-object-handles-and-dependent-raw-autosomal-rows",
+          "targets": "only-exact-target-canonical-source-rows-random-object-handles-and-dependent-raw-source-variant-rows",
           "holdRule": "a-current-valid-contradiction.freeze-or-embryo.single-parent-review-30d-row-may-defer-only-the-explicit-minimum-disputed-source-members-recorded-on-that-hold; every-other-source-member-remains-due"
         },
         "access.revocation-immediate": {
@@ -7635,7 +7638,7 @@
         "mail-token-delivery-v1",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "future-person-claim-intake-privacy-v1"
       ]
     },
@@ -7653,7 +7656,7 @@
       "verification": "race-fixtures-cover-claim-versus-purge-transfer-versus-purge-renewal-versus-purge-late-hold-and-worker-crash-after-each-batch; no-fixture-can-finish-with-a-live-renewed-transferred-claimed-or-held-target-and-a-partially-deleted-frozen-manifest",
       "contracts": [
         "resource-authorization-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "sensitive-purge-target-registry-v1"
       ]
     },
@@ -7683,7 +7686,7 @@
         "ownedSubjects": "every-current-subject-whose-owner_account_id-equals-the-deleting-account-including-self-adult-and-claimed_bound-subjects-owned-by-that-claimant; exclude-claimed_unbound-and-every-subject-transferred-away-before-the-deadline",
         "boundAdultSubjects": "every-current-adult-subject-whose-subject_account_id-equals-the-deleting-account-even-when-owner_account_id-is-a-different-uploader; the-account-is-the-data-subject-authority-and-revocation-and-purge-v1-applies-unless-the-request-was-cancelled",
         "cohorts": {
-          "ownedCohort": "every-current-embryo_cohorts.owner_account_id-equal-to-the-deleting-account-selects-complete-retention-of-that-still-parent-controlled-cohort-and-every-unclaimed-embryo-source-result-Record-Key-working-row-and-object-through-sensitive-purge-target-registry-v1-even-when-other-principals-hold-live-consents; exclude-and-preserve-only-each-already-detached-claimed-future-person-subject-and-its-minimum-autosomal-source-provenance-and-agreement-slice; ownership-is-a-deletion-selector-under-X3.5-not-parent-upload-analysis-disposition-notice-Card-restrict-withdraw-or-profile-authority",
+          "ownedCohort": "every-current-embryo_cohorts.owner_account_id-equal-to-the-deleting-account-selects-complete-retention-of-that-still-parent-controlled-cohort-and-every-unclaimed-embryo-source-result-Record-Key-working-row-and-object-through-sensitive-purge-target-registry-v1-even-when-other-principals-hold-live-consents; exclude-and-preserve-only-each-already-detached-claimed-future-person-subject-and-its-minimum-autosomal-and-X-Y-source-provenance-and-agreement-slice; ownership-is-a-deletion-selector-under-X3.5-not-parent-upload-analysis-disposition-notice-Card-restrict-withdraw-or-profile-authority",
           "dispositionAuthority": "one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.dispositionAuthorities-whose-immutable-principal-is-the-deleting-account-dispatches-cohort-restriction-v1-for-a-not-owned-whole-current-parent-controlled-cohort-and-must-preserve-every-already-detached-claimed-future-person-subject",
           "identifiedDonorAttribution": "only-when-the-deleting-account-controls-the-exact-current-consent.embryo-donor-attribution-donor-subject-principal-dispatch-embryo-donor-attribution-revocation-v1-for-a-not-owned-cohort-with-no-cohort-source-parent-set-or-donor-neutral-result-deletion; for-an-owned-cohort-this-role-specific-revocation-is-additive-but-the-owner-complete-retention-selector-still-governs-the-unclaimed-cohort",
           "nonParentRequiredUploaderBasis": "only-when-the-deleting-account-is-the-current-class-D-nonparent-uploader-principal-and-its-exact-current-required-consent.upload-embryo-signature-for-a-not-owned-cohort-is-revoked-by-deletion-dispatch-cohort-restriction-v1.actorCases.nonparent-required-uploader-basis-loss; historical-upload-status-alone-is-insufficient",
@@ -7758,20 +7761,20 @@
         "resource-authorization-v1",
         "legal-evidence-ingest-v1",
         "mail-token-delivery-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "retention-purge-v1"
       ]
     },
     "future-person-analysis-stop-v1": {
       "scope": "the-exact-approved-claimant-principal-and-one-claimed-embryo-subject",
       "effect": "atomically-set-analysis_stopped_at-invalidate-and-cancel-every-pending-or-running-analysis-model-retrieval-and-new-purpose-enqueue-for-that-subject-and-recheck-before-every-worker-write",
-      "retains": "the-subjects-autosomal-source-and-existing-readable-results-remain-for-free-export-correction-and-later-deletion; parents-never-regain-analysis-authority",
+      "retains": "the-subjects-autosomal-and-X-Y-source-and-existing-readable-results-remain-for-free-export-correction-and-later-deletion; parents-never-regain-analysis-authority",
       "irreversible": "analysis_stopped_at-can-never-be-cleared-and-no-claimant-parent-operator-worker-or-migration-may-resume-or-enqueue-new-analysis-for-that-subject; deletion-and-free-export-remain-available",
       "audit": "append-one-pseudonymized-claimant.analysis_stopped-event-with-no-token-contact-or-raw-data",
       "contracts": [
         "resource-authorization-v1",
         "future-person-claimant-authority-v1",
-        "embryo-autosomal-only-v1"
+        "embryo-source-and-output-v2"
       ]
     },
     "future-person-correction-v1": {
@@ -7837,7 +7840,7 @@
       "finalization": "after-server-side-sniff-and-sha256-verification-copy-to-a-fresh-immutable-server-only-final-key-verify-then-delete-the-staging-key-before-marking-finalized",
       "postFinalize": "the-RLS-session-row-is-consumed-the-staging-key-is-deleted-and-no-client-policy-ever-addresses-the-final-key",
       "revocation": "current-session-sign-out-session-rotation-password-or-security-reset-suspension-credential-compromise-and-every-consent-revocation-refusal-transfer-account-deletion-or-cohort-restriction-transaction-invalidates-all-matching-upload-session-rows-before-the-auth-or-lifecycle-change-commits",
-      "embryoOrCohortWrite": "service-only-after-streaming-autosomal-sanitization",
+      "embryoOrCohortWrite": "service-only-after-streaming-sanitization-under-embryo-source-and-output-v2",
       "serverRead": "join-exact-genome_files-row-to-subject-or-cohort-require-policyContracts.canonical-source-publication-v1-readability-and-re-evaluate-operation-specific-consent",
       "rawReadRequirement": "self-subject-or-policyContracts.raw-export-grant-v1",
       "authenticatedPostgrestRawSelect": "deny-direct-select-on-user_variants-embryo_variants-and-original-object-metadata; raw access is server-mediated-through-a-closed-operation-specific-projection",
@@ -7853,7 +7856,7 @@
       "contracts": [
         "resource-authorization-v1",
         "canonical-source-publication-v1",
-        "embryo-autosomal-only-v1"
+        "embryo-source-and-output-v2"
       ]
     },
     "restricted-evidence-v1": {
@@ -8464,7 +8467,7 @@
         "resource-authorization-v1",
         "genetic-file-ingest-v1",
         "canonical-source-publication-v1",
-        "embryo-autosomal-only-v1",
+        "embryo-source-and-output-v2",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1",
         "upload-time-rights-notice-v1"
@@ -8473,7 +8476,7 @@
         "claim-the-exact-current-fragment-manifest-and-revision",
         "recompute-and-constant-time-compare-the-fragment-set-fingerprint",
         "at-claim-before-every-fragment-read-before-every-per-ordinal-canonical-write-and-at-terminal-publication-recheck-cohort-reservations-build-current-uploader-the-current-embryo-basis-case-all-five-set-memberships-and-revisions-the-resolved-caseArtifactMatrix-membership-artifact-and-reviewed-evidence-revisions-including-true-two-parent-zero-single-parent-artifact-state-every-and-only-requiredUploadPrincipal-jurisdiction-embryo_analysis-capability-disclosure-Charter-current-donor-slot-artifact-and-attribution-revision-or-explicit-donor-neutral-no-donor-classification-lifecycle-and-handle-map-revisions-and-rerun-the-class-specific-analysis-eligibility-v1-normalization-common-gates",
-        "for-each-stable-ordinal-in-a-separate-transaction-either-compose-stream-hash-and-finalize-one-attempt-owned-worker-only-unreadable-canonical-autosomal-source-or-delete-only-that-ordinals-partial-pending-source-and-persist-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-reason-then-continue",
+        "for-each-stable-ordinal-in-a-separate-transaction-either-compose-stream-hash-and-finalize-one-attempt-owned-worker-only-unreadable-canonical-autosomal-and-X-Y-source-or-delete-only-that-ordinals-partial-pending-source-and-persist-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-reason-then-continue",
         "after-every-ordinal-is-terminal-success-or-named-QC-failure-recheck-the-whole-ordinal-set-and-atomically-publish-only-the-successful-source-member-set-under-one-readable-publication_revision-promote-each-attempt-owned-provisional-QC-marker-to-sourceState-qc_fail_no_source-plus-embryoStatus-qc_fail-with-a-closed-reason-no-source-and-no-result-cells-mark-each-exact-published-source-revision-normalization_complete-mark-the-job-partial-when-needed-for-each-successful-ordinal-set-actual_uploaded_at-retention-deadline-and-card-date_revision-and-for-each-qc_fail_no_source-ordinal-set-no-uploaded_at-set-qc_failed_at-and-the-nonrenewable-no-source-retention-anchor-from-the-terminal-commit-compute-the-authoritative-deadline-and-bump-card-date_revision-without-a-sibling-time-insert-every-required-date-only-no-key-addendum-for-both-branches-and-upload-time-rights-notice-v1-rows-and-audit-events-only-for-the-valid-published-set-and-atomically-cancel-the-exact-embryo.ingest-session-24h-retention-due-phase-for-this-ingest-revision-or-write-none-of-those-terminal-transitions",
         "only-after-that-trigger-commit-delete-every-fragment-and-handle-map-and-evaluate-purpose-specific-downstream-jobs-for-the-current-normalization_complete-publication_revision-through-analysis-eligibility-v1"
       ],
@@ -9147,7 +9150,7 @@
       "every-retention-due-phase-object-has-one-globally-stable-phaseId-and-the-retention-row-UUID-phaseId-phaseRevision-tuple-is-the-only-claim-idempotency-cancellation-supersession-and-completion-identity",
       "sensitive-purge-target-registry-v1-bindingValidation-schemaCoverage-retentionPhaseManifestClassBindings-inlineDispositionManifestClassBindings-orderedTargets-manifestClasses-and-zeroResidualVerification-all-pass-before-a-purge-worker-migration-or-release-can-pass",
       "the-legal-audit-append-function-is-the-only-writer-serializes-seq-and-occurred_at-allocation-rejects-caller-supplied-values-and-proves-occurred_at-nondecreasing-with-seq-before-a-seven-year-prefix-retention-release-can-pass",
-      "embryo-autosomal-only-v1.shapeBindings.findingBearingConsumerInventory-equals-the-static-discovery-set-by-RSC-API-export-chat-and-worker-class-and-every-inventory-member-has-one-explicit-resolving-root-binding",
+      "embryo-source-and-output-v2.shapeBindings.findingBearingConsumerInventory-equals-the-static-discovery-set-by-RSC-API-export-chat-and-worker-class-and-every-inventory-member-has-one-explicit-resolving-root-binding",
       "every-embryo-closedShapes-root-child-oneOf-and-array-item-reference-resolves-the-reachable-graph-is-acyclic-every-reachable-object-has-equal-exact-keys-and-required-sets-plus-unknownFields-reject-and-every-array-has-one-item-shape-and-explicit-cardinality",
       "every-reachable-embryo-finding-leaf-has-exactly-the-eight-L-23-EmbryoFinding-keys-its-condition-and-model-bind-to-data/embryo/allowed_conditions.json-and-no-parent-envelope-duplicates-the-leafs-identity-or-provenance-fields",
       "for-every-embryo-finding-consumer-class-the-adversarial-candidate-with-both-an-extra-sex-key-and-an-extra-numeric-predicted_rank-key-at-each-reachable-depth-produces-HTTP-500-where-applicable-zero-unsafe-bytes-and-exactly-one-pseudonymized-feature.blocked-ledger-event",
@@ -11437,7 +11440,7 @@
           },
           "content": "fully-validated-completion-or-registered-refusal",
           "citations": "closed-authorized-list",
-          "embryoFindings": "when-the-server-resolved-scope-kind-is-cohort-a-zero-or-more-array-of-exact-policyContracts.embryo-autosomal-only-v1.closedShapes.EmbryoFinding-and-otherwise-the-exact-empty-array"
+          "embryoFindings": "when-the-server-resolved-scope-kind-is-cohort-a-zero-or-more-array-of-exact-policyContracts.embryo-source-and-output-v2.closedShapes.EmbryoFinding-and-otherwise-the-exact-empty-array"
         }
       },
       "unknownFieldsRecursively": "forbidden",
@@ -11478,7 +11481,7 @@
                 "href": "same-origin-or-committed-public-source-URL"
               }
             ],
-            "embryoFindings": "when-the-server-resolved-scope-kind-is-cohort-a-zero-or-more-array-of-exact-policyContracts.embryo-autosomal-only-v1.closedShapes.EmbryoFinding-and-otherwise-the-exact-empty-array",
+            "embryoFindings": "when-the-server-resolved-scope-kind-is-cohort-a-zero-or-more-array-of-exact-policyContracts.embryo-source-and-output-v2.closedShapes.EmbryoFinding-and-otherwise-the-exact-empty-array",
             "createdAt": "ISO-8601-UTC"
           }
         ]
@@ -11780,7 +11783,7 @@
         },
         {
           "status": 422,
-          "when": "parse-produces-zero-usable-autosomal-records",
+          "when": "parse-produces-zero-usable-records-on-embryo-source-and-output-v2.storedChromosomes",
           "contentType": "application/json",
           "body": {
             "error": {
@@ -12694,7 +12697,7 @@
           }
         ]
       },
-      "schema": "policyContracts.embryo-autosomal-only-v1.closedShapes.apiCohortCreate",
+      "schema": "policyContracts.embryo-source-and-output-v2.closedShapes.apiCohortCreate",
       "unknownFieldsRecursively": "forbidden",
       "headers": "private-no-store-no-referrer",
       "recipientRule": "the-array-contains-exactly-one-card-per-embryo-only-when-the-caller-is-one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.recordKeyRecipients-and-otherwise-is-empty; every-other-current-recordKeyRecipients-member-receives-an-immediately-available-own-principal-one-time-print-right-and-a-nonparent-uploader-donor-subject-only-principal-reviewer-provider-or-custody-owner-never-receives-a-key",
@@ -12751,7 +12754,7 @@
           }
         ]
       },
-      "schema": "policyContracts.embryo-autosomal-only-v1.closedShapes.apiRecordKeyCardDelivery",
+      "schema": "policyContracts.embryo-source-and-output-v2.closedShapes.apiRecordKeyCardDelivery",
       "unknownFieldsRecursively": "forbidden",
       "headers": "private-no-store-no-referrer",
       "transaction": "lock-the-current-acting-policyResolvers.embryo-basis-authority-v1.recordKeyRecipients-principal-basis-and-recipient-set-revisions-key_revision-and-unconsumed-print-rights-generate-one-distinct-CSPRNG-key-per-covered-embryo-store-only-each-hash-consume-the-rights-and-return-the-cards-or-write-nothing; a-donor-subject-only-principal-uploader-owner-provider-or-reviewer-is-always-a-nonrecipient-and-any-missing-consumed-stale-revoked-transferred-or-nonrecipient-state-is-resource-not-found-v1",
@@ -13757,7 +13760,7 @@
     "jurisdiction-unavailable"
   ],
   "stateDefinitions": {
-    "_note": "What each state id means, one sentence each, recorded 2026-09-14 on corrections item 11. Eight ids had no definition anywhere and precedent had supplied several meanings per name, which is why the ratchet's columns counted different achievements under one heading. These definitions were READ OUT OF the proofs rather than chosen: each existing test states in its header which reading it used, and no definition here contradicts a recorded proof. Where an id genuinely carries more than one reading, the readings are named rather than one being declared correct and the other retired \u2014 owner decision 2026-09-13, taken because both readings are already proven and a split would put every one of those proofs up for re-reading.",
+    "_note": "What each state id means, one sentence each, recorded 2026-09-14 on corrections item 11. Eight ids had no definition anywhere and precedent had supplied several meanings per name, which is why the ratchet's columns counted different achievements under one heading. These definitions were READ OUT OF the proofs rather than chosen: each existing test states in its header which reading it used, and no definition here contradicts a recorded proof. Where an id genuinely carries more than one reading, the readings are named rather than one being declared correct and the other retired — owner decision 2026-09-13, taken because both readings are already proven and a split would put every one of those proofs up for re-reading.",
     "empty": {
       "means": "The page has nothing to show, and there is no step this reader can take to change that.",
       "separatedFrom": {
@@ -13768,7 +13771,7 @@
     "processing": {
       "means": "Work the reader started is in flight, and the page says so rather than looking finished.",
       "overloaded": false,
-      "note": "The one id item 11 examined and found NOT overloaded: it means the same thing on every route that has claimed it (recorded in e2e/embryos.spec.ts). It is also the id most often found implemented-and-untitled \u2014 auth-flow's four, and five more measured in item 8 \u2014 so a zero in its proven column has never once meant the state was absent."
+      "note": "The one id item 11 examined and found NOT overloaded: it means the same thing on every route that has claimed it (recorded in e2e/embryos.spec.ts). It is also the id most often found implemented-and-untitled — auth-flow's four, and five more measured in item 8 — so a zero in its proven column has never once meant the state was absent."
     },
     "partial-coverage": {
       "means": "Some of what this page could show is absent, and the page names which part and why.",
@@ -13780,11 +13783,11 @@
         },
         {
           "reading": "permission",
-          "is": "one layer was granted and another was not, so cells read \u201cNot shared with you\u201d",
+          "is": "one layer was granted and another was not, so cells read “Not shared with you”",
           "where": "/family/[person] and /family/health-picture"
         }
       ],
-      "note": "Both readings are proven and both routes sit on the `product-result` profile, so recording the reading per PROFILE cannot separate them \u2014 which is why item 11's own proposal was insufficient and the owner chose to name both readings under one id instead. Nothing about a file's coverage differs between the two Family cases."
+      "note": "Both readings are proven and both routes sit on the `product-result` profile, so recording the reading per PROFILE cannot separate them — which is why item 11's own proposal was insufficient and the owner chose to name both readings under one id instead. Nothing about a file's coverage differs between the two Family cases."
     },
     "complete": {
       "means": "The page is showing everything it can honestly show for what was asked.",
@@ -13792,12 +13795,12 @@
         {
           "reading": "complete-for-the-question",
           "is": "the answer is complete for what was asked, which is all a search surface can claim",
-          "where": "/genome/[subject]/data/browser \u2014 the browser never claims the file covers the genome"
+          "where": "/genome/[subject]/data/browser — the browser never claims the file covers the genome"
         },
         {
           "reading": "permitted-and-able",
           "is": "everything the page is permitted AND able to show, with no cell absent for want of a permission or a source",
-          "where": "/family/health-picture \u2014 it cannot mean every report covered, because no real file covers the catalogue; /genome/[subject]/reports \u2014 both layers granted and generated, so no group is absent for want of a permission or a source"
+          "where": "/family/health-picture — it cannot mean every report covered, because no real file covers the catalogue; /genome/[subject]/reports — both layers granted and generated, so no group is absent for want of a permission or a source"
         },
         {
           "reading": "everything-it-has",
@@ -13817,7 +13820,7 @@
     },
     "error": {
       "means": "A fault a request can actually reach.",
-      "note": "Declared only where a fault is reachable. A route that answers bad input with notFound() does not declare it, and the reason may name that convention rather than a structural property \u2014 the one exception G2.2 allows to its own n/a rule (operator decision 2026-09-12, corrections item 4, which took this id off nine profiles)."
+      "note": "Declared only where a fault is reachable. A route that answers bad input with notFound() does not declare it, and the reason may name that convention rather than a structural property — the one exception G2.2 allows to its own n/a rule (operator decision 2026-09-12, corrections item 4, which took this id off nine profiles)."
     },
     "consent-required": {
       "means": "A recorded, revocable consent is missing; the page names the outstanding step and links to where it is given.",
@@ -13832,7 +13835,7 @@
       "separatedFrom": {
         "empty": "An empty page has nothing to show and no step this reader can take. This page has a prepared file and exactly one step, named and linked. Both render as a page with no results on it, which is why the id exists rather than the shape being folded into `empty`.",
         "processing": "Nothing is in flight. The preparation finished; what is waiting is a decision only the reader can make.",
-        "complete": "The page is not showing everything it can: it is showing that it can show nothing until a choice is made. /genome/[subject]/reports is the counter-case and the reason this id does not spread \u2014 its body IS the choosing surface, so it is `complete` whether or not anything has been chosen."
+        "complete": "The page is not showing everything it can: it is showing that it can show nothing until a choice is made. /genome/[subject]/reports is the counter-case and the reason this id does not spread — its body IS the choosing surface, so it is `complete` whether or not anything has been chosen."
       },
       "note": "Added 2026-09-14 on the owner's decision of 2026-09-13, taken after the shape was found unnamed rather than mis-named. Every reader who uploads a file passes through it and the ratchet could not see it. Reachable on /overview alone: `needsReportChoice` in overview/page.tsx is the only branch in the product whose whole body is a call to choose an analysis."
     }
@@ -13850,7 +13853,7 @@
         "not-covered": "A static public document renders no uploaded-file result.",
         "consent-required": "A public document is readable without a genetic-data consent.",
         "jurisdiction-unavailable": "Rights, legal and science documents are never jurisdiction-blocked.",
-        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "public-capability-marketing": {
@@ -13865,7 +13868,7 @@
         "partial-coverage": "The public branch renders no uploaded-file result.",
         "not-covered": "The public branch renders no uploaded-file result.",
         "consent-required": "The public restriction explanation is readable without genetic-data consent.",
-        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       },
       "jurisdictionUnavailable": "return-200-render-the-exact-fail-closed-capability-copy-and-future-person-rights-link-with-zero-user-result-cookie-or-subject-fetch"
     },
@@ -13881,7 +13884,7 @@
         "complete": "The page's one render is already proven as jurisdiction-unavailable. Counting the same render twice would inflate the proven column without proving anything. Corrections item 10, signed 2026-09-13.",
         "not-covered": "No file, no viewer, no coverage: the page describes the catalog, not a person. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
-        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       },
       "zeroUserDataRule": "every-state-is-a-public-educational-projection-selected-from-committed-copy-and-the-current-public-jurisdiction-catalog-with-zero-account-subject-file-result-cookie-or-genetic-data-fetch",
       "stateProjection": {
@@ -13900,13 +13903,13 @@
       ],
       "notApplicable": {
         "awaiting-choice": "A versioned public document has no reader's file and offers no analysis to choose.",
-        "empty": "All six routes were read end to end; each is between nine and fourteen lines. Every one renders a committed body or answers notFound(), and not one carries a branch that renders nothing. The diff pages render both versions side by side and fall back to \u201cNo change summary was recorded.\u201d for a missing summary field, which is a fallback inside a populated page rather than an empty state. Corrections item 8, signed 2026-09-13.",
+        "empty": "All six routes were read end to end; each is between nine and fourteen lines. Every one renders a committed body or answers notFound(), and not one carries a branch that renders nothing. The diff pages render both versions side by side and fall back to “No change summary was recorded.” for a missing summary field, which is a fallback inside a populated page rather than an empty state. Corrections item 8, signed 2026-09-13.",
         "processing": "A versioned document performs no asynchronous user-data processing.",
         "partial-coverage": "A versioned document renders no uploaded-file result.",
         "not-covered": "A versioned document renders no uploaded-file result.",
         "consent-required": "Public version history is readable without a genetic-data consent.",
         "jurisdiction-unavailable": "Public version history is never jurisdiction-blocked.",
-        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "auth-flow": {
@@ -13916,12 +13919,12 @@
       ],
       "notApplicable": {
         "awaiting-choice": "Signing in, signing up or resetting a password knows of no prepared file and offers no analysis, so there is nothing for this reader to choose here.",
-        "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders \u201cCheck your email\u201d, which is a complete shape. Corrections item 8, signed 2026-09-13.",
+        "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders “Check your email”, which is a complete shape. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "Authentication does not render an uploaded-file result.",
         "not-covered": "Authentication does not render an uploaded-file result.",
         "consent-required": "Authentication structurally precedes genetic-data consent.",
         "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
-        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "product-result": {
@@ -13936,7 +13939,7 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "own-product-result": {
@@ -13950,7 +13953,7 @@
       ],
       "notApplicable": {
         "awaiting-choice": "/files and /files/upload are about the file itself rather than what to make from it, and /copilot/[scope] answers questions about results that already exist. None of the three renders an invitation to choose an analysis.",
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table."
       }
     },
@@ -13966,7 +13969,7 @@
         "empty": "All four routes read 2026-09-12. /family/invite is a form. /family/[person]/permissions always renders both columns and all seven rows; its youSeeNothing branch gates a note beside the populated columns. /embryos/upload and /embryos/request-data always render. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
         "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
-        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "account-management": {
@@ -13976,11 +13979,11 @@
         "complete"
       ],
       "notApplicable": {
-        "awaiting-choice": "These pages manage the account itself \u2014 its settings, consents, Copilot model and own data \u2014 and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
+        "awaiting-choice": "These pages manage the account itself — its settings, consents, Copilot model and own data — and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
         "partial-coverage": "Account management does not render an uploaded-file result.",
         "not-covered": "Account management does not render an uploaded-file result.",
-        "error": "These settings pages parse no parameter and no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
-        "consent-required": "These pages manage the account itself \u2014 its settings, its consents, its Copilot model and its own data \u2014 and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
+        "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
         "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5."
       }
     },
@@ -13990,13 +13993,13 @@
       ],
       "notApplicable": {
         "awaiting-choice": "A rights request is about data already held. It offers no analysis to choose and does not read whether a file is prepared.",
-        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is \u201cClaims are not open yet\u201d, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its \u201cempty\u201d word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
-        "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
+        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is “Claims are not open yet”, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its “empty” word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
+        "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs — a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
         "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked.",
-        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "redirect": {
@@ -14458,7 +14461,7 @@
           "resource-authorization-v1",
           "adult-subject-confirmation-v1",
           "adult-upload-revision-confirmation-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ],
         "operationsByPurpose": {
           "adult-withdrawal": [
@@ -14597,7 +14600,7 @@
       "width": "72rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "disposition": "kept",
       "expectedStatus": 200
@@ -14613,7 +14616,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
         "partial-coverage": "The hub renders tiles, a file count and a link per tool. It never renders a result, so there is nothing that could be partly covered. Corrections item 10, signed 2026-09-13.",
         "not-covered": "The same: coverage is a property of a report against a file, and this page shows no report. Corrections item 10, signed 2026-09-13.",
         "empty": "It has no empty render. For an own record all three tiles are unconditional; for a relative's record resolveSubjectRoute refuses the page outright when nothing is granted (anyOf reports.monogenic, reports.polygenic, ancestry) rather than serving an empty hub, which is deliberate because an empty hub would confirm the record exists. Corrections item 10, signed 2026-09-13."
@@ -14641,7 +14644,7 @@
         }
       },
       "notApplicableStates": {
-        "awaiting-choice": "This IS the page where the choice is made. Its body is the report library, which renders in full whether or not anything has been chosen \u2014 so the shape here is `complete`, and an `awaiting-choice` declaration would claim a call-to-action page this route never becomes."
+        "awaiting-choice": "This IS the page where the choice is made. Its body is the report library, which renders in full whether or not anything has been chosen — so the shape here is `complete`, and an `awaiting-choice` declaration would claim a call-to-action page this route never becomes."
       },
       "stateProfile": "product-result",
       "policy": {
@@ -14665,7 +14668,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry. This route serves genetic findings, which is exactly why the measurement is recorded rather than assumed."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry. This route serves genetic findings, which is exactly why the measurement is recorded rather than assumed."
       },
       "policy": {
         "mode": "resolved",
@@ -14685,8 +14688,8 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
-        "partial-coverage": "Not a state this page can render, measured 2026-09-18 (corrections document, \u2018Measured 2026-09-18\u2019). The seven-region panel's minimum is its whole panel (SEVEN_ANCESTRY_PANEL.minimumMarkers = 168), so any shortfall, one marker or 147, is the grey state already proven as /genome/[subject]/ancestry not-covered; the capture distinguishes result_state partial from not_covered, but the page says the same sentence for both and draws no map for either. The owner chose on 2026-09-18 to waive the state here rather than add a sentence saying shares were computed from a partial panel and withheld. Reopens if the page ever renders a partial panel differently from none."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
+        "partial-coverage": "Not a state this page can render, measured 2026-09-18 (corrections document, ‘Measured 2026-09-18’). The seven-region panel's minimum is its whole panel (SEVEN_ANCESTRY_PANEL.minimumMarkers = 168), so any shortfall, one marker or 147, is the grey state already proven as /genome/[subject]/ancestry not-covered; the capture distinguishes result_state partial from not_covered, but the page says the same sentence for both and draws no map for either. The owner chose on 2026-09-18 to waive the state here rather than add a sentence saying shares were computed from a partial panel and withheld. Reopens if the page ever renders a partial panel differently from none."
       },
       "policy": {
         "mode": "resolved",
@@ -14706,7 +14709,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
         "not-covered": "The render this state would title is the one the route's complete proof was taken on (e2e/genome-data.spec.ts): this page's product is the account of methods and coverage, and a file that reads zero of every panel's positions renders the same three zero-of-N figures under a second title. The page's one statement of coverage is the figure itself, and the scorer's refusal of every palindromic pair means no file reads every position either, so complete cannot be re-anchored. Measured 2026-09-18; the owner chose on 2026-09-18 to waive the state here rather than add a sentence saying the file supplied none of the positions the panels need. partial-coverage stays declared and proven: a read count strictly between zero and the panel size is a render neither other title had."
       },
       "policy": {
@@ -14727,7 +14730,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "policy": {
         "mode": "resolved",
@@ -14748,12 +14751,12 @@
       "notApplicableStates": {
         "awaiting-choice": "The Family surfaces are about other people's shared results and about permissions. Nothing on any of them asks this reader to choose an analysis for their own file.",
         "consent-required": "Consent here is a property of a PERSON, not of this page: `familyPersonState` returns `paused` for one card and the hub renders every other card, tile and panel around it. The route-level refusal on this page is the jurisdiction one, which suppresses the whole surface and is proven. There is no account-level Family consent that could put the hub itself into this state. Read 2026-09-13; corrections item 13, signed.",
-        "not-covered": "Not a state the hub renders, measured 2026-09-18. Its card knows five things about a person (paused, waiting for a grant, ready, results awaited, no file) and nothing about what the shared file covers; the coverage reading has nothing on the hub to attach to, and the proven /family/[person] not-covered is where a shared file's coverage is said, past that page's own gate. Measuring this pair found D-129 (the card read \u2018No shared results yet\u2019 for a completed run that reaches no report), fixed by 20260918213000_shared_report_readiness_completed_runs.sql. The owner chose on 2026-09-18 to waive the state here rather than have a card name another adult's file coverage, which is a disclosure about that person's record.",
+        "not-covered": "Not a state the hub renders, measured 2026-09-18. Its card knows five things about a person (paused, waiting for a grant, ready, results awaited, no file) and nothing about what the shared file covers; the coverage reading has nothing on the hub to attach to, and the proven /family/[person] not-covered is where a shared file's coverage is said, past that page's own gate. Measuring this pair found D-129 (the card read ‘No shared results yet’ for a completed run that reaches no report), fixed by 20260918213000_shared_report_readiness_completed_runs.sql. The owner chose on 2026-09-18 to waive the state here rather than have a card name another adult's file coverage, which is a disclosure about that person's record.",
         "partial-coverage": "Waived by the owner on 2026-09-18 with /family not-covered, for the same reason. The permission reading of partial-coverage (one layer granted and the other not) is a per-person fact the card already carries as its own state, and the coverage reading has nothing on the hub to attach to: the card renders no result and no coverage."
       },
       "consentRequiredException": {
         "kind": "item-level",
-        "carriedBy": "/family/[person] consent-required, and the card's own \u201cSharing paused\u201d state"
+        "carriedBy": "/family/[person] consent-required, and the card's own “Sharing paused” state"
       },
       "policy": {
         "mode": "public-first-then-authenticated",
@@ -15088,7 +15091,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "An embryo cohort's analysis is chosen in the request flow that creates it, not on any of the three cohort result routes, so none of them can render an invitation to choose one.",
-        "consent-required": "The same shape: the analysis grant is a property of a COHORT. `analysisConsent` already renders a waiting line per cohort, and `/embryos complete` was proven on a hub carrying a per-cohort jurisdiction line for exactly this reason \u2014 a per-item line is what the page HAS, not a state the page is in. Read 2026-09-13; corrections item 13, signed."
+        "consent-required": "The same shape: the analysis grant is a property of a COHORT. `analysisConsent` already renders a waiting line per cohort, and `/embryos complete` was proven on a hub carrying a per-cohort jurisdiction line for exactly this reason — a per-item line is what the page HAS, not a state the page is in. Read 2026-09-13; corrections item 13, signed."
       },
       "consentRequiredException": {
         "kind": "item-level",
@@ -15129,7 +15132,7 @@
         "contracts": [
           "resource-authorization-v1",
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "disposition": "kept",
@@ -15148,7 +15151,7 @@
         "kind": "reads-no-consent"
       },
       "notApplicableStates": {
-        "consent-required": "TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs \u2014 `consent.upload-embryo` and `attestation.embryo-parentage` \u2014 are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.",
+        "consent-required": "TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs — `consent.upload-embryo` and `attestation.embryo-parentage` — are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.",
         "processing": "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13."
       },
       "policy": {
@@ -15163,7 +15166,7 @@
         ],
         "contracts": [
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "disposition": "kept",
@@ -15197,7 +15200,7 @@
         ],
         "contracts": [
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "disposition": "kept",
@@ -15264,7 +15267,7 @@
         "contracts": [
           "resource-authorization-v1",
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "disposition": "kept",
@@ -15317,7 +15320,7 @@
         "contracts": [
           "resource-authorization-v1",
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "disposition": "kept",
@@ -15339,7 +15342,7 @@
       "width": "64rem",
       "stateProfile": "own-product-result",
       "notApplicableStates": {
-        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own \u2014 read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
+        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own — read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13."
       },
       "policy": {
@@ -16053,7 +16056,7 @@
         "polling": "same-GET-with-the-opaque-export-id-in-an-HttpOnly-principal-bound-cookie-never-a-query-credential",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "large-export-delivery-v1",
@@ -16128,7 +16131,7 @@
           "copilot-context-v1",
           "copilot-intent-gate-v1",
           "copilot-output-guard-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1"
         ]
@@ -16164,7 +16167,7 @@
           "jurisdiction-v1",
           "copilot-output-guard-v1",
           "chat-history-projection-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1"
         ]
@@ -16242,7 +16245,7 @@
         "closedBody": {
           "subject": "required-subject-id-or-me-alias",
           "region": {
-            "chromosome": "required-normalized-autosomal-contig",
+            "chromosome": "required-normalized-contig-permitted-by-the-resolved-subject-source-contract",
             "start": "required-positive-safe-integer",
             "end": "required-positive-safe-integer-not-less-than-start"
           },
@@ -16318,9 +16321,9 @@
           },
           "embryo": {
             "requiresGrantContract": "raw-export-grant-v1",
-            "download": "grant-scoped-autosomal-subject-projection-never-multisample-cohort-source",
+            "download": "grant-scoped-autosomal-and-X-Y-subject-projection-never-multisample-cohort-source",
             "contracts": [
-              "embryo-autosomal-only-v1"
+              "embryo-source-and-output-v2"
             ]
           },
           "cohort": {
@@ -16488,7 +16491,7 @@
         "contracts": [
           "resource-authorization-v1",
           "genetic-file-ingest-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-donor-attribution-v1"
         ]
       },
@@ -16691,7 +16694,7 @@
           "genetic-file-ingest-v1",
           "genome-build-inference-v1",
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "methodSuccessResponseContracts": {
@@ -16729,14 +16732,14 @@
         "mode": "resolved",
         "resolver": "embryo-ingest-session-v1",
         "operation": "embryo-ingest-chunk-write",
-        "persistentWrite": "sanitized-autosomal-fragment-only-under-storage.cohort-v2-with-server-generated-name",
+        "persistentWrite": "sanitized-autosomal-and-X-Y-fragment-only-under-storage.cohort-v2-with-server-generated-name",
         "terminalFailure": "every-terminal-format-header-mapping-chunk-quota-limit-cancel-or-abort-branch-marks-failure-pending-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-fragment-or-handle-map-delete; a-mapping_required-response-is-nonterminal-and-preserves-the-live-session-and-fixed-due-target",
         "contracts": [
           "genetic-file-ingest-v1",
           "genome-build-inference-v1",
           "resource-authorization-v1",
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "embryo-ingest-chunk-v1",
@@ -16783,7 +16786,7 @@
           "worker-job-enqueue-v1",
           "resource-authorization-v1",
           "jurisdiction-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-donor-attribution-v1"
         ]
       },
@@ -17032,9 +17035,9 @@
           },
           "embryo": {
             "requiresGrantContract": "raw-export-grant-v1",
-            "download": "autosomal-subject-projection-never-multisample-cohort-source",
+            "download": "autosomal-and-X-Y-subject-projection-never-multisample-cohort-source",
             "contracts": [
-              "embryo-autosomal-only-v1"
+              "embryo-source-and-output-v2"
             ]
           }
         },
@@ -17102,7 +17105,7 @@
         "polling": "same-route-principal-bound-export-cookie",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ],
         "cases": {
           "self-or-adult": {
@@ -17210,7 +17213,7 @@
         },
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1"
         ]
       },
@@ -17961,7 +17964,7 @@
         "writesAudit": true,
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1",
           "embryo-donor-attribution-revocation-v1",
@@ -18012,7 +18015,7 @@
         "transaction": "derive-every-row-and-mutually-exclusive-disposition-in-the-database; for-each-embryo-purpose-lock-the-current-policyResolvers.embryo-basis-authority-v1-basis-five-set-artifact-and-lifecycle-revisions-and-require-the-acting-immutable-principal-is-one-exact-current-requiredUploadPrincipals-member-then-atomically-revoke-all-matching-own-grants-invalidate-access-enqueue-every-exact-purpose-pair-or-provider-disposition-and-write-one-audit-batch; donor-subject-only-uploader-owner-provider-or-reviewer-status-never-selects-a-parent-purpose-and-embryo.analysis-is-always-the-purpose-only-deletion-branch-here-because-this-route-excludes-class-upload-or-source-authority-artifacts",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1",
           "purpose-revocation-v1"
         ]
@@ -18464,7 +18467,7 @@
           "resource-authorization-v1",
           "jurisdiction-v1",
           "legal-evidence-ingest-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1"
         ],
@@ -18519,7 +18522,7 @@
         "mailOrDelegation": "raw-keys-are-never-emailed-delegated-to-the-uploader-or-returned-for-another-parent",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1"
         ]
       },
@@ -18570,7 +18573,7 @@
         "mailOrDelegation": "the-activation-mail-carries-only-a-generic-fragment-token-and-raw-keys-are-never-emailed-delegated-or-returned-for-another-parent",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "mail-token-delivery-v1",
           "embryo-basis-authority-v1"
         ]
@@ -19053,7 +19056,7 @@
         "auditAndNotice": "append-one-pseudonymized-disposition-event-and-notify-exactly-every-current-member-of-policyResolvers.embryo-basis-authority-v1.noticeRecipients-without-genetic-results-donor-identity-other-principal-contact-or-a-raw-Record-Key",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1"
         ]
@@ -19145,7 +19148,7 @@
         "dispositionContract": "cohort-restriction-v1",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1"
         ]
       },
@@ -19172,13 +19175,13 @@
         "resolver": "embryo-basis-authority-v1",
         "actorRole": "one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.dispositionAuthorities-under-the-current-basis-authority-set-and-lifecycle-revisions",
         "roleExclusions": "donor-subject-only-nonparent-uploader-custody-owner-provider-reviewer-and-stale-former-authority",
-        "effect": "parent-controlled-and-unclaimed-cohort-material-unreadable-to-every-current-member-of-the-locked-policyResolvers.embryo-basis-authority-v1-five-output-sets; detached-claimed-subjects-their-sanitized-autosomal-sources-historical-agreement-slices-and-claimant-rights-are-preserved",
+        "effect": "parent-controlled-and-unclaimed-cohort-material-unreadable-to-every-current-member-of-the-locked-policyResolvers.embryo-basis-authority-v1-five-output-sets; detached-claimed-subjects-their-sanitized-autosomal-and-X-Y-sources-historical-agreement-slices-and-claimant-rights-are-preserved",
         "noticeRecipients": "every-exact-current-member-of-the-locked-pre-effect-policyResolvers.embryo-basis-authority-v1.noticeRecipients-set",
         "dispositionContract": "cohort-restriction-v1",
         "writesAudit": true,
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "embryo-basis-authority-v1"
         ]
       },
@@ -19692,7 +19695,7 @@
           "future-person-claim-resolution-v1",
           "legal-evidence-ingest-v1",
           "mail-token-delivery-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "future-person-claim-intake-privacy-v1"
         ],
         "GET": "operation-specific-assignment-RPC-decrypts-only-the-recursively-closed-future-person-claim-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read"
@@ -19848,7 +19851,7 @@
           "resource-authorization-v1",
           "future-person-claim-resolution-v1",
           "mail-token-delivery-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "future-person-claim-intake-privacy-v1"
         ]
       },
@@ -19983,7 +19986,7 @@
           "future-person-claim-intake-privacy-v1",
           "claim-release-objection-freeze-v1",
           "mail-token-delivery-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "methodSuccessResponseContracts": {
@@ -20016,7 +20019,7 @@
         "contracts": [
           "resource-authorization-v1",
           "future-person-claimant-authority-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ],
         "GET": "operation-specific-assignment-RPC-decrypts-only-the-closed-future-person-correction-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read"
       },
@@ -20115,7 +20118,7 @@
         "polling": "same-route-rights-session-bound-export-cookie",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "large-export-delivery-v1",
@@ -20155,7 +20158,7 @@
         ],
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "future-person-deletion-accepted-v1",
@@ -20201,7 +20204,7 @@
         "contract": "future-person-claimant-authority-v1",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "future-person-claimant-bound-v1",
@@ -20296,7 +20299,7 @@
         "contracts": [
           "resource-authorization-v1",
           "future-person-claimant-authority-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "future-person-correction-accepted-v1",
@@ -20325,7 +20328,7 @@
         "contracts": [
           "resource-authorization-v1",
           "future-person-claimant-authority-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "future-person-analysis-stopped-v1",
@@ -20375,7 +20378,7 @@
         "contracts": [
           "resource-authorization-v1",
           "future-person-claimant-authority-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "future-person-correction-accepted-v1",
@@ -20404,7 +20407,7 @@
         "contracts": [
           "resource-authorization-v1",
           "future-person-claimant-authority-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "future-person-analysis-stopped-v1",
@@ -20510,7 +20513,7 @@
           "adult-subject-confirmation-v1",
           "adult-upload-revision-confirmation-v1",
           "embryo-donor-attribution-v1",
-          "embryo-autosomal-only-v1",
+          "embryo-source-and-output-v2",
           "mail-token-delivery-v1"
         ],
         "invitationRefusal": "the-operation-must-be-refuse-the-rights-session-purpose-must-be-invitation-and-the-server-stored-target-must-be-one-pending-adult_subject-co_parent-or-identified_donor_subject-invitation; dispatch-invitation-refusal-v1-for-adult_subject-or-co_parent-and-identified-donor-refusal-v1-for-identified_donor_subject-with-no-account-requirement",
@@ -20580,7 +20583,7 @@
         "polling": "same-route-rights-session-bound-export-cookie",
         "contracts": [
           "resource-authorization-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       },
       "successResponseContract": "large-export-delivery-v1",
@@ -20788,7 +20791,7 @@
           "mail-token-delivery-v1",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ]
       }
     },
@@ -20828,7 +20831,7 @@
           "mail-token-delivery-v1",
           "embryo-basis-authority-v1",
           "embryo-donor-attribution-v1",
-          "embryo-autosomal-only-v1"
+          "embryo-source-and-output-v2"
         ],
         "adapterFor": "jobs.retention",
         "requestMaySelectSubjectTargetSourceOrRows": false,
@@ -20919,9 +20922,9 @@
       "prefix": "{account_id}/{cohort_id}/{upload_id}/{filename}",
       "disposition": "kept",
       "filenameContract": "the-filename-placeholder-is-one-server-generated-high-entropy-opaque-per-upload-object-handle-plus-an-allowlisted-normalized-extension-and-encodes-no-subject-cohort-sample-ordinal-source-label-sex-or-other-identifier; the-database-genome_files-row-binds-that-random-handle-to-the-exact-embryo-subject-and-upload-revision; slash-backslash-dot-segments-control-characters-original-filenames-and-client-derived-identifiers-are-forbidden",
-      "authority": "Database-owned cohort upload session after server-stream autosomal sanitization; every persistent object is one embryo subject projection and unsanitized or multisample embryo bytes never enter persistent Storage.",
+      "authority": "Database-owned cohort upload session after server-stream sanitization under embryo-source-and-output-v2; every persistent object is one embryo subject projection and unsanitized or multisample embryo bytes never enter persistent Storage.",
       "contracts": [
-        "embryo-autosomal-only-v1"
+        "embryo-source-and-output-v2"
       ]
     },
     {

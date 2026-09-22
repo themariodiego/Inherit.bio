@@ -1,6 +1,6 @@
 import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { detectPgtHeader, type CompleteMapping, type PgtDelimiter } from "../genome/parsers/pgt-table";
-import { chromToNumber } from "../genome/types";
+import { embryoSourceChromosome, isEmbryoSourceChromosome } from "./source-chromosomes";
 import { embryoFileStream, embryoInputLines, EmbryoTransportError } from "./ingest-lines";
 import { checkTransportBinding, checkTransportHandles, resolveTransportHandle,
   type BrowserTransportBinding, type EmbryoTransportBinding, type ServerTransportBinding } from "./ingest-binding";
@@ -56,11 +56,6 @@ function positiveInteger(value: string): number {
 function rsid(value: string): number {
   if (!/^rs[1-9][0-9]*$/i.test(value)) throw new EmbryoTransportError("unrecognised_format");
   return positiveInteger(value.slice(2));
-}
-
-function autosome(raw: string): number | null {
-  const chrom = chromToNumber(raw);
-  return typeof chrom === "number" && Number.isInteger(chrom) && chrom >= 1 && chrom <= 22 ? chrom : null;
 }
 
 function call(value: string): string {
@@ -119,14 +114,14 @@ export async function* embryoTableChunks(file: Blob, inputBinding: TableBrowserB
       }
       let locus: string[];
       if (mapping.locus.kind === "rsid") {
-        // If a source also states a chromosome, drop known non-autosomal
+        // If a source also states a chromosome, drop unsupported contigs
         // rows in the browser. The server independently resolves every rsID.
         const chromColumns = sourceHeader.columns.chrom;
         const optionalChrom = chromColumns.length === 1 ? values[chromColumns[0]] : "";
-        if (optionalChrom !== "" && optionalChrom !== "." && autosome(optionalChrom) === null) continue;
+        if (optionalChrom !== "" && optionalChrom !== "." && embryoSourceChromosome(optionalChrom) === null) continue;
         locus = [`rs${rsid(values[mapping.locus.column])}`];
       } else {
-        const chrom = autosome(values[mapping.locus.chrom]);
+        const chrom = embryoSourceChromosome(values[mapping.locus.chrom]);
         if (chrom === null) continue;
         locus = [String(chrom), String(positiveInteger(values[mapping.locus.pos]))];
       }
@@ -186,12 +181,12 @@ export function validateEmbryoTableChunk(bytes: Uint8Array, binding: TableServer
       locus = binding.resolveRsid(id, binding.build);
       if (!locus) throw new EmbryoTransportError("unrecognised_format");
     } else {
-      const chrom = autosome(fields[1]);
+      const chrom = embryoSourceChromosome(fields[1]);
       if (chrom === null) continue;
       if (fields[1] !== String(chrom)) throw new EmbryoTransportError("invalid_chunk");
       locus = { chrom, pos: positiveInteger(fields[2]) };
     }
-    if (!Number.isInteger(locus.chrom) || locus.chrom < 1 || locus.chrom > 22) continue;
+    if (!isEmbryoSourceChromosome(locus.chrom)) continue;
     if (!Number.isSafeInteger(locus.pos) || locus.pos <= 0) throw new EmbryoTransportError("unrecognised_format");
     const genotype = fields.at(-1)!;
     if (call(genotype) !== genotype) throw new EmbryoTransportError("invalid_chunk");

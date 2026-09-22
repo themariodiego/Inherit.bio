@@ -2,7 +2,7 @@
  * The embryo condition allow-list (brief §4 §6.9, X10; design §2.6). This
  * module is the one reader of `data/embryo/allowed_conditions.json`, the
  * only condition-eligibility source for every embryo surface, job and export
- * (`docs/route-register.json#policyContracts.embryo-autosomal-only-v1
+ * (`docs/route-register.json#policyContracts.embryo-source-and-output-v2
  * .allowedConditionsRegistry`).
  *
  * Today the committed file holds zero conditions, and that emptiness is a

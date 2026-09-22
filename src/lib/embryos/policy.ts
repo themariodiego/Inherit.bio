@@ -1,6 +1,6 @@
 /**
  * The embryo non-ranking and closed-shape policy — the runtime mirror of
- * `docs/route-register.json#policyContracts.embryo-autosomal-only-v1`
+ * `docs/route-register.json#policyContracts.embryo-source-and-output-v2`
  * (docs/canonical-artifacts.md names this file for both). Pure.
  *
  * Three things live here and nowhere else:

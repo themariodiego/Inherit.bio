@@ -43,9 +43,34 @@ describe("embryo VCF transport", () => {
   });
 
   it("makes output identical when only forbidden contigs or metadata change", async () => {
-    const discarded = ["X", "Y", "M", "MT", "23", "24", "25", "PAR1", "chrUn", "1_random", "__proto__"]
+    const discarded = ["M", "MT", "25", "PAR1", "chrUn", "1_random", "__proto__"]
       .map((chrom) => `${chrom}\t1\t.\tA\tG\t.\t.\t.\tGT\t0/1\t0/0`).join("\n");
     expect(await cleanText(source(`${row}\n${discarded}`))).toBe(await cleanText());
+  });
+
+  it.each([["chrX", "23"], ["X", "23"], ["23", "23"], ["chrY", "24"], ["Y", "24"], ["24", "24"]])(
+    "retains %s source calls through both validators without a sex assignment", async (alias, canonical) => {
+      const input = `${alias}\t500\trs999\tA\tG\t.\tPASS\tPRIVATE_SEX=XY\tGT:DP\t1:12\t./.:.`;
+      const bytes = (await chunks(source(input)))[0];
+      const text = decoder.decode(bytes);
+      expect(text).toContain(`\n${canonical}\t500\trs999\tA\tG\t.\tPASS\t.\tGT:DP:GQ:AD:FT:LEN\t1:12:.:.:.:.\t./.:.:.:.:.:.`);
+      expect(text).not.toMatch(/PRIVATE|XX|XY|karyotype/);
+      const fragments = validateEmbryoVcfChunk(bytes, server);
+      expect(fragments).toHaveLength(2);
+      expect(fragments[0].vcf).toContain(`\n${canonical}\t500\trs999`);
+      expect(fragments[0].vcf).toContain("\t1:12:.:.:.:.");
+      expect(fragments[1].vcf).toContain("\t./.:.:.:.:.:.");
+      expect(fragments.map(item => item.ordinal)).toEqual([0, 1]);
+    },
+  );
+
+  it("validates newly retained X/Y calls instead of silently dropping malformed data", async () => {
+    for (const chrom of ["chrX", "chrY"]) {
+      await expect(chunks(source(row.replace("chr1", chrom).replace("0/1:12", "0/2:12"))))
+        .rejects.toMatchObject({ code: "unrecognised_format" });
+      const bytes = (await chunks(source(row.replace("chr1", chrom))))[0];
+      expect(() => validateEmbryoVcfChunk(encoder.encode(decoder.decode(bytes).replace("0/1:12", "0/2:12")), server)).toThrow();
+    }
   });
 
   it("retains partial no-calls, ploidy, allele indexes and reference-block boundaries", async () => {
@@ -148,7 +173,7 @@ describe("embryo VCF transport", () => {
   });
 
   it("refuses a source with no retained records", async () => {
-    await expect(chunks(source(row.replace("chr1", "chrX")))).rejects.toMatchObject({ code: "empty_after_parse" });
+    await expect(chunks(source(row.replace("chr1", "chrMT")))).rejects.toMatchObject({ code: "empty_after_parse" });
   });
 
   it("splits at logical lines, repeats the exact header and validates every output chunk", async () => {
@@ -199,10 +224,10 @@ describe("embryo VCF transport", () => {
     }
   });
 
-  it("server independently discards sex-linked rows and emits no side channel", async () => {
+  it("server independently discards unsupported contigs and emits no side channel", async () => {
     const text = await cleanText();
     const cleanRow = text.trimEnd().split("\n").at(-1)!;
-    expect(validateEmbryoVcfChunk(encoder.encode(text + cleanRow.replace(/^1\t/, "chrY\t") + "\n"), server))
+    expect(validateEmbryoVcfChunk(encoder.encode(text + cleanRow.replace(/^1\t/, "chrMT\t") + "\n"), server))
       .toEqual(validateEmbryoVcfChunk(encoder.encode(text), server));
   });
 });

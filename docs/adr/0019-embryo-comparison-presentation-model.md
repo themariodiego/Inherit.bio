@@ -13,7 +13,7 @@ with them: a rank, a composite, a "best", a sort by any computed quantity,
 a lead count, an embryo's sex (`brief:2087-2090`, X10.2, X10.3). G4.5
 (`brief:2632`) requires the joint-selection constraint and the exact
 sentence "Inherit does not rank embryos and does not recommend one." on
-every such surface, and the register's `embryo-autosomal-only-v1` binds the
+every such surface, and the register's `embryo-source-and-output-v2` binds the
 closed shapes, the two permitted orders and the `tradeOffs.forbidden` list.
 The condition registry (`data/embryo/allowed_conditions.json`) is empty, so
 no condition row exists today; the model below is what every future row
@@ -44,11 +44,14 @@ renders into. The Embryo surfaces of design `docs/design/w10-embryo-surfaces.md`
 4. **Colour is suppressed.** The embryo chip and disc carry no subject
    colour and the compare surface renders no direction, state or evidence
    colour token; an embryo is "E" in a neutral disc.
-5. **Sex never reaches the page.** Non-autosomal records are discarded at
-   ingest without recording presence or count (register `ingress`); every
-   closed shape refuses the sex, karyotype and laboratory-label keys of
-   `forbiddenShapeFields` (`FORBIDDEN_SHAPE_FIELDS`); no jurisdiction has a
-   sex row, so `brief:485` acceptance 25 is restated under X10.2.
+5. **Source calls and inferred results are separate.** Owner revision,
+   22 September 2026: retain observed X/Y calls alongside autosomal calls in
+   sanitized embryo sources and authorized source exports. This supersedes
+   the previous X/Y discard rule. Every result shape still refuses sex,
+   karyotype and laboratory-label keys (`FORBIDDEN_SHAPE_FIELDS`); no inference
+   or result display is added by the retention change. Build inference,
+   heterozygosity and the registered autosomal models keep their own input
+   rules. The versioned authority is `embryo-source-and-output-v2`.
 6. **One standing statement, once.** The §4 §6.1 sentence (`brief:1376`) is
    the one rendered version: above the table, verbatim, on every load,
    never collapsible. The §2 and §3 variants of the same claim are not
@@ -66,9 +69,10 @@ renders into. The Embryo surfaces of design `docs/design/w10-embryo-surfaces.md`
 - **A spread-ordered condition list and lead counts** (`brief:1024`,
   `brief:1027`, `brief:1411`): killed by X10.3 and the register's
   `tradeOffs.forbidden`; "leads on 3 of 5" is a composite.
-- **A consented sex toggle** (`brief:396`): killed by X10.2 and by the data
-  itself — the sex-bearing records are discarded at ingest, so no toggle
-  could reveal them.
+- **A consented sex toggle** (`brief:396`): not implemented under the current
+  result policy. The earlier rationale that X/Y calls do not exist is
+  superseded by the 22 September retention decision; retaining observed calls
+  does not itself specify or validate a sex inference or presentation.
 - **A stored PDF laboratory record** (`brief:379`): killed by ADR 0016 —
   a PDF is refused before any durable byte.
 

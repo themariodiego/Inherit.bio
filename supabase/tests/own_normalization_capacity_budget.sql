@@ -56,24 +56,30 @@ create trigger capacity_chromosome_guard before insert or update of subject_id,c
  for each row execute function private.enforce_subject_variant_chromosome();
 select lives_ok($$insert into capacity_guard_rows select n,(select id from capacity_subject),n::smallint from generate_series(1,25) n$$,
  'self-source chromosomes1 through25 retain the existing allowed behavior');
-select lives_ok($$insert into capacity_guard_rows select 100+n,'77980000-0000-4000-8000-000000000005',n::smallint from generate_series(1,22) n$$,
- 'every autosome remains allowed for embryo rows');
+select lives_ok($$insert into capacity_guard_rows select 100+n,'77980000-0000-4000-8000-000000000005',n::smallint from generate_series(1,24) n$$,
+ 'every autosome and both X/Y chromosomes are allowed for embryo source rows');
+select is((select stored.chrom::integer from capacity_guard_rows stored where stored.id=100+desired.chrom),desired.chrom,
+ 'embryo source chromosome '||desired.chrom||' is retained unchanged') from unnest(array[23,24]) desired(chrom);
 select throws_ok(format('insert into capacity_guard_rows values (%s,%L,%s)',200+chrom,'77980000-0000-4000-8000-000000000005',chrom),
- '23514','non-autosomal embryo variant forbidden','embryo chromosome'||chrom||' remains rejected')
- from unnest(array[-1,0,23,24,25,26]) chrom;
-select throws_ok($$update capacity_guard_rows set chrom=23 where id=101$$,
- '23514','non-autosomal embryo variant forbidden','updating an embryo row to chromosomeX remains rejected');
+ '23514','unsupported embryo source chromosome','embryo chromosome'||chrom||' remains rejected')
+ from unnest(array[-1,0,25,26]) chrom;
+select throws_ok($$update capacity_guard_rows set chrom=25 where id=101$$,
+ '23514','unsupported embryo source chromosome','updating an embryo row to a mitochondrial chromosome remains rejected');
 select is((select chrom::integer from capacity_guard_rows where id=101),1,
  'a rejected chromosome update preserves the original row');
-select throws_ok($$update capacity_guard_rows set subject_id='77980000-0000-4000-8000-000000000005' where id=23$$,
- '23514','non-autosomal embryo variant forbidden','changing a non-autosomal self row to an embryo remains rejected');
-select is((select subject_id from capacity_guard_rows where id=23),(select id from capacity_subject),
+select throws_ok($$update capacity_guard_rows set subject_id='77980000-0000-4000-8000-000000000005' where id=25$$,
+ '23514','unsupported embryo source chromosome','changing a mitochondrial self row to an embryo remains rejected');
+select is((select subject_id from capacity_guard_rows where id=25),(select id from capacity_subject),
  'a rejected subject update preserves the original subject');
 select lives_ok($$update capacity_guard_rows set subject_id='77980000-0000-4000-8000-000000000005' where id=1$$,
  'changing an autosomal row to an embryo still passes the chromosome rule');
+select lives_ok($$update capacity_guard_rows set subject_id='77980000-0000-4000-8000-000000000005' where id in(23,24)$$,
+ 'X/Y calls pass the chromosome rule on subject updates as well as insertion');
+select is((select count(*) from capacity_guard_rows where id in(23,24)
+ and subject_id='77980000-0000-4000-8000-000000000005'),2::bigint,'both X/Y subject updates take effect');
 select throws_ok($$insert into capacity_guard_rows values
- (301,'77980000-0000-4000-8000-000000000005',2),(302,'77980000-0000-4000-8000-000000000005',24)$$,
- '23514','non-autosomal embryo variant forbidden','a mixed bulk insert rejects its non-autosomal embryo member');
+ (301,'77980000-0000-4000-8000-000000000005',23),(302,'77980000-0000-4000-8000-000000000005',25)$$,
+ '23514','unsupported embryo source chromosome','a mixed bulk insert rejects its unsupported embryo member');
 select is((select count(*) from capacity_guard_rows where id in(301,302)),0::bigint,
  'a mixed bulk failure publishes none of the statement rows');
 

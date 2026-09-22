@@ -11,7 +11,7 @@ const binding: TableBrowserBinding = { challenge: "q".repeat(43), revision: 1, b
 const server: TableServerBinding = { ...binding, locusKind: "rsid", resolveHandle: (handle) => {
   const index = binding.handles.indexOf(handle);
   return index < 0 ? null : index;
-}, resolveRsid: (id) => id === 999 ? { chrom: 24, pos: 12 } : { chrom: 1, pos: id } };
+}, resolveRsid: (id) => id === 999 ? { chrom: 25, pos: 12 } : { chrom: 1, pos: id } };
 const source = "Sample,rsID,Genotype,Sex,Private note\nPRIVATE_A,rs123,AG,XX,PRIVATE_TEXT\nPRIVATE_B,rs123,GG,XY,PRIVATE_TEXT\nPRIVATE_A,rs124,AA,XX,PRIVATE_TEXT\n";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -52,7 +52,7 @@ describe("embryo laboratory-table transport", () => {
     expect(() => validateEmbryoTableChunk(encoder.encode(decoder.decode(bytes).replace("A/G", "A|G")), server)).toThrow();
   });
 
-  it("resolves rsIDs on the server and drops non-autosomal loci without a marker", async () => {
+  it("resolves rsIDs on the server and drops unsupported contigs without a marker", async () => {
     const bytes = (await chunks(source.replaceAll("rs123", "rs999")))[0];
     expect(validateEmbryoTableChunk(bytes, server)).toEqual([{ ordinal: 0, chrom: 1, pos: 124, rsid: 124, genotype: "A/A" }]);
     const onlyExcluded = (await chunks(source.replaceAll(/rs12[34]/g, "rs999")))[0];
@@ -76,17 +76,37 @@ describe("embryo laboratory-table transport", () => {
     expect(rows.every((row) => Object.keys(row).sort().join() === "chrom,genotype,ordinal,pos,rsid")).toBe(true);
   });
 
-  it("supports coordinate mappings and strips non-autosomal rows on both sides", async () => {
-    const text = "Embryo,Chromosome,Position,Genotype,Sex\nPRIVATE_A,chr1,123,AG,XX\nPRIVATE_B,chr2,456,G/G,XY\nPRIVATE_A,chrY,500,G/G,XX\n";
+  it("keeps X/Y coordinate mappings and strips unsupported contigs on both sides", async () => {
+    const text = "Embryo,Chromosome,Position,Genotype,Sex\nPRIVATE_A,chr1,123,AG,XX\nPRIVATE_B,chr2,456,G/G,XY\nPRIVATE_A,chrY,500,G,XX\nPRIVATE_B,X,600,./.,XY\nPRIVATE_A,chrMT,700,A,XX\n";
     const coordinateMapping = planMapping(detectPgtHeader(text.split("\n")[0])!) as CompleteMapping;
     const output = (await chunks(text, { ...binding, mapping: coordinateMapping }))[0];
     const state = { ...server, locusKind: "chrom-pos" as const };
     expect(validateEmbryoTableChunk(output, state)).toEqual([
       { ordinal: 0, chrom: 1, pos: 123, rsid: null, genotype: "A/G" },
       { ordinal: 1, chrom: 2, pos: 456, rsid: null, genotype: "G/G" },
+      { ordinal: 0, chrom: 24, pos: 500, rsid: null, genotype: "G" },
+      { ordinal: 1, chrom: 23, pos: 600, rsid: null, genotype: "./." },
     ]);
-    const injected = encoder.encode(decoder.decode(output) + `${binding.handles[0]}\tchrY\t500\tG/G\n`);
+    expect(decoder.decode(output)).not.toMatch(/PRIVATE|Sex|XX|XY/);
+    const injected = encoder.encode(decoder.decode(output) + `${binding.handles[0]}\tchrMT\t500\tG/G\n`);
     expect(validateEmbryoTableChunk(injected, state)).toEqual(validateEmbryoTableChunk(output, state));
+    // Browser transport must use numeric canonical chromosomes. The server
+    // rejects a noncanonical X/Y alias instead of silently losing that row.
+    for (const alias of ["X", "chrX", "Y", "chrY"]) {
+      const bad = encoder.encode(decoder.decode(output) + `${binding.handles[0]}\t${alias}\t800\tG\n`);
+      expect(() => validateEmbryoTableChunk(bad, state)).toThrow();
+    }
+  });
+
+  it.each([23, 24])("retains server-resolved chromosome %i without accepting client coordinates", async chrom => {
+    const text = `Sample,rsID,Genotype,Chromosome\nPRIVATE_A,rs123,A,${chrom}\nPRIVATE_B,rs124,./.,${chrom}\n`;
+    const bytes = (await chunks(text))[0];
+    const rows = validateEmbryoTableChunk(bytes, { ...server, resolveRsid: id => ({ chrom, pos: id + 100 }) });
+    expect(rows).toEqual([
+      { ordinal: 0, chrom, pos: 223, rsid: 123, genotype: "A" },
+      { ordinal: 1, chrom, pos: 224, rsid: 124, genotype: "./." },
+    ]);
+    expect(() => validateEmbryoTableChunk(encoder.encode(decoder.decode(bytes).replace("\tA\n", "\tXY\n")), server)).toThrow();
   });
 
   it.each([

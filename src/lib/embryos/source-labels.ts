@@ -2,7 +2,7 @@ import registry from "../../../data/embryo/source_labels.json";
 
 /**
  * The bounded safe labels a QC row may carry for its source fields
- * (register `embryo-autosomal-only-v1.sourceProvenance`; canonical
+ * (register `embryo-source-and-output-v2.sourceProvenance`; canonical
  * artifacts: original laboratory labels are never rendered). The registry
  * is closed and, today, empty: it is withheld until reviewed organisation
  * and assay names are registered. A source string is either null or one of
