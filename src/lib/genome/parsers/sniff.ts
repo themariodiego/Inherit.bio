@@ -3,6 +3,7 @@
 import { gunzipSync, constants as zlibConstants } from "node:zlib";
 import type { FileKind } from "../types";
 import { detectPgtHeader } from "./pgt-table";
+import { hasGvcfMarker } from "./gvcf";
 
 export interface SniffResult {
   kind: FileKind | null;
@@ -116,7 +117,7 @@ export function sniffHeadV2(head: Uint8Array, compressed: boolean): SniffV2Resul
   const first = lines[0] ?? "";
 
   if (first.startsWith("##fileformat=VCF")) {
-    const single = text.includes("<NON_REF>") ? "gvcf" : "vcf";
+    const single = hasGvcfMarker(lines) ? "gvcf" : "vcf";
     const at = lines.findIndex((line) => line.startsWith("#CHROM"));
     // The header line must be complete: a `#CHROM` line that the decode
     // window (or a truncated gzip member) cut off is the last, unterminated
@@ -140,7 +141,10 @@ export function sniffHeadV2(head: Uint8Array, compressed: boolean): SniffV2Resul
 
   // Header-comment-less CSVs: distinguish MyHeritage (quoted) from
   // FamilyTreeDNA (unquoted) by the column-header row.
-  const firstData = lines.find((l) => l !== "" && !l.startsWith("#"));
+  // A chunk can stop after the first three CSV columns. That prefix also
+  // matches a laboratory table, so wait for the line terminator before
+  // selecting either table parser. Structural inspection sees more chunks.
+  const firstData = lines.slice(0, -1).find((l) => l !== "" && !l.startsWith("#"));
   if (firstData === '"RSID","CHROMOSOME","POSITION","RESULT"') return { kind: "array_myheritage", compressed, ...none };
   if (firstData === "RSID,CHROMOSOME,POSITION,RESULT") return { kind: "array_ftdna", compressed, ...none };
 
