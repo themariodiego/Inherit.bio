@@ -1,5 +1,42 @@
 # Test diff register
 
+## Standard upload grants reject other provider transports · 22 September 2026
+
+`supabase/tests/own_upload_storage_authorization.sql` adds a refusal matrix for
+15 missing or nonstandard operation settings: TUS, S3, signed upload, update,
+an unqualified name and an extended name. Each request also supplies spoofed
+headers asserting the permitted operation. The matrix requires an RLS refusal,
+then checks that the exact session remains issued and no object row was added.
+The existing valid fixtures now set the trusted standard operation. Every
+existing key, size, ownership, consumption and revocation assertion remains;
+the elevated completion cases clear the operation to check that the service
+trigger retains its independent authority checks.
+
+`e2e/own-upload-transport.spec.ts` adds an installed-provider regression. It
+issues one real grant after the consent screens, requires both an ordinary
+empty TUS create and a metadata-spoofing create to fail with 403, and requires
+the standard upsert route to report its permission refusal. It checks that the
+session remains issued, then uses the same grant for standard object creation
+and finalization, verifying the exact stored bytes at both stages. This makes
+a bad or consumed grant fail the success path instead of appearing to prove
+transport binding. The existing complete UI upload journey is unchanged.
+
+Each TUS refusal is asserted before the next attempt. If a regression returns
+a resource location, the test first attempts one bounded termination of only
+the decoded exact synthetic bucket, staging key and version through the local
+provider. That response does not prove physical deletion. The reviewed provider
+source places the permission probe before allocation; CI must still establish
+the installed provider's HTTP propagation and refusal behavior.
+
+Local verification passed 159 targeted token, issuance, finalization and
+retention tests, changed-file lint, TypeScript and the readability gate.
+Playwright discovery found this test and the existing positive journey;
+discovery is not execution. pgTAP and the browser regression remain unexecuted
+pending CI because the local Docker runtime was unavailable. No local provider
+request, source-byte upload, database mutation or hosted migration was used to
+prepare this change, and no red/green runtime result is claimed. Upload limits,
+route and density ratchets, and finalization bounds are unchanged.
+
 ## A focus precondition that does not depend on window focus · 21 September 2026
 
 `e2e/search.spec.ts`'s `openWithShortcut` establishes that focus sits on the
