@@ -29,7 +29,7 @@ export function LegalPage({
   sections: LegalSection[];
 }) {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
+    <div className="mx-auto max-w-6xl px-6 py-12 md:py-16">
       <header className="max-w-3xl">
         <p className="eyebrow mb-4">{eyebrow}</p>
         <h1 className="display text-4xl sm:text-5xl">{title}</h1>
@@ -64,11 +64,19 @@ export function LegalPage({
         )}
       </header>
 
-      <div className="mt-12 gap-12 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <nav aria-label="On this page" className="mb-10 lg:mb-0">
+      <details className="legal-toc mt-8 rounded-xl border border-line bg-card px-4 py-2 lg:hidden">
+        <summary className="text-sm font-medium">On this page</summary>
+        <nav aria-label="On this page" className="pb-2">
+          <ol className="space-y-2 text-sm">
+            {sections.map((section) => <li key={section.id}><a href={`#${section.id}`} className="flex min-h-11 items-center text-ink-muted">{section.heading}</a></li>)}
+          </ol>
+        </nav>
+      </details>
+      <div className="mt-12 gap-12 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <nav aria-label="On this page" className="legal-toc hidden lg:block">
           <div className="lg:sticky lg:top-24">
             <p className="eyebrow mb-4">On this page</p>
-            <ol className="space-y-2.5 border-l border-line pl-4 text-sm">
+            <ol className="space-y-2 border-l border-line pl-2 text-sm">
               {sections.map((s) => (
                 <li key={s.id}>
                   <a
@@ -88,10 +96,10 @@ export function LegalPage({
             <section
               key={s.id}
               id={s.id}
-              className="scroll-mt-24 border-t border-line py-8 first:border-t-0 first:pt-0 last:pb-0"
+              className="legal-section border-t border-line py-8 first:border-t-0 first:pt-0 last:pb-0"
             >
               <h2 id={`${s.id}-heading`} className="display text-2xl">{s.heading}</h2>
-              <div className="mt-4 max-w-prose space-y-4 text-sm leading-relaxed text-ink-muted [&_a:hover]:text-ink [&_a]:underline [&_a]:underline-offset-2 [&_h3]:pt-2 [&_h3]:font-medium [&_h3]:text-ink [&_li]:pl-1 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_strong]:font-medium [&_strong]:text-ink [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
+              <div className="legal-body mt-4 max-w-prose space-y-4 text-ink-muted [&_a:hover]:text-ink [&_a]:underline [&_a]:underline-offset-2 [&_h3]:pt-2 [&_h3]:font-medium [&_h3]:text-ink [&_li]:pl-1 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_strong]:font-medium [&_strong]:text-ink [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
                 {s.body}
               </div>
             </section>

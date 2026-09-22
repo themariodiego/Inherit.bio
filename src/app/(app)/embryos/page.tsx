@@ -65,7 +65,7 @@ export default async function EmbryosPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="mx-auto max-w-4xl space-y-12 md:space-y-16"
+      className="page-stack mx-auto max-w-4xl space-y-12 md:space-y-16"
     >
       {allowed ? (
         <p data-slot="availability-line" className="text-sm leading-relaxed text-ink-muted">
@@ -113,7 +113,7 @@ export default async function EmbryosPage() {
         />
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {HUB_TILES.map((tile) => {
           const href = tileHref[tile.id];
           return (

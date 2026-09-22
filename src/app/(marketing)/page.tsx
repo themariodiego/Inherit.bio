@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight, BookOpen, Fingerprint, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { route } from "@/lib/primary-routes";
 
@@ -35,29 +36,44 @@ const candor = [
 export default function LandingPage() {
   return (
     <>
-      <section className="mx-auto max-w-6xl px-6 pb-20 pt-24">
-        <p className="eyebrow mb-6">Open-source consumer genomics</p>
-        <h1 className="display max-w-3xl text-5xl sm:text-6xl">
-          Your genome, <span className="accent">on your terms.</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-lg text-ink-muted">
-          Inherit helps you buy DNA sequencing from an independent lab. You can
-          turn your raw DNA file into reports and ancestry results. You can also
-          see polygenic scores, which combine many small genetic effects. You
-          can inspect, audit, or run the system yourself.
-        </p>
-        <p className="mt-4 max-w-xl text-ink-muted">
-          Inherit itself is free — you only ever pay a sequencing provider,
-          directly. Already have a DNA file? Everything here costs nothing.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button asChild size="lg">
-            <Link href="/auth/sign-up">Start with your raw data</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link href={route("marketing.providers")}>Find a sequencing provider</Link>
-          </Button>
+      <section className="landing-hero mx-auto max-w-6xl px-6">
+        <div>
+          <p className="eyebrow mb-6">Open-source consumer genomics</p>
+          <h1 className="display">
+            Your genome, <span className="accent">on your terms.</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-muted">
+            Turn your raw DNA file into reports and ancestry results. Read the
+            evidence, see what your file covers, and keep control of your data.
+          </p>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-muted">
+            Inherit itself is free — you only ever pay a sequencing provider,
+            directly. Already have a DNA file? Everything here costs nothing.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link href="/auth/sign-up">Start with your raw data <ArrowUpRight aria-hidden="true" /></Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href={route("marketing.providers")}>Find a sequencing provider</Link>
+            </Button>
+          </div>
         </div>
+        <aside className="genome-guide" aria-label="About Inherit">
+          <p className="eyebrow mb-6">A guide to your DNA</p>
+          <div className="guide-row">
+            <BookOpen aria-hidden="true" className="size-6" />
+            <div><p className="font-medium">Reports, with context</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">What your file shows. Where the evidence comes from. What it cannot tell you.</p></div>
+          </div>
+          <div className="guide-row">
+            <Fingerprint aria-hidden="true" className="size-6" />
+            <div><p className="font-medium">Explore your ancestry</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">See the regions your file supports, with its limits in view.</p></div>
+          </div>
+          <div className="guide-row pb-0">
+            <LockKeyhole aria-hidden="true" className="size-6" />
+            <div><p className="font-medium">Your data, your choice</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">Export, delete, or run Inherit yourself. The code is open to read.</p></div>
+          </div>
+        </aside>
       </section>
 
       <section className="border-y border-line bg-card">
@@ -65,9 +81,9 @@ export default function LandingPage() {
           <p className="eyebrow mb-10">How it works</p>
           <ol className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((s) => (
-              <li key={s.n}>
-                <span className="display text-4xl text-forest">{s.n}</span>
-                <h2 className="mt-3 font-medium">{s.title}</h2>
+              <li key={s.n} className="process-step">
+                <span className="process-number">{s.n}</span>
+                <h2 className="mt-4 text-lg font-medium">{s.title}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-ink-muted">
                   {s.body}
                 </p>

@@ -39,7 +39,8 @@ export default function AboutPage() {
                 directly. Some links may earn Inherit a commission, which we
                 show beside the link. You can upload a file from 23andMe,
                 AncestryDNA, MyHeritage, or FamilyTreeDNA. You can also add a
-                VCF, BAM, or CRAM file. Inherit reads the file for you.
+                VCF or gVCF file. BAM, CRAM and FASTQ files are not accepted.
+                Inherit reads the supported file for you.
               </p>
               <p>
                 Each report shows its evidence, sources, and any variant your

@@ -229,7 +229,7 @@ export function GlobalSearch() {
             />
           </div>
 
-          <div ref={listRef} className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
+          <div ref={listRef} aria-busy={trimmedQuery !== "" && !answered} className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
             {trimmedQuery === "" ? <p className="text-sm text-ink-muted">{SEARCH.empty}</p> : null}
             {groups.map((group) => {
               const labelId = `${titleId}-${group.id}`;
@@ -262,8 +262,8 @@ export function GlobalSearch() {
                 </div>
               );
             })}
-            <p role="status" aria-live="polite" className={cn("text-sm text-ink-muted", !noResults && "sr-only")}>
-              {noResults ? SEARCH.noResults : ""}
+            <p role="status" aria-live="polite" className={cn("text-sm text-ink-muted", !noResults && (trimmedQuery === "" || answered) && "sr-only")}>
+              {noResults ? SEARCH.noResults : trimmedQuery !== "" && !answered ? "Searching…" : ""}
             </p>
           </div>
         </div>

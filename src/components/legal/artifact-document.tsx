@@ -31,7 +31,7 @@ export function LegalArtifactDocument({
         <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-muted">{artifact.summary_markdown}</p>
       </section>
       {artifact.summary_of_changes ? <p className="mt-5 text-sm text-ink-muted"><strong>Changes:</strong> {artifact.summary_of_changes}</p> : null}
-      <div className="mt-8 whitespace-pre-wrap border-t border-line pt-8 text-sm leading-relaxed">{artifact.body_markdown}</div>
+      <div className="legal-body mt-8 max-w-prose whitespace-pre-wrap border-t border-line pt-8">{artifact.body_markdown}</div>
       <footer className="mt-10 space-y-2 border-t border-line pt-5 text-xs text-ink-muted">
         <p className="break-all font-mono">sha256 {artifact.body_sha256}</p>
         <Link href={`${routeBase}/${versionPath}/${artifact.version}`} className="underline underline-offset-2">Permanent link to this version</Link>

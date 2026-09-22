@@ -34,7 +34,7 @@ export async function SiteHeader() {
           {/* Tagline only when there is genuinely room for one line: at
               200% zoom a typical window is ~640-768 effective px, where
               sm:inline wrapped it into a multi-line sliver. */}
-          <span className="hidden text-[11px] whitespace-nowrap text-ink-muted lg:inline">
+          <span className="hidden text-xs whitespace-nowrap text-ink-muted xl:inline">
             created by Plus Bio for the public good
           </span>
         </div>
@@ -49,7 +49,7 @@ export async function SiteHeader() {
             <Link
               key={l.href}
               href={l.href}
-              className="flex min-h-11 min-w-11 items-center justify-center text-sm text-ink-muted transition-colors hover:text-ink"
+              className="site-nav-link flex min-h-11 min-w-11 items-center justify-center text-sm text-ink-muted transition-colors hover:text-ink"
             >
               {l.label}
             </Link>
@@ -83,13 +83,13 @@ export async function SiteHeader() {
           never big enough to hit. */}
       <nav
         aria-label="Main (mobile)"
-        className="flex flex-wrap gap-x-5 gap-y-1 border-t border-line px-6 py-2 md:hidden"
+        className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line px-6 md:hidden"
       >
         {nav.map((l) => (
           <Link
             key={l.href}
             href={l.href}
-            className="flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm text-ink-muted hover:text-ink"
+            className="site-nav-link flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm text-ink-muted hover:text-ink"
           >
             {l.label}
           </Link>

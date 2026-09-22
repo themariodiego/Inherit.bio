@@ -44,7 +44,7 @@ export default async function SettingsPage() {
       : null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
+    <div className="page-stack mx-auto max-w-3xl space-y-10">
       <header className="space-y-2">
         <p className="eyebrow">Account</p>
         <h1 className="display text-3xl">Settings</h1>
@@ -52,7 +52,7 @@ export default async function SettingsPage() {
       </header>
       <nav aria-label="Settings sections" className="grid gap-4 sm:grid-cols-2">
         {sections.map((section) => (
-          <Link key={section.href} href={section.href} className="rounded-2xl border border-line bg-card p-5 hover:border-forest">
+          <Link key={section.href} href={section.href} className="link-surface rounded-2xl border border-line bg-card p-6 hover:border-forest">
             <h2 className="font-medium">{section.title}</h2>
             <p className="mt-2 text-sm text-ink-muted">{section.copy}</p>
           </Link>

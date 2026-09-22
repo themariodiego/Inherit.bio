@@ -126,7 +126,7 @@ export function ChatPanel({
                 return (
                   <p
                     key={i}
-                    className="my-1 font-mono text-[11px] text-ink-muted"
+                    className="my-1 font-mono text-xs text-ink-muted"
                   >
                     ⚙ {label}
                     {"state" in part && part.state === "output-available"
