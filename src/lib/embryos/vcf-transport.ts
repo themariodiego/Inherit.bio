@@ -1,5 +1,5 @@
 import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
-import { chromToNumber } from "../genome/types";
+import { embryoSourceChromosome } from "./source-chromosomes";
 import { embryoFileStream, embryoInputLines, EmbryoTransportError } from "./ingest-lines";
 import { checkTransportBinding as checkBinding, checkTransportHandles as checkHandles,
   type EmbryoTransportBinding, type BrowserTransportBinding, type ServerTransportBinding } from "./ingest-binding";
@@ -65,10 +65,10 @@ function genotype(value: string | undefined, alleleCount: number): string {
 function cleanRecord(line: string, count: number): string | null {
   const fields = line.split("\t");
   if (fields.length !== 9 + count) throw new EmbryoTransportError("unrecognised_format");
-  const chrom = chromToNumber(fields[0]);
-  // Drop all non-autosomal content before interpreting its fields. Never
-  // expose a discarded count, reason or presence marker to the caller.
-  if (typeof chrom !== "number" || !Number.isInteger(chrom) || chrom < 1 || chrom > 22) return null;
+  const chrom = embryoSourceChromosome(fields[0]);
+  // Retain observed autosomal and X/Y calls. Unsupported contigs supply no
+  // source rows or discard markers, and no sex result is derived here.
+  if (chrom === null) return null;
   integer(fields[1], 1);
   fields[3] = fields[3].toUpperCase();
   fields[4] = fields[4].split(",").map((alt) => /^[acgtn]+$/i.test(alt) ? alt.toUpperCase() : alt).join(",");

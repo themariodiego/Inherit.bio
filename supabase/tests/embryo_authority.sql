@@ -1,5 +1,5 @@
 begin;
-select plan(7);
+select plan(10);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values (
@@ -106,15 +106,24 @@ select lives_ok(
   'autosomal embryo variants are accepted'
 );
 
+select lives_ok(format($$insert into public.embryo_variants (
+  embryo_id, chromosome, position, genotype, source_binding_fingerprint
+) values ('60000000-0000-0000-0000-000000000006', %s, 200, 'G', repeat('c', 64))$$, chrom),
+ 'observed embryo chromosome ' || chrom || ' call is retained')
+from unnest(array[23,24]) chrom;
+select is((select array_agg(chromosome::integer order by chromosome) from public.embryo_variants
+ where embryo_id='60000000-0000-0000-0000-000000000006' and position=200),array[23,24],
+ 'both observed X/Y source rows survive the table constraint unchanged');
+
 select throws_ok(
   $$insert into public.embryo_variants (
       embryo_id, chromosome, position, genotype, source_binding_fingerprint
     ) values (
-      '60000000-0000-0000-0000-000000000006', 23, 100, 'A/G', repeat('b', 64)
+      '60000000-0000-0000-0000-000000000006', 25, 100, 'A/G', repeat('b', 64)
     )$$,
   '23514',
   null,
-  'non-autosomal embryo variants are rejected'
+  'unsupported mitochondrial embryo variants remain rejected'
 );
 
 select lives_ok(

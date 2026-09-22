@@ -3872,3 +3872,32 @@ taken, because the number moved.
   issuance refuses it with the size named. That makes (a) a safety net against
   the ceilings and `max_artifact_bytes` being configured out of step, rather
   than the path an ordinary person walks.
+
+
+## 22 September 2026 — retain observed embryo X/Y calls
+
+The owner changed the requirement in chat: sex chromosomes should be recorded
+from DNA. The source-retention implementation keeps observed X/Y allele calls
+alongside autosomes, including their reported ploidy and missing calls, in
+sanitized per-embryo sources and authorized source exports. It does not derive
+a sex or karyotype result. The separate question of result inference/display
+was initially awaiting the owner's choice.
+
+`embryo-source-and-output-v2` supersedes `embryo-autosomal-only-v1` as the
+current register authority. Browser and server transport, both variant-table
+boundaries and the source/export contract must agree. The numerical analysis
+rules remain autosomal; there is no new demographic field, metadata exception,
+ranking control, consent bypass or source-acceptance endpoint. Unsupported
+contigs remain excluded. Tests replace the old X/Y rejection expectation with
+positive round trips and retain negative boundary, metadata and authority
+coverage. Production migration or activation is not part of this change.
+
+The owner then explicitly selected **retention and display of a chromosomal-
+sex result**, and delegated the initial laboratory/format and method choice.
+That supersedes the retention-only scope above. Start with the existing
+multi-sample VCF/gVCF and structured PGT table formats, using a separately
+qualified DNA-based caller and a closed result with an indeterminate state.
+`docs/design/chromosomal-sex-result.md` records the selected approach, existing
+evidence component and remaining calibration, authority and display work.
+No new permission question is needed to implement that authorized scope;
+scientific evidence and participant authority must still be real.

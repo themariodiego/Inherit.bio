@@ -14,7 +14,7 @@ import { syntheticAbsoluteFinding, syntheticCarrierFinding, syntheticCoverageFai
 
 /**
  * The closed-shape validator and the two permitted orders (design §6.1;
- * register embryo-autosomal-only-v1). Every forbidden field is rejected
+ * register embryo-source-and-output-v2). Every forbidden field is rejected
  * wherever it sits; columns follow the ordinal and rows the registry id
  * for a fixture whose values order differently; displayed === stored.
  */

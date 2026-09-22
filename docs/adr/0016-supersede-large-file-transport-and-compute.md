@@ -108,11 +108,12 @@ for usability, but the server independently sniffs and validates the decoded
 bytes and owns the result. Rejection deletes partial or bypassed input under
 the registered disposition and creates no derived genetic row.
 
-For embryo/cohort input, the autosomal-only contract rejects forbidden
-sex/gender/karyotype/proxy headers and retains only chromosomes 1–22. X, Y, M,
-MT, PAR, unplaced, and unknown contigs are discarded without persisting or
-reporting their presence or count. Only neutral server-issued sample ordinals
-or random handles survive the transient mapping process.
+For embryo/cohort input, `embryo-source-and-output-v2` retains observed calls on
+chromosomes 1–22, X and Y (owner revision, 22 September 2026). M, MT, unresolved
+PAR, unplaced and unknown contigs are still discarded without presence/count
+markers. Source sex/gender/karyotype/proxy metadata remains excluded: this is
+DNA-call retention, not a sex inference or display. Only neutral server-issued
+sample ordinals or random handles survive the transient mapping process.
 
 ### Download and export delivery
 

@@ -1,5 +1,5 @@
 /**
- * The copy ids `docs/route-register.json#policyContracts.embryo-autosomal-only-v1`
+ * The copy ids `docs/route-register.json#policyContracts.embryo-source-and-output-v2`
  * names, resolved to their one string each. A renderer that receives a copy
  * id looks it up here; nothing else spells these strings.
  */
