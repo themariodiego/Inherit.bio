@@ -228,6 +228,8 @@ test("genome track settings preserve keyboard focus, apply edits and escape back
   const menu = widget.getByRole("menu");
   await expect(menu).toBeVisible();
   const rename = menu.getByRole("menuitem", { name: "Set track name", exact: true });
+  await expect(menu.getByRole("menuitem", { name: "Set track height", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown");
   await expect(rename).toBeFocused();
   await page.keyboard.press("Enter");
   const dialog = widget.getByRole("dialog", { name: "Track Name", exact: true });
@@ -238,7 +240,10 @@ test("genome track settings preserve keyboard focus, apply edits and escape back
   await expect(dialog).toBeHidden();
   const renamedGear = widget.getByRole("button", { name: "Track settings: My stored variants", exact: true });
   await expect(renamedGear).toBeFocused();
-  await page.keyboard.press("Enter"); await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await expect(menu.getByRole("menuitem", { name: "Set track height", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown"); await expect(rename).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(input).toBeFocused(); await input.fill("Discard this edit");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden(); await expect(renamedGear).toBeFocused();

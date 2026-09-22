@@ -13,6 +13,8 @@ export function enhanceIgvInteractions(container: HTMLElement, labels: Record<st
   startTrackDrag(view: IgvTrackView): void;
   updateTrackDrag(view: IgvTrackView): void;
   endTrackDrag(): void;
+  calculateViewportWidth(columnCount: number): number;
+  resize(): Promise<void>;
 }): () => void {
   const root = container.shadowRoot ?? container;
   const abort = new AbortController();
@@ -58,8 +60,8 @@ export function enhanceIgvInteractions(container: HTMLElement, labels: Record<st
   const style = document.createElement("style");
   style.dataset.inheritInteractions = "true";
   style.textContent = `
-    .igv-gear-menu-column { width: var(--size-control, 44px); flex-shrink: 0; }
-    .igv-track-drag-column { width: var(--size-control, 44px); flex-shrink: 0; }
+    .igv-column-container > .igv-gear-menu-column { width: var(--size-control, 44px); flex-shrink: 0; }
+    .igv-column-container > .igv-track-drag-column { width: var(--size-control, 44px); flex-shrink: 0; }
     .igv-track-drag-handle[role=slider] { min-width: 44px; min-height: 44px; }
     .igv-track-drag-handle-color { background-color: #666 !important; }
     .igv-gear-menu-column > div > [data-igv-action] { margin: 0; padding: 12px; }
@@ -106,6 +108,30 @@ export function enhanceIgvInteractions(container: HTMLElement, labels: Record<st
     dialog[data-igv-modal] .picker_done button { color: white; background: #2e5c45; }
   `;
   root.appendChild(style);
+
+  // igv 3.8.5 subtracts fixed 12/28/14-pixel drag, gear and scrollbar
+  // columns. Account for their rendered sizes after enlarging the controls;
+  // otherwise the track pushes the gear outside the clipping container.
+  const originalWidth = browser.calculateViewportWidth;
+  const columns = [
+    [".igv-track-drag-column", 12], [".igv-gear-menu-column", 28], [".igv-scrollbar-column", 14],
+  ] as const;
+  browser.calculateViewportWidth = function (count) {
+    const extra = columns.reduce((sum, [selector, standard]) => {
+      const width = root.querySelector(selector)?.getBoundingClientRect().width ?? 0;
+      return sum + (width > 0 ? width - standard : 0);
+    }, 0);
+    return Math.max(1, originalWidth.call(this, count) - Math.ceil(extra / count));
+  };
+  let previousColumnWidth = -1;
+  const columnObserver = new ResizeObserver(() => {
+    const width = columns.reduce((sum, [selector]) => sum + (root.querySelector(selector)?.getBoundingClientRect().width ?? 0), 0);
+    if (!stopped && width !== previousColumnWidth) { previousColumnWidth = width; void browser.resize(); }
+  });
+  for (const [selector] of columns) {
+    const column = root.querySelector(selector);
+    if (column) columnObserver.observe(column);
+  }
 
   function update() {
     if (stopped) return;
@@ -274,7 +300,8 @@ export function enhanceIgvInteractions(container: HTMLElement, labels: Record<st
   root.addEventListener("scroll", update, { capture: true, signal: abort.signal });
   update();
   return () => {
-    stopped = true; observer.disconnect(); abort.abort(); style.remove();
+    stopped = true; observer.disconnect(); columnObserver.disconnect(); abort.abort(); style.remove();
+    browser.calculateViewportWidth = originalWidth;
     for (const [source, dialog] of dialogs) {
       if (dialog.open) dialog.close();
       for (const input of source.querySelectorAll("[data-igv-height]")) input.removeAttribute("data-igv-height");

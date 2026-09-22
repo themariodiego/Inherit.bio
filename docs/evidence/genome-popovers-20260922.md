@@ -21,16 +21,19 @@ visually inspected; its text and close control remain within the viewport.
 
 Eight new native Chromium cases pass against the installed library and a
 first-party chromosome-size reference. The main keyboard journey runs at
-320, 390 and 1280 pixels in both themes, with zero WCAG 2.1 A/AA axe findings,
+320, 390 and 1280 pixels in both themes, with zero findings across the full app axe tags, including WCAG 2.2 AA
+and best practice,
 44-pixel controls, no document overflow and normal closed-widget Tab order.
 Additional cases exercise actual downloads, a pointer-opened feature popover,
-repeated message dialogs and cleanup. All 47 targeted cases across the widget,
+repeated message dialogs and cleanup. All 49 targeted cases across the widget,
 scrolling, keyboard and copy suites pass. Five ordinary words are added to the
 plain vocabulary; no readability threshold changes.
 
 The added full-app browser journey starts from the existing synthetic uploaded
 file, opens track details by keyboard, exports an SVG through the keyboard
-menu and checks Escape back to the page. It is discovered but still awaits CI.
+menu and checks Escape back to the page. The inherited track-settings geometry
+and menu-focus correction is included, with all existing assertions retained.
+Full-app CI on this correction is still required.
 No source file, server route, upload limit or scientific interpretation changes.
 
 ## Remaining evidence

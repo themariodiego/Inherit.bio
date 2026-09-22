@@ -50,7 +50,7 @@ async function fixture(width: number, theme: string, run: (page: Page) => Promis
 }
 
 async function audit(page: Page) {
-  const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
   expect(result.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => node.failureSummary) }))).toEqual([]);
   for (const control of await page.locator("[data-igv-popup-action]").all()) {
     if (!await control.isVisible()) continue;

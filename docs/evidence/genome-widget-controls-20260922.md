@@ -36,19 +36,35 @@ picker when focus returns to the More colors button.
 
 ## Verification and limits
 
-The 32 targeted tests in `scripts/igv-interactions.test.ts`,
+The 34 targeted tests in `scripts/igv-interactions.test.ts`,
 `scripts/keyboard-traversal.test.ts` and `src/copy/genome/data.test.ts` pass.
 The new interaction suite runs native Chromium against the installed library.
 It covers normal tab order, name/height changes, cancellation, focus restoration,
 modal containment, palette and typed colors, track ordering, display modes,
 reference menu controls and removal. The name/height journeys run at 320, 390
-and 1280 CSS pixels in both themes, with zero WCAG 2.1 A/AA axe violations,
+and 1280 CSS pixels in both themes, with zero findings across the full app's
+WCAG 2, 2.1, 2.2 AA and best-practice axe tags,
 44-pixel control targets and no document overflow required.
 
 The existing keyboard audit's positive and deliberately broken fixtures remain
 unchanged. `e2e/genome-data.spec.ts` adds a real-app keyboard settings journey
 after the existing synthetic upload and report preparation. That journey must
 pass full CI; standalone widget tests are not evidence of an app pass.
+
+The first full CI run found two regressions: enlarged reorder handles covered
+the track gears, and the app journey expected the name action before the
+library's first height action. The library's adopted stylesheet overrode the
+column widths, and its viewport calculation still subtracted the original
+12/28/14-pixel drag, gear and scrollbar columns. More specific width rules and
+a calculation using the actual rendered column sizes now keep those controls
+inside the host. A resize observer recalculates only when a column width
+changes, and cleanup restores the original calculation. Two new native tests
+resize a padded, clipped host through all three widths, require full axe
+coverage, and verify that both gear centers remain reachable by a pointer.
+The app test retains its focus assertions and reaches the name action with
+ArrowDown after asserting focus on the height action. Corrected full CI is
+still required; the failed run's 493 passes and six blocked serial successors
+are not a clean result.
 
 Canvas context menus, track-label popovers and vertical track scrolling still
 need a complete interaction inventory and equivalent keyboard verification.
