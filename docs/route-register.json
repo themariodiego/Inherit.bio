@@ -2105,8 +2105,10 @@
       "forbiddenSemanticTags": [
         "embryo-sex",
         "sex-proxy",
+        "non-autosomal-variant",
         "unsupported-contig-variant"
       ],
+      "semanticTagScope": "derived-findings-and-model-context; observed-X-Y-source-calls-use-the-separate-storedChromosomes-retention-and-authorized-source-export-rules-and-do-not-widen-autosomal-analysis-inputs",
       "filtersAndSorts": {
         "conditionFilter": "only-exact-current-data/embryo/allowed_conditions.json-condition_id-values",
         "columnOrder": "ascending-immutable-sample_ordinal-only",

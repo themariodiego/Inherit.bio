@@ -60,7 +60,8 @@ function rsid(value: string): number {
 
 function call(value: string): string {
   const upper = value.toUpperCase();
-  if (["--", "-", ".", "./."].includes(upper)) return "./.";
+  if (["-", "."].includes(upper)) return ".";
+  if (["--", "./."].includes(upper)) return "./.";
   if (/^[ACGT]{2}$/.test(upper)) return `${upper[0]}/${upper[1]}`;
   // Sequence alleles separated by / or |, or a single called base. An
   // unseparated multi-base string is never guessed to be a haploid indel.

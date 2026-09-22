@@ -46,6 +46,14 @@ describe("embryo laboratory-table transport", () => {
     expect(validateEmbryoTableChunk(bytes, server).map((row) => row.genotype)).toEqual(["./.", "G/.", "A/A"]);
   });
 
+  it.each([1, 23, 24])("does not turn a single missing call into two on chromosome %i", async chrom => {
+    const text = `Embryo,Chromosome,Position,Genotype\nPRIVATE_A,${chrom},123,.\nPRIVATE_B,${chrom},124,-\nPRIVATE_A,${chrom},125,./.\n`;
+    const mapping = planMapping(detectPgtHeader(text.split("\n")[0])!) as CompleteMapping;
+    const bytes = (await chunks(text, { ...binding, mapping }))[0];
+    expect(validateEmbryoTableChunk(bytes, { ...server, locusKind: "chrom-pos" })
+      .map(row => row.genotype)).toEqual([".", ".", "./."]);
+  });
+
   it("does not claim cross-record phasing without phase-set provenance", async () => {
     const bytes = (await chunks(source.replace(",AG,", ",A|G,")))[0];
     expect(validateEmbryoTableChunk(bytes, server)[0].genotype).toBe("A/G");
