@@ -53,7 +53,7 @@ worker authority and both retention-route suites remain in the targeted run.
 The targeted run passed 142 tests across eight suites. Changed-file ESLint,
 typecheck and the readability gate passed locally.
 
-No provider write, deployment, hosted retry or final R2 reconciliation was made
+No provider write, worker deployment, hosted retry or final R2 reconciliation was made
 for this change. Unit tests establish orchestration and cancellation contracts;
 they do not establish that provider throughput meets the fixed two-hour scratch
 deadline. Sustained cleanup backlog can defer preparation admission, and shared
