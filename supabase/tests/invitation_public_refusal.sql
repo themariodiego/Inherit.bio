@@ -12,12 +12,15 @@ set local role service_role;
 select lives_ok($$select public.refuse_co_parent_invitation_session_v1(
  repeat('c',64),'public-refuse-aaaaaaaaaaaaaaaa')$$,'the service facade commits accountless refusal');
 select is(public.read_co_parent_refusal_v1(repeat('c',64)),'done','a completed session has only a generic receipt');
+-- Constraint coverage stays independent of the service role's write denial.
+reset role;
 select throws_ok($$update public.embryo_operation_nonces set rights_session_hash=null
  where rights_session_hash=repeat('c',64)$$,'23514',null,
  'a refusal receipt cannot keep a deadline without its session hash');
 select throws_ok($$update public.embryo_operation_nonces set rights_receipt_expires_at=null
  where rights_session_hash=repeat('c',64)$$,'23514',null,
  'a refusal receipt cannot keep its session hash without a deadline');
+set local role service_role;
 select ok(not public.authorize_mail_submission_v1((select outbox_id from delivery),
  (select attempt_ordinal from delivery)),'refusal cancels a claimed invitation before provider submission');
 create temporary table cleanup as select * from public.claim_refused_invitation_draft_purge_v1(repeat('a',64));
