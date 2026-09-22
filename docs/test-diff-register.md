@@ -2275,3 +2275,18 @@ extractor or legal statement is removed or relaxed.
   changed. The dependency patch is registered only for IGV 3.8.5. See
   `docs/evidence/igv-native-initialization-patch-assessment-20260922.md` for
   clean-install evidence and the limits of the measured failure path.
+
+## Genome browser to upload navigation waypoints · 22 September 2026
+
+- The same-document network audit now requires the My Genome URL, heading,
+  tools region and viewer removal before following the subject-bar upload link.
+  The hub has two upload links, so the second click is scoped to that bar.
+  The upload URL is checked before the existing picker, Storage, finalization,
+  preparation and origin assertions. Existing timeouts are unchanged.
+- A failed transition retains only fixed route/stage names, response statuses,
+  bounded event kinds and error counts. Two standalone Chromium cases verify
+  removal of request/error content, the event bound and listener cleanup.
+- CI run 35744757008 retained the original browser page after both clicks;
+  it did not record which route request or transition failed. The absent hub
+  waypoint is a demonstrated test gap, not a proven cause of that failure.
+  No application behavior, network limit or release verdict changes here.
