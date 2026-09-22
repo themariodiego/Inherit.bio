@@ -26,7 +26,8 @@ and best practice,
 44-pixel controls, no document overflow and normal closed-widget Tab order.
 Additional cases exercise actual downloads, a pointer-opened feature popover,
 repeated message dialogs and cleanup. All 49 targeted cases across the widget,
-scrolling, keyboard and copy suites pass. Five ordinary words are added to the
+scrolling, keyboard and copy suites pass. The five new control-counter cases
+also pass, for 54 distinct targeted cases across six suites. Five ordinary words are added to the
 plain vocabulary; no readability threshold changes.
 
 The added full-app browser journey starts from the existing synthetic uploaded
@@ -40,9 +41,11 @@ No source file, server route, upload limit or scientific interpretation changes.
 
 Feature popovers can now be closed from the keyboard, but this does not prove
 keyboard selection of every plotted feature. The in-page results table and
-the wider plotted region need a complete equivalence audit. The separate
-`firstViewportInteractives` helper also still queries the document without
-entering shadow roots; a passing twelve-control count is therefore insufficient
-for the widget's full density claim. Neither gap is treated as an exemption.
+the wider plotted region need a complete equivalence audit. The shared
+`firstViewportInteractives` helper now includes open shadow roots and slots;
+its five new regressions pass. Full-app sweeps must pass with that corrected
+count. This does not replace the separate pixel-area density measurement,
+which still needs a consistent baseline and candidate remeasurement. No gap
+is treated as an exemption.
 The fixed density ceiling and every existing route/test ratchet stay intact.
 The app's complete route sweeps must also pass before G1.13b can close.
