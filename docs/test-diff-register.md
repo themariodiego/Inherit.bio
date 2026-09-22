@@ -2261,3 +2261,17 @@ extractor or legal statement is removed or relaxed.
   coordinate after resizing and verifies its name, retaining the dialog, axe and
   Escape requirements. The old midpoint no longer named that marker after the
   resize correction. No count, density, route, test or timeout bound changes.
+
+
+## Native viewer initialization failure cleanup · 22 September 2026
+
+- Four native Chromium cases cover the installed ESM and UMD package entries,
+  each with a real synthetic reference File read rejection and repeated normal
+  removal. They inspect actual keyboard/resize listeners and shadow roots;
+  a separate live viewer must keep rendering, searching and returning its
+  synthetic feature after its neighbor fails.
+- Both cases retain uncaught-error and network-origin assertions. No global
+  event method is replaced, no existing test is removed, and no threshold is
+  changed. The dependency patch is registered only for IGV 3.8.5. See
+  `docs/evidence/igv-native-initialization-patch-assessment-20260922.md` for
+  clean-install evidence and the limits of the measured failure path.
