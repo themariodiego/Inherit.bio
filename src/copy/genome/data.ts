@@ -197,4 +197,5 @@ export const IGV_CONTROL_LABELS = {
   colorValue: "Color name or code",
   referenceTrack: "Reference positions",
   trackOrder: "Track order",
+  scrollTrack: "Scroll track",
 } as const;
