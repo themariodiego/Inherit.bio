@@ -81,6 +81,9 @@ export function labelIgvControls(container: HTMLElement, labels: Record<string, 
         .igv-navbar-genomic-location, .igv-locus-size-group, .igv-search-container {
           height: auto; min-height: var(--size-control, 44px); align-items: center;
         }
+        .igv-windowsize-panel-container {
+          white-space: nowrap; flex-shrink: 0; color: #444; background: #f3f3f3;
+        }
         input.igv-search-input, .igv-zoom-widget input, [data-keyboard-button] {
           box-sizing: border-box; min-width: var(--size-control, 44px);
           min-height: var(--size-control, 44px);

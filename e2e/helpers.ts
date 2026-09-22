@@ -545,6 +545,7 @@ export const AXE_VIEWPORTS = [
 export type AxeFinding = {
   id: string; theme: AxeTheme; viewport: string; motion: "no-preference" | "reduce";
   nodes: number; help: string;
+  elements: { target: (string | string[])[]; failure: string | null }[];
 };
 
 async function analyze(page: Page, theme: AxeTheme, viewport: string,
@@ -552,6 +553,7 @@ async function analyze(page: Page, theme: AxeTheme, viewport: string,
   const results = await new AxeBuilder({ page }).withTags([...AXE_TAGS]).analyze();
   return results.violations.map(violation => ({
     id: violation.id, theme, viewport, motion, nodes: violation.nodes.length, help: violation.help,
+    elements: violation.nodes.map(node => ({ target: node.target, failure: node.failureSummary ?? null })),
   }));
 }
 

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { chromium, type Browser, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { escapeLeavesTheTrap, installKeyboardAudit, tabThrough } from "../e2e/keyboard-traversal";
 import { labelIgvControls } from "../src/components/browse/igv-accessibility";
@@ -111,8 +112,10 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
     });
   });
 
-  it.each([320, 800, 1200])("traverses the installed genome widget at %i px and exits normally", async width => {
-    const page = await browser.newPage({ viewport: { width: width === 320 ? 390 : 1280, height: 844 } });
+  it.each([320, 390, 800, 1200].flatMap(width => ["light", "dark"].map(theme => ({ width, theme }))))(
+    "traverses the installed genome widget at $width px in $theme and exits normally", async ({ width, theme }) => {
+    const context = await browser.newContext({ viewport: { width: width === 320 ? 390 : 1280, height: 844 } });
+    const page = await context.newPage();
     await page.route("**/*", route => {
       const url = new URL(route.request().url());
       if (url.origin !== "http://fixture.invalid") return route.abort();
@@ -121,7 +124,8 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
       if (url.pathname === "/sizes") return route.fulfill({ contentType: "text/plain",
         body: readFileSync("public/genomes/hg38.chrom.sizes") });
       if (url.pathname !== "/") return route.abort();
-      return route.fulfill({ contentType: "text/html", body: '<button>Before</button>'
+      const colors = theme === "dark" ? "color:#e8ede2;background:#171f1a" : "color:#14201b;background:#fdfdf9";
+      return route.fulfill({ contentType: "text/html", body: `<body style="${colors}"><button>Before</button>`
         + `<div id="widget" style="width:${width}px;overflow-x:auto"></div><button>After</button>` });
     });
     try {
@@ -132,7 +136,8 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
           loadDefaultGenomes: false, showChromosomeWidget: false, showSVGButton: false,
           showSampleNameButton: false, showMultiSelectButton: false, showTrackLabelButton: false,
           showCenterGuideButton: false, showCursorTrackingGuideButton: false,
-          reference: { id: "positions", format: "chromsizes", fastaURL: "/sizes" },
+          reference: { id: "hg38-positions", name: "GRCh38 (positions only, no external sequence host)",
+            format: "chromsizes", fastaURL: "/sizes" },
           locus: "chr1:10000-20000", tracks: [{
             name: "Synthetic positions", type: "annotation", format: "bed", displayMode: "EXPANDED",
             features: [{ chr: "chr1", start: 14999, end: 15000, name: "Synthetic A/G" }],
@@ -148,6 +153,18 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
       expect((await search.boundingBox())!.height).toBeLessThan(44);
       // Evaluate the actual self-contained adapter in Chromium's DOM.
       await page.evaluate(`(${labelIgvControls.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)})`);
+      // The larger targets must not push dark text outside the pale toolbar.
+      // Check again after resizing, when the scrollable toolbar can overflow its host.
+      const contrast = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+      expect(contrast.violations.map(finding => ({ id: finding.id, targets: finding.nodes.map(node => node.target) })))
+        .toEqual([]);
+      await page.setViewportSize({ width: width === 1200 ? 1280 : width, height: 844 });
+      await page.locator("#widget").evaluate(element => { element.style.width = "calc(100% - 64px)"; });
+      const resized = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+      expect(resized.violations.map(finding => ({ id: finding.id, targets: finding.nodes.map(node => node.target) })))
+        .toEqual([]);
+      await page.setViewportSize({ width: width === 320 ? 390 : 1280, height: 844 });
+      await page.locator("#widget").evaluate((element, size) => { element.style.width = `${size}px`; }, width);
       // An effect can enhance the same subtree again; one key still means one action.
       await page.evaluate(`(${labelIgvControls.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)})`);
       const controls = page.locator('#widget input, #widget [role="button"]');
@@ -175,6 +192,6 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
       await page.keyboard.press("Enter");
       await page.keyboard.press("Space");
       expect(await go.getAttribute("data-activated")).toBe("2");
-    } finally { await page.close(); }
+    } finally { await context.close(); }
   });
 });
