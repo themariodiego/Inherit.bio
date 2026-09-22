@@ -403,25 +403,7 @@ export function seededTemplateCount(layer: "estimate" | "variant_call"): number 
  * Copilot entry control. Shared by the specs that pin the first-viewport
  * budget (`overview.spec.ts`, `genome-data.spec.ts`).
  */
-export async function firstViewportInteractives(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const selector =
-      'a[href],button,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]:not([tabindex="-1"])';
-    const found: string[] = [];
-    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-      if (element.matches('a[href="#main"]')) continue;
-      if (element.closest("nav,[data-copilot-entry]")) continue;
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) continue;
-      if (element.getClientRects().length === 0) continue;
-      if (rect.top >= window.innerHeight) continue;
-      found.push(
-        `${element.tagName.toLowerCase()}:${(element.textContent ?? "").trim().slice(0, 40)}`,
-      );
-    }
-    return found;
-  });
-}
+export { firstViewportInteractives } from "./viewport-controls";
 
 export type AxeTheme = "light" | "dark";
 

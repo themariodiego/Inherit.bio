@@ -2208,3 +2208,15 @@ extractor or legal statement is removed or relaxed.
   Full-app execution is still pending CI; no test or threshold is relaxed.
 - The 47 targeted widget, keyboard and copy cases pass. Remaining full-scope
   evidence is recorded in `docs/evidence/genome-popovers-20260922.md`.
+
+## Composed first-viewport control count · 22 September 2026
+
+- The shared control counter now enters open shadow roots and assigned slots,
+  retaining its selectors, viewport boundary, exclusions and twelve-control
+  threshold. The ancestry suite uses the same implementation.
+- Five native Chromium regressions cover the omitted controls, nested roots,
+  slots, composed navigation exclusions and a real thirteen-control refusal
+  case. The existing fourteen keyboard-audit cases also pass.
+- No test, assertion or threshold is removed. Native fixture counts are not
+  app-layout evidence; the complete app sweeps must pass with this counter.
+  The frozen pixel-area baseline is unchanged and G1.13b remains NO.
