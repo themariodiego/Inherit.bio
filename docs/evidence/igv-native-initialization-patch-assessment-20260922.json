@@ -1,0 +1,210 @@
+{
+  "observed_at": "2026-09-22T14:51:34.106Z",
+  "package": "igv@3.8.5",
+  "esm_sha256_before": "8a839d02cc3400e6cc35a759bfb03e05c68554f89b47f7d1ec12c4c77673773e",
+  "esm_sha256_after": "e8196e9a9f2dc745b7c72ba223e0814565886abf49442261e73c6979992afd20",
+  "umd_sha256_before": "db1eb740d09d4c182b570c9ecc9a326d99431c05f2d5ff45fa68a1ff43fb42b2",
+  "umd_sha256_after": "283ddc1ea47ae7bf1d836e40b0bbc221947da05f96aaf752c914c4912a3f8711",
+  "clean_install": {
+    "pnpm": "10.33.0",
+    "initial": "pnpm install --ignore-scripts --store-dir ./store",
+    "frozen": "pnpm install --frozen-lockfile --ignore-scripts --store-dir ./store",
+    "isolatedStores": true,
+    "entryHashesMatchAppliedPatch": true,
+    "lockfile_sha256": "6d24b2e478989474d552fd25ec2ab0d04d23d4579c7e3d72d6a8e4bf7faaf6cf"
+  },
+  "patch_sha256": "ebbddfcffb4fd04826ccf09472680bffa1081ef87f0557f7240bbf2bb35ff206",
+  "patch_application": "git apply --check then git apply to an isolated temporary copy; shared installed dependency untouched",
+  "scope": "actual native File.arrayBuffer rejection and normal removal with another live synthetic viewer preserved",
+  "comparisons": [
+    {
+      "entry": "esm",
+      "name": "original",
+      "initial": {
+        "keyup": 0,
+        "resize": 0
+      },
+      "healthy": {
+        "keyup": 1,
+        "resize": 1
+      },
+      "rejected": {
+        "outcome": "rejected",
+        "message": "synthetic reference read failure"
+      },
+      "afterRejection": {
+        "keyup": 2,
+        "resize": 2
+      },
+      "roots": {
+        "live": 1,
+        "failed": 1,
+        "liveConnected": true
+      },
+      "healthyViewerAfterFailure": {
+        "searched": true,
+        "features": [
+          "SYNTHETIC_A/G"
+        ],
+        "canvasCount": 12
+      },
+      "afterHealthyRemoval": {
+        "keyup": 2,
+        "resize": 1
+      },
+      "errors": [],
+      "requests": [
+        "http://fixture.invalid/",
+        "http://fixture.invalid/igv.js"
+      ]
+    },
+    {
+      "entry": "esm",
+      "name": "patched",
+      "initial": {
+        "keyup": 0,
+        "resize": 0
+      },
+      "healthy": {
+        "keyup": 1,
+        "resize": 1
+      },
+      "rejected": {
+        "outcome": "rejected",
+        "message": "synthetic reference read failure"
+      },
+      "afterRejection": {
+        "keyup": 1,
+        "resize": 1
+      },
+      "roots": {
+        "live": 1,
+        "failed": 0,
+        "liveConnected": true
+      },
+      "healthyViewerAfterFailure": {
+        "searched": true,
+        "features": [
+          "SYNTHETIC_A/G"
+        ],
+        "canvasCount": 12
+      },
+      "afterHealthyRemoval": {
+        "keyup": 0,
+        "resize": 0
+      },
+      "errors": [],
+      "requests": [
+        "http://fixture.invalid/",
+        "http://fixture.invalid/igv.js"
+      ]
+    },
+    {
+      "entry": "umd",
+      "name": "original",
+      "initial": {
+        "keyup": 0,
+        "resize": 0
+      },
+      "healthy": {
+        "keyup": 1,
+        "resize": 1
+      },
+      "rejected": {
+        "outcome": "rejected",
+        "message": "synthetic reference read failure"
+      },
+      "afterRejection": {
+        "keyup": 2,
+        "resize": 2
+      },
+      "roots": {
+        "live": 1,
+        "failed": 1,
+        "liveConnected": true
+      },
+      "healthyViewerAfterFailure": {
+        "searched": true,
+        "features": [
+          "SYNTHETIC_A/G"
+        ],
+        "canvasCount": 12
+      },
+      "afterHealthyRemoval": {
+        "keyup": 2,
+        "resize": 1
+      },
+      "errors": [],
+      "requests": [
+        "http://fixture.invalid/",
+        "http://fixture.invalid/igv.js"
+      ]
+    },
+    {
+      "entry": "umd",
+      "name": "patched",
+      "initial": {
+        "keyup": 0,
+        "resize": 0
+      },
+      "healthy": {
+        "keyup": 1,
+        "resize": 1
+      },
+      "rejected": {
+        "outcome": "rejected",
+        "message": "synthetic reference read failure"
+      },
+      "afterRejection": {
+        "keyup": 1,
+        "resize": 1
+      },
+      "roots": {
+        "live": 1,
+        "failed": 0,
+        "liveConnected": true
+      },
+      "healthyViewerAfterFailure": {
+        "searched": true,
+        "features": [
+          "SYNTHETIC_A/G"
+        ],
+        "canvasCount": 12
+      },
+      "afterHealthyRemoval": {
+        "keyup": 0,
+        "resize": 0
+      },
+      "errors": [],
+      "requests": [
+        "http://fixture.invalid/",
+        "http://fixture.invalid/igv.js"
+      ]
+    }
+  ],
+  "repository_patch_registration": {
+    "verified_at": "2026-09-22T15:01:42.910919+00:00",
+    "base_commit": "423c8e5dbad0e5c60c0d3d17403c3c003f1de32d",
+    "base_lockfile_sha256": "f6dc48a808bdf3441e44090b8963c07013b9cda17aee1c211e418842daf04f01",
+    "lockfile_sha256": "553e98f76cb6cab372a55338a981db9f971c512355e134220080180267f93fc2",
+    "only_patch_metadata_and_references_changed": true,
+    "all_other_dependency_versions_preserved": true,
+    "isolated_full_project_lockfile_validation": "corepack pnpm install --lockfile-only --frozen-lockfile --offline --ignore-scripts --store-dir ./store",
+    "lockfile_unchanged_after_validation": true,
+    "full_repository_install_performed": false
+  },
+  "maintained_regressions": {
+    "file": "scripts/igv-native-cleanup.test.ts",
+    "passed": 4,
+    "entry_builds": [
+      "main/module: dist/igv.esm.js",
+      "browser: dist/igv.js"
+    ],
+    "combined_targeted_tests_passed": 73,
+    "combined_suites_passed": 10,
+    "typecheck": "passed",
+    "changed_file_lint": "passed",
+    "readability": "passed",
+    "full_app_ci": "pending"
+  }
+}

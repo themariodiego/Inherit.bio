@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { subjectFinalizationReceipt, subjectProcessingReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { assertNoThirdParty, createConfirmedUser, signIn, watchRequests } from "./helpers";
+import { watchGenomeNavigation } from "./genome-navigation-diagnostics";
 
 // A14 — the network audit as an E2E test over REAL rendered pages: the set
 // of request origins on landing, dashboard, and a report page must be
@@ -59,7 +60,7 @@ test("a report page contacts no third-party origin", async ({ page }) => {
 // the origin set stays first-party.
 test("browse page with the embedded genome browser contacts no third-party origin", async ({
   page,
-}) => {
+}, testInfo) => {
   const user = {
     email: `netaudit-browse-${randomUUID()}@e2e.local`,
     password: "e2e-netaudit-browse-pw",
@@ -93,9 +94,25 @@ test("browse page with the embedded genome browser contacts no third-party origi
   // would erase the old viewer's global XHR patch and miss this regression.
   const marker = randomUUID();
   await page.evaluate(value => { Object.assign(window, { viewerUploadMarker: value }); }, marker);
-  await page.getByRole("link", { name: "My Genome", exact: true }).first().click();
-  await page.getByRole("link", { name: "Add a file", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Choose file", exact: true })).toBeEnabled();
+  const navigation = watchGenomeNavigation(page);
+  try {
+    await page.getByRole("link", { name: "My Genome", exact: true }).first().click();
+    await expect(page).toHaveURL(url => url.pathname === "/genome/me");
+    await expect(page.getByRole("heading", { name: "My Genome", exact: true, level: 1 })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Genome tools", exact: true })).toBeVisible();
+    await expect(page.getByTestId("genome-browser")).toHaveCount(0);
+    navigation.stage("upload");
+    // The hub has a second upload CTA. Use its persistent subject-bar link,
+    // only after proving the hub replaced the viewer in this same document.
+    await page.locator("[data-subject-bar]").getByRole("link", { name: "Add a file", exact: true }).click();
+    await expect(page).toHaveURL(url => url.pathname === "/files/upload" && url.searchParams.get("subject") === "me");
+    await expect(page.getByRole("button", { name: "Choose file", exact: true })).toBeEnabled();
+  } catch (error) {
+    await testInfo.attach("genome-upload-navigation", {
+      contentType: "application/json", body: JSON.stringify(navigation.snapshot(), null, 2),
+    });
+    throw error;
+  } finally { navigation.stop(); }
   expect(await page.evaluate(() => Reflect.get(window, "viewerUploadMarker"))).toBe(marker);
   const finalized = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/finalize$/.test(new URL(response.url()).pathname)
     && response.request().method() === "POST");

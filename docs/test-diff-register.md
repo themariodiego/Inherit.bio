@@ -2261,3 +2261,50 @@ extractor or legal statement is removed or relaxed.
   coordinate after resizing and verifies its name, retaining the dialog, axe and
   Escape requirements. The old midpoint no longer named that marker after the
   resize correction. No count, density, route, test or timeout bound changes.
+
+
+## Native viewer initialization failure cleanup · 22 September 2026
+
+- Four native Chromium cases cover the installed ESM and UMD package entries,
+  each with a real synthetic reference File read rejection and repeated normal
+  removal. They inspect actual keyboard/resize listeners and shadow roots;
+  a separate live viewer must keep rendering, searching and returning its
+  synthetic feature after its neighbor fails.
+- Both cases retain uncaught-error and network-origin assertions. No global
+  event method is replaced, no existing test is removed, and no threshold is
+  changed. The dependency patch is registered only for IGV 3.8.5. See
+  `docs/evidence/igv-native-initialization-patch-assessment-20260922.md` for
+  clean-install evidence and the limits of the measured failure path.
+
+## Genome browser to upload navigation waypoints · 22 September 2026
+
+- The same-document network audit now requires the My Genome URL, heading,
+  tools region and viewer removal before following the subject-bar upload link.
+  The hub has two upload links, so the second click is scoped to that bar.
+  The upload URL is checked before the existing picker, Storage, finalization,
+  preparation and origin assertions. Existing timeouts are unchanged.
+- A failed transition retains only fixed route/stage names, response statuses,
+  bounded event kinds and error counts. Two standalone Chromium cases verify
+  removal of request/error content, the event bound and listener cleanup.
+- CI run 35744757008 retained the original browser page after both clicks;
+  it did not record which route request or transition failed. The absent hub
+  waypoint is a demonstrated test gap, not a proven cause of that failure.
+  No application behavior, network limit or release verdict changes here.
+
+
+## Detached viewer mutation cleanup · 22 September 2026
+
+- The new `scripts/igv-detached-cleanup.test.ts` exercises the installed native
+  viewer and all current interaction adapters. After its real unknown-position
+  alert is closed, a queued viewport mutation is delivered with the host
+  detached and disposal scheduled for a later task. The next task must run,
+  remove the native roots, render the next page and produce no browser errors.
+- A test-only observer watchdog bounds an otherwise infinite microtask loop;
+  reaching the watchdog is an assertion failure. The regression fails without
+  the scrolling adapter's attached-host guard and passes with it. The guard
+  prevents detached controls being repeatedly removed and recreated before
+  passive cleanup can run. No existing assertion, timeout or threshold changes.
+- CI run 35755611547 had received the My Genome HTTP 200 response and updated
+  URL, but its heading assertion stalled until the 120-second test timeout.
+  This regression demonstrates the teardown defect behind that failure shape;
+  the existing complete same-document upload journey still has to pass CI.

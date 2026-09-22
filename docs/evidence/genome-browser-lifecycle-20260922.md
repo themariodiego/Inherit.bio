@@ -53,3 +53,11 @@ calling `removeAllBrowsers` would also destroy an unrelated live viewer. This
 failure path therefore remains open. A late disposal exception is observed and
 reported with a fixed message, without leaking the thrown error's contents or
 leaving the fulfilled creation chain with an unhandled rejection.
+
+
+The subsequent [pinned native cleanup change](igv-native-initialization-patch-assessment-20260922.md)
+addresses that measured reference-read rejection inside both installed library
+entry builds. Its original failure receipt above remains historical evidence;
+the native comparison and maintained tests verify the corrected path while
+preserving a different live viewer. Constructor and secondary-disposal failures
+remain outside the measured claim.

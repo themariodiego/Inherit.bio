@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  igv@3.8.5:
+    hash: ebbddfcffb4fd04826ccf09472680bffa1081ef87f0557f7240bbf2bb35ff206
+    path: patches/igv@3.8.5.patch
+
 importers:
 
   .:
@@ -46,7 +51,7 @@ importers:
         version: 4.12.0
       igv:
         specifier: ^3.8.5
-        version: 3.8.5
+        version: 3.8.5(patch_hash=ebbddfcffb4fd04826ccf09472680bffa1081ef87f0557f7240bbf2bb35ff206)
       lucide-react:
         specifier: ^1.35.0
         version: 1.35.0(react@19.2.8)
@@ -7698,7 +7703,7 @@ snapshots:
 
   ignore@7.0.6: {}
 
-  igv@3.8.5: {}
+  igv@3.8.5(patch_hash=ebbddfcffb4fd04826ccf09472680bffa1081ef87f0557f7240bbf2bb35ff206): {}
 
   image-ssim@0.2.0: {}
 

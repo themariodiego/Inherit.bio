@@ -1,0 +1,110 @@
+diff --git a/dist/igv.esm.js b/dist/igv.esm.js
+--- a/dist/igv.esm.js
++++ b/dist/igv.esm.js
+@@ -83973,8 +83973,7 @@
+     }
+ 
+     removeKeyboardHandler() {
+-        console.log("Remove handler");
+-        document.addEventListener("keyup", this.keyUpHandler);
++        document.removeEventListener("keyup", this.keyUpHandler);
+     }
+ 
+ 
+@@ -84584,21 +84583,26 @@
+     const browser = new Browser(config, parentDiv);
+     allBrowsers.push(browser);
+ 
+-    const sessionURL = config.sessionURL || config.session || config.hubURL;
+-    if (sessionURL) {
+-        await browser.loadSession({
+-            url: sessionURL
+-        });
+-    } else {
+-        await browser.loadSessionObject(config);
+-    }
+-
+-    browser.navbar.navbarDidResize();
+-
+-    if(config.enableWebSocket) {
+-        const host = config.webSocketHost || "localhost";
+-        const port = config.webSocketPort || 60141;
+-        createWebSocketClient(host, port, browser);
++    try {
++        const sessionURL = config.sessionURL || config.session || config.hubURL;
++        if (sessionURL) {
++            await browser.loadSession({
++                url: sessionURL
++            });
++        } else {
++            await browser.loadSessionObject(config);
++        }
++
++        browser.navbar.navbarDidResize();
++
++        if(config.enableWebSocket) {
++            const host = config.webSocketHost || "localhost";
++            const port = config.webSocketPort || 60141;
++            createWebSocketClient(host, port, browser);
++        }
++    } catch (error) {
++        removeBrowser(browser);
++        throw error
+     }
+ 
+     return browser
+diff --git a/dist/igv.js b/dist/igv.js
+--- a/dist/igv.js
++++ b/dist/igv.js
+@@ -83979,8 +83979,7 @@
+        }
+ 
+        removeKeyboardHandler() {
+-           console.log("Remove handler");
+-           document.addEventListener("keyup", this.keyUpHandler);
++           document.removeEventListener("keyup", this.keyUpHandler);
+        }
+ 
+ 
+@@ -84590,21 +84589,26 @@
+        const browser = new Browser(config, parentDiv);
+        allBrowsers.push(browser);
+ 
+-       const sessionURL = config.sessionURL || config.session || config.hubURL;
+-       if (sessionURL) {
+-           await browser.loadSession({
+-               url: sessionURL
+-           });
+-       } else {
+-           await browser.loadSessionObject(config);
+-       }
+-
+-       browser.navbar.navbarDidResize();
+-
+-       if(config.enableWebSocket) {
+-           const host = config.webSocketHost || "localhost";
+-           const port = config.webSocketPort || 60141;
+-           createWebSocketClient(host, port, browser);
++       try {
++           const sessionURL = config.sessionURL || config.session || config.hubURL;
++           if (sessionURL) {
++               await browser.loadSession({
++                   url: sessionURL
++               });
++           } else {
++               await browser.loadSessionObject(config);
++           }
++
++           browser.navbar.navbarDidResize();
++
++           if(config.enableWebSocket) {
++               const host = config.webSocketHost || "localhost";
++               const port = config.webSocketPort || 60141;
++               createWebSocketClient(host, port, browser);
++           }
++       } catch (error) {
++           removeBrowser(browser);
++           throw error
+        }
+ 
+        return browser
