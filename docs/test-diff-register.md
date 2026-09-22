@@ -2221,6 +2221,16 @@ extractor or legal statement is removed or relaxed.
   app-layout evidence; the complete app sweeps must pass with this counter.
   The frozen pixel-area baseline is unchanged and G1.13b remains NO.
 
+## Upload after genome browsing · 22 September 2026
+
+- Four native Chromium cases cover the installed viewer's File reference,
+  unchanged network methods, uploads during and after viewing, refusal,
+  redirects and cancellation. Synthetic test origins are explicit fixtures.
+- The existing real-app network audit retains all origin/tracker assertions
+  and adds a same-document link journey back to upload, followed by actual
+  Storage, finalization and preparation. A document marker prevents a reload
+  from masking the old permanent XHR patch. No existing test is removed or
+  weakened; full-app CI remains required.
 ## Native navigation option and resize API · 22 September 2026
 
 - The existing false multi-select option was ignored by the installed widget,
