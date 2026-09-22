@@ -165,6 +165,17 @@ describe("bounded provisional run merge", () => {
     await iterator.return(); expect(f.readBlock).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps eight buffered inputs bounded and cancels before another buffered emission", async () => {
+    const groups = await Promise.all(Array.from({ length: 8 }, (_, i) => data([row(i + 1), row(i + 9)])));
+    const f = await fixture(groups, 4), controller = new AbortController(), iterator = merge(f, controller.signal);
+    const expected = groups.flat().toSorted(compare);
+    for (let i = 0; i < 16; i++) expect((await iterator.next()).value).toEqual(expected[i]);
+    expect(f.readBlock).toHaveBeenCalledTimes(8);
+    await new Promise<void>(resolve => setImmediate(resolve)); expect(f.readBlock).toHaveBeenCalledTimes(8);
+    controller.abort(); await expect(iterator.next()).rejects.toMatchObject({ code: "aborted" });
+    expect(f.readBlock).toHaveBeenCalledTimes(8);
+  });
+
   it("does not allow a reader to mutate expected bindings", async () => {
     const f = await fixture([await data([row(1)])]);
     const output = await collect(mergePreparedRuns(f.runs, { source: syntheticSource, readBlock: async d => {

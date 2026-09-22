@@ -1,5 +1,16 @@
 # Test diff register
 
+## Buffered merge head selection · 22 September 2026
+
+`merge.test.ts` and `canonical-merge.test.ts` each add an eight-input case that
+compares the buffered output order, requires no further reads while downstream
+is paused, then aborts before another buffered emission or block acquisition.
+All existing receipt, hash/EOF, order, count and terminal assertions remain.
+No tests were removed or relaxed. These are preservation tests for a CPU
+optimization and also pass on the baseline implementation; the reproducible
+synthetic paired benchmark records the performance evidence separately in
+`docs/evidence/prepared-merge-buffered-heads-20260922.md`.
+
 ## A focus precondition that does not depend on window focus · 21 September 2026
 
 `e2e/search.spec.ts`'s `openWithShortcut` establishes that focus sits on the
