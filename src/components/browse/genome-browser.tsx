@@ -12,6 +12,7 @@ import {
 } from "@/copy/genome/data";
 import { chromToName } from "@/lib/genome/types";
 import { labelIgvControls } from "./igv-accessibility";
+import { enhanceIgvInteractions } from "./igv-interactions";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
@@ -145,6 +146,7 @@ export function GenomeBrowser({
   useEffect(() => {
     let disposed = false;
     let browserRef: unknown = null;
+    let disposeInteractions: (() => void) | undefined;
     const key = `${fileId}:${locus.chrom}:${locus.start}-${locus.end}`;
 
     async function mount() {
@@ -230,7 +232,9 @@ export function GenomeBrowser({
         igv.createBrowser(el, config),
         CREATE_BROWSER_TIMEOUT_MS,
       );
+      if (disposed) return;
       labelIgvControls(el, IGV_CONTROL_LABELS);
+      disposeInteractions = enhanceIgvInteractions(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvInteractions>[2]);
       return variants.length;
     }
 
@@ -249,6 +253,7 @@ export function GenomeBrowser({
     );
     return () => {
       disposed = true;
+      disposeInteractions?.();
       if (browserRef && el) el.innerHTML = "";
     };
   }, [fileId, locus.chrom, locus.start, locus.end]);
@@ -272,6 +277,10 @@ export function GenomeBrowser({
    */
   function leaveOnEscape(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.key !== "Escape") return;
+    // Let an open menu or native modal handle Escape first. Its own close
+    // restores the trigger; the next Escape still leaves the whole widget.
+    if (event.nativeEvent.composedPath().some(node => node instanceof HTMLElement
+      && node.getAttribute("data-igv-interaction") === "open")) return;
     const region = containerRef.current;
     if (!region) return;
     event.preventDefault();
