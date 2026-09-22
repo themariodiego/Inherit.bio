@@ -2,11 +2,12 @@
 
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
+import { hasZipMagic, openOwnUploadZip, OwnUploadZipError } from "./own-upload-zip";
 import { route } from "../primary-routes";
 import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
-export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
+export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" | "archive_invalid" |
   "too_large" | "account_full" | "decompressed_too_large" | "upload_integrity_mismatch" | "unauthorized" |
   "uploads_paused" | "unavailable";
 export class BrowserUploadError extends Error {
@@ -91,7 +92,19 @@ async function responseFailure(response: Response): Promise<never> {
 export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
   limits?: OwnUploadLimits | null) {
   onProgress({ step: "checking", pct: 0 });
-  const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
+  let head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
+  if (hasZipMagic(head)) {
+    if (!limits) throw new BrowserUploadError("unavailable");
+    const maximum = Math.max(uploadCeilingBytes("consumer-array-text-v1", limits),
+      uploadCeilingBytes("VCF", limits), uploadCeilingBytes("gVCF", limits));
+    try { file = await openOwnUploadZip(file, maximum); }
+    catch (error) {
+      if (error instanceof OwnUploadZipError) throw new BrowserUploadError(error.code, error.limitBytes);
+      throw new BrowserUploadError("archive_invalid");
+    }
+    head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
+    if (hasZipMagic(head)) throw new BrowserUploadError("archive_invalid");
+  }
   const sniffed = await sniffFileV2(head);
   if (sniffed.kind === "pdf") throw new BrowserUploadError("pdf_not_data");
   if (sniffed.kind === "pgt_table" || sniffed.kind === "vcf_multisample") throw new BrowserUploadError("subject_source_not_single_sample");

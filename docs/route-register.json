@@ -84,6 +84,14 @@
         "identity": "source-sample-and-embryo-column-values-are-used-only-to-build-the-transient-stable-ordinal-map-and-never-persisted"
       },
       "browserPreflight": "inspect-magic-bytes-before-the-first-direct-upload-or-ingest-chunk-and-refuse-%PDF-",
+      "ownZipPreflight": {
+        "scope": "own-subject-browser-file-picker-only; no-embryo-cohort-or-evidence-archive-intake",
+        "container": "one-regular-unencrypted-stored-or-deflated-ZIP-member; matching-local-central-and-optional-descriptor-metadata; exact-CRC32-and-decoded-length; refuse-split-ZIP64-ambiguous-multiple-empty-nested-or-corrupt-archives-before-any-network-request",
+        "limit": "both-selected-archive-and-decoded-member-are-bounded-by-payloadBoundaryContract.ownZipPreflightMaximumBytes; member-also-must-fit-the-live-content-format-upload-ceiling; this-does-not-raise-any-server-or-account-limit",
+        "source": "open-locally-in-ephemeral-memory-with-no-filesystem-extraction; the-exact-contained-DNA-file-is-the-source-for-the-existing-hash-lease-storage-finalization-preparation-and-original-download-contracts; ZIP-container-names-comments-and-extra-metadata-are-not-sent-or-saved",
+        "disclosure": "before-file-selection-say-that-only-the-file-inside-is-saved-and-display-the-archive-and-contained-file-bound; normal-server-format-and-single-sample-validation-remain-authoritative",
+        "adr": "docs/adr/0031-own-upload-zip-preflight.md"
+      },
       "serverPreflight": "independently-sniff-the-first-decoded-bytes-before-parse-and-never-trust-extension-content-type-or-browser-result; after-an-embryo-ingest-session-and-its-due-phase-exist-any-terminal-format-or-header-failure-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-and-never-deletes-the-session-due-target-or-fragments-first",
       "selfOrAdultBypass": "if-a-PDF-or-unsupported-file-bypasses-browser-preflight-delete-the-object-set-the-file-error-and-return-file-processing-v1.pdf-415-with-zero-derived-row",
       "selfOrAdultUnknownBuild": "when-an-ordinary-self-or-other-adult-VCF-gVCF-or-coordinate-bearing-source-has-no-trusted-explicit-source-build-do-not-assume-GRCh38-do-not-run-the-embryo-session-challenge-and-do-not-parse-into-canonical-rows; set-only-build_unknown-delete-the-rejected-object-under-the-governing-file-disposition-return-file-processing-v1.buildUnknown-and-direct-the-user-through-a-copy-ID-to-request-or-reupload-data-with-trusted-build-metadata",
@@ -3041,6 +3049,7 @@
   "payloadBoundaryContract": {
     "serverlessMaximumObservedBodyBytes": 4500000,
     "ingestChunkMaximumBytes": 4000000,
+    "ownZipPreflightMaximumBytes": 67108864,
     "embryoIngestSessionLimits": {
       "maximumUncompressedInputBytes": 200000000,
       "maximumChunks": 50,
