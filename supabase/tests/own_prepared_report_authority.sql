@@ -383,6 +383,7 @@ select ok(not has_function_privilege('anon','private.own_report_source_metadata_
  and not has_function_privilege('inherit_upload_only','private.own_report_source_metadata_v1(uuid,uuid,boolean)','EXECUTE'),'metadata helper is closed to client roles');
 select ok(not has_function_privilege('service_role','private.assert_own_report_run_current_v1(uuid,uuid,uuid,text,uuid,jsonb,boolean)','EXECUTE'),'terminal internal assertion is not an issued capability');
 select ok(not has_function_privilege('service_role','private.own_report_members_metadata_current_v1(uuid,uuid,jsonb)','EXECUTE'),'full ready metadata checker grants no direct read capability');
+\ir fixtures/own_prepared_copilot_assertions.inc
 select is((select enabled from private.own_preparation_config where singleton),false,'integration leaves preparation dispatch disabled');
 select * from finish();
 rollback;

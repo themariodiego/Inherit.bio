@@ -2447,3 +2447,36 @@ extractor or legal statement is removed or relaxed.
   changed-file lint and readability passed. The pgTAP additions and the integrated
   upload/report/ancestry/Copilot browser journey remain pending CI. No hosted
   model, database, provider, upload or cleanup measurement was made here.
+
+## Prepared own sources in Copilot · 23 September 2026
+
+- A route regression provides a valid published-source projection to the actual
+  dispatcher and existing raw tool. It failed against the prior route/schema
+  with HTTP 403, before dispatch. The integration returns the exact observed
+  genotype and retains all five tool names, with no prepared SQL fallback.
+- Mixed-source tests preserve cross-locus conflict, reject foreign or prepared
+  IDs from the SQL selector, and discard partial calls on late refusal. One
+  whole-union deadline stops two sequential sources at 30 seconds; a stalled
+  database page is bounded too. Evidence omitted as exact duplicates still
+  consumes the shared record/byte budget, including before the next file starts.
+  Source-unavailable responses require a final full projection check.
+- The existing publication/report fixture adds real Copilot settings, current
+  permission, paired history and completed prepared report/ancestry reads. It
+  asserts unchanged database-source JSON, exact prepared/completed identities,
+  exclusion from both stale SQL selectors, and refusal after source, root,
+  unread member or store-authority changes. File-deletion preparation must
+  freeze the exact message/turn/projection-hash pairs and dependent suffix;
+  ancestry withdrawal must purge its exact pairs while preserving the separate
+  report and prepared source. These are SQL metadata and authority assertions,
+  not evidence of physical provider deletion.
+- The retirement fixture separately checks the gap between original metadata
+  removal and exact acknowledged retirement. Only the latter may preserve the
+  captured prepared projection. Its prior deadline and deletion assertions stay
+  intact. Existing synthetic recipient settings JSON is extracted unchanged
+  into a shared fixture; no endpoint is contacted and no new recipient is added.
+- Local validation: all 1,368 prepared-source/Copilot tests across 50 suites,
+  full TypeScript checking and changed-file lint pass. Type checking reuses
+  existing generated route declarations without running an application build.
+  The new pgTAP assertions and integrated prepared browser journey remain
+  pending CI. No database, provider, inference or hosted activation ran locally;
+  no release acceptance row is changed by these results.

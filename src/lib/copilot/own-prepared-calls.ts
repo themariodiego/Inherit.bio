@@ -69,6 +69,7 @@ function projectCalls(records: CanonicalRecord[], fileId: string): OwnPreparedCo
 export async function readOwnPreparedCopilotCalls(rawActor: { accountId: string; sessionId: string },
   rawSelection: PreparedCopilotSelection, rawRsids: readonly number[], options: {
     checkOperation: (signal: AbortSignal) => Promise<void>; signal?: AbortSignal;
+    consumeEvidence?: (count: number, serializedBytes: number) => void;
   }): Promise<OwnPreparedCopilotCall[]> {
   const deadline = new AbortController(), signal = options.signal ? AbortSignal.any([options.signal, deadline.signal]) : deadline.signal;
   const timer = setTimeout(() => deadline.abort(), 30_000); timer.unref();
@@ -88,9 +89,10 @@ export async function readOwnPreparedCopilotCalls(rawActor: { accountId: string;
       assertPreparedMetadataBounds(rawActor, 512); actor = z.object({ accountId: uuid, sessionId: uuid }).strict().parse(rawActor);
       assertPreparedMetadataBounds(rawSelection, 2048); selection = selectionSchema.parse(rawSelection);
       assertPreparedMetadataBounds(rawRsids, 16384); rsids = z.array(n.positive()).max(50).parse(rawRsids).sort((a, b) => a - b);
-      if (new Set(rsids).size !== rsids.length || typeof options.checkOperation !== "function") throw new Error();
+      if (new Set(rsids).size !== rsids.length || typeof options.checkOperation !== "function"
+        || (options.consumeEvidence !== undefined && typeof options.consumeEvidence !== "function")) throw new Error();
     } catch { throw new PreparedCopilotReadError("invalid_request"); }
-    const read = createOwnPreparedRsidReader(actor), operation = options.checkOperation;
+    const read = createOwnPreparedRsidReader(actor), operation = options.checkOperation, consumeEvidence = options.consumeEvidence;
     const checkOperation = async (current: AbortSignal) => { active(); await wait(operation(current)); active(); };
     let firstSource: OwnPreparedSource | undefined;
     const checkSourceSelection = async (source: OwnPreparedSource) => {
@@ -107,13 +109,19 @@ export async function readOwnPreparedCopilotCalls(rawActor: { accountId: string;
         rsids, cursor }, { checkOperation, checkSourceSelection, signal }));
       await checkSourceSelection(page.source);
       valid(Array.isArray(page.records) && page.records.length <= 1000);
+      let pageBytes = 2, pageRecords = 0;
       for (const raw of page.records) {
         const record = canonicalRecordSchema.parse(raw), rsid = canonicalRecordRsid(record);
         valid(rsid !== null && requested.has(rsid));
-        bytes += Buffer.byteLength(JSON.stringify(record)) + (records.length ? 1 : 0);
+        const recordBytes = Buffer.byteLength(JSON.stringify(record));
+        bytes += recordBytes + (records.length ? 1 : 0);
+        pageBytes += recordBytes + (pageRecords++ ? 1 : 0);
         if (records.length === 10000 || bytes > 2_000_000) throw new PreparedCopilotReadError("too_large");
         records.push(record);
       }
+      // The caller may compose several sources under one stricter budget.
+      // Charge original evidence before exact duplicate variants are omitted.
+      consumeEvidence?.(pageRecords, pageBytes);
       const next: CanonicalRsidCursor | null = page.nextCursor === null ? null : canonicalRsidCursorSchema.parse(page.nextCursor);
       if (next) {
         valid(next.querySha256 === querySha256);

@@ -5,6 +5,7 @@ import { serializePrsCoverage } from '@/lib/genome/prs-output';
 import { isFixtureSlug } from '@/components/reports/library';
 import { reportCatalogSnapshotSchema } from '@/lib/genome/report-catalog-snapshot';
 import { OWN_ANCESTRY_HREF, ownChatAncestrySnapshotSchema, capturedAncestryCitation } from './own-chat-ancestry-content';
+import { preparedReportSourceSchema } from '@/lib/genome/prepared-source/report-call-pages';
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const revision = z.number().int().positive().safe();
 export const ownChatProjectionSchema = z.object({
@@ -12,7 +13,7 @@ export const ownChatProjectionSchema = z.object({
         normalizedAt: z.string(), build: z.enum(['GRCh37', 'GRCh38']), completed: z.array(z.object({
             purpose: z.enum(['reports.monogenic', 'reports.polygenic', 'ancestry']), authority: z.record(z.string(), z.unknown()),
             runId: uuid, completedAt: z.string(), resultHash: hash,
-        }).strict()).max(3),
+        }).strict()).max(3), preparedSource: preparedReportSourceSchema.optional(),
     }).strict()).max(1000),
     legacySources: z.array(z.object({ id: uuid, sha256: hash, build: z.enum(['GRCh37', 'GRCh38']), createdAt: z.string() }).strict()).max(1000),
     unavailableSources: z.array(z.object({ id: uuid, reason: z.literal('source_unavailable') }).strict()).max(1000),

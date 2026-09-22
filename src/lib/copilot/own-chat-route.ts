@@ -17,8 +17,9 @@ import { prepareOwnCopilotProvider } from './own-provider-authority';
 import { checkOwnChat, ownChatRpc, ownChatSubject, ownChatHistorySchema, type OwnChatOperation } from './own-chat';
 import { readOwnChatToken, snapshotHash } from './own-chat-token';
 import { readOwnChatAncestry } from './own-chat-ancestry';
+import { readOwnChatCalls } from './own-chat-calls';
 import { capturedAncestryResult, OWN_ANCESTRY_REPORT, OWN_ANCESTRY_TITLE } from './own-chat-ancestry-content';
-import { ownChatProjectionSchema, ownChatCallSchema, ownChatReportSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
+import { ownChatProjectionSchema, ownChatReportSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
 export const ownChatBodySchema = z.union([
     z.object({ contextToken: z.string().min(16).max(12000), message: z.string().trim().min(1).max(8000) }).strict(),
     z.object({ chatId: z.uuid(), message: z.string().trim().min(1).max(8000) }).strict(),
@@ -93,13 +94,11 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
             await check();
             return rows;
         }
-        const sourceIds = new Set([...projection.sources, ...projection.legacySources].map(s => s.id));
         async function calls(rsids: number[]) {
-            const rows = await pages('calls', ownChatCallSchema, { rsids });
-            if (rows.some(r => !sourceIds.has(r.file_id) || !rsids.includes(r.rsid)))
-                throw new Error('copilot_unavailable');
-            return rows;
+            return readOwnChatCalls(rsids, { authority: provider!.authority, projection, signal: request.signal, check,
+                readDatabasePage: offset => ownChatRpc('calls', provider!.authority, projection, chatId, { rsids, offset }) });
         }
+        const sourceUnavailable = async () => { await check(); return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' }; };
         async function reports() {
             const rows = await pages('reports', ownChatReportSchema);
             if (rows.some(r => r.report.slug === OWN_ANCESTRY_REPORT))
@@ -119,11 +118,13 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
                     if (!n)
                         return { error: 'not a valid rsID' };
                     if (projection.unavailableSources.length)
-                        return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' };
+                        return sourceUnavailable();
                     const { data: reference, error } = await db.from('ref_variants').select('rsid,chrom,pos38,ref,alt,gene_symbol').eq('rsid', n).maybeSingle();
                     if (error)
                         throw new Error('copilot_unavailable');
-                    const result = ownGenotypeResult(n, await calls([n]), reference);
+                    const selected = await calls([n]);
+                    if (selected.state === 'source_unavailable') return sourceUnavailable();
+                    const result = ownGenotypeResult(n, selected.calls, reference);
                     await check();
                     return { ...result, ...rawProvenance() };
                 } }),
@@ -131,11 +132,13 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
                 inputSchema: z.object({ gene: z.string().regex(/^[A-Za-z0-9-]{1,32}$/) }).strict(), execute: async ({ gene }) => {
                     await check();
                     if (projection.unavailableSources.length)
-                        return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' };
+                        return sourceUnavailable();
                     const { data: refs, error } = await db.from('ref_variants').select('rsid,chrom,pos38,ref,alt,gene_symbol').eq('gene_symbol', gene.toUpperCase()).order('rsid').limit(50);
                     if (error)
                         throw new Error('copilot_unavailable');
-                    const rows = refs?.length ? await calls(refs.map(r => r.rsid)) : [];
+                    const selected = refs?.length ? await calls(refs.map(r => r.rsid)) : { state: 'available' as const, calls: [] };
+                    if (selected.state === 'source_unavailable') return sourceUnavailable();
+                    const rows = selected.calls;
                     const result = { gene, variants: (refs ?? []).map(r => ({ ...ownGenotypeResult(r.rsid, rows, r), gene: r.gene_symbol })),
                         note: 'Only known reference positions are searched; this is not a complete gene screen.', ...rawProvenance() };
                     await check();
