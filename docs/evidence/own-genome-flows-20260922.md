@@ -62,7 +62,8 @@ Disabled hosted preparation does not mean small-file synchronous preparation
 is disabled; it means the large-file hosted path has not been activated.
 
 The repository accepts extracted consumer text/CSV and gzip, not ZIP archives.
-This matters because [23andMe distributes raw data in ZIP files](https://customercare.23andme.com/hc/en-us/articles/212196868-Accessing-Your-Raw-Genetic-Data).
+This matters because consumer downloads can arrive as ZIP-wrapped text files
+(23andMe Customer Care, “Accessing Your Raw Genetic Data,” read 22 September 2026).
 ZIP intake remains work to do. BAM/CRAM/FASTQ and BCF are not admitted by the
 current upload contract; raw-read calling is a separate capability, not a file
 extension to add to the picker.
