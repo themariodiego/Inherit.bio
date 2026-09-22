@@ -41,6 +41,13 @@ async function setup(rows = [row(1)], build: "GRCh37" | "GRCh38" = "GRCh38") {
 beforeEach(() => { mocked.read.mockReset(); });
 
 describe("own prepared Copilot adapter (synthetic source reader)", () => {
+  it("charges the shared budget for original duplicate evidence before projecting calls", async () => {
+    const f = await setup([row(1), row(1)]), consumeEvidence = vi.fn();
+    const calls = await readOwnPreparedCopilotCalls(actor, f.selection, [1], { ...f, consumeEvidence });
+    expect(calls).toHaveLength(3); expect(f.records).toHaveLength(4);
+    expect(consumeEvidence).toHaveBeenCalledExactlyOnceWith(4, Buffer.byteLength(JSON.stringify(f.records)));
+  });
+
   it("keeps conflicting loci and observed no-calls while proving each discarded duplicate", async () => {
     const f = await setup([row(1), row(1), row(8).replace("rs8", "rs1"), row(9, "./.").replace("rs9", "rs1")]);
     const calls = await readOwnPreparedCopilotCalls(actor, f.selection, [1], f);

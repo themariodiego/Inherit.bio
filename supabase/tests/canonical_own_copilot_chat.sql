@@ -29,10 +29,10 @@ select public.sign_own_upload_artifact_v1('77900000-0000-4000-8000-000000000001'
  (select body_sha256 from public.consent_artifacts where artifact_key='consent.upload-self' and version=1),
  array['own-adult-dna'],1,1,1,1,1,repeat('b',64));
 
+\ir fixtures/own_copilot_synthetic_settings.inc
 create function pg_temp.save_model(model_name text default 'synthetic-model',class text default 'cloud') returns jsonb language sql as $$
  select public.save_own_copilot_settings_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
- jsonb_build_object('provider','openai_compatible','baseUrl',case when class='local' then 'http://localhost:3103/v1' else 'https://model.synthetic.invalid/v1' end,'model',model_name,
- 'origin',case when class='local' then 'http://localhost:3103' else 'https://model.synthetic.invalid' end,'providerLabel','Synthetic model','providerClass',class,'runtimeAttestationFingerprint',repeat('a',64)),
+ pg_temp.synthetic_copilot_settings(model_name,class),
  null,repeat('b',64),null);
 $$;
 create function pg_temp.authority(expected jsonb default null) returns jsonb language sql as $$

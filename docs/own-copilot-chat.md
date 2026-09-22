@@ -67,11 +67,27 @@ for the same exact recipient. Superseded grants cannot read old history, and
 re-consent queues its existing exact-grant cleanup. Other Copilot scopes retain
 their existing disclosure wording.
 
-This ancestry patch still admits only the database-normalized canonical sources
-already supported by this Copilot projection. Object-prepared sources, including
-their retired-original state and indexed raw-call reads, need the separate
-prepared-source integration. This patch does not establish large-file support
-or a successful hosted journey.
+The projection also admits an own object-prepared source through the existing
+published-source authority. It pins the source revision, original and decoded
+hashes, preparation time, manifest, complete membership digest and root. Every
+registered final member must still be current, including members the raw query
+does not read. Original-object absence is insufficient: only the existing exact
+acknowledged-retirement exception preserves prepared authority. Database-backed
+sources keep their prior JSON shape. Completed report and ancestry journal,
+grant, result-hash and source identifiers remain unchanged for history and purge.
+
+The existing raw tools read prepared rsIDs through the bounded canonical index
+reader. Both SQL raw selectors exclude prepared IDs, even if stale SQL rows
+exist. The dispatcher drains the whole selected union before releasing calls;
+it never falls back when a prepared read fails. One 30-second operation scope
+and one budget of 10,000 evidence records and 2 MB cover all files, counting
+evidence discarded later as proven duplicates. Each page holds at most 1,000
+records and a query at most 50 rsIDs. Empty continuation pages need a strictly
+advancing cursor. Cross-locus conflicts and no-calls survive; selected unmapped
+or unsupported evidence returns explicit source unavailability. Every result,
+including that unavailable state, requires a final whole-projection check.
+No extra tool, permission or raw-file access is added. These repository tests
+do not establish provider performance, physical deletion or a hosted journey.
 
 A canonical chat shell with no surviving messages is not a usable conversation.
 List, history and existing-chat commit refuse it, including after exact retention
