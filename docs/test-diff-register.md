@@ -2234,9 +2234,10 @@ extractor or legal statement is removed or relaxed.
 
 ## Genome viewer lifecycle · 22 September 2026
 
-- Six new standalone Chromium cases cover normal disposal, late initialization
+- Eight new standalone Chromium cases cover normal disposal, late initialization
   after unmount, timeout with late completion, repeated region replacement,
-  prior cancellation and an explicitly rejected creation fixture. The native
+  prior cancellation, late disposal errors and explicit rejected/missing-handle
+  creation fixtures. The native
   cases verify shadow roots, global registry visits and actual keyboard/resize
   callback behavior, including preservation of an unrelated listener/viewer.
 - The installed library supplies real synthetic rendering; its instance

@@ -25,20 +25,31 @@ instance's `keyUpHandler`, without patching global listener or network methods.
 The existing control, scrolling and popover adapters bind the owned host and
 are released before the native viewer. Mount errors release them too.
 
-Six regressions run in standalone Chromium. Five use the installed viewer to
+Eight regressions run in standalone Chromium. Six use the installed viewer to
 check normal disposal, late completion alongside a newer instance, timeout,
-repeated region replacement and cancellation before creation. A separate
-rejected-creation fixture checks removal of the empty host. The tests verify
+repeated region replacement, cancellation before creation and a disposal
+exception after late creation. Separate fixtures cover a rejected creation and
+a missing handle. The tests verify
 registry notifications, document keyboard events, window resize events, shadow
 roots and preservation of unrelated listeners. All data and intercepted
 transport responses are explicitly synthetic.
 
 The 30-second initialization timeout, first-party reference, authenticated
 region reads, controls, upload behavior and safety bounds remain unchanged.
-All 64 focused lifecycle, reference, control, scrolling, popover, viewport,
+All 66 focused lifecycle, reference, control, scrolling, popover, viewport,
 keyboard and copy tests pass; changed-file lint, typecheck and readability pass.
 Full-app CI is still required. This does not implement fresh region queries
 while panning or searching, complete the region pagination/nonce protocol, or
-close G1.13b. A native initialization that rejects after internally registering
-an instance but before returning its handle is not proven by the rejected
-fixture; the public creation API does not expose that partial instance.
+close G1.13b. A [separate native rejection probe](genome-browser-lifecycle-native-rejection-20260922.json)
+confirms an unresolved library boundary.
+A synthetic reference File whose `arrayBuffer` rejects causes creation to fail
+after IGV has registered its instance. The owned DOM host is removed, but
+Chromium's listener inspector still finds document `keyup` and window `resize`
+callbacks at installed source lines 84171 and 84091, where neither existed
+before creation. The module exports no browser registry/list getter and the
+host has no public instance link. Its `genomechange` event occurs only after the
+reference has loaded. Recovering that partial instance needs a library change;
+calling `removeAllBrowsers` would also destroy an unrelated live viewer. This
+failure path therefore remains open. A late disposal exception is observed and
+reported with a fixed message, without leaking the thrown error's contents or
+leaving the fulfilled creation chain with an unhandled rejection.

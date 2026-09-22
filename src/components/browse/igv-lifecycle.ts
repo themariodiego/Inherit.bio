@@ -26,6 +26,7 @@ export function createIgvBrowser(
       removed = true;
       const handler = typeof browser === "object" ? Reflect.get(browser, "keyUpHandler") : undefined;
       try { igv.removeBrowser(browser); }
+      catch { console.error("Genome viewer cleanup failed"); }
       finally {
         // IGV 3.8.5 removeKeyboardHandler adds this exact callback instead of
         // removing it. Remove only this instance's callback after disposal.
@@ -50,7 +51,10 @@ export function createIgvBrowser(
       if (stopped) return;
       return igv.createBrowser(element, config);
     }).then(value => {
-      if (!value) return;
+      if (!value) {
+        if (!stopped) stop(new Error("igv.createBrowser returned no instance"));
+        return;
+      }
       browser = value;
       if (stopped) { remove(); return; }
       clearTimeout(timer);

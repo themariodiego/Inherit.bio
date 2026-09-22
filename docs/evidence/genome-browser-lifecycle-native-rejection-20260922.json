@@ -1,0 +1,58 @@
+{
+  "head": "3a30d921c9eba9afcf526b3ca1cf8effb24b1cdd",
+  "fixture": "standalone installed library; synthetic reference File rejecting arrayBuffer; browser inspection only",
+  "before": {
+    "document": [],
+    "window": []
+  },
+  "result": {
+    "outcome": "synthetic native reference read failure",
+    "remainingHosts": 0,
+    "moduleExports": [
+      "AlertDialog",
+      "TrackUtils",
+      "IGVGraphics",
+      "MenuUtils",
+      "DataRangeDialog",
+      "createTrack",
+      "createBrowser",
+      "removeBrowser",
+      "removeAllBrowsers",
+      "visibilityChange",
+      "setGoogleOauthToken",
+      "setOauthToken",
+      "setCORSProxy",
+      "oauth",
+      "version",
+      "setApiKey",
+      "TrackBase",
+      "registerTrackClass",
+      "registerTrackCreatorFunction",
+      "registerFileFormats",
+      "loadSessionFile",
+      "loadHub",
+      "uncompressSession",
+      "createIcon",
+      "createWebSocketClient"
+    ],
+    "hostOwnKeys": []
+  },
+  "after": {
+    "document": [
+      {
+        "type": "keyup",
+        "sourceLine": 84171
+      }
+    ],
+    "window": [
+      {
+        "type": "resize",
+        "sourceLine": 84091
+      }
+    ]
+  },
+  "observed_at": "2026-09-22T14:34:12.061438+00:00",
+  "installed_igv_version": "3.8.5",
+  "installed_module_sha256": "8a839d02cc3400e6cc35a759bfb03e05c68554f89b47f7d1ec12c4c77673773e",
+  "interpretation": "Native creation rejected before returning an instance. The lifecycle helper removed its host but cannot reach the module-private registered instance. Document and window handlers remain; this path is not fixed."
+}

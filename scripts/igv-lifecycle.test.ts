@@ -11,6 +11,8 @@ async function fixture(run: (page: Page) => Promise<void>) {
   const context = await browser.newContext();
   const page = await context.newPage();
   const external: string[] = [];
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*", route => {
     const url = new URL(route.request().url());
     if (url.origin !== "http://fixture.invalid") { external.push(url.origin); return route.abort(); }
@@ -68,6 +70,7 @@ async function fixture(run: (page: Page) => Promise<void>) {
     await page.waitForFunction(() => Reflect.get(window, "ready") === true);
     await run(page);
     expect(external).toEqual([]);
+    expect(errors).toEqual([]);
   } finally { await context.close(); }
 }
 
@@ -151,4 +154,30 @@ describe("installed genome viewer lifecycle", () => {
       expect(await page.locator("#widget > div").count()).toBe(0);
     });
   });
+
+  it("observes a late disposal error while still removing the instance keyboard callback", async () => {
+    await fixture(async page => {
+      const reports: string[] = [];
+      page.on("console", message => { if (message.type() === "error") reports.push(message.text()); });
+      await page.evaluate(`const remove = window.api.removeBrowser;
+        window.api.removeBrowser = native => { remove(native); throw new Error('synthetic disposal failure'); };
+        window.start('late', true, 25);`);
+      await page.waitForFunction(() => Reflect.get(window, "reads") === 1);
+      expect(await page.evaluate("window.late.result.then(result => result.status)")).toBe("error");
+      await page.evaluate("window.late.release()");
+      await page.waitForFunction("window.records.length === 1 && window.records[0].removed === 1");
+      expect(await page.evaluate("window.observe()")).toEqual([removed]);
+      await expect.poll(() => reports).toEqual(["Genome viewer cleanup failed"]);
+    });
+  });
+
+  it("rejects a missing creation handle without waiting for the timeout", async () => {
+    await fixture(async page => {
+      expect(await page.evaluate(`window.createViewer({ createBrowser: async () => undefined, removeBrowser: () => {} },
+        document.querySelector('#widget'), {}, new AbortController().signal, 5000)
+        .then(() => 'ready', error => error.message)`)).toBe("igv.createBrowser returned no instance");
+      expect(await page.locator("#widget > div").count()).toBe(0);
+    });
+  });
+
 });
