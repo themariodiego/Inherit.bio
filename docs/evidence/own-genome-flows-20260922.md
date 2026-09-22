@@ -81,3 +81,19 @@ adds transport-safe disclosure/refusal without raising safety bounds; the
 768 MiB journey remains skipped for missing preview credentials. Neither small
 synthetic fixtures nor configuration reads prove large-file throughput, memory,
 artifact capacity or deadlines. No size ceiling was raised in this change.
+
+## First full CI result and selector corrections
+
+Run `35714985499` on `dcd3b001daad72d44c3846a5090fbea293aadba3`
+passed 5,366 unit tests, 3,393 database assertions and all 500 existing browser
+tests. All 14 new format journeys failed at two selectors in the new test:
+the My Genome hub and subject bar both offer an Add a file link, and report
+markers store a numeric rsID without the `rs` prefix. The former seven stopped
+at entry; the latter seven reached the report assertion after the exact source
+byte and preparation checks. None of the 14 journeys is claimed as passing.
+
+The correction selects the hub's primary upload link and the actual numeric
+report marker, additionally requiring observed genotype provenance. All file
+byte, type, hash, grant, preparation and A/C result assertions remain. The ZIP
+follow-up expands the suite to 21 cases; browser discovery and 158 targeted
+tests pass locally, but the corrected full CI run remains required.

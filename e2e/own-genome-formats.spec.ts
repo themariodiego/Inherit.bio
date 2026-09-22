@@ -18,7 +18,14 @@ for (const fixture of syntheticOwnUploadFormats) {
       const errors: string[] = [];
       page.on("pageerror", error => errors.push(error.message));
       await page.goto(encoding === "plain" ? "/overview" : "/genome/me");
-      await page.getByRole("link", { name: encoding === "plain" ? "I have a DNA file" : "Add a file", exact: true }).click();
+      if (encoding === "plain") {
+        await page.getByRole("link", { name: "I have a DNA file", exact: true }).click();
+      } else {
+        // The subject bar has a second, outline upload link. Exercise the
+        // hub's primary action while preserving both entry points.
+        await page.getByRole("link", { name: "Add a file", exact: true })
+          .and(page.locator('main [data-variant="default"]')).click();
+      }
       await expect(page).toHaveURL(/\/files\/upload(?:\?|$)/);
       await completeOwnUploadConsent(page, page.url());
 
@@ -64,8 +71,8 @@ for (const fixture of syntheticOwnUploadFormats) {
       await page.getByRole("link", { name: "Open Reports", exact: true }).click();
       await expect(page).toHaveURL(/\/genome\/me\/reports$/);
       await page.goto("/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551");
-      const result = page.locator('[data-variant-result="rs762551"]');
-      await expect(result.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
+      const result = page.locator('[data-variant-result="762551"]');
+      await expect(result.locator('[data-figure-kind="genotype"][data-figure-basis="observed"] [data-slot="figure-value"]')).toHaveText("A/C");
       await expect(result.locator("[data-outcome]")).toHaveCount(0);
       await page.goto("/overview");
       await expect(page.locator('section[aria-labelledby="prepared-reports-title"]')).toHaveCount(0);
