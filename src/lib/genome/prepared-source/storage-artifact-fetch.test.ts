@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPreparedArtifactFetch } from "./storage-artifact-fetch";
 import type { PreparedStoredArtifact } from "./storage-writer";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
+import { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 const bytes = new TextEncoder().encode("synthetic prepared root");
 const sha = (value: Uint8Array) => createHash("sha256").update(value).digest("hex");
@@ -27,6 +28,43 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("authenticated full prepared-artifact transport", () => {
+  it("counts transport only at existing EOF without pulling ahead, and separates post-read authority failure", async () => {
+    const sink = vi.fn(); let time = 0, pulls = 0;
+    const metrics = new PreparationMetrics(sink, { now: () => time, cpu: () => null });
+    const fetch = vi.fn(async () => {
+      time += 3;
+      return new Response(new ReadableStream<Uint8Array>({ pull(controller) {
+        pulls++; time += 5;
+        if (pulls === 1) controller.enqueue(bytes); else controller.close();
+      } }, { highWaterMark: 0 }));
+    });
+    vi.stubGlobal("fetch", fetch); const signal = new AbortController().signal;
+    const transport = await createPreparedArtifactFetch(metrics)(artifact(), signal);
+    expect(pulls).toBe(0); expect(fetch).toHaveBeenCalledOnce();
+    const check = vi.fn(async () => { time += 2; if (check.mock.calls.length === 2) throw new Error("private authority detail"); });
+    await expect(readVerifiedPreparedArtifact(artifact(), { metrics, readArtifact: () => transport, check, signal })).rejects.toMatchObject({ code: "unavailable" });
+    metrics.finish("failed");
+    expect(pulls).toBe(2); expect(check).toHaveBeenCalledTimes(2); expect(fetch).toHaveBeenCalledOnce();
+    const event = sink.mock.calls[0][0];
+    expect(event.phases.claim.operations.provider_get).toEqual({ started: 1, completed: 1, failed: 0, incomplete: 0, completedBytes: bytes.length, wallMs: 15 });
+    expect(event.phases.claim.operations.artifact_read).toEqual({ started: 1, completed: 0, failed: 1, incomplete: 0, completedBytes: 0, wallMs: 14 });
+    expect(JSON.stringify(event)).not.toContain("private authority detail");
+  });
+  it.each(["return", "abort", "late-error"])("keeps %s before EOF out of successful provider byte totals", async mode => {
+    const sink = vi.fn(), metrics = new PreparationMetrics(sink), controller = new AbortController(); let pulls = 0;
+    const cancel = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ pull(stream) {
+      if (++pulls === 1) stream.enqueue(bytes); else stream.error(new Error("private provider detail"));
+    }, cancel }, { highWaterMark: 0 }))));
+    const source = await createPreparedArtifactFetch(metrics)(artifact(), controller.signal), iterator = source[Symbol.asyncIterator]();
+    expect((await iterator.next()).value).toEqual(bytes);
+    if (mode === "return") await iterator.return!();
+    else if (mode === "abort") { controller.abort(); await expect(iterator.next()).rejects.toMatchObject({ code: "aborted" }); }
+    else await expect(iterator.next()).rejects.toMatchObject({ code: "unavailable" });
+    metrics.finish(mode === "abort" ? "aborted" : "failed");
+    expect(sink.mock.calls[0][0].phases.claim.operations.provider_get).toMatchObject({ started: 1, completed: 0, failed: 1, completedBytes: 0 });
+    expect(pulls).toBe(mode === "late-error" ? 2 : 1); if (mode !== "late-error") expect(cancel).toHaveBeenCalledOnce();
+  });
   it("uses trusted authenticated full GET and verifies actual EOF/hash with authority on both sides", async () => {
     const f = streaming([bytes.subarray(0, 4), bytes.subarray(4)], { "content-length": String(bytes.length) });
     const fetch = vi.fn(async () => f.response); vi.stubGlobal("fetch", fetch);

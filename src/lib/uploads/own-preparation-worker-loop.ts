@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "../supabase/admin";
 import { drainPreparedScratch } from "../genome/prepared-source/cleanup-integration";
 import { runNextOwnPreparation } from "./own-preparation-worker";
+import { PreparationMetrics, type PreparationMetricsSink } from "./preparation-metrics";
 
 export type PreparationWorkerEvent = "preparation_prepared" | "preparation_idle" | "preparation_failed"
   | "cleanup_progress" | "cleanup_idle" | "cleanup_failed" | "worker_stopped";
@@ -29,6 +30,7 @@ function idle(signal: AbortSignal): Promise<void> {
 export async function runOwnPreparationWorkerLoop(options: {
   signal: AbortSignal;
   emit: (event: PreparationWorkerEvent) => void;
+  emitMetrics?: PreparationMetricsSink;
   /** Bounded operator --once/test mode; omission keeps polling until signalled. */
   maximumIterations?: number;
 }): Promise<{ status: "stopped" | "limit"; hadFailure: boolean }> {
@@ -42,7 +44,8 @@ export async function runOwnPreparationWorkerLoop(options: {
     // authority independently gate the actual claim; this flag never sets them.
     if (process.env.INHERIT_PREPARED_WGS_ENABLED !== "true") throw new PreparationWorkerLoopError("worker_disabled");
     try {
-      const result = await runNextOwnPreparation({ signal: options.signal });
+      const result = await runNextOwnPreparation({ signal: options.signal,
+        ...(options.emitMetrics ? { metrics: new PreparationMetrics(options.emitMetrics) } : {}) });
       if (options.signal.aborted) break;
       prepared = result.status === "prepared";
       options.emit(prepared ? "preparation_prepared" : "preparation_idle");

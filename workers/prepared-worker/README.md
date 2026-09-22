@@ -140,8 +140,12 @@ expire); the secrets are set as above.
   watches the bill.
 - The Worker's observability is off. The container's own stdout carries only
   the coded outcomes the entry prints (`preparation_idle`,
-  `preparation_failed`, ...); whether Cloudflare keeps container logs is the
-  application-level setting in the dashboard, not set here.
+  `preparation_failed`, ...) with its current command. An operator can add
+  `--metrics` to emit one aggregate event per attempt; the image's command
+  does not opt in. See [optional preparation metrics](../../docs/preparation-phase-metrics.md)
+  for its fixed fields, phase and checkpoint distinction, and failure limits.
+  Whether Cloudflare keeps container logs is the application-level setting in
+  the dashboard, not set here.
 
 ## What this does not prove
 
