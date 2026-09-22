@@ -160,7 +160,7 @@ export const TRACK_NAME = "Your variants";
 export const BROWSER_LOADING = "Loading the genome browser…";
 
 export const BROWSER_FAILED =
-  "The genome browser could not load. Your variants are still listed above.";
+  "The genome browser could not load. Try another search on this page.";
 
 /**
  * The genome browser's keyboard escape, stated on the page because WCAG 2.1
@@ -176,6 +176,19 @@ export const BROWSER_KEYBOARD_ESCAPED = "End of the genome browser.";
 
 export const BROWSER_EMPTY_REGION =
   "Your file has no variants in this region, so the track above is empty. That reflects your file’s coverage, not an error.";
+
+export const TRACK_TEXT_CAPTION = "Calls drawn in this view";
+export const TRACK_LOADED_RANGE_LABEL = "First region";
+export const TRACK_WINDOW_NOTE =
+  "The track holds calls from the loaded range. Moving the view does not load more calls.";
+export const TRACK_TRUNCATED_NOTE =
+  "This range reached the row limit, so more calls may be missing. Use the page search for a smaller range.";
+export const TRACK_OUTSIDE_NOTE =
+  "This view includes positions outside the loaded range. No calls were loaded for those positions.";
+export const TRACK_EMPTY_NOTE = "No variants from this track are in this view.";
+export const TRACK_REMOVED_NOTE = "The track is not here. Search again on this page to load it.";
+export const TRACK_TEXT_FAILED = "The text for this view could not be read. Search again on this page to load it.";
+export const TRACK_TEXT_LOADING = "Reading the current view.";
 
 /**
  * Accessible names attached to the library's unlabelled controls after it
