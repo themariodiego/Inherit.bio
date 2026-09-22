@@ -215,7 +215,7 @@ test("genome track details and image actions work from the keyboard", async ({ p
   expect(await download.failure()).toBeNull();
   await expect(menu).toBeHidden(); await expect(track).toBeFocused();
   await page.keyboard.press("Escape");
-  expect(await widget.evaluate(element => element.shadowRoot?.activeElement === null)).toBe(true);
+  expect(await label.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === null)).toBe(true);
 });
 
 test("genome track settings preserve keyboard focus, apply edits and escape back into the page", async ({ page }) => {
@@ -251,7 +251,7 @@ test("genome track settings preserve keyboard focus, apply edits and escape back
   await page.keyboard.press("Escape");
   await expect(menu).toBeHidden(); await expect(renamedGear).toBeFocused();
   await page.keyboard.press("Escape");
-  expect(await widget.evaluate(element => element.shadowRoot?.activeElement === null)).toBe(true);
+  expect(await renamedGear.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === null)).toBe(true);
   await expect(page.locator('[data-claim-block] table tbody tr')).toContainText("A/C");
 });
 

@@ -2231,3 +2231,18 @@ extractor or legal statement is removed or relaxed.
   Storage, finalization and preparation. A document marker prevents a reload
   from masking the old permanent XHR patch. No existing test is removed or
   weakened; full-app CI remains required.
+
+## Genome viewer lifecycle · 22 September 2026
+
+- Six new standalone Chromium cases cover normal disposal, late initialization
+  after unmount, timeout with late completion, repeated region replacement,
+  prior cancellation and an explicitly rejected creation fixture. The native
+  cases verify shadow roots, global registry visits and actual keyboard/resize
+  callback behavior, including preservation of an unrelated listener/viewer.
+- The installed library supplies real synthetic rendering; its instance
+  callbacks provide observation without global event or network patches.
+  No existing test, timeout or threshold is removed or weakened. Full-app CI
+  remains required; see `docs/evidence/genome-browser-lifecycle-20260922.md`.
+- The two real-app Escape assertions now inspect the focused control's actual
+  shadow root, preserving the requirement that focus has left that tree after
+  Escape when each instance lives in its own child host.
