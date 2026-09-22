@@ -30,3 +30,10 @@ exercise passing ancestry, different decisions, non-ancestor commits, invalid
 object types, replacement objects, missing history and path boundaries. These
 are instrument tests, not signed reviews. There are still no real signed
 jurisdiction decisions in the product; restricted capabilities remain closed.
+
+Brief G5.5(b) explicitly allows zero permitted real jurisdictions to pass the
+structural gate. The gate therefore does not demand a fabricated first review.
+This does not authorize a capability: before a restricted capability is offered,
+the operator must obtain the applicable qualified legal, clinical-genetics and
+safeguarding/ethics reviews. See `docs/release-checklist.md` B2 and
+`docs/evidence/jurisdiction-review-gate-20260922.md` for the current proof.
