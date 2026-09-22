@@ -49,3 +49,29 @@ which still needs a consistent baseline and candidate remeasurement. No gap
 is treated as an exemption.
 The fixed density ceiling and every existing route/test ratchet stay intact.
 The app's complete route sweeps must also pass before G1.13b can close.
+
+## Native navigation and resize correction
+
+CI run 35731972616 on 910cb7868a90e7c2b8eaf03c362c36173a04c16c
+reported 13 first-viewport controls against the unchanged limit of 12.
+493 browser cases passed, one failed and nine serial successors did not run.
+The composed-tree census correctly exposed Select Tracks: the app already sets
+`showMultiSelectButton: false`, but igv 3.8.5 passes that value only to hover
+handling and never applies visibility. The adapter now calls that instance's
+native visibility method when the existing option is false. True and absent
+retain a visible, working selection control. Native tests exercise all three
+settings across desktop/mobile resizing; no control-count exemption is added.
+
+The new native probe also found that the earlier column resize adapter called
+`browser.resize`, which the installed library does not expose. All fourteen
+interaction cases reproduced that page error once uncaught errors were checked.
+The adapter now invokes the same instance-bound resize handler that igv registers
+for window resize. The interaction, scrolling and popover fixtures now fail on
+uncaught page errors and apply the app's navigation configuration.
+
+The corrected resize preserves the genomic start and scale while changing the
+viewport's end. The pointer-popover fixture therefore locates its known synthetic
+marker using the actual reference frame instead of assuming a viewport midpoint.
+It still uses a real pointer click, checks the marker's name in the dialog, audits
+accessibility and exits with Escape. No existing assertion or threshold is removed.
+Full-app CI must verify the updated head; these local checks do not close G1.13b.

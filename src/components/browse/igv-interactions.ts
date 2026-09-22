@@ -14,7 +14,7 @@ export function enhanceIgvInteractions(container: HTMLElement, labels: Record<st
   updateTrackDrag(view: IgvTrackView): void;
   endTrackDrag(): void;
   calculateViewportWidth(columnCount: number): number;
-  resize(): Promise<void>;
+  boundWindowResizeHandler(): Promise<void>;
 }): () => void {
   const root = container.shadowRoot ?? container;
   const abort = new AbortController();
@@ -126,7 +126,7 @@ export function enhanceIgvInteractions(container: HTMLElement, labels: Record<st
   let previousColumnWidth = -1;
   const columnObserver = new ResizeObserver(() => {
     const width = columns.reduce((sum, [selector]) => sum + (root.querySelector(selector)?.getBoundingClientRect().width ?? 0), 0);
-    if (!stopped && width !== previousColumnWidth) { previousColumnWidth = width; void browser.resize(); }
+    if (!stopped && width !== previousColumnWidth) { previousColumnWidth = width; void browser.boundWindowResizeHandler(); }
   });
   for (const [selector] of columns) {
     const column = root.querySelector(selector);

@@ -15,6 +15,7 @@ import { labelIgvControls } from "./igv-accessibility";
 import { enhanceIgvInteractions } from "./igv-interactions";
 import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
 import { enhanceIgvPopovers } from "./igv-popovers";
+import { configureIgvNavigation } from "./igv-navigation";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
@@ -237,6 +238,7 @@ export function GenomeBrowser({
         CREATE_BROWSER_TIMEOUT_MS,
       );
       if (disposed) return;
+      configureIgvNavigation(browserRef as Parameters<typeof configureIgvNavigation>[0]);
       labelIgvControls(el, IGV_CONTROL_LABELS);
       disposeInteractions = enhanceIgvInteractions(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvInteractions>[2]);
       disposeScrolling = enhanceIgvTrackScrolling(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvTrackScrolling>[2]);
