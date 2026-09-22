@@ -6,6 +6,7 @@ import { createOwnPreparationArtifacts } from "./own-preparation-artifacts";
 import { decodePreparedBlock, encodePreparedBlock } from "../genome/prepared-source/codec";
 import type { PreparedRunReceipt } from "../genome/prepared-source/runs";
 import type { PreparedStoredArtifact } from "../genome/prepared-source/storage-writer";
+import { PreparationMetrics, type PreparationMetricsEvent } from "./preparation-metrics";
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const header = "##fileformat=VCFv4.2\n##reference=GRCh38\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS\n";
 const rows = ["15\t74749576\trs762551\tC\tA\t.\tPASS\t.\tGT\t0/1",
@@ -75,6 +76,73 @@ async function sourceContainersFixture(text?: string, eventsPerContainer = 1) {
 }
 
 describe("own preparation bounded pipeline", () => {
+  it("keeps real synthetic pipeline bytes, authority order and checkpoints identical with optional metrics", async () => {
+    const baseline = setup(), measured = setup();
+    Object.assign(measured.options, { jobId: baseline.options.jobId, attemptId: baseline.options.attemptId });
+    measured.options.original.source = structuredClone(baseline.options.original.source);
+    const sink = vi.fn(); let time = 0;
+    measured.options.metrics = new PreparationMetrics(sink, { now: () => time, cpu: () => ({ user: time * 2, system: time }) });
+    function deterministic(f: ReturnType<typeof setup>) {
+      const order: unknown[] = [], id = (sequence: number, prefix: string) => `${prefix}-0000-4000-8000-${String(sequence).padStart(12, "0")}`;
+      f.options.writeArtifact = vi.fn(async ({ descriptor, bytes }) => {
+        order.push(["write", descriptor.sequence]); time += 3;
+        const artifact: PreparedStoredArtifact = { receipt: { version: "own-preparation-artifact-v1", artifactId: id(descriptor.sequence, "11111111"),
+          jobId: f.options.jobId, attemptId: f.options.attemptId, sequence: descriptor.sequence, bucket: "genomes",
+          objectKey: `prepared/${id(descriptor.sequence, "22222222")}`, byteCount: bytes.length, sha256: sha(bytes), writeExpiresAt: "2026-09-09T02:00:00Z" },
+          storageObjectId: id(descriptor.sequence, "33333333") };
+        f.objects.set(artifact.receipt.artifactId, Uint8Array.from(bytes)); f.artifacts.push(artifact); return artifact;
+      });
+      const read = f.options.readArtifact, range = f.options.original.readRange;
+      f.options.readArtifact = vi.fn(async (artifact, signal) => { order.push(["read", artifact.receipt.sequence]); time += 5; return read(artifact, signal); });
+      f.options.original.readRange = vi.fn(async (source, start, end, signal) => { order.push(["source", start, end]); time += 7; return range(source, start, end, signal); });
+      f.options.check = vi.fn(async artifact => { order.push(["authority", artifact?.receipt.sequence ?? null]); time++; });
+      f.options.original.check = vi.fn(async () => { order.push(["source-authority"]); time++; });
+      f.options.checkpoint = vi.fn(async checkpoint => { order.push(["checkpoint", checkpoint.phase]); time++; return structuredClone(checkpoint); });
+      return order;
+    }
+    const baselineOrder = deterministic(baseline), measuredOrder = deterministic(measured);
+    const before = await runOwnPreparationPipeline(baseline.options); time = 0;
+    const after = await runOwnPreparationPipeline(measured.options); measured.options.metrics.finish("prepared");
+    expect(after).toEqual(before); expect(measured.objects).toEqual(baseline.objects); expect(measuredOrder).toEqual(baselineOrder);
+    const event = sink.mock.calls[0][0] as PreparationMetricsEvent, phases = Object.values(event.phases);
+    expect(event).toMatchObject({ activePhase: "publication_preflight", lastCompletedCheckpoint: "publication-preflight", dropped: 0,
+      completedCheckpoints: vi.mocked(measured.options.checkpoint).mock.calls.length });
+    const reads = vi.mocked(measured.options.readArtifact).mock.calls.map(([artifact]) => artifact.receipt.byteCount);
+    expect(phases.reduce((sum, phase) => sum + phase.operations.artifact_read.completed, 0)).toBe(reads.length);
+    expect(phases.reduce((sum, phase) => sum + phase.operations.artifact_read.completedBytes, 0)).toBe(reads.reduce((a, b) => a + b, 0));
+    expect(phases.reduce((sum, phase) => sum + phase.operations.artifact_write.completed, 0)).toBe(measured.artifacts.length);
+    expect(phases.reduce((sum, phase) => sum + phase.operations.artifact_write.completedBytes, 0)).toBe([...measured.objects.values()].reduce((sum, bytes) => sum + bytes.length, 0));
+    expect(event.phases.publication_preflight.operations.artifact_read.completed).toBeGreaterThan(0);
+    expect(event.phases.source_scan.operations.source_get).toMatchObject({ completed: 1, completedBytes: measured.options.original.source.sizeBytes, wallMs: 7 });
+    expect(event.phases.source_runs.operations.source_get.completed).toBe(1);
+    expect(event.phases.rsid_runs.entered).toBe(true); expect(event.phases.publication.entered).toBe(false);
+    for (const privateValue of [baseline.options.jobId, baseline.options.original.source.rawSha256, ...measured.objects.keys()]) expect(JSON.stringify(event)).not.toContain(privateValue);
+  });
+  it.each(["checkpoint", "read", "abort"])("keeps the last acknowledged checkpoint separate from active rsID work after %s failure", async mode => {
+    const f = setup(), sink = vi.fn(), controller = new AbortController();
+    f.options.signal = controller.signal; f.options.original.signal = controller.signal;
+    f.options.metrics = new PreparationMetrics(sink);
+    let materialized = false; const read = f.options.readArtifact;
+    f.options.checkpoint = vi.fn(async checkpoint => {
+      if (checkpoint.phase === "canonical-materialization") {
+        if (mode === "checkpoint") return { ...checkpoint, generation: checkpoint.generation + 1 };
+        materialized = true;
+      }
+      return structuredClone(checkpoint);
+    });
+    f.options.readArtifact = vi.fn(async (artifact, signal) => {
+      if (materialized) { if (mode === "abort") controller.abort(); throw new Error("synthetic private read detail"); }
+      return read(artifact, signal);
+    });
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: mode === "checkpoint" ? "integrity_mismatch" : mode === "abort" ? "aborted" : "unavailable" });
+    f.options.metrics.finish(mode === "abort" ? "aborted" : "failed");
+    const event = sink.mock.calls[0][0] as PreparationMetricsEvent;
+    expect(event.lastCompletedCheckpoint).toBe(mode === "checkpoint" ? "canonical-runs" : "canonical-materialization");
+    expect(event.activePhase).toBe(mode === "checkpoint" ? "canonical_materialization" : "rsid_runs");
+    expect(event.phases[event.activePhase].completed).toBe(false); expect(event.phases.publication_preflight.entered).toBe(false);
+    if (mode !== "checkpoint") expect(event.phases.rsid_runs.operations.artifact_read).toMatchObject({ started: 1, failed: 1, completed: 0, completedBytes: 0 });
+    expect(JSON.stringify(event)).not.toContain("synthetic private read detail");
+  });
   it("uses the detected GRCh38 build when the worker has a configured GRCh37 chain", async () => {
     const f = setup();
     const chainBytes = Buffer.from("chain 1 chr1 1000 + 0 10 chr1 1000 + 899 909 1\n10\n");

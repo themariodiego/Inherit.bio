@@ -6,6 +6,7 @@ import { PREPARED_CONTAINER_MAX_BYTES } from "./containers";
 import { preparedStorageConfig } from "./storage-common";
 
 import { fetchPreparedR2 } from "./r2-transport";
+import type { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const hash = z.string().regex(/^[0-9a-f]{64}$/);
@@ -80,7 +81,7 @@ async function body(response: Response, maximum: number, signal: AbortSignal): P
  * job's freeze/cleanup lifecycle. This function neither deletes an uncertain
  * upload nor claims physical absence, and is not wired to dispatch yet.
  */
-export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchema>) {
+export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchema>, metrics?: PreparationMetrics) {
   let claim: z.infer<typeof claimSchema>, origin: string, key: string;
   try { claim = claimSchema.parse(rawClaim); }
   catch { throw new PreparedStorageWriteError("invalid_request"); }
@@ -102,6 +103,8 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
     const deadline = new AbortController();
     const timer = setTimeout(() => deadline.abort(), 30_000); timer.unref();
     let leaseTimer: ReturnType<typeof setTimeout> | undefined;
+    let measuredPut: ReturnType<PreparationMetrics["operation"]> | undefined;
+    let measuredGet: ReturnType<PreparationMetrics["operation"]> | undefined;
     const signal = external ? AbortSignal.any([external, deadline.signal]) : deadline.signal;
     async function request(path: string, init: RequestInit): Promise<Response> {
       active(signal);
@@ -125,8 +128,12 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
       return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await body(response, 16_384, signal)));
     }
     async function rpc(name: string, args: object): Promise<unknown> {
-      return json(await request(`/rest/v1/rpc/${name}`, { method: "POST",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify(args) }));
+      const measured = metrics?.operation("rpc");
+      try {
+        const result = await json(await request(`/rest/v1/rpc/${name}`, { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify(args) }));
+        measured?.(true); return result;
+      } finally { measured?.(false); }
     }
     try {
       active(signal);
@@ -153,6 +160,7 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
       if (remaining <= 0) throw new PreparedStorageWriteError("unavailable");
       leaseTimer = setTimeout(() => deadline.abort(), Math.min(remaining, 30_000)); leaseTimer.unref();
       let stored: PreparedStoredArtifact;
+      measuredPut = metrics?.operation("provider_put");
       if (receipt.version === "own-preparation-artifact-v2") {
         const uploadResponse = await wait(fetchPreparedR2({ receipt, operation: "put", bytes: owned, signal }), signal);
         if (uploadResponse.status !== 200) { void uploadResponse.body?.cancel(); throw new PreparedStorageWriteError("unavailable"); }
@@ -167,9 +175,11 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
         );
         stored = { receipt, storageObjectId: uploaded.Id };
       }
+      measuredPut?.(true, owned.length);
       z.object({ version: z.literal("own-preparation-claim-v1"),
         jobId: z.literal(claim.jobId), attemptId: z.literal(claim.attemptId) }).passthrough().parse(
         await rpc("check_own_preparation_claim_v1", claimArgs));
+      measuredGet = metrics?.operation("provider_get");
       const response = receipt.version === "own-preparation-artifact-v2"
         ? await wait(fetchPreparedR2({ receipt, stored, operation: "get", signal }), signal)
         : await request(`/storage/v1/object/authenticated/genomes/${receipt.objectKey}`, {
@@ -184,6 +194,7 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
       const observed = await body(response, descriptor.byteCount, signal);
       if (observed.byteLength !== descriptor.byteCount || sha(observed) !== descriptor.sha256)
         throw new PreparedStorageWriteError("integrity_mismatch");
+      measuredGet?.(true, observed.length);
       if ("storageObjectId" in stored) {
         const acknowledged = receiptSchema.parse(await rpc("ack_own_preparation_artifact_v1", {
           ...claimArgs, p_artifact_id: receipt.artifactId, p_storage_object_id: stored.storageObjectId,
@@ -206,6 +217,7 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
       throw new PreparedStorageWriteError("unavailable");
     } finally {
       clearTimeout(timer); if (leaseTimer) clearTimeout(leaseTimer); busy = false;
+      measuredPut?.(false); measuredGet?.(false);
     }
   };
 }

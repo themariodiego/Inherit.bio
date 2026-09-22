@@ -1,5 +1,25 @@
 # Test diff register
 
+## Optional preparation phase metrics · 23 September 2026
+
+New collector tests cover fixed labels, bounded pending state, wall and process
+CPU deltas, bad clocks, saturated counters, late results, frozen snapshots and
+throwing or rejected sinks. Operator option tests keep metrics opt-in and
+reject unknown or duplicate arguments.
+
+The real synthetic pipeline runs with and without the collector and compares
+all result data, stored bytes, authority order and checkpoint order. Separate
+failure cases distinguish an acknowledged canonical checkpoint from active
+rsID work and refuse a changed checkpoint ACK. Worker tests retain original
+results and failures while checking final metrics on idle, success, failure
+and cancellation. Transport tests require unchanged request counts, lazy
+reads, actual EOF, and separate transport and post-read authority outcomes;
+the R2 case uses a synthetic transport and the actual writer and reader.
+
+No existing test, timeout, authority check or capacity bound is removed or
+relaxed. These are local instrumentation tests, not hosted timing or a new
+capacity result. They do not change release acceptance evidence.
+
 ## Buffered merge head selection · 22 September 2026
 
 `merge.test.ts` and `canonical-merge.test.ts` each add an eight-input case that

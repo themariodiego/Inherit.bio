@@ -75,6 +75,7 @@ function nextBlock(runs: PreparationRunHandle[], checkpoint?: OwnPreparationChec
  */
 export async function runOwnPreparationPipeline(options: OwnPreparationPipelineOptions) {
   const signal = options.signal, artifacts = createOwnPreparationArtifacts(options);
+  options.metrics?.enterPhase("setup");
   preparationActive(signal);
   if (options.original.signal !== signal) preparationFail("invalid_state");
   let saved: OwnPreparationCheckpoint | undefined;
@@ -87,7 +88,9 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
       || !isDeepStrictEqual(saved.resume?.scan, checkedScan)) preparationFail("integrity_mismatch");
     await preparationWait(options.check(null, signal), signal);
   }
-  const scan = saved ? ownPreparationScanSchema.parse(saved.sourceScan) : await scanOwnPreparationSource(options.original);
+  if (!saved) options.metrics?.enterPhase("source_scan");
+  const original = { ...options.original, metrics: options.metrics };
+  const scan = saved ? ownPreparationScanSchema.parse(saved.sourceScan) : await scanOwnPreparationSource(original);
   const state: OwnPreparationResumeState = saved ? structuredClone(saved.resume) : {
     scan, parserReceipt: null, canonicalRunsReceipt: null, canonical: null, scanReceipt: null, rsid: null,
     sourceRuns: [], canonicalRuns: [], rsidRuns: [],
@@ -104,6 +107,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     preparationJson(ack);
     if (!isDeepStrictEqual(expected, ack)) preparationFail("integrity_mismatch");
     checkpointGenerations.set(phase, generation);
+    options.metrics?.checkpointCompleted(phase);
   }
   if (!saved) await checkpoint("source-scan", scan);
   const source = preparedSourceBindingSchema.parse({ fileId: scan.source.fileId, subjectId: scan.source.subjectId,
@@ -117,7 +121,8 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
       if (!isDeepStrictEqual(r.source, source)) preparationFail("integrity_mismatch"); return r; }, count: r => r.eventCount,
   });
   if (!state.parserReceipt) {
-    state.parserReceipt = await createPreparedRuns(streamVcf(readOwnPreparationLines(options.original, scan)), { source, signal, sink: sourceStore.sink });
+    options.metrics?.enterPhase("source_runs");
+    state.parserReceipt = await createPreparedRuns(streamVcf(readOwnPreparationLines(original, scan)), { source, signal, sink: sourceStore.sink });
     state.sourceRuns = sourceStore.handles;
     await checkpoint("source-runs", state.parserReceipt, [], state.sourceRuns);
   }
@@ -183,6 +188,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     }
     return current;
   }
+  if (!state.canonicalRunsReceipt) options.metrics?.enterPhase("source_merge");
   const sourceRuns = state.canonicalRunsReceipt ? state.sourceRuns : await reduce<PreparedBlockDescriptor, PreparedRunReceipt, PreparedEvent, PreparedMergeSummary>({ phase: "source-merge", store: sourceStore, terminal: parserReceipt, initial: state.sourceRuns,
     merge: (runs, readBlock) => mergePreparedRuns(runs, { source, readBlock, signal }),
     isSummary: (value): value is PreparedMergeSummary => value.type === "merge-summary",
@@ -198,6 +204,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
       if (!isDeepStrictEqual(r.binding, binding)) preparationFail("integrity_mismatch"); return r; }, count: r => r.recordCount,
   });
   if (!state.canonicalRunsReceipt) {
+    options.metrics?.enterPhase("canonical_runs");
     if (!sourceReader) preparationFail("integrity_mismatch");
     // Expectations come from the verified parser receipt and immutable run graph,
     // not a second read of every source block. They prove no merge completeness:
@@ -224,6 +231,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     await checkpoint("canonical-runs", state.canonicalRunsReceipt, [], state.canonicalRuns);
   }
   const canonicalRunsReceipt = state.canonicalRunsReceipt;
+  if (!state.canonical) options.metrics?.enterPhase("canonical_merge");
   const canonicalRuns = state.canonical ? state.canonicalRuns : await reduce<CanonicalBlockDescriptor, CanonicalRunReceipt, CanonicalRecord, CanonicalMergeSummary>({ phase: "canonical-merge", store: canonicalStore, terminal: canonicalRunsReceipt, initial: state.canonicalRuns,
     merge: (runs, readBlock) => mergeCanonicalRuns(runs, { binding, readBlock, signal }),
     isSummary: (value): value is Exclude<typeof value, CanonicalRecord> => value.type === "canonical-merge-summary",
@@ -233,6 +241,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
   });
   state.canonicalRuns = canonicalRuns;
   if (!state.canonical) {
+  options.metrics?.enterPhase("canonical_materialization");
   const canonicalReader = await canonicalStore.reader(canonicalRuns);
   state.canonical = await materializeCanonicalMerge(mergeCanonicalRuns(canonicalReader.runs, { binding, readBlock: canonicalReader.readBlock, signal }), {
     binding, canonicalSummary: canonicalRunsReceipt.canonicalSummary, jobId: options.jobId, attemptId: options.attemptId,
@@ -263,12 +272,14 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
       if (!isDeepStrictEqual(r.binding, binding)) preparationFail("integrity_mismatch"); return r; }, count: r => r.pointerCount,
   });
   if (!state.scanReceipt) {
+    options.metrics?.enterPhase("rsid_runs");
     state.scanReceipt = await createCanonicalRsidRuns(canonicalBlocks(), { binding, signal, sink: rsidStore.sink });
     state.rsidRuns = rsidStore.handles;
     await checkpoint("rsid-runs", { scanReceipt: state.scanReceipt, canonical }, [], state.rsidRuns);
   }
   const scanReceipt = state.scanReceipt;
   if (scanReceipt.canonicalBlockCount !== canonical.blockCount || scanReceipt.canonicalRecordCount !== canonical.recordCount) preparationFail("integrity_mismatch");
+  if (!state.rsid) options.metrics?.enterPhase("rsid_merge");
   const rsidRuns = state.rsid ? state.rsidRuns : await reduce<CanonicalRsidBlockDescriptor, CanonicalRsidRunReceipt, CanonicalRsidPointer, CanonicalRsidMergeSummary>({ phase: "rsid-merge", store: rsidStore, terminal: scanReceipt, initial: state.rsidRuns,
     merge: (runs, readBlock) => mergeCanonicalRsidRuns(runs, { binding, readBlock, signal }),
     isSummary: (value): value is Exclude<typeof value, CanonicalRsidPointer> => "type" in value,
@@ -277,6 +288,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     summaryCount: s => s.pointerCount,
   });
   state.rsidRuns = rsidRuns;
+  if (!state.rsid) options.metrics?.enterPhase("rsid_materialization");
   const rsidReader = !state.rsid && rsidRuns.length ? await rsidStore.reader(rsidRuns) : null;
   const firstRsidArtifactSequence = state.rsid?.firstArtifactSequence ?? artifacts.nextSequence;
   const rsid = state.rsid ?? await materializeCanonicalRsidMerge(rsidReader ? mergeCanonicalRsidRuns(rsidReader.runs, {
@@ -285,9 +297,10 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     canonicalRecordCount: canonical.recordCount, jobId: options.jobId, attemptId: options.attemptId,
     firstArtifactSequence: firstRsidArtifactSequence, writeArtifact: artifacts.write, signal });
   state.rsid = rsid;
+  options.metrics?.enterPhase("publication_preflight");
   const publication = await prepareGenomePublication({ canonical, rsid,
     expected: { binding, jobId: options.jobId, attemptId: options.attemptId, firstRsidArtifactSequence } }, {
-    readArtifact: options.readArtifact, check: options.check, writeArtifact: artifacts.write, signal,
+    readArtifact: options.readArtifact, check: options.check, writeArtifact: artifacts.write, signal, metrics: options.metrics,
   });
   await checkpoint("publication-preflight", publication);
   const finalIds = new Set(publication.members.map(m => m.receipt.artifactId));

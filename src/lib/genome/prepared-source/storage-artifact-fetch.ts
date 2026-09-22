@@ -3,6 +3,7 @@ import { preparedStoredArtifactSchema } from "./artifact-identity";
 import "server-only";
 import { preparedStorageConfig } from "./storage-common";
 import { type PreparedStoredArtifact } from "./storage-writer";
+import type { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 export class PreparedArtifactFetchError extends Error {
   constructor(readonly code: "invalid_artifact" | "integrity_mismatch" | "unavailable" | "aborted") {
@@ -32,7 +33,7 @@ function preflight(value: unknown, depth = 0): void {
  * readVerifiedPreparedArtifact for actual length/hash/EOF and current authority.
  * The receipt's historical write lease is not a present read authorization.
  * One request, one iterator, no buffering, redirects, cache, or retries. */
-export function createPreparedArtifactFetch():
+export function createPreparedArtifactFetch(metrics?: PreparationMetrics):
   (artifact: PreparedStoredArtifact, signal: AbortSignal) => Promise<AsyncIterable<Uint8Array>> {
   let config: ReturnType<typeof preparedStorageConfig>;
   try { config = preparedStorageConfig(); }
@@ -42,6 +43,7 @@ export function createPreparedArtifactFetch():
     const signal = AbortSignal.any([external, controller.signal]);
     let response: Response | undefined, reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
     let closed = false, ended = false, reading = false, acquired = false;
+    let measured: ReturnType<PreparationMetrics["operation"]> | undefined, transferredBytes = 0;
     const active = () => { if (signal.aborted) throw new PreparedArtifactFetchError("aborted"); };
     function close() {
       if (closed) return; closed = true;
@@ -55,6 +57,7 @@ export function createPreparedArtifactFetch():
         } else if (response) void response.body?.cancel().catch(() => {});
       } catch { /* Preserve the original error. */ }
       controller.abort();
+      measured?.(false);
     }
     signal.addEventListener("abort", close, { once: true });
     async function wait<T>(pending: Promise<T>): Promise<T> {
@@ -76,6 +79,7 @@ export function createPreparedArtifactFetch():
       const parsed = schema.safeParse(rawArtifact);
       if (!parsed.success) throw new PreparedArtifactFetchError("invalid_artifact");
       const artifact = parsed.data;
+      measured = metrics?.operation("provider_get");
       const pending = artifact.receipt.version === "own-preparation-artifact-v2"
         ? fetchPreparedR2({ receipt: artifact.receipt, stored: artifact, operation: "get", signal })
         : fetch(`${config.origin}/storage/v1/object/authenticated/genomes/${artifact.receipt.objectKey}`, {
@@ -107,8 +111,9 @@ export function createPreparedArtifactFetch():
             if (reading) throw new PreparedArtifactFetchError("unavailable");
             reading = true;
             const next = await wait(reader!.read());
-            if (next.done) { ended = true; close(); return { done: true, value: undefined }; }
+            if (next.done) { ended = true; measured?.(true, transferredBytes); close(); return { done: true, value: undefined }; }
             if (!(next.value instanceof Uint8Array)) throw new PreparedArtifactFetchError("integrity_mismatch");
+            transferredBytes += next.value.byteLength;
             return { done: false, value: next.value };
           } catch (error) { const safe = failure(error); close(); throw safe; }
           finally { reading = false; }

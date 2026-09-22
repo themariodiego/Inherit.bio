@@ -4,11 +4,21 @@ vi.mock("./own-preparation-worker", () => ({ runNextOwnPreparation: m.prepare })
 vi.mock("../supabase/admin", () => ({ createAdminClient: m.admin }));
 vi.mock("../genome/prepared-source/cleanup-integration", () => ({ drainPreparedScratch: m.cleanup }));
 import { runOwnPreparationWorkerLoop } from "./own-preparation-worker-loop";
+import { PreparationMetrics } from "./preparation-metrics";
 beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("INHERIT_PREPARED_WGS_ENABLED", "true");
   m.prepare.mockResolvedValue({ status: "idle" }); m.cleanup.mockResolvedValue({ processed: 0, failed: 0, stop: "idle" }); m.admin.mockReturnValue({}); });
 afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 const args = () => ({ signal: new AbortController().signal, emit: vi.fn(), maximumIterations: 1 });
 describe("operator preparation worker loop", () => {
+  it("passes no metrics by default, creates a fresh optional collector for each claim", async () => {
+    const o = args(); await runOwnPreparationWorkerLoop(o);
+    expect(m.prepare).toHaveBeenCalledWith({ signal: o.signal }); m.prepare.mockClear();
+    const emitMetrics = vi.fn(); m.prepare.mockResolvedValue({ status: "prepared" });
+    await runOwnPreparationWorkerLoop({ ...o, maximumIterations: 2, emitMetrics });
+    const first = m.prepare.mock.calls[0][0].metrics, second = m.prepare.mock.calls[1][0].metrics;
+    expect(first).toBeInstanceOf(PreparationMetrics); expect(second).toBeInstanceOf(PreparationMetrics); expect(first).not.toBe(second);
+    first.finish("prepared"); second.finish("idle"); expect(emitMetrics.mock.calls.map(([event]) => event.outcome)).toEqual(["prepared", "idle"]);
+  });
   it.each([undefined, "false", "TRUE", "1"])("refuses disabled flag %s before queue/service work", async flag => {
     vi.stubEnv("INHERIT_PREPARED_WGS_ENABLED", flag);
     await expect(runOwnPreparationWorkerLoop(args())).rejects.toMatchObject({ code: "worker_disabled" });

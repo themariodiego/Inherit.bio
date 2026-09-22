@@ -6,6 +6,7 @@ import { validateCanonicalRsidMaterialization, verifyCanonicalRsidMaterializatio
 import { verifyCanonicalMaterialization } from "./verify-canonical-materialization";
 import { type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
 import type { CanonicalBinding } from "./canonical-schema";
+import type { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 export type PreparedPublicationSummary = { version: "own-prepared-summary-v1"; sourceBuild: "GRCh37" | "GRCh38";
   parserRevision: string; canonicalRevision: "prepared-canonical-v1"; sourceVariantCount: number; sourceObservedCount: number;
@@ -46,6 +47,7 @@ export async function prepareGenomePublication(input: { canonical: unknown; rsid
   writeArtifact: (input: { descriptor: PreparedArtifactDescriptor; bytes: Uint8Array }, signal?: AbortSignal) => Promise<PreparedStoredArtifact>;
   check: (artifact: PreparedStoredArtifact | null, signal: AbortSignal) => Promise<void>;
   signal?: AbortSignal;
+  metrics?: PreparationMetrics;
 }) {
   const controller = new AbortController(), signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal;
   const timer = setTimeout(() => controller.abort(), 300_000); timer.unref();
@@ -75,10 +77,10 @@ export async function prepareGenomePublication(input: { canonical: unknown; rsid
       active(); await wait(options.check(artifact ? structuredClone(artifact) : null, current)); active();
     }
     const verifiedCanonical = await verifyCanonicalMaterialization(canonical, expected, {
-      signal, readArtifact: options.readArtifact, check: (_root, artifact, current) => check(artifact, current),
+      signal, readArtifact: options.readArtifact, check: (_root, artifact, current) => check(artifact, current), metrics: options.metrics,
     });
     const verifiedRsid = await verifyCanonicalRsidMaterialization(rsid, rsidExpected, {
-      signal, readArtifact: options.readArtifact, check: (_root, artifact, current) => check(artifact, current),
+      signal, readArtifact: options.readArtifact, check: (_root, artifact, current) => check(artifact, current), metrics: options.metrics,
     });
     active();
     const members: PreparedStoredArtifact[] = [], identities = new Set<string>();

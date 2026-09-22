@@ -10,6 +10,7 @@ import { validateCanonicalRsidContainerDescriptor, verifyCanonicalRsidContainerB
 import type { CanonicalRsidMaterializationReceipt } from "./materialize-canonical-rsid";
 import { type PreparedStoredArtifact } from "./storage-writer";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
+import type { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 const n = z.number().int().nonnegative().safe(), uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const stored = preparedStoredArtifactSchema;
@@ -108,6 +109,7 @@ export async function verifyCanonicalRsidMaterialization(raw: unknown, expected:
   readArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => AsyncIterable<Uint8Array> | Promise<AsyncIterable<Uint8Array>>;
   check: (manifest: CanonicalRsidMaterializationReceipt, artifact: PreparedStoredArtifact | null, signal: AbortSignal) => Promise<void>;
   signal?: AbortSignal;
+  metrics?: PreparationMetrics;
 }) {
   const controller = new AbortController(), signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal;
   const timer = setTimeout(() => controller.abort(), 300_000); timer.unref();
@@ -130,6 +132,7 @@ export async function verifyCanonicalRsidMaterialization(raw: unknown, expected:
     const append = (artifact: PreparedStoredArtifact) => { member(artifact, root); addIdentity(identities, artifact); artifacts.push(artifact); valid(artifacts.length <= 4096); };
     for (const ref of root.directories) append(ref.artifact);
     const read = (artifact: PreparedStoredArtifact) => readVerifiedPreparedArtifact(artifact, {
+      metrics: options.metrics,
       readArtifact: options.readArtifact, check: (selected, current) => check(selected, current), signal,
     });
     await check(null);
