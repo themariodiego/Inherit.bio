@@ -427,5 +427,31 @@
       "Vercel"
     ],
     "interpretation": "This is only the provisioned container compute, memory and disk ceiling for one hour, not a total test cost or account bill. Existing monthly included usage may reduce it."
+  },
+  "cleanupDeadlineObservation": {
+    "method": "Read-only aggregate SQL on the existing isolated preview after the unchanged cleanup deadline. No cleanup invocation, worker restart, deployment, provider write or R2 reconciliation.",
+    "project": "iofjhrtcyawjjhuxbgfd",
+    "outcome": "not_complete_at_immutable_cleanup_deadline",
+    "observation": {
+      "observed_at": "2026-09-22 15:02:23.265684+00",
+      "id": "a56c3ee5-f30d-4517-95dd-fad012004434",
+      "job_id": "073724a4-a81e-4bc9-83d5-7cff376691e8",
+      "state": "pending",
+      "mode": "unpublished-scratch",
+      "attempts": 12,
+      "entry_count": 2065,
+      "created_at": "2026-09-22 14:06:08.874598+00",
+      "cleanup_deadline": "2026-09-22 15:01:56.889531+00",
+      "completed_at": null,
+      "acknowledged_entries": 192,
+      "first_acknowledged_at": "2026-09-22 14:06:09.438642+00",
+      "last_acknowledged_at": "2026-09-22 15:01:59.001902+00"
+    },
+    "limitations": [
+      "Database acknowledgment counts are not the owner-reserved final R2 reconciliation.",
+      "The original unchanged deployed worker still drains one bounded page per scheduled wake. Draft PR196 has not been deployed.",
+      "This observation does not state a later completion time or prove all remaining provider payloads are present.",
+      "No retention, claim, artifact, upload or preparation bound was changed."
+    ]
   }
 }

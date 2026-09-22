@@ -43,6 +43,15 @@ these are not measurements of current draft PR deployments. Memory collection,
 final R2 reconciliation, teardown and production activation remain owner actions.
 The proposed next steps are in `docs/large-file-upload-proposal.md`.
 
+The same attempt also missed its fixed cleanup deadline. At 15:02:23.265684 UTC,
+read-only preview SQL still showed cleanup pending, with 192 of 2,065 entries
+acknowledged over 12 claims. The deadline was 15:01:56.889531 UTC. The full gzip
+receipt preserves this later observation alongside the earlier snapshots.
+The deployed worker was unchanged; draft PR #196's serial cleanup drain had
+not been deployed. This is a database observation, not final R2 reconciliation
+or a later completion time. No cleanup was forced and no bound was changed.
+
+
 ## How this folder reached main · 21 September 2026
 
 This evidence was produced on branch `claude/hosted-proof-20260919` (pull
