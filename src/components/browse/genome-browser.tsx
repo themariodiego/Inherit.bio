@@ -11,6 +11,7 @@ import {
   TRACK_NAME,
 } from "@/copy/genome/data";
 import { chromToName } from "@/lib/genome/types";
+import { labelIgvControls } from "./igv-accessibility";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
@@ -99,89 +100,6 @@ function installFirstPartyXhrGuard() {
 }
 
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
-
-/**
- * Every root igv's markup can be in: the container it was handed, and any
- * shadow root it opened underneath.
- *
- * igv 3.8.5 renders its navbar into a shadow root, and `querySelector` does
- * not cross that boundary, so labelling the container alone silently matched
- * nothing — the zoom slider reached the page as a bare `<input type="range">`
- * and `e2e/a11y.spec.ts` caught it as the one violation on the variant
- * browser once that sweep covered the registered authenticated pages.
- */
-function igvRoots(container: HTMLElement): ParentNode[] {
-  const roots: ParentNode[] = [container];
-  for (const element of [container, ...container.querySelectorAll<HTMLElement>("*")]) {
-    if (element.shadowRoot) roots.push(element.shadowRoot);
-  }
-  return roots;
-}
-
-/**
- * igv.js (3.8.5) ships its navbar controls unlabeled: a bare <select> of
- * chromosomes, an unnamed zoom slider, and icon-only <div>s acting as
- * buttons. After createBrowser resolves we post-process the DOM igv built
- * and attach accessible names (and button roles where a plain div is
- * click-handled). Selectors follow the classnames in
- * node_modules/igv/dist/igv.esm.js — ChromosomeSelectWidget, ZoomWidget,
- * ResponsiveNavbar. Everything is best-effort inside try/catch: an igv
- * upgrade that renames a class must degrade to the old unlabeled state,
- * never crash the page.
- */
-function labelIgvControls(container: HTMLElement) {
-  try {
-    const roots = igvRoots(container);
-    const find = (selector: string): Element | null => {
-      for (const root of roots) {
-        const found = root.querySelector(selector);
-        if (found) return found;
-      }
-      return null;
-    };
-    const findAll = (selector: string): Element[] =>
-      roots.flatMap((root) => [...root.querySelectorAll(selector)]);
-    const label = (el: Element | null, name: string, asButton = false) => {
-      if (!el || el.hasAttribute("aria-label")) return;
-      el.setAttribute("aria-label", name);
-      if (asButton && !el.hasAttribute("role")) {
-        el.setAttribute("role", "button");
-      }
-    };
-
-    // Chromosome picker: a bare 26-option <select> with no name. Hidden by
-    // the config below, but named in case a config change shows it again.
-    label(
-      find(".igv-chromosome-select-widget-container select"),
-      IGV_CONTROL_LABELS.chromosome,
-    );
-
-    // Locus search box (placeholder-only otherwise) and its icon "button".
-    label(find("input.igv-search-input"), IGV_CONTROL_LABELS.locusSearch);
-    label(find(".igv-search-icon-container"), IGV_CONTROL_LABELS.locusSubmit, true);
-
-    // Zoom widget: [zoom-out div] [slider] [zoom-in div], per ZoomWidget's
-    // construction order in the igv dist.
-    const zoom = find(".igv-zoom-widget");
-    if (zoom) {
-      label(zoom.querySelector("input[type='range']"), IGV_CONTROL_LABELS.zoomSlider);
-      label(zoom.firstElementChild, IGV_CONTROL_LABELS.zoomOut, true);
-      label(zoom.lastElementChild, IGV_CONTROL_LABELS.zoomIn, true);
-    }
-
-    // Navbar toggle buttons (cursor guide, center line, track labels, …)
-    // are divs carrying only a title tooltip; promote it to a real name.
-    for (const btn of findAll(".igv-navbar-text-button, .igv-navbar-icon-button")) {
-      const title = btn.getAttribute("title");
-      if (title) label(btn, title, true);
-    }
-
-    // The igv logo is decorative.
-    find(".igv-logo")?.setAttribute("aria-hidden", "true");
-  } catch {
-    // Labeling is progressive enhancement over igv internals — never fatal.
-  }
-}
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -312,7 +230,7 @@ export function GenomeBrowser({
         igv.createBrowser(el, config),
         CREATE_BROWSER_TIMEOUT_MS,
       );
-      labelIgvControls(el);
+      labelIgvControls(el, IGV_CONTROL_LABELS);
       return variants.length;
     }
 
@@ -338,12 +256,8 @@ export function GenomeBrowser({
   /**
    * The keyboard escape WCAG 2.1 SC 2.1.2 asks for.
    *
-   * Tab past this browser's last control does not hand focus out of the
-   * region — it returns to a stop already visited. Everything holding focus
-   * in there is built by igv.js 3.8.5, shadow root included, so the tab order
-   * is not ours to rewrite without owning the widget. SC 2.1.2 is met by the
-   * second half of its own wording instead: focus can be moved away using
-   * only the keyboard, and the reader is told which key does it
+   * A forward exit independent of the number of controls inside the widget.
+   * The reader is told which key does it
    * (BROWSER_KEYBOARD_ESCAPE, rendered above the region and referenced by it
    * through aria-describedby, so it is announced on entry rather than only
    * read by someone who happened to look).

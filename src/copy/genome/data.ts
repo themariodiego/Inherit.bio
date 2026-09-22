@@ -165,10 +165,8 @@ export const BROWSER_FAILED =
 /**
  * The genome browser's keyboard escape, stated on the page because WCAG 2.1
  * SC 2.1.2 requires the method to be stated whenever it is not an unmodified
- * arrow or Tab key. It is not: Tab past the browser's last control returns
- * inside it, and the focus order in there belongs to igv.js, not to us.
- * Escape is the key we bind on our own container, so the criterion is met by
- * the second half of its own wording rather than by silence.
+ * arrow or Tab key. Escape is an additional forward exit from the widget;
+ * the full browser sweep verifies both normal Tab order and this promise.
  */
 export const BROWSER_KEYBOARD_ESCAPE =
   "Keyboard: press Escape to move focus out of the genome browser.";

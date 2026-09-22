@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { escapeLeavesTheTrap, installKeyboardAudit, tabThrough } from "../e2e/keyboard-traversal";
+import { labelIgvControls } from "../src/components/browse/igv-accessibility";
+import { IGV_CONTROL_LABELS } from "../src/copy/genome/data";
 
 let browser: Browser;
 beforeAll(async () => { browser = await chromium.launch(); });
@@ -109,8 +111,8 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
     });
   });
 
-  it.each([800, 1200])("traverses the installed genome widget at %i px and exits normally", async width => {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  it.each([320, 800, 1200])("traverses the installed genome widget at %i px and exits normally", async width => {
+    const page = await browser.newPage({ viewport: { width: width === 320 ? 390 : 1280, height: 844 } });
     await page.route("**/*", route => {
       const url = new URL(route.request().url());
       if (url.origin !== "http://fixture.invalid") return route.abort();
@@ -139,6 +141,37 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
       await page.evaluate(installKeyboardAudit);
       expect(await tabThrough(page)).toMatchObject({ stops: width === 1200 ? 4 : 3,
         expected: width === 1200 ? 4 : 3, exit: "left-document", violations: [], unreached: [] });
+      const search = page.locator("input.igv-search-input");
+      expect((await search.boundingBox())!.height).toBeLessThan(44);
+      // Evaluate the actual self-contained adapter in Chromium's DOM.
+      await page.evaluate(`(${labelIgvControls.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)})`);
+      // An effect can enhance the same subtree again; one key still means one action.
+      await page.evaluate(`(${labelIgvControls.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)})`);
+      const controls = page.locator('#widget input, #widget [role="button"]');
+      for (const control of await controls.all()) {
+        if (!await control.isVisible()) continue;
+        const box = await control.boundingBox();
+        expect(box!.width).toBeGreaterThanOrEqual(44);
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+      }
+      const accessible = await tabThrough(page);
+      expect(accessible).toMatchObject({ exit: "left-document", violations: [], unreached: [] });
+      expect(accessible.stops).toBe(accessible.expected);
+      const stops = await page.evaluate(() => window.__keyboardAudit!.tab.names);
+      expect(stops).toContain('div "Go to position"');
+      if (width === 1200) {
+        for (const name of ["Zoom out", "Zoom level", "Zoom in"]) {
+          expect(stops.some(stop => stop.endsWith(`"${name}"`))).toBe(true);
+        }
+      }
+      const go = page.getByRole("button", { name: IGV_CONTROL_LABELS.locusSubmit, exact: true });
+      await go.evaluate(element => element.addEventListener("click", () => {
+        element.setAttribute("data-activated", String(Number(element.getAttribute("data-activated") ?? 0) + 1));
+      }));
+      await go.focus();
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Space");
+      expect(await go.getAttribute("data-activated")).toBe("2");
     } finally { await page.close(); }
   });
 });

@@ -1234,7 +1234,9 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         const undersized: { component: string; element: string; width: number; height: number }[] = [];
         const round = (value: number) => Math.round(value * 10) / 10;
         let counted = 0;
-        for (const element of document.querySelectorAll(probe.interactive)) {
+        const keyboard = window.__keyboardAudit;
+        if (!keyboard) throw new Error("composed DOM probe not installed");
+        for (const element of keyboard.elements().filter(element => element.matches(probe.interactive))) {
           if (!probe.rendered(element)) continue;
           // An inactive control accepts no pointer action, so it is not a
           // target; it becomes one when it is enabled, in the state a test
