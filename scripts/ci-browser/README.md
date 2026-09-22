@@ -11,9 +11,17 @@ provider on the container's own loopback (`127.0.0.1:8127`), and only
 attestation admits that origin and no other, and the container's own
 environment still reads local mode as off.
 
+The fifth CI variant, on port 3104, enables the preparation gate only for
+`e2e/own-prepared-genome-journey.spec.ts`. Its guarded setup temporarily enables
+the existing local database preparation configuration without changing any
+limit, runs one fixed bounded worker and restores the captured configuration.
+It refuses an unrelated queue or uncertain outcome. The complete boundary and
+remaining evidence limits are recorded in
+[`own-prepared-genome-journey.md`](../../docs/evidence/own-prepared-genome-journey.md).
+
 The production build runs after the workflow exports the actual local public
 Supabase configuration. `record-build` binds that build to the unchanged source
-revision, public configuration hash, and Node major version. All four Next
+revision, public configuration hash, and Node major version. All five CI Next
 variants use the same build. The image is constructed without app credentials;
 the runtime uses its resolved image ID and the Linux dependencies already
 installed in this job. It does not copy Mac dependencies or download a browser
@@ -46,7 +54,7 @@ This is proof of the real policy and TLS transport using a synthetic endpoint;
 it is not a call to an external model service.
 
 The reviewed daemon and all 64 output fixtures are reused without changes.
-Only host-loopback control port 8130 and the three app ports are published.
+Only host-loopback control port 8130 and the five fixed app ports are published.
 Playwright waits for each actual sign-in HTTP response, because a published
 Docker TCP socket alone does not prove Next is running.
 Daemon environment has no app credentials. App configuration travels over its

@@ -2504,3 +2504,23 @@ extractor or legal statement is removed or relaxed.
   The new pgTAP assertions and integrated prepared browser journey remain
   pending CI. No database, provider, inference or hosted activation ran locally;
   no release acceptance row is changed by these results.
+
+
+## Complete prepared-source browser journey · 23 September 2026
+
+- Added the actual prepared-object journey and the guarded CI-only fifth app
+  described in [its evidence record](evidence/own-prepared-genome-journey.md).
+  The fixture uploads a tiny synthetic source, requires a queued job and actual
+  worker publication, and verifies zero database-normalization fallback before
+  reading reports, ancestry and the raw genotype through Copilot. Withdrawal
+  and selected-file deletion use the existing product paths and exact source.
+- Configuration tests preserve all earlier local variants and require the new
+  case in qualified CI. Fixed command, isolated runtime identity, current queue,
+  captured configuration restoration and bounded uncertain completion are
+  exercised through injected adapters; they do not claim provider execution.
+- Independent review strengthened both normal and prepared journey reloads to
+  compare every ordered user/assistant message, its content and citations, and
+  the exact chat ID. A correct final answer cannot conceal corrupted earlier
+  report or raw-call history. No existing assertion or timeout is relaxed.
+- Targeted checks and discovery are local authoring evidence. Combined
+  database, browser and Storage execution remains pending the actual CI run.

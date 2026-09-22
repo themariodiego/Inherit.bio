@@ -14,7 +14,7 @@ describe("app server configuration for the fixed local variants", () => {
   job.INHERIT_TEST_JURISDICTION = "1";
   job.INHERIT_CANONICAL_UPLOADS_PAUSED = "true";
   it("is admitted by the container's validator for every fixed variant, with the variant fields fixed here", () => {
-    for (const port of [3100, 3101, 3102, 3103] as const) {
+    for (const port of [3100, 3101, 3102, 3103, 3104] as const) {
       const env = appServerEnvironment(job, port);
       expect(checkedAppEnvironment(env, port)).toEqual(env);
       expect(env.NEXT_PUBLIC_APP_URL).toBe(`http://localhost:${port}`);
@@ -25,6 +25,9 @@ describe("app server configuration for the fixed local variants", () => {
       // The local-model attestation reaches the fourth variant alone, and a job
       // environment that happens to carry it does not leak it into the others.
       for (const name of LOCAL_MODEL_ENV_NAMES) expect(env[name]).toBe(port === 3103 ? LOCAL_MODEL_ENV[name] : undefined);
+      expect(env.INHERIT_PREPARED_WGS_ENABLED).toBe(port === 3104 ? "true" : undefined);
+      const preparedLeak = appServerEnvironment({ ...job, INHERIT_PREPARED_WGS_ENABLED: "false" }, port);
+      expect(preparedLeak.INHERIT_PREPARED_WGS_ENABLED).toBe(port === 3104 ? "true" : undefined);
       const leaking = appServerEnvironment({ ...job, ...LOCAL_MODEL_ENV }, port);
       for (const name of LOCAL_MODEL_ENV_NAMES) expect(leaking[name]).toBe(port === 3103 ? LOCAL_MODEL_ENV[name] : undefined);
     }
