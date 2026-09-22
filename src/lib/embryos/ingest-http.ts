@@ -79,10 +79,11 @@ export async function authorizeIngestHttpRequest(
   }
 }
 
-/** Resolve the exact Origin header; Sec-Fetch-Site is not a stored origin. */
+/** Both checks are required; fetch metadata never substitutes for exact Origin. */
 export function ingestRequestOrigin(request: Request): string | null {
   const origin = request.headers.get("origin");
-  if (!origin || origin.length > 255 || origin !== new URL(request.url).origin ||
+  if (request.headers.get("sec-fetch-site") !== "same-origin" ||
+    !origin || origin.length > 255 || origin !== new URL(request.url).origin ||
     !/^https?:\/\/[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$/.test(origin)) return null;
   return origin;
 }

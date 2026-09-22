@@ -133,7 +133,10 @@ describe("keyboard sweep using actual focused elements across shadow roots", () 
           showSampleNameButton: false, showMultiSelectButton: false, showTrackLabelButton: false,
           showCenterGuideButton: false, showCursorTrackingGuideButton: false,
           reference: { id: "positions", format: "chromsizes", fastaURL: "/sizes" },
-          locus: "chr1:10000-20000", tracks: [],
+          locus: "chr1:10000-20000", tracks: [{
+            name: "Synthetic positions", type: "annotation", format: "bed", displayMode: "EXPANDED",
+            features: [{ chr: "chr1", start: 14999, end: 15000, name: "Synthetic A/G" }],
+          }],
         });
         document.body.dataset.igvReady = "true";
       ` });

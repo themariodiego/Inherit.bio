@@ -7,7 +7,7 @@ const SESSION = "a0000000-0000-4000-8000-000000000001";
 const url = `https://inherit.example/api/embryo-ingest/${SESSION}/chunks/0`;
 function request(headers: Record<string, string> = {}, body?: ReadableStream<Uint8Array>) {
   return new Request(url, { method: "PUT", headers: { origin: "https://inherit.example",
-    "content-type": "application/octet-stream", "content-length": "4", ...headers },
+    "sec-fetch-site": "same-origin", "content-type": "application/octet-stream", "content-length": "4", ...headers },
   ...(body ? { body, duplex: "half" } : {}) });
 }
 const metadata = { status: "authorized", session: SESSION, cohortId: SESSION, uploadId: SESSION, ingestRevision: 1,
@@ -21,6 +21,14 @@ describe("ingest HTTP boundary", () => {
       expect(ingestRequestOrigin(request({ origin }))).toBeNull();
     }
     expect(ingestRequestOrigin(new Request(url, { headers: { "sec-fetch-site": "same-origin" } }))).toBeNull();
+  });
+  it("requires same-origin fetch metadata even alongside a matching Origin", () => {
+    for (const value of ["cross-site", "same-site", "none", ""]) {
+      expect(ingestRequestOrigin(request({ "sec-fetch-site": value }))).toBeNull();
+    }
+    const missing = request();
+    missing.headers.delete("sec-fetch-site");
+    expect(ingestRequestOrigin(missing)).toBeNull();
   });
   it("does not touch the body during envelope validation", () => {
     const req = request();
@@ -98,6 +106,7 @@ describe("HTTP credential orchestration", () => {
   it("denies before database access or body reads for missing auth, origin, jurisdiction or cookie", async () => {
     for (const [req, context, settings, status] of [
       [validRequest(), null, env, 401], [request({ origin: "https://evil.example" }), account, env, 403],
+      [request({ "sec-fetch-site": "cross-site" }), account, env, 403],
       [validRequest(), account, {}, 403], [request(), account, env, 404],
     ] as const) {
       const rpc = vi.fn();

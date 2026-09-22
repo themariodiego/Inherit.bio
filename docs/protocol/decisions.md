@@ -3885,5 +3885,7 @@ taken, because the number moved.
 - **Comprehension execution:** the owner authorized at least 600 simulations and
   about 60 independent re-gradings, including multiple calls per simulation, and
   asked engineering to choose the host and endpoint with a preference for the
-  existing edge provider. The spending cap is still awaiting a separate choice;
-  no paid run has started. The model-identity evidence decision remains pending.
+  existing edge provider. The owner then authorized a **US$50 total incremental cap**, covering inference,
+  CI usage and any required first month of the plan. This supersedes the earlier
+  US$25 choice. Spend only what is needed and stop before exceeding the cap.
+  No paid run has started. The model-identity evidence decision remains pending.
