@@ -4,6 +4,9 @@ import { z } from "zod";
 import { canonicalBindingSchema } from "./canonical-schema";
 import { assertPreparedMetadataBounds, validateCanonicalMaterializationReceipt } from "./canonical-manifest";
 import { readCanonicalCoordinates, type CanonicalCoordinateCursor } from "./canonical-coordinate-reader";
+import { readCanonicalRsids, canonicalRsidCursorSchema, type CanonicalRsidCursor } from "./canonical-rsid-reader";
+import { validateCanonicalRsidMaterialization } from "./verify-rsid-materialization";
+import type { CanonicalRsidMaterializationReceipt } from "./materialize-canonical-rsid";
 import type { CanonicalCoordinate } from "./canonical-coordinate-index";
 import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity, type PreparedStoredArtifact } from "./artifact-identity";
 import { preparedStorageConfig } from "./storage-common";
@@ -44,12 +47,14 @@ export class PublishedSourceReadError extends Error {
 export type OwnPreparedSourceAccess = {
   source: OwnPreparedSource;
   canonical: CanonicalMaterializationReceipt;
+  readRsidManifest: () => Promise<CanonicalRsidMaterializationReceipt>;
   readArtifact: ReturnType<typeof createPreparedArtifactFetch>;
   checkArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => Promise<void>;
   checkSource: () => Promise<void>;
   signal: AbortSignal;
 };
-type ReadOptions = { checkOperation: (signal: AbortSignal) => Promise<void>; signal?: AbortSignal };
+type ReadOptions = { checkOperation: (signal: AbortSignal) => Promise<void>; signal?: AbortSignal;
+  checkSourceSelection?: (source: OwnPreparedSource, signal: AbortSignal) => Promise<void> };
 type SourceRequest = { fileId: string; expectedManifestId: string };
 
 /** Scoped server access only. The caller must supply current authenticated actor
@@ -113,7 +118,8 @@ function createPublishedSourceAccess(rawActor: { accountId: string; sessionId: s
       // Own bounded request metadata before the first external callback.
       assertPreparedMetadataBounds(rawRequest, 16_384);
       const request = z.object({ fileId: uuid, expectedManifestId: uuid }).strict().parse(rawRequest);
-      if (typeof options.checkOperation !== "function" || typeof consume !== "function") throw new PublishedSourceReadError("invalid_request");
+      if (typeof options.checkOperation !== "function" || typeof consume !== "function"
+        || (options.checkSourceSelection !== undefined && typeof options.checkSourceSelection !== "function")) throw new PublishedSourceReadError("invalid_request");
       await operation();
       const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_file_id: request.fileId,
         p_expected_manifest_id: request.expectedManifestId };
@@ -121,6 +127,7 @@ function createPublishedSourceAccess(rawActor: { accountId: string; sessionId: s
       assertPreparedMetadataBounds(rawSource, 16_384);
       const source = sourceSchema.parse(rawSource);
       requireValid(source.fileId === request.fileId && source.manifestId === request.expectedManifestId && source.root.receipt.byteCount <= 16_384);
+      if (options.checkSourceSelection) await wait(options.checkSourceSelection(structuredClone(source), signal));
       async function check(artifact: PreparedStoredArtifact, current: AbortSignal) {
         active(); await operation(current);
         const rawMember = await rpc("check_own_prepared_member_v1", { ...args, p_artifact_id: artifact.receipt.artifactId });
@@ -150,14 +157,30 @@ function createPublishedSourceAccess(rawActor: { accountId: string; sessionId: s
         && c.sourceVariantCount === s.sourceVariantCount && c.sourceObservedCount === s.sourceObservedCount && c.sourceReferenceCount === s.sourceReferenceCount
         && c.normalizedVariantCount === s.variantCount && c.normalizedObservedCount === s.observedCallCount && c.usableObservedCount === s.usableObservedCount
         && canonical.canonicalSummary.attempted === s.attempted && canonical.canonicalSummary.unmapped === s.unmapped);
+      async function readRsidManifest() {
+        active();
+        const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await readVerifiedPreparedArtifact(root.rsid, { readArtifact, check, signal })));
+        assertPreparedMetadataBounds(raw, 4_000_000);
+        // Publication may discard scratch reservations between the two phases.
+        // The authenticated root supplies the phase start; never infer adjacency.
+        const start = z.object({ firstArtifactSequence: count.max(4095) }).parse(raw).firstArtifactSequence;
+        const rsid = validateCanonicalRsidMaterialization(raw, { ...expected, firstArtifactSequence: start,
+          canonicalBlockCount: canonical.blockCount, canonicalRecordCount: canonical.recordCount });
+        requireValid(start >= canonical.nextArtifactSequence && rsid.nextArtifactSequence === root.canonical.receipt.sequence
+          && rsid.pointerCount === source.summary.rsidPointerCount
+          && source.memberCount === canonical.artifactCount + rsid.artifactCount + 3);
+        await operation(); active(); return rsid;
+      }
       async function checkSource() {
         active(); await operation();
         const finalSource = await rpc("read_own_prepared_manifest_v1", args);
         assertPreparedMetadataBounds(finalSource, 16_384);
         requireValid(equal(sourceSchema.parse(finalSource), source));
+        if (options.checkSourceSelection) await wait(options.checkSourceSelection(structuredClone(source), signal));
         await operation(); active();
       }
       const result = await wait(consume({ source: structuredClone(source), canonical: structuredClone(canonical),
+        readRsidManifest,
         readArtifact: (artifact, current) => {
           active(); return readArtifact(artifact, AbortSignal.any([signal, current]));
         }, checkArtifact: check, checkSource, signal }));
@@ -169,6 +192,36 @@ function createPublishedSourceAccess(rawActor: { accountId: string; sessionId: s
       if (error instanceof PublishedSourceReadError) throw error;
       throw new PublishedSourceReadError("unavailable");
     } finally { clearTimeout(timer); deadline.abort(); }
+  };
+}
+
+/** Indexed rsID pages under the same published source and operation boundary.
+ * The caller must drain every page and reject partial results on any failure. */
+export function createOwnPreparedRsidReader(actor: { accountId: string; sessionId: string }) {
+  const access = createPublishedSourceAccess(actor, 30_000), fetchRange = createPreparedRangeFetch();
+  return async (rawRequest: SourceRequest & { rsids: readonly number[]; cursor?: CanonicalRsidCursor | null }, options: ReadOptions) => {
+    try {
+      assertPreparedMetadataBounds(rawRequest, 16_384);
+      const request = z.object({ fileId: uuid, expectedManifestId: uuid,
+        rsids: z.array(count.positive()).max(50), cursor: canonicalRsidCursorSchema.nullable().optional(),
+      }).strict().parse(rawRequest);
+      if (new Set(request.rsids).size !== request.rsids.length) throw new PublishedSourceReadError("invalid_request");
+      return await access({ fileId: request.fileId, expectedManifestId: request.expectedManifestId }, options,
+        async ({ source, canonical, readRsidManifest, checkArtifact, signal }) => {
+          const rsid = await readRsidManifest();
+          const result = await readCanonicalRsids({ canonical, rsid,
+            expected: { binding: canonical.binding, jobId: canonical.jobId, attemptId: canonical.attemptId,
+              firstArtifactSequence: rsid.firstArtifactSequence, canonicalBlockCount: canonical.blockCount, canonicalRecordCount: canonical.recordCount },
+            rsids: request.rsids, cursor: request.cursor }, {
+            signal, fetchRange, check: ({ artifact }, current) => checkArtifact(artifact ?? source.root, current),
+          });
+          return { source, records: result.records, nextCursor: result.nextCursor };
+        });
+    } catch (error) {
+      if (options.signal?.aborted) throw new PublishedSourceReadError("aborted");
+      if (error instanceof PublishedSourceReadError) throw error;
+      throw new PublishedSourceReadError("unavailable");
+    }
   };
 }
 

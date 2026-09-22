@@ -2308,3 +2308,26 @@ extractor or legal statement is removed or relaxed.
   URL, but its heading assertion stalled until the 120-second test timeout.
   This regression demonstrates the teardown defect behind that failure shape;
   the existing complete same-document upload journey still has to pass CI.
+
+## Own prepared-source Copilot rsID reader · 23 September 2026
+
+- Fifty-seven new synthetic cases cover bounded rsID lookup, the published
+  source boundary and a standalone Copilot call adapter. Real parser and
+  materializer bytes pass through mocked authenticated HTTP and the existing
+  genotype policy for calls, reference observations, no-calls and conflicting
+  loci. Rewritten index hashes exercise wrong-rsID pointers, offsets outside
+  actual records and repeated pointers, separately from transport corruption.
+- The reader retains source-only evidence and repeated observations. The adapter
+  refuses selected unmapped or unsupported evidence and discards a duplicate
+  variant only after finding its exact normalized original in the complete
+  selection. Cursor hashes bind both roots and the query. Tests cover short and
+  empty continuations, byte limits, scratch gaps, source changes, late refusals,
+  finite deadlines and callbacks used after their scope closes. The limits
+  remain 50 query IDs, 1,000 records per page, 10,000 aggregate records and 2 MB;
+  the whole adapter has a 30-second deadline and an eleven-page work bound.
+- All 1,298 prepared-source and Copilot tests pass. Changed files pass lint and
+  the readability gate. Existing tests and safety bounds are preserved. These
+  fixtures make no real provider, database or inference calls. Prepared sources
+  still need the coordinated Copilot projection and dispatcher integration;
+  this change does not activate a new source, grant, tool or history path, and
+  does not establish hosted deletion, retirement or release acceptance evidence.
