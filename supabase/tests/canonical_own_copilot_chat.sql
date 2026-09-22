@@ -347,6 +347,25 @@ select ok((select bool_and('ancestry'=any(retrieved_purpose_keys)) from public.c
 create temporary table old_ancestry_grant as select grant_id id from public.purpose_grants
  where target_id=(select id from copilot_subject) and purpose='ancestry' and revoked_at is null;
 select public.revoke_directional_purpose_v1('77900000-0000-4000-8000-000000000001',(select id from old_ancestry_grant));
+create temporary table old_ancestry_cleanup as select j.id job_id,
+ jsonb_build_object('job',to_jsonb(j),'phase',to_jsonb(d),'manifest',to_jsonb(m)) terminal_before
+ from public.worker_jobs j join public.retention_due_phases d on d.retention_row_id=j.source_binding_id
+ join public.purge_manifests m on m.retention_row_id=d.retention_row_id
+  and m.phase_id=d.phase_id and m.phase_revision=d.phase_revision and m.manifest_revision=1
+ where d.immutable_envelope->>'grantId'=(select id::text from old_ancestry_grant)
+  and d.phase_id='own-report-purpose-purge' and d.phase_revision=1
+  and j.kind='revoke_purge' and j.source_binding_kind='revocation-disposition'
+  and j.computation_revision='own-report-revocation-v1';
+select is((select count(*) from old_ancestry_cleanup),1::bigint,'exact old ancestry grant has one canonical cleanup job and manifest');
+select ok((select terminal_before#>>'{job,status}'='done'
+ and terminal_before#>>'{job,result,outcome}'='exact_grant_residuals_zero'
+ and terminal_before#>>'{job,finished_at}' is not null
+ and terminal_before#>>'{phase,status}'='succeeded'
+ and terminal_before#>>'{phase,terminal_outcome_code}'='exact_grant_residuals_zero'
+ and terminal_before#>>'{manifest,state}'='complete'
+ and terminal_before#>>'{manifest,physical_purge_started_at}' is not null
+ and terminal_before#>>'{manifest,frozen_manifest_hash}' is not null from old_ancestry_cleanup),
+ 'actual ancestry withdrawal records completed job, phase and frozen-manifest evidence before replay');
 select is((select count(*) from public.purge_manifest_entries e join public.purge_manifests m on m.id=e.manifest_id
  join public.retention_due_phases d on d.retention_row_id=m.retention_row_id
  where d.immutable_envelope->>'grantId'=(select id::text from old_ancestry_grant) and e.store_name='public.chat_messages'),4::bigint,'ancestry withdrawal freezes exactly both dependent pairs');
@@ -362,8 +381,14 @@ select throws_ok($$select pg_temp.chat_ancestry((select value from ancestry_proj
 select throws_ok($$select pg_temp.chat('history','{}',(select id from ancestry_chat))$$,'42501','not_found','regrant cannot revive purged predecessor history');
 update chat_projection set value=pg_temp.chat('prepare');
 create temporary table successor_ancestry_chat as select (pg_temp.turn(repeat('a5',32))->>'chatId')::uuid id;
-select is(private.execute_own_report_purge_v1((select j.id from public.worker_jobs j join public.retention_due_phases d on d.retention_row_id=j.source_binding_id
- where d.immutable_envelope->>'grantId'=(select id::text from old_ancestry_grant)))->>'outcome','complete','exact old ancestry cleanup replay remains idempotent');
+select is(private.execute_own_report_purge_v1((select job_id from old_ancestry_cleanup)),null::jsonb,
+ 'completed exact old ancestry cleanup is idempotently omitted');
+select is((select jsonb_build_object('job',to_jsonb(j),'phase',to_jsonb(d),'manifest',to_jsonb(m))
+ from public.worker_jobs j join public.retention_due_phases d on d.retention_row_id=j.source_binding_id
+ join public.purge_manifests m on m.retention_row_id=d.retention_row_id
+  and m.phase_id=d.phase_id and m.phase_revision=d.phase_revision and m.manifest_revision=1
+ where j.id=(select job_id from old_ancestry_cleanup) and d.phase_id='own-report-purpose-purge' and d.phase_revision=1),
+ (select terminal_before from old_ancestry_cleanup),'regrant and replay preserve the entire completed job, phase and manifest receipt');
 select is((select count(*) from public.chat_messages where chat_id=(select id from successor_ancestry_chat)),2::bigint,'predecessor purge replay leaves successor-grant conversation intact');
 select lives_ok($$select pg_temp.chat_ancestry()$$,'successor ancestry capture remains readable after predecessor purge replay');
 select ok(not has_function_privilege(role_name,'public.own_copilot_ancestry_v1(uuid,uuid,uuid,jsonb,jsonb,uuid)','EXECUTE'),role_name||' cannot bypass the server ancestry dispatcher')

@@ -2524,3 +2524,17 @@ extractor or legal statement is removed or relaxed.
   report or raw-call history. No existing assertion or timeout is relaxed.
 - Targeted checks and discovery are local authoring evidence. Combined
   database, browser and Storage execution remains pending the actual CI run.
+
+## Completed ancestry cleanup replay contract · 23 September 2026
+
+- Integrated CI run 35797716604 executed 3,493 database assertions and found
+  one incorrect expectation in the new ancestry fixture: a completed cleanup
+  replay returns SQL NULL, as the existing executor and its original regression
+  require. The first execution alone returns the completion response.
+- The corrected assertion checks the entire NULL result and first requires one
+  exact old-grant job with completed job, phase and manifest receipts. A full
+  snapshot must remain unchanged after regrant and replay. Existing old-pair
+  removal, independent history, successor-pair and ancestry-read assertions stay
+  intact. No executor behavior, safety bound or test is removed or relaxed.
+- The corrected database assertions require a new CI run; source review and
+  focused unit checks do not substitute for their execution.
