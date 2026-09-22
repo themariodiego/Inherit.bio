@@ -2,6 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it, vi } from "vitest";
 import { runOwnPreparationPipeline, type OwnPreparationPipelineOptions, type OwnPreparationCheckpoint } from "./own-preparation-pipeline";
+import { createOwnPreparationArtifacts } from "./own-preparation-artifacts";
+import { decodePreparedBlock, encodePreparedBlock } from "../genome/prepared-source/codec";
+import type { PreparedRunReceipt } from "../genome/prepared-source/runs";
 import type { PreparedStoredArtifact } from "../genome/prepared-source/storage-writer";
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const header = "##fileformat=VCFv4.2\n##reference=GRCh38\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS\n";
@@ -31,6 +34,46 @@ function setup(text = header + rows.join("\n") + "\n", gzip = false) {
   };
   return { options, objects, artifacts };
 }
+
+/** Repack an actually parsed same-attempt source into separate containers.
+ * Tiny cases use one event each to expose redundant reads without a large file. */
+async function sourceContainersFixture(text?: string, eventsPerContainer = 1) {
+  const f = setup(text); let saved: OwnPreparationCheckpoint | undefined;
+  f.options.checkpoint = async checkpoint => {
+    if (checkpoint.phase === "source-runs") { saved = structuredClone(checkpoint); throw new Error("source_ready"); }
+    return checkpoint;
+  };
+  await expect(runOwnPreparationPipeline(f.options)).rejects.toThrow("source_ready");
+  const checkpoint = saved!, old = checkpoint.resume.sourceRuns[0];
+  expect(checkpoint.resume.sourceRuns).toHaveLength(1);
+  const envelope = JSON.parse(Buffer.from(f.objects.get(old.artifact.receipt.artifactId)!).toString()) as {
+    run: PreparedRunReceipt; containers: PreparedStoredArtifact[]; locations: { container: number; offset: number; length: number }[];
+  };
+  const events = [];
+  for (const [index, descriptor] of envelope.run.blocks.entries()) {
+    const location = envelope.locations[index], bytes = f.objects.get(envelope.containers[location.container].receipt.artifactId)!;
+    const block = await decodePreparedBlock((async function* () { yield bytes.subarray(location.offset, location.offset + location.length); })(), descriptor);
+    events.push(...block.events);
+  }
+  const artifacts = createOwnPreparationArtifacts({ ...f.options, firstArtifactSequence: f.artifacts.length });
+  const containers: PreparedStoredArtifact[] = [], blocks = [], locations = [];
+  for (let offset = 0; offset < events.length; offset += eventsPerContainer) {
+    const sequence = blocks.length;
+    const encoded = await encodePreparedBlock({ source: envelope.run.source, sequence, events: events.slice(offset, offset + eventsPerContainer) });
+    containers.push(await artifacts.persist(encoded.compressed)); blocks.push(encoded.descriptor);
+    locations.push({ sequence, container: sequence, offset: 0, length: encoded.compressed.length });
+  }
+  const run = { ...envelope.run, blocks };
+  const artifact = await artifacts.persist(Buffer.from(JSON.stringify({ version: "own-preparation-run-v1", kind: "source", run, containers, locations })));
+  const handle = { ...old, artifact, firstBlockSequence: 0, blockCount: blocks.length };
+  checkpoint.resume.sourceRuns = [handle]; checkpoint.outputs = [handle];
+  checkpoint.resume.parserReceipt!.blockCount = blocks.length; checkpoint.terminal = checkpoint.resume.parserReceipt;
+  checkpoint.nextArtifactSequence = artifacts.nextSequence;
+  f.options.resume = checkpoint; f.options.firstArtifactSequence = artifacts.nextSequence;
+  f.options.checkpoint = vi.fn(async value => structuredClone(value)); vi.mocked(f.options.readArtifact).mockClear();
+  return { ...f, containers, checkpoint };
+}
+
 describe("own preparation bounded pipeline", () => {
   it("uses the detected GRCh38 build when the worker has a configured GRCh37 chain", async () => {
     const f = setup();
@@ -104,6 +147,105 @@ describe("own preparation bounded pipeline", () => {
     f.options.resume = captured; f.options.firstArtifactSequence = 1;
     await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: "integrity_mismatch" });
     expect(f.options.writeArtifact).not.toHaveBeenCalled();
+  });
+
+  it("reads each final source container once and checkpoints only complete canonical state", async () => {
+    const f = await sourceContainersFixture(), result = await runOwnPreparationPipeline(f.options);
+    expect(f.containers.length).toBeGreaterThan(1);
+    for (const container of f.containers) expect(vi.mocked(f.options.readArtifact).mock.calls.filter(([artifact]) =>
+      artifact.receipt.artifactId === container.receipt.artifactId)).toHaveLength(1);
+    const checkpoints = vi.mocked(f.options.checkpoint).mock.calls.map(([value]) => value);
+    const source = checkpoints.find(value => value.phase === "source-merge")!;
+    expect(source.resume.canonicalRunsReceipt).toEqual(result.canonicalRunsReceipt);
+    expect(source.resume.canonicalRuns.length).toBe(result.canonicalRunsReceipt.runCount);
+    expect(source.terminal).toEqual({ parserReceipt: result.parserReceipt, mergeSummary: result.canonicalRunsReceipt.canonicalSummary.mergeSummary });
+    expect(checkpoints.slice(0, 2).map(value => value.phase)).toEqual(["source-merge", "canonical-runs"]);
+    expect(checkpoints[1].nextArtifactSequence).toBe(source.nextArtifactSequence);
+    expect(result.canonicalRunsReceipt.canonicalSummary).toMatchObject({ variantCount: 1, observedCallCount: 3 });
+  });
+
+  it("resumes a completed source-merge checkpoint without rereading source or rewriting canonical runs", async () => {
+    const f = await sourceContainersFixture(); let saved: OwnPreparationCheckpoint | undefined;
+    f.options.checkpoint = async checkpoint => {
+      if (checkpoint.phase === "source-merge") { saved = structuredClone(checkpoint); throw new Error("worker_yield"); }
+      return checkpoint;
+    };
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toThrow("worker_yield");
+    expect(saved!.resume.canonicalRunsReceipt).not.toBeNull(); expect(saved!.resume.canonicalRuns).not.toHaveLength(0);
+    const written = f.artifacts.length, reads = vi.mocked(f.options.readArtifact).mock.calls.length;
+    f.options.resume = saved; f.options.firstArtifactSequence = saved!.nextArtifactSequence;
+    f.options.checkpoint = vi.fn(async checkpoint => checkpoint);
+    const result = await runOwnPreparationPipeline(f.options);
+    expect(result.canonicalRunsReceipt).toEqual(saved!.resume.canonicalRunsReceipt);
+    const sourceIds = new Set(f.containers.map(value => value.receipt.artifactId));
+    expect(vi.mocked(f.options.readArtifact).mock.calls.slice(reads).some(([value]) => sourceIds.has(value.receipt.artifactId))).toBe(false);
+    for (const artifact of f.artifacts.slice(written)) {
+      const bytes = Buffer.from(f.objects.get(artifact.receipt.artifactId)!);
+      if (bytes[0] === 123) expect(JSON.parse(bytes.toString())).not.toMatchObject({ version: "own-preparation-run-v1", kind: "canonical" });
+    }
+    expect(result.nextArtifactSequence).toBe(f.artifacts.length);
+  });
+
+  it.each(["hash", "EOF", "abort"])("refuses a late source %s failure without a completed phase checkpoint", async mode => {
+    const f = await sourceContainersFixture(), read = f.options.readArtifact, last = f.containers.at(-1)!.receipt.artifactId;
+    const controller = new AbortController(); f.options.signal = controller.signal; f.options.original.signal = controller.signal;
+    f.options.readArtifact = vi.fn(async (artifact, signal) => {
+      if (artifact.receipt.artifactId !== last) return read(artifact, signal);
+      return (async function* () {
+        const bytes = Uint8Array.from(f.objects.get(last)!);
+        if (mode === "hash") bytes[bytes.length - 1] ^= 1;
+        yield bytes;
+        if (mode === "abort") controller.abort();
+        if (mode === "EOF") throw new Error("late provider EOF failure");
+      })();
+    });
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: mode === "hash" ? "integrity_mismatch" : mode === "abort" ? "aborted" : "unavailable" });
+    expect(f.options.checkpoint).not.toHaveBeenCalled();
+    expect(vi.mocked(f.options.readArtifact).mock.calls.filter(([artifact]) => artifact.receipt.artifactId === last)).toHaveLength(1);
+  });
+
+  it("treats parser-derived counts as expectations until the actual source terminal agrees", async () => {
+    const f = await sourceContainersFixture(), parser = f.checkpoint.resume.parserReceipt!;
+    parser.summary.variantCount--; parser.summary.referenceCallCount++;
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: "invalid_summary" });
+    expect(f.options.checkpoint).not.toHaveBeenCalled();
+  });
+
+  it("keeps acknowledged canonical scratch provisional when a later source container is corrupt", async () => {
+    const text = header + Array.from({ length: 15_999 }, (_, i) => `1\t${i + 1}\trs${i + 1}\tA\tC\t.\tPASS\t.\tGT\t0/1\n`).join("");
+    const f = await sourceContainersFixture(text, 2000), read = f.options.readArtifact;
+    const last = f.containers.at(-1)!.receipt.artifactId, firstCanonicalSequence = f.options.firstArtifactSequence;
+    let canonicalAcknowledgedBeforeFailure = false;
+    f.options.readArtifact = vi.fn(async (artifact, signal) => {
+      if (artifact.receipt.artifactId !== last) return read(artifact, signal);
+      canonicalAcknowledgedBeforeFailure = f.artifacts.some(value => {
+        if (value.receipt.sequence < firstCanonicalSequence) return false;
+        const bytes = Buffer.from(f.objects.get(value.receipt.artifactId)!);
+        return bytes[0] === 123 && JSON.parse(bytes.toString()).kind === "canonical";
+      });
+      return (async function* () {
+        const bytes = Uint8Array.from(f.objects.get(last)!); bytes[bytes.length - 1] ^= 1; yield bytes;
+      })();
+    });
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: "integrity_mismatch" });
+    expect(canonicalAcknowledgedBeforeFailure).toBe(true);
+    expect(f.options.checkpoint).not.toHaveBeenCalled();
+    expect(f.options.original.source).toEqual(f.checkpoint.sourceScan.source);
+    expect(f.artifacts.every(value => value.receipt.jobId === f.options.jobId && value.receipt.attemptId === f.options.attemptId)).toBe(true);
+    for (const artifact of f.artifacts.filter(value => value.receipt.sequence >= firstCanonicalSequence)) {
+      const bytes = Buffer.from(f.objects.get(artifact.receipt.artifactId)!);
+      if (bytes[0] === 123) expect(JSON.parse(bytes.toString())).toMatchObject({
+        version: "own-preparation-run-v1", kind: "canonical", run: { state: "provisional" },
+      });
+    }
+  // Real codec/parser regression under concurrent CI load, not a timing gate.
+  }, 60_000);
+
+  it("does not checkpoint source completion when the final canonical write fails", async () => {
+    const f = await sourceContainersFixture();
+    f.options.writeArtifact = vi.fn(async () => { throw new Error("provider refused canonical write"); });
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: "unavailable" });
+    expect(f.options.writeArtifact).toHaveBeenCalledTimes(1); expect(f.options.checkpoint).not.toHaveBeenCalled();
   });
 
   it("performs actual multi-pass sorting beyond eight initial runs without losing collision evidence", async () => {
