@@ -192,28 +192,35 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
   });
   state.sourceRuns = sourceRuns;
   const sourceReader = !state.canonicalRunsReceipt ? await sourceStore.reader(sourceRuns) : null;
-  let mergeSummary: PreparedMergeSummary | undefined;
-  if (sourceReader) for await (const event of mergePreparedRuns(sourceReader.runs, { source, readBlock: sourceReader.readBlock, signal })) {
-    if (event.type === "merge-summary") mergeSummary = event;
-  }
-  if (!state.canonicalRunsReceipt) {
-    if (!mergeSummary) preparationFail("integrity_mismatch");
-    await checkpoint("source-merge", { parserReceipt, mergeSummary }, sourceRuns, sourceRuns);
-  }
   const canonicalStore = createOwnPreparationRunStore<CanonicalBlockDescriptor, CanonicalRunReceipt>({
     kind: "canonical", artifacts, signal, firstBlockSequence: nextBlock(state.canonicalRuns, saved?.phase === "canonical-merge" ? saved : undefined), parseBlock: raw => canonicalBlockDescriptorSchema.parse(raw),
     parseRun: raw => { preparationJson(raw); const r = canonicalRunSchema.parse(raw);
       if (!isDeepStrictEqual(r.binding, binding)) preparationFail("integrity_mismatch"); return r; }, count: r => r.recordCount,
   });
   if (!state.canonicalRunsReceipt) {
-    if (!sourceReader || !mergeSummary) preparationFail("integrity_mismatch");
+    if (!sourceReader) preparationFail("integrity_mismatch");
+    // Expectations come from the verified parser receipt and immutable run graph,
+    // not a second read of every source block. They prove no merge completeness:
+    // canonicalization still requires the actual matching terminal AND EOF.
+    const expectedMergeSummary: PreparedMergeSummary = {
+      type: "merge-summary", version: "prepared-merge-v1", state: "provisional", source,
+      inputRunSequences: sourceReader.runs.map(run => run.sequence).sort((a, b) => a - b),
+      inputBlockCount: sourceReader.runs.reduce((n, run) => n + run.blocks.length, 0),
+      eventCount: sourceReader.runs.reduce((n, run) => n + run.eventCount, 0),
+      variantCount: parserReceipt.summary.variantCount, referenceCallCount: parserReceipt.summary.referenceCallCount,
+      observedCallCount: parserReceipt.summary.observedCallCount,
+    };
     state.canonicalRunsReceipt = await createCanonicalRuns(canonicalizePreparedEvents(
     mergePreparedRuns(sourceReader.runs, { source, readBlock: sourceReader.readBlock, signal }), {
-      source, parserReceipt, expectedMergeSummary: mergeSummary, expectedParserRevision: "vcf-stream-v1",
+      source, parserReceipt, expectedMergeSummary, expectedParserRevision: "vcf-stream-v1",
       liftover: source.sourceBuild === "GRCh37" ? options.liftover : undefined,
       maximumUnmappedFraction: options.maximumUnmappedFraction, signal,
     }), { binding, signal, sink: canonicalStore.sink });
     state.canonicalRuns = canonicalStore.handles;
+    // Both terminals, actual EOF and final run ACKs are now verified. Persist
+    // complete canonical state before either checkpoint so a same-attempt
+    // interruption here cannot replay already completed canonical writes.
+    await checkpoint("source-merge", { parserReceipt, mergeSummary: state.canonicalRunsReceipt.canonicalSummary.mergeSummary }, sourceRuns, sourceRuns);
     await checkpoint("canonical-runs", state.canonicalRunsReceipt, [], state.canonicalRuns);
   }
   const canonicalRunsReceipt = state.canonicalRunsReceipt;
