@@ -198,4 +198,9 @@ export const IGV_CONTROL_LABELS = {
   referenceTrack: "Reference positions",
   trackOrder: "Track order",
   scrollTrack: "Scroll track",
+  trackActions: "Track actions",
+  trackDetails: "Track details",
+  positionDetails: "Position details",
+  trackMessage: "Track message",
+  trackActionsHint: "Press Shift and F10 together to open track actions.",
 } as const;

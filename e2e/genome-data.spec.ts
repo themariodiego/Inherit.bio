@@ -192,6 +192,32 @@ test("a synthetic overlapping-region response can be scrolled with the keyboard"
   await slider.press("Escape"); await expect(slider).not.toBeFocused();
 });
 
+test("genome track details and image actions work from the keyboard", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const widget = page.getByTestId("genome-browser");
+  const label = widget.getByRole("button", { name: "Track details: Your variants", exact: true });
+  await expect(label).toBeVisible({ timeout: 60_000 });
+  await label.press("Enter");
+  const details = widget.getByRole("dialog", { name: "Your variants", exact: true });
+  await expect(details).toBeVisible();
+  await expect(details.getByRole("button", { name: "Close dialog", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(details).toBeHidden(); await expect(label).toBeFocused();
+  const track = widget.getByRole("group", { name: "Track actions: Your variants", exact: true });
+  await track.focus(); await page.keyboard.press("Shift+F10");
+  const menu = widget.getByRole("menu", { name: "Track actions", exact: true });
+  await expect(menu).toBeVisible(); await page.keyboard.press("End");
+  await expect(menu.getByRole("menuitem", { name: "Save Image (SVG)", exact: true })).toBeFocused();
+  const downloadPromise = page.waitForEvent("download");
+  await page.keyboard.press("Enter");
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.svg$/i);
+  expect(await download.failure()).toBeNull();
+  await expect(menu).toBeHidden(); await expect(track).toBeFocused();
+  await page.keyboard.press("Escape");
+  expect(await widget.evaluate(element => element.shadowRoot?.activeElement === null)).toBe(true);
+});
+
 test("genome track settings preserve keyboard focus, apply edits and escape back into the page", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto(`${BROWSER}?q=rs762551`);

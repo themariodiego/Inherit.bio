@@ -14,6 +14,7 @@ import { chromToName } from "@/lib/genome/types";
 import { labelIgvControls } from "./igv-accessibility";
 import { enhanceIgvInteractions } from "./igv-interactions";
 import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
+import { enhanceIgvPopovers } from "./igv-popovers";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
@@ -149,6 +150,7 @@ export function GenomeBrowser({
     let browserRef: unknown = null;
     let disposeInteractions: (() => void) | undefined;
     let disposeScrolling: (() => void) | undefined;
+    let disposePopovers: (() => void) | undefined;
     const key = `${fileId}:${locus.chrom}:${locus.start}-${locus.end}`;
 
     async function mount() {
@@ -238,6 +240,7 @@ export function GenomeBrowser({
       labelIgvControls(el, IGV_CONTROL_LABELS);
       disposeInteractions = enhanceIgvInteractions(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvInteractions>[2]);
       disposeScrolling = enhanceIgvTrackScrolling(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvTrackScrolling>[2]);
+      disposePopovers = enhanceIgvPopovers(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvPopovers>[2]);
       return variants.length;
     }
 
@@ -258,6 +261,7 @@ export function GenomeBrowser({
       disposed = true;
       disposeInteractions?.();
       disposeScrolling?.();
+      disposePopovers?.();
       if (browserRef && el) el.innerHTML = "";
     };
   }, [fileId, locus.chrom, locus.start, locus.end]);

@@ -2183,3 +2183,16 @@ extractor or legal statement is removed or relaxed.
   No existing test, assertion, timeout or acceptance threshold changes.
 - `docs/evidence/genome-track-scrolling-20260922.md` records the scope and the
   remaining context-menu and popover work. Full-app CI is still required.
+
+## Genome context menus and detail popovers · 22 September 2026
+
+- Eight new installed-library Chromium cases exercise track-label keyboard
+  activation, native modal focus containment, context-menu arrow navigation,
+  PNG/SVG downloads through existing callbacks, pointer-opened detail closure,
+  repeated alerts, cleanup and reattachment. The main journey runs at three
+  widths in both themes with axe, 44-pixel targets, reflow and normal Tab order.
+- The new real-app keyboard detail/export journey retains all existing genome
+  data assertions and uses the ordinary synthetic upload from the suite.
+  Full-app execution is still pending CI; no test or threshold is relaxed.
+- The 47 targeted widget, keyboard and copy cases pass. Remaining full-scope
+  evidence is recorded in `docs/evidence/genome-popovers-20260922.md`.
