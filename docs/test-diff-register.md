@@ -2182,10 +2182,9 @@ extractor or legal statement is removed or relaxed.
 
 ## Native genome track scrolling · 22 September 2026
 
-- The correction for the inherited track-settings CI failures is included.
-  The scrolling cases also use the full app axe rule tags, including WCAG 2.2 AA
-  and best practice. All 41 widget, scrolling, keyboard and copy cases pass;
-  the full-app run on the corrected head remains required.
+- The inherited geometry correction and full app axe tags are retained. The
+  combined widget, scrolling, popover, keyboard and copy checks pass 49 cases;
+  full-app verification of the corrected head remains required.
 
 - `scripts/igv-track-scrolling.test.ts` adds seven installed-library Chromium
   checks for keyboard and pointer endpoints, real content movement, resize,
@@ -2196,3 +2195,42 @@ extractor or legal statement is removed or relaxed.
   No existing test, assertion, timeout or acceptance threshold changes.
 - `docs/evidence/genome-track-scrolling-20260922.md` records the scope and the
   remaining context-menu and popover work. Full-app CI is still required.
+
+## Genome context menus and detail popovers · 22 September 2026
+
+- Eight new installed-library Chromium cases exercise track-label keyboard
+  activation, native modal focus containment, context-menu arrow navigation,
+  PNG/SVG downloads through existing callbacks, pointer-opened detail closure,
+  repeated alerts, cleanup and reattachment. The main journey runs at three
+  widths in both themes with axe, 44-pixel targets, reflow and normal Tab order.
+- The new real-app keyboard detail/export journey retains all existing genome
+  data assertions and uses the ordinary synthetic upload from the suite.
+  Full-app execution is still pending CI; no test or threshold is relaxed.
+- The 47 targeted widget, keyboard and copy cases pass. Remaining full-scope
+  evidence is recorded in `docs/evidence/genome-popovers-20260922.md`.
+
+## Composed first-viewport control count · 22 September 2026
+
+- The shared control counter now enters open shadow roots and assigned slots,
+  retaining its selectors, viewport boundary, exclusions and twelve-control
+  threshold. The ancestry suite uses the same implementation.
+- Five native Chromium regressions cover the omitted controls, nested roots,
+  slots, composed navigation exclusions and a real thirteen-control refusal
+  case. The existing fourteen keyboard-audit cases also pass.
+- No test, assertion or threshold is removed. Native fixture counts are not
+  app-layout evidence; the complete app sweeps must pass with this counter.
+  The frozen pixel-area baseline is unchanged and G1.13b remains NO.
+
+## Native navigation option and resize API · 22 September 2026
+
+- The existing false multi-select option was ignored by the installed widget,
+  which the composed first-viewport census caught as 13 controls against 12.
+  Three new native tests cover false, true and absent options through resize;
+  enabled selection must still toggle the actual native track-selection state.
+- Checking uncaught errors reproduced the nonexistent resize method in all
+  fourteen interaction cases. Native interaction, scrolling and popover tests
+  now fail on page errors. The adapter calls the observed instance-bound handler.
+- A pointer-popover test now clicks its synthetic marker's actual reference-frame
+  coordinate after resizing and verifies its name, retaining the dialog, axe and
+  Escape requirements. The old midpoint no longer named that marker after the
+  resize correction. No count, density, route, test or timeout bound changes.
