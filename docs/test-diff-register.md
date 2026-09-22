@@ -2447,3 +2447,27 @@ extractor or legal statement is removed or relaxed.
   changed-file lint and readability passed. The pgTAP additions and the integrated
   upload/report/ancestry/Copilot browser journey remain pending CI. No hosted
   model, database, provider, upload or cleanup measurement was made here.
+
+
+## Complete own-genome browser journey · 23 September 2026
+
+- Two new scenarios start at Overview and My Genome, respectively. Each uploads
+  a single synthetic VCF composed from the existing regional and caffeine
+  fixtures through the actual file picker, finalization and preparation path.
+  Storage bytes and the source digest must match before any analysis purpose
+  is selected. No purpose grant, result or prepared state is seeded.
+- The person explicitly chooses reports and ancestry, follows the hub and report
+  links, and sees the resulting genotype and ancestry. Copilot remains unavailable
+  until separate explicit consent names ancestry and the configured provider.
+- The existing controlled HTTPS inference fixture receives the actual report and
+  ancestry tool results. Assertions compare page-rendered parent and split-region
+  percentages, support note, caveat and marker coverage to the captured evidence;
+  every regional range stays explicitly unavailable. Citation receipts, paired
+  history and the unchanged source are checked across reload and withdrawal.
+  Withdrawing ancestry refuses the old chat before another provider call, removes
+  the ancestry figures and preserves the independent report and source.
+- These cases exercise the normal database preparation path. A separate prepared
+  object journey is still required. The fixture controls inference only; it is
+  not evidence of hosted model quality, clinical validity or large-file capacity.
+- Lint, TypeScript and test discovery pass locally. Browser execution is pending
+  CI; no existing assertion, test timeout or acceptance threshold was changed.
