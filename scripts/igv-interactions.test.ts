@@ -67,7 +67,7 @@ async function choose(page: Page, action: string) {
 }
 
 async function audit(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
   expect(results.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => node.failureSummary) }))).toEqual([]);
   for (const control of await page.locator('#widget [data-igv-action], #widget input, #widget [role="slider"], #widget dialog button').all()) {
     if (!await control.isVisible()) continue;
@@ -78,6 +78,29 @@ async function audit(page: Page) {
 }
 
 describe("installed genome widget menus and dialogs", () => {
+  it.each(["light", "dark"])("keeps enlarged track controls inside a padded, resized host in %s", async theme => {
+    await fixture(1280, theme, async page => {
+      await page.locator("#widget").evaluate(element => {
+        element.setAttribute("style", "box-sizing:border-box;width:100%;overflow-x:auto;padding:8px;border:1px solid #555;border-radius:12px");
+      });
+      for (const width of [320, 390, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        await audit(page);
+        const host = (await page.locator("#widget").boundingBox())!;
+        for (const gear of await page.getByRole("button", { name: /^Track settings:/ }).all()) {
+          const box = (await gear.boundingBox())!;
+          expect(box.x).toBeGreaterThanOrEqual(host.x);
+          expect(box.x + box.width).toBeLessThanOrEqual(host.x + host.width);
+          const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+          expect(await gear.evaluate((element, at) => {
+            const root = element.getRootNode() as ShadowRoot;
+            return element.contains(root.elementFromPoint(at.x, at.y));
+          }, point)).toBe(true);
+        }
+      }
+    });
+  }, 30_000);
+
   it.each([390, 1280])("keeps all closed-widget controls in normal tab order at %i px", async width => {
     await fixture(width, "light", async page => {
       await page.evaluate(installKeyboardAudit);
