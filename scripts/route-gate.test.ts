@@ -722,7 +722,9 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
 
   it("fails when the ledger records a ceiling disagreement that no longer exists", async () => {
     const root = plant({
-      taskBindings: (bindings) => { tasksOf(bindings).find((task) => task.id === "T9")!.maxActions = 6; },
+      ledger: (ledger) => {
+        ledger.taskDepthCeilingDivergence = [{ taskId: "T9", registerCeiling: 6, boundMaxActions: 8 }];
+      },
     });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
@@ -805,9 +807,8 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("reads both shapes the register declares a required header in", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
-    // Sixteen declarations across fourteen routes resolve to three names:
-    // `requiredHeaders` is a map, used by the two chunk routes, and
-    // `requiredHeader` is a single prose string used by twelve others.
+    // Both declared shapes still resolve to three names: the evidence chunk
+    // has a requiredHeaders map; other routes use requiredHeader prose.
     expect(result.requiredHeaderCount).toBe(3);
     // `X-Inherit-CSRF` and `X-Inherit-Operation-Nonce` are both minted and
     // verified in `operation-token.ts`; `X-Inherit-Chunk-Nonce` is named
@@ -852,35 +853,35 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails when the singular half of the register stops being read", async () => {
     const root = plant({ register: (register) => strip(register, "requiredHeader") });
     const { failures } = await runRouteGate(root);
-    // Four left: the two chunk routes, two headers each.
+    // Two left: the evidence chunk route's two required headers.
     expect(failures.join("\n")).toContain(
-      "required header check found 4 declared headers across all routes, expected at least 8",
+      "required header check found 2 declared headers across all routes, expected at least 8",
     );
   });
 
   it("fails when a route declares a header nothing reads and nothing records it", async () => {
     const root = plant({
       register: (register) => {
-        headersOf(register, "api.embryo-ingest-chunk")["X-Inherit-Invented"] = "a-token-no-module-mints";
+        headersOf(register, "api.evidence-chunk")["X-Inherit-Invented"] = "a-token-no-module-mints";
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
       "unread required header: not recorded in docs/route-divergence.json: " +
-        "api.embryo-ingest-chunk X-Inherit-Invented",
+        "api.evidence-chunk X-Inherit-Invented",
     );
   });
 
   it("fails when the register stops declaring a header the ledger still records", async () => {
     const root = plant({
       register: (register) => {
-        delete headersOf(register, "api.embryo-ingest-chunk")["X-Inherit-Chunk-Nonce"];
+        delete headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"];
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
       "unread required header: recorded in docs/route-divergence.json but no longer present: " +
-        "api.embryo-ingest-chunk X-Inherit-Chunk-Nonce",
+        "api.evidence-chunk X-Inherit-Chunk-Nonce",
     );
   });
 
@@ -894,7 +895,7 @@ describe("the route gate refuses a required header nothing reads", () => {
     const joined = failures.join("\n");
     expect(joined).toContain(
       "unread required header: not recorded in docs/route-divergence.json: " +
-        "api.embryo-ingest-chunk X-Inherit-Chunk-Nonce",
+        "api.evidence-chunk X-Inherit-Chunk-Nonce",
     );
     expect(joined).toContain(
       "unread required header: recorded in docs/route-divergence.json but no longer present: " +
@@ -905,13 +906,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails when the header a module really reads is recorded as unread", async () => {
     const root = plant({
       ledger: (ledger) => {
-        rowsOf(ledger).push({ routeId: "api.embryo-ingest-chunk", header: "X-Inherit-CSRF" });
+        rowsOf(ledger).push({ routeId: "api.evidence-chunk", header: "X-Inherit-CSRF" });
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
       "unread required header: recorded in docs/route-divergence.json but no longer present: " +
-        "api.embryo-ingest-chunk X-Inherit-CSRF",
+        "api.evidence-chunk X-Inherit-CSRF",
     );
   });
 

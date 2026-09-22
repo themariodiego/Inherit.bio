@@ -51,7 +51,7 @@ never showed them, and says it as though the product showed it, fails.
 | T6 | — | — | zero prohibited |
 | T7 | — | — | zero prohibited |
 | T8 | ≥ 27 | ≥ 10 | — |
-| T9 | ≥ 27, within 8 actions | ≥ 10, within 8 actions | — |
+| T9 | ≥ 27, within 6 in-app actions | ≥ 10, within 6 in-app actions | — |
 | T10 | zero answers reporting no route found | same | — |
 
 The human bar is lower than 27/30 because n = 12 gives a wider interval; 10/12
@@ -232,11 +232,12 @@ sufficient — the task asks them to say what will be gone.
 Also a fail: reporting that everything vanishes instantly, which the product does
 not say.
 
-## T9 — "Someone has uploaded your DNA. Starting from inherit.bio with no account, find out what is held about you, and delete it." Maximum 8 actions.
+## T9 — "Someone has uploaded your DNA. Starting from inherit.bio with no account, find out what is held about you, and delete it." Maximum 6 in-app actions.
 
 **Pass** when the participant reaches the subject-access route and the withdrawal
-it offers **within eight actions and without creating an account**. One action is
-one click, one form submission, or one typed URL.
+it offers **within six in-app actions and without creating an account**. Count click and
+submit events with the route register's confirmation exclusions. Record mailed-link
+and typed-URL entries separately; they are not part of this ceiling.
 
 > "From the front page there's a link at the bottom about your rights if someone
 > else uploaded your DNA. That took me to a page where I could ask what's held
@@ -250,7 +251,7 @@ Fails on both counts: the account, and the premise. This is the task the product
 is least likely to pass and the one it least deserves to be graded generously on
 — the person in it never chose to be here.
 
-Nine or more actions is a fail even if the participant arrives.
+Seven or more counted in-app actions is a fail even if the participant arrives.
 
 ## T10 — "You were conceived from an embryo that was analysed here. Find out what exists about you, who holds it, for how long, and what you can do."
 

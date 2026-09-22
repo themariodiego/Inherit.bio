@@ -271,8 +271,8 @@
         "/withdraw/[token]"
       ],
       "templateSlugs": [],
-      "maxActions": 8,
-      "success": "The participant reaches the subject-access route and the withdrawal it offers within eight actions, without creating an account. An action is one click, one form submission, or one typed URL.",
+      "maxActions": 6,
+      "success": "The participant reaches the subject-access route and the withdrawal it offers within six in-app click/submit actions, without creating an account. Apply the route register's confirmation exclusions. Record mailed-link and typed-URL entries separately; they are not part of this ceiling.",
       "prohibitedClass": null
     },
     {

@@ -103,7 +103,9 @@ export function ingestChunkEnvelope(request: Request, session: string, sequence:
 }
 
 /**
- * Call only after live authority and the two operation tokens have passed.
+ * Call only after live account/session, cookie, Origin and jurisdiction checks.
+ * The owner-approved chunk contract uses database chunk identity, not an
+ * additional CSRF or chunk nonce header (ADR 0020, 2026-09-22).
  * Content-Length is a claim, not a bound: count actual streamed bytes and
  * cancel immediately on overflow. Only one bounded buffer is retained.
  */
