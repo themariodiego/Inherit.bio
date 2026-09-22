@@ -165,6 +165,33 @@ test("/genome/[subject]/data/browser complete: an rsID search answers from the f
   expect(interactives.length, interactives.join(" | ")).toBeLessThanOrEqual(12);
 });
 
+test("a synthetic overlapping-region response can be scrolled with the keyboard", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  // UI interaction fixture only: no source/preparation or capacity claim is
+  // made from these overlapping annotations. The surrounding tests retain
+  // their real upload, preparation and unmodified region responses.
+  await page.route("**/api/browse/region", route => route.fulfill({ json: {
+    variants: Array.from({ length: 40 }, () => ({ rsid: null, chrom: 15, pos: 74749576,
+      ref: "A", alt: "C", genotype: "A/C" })), truncated: false,
+  } }));
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const widget = page.getByTestId("genome-browser");
+  const gear = widget.getByRole("button", { name: "Track settings: Your variants", exact: true });
+  await expect(gear).toBeVisible({ timeout: 60_000 });
+  await gear.press("Enter");
+  await widget.getByRole("menuitem", { name: "Set track height", exact: true }).press("Enter");
+  const height = widget.getByRole("spinbutton", { name: "Track Height", exact: true });
+  await height.fill("100"); await height.press("Enter");
+  const slider = widget.getByRole("slider", { name: "Scroll track: Your variants", exact: true });
+  await expect(slider).toBeVisible();
+  const max = await slider.getAttribute("max"); expect(Number(max)).toBeGreaterThan(0);
+  await slider.press("End"); await expect(slider).toHaveValue(max!);
+  await expect.poll(() => widget.locator('.igv-viewport[data-track-type="annotation"] canvas')
+    .evaluate(element => parseFloat((element as HTMLElement).style.top))).toBeLessThan(0);
+  await slider.press("Home"); await expect(slider).toHaveValue("0");
+  await slider.press("Escape"); await expect(slider).not.toBeFocused();
+});
+
 test("genome track settings preserve keyboard focus, apply edits and escape back into the page", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto(`${BROWSER}?q=rs762551`);

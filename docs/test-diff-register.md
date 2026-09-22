@@ -2171,3 +2171,15 @@ extractor or legal statement is removed or relaxed.
   Full-app CI remains required; no acceptance or density threshold changes.
 - See `docs/evidence/genome-widget-controls-20260922.md` for remaining interaction
   inventory and verification limits. G1.13b remains NO.
+
+## Native genome track scrolling · 22 September 2026
+
+- `scripts/igv-track-scrolling.test.ts` adds seven installed-library Chromium
+  checks for keyboard and pointer endpoints, real content movement, resize,
+  focus return, target size, reflow, axe and normal tab traversal. Overlapping
+  annotations are explicitly a UI fixture, not prepared DNA or capacity proof.
+- `e2e/genome-data.spec.ts` adds a separately labelled synthetic-response UI
+  journey while preserving every real source/preparation test and response.
+  No existing test, assertion, timeout or acceptance threshold changes.
+- `docs/evidence/genome-track-scrolling-20260922.md` records the scope and the
+  remaining context-menu and popover work. Full-app CI is still required.
