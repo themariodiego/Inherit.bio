@@ -24,6 +24,7 @@ const probes = [
   "authorize_mail_submission_v1(null,null)",
   "read_co_parent_refusal_v1(null)",
   "refuse_co_parent_invitation_session_v1(null,null)",
+  "expire_invitation_refusal_receipts_v1()",
   "run_due_embryo_retention_phases_v1()",
   "claim_refused_invitation_draft_purge_v1(repeat('a',64))",
   "finish_refused_invitation_draft_purge_v1(null,null)",

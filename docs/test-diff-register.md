@@ -1,5 +1,60 @@
 # Test diff register
 
+## Embryo nonce capabilities · 22 September 2026
+
+`embryo_nonce_capabilities.sql` adds actual service-role refusals for direct
+helper execution and nonce INSERT, UPDATE, DELETE and TRUNCATE, plus effective
+privilege checks including REFERENCES and TRIGGER. The table remains readable
+only by the service role and owner. It exercises the existing operation RPCs
+as the service role: draft creation, signing, invitation, activation, acceptance,
+finalization, configuration, mapping, card delivery, purpose grant, disposition,
+restriction and accountless adult response. It preserves the intentional NULL
+form target, exact configuration retry and failed-target nonce rollback.
+
+The no-argument expiry RPC keeps its original predicate, deadline and count
+through a private definer and public invoker facade. Tests verify expired-only
+deletion, unchanged live receipts and unrelated nonces, and a zero-row retry.
+`invitation_public_refusal.sql` retains all 21 assertions, including refusal
+through service_role, exact retry after draft/session deletion, and expiry. Its
+two malformed receipt UPDATEs now run as the migration owner to preserve their
+original constraint assertions independently of the new service write denial.
+`invitation-transition-locks.mjs` adds expiry to the existing real two-backend
+advisory-lock test. All prior probes remain.
+
+The complete current nonce call mapping is below. Each caller reaches the
+helper under a definer. The private refusal core is an invoker already denied
+to service_role, reached from the private submit definer. No operation body,
+target rule or lock order changes; no second operation allowlist is introduced.
+
+| Operation | Target | Caller | Existing target lifetime |
+|---|---|---|---|
+| `cohort_draft_create` | `account`, UUID | `public.create_embryo_cohort_draft_v1` | Account FK and active self principal/subject; creates the draft afterward. |
+| `artifact_sign` | `cohort_draft`, UUID | `public.sign_embryo_artifact_v1` | Locked live unexpired draft; failure rolls back early nonce consumption. |
+| `invitation_create` | `cohort_draft`, UUID | `public.create_embryo_draft_invitation_v1` | Locked owned live unexpired draft, including empty/idempotent receipts. |
+| `cohort_finalize` | `cohort_draft`, UUID | `public.finalize_embryo_cohort_v1` | Locked owned live unexpired draft; creates the cohort afterward. |
+| `rights_activate` | `form`, NULL | `public.activate_rights_session_v1` | Intentionally consumes before token lookup; unknown tokens still burn the form. |
+| `invitation_accept` | `rights_session`, UUID | `public.accept_embryo_co_parent_invitation_v1` | Locked active unexpired session plus current invitation/draft; auth-session UUID is NULL. |
+| `invitation_refuse` | `rights_session`, UUID | `private.refuse_co_parent_invitation_v1` | Initial call locks an active unexpired session/current invitation; the bounded exact retry receipt may outlive its target. |
+| `invitation_respond` | `rights_session`, UUID | `public.respond_adult_subject_invitation_session_v1` | Locked active unexpired adult-subject session; account may be NULL and auth-session UUID is NULL. |
+| `record_key_print` | `cohort`, UUID | `public.deliver_embryo_record_key_cards_v1` | Locked upload-pending, ingesting or active cohort and exact recipient. |
+| `cohort_restrict` | `cohort`, UUID | `public.restrict_embryo_cohort_v1` | Locked existing cohort; actor/state check after consumption rolls failures back. |
+| `embryo_disposition` | `embryo`, UUID | `public.record_embryo_disposition_v1` | Locked embryo then current cohort, plus action-specific authority/state. |
+| `cohort_purpose_grant` | `cohort`, UUID | `public.grant_cohort_purpose_v1` | Locked upload-pending, ingesting or active cohort and exact principal/artifact. |
+| `ingest_configure` | `ingest_session`, UUID | `private.configure_embryo_ingest_session_v1` | Credential-bound session then current cohort/auth/due locks; open and never configured. |
+| `ingest_mapping_inspect` | `ingest_session`, UUID | `private.create_embryo_mapping_challenge_v1` | Current configured PGT session/transport, no chunks; creates the challenge afterward. |
+| `ingest_mapping_decide` | `ingest_session`, UUID | `private.resolve_embryo_mapping_challenge_v1` | Current session plus locked current challenge; an unknown-build decision may then mark failure. |
+
+This closes direct nonce mutation by the service role. It does not prove every
+polymorphic, JSON or embedded-text writer participates in a terminal graph
+transaction. The rejected never-configured embryo purge remains outside the
+repository. Exact graph closure, bounded work and real-crypto contact-envelope
+survival remain separate unresolved proofs. No source writes, provider cleanup,
+upload activation, retention-bound change or release-row promotion is included.
+Local validation: 61 focused token/refusal/activation/cleanup unit tests, script
+lint and syntax, and readability pass under Node 22 and pnpm 10.33.0. pgTAP
+and the real two-backend test are authored for CI and remain unexecuted locally;
+no database or hosted evidence is claimed.
+
 ## Private embryo configuration prerequisites · 22 September 2026
 
 Adds `supabase/tests/embryo_ingest_session_configuration.sql` without removing
