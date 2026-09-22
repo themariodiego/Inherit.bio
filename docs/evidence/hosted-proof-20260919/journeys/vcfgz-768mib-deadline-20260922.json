@@ -453,5 +453,14 @@
       "This observation does not state a later completion time or prove all remaining provider payloads are present.",
       "No retention, claim, artifact, upload or preparation bound was changed."
     ]
+  },
+  "checkpointInterpretation": {
+    "method": "Read the immutable recorded checkpoint and the exact deployed src/lib/uploads/own-preparation-pipeline.ts at 00d529faffeacab0c2159609700bf414657ae0e6; arithmetic uses the existing admission, checkpoint and deadline timestamps. No new hosted request.",
+    "lastCompletedCheckpoint": "canonical-materialization",
+    "completedAt": "2026-09-22T13:58:38.350562Z",
+    "admissionToCheckpointSeconds": 3401.461031,
+    "deadlineMarginSeconds": 198.538969,
+    "nextIncompletePhaseInference": "Canonical artifact rereading and initial rsID run generation follow this completed checkpoint. No rsid-runs completion checkpoint was recorded.",
+    "limitation": "The checkpoint label does not measure the active phase or identify its precise failure, CPU time, provider I/O time or database time. No final artifact ratio or larger capacity is established."
   }
 }

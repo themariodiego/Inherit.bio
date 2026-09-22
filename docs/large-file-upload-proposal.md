@@ -74,10 +74,14 @@ one-hour deadline, 4,096-artifact cap or 1 GiB artifact-byte budget.
 
 The earlier 2 GiB run already showed that preparation needs additional work;
 its extrapolated artifact requirement is not a successful measurement. The
-768 MiB comparison now shows source merging followed by canonical merging and
-materialization still in progress at the deadline. Use its recorded checkpoints
-to profile repeated artifact reads, writes and merge passes before changing the
-pipeline. The partial acknowledged ratio was already 1.018620063 per decoded
+768 MiB comparison records the last completed checkpoint as canonical
+materialization at 13:58:38.350562 UTC, leaving 198.538969 seconds before the
+unchanged deadline. That label records completed work, not the active phase.
+Reading the exact deployed pipeline shows that canonical rereading and initial
+rsID runs come next; no completed rsID-runs checkpoint was recorded. This is a
+control-flow inference, not a timed measurement of that remaining work. Profile
+phase CPU time, artifact I/O and database requests before choosing the next
+optimization. The partial acknowledged ratio was already 1.018620063 per decoded
 byte; the older 0.87 ratio is not a reliable capacity promise. Reduce measured
 work within the existing bounds and rerun the same synthetic journey. The full
 receipt is `evidence/hosted-proof-20260919/journeys/vcfgz-768mib-deadline-20260922.json`.
