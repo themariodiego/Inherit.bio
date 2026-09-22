@@ -2159,3 +2159,15 @@ extractor or legal statement is removed or relaxed.
   fixture hit an existing consistency constraint; an explicit constraint-refusal
   assertion remains, and the stale-source probe changes both revision fields
   coherently before requiring the same member-gate refusal. No guard is bypassed.
+
+## Genome widget settings and keyboard controls · 22 September 2026
+
+- `scripts/igv-interactions.test.ts` adds actual installed-library Chromium
+  checks for track settings, dialogs, colors, ordering, display modes and
+  removal, with normal tab traversal, mobile reflow, target size and axe checks.
+  Existing keyboard and accessibility tests are unchanged.
+- `e2e/genome-data.spec.ts` adds a settings edit/cancel/menu/page Escape journey
+  after the existing synthetic upload, retaining every previous assertion.
+  Full-app CI remains required; no acceptance or density threshold changes.
+- See `docs/evidence/genome-widget-controls-20260922.md` for remaining interaction
+  inventory and verification limits. G1.13b remains NO.

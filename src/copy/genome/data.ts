@@ -189,4 +189,12 @@ export const IGV_CONTROL_LABELS = {
   zoomOut: "Zoom out",
   zoomIn: "Zoom in",
   region: "Interactive genome browser",
+  trackSettings: "Track settings",
+  closeMenu: "Close menu",
+  closeDialog: "Close dialog",
+  color: "Color",
+  moreColors: "More colors",
+  colorValue: "Color name or code",
+  referenceTrack: "Reference positions",
+  trackOrder: "Track order",
 } as const;

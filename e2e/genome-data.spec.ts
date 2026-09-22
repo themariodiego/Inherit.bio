@@ -165,6 +165,38 @@ test("/genome/[subject]/data/browser complete: an rsID search answers from the f
   expect(interactives.length, interactives.join(" | ")).toBeLessThanOrEqual(12);
 });
 
+test("genome track settings preserve keyboard focus, apply edits and escape back into the page", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const widget = page.getByTestId("genome-browser");
+  const gear = widget.getByRole("button", { name: "Track settings: Your variants", exact: true });
+  await expect(gear).toBeVisible({ timeout: 60_000 });
+  await gear.focus(); await page.keyboard.press("Enter");
+  const menu = widget.getByRole("menu");
+  await expect(menu).toBeVisible();
+  const rename = menu.getByRole("menuitem", { name: "Set track name", exact: true });
+  await expect(rename).toBeFocused();
+  await page.keyboard.press("Enter");
+  const dialog = widget.getByRole("dialog", { name: "Track Name", exact: true });
+  const input = dialog.getByRole("textbox", { name: "Track Name", exact: true });
+  await expect(input).toBeFocused();
+  await input.fill("My stored variants");
+  await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+  const renamedGear = widget.getByRole("button", { name: "Track settings: My stored variants", exact: true });
+  await expect(renamedGear).toBeFocused();
+  await page.keyboard.press("Enter"); await page.keyboard.press("Enter");
+  await expect(input).toBeFocused(); await input.fill("Discard this edit");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden(); await expect(renamedGear).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(menu).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden(); await expect(renamedGear).toBeFocused();
+  await page.keyboard.press("Escape");
+  expect(await widget.evaluate(element => element.shadowRoot?.activeElement === null)).toBe(true);
+  await expect(page.locator('[data-claim-block] table tbody tr')).toContainText("A/C");
+});
+
 /**
  * `/genome/[subject]/data/browser partial-coverage`, and unusually for this
  * register's vocabulary the mapping needs no argument: the page renders both
