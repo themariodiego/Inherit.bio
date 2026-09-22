@@ -2290,3 +2290,21 @@ extractor or legal statement is removed or relaxed.
   it did not record which route request or transition failed. The absent hub
   waypoint is a demonstrated test gap, not a proven cause of that failure.
   No application behavior, network limit or release verdict changes here.
+
+
+## Detached viewer mutation cleanup · 22 September 2026
+
+- The new `scripts/igv-detached-cleanup.test.ts` exercises the installed native
+  viewer and all current interaction adapters. After its real unknown-position
+  alert is closed, a queued viewport mutation is delivered with the host
+  detached and disposal scheduled for a later task. The next task must run,
+  remove the native roots, render the next page and produce no browser errors.
+- A test-only observer watchdog bounds an otherwise infinite microtask loop;
+  reaching the watchdog is an assertion failure. The regression fails without
+  the scrolling adapter's attached-host guard and passes with it. The guard
+  prevents detached controls being repeatedly removed and recreated before
+  passive cleanup can run. No existing assertion, timeout or threshold changes.
+- CI run 35755611547 had received the My Genome HTTP 200 response and updated
+  URL, but its heading assertion stalled until the 120-second test timeout.
+  This regression demonstrates the teardown defect behind that failure shape;
+  the existing complete same-document upload journey still has to pass CI.

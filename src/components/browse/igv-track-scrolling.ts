@@ -31,6 +31,10 @@ export function enhanceIgvTrackScrolling(container: HTMLElement, labels: Record<
   `;
   root.appendChild(style);
   function update() {
+    // React can detach the host before passive-effect cleanup runs. Rebuilding
+    // controls in that detached tree would keep queuing mutation microtasks
+    // and prevent the cleanup task (or the next page) from running.
+    if (abort.signal.aborted || !container.isConnected) return;
     for (const [thumb, range] of ranges) {
       if (!thumb.isConnected) { range.remove(); ranges.delete(thumb); }
     }
