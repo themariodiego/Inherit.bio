@@ -1,8 +1,10 @@
 # Large-file upload proposal · 22 September 2026
 
-Status: proposal only. The hosted objective requires an owner decision before
-adding a resumable upload path. No transport, deadline, artifact budget or
-production setting has been changed for this proposal.
+Status: approved by the owner in chat on 22 September 2026. Implementation
+starts with the provider-contract proof below. The first empty-upload probe
+confirmed an offset-read authorization gap; transfers remain unactivated.
+No deadline, artifact budget or production setting has changed. See
+[the proof and gateway requirements](resumable-upload-contract.md).
 
 A fresh 768 MiB plain synthetic VCF failed during transfer from the owner
 computer, after the page reached 82%. No HTTP status was captured and no file
@@ -61,8 +63,9 @@ measurement of the preview's deployed version. It does mean a direct client
 library switch cannot be assumed to preserve the app's current account,
 session and revocation checks on offset reads. Prove that boundary and orphan
 cleanup first; if a separate authority gateway is needed, document its exact
-contract and costs before proposing activation. No provider write or TUS
-upload was made during this source review.
+contract and costs before proposing activation. That source review preceded
+approval and made no provider write. The later approved empty-upload probe and
+its failed authority boundary are recorded in the linked contract proof.
 
 ## Larger capacity remains a separate measurement
 
