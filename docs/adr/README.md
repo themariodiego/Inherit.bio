@@ -36,3 +36,4 @@ writing a superseding ADR, not silently drifting.
 | [0028](./0028-jurisdiction-gating-mechanism.md) | The jurisdiction gating mechanism: default deny across all 249 codes, and no determination authored by the system that enforces it | Proposed |
 | [0029](./0029-density-contract.md) | The density contract: measured budgets rather than review judgement, and the accessibility rule wins where they conflict | Proposed |
 | [0030](./0030-hosted-preparation-on-cloudflare-containers.md) | Hosted preparation on Cloudflare Containers: a five-minute cron wakes one standard-1 container that runs one pass and exits | Accepted by owner decision |
+| [0031](./0031-own-upload-zip-preflight.md) | Open a bounded single-file own-DNA ZIP locally; store the contained source | Accepted for draft implementation; unreleased |

@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
+import AdmZip from "adm-zip";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { finishStagedUpload, prepareSubjectFile, uploadSubjectFile } from "./subject-upload-browser";
+import { syntheticOwnUploadFormats } from "../../../scripts/synthetic-own-upload-formats";
 const key = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const uploadId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -116,6 +118,55 @@ describe("preparing an already finalized file", () => {
   });
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+describe("ZIP input before the ordinary upload", () => {
+  const limits = { maximumArrayBytes: 10_000, maximumVcfBytes: 20_000, maximumGvcfBytes: 30_000,
+    maximumAccountBytes: 100_000, maximumActiveUploads: 2, reservedBytes: 0, activeUploads: 0 };
+  function zipFile(contents: Uint8Array) {
+    const zip = new AdmZip(); zip.addFile("private-source-name.txt", Buffer.from(contents));
+    return new File([new Uint8Array(zip.toBuffer())], "not-selected-by-extension.data");
+  }
+  it.each(syntheticOwnUploadFormats)("uploads and hashes only the exact $id source inside", async fixture => {
+    const raw = Buffer.from(fixture.text);
+    expect(await uploadSubjectFile(zipFile(raw), subjectId, vi.fn(), limits)).toEqual(completed);
+    const declaration = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(declaration).toMatchObject({ sizeBytes: raw.length, sha256: createHash("sha256").update(raw).digest("hex") });
+    expect(JSON.stringify(declaration)).not.toContain("private");
+    const body = requests[0].body as File;
+    expect(Buffer.from(await body.arrayBuffer())).toEqual(raw);
+    expect(body.name).toBe("raw-dna-data");
+  });
+  it("preserves a gzip member's compressed bytes as the stored source", async () => {
+    const raw = gzipSync(Buffer.from(syntheticOwnUploadFormats.find(format => format.id === "vcf")!.text));
+    expect(await uploadSubjectFile(zipFile(raw), subjectId, vi.fn(), limits)).toEqual(completed);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      declaredFormat: "VCF.GZ", sizeBytes: raw.length, sha256: createHash("sha256").update(raw).digest("hex"),
+    });
+    expect(Buffer.from(await (requests[0].body as File).arrayBuffer())).toEqual(raw);
+  });
+  it("still applies the contained format's limit after the archive bound", async () => {
+    await expect(uploadSubjectFile(zipFile(Buffer.from(syntheticOwnUploadFormats[0].text)), subjectId, vi.fn(), {
+      ...limits, maximumArrayBytes: 10,
+    })).rejects.toMatchObject({ code: "too_large", limitBytes: 10 });
+    expect(fetchMock).not.toHaveBeenCalled(); expect(requests).toHaveLength(0);
+  });
+  it("does not turn an archived PDF, multiple samples or a nested ZIP into an admitted source", async () => {
+    for (const [source, code] of [
+      [Buffer.from("%PDF-1.7\n"), "pdf_not_data"],
+      [Buffer.from(vcf.replace("SAMPLE", "ONE\tTWO")), "subject_source_not_single_sample"],
+      [new Uint8Array(await zipFile(Buffer.from(vcf)).arrayBuffer()), "archive_invalid"],
+    ] as const) {
+      await expect(uploadSubjectFile(zipFile(source), subjectId, vi.fn(), limits)).rejects.toMatchObject({ code });
+    }
+    expect(fetchMock).not.toHaveBeenCalled(); expect(requests).toHaveLength(0);
+  });
+  it("refuses a damaged archive and unknown limits before any request", async () => {
+    await expect(uploadSubjectFile(new File(["PK\u0003\u0004"], "broken.zip"), subjectId, vi.fn(), limits))
+      .rejects.toMatchObject({ code: "archive_invalid" });
+    await expect(uploadSubjectFile(zipFile(Buffer.from(vcf)), subjectId, vi.fn(), null))
+      .rejects.toMatchObject({ code: "unavailable" });
+    expect(fetchMock).not.toHaveBeenCalled(); expect(requests).toHaveLength(0);
+  });
+});
 describe("browser-to-Storage own-subject upload", () => {
   it("sends a closed hash declaration, uses only its restricted bearer, and finalizes without a body", async () => {
     const progress = vi.fn(); const source = file();

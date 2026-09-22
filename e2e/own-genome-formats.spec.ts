@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createHash, randomUUID } from "node:crypto";
 import { gzipSync } from "node:zlib";
+import AdmZip from "adm-zip";
 import { syntheticOwnUploadFormats } from "../scripts/synthetic-own-upload-formats";
 import { subjectFinalizationReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { adminClient, completeOwnUploadConsent, createConfirmedUser, signIn } from "./helpers";
@@ -9,15 +10,15 @@ import { generateOwnFileWithChosenReports } from "./own-report-helpers";
 // Real picker, Storage, preparation and explicit report choice for every
 // admitted content format. No result rows or consent grants are inserted.
 for (const fixture of syntheticOwnUploadFormats) {
-  for (const compressed of [false, true]) {
-    test(`${fixture.id} ${compressed ? "gzip" : "plain"}: own entry to prepared source and report`, async ({ page }) => {
+  for (const encoding of ["plain", "gzip", "zip"]) {
+    test(`${fixture.id} ${encoding}: own entry to prepared source and report`, async ({ page }) => {
       const user = { email: `own-formats-${randomUUID()}@e2e.local`, password: "e2e-own-formats-password" };
       await createConfirmedUser(user.email, user.password);
       await signIn(page, user.email, user.password);
       const errors: string[] = [];
       page.on("pageerror", error => errors.push(error.message));
-      await page.goto(compressed ? "/genome/me" : "/overview");
-      await page.getByRole("link", { name: compressed ? "Add a file" : "I have a DNA file", exact: true }).click();
+      await page.goto(encoding === "plain" ? "/overview" : "/genome/me");
+      await page.getByRole("link", { name: encoding === "plain" ? "I have a DNA file" : "Add a file", exact: true }).click();
       await expect(page).toHaveURL(/\/files\/upload(?:\?|$)/);
       await completeOwnUploadConsent(page, page.url());
 
@@ -26,9 +27,11 @@ for (const fixture of syntheticOwnUploadFormats) {
       const preparing = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/process$/.test(response.url())
         && response.request().method() === "POST");
       for (const promise of [finalizing, preparing]) void promise.catch(() => {});
-      const decoded = Buffer.from(fixture.text), bytes = compressed ? gzipSync(decoded) : decoded;
+      const decoded = Buffer.from(fixture.text), bytes = encoding === "gzip" ? gzipSync(decoded) : decoded;
+      const zip = new AdmZip(); zip.addFile("synthetic-dna.txt", decoded);
+      const selected = encoding === "zip" ? zip.toBuffer() : bytes;
       // Deliberately uninformative name and MIME: content selects the parser.
-      await page.locator('input[type="file"]').setInputFiles({ name: "synthetic.data", mimeType: "application/octet-stream", buffer: bytes });
+      await page.locator('input[type="file"]').setInputFiles({ name: "synthetic.data", mimeType: "application/octet-stream", buffer: selected });
       const finalized = await finalizing;
       expect(finalized.status()).toBe(200);
       const { fileId } = subjectFinalizationReceipt.parse(await finalized.json());

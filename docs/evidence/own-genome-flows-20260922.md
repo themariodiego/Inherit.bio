@@ -32,10 +32,10 @@ and concatenated gzip members, exact original and decoded hashes, identical
 genotypes, an exact decoded-size boundary and a one-byte-over refusal. Separate
 regressions cover long headers, false format hints and block-only records.
 
-The browser suite adds fourteen actual journeys: each representation in plain
-and gzip form. They start from Overview or My Genome, follow the upload link,
+The browser suite adds twenty-one actual journeys: each representation in plain,
+gzip and single-file ZIP form. They start from Overview or My Genome, follow the upload link,
 complete consent, upload through the real Storage provider, prepare, check the
-original bytes and absence of unchosen analysis grants, follow Overview's
+source bytes and absence of unchosen analysis grants, follow Overview's
 report-choice link, explicitly generate a report, and read its exact synthetic
 genotype through My Genome. Test discovery is not execution; their CI result
 must be checked on the pushed head before claiming these journeys passed.
@@ -61,10 +61,18 @@ No production mutation, source read, upload or deployment was performed.
 Disabled hosted preparation does not mean small-file synchronous preparation
 is disabled; it means the large-file hosted path has not been activated.
 
-The repository accepts extracted consumer text/CSV and gzip, not ZIP archives.
-This matters because consumer downloads can arrive as ZIP-wrapped text files
+The draft now opens a bounded single-file ZIP in the own-DNA picker, in addition
+to direct consumer text/CSV and gzip. This matters because downloads can arrive as ZIP-wrapped text files
 (23andMe Customer Care, “Accessing Your Raw Genetic Data,” read 22 September 2026).
-ZIP intake remains work to do. BAM/CRAM/FASTQ and BCF are not admitted by the
+Only the exact contained DNA file is uploaded, hashed, retained and downloaded;
+the ZIP container and its names are not saved. This distinction and the 64 MiB
+archive/member bound appear before file selection. Its normal content-format
+ceiling still applies. ADR-0031 and the route register define this local
+preflight; its full browser CI is still required. A standalone native Chromium
+probe decoded 24 MiB of invented bytes exactly and refused a one-byte-over
+configured bound; that is decoder evidence, not a hosted preparation proof.
+
+BAM/CRAM/FASTQ and BCF are not admitted by the
 current upload contract; raw-read calling is a separate capability, not a file
 extension to add to the picker.
 
