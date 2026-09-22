@@ -28,11 +28,11 @@ export function observedVcfCall(f: string[], chrom: number, pos: number, line: n
 
 /** File read quality does not require an rsID; report matching still does. */
 export function observedVcfPointCall(f: string[], chrom: number, pos: number, line: number): ObservedCall | null {
-  // A gVCF lists <NON_REF> after the alternate it observed (D-128). The
+  // A gVCF lists <NON_REF> or <*> after the alternate it observed (D-128). The
   // trailing symbolic allele is dropped for a called site; a row that calls
   // nothing but the reference there is a block-like record the parser skips,
   // never a reference finding.
-  const alt = f[4]?.endsWith(",<NON_REF>") ? f[4].slice(0, -",<NON_REF>".length) : f[4];
+  const alt = f[4]?.replace(/,<(?:NON_REF|\*)>$/, "");
   if (f.length !== 10 ||
       !/^[ACGT]$/.test(f[3]) || !/^[ACGT]$/.test(alt) || f[3] === alt ||
       /(?:^|;)(?:END|SVLEN)=/.test(f[7])) return null;
