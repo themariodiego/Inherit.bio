@@ -16,6 +16,8 @@ import { classifyIntent, checkResponse, foldStreamChunks, type AllowedNumerals }
 import { prepareOwnCopilotProvider } from './own-provider-authority';
 import { checkOwnChat, ownChatRpc, ownChatSubject, ownChatHistorySchema, type OwnChatOperation } from './own-chat';
 import { readOwnChatToken, snapshotHash } from './own-chat-token';
+import { readOwnChatAncestry } from './own-chat-ancestry';
+import { capturedAncestryResult, OWN_ANCESTRY_REPORT, OWN_ANCESTRY_TITLE } from './own-chat-ancestry-content';
 import { ownChatProjectionSchema, ownChatCallSchema, ownChatReportSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
 export const ownChatBodySchema = z.union([
     z.object({ contextToken: z.string().min(16).max(12000), message: z.string().trim().min(1).max(8000) }).strict(),
@@ -100,6 +102,8 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
         }
         async function reports() {
             const rows = await pages('reports', ownChatReportSchema);
+            if (rows.some(r => r.report.slug === OWN_ANCESTRY_REPORT))
+                throw new Error('copilot_unavailable');
             if (rows.some(r => !projection.sources.some(s => s.id === r.file_id && s.completed.some(c => c.purpose === r.purpose))))
                 throw new Error('copilot_unavailable');
             return rows.filter(r => !isFixtureSlug(r.report.slug));
@@ -137,21 +141,31 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
                     await check();
                     return result;
                 } }),
-            list_reports: tool({ description: 'List only existing completed reports authorized for this subject; never generates reports.',
+            list_reports: tool({ description: 'List existing completed reports and ancestry authorized for this subject; never generates results.',
                 inputSchema: z.object({ category: z.string().max(100).nullish() }).strict(), execute: async ({ category }) => {
                     await check();
                     const rows = await reports();
-                    const result = { reports: rows.filter(r => !category || r.report.catalogSnapshot?.template.category === category).map(r => ({ slug: r.report.slug, title: r.report.catalogSnapshot?.template.title ?? r.report.slug,
+                    const ancestry = (!category || category === 'ancestry') && projection.sources.some(s => s.completed.some(c => c.purpose === 'ancestry'))
+                        ? await readOwnChatAncestry(provider.authority, projection, check) : [];
+                    const result = { reports: [...rows.filter(r => !category || r.report.catalogSnapshot?.template.category === category).map(r => ({ slug: r.report.slug, title: r.report.catalogSnapshot?.template.title ?? r.report.slug,
                             category: r.report.catalogSnapshot?.template.category ?? null,
                             file_id: r.file_id, purpose: r.purpose, covered: r.report.covered, completed_at: r.completed_at })),
+                            ...ancestry.map(r => ({ slug: OWN_ANCESTRY_REPORT, title: OWN_ANCESTRY_TITLE, category: 'ancestry',
+                                file_id: r.fileId, purpose: 'ancestry', covered: r.content.admixture.result_state === 'available', completed_at: r.completedAt }))],
                         unavailable_sources: legacyAnalysis(), ...(category && rows.some(r => !r.report.catalogSnapshot) ? { limitation: 'Older reports without captured catalog categories cannot be matched to this category filter.' } : {}) };
                     await check();
                     return result;
                 } }),
-            get_report: tool({ description: 'Read captured report outcomes and source conflicts. Uncaptured current scientific metadata is not supplied.',
+            get_report: tool({ description: 'Read captured report outcomes and source conflicts. Use inherit:ancestry for separately enabled saved ancestry. Uncaptured current scientific metadata is not supplied.',
                 inputSchema: z.object({ slug: z.string().max(200) }).strict(), execute: async ({ slug }) => {
                     await check();
                     const rows = await reports();
+                    if (slug === OWN_ANCESTRY_REPORT) {
+                        const ancestry = await readOwnChatAncestry(provider.authority, projection, check);
+                        await check();
+                        return ancestry.length ? { slug: OWN_ANCESTRY_REPORT, sources: ancestry.map(capturedAncestryResult), unavailable_sources: legacyAnalysis() }
+                            : { slug: OWN_ANCESTRY_REPORT, error: 'ancestry_not_generated', note: 'No completed ancestry result is currently available under your selected purposes.', unavailable_sources: legacyAnalysis() };
+                    }
                     let result = capturedReportResult(rows, slug);
                     if ('error' in result && !isFixtureSlug(slug)) {
                         // Acknowledge only a real published lookup identifier. This

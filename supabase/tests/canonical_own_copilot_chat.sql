@@ -57,6 +57,68 @@ select throws_ok($$select public.revoke_own_copilot_v1('77900000-0000-4000-8000-
  '77900000-0000-4000-8000-000000000010',(select id from copilot_subject),null)$$,'22023','invalid_request','revoke requires the exact expected snapshot');
 
 select pg_temp.save_model();
+-- Reproduce persisted v1 evidence as historical rows, without changing any
+-- artifact or disabling its immutability guard. All other bindings are current.
+savepoint ancestry_disclosure_upgrade;
+create temporary table historical_configuration as select pg_temp.presentation()->'snapshot' value;
+insert into public.consent_signatures(id,artifact_key,artifact_version,artifact_body_sha256,signer_principal_id,
+ signer_account_id,target_kind,target_id,purpose,statement_keys,jurisdiction_code,jurisdiction_revision,subject_binding_revision)
+ select case when a.artifact_key='consent.own-copilot-cloud' then '77900000-0000-4000-8000-000000000101'::uuid
+ else '77900000-0000-4000-8000-000000000102'::uuid end,a.artifact_key,1,a.body_sha256,(c.value#>>'{context,principalId}')::uuid,
+ '77900000-0000-4000-8000-000000000001','subject',(select id from copilot_subject),'copilot.cloud',
+ array['model-named','data-classes-named','raw-file-excluded','revocable'],coalesce(p.jurisdiction_code,'ZZ'),p.jurisdiction_revision,
+ (c.value#>>'{context,subjectBindingRevision}')::bigint from public.consent_artifacts a cross join historical_configuration c
+ join public.profiles p on p.id='77900000-0000-4000-8000-000000000001'
+ where a.artifact_key in('consent.own-copilot-cloud','consent.copilot-cloud-model') and a.version=1;
+insert into public.purpose_grants(grant_id,grant_revision,target_kind,target_id,purpose,artifact_key,artifact_version,artifact_body_sha256,
+ signature_id,signer_principal_id,data_subject_principal_id,subject_binding_revision,jurisdiction_code,jurisdiction_revision,copilot_recipient_revision)
+ select '77900000-0000-4000-8000-000000000103',1,'subject',s.target_id,s.purpose,s.artifact_key,s.artifact_version,s.artifact_body_sha256,
+ s.id,s.signer_principal_id,s.signer_principal_id,s.subject_binding_revision,s.jurisdiction_code,s.jurisdiction_revision,
+ (c.value->>'recipientRevision')::bigint from public.consent_signatures s cross join historical_configuration c
+ where s.id='77900000-0000-4000-8000-000000000101';
+insert into public.directional_grants(grant_id,grant_revision,recipient_principal_id,recipient_account_id,relationship_or_pair_revision,direction,self_principal_revision)
+ select '77900000-0000-4000-8000-000000000103',1,(value#>>'{context,principalId}')::uuid,'77900000-0000-4000-8000-000000000001',
+ (value#>>'{context,accountBindingRevision}')::bigint,'self',(value#>>'{context,principalRevision}')::bigint from historical_configuration;
+insert into public.subject_consents(id,signature_id,subject_id,account_id,consent_type,scope,provider_key,grant_revision,copilot_recipient)
+ select '77900000-0000-4000-8000-000000000104','77900000-0000-4000-8000-000000000102',(select id from copilot_subject),
+ '77900000-0000-4000-8000-000000000001','cloud_model',array['genotypes','variant_search','reports','prs_coverage','chat_messages'],
+ 'canonical:77900000-0000-4000-8000-000000000001:'||(c.value->>'recipientRevision'),1,s.copilot_recipient
+ from historical_configuration c join public.llm_settings s on s.user_id='77900000-0000-4000-8000-000000000001';
+create temporary table historical_chat_authority as select value||jsonb_build_object('copilotGrantId','77900000-0000-4000-8000-000000000103',
+ 'copilotGrantRevision',1,'providerGrantId','77900000-0000-4000-8000-000000000104','providerGrantRevision',1) value from historical_configuration;
+insert into public.chats(id,user_id,scope_kind,subject_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
+ model_recipient_revision,authorization_fingerprint,legacy_unverified,canonical_authority)
+ select '77900000-0000-4000-8000-000000000105','77900000-0000-4000-8000-000000000001','self',(select id from copilot_subject),
+ (value#>>'{context,subjectLifecycleRevision}')::bigint,'cloud',1,(value->>'recipientRevision')::bigint,
+ encode(digest(convert_to(value::text,'UTF8'),'sha256'),'hex'),false,value from historical_chat_authority;
+insert into public.chat_messages(chat_id,user_id,role,content,turn_id,turn_ordinal,paired_role,scope_revision,authorization_fingerprint,
+ retrieved_subject_ids,retrieved_purpose_keys,contributor_ids,grant_revisions,lifecycle_revisions,provider_classification,
+ runtime_attestation_revision,model_recipient_revision,legacy_unverified,canonical_projection,canonical_citations,citation_ids)
+ select c.id,c.user_id,role,jsonb_build_array(jsonb_build_object('type','text','text','Historical synthetic text')),
+ '77900000-0000-4000-8000-000000000106',1,role,c.scope_revision,c.authorization_fingerprint,array[c.subject_id],array['copilot.cloud'],
+ array[c.user_id],array[1]::bigint[],array[c.lifecycle_revision],'cloud',1,c.model_recipient_revision,false,
+ '{"sources":[],"legacySources":[],"unavailableSources":[]}'::jsonb,'[]','{}' from public.chats c
+ cross join unnest(array['user','assistant']) role where c.id='77900000-0000-4000-8000-000000000105';
+set constraints all immediate;
+set constraints all deferred;
+select is(pg_temp.authority(),null::jsonb,'a persisted v1 own-purpose grant cannot authorize the newly named ancestry disclosure');
+select throws_ok($$select public.own_copilot_chat_v1('history','77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ (select id from copilot_subject),(select value from historical_chat_authority),null,'77900000-0000-4000-8000-000000000105','{}')$$,
+ '42501','not_found','v1 authority cannot read its historical paired conversation after v2 publication');
+create temporary table fresh_disclosure_authority as select pg_temp.grant_model(pg_temp.presentation(),repeat('b1',32)) value;
+select isnt((select value->>'copilotGrantId' from fresh_disclosure_authority),'77900000-0000-4000-8000-000000000103','fresh explicit v2 permission issues a new purpose grant');
+select isnt((select value->>'providerGrantId' from fresh_disclosure_authority),'77900000-0000-4000-8000-000000000104','fresh explicit v2 permission binds a new cloud signature to the same recipient');
+select is((select g.artifact_version from public.purpose_grants g where g.grant_id=(select (value->>'copilotGrantId')::uuid from fresh_disclosure_authority)),2,'new own-purpose signature records disclosure v2');
+select is((select s.scope from public.subject_consents s where s.id=(select (value->>'providerGrantId')::uuid from fresh_disclosure_authority)),
+ array['genotypes','variant_search','reports','prs_coverage','chat_messages']::text[],'fresh disclosure preserves the exact five existing cloud scope strings');
+select is(pg_temp.authority(),(select value from fresh_disclosure_authority),'fresh explicit v2 permission is usable');
+select throws_ok($$select public.own_copilot_chat_v1('history','77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ (select id from copilot_subject),(select value from fresh_disclosure_authority),null,'77900000-0000-4000-8000-000000000105','{}')$$,
+ '42501','not_found','new permission cannot revive a paired conversation made under v1');
+select is(private.execute_own_report_purge_v1((select j.id from public.worker_jobs j join public.retention_due_phases d on d.retention_row_id=j.source_binding_id
+ where d.immutable_envelope->>'grantId'='77900000-0000-4000-8000-000000000103'))->>'outcome','complete','v2 re-consent queues exact cleanup of superseded v1 purpose evidence');
+select is((select count(*) from public.chat_messages where chat_id='77900000-0000-4000-8000-000000000105'),0::bigint,'old v1 paired messages are physically removed by their exact cleanup job');
+rollback to ancestry_disclosure_upgrade;
 create temporary table chat_authority as select pg_temp.grant_model(pg_temp.presentation(),repeat('c',64)) value;
 create function pg_temp.chat(op text,payload jsonb default '{}',chat_id uuid default null,expected_projection jsonb default null) returns jsonb language sql as $$
  select public.own_copilot_chat_v1(op,'77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
@@ -157,8 +219,8 @@ create function pg_temp.grant_report(purpose text,nonce text) returns jsonb lang
  select public.grant_own_report_purpose_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
  (select id from copilot_subject),public.own_report_context_v1('77900000-0000-4000-8000-000000000001',
  '77900000-0000-4000-8000-000000000010',(select id from copilot_subject)),purpose,
- (select version from public.consent_artifacts where artifact_key=case purpose when 'reports.polygenic' then 'consent.own-polygenic' else 'consent.own-monogenic' end and superseded_at is null),
- (select body_sha256 from public.consent_artifacts where artifact_key=case purpose when 'reports.polygenic' then 'consent.own-polygenic' else 'consent.own-monogenic' end and superseded_at is null),nonce,clock_timestamp()+interval '9 minutes');
+ (select version from public.consent_artifacts where artifact_key=case purpose when 'ancestry' then 'consent.own-ancestry' when 'reports.polygenic' then 'consent.own-polygenic' else 'consent.own-monogenic' end and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key=case purpose when 'ancestry' then 'consent.own-ancestry' when 'reports.polygenic' then 'consent.own-polygenic' else 'consent.own-monogenic' end and superseded_at is null),nonce,clock_timestamp()+interval '9 minutes');
 $$;
 
 select throws_ok($$select pg_temp.chat('check','{}',null,(select value from chat_projection))$$,'42501','not_found','adding a source changes the context before any provider dispatch');
@@ -175,6 +237,141 @@ update chat_projection set value=pg_temp.chat('prepare');
 select is(pg_temp.chat('reports','{"offset":0}',null,(select value from chat_projection))->0->'report'->'covered','false'::jsonb,'stored uncovered report outcome is preserved');
 select is(pg_temp.chat('reports','{"offset":0}',null,(select value from chat_projection))->0->'report'->'conflictingRsids','[4988235]'::jsonb,'captured conflicts remain distinct from missing coverage');
 select ok(not((pg_temp.chat('prs','{"offset":0}',null,(select value from chat_projection))->0) ?| array['raw_score','zscore','percentile','coverage']), 'PRS reader never returns unvalidated quantities');
+
+-- This savepoint exercises actual ancestry generation, grants and frozen purge
+-- membership, then restores the independent pre-existing chat regression.
+savepoint ancestry_copilot_contract;
+create function pg_temp.chat_ancestry(expected jsonb default null) returns jsonb language sql as $$
+ select public.own_copilot_ancestry_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+  (select id from copilot_subject),(select value from chat_authority),coalesce(expected,(select value from chat_projection)),
+  '77900000-0000-4000-8000-000000000040');
+$$;
+create temporary table independent_ancestry_chat as select (pg_temp.turn(repeat('a1',32))->>'chatId')::uuid id;
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','raw-source and Copilot permission do not authorize unselected ancestry');
+select pg_temp.grant_report('ancestry',repeat('a2',32));
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','ancestry permission alone does not expose an incomplete capture');
+insert into claims values('ancestry',pg_temp.generate('begin','ancestry'));
+-- The same closed, zero-panel-coverage DTO as the ancestry generation fixture.
+-- Its supplied source call is outside the panel: this makes no personal claim.
+\ir fixtures/own_ancestry_empty_content.inc
+create temporary table chat_ancestry_output as select pg_temp.empty_ancestry_output(
+ jsonb_build_object('fileId','77900000-0000-4000-8000-000000000040','subjectId',(select id from copilot_subject),
+  'normalizedBuild','GRCh38','callEncoding','vcf-literal','sourceRevision',1,'sourceSha256',repeat('a',64),
+  'normalizedAt',receipt#>'{authorization,normalizedAt}')) payload
+ from claims where purpose='ancestry';
+select pg_temp.generate('complete','ancestry',(select payload from chat_ancestry_output));
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','a newly completed ancestry result invalidates the old context');
+update chat_projection set value=pg_temp.chat('prepare');
+create temporary table ancestry_projection as select value from chat_projection;
+create temporary table ancestry_receipt as select pg_temp.chat_ancestry() value;
+select is((select value->'content' from ancestry_receipt),(select payload->'ancestry' from chat_ancestry_output),'Copilot reads exactly the captured ancestry page content');
+select is((select value->>'resultHash' from ancestry_receipt),(select encode(digest(convert_to(result::text,'UTF8'),'sha256'),'hex')
+ from private.own_analysis_runs where file_id='77900000-0000-4000-8000-000000000040' and purpose='ancestry'),'receipt pins the full completed ancestry journal digest');
+select is((select count(*) from jsonb_array_elements((select value->'sources'->0->'completed' from ancestry_projection)) c where c->>'purpose'='ancestry'),1::bigint,'completed ancestry appears once in the immutable purpose projection');
+grant select on ancestry_projection to service_role;
+set local role service_role;
+select lives_ok($$select public.own_copilot_ancestry_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ (select id from copilot_subject),(select value from chat_authority),(select value from ancestry_projection),'77900000-0000-4000-8000-000000000040')$$,'actual application role reads ancestry through both Copilot and ancestry authority');
+select throws_ok($$select public.own_copilot_ancestry_v1('77900000-0000-4000-8000-000000000099','77900000-0000-4000-8000-000000000010',
+ (select id from copilot_subject),(select value from chat_authority),(select value from ancestry_projection),'77900000-0000-4000-8000-000000000040')$$,'42501','not_found','service role cannot substitute another ancestry account');
+set local role postgres;
+select throws_ok($$select public.own_copilot_ancestry_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ (select id from copilot_subject),(select value from chat_authority),(select value from ancestry_projection),'77900000-0000-4000-8000-000000000099')$$,'42501','not_found','caller cannot select a file outside the frozen projection');
+savepoint ancestry_catalog_collision;
+insert into public.report_templates(slug,category,title,summary,status,evidence,layer,estimate_kind,pgs_id)
+ select 'inherit:ancestry',category,title,summary,status,evidence,layer,estimate_kind,pgs_id
+ from public.report_templates where slug='synthetic-copilot-content-estimate';
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','reserved ancestry identity never shadows a published template');
+rollback to ancestry_catalog_collision;
+savepoint ancestry_capture_changed;
+update private.own_analysis_runs set completed_at=completed_at+interval '1 second'
+ where file_id='77900000-0000-4000-8000-000000000040' and purpose='ancestry';
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','changed completion receipt cannot reuse a pinned ancestry context');
+rollback to ancestry_capture_changed;
+savepoint ancestry_source_changed;
+update public.genome_files set upload_revision=2,normalization_source_revision=2
+ where id='77900000-0000-4000-8000-000000000040';
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','changed source revision cannot reuse ancestry context');
+rollback to ancestry_source_changed;
+savepoint ancestry_original_changed;
+update public.genome_storage_objects set state='revoked',revoked_at=clock_timestamp()
+ where genome_file_id='77900000-0000-4000-8000-000000000040';
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','loss of current original-object authority refuses ancestry');
+rollback to ancestry_original_changed;
+-- Fault injection happens after the unchanged real captured-content reader.
+-- The original body is copied, not replaced by a fabricated result. Rollback
+-- restores both the reader definition and all injected state transitions.
+savepoint ancestry_read_transition;
+do $test$
+declare definition text;
+begin
+ definition:=pg_get_functiondef('private.own_ancestry_content_v1(uuid,uuid,uuid)'::regprocedure);
+ definition:=replace(definition,'FUNCTION private.own_ancestry_content_v1(','FUNCTION pg_temp.original_ancestry_reader(');
+ if position('FUNCTION pg_temp.original_ancestry_reader(' in definition)=0 then raise exception 'expected ancestry reader definition'; end if;
+ execute definition;
+end;
+$test$;
+create temporary table ancestry_read_transition(kind text);
+insert into ancestry_read_transition values('source');
+create or replace function private.own_ancestry_content_v1(p_account_id uuid,p_session_id uuid,p_file_id uuid)
+returns jsonb language plpgsql security definer set search_path=pg_catalog,private as $test$
+declare captured jsonb; transition text;
+begin
+ captured:=pg_temp.original_ancestry_reader(p_account_id,p_session_id,p_file_id);
+ select kind into transition from pg_temp.ancestry_read_transition;
+ if transition='source' then
+  update public.genome_storage_objects set state='revoked',revoked_at=clock_timestamp() where genome_file_id=p_file_id;
+ elsif transition='capture' then
+  update private.own_analysis_runs set completed_at=completed_at+interval '1 second' where file_id=p_file_id and purpose='ancestry';
+ elsif transition='purpose' then
+  perform public.revoke_directional_purpose_v1(p_account_id,(select grant_id from private.own_analysis_runs where file_id=p_file_id and purpose='ancestry'));
+ end if;
+ return captured;
+end;
+$test$;
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','final chat check refuses original-object authority lost after the ancestry read');
+update ancestry_read_transition set kind='capture';
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','receipt comparison refuses a capture replaced after the ancestry read');
+update ancestry_read_transition set kind='purpose';
+select throws_ok($$select pg_temp.chat_ancestry()$$,'42501','not_found','ancestry withdrawal between the content read and serialization returns no result');
+rollback to ancestry_read_transition;
+select pg_temp.chat('begin',jsonb_build_object('nonceHash',repeat('a3',32),'expiresAt',clock_timestamp()+interval '9 minutes'),null,(select value from chat_projection));
+create temporary table ancestry_chat as select (pg_temp.chat('commit',jsonb_build_object('message','What was captured?',
+ 'answer','The saved result lacks enough markers.','citations',jsonb_build_array(jsonb_build_object(
+ 'id','ancestry:'||(value->>'fileId')||':'||(value->>'runId')||':'||(value->>'resultHash'),
+ 'label','Your captured ancestry result','href','/genome/me/ancestry')),
+ 'lastOrdinal',0,'nonceHash',repeat('a3',32)),null,(select value from chat_projection))->>'chatId')::uuid id from ancestry_receipt;
+select pg_temp.turn(null,(select id from ancestry_chat),1);
+select is((select canonical_citations->0->>'href' from public.chat_messages where chat_id=(select id from ancestry_chat) and role='assistant' and turn_ordinal=1),'/genome/me/ancestry','validated ancestry citation persists on its exact paired turn');
+select ok((select bool_and('ancestry'=any(retrieved_purpose_keys)) from public.chat_messages where chat_id=(select id from ancestry_chat)),'every dependent pair retains the ancestry purpose dependency');
+create temporary table old_ancestry_grant as select grant_id id from public.purpose_grants
+ where target_id=(select id from copilot_subject) and purpose='ancestry' and revoked_at is null;
+select public.revoke_directional_purpose_v1('77900000-0000-4000-8000-000000000001',(select id from old_ancestry_grant));
+select is((select count(*) from public.purge_manifest_entries e join public.purge_manifests m on m.id=e.manifest_id
+ join public.retention_due_phases d on d.retention_row_id=m.retention_row_id
+ where d.immutable_envelope->>'grantId'=(select id::text from old_ancestry_grant) and e.store_name='public.chat_messages'),4::bigint,'ancestry withdrawal freezes exactly both dependent pairs');
+select is((select count(*) from public.chat_messages where chat_id=(select id from ancestry_chat)),0::bigint,'ancestry withdrawal actually purges both dependent pairs');
+select is((select count(*) from public.chat_messages where chat_id=(select id from independent_ancestry_chat)),2::bigint,'pre-existing conversation with no ancestry dependency survives');
+select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from independent_ancestry_chat))->'messages'),2,'the independent conversation is readable under the restored current projection');
+select is((select count(*) from public.report_observed_calls where file_id='77900000-0000-4000-8000-000000000040'),1::bigint,'ancestry purge preserves raw source observations');
+select is((select count(*) from private.own_analysis_runs where file_id='77900000-0000-4000-8000-000000000040' and purpose='reports.polygenic'),1::bigint,'ancestry purge preserves independent selected report');
+select pg_temp.grant_report('ancestry',repeat('a4',32));
+update claims set receipt=pg_temp.generate('begin','ancestry') where purpose='ancestry';
+select pg_temp.generate('complete','ancestry',(select payload from chat_ancestry_output));
+select throws_ok($$select pg_temp.chat_ancestry((select value from ancestry_projection))$$,'42501','not_found','regrant and regeneration cannot restore the predecessor context');
+select throws_ok($$select pg_temp.chat('history','{}',(select id from ancestry_chat))$$,'42501','not_found','regrant cannot revive purged predecessor history');
+update chat_projection set value=pg_temp.chat('prepare');
+create temporary table successor_ancestry_chat as select (pg_temp.turn(repeat('a5',32))->>'chatId')::uuid id;
+select is(private.execute_own_report_purge_v1((select j.id from public.worker_jobs j join public.retention_due_phases d on d.retention_row_id=j.source_binding_id
+ where d.immutable_envelope->>'grantId'=(select id::text from old_ancestry_grant)))->>'outcome','complete','exact old ancestry cleanup replay remains idempotent');
+select is((select count(*) from public.chat_messages where chat_id=(select id from successor_ancestry_chat)),2::bigint,'predecessor purge replay leaves successor-grant conversation intact');
+select lives_ok($$select pg_temp.chat_ancestry()$$,'successor ancestry capture remains readable after predecessor purge replay');
+select ok(not has_function_privilege(role_name,'public.own_copilot_ancestry_v1(uuid,uuid,uuid,jsonb,jsonb,uuid)','EXECUTE'),role_name||' cannot bypass the server ancestry dispatcher')
+ from unnest(array['anon','authenticated','inherit_upload_only']) role_name;
+select ok(not private.valid_own_copilot_citations_v1('[{"id":"ancestry","label":"Ancestry","href":"/genome/me/ancestry?file=other"}]'),'ancestry citation path does not accept a caller-selected query');
+set constraints all immediate;
+rollback to ancestry_copilot_contract;
+
 -- The historical compatibility fixture has the same old processed-file
 -- authority as existing legacy readers; it is never relabelled canonical.
 insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,sha256,status,build)

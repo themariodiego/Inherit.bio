@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ actor: vi.fn(), subject: vi.fn(), prepare: vi.fn(), check: vi.fn(), rpc: vi.fn(), token: vi.fn(), stream: vi.fn(), providerFetch: vi.fn(), from: vi.fn(), scope: vi.fn(), capturedFetch: null as typeof fetch | null }));
+const mocks = vi.hoisted(() => ({ actor: vi.fn(), subject: vi.fn(), prepare: vi.fn(), check: vi.fn(), rpc: vi.fn(), ancestryRpc: vi.fn(), token: vi.fn(), stream: vi.fn(), providerFetch: vi.fn(), from: vi.fn(), scope: vi.fn(), capturedFetch: null as typeof fetch | null }));
 vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
 vi.mock("./own-provider-authority", () => ({ prepareOwnCopilotProvider: mocks.prepare }));
 vi.mock("./own-chat", async () => { const { z } = await import("zod"); return { checkOwnChat: mocks.check, ownChatRpc: mocks.rpc, ownChatSubject: mocks.scope, ownChatHistorySchema: z.any() }; });
 vi.mock("./own-chat-token", () => ({ readOwnChatToken: mocks.token, snapshotHash: (v: unknown) => JSON.stringify(v) }));
 vi.mock("@/lib/account-deletion", () => ({ isSameOrigin: (r: Request) => r.headers.get("origin") === "https://inherit.test" }));
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from }) }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.ancestryRpc }) }));
 vi.mock("@ai-sdk/anthropic", () => ({ createAnthropic: (o: {
         fetch: typeof fetch;
     }) => { mocks.capturedFetch = o.fetch; return () => ({}); } }));
@@ -17,6 +17,7 @@ vi.mock("ai", () => ({ tool: (x: unknown) => x, stepCountIs: () => 8, streamText
         stream: ReadableStream;
     }) => stream }));
 import { ownChatResponse } from "./own-chat-route";
+import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
 const accountId = "80000000-0000-4000-8000-000000000001", sessionId = "80000000-0000-4000-8000-000000000002", subjectId = "80000000-0000-4000-8000-000000000003", chatId = "80000000-0000-4000-8000-000000000004";
 const authority = { accountId, sessionId, subjectId, providerClass: "local" };
 const projection = { sources: [], legacySources: [], unavailableSources: [] };
@@ -179,4 +180,35 @@ it("keeps the exact data check inside a paused transport authorization boundary"
     expect((await response).status).toBe(403);
     expect(mocks.providerFetch).not.toHaveBeenCalled();
     expect(mocks.rpc.mock.calls.some(call => call[0] === "commit")).toBe(false);
+});
+
+it("reads a captured ancestry result through the existing five tools", async () => {
+    const fileId = "80000000-0000-4000-8000-000000000005";
+    const runId = "80000000-0000-4000-8000-000000000006";
+    const completedAt = "2026-09-15T10:01:00Z", normalizedAt = "2026-09-15T10:00:00Z";
+    const content = computeOwnAncestryContentV3({ source: { fileId, subjectId, sourceRevision: 1,
+        sourceSha256: "a".repeat(64), normalizedAt, normalizedBuild: "GRCh38", callEncoding: "vcf-literal" },
+        panel: SEVEN_OWN_ANCESTRY_PANEL, calls: [] });
+    const ancestryProjection = { ...projection, sources: [{ id: fileId, revision: 1, sha256: "a".repeat(64),
+        decodedSha256: "b".repeat(64), objectId: "80000000-0000-4000-8000-000000000007", normalizedAt, build: "GRCh38",
+        completed: [{ purpose: "ancestry", authority: { grantId: "80000000-0000-4000-8000-000000000008", grantRevision: 1 },
+            runId, completedAt, resultHash: "c".repeat(64) }] }] };
+    mocks.token.mockReturnValue({ authority, projectionHash: JSON.stringify(ancestryProjection), nonce: "ancestry-context", expiresAt: Date.now() + 500000 });
+    mocks.rpc.mockImplementation(async (op: string) => op === "prepare" ? ancestryProjection : op === "begin" ? true : op === "commit" ? { chatId } : []);
+    mocks.ancestryRpc.mockResolvedValue({ data: { fileId, runId, resultHash: "c".repeat(64), completedAt, content }, error: null });
+    let names: string[] = [], listing: unknown, result: unknown;
+    run = async flow => {
+        names = Object.keys(flow.tools).sort();
+        listing = await flow.tools.list_reports.execute({});
+        result = await flow.tools.get_report.execute({ slug: "inherit:ancestry" });
+        return "Your file does not cover enough positions for an ancestry estimate.";
+    };
+    const r = request({ contextToken: "valid-context-token", message: "What does my saved ancestry result show?" });
+    const response = await ownChatResponse(r, await r.json(), options);
+    expect(response.status).toBe(200);
+    expect(names).toEqual(["get_genotype", "get_prs", "get_report", "list_reports", "search_variants"]);
+    expect(listing).toMatchObject({ reports: [expect.objectContaining({ slug: "inherit:ancestry", category: "ancestry", file_id: fileId })] });
+    expect(result).toMatchObject({ slug: "inherit:ancestry", sources: [expect.objectContaining({ file_id: fileId,
+        status: "not_covered", regions: [] })] });
+    expect((await response.json()).message.content).toContain("does not cover enough positions");
 });
