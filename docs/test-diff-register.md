@@ -2414,3 +2414,36 @@ extractor or legal statement is removed or relaxed.
   still need the coordinated Copilot projection and dispatcher integration;
   this change does not activate a new source, grant, tool or history path, and
   does not establish hosted deletion, retirement or release acceptance evidence.
+
+## Captured own ancestry in Copilot · 22 September 2026
+
+- The new route regression supplies an authorized completed ancestry projection
+  and executes the existing `list_reports` and `get_report` tools. It failed on
+  the prior implementation with HTTP 403 before tool dispatch; it now passes
+  and asserts exactly the existing five tool names. All assertions are outside
+  the route's error-catching callback.
+- Focused reader and presentation cases compare both distinct regional VCF
+  fixtures with the ancestry page's display arithmetic. They use observed calls,
+  including literal reference observations, retain historical five-region and
+  lineage states, withhold partial regional estimates, and reject changed
+  receipts, current catalog collisions, invented percentages and citations.
+- The database fixture generates a real captured ancestry result using the
+  existing normalization and selected-purpose APIs. New assertions cover exact
+  source/journal binding, actual service-role access, post-read source/capture/
+  purpose changes, and ancestry withdrawal's frozen paired-message purge.
+  Regrant cannot revive old context or history; an independent conversation,
+  source observations, other reports and successor-grant messages survive.
+- The original zero-coverage ancestry DTO is relocated unchanged into a shared
+  `.inc` fixture, with only each test's source binding supplied as an argument.
+  The original generation test retains its exact source tuple and assertions;
+  the Copilot test adds no reference identifier literals. Static substitution
+  reproduces the original expression byte for byte.
+- Own-Copilot v1 evidence is seeded as historical signatures and paired rows;
+  the current v2 resolver must refuse it. Fresh explicit permission must create
+  new purpose and cloud-signature evidence under the unchanged five scope
+  identifiers. Exact queued cleanup must remove the superseded pairs. The
+  fixture changes no artifact body, trigger or assertion bound.
+- Local validation: 438 targeted tests across 17 suites, generated type checking,
+  changed-file lint and readability passed. The pgTAP additions and the integrated
+  upload/report/ancestry/Copilot browser journey remain pending CI. No hosted
+  model, database, provider, upload or cleanup measurement was made here.

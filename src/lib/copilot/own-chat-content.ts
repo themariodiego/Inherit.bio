@@ -4,14 +4,15 @@ import { genotypeKey } from '@/lib/genome/reports';
 import { serializePrsCoverage } from '@/lib/genome/prs-output';
 import { isFixtureSlug } from '@/components/reports/library';
 import { reportCatalogSnapshotSchema } from '@/lib/genome/report-catalog-snapshot';
+import { OWN_ANCESTRY_HREF, ownChatAncestrySnapshotSchema, capturedAncestryCitation } from './own-chat-ancestry-content';
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const revision = z.number().int().positive().safe();
 export const ownChatProjectionSchema = z.object({
     sources: z.array(z.object({ id: uuid, revision, sha256: hash, decodedSha256: hash, objectId: uuid,
         normalizedAt: z.string(), build: z.enum(['GRCh37', 'GRCh38']), completed: z.array(z.object({
-            purpose: z.enum(['reports.monogenic', 'reports.polygenic']), authority: z.record(z.string(), z.unknown()),
+            purpose: z.enum(['reports.monogenic', 'reports.polygenic', 'ancestry']), authority: z.record(z.string(), z.unknown()),
             runId: uuid, completedAt: z.string(), resultHash: hash,
-        }).strict()).max(2),
+        }).strict()).max(3),
     }).strict()).max(1000),
     legacySources: z.array(z.object({ id: uuid, sha256: hash, build: z.enum(['GRCh37', 'GRCh38']), createdAt: z.string() }).strict()).max(1000),
     unavailableSources: z.array(z.object({ id: uuid, reason: z.literal('source_unavailable') }).strict()).max(1000),
@@ -43,7 +44,7 @@ export const LEGACY_SOURCE_LIMIT = 'Older files have no captured report-purpose 
 export const LEGACY_RAW_NOTE = 'Includes observations from older processed files. Their historical normalization version was not recorded; these observations are not newly processed or interpreted.';
 export const CAPTURED_REPORT_NOTE = 'These are stored outcomes. Generation did not capture the catalog revision, report description, evidence level or citations.';
 export const ownChatCitationSchema = z.object({ id: z.string().min(1).max(2000), label: z.string().min(1).max(100000), href: z.string().max(4000)
-        .refine(h => /^\/genome\/me\/reports\/[^/?#]+$/.test(h) || /^https:\/\/(pubmed\.ncbi\.nlm\.nih\.gov\/\d{6,9}\/|doi\.org\/[^\s]+)$/.test(h)) }).strict();
+        .refine(h => h === OWN_ANCESTRY_HREF || /^\/genome\/me\/reports\/[^/?#]+$/.test(h) || /^https:\/\/(pubmed\.ncbi\.nlm\.nih\.gov\/\d{6,9}\/|doi\.org\/[^\s]+)$/.test(h)) }).strict();
 /** Only verified snapshots returned by this turn's tools supply reply sources.
  * The model cannot supply its own link, label or a mutable catalog lookup. */
 export function capturedChatCitations(toolJson: unknown) {
@@ -56,7 +57,14 @@ export function capturedChatCitations(toolJson: unknown) {
         if (!value || typeof value !== 'object')
             return;
         for (const [key, child] of Object.entries(value)) {
-            if (key === 'catalogSnapshot') {
+            if (key === 'ancestrySnapshot') {
+                const parsed = ownChatAncestrySnapshotSchema.safeParse(child);
+                if (parsed.success) {
+                    const citation = capturedAncestryCitation(parsed.data);
+                    citations.set(citation.id, citation);
+                }
+            }
+            else if (key === 'catalogSnapshot') {
                 const parsed = reportCatalogSnapshotSchema.safeParse(child);
                 if (!parsed.success)
                     continue;

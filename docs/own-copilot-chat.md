@@ -32,6 +32,47 @@ a completed canonical purpose journal remain unavailable per source. Canonical
 reports use captured `catalogSnapshot` title/evidence/citations; older journals
 retain the explicit missing-reference note. PRS returns coverage only.
 
+Captured own ancestry is listed and read through the same five model tools.
+`list_reports` uses category `ancestry` and the reserved identifier
+`inherit:ancestry`; `get_report` returns each authorized source separately under
+that identifier. A captured or currently published template with that identifier
+fails closed instead of being shadowed. No sixth model tool or current-template
+metadata lookup supplies ancestry interpretation.
+
+The source projection includes each completed ancestry purpose's exact grant,
+run, completion time and result digest. The service-only
+`own_copilot_ancestry_v1` selector requires the existing current Copilot
+authority/projection, reads through the ancestry page's captured-content reader,
+checks the exact journal and source receipt, and repeats the chat check before
+returning. The application checks around each call too. A replaced capture,
+source, grant or recipient invalidates the read and dependent history. Existing
+exact-grant purge membership includes ancestry via the same completed-purpose
+dependency, without sweeping successor grants or independent conversations.
+
+The model receives the ancestry page's display arithmetic and recorded
+resolution, not raw ancestry inputs or a new fit. Seven-region combined and
+separate results use the saved reporting decision. Low-coverage results expose
+their limitation, not regional percentages. Historical results keep their
+captured resolution and lineage availability. Displayed percentages pass
+through the unchanged numeric guard; the patch adds no numeric exemptions.
+Only a validated captured receipt can supply the exact `/genome/me/ancestry`
+citation, bound to its file, run and result digest.
+
+Own-Copilot permission version 2 names saved ancestry estimates and lineage
+results explicitly. Both local and cloud own-purpose grants need fresh explicit
+permission; saving settings never supplies it. The shared cloud-disclosure
+artifact and the five existing cloud data-class identifiers remain unchanged.
+The new own-cloud grant also records a fresh signature on that shared disclosure
+for the same exact recipient. Superseded grants cannot read old history, and
+re-consent queues its existing exact-grant cleanup. Other Copilot scopes retain
+their existing disclosure wording.
+
+This ancestry patch still admits only the database-normalized canonical sources
+already supported by this Copilot projection. Object-prepared sources, including
+their retired-original state and indexed raw-call reads, need the separate
+prepared-source integration. This patch does not establish large-file support
+or a successful hosted journey.
+
 A canonical chat shell with no surviving messages is not a usable conversation.
 List, history and existing-chat commit refuse it, including after exact retention
 removes all pairs. No empty history can reset its turn ordinal or revive old
@@ -83,3 +124,11 @@ normalization operations. It targets only its exact cleanup jobs, never a global
 worker sweep. This lane does not run hosted calls, models, builds or browser
 suites; the integrated local receipts and remaining browser work are recorded
 in `docs/local-upload-browser-verification.md`.
+
+The captured-ancestry regressions add actual authority, completion, revocation,
+regrant and purge assertions to that rollback-only database fixture. Historical
+v1 consent evidence is seeded without disabling artifact immutability or other
+constraints. Post-read fault injection delegates to an unchanged copy of the
+real ancestry reader before changing source, capture or purpose state. These
+database assertions require CI execution; unit tests and source review alone do
+not establish runtime purge or hosted completion.
