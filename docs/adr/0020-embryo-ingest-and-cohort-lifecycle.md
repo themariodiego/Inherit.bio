@@ -369,3 +369,12 @@ and tested, one job executor, and a flag.
   `src/lib/genome/parsers/{sniff,pgt-table}.test.ts`,
   `src/lib/genome/ingest-limits.test.ts`, `src/lib/embryos/upload-flow.test.ts`,
   `src/components/embryo/embryo.test.ts` and `e2e/embryos.spec.ts`.
+
+## Owner resolution, 2026-09-22
+
+Corrections item 20 option 1 is now signed: omit both extra headers on the embryo
+chunk route alone. Decision 9's database identity enforcement and the existing
+strict cookie, exact Origin, account/session and jurisdiction checks remain the
+authority. The shared fetch-metadata guard also remains required. Mapping and
+completion retain their separate token contracts. The legal-evidence chunk route
+is not covered. Earlier text asking for this owner decision is historical.
