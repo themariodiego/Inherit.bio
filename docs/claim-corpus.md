@@ -21,13 +21,17 @@ The canonical registers remain `data/citations.json`, `data/claims.json` and
   existing route register, discovered email entrypoints and explicit code-owned
   prose policies. Missing policies and undeclared states fail; they never mean
   that a surface needs no checking. Capture labels are not application URLs.
-- The canonical files contain 71 exact statements in eight reports: eight
-  summaries, 51 study-context paragraphs and 12 genotype interpretations.
+- The canonical files contain 75 exact statements in nine reports: nine
+  summaries, 51 study-context paragraphs and 15 genotype interpretations.
   The released first four reports (COMT, BDNF, FAAH and SLC45A2) account for
   39 independently reviewed statements. The everyday-trait follow-through
   released by PR72 adds 32 statements for cilantro, asparagus odor, bright-light sneezing and
   earwax; see `docs/sources/everyday/review.md` for source-review and release
-  status. The combined register has 19 sources: 12 publications and seven
+  status. Four corrected ADORA2A statements add one summary and three genotype
+  interpretations; the anxiety source was read as an author abstract and the
+  sleep source as a full primary paper. See
+  `docs/sources/reviews/adora2a-correction-20260923.md` for the exact scope.
+  The combined register has 21 sources: 14 publications and seven
   Ensembl position/transcript records.
   `src/components/claims/claim.tsx` renders those statements with numbered,
   source-bound links on the actual report detail page. Changed hosted prose

@@ -188,5 +188,25 @@
     "access_date": "2026-09-06",
     "quote": "G/R",
     "claim": "ABCC11 transcripts are reverse-strand; forward T at rs17822931 maps Gly180 to Arg. Another alternate allele exists, so an unreviewed G call must not acquire a C/T interpretation."
+  },
+  {
+    "id": "pmid:12825092",
+    "type": "pmid",
+    "identifier": "12825092",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "greater increases in anxiety",
+    "claim": "Alsene 2003 author abstract only: greater acute self-reported anxiety in 1976TT than other genotypes among 94 healthy infrequent users after 150 mg caffeine versus placebo. Full text not accessed; no CT-versus-CC ordering, sleep direction or personal prediction certified."
+  },
+  {
+    "id": "pmid:17329997",
+    "type": "pmid",
+    "identifier": "17329997",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "higher proportion of sensitive subjects had the C/C genotype",
+    "claim": "Rétey 2007 full primary paper, Results/Table 1 pp. 693–694 and Methods pp. 696–697: CC enrichment and lower TT frequency in self-rated caffeine-sensitive versus insensitive participants; CT frequencies similar. Figure 4 supports only a narrow sleep-EEG endpoint, not a general CT middle ranking. Read scope and primary PDF URL: docs/sources/reviews/adora2a-correction-20260923.md."
   }
 ]

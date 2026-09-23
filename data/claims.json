@@ -1564,5 +1564,104 @@
     "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
     "reviewed_on": "2026-09-06",
     "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.summary",
+    "text_verbatim": "The cited studies examined different responses to caffeine. TT was linked to greater anxiety after a single dose in infrequent users. CC was more common among people reporting sleep sensitivity. This marker does not predict your personal response.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12825092",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract only: 94 healthy infrequent users, 150 mg caffeine versus placebo, greater self-reported anxiety in TT than other groups. No full-paper review or CT-versus-CC ordering claimed."
+      },
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Results and Table 1, printed pp. 693–694: CC more frequent and TT less frequent among self-rated caffeine-sensitive than insensitive participants; CT frequencies similar. Methods pp. 696–697 limit the selected study population."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.interpretation.rs5751876.tt",
+    "text_verbatim": "Your file shows two T copies. In one study of infrequent caffeine users, TT was linked to greater anxiety after 150 mg caffeine. TT was less common among people reporting sleep sensitivity than among those reporting little sensitivity.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12825092",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract only: 94 healthy infrequent users, 150 mg caffeine versus placebo, greater self-reported anxiety in TT than other groups. No full-paper review or CT-versus-CC ordering claimed."
+      },
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Results and Table 1, printed pp. 693–694: CC more frequent and TT less frequent among self-rated caffeine-sensitive than insensitive participants; CT frequencies similar. Methods pp. 696–697 limit the selected study population."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.interpretation.rs5751876.ct",
+    "text_verbatim": "Your file shows one C and one T copy. These studies do not establish a general middle level of anxiety or sleep sensitivity for CT. They cannot predict your personal response.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:12825092",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract only compares TT with other genotype groups; it does not establish a CT-versus-CC anxiety ordering or a general middle level of sensitivity. No full-paper review or absence of all possible effects is claimed."
+      },
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Table 1, p. 694, has similar CT frequencies across self-rated sensitivity groups. Figure 4, p. 695, concerns a narrow nonREM beta-EEG endpoint after sleep deprivation, not a general personal sensitivity scale."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.interpretation.rs5751876.cc",
+    "text_verbatim": "Your file shows two C copies. CC was more common among people reporting caffeine-related sleep sensitivity. This was a group association. It cannot tell you your own sensitivity or caffeine limit.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Results and Table 1, printed pp. 693–694: CC more frequent and TT less frequent among self-rated caffeine-sensitive than insensitive participants; CT frequencies similar. Methods pp. 696–697 limit the selected study population."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
   }
 ]
