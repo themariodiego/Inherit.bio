@@ -1,5 +1,19 @@
 # Test diff register
 
+## Register the cited primary-paper path · 23 September 2026
+
+CI run 35805911265 passed the full unit suite, then the name gate refused the
+unregistered university-hosted PDF used by the ADORA2A review. The gate's G6.2
+contract permits organisations named in cited papers with an evidence-backed
+reason. The paper names the hosting institution in its author affiliations.
+
+One cited-organisation entry registers only that PDF path. The original source
+link and access evidence stay intact. A new test admits the exact path while
+refusing the bare host, a different paper and a lookalike host; private denylist
+matching still overrides the public entry. Existing fixtures, scan scope,
+baseline, provider carve-out and all gate code remain unchanged. The actual
+private denylist is available in CI; local tests do not replace that gate.
+
 ## Source dates after the ADORA2A correction · 23 September 2026
 
 CI run 35805197191 passed 5,745 unit tests and failed the science-page date

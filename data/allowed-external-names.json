@@ -992,6 +992,18 @@
       "evidence": [
         "docs/design/ui-renewal/README.md"
       ]
+    },
+    {
+      "name": "University of Zurich pharmacology archive",
+      "category": "cited-organisation",
+      "aliases": [
+        "pharma.uzh.ch/dam/jcr:00000000-2992-0cf5-0000-000020c5cb44/Retey_Clin_Pharmacol_Ther_2007.pdf"
+      ],
+      "reason": "Hosts the full primary paper used for the dated ADORA2A sleep-association correction; the institution is named in the paper's author affiliations. Only the cited PDF path is registered, not the whole archive host.",
+      "evidence": [
+        "docs/sources/reviews/adora2a-correction-20260923.md",
+        "data/citations.json"
+      ]
     }
   ]
 }
