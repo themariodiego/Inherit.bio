@@ -2904,3 +2904,14 @@ legal-evidence entry instead of exports. The new migration creates only the
 registered private exports bucket; only that bucket-existence divergence is
 removed. The negative test and all other route, scope and retention assertions
 remain. No threshold or acceptance row changes.
+
+## Archive worker RPC bridge · 23 September 2026
+
+Added tests that run the existing segmentation core through the new worker RPC
+bridge, then record byte completion without publishing ready. They verify
+fixed job and attempt identity, receipt changes, the five-minute lease and
+original deadline, exact copied pages, malformed replies, cancellation,
+uncertain mutations, sticky cleanup responsibility and refusal to reuse a
+closed adapter. A real installed-SDK case verifies one POST after a transient
+failure with retries disabled. These are injected-transport tests, not database
+or hosted-export proof. Existing tests, timeouts and acceptance bounds remain.

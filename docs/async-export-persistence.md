@@ -80,3 +80,25 @@ publication-hold and purge regressions. Its Storage rows are synthetic metadata
 inside a rollback transaction. Those cases have not been executed locally and
 are not evidence of provider upload, physical deletion, complete archive
 membership, ZIP64 delivery or independent-rights support.
+
+## Worker RPC bridge
+
+`archive-persistence.ts` connects the byte core's hooks to the service-only
+worker RPC. It copies the discovered job and pins one fresh attempt. Discovery
+grants no authority: the first check uses SQL preflight; begin and every later
+operation perform the stored-origin checks in SQL. Renewals retain the original
+job deadline and the five-minute attempt limit.
+
+Every call is a POST with SDK retries disabled and a cancellation signal. The
+bridge bounds each call by 30 seconds, the current lease and the job deadline.
+A failed or uncertain operation closes that adapter permanently. Once begin
+could have committed, errors keep cleanup responsibility. A late response
+cannot resume the attempt, replace its receipt or publish a ready export.
+
+Reservation, acknowledgement and page replies must match their exact copied
+inputs. Completion accepts only the byte core's consistent counts and hashes;
+its result remains `bytes-complete`. The bridge does not select archive members,
+implement a dispatcher, expose a route or remove the database publication hold.
+Tests use the installed SDK with an injected transport. They do not execute SQL
+or prove a configured provider transport's redirect, origin or response-size
+limits; that service transport still needs its own integration checks.
