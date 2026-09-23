@@ -9,6 +9,7 @@ import environmental from "../../../data/templates/environmental-sensitivity.jso
 import basic from "../../../data/templates/basic-traits.json";
 import brain from "../../../data/templates/brain-health.json";
 import cancer from "../../../data/templates/cancer-risk.json";
+import neurodegenerative from "../../../data/templates/neurodegenerative.json";
 import type { ReportTemplate } from "../genome/reports";
 import { validateClaimRegistry, type ClaimOccurrence } from "./registry";
 import { readStudyContext } from "../genome/study-context";
@@ -61,6 +62,22 @@ const correctedItems = correctedTemplates.flatMap((template) => [
     text, slug: template.slug, summary: false,
   }))),
 ]);
+const trem2Template = neurodegenerative.find((template) => template.slug === "trem2-r47h-alzheimers")!;
+const trem2Items = [
+  { id: `report.${trem2Template.slug}.summary`, text: trem2Template.summary, slug: trem2Template.slug, summary: true },
+  ...Object.entries(trem2Template.variants[0].interpretations).map(([genotype, text]) => ({
+    id: `report.${trem2Template.slug}.interpretation.rs75932628.${genotype.toLowerCase()}`,
+    text, slug: trem2Template.slug, summary: false,
+  })),
+];
+const apoeTemplate = neurodegenerative.find((template) => template.slug === "apoe-e4-alzheimers-risk")!;
+const apoeItems = [
+  { id: `report.${apoeTemplate.slug}.summary`, text: apoeTemplate.summary, slug: apoeTemplate.slug, summary: true },
+  ...apoeTemplate.variants.flatMap((variant) => Object.entries(variant.interpretations).map(([genotype, text]) => ({
+    id: `report.${apoeTemplate.slug}.interpretation.rs${variant.rsid}.${genotype.toLowerCase()}`,
+    text, slug: apoeTemplate.slug, summary: false,
+  }))),
+];
 const validate = (overrides = {}) => validateClaimRegistry({
   citations: initialCitations, claims: initialClaims, commitDate: "2026-09-06", corpus: seedOccurrences,
   refusalClaimIds: [], societyPositionClaimIds: [],
@@ -150,12 +167,13 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
         text, slug: adora2aSlug, summary: false,
       })),
     ];
-    expect(claims).toHaveLength(87);
-    expect(citations).toHaveLength(30);
+    expect(claims).toHaveLength(98);
+    expect(citations).toHaveLength(35);
     expect(citations.map((source) => source.id).sort()).toEqual([
       ...initialSourceIds, "pmid:12825092", "pmid:17329997",
       "pmid:9288102", "pmid:37076288", "pmid:40866199", "dataset:dbsnp-rs1801155",
       "pmid:17529967", "pmid:19320537", "pmid:39075523", "pmid:12419833", "pmid:2024727",
+      "pmid:23150908", "pmid:23150934", "pmid:8346443", "pmid:9343467", "dataset:ncrad-apoe-genotyping",
     ].sort());
     expect(added.map((item) => item.id).sort()).toEqual([
       `report.${adora2aSlug}.interpretation.rs5751876.cc`,
@@ -164,7 +182,7 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
       `report.${adora2aSlug}.summary`,
     ]);
     expect(claims.map((claim) => claim.claim_id).sort())
-      .toEqual([...expected, ...added, ...correctedItems].map((item) => item.id).sort());
+      .toEqual([...expected, ...added, ...correctedItems, ...trem2Items, ...apoeItems].map((item) => item.id).sort());
     for (const item of added) {
       const claim = claims.find((held) => held.claim_id === item.id)!;
       expect(claim.text_verbatim).toBe(item.text);
@@ -175,7 +193,7 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
       expect(claim.evidence.map((edge) => edge.citation)).toEqual(item.id.endsWith(".cc")
         ? ["pmid:17329997"] : ["pmid:12825092", "pmid:17329997"]);
     }
-    const corpus = [...seedOccurrences, ...[...added, ...correctedItems].flatMap((item) => intended(item).map((surface) =>
+    const corpus = [...seedOccurrences, ...[...added, ...correctedItems, ...trem2Items, ...apoeItems].flatMap((item) => intended(item).map((surface) =>
       ({ claimId: item.id, text: item.text, surface })))];
     const result = validate({ claims, citations, commitDate: "2026-09-23", corpus });
     expect(result.issues).toEqual([]);
@@ -206,6 +224,24 @@ describe("bounded cancer and alcohol report corrections", () => {
         expect(edge.accessed_on).toBe(source.access_date);
         expect(edge.doi_or_url).toBe(source.url);
       }
+    }
+  });
+});
+
+
+describe("APOE separate-marker correction registration", () => {
+  it("binds exactly seven current strings while preserving earlier report bindings", () => {
+    expect(createHash("sha256").update(JSON.stringify(apoeTemplate)).digest("hex"))
+      .toBe("a72d09e5db49151eeb956cb4505091c6d394dd59ba23cad1f6bbe885de3febf7");
+    expect(apoeItems).toHaveLength(7);
+    for (const item of apoeItems) {
+      const claim = claims.find((held) => held.claim_id === item.id)!;
+      expect(claim.text_verbatim).toBe(item.text);
+      expect(claim.surfaces).toEqual(intended(item));
+      expect(claim.reviewed_on).toBe("2026-09-23");
+      expect(claim.reviewer).toContain("not human signoff");
+      expect(claim.evidence.map((edge) => edge.citation)).toEqual(item.summary
+        ? ["pmid:8346443", "pmid:9343467", "dataset:ncrad-apoe-genotyping"] : ["dataset:ncrad-apoe-genotyping"]);
     }
   });
 });

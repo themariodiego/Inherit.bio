@@ -1960,5 +1960,263 @@
     "net_impression_note": "Keep each complete paragraph and its study limits. This is neither a personal risk estimate nor a safe drinking limit. See docs/sources/reviews/aldh2-correction-20260923.md for actual read scopes; intended surfaces are not a hosted-release claim.",
     "reviewed_on": "2026-09-23",
     "reviewer": "Codex agent release_remaining_audit; source-content review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.summary",
+    "text_verbatim": "Studies linked the T variant at TREM2 R47H to higher odds of late-onset Alzheimer’s disease in the groups studied. This association does not tell you whether or when the condition might affect you.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.interpretation.rs75932628.cc",
+    "text_verbatim": "Your file shows two C copies at this position, so it does not show the T variant known as R47H. This report does not assess other TREM2 variants or your overall chance of developing Alzheimer’s disease.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.interpretation.rs75932628.ct",
+    "text_verbatim": "Your file shows one C and one T copy. The cited studies linked the R47H T variant to higher odds of Alzheimer’s disease in their study groups. They do not provide your personal lifetime chance of developing the condition.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.interpretation.rs75932628.tt",
+    "text_verbatim": "Your file shows two T copies at this position. This report does not provide a separate risk estimate for this two-copy result or verify the accuracy of the original DNA test.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.summary",
+    "text_verbatim": "Studies linked APOE ε3/ε4 and ε4/ε4 to higher odds of Alzheimer’s disease than ε3/ε3 in the groups studied. This report shows rs429358 and rs7412 separately. It does not assign an APOE type or estimate your personal risk. Some marker combinations also need information about which letters were inherited together.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:8346443",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/8346443/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Family association context only; Farrer supplies the specific genotype comparison. No family-specific percentage is applied to the reader."
+      },
+      {
+        "citation": "pmid:9343467",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/9343467/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The abstract reports higher group odds for ε3/ε4 and ε4/ε4 relative to ε3/ε3, with population, age and sex limitations."
+      },
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs429358.tt",
+    "text_verbatim": "Your file shows two T copies at rs429358. This result is one part of APOE typing. This report does not combine it with rs7412 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs429358.ct",
+    "text_verbatim": "Your file shows one C and one T copy at rs429358. This result is one part of APOE typing. This report does not combine it with rs7412 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs429358.cc",
+    "text_verbatim": "Your file shows two C copies at rs429358. This result is one part of APOE typing. This report does not combine it with rs7412 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs7412.cc",
+    "text_verbatim": "Your file shows two C copies at rs7412. This result is one part of APOE typing. This report does not combine it with rs429358 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs7412.ct",
+    "text_verbatim": "Your file shows one C and one T copy at rs7412. This result is one part of APOE typing. This report does not combine it with rs429358 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs7412.tt",
+    "text_verbatim": "Your file shows two T copies at rs7412. This result is one part of APOE typing. This report does not combine it with rs429358 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
   }
 ]

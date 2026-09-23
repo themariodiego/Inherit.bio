@@ -298,5 +298,55 @@
     "access_date": "2026-09-23",
     "quote": "two cases of the mutant homozygote",
     "claim": "Enomoto 1991 author abstract only, truncated at 250 words: two AA liver samples without detectable ALDH2 activity and increased blood acetaldehyde after alcohol. No cancer endpoint, general symptom prediction or full-sample demographic verification."
+  },
+  {
+    "id": "pmid:23150908",
+    "type": "pmid",
+    "identifier": "23150908",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "a significant risk of Alzheimer's disease in Iceland",
+    "claim": "Jonsson 2013 author abstract, Figure 1 caption and indexed opening Methods/Results were read. The R47H T variant was associated with higher Alzheimer disease odds in the studied groups; this is not a personal lifetime estimate or a test-accuracy assessment. Full paper and tables were inaccessible. Exact access scope and allele mapping: docs/sources/reviews/trem2-correction-20260923.md."
+  },
+  {
+    "id": "pmid:23150934",
+    "type": "pmid",
+    "identifier": "23150934",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "Heterozygous rare variants in TREM2 are associated with a significant increase in the risk of Alzheimer's disease.",
+    "claim": "Guerreiro 2013 author abstract and figure captions only. The abstract reports an R47H association and concludes that rare heterozygous TREM2 variants are associated with increased Alzheimer disease risk. It does not validate the imported assay or supply a personal lifetime estimate. Full paper and tables were inaccessible. Exact access scope: docs/sources/reviews/trem2-correction-20260923.md."
+  },
+  {
+    "id": "pmid:8346443",
+    "type": "pmid",
+    "identifier": "8346443",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/8346443/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "gene dose is a major risk factor for late onset AD",
+    "claim": "Corder 1993 author abstract only, read through primary PubMed indexing. Association in 42 late-onset Alzheimer disease families; family-specific quantities do not calibrate a reader’s personal risk. Full paper, Methods and tables were inaccessible. Exact scope: docs/sources/reviews/apoe-correction-20260923.md."
+  },
+  {
+    "id": "pmid:9343467",
+    "type": "pmid",
+    "identifier": "9343467",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/9343467/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "the risk of AD associated with a given genotype varies with sex",
+    "claim": "Farrer 1997 author abstract only, read on PubMed and JAMA. Genotype-specific odds relative to ε3/ε3 varied by study population, age and sex; no personal lifetime estimate or single-marker APOE assignment is supplied. Full paper and tables were inaccessible. Exact scope: docs/sources/reviews/apoe-correction-20260923.md."
+  },
+  {
+    "id": "dataset:ncrad-apoe-genotyping",
+    "type": "dataset",
+    "identifier": "ncrad-apoe-genotyping",
+    "url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+    "archived_path": "docs/sources/ncrad/apoe-genotypes-2026-09-23.json",
+    "access_date": "2026-09-23",
+    "quote": "determined based on the genotypes of two SNPs, rs7412 and rs429358",
+    "claim": "Primary NCRAD genotype chart: APOE typing uses both rs429358 and rs7412, with two distinct types listed for CT/CT. The local excerpt records only this method boundary; it does not validate the application or an uploaded assay. Exact scope: docs/sources/reviews/apoe-correction-20260923.md."
   }
 ]
