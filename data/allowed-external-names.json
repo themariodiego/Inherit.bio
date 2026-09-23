@@ -1037,6 +1037,29 @@
         "docs/sources/reviews/adora2a-correction-20260923.md",
         "data/citations.json"
       ]
+    },
+    {
+      "name": "NCRAD APOE joint-marker chart",
+      "category": "cited-organisation",
+      "aliases": [
+        "ncrad.iu.edu/bank-samples/apoe-genotyping/"
+      ],
+      "reason": "Primary joint-marker chart read for the dated APOE explanation correction. This full-path alias is a content-name exception under the existing substring classifier, not URL authorization.",
+      "evidence": [
+        "docs/sources/reviews/apoe-correction-20260923.md",
+        "docs/sources/ncrad/apoe-genotypes-2026-09-23.json"
+      ]
+    },
+    {
+      "name": "JAMA APOE meta-analysis abstract",
+      "category": "cited-organisation",
+      "aliases": [
+        "jamanetwork.com/journals/jama/article-abstract/418446"
+      ],
+      "reason": "Publisher author abstract independently read for the dated APOE explanation correction. This full-path alias is a content-name exception under the existing substring classifier, not URL authorization.",
+      "evidence": [
+        "docs/sources/reviews/apoe-correction-20260923.md"
+      ]
     }
   ]
 }

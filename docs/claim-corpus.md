@@ -21,8 +21,8 @@ The canonical registers remain `data/citations.json`, `data/claims.json` and
   existing route register, discovered email entrypoints and explicit code-owned
   prose policies. Missing policies and undeclared states fail; they never mean
   that a surface needs no checking. Capture labels are not application URLs.
-- The canonical files contain 75 exact statements in nine reports: nine
-  summaries, 51 study-context paragraphs and 15 genotype interpretations.
+- The canonical files contain 98 exact statements in fourteen reports: fourteen
+  summaries, 51 study-context paragraphs and 33 genotype interpretations.
   The released first four reports (COMT, BDNF, FAAH and SLC45A2) account for
   39 independently reviewed statements. The everyday-trait follow-through
   released by PR72 adds 32 statements for cilantro, asparagus odor, bright-light sneezing and
@@ -31,8 +31,15 @@ The canonical registers remain `data/citations.json`, `data/claims.json` and
   interpretations; the anxiety source was read as an author abstract and the
   sleep source as a full primary paper. See
   `docs/sources/reviews/adora2a-correction-20260923.md` for the exact scope.
-  The combined register has 21 sources: 14 publications and seven
-  Ensembl position/transcript records.
+  The APC, FGFR2, ALDH2 and TREM2 corrections add sixteen exact statements;
+  their source notes record the actual access scope. TREM2 binds the primary
+  author abstracts and does not claim full-paper access or assay validation.
+  The APOE correction adds seven strings without assigning types from separate
+  markers; two author abstracts and the NCRAD joint-marker chart define its
+  source limits. Older captured templates retain their original wording and
+  remain a separate follow-up. The combined register has 35 sources: 26
+  publications, seven Ensembl position/transcript records, one NCBI RefSNP
+  record and one scoped NCRAD chart excerpt.
   `src/components/claims/claim.tsx` renders those statements with numbered,
   source-bound links on the actual report detail page. Changed hosted prose
   remains unregistered rather than borrowing attribution from different text.

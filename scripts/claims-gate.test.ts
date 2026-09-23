@@ -136,15 +136,15 @@ const stale = (label: string, finding: string) =>
 describe("the claims gate holds the registers to the product", () => {
   it("reads every input on this repository, and no floor guard fires", () => {
     const result = runClaimsGate(REPOSITORY_ROOT);
-    expect(result.citationCount).toBe(30);
-    expect(result.archivedSourceCount).toBe(8);
-    expect(result.claimCount).toBe(87);
+    expect(result.citationCount).toBe(35);
+    expect(result.archivedSourceCount).toBe(9);
+    expect(result.claimCount).toBe(98);
     expect(result.claimEvidenceCount).toBeGreaterThan(50);
     expect(result.reportTemplateCount).toBe(162);
     expect(result.reportProseCount).toBe(746);
-    expect(result.registeredProseCount).toBe(87);
+    expect(result.registeredProseCount).toBe(98);
     expect(result.templateCitationCount).toBe(225);
-    expect(result.registeredTemplateCitationCount).toBe(33);
+    expect(result.registeredTemplateCitationCount).toBe(37);
     expect(result.provenanceLiteralCount).toBeGreaterThan(10);
     // Exactly three components emit a claim or figure marker in this
     // repository: <Claim>, <Figure> and <RelativeFigure>.
@@ -195,8 +195,8 @@ describe("the claims gate holds the registers to the product", () => {
 
   it("records every divergence the ten checks report, and nothing else", () => {
     const ledger = readClaimsLedger(REPOSITORY_ROOT);
-    // 671 unregistered prose blocks are 16 entries, one per template file
-    // carrying its counts; 199 unregistered template citations are 16 more.
+    // 648 unregistered prose blocks are 16 entries, one per template file
+    // carrying its counts; 188 unregistered template citations are 16 more.
     expect(ledger["report body registration"]).toHaveLength(16);
     expect(ledger["template citation registration"]).toHaveLength(16);
     expect(ledger["designated surface"]).toHaveLength(9);
@@ -480,7 +480,7 @@ describe("the claims gate holds the registers to the product", () => {
     expect(joined).toContain(
       stale("report body registration", "data/templates/basic-traits.json: 31 of 63 report-body prose blocks"),
     );
-    expect(registeredProseCount).toBe(86);
+    expect(registeredProseCount).toBe(97);
   });
 
   it("fails when a report body's registered prose no longer matches the template text", () => {

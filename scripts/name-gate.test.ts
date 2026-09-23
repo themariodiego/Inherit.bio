@@ -139,6 +139,8 @@ describe("external hostname classification", () => {
     ["Institute of Cancer Research paper repository",
       "repository.icr.ac.uk/server/api/core/bitstreams/99e2e771-711d-4bdd-b509-f58f0a8610f1/content", "apc"],
     ["Nature FGFR2 paper supplement", "nature.com/articles/nature05887#MOESM272", "fgfr2"],
+    ["NCRAD APOE joint-marker chart", "ncrad.iu.edu/bank-samples/apoe-genotyping/", "apoe"],
+    ["JAMA APOE meta-analysis abstract", "jamanetwork.com/journals/jama/article-abstract/418446", "apoe"],
   ])("registers only the reviewed path for %s and retains private-name refusal", (name, paper, review) => {
     const entry = allowedNames.entries.find(row => row.name === name)!;
     expect(entry.category).toBe("cited-organisation");

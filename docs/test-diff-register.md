@@ -1,5 +1,17 @@
 # Test diff register
 
+## TREM2 source scope · 23 September 2026
+
+The R47H report keeps its C/T marker and association direction, while removing
+unsupported lifetime reassurance and the claim that a TT call is probably
+an error. Six additive cases cover allele identity (including rejection of
+the same-rsID R47L alternative), missing calls, genotype limits, dated source
+bindings and actual report rendering with changed-text/key refusal. The
+existing canonical baselines and regression assertions remain; only measured
+aggregate counts expand for four strings and two primary publications.
+The undated-citation ratchet falls by two. This is source-scoped regression
+coverage, not clinical or full-catalog validation.
+
 ## Prepared journey cleanup fixture · 23 September 2026
 
 CI run 35807399737 passed 528 browser cases. The prepared plain case reached
@@ -2708,3 +2720,29 @@ extractor or legal statement is removed or relaxed.
   every current Dockerfile input. Existing deployment guards and CI checks
   remain unchanged. The local suite passes all 20 tests; actual image build
   verification requires the new remote check and is not yet claimed.
+
+## APOE separate-marker explanation correction · 23 September 2026
+
+- Added 13 focused tests binding the unchanged GRCh38 alleles and emerging
+  evidence tier, direct/complement calls, and the actual resolver/rendering
+  boundary. Missing and no-call partners in both directions, CC/TT, dual CT,
+  an unrecognized partner and conflicting source observations cannot emit an
+  APOE type or personal odds from a separate marker explanation.
+- The existing attribution renderer refuses historical wording, mismatched
+  marker identity and changed genotype. Older captured templates retain
+  their original text and remain a separate release follow-up; this correction
+  applies to newly generated reports using the corrected template.
+- Seven exact claims bind two primary author abstracts and one short NCRAD
+  joint-marker chart excerpt. A separate aggregate test preserves every prior
+  binding while adding these seven. Existing count fixtures move only by the
+  measured additions, and the undated-citation bound decreases from 181 to
+  179; no scanner, caller, coverage rule or safety bound is relaxed.
+- The focused report, canonical registry, rendered-source, claims-gate and
+  template suites pass 185 tests in ten files. Changed TypeScript lint,
+  template, claims and readability checks pass locally. These checks are
+  source and regression evidence, not clinical validation or a hosted run.
+
+- Two additional source-name cases cover the reviewed NCRAD and JAMA paths,
+  retaining bare-host, unrelated-path, lookalike and private-denylist refusal.
+  They exercise the existing substring classifier, not strict URL or per-file
+  authorization. Previous allowances and scanner behavior remain unchanged.
