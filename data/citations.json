@@ -378,5 +378,35 @@
     "access_date": "2026-09-23",
     "quote": "NC_000010.11:g.112998590C>T",
     "claim": "Official Variant Details identity only: VCV000007413.7 links rs7903146 to forward GRCh38 chr10:112998590 C>T. Submitted clinical interpretations and population frequencies are not used. A matched locus does not validate an uploaded DNA assay."
+  },
+  {
+    "id": "pmid:8164741",
+    "type": "pmid",
+    "identifier": "8164741",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/8164741/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "not properly inactivated by APC",
+    "claim": "Bertina 1994 complete publisher author abstract read; full paper was subscription-only. Supports the original Factor V Leiden activated-protein-C resistance mechanism, not a personal clot probability or usual risk for CC. Exact access scope: docs/sources/reviews/f5-correction-20260923.md."
+  },
+  {
+    "id": "pmid:14996674",
+    "type": "pmid",
+    "identifier": "14996674",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "The lowest absolute 10-year risks",
+    "claim": "Juul 2004 complete author abstract read via indexed primary PubMed; independent agent also read it directly. Cohort of 9,253 randomly selected Danish adults, 23-year follow-up and hospitalization/death from venous thromboembolism. Carrier group risks differed from noncarriers and varied by age, smoking and body mass index; not a personal prediction or lifetime reassurance. No full paper, tables or assay validation claimed. Scope: docs/sources/reviews/f5-correction-20260923.md."
+  },
+  {
+    "id": "dataset:ncbi-clinvar-rs6025",
+    "type": "dataset",
+    "identifier": "ncbi-clinvar-rs6025",
+    "url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+    "archived_path": "docs/sources/clinvar/rs6025-2026-09-23.json",
+    "access_date": "2026-09-23",
+    "quote": "NC_000001.11:g.169549811C>T NM_000130.5:c.1601G>A NP_000121.2:p.Arg534Gln",
+    "claim": "Official Variant Details identity fields only, directly read by the independent agent: VCV000000642.133 links rs6025 to GRCh38 chr1:169549811 C>T, transcript G>A and historical R506Q naming. No clinical classification, population frequency or consumer assay validation is used. Reference status differs between assemblies and does not imply benignity."
   }
 ]

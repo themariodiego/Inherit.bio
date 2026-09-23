@@ -2323,5 +2323,116 @@
     "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
     "reviewed_on": "2026-09-23",
     "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.summary",
+    "text_verbatim": "Factor V Leiden is the T change at rs6025 in F5. It can make clotting factor V harder for activated protein C to turn off. A Danish adult study linked one or two T copies to more blood clots in veins. This site alone does not give your personal risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:8164741",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/8164741/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports resistance to activated protein C; no genotype-specific or personal probability is inferred."
+      },
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.interpretation.rs6025.cc",
+    "text_verbatim": "Your file shows two C copies at rs6025. It does not show the Factor V Leiden T change at this site. This does not rule out other causes of blood clots or measure your overall clot risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.interpretation.rs6025.ct",
+    "text_verbatim": "Your file shows one C and one T copy at rs6025. In a Danish adult study, one copy was linked to more blood clots in veins than no copies. The chance varies with age and personal circumstances. This result does not give your own probability.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.interpretation.rs6025.tt",
+    "text_verbatim": "Your file shows two T copies at rs6025. In a Danish adult study, two copies were linked to higher vein-clot risk than one copy. A clot is not certain, and this result does not give your personal chance of one.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
   }
 ]

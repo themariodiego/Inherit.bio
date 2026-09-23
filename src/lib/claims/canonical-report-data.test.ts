@@ -9,6 +9,7 @@ import environmental from "../../../data/templates/environmental-sensitivity.jso
 import basic from "../../../data/templates/basic-traits.json";
 import brain from "../../../data/templates/brain-health.json";
 import cancer from "../../../data/templates/cancer-risk.json";
+import heart from "../../../data/templates/heart-cardiovascular.json";
 import metabolic from "../../../data/templates/metabolic-obesity.json";
 import neurodegenerative from "../../../data/templates/neurodegenerative.json";
 import type { ReportTemplate } from "../genome/reports";
@@ -85,6 +86,14 @@ const tcf7l2Items = [
   ...Object.entries(tcf7l2Template.variants[0].interpretations).map(([genotype, text]) => ({
     id: `report.${tcf7l2Template.slug}.interpretation.rs7903146.${genotype.toLowerCase()}`,
     text, slug: tcf7l2Template.slug, summary: false,
+  })),
+];
+const f5Template = heart.find(template => template.slug === "factor-v-leiden-rs6025")!;
+const f5Items = [
+  { id: `report.${f5Template.slug}.summary`, text: f5Template.summary, slug: f5Template.slug, summary: true },
+  ...Object.entries(f5Template.variants[0].interpretations).map(([genotype, text]) => ({
+    id: `report.${f5Template.slug}.interpretation.rs6025.${genotype.toLowerCase()}`,
+    text, slug: f5Template.slug, summary: false,
   })),
 ];
 const validate = (overrides = {}) => validateClaimRegistry({
@@ -176,14 +185,15 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
         text, slug: adora2aSlug, summary: false,
       })),
     ];
-    expect(claims).toHaveLength(102);
-    expect(citations).toHaveLength(38);
+    expect(claims).toHaveLength(106);
+    expect(citations).toHaveLength(41);
     expect(citations.map((source) => source.id).sort()).toEqual([
       ...initialSourceIds, "pmid:12825092", "pmid:17329997",
       "pmid:9288102", "pmid:37076288", "pmid:40866199", "dataset:dbsnp-rs1801155",
       "pmid:17529967", "pmid:19320537", "pmid:39075523", "pmid:12419833", "pmid:2024727",
       "pmid:23150908", "pmid:23150934", "pmid:8346443", "pmid:9343467", "dataset:ncrad-apoe-genotyping",
       "pmid:16415884", "pmid:16855264", "dataset:ncbi-clinvar-rs7903146",
+      "pmid:8164741", "pmid:14996674", "dataset:ncbi-clinvar-rs6025",
     ].sort());
     expect(added.map((item) => item.id).sort()).toEqual([
       `report.${adora2aSlug}.interpretation.rs5751876.cc`,
@@ -192,7 +202,7 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
       `report.${adora2aSlug}.summary`,
     ]);
     expect(claims.map((claim) => claim.claim_id).sort())
-      .toEqual([...expected, ...added, ...correctedItems, ...trem2Items, ...apoeItems, ...tcf7l2Items].map((item) => item.id).sort());
+      .toEqual([...expected, ...added, ...correctedItems, ...trem2Items, ...apoeItems, ...tcf7l2Items, ...f5Items].map((item) => item.id).sort());
     for (const item of added) {
       const claim = claims.find((held) => held.claim_id === item.id)!;
       expect(claim.text_verbatim).toBe(item.text);
@@ -203,7 +213,7 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
       expect(claim.evidence.map((edge) => edge.citation)).toEqual(item.id.endsWith(".cc")
         ? ["pmid:17329997"] : ["pmid:12825092", "pmid:17329997"]);
     }
-    const corpus = [...seedOccurrences, ...[...added, ...correctedItems, ...trem2Items, ...apoeItems, ...tcf7l2Items].flatMap((item) => intended(item).map((surface) =>
+    const corpus = [...seedOccurrences, ...[...added, ...correctedItems, ...trem2Items, ...apoeItems, ...tcf7l2Items, ...f5Items].flatMap((item) => intended(item).map((surface) =>
       ({ claimId: item.id, text: item.text, surface })))];
     const result = validate({ claims, citations, commitDate: "2026-09-23", corpus });
     expect(result.issues).toEqual([]);
