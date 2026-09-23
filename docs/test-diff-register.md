@@ -2669,3 +2669,15 @@ extractor or legal statement is removed or relaxed.
   and rejects a different identity. Independent review found no further syntax
   issue in the remaining new assertions. Full fixture execution remains a CI
   requirement; the constant-expression probe does not establish its result.
+
+## Preparation image build check · 23 September 2026
+
+- Added a separate pull-request check that builds the production worker
+  Dockerfile with its actual frozen dependency install and repository context.
+  This catches missing package patches before a hosted deployment. The worker
+  is never started, and the image is neither published nor deployed.
+- Two additive configuration tests require the bounded build-only command,
+  read-only checkout without persisted credentials, and change filters for
+  every current Dockerfile input. Existing deployment guards and CI checks
+  remain unchanged. The local suite passes all 20 tests; actual image build
+  verification requires the new remote check and is not yet claimed.

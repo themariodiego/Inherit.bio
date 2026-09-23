@@ -342,3 +342,32 @@ describe("the deploy workflow", () => {
     expect(workflow).toContain("          - production\n          - preview\n");
   });
 });
+
+describe("the independent preparation image check", () => {
+  const workflowPath = ".github/workflows/prepared-worker-image.yml";
+  const workflow = read(workflowPath);
+
+  it("builds on a bounded public runner without starting, publishing or credentialing the worker", () => {
+    expect(workflow).toMatch(/^on:\n {2}pull_request:\n/m);
+    expect(workflow).toMatch(/^permissions:\n {2}contents: read\n\n/m);
+    expect(workflow).toContain("group: prepared-worker-image-${{ github.event.pull_request.number }}");
+    expect(workflow).toContain("cancel-in-progress: true");
+    expect(workflow).toContain("runs-on: ubuntu-24.04");
+    expect(workflow).toContain("timeout-minutes: 15");
+    expect(workflow).toContain("persist-credentials: false");
+    expect([...workflow.matchAll(/^ +(?:- )?uses: (.+)$/gm)].map(match => match[1])).toEqual(["actions/checkout@v4"]);
+    expect([...workflow.matchAll(/^ +run: (.+)$/gm)].map(match => match[1])).toEqual([
+      "docker build --pull --file workers/prepared-worker/Dockerfile --tag inherit-prepared-worker:ci .",
+    ]);
+    expect(workflow).not.toMatch(/secrets\.|pull_request_target:|environment:|\benv:|--build-arg|--secret|--ssh|docker (?:run|start|push)|registry/);
+  });
+
+  it("triggers for the Dockerfile, context rules and every copied build input", () => {
+    const copies = read(DOCKERFILE).split("\n").filter(line => line.startsWith("COPY "))
+      .flatMap(line => line.split(/\s+/).slice(1, -1)).filter(part => !part.startsWith("--"));
+    const inputs = copies.map(input => statSync(path.join(ROOT, input)).isDirectory() ? `${input}/**` : input);
+    for (const input of [workflowPath, DOCKERFILE, DOCKERIGNORE, ...inputs]) {
+      expect(workflow, `${input} must trigger the image build`).toContain(`      - "${input}"\n`);
+    }
+  });
+});
