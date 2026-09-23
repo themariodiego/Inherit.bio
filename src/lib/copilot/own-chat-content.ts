@@ -6,6 +6,8 @@ import { isFixtureSlug } from '@/components/reports/library';
 import { reportCatalogSnapshotSchema } from '@/lib/genome/report-catalog-snapshot';
 import { OWN_ANCESTRY_HREF, ownChatAncestrySnapshotSchema, capturedAncestryCitation } from './own-chat-ancestry-content';
 import { preparedReportSourceSchema } from '@/lib/genome/prepared-source/report-call-pages';
+import { reportScientificCorrections, reportOutcomeScientificCorrections } from '@/lib/genome/report-scientific-corrections';
+import { ownChatCorrection } from './own-chat-correction';
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const revision = z.number().int().positive().safe();
 export const ownChatProjectionSchema = z.object({
@@ -39,6 +41,12 @@ export const ownChatReportSchema = z.object({ file_id: uuid, purpose: z.enum(['r
     report: z.object({ slug: z.string(), covered: z.boolean(), conflictingRsids: z.array(z.number().int().positive()), catalogSnapshot: reportCatalogSnapshotSchema.optional(),
         variants: z.array(z.object({ rsid: z.number().int().positive(), outcome }).strict()) }).strict().refine(r => !r.catalogSnapshot || r.catalogSnapshot.template.slug === r.slug) }).strict();
 export type OwnChatReport = z.infer<typeof ownChatReportSchema>;
+/** Exact reviewed corrections only; absent snapshots and unknown prose remain
+ * unknown. Even an uncovered row can carry superseded catalogue definitions. */
+export function hasOwnChatReportCorrection(rows: readonly OwnChatReport[]): boolean {
+    return rows.some(row => (row.report.catalogSnapshot && reportScientificCorrections(row.report.catalogSnapshot.template).length > 0)
+        || reportOutcomeScientificCorrections(row.report.slug, row.report.variants).length > 0);
+}
 export const ownChatPrsSchema = z.object({ file_id: uuid, pgs_id: z.string(), matched: z.number().int().nonnegative(), computed_at: z.string(),
     n_variants: z.number().int().positive().nullable() }).strict();
 export const LEGACY_SOURCE_LIMIT = 'Older files have no captured report-purpose completion or scientific catalog snapshot. Their historical reports and score results are unavailable here; this is not a negative finding.';
@@ -70,6 +78,7 @@ export function capturedChatCitations(toolJson: unknown) {
                 if (!parsed.success)
                     continue;
                 const { template, templateSha256 } = parsed.data;
+                if (reportScientificCorrections(template).length) continue;
                 const report = { id: `report:${template.slug}:${templateSha256}`, label: template.title, href: `/genome/me/reports/${encodeURIComponent(template.slug)}` };
                 citations.set(report.id, report);
                 for (const source of template.citations) {
@@ -115,6 +124,7 @@ export function ownGenotypeResult(rsid: number, calls: OwnChatCall[], reference:
 /** Never decorate old outcomes with today's scientific description/citations. */
 export function capturedReportResult(rows: OwnChatReport[], slug: string, publishedSlug?: string) {
     const selected = rows.filter(r => r.report.slug === slug && !isFixtureSlug(slug));
+    if (hasOwnChatReportCorrection(selected)) return ownChatCorrection();
     if (!selected.length)
         return { ...(publishedSlug === slug && !isFixtureSlug(slug) ? { slug } : {}), error: 'report_not_generated', note: 'No completed report for this topic is currently available under your selected purposes.' };
     return { slug, sources: selected.map(r => ({ file_id: r.file_id, purpose: r.purpose,

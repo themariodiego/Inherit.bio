@@ -5,7 +5,9 @@ import { currentOwnUploadAccount } from '@/lib/uploads/own-upload-context';
 import { providerKeyFor } from '@/lib/llm';
 import { resolveSubjectForAccount } from '@/lib/subjects';
 import { prepareOwnCopilotProvider, ownCopilotProviderStatus, assertOwnCopilotAuthority, type OwnCopilotAuthority } from './own-provider-authority';
-import { ownChatProjectionSchema, ownChatCitationSchema, type OwnChatProjection } from './own-chat-content';
+import { ownChatProjectionSchema, ownChatCitationSchema, hasOwnChatReportCorrection, type OwnChatProjection } from './own-chat-content';
+import { readOwnChatReports } from './own-chat-report-context';
+import { ownChatCorrection } from './own-chat-correction';
 import { mintOwnChatToken, snapshotHash } from './own-chat-token';
 type Actor = {
     accountId: string;
@@ -19,6 +21,7 @@ export type OwnCopilotChatView = {
 } | {
     kind: 'ready';
     contextToken: string;
+    contextHash: string;
     providerInfo: {
         configured: true;
         provider: 'anthropic' | 'openai_compatible';
@@ -88,7 +91,7 @@ export async function prepareOwnCopilotChat(subjectId: string): Promise<OwnCopil
         const projection = ownChatProjectionSchema.parse(await ownChatRpc('prepare', provider.authority));
         const chats = z.array(z.object({ id: z.uuid(), created_at: z.string() }).strict()).max(50).parse(await ownChatRpc('list', provider.authority));
         await checkOwnChat(provider.authority, projection);
-        return { kind: 'ready', contextToken: mintOwnChatToken({ authority: provider.authority, projectionHash: snapshotHash(projection) }),
+        return { kind: 'ready', contextHash: snapshotHash(projection), contextToken: mintOwnChatToken({ authority: provider.authority, projectionHash: snapshotHash(projection) }),
             providerInfo: { configured: true, provider: provider.settings.provider, providerKey: providerKeyFor(provider.settings.provider, provider.settings.base_url),
                 model: provider.settings.model, local: provider.authority.providerClass === 'local', hasConsent: true },
             chats: chats.map(c => ({ id: c.id, createdAt: new Date(c.created_at).toISOString() })) };
@@ -115,7 +118,12 @@ export async function readOwnChatHistory(chatId: string) {
     if (!provider)
         return null;
     const history = ownChatHistorySchema.parse(await ownChatRpc('history', provider.authority, null, chatId));
+    const reports = await readOwnChatReports(history.projection, {
+        check: () => checkOwnChat(provider.authority, history.projection),
+        readPage: offset => ownChatRpc('reports', provider.authority, history.projection, chatId, { offset }),
+    });
     await checkOwnChat(provider.authority, history.projection);
-    return { chatId, scope: { kind: 'self' as const, displayLabel: subject.displayLabel }, messages: history.messages.map(m => ({ id: m.id, role: m.role,
+    return { chatId, ...(hasOwnChatReportCorrection(reports) ? { correction: ownChatCorrection() } : {}),
+        scope: { kind: 'self' as const, displayLabel: subject.displayLabel }, messages: history.messages.map(m => ({ id: m.id, role: m.role,
             content: m.content[0].text, citations: m.citations, embryoFindings: [], createdAt: new Date(m.created_at).toISOString() })) };
 }

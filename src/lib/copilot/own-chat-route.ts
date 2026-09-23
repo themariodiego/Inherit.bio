@@ -19,7 +19,9 @@ import { readOwnChatToken, snapshotHash } from './own-chat-token';
 import { readOwnChatAncestry } from './own-chat-ancestry';
 import { readOwnChatCalls } from './own-chat-calls';
 import { capturedAncestryResult, OWN_ANCESTRY_REPORT, OWN_ANCESTRY_TITLE } from './own-chat-ancestry-content';
-import { ownChatProjectionSchema, ownChatReportSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
+import { ownChatProjectionSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, hasOwnChatReportCorrection, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
+import { readOwnChatReports } from './own-chat-report-context';
+import { ownChatCorrection } from './own-chat-correction';
 export const ownChatBodySchema = z.union([
     z.object({ contextToken: z.string().min(16).max(12000), message: z.string().trim().min(1).max(8000) }).strict(),
     z.object({ chatId: z.uuid(), message: z.string().trim().min(1).max(8000) }).strict(),
@@ -73,8 +75,6 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
             projection = ownChatProjectionSchema.parse(await ownChatRpc('prepare', provider.authority));
             if (!token || snapshotHash(projection) !== token.projectionHash)
                 return denied();
-            if (await ownChatRpc('begin', provider.authority, projection, null, { nonceHash: snapshotHash(token.nonce), expiresAt: new Date(token.expiresAt).toISOString() }) !== true)
-                return denied();
         }
         const check = async () => { if (request.signal.aborted)
             throw new Error('copilot_unavailable'); await checkOwnChat(provider.authority, projection); };
@@ -100,13 +100,15 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
         }
         const sourceUnavailable = async () => { await check(); return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' }; };
         async function reports() {
-            const rows = await pages('reports', ownChatReportSchema);
-            if (rows.some(r => r.report.slug === OWN_ANCESTRY_REPORT))
-                throw new Error('copilot_unavailable');
-            if (rows.some(r => !projection.sources.some(s => s.id === r.file_id && s.completed.some(c => c.purpose === r.purpose))))
-                throw new Error('copilot_unavailable');
-            return rows.filter(r => !isFixtureSlug(r.report.slug));
+            return readOwnChatReports(projection, { check,
+                readPage: offset => ownChatRpc('reports', provider!.authority, projection, chatId, { offset }) });
         }
+        // Inspect the whole bound report context before nonce consumption and
+        // before history or tools can reach a model, including old paraphrases.
+        if (hasOwnChatReportCorrection(await reports()))
+            return Response.json(ownChatCorrection(), { status: 409, headers });
+        if (!chatId && (!token || await ownChatRpc('begin', provider.authority, projection, null,
+            { nonceHash: snapshotHash(token.nonce), expiresAt: new Date(token.expiresAt).toISOString() }) !== true)) return denied();
         const legacyAnalysis = () => [...projection.legacySources.map(s => ({ file_id: s.id, status: 'historical_analysis_unavailable', note: LEGACY_SOURCE_LIMIT })),
             ...projection.unavailableSources.map(s => ({ file_id: s.id, status: s.reason, note: 'This source is not currently readable; no result is inferred.' }))];
         const rawProvenance = () => projection.legacySources.length ? { legacy_sources: projection.legacySources.map(s => ({ file_id: s.id, provenance: 'historical_normalization_unrecorded' })), provenance_note: LEGACY_RAW_NOTE } : {};

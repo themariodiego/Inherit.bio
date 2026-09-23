@@ -1,5 +1,37 @@
 # Test diff register
 
+## TCF7L2 source scope · 23 September 2026
+
+Six additive cases preserve the exact C>T call contract, trial population and
+CT uncertainty; they bind all four corrected strings to dated primary evidence
+and reject changed prose or marker attribution. Existing canonical claims and
+all earlier report tests remain; only measured aggregate counts expand.
+The undated-citation backlog decreases by one. No acceptance row, route or
+density ratchet changes. Tests do not establish assay or clinical validity.
+The historical matcher adds the four exact prior fields from the committed
+TCF7L2 source change; existing six batches and all original assertions remain.
+
+## Historical report correction boundaries · 23 September 2026
+
+New regression cases bind 32 exact superseded fields from seven reviewed source
+changes, including 24 resolver-consistent saved genotype explanations. They
+preserve unknown wording as unknown, immutable captured data, source identity,
+own and Family sensitive-result gates, and every original assertion.
+
+Copilot cases prove refusal before nonce consumption, provider dispatch or
+new chat commits, including an older assistant paraphrase and known outcomes
+without a catalog. Pagination and final authority checks retain their bounds.
+Client handler and actual page-key tests distinguish a fresh nonce from a
+changed source projection. Existing current APOE/FGFR2 browser cases gain four
+no-false-warning assertions; no fixture, assertion, timeout or gate is removed.
+JSON/text export cases preserve the original captured objects and add only
+correction metadata. Notices live in the scanned copy registry.
+
+Local tests do not claim an old-capture browser journey, generated route-type
+validation, hosted inference or clinical review. The scoped behavior and
+conservative whole-context refusal are documented in
+`docs/report-scientific-corrections.md`.
+
 ## TREM2 source scope · 23 September 2026
 
 The R47H report keeps its C/T marker and association direction, while removing
@@ -2746,3 +2778,47 @@ extractor or legal statement is removed or relaxed.
   retaining bare-host, unrelated-path, lookalike and private-denylist refusal.
   They exercise the existing substring classifier, not strict URL or per-file
   authorization. Previous allowances and scanner behavior remain unchanged.
+
+### 2026-09-23 — Overview Portrait navigation
+
+- Overview resolves a direct Portrait link only from the viewer's own Family
+  graph and a current, finally confirmed pair authority receipt. No pair ID
+  reaches the page from an unconfirmed candidate. Both Portrait directions,
+  account/session, endpoints, purpose, signatures, current consent artifact,
+  pair revision, pause, acknowledgment and independent-login state remain
+  required. Report permission cannot stand in for Portrait permission.
+- The navigation RPC shares the existing Portrait authority validation and
+  reads no files, sources, calls or results. The source-readiness path retains
+  its source-specific locks and receipt format; its SQL parity checks remain
+  separate from the navigation's no-source positive fixture.
+- New adapter tests exercise exact membership, both pair orientations, bounded
+  discovery, capability refusal, missing or mismatched metadata, final session
+  or authority drift and refusal after a failed confirmation. Existing
+  Overview href and own-result tests remain, with direct-link and fallback
+  composition assertions added. Discovery checks at most 50 current candidate
+  pairs in ID order; an eligible pair outside that bound may retain the safe
+  Family fallback. This is not a complete enumeration of every eligible pair.
+  Read, policy and RPC exceptions or malformed/error replies also keep that
+  fallback and expose no captured pair.
+- The existing no-file Portrait browser fixture supplies reciprocal grants,
+  independent logins and both acknowledgments. It now reaches the same gated
+  destination in one Overview click and adds a real permission-withdrawal
+  fallback check. Every earlier empty-state and result-withholding assertion
+  remains. Browser execution and database tests require the normal full CI;
+  local test discovery does not claim those journeys passed. The additional
+  withdrawal case makes the expected complete browser suite 531 cases, up
+  from 530, with no earlier assertion removed.
+- This fixes one eligible navigation path. It does not close G2.4, add carrier
+  results, change the destination's consent gate, or establish hosted readiness.
+
+### 2026-09-23 — Exact source heading in the sensitive-report test
+
+- The APOE gate test requires the exact `Sources` level-three heading. The
+  added `Position sources` heading made its earlier substring locator match
+  both headings, which failed the browser's strict locator check before the
+  reveal assertions. An exact match still fails when the required heading is
+  absent; it cannot substitute the position-source section.
+- Every gate, result-withholding, reveal, remembered-choice, accessibility and
+  raw-response assertion remains. No case, timeout or retry setting changes.
+  The full browser suite must pass on the new head before this is counted as
+  a verified application journey.

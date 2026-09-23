@@ -1,4 +1,6 @@
 import { loadOwnStoredReportSnapshot } from "@/lib/genome/own-stored-report";
+import { reportScientificCorrections } from "@/lib/genome/report-scientific-corrections";
+import { ScientificCorrectionNotice } from "@/components/reports/scientific-correction-notice";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -550,6 +552,7 @@ export default async function ReportDetailPage(
         </nav> : null}
         {sharedReport ? <p className="text-sm text-ink-muted">Saved on <time dateTime={sharedReport.completedAt}>
           {sharedReport.completedAt.slice(0, 10)}</time>. Each saved result uses one source file.</p> : null}
+        {reportScientificCorrections(template).length > 0 ? <ScientificCorrectionNotice /> : null}
         <ul data-slot="chip-row" className="space-y-2 text-sm">
           <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span data-chip="layer" className={CHIP}>

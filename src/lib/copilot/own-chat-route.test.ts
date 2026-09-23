@@ -18,6 +18,8 @@ vi.mock("ai", () => ({ tool: (x: unknown) => x, stepCountIs: () => 8, streamText
     }) => stream }));
 import { ownChatResponse } from "./own-chat-route";
 import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
+import { correctionBatches, correctionProjection, correctionReport } from "./own-chat-correction.test-fixture";
+import { ownChatCorrection } from "./own-chat-correction";
 const accountId = "80000000-0000-4000-8000-000000000001", sessionId = "80000000-0000-4000-8000-000000000002", subjectId = "80000000-0000-4000-8000-000000000003", chatId = "80000000-0000-4000-8000-000000000004";
 const authority = { accountId, sessionId, subjectId, providerClass: "local" };
 const projection = { sources: [], legacySources: [], unavailableSources: [] };
@@ -211,4 +213,79 @@ it("reads a captured ancestry result through the existing five tools", async () 
     expect(result).toMatchObject({ slug: "inherit:ancestry", sources: [expect.objectContaining({ file_id: fileId,
         status: "not_covered", regions: [] })] });
     expect((await response.json()).message.content).toContain("does not cover enough positions");
+});
+
+describe("known scientific correction before any model or history replay", () => {
+    function bind(pages: unknown[][], existing = false) {
+        mocks.token.mockReturnValue({ authority, projectionHash: JSON.stringify(correctionProjection), nonce: "nonce", expiresAt: Date.now() + 500000 });
+        let index = 0;
+        mocks.rpc.mockImplementation(async (op: string) => op === "prepare" ? correctionProjection : op === "begin" ? true
+            : op === "reports" ? pages[index++] ?? [] : op === "commit" ? { chatId }
+            : op === "history" ? { projection: correctionProjection, lastOrdinal: 1, messages: [
+                { role: "user", content: [{ text: "What did my earlier report mean?" }] },
+                { role: "assistant", content: [{ text: "Your chance is lower because of that combination." }] },
+            ] } : []);
+        return existing ? { chatId, message: "Explain your earlier answer." }
+            : { contextToken: "valid-context-token", message: "What does my file cover?" };
+    }
+    function noInferenceOrWrites() {
+        expect(mocks.stream).not.toHaveBeenCalled();
+        expect(mocks.providerFetch).not.toHaveBeenCalled();
+        expect(mocks.capturedFetch).toBeNull();
+        expect(mocks.rpc.mock.calls.some(call => ["begin", "commit"].includes(call[0]))).toBe(false);
+    }
+    it.each(correctionBatches)("blocks the captured %s batch even when it is uncovered", async slug => {
+        const body = bind([[correctionReport(slug)], []]);
+        const result = await ownChatResponse(request(body), body, options);
+        expect(result.status).toBe(409);
+        expect(await result.json()).toEqual(ownChatCorrection());
+        noInferenceOrWrites();
+    });
+    it.each(["unused-interpretation", "outcome"] as const)("blocks a known %s without sending a replacement", async field => {
+        const body = bind([[correctionReport(undefined, field)], []]);
+        const result = await ownChatResponse(request(body), body, options);
+        expect(result.status).toBe(409);
+        expect(await result.json()).toEqual(ownChatCorrection());
+        noInferenceOrWrites();
+    });
+    it("checks later pages before replaying a paraphrased assistant message", async () => {
+        const unrelated = correctionReport();
+        unrelated.report.catalogSnapshot!.template.summary = "Unknown historical prose, not declared current.";
+        const before = structuredClone(unrelated);
+        const body = bind([[unrelated], [correctionReport()], []], true);
+        const result = await ownChatResponse(request(body), body, options);
+        expect(result.status).toBe(409);
+        expect(mocks.rpc.mock.calls.filter(call => call[0] === "reports").map(call => call[4])).toEqual([{ offset: 0 }, { offset: 1 }, { offset: 2 }]);
+        expect(unrelated).toEqual(before);
+        noInferenceOrWrites();
+    });
+    it.each(["foreign-file", "wrong-purpose", "malformed", "revoked-after-read"])("fails closed before notice or inference: %s", async kind => {
+        const row = correctionReport();
+        if (kind === "foreign-file") row.file_id = accountId;
+        if (kind === "wrong-purpose") row.purpose = "reports.monogenic";
+        const body = bind([[kind === "malformed" ? { ...row, privateExtra: true } : row], []]);
+        if (kind === "revoked-after-read") {
+            const original = mocks.rpc.getMockImplementation()!;
+            mocks.rpc.mockImplementation(async (...args: unknown[]) => {
+                const value = await original(...args);
+                if (args[0] === "reports") mocks.check.mockRejectedValue(new Error("withdrawn"));
+                return value;
+            });
+        }
+        const result = await ownChatResponse(request(body), body, options);
+        expect(result.status).toBe(403);
+        expect(await result.json()).toEqual({ error: "copilot_unavailable" });
+        noInferenceOrWrites();
+    });
+    it.each([false, true])("preserves unrelated historical behavior with captured catalog present=%s", async hasCatalog => {
+        const row = correctionReport();
+        if (hasCatalog) row.report.catalogSnapshot!.template.summary = "Unregistered wording is not automatically incorrect.";
+        else delete row.report.catalogSnapshot;
+        const body = bind([[row], []]);
+        expect((await ownChatResponse(request(body), body, options)).status).toBe(200);
+        expect(mocks.providerFetch).toHaveBeenCalledOnce();
+        const operations = mocks.rpc.mock.calls.map(call => call[0]);
+        expect(operations.indexOf("begin")).toBeGreaterThan(operations.lastIndexOf("reports"));
+        expect(operations).toContain("commit");
+    });
 });
