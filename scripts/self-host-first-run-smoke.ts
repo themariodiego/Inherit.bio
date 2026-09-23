@@ -29,7 +29,7 @@ const sha = (value: string | Buffer) => createHash("sha256").update(value).diges
 function requireProof(value: unknown): asserts value { if (!value) throw new Error("first_run_proof_failed"); }
 function json(value: string): unknown { try { return JSON.parse(value); } catch { throw new Error("first_run_invalid_json"); } }
 
-export function requireRemoteRunner(env: NodeJS.ProcessEnv, platform: string, version: string, args: string[]): void {
+export function requireRemoteRunner(env: Readonly<Record<string, string | undefined>>, platform: string, version: string, args: string[]): void {
   requireProof(platform === "linux" && version === "v22.17.0" && args.length === 0
     && env.CI === "true" && env.GITHUB_ACTIONS === "true" && env.RUNNER_ENVIRONMENT === "github-hosted");
   requireProof(["INHERIT_TEST_JURISDICTION", "INHERIT_DISPOSABLE_LOCAL_E2E", "INHERIT_LOCAL_E2E_PROJECT",

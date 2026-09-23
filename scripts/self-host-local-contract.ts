@@ -51,7 +51,7 @@ export function checkedConfig(text: string, prepared: boolean): string {
   return text;
 }
 
-export function checkedEnvironment(env: NodeJS.ProcessEnv, template = ""): void {
+export function checkedEnvironment(env: Readonly<Record<string, string | undefined>>, template = ""): void {
   const forbidden = ["VERCEL", "VERCEL_ENV", "VERCEL_URL", "DOCKER_HOST", "DOCKER_CONTEXT", "NODE_OPTIONS",
     "INHERIT_TEST_JURISDICTION", "INHERIT_DISPOSABLE_LOCAL_E2E", "INHERIT_LOCAL_E2E_PROJECT"];
   requireLocal(forbidden.every(key => !env[key]), "environment_override");

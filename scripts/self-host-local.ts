@@ -14,16 +14,19 @@ const sha = (text: string) => createHash("sha256").update(text).digest("hex");
 const PRIVATE = ["auth-signing-keys.json", "upload-signing-key.json", "prepared.json"];
 const JSON_FORMAT = '{"id":{{json .Id}},"name":{{json .Name}},"project":{{json (index .Config.Labels "com.supabase.cli.project")}},"running":{{json .State.Running}},"created":{{json .Created}}}';
 
-export function nativeLocalSetupIO(root: string, env: NodeJS.ProcessEnv): LocalSetupIO {
+export function nativeLocalSetupIO(root: string, env: Readonly<Record<string, string | undefined>>): LocalSetupIO {
   // Provider/config overrides, debug flags and credentials never reach children.
   const childEnv = Object.fromEntries(["PATH", "HOME", "TMPDIR", "COREPACK_HOME", "XDG_RUNTIME_DIR"]
     .flatMap(name => env[name] ? [[name, env[name]]] : []));
   return { fs, bytes: randomBytes, now: () => new Date().toISOString(), key: () => ({
     ...generateKeyPairSync("ec", { namedCurve: "prime256v1" }).privateKey.export({ format: "jwk" }),
-    kid: randomUUID(), alg: "ES256", use: "sig",
+    // Auth selects its one signer by key_ops: https://github.com/supabase/auth/blob/v2.196.0/internal/conf/jwk.go
+    kid: randomUUID(), alg: "ES256", use: "sig", key_ops: ["sign", "verify"],
   }), run: (command, args, input) => {
     try {
-      return execFileSync(command, args, { cwd: root, env: childEnv, input, encoding: "utf8",
+      // Node accepts an unset NODE_ENV; Next's global type requires one.
+      // Keep the child environment restricted to the allowlist above.
+      return execFileSync(command, args, { cwd: root, env: childEnv as NodeJS.ProcessEnv, input, encoding: "utf8",
         stdio: ["pipe", "pipe", "pipe"], timeout: 30_000, maxBuffer: 1_048_576 }).trim();
     } catch {
       const phase = command === "git" ? "source_read" : command === "corepack" ?
@@ -52,7 +55,7 @@ function parse(text: string): unknown {
 function writeNew(io: LocalSetupIO, filename: string, text: string): void {
   io.fs.writeFileSync(filename, text, { flag: "wx", mode: 0o600 });
 }
-function checkedRoot(root: string, io: LocalSetupIO, env: NodeJS.ProcessEnv, prepared: boolean) {
+function checkedRoot(root: string, io: LocalSetupIO, env: Readonly<Record<string, string | undefined>>, prepared: boolean) {
   checkedEnvironment(env, file(io, path.join(root, ".env.example")));
   requireLocal(path.isAbsolute(root) && io.fs.realpathSync(root) === root, "root_path");
   requireLocal(!io.fs.lstatSync(path.join(root, "supabase")).isSymbolicLink(), "config_directory");
@@ -80,7 +83,7 @@ function checkedRoot(root: string, io: LocalSetupIO, env: NodeJS.ProcessEnv, pre
   requireLocal(typeof endpoint === "string" && endpoint.startsWith("unix:///") && !endpoint.includes("\n"), "docker_endpoint");
 }
 
-export function prepareLocal(root: string, io: LocalSetupIO, env: NodeJS.ProcessEnv = {}) {
+export function prepareLocal(root: string, io: LocalSetupIO, env: Readonly<Record<string, string | undefined>> = {}) {
   checkedRoot(root, io, env, false);
   const configPath = path.join(root, "supabase/config.toml");
   const before = file(io, configPath); const configured = checkedConfig(before, false);
@@ -110,7 +113,7 @@ export function prepareLocal(root: string, io: LocalSetupIO, env: NodeJS.Process
   return "Prepared fresh local signing keys. Start the local stack once, then run configure.";
 }
 
-export function configureLocal(root: string, io: LocalSetupIO, env: NodeJS.ProcessEnv = {}) {
+export function configureLocal(root: string, io: LocalSetupIO, env: Readonly<Record<string, string | undefined>> = {}) {
   checkedRoot(root, io, env, true);
   const directory = path.join(root, LOCAL.directory);
   const stat = io.fs.lstatSync(directory);
@@ -129,6 +132,10 @@ export function configureLocal(root: string, io: LocalSetupIO, env: NodeJS.Proce
     && keys[0].kid === manifest.authKid && keys[1].kid === manifest.uploadKid && upload.kid === manifest.uploadKid
     && keys[0].kid !== keys[1].kid && typeof keys[0].d === "string" && keys[1].d === undefined,
   "key_files");
+  requireLocal(Array.isArray(keys[0].key_ops) && keys[0].key_ops.length === 2
+    && keys[0].key_ops.includes("sign") && keys[0].key_ops.includes("verify")
+    && Array.isArray(keys[1].key_ops) && keys[1].key_ops.length === 1 && keys[1].key_ops[0] === "verify",
+  "key_operations");
   const publicUpload = createPublicKey(createPrivateKey({ key: upload, format: "jwk" })).export({ format: "jwk" });
   requireLocal(["kty", "crv", "x", "y"].every(name => keys[1][name] === publicUpload[name]), "upload_key_binding");
   const output = path.join(root, ".env.local"); absent(io, output);

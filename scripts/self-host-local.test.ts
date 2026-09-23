@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createPrivateKey, createPublicKey, generateKeyPairSync, randomBytes, randomUUID, sign } from "node:crypto";
-import { configureLocal, prepareLocal, type LocalSetupIO } from "./self-host-local";
+import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, randomBytes, randomUUID, sign } from "node:crypto";
+import { configureLocal, nativeLocalSetupIO, prepareLocal, type LocalSetupIO } from "./self-host-local";
 import { checkedConfig, checkedEnvironment, checkedStatus, localEnvironmentFile, type SigningKey } from "./self-host-local-contract";
 import { localConfigurationSql } from "./self-host-local-database";
 
@@ -18,7 +18,7 @@ function startedFixture(root: string) {
 }
 function key(): SigningKey {
   return { ...generateKeyPairSync("ec", { namedCurve: "prime256v1" }).privateKey.export({ format: "jwk" }),
-    kid: randomUUID(), alg: "ES256", use: "sig" };
+    kid: randomUUID(), alg: "ES256", use: "sig", key_ops: ["sign", "verify"] };
 }
 function jwt(auth: SigningKey, role: string) {
   const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -100,6 +100,31 @@ describe("fresh local profile", () => {
 });
 
 describe("prepare with synthetic command adapters", () => {
+  it("gives Auth exactly one signing key when using the native crypto generator", () => {
+    const { root, io } = fixture();
+    // Keep every command synthetic while exercising the actual native JWK output.
+    io.key = nativeLocalSetupIO(root, {}).key;
+    const generated = io.key();
+    expect(generated.d).toBeTruthy();
+    expect(generated.key_ops).toEqual(["sign", "verify"]);
+    const message = prepareLocal(root, io);
+    const directory = path.join(root, ".inherit-local");
+    const providerText = fs.readFileSync(path.join(directory, "auth-signing-keys.json"), "utf8");
+    const providerKeys: SigningKey[] = JSON.parse(providerText);
+    const upload: SigningKey = JSON.parse(fs.readFileSync(path.join(directory, "upload-signing-key.json"), "utf8"));
+    expect(providerKeys).toHaveLength(2);
+    const [auth, uploadPublic] = providerKeys;
+    expect(auth.d).toBeTruthy();
+    expect(auth.key_ops).toEqual(["sign", "verify"]);
+    expect(providerKeys.filter(key => Array.isArray(key.key_ops) && key.key_ops.includes("sign"))).toEqual([auth]);
+    expect(uploadPublic.key_ops).toEqual(["verify"]);
+    expect(uploadPublic.d).toBeUndefined();
+    expect(upload.d).toBeTruthy();
+    expect(uploadPublic).toMatchObject({ kid: upload.kid, x: upload.x, y: upload.y });
+    expect(auth.kid).not.toBe(upload.kid); expect(auth.x).not.toBe(upload.x);
+    expect(providerText).not.toContain(upload.d);
+    expect(message).not.toContain(auth.d); expect(message).not.toContain(upload.d);
+  });
   it("writes separate Auth/private and upload/verify keys with private file permissions and no credential output", () => {
     const { root, io, calls } = fixture(); const message = prepareLocal(root, io);
     const directory = path.join(root, ".inherit-local");
@@ -191,6 +216,28 @@ describe("configure with synthetic command adapters", () => {
     expect(fs.existsSync(path.join(f.root, ".inherit-local/configure-attempt.json"))).toBe(true);
     expect(() => configureLocal(f.root, f.io)).toThrow("existing_file");
     expect(f.calls.filter(call => call.args[0] === "exec")).toHaveLength(1);
+  });
+  it("rejects checksum-consistent missing or broadened provider key operations before SQL", () => {
+    for (const kind of ["legacy-auth", "verify-only-auth", "duplicate-sign", "upload-signer", "missing-upload-ops"]) {
+      const f = fixture(); prepareLocal(f.root, f.io); startedFixture(f.root);
+      const directory = path.join(f.root, ".inherit-local");
+      const authPath = path.join(directory, "auth-signing-keys.json");
+      const keys: SigningKey[] = JSON.parse(fs.readFileSync(authPath, "utf8"));
+      if (kind === "legacy-auth") delete keys[0].key_ops;
+      if (kind === "verify-only-auth") keys[0].key_ops = ["verify"];
+      if (kind === "duplicate-sign") keys[0].key_ops = ["sign", "sign"];
+      if (kind === "upload-signer") keys[1].key_ops = ["sign", "verify"];
+      if (kind === "missing-upload-ops") delete keys[1].key_ops;
+      const authText = JSON.stringify(keys); fs.writeFileSync(authPath, authText);
+      const manifestPath = path.join(directory, "prepared.json");
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      manifest.authFileSha256 = createHash("sha256").update(authText).digest("hex");
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+      expect(() => configureLocal(f.root, f.io)).toThrow("key_operations");
+      expect(f.calls.some(call => call.args[0] === "exec" || call.args.includes("status"))).toBe(false);
+      expect(fs.existsSync(path.join(directory, "configure-attempt.json"))).toBe(false);
+      expect(fs.existsSync(path.join(f.root, ".env.local"))).toBe(false);
+    }
   });
   it("refuses drifted config, readable key files and private-directory symlinks", () => {
     for (const kind of ["config", "mode", "symlink"]) {

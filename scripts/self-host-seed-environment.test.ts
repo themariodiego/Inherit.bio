@@ -42,10 +42,14 @@ beforeEach(() => {
 afterEach(() => { rmSync(directory, { recursive: true, force: true }); });
 
 function probe(args: string[], environment: Record<string, string> = {}) {
+  const childEnv: Record<string, string | undefined> = {
+    PATH: path.dirname(process.execPath), TMPDIR: directory, TSX_DISABLE_CACHE: "1", ...environment,
+  };
   return spawnSync(process.execPath, [tsxCli, ...args], {
     cwd: directory,
     // Do not pass the test runner's ambient project settings or Node hooks.
-    env: { PATH: path.dirname(process.execPath), TMPDIR: directory, TSX_DISABLE_CACHE: "1", ...environment },
+    // Node accepts an unset NODE_ENV; Next's global type requires one.
+    env: childEnv as NodeJS.ProcessEnv,
     encoding: "utf8", timeout: 5_000, maxBuffer: 8_192,
   });
 }
