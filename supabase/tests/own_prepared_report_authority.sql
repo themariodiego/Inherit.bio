@@ -418,7 +418,7 @@ select is(pg_temp.call_source('invalid'),null::jsonb,'malformed expected receipt
 select is(pg_temp.call_source(null,gen_random_uuid()),null::jsonb,'unknown source fails closed');
 select is(pg_temp.call_source(null,null,'reports.polygenic',gen_random_uuid()),null::jsonb,'unbound session fails closed');
 reset role;
-select is((select value->'selection'-'preparedSource' from report_call_sources where label='prepared'),
+select is((select (value->'selection')-'preparedSource' from report_call_sources where label='prepared'),
  (select jsonb_build_object('fileId',id,'subjectId',subject_id,'sourceRevision',upload_revision,'sourceSha256',sha256,
  'decodedSha256',source_sha256,'normalizedAt',normalization_completed_at) from public.genome_files where id=pg_temp.file_id()),
  'prepared selection carries only exact source identity used by the object reader');

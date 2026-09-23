@@ -2639,3 +2639,15 @@ extractor or legal statement is removed or relaxed.
 - Local checks are authoring evidence only. The added gzip case requires actual
   isolated CI browser, database and Storage execution before it can be claimed
   as verified. This adds no hosted capacity or release acceptance claim.
+
+## Prepared report identity assertion syntax · 23 September 2026
+
+- CI run 35806680706 passed the first 87 assertions in the prepared report
+  authority fixture, then stopped because subtraction bound before JSON
+  selection in the next assertion. Parentheses now select the identity object
+  before removing its prepared-source metadata. The expected identity and the
+  complete comparison remain unchanged; no assertion, trigger or bound moves.
+- A read-only constant-expression probe preserves the exact synthetic identity
+  and rejects a different identity. Independent review found no further syntax
+  issue in the remaining new assertions. Full fixture execution remains a CI
+  requirement; the constant-expression probe does not establish its result.
