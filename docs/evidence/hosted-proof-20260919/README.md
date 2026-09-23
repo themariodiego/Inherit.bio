@@ -51,6 +51,22 @@ The deployed worker was unchanged; draft PR #196's serial cleanup drain had
 not been deployed. This is a database observation, not final R2 reconciliation
 or a later completion time. No cleanup was forced and no bound was changed.
 
+## Cleanup follow-up · 23 September 2026
+
+A later read-only observation at 02:07:03 UTC found the same cleanup complete.
+Its database receipt records completion at **00:55:59.618497 UTC**, after
+130 claims for 2,065 entries: **9 hours 54 minutes 2.728966 seconds late** and
+11 hours 54 minutes 2.728966 seconds after admission. The job, artifact,
+checkpoint and cleanup-entry rows are gone. The original remains uploaded,
+with the attempt's exact stored byte count and hash; it has no completed
+normalization. See `journeys/vcfgz-768mib-cleanup-20260923.json` for the query,
+timestamps and interval calculation.
+
+This records eventual database cleanup, not successful preparation or an
+independent check of physical R2 erasure. The currently configured image digest
+matches the earlier proof. No cleanup, deployment, new upload or bound change
+was performed for this observation. The earlier pending snapshots are preserved.
+
 
 ## How this folder reached main · 21 September 2026
 
