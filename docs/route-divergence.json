@@ -110,14 +110,6 @@
       "closing": "Decide which it is. If derived artifacts are meant to be objects, write the prefix entry; if they are rows only, drop the bucket so the retention target class is the only thing wearing the name."
     },
     {
-      "bucket": "exports",
-      "direction": "declared-not-created",
-      "declaredBy": "storage.export-v1",
-      "why": "The bucket the large-export delivery contract writes archives into. It does not exist, which is consistent with POST /api/export being unbuilt above: the whole asynchronous export path is backlog, not a half-built one. The declared access rules \u2014 worker-write-only, authenticated list and select denied, bounded range reads only after api.download-chunk authorization \u2014 therefore protect nothing yet.",
-      "priority": "Priority 1 \u2014 complete download/export",
-      "closing": "Created with those policies as part of building largeExportDeliveryContract."
-    },
-    {
       "bucket": "legal-evidence",
       "direction": "declared-not-created",
       "declaredBy": "storage.legal-evidence-v1",

@@ -2888,3 +2888,19 @@ extractor or legal statement is removed or relaxed.
   nonliteral Storage call site. The register pin and call-site ledger now
   record those exact changes. No route, response, export scope, retention
   deadline, test, timeout, retry or acceptance ratchet is removed or relaxed.
+
+## Archive persistence boundaries · 23 September 2026
+
+A new rollback-only pgTAP suite covers the reachable own-account queue, live
+origin and complete-partition refusals, one-use operation envelopes, exact
+export-cookie possession, fresh attempts, sequential reserved objects, actual
+Storage metadata identity, bounded manifest pages and the explicit publication
+hold. Empty-job deletion preserves nonce replay protection; any reserved key,
+even one with a delete ACK, prevents metadata purge. No SQL or provider test
+was run locally, and no asynchronous export acceptance is claimed.
+
+The route gate's planted missing-bucket test now removes the still-missing
+legal-evidence entry instead of exports. The new migration creates only the
+registered private exports bucket; only that bucket-existence divergence is
+removed. The negative test and all other route, scope and retention assertions
+remain. No threshold or acceptance row changes.
