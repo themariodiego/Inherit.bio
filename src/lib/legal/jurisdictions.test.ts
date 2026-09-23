@@ -87,6 +87,18 @@ describe("jurisdiction vocabulary", () => {
 });
 
 describe("resolveCapability", () => {
+  it("keeps every shipped real-country capability unreviewed under G5.5's zero-permitted default", () => {
+    expect(Object.keys(FILE.realJurisdictions)).toEqual([]);
+    expect(FILE.realJurisdictionCatalog.codes).toHaveLength(249);
+    expect(JURISDICTION_CAPABILITIES).toHaveLength(12);
+    for (const code of FILE.realJurisdictionCatalog.codes) {
+      for (const capability of JURISDICTION_CAPABILITIES) {
+        expect(resolveCapability(code, capability, off), `${code}/${capability}`)
+          .toMatchObject({ status: "unreviewed", source: "default", jurisdictionCode: code });
+      }
+    }
+  });
+
   it("reads an unset code as unreviewed with the default copy", () => {
     for (const code of [null, undefined, "", "  "]) {
       expect(resolveCapability(code, "family_portrait", off)).toEqual({
