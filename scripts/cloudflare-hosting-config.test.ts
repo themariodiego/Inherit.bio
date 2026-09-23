@@ -215,6 +215,36 @@ describe("the image", () => {
     expect(entry.indexOf("server-only-shim")).toBeLessThan(entry.indexOf("--import tsx"));
   });
 
+  it("provides every configured dependency patch at its required image path before frozen install", () => {
+    // Frozen pnpm installation reads patch files even when their dependency
+    // is not imported by the worker. Runtime-import coverage cannot catch this.
+    const section = (file: string) => /^patchedDependencies:\n((?:[ \t]+[^\n]*\n?)*)/m.exec(read(file))?.[1] ?? "";
+    const workspacePatches = [...section("pnpm-workspace.yaml").matchAll(/^ {2}[^:\n]+: (\S+)$/gm)].map(match => match[1]).sort();
+    const lockPatches = [...section("pnpm-lock.yaml").matchAll(/^ +path: (\S+)$/gm)].map(match => match[1]).sort();
+    expect(workspacePatches.length).toBeGreaterThan(0);
+    expect(lockPatches).toEqual(workspacePatches);
+    const installAt = lines.findIndex(line => /\bpnpm install\b/.test(line));
+    expect(installAt).toBeGreaterThan(-1);
+    expect(lines.slice(0, installAt)).toContain("WORKDIR /app");
+    const copies = lines.slice(0, installAt).filter(line => line.startsWith("COPY ")).map(line => {
+      const parts = line.split(/\s+/).slice(1).filter(part => !part.startsWith("--"));
+      return { sources: parts.slice(0, -1), destination: parts.at(-1)! };
+    });
+    const ignored = read(DOCKERIGNORE).split("\n").map(line => line.trim()).filter(line => line && !line.startsWith("#"));
+    for (const patch of workspacePatches) {
+      expect(statSync(path.join(ROOT, patch)).isFile()).toBe(true);
+      const directory = patch.split("/")[0];
+      for (const excluded of [patch, directory, `${directory}/`, `${directory}/**`, "*.patch", "**/*.patch"]) {
+        expect(ignored, `${patch} must remain in the Docker build context`).not.toContain(excluded);
+      }
+      expect(copies.some(copy => copy.sources.some(source => {
+        if (source === patch) return path.posix.resolve("/app", copy.destination, copy.destination.endsWith("/") ? path.posix.basename(patch) : "") === `/app/${patch}`;
+        const prefix = `${source.replace(/\/$/, "")}/`;
+        return patch.startsWith(prefix) && path.posix.resolve("/app", copy.destination, patch.slice(prefix.length)) === `/app/${patch}`;
+      })), `${patch} must be copied to /app/${patch} before pnpm install`).toBe(true);
+    }
+  });
+
   it("keeps the build context to what the image copies", () => {
     const ignored = read(DOCKERIGNORE).split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#"));
     for (const entry of [".git", "node_modules", ".next", "e2e", "test-results", "playwright-report", "supabase", "docs",

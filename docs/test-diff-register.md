@@ -1,5 +1,23 @@
 # Test diff register
 
+## Preparation image dependency patches · 23 September 2026
+
+The frozen dependency install runs before the preparation image copies its
+source files. Its workspace and lockfile now name a local dependency patch,
+but the Dockerfile did not copy that patch into the image. The next image
+build therefore lacked a required install input, even though the worker does
+not import the patched browser dependency.
+
+The Dockerfile now copies the patch directory before installation. One
+additive configuration test compares the workspace and lockfile patch paths,
+checks the files and build-context exclusions, and resolves their image
+destinations using only COPY instructions before the install. Against the
+old Dockerfile, this case fails while all 17 existing cases pass. The change
+preserves the unprivileged user, frozen install, script restrictions, worker
+entry, deployment guard and every existing assertion. No worker behavior,
+runtime setting or safety bound changes. An actual image build remains a
+separate validation step; no build or deployment ran while authoring this fix.
+
 ## Register the cited primary-paper path · 23 September 2026
 
 CI run 35805911265 passed the full unit suite, then the name gate refused the
