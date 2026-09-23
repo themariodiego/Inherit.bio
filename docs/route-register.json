@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "1f749e54c06ee46c1c1516b01e4be69d390873ac192c2a7d0c24f09ee5ddf3f9",
+  "briefSha256": "4192e325f83b3d0fb4a1e34a82a13bc0bf8eeb0e1772020b69aa2cd192fc8288",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -3071,14 +3071,22 @@
     "largeSelfOrAdultUpload": "browser-to-private-Supabase-Storage-under-an-exact-database-authorized-upload-session",
     "largeEmbryoUpload": "browser-decompresses-and-frames-complete-logical-lines-into-ingest-chunks; every-chunk-is-reparsed-and-reserialized-by-the-server-and-client-normalization-is-never-trusted",
     "largeDownload": "a-small-initialization-response-then-sequential-same-origin-api.download-chunk-responses-of-at-most-payloadBoundaryContract.ingestChunkMaximumBytes; every-chunk-re-authorizes-and-no-full-file-body-crosses-a-Vercel-Function",
-    "largeExport": "worker-generates-a-private-expiring-archive-object; API-responses-are-only-202-pending-200-small-ready-metadata-or-a-200-small-download-session-created-by-a-separate-explicit-open-ready-POST-followed-by-the-same-bounded-chunk-route",
+    "largeExport": "worker-generates-one-private-expiring-logical-ZIP64-archive-under-largeExportDeliveryContract.archiveRepresentation; API-responses-are-only-202-pending-200-small-ready-metadata-or-a-200-small-download-session-created-by-a-separate-explicit-open-ready-POST-followed-by-the-same-bounded-chunk-route",
     "legalEvidence": "all-document-bodies-cross-Vercel-only-as-sequential-api.evidence-chunk-requests-of-at-most-payloadBoundaryContract.ingestChunkMaximumBytes",
     "verification": "e2e/function-payload.spec.ts"
   },
   "largeExportDeliveryContract": {
     "storagePrefixId": "storage.export-v1",
+    "archiveRepresentation": {
+      "format": "one-complete-logical-ZIP64-archive-with-one-user-download-and-one-total-size-and-sha256; no-member-omission-or-silent-total-size-cap-to-fit-a-single-provider-object",
+      "physicalObjects": "separate-create-only-whole-private-Storage-objects-of-payloadBoundaryContract.ingestChunkMaximumBytes-with-only-the-final-object-permitted-to-be-shorter; this-is-not-provider-multipart-upload-or-a-change-to-original-genome-storage",
+      "identity": "server-owned-export-id-and-fresh-attempt-id; reserve-every-exact-object-key-before-writing-and-record-its-ordinal-offset-size-sha256-and-provider-object-id; no-cross-attempt-adoption-upsert-or-prefix-inferred-authority",
+      "manifest": "immutable-ordered-database-manifest-in-pages-of-at-most-128-segments-with-unique-ordinals-keys-and-provider-object-ids; a-database-verified-complete-manifest-and-current-complete-member-set-are-required-before-ready",
+      "cleanup": "the-same-export.generated-artifact-24h-deadline-covers-every-reserved-key-including-unacknowledged-or-uncertain-writes; leases-never-extend-retention-and-cleanup-is-not-complete-until-late-write-fencing-and-exact-provider-deletion-are-proven"
+    },
+    "noncePresentation": "an-authorized-server-rendered-explicit-action-form-may-issue-a-stateless-operation-specific-envelope-after-read-only-current-authority-resolution; bind-exact-registered-route-export-contract-origin-session-principal-target-authority-receipt-expiry-and-random-nonce-and-for-open-ready-the-exact-export-id-and-revision; preserve-the-separate-required-CSRF-proof-and-consume-the-nonce-once-in-the-same-database-transaction-as-the-POST-operation; no-new-origin-is-authorized-no-fields-are-added-to-the-closed-poll-response-and-form-rendering-never-creates-or-rotates-export-or-download-rows-cookies-or-sessions",
     "originatingSessionBinding": "an-export-cookie-worker-job-or-download-session-minted-by-an-authenticated-or-reviewer-principal-stores-and-rechecks-the-exact-originating-Supabase-auth.session_id-account-auth-session-revision-and-capability-revision-under-authContracts.authenticated-session-v1.authenticatedDerivedCapability-before-every-generation-step-poll-open-ready-and-chunk; a-rights-session-origin-remains-independent-only-under-tokenSecurityContract-and-its-own-live-revocation-graph",
-    "generation": "only-an-explicit-same-origin-POST-operation-create-with-a-valid-session-bound-one-time-export-nonce-may-enqueue-an-authorized-worker-to-build-a-private-Storage-archive-and-record-the-exact-requesting-principal-subject-partitions-contributors-grant-revisions-lifecycle-claim-and-request-revisions-sha256-size-and-retention-id; the-worker-must-run-workerExecutionBindings.export-generation-at-claim-before-every-source-read-before-the-exact-object-write-and-before-finalize-and-must-delete-every-partial-object-on-stale-state; GET-prefetch-and-scanner-requests-have-zero-write-or-enqueue-side-effects",
+    "generation": "only-an-explicit-same-origin-POST-operation-create-with-a-valid-session-bound-one-time-export-nonce-may-enqueue-an-authorized-worker-to-build-a-private-Storage-archive-and-record-the-exact-requesting-principal-subject-partitions-contributors-grant-revisions-lifecycle-claim-and-request-revisions-sha256-size-and-retention-id; the-worker-must-run-workerExecutionBindings.export-generation-at-claim-before-every-source-read-before-every-exact-reserved-object-write-and-before-finalize-and-must-delete-every-partial-object-on-stale-state; GET-prefetch-and-scanner-requests-have-zero-write-or-enqueue-side-effects",
     "initialOrPending": "POST-operation-create-returns-responseContracts.large-export-delivery-v1.pending-with-a-small-body-and-a-hash-only-principal-bound-export-cookie; GET-may-only-poll-an-existing-cookie-bound-export-and-returns-pending-or-ready-metadata-never-creating-or-rotating-a-row-cookie-session-or-credential",
     "ready": "on-GET-repeat-the-complete-resource-consent-joint-contributor-and-lifecycle-authorization-under-the-current-principal-then-return-responseContracts.large-export-delivery-v1.ready-metadata-with-no-cookie-session-or-write; after-an-explicit-user-download-action-a-separate-same-origin-POST-operation-open-ready-with-a-fresh-one-time-nonce-repeats-the-identical-authorization-creates-revocable-chunk-session-v1-and-returns-responseContracts.large-export-delivery-v1.downloadSession; inherit-the-route-level-jurisdictionBypass-for-rights-exports-and-never-block-export-on-a-capability-status",
     "scannerSafety": "GET-is-strictly-read-only-and-cannot-enqueue-create-or-activate-any-export-or-download-session-and-the-open-ready-POST-operation-is-never-issued-by-link-navigation-prefetch-or-a-mail-scanner",
@@ -5632,7 +5640,7 @@
     },
     "raw-export-revocation-v1": {
       "scope": "server-resolved-exact-subject-and-authorized-account-raw-export-tuple",
-      "effect": "atomically-invalidate-the-exact-download-and-export-sessions-then-execute-sensitive-purge-target-registry-v1.raw-export-only-for-the-exact-generated-archive-DB-joined-random-Storage-handle-and-delivery-rows-with-service-role-zero-residual-verification-without-deleting-canonical-source-raw-variant-or-another-subjects-export",
+      "effect": "atomically-invalidate-the-exact-download-and-export-sessions-then-execute-sensitive-purge-target-registry-v1.raw-export-only-for-the-exact-generated-export-row-and-only-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes-and-delivery-rows-with-service-role-zero-residual-verification-without-deleting-canonical-source-raw-variant-or-another-subjects-export",
       "retentionIds": [
         "raw-export.access-immediate"
       ],
@@ -5955,7 +5963,7 @@
           "objectClass": "exports.generated-archive",
           "bucketId": "exports",
           "referenceStore": "public.generated_exports",
-          "selector": "exact-generated-export-row-and-random-archive-handle",
+          "selector": "exact-generated-export-row-and-only-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes; never-prefix-selection",
           "manifestClasses": [
             "derived-only",
             "purpose-derived-only",
@@ -5967,7 +5975,7 @@
           "objectClass": "exports.raw-archive",
           "bucketId": "exports",
           "referenceStore": "public.generated_exports",
-          "selector": "exact-subject-account-raw-export-revision-row-and-random-archive-handle",
+          "selector": "exact-subject-account-raw-export-revision-row-and-only-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes; never-prefix-selection",
           "manifestClasses": [
             "raw-export-only",
             "complete-retention"
@@ -6189,7 +6197,7 @@
             "public.download_sessions",
             "public.model_contexts"
           ],
-          "joinRule": "select-only-by-the-exact-subject-cohort-file-export-purpose-pair-donor-attribution-draft-or-ingest-FK-and-its-current-immutable-revision-tuple; export-artifact-only-selects-one-generated-export-download-row-and-archive-handle-and-raw-export-only-selects-only-the-exact-subject-account-raw-export-tuple",
+          "joinRule": "select-only-by-the-exact-subject-cohort-file-export-purpose-pair-donor-attribution-draft-or-ingest-FK-and-its-current-immutable-revision-tuple; export-artifact-only-selects-one-generated-export-download-row-and-logical-archive-identity-and-raw-export-only-selects-only-the-exact-subject-account-raw-export-tuple; resolve-each-selected-export-only-to-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes; never-prefix-selection",
           "manifestClasses": [
             "derived-only",
             "purpose-derived-only",
@@ -7822,7 +7830,7 @@
       "hardExpiry": "DOWNLOAD_SESSION_ABSOLUTE_SECONDS-is-required-and-hard-clamped-to-3600; DOWNLOAD_SESSION_IDLE_SECONDS-is-required-and-hard-clamped-to-300; expiry-never-substitutes-for-live-authorization",
       "chunking": "server-fixed-payloadBoundaryContract.ingestChunkMaximumBytes-logical-chunks-addressed-only-by-canonical-sequence; client-byte-ranges-offsets-and-object-paths-are-forbidden",
       "authorization": "every-api.download-chunk-request-invokes-an-operation-specific-database-RPC-under-the-current-account-rights-or-reviewer-principal-and-rechecks-policyContracts.canonical-source-publication-v1-current-readable-publication_revision-plus-the-session-target-object-hash-lifecycle-revision-exact-subject-grants-joint-contributors-or-current-named-review-assignment-plus-MFA-and-recent-auth-revision-before-any-Storage-read; pending-unpublished-or-terminally-denied-sources-return-opaque-404-and-zero-object-metadata-or-bytes",
-      "storageRead": "after-authorization-the-service-role-fetches-only-the-server-computed-range-from-the-exact-private-object-and-never-signs-or-discloses-an-object-URL",
+      "storageRead": "after-authorization-the-service-role-fetches-only-the-server-computed-range-from-the-exact-private-object; for-large-exports-the-server-resolves-the-sequence-to-one-exact-whole-object-in-the-completed-archive-manifest-and-verifies-its-provider-identity-length-and-sha256-plus-current-authority-before-releasing-any-bytes; never-sign-or-disclose-an-object-URL",
       "response": "application/octet-stream-with-Content-Encoding-identity-an-exact-Content-Length-at-most-payloadBoundaryContract.ingestChunkMaximumBytes-and-private-no-store; a-nonfinal-chunk-must-be-exactly-payloadBoundaryContract.ingestChunkMaximumBytes",
       "clientAssembly": "the-browser-requests-sequences-in-order-writes-to-a-streaming-download-sink-and-verifies-the-final-size-and-sha256; it-never-constructs-a-full-file-API-response",
       "revocation": "the-session-id-and-cookie-are-only-identifiers-not-access-grants; the-first-chunk-request-after-originating-auth-session-revocation-rotation-or-account-revision-change-or-after-target-revocation-restriction-transfer-expiry-or-grant-loss-is-opaque-404-and-reads-zero-Storage-bytes",
@@ -8515,7 +8523,7 @@
       "checkpoints": [
         "claim-exact-principal-bound-export-row",
         "recheck-subject-partitions-contributors-grant-lifecycle-claim-request-other-adult-mitigation-state-v1-and-current-readable-publication_revision-before-every-source-read-or-member-selection",
-        "write-only-the-exact-private-export-object-owned-by-the-row",
+        "reserve-and-write-only-each-exact-private-archive-object-owned-by-the-export-row-and-fresh-attempt-under-largeExportDeliveryContract.archiveRepresentation",
         "recheck-identical-revisions-including-other-adult-mitigation-state-v1-and-publication_revision-before-finalize",
         "on-any-stale-or-failed-check-abort-delete-every-partial-object-and-return-no-ready-session"
       ]
@@ -20938,12 +20946,12 @@
     {
       "id": "storage.export-v1",
       "bucket": "exports",
-      "prefix": "{principal_hash}/{export_id}/{server_archive_name}",
+      "prefix": "{principal_hash}/{export_id}/{attempt_id}-{ordinal}.part",
       "disposition": "kept",
-      "access": "private; authenticated-list-and-select-denied; worker-write-only; exact-bounded-range-service-read-only-after-api.download-chunk-authorization",
-      "filenameContract": "server-generated-opaque-archive-name-only-with-no-user-subject-email-or-original-filename-segment",
+      "access": "private; authenticated-list-and-select-denied; worker-create-only-for-exact-reserved-objects; exact-bounded-whole-segment-service-read-only-after-api.download-chunk-authorization",
+      "filenameContract": "server-generated-opaque-export-and-attempt-identities-with-canonical-ordinal-only; no-user-subject-email-or-original-filename-segment",
       "retentionId": "export.generated-artifact-24h",
-      "authority": "The delivery row owns the exact object key and contributor/lifecycle revisions; no prefix inference."
+      "authority": "The delivery row and its immutable ordered manifest own every exact reserved key and provider object identity, total archive size and SHA-256, and contributor/lifecycle revisions; no prefix inference."
     },
     {
       "id": "storage.legal-evidence-v1",

@@ -2872,3 +2872,19 @@ extractor or legal statement is removed or relaxed.
   selection, exact provider identity/length/digest, owned-buffer delivery and
   cancellation under a fixed total deadline. Injected objects prove the core
   checks; they do not prove a live Storage GET adapter or an HTTP download route.
+
+### 2026-09-23 — Export action envelopes and storage contract
+
+- Added operation-token tests for exact route, origin, export scope, current
+  authority and separate CSRF binding, with distinct create/open-ready intent
+  and ready-export identity/revision. Adversarial cases cover cross-route
+  replay, expiry, malformed and noncanonical signed payloads, key rotation and
+  refusal of reviewer origins on routes that do not authorize them.
+- Repeated cryptographic verification is explicitly tested as repeatable;
+  only a later atomic database consumer can enforce one use. These tests do
+  not claim working route issuance, CSRF consumption or database authority.
+- The existing route and storage correspondence suites remain unchanged.
+  Their first run found the brief's changed hash pin and the byte core's new
+  nonliteral Storage call site. The register pin and call-site ledger now
+  record those exact changes. No route, response, export scope, retention
+  deadline, test, timeout, retry or acceptance ratchet is removed or relaxed.

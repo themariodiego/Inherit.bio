@@ -13,13 +13,13 @@ object aligns with one bounded delivery chunk and has its own SHA-256 digest.
 The last object can be shorter. This is not a multipart upload protocol and does
 not change the original-genome backend, access scopes or retention deadline.
 
-`largeExportDeliveryContract` and `workerExecutionBindings.export-generation`
-currently describe one physical export object. This internal representation is
-an explicit clarification of that wording, not a claim of literal single-object
-compliance. The later schema/contract integration must name the ordered segment
-manifest and all its reserved objects while preserving the existing wire shape,
-maximum chunk size, origin binding and 24-hour deletion rule. It must not impose
-a silent 5 GB total-export cap or omit members that do not fit one object.
+`largeExportDeliveryContract.archiveRepresentation`, its worker binding and
+`storage.export-v1` now explicitly name this internal representation. G5.6 in
+the brief records the same clarification. The wire shape, maximum chunk size,
+origin binding, full data scope and 24-hour deletion rule remain required.
+Database and product integration are still incomplete. The implementation must
+not impose a silent 5 GB total-export cap or omit members that do not fit one
+object.
 
 ## Implemented core
 
@@ -85,8 +85,9 @@ Errors contain a fixed code, not source filenames, tokens or provider bodies.
 The hooks are contracts, not deployed authorization or persistence. Before any
 route can use this core, implement the following complete path:
 
-- Store a discriminated origin for authenticated, reviewer and independent
-  rights sessions. Bind the exact session, account/subject/contributor set,
+- Store a discriminated origin for the authenticated or independent rights
+  session permitted by the exact registered export route. A reviewer session
+  alone grants no export route. Bind the exact session, account/subject/contributor set,
   grants, signatures, lifecycle, claim/request and source publication revisions.
   A rights-origin export must not borrow an uploader's session or capabilities.
 - Claim attempts with INSERT-only identity and lease semantics. Reserve every
