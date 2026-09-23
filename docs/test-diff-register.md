@@ -2810,3 +2810,15 @@ extractor or legal statement is removed or relaxed.
   from 530, with no earlier assertion removed.
 - This fixes one eligible navigation path. It does not close G2.4, add carrier
   results, change the destination's consent gate, or establish hosted readiness.
+
+### 2026-09-23 — Exact source heading in the sensitive-report test
+
+- The APOE gate test requires the exact `Sources` level-three heading. The
+  added `Position sources` heading made its earlier substring locator match
+  both headings, which failed the browser's strict locator check before the
+  reveal assertions. An exact match still fails when the required heading is
+  absent; it cannot substitute the position-source section.
+- Every gate, result-withholding, reveal, remembered-choice, accessibility and
+  raw-response assertion remains. No case, timeout or retry setting changes.
+  The full browser suite must pass on the new head before this is counted as
+  a verified application journey.

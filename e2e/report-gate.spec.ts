@@ -95,7 +95,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await expect(
     page.getByRole("heading", { name: "Where this comes from" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { level: 3, name: "Sources" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: "Sources", exact: true })).toBeVisible();
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
 
   // Click through the gate: "Show my result" is a link to the same URL with
