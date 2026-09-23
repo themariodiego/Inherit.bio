@@ -2822,3 +2822,20 @@ extractor or legal statement is removed or relaxed.
   raw-response assertion remains. No case, timeout or retry setting changes.
   The full browser suite must pass on the new head before this is counted as
   a verified application journey.
+
+### 2026-09-23 — Pending invitation deletion does not imply refusal
+
+- Added database cases for the existing accountless adult invitation delete
+  operation through both its rights session and legacy mailed-token paths.
+  Each closes only its reserved subject. Deletion leaves both refusal-bar
+  stores unchanged, and a different inviter can issue a new invitation.
+  Explicit refusal still creates both global bars and blocks that invitation.
+- The new cases also hold replay refusal, contact shredding, token and session
+  consumption, unrelated subject state, expired and unrelated live bar rows,
+  and the private helper's restricted privileges. They do not equate closing
+  an empty reservation with deleting a held genome or proving Storage erasure.
+- Added the adult delete HTTP contract case and a signed-out browser deletion
+  journey. Existing invitation acceptance, refusal, scanner safety, privacy,
+  authority and legacy-link cases remain. No timeout, retry or route ratchet
+  changes. Database and browser execution remains CI work; discovery and
+  local source checks alone do not close G5.4 or G8.5.
