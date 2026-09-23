@@ -12,7 +12,7 @@ import {
 import type { ReportTemplate } from "./reports";
 
 const slug = "breast-cancer-fgfr2-rs2981582";
-const template = templates.find((item) => item.slug === slug)!;
+const template = templates.find((item) => item.slug === slug)! as ReportTemplate;
 const variant = template.variants[0];
 const sourceId = "pmid:17529967";
 const notePath = "docs/sources/reviews/fgfr2-correction-20260923.md";
@@ -70,7 +70,7 @@ describe("FGFR2 study scope and canonical binding", () => {
   });
 
   it("supplies the source only for the exact corrected report text", () => {
-    expect(reportSourceIds(template as ReportTemplate)).toEqual([sourceId]);
+    expect(reportSourceIds(template)).toEqual([sourceId]);
     expect(registeredReportSummary(slug, template.summary)?.claim_id).toBe(`report.${slug}.summary`);
     expect(registeredReportSummary(slug, `${template.summary} Your overall risk is low.`)).toBeUndefined();
     for (const [genotype, text] of Object.entries(variant.interpretations)) {
