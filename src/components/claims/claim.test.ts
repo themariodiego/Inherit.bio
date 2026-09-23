@@ -8,6 +8,7 @@ import mental from "../../../data/templates/mental-health.json";
 import addiction from "../../../data/templates/addiction.json";
 import environmental from "../../../data/templates/environmental-sensitivity.json";
 import basic from "../../../data/templates/basic-traits.json";
+import brain from "../../../data/templates/brain-health.json";
 import type { ReportTemplate } from "../../lib/genome/reports";
 import { Claim } from "./claim";
 import { ClaimSources } from "./sources";
@@ -18,7 +19,7 @@ import { annotateReportSources, claimSourceIds, legacySourceId, presentationCita
 import { collectDomSurface } from "../../lib/claims/collect-dom";
 
 const summaries = claims.filter((claim) => claim.claim_id.endsWith(".summary"));
-const templates = [...mental, ...addiction, ...environmental, ...basic].filter((template) =>
+const templates = [...mental, ...addiction, ...environmental, ...basic, ...brain].filter((template) =>
   summaries.some((claim) => claim.claim_id === `report.${template.slug}.summary`)) as ReportTemplate[];
 let browser: Browser;
 beforeAll(async () => { browser = await chromium.launch({ headless: true }); });
@@ -160,8 +161,15 @@ describe("canonical claim display connected to real report components", () => {
       expect(await page.locator("#sources").textContent()).toContain("not a complete review");
       for (const source of presentationCitations) {
         expect(await page.locator(`#sources a[href="${source.url}"]`).count()).toBe(1);
+        const entry = page.locator(`#sources [data-source-id="${source.id}"]`);
+        expect(await entry.count()).toBe(1);
+        expect(await entry.locator("time").count()).toBe(1);
+        expect(await entry.locator("time").getAttribute("datetime")).toBe(source.access_date);
+        expect(await entry.locator("time").textContent()).toBe(source.access_date);
       }
-      expect(await page.locator('#sources time[datetime="2026-09-06"]').count()).toBe(presentationCitations.length);
+      expect(await page.locator("#sources time").count()).toBe(presentationCitations.length);
+      expect(await page.locator('#sources time[datetime="2026-09-06"]').count()).toBe(19);
+      expect(await page.locator('#sources time[datetime="2026-09-23"]').count()).toBe(2);
     } finally { await page.close(); }
   });
 

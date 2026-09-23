@@ -1,5 +1,20 @@
 # Test diff register
 
+## Source dates after the ADORA2A correction · 23 September 2026
+
+CI run 35805197191 passed 5,745 unit tests and failed the science-page date
+assertion. All 21 sources were rendered, but the test expected every source to
+carry the original 6 September date. The two added sources correctly carry
+their 23 September access date. No application change is needed.
+
+The test retains the original 19 dated sources, requires the two new dates,
+and now checks each source's unique entry, one time element, exact date
+attribute and visible date against its record. Existing source-link and
+incomplete-coverage checks remain. The corrected brain-health report also
+joins the existing real Chromium DOM checks for exact registered prose,
+genotype bindings and source anchors. No test or assertion is removed, and
+no old review date or scientific evidence is changed.
+
 ## Ordinary reports from prepared sources · 23 September 2026
 
 CI run 35798620915 passed 528 browser cases, including complete own-genome
