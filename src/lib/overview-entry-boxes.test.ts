@@ -3,13 +3,14 @@ import { ENTRY_BOXES } from "@/copy/overview";
 import { resolveBoxHref, type EntryBoxTargets } from "./overview-entry-boxes";
 import { route } from "./primary-routes";
 
-// Four accounts, because the four resolved boxes branch on what the account
+// Five accounts, because the four resolved boxes branch on what the account
 // holds and a single shape would leave half of each branch unwalked.
 const TARGETS: Record<string, EntryBoxTargets> = {
-  "an account with neither an adult nor a cohort": { firstAdultSegment: null, cohortId: null },
-  "an account with an adult but no cohort": { firstAdultSegment: "adult-1", cohortId: null },
-  "an account with a cohort but no adult": { firstAdultSegment: null, cohortId: "cohort-1" },
-  "an account with both": { firstAdultSegment: "adult-1", cohortId: "cohort-1" },
+  "an account with neither an adult nor a cohort": { firstAdultSegment: null, cohortId: null, portraitPairId: null },
+  "an account with an adult but no cohort": { firstAdultSegment: "adult-1", cohortId: null, portraitPairId: null },
+  "an account with a cohort but no adult": { firstAdultSegment: null, cohortId: "cohort-1", portraitPairId: null },
+  "an account with both": { firstAdultSegment: "adult-1", cohortId: "cohort-1", portraitPairId: null },
+  "an account with a confirmed Portrait": { firstAdultSegment: "adult-1", cohortId: null, portraitPairId: "pair-1" },
 };
 
 describe("entry box targets", () => {
@@ -48,6 +49,13 @@ describe("entry box targets", () => {
     const byId = Object.fromEntries(ENTRY_BOXES.map(b => [b.id, b]));
     expect(resolveBoxHref(byId["family.individual-risks"], TARGETS["an account with an adult but no cohort"]))
       .toBe(route("family.person", { person: "adult-1" }));
+  });
+
+  it("routes Portrait directly only when the server confirmed its pair", () => {
+    const box = ENTRY_BOXES.find(box => box.id === "family.portrait")!;
+    expect(resolveBoxHref(box, TARGETS["an account with a confirmed Portrait"]))
+      .toBe(route("family.portrait", { pairId: "pair-1" }));
+    expect(resolveBoxHref(box, TARGETS["an account with both"])).toBe(route("family.index"));
   });
 
   it("keeps every static target exactly as the copy declares it", () => {
