@@ -8,6 +8,7 @@ import addiction from "../../../data/templates/addiction.json";
 import environmental from "../../../data/templates/environmental-sensitivity.json";
 import basic from "../../../data/templates/basic-traits.json";
 import brain from "../../../data/templates/brain-health.json";
+import cancer from "../../../data/templates/cancer-risk.json";
 import type { ReportTemplate } from "../genome/reports";
 import { validateClaimRegistry, type ClaimOccurrence } from "./registry";
 import { readStudyContext } from "../genome/study-context";
@@ -42,9 +43,24 @@ const intended = (item: typeof expected[number]) => [
 const seedOccurrences: ClaimOccurrence[] = expected.flatMap((item) => intended(item).map((surface) =>
   ({ claimId: item.id, text: item.text, surface })));
 const adora2aSlug = "caffeine-sleep-adora2a-rs5751876";
-const addedSourceIds = new Set(["pmid:12825092", "pmid:17329997"]);
-const initialClaims = claims.filter((claim) => !claim.claim_id.startsWith(`report.${adora2aSlug}.`));
-const initialCitations = citations.filter((citation) => !addedSourceIds.has(citation.id));
+const initialIds = new Set(expected.map((item) => item.id));
+const initialClaims = claims.filter((claim) => initialIds.has(claim.claim_id));
+const initialSourceIds = new Set(initialClaims.flatMap((claim) => claim.evidence.map((edge) => edge.citation)));
+const initialCitations = citations.filter((citation) => initialSourceIds.has(citation.id));
+const corrections = ["colorectal-apc-i1307k", "breast-cancer-fgfr2-rs2981582", "alcohol-dependence-aldh2-rs671"];
+const correctionHashes: Record<string, string> = {
+  "colorectal-apc-i1307k": "b72c0bb355b7874295106ce9efb52892a423c32ff88e14cfd9a4002f4056bcce",
+  "breast-cancer-fgfr2-rs2981582": "1977082a6625dccdf4a3955bd0e691208c525a57b48724267426be5bbea216b6",
+  "alcohol-dependence-aldh2-rs671": "8e0d2078554b8944b5876676c036cd5581eb9f366d9ca6ba3d652ac403d3d50f",
+};
+const correctedTemplates = [...cancer, ...addiction].filter((template) => corrections.includes(template.slug));
+const correctedItems = correctedTemplates.flatMap((template) => [
+  { id: `report.${template.slug}.summary`, text: template.summary, slug: template.slug, summary: true },
+  ...template.variants.flatMap((variant) => Object.entries(variant.interpretations).map(([genotype, text]) => ({
+    id: `report.${template.slug}.interpretation.rs${variant.rsid}.${genotype.toLowerCase()}`,
+    text, slug: template.slug, summary: false,
+  }))),
+]);
 const validate = (overrides = {}) => validateClaimRegistry({
   citations: initialCitations, claims: initialClaims, commitDate: "2026-09-06", corpus: seedOccurrences,
   refusalClaimIds: [], societyPositionClaimIds: [],
@@ -114,7 +130,7 @@ describe("initial canonical report content, not full corpus acceptance", () => {
   it("keeps aggregate publication quotations within the existing receipt allocations", () => {
     // Counts include committed prior excerpts and the pending batch-04 Han excerpt.
     // Canonical snippets are shorter subsets when reusing those publications.
-    const priorWords: Record<string, number> = { "11381111": 12, "12060782": 12, "12553913": 9, "15956988": 5, "18483556": 16, "16444273": 15, "10.1186/2044-7248-1-22": 14, "12825092": 14, "17329997": 13 };
+    const priorWords: Record<string, number> = { "11381111": 12, "12060782": 12, "12553913": 9, "15956988": 5, "18483556": 16, "16444273": 15, "10.1186/2044-7248-1-22": 14, "12825092": 14, "17329997": 13, "12419833": 15 };
     for (const citation of citations.filter((c) => c.type === "pmid" || c.type === "doi")) {
       expect(citation.quote.trim().split(/\s+/u).length + (priorWords[citation.identifier] ?? 0)).toBeLessThanOrEqual(25);
     }
@@ -134,8 +150,13 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
         text, slug: adora2aSlug, summary: false,
       })),
     ];
-    expect(claims).toHaveLength(75);
-    expect(citations).toHaveLength(21);
+    expect(claims).toHaveLength(87);
+    expect(citations).toHaveLength(30);
+    expect(citations.map((source) => source.id).sort()).toEqual([
+      ...initialSourceIds, "pmid:12825092", "pmid:17329997",
+      "pmid:9288102", "pmid:37076288", "pmid:40866199", "dataset:dbsnp-rs1801155",
+      "pmid:17529967", "pmid:19320537", "pmid:39075523", "pmid:12419833", "pmid:2024727",
+    ].sort());
     expect(added.map((item) => item.id).sort()).toEqual([
       `report.${adora2aSlug}.interpretation.rs5751876.cc`,
       `report.${adora2aSlug}.interpretation.rs5751876.ct`,
@@ -143,7 +164,7 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
       `report.${adora2aSlug}.summary`,
     ]);
     expect(claims.map((claim) => claim.claim_id).sort())
-      .toEqual([...expected, ...added].map((item) => item.id).sort());
+      .toEqual([...expected, ...added, ...correctedItems].map((item) => item.id).sort());
     for (const item of added) {
       const claim = claims.find((held) => held.claim_id === item.id)!;
       expect(claim.text_verbatim).toBe(item.text);
@@ -154,12 +175,37 @@ describe("ADORA2A correction registration, not full corpus acceptance", () => {
       expect(claim.evidence.map((edge) => edge.citation)).toEqual(item.id.endsWith(".cc")
         ? ["pmid:17329997"] : ["pmid:12825092", "pmid:17329997"]);
     }
-    const corpus = [...seedOccurrences, ...added.flatMap((item) => intended(item).map((surface) =>
+    const corpus = [...seedOccurrences, ...[...added, ...correctedItems].flatMap((item) => intended(item).map((surface) =>
       ({ claimId: item.id, text: item.text, surface })))];
     const result = validate({ claims, citations, commitDate: "2026-09-23", corpus });
     expect(result.issues).toEqual([]);
     expect(result.ok).toBe(true);
     expect(citations.find((citation) => citation.id === "pmid:12825092")!.claim).toContain("author abstract only");
     expect(citations.find((citation) => citation.id === "pmid:17329997")!.claim).toContain("full primary paper");
+  });
+});
+
+describe("bounded cancer and alcohol report corrections", () => {
+  it("registers exactly the twelve corrected blocks with current, explicit source edges", () => {
+    expect(correctedTemplates.map((template) => template.slug).sort()).toEqual([...corrections].sort());
+    for (const template of correctedTemplates) {
+      expect(createHash("sha256").update(JSON.stringify(template)).digest("hex"))
+        .toBe(correctionHashes[template.slug]);
+    }
+    expect(correctedItems).toHaveLength(12);
+    for (const item of correctedItems) {
+      const claim = claims.find((held) => held.claim_id === item.id)!;
+      expect(claim.text_verbatim).toBe(item.text);
+      expect(claim.surfaces).toEqual(intended(item));
+      expect(claim.reviewed_on).toBe("2026-09-23");
+      expect(claim.reviewer).toContain("Codex agent");
+      expect(claim.reviewer).toContain("not human signoff");
+      expect(claim.evidence.length).toBeGreaterThan(0);
+      for (const edge of claim.evidence) {
+        const source = citations.find((held) => held.id === edge.citation)!;
+        expect(edge.accessed_on).toBe(source.access_date);
+        expect(edge.doi_or_url).toBe(source.url);
+      }
+    }
   });
 });

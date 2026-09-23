@@ -169,7 +169,7 @@ describe("canonical claim display connected to real report components", () => {
       }
       expect(await page.locator("#sources time").count()).toBe(presentationCitations.length);
       expect(await page.locator('#sources time[datetime="2026-09-06"]').count()).toBe(19);
-      expect(await page.locator('#sources time[datetime="2026-09-23"]').count()).toBe(2);
+      expect(await page.locator('#sources time[datetime="2026-09-23"]').count()).toBe(11);
     } finally { await page.close(); }
   });
 
