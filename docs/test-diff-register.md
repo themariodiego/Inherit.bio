@@ -2822,3 +2822,17 @@ extractor or legal statement is removed or relaxed.
   raw-response assertion remains. No case, timeout or retry setting changes.
   The full browser suite must pass on the new head before this is counted as
   a verified application journey.
+
+### 2026-09-23 — Rendered date count for the TCF7L2 sources
+
+- The science-page test now expects 19 source records accessed on 23 September,
+  accounting for the three reviewed TCF7L2 records: Grant, Florez and the NCBI
+  marker-identity record. The prior 16 records remain unchanged. The separate
+  6 September count stays 19.
+- The test still checks every canonical source's unique link and record,
+  exact date attribute and visible date, total count and incomplete-review
+  disclosure. No test, source, assertion, timeout or retry is removed.
+- The complete local unit run also exposed two filesystem roots that used a
+  URL's encoded pathname directly. The glossary and route sweeps now convert
+  their module URLs with `fileURLToPath`, so a checkout with spaces reaches
+  the same actual files as CI. Their assertions and scan scope are unchanged.
