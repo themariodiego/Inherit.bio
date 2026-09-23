@@ -40,7 +40,11 @@ export const APP_ENV_NAMES = ["INHERIT_UPLOAD_SIGNING_JWK", "INHERIT_CANONICAL_U
 /** Fixed app variants: main, jurisdiction-off, paused, local-model, and prepared-source. */
 export const APP_PORTS = [3100, 3101, 3102, 3103, 3104] as const;
 export const PREPARED_APP_PORT = 3104;
-export const PREPARED_APP_ENV = Object.freeze({ INHERIT_PREPARED_WGS_ENABLED: "true" });
+export const PREPARED_APP_ENV = Object.freeze({
+  INHERIT_PREPARED_WGS_ENABLED: "true",
+  INHERIT_PREPARED_R2_ORIGIN: "https://prepared.artifacts.test:8140",
+  INHERIT_PREPARED_R2_BUCKET: "inherit-prepared-ci",
+});
 /**
  * The fourth variant alone attests the local-model path (G4.8, brief line
  * 2635). The attestation is truthful of this runtime and of nothing else: the
@@ -81,7 +85,10 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
   if (port === LOCAL_MODEL_PORT) {
     for (const name of LOCAL_MODEL_ENV_NAMES) assert(env[name] === LOCAL_MODEL_ENV[name], "Local-model variant differs from its fixed attestation");
   }
-  if (port === PREPARED_APP_PORT) assert(env.INHERIT_PREPARED_WGS_ENABLED === "true", "Prepared variant requires its fixed gate");
+  if (port === PREPARED_APP_PORT) {
+    for (const [name, value] of Object.entries(PREPARED_APP_ENV))
+      assert(env[name] === value, "Prepared variant differs from its fixed artifact scope");
+  }
   for (const name of ["INHERIT_UPLOAD_SIGNING_JWK", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"])
     assert(env[name].length > 0, "Required ephemeral app configuration missing");
   return { ...env };

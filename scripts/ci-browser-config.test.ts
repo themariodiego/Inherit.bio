@@ -62,6 +62,22 @@ describe("isolated standard CI runtime boundaries", () => {
     for (const value of [undefined, "", "false", "1"])
       expect(() => checkedAppEnvironment({ ...app(3104), INHERIT_PREPARED_WGS_ENABLED: value }, 3104)).toThrow();
   });
+  it("pins every prepared artifact field to the isolated gateway on the prepared variant alone", () => {
+    expect(PREPARED_APP_ENV).toEqual({ INHERIT_PREPARED_WGS_ENABLED: "true",
+      INHERIT_PREPARED_R2_ORIGIN: "https://prepared.artifacts.test:8140", INHERIT_PREPARED_R2_BUCKET: "inherit-prepared-ci" });
+    for (const name of Object.keys(PREPARED_APP_ENV)) {
+      const omitted = Object.fromEntries(Object.entries(app(3104)).filter(([key]) => key !== name));
+      expect(() => checkedAppEnvironment(omitted, 3104)).toThrow();
+      for (const port of [3100, 3101, 3102, 3103])
+        expect(() => checkedAppEnvironment({ ...app(port), [name]: PREPARED_APP_ENV[name as keyof typeof PREPARED_APP_ENV] }, port)).toThrow();
+    }
+    for (const origin of ["", "http://prepared.artifacts.test:8140", "https://prepared.artifacts.test:8141",
+      "https://prepared.artifacts.test:8140/", "https://model.copilot.test:8140", "https://203.0.114.11:8140",
+      "https://prepared.artifacts.test:8140?redirect=1", "https://example.invalid:8140"])
+      expect(() => checkedAppEnvironment({ ...app(3104), INHERIT_PREPARED_R2_ORIGIN: origin }, 3104)).toThrow();
+    for (const bucket of ["", "genomes", "inherit-prepared-other", "inherit-prepared-ci/"])
+      expect(() => checkedAppEnvironment({ ...app(3104), INHERIT_PREPARED_R2_BUCKET: bucket }, 3104)).toThrow();
+  });
   it("requires actual firewall drop counters, not just failed network attempts", () => {
     const ipv4 = "Chain OUTPUT (policy DROP 3 packets, 180 bytes)\n1 60 DROP all -- * * 0.0.0.0/0 127.0.0.11\n";
     const ipv6 = "Chain OUTPUT (policy DROP 0 packets, 0 bytes)";

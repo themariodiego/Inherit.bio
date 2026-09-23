@@ -6,7 +6,7 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { subjectFinalizationReceipt, subjectNormalizationReceipt, subjectQueuedPreparationReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { adminClient, completeOwnUploadConsent, createConfirmedUser, signIn } from "./helpers";
 import { generateOwnFileWithChosenReports } from "./own-report-helpers";
-import { withPreparedJourney } from "../scripts/ci-prepared-journey";
+import { withPreparedR2Journey } from "../scripts/ci-prepared-journey";
 import type { CanonicalProviderPlan } from "./fixtures/canonical-copilot-provider";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, expectClosedCompletion,
   expectedCaffeineCitations, lastToolResult, observeNextChatResponse, saveCopilotProvider,
@@ -53,11 +53,15 @@ async function ask(page: Page, fixture: CopilotFixture, prompt: string, tool: Ca
   return { response, tool: lastToolResult(await fixture.snapshot()) };
 }
 
-// The application, source, grants, captured results and cleanup are real. Only
-// inference is a controlled HTTPS fixture; this is never hosted model evidence.
+// Application, source, grants, results and cleanup execute the production paths.
+// Inference and the gateway's R2 binding are bounded synthetic CI fixtures;
+// this is not hosted inference, R2 service or physical-erasure evidence.
 for (const compression of ["plain", "gzip"] as const) test(`own prepared ${compression === "gzip" ? "gzip " : ""}object: real source, chosen reports, ancestry, raw Copilot and revocation`, async ({ page }) => {
   test.setTimeout(300_000);
-  await withPreparedJourney(process.env, async preparedFixture => {
+  await withPreparedR2Journey(process.env, async preparedFixture => {
+    const initialArtifacts = await preparedFixture.artifactProof();
+    expect(initialArtifacts).toMatchObject({ activeRequests: 0, payloadObjects: 0, payloadBytes: 0, rejected: 0 });
+    expect(initialArtifacts.tombstones).toBe(initialArtifacts.objects);
     const scenario = { name: "aims-regional-merged-grch38.vcf", merged: true };
     const fixture = await startCopilotFixture(8123);
     try {
@@ -102,8 +106,17 @@ for (const compression of ["plain", "gzip"] as const) test(`own prepared ${compr
       expect(preparation.status()).toBe(200);
       expect(subjectNormalizationReceipt.parse(await preparation.json()).fileId).toBe(fileId);
       await expect(page.getByText("Your file is stored and prepared. Reports have not been generated yet.", { exact: false })).toBeVisible();
-      expect(await preparedFixture.proof(fileId)).toEqual({ jobs: 1, manifests: 1, membersCurrent: true,
-        normalizations: 0, observedCalls: 0, analysisRuns: 0 });
+      const publishedProof = await preparedFixture.proof(fileId) as { artifacts: number };
+      expect(publishedProof).toEqual({ jobs: 1, manifests: 1, membersCurrent: true,
+        normalizations: 0, observedCalls: 0, analysisRuns: 0, artifacts: expect.any(Number), allArtifactsCurrent: true });
+      expect(publishedProof.artifacts).toBeGreaterThan(0);
+      const publishedArtifacts = await preparedFixture.artifactProof();
+      expect(publishedArtifacts.activeRequests).toBe(0);
+      expect(publishedArtifacts.rejected).toBe(0);
+      expect(publishedArtifacts.objects - initialArtifacts.objects).toBe(publishedProof.artifacts);
+      expect(publishedArtifacts.putCommits - initialArtifacts.putCommits).toBe(publishedProof.artifacts);
+      expect(publishedArtifacts.payloadObjects).toBeGreaterThan(0);
+      expect(publishedArtifacts.payloadBytes).toBeGreaterThan(0);
       const admin = adminClient();
       const source = await admin.from("genome_files").select("id,subject_id,sha256,bucket_path").eq("id", fileId).single();
       expect(source.error).toBeNull();
@@ -281,7 +294,13 @@ for (const compression of ["plain", "gzip"] as const) test(`own prepared ${compr
       const gone = await admin.storage.from("genomes").download(source.data!.bucket_path);
       expect(gone.error).not.toBeNull();
       expect(await preparedFixture.proof(fileId)).toEqual({ jobs: 0, manifests: 0, membersCurrent: false,
-        normalizations: 0, observedCalls: 0, analysisRuns: 0 });
+        normalizations: 0, observedCalls: 0, analysisRuns: 0, artifacts: 0, allArtifactsCurrent: false });
+      const deletedArtifacts = await preparedFixture.artifactProof();
+      expect(deletedArtifacts).toMatchObject({ activeRequests: 0, rejected: 0,
+        payloadObjects: 0, payloadBytes: 0, allPayloadsEmpty: true });
+      expect(deletedArtifacts.objects).toBe(publishedArtifacts.objects);
+      expect(deletedArtifacts.tombstones - initialArtifacts.tombstones).toBe(publishedProof.artifacts);
+      expect(deletedArtifacts.putCommits).toBe(publishedArtifacts.putCommits);
       expect((await fixture.snapshot()).calls).toBe(8);
       expect(errors).toEqual([]);
     } finally { await fixture.stop(); }

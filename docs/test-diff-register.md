@@ -1,5 +1,32 @@
 # Test diff register
 
+## Prepared journey cleanup fixture · 23 September 2026
+
+CI run 35807399737 passed 528 browser cases. The prepared plain case reached
+selected-file deletion and timed out; the following gzip case refused the
+still-enabled worker. The fixture had selected Supabase prepared artifacts,
+whose cleanup adapter deliberately cannot acknowledge unverified physical
+deletion. The production refusal and its existing tests remain unchanged.
+
+Both complete prepared cases now select the supported R2 gateway protocol.
+The actual production gateway runs over TLS against a bounded synthetic
+binding inside the existing isolated CI namespace. It checks checksums,
+versions, ranges and conditional writes; retained empty tombstones prevent
+late writes. The application and one worker use the same ephemeral signer;
+the gateway receives only its public half. No provider endpoint, published
+port, proxy allowlist, production configuration or cleanup bound changes.
+
+Additive tests cover scope refusal, captured configuration restoration,
+concurrent drift, gateway authentication, immutable versions, late writes,
+resource limits and protected aggregate evidence. Existing Supabase fixture
+tests are preserved. Each browser case retains the exact genotype, ancestry,
+history, withdrawal, original-object deletion, database cleanup and 204
+assertions. It additionally reconciles every acknowledged job artifact,
+including scratch, with the retained empty markers and zero payload bytes.
+The two cases share the gateway lifetime; there is no reset between them.
+All existing browser and worker deadlines remain unchanged. This is synthetic
+CI integration evidence, not hosted R2, physical erasure or large-file capacity.
+
 ## Preparation image dependency patches · 23 September 2026
 
 The frozen dependency install runs before the preparation image copies its

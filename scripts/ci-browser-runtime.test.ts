@@ -62,7 +62,7 @@ describe("owned isolated CI runtime lifecycle", () => {
     expect(creation.filter(value => value.startsWith("127.0.0.1:"))).toEqual(["127.0.0.1:3100:3100", "127.0.0.1:3101:3101", "127.0.0.1:3102:3102", "127.0.0.1:3103:3103", "127.0.0.1:3104:3104", "127.0.0.1:8130:8130"]);
     expect(creation.join(" ")).not.toMatch(/--privileged|docker\.sock|--network=host|--env/);
     const values = (flag: string) => creation.flatMap((value, index) => value === flag ? [creation[index + 1]] : []);
-    expect(values("--add-host")).toEqual(["model.copilot.test:203.0.114.10"]);
+    expect(values("--add-host")).toEqual(["model.copilot.test:203.0.114.10", "prepared.artifacts.test:203.0.114.11"]);
     expect(values("--dns")).toEqual(["127.0.0.1"]);
     expect(values("--dns-option")).toEqual(["attempts:1", "timeout:1"]);
     expect(values("--dns-search")).toEqual(["."]);
@@ -123,6 +123,28 @@ describe("owned isolated CI runtime lifecycle", () => {
       expect(result.status).toBe(19); expect(result.stderr).toBe("");
       expect(result.stdout).toBe("synthetic firewall refusal\nISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=19\n");
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+  });
+  it("keeps both synthetic TLS destinations on loopback without widening the firewall", async () => {
+    const fs = await vi.importActual<typeof import("node:fs")>("node:fs");
+    const namespace = fs.readFileSync("scripts/ci-browser/namespace.sh", "utf8");
+    expect(namespace.split("\n").filter(line => line.startsWith("ip address add "))).toEqual([
+      "ip address add 203.0.114.10/32 dev lo", "ip address add 203.0.114.11/32 dev lo",
+    ]);
+    expect(namespace.split("\n").filter(line => line.startsWith("ip route get "))).toEqual([
+      "ip route get 203.0.114.10 | grep -q 'dev lo'", "ip route get 203.0.114.11 | grep -q 'dev lo'",
+    ]);
+    expect(namespace.split("\n").filter(line => /^ip6?tables -A /.test(line))).toEqual([
+      "iptables -A OUTPUT -d 127.0.0.11 -j DROP", "iptables -A OUTPUT -p udp --dport 53 -j DROP",
+      "iptables -A OUTPUT -p tcp --dport 53 -j DROP", "iptables -A OUTPUT -o lo -j ACCEPT",
+      "iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+      'iptables -A OUTPUT -d "$gateway" -p tcp --dport 8000 -j ACCEPT',
+      "ip6tables -A OUTPUT -p udp --dport 53 -j DROP", "ip6tables -A OUTPUT -p tcp --dport 53 -j DROP",
+      "ip6tables -A OUTPUT -o lo -j ACCEPT", "ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+    ]);
+    const tls = fs.readFileSync("scripts/ci-browser/tls.sh", "utf8");
+    expect(tls.match(/subjectAltName=[^\\]+/g)).toEqual([
+      "subjectAltName=DNS:model.copilot.test,DNS:prepared.artifacts.test",
+    ]);
   });
   it("leaves a preexisting ownership receipt untouched without creating a container", async () => {
     state.files.set("/synthetic-ci-tmp/inherit-ci-browser-owner.json", "unrelated-receipt");

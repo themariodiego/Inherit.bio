@@ -2,11 +2,14 @@
  * stdin only; the daemon has a separate clean environment. */
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
+import { createPrivateKey, createPublicKey } from "node:crypto";
 import { readFileSync } from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
+import { startPreparedArtifactFixture } from "./prepared-artifact-fixture";
+import { createPreparedArtifactProofWriter } from "./prepared-artifact-proof";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
@@ -124,6 +127,18 @@ try {
       input.on("line", line => { void (async () => {
         assert(!initialized && line.length < 65_536, "Single bounded app configuration required"); initialized = true;
         const env = checkedAppEnvironment(JSON.parse(line), port);
+        if (port === 3104) {
+          const signingKey = JSON.parse(env.INHERIT_UPLOAD_SIGNING_JWK);
+          assert(signingKey.kty === "EC" && signingKey.crv === "P-256" && typeof signingKey.kid === "string",
+            "Synthetic upload signer required");
+          const publicKey = createPublicKey(createPrivateKey({ key: signingKey, format: "jwk" })).export({ format: "jwk" });
+          const artifacts = await startPreparedArtifactFixture({
+            publicJwk: { kty: publicKey.kty, crv: publicKey.crv, x: publicKey.x, y: publicKey.y, kid: signingKey.kid },
+            key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt"),
+            onChange: createPreparedArtifactProofWriter(),
+          });
+          closers.push(() => { void artifacts.close(); });
+        }
         if (port === 3100) {
           const gateway = process.argv[4]; assert(net.isIP(gateway) === 4);
           const proxy = net.createServer(downstream => {
