@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { checkConfigured, confirmationLink, requestFence, requireRemoteRunner, sampleGenotype } from "./self-host-first-run-smoke";
+import { checkConfigured, confirmationLink, requestFence, requireRemoteRunner, sampleAncestry, sampleGenotype } from "./self-host-first-run-smoke";
 
 const APP = "http://localhost:3000";
 const API = "http://127.0.0.1:54321";
@@ -64,5 +64,15 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
     expect(sampleGenotype(bytes)).toMatch(/^[ACGT]\/[ACGT]$/);
     const altered = Buffer.from(bytes); altered[altered.length - 1] ^= 1;
     expect(() => sampleGenotype(altered)).toThrow();
+  });
+  it("derives the three-marker partial ancestry contract without treating it as zero coverage", () => {
+    const bytes = readFileSync("data/samples/synthetic-pipeline-grch38.vcf.gz");
+    const ancestry = sampleAncestry(bytes);
+    expect(ancestry.calls).toEqual([["2:108897145", "A/G"], ["5:33951588", "C/G"], ["15:28120472", "G/G"]]);
+    expect(ancestry.result.markersUsed).toBe(3); expect(ancestry.result.proportions).not.toBeNull();
+    expect(ancestry.rows.length + ancestry.split.length).toBeGreaterThan(0);
+    expect(ancestry.result.note).toContain("no tested range yet");
+    const altered = Buffer.from(bytes); altered[altered.length - 1] ^= 1;
+    expect(() => sampleAncestry(altered)).toThrow();
   });
 });

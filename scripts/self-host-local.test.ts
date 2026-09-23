@@ -64,12 +64,12 @@ const mutations = [
   (s: string) => s.replace("port = 54321", "port = 54320"),
   (s: string) => s.replace("port = 54322", "port = 54323"),
   (s: string) => s.replace('file_size_limit = "50MiB"', 'file_size_limit = "500MiB"'),
-  (s: string) => s.replace('site_url = "http://127.0.0.1:3000"', 'site_url = "https://example.org"'),
+  (s: string) => s.replace('site_url = "http://127.0.0.1:3000"', 'site_url = "https://example.invalid"'),
   (s: string) => s.replace("enable_confirmations = true", "enable_confirmations = false"),
   (s: string) => s + "\n[api]\nport=54321\n",
   (s: string) => s.replace("port = 54321", "port = 54321\nport=54321"),
   (s: string) => s.replace('# signing_keys_path = "./signing_keys.json"', 'signing_keys_path = "./owned.json"'),
-  (s: string) => s.replace('# external_url = ""', 'external_url = "https://example.org/auth/v1"'),
+  (s: string) => s.replace('# external_url = ""', 'external_url = "https://example.invalid/auth/v1"'),
   (s: string) => s + '\n[remotes.example]\nproject_id="example"\n',
 ];
 
@@ -197,9 +197,9 @@ describe("configure with synthetic command adapters", () => {
       }
       if (args.includes("status")) {
         const value = JSON.parse(answer);
-        if (kind === "origin") value.API_URL = "https://example.org";
+        if (kind === "origin") value.API_URL = "https://example.invalid";
         if (kind === "mail") value.INBUCKET_URL = "http://127.0.0.1:54325";
-        if (kind === "database") value.DB_URL = "postgresql://postgres:synthetic@example.org:54322/postgres";
+        if (kind === "database") value.DB_URL = "postgresql://postgres:synthetic@example.invalid:54322/postgres";
         if (kind === "auth-key") value.ANON_KEY = jwt(key(), "anon");
         return JSON.stringify(value);
       }

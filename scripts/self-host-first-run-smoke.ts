@@ -7,6 +7,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
+import { RAW_NUMBERS_SUMMARY } from "../src/copy/ancestry";
+import { regionalBelowMinimum } from "../src/copy/regional-ancestry";
+import { presentRegionalShares } from "../src/lib/ancestry/regional-present";
+import { estimateRegionalAdmixture, REGIONAL_AIMS } from "../src/lib/genome/regional-admixture";
+import { SEVEN_ANCESTRY_PANEL } from "../src/lib/uploads/own-ancestry-content-v3";
 import { directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt,
   subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { checkedConfig, isRecord, LOCAL } from "./self-host-local-contract";
@@ -104,9 +109,12 @@ export function confirmationLink(body: unknown): string {
   return url.href;
 }
 
-export function sampleGenotype(bytes: Buffer): string {
+function sampleLines(bytes: Buffer): string[] {
   requireProof(sha(bytes) === SAMPLE_SHA);
-  const lines = gunzipSync(bytes, { maxOutputLength: 8 * 1024 * 1024 }).toString("utf8").split("\n");
+  return gunzipSync(bytes, { maxOutputLength: 8 * 1024 * 1024 }).toString("utf8").split("\n");
+}
+export function sampleGenotype(bytes: Buffer): string {
+  const lines = sampleLines(bytes);
   requireProof(!lines.some(line => line.split("\t")[2] === "rs762551"));
   const matches = lines.filter(line => line.split("\t")[2] === "rs72921001");
   requireProof(matches.length === 1);
@@ -116,6 +124,25 @@ export function sampleGenotype(bytes: Buffer): string {
   const calls = columns[9].split(":")[index]?.split(/[|/]/).map(value => alleles[Number(value)]);
   requireProof(index >= 0 && calls?.length === 2 && calls.every(value => /^[ACGT]$/.test(value)));
   return calls.sort().join("/");
+}
+
+/** Reproduce only the committed synthetic fixture's partial-result contract. */
+export function sampleAncestry(bytes: Buffer) {
+  const panel = new Map(REGIONAL_AIMS.map(marker => [`${marker.chrom}:${marker.pos38}`, marker]));
+  const calls = new Map<string, string>();
+  for (const line of sampleLines(bytes)) {
+    if (!line || line.startsWith("#")) continue;
+    const columns = line.split("\t"), key = `${columns[0].replace(/^chr/, "")}:${columns[1]}`;
+    if (!panel.has(key)) continue;
+    const index = columns[8].split(":").indexOf("GT"), alleles = [columns[3], ...columns[4].split(",")];
+    const genotype = columns[9].split(":")[index]?.split(/[|/]/).map(value => alleles[Number(value)]);
+    requireProof(index >= 0 && genotype?.length === 2 && genotype.every(value => /^[ACGT]$/.test(value)) && !calls.has(key));
+    calls.set(key, genotype.join("/"));
+  }
+  const result = estimateRegionalAdmixture((chrom, pos) => calls.get(`${chrom}:${pos}`) ?? null);
+  requireProof(calls.size === 3 && result.markersUsed === 3 && result.proportions !== null
+    && result.markersUsed < SEVEN_ANCESTRY_PANEL.minimumMarkers);
+  return { calls: [...calls], result, ...presentRegionalShares(result) };
 }
 
 function safeRead(filename: string, maximum: number): Buffer {
@@ -187,7 +214,7 @@ export async function runFirstRunSmoke(): Promise<void> {
   // Observer deadline only; it neither changes upload limits nor retries mutations.
   const deadline = setTimeout(() => { fenceFailed = true; void browser?.close(); }, 15 * 60_000);
   try {
-    let genotype = "";
+    let genotype = ""; let ancestry: ReturnType<typeof sampleAncestry> | undefined;
     await step("preflight", async () => {
       const commit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", timeout: 5_000,
         stdio: ["ignore", "pipe", "pipe"] }).trim(); requireProof(/^[0-9a-f]{40}$/.test(commit));
@@ -196,7 +223,7 @@ export async function runFirstRunSmoke(): Promise<void> {
       const guide = safeRead(path.join(root, "docs/self-hosting.md"), 131_072);
       const configured = safeRead(path.join(root, ".inherit-local/configured.json"), 4_096);
       checkConfigured(json(configured.toString()), commit, sha(config), sha(guide));
-      const sample = safeRead(path.join(root, SAMPLE), 1_048_576); genotype = sampleGenotype(sample);
+      const sample = safeRead(path.join(root, SAMPLE), 1_048_576); genotype = sampleGenotype(sample); ancestry = sampleAncestry(sample);
       Object.assign(receipt, { commit, configSha256: sha(config), guideSha256: sha(guide),
         configuredReceiptSha256: sha(configured), fixtureSha256: sha(sample) });
       receipt.checks.stockLocalConfiguration = true;
@@ -316,10 +343,35 @@ export async function runFirstRunSmoke(): Promise<void> {
       receipt.checks.absenceIsNotAResult = true;
     });
     await step("storedAncestryFallback", async () => {
+      requireProof(ancestry);
       await openTool("Ancestry"); const region = page.locator('[data-slot="regional-ancestry"]');
-      await expect(region.locator('[data-slot="grey-state"]')).toContainText(/Your file covers only \d+ of \d+ ancestry markers — too few to draw a map\./);
+      await expect(region.locator('[data-slot="grey-state"]')).toHaveText(regionalBelowMinimum(ancestry.result.markersUsed, SEVEN_ANCESTRY_PANEL.minimumMarkers));
       await expect(region.locator('[data-slot="stored-support-note"]')).toBeVisible();
-      await expect(region.locator('[data-figure-kind="ancestry-share"]')).toHaveCount(0);
+      await expect(region.locator('[data-slot="stored-support-note"]')).toHaveText(ancestry.result.note);
+      await expect(region.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
+      await expect(region.locator('[data-slot="ancestry-map"] [role="button"], [data-slot="ancestry-chip"], [data-slot="well-supported-toggle"], [data-slot="region-row"]')).toHaveCount(0);
+      const raw = region.locator('details[data-slot="raw-numbers"]');
+      await expect(raw).toHaveCount(1); await expect(raw).toHaveJSProperty("open", false);
+      await expect(raw.locator("summary").first()).toHaveText(RAW_NUMBERS_SUMMARY);
+      await expect(raw.locator("summary").first()).toBeVisible();
+      await expect(raw).toContainText(`Only 3 of the required ${SEVEN_ANCESTRY_PANEL.minimumMarkers} usable markers were read. These raw estimates are unreliable. They may change greatly with the missing markers.`);
+      await expect(raw.locator('[data-slot="regional-caveat"]')).toHaveText(ancestry.result.reporting.caveat);
+      const figures = '[data-figure-kind="ancestry-share"]';
+      const count = ancestry.rows.length + ancestry.split.length;
+      await expect(raw.locator(figures)).toHaveCount(count);
+      await expect(region.locator(figures)).toHaveCount(count);
+      await expect(region.locator(`${figures}:visible`)).toHaveCount(0);
+      await expect(raw.locator('[data-slot="raw-numbers-list"] [data-region]')).toHaveCount(ancestry.rows.length);
+      await expect(raw.locator('[data-split-region]')).toHaveCount(ancestry.split.length);
+      for (const [attribute, rows] of [["data-region", ancestry.rows], ["data-split-region", ancestry.split]] as const) {
+        for (const row of rows) {
+          const figure = raw.locator(`[${attribute}="${row.code}"] ${figures}`);
+          await expect(figure).toHaveCount(1); await expect(figure).not.toBeVisible();
+          await expect(figure).toHaveAttribute("data-figure-basis", "modelled");
+          await expect(figure.locator('[data-slot="figure-value"]')).toHaveText(`${(row.share * 100).toFixed(1)}%`);
+          await expect(figure.locator('[data-slot="figure-unit"]')).toHaveText("no range yet");
+        }
+      }
       receipt.checks.storedInsufficientMarkerResult = true;
     });
     await step("copilotWithoutProvider", async () => {

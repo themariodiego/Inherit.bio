@@ -94,7 +94,7 @@ The other two are here for reasons that are not this, and both used to be
 offered on this line:
 
 - **`synthetic_23andme.txt` is a separate synthetic array fixture.** Its
-  parser and browser cases do not establish the recommended VCF journey.
+  parser and browser cases do not establish the documented VCF journey.
 - **`HG001_GRCh38_chr20-22.vcf.gz` is a historical artifact.** It is consented,
   openly published GIAB reference material, and `data/samples/PROVENANCE.md`
   records that no current browser or pipeline test uses it as genetic input,
