@@ -2865,3 +2865,10 @@ increase by four claims and three sources, and the undated template citation
 bound drops from 178 to 177 for the actually read Bertina citation. Full hosted,
 clinical or catalogue-wide validation is not claimed. This first commit does
 not rewrite historical snapshots or invent a correction commit identifier.
+
+The separate historical F5 follow-up appends four exact prior fields using the
+actual source-correction commit. Existing registry fixtures preserve the old
+32-field digest, add the four F5 fields, and exercise all 27 prior genotype
+interpretations through the same exact-text/identity matcher. Current corrected
+text remains unflagged; missing, malformed and wrong-identity controls remain.
+No matching rule, captured snapshot, source authority or Copilot logic changes.

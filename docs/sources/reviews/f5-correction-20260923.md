@@ -53,10 +53,13 @@ or establish a diagnosis. CC only describes absence of T at this called site.
 
 These strings apply to newly generated reports that use the corrected template.
 Captured catalogue snapshots and saved DNA calls are not rewritten. The exact
-superseded four strings will be registered separately after this correction has
-an actual reachable commit; its record must never use an invented future SHA.
-Existing historical-correction batches and their behavior remain unchanged in
-this first source/copy commit. Old prose must not borrow the new attribution.
+superseded four strings are registered in `data/report-scientific-corrections.json`
+against prior commit `fe09e3e89784729be0cde0bee025b2b05c586b49`
+and actual correction commit `5eb72318047c66bf378eb3a63270f05a5ff4d3e4`.
+The seven prior batches remain unchanged. The existing notices and Copilot
+boundary now recognize this exact old F5 wording without rewriting the original
+DNA calls or saved prose. Unknown text is not assumed wrong. Old prose must not
+borrow the new attribution.
 
 The targeted regression checks allele orientation, all three genotypes, missing
 and no-call data, an unrelated allele, exact source edges, and old/wrong-identity

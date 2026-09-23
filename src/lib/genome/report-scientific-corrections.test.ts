@@ -5,6 +5,7 @@ import registry from "../../../data/report-scientific-corrections.json";
 import brain from "../../../data/templates/brain-health.json";
 import cancer from "../../../data/templates/cancer-risk.json";
 import addiction from "../../../data/templates/addiction.json";
+import heart from "../../../data/templates/heart-cardiovascular.json";
 import metabolic from "../../../data/templates/metabolic-obesity.json";
 import neurodegenerative from "../../../data/templates/neurodegenerative.json";
 import {
@@ -16,12 +17,13 @@ import {
 } from "./report-scientific-corrections";
 import { resolveVariant, type ReportTemplate } from "./reports";
 
-const current = [...brain, ...cancer, ...addiction, ...neurodegenerative, ...metabolic] as ReportTemplate[];
+const current = [...brain, ...cancer, ...addiction, ...neurodegenerative, ...metabolic, ...heart] as ReportTemplate[];
 const expectedCounts = [
   ["caffeine-sleep-adora2a-rs5751876", 4], ["colorectal-apc-i1307k", 4],
   ["breast-cancer-fgfr2-rs2981582", 4], ["alcohol-dependence-aldh2-rs671", 5],
   ["trem2-r47h-alzheimers", 4], ["apoe-e4-alzheimers-risk", 7],
   ["type-2-diabetes-tcf7l2-rs7903146", 4],
+  ["factor-v-leiden-rs6025", 4],
 ] as const;
 
 function historical(slug: string) {
@@ -49,14 +51,17 @@ function freeze<T>(value: T): T {
 }
 
 describe("known scientific correction registry", () => {
-  it("pins the exact 32 old fields extracted from seven reviewed Git changes", () => {
+  it("preserves the prior 32 fields and appends four exact F5 fields from reachable Git changes", () => {
     expect(registry.map((batch) => [batch.slug, batch.fields.length])).toEqual(expectedCounts);
     const fields = registry.flatMap((batch) => batch.fields.map((entry) =>
       [batch.slug, entry.field, entry.rsid ?? null, entry.genotype ?? null, entry.oldText]));
-    expect(fields).toHaveLength(32);
+    expect(fields).toHaveLength(36);
     expect(createHash("sha256").update(JSON.stringify(fields)).digest("hex"))
+      .toBe("17625054d23c77d99f6c8e40c07adc9cc70e7e4ad284c9d4a45a8a356dcce71f");
+    expect(fields.slice(0, 32)).toHaveLength(32);
+    expect(createHash("sha256").update(JSON.stringify(fields.slice(0, 32))).digest("hex"))
       .toBe("75d4e0e17a558adf3c97b641b84f4b0fcd004eb386748a14e9f50c3b4d9d1269");
-    expect(new Set(registry.flatMap((batch) => batch.fields.map((entry) => entry.id))).size).toBe(32);
+    expect(new Set(registry.flatMap((batch) => batch.fields.map((entry) => entry.id))).size).toBe(36);
     for (const batch of registry) {
       expect(batch.correctedOn).toBe("2026-09-23");
       expect(existsSync(batch.reviewPath)).toBe(true);
@@ -128,7 +133,7 @@ describe("known scientific correction registry", () => {
 });
 
 describe("known no-catalog outcome corrections", () => {
-  it("matches each of the 24 actual old genotype explanations and no current explanation", () => {
+  it("matches each of the 27 actual old genotype explanations and no current explanation", () => {
     let matched = 0;
     for (const batch of registry) {
       const present = current.find((item) => item.slug === batch.slug)!;
@@ -141,7 +146,32 @@ describe("known no-catalog outcome corrections", () => {
         matched++;
       }
     }
-    expect(matched).toBe(24);
+    expect(matched).toBe(27);
+  });
+
+  it("recognizes saved F5 calls in both valid orientations without inferring missing or other alleles", () => {
+    const slug = "factor-v-leiden-rs6025", old = historical(slug), variant = old.variants[0];
+    for (const [raw, genotype, strandFlipped] of [
+      ["C/C", "CC", false], ["C/T", "CT", false], ["T/T", "TT", false],
+      ["G/G", "CC", true], ["A/G", "CT", true], ["A/A", "TT", true],
+    ] as const) {
+      const outcome = resolveVariant(variant, raw);
+      expect(outcome).toMatchObject({ status: "genotyped", genotype, strandFlipped });
+      const saved = freeze([{ rsid: 6025, outcome }]);
+      const before = JSON.stringify(saved);
+      expect(reportOutcomeScientificCorrections(slug, saved).map(entry => entry.id))
+        .toEqual([`scientific-correction.20260923.${slug}.rs6025.${genotype.toLowerCase()}`]);
+      expect(JSON.stringify(saved)).toBe(before);
+    }
+    for (const raw of [undefined, "./.", "C/A"]) {
+      expect(reportOutcomeScientificCorrections(slug, [{ rsid: 6025, outcome: resolveVariant(variant, raw) }]))
+        .toEqual([]);
+    }
+    const saved = oldOutcome(slug, 6025, "CT", true);
+    expect(reportOutcomeScientificCorrections(slug, [{ ...saved, outcome: { ...saved.outcome, genotype: "AG" } }]))
+      .toEqual([]);
+    expect(reportOutcomeScientificCorrections(slug, [{ ...saved, rsid: 6026 }])).toEqual([]);
+    expect(reportOutcomeScientificCorrections("another-f5-report", [saved])).toEqual([]);
   });
 
   it("uses resolver-canonical output and permits only a genuinely possible flipped pair", () => {
