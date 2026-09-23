@@ -136,15 +136,15 @@ const stale = (label: string, finding: string) =>
 describe("the claims gate holds the registers to the product", () => {
   it("reads every input on this repository, and no floor guard fires", () => {
     const result = runClaimsGate(REPOSITORY_ROOT);
-    expect(result.citationCount).toBe(35);
-    expect(result.archivedSourceCount).toBe(9);
-    expect(result.claimCount).toBe(98);
+    expect(result.citationCount).toBe(38);
+    expect(result.archivedSourceCount).toBe(10);
+    expect(result.claimCount).toBe(102);
     expect(result.claimEvidenceCount).toBeGreaterThan(50);
     expect(result.reportTemplateCount).toBe(162);
     expect(result.reportProseCount).toBe(746);
-    expect(result.registeredProseCount).toBe(98);
-    expect(result.templateCitationCount).toBe(225);
-    expect(result.registeredTemplateCitationCount).toBe(37);
+    expect(result.registeredProseCount).toBe(102);
+    expect(result.templateCitationCount).toBe(226);
+    expect(result.registeredTemplateCitationCount).toBe(39);
     expect(result.provenanceLiteralCount).toBeGreaterThan(10);
     // Exactly three components emit a claim or figure marker in this
     // repository: <Claim>, <Figure> and <RelativeFigure>.
@@ -480,7 +480,7 @@ describe("the claims gate holds the registers to the product", () => {
     expect(joined).toContain(
       stale("report body registration", "data/templates/basic-traits.json: 31 of 63 report-body prose blocks"),
     );
-    expect(registeredProseCount).toBe(97);
+    expect(registeredProseCount).toBe(101);
   });
 
   it("fails when a report body's registered prose no longer matches the template text", () => {

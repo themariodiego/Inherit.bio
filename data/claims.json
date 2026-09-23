@@ -2218,5 +2218,110 @@
     "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
     "reviewed_on": "2026-09-23",
     "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.summary",
+    "text_verbatim": "TCF7L2 rs7903146 has been linked to type 2 diabetes. One trial studied overweight people with high blood sugar. TT was linked to a higher rate of diabetes than CC over about three years. These group results do not give your personal chance of diabetes.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16415884",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16415884/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Original TCF7L2 locus discovery only. Its DG10S478 frequencies and relative risks are not transferred to rs7903146, and it does not support the later trial results."
+      },
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Study population, about-three-year follow-up and TT/CC group association; no personal lifetime probability."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.interpretation.rs7903146.cc",
+    "text_verbatim": "Your file shows two C copies at rs7903146. CC was the comparison group in the trial. People with this genotype also developed diabetes, so this result does not rule it out.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 records diabetes cases in the CC comparison group; that genotype does not exclude diabetes."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs7903146",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward rs7903146 C>T identity only. The actual genotype letters come from the existing authorized resolver, not a paper or a clinical classification."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.interpretation.rs7903146.ct",
+    "text_verbatim": "Your file shows one C and one T at rs7903146. The trial did not find a higher rate of diabetes in CT than CC. This does not prove there is no effect; the study may have been too small to detect it.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 did not detect higher incidence in CT versus CC; the discussion notes limited heterozygote power. This is not proof that CT has no association in other studies."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs7903146",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward rs7903146 C>T identity only. The actual genotype letters come from the existing authorized resolver, not a paper or a clinical classification."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.interpretation.rs7903146.tt",
+    "text_verbatim": "Your file shows two T copies at rs7903146. In the trial, TT was linked to a higher rate of diabetes than CC. That result describes a group with high blood sugar, not your lifetime chance of diabetes.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 supports higher incidence in TT versus CC in this high-risk trial, not a personal lifetime estimate."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs7903146",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward rs7903146 C>T identity only. The actual genotype letters come from the existing authorized resolver, not a paper or a clinical classification."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
   }
 ]

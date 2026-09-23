@@ -2,15 +2,15 @@
   "purpose": "Every place where the product and G1.11's claims and provenance rules disagree today. scripts/claims-gate.ts (pnpm gate:claims) runs ten checks: the citation register's schema, the local snapshot of every non-permanent source, the claim register's evidence, the surfaces claims name, every provenance expression built in src/, the provenance attribute on every claim or figure element, the exempt-numeral rule, report-body registration, template citation registration, and the seven designated surfaces. Each check compares what it finds against the matching group here in both directions: an unlisted divergence fails, and a listed one that no longer exists fails too, so a fix has to bring the ledger down with it and nothing can quietly give a registration back.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. Every entry below is an open finding measured exactly, not an accepted state \u2014 acceptance is a line in docs/acceptance-matrix.md, and G1.11 stands at NO there. The point of the ledger is that the distance from the rule is written down and can only shrink.",
   "howEntriesAreMatched": "The seven checks whose findings name a single record hold the finding sentence verbatim, because there is nothing in it to recount. The three that carry counts \u2014 report-body registration, template citation registration and the designated surfaces \u2014 hold the counts, and scripts/claims-gate.ts rebuilds the sentence from them through the same function the check itself uses. So one prose block gaining a registration moves a number, and a number that moves fails in both directions rather than matching a stale sentence.",
-  "granularity": "The report-body backlog is 648 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 648 rows would be 648 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
+  "granularity": "The report-body backlog is 644 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 644 rows would be 644 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
   "citationSchema": [],
-  "citationSchemaNote": "Empty, checked in both directions. All 35 entries in data/citations.json carry the required eight fields, supported citation types, resolvable HTTPS URLs, actual access dates and quotations of 25 words or fewer.",
+  "citationSchemaNote": "Empty, checked in both directions. All 38 entries in data/citations.json carry the required eight fields, supported citation types, resolvable HTTPS URLs, actual access dates and quotations of 25 words or fewer.",
   "sourceSnapshot": [],
-  "sourceSnapshotNote": "Empty. Nine of the 35 sources have local snapshots: seven Ensembl records, one NCBI RefSNP record and one short NCRAD joint-marker chart excerpt. Twenty-five PMIDs and one DOI use permanent identifiers. Publication notes distinguish full-paper access, review articles and abstract-only reads.",
+  "sourceSnapshotNote": "Empty. Ten of the 38 sources have local snapshots: seven Ensembl records, one NCBI RefSNP record, one NCRAD joint-marker chart excerpt and one NCBI ClinVar identity excerpt. Twenty-seven PMIDs and one DOI use permanent identifiers. Publication notes distinguish full-paper access, review articles and abstract-only reads.",
   "claimEvidence": [],
-  "claimEvidenceNote": "Empty: all 98 claims carry exact text, declared surfaces and evidence bound to canonical sources with matching access dates. Fourteen reports have registered statements; this remains partial catalog coverage, not full G1.11 acceptance.",
+  "claimEvidenceNote": "Empty: all 102 claims carry exact text, declared surfaces and evidence bound to canonical sources with matching access dates. Fifteen reports have registered statements; this remains partial catalog coverage, not full G1.11 acceptance.",
   "claimSurface": [],
-  "claimSurfaceNote": "Empty: every surface the 98 claims name resolves to a page route in docs/route-register.json, the account export contract or the research-digest mail fixture; every named report slug exists in a template.",
+  "claimSurfaceNote": "Empty: every surface the 102 claims name resolves to a page route in docs/route-register.json, the account export contract or the research-digest mail fixture; every named report slug exists in a template.",
   "figureProvenance": [
     {
       "finding": "src/components/embryo/compare/compare-cell.tsx builds a citation provenance whose id is the expression withinFamily.citation_ids[0], which no static reader can resolve",
@@ -184,15 +184,15 @@
     },
     {
       "file": "data/templates/metabolic-obesity.json",
-      "unregisteredBlocks": 40,
+      "unregisteredBlocks": 36,
       "totalBlocks": 40,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 30,
+      "reports": 9,
+      "summaries": 9,
+      "interpretations": 27,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
-      "closing": "Ten reports of source review, then 40 claim entries.",
-      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+      "why": "The TCF7L2 summary and three interpretations are source-reviewed and registered; nine reports remain unregistered.",
+      "closing": "Review the remaining nine reports and register their 36 exact body strings.",
+      "blocker": "review \u2014 36 statements still need supporting sources and actual access dates."
     },
     {
       "file": "data/templates/neurodegenerative.json",
@@ -327,11 +327,11 @@
     },
     {
       "file": "data/templates/metabolic-obesity.json",
-      "absentSources": 11,
-      "citedSources": 11,
-      "why": "Every reference in the file is absent; 11 distinct sources.",
-      "closing": "11 publications opened, quoted and dated.",
-      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+      "absentSources": 10,
+      "citedSources": 12,
+      "why": "Grant original-discovery abstract and the Florez primary trial are registered with explicit read scopes; ten other distinct sources remain absent.",
+      "closing": "Open, read, quote and date the ten remaining publications.",
+      "blocker": "review \u2014 source registration requires actual access and content review."
     },
     {
       "file": "data/templates/neurodegenerative.json",

@@ -1,5 +1,14 @@
 # Test diff register
 
+## TCF7L2 source scope · 23 September 2026
+
+Six additive cases preserve the exact C>T call contract, trial population and
+CT uncertainty; they bind all four corrected strings to dated primary evidence
+and reject changed prose or marker attribution. Existing canonical claims and
+all earlier report tests remain; only measured aggregate counts expand.
+The undated-citation backlog decreases by one. No acceptance row, route or
+density ratchet changes. Tests do not establish assay or clinical validity.
+
 ## Historical report correction boundaries · 23 September 2026
 
 New regression cases bind 28 exact superseded fields from six reviewed source
