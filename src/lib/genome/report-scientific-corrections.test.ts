@@ -5,6 +5,7 @@ import registry from "../../../data/report-scientific-corrections.json";
 import brain from "../../../data/templates/brain-health.json";
 import cancer from "../../../data/templates/cancer-risk.json";
 import addiction from "../../../data/templates/addiction.json";
+import metabolic from "../../../data/templates/metabolic-obesity.json";
 import neurodegenerative from "../../../data/templates/neurodegenerative.json";
 import {
   REPORT_SCIENTIFIC_CORRECTION_NOTICE,
@@ -15,11 +16,12 @@ import {
 } from "./report-scientific-corrections";
 import { resolveVariant, type ReportTemplate } from "./reports";
 
-const current = [...brain, ...cancer, ...addiction, ...neurodegenerative] as ReportTemplate[];
+const current = [...brain, ...cancer, ...addiction, ...neurodegenerative, ...metabolic] as ReportTemplate[];
 const expectedCounts = [
   ["caffeine-sleep-adora2a-rs5751876", 4], ["colorectal-apc-i1307k", 4],
   ["breast-cancer-fgfr2-rs2981582", 4], ["alcohol-dependence-aldh2-rs671", 5],
   ["trem2-r47h-alzheimers", 4], ["apoe-e4-alzheimers-risk", 7],
+  ["type-2-diabetes-tcf7l2-rs7903146", 4],
 ] as const;
 
 function historical(slug: string) {
@@ -47,14 +49,14 @@ function freeze<T>(value: T): T {
 }
 
 describe("known scientific correction registry", () => {
-  it("pins the exact 28 old fields extracted from six reviewed Git changes", () => {
+  it("pins the exact 32 old fields extracted from seven reviewed Git changes", () => {
     expect(registry.map((batch) => [batch.slug, batch.fields.length])).toEqual(expectedCounts);
     const fields = registry.flatMap((batch) => batch.fields.map((entry) =>
       [batch.slug, entry.field, entry.rsid ?? null, entry.genotype ?? null, entry.oldText]));
-    expect(fields).toHaveLength(28);
+    expect(fields).toHaveLength(32);
     expect(createHash("sha256").update(JSON.stringify(fields)).digest("hex"))
-      .toBe("0074b093e0876bec6e5afb41411b8e30d6a399fdc655ce7399039bc4901bc05d");
-    expect(new Set(registry.flatMap((batch) => batch.fields.map((entry) => entry.id))).size).toBe(28);
+      .toBe("75d4e0e17a558adf3c97b641b84f4b0fcd004eb386748a14e9f50c3b4d9d1269");
+    expect(new Set(registry.flatMap((batch) => batch.fields.map((entry) => entry.id))).size).toBe(32);
     for (const batch of registry) {
       expect(batch.correctedOn).toBe("2026-09-23");
       expect(existsSync(batch.reviewPath)).toBe(true);
@@ -126,7 +128,7 @@ describe("known scientific correction registry", () => {
 });
 
 describe("known no-catalog outcome corrections", () => {
-  it("matches each of the 21 actual old genotype explanations and no current explanation", () => {
+  it("matches each of the 24 actual old genotype explanations and no current explanation", () => {
     let matched = 0;
     for (const batch of registry) {
       const present = current.find((item) => item.slug === batch.slug)!;
@@ -139,7 +141,7 @@ describe("known no-catalog outcome corrections", () => {
         matched++;
       }
     }
-    expect(matched).toBe(21);
+    expect(matched).toBe(24);
   });
 
   it("uses resolver-canonical output and permits only a genuinely possible flipped pair", () => {

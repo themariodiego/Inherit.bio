@@ -320,5 +320,53 @@
         "alt": "T"
       }
     ]
+  },
+  {
+    "slug": "type-2-diabetes-tcf7l2-rs7903146",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/tcf7l2-correction-20260923.md",
+    "source": {
+      "previousCommit": "40ffa44b1d2e029fcf2c6b130f27a74e67da5867",
+      "correctedCommit": "014d01587f2094bfab2ae9dfab59e9df288dfd8e",
+      "templatePath": "data/templates/metabolic-obesity.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.type-2-diabetes-tcf7l2-rs7903146.summary",
+        "field": "summary",
+        "oldText": "TCF7L2 rs7903146 is the strongest common genetic variant for type 2 diabetes known, acting mainly through reduced insulin secretion. Each copy of the T allele is associated on average with higher odds of type 2 diabetes: a small shift for one copy and a moderate shift for two. Lifestyle factors such as weight, diet, and activity still dominate absolute risk."
+      },
+      {
+        "id": "scientific-correction.20260923.type-2-diabetes-tcf7l2-rs7903146.rs7903146.cc",
+        "field": "interpretation",
+        "rsid": 7903146,
+        "genotype": "CC",
+        "oldText": "Two copies of the C allele, the genotype with the lowest average type 2 diabetes odds at this locus. This does not remove risk from other genetic and lifestyle factors, which together matter far more than any single variant."
+      },
+      {
+        "id": "scientific-correction.20260923.type-2-diabetes-tcf7l2-rs7903146.rs7903146.ct",
+        "field": "interpretation",
+        "rsid": 7903146,
+        "genotype": "CT",
+        "oldText": "One copy of T, found in about 40% of people with European ancestry. This result is linked to higher odds of type 2 diabetes versus CC (a small shift), mainly through slightly lower insulin release. Lifestyle changes prevented diabetes across all genotypes in trials."
+      },
+      {
+        "id": "scientific-correction.20260923.type-2-diabetes-tcf7l2-rs7903146.rs7903146.tt",
+        "field": "interpretation",
+        "rsid": 7903146,
+        "genotype": "TT",
+        "oldText": "Two copies of T, found in about 8% to 10% of people with European ancestry. This result is linked to higher odds of type 2 diabetes versus CC: a moderate shift. It is the largest known common-variant effect for this condition. Even so, most TT carriers do not develop diabetes. Weight and lifestyle strongly shape actual risk."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 7903146,
+        "gene": "TCF7L2",
+        "chrom": 10,
+        "pos38": 112998590,
+        "ref": "C",
+        "alt": "T"
+      }
+    ]
   }
 ]

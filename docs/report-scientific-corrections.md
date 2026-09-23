@@ -3,9 +3,9 @@
 Saved report templates and outcomes remain immutable. Correcting the current
 catalog does not change an earlier result or make its explanation current.
 
-`data/report-scientific-corrections.json` records 28 exact earlier fields from
-the reviewed ADORA2A, APC, FGFR2, ALDH2, TREM2 and APOE changes: six summaries,
-21 genotype explanations and the ALDH2 title. Each batch names the preceding
+`data/report-scientific-corrections.json` records 32 exact earlier fields from
+the reviewed ADORA2A, APC, FGFR2, ALDH2, TREM2, APOE and TCF7L2 changes: seven summaries,
+24 genotype explanations and the ALDH2 title. Each batch names the preceding
 and corrected Git revisions, template path and dated source review. The pure
 matcher requires the exact report and field identity and original wording.
 Unknown or unregistered wording is not classified as incorrect or current.

@@ -8,11 +8,13 @@ and reject changed prose or marker attribution. Existing canonical claims and
 all earlier report tests remain; only measured aggregate counts expand.
 The undated-citation backlog decreases by one. No acceptance row, route or
 density ratchet changes. Tests do not establish assay or clinical validity.
+The historical matcher adds the four exact prior fields from the committed
+TCF7L2 source change; existing six batches and all original assertions remain.
 
 ## Historical report correction boundaries · 23 September 2026
 
-New regression cases bind 28 exact superseded fields from six reviewed source
-changes, including 21 resolver-consistent saved genotype explanations. They
+New regression cases bind 32 exact superseded fields from seven reviewed source
+changes, including 24 resolver-consistent saved genotype explanations. They
 preserve unknown wording as unknown, immutable captured data, source identity,
 own and Family sensitive-result gates, and every original assertion.
 
