@@ -2853,3 +2853,22 @@ extractor or legal statement is removed or relaxed.
   authority and legacy-link cases remain. No timeout, retry or route ratchet
   changes. Database and browser execution remains CI work; discovery and
   local source checks alone do not close G5.4 or G8.5.
+
+### 2026-09-23 — Bounded asynchronous export byte core
+
+- Added real-SDK injected-transport tests for immutable whole-object writes,
+  exact bytes and incremental hashes, reserved-key tracking, current-authority
+  receipt pinning, ordered pages, caller abort, deadlines and uncertain ACKs.
+  Existing export tests and all product routes remain unchanged.
+- The physical object boundary is the existing 4,000,000-byte download limit.
+  Beyond-2^32 validation uses virtual metadata through the actual manifest
+  accounting code; it is not a 4 GiB hashing, ZIP64 or hosted delivery proof.
+- No ready publication, database migration, worker dispatch, nonce route,
+  provider erasure or acceptance closure is represented by this core. Its
+  mandatory integration and write-fencing gaps are explicit in
+  `docs/async-export-delivery-core.md`. No existing test, retry or timeout is
+  removed or weakened.
+- Added a pure one-segment reader suite for current pinned authority, frozen
+  selection, exact provider identity/length/digest, owned-buffer delivery and
+  cancellation under a fixed total deadline. Injected objects prove the core
+  checks; they do not prove a live Storage GET adapter or an HTTP download route.
