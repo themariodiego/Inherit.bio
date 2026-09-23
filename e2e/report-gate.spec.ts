@@ -28,6 +28,9 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 const USER = { email: `gate-user-${randomUUID()}@e2e.local`, password: "e2e-gate-pw" };
 
 const FGFR2_SLUG = "breast-cancer-fgfr2-rs2981582";
+const FGFR2_AG_INTERPRETATION = "Your file shows one A and one G copy. "
+  + "In the cited study, AG was associated with higher breast cancer odds than GG. "
+  + "This marker alone cannot tell you your chance of developing breast cancer.";
 
 const GENOTYPE_NODE = '[data-figure-kind="genotype"]';
 const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
@@ -230,13 +233,13 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   const gatedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}`);
   expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
   expect(gatedHtml).not.toContain("A/G");
-  expect(gatedHtml).not.toContain("One copy of the A risk allele");
+  expect(gatedHtml).not.toContain(FGFR2_AG_INTERPRETATION);
 
   // The same URL with ?reveal=1 does serve the result.
   const revealedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}?reveal=1`);
   expect(revealedHtml).toContain(GENOTYPE_NODE.slice(1, -1));
   expect(revealedHtml).toContain("A/G");
-  expect(revealedHtml).toContain("One copy of the A risk allele");
+  expect(revealedHtml).toContain(FGFR2_AG_INTERPRETATION);
 
   // Cross-account regression: a choice stored for ANOTHER user id — or under
   // the old un-scoped device-global key — must not un-gate this account.
