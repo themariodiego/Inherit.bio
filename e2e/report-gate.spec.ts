@@ -83,6 +83,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await expect(page.locator(GENOTYPE_NODE)).toHaveCount(0);
   await expect(page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE)).toHaveCount(0);
   await expect(page.getByText(LIMIT_OF_FILE)).toHaveCount(0);
+  await expect(page.locator('[data-slot="report-scientific-correction"]')).toHaveCount(0);
 
   // Header, summary, sources, and the not-diagnostic line stay visible
   // around the gate. The h1 is the report name (the title up to its gene
@@ -103,6 +104,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await page.getByRole("link", { name: "Show my result" }).click();
   await page.waitForURL(/reveal=1/);
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
+  await expect(page.locator('[data-slot="report-scientific-correction"]')).toHaveCount(0);
   await expect(
     page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE).first(),
   ).toBeVisible();
@@ -234,12 +236,14 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
   expect(gatedHtml).not.toContain("A/G");
   expect(gatedHtml).not.toContain(FGFR2_AG_INTERPRETATION);
+  expect(gatedHtml).not.toContain('data-slot="report-scientific-correction"');
 
   // The same URL with ?reveal=1 does serve the result.
   const revealedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}?reveal=1`);
   expect(revealedHtml).toContain(GENOTYPE_NODE.slice(1, -1));
   expect(revealedHtml).toContain("A/G");
   expect(revealedHtml).toContain(FGFR2_AG_INTERPRETATION);
+  expect(revealedHtml).not.toContain('data-slot="report-scientific-correction"');
 
   // Cross-account regression: a choice stored for ANOTHER user id — or under
   // the old un-scoped device-global key — must not un-gate this account.

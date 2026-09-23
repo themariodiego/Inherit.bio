@@ -1,0 +1,324 @@
+[
+  {
+    "slug": "caffeine-sleep-adora2a-rs5751876",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/adora2a-correction-20260923.md",
+    "source": {
+      "correctedCommit": "038ae9ba357437ba44f48cfe690bb4e932d9aea2",
+      "previousCommit": "1c875e3c3a8b4c67edc1a645c12747aa4546e188",
+      "templatePath": "data/templates/brain-health.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.caffeine-sleep-adora2a-rs5751876.summary",
+        "field": "summary",
+        "oldText": "Caffeine keeps people alert by blocking adenosine A2A receptors. The ADORA2A gene provides the instructions for these receptors. Studies repeatedly link the T copy at rs5751876 to more anxiety after caffeine. People with TT were more likely to report anxiety after a moderate dose. On average, they also reported more sleep problems after caffeine."
+      },
+      {
+        "id": "scientific-correction.20260923.caffeine-sleep-adora2a-rs5751876.rs5751876.tt",
+        "field": "interpretation",
+        "rsid": 5751876,
+        "genotype": "TT",
+        "oldText": "Two T copies were linked to the most anxiety after moderate caffeine doses in controlled studies. This type also appears more often among people who say caffeine harms their sleep. Late caffeine may be more disruptive on average. Personal tolerance also depends on usual intake and CYP1A2 speed."
+      },
+      {
+        "id": "scientific-correction.20260923.caffeine-sleep-adora2a-rs5751876.rs5751876.ct",
+        "field": "interpretation",
+        "rsid": 5751876,
+        "genotype": "CT",
+        "oldText": "One T and one C copy form a middle group. Studies place it between the other two types for anxiety and sleep problems after caffeine. People vary widely within each group. Usual intake and CYP1A2 speed also shape the response."
+      },
+      {
+        "id": "scientific-correction.20260923.caffeine-sleep-adora2a-rs5751876.rs5751876.cc",
+        "field": "interpretation",
+        "rsid": 5751876,
+        "genotype": "CC",
+        "oldText": "Two copies of the C allele. Associated on average with less caffeine-induced anxiety and less self-reported sleep disturbance from caffeine than TT at this locus. This does not make caffeine sleep-neutral; dose and timing still matter for everyone."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 5751876,
+        "gene": "ADORA2A",
+        "chrom": 22,
+        "pos38": 24441333,
+        "ref": "T",
+        "alt": "C"
+      }
+    ]
+  },
+  {
+    "slug": "colorectal-apc-i1307k",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/apc-correction-20260923.md",
+    "source": {
+      "correctedCommit": "7f28d2525c764637e2aa3ac5a50a3ec7cfe97995",
+      "previousCommit": "ed34723f8ff99141f43e6b14d712ba3ad3983027",
+      "templatePath": "data/templates/cancer-risk.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.colorectal-apc-i1307k.summary",
+        "field": "summary",
+        "oldText": "APC I1307K (A at rs1801155) makes a short DNA stretch less stable. About 6-7% of people with Ashkenazi Jewish ancestry carry it. Carriers have higher average odds of colorectal cancer: a moderate shift. I1307K does not cause the high-risk condition called familial adenomatous polyposis."
+      },
+      {
+        "id": "scientific-correction.20260923.colorectal-apc-i1307k.rs1801155.tt",
+        "field": "interpretation",
+        "rsid": 1801155,
+        "genotype": "TT",
+        "oldText": "No copies of the I1307K variant. Colorectal cancer risk at this position is not elevated. Family history, age, lifestyle, and other genetic factors still shape overall risk. Standard screening guidance applies."
+      },
+      {
+        "id": "scientific-correction.20260923.colorectal-apc-i1307k.rs1801155.at",
+        "field": "interpretation",
+        "rsid": 1801155,
+        "genotype": "AT",
+        "oldText": "One copy of the I1307K variant, most often seen in people with Ashkenazi Jewish ancestry. Associated on average with higher odds of colorectal cancer: a moderate shift. This is a moderate, probabilistic risk factor, not a polyposis syndrome. It is one factor among many. Discussing family history and screening timing with a clinician can put it in context."
+      },
+      {
+        "id": "scientific-correction.20260923.colorectal-apc-i1307k.rs1801155.aa",
+        "field": "interpretation",
+        "rsid": 1801155,
+        "genotype": "AA",
+        "oldText": "Two I1307K copies. This result is rare, even among people with Ashkenazi Jewish ancestry. Too few people with this result have been studied to estimate its cancer risk. Do not assume it carries twice the risk of one copy. Family history and screening advice are more useful for care."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 1801155,
+        "gene": "APC",
+        "chrom": 5,
+        "pos38": 112839514,
+        "ref": "T",
+        "alt": "A"
+      }
+    ]
+  },
+  {
+    "slug": "breast-cancer-fgfr2-rs2981582",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/fgfr2-correction-20260923.md",
+    "source": {
+      "correctedCommit": "7f28d2525c764637e2aa3ac5a50a3ec7cfe97995",
+      "previousCommit": "ed34723f8ff99141f43e6b14d712ba3ad3983027",
+      "templatePath": "data/templates/cancer-risk.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.breast-cancer-fgfr2-rs2981582.summary",
+        "field": "summary",
+        "oldText": "An intronic variant in FGFR2 is among the most consistently replicated common breast cancer risk variants. Each copy of the A allele at rs2981582 is linked on average to higher odds of breast cancer: a small shift. It is often reported as the T allele on the opposite strand. The link is mainly with estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test. A reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route."
+      },
+      {
+        "id": "scientific-correction.20260923.breast-cancer-fgfr2-rs2981582.rs2981582.aa",
+        "field": "interpretation",
+        "rsid": 2981582,
+        "genotype": "AA",
+        "oldText": "Two copies of the A risk allele, carried by roughly 15% of people of European ancestry. Associated on average with higher odds of breast cancer compared with GG: a moderate shift. This is a modest probability shift from one common variant; family history, reproductive factors, and many other variants together matter more."
+      },
+      {
+        "id": "scientific-correction.20260923.breast-cancer-fgfr2-rs2981582.rs2981582.ag",
+        "field": "interpretation",
+        "rsid": 2981582,
+        "genotype": "AG",
+        "oldText": "One copy of the A risk allele. On average this is associated with higher odds of breast cancer compared with GG: a small shift. This is one small factor among many influences on breast cancer risk and does not predict disease on its own."
+      },
+      {
+        "id": "scientific-correction.20260923.breast-cancer-fgfr2-rs2981582.rs2981582.gg",
+        "field": "interpretation",
+        "rsid": 2981582,
+        "genotype": "GG",
+        "oldText": "Two copies of the G allele, the most common genotype. Associated with somewhat lower average odds of breast cancer at this locus. Overall risk still depends on family history, other genetic variants, and non-genetic factors, and routine screening guidance is unchanged."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 2981582,
+        "gene": "FGFR2",
+        "chrom": 10,
+        "pos38": 121592803,
+        "ref": "A",
+        "alt": "G"
+      }
+    ]
+  },
+  {
+    "slug": "alcohol-dependence-aldh2-rs671",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/aldh2-correction-20260923.md",
+    "source": {
+      "correctedCommit": "7f28d2525c764637e2aa3ac5a50a3ec7cfe97995",
+      "previousCommit": "ed34723f8ff99141f43e6b14d712ba3ad3983027",
+      "templatePath": "data/templates/addiction.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.alcohol-dependence-aldh2-rs671.title",
+        "field": "title",
+        "oldText": "Alcohol dependence protection · ALDH2"
+      },
+      {
+        "id": "scientific-correction.20260923.alcohol-dependence-aldh2-rs671.summary",
+        "field": "summary",
+        "oldText": "ALDH2 clears acetaldehyde, a toxic product made when the body breaks down alcohol. The A copy at rs671, called ALDH2*2, is common in East Asian groups. It leaves the enzyme mostly inactive and can cause flushing after drinking. Because alcohol then feels unpleasant, A is strongly linked to less heavy drinking and alcohol dependence. This is one of the clearest known links between a gene and behavior."
+      },
+      {
+        "id": "scientific-correction.20260923.alcohol-dependence-aldh2-rs671.rs671.gg",
+        "field": "interpretation",
+        "rsid": 671,
+        "genotype": "GG",
+        "oldText": "Plain summary: no flush variant here — this gene does not change your alcohol-related risks either way, and the usual guidance on drinking still applies. Two working copies of ALDH2. Acetaldehyde is cleared normally, no genetic flushing reaction, and no protection against heavy drinking from this locus. Drinking patterns for this genotype are shaped by culture, environment, and other genes."
+      },
+      {
+        "id": "scientific-correction.20260923.alcohol-dependence-aldh2-rs671.rs671.ag",
+        "field": "interpretation",
+        "rsid": 671,
+        "genotype": "AG",
+        "oldText": "Plain summary: This risk does not apply if little or no alcohol is used. Heavy drinking with this DNA type raises the risk of throat cancer. AG has one inactive ALDH2*2 copy and occurs mainly in people with East Asian ancestry. Acetaldehyde builds up after alcohol and often causes a red face and nausea. AG is linked to far less alcohol dependence. People who drink heavily despite flushing have a higher risk of esophageal cancer in population studies. The flush should be taken seriously."
+      },
+      {
+        "id": "scientific-correction.20260923.alcohol-dependence-aldh2-rs671.rs671.aa",
+        "field": "interpretation",
+        "rsid": 671,
+        "genotype": "AA",
+        "oldText": "Plain summary: Alcohol usually feels very unpleasant with AA. No extra risk applies if little or no alcohol is used. Heavy drinking despite flushing brings the highest acetaldehyde-related throat-cancer risk. AA has two inactive ALDH2*2 copies. Even small amounts of alcohol often cause strong flushing. Alcohol dependence is rare because drinking is so unpleasant. This is a common group pattern, not a rule for one person."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 671,
+        "gene": "ALDH2",
+        "chrom": 12,
+        "pos38": 111803962,
+        "ref": "G",
+        "alt": "A"
+      }
+    ]
+  },
+  {
+    "slug": "trem2-r47h-alzheimers",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/trem2-correction-20260923.md",
+    "source": {
+      "correctedCommit": "2bdd8c859be3cdb012e2162192cd223dab306d12",
+      "previousCommit": "fa1ff303380aea46aa914bb0a33c183fcceeab12",
+      "templatePath": "data/templates/neurodegenerative.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.trem2-r47h-alzheimers.summary",
+        "field": "summary",
+        "oldText": "The rare TREM2 R47H variant (rs75932628, a C-to-T change on the forward strand) is associated with higher average odds of late-onset Alzheimer’s disease — a moderate to large shift, an effect size approaching that of one APOE ε4 allele. It is carried by fewer than 1 in 200 people of European ancestry and is rarer in other populations. Most carriers never develop the condition."
+      },
+      {
+        "id": "scientific-correction.20260923.trem2-r47h-alzheimers.rs75932628.cc",
+        "field": "interpretation",
+        "rsid": 75932628,
+        "genotype": "CC",
+        "oldText": "No copies of the R47H variant — the result for over 99% of people. This says nothing about other Alzheimer's risk factors such as APOE, age, or cardiovascular health."
+      },
+      {
+        "id": "scientific-correction.20260923.trem2-r47h-alzheimers.rs75932628.ct",
+        "field": "interpretation",
+        "rsid": 75932628,
+        "genotype": "CT",
+        "oldText": "One copy of the R47H variant (the T allele). Two independent 2013 studies associated this variant with higher average odds of late-onset Alzheimer’s disease: a moderate to large shift. The variant is thought to act through reduced microglial function. Absolute risk still depends far more on age and other factors. Many carriers are never affected. This is one factor among many. Rare-variant array calls can be unreliable, so confirmation is sensible."
+      },
+      {
+        "id": "scientific-correction.20260923.trem2-r47h-alzheimers.rs75932628.tt",
+        "field": "interpretation",
+        "rsid": 75932628,
+        "genotype": "TT",
+        "oldText": "Two copies of R47H. This result is extremely rare and has been reported only a few times. An array call this rare is likely to be a test error. Confirm it with clinical-quality sequencing before trying to interpret it."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 75932628,
+        "gene": "TREM2",
+        "chrom": 6,
+        "pos38": 41161514,
+        "ref": "C",
+        "alt": "T"
+      }
+    ]
+  },
+  {
+    "slug": "apoe-e4-alzheimers-risk",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/apoe-correction-20260923.md",
+    "source": {
+      "correctedCommit": "2bdd8c859be3cdb012e2162192cd223dab306d12",
+      "previousCommit": "fa1ff303380aea46aa914bb0a33c183fcceeab12",
+      "templatePath": "data/templates/neurodegenerative.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.summary",
+        "field": "summary",
+        "oldText": "APOE ε4 is the strongest common genetic link to late-onset Alzheimer's disease. ε2 is linked to lower average risk. Two variants, rs429358 and rs7412, work together to define ε2, ε3, and ε4. This report shows them separately, so both are needed. APOE does not predict an outcome. Age, heart health, other genes, and environment also shape risk."
+      },
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.rs429358.tt",
+        "field": "interpretation",
+        "rsid": 429358,
+        "genotype": "TT",
+        "oldText": "In plain words: this means no ε4 allele — together with your rs7412 result below, it determines whether your type is ε2/ε2, ε2/ε3, or ε3/ε3. No copies of the ε4-tagging C allele at rs429358. Combined with rs7412, this typically corresponds to ε2 or ε3 alleles, which are associated with average or lower-than-average Alzheimer's risk. Genetics is only one small factor in overall risk."
+      },
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.rs429358.ct",
+        "field": "interpretation",
+        "rsid": 429358,
+        "genotype": "CT",
+        "oldText": "Plainly, this often means one ε4 allele. Your rs7412 result completes the picture. C/C there means ε3/ε4. A T there almost always means ε2/ε4. One C copy at rs429358 tags ε4. With rs7412 C on the same chromosome, studies link it to higher odds of late-onset Alzheimer’s disease: a moderate to large shift. The effect differs by ancestry. Many carriers never develop the condition."
+      },
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.rs429358.cc",
+        "field": "interpretation",
+        "rsid": 429358,
+        "genotype": "CC",
+        "oldText": "Plainly, this often means ε4/ε4. Two C copies tag two ε4 alleles, and rs7412 is almost always C on those chromosomes. European-ancestry studies link ε4/ε4 to higher odds of late-onset Alzheimer’s disease: a large shift. Some other ancestry groups have lower estimates. Many carriers never develop dementia. This is a risk link, not a certainty."
+      },
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.rs7412.cc",
+        "field": "interpretation",
+        "rsid": 7412,
+        "genotype": "CC",
+        "oldText": "In plain words: this means no ε2 allele — together with your rs429358 result above, it determines whether your type is ε3/ε3, ε3/ε4, or ε4/ε4. No copies of the ε2-tagging T allele at rs7412. Your ε2/ε3/ε4 status is then determined by rs429358: C there tags ε4, T there tags ε3. This variant alone does not change your risk estimate."
+      },
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.rs7412.ct",
+        "field": "interpretation",
+        "rsid": 7412,
+        "genotype": "CT",
+        "oldText": "In plain words: this corresponds to one ε2 allele — your rs429358 result above completes the picture: T/T there means ε2/ε3, while a C there almost always means ε2/ε4. One copy of the ε2-tagging T allele, typically indicating one ε2 allele. ε2 is associated on average with somewhat lower odds of late-onset Alzheimer's disease relative to the common ε3 allele. This is a modest average effect and only one small factor in overall risk."
+      },
+      {
+        "id": "scientific-correction.20260923.apoe-e4-alzheimers-risk.rs7412.tt",
+        "field": "interpretation",
+        "rsid": 7412,
+        "genotype": "TT",
+        "oldText": "In plain words: this corresponds to ε2/ε2 (rs429358 is essentially always T on ε2 chromosomes). Two copies of the ε2-tagging T allele, consistent with an ε2/ε2 genotype (roughly 1 in 200 people). ε2/ε2 is associated on average with lower odds of late-onset Alzheimer's disease than ε3/ε3. As with all APOE genotypes, this shifts average risk only — it is not protective in any absolute sense."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 429358,
+        "gene": "APOE",
+        "chrom": 19,
+        "pos38": 44908684,
+        "ref": "T",
+        "alt": "C"
+      },
+      {
+        "rsid": 7412,
+        "gene": "APOE",
+        "chrom": 19,
+        "pos38": 44908822,
+        "ref": "C",
+        "alt": "T"
+      }
+    ]
+  }
+]

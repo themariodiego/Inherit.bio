@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, ownChatReportSchema, type OwnChatCall, type OwnChatReport } from "./own-chat-content";
+import { correctionBatches, correctionReport } from "./own-chat-correction.test-fixture";
+import { ownChatCorrection } from "./own-chat-correction";
 const file = "80000000-0000-4000-8000-000000000001";
 const call: OwnChatCall = { file_id: file, rsid: 762551, chrom: 15, pos: 74749576, ref: "A", alt: "C", genotype: "A/C", usable: true };
 const reference = { rsid: call.rsid, chrom: call.chrom, pos38: call.pos, ref: "A", alt: "C" };
@@ -61,4 +63,18 @@ it("uses only the captured scientific template for a completed report", () => {
     expect(ownChatReportSchema.safeParse({ ...row, report: { ...row.report, slug: "another-topic" } }).success).toBe(false);
     expect(capturedChatCitations([result])).toContainEqual({ id: "pmid:12345678", label: "Synthetic captured reference", href: "https://pubmed.ncbi.nlm.nih.gov/12345678/" });
     expect(capturedChatCitations([{ citations: [{ url: "https://model-invented.invalid" }] }])).toEqual([]);
+});
+
+describe("known corrections never become provider tool evidence", () => {
+    it.each(correctionBatches)("withholds the whole stale %s snapshot, preserving the input", slug => {
+        const row = correctionReport(slug), before = structuredClone(row);
+        expect(capturedReportResult([row], slug)).toEqual(ownChatCorrection());
+        expect(capturedChatCitations([{ nested: [row.report] }])).toEqual([]);
+        expect(row).toEqual(before);
+    });
+    it.each(["unused-interpretation", "outcome"] as const)("withholds %s even without a selected old summary", field => {
+        const row = correctionReport(undefined, field);
+        expect(capturedReportResult([row], row.report.slug)).toEqual(ownChatCorrection());
+        expect(capturedChatCitations([{ nested: [row.report] }])).toEqual([]);
+    });
 });

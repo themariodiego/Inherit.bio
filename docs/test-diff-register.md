@@ -1,5 +1,26 @@
 # Test diff register
 
+## Historical report correction boundaries · 23 September 2026
+
+New regression cases bind 28 exact superseded fields from six reviewed source
+changes, including 21 resolver-consistent saved genotype explanations. They
+preserve unknown wording as unknown, immutable captured data, source identity,
+own and Family sensitive-result gates, and every original assertion.
+
+Copilot cases prove refusal before nonce consumption, provider dispatch or
+new chat commits, including an older assistant paraphrase and known outcomes
+without a catalog. Pagination and final authority checks retain their bounds.
+Client handler and actual page-key tests distinguish a fresh nonce from a
+changed source projection. Existing current APOE/FGFR2 browser cases gain four
+no-false-warning assertions; no fixture, assertion, timeout or gate is removed.
+JSON/text export cases preserve the original captured objects and add only
+correction metadata. Notices live in the scanned copy registry.
+
+Local tests do not claim an old-capture browser journey, generated route-type
+validation, hosted inference or clinical review. The scoped behavior and
+conservative whole-context refusal are documented in
+`docs/report-scientific-corrections.md`.
+
 ## TREM2 source scope · 23 September 2026
 
 The R47H report keeps its C/T marker and association direction, while removing
