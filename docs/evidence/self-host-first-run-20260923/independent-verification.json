@@ -1,0 +1,57 @@
+{
+  "verifiedAt": "2026-09-23T08:27:29.491453+00:00",
+  "verdict": "verified-scoped-success",
+  "runId": 35836543091,
+  "runAttempt": 1,
+  "runUrl": "https://github.com/themariodiego/Inherit.bio/actions/runs/35836543091",
+  "head": "5061cedee32f899a3c254fb8571a4926d2234d59",
+  "testedMerge": "b659df57f072763704219b20e92b049d0cef461a",
+  "commonGitTree": "46aab78aedc95ee4654ee928e709939ded8d52a2",
+  "entireTestedTreeEqualsHead": true,
+  "jobId": 107101256398,
+  "jobCompletedAt": "2026-09-23T08:25:21Z",
+  "browserPhasesPassed": 13,
+  "browserChecksTrue": 11,
+  "continuationRejections": 0,
+  "setupAndCleanupOutcomes": {
+    "install": "success",
+    "browser": "success",
+    "prepare": "success",
+    "stack": "success",
+    "configure": "success",
+    "seed": "success",
+    "journey": "success",
+    "cleanup": "success"
+  },
+  "appShutdown": "stopped",
+  "receiptFiles": [
+    "self-host-first-run-job.json",
+    "self-host-first-run.json"
+  ],
+  "sourceSha256": {
+    "docs/self-hosting.md": "e615ab545f1cdf191b921499289d19bf3aabb1ad37b22faa7be5bfacbfc7fb4d",
+    ".github/workflows/self-host-first-run.yml": "ec8ee813504372894e706c5aac9ef2862925a4133146348162c3d120771a4d25",
+    "scripts/self-host-first-run-smoke.ts": "72a8d018ebfad14506377076a1d846bdc85978d19ebaa7b1b2af58ae32653fc8",
+    "scripts/self-host-first-run-smoke.test.ts": "a2f0d044d1cdc92664719948589836aa17c8863af4b5489b33b6d3b95255e824",
+    "scripts/self-host-local.ts": "198ec65649eb1206c042088afc72ea43ecc863c0fce5ce6365c3e23c0067e8c9",
+    "scripts/self-host-local-contract.ts": "625b74672a33bfd096cbd29190fd7c0eb7b0279dfadd1e5bbdf5021dbf2831bd",
+    "scripts/seed.ts": "0c7295773ac085271191d973896d213cb7a2d9b14b70b8ac812e10fd1beabf2f",
+    "data/samples/synthetic-pipeline-grch38.vcf.gz": "46c46da43500f3b1ad5f01524c4ac9bcb52b2bd9a1dcc5b3c33aa8dbbc6a2b44"
+  },
+  "artifactId": 10739397222,
+  "artifactDigestFromGitHub": "sha256:7538ef04665ec9c005a477b06ca27f0baf22e65e636ba3d139b60d4f7e996960",
+  "localReceiptSha256": {
+    "self-host-first-run-job.json": "be98c73412feb150eb795b7e480b4cd0a2324eae38965cc721d486351d908514",
+    "self-host-first-run.json": "8d9e69c6256ecb691651c7efa29d49020727e6fb94284318a17bc2f2c5e8fa46"
+  },
+  "cleanupProof": "At the exact tested workflow, cleanup success requires stock supabase stop --no-backup and empty project-labelled container and volume inventories; appShutdown stopped requires the owned process group to exit after TERM.",
+  "limits": [
+    "One clean GitHub-hosted Ubuntu 24.04 local first run with the exact committed synthetic sample.",
+    "The ancestry proof is the three-of-168-marker insufficient-coverage state with closed, hidden raw estimates, not a supported ancestry accuracy proof.",
+    "Copilot provider-unconfigured surface only: no inference was performed.",
+    "No hosted/production, large-file capacity, resumability or broad format acceptance proof.",
+    "Smoke shutdownVerified=false is expected because the smoke delegates shutdown to the workflow; the independent job receipt records successful app and stack cleanup.",
+    "Generated local config and configured receipt hashes are retained by the smoke, but their private contents are deliberately absent from the artifact.",
+    "No G7.2 acceptance-row promotion follows from this smoke alone."
+  ]
+}

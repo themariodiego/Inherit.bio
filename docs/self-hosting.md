@@ -108,9 +108,13 @@ liftover step does not apply to it. It carries
 120,073 records with 73 of the catalogue's 146 rsIDs present and 73 absent, so
 a first run shows both a covered result and an honest not-covered one.
 `src/lib/genome/pipeline-integration.test.ts` drives it through the parser and
-report resolution and asserts both outcomes. **No completed browser run yet verifies this first-run recommendation**.
-It rests on that integration test and the file's build; the newly added array
-journey is a separate check and does not exercise the recommended VCF.
+report resolution and asserts both outcomes. The [recorded first run](evidence/self-host-first-run-20260923/README.md)
+verified this exact sample in a browser on 23 September 2026: stock Storage
+upload, normalization, chosen reports, one covered call and one absent call.
+Its three ancestry markers produce an insufficient-coverage state, with a
+grey map and unreliable estimates hidden in a closed disclosure. This does
+not verify ancestry accuracy, every report or larger files. The array
+journey remains separate evidence.
 
 ### Optional local Copilot connection
 
@@ -148,8 +152,11 @@ genetic calls belong in that receipt.
 
 The workflow uses no hosted credentials. It records the checked-out commit,
 guide and fixture hashes, completed steps and cleanup outcomes. A successful
-ordinary CI run is not evidence for this guide. G7.2 remains pending until
-this dedicated journey succeeds and its receipt is reviewed.
+ordinary CI run is not evidence for this guide. The dedicated run on
+23 September 2026 passed all 13 browser stages and all setup and cleanup
+steps. The [reviewed receipts and core-document audit](evidence/self-host-first-run-20260923/README.md)
+record the tested source, hashes and limits that close G7.2 on this candidate.
+Optional hosted setup, inference and preparation remain separate proof work.
 
 Stop the app with Ctrl-C when finished. `corepack pnpm exec supabase stop`
 stops this local stack while retaining its data. Keep `.inherit-local/` and
@@ -441,7 +448,8 @@ must verify tokens signed by this key's public half. The local helper sets
 provider configuration; never replace an existing Auth signing key with the
 upload signer. The historical browser harness uses a separate Storage
 process, so its success does not prove this stock first-run setup. The
-dedicated workflow above must establish that result.
+dedicated workflow above records that proof for the fresh local profile;
+it does not establish a hosted project's signer configuration.
 
 ## Troubleshooting
 

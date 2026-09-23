@@ -80,8 +80,12 @@ covers the pinned package manager, local stack and migrations, environment
 loading for seeds, and the upload signer that Storage must accept. Copying
 `.env.example` and starting the app alone does not enable uploads.
 
-A recorded clean-clone self-host run is still pending. CI browser results
-are separate evidence and do not verify that first-run guide.
+The [recorded first run](docs/evidence/self-host-first-run-20260923/README.md)
+passed on a fresh GitHub-hosted Ubuntu checkout on 23 September 2026.
+It followed the local guide through signup, the synthetic VCF upload and
+results, including limited ancestry and unconfigured Copilot states.
+This is separate from ordinary CI and does not prove hosted deployment,
+optional inference or large-file capacity.
 
 `pnpm test` runs unit tests, including three suites that need Chromium for
 real DOM checks. `pnpm e2e` invokes the guarded browser harness
