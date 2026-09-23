@@ -1,5 +1,23 @@
 # Test diff register
 
+## ADORA2A report source correction · 23 September 2026
+
+The canonical content fixture preserves all 71 original claims, 19 sources,
+eight report hashes, review dates and twelve interpretation bindings. A separate
+case binds the corrected ADORA2A object, its four exact strings and two dated
+sources, including the distinction between abstract and full-paper access.
+The combined registry must contain exactly 75 claims and 21 sources.
+
+Claims-gate counts increase only for those additions. Removing the same existing
+earwax claim still produces both missing and stale ledger findings; the remaining
+registered count is now 74. All negative and drift checks remain. Prior source
+quotation allocations are included in the unchanged 25-word limit. The actual
+two new citation dates lower the undated-citation ratchet from 189 to 187.
+
+These checks bind reviewed seed text and source records. They do not establish
+clinical validation, a hosted reseed, corrected historical report snapshots or
+completion of the remaining catalog and release acceptance work.
+
 ## Optional preparation phase metrics · 23 September 2026
 
 New collector tests cover fixed labels, bounded pending state, wall and process

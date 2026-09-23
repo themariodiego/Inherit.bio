@@ -165,7 +165,7 @@ function genotypeKeys(ref: string, alt: string, chrom: number): string[] {
  * Citations carrying no `accessedOn`, as measured on 2026-09-10. Lower it when
  * sources are dated; it may never be raised. See the ratchet in `main`.
  */
-const UNDATED_CITATION_BACKLOG = 189;
+const UNDATED_CITATION_BACKLOG = 187;
 
 function main() {
   let totalCitations = 0;
