@@ -2853,3 +2853,15 @@ extractor or legal statement is removed or relaxed.
   authority and legacy-link cases remain. No timeout, retry or route ratchet
   changes. Database and browser execution remains CI work; discovery and
   local source checks alone do not close G5.4 or G8.5.
+
+### Factor V Leiden source correction — 23 September 2026
+
+The new `src/lib/genome/f5-source.test.ts` checks the existing resolver's C/T
+orientation, all three covered genotypes, missing/no-call/unrelated alleles,
+exact dated evidence edges and rendered attribution. It also refuses the exact
+old CC paragraph and wrong rsID/genotype attribution. No caller, coverage rule,
+route or privacy gate changes. Existing assertions remain; canonical counts
+increase by four claims and three sources, and the undated template citation
+bound drops from 178 to 177 for the actually read Bertina citation. Full hosted,
+clinical or catalogue-wide validation is not claimed. This first commit does
+not rewrite historical snapshots or invent a correction commit identifier.

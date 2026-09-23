@@ -2,15 +2,15 @@
   "purpose": "Every place where the product and G1.11's claims and provenance rules disagree today. scripts/claims-gate.ts (pnpm gate:claims) runs ten checks: the citation register's schema, the local snapshot of every non-permanent source, the claim register's evidence, the surfaces claims name, every provenance expression built in src/, the provenance attribute on every claim or figure element, the exempt-numeral rule, report-body registration, template citation registration, and the seven designated surfaces. Each check compares what it finds against the matching group here in both directions: an unlisted divergence fails, and a listed one that no longer exists fails too, so a fix has to bring the ledger down with it and nothing can quietly give a registration back.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. Every entry below is an open finding measured exactly, not an accepted state \u2014 acceptance is a line in docs/acceptance-matrix.md, and G1.11 stands at NO there. The point of the ledger is that the distance from the rule is written down and can only shrink.",
   "howEntriesAreMatched": "The seven checks whose findings name a single record hold the finding sentence verbatim, because there is nothing in it to recount. The three that carry counts \u2014 report-body registration, template citation registration and the designated surfaces \u2014 hold the counts, and scripts/claims-gate.ts rebuilds the sentence from them through the same function the check itself uses. So one prose block gaining a registration moves a number, and a number that moves fails in both directions rather than matching a stale sentence.",
-  "granularity": "The report-body backlog is 644 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 644 rows would be 644 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
+  "granularity": "The report-body backlog is 640 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 640 rows would be 640 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
   "citationSchema": [],
-  "citationSchemaNote": "Empty, checked in both directions. All 38 entries in data/citations.json carry the required eight fields, supported citation types, resolvable HTTPS URLs, actual access dates and quotations of 25 words or fewer.",
+  "citationSchemaNote": "Empty, checked in both directions. All 41 entries in data/citations.json carry the required eight fields, supported citation types, resolvable HTTPS URLs, actual access dates and quotations of 25 words or fewer.",
   "sourceSnapshot": [],
-  "sourceSnapshotNote": "Empty. Ten of the 38 sources have local snapshots: seven Ensembl records, one NCBI RefSNP record, one NCRAD joint-marker chart excerpt and one NCBI ClinVar identity excerpt. Twenty-seven PMIDs and one DOI use permanent identifiers. Publication notes distinguish full-paper access, review articles and abstract-only reads.",
+  "sourceSnapshotNote": "Empty. Eleven of the 41 sources have local snapshots: seven Ensembl records, one NCBI RefSNP record, one NCRAD chart excerpt and two NCBI ClinVar identity excerpts. Twenty-nine PMIDs and one DOI use permanent identifiers. Publication notes distinguish full-paper access, review articles and abstract-only reads.",
   "claimEvidence": [],
-  "claimEvidenceNote": "Empty: all 102 claims carry exact text, declared surfaces and evidence bound to canonical sources with matching access dates. Fifteen reports have registered statements; this remains partial catalog coverage, not full G1.11 acceptance.",
+  "claimEvidenceNote": "Empty: all 106 claims carry exact text, declared surfaces and evidence bound to canonical sources with matching access dates. Sixteen reports have registered statements; this remains partial catalog coverage, not full G1.11 acceptance.",
   "claimSurface": [],
-  "claimSurfaceNote": "Empty: every surface the 102 claims name resolves to a page route in docs/route-register.json, the account export contract or the research-digest mail fixture; every named report slug exists in a template.",
+  "claimSurfaceNote": "Empty: every surface the 106 claims name resolves to a page route in docs/route-register.json, the account export contract or the research-digest mail fixture; every named report slug exists in a template.",
   "figureProvenance": [
     {
       "finding": "src/components/embryo/compare/compare-cell.tsx builds a citation provenance whose id is the expression withinFamily.citation_ids[0], which no static reader can resolve",
@@ -24,7 +24,7 @@
   "claimAttributeNote": "Empty: exactly three components in this repository emit data-claim, data-claim-id or data-figure-kind \u2014 Claim, Figure and RelativeFigure \u2014 and all three carry data-provenance on the same element.",
   "exemptNumeral": [],
   "exemptNumeralNote": "Empty: every element claiming the UI-chrome exemption names one of G1.11's six kinds as a literal, and none of them also carries a claim or figure marker.",
-  "reportBodyRegistrationNote": "746 prose blocks are rendered by 162 report templates; 98 are registered canonical claims and 648 are not. Registration requires a source-specific review, actual access date, supporting quotation and exact match between the template string and data/claims.json text_verbatim. The presentation layer rejects citation borrowing when text or keys differ. The original 71 statements cover eight reports; four ADORA2A statements and twelve APC, FGFR2 and ALDH2 statements add four more. Exact access scopes and independent agent review are recorded in docs/sources/reviews/*-correction-20260923.md and report-corrections-independent-20260923.md. No full-catalog or clinical acceptance is claimed. Four TREM2 strings now bind to the two primary author abstracts with explicit access limits in trem2-correction-20260923.md. Seven APOE strings bind two author abstracts and the joint-marker chart with explicit access and historical-snapshot limits in apoe-correction-20260923.md.",
+  "reportBodyRegistrationNote": "746 prose blocks are rendered by 162 report templates; 106 are registered canonical claims and 640 are not. Registration requires a source-specific review, actual access date, supporting quotation and exact match between the template string and data/claims.json text_verbatim. The presentation layer rejects citation borrowing when text or keys differ. The original 71 statements cover eight reports; four ADORA2A statements and twelve APC, FGFR2 and ALDH2 statements add four more. Exact access scopes and independent agent review are recorded in docs/sources/reviews/*-correction-20260923.md and report-corrections-independent-20260923.md. No full-catalog or clinical acceptance is claimed. Four TREM2 strings now bind to the two primary author abstracts with explicit access limits in trem2-correction-20260923.md. Seven APOE strings bind two author abstracts and the joint-marker chart with explicit access and historical-snapshot limits in apoe-correction-20260923.md. Four TCF7L2 and four F5 strings also have exact bindings; their dated correction notes record the study populations and access limits.",
   "reportBodyRegistration": [
     {
       "file": "data/templates/addiction.json",
@@ -124,15 +124,15 @@
     },
     {
       "file": "data/templates/heart-cardiovascular.json",
-      "unregisteredBlocks": 40,
+      "unregisteredBlocks": 36,
       "totalBlocks": 40,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 30,
+      "reports": 9,
+      "summaries": 9,
+      "interpretations": 27,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
-      "closing": "Ten reports of source review, then 40 claim entries.",
-      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+      "why": "The F5 summary and three genotype interpretations now have exact source bindings. Nine other reports remain unregistered.",
+      "closing": "Review the remaining nine reports and register their 36 body strings.",
+      "blocker": "review \u2014 36 statements still need actual source support and access dates."
     },
     {
       "file": "data/templates/lifestyle-wellness.json",
@@ -219,7 +219,7 @@
       "blocker": "review \u2014 40 statements need a source read and an access date recorded."
     }
   ],
-  "templateCitationRegistrationNote": "The 162 templates carry 225 citation references; 37 resolve to data/citations.json and 188 do not. Those unresolved references represent 164 distinct sources. Each remaining source needs actual access, a dated canonical record and a supporting quotation within the publication-level budget. Shared-source registration reduces a missing-reference count without claiming review of another report's prose. Permanent identifiers remove the need for local paper copies; they do not substitute for source reading.",
+  "templateCitationRegistrationNote": "The 162 templates carry 227 citation references; 42 resolve to data/citations.json and 185 do not. Those unresolved references represent 162 distinct sources. Each remaining source needs actual access, a dated canonical record and a supporting quotation within the publication-level budget. Shared-source registration reduces a missing-reference count without claiming review of another report's prose. Permanent identifiers remove the need for local paper copies; they do not substitute for source reading.",
   "templateCitationRegistration": [
     {
       "file": "data/templates/addiction.json",
@@ -287,10 +287,10 @@
     },
     {
       "file": "data/templates/heart-cardiovascular.json",
-      "absentSources": 11,
-      "citedSources": 11,
-      "why": "Every reference in the file is absent; 10 distinct sources.",
-      "closing": "10 publications opened, quoted and dated.",
+      "absentSources": 10,
+      "citedSources": 12,
+      "why": "The Bertina and Juul author abstracts are registered with explicit access limits; ten references to nine other sources remain absent.",
+      "closing": "Read, quote and date the nine remaining distinct sources.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     },
     {
@@ -343,10 +343,10 @@
     },
     {
       "file": "data/templates/reproductive-family.json",
-      "absentSources": 15,
+      "absentSources": 14,
       "citedSources": 15,
-      "why": "Every reference in the file is absent, and all fifteen are distinct sources.",
-      "closing": "15 publications opened, quoted and dated.",
+      "why": "The Bertina source now resolves after the F5 source correction; 14 other references remain absent. Shared-source registration does not review this file\u2019s prose or source matching.",
+      "closing": "Read, quote and date the 14 remaining distinct sources; separately review the prose against the sources.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     }
   ],
