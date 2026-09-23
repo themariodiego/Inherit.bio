@@ -51,6 +51,16 @@ describe("sniff", () => {
     });
   });
 
+  it.each(["RSID,CHROMOSOME,POSITION,RESULT", '"RSID","CHROMOSOME","POSITION","RESULT"'])(
+    "waits for a complete consumer CSV header instead of treating its prefix as a lab table: %s", header => {
+      for (let length = 1; length <= header.length; length++) {
+        expect(sniffV2(Buffer.from(`# build 38\n${header.slice(0, length)}`)).kind).toBeNull();
+      }
+      expect(sniffV2(Buffer.from(`# build 38\n${header}\n`)).kind)
+        .toBe(header.startsWith('"') ? "array_myheritage" : "array_ftdna");
+    },
+  );
+
   it("detects VCF", () => {
     expect(sniff(fx("sample.vcf"))).toEqual({
       kind: "vcf",

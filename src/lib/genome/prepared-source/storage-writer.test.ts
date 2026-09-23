@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPreparedArtifactWriter, type PreparedArtifactDescriptor, type PreparedArtifactReceipt } from "./storage-writer";
+import { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 const origin = "https://synthetic.invalid", credential = "synthetic-placeholder";
 const claim = { jobId: "11111111-1111-4111-8111-111111111111", attemptId: "22222222-2222-4222-8222-222222222222", claimTokenHash: "a".repeat(64) };
@@ -45,6 +46,26 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("prepared artifact write protocol (mock provider, not durability proof)", () => {
+  it.each(["complete", "get-fails", "ack-fails"])("measures the existing request sequence and retains %s outcome boundaries", async mode => {
+    const sink = vi.fn(); let time = 0;
+    const f = fixture(phase => {
+      time += 4;
+      if ((mode === "get-fails" && phase === "get") || (mode === "ack-fails" && phase === "ack")) return new Response("private failure", { status: 503 });
+    });
+    const metrics = new PreparationMetrics(sink, { now: () => time, cpu: () => null });
+    const result = createPreparedArtifactWriter(claim, metrics)(f.input);
+    if (mode === "complete") await expect(result).resolves.toEqual({ receipt: f.receipt, storageObjectId });
+    else await expect(result).rejects.toMatchObject({ code: "unavailable" });
+    metrics.finish(mode === "complete" ? "prepared" : "failed");
+    const operations = sink.mock.calls[0][0].phases.claim.operations;
+    expect(f.order).toEqual(mode === "get-fails" ? ["reserve", "upload", "check", "get"] : ["reserve", "upload", "check", "get", "ack"]);
+    expect(operations.provider_put).toMatchObject({ started: 1, completed: 1, failed: 0, completedBytes: f.bytes.length, wallMs: 4 });
+    expect(operations.provider_get).toMatchObject({ started: 1, completed: mode === "get-fails" ? 0 : 1, failed: mode === "get-fails" ? 1 : 0,
+      completedBytes: mode === "get-fails" ? 0 : f.bytes.length, wallMs: 4 });
+    expect(operations.rpc).toMatchObject({ started: mode === "get-fails" ? 2 : 3, completed: mode === "complete" ? 3 : 2,
+      failed: mode === "ack-fails" ? 1 : 0, wallMs: mode === "get-fails" ? 8 : 12 });
+    expect(JSON.stringify(sink.mock.calls[0][0])).not.toContain(f.receipt.objectKey);
+  });
   it("reserves, creates only, checks live claim, verifies full GET EOF, then ACKs exact identity", async () => {
     let part = 0;
     const f = fixture(phase => phase === "get" ? new Response(new ReadableStream<Uint8Array>({ pull(controller) {

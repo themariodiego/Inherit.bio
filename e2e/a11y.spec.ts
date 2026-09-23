@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { assertNoThirdParty, AXE_VIEWPORTS, axeViolations, createConfirmedUser, signIn, watchRequests } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { installKeyboardAudit, tabThrough, escapeLeavesTheTrap, type TabExit } from "./keyboard-traversal";
+import { auditTextAlternatives } from "./text-alternatives";
 import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 
 // A16 — axe accessibility checks over key surfaces in BOTH themes, plus
@@ -693,15 +695,11 @@ type ElementProbe = {
   rendered: (element: Element) => boolean;
   /** Everything a person can operate: `e2e/helpers.ts`'s list plus the widget roles. */
   interactive: string;
-  /** Scratch space for one keyboard pass, reset before each. */
-  tab: { elements: Element[]; names: string[]; violations: string[]; counted: Element[] };
 };
 
 declare global {
   interface Window {
     __g113b?: ElementProbe;
-    /** The component a trapped traversal ended inside, for the escape check. */
-    __g113bTrap?: Element;
   }
 }
 
@@ -713,6 +711,7 @@ declare global {
  * bar drifted between five specs before `helpers.ts` held it in one place.
  */
 async function installProbes(page: Page) {
+  await page.addInitScript(installKeyboardAudit);
   await page.addInitScript(() => {
     window.__g113b = {
       interactive: 'a[href],button,input:not([type="hidden"]),select,textarea,summary,'
@@ -764,7 +763,6 @@ async function installProbes(page: Page) {
         const style = getComputedStyle(element);
         return style.visibility !== "hidden" && style.display !== "none";
       },
-      tab: { elements: [], names: [], violations: [], counted: [] },
     };
   });
 }
@@ -1237,7 +1235,9 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         const undersized: { component: string; element: string; width: number; height: number }[] = [];
         const round = (value: number) => Math.round(value * 10) / 10;
         let counted = 0;
-        for (const element of document.querySelectorAll(probe.interactive)) {
+        const keyboard = window.__keyboardAudit;
+        if (!keyboard) throw new Error("composed DOM probe not installed");
+        for (const element of keyboard.elements().filter(element => element.matches(probe.interactive))) {
           if (!probe.rendered(element)) continue;
           // An inactive control accepts no pointer action, so it is not a
           // target; it becomes one when it is enabled, in the state a test
@@ -1373,9 +1373,9 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
    * Keyboard traversal of every page: tab order equal to DOM order, and no
    * trap.
    *
-   * Order is checked pair by pair against `compareDocumentPosition` rather
-   * than against a list snapshotted before the first Tab. A snapshot goes
-   * stale the moment focus itself changes the page — the ancestry map opens
+   * Order is checked pair by pair in the current composed DOM, including
+   * shadow roots and slots, rather than a snapshot before the first Tab. A
+   * snapshot goes stale when focus changes the page — the ancestry map opens
    * its region panel on focus, and a tooltip with a focus equivalent adds a
    * node — and the property under test is a relation between consecutive
    * stops, not a fixed list.
@@ -1392,14 +1392,10 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
    * A trap that wrapped the *entire* page would be indistinguishable from the
    * headless wrap and is the one case this cannot separate.
    *
-   * Recorded, not asserted, against `keyboardTraversal` in the ledger. The
-   * trap it finds is a WCAG 2.1 SC 2.1.2 Level A defect inside igv.js 3.8.5,
-   * whose DOM `src/components/browse/genome-browser.tsx` post-processes and
-   * does not own, so it cannot be closed from here — and a Level A failure is
-   * exactly the kind of thing that has to be written down rather than left as
-   * a red test everyone learns to scroll past. Nothing is softened: the same
-   * three properties are measured on the same pages at the same two widths,
-   * and a finding that is not in the ledger fails as loudly as it did before.
+   * The ledger is compared in both directions. Focus inside an open shadow
+   * root is the actual control, not document.activeElement's host: successive
+   * controls can otherwise look like a repeated stop. The same three
+   * properties hold on every page at both widths, including those controls.
    */
   test("keyboard traversal: tab order is DOM order, and no page traps focus", async ({ page }) => {
     test.setTimeout(1_500_000);
@@ -1443,12 +1439,21 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
             else escapesProven++;
           }
         }
-        if (pass.stops < pass.expected) {
+        if (pass.unreached.length > 0) {
           record({ kind: "stops", ...at, reached: pass.stops, expected: pass.expected },
             `    never reached: ${pass.unreached.slice(0, 12).join(", ") || "(none named)"}\n`
-            + `    ${pass.expected - pass.stops} of this page's certainly-tabbable elements were never`
+            + `    ${pass.unreached.length} of this page's certainly-tabbable elements were never`
             + ` reached (${pass.stops} of ${pass.expected}); the traversal ended ${pass.exit} at`
             + ` ${pass.last}`);
+        }
+        // The advertised escape remains a contract even when ordinary Tab
+        // leaves correctly. Exercise it directly from inside the real widget.
+        const search = page.locator('[data-testid="genome-browser"] input.igv-search-input');
+        if (await search.isVisible()) {
+          await search.focus();
+          const unescaped = await escapeLeavesTheTrap(page);
+          if (unescaped) unescapable.push(`  ${route} at ${viewport.label}\n${unescaped}`);
+          else escapesProven++;
         }
       }
     });
@@ -1460,13 +1465,10 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
       "WCAG 2.1 SC 2.1.2: focus that Tab cannot carry out of a component must be movable out by a"
       + " key the component's own description names")
       .toBe("");
-    // A floor on the escape check itself. The ledger records a trap on the
-    // variant browser, so this sweep must have exercised at least one escape;
-    // zero would mean the check silently stopped running rather than that the
-    // product stopped trapping — and the ledger comparison below would then
-    // be the only thing left saying the trap exists.
+    // A floor on the escape check itself, independent of any trap finding.
+    // The widget promises Escape, so the full sweep must actually exercise it.
     expect(escapesProven,
-      "the escape check ran on the trap the ledger records, rather than on nothing")
+      "the advertised escape was exercised inside the genome browser")
       .toBeGreaterThan(0);
     expect(compareToLedger("keyboard traversal", present, accessibilityLedger().keyboard).join("\n\n"),
       `keyboard traversal: the sweep and ${ACCESSIBILITY_LEDGER} must say the same thing, in both directions`)
@@ -1496,115 +1498,31 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
     expect(Object.keys(VISIT), "the ancestry route this test names is still the registered one")
       .toContain(ANCESTRY_ROUTE);
     let figures = 0;
+    let genomeCanvases = 0;
     let mapSeen = false;
     const visited = await sweepPages(page, async ({ route }) => {
-      const found = await page.evaluate(() => {
-        const probe = window.__g113b;
-        if (!probe) throw new Error("element probe not installed");
-        const candidates = new Set<Element>();
-        // `<figure>` is the container this design gives a chart, so it is the
-        // rule rather than a list of known charts: a new one is measured the
-        // day it renders.
-        for (const figure of document.querySelectorAll("figure")) candidates.add(figure);
-        for (const graphic of document.querySelectorAll("svg,canvas")) {
-          if (graphic.closest('[aria-hidden="true"]')) continue;
-          // A graphic announced as content is a picture of something; an
-          // unnamed icon beside a word is not, and demanding a table of every
-          // chevron would measure nothing.
-          const named = graphic.hasAttribute("aria-label") || graphic.hasAttribute("aria-labelledby")
-            || graphic.getAttribute("role") === "img" || graphic.querySelector(":scope > title") !== null;
-          if (!named) continue;
-          candidates.add(graphic.closest("figure") ?? graphic);
-        }
-        const findings: string[] = [];
-        const disclosures: { index: number; name: string }[] = [];
-        let checked = 0;
-        for (const candidate of candidates) {
-          if (!probe.rendered(candidate)) continue;
-          checked++;
-          const name = probe.describe(candidate);
-          // The text half: a caption or an accessible name.
-          if (!(candidate.querySelector("figcaption") !== null
-            || candidate.hasAttribute("aria-label") || candidate.hasAttribute("aria-labelledby")
-            || candidate.querySelector("svg[aria-label],svg[aria-labelledby],svg > title") !== null)) {
-            findings.push(`${name}: no caption and no accessible name`);
-          }
-          // What the picture exposes to a reader: a part that is focusable,
-          // named or given a role. The grey ancestry map exposes none — every
-          // region is aria-hidden and nothing is focusable — so it is a
-          // picture of nothing and has nothing for a list to restate.
-          const parts = [...candidate.querySelectorAll(
-            '[tabindex]:not([tabindex="-1"]),[role="button"],[role="img"],[role="graphics-symbol"],[aria-label]')]
-            .filter(part => part.closest('[aria-hidden="true"]') === null)
-            .filter(part => part.tagName.toLowerCase() !== "svg" && part.tagName.toLowerCase() !== "canvas");
-          // Where an equivalent may live: inside the figure, on the far end of
-          // its own aria-describedby/aria-details, or beside it in the
-          // container that holds them both. Navigation is not an equivalent.
-          const scope: Element[] = [candidate];
-          if (candidate.parentElement) scope.push(candidate.parentElement);
-          for (const attribute of ["aria-describedby", "aria-details"]) {
-            for (const id of (candidate.getAttribute(attribute) ?? "").split(/\s+/).filter(Boolean)) {
-              const target = document.getElementById(id);
-              if (target) scope.push(target);
-            }
-          }
-          let equivalent: Element | null = null;
-          for (const region of scope) {
-            for (const list of region.querySelectorAll("table,ul,ol,dl")) {
-              if (list.closest('[aria-hidden="true"]') || list.closest("nav,header,footer")) continue;
-              equivalent = list;
-              break;
-            }
-            if (equivalent) break;
-          }
-          if (parts.length > 0 && !equivalent) {
-            findings.push(`${name}: ${parts.length} parts of the picture are exposed`
-              + ` (${probe.describe(parts[0])}…) and no list or table restates them`);
-          }
-          if (parts.length === 0 && !equivalent) {
-            // The words BESIDE the picture, never its own caption: a caption
-            // names a figure, and a figure that states nothing has to be
-            // answered by a sentence that says so ("we could not read enough
-            // of your file"), which is a different piece of text.
-            let beside = "";
-            const container = candidate.parentElement;
-            if (container) {
-              const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-              for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-                if (candidate.contains(node)) continue;
-                beside += node.nodeValue ?? "";
-              }
-            }
-            if (!/[a-z]{2,}/i.test(beside)) findings.push(`${name}: no list, no table and no sentence beside it`);
-          }
-          if (equivalent) {
-            const details = equivalent.closest("details");
-            if (details && !details.open) {
-              const summary = details.querySelector(":scope > summary");
-              if (!summary) {
-                findings.push(`${name}: its list is inside a closed <details> with no <summary>, so no keyboard opens it`);
-              } else {
-                summary.setAttribute("data-g113b-disclosure", String(disclosures.length));
-                disclosures.push({ index: disclosures.length, name });
-              }
-            } else if (!probe.rendered(equivalent)) {
-              findings.push(`${name}: ${probe.describe(equivalent)} is in the DOM but is not rendered`);
-            }
-          }
-        }
-        return { checked, findings, disclosures };
-      });
+      const found = await page.evaluate(auditTextAlternatives);
+      genomeCanvases += found.genomeCanvases;
       figures += found.checked;
       expect.soft(found.findings,
         `${route}: every chart needs an equivalent list and text`).toEqual([]);
       for (const disclosure of found.disclosures) {
         const summary = page.locator(`[data-g113b-disclosure="${disclosure.index}"]`);
+        await expect.soft(summary,
+          `${route}: the disclosure for ${disclosure.name} is rendered`).toBeVisible();
         await summary.focus();
         await page.keyboard.press("Enter");
         expect.soft(
           await summary.evaluate(element =>
             element.parentElement instanceof HTMLDetailsElement && element.parentElement.open),
           `${route}: the list behind ${disclosure.name} opens without a pointer`).toBe(true);
+      }
+      if (found.disclosures.length) {
+        const opened = await page.evaluate(auditTextAlternatives);
+        expect.soft(opened.findings,
+          `${route}: opening a disclosure must expose its actual text equivalent`).toEqual([]);
+        expect.soft(opened.disclosures,
+          `${route}: no equivalent remains behind a closed disclosure`).toEqual([]);
       }
       if (route !== ANCESTRY_ROUTE) return;
       mapSeen = true;
@@ -1639,185 +1557,8 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
     // sweep has seen at least it.
     expect(figures, "the sweep found charts to check rather than none").toBeGreaterThan(0);
     expect(mapSeen, "the sweep reached the ancestry map's own route").toBe(true);
+    expect(genomeCanvases,
+      "the text-alternative sweep inspected the real genome canvases inside their shadow root")
+      .toBeGreaterThan(0);
   });
 });
-
-/** How one traversal ended, as seen from inside the document. */
-type TabExit = "left-document" | "wrapped" | "trapped" | "exhausted";
-type TabPass = { stops: number; expected: number; exit: TabExit; violations: string[]; last: string;
-  unreached: string[] };
-
-/**
- * A hang guard, not a measurement: a traversal ends by itself at the body or
- * at the first element it reaches twice, so this cap is only ever reached by a
- * page that keeps handing focus to something new. Reaching it is reported as
- * `exhausted`, which fails.
- */
-const TAB_PRESS_CAP = 500;
-
-async function tabThrough(page: Page): Promise<TabPass> {
-  const expected = await page.evaluate(() => {
-    const probe = window.__g113b;
-    if (!probe) throw new Error("element probe not installed");
-    probe.tab = { elements: [], names: [], violations: [], counted: [] };
-    // A floor, not a census. Radio inputs are left out (exactly one of a group
-    // is tabbable and which one depends on which is checked), so is anything
-    // carrying tabindex="-1" (the roving chip strip parks its other chips
-    // there), and so is every ARIA-role widget that is not natively focusable.
-    // The count can only come out lower than the truth, which is what a "did
-    // the traversal actually reach this page" assertion needs.
-    let count = 0;
-    for (const element of document.querySelectorAll(
-      'a[href],button,input,select,textarea,summary,[tabindex="0"]')) {
-      if (!probe.rendered(element)) continue;
-      if (element.getAttribute("tabindex") === "-1") continue;
-      if (element.matches(":disabled")) continue;
-      if (element.matches('input[type="hidden"],input[type="radio"]')) continue;
-      // Only the first summary of a <details> is a tab stop.
-      if (element.tagName === "SUMMARY" && !(element.parentElement?.tagName === "DETAILS"
-        && element.parentElement.firstElementChild === element)) continue;
-      // A control inside a closed <details> is correctly not a tab stop: the
-      // summary that opens it is one, and it is counted and reached. Chromium
-      // still hands these descendants client rects, so `rendered` says yes and
-      // the count came out eight too high on the report library, whose eight
-      // category jump links live behind exactly such a disclosure. That read as
-      // eight controls a keyboard could not reach; they are reachable, one Tab
-      // and one Enter away. Counting them was the bug, not the page.
-      const closed = element.closest("details:not([open])");
-      if (closed && !(element.tagName === "SUMMARY" && element.parentElement === closed)) continue;
-      count++;
-      probe.tab.counted.push(element);
-    }
-    // Where the next Tab starts from. tabindex="-1" adds no tab stop, but
-    // focusing the root resets Chromium's sequential-navigation starting
-    // point, so the second pass over a page starts at the top rather than
-    // continuing from wherever the first one ended.
-    document.documentElement.tabIndex = -1;
-    document.documentElement.focus();
-    return count;
-  });
-  let exit: TabExit = "exhausted";
-  for (let press = 0; press < TAB_PRESS_CAP; press++) {
-    await page.keyboard.press("Tab");
-    const step = await page.evaluate(() => {
-      const probe = window.__g113b;
-      if (!probe) throw new Error("element probe not installed");
-      const log = probe.tab;
-      const active = document.activeElement;
-      // Nothing in the page holds focus any more: in a browser with chrome
-      // this is the Tab that hands focus to the address bar.
-      if (!active || active === document.body || active === document.documentElement) return "left-document";
-      const seen = log.elements.indexOf(active);
-      if (seen === 0) return "wrapped";
-      if (seen > 0) {
-        log.violations.push(`focus returned to ${log.names[seen]}`
-          + ` (stop ${seen + 1} of ${log.elements.length}) instead of leaving the page`);
-        return "trapped";
-      }
-      const name = probe.describe(active);
-      const previous = log.elements[log.elements.length - 1];
-      if (previous && previous.isConnected) {
-        if (!(previous.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING)) {
-          log.violations.push(`${log.names[log.names.length - 1]} → ${name} moves backwards in the DOM`);
-        }
-      } else if (previous) {
-        // A detached node answers `compareDocumentPosition` with an
-        // implementation-specific order, so this is reported, not judged.
-        log.violations.push(`${log.names[log.names.length - 1]} left the DOM while it held focus`);
-      }
-      log.elements.push(active);
-      log.names.push(name);
-      return "advancing";
-    });
-    if (step !== "advancing") { exit = step; break; }
-  }
-  const log = await page.evaluate(() => {
-    const probe = window.__g113b;
-    if (!probe) throw new Error("element probe not installed");
-    return {
-      stops: probe.tab.elements.length,
-      violations: probe.tab.violations,
-      last: probe.tab.names[probe.tab.names.length - 1] ?? "(no tab stop at all)",
-      // A shortfall is only worth recording if it can be acted on, and "eight
-      // stops missing" cannot. These are the counted elements Tab never landed
-      // on, named, so the next person reads which controls a keyboard cannot
-      // reach rather than how many.
-      unreached: probe.tab.counted
-        .filter(element => !probe.tab.elements.includes(element))
-        .map(element => probe.describe(element)),
-    };
-  });
-  return { ...log, expected, exit };
-}
-
-/**
- * WCAG 2.1 SC 2.1.2 in the half that the Tab traversal above cannot see.
- *
- * The criterion is not "Tab always leaves". It is that focus can be moved
- * away using only the keyboard, and that if the key is not an unmodified
- * arrow or Tab, the reader is told which key it is. So a page whose Tab order
- * loops inside a widget still conforms — but only if it ships a working
- * escape AND says so on the page. This checks both, on whatever page the
- * traversal ended trapped, and it is a plain failure rather than a ledger
- * entry: an unescapable trap is a Level A failure with no honest interim.
- *
- * "Told which key" is read from the accessible description of the component
- * focus is stuck in, because that is what a reader arriving by Tab actually
- * hears; a sentence rendered somewhere on the page that the component does
- * not reference would pass a text search and help nobody.
- */
-async function escapeLeavesTheTrap(page: Page): Promise<string | null> {
-  const trapped = await page.evaluate(() => {
-    const probe = window.__g113b;
-    if (!probe) throw new Error("element probe not installed");
-    const active = document.activeElement;
-    if (!active || active === document.body) return null;
-    // The component, not the control: the region, dialog or application the
-    // stuck control sits in, which is the thing SC 2.1.2 talks about.
-    const region = active.closest('[role="region"],[role="application"],[role="dialog"],[role="group"]')
-      ?? active;
-    window.__g113bTrap = region;
-    const described = (region.getAttribute("aria-describedby") ?? "")
-      .split(/\s+/).filter(Boolean)
-      .map(id => document.getElementById(id)?.textContent ?? "")
-      .join(" ");
-    return { region: probe.describe(region), described };
-  });
-  if (!trapped) return null;
-  // Named, not inferred from a key list: if the page advertises a different
-  // key this reads it and presses that instead, so the check follows the
-  // page's own statement rather than assuming Escape.
-  const advertised = /\b(Escape|Esc)\b/i.test(trapped.described) ? "Escape" : null;
-  if (!advertised) {
-    return `    ${trapped.region} traps focus and its accessible description does not name a key`
-      + ` that moves focus out of it. WCAG 2.1 SC 2.1.2 needs both: a working escape, and the`
-      + ` reader told which key it is.\n      described as: ${trapped.described || "(nothing)"}`;
-  }
-  await page.keyboard.press(advertised);
-  const left = await page.evaluate(() => {
-    const probe = window.__g113b;
-    const region = window.__g113bTrap;
-    if (!probe || !region) throw new Error("trap probe not installed");
-    const active = document.activeElement;
-    if (!active || active === document.body || active === document.documentElement) {
-      return { out: true, where: "(left the page)" };
-    }
-    return {
-      out: !region.contains(active),
-      where: probe.describe(active),
-      // Moving focus BACKWARDS out of the trap would satisfy the letter and
-      // strand the reader before the widget they just left, so where it lands
-      // is reported rather than only whether it left.
-      forward: (region.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
-    };
-  });
-  if (!left.out) {
-    return `    ${trapped.region} advertises ${advertised} as its escape and pressing it left focus`
-      + ` inside the trap, at ${left.where}`;
-  }
-  if (left.forward === false) {
-    return `    ${trapped.region} advertises ${advertised} as its escape and pressing it moved focus`
-      + ` BACKWARDS, to ${left.where}, stranding the reader before the widget they left`;
-  }
-  return null;
-}

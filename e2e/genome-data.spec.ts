@@ -165,6 +165,134 @@ test("/genome/[subject]/data/browser complete: an rsID search answers from the f
   expect(interactives.length, interactives.join(" | ")).toBeLessThanOrEqual(12);
 });
 
+test("the current track has an open source-matched text alternative after native position changes", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  const requests: string[] = [];
+  page.on("request", request => {
+    if (new URL(request.url()).pathname === "/api/browse/region") requests.push(request.method());
+  });
+  const response = page.waitForResponse(response => new URL(response.url()).pathname === "/api/browse/region");
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const { variants } = await (await response).json() as {
+    variants: { chrom: number; pos: number; rsid: number | null; genotype: string }[];
+  };
+  const alternative = page.locator('[data-slot="genome-track-alternative"]');
+  await expect(alternative).toHaveAttribute("data-track-status", "ready");
+  expect(variants).toHaveLength(1);
+  const source = variants[0];
+  await expect(alternative.locator('[data-track-feature]')).toHaveAttribute("data-track-feature", `${source.chrom}:${source.pos}:0`);
+  await expect(alternative.locator('[data-track-feature]')).toContainText(`rs${source.rsid}`);
+  await expect(alternative.locator('[data-track-feature]')).toContainText(`chr${source.chrom}:${source.pos}`);
+  await expect(alternative.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText(source.genotype);
+  const subject = await page.locator('[data-subject-bar]').getAttribute('data-subject-id');
+  await expect(alternative.locator('[data-claim-block]')).toHaveAttribute('data-subject-id', subject!);
+  await expect(alternative.locator('details, [hidden], button, input, [tabindex]')).toHaveCount(0);
+  await expect(page.locator('#results tbody tr')).toHaveCount(1);
+
+  const search = page.getByRole('textbox', { name: 'Search by position', exact: true });
+  await search.fill('chr1:100-1000'); await search.press('Enter');
+  await expect(alternative.locator('[data-track-range]')).toHaveText('chr1:100-1,000');
+  await expect(alternative).toHaveAttribute('data-track-status', 'ready');
+  await expect(alternative.locator('[data-track-feature]')).toHaveCount(0);
+  await expect(alternative).toContainText('No calls were loaded for those positions.');
+  await expect(alternative).not.toContainText('Your file has no variants');
+
+  await search.fill(REGION_RANGE); await search.press('Enter');
+  await expect(alternative.locator('[data-track-feature]')).toHaveCount(1);
+  await expect(alternative.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText(source.genotype);
+  expect(requests).toEqual(['POST']);
+});
+
+test("a synthetic overlapping-region response can be scrolled with the keyboard", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  // UI interaction fixture only: no source/preparation or capacity claim is
+  // made from these overlapping annotations. The surrounding tests retain
+  // their real upload, preparation and unmodified region responses.
+  await page.route("**/api/browse/region", route => route.fulfill({ json: {
+    variants: Array.from({ length: 40 }, () => ({ rsid: null, chrom: 15, pos: 74749576,
+      ref: "A", alt: "C", genotype: "A/C" })), truncated: false,
+  } }));
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const widget = page.getByTestId("genome-browser");
+  const gear = widget.getByRole("button", { name: "Track settings: Your variants", exact: true });
+  await expect(gear).toBeVisible({ timeout: 60_000 });
+  await gear.press("Enter");
+  await widget.getByRole("menuitem", { name: "Set track height", exact: true }).press("Enter");
+  const height = widget.getByRole("spinbutton", { name: "Track Height", exact: true });
+  await height.fill("100"); await height.press("Enter");
+  const slider = widget.getByRole("slider", { name: "Scroll track: Your variants", exact: true });
+  await expect(slider).toBeVisible();
+  const max = await slider.getAttribute("max"); expect(Number(max)).toBeGreaterThan(0);
+  await slider.press("End"); await expect(slider).toHaveValue(max!);
+  await expect.poll(() => widget.locator('.igv-viewport[data-track-type="annotation"] canvas')
+    .evaluate(element => parseFloat((element as HTMLElement).style.top))).toBeLessThan(0);
+  await slider.press("Home"); await expect(slider).toHaveValue("0");
+  await slider.press("Escape"); await expect(slider).not.toBeFocused();
+});
+
+test("genome track details and image actions work from the keyboard", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const widget = page.getByTestId("genome-browser");
+  const label = widget.getByRole("button", { name: "Track details: Your variants", exact: true });
+  await expect(label).toBeVisible({ timeout: 60_000 });
+  await label.press("Enter");
+  const details = widget.getByRole("dialog", { name: "Your variants", exact: true });
+  await expect(details).toBeVisible();
+  await expect(details.getByRole("button", { name: "Close dialog", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(details).toBeHidden(); await expect(label).toBeFocused();
+  const track = widget.getByRole("group", { name: "Track actions: Your variants", exact: true });
+  await track.focus(); await page.keyboard.press("Shift+F10");
+  const menu = widget.getByRole("menu", { name: "Track actions", exact: true });
+  await expect(menu).toBeVisible(); await page.keyboard.press("End");
+  await expect(menu.getByRole("menuitem", { name: "Save Image (SVG)", exact: true })).toBeFocused();
+  const downloadPromise = page.waitForEvent("download");
+  await page.keyboard.press("Enter");
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.svg$/i);
+  expect(await download.failure()).toBeNull();
+  await expect(menu).toBeHidden(); await expect(track).toBeFocused();
+  await page.keyboard.press("Escape");
+  expect(await label.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === null)).toBe(true);
+});
+
+test("genome track settings preserve keyboard focus, apply edits and escape back into the page", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const widget = page.getByTestId("genome-browser");
+  const gear = widget.getByRole("button", { name: "Track settings: Your variants", exact: true });
+  await expect(gear).toBeVisible({ timeout: 60_000 });
+  await gear.focus(); await page.keyboard.press("Enter");
+  const menu = widget.getByRole("menu");
+  await expect(menu).toBeVisible();
+  const rename = menu.getByRole("menuitem", { name: "Set track name", exact: true });
+  await expect(menu.getByRole("menuitem", { name: "Set track height", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(rename).toBeFocused();
+  await page.keyboard.press("Enter");
+  const dialog = widget.getByRole("dialog", { name: "Track Name", exact: true });
+  const input = dialog.getByRole("textbox", { name: "Track Name", exact: true });
+  await expect(input).toBeFocused();
+  await input.fill("My stored variants");
+  await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+  const renamedGear = widget.getByRole("button", { name: "Track settings: My stored variants", exact: true });
+  await expect(renamedGear).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(menu.getByRole("menuitem", { name: "Set track height", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown"); await expect(rename).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(input).toBeFocused(); await input.fill("Discard this edit");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden(); await expect(renamedGear).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(menu).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden(); await expect(renamedGear).toBeFocused();
+  await page.keyboard.press("Escape");
+  expect(await renamedGear.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === null)).toBe(true);
+  await expect(page.locator('[data-claim-block] table tbody tr')).toContainText("A/C");
+});
+
 /**
  * `/genome/[subject]/data/browser partial-coverage`, and unusually for this
  * register's vocabulary the mapping needs no argument: the page renders both

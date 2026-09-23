@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { axeViolations, createConfirmedUser, signIn } from "./helpers";
+import { axeViolations, createConfirmedUser, firstViewportInteractives, signIn } from "./helpers";
 import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_NO_RANGE, LINEAGE_RESOLUTION_LIMIT,
   LINEAGE_UNREADABLE, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
@@ -117,30 +117,6 @@ function deniedWordIn(label: string): string | null {
     if (new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u").test(folded)) return word;
   }
   return null;
-}
-
-/**
- * X6.1 basis, identical to scripts/density-baseline/capture.mjs and
- * e2e/overview.spec.ts: rendered interactive elements whose top edge is
- * inside the first viewport, excluding persistent navigation (anything
- * inside a `nav`), the skip link and the Copilot entry control.
- */
-async function firstViewportInteractives(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const selector =
-      'a[href],button,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]:not([tabindex="-1"])';
-    const found: string[] = [];
-    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-      if (element.matches('a[href="#main"]')) continue;
-      if (element.closest("nav,[data-copilot-entry]")) continue;
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) continue;
-      if (element.getClientRects().length === 0) continue;
-      if (rect.top >= window.innerHeight) continue;
-      found.push(`${element.tagName.toLowerCase()}:${(element.textContent ?? "").trim().slice(0, 40)}`);
-    }
-    return found;
-  });
 }
 
 /**

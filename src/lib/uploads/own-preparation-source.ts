@@ -7,6 +7,7 @@ import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { buildFromHeader } from "../genome/parsers/vcf";
 import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
+import type { PreparationMetrics } from "./preparation-metrics";
 
 const integer = z.number().int().positive().safe();
 const hash = z.string().regex(/^[0-9a-f]{64}$/);
@@ -26,6 +27,7 @@ export const ownPreparationScanSchema = z.object({
 }).strict();
 export type OwnPreparationScan = z.infer<typeof ownPreparationScanSchema>;
 export type OwnPreparationSourceOptions = {
+  metrics?: PreparationMetrics;
   source: OwnPreparationOriginal;
   /** Must issue an authenticated, cache-bypassing exact Range request to the
    * captured original. No retry after uncertain I/O is performed here. */
@@ -59,10 +61,12 @@ async function range(options: OwnPreparationSourceOptions, source: OwnPreparatio
   const deadline = AbortSignal.timeout(30_000), signal = AbortSignal.any([options.signal, deadline]);
   let response: Response | undefined, reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let completed = false;
+  let measured: ReturnType<PreparationMetrics["operation"]> | undefined;
   const cancel = (value: Response) => { try { void value.body?.cancel().catch(() => {}); } catch { /* Already acquired. */ } };
   try {
     active(signal);
     await wait(Promise.resolve(options.check(structuredClone(source), signal)), signal);
+    measured = options.metrics?.operation("source_get");
     const pending = Promise.resolve(options.readRange(structuredClone(source), start, end, signal)).then(value => {
       response = value; if (signal.aborted) cancel(value); return value;
     });
@@ -80,6 +84,7 @@ async function range(options: OwnPreparationSourceOptions, source: OwnPreparatio
       bytes.set(next.value, offset); offset += next.value.length;
     }
     if (offset !== bytes.length) fail("invalid_range");
+    measured?.(true, bytes.length);
     await wait(Promise.resolve(options.check(structuredClone(source), signal)), signal);
     active(signal); completed = true; return bytes;
   } catch (error) {
@@ -88,6 +93,7 @@ async function range(options: OwnPreparationSourceOptions, source: OwnPreparatio
   } finally {
     if (reader) { if (!completed) void reader.cancel().catch(() => {}); try { reader.releaseLock(); } catch { /* Pending read cancelled. */ } }
     else if (response) cancel(response);
+    measured?.(false);
   }
 }
 

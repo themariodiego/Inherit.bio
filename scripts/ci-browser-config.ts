@@ -37,8 +37,14 @@ export function checkedGateway(value: unknown): { address: string; network: stri
 export const APP_ENV_NAMES = ["INHERIT_UPLOAD_SIGNING_JWK", "INHERIT_CANONICAL_UPLOADS_PAUSED", "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "BYOK_ENCRYPTION_KEY", "JOBS_SECRET", "CRON_SECRET",
   "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION"] as const;
-/** The four app variants: main, jurisdiction-off, paused issuance, and the local-model path. */
-export const APP_PORTS = [3100, 3101, 3102, 3103] as const;
+/** Fixed app variants: main, jurisdiction-off, paused, local-model, and prepared-source. */
+export const APP_PORTS = [3100, 3101, 3102, 3103, 3104] as const;
+export const PREPARED_APP_PORT = 3104;
+export const PREPARED_APP_ENV = Object.freeze({
+  INHERIT_PREPARED_WGS_ENABLED: "true",
+  INHERIT_PREPARED_R2_ORIGIN: "https://prepared.artifacts.test:8140",
+  INHERIT_PREPARED_R2_BUCKET: "inherit-prepared-ci",
+});
 /**
  * The fourth variant alone attests the local-model path (G4.8, brief line
  * 2635). The attestation is truthful of this runtime and of nothing else: the
@@ -58,9 +64,10 @@ export const LOCAL_MODEL_ENV = Object.freeze({
   INHERIT_LOCAL_MODEL_ORIGINS: JSON.stringify([LOCAL_MODEL_ORIGIN]),
 });
 export const LOCAL_MODEL_ENV_NAMES = Object.keys(LOCAL_MODEL_ENV) as ReadonlyArray<keyof typeof LOCAL_MODEL_ENV>;
-/** Every name a variant's configuration may carry: the local-model four only on the local-model port. */
+/** Extra fields belong only to their fixed local-model or prepared variant. */
 export function admittedAppEnvironmentNames(port: number): readonly string[] {
-  return port === LOCAL_MODEL_PORT ? [...APP_ENV_NAMES, ...LOCAL_MODEL_ENV_NAMES] : APP_ENV_NAMES;
+  return port === LOCAL_MODEL_PORT ? [...APP_ENV_NAMES, ...LOCAL_MODEL_ENV_NAMES]
+    : port === PREPARED_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(PREPARED_APP_ENV)] : APP_ENV_NAMES;
 }
 export function checkedAppEnvironment(value: unknown, port: number): Record<string, string> {
   assert((APP_PORTS as readonly number[]).includes(port), "Unregistered app port");
@@ -77,6 +84,10 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
     && env.INHERIT_CANONICAL_UPLOADS_PAUSED === (port === 3102 ? "true" : "false"), "App scope differs from its fixed CI variant");
   if (port === LOCAL_MODEL_PORT) {
     for (const name of LOCAL_MODEL_ENV_NAMES) assert(env[name] === LOCAL_MODEL_ENV[name], "Local-model variant differs from its fixed attestation");
+  }
+  if (port === PREPARED_APP_PORT) {
+    for (const [name, value] of Object.entries(PREPARED_APP_ENV))
+      assert(env[name] === value, "Prepared variant differs from its fixed artifact scope");
   }
   for (const name of ["INHERIT_UPLOAD_SIGNING_JWK", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"])
     assert(env[name].length > 0, "Required ephemeral app configuration missing");

@@ -22,6 +22,9 @@ USER node
 # devDependencies are required: the entry runs through tsx, which is one, so
 # NODE_ENV stays unset and --prod=false is explicit.
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Frozen installation needs the local patches declared by those manifests,
+# including dependencies the worker does not import at runtime.
+COPY --chown=node:node patches ./patches
 RUN corepack pnpm install --frozen-lockfile --ignore-scripts --prod=false
 
 # tsconfig.json carries the @/ path alias tsx resolves. next.config.ts and

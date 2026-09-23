@@ -1,0 +1,478 @@
+{
+  "row": "G1.13b",
+  "head": "109089d143e2efd723f7461cf7e493eac45fb4ae",
+  "run": 35834704734,
+  "attempt": 1,
+  "job": 107095269548,
+  "completedAt": "2026-09-23T09:01:00Z",
+  "testedMergeSha": "6ba93840fdbf570d055858e3da0ff1658cdadf15",
+  "logSha256": "cfe2dc769f641ea0d7f3e717aca1b114a46d9502fa08369d3e8cf96ef7630eb3",
+  "fullCi": {
+    "pr": 207,
+    "head": "109089d143e2efd723f7461cf7e493eac45fb4ae",
+    "run": 35834704734,
+    "runAttempt": 1,
+    "runConclusion": "success",
+    "logSha256": "cfe2dc769f641ea0d7f3e717aca1b114a46d9502fa08369d3e8cf96ef7630eb3",
+    "preparedVariants": [
+      "plain",
+      "gzip"
+    ],
+    "testedCheckout": "HEAD is now at 6ba9384 Merge 109089d143e2efd723f7461cf7e493eac45fb4ae into 3af31bf5945dc30e7ab069a5dfc54366f6a7897c",
+    "testedMergeSha": "6ba93840fdbf570d055858e3da0ff1658cdadf15",
+    "unitTests": 5844,
+    "unitSuites": 359,
+    "databaseFiles": 87,
+    "databaseAssertions": 3536,
+    "transitionLockPasses": 30,
+    "browserPassRecords": 530,
+    "uniqueCaseIndices": 530,
+    "noSkipsOrRetries": true,
+    "browserSummary": [
+      "530 passed (51.1m)"
+    ],
+    "ownJourneyCases": [
+      "[chromium] › e2e/own-genome-complete-journey.spec.ts:57:7 › own genome from Overview: one file, reports, ancestry and Copilot (20.1s)",
+      "[chromium] › e2e/own-genome-complete-journey.spec.ts:57:7 › own genome from My Genome: one file, reports, ancestry and Copilot (20.2s)",
+      "[prepared-source] › e2e/own-prepared-genome-journey.spec.ts:59:59 › own prepared object: real source, chosen reports, ancestry, raw Copilot and revocation (45.2s)",
+      "[prepared-source] › e2e/own-prepared-genome-journey.spec.ts:59:59 › own prepared gzip object: real source, chosen reports, ancestry, raw Copilot and revocation (48.5s)"
+    ],
+    "ownFormatJourneyCases": [
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › 23andme plain: own entry to prepared source and report (10.2s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › 23andme gzip: own entry to prepared source and report (11.0s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › 23andme zip: own entry to prepared source and report (10.6s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › ancestry plain: own entry to prepared source and report (9.8s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › ancestry gzip: own entry to prepared source and report (11.0s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › ancestry zip: own entry to prepared source and report (9.6s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › myheritage plain: own entry to prepared source and report (9.7s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › myheritage gzip: own entry to prepared source and report (10.4s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › myheritage zip: own entry to prepared source and report (10.9s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › ftdna plain: own entry to prepared source and report (9.4s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › ftdna gzip: own entry to prepared source and report (9.8s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › ftdna zip: own entry to prepared source and report (9.1s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › vcf plain: own entry to prepared source and report (9.8s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › vcf gzip: own entry to prepared source and report (9.6s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › vcf zip: own entry to prepared source and report (10.0s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › gvcf-non-ref plain: own entry to prepared source and report (9.7s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › gvcf-non-ref gzip: own entry to prepared source and report (9.4s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › gvcf-non-ref zip: own entry to prepared source and report (9.4s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › gvcf-unspecified plain: own entry to prepared source and report (9.5s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › gvcf-unspecified gzip: own entry to prepared source and report (9.7s)",
+      "[chromium] › e2e/own-genome-formats.spec.ts:14:9 › gvcf-unspecified zip: own entry to prepared source and report (10.6s)"
+    ],
+    "ownFormatJourneyCount": 21,
+    "lighthouseMedians": [
+      {
+        "name": "landing",
+        "url": "http://localhost:3100/",
+        "aggregation": "median-of-three",
+        "scores": {
+          "performance": 95,
+          "accessibility": 100
+        }
+      },
+      {
+        "name": "overview",
+        "url": "http://localhost:3100/overview",
+        "aggregation": "median-of-three",
+        "scores": {
+          "performance": 94,
+          "accessibility": 100
+        }
+      },
+      {
+        "name": "report",
+        "url": "http://localhost:3100/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551?source=60026307-c34a-451d-9a84-52cd5685b44a",
+        "aggregation": "median-of-three",
+        "scores": {
+          "performance": 92,
+          "accessibility": 100
+        }
+      }
+    ],
+    "lighthouseAuditCount": 9,
+    "allAuditAccessibility100": true,
+    "lighthousePerformanceContract": "median of three per exact route >=90; individual samples may be lower",
+    "runtimeSource": [
+      "PASS disposable CI runtime image sha256:dba4dbb6d04eaa6d0f6fd16f6cbfe18d82523454ae83afa5c30ba20e373d07d8; source 6ba93840fdbf570d055858e3da0ff1658cdadf15; TLS keys stay in tmpfs.",
+      "PASS disposable CI runtime image sha256:dba4dbb6d04eaa6d0f6fd16f6cbfe18d82523454ae83afa5c30ba20e373d07d8; source 6ba93840fdbf570d055858e3da0ff1658cdadf15; TLS keys stay in tmpfs."
+    ]
+  },
+  "browserCases": [
+    {
+      "project": "chromium",
+      "path": "e2e/a11y.spec.ts",
+      "describe": "G1.13b: the accessibility measurements axe cannot make",
+      "title": "reflow: no page scrolls horizontally at a 320 CSS px viewport",
+      "index": 81,
+      "duration": "43.2s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:20:10.0558861Z   ✓   81 [chromium] › e2e/a11y.spec.ts:829:7 › G1.13b: the accessibility measurements axe cannot make › reflow: no page scrolls horizontally at a 320 CSS px viewport (43.2s)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/a11y.spec.ts",
+      "describe": "G1.13b: the accessibility measurements axe cannot make",
+      "title": "target size: every control is at least 44x44 CSS px at 390x844",
+      "index": 82,
+      "duration": "42.9s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:20:52.9953889Z   ✓   82 [chromium] › e2e/a11y.spec.ts:1192:7 › G1.13b: the accessibility measurements axe cannot make › target size: every control is at least 44x44 CSS px at 390x844 (42.9s)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/a11y.spec.ts",
+      "describe": "G1.13b: the accessibility measurements axe cannot make",
+      "title": "keyboard traversal: tab order is DOM order, and no page traps focus",
+      "index": 83,
+      "duration": "1.0m",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:21:54.2994595Z   ✓   83 [chromium] › e2e/a11y.spec.ts:1400:7 › G1.13b: the accessibility measurements axe cannot make › keyboard traversal: tab order is DOM order, and no page traps focus (1.0m)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/a11y.spec.ts",
+      "describe": "G1.13b: the accessibility measurements axe cannot make",
+      "title": "text alternatives: the ancestry map and every chart have an equivalent list and text",
+      "index": 84,
+      "duration": "44.5s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:22:38.7797371Z   ✓   84 [chromium] › e2e/a11y.spec.ts:1495:7 › G1.13b: the accessibility measurements axe cannot make › text alternatives: the ancestry map and every chart have an equivalent list and text (44.5s)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/genome-data.spec.ts",
+      "describe": null,
+      "title": "the current track has an open source-matched text alternative after native position changes",
+      "index": 247,
+      "duration": "1.8s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:36:52.5880545Z   ✓  247 [chromium] › e2e/genome-data.spec.ts:168:5 › the current track has an open source-matched text alternative after native position changes (1.8s)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/genome-data.spec.ts",
+      "describe": null,
+      "title": "a synthetic overlapping-region response can be scrolled with the keyboard",
+      "index": 248,
+      "duration": "1.7s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:36:54.2579246Z   ✓  248 [chromium] › e2e/genome-data.spec.ts:206:5 › a synthetic overlapping-region response can be scrolled with the keyboard (1.7s)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/genome-data.spec.ts",
+      "describe": null,
+      "title": "genome track details and image actions work from the keyboard",
+      "index": 249,
+      "duration": "2.0s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:36:56.2250469Z   ✓  249 [chromium] › e2e/genome-data.spec.ts:233:5 › genome track details and image actions work from the keyboard (2.0s)"
+    },
+    {
+      "project": "chromium",
+      "path": "e2e/genome-data.spec.ts",
+      "describe": null,
+      "title": "genome track settings preserve keyboard focus, apply edits and escape back into the page",
+      "index": 250,
+      "duration": "2.0s",
+      "actualPassRecord": "checks\tFull browser suite with the real local Storage provider\t2026-09-23T08:36:58.2128398Z   ✓  250 [chromium] › e2e/genome-data.spec.ts:259:5 › genome track settings preserve keyboard focus, apply edits and escape back into the page (2.0s)"
+    }
+  ],
+  "unitFiles": [
+    {
+      "path": "scripts/igv-interactions.test.ts",
+      "describe": "installed genome widget menus and dialogs",
+      "expectedPassedTests": 14,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:12.1762758Z  ✓ scripts/igv-interactions.test.ts (14 tests) 27148ms"
+    },
+    {
+      "path": "scripts/igv-popovers.test.ts",
+      "describe": "installed genome widget transient surfaces",
+      "expectedPassedTests": 8,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:39.9332933Z  ✓ scripts/igv-popovers.test.ts (8 tests) 17787ms"
+    },
+    {
+      "path": "scripts/igv-track-scrolling.test.ts",
+      "describe": "installed genome widget vertical scrolling",
+      "expectedPassedTests": 7,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:57.9259198Z  ✓ scripts/igv-track-scrolling.test.ts (7 tests) 8754ms"
+    },
+    {
+      "path": "scripts/igv-track-text.test.ts",
+      "describe": "native current-track text equivalence",
+      "expectedPassedTests": 12,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:02:55.6817337Z  ✓ scripts/igv-track-text.test.ts (12 tests) 11862ms"
+    },
+    {
+      "path": "scripts/igv-navigation.test.ts",
+      "describe": "installed genome navigation configuration",
+      "expectedPassedTests": 3,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:04:10.3725002Z  ✓ scripts/igv-navigation.test.ts (3 tests) 1469ms"
+    },
+    {
+      "path": "scripts/keyboard-traversal.test.ts",
+      "describe": "keyboard sweep using actual focused elements across shadow roots",
+      "expectedPassedTests": 14,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:33.6962393Z  ✓ scripts/keyboard-traversal.test.ts (14 tests) 12444ms"
+    },
+    {
+      "path": "scripts/text-alternatives.test.ts",
+      "describe": "text alternatives across the composed chart tree",
+      "expectedPassedTests": 8,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:48.9953305Z  ✓ scripts/text-alternatives.test.ts (8 tests) 982ms"
+    },
+    {
+      "path": "scripts/viewport-controls.test.ts",
+      "describe": "first-viewport control census",
+      "expectedPassedTests": 5,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:04:03.3521337Z  ✓ scripts/viewport-controls.test.ts (5 tests) 810ms"
+    },
+    {
+      "path": "src/components/browse/igv-track-data.test.ts",
+      "describe": "track text snapshot ownership",
+      "expectedPassedTests": 4,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:04:04.9877699Z  ✓ src/components/browse/igv-track-data.test.ts (4 tests) 7ms"
+    },
+    {
+      "path": "src/lib/genome/browser-figures.test.ts",
+      "describe": "client-safe genome browser figures",
+      "expectedPassedTests": 3,
+      "scope": "core",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:04:12.9956770Z  ✓ src/lib/genome/browser-figures.test.ts (3 tests) 3ms"
+    },
+    {
+      "path": "scripts/igv-lifecycle.test.ts",
+      "describe": "installed genome viewer lifecycle",
+      "expectedPassedTests": 8,
+      "scope": "supportingLifecycle",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:32.6609347Z  ✓ scripts/igv-lifecycle.test.ts (8 tests) 2887ms"
+    },
+    {
+      "path": "scripts/igv-detached-cleanup.test.ts",
+      "describe": "detached native genome viewer",
+      "expectedPassedTests": 1,
+      "scope": "supportingLifecycle",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:54.9539796Z  ✓ scripts/igv-detached-cleanup.test.ts (1 test) 746ms"
+    },
+    {
+      "path": "scripts/igv-native-cleanup.test.ts",
+      "describe": "installed esm viewer cleanup; installed umd viewer cleanup",
+      "expectedPassedTests": 4,
+      "scope": "supportingLifecycle",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:03:58.2639413Z  ✓ scripts/igv-native-cleanup.test.ts (4 tests) 1908ms"
+    },
+    {
+      "path": "scripts/igv-reference.test.ts",
+      "describe": "first-party genome reference without a global upload guard",
+      "expectedPassedTests": 4,
+      "scope": "supportingLifecycle",
+      "actualPassRecord": "checks\tUnit tests\t2026-09-23T08:04:00.7457827Z  ✓ scripts/igv-reference.test.ts (4 tests) 881ms"
+    }
+  ],
+  "scopedFiles": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "d962910c56882f45ca1640f8496bc5340d2f9c3c200cffe5267f814c963a35e8"
+    },
+    {
+      "path": "docs/accessibility-divergence.json",
+      "sha256": "94cb2930accf964c66c0cff85cd956d5ab38cc6b596e5b7057ae9278ad4b0126"
+    },
+    {
+      "path": "docs/inherit-v2-brief.md",
+      "sha256": "1f749e54c06ee46c1c1516b01e4be69d390873ac192c2a7d0c24f09ee5ddf3f9"
+    },
+    {
+      "path": "e2e/a11y.spec.ts",
+      "sha256": "5dcbc138d31b170172ad9eeb8c9982d0a06a299e6dd61c2d8e55474ba52b6e3e"
+    },
+    {
+      "path": "e2e/genome-data.spec.ts",
+      "sha256": "baef167279def1e0646928ee33974adc1bec90f2cac0ad84593e07e6b2cc0a7c"
+    },
+    {
+      "path": "e2e/genome-navigation-diagnostics.ts",
+      "sha256": "5c2792cc7dfd77dfdf7610ace3c0f4f2887bab5b924b971cf1c4bd1967bf5871"
+    },
+    {
+      "path": "e2e/helpers.ts",
+      "sha256": "76b23b53b532fb0ab8d098973f16b69891aefd7514884f0308a9c076e99ccee4"
+    },
+    {
+      "path": "e2e/keyboard-traversal.ts",
+      "sha256": "e4acb4563c40aab95cbbee36094626034ab875767141c2fa466e4a63a6fdfbda"
+    },
+    {
+      "path": "e2e/text-alternatives.ts",
+      "sha256": "36fe6e03c5366c44f96be26b34b0365b63fc68b54d8bc67c6682ad800a8c574d"
+    },
+    {
+      "path": "e2e/viewport-controls.ts",
+      "sha256": "8bd24ddc3f48968bfd580a6b0f41736ed649d04fbde98eb543b0d1d3fcd24e82"
+    },
+    {
+      "path": "package.json",
+      "sha256": "4c85034dc2eb346b8a4af70137693c875033e83054b1b742ddbb9a70d0fba5d8"
+    },
+    {
+      "path": "patches/igv@3.8.5.patch",
+      "sha256": "ebbddfcffb4fd04826ccf09472680bffa1081ef87f0557f7240bbf2bb35ff206"
+    },
+    {
+      "path": "playwright.config.ts",
+      "sha256": "7e95d86f3dadfc0a74ddb9c4d4c4012f4b1f7d18e7eab8524a841390b031e571"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "553e98f76cb6cab372a55338a981db9f971c512355e134220080180267f93fc2"
+    },
+    {
+      "path": "scripts/genome-navigation-diagnostics.test.ts",
+      "sha256": "9430684610e78ec1fcf53d524e2dfa56e6e1e0a0a739a6be8b2642f88eeb3eb1"
+    },
+    {
+      "path": "scripts/igv-detached-cleanup.test.ts",
+      "sha256": "abe530097465699f8b8ad276b53c49c536b32f32c4b11e86a022e4842a1fc193"
+    },
+    {
+      "path": "scripts/igv-interactions.test.ts",
+      "sha256": "cf31d2f149062100ec086ddb11c64cd314186fe9a7c9528413466ec85323681f"
+    },
+    {
+      "path": "scripts/igv-lifecycle.test.ts",
+      "sha256": "4265dd337d339b91f12e4f51006dad720879597dea00500476e2934d97983860"
+    },
+    {
+      "path": "scripts/igv-native-cleanup.test.ts",
+      "sha256": "fbc1314d2c6c054a6a3a1020da460e1f7b9f359df134dbe0659c148603d0f397"
+    },
+    {
+      "path": "scripts/igv-navigation.test.ts",
+      "sha256": "452669e0d73efcbc7ead54e33e38cafd153fbfaf6723e3d94f9b53b2f05477ab"
+    },
+    {
+      "path": "scripts/igv-popovers.test.ts",
+      "sha256": "9312b95fcd71e8ea0ce592c80d0b483d1084eaec3c65bb1eac1d8a70d2bc75d5"
+    },
+    {
+      "path": "scripts/igv-reference.test.ts",
+      "sha256": "41b7e012dfe1e36ff5bf844776ff48df0716edba5cab4ac8dfb78b58fb414bcd"
+    },
+    {
+      "path": "scripts/igv-track-scrolling.test.ts",
+      "sha256": "24c770491e53e215412275ec6c34b2b78663b3ed8a670d463d83fd67113d5237"
+    },
+    {
+      "path": "scripts/igv-track-text.test.ts",
+      "sha256": "bb4159550bc96caa197549476ba3a28b0647015df49ba553e4a4929278d520ac"
+    },
+    {
+      "path": "scripts/keyboard-traversal.test.ts",
+      "sha256": "44924bb021516054a65fcf1c98dff8053bce1395858422d43d59f3a2c08ff992"
+    },
+    {
+      "path": "scripts/text-alternatives.test.ts",
+      "sha256": "3b01f83700fea646fd8e63a5cf608b12badbefaf4f4ee3b3e10e800ad2262c0a"
+    },
+    {
+      "path": "scripts/viewport-controls.test.ts",
+      "sha256": "b46210ca5aae257b6b5696146073245a0f21dbb1cbeaab2c1e86f3eebb46529a"
+    },
+    {
+      "path": "src/app/(app)/genome/[subject]/data/browser/page.tsx",
+      "sha256": "c675d78b504668604d44c437ad252a14bc676984b4097badf73ea7442cc6cd90"
+    },
+    {
+      "path": "src/app/globals.css",
+      "sha256": "6424a4c15f1ca3498cd0a962b7a78747fc08f12d0a4893f1d547d310fc11b32f"
+    },
+    {
+      "path": "src/components/browse/genome-browser.tsx",
+      "sha256": "07acb5407f880039505c3fe821dcdb819376cd707a90f275a80e9890ebf41da6"
+    },
+    {
+      "path": "src/components/browse/igv-accessibility.ts",
+      "sha256": "53792d9aa3e784104b5de33285938812e317ab27467a604967b98f2e11cf430a"
+    },
+    {
+      "path": "src/components/browse/igv-interactions.ts",
+      "sha256": "80723c0c41a18785cffa13ba8d51b36677d0c5e77d2af05af30b20d1acb8377e"
+    },
+    {
+      "path": "src/components/browse/igv-lifecycle.ts",
+      "sha256": "24a4b432ef2513c39be580e3e1b4b7819dd910879c3ddc963474a9f77ba06ec3"
+    },
+    {
+      "path": "src/components/browse/igv-navigation.ts",
+      "sha256": "409fd94911a940634ad3e118a6347f2e4e6279431ae3754ebb7d9b0644538007"
+    },
+    {
+      "path": "src/components/browse/igv-popovers.ts",
+      "sha256": "bbf7ac3450a2a4774f7982d80352a51ed52d1e17fb0fada45ad7579ca979d9f6"
+    },
+    {
+      "path": "src/components/browse/igv-reference.ts",
+      "sha256": "071b2c8784d96387ab926fcadfbfc1193fb3b82a0287ac0bf26a58a817e23aad"
+    },
+    {
+      "path": "src/components/browse/igv-track-data.test.ts",
+      "sha256": "6a33dddb072cb4f5d863db54158e56a5e78b635d54d7c8b3edb4607dbb7dab25"
+    },
+    {
+      "path": "src/components/browse/igv-track-data.ts",
+      "sha256": "9bf9c58ca1585d29060d391b3ab3cf3da046c1a7912dc34fc0076a1a81fda8a1"
+    },
+    {
+      "path": "src/components/browse/igv-track-scrolling.ts",
+      "sha256": "24400463fbc7642375499ecdf8534631c30b6e7f33b13c5fd9d997f38fb9fe20"
+    },
+    {
+      "path": "src/components/browse/track-text-alternative.tsx",
+      "sha256": "3bdee927b2e3100685cea386bf33196ec6fa58c43619082926f34722e0b32014"
+    },
+    {
+      "path": "src/components/figures/claim-block.tsx",
+      "sha256": "bd9596266f42c954875ea78f565ad327b86fa7482d6c60a193458e3c9838f80e"
+    },
+    {
+      "path": "src/components/figures/figure.tsx",
+      "sha256": "a30535612991f3160b684f4c69cb628f5bfc9c7ffd08591eecd5de10376abcc6"
+    },
+    {
+      "path": "src/components/site/app-shell.tsx",
+      "sha256": "d6e8e4020a78f63df8acd226770edfde4c98f9f0c38b03ffd7c83f116fdda21c"
+    },
+    {
+      "path": "src/copy/genome/data.test.ts",
+      "sha256": "353247e8dfbfe763b0d95987206ada99140fb765b26b04176eab45824894e227"
+    },
+    {
+      "path": "src/copy/genome/data.ts",
+      "sha256": "1908196d1fd6e4e58ec633d31605d4ad2defc33319a1ab0c829be3df0c5fc5d2"
+    },
+    {
+      "path": "src/lib/genome/browser-figures.test.ts",
+      "sha256": "2ee25d3dc871d60ab89ed8315077ef6a742167bf5f606d31b0026495a924f6e3"
+    },
+    {
+      "path": "src/lib/genome/browser-figures.ts",
+      "sha256": "ac5c5f2b35ebf9ef6055c17074d49b29a372778c6f1b49dc5f6a9464ce643778"
+    },
+    {
+      "path": "src/lib/genome/browser.test.ts",
+      "sha256": "3d9584ede8a0f45b7908b9aee212c0308f6e5c2dc48712266d7c4c90005c45f1"
+    },
+    {
+      "path": "src/lib/genome/browser.ts",
+      "sha256": "a241dbb8afad886875afd9e93066e2c26abd894dca80b0696ce86cafe4519a3d"
+    },
+    {
+      "path": "vitest.config.ts",
+      "sha256": "5cc23071b75c3700a34a64379afc107d9aa81278113b0458e8660762d92f2621"
+    }
+  ],
+  "scope": "Specified automated measurements; no human assistive-technology or hosted-capacity claim."
+}

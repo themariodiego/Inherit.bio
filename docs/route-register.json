@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "781ea3e7b2bd1ecd93dc3226372b49c15d9a963b8210cabb6e0cc23a08b97a8d",
+  "briefSha256": "1f749e54c06ee46c1c1516b01e4be69d390873ac192c2a7d0c24f09ee5ddf3f9",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -84,6 +84,14 @@
         "identity": "source-sample-and-embryo-column-values-are-used-only-to-build-the-transient-stable-ordinal-map-and-never-persisted"
       },
       "browserPreflight": "inspect-magic-bytes-before-the-first-direct-upload-or-ingest-chunk-and-refuse-%PDF-",
+      "ownZipPreflight": {
+        "scope": "own-subject-browser-file-picker-only; no-embryo-cohort-or-evidence-archive-intake",
+        "container": "one-regular-unencrypted-stored-or-deflated-ZIP-member; matching-local-central-and-optional-descriptor-metadata; exact-CRC32-and-decoded-length; refuse-split-ZIP64-ambiguous-multiple-empty-nested-or-corrupt-archives-before-any-network-request",
+        "limit": "both-selected-archive-and-decoded-member-are-bounded-by-payloadBoundaryContract.ownZipPreflightMaximumBytes; member-also-must-fit-the-live-content-format-upload-ceiling; this-does-not-raise-any-server-or-account-limit",
+        "source": "open-locally-in-ephemeral-memory-with-no-filesystem-extraction; the-exact-contained-DNA-file-is-the-source-for-the-existing-hash-lease-storage-finalization-preparation-and-original-download-contracts; ZIP-container-names-comments-and-extra-metadata-are-not-sent-or-saved",
+        "disclosure": "before-file-selection-say-that-only-the-file-inside-is-saved-and-display-the-archive-and-contained-file-bound; normal-server-format-and-single-sample-validation-remain-authoritative",
+        "adr": "docs/adr/0031-own-upload-zip-preflight.md"
+      },
       "serverPreflight": "independently-sniff-the-first-decoded-bytes-before-parse-and-never-trust-extension-content-type-or-browser-result; after-an-embryo-ingest-session-and-its-due-phase-exist-any-terminal-format-or-header-failure-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-and-never-deletes-the-session-due-target-or-fragments-first",
       "selfOrAdultBypass": "if-a-PDF-or-unsupported-file-bypasses-browser-preflight-delete-the-object-set-the-file-error-and-return-file-processing-v1.pdf-415-with-zero-derived-row",
       "selfOrAdultUnknownBuild": "when-an-ordinary-self-or-other-adult-VCF-gVCF-or-coordinate-bearing-source-has-no-trusted-explicit-source-build-do-not-assume-GRCh38-do-not-run-the-embryo-session-challenge-and-do-not-parse-into-canonical-rows; set-only-build_unknown-delete-the-rejected-object-under-the-governing-file-disposition-return-file-processing-v1.buildUnknown-and-direct-the-user-through-a-copy-ID-to-request-or-reupload-data-with-trusted-build-metadata",
@@ -2502,6 +2510,8 @@
         "authority": "private.own_copilot_authority_v1 plus private.own_copilot_chat_v1; exact current account/session/store/Copilot purpose/recipient snapshot before every tool, pinned connection, commit and response",
         "readers": "canonical prepared observations and exact completed report-purpose/source journals; explicit legacy processed-file observations remain separately snapshot-bound; historical report/PRS authority is unavailable per source",
         "scientificMetadata": "only immutable catalogSnapshot captured at completion; no current-template decoration of historical outcomes",
+        "ancestry": "reserved inherit:ancestry through list_reports/get_report only; exact completed ancestry grant/run/result digest; own_copilot_ancestry_v1 repeats current Copilot and captured-content authority; page-equivalent recorded resolution and display percentages; no partial-result region claims or object-prepared source support in this slice",
+        "ownDisclosure": "own-local/cloud artifact v2 explicitly names captured ancestry and requires fresh explicit permission; shared cloud artifact and exact five data-class identifiers unchanged; new own-cloud grant obtains fresh paired recipient-bound signatures",
         "history": "server-owned single-use context or immutable chat ID; no client history; atomic paired messages with captured citations; stale or unverified pairs invalidate the whole dependent chain",
         "cleanup": "exact-grant frozen purpose-derived manifest before message deletion; selected-file deletion freezes exact dependent message IDs in its Storage-ACK record; successor grants and independent chats excluded",
         "scopeLimit": "this implementation is self only; legacy ABI remains isolated behind absence of canonical consent/source/chat markers; no canonical RPC error may fall back",
@@ -3041,6 +3051,7 @@
   "payloadBoundaryContract": {
     "serverlessMaximumObservedBodyBytes": 4500000,
     "ingestChunkMaximumBytes": 4000000,
+    "ownZipPreflightMaximumBytes": 67108864,
     "embryoIngestSessionLimits": {
       "maximumUncompressedInputBytes": 200000000,
       "maximumChunks": 50,
@@ -9434,7 +9445,10 @@
           "excludedFromCeilings": true,
           "countsTowardFloors": true
         }
-      ]
+      ],
+      "entryEvents": {
+        "T9": "Record mailed-link and typed-URL entries separately from the six in-app click/submit actions; retain the registered confirmation exclusions."
+      }
     },
     "settingsDataReachability": {
       "fromSettingsNavMaxActions": 1,
@@ -9633,7 +9647,7 @@
       },
       "credential": "secure-httpOnly-sameSite-strict-cookie-hash-only-at-rest",
       "originSessionBinding": "authContracts.authenticated-session-v1.authenticatedDerivedCapability",
-      "stateChangingRequest": "exact-Origin-same-origin-fetch-metadata-and-X-Inherit-CSRF-header-bound-to-the-upload-session",
+      "stateChangingRequest": "exact-Origin-same-origin-fetch-metadata-and-X-Inherit-CSRF-header-bound-to-the-upload-session; api.embryo-ingest-chunk-alone-uses-its-policy.requestAuthority-without-an-additional-CSRF-or-chunk-nonce-header",
       "redirectsForbidden": true,
       "rawCredentialBodyLogAnalyticsOrAudit": "forbidden"
     },
@@ -9787,11 +9801,11 @@
       "header": {
         "const": "X-Inherit-CSRF"
       },
-      "requiredFor": "every-state-changing-method-including-a-body-forbidden-route",
+      "requiredFor": "every-state-changing-method-including-a-body-forbidden-route-except-api.embryo-ingest-chunk-as-declared-by-its-policy.requestAuthority",
       "binding": "one-time-and-bound-to-the-current-authenticated-or-purpose-session",
       "operationNonceIsNotCsrf": true
     },
-    "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce",
+    "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce; only-api.embryo-ingest-chunk-omits-the-CSRF-and-operation-nonce-headers-under-its-policy.requestAuthority",
     "destructiveBindings": [
       {
         "routeId": "api.account-delete",
@@ -16718,11 +16732,7 @@
         "contentEncoding": "forbidden",
         "maximumBodyBytes": "payloadBoundaryContract.ingestChunkMaximumBytes",
         "framing": "uncompressed-UTF-8-complete-logical-lines",
-        "unknownOrInvalid": "embryo-ingest-chunk-v1.invalidChunk",
-        "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-upload-session",
-          "X-Inherit-Chunk-Nonce": "one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256"
-        }
+        "unknownOrInvalid": "embryo-ingest-chunk-v1.invalidChunk"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -16737,7 +16747,8 @@
           "resource-authorization-v1",
           "jurisdiction-v1",
           "embryo-autosomal-only-v1"
-        ]
+        ],
+        "requestAuthority": "live-authenticated-account-originating-auth-session-strict-host-only-upload-session-cookie-exact-Origin-shared-same-origin-fetch-metadata-and-jurisdiction-guard-before-reading-bytes; database-reservation-and-commit-bind-session-sequence-actual-byte-count-and-content-hash; identical-retry-is-idempotent-and-changed-hash-fails-the-session"
       },
       "successResponseContract": "embryo-ingest-chunk-v1",
       "disposition": "kept"

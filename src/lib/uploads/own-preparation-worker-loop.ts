@@ -2,9 +2,10 @@ import "server-only";
 import { createAdminClient } from "../supabase/admin";
 import { drainPreparedScratch } from "../genome/prepared-source/cleanup-integration";
 import { runNextOwnPreparation } from "./own-preparation-worker";
+import { PreparationMetrics, type PreparationMetricsSink } from "./preparation-metrics";
 
 export type PreparationWorkerEvent = "preparation_prepared" | "preparation_idle" | "preparation_failed"
-  | "cleanup_progress" | "cleanup_idle" | "cleanup_failed" | "worker_stopped";
+  | "cleanup_progress" | "cleanup_idle" | "cleanup_deferred" | "cleanup_failed" | "worker_stopped";
 export class PreparationWorkerLoopError extends Error {
   constructor(readonly code: "worker_disabled" | "invalid_options") { super(code); this.name = "PreparationWorkerLoopError"; }
 }
@@ -19,8 +20,10 @@ function idle(signal: AbortSignal): Promise<void> {
   });
 }
 
-/** Sequential, awaited operator process. Each iteration runs at most one FIFO
- * preparation and one cleanup page. A failed claim/write is not retried here;
+/** Sequential, awaited operator process. Each iteration drains bounded cleanup
+ * first and runs at most one FIFO preparation only after no cleanup is eligible.
+ * Known pending cleanup defers preparation so a new hour-long job cannot starve
+ * its deadline. Failed claim/write operations are not retried in this iteration;
  * the next iteration uses SQL's current queue/cleanup eligibility. The existing
  * retention scheduler remains independent. Cleanup progress is not a claim of
  * queue emptiness, physical media erasure, or completion of all file artifacts.
@@ -29,6 +32,7 @@ function idle(signal: AbortSignal): Promise<void> {
 export async function runOwnPreparationWorkerLoop(options: {
   signal: AbortSignal;
   emit: (event: PreparationWorkerEvent) => void;
+  emitMetrics?: PreparationMetricsSink;
   /** Bounded operator --once/test mode; omission keeps polling until signalled. */
   maximumIterations?: number;
 }): Promise<{ status: "stopped" | "limit"; hadFailure: boolean }> {
@@ -41,23 +45,31 @@ export async function runOwnPreparationWorkerLoop(options: {
     // Recheck operator enablement between jobs. SQL config and current source
     // authority independently gate the actual claim; this flag never sets them.
     if (process.env.INHERIT_PREPARED_WGS_ENABLED !== "true") throw new PreparationWorkerLoopError("worker_disabled");
-    try {
-      const result = await runNextOwnPreparation({ signal: options.signal });
-      if (options.signal.aborted) break;
-      prepared = result.status === "prepared";
-      options.emit(prepared ? "preparation_prepared" : "preparation_idle");
-    } catch {
-      if (options.signal.aborted) break;
-      hadFailure = true; cycleFailed = true; options.emit("preparation_failed");
-    }
+    let cleanupIdle = false;
     try {
       const result = await drainPreparedScratch(createAdminClient(), options.signal);
       if (options.signal.aborted) break;
       if (result.failed) { hadFailure = true; cycleFailed = true; options.emit("cleanup_failed"); }
-      else options.emit(result.processed > 0 ? "cleanup_progress" : "cleanup_idle");
+      else options.emit(result.processed > 0 ? "cleanup_progress" : result.stop === "idle" ? "cleanup_idle" : "cleanup_deferred");
+      cleanupIdle = result.stop === "idle" && !result.failed;
     } catch {
       if (options.signal.aborted) break;
       hadFailure = true; cycleFailed = true; options.emit("cleanup_failed");
+    }
+    if (cleanupIdle) {
+      // The flag can change while cleanup is awaited. Never admit another job
+      // after that withdrawal; cleanup itself still uses its existing authority.
+      if (process.env.INHERIT_PREPARED_WGS_ENABLED !== "true") throw new PreparationWorkerLoopError("worker_disabled");
+      try {
+        const result = await runNextOwnPreparation({ signal: options.signal,
+          ...(options.emitMetrics ? { metrics: new PreparationMetrics(options.emitMetrics) } : {}) });
+        if (options.signal.aborted) break;
+        prepared = result.status === "prepared";
+        options.emit(prepared ? "preparation_prepared" : "preparation_idle");
+      } catch {
+        if (options.signal.aborted) break;
+        hadFailure = true; cycleFailed = true; options.emit("preparation_failed");
+      }
     }
     iterations++;
     if (options.maximumIterations !== undefined && iterations >= options.maximumIterations) break;

@@ -3,6 +3,7 @@ import type { Db } from "./load";
 import { OBSERVED_CALL_VERSION } from "./observed-calls";
 import { genotypeKey, type ReportTemplate, type TemplateVariant } from "./reports";
 import { filterOwnAnalysisFiles, loadOwnReportCallPage } from "./own-analysis-access";
+import { createOwnReportReadScope, loadOwnReportCallSource } from "./own-prepared-report-calls";
 import type { OwnReportPurpose } from "@/lib/uploads/own-report-purpose";
 
 export interface ReportCall {
@@ -60,6 +61,20 @@ async function allPages<T>(query: (offset: number) => PromiseLike<{ data: T[] | 
   }
 }
 
+async function loadModernCalls(db: Db, subjectId: string, fileId: string, purpose: OwnReportPurpose,
+  rsids: readonly number[], scope: ReturnType<typeof createOwnReportReadScope>) {
+  const source = await loadOwnReportCallSource(db, fileId, purpose, scope, subjectId);
+  if (source.backend === "prepared-object-v1") return { calls: await source.read(rsids), confirm: source.confirm };
+  const calls: ReportCall[] = [];
+  for (let offset = 0; offset < rsids.length; offset += 200) {
+    const rows = await allPages(page => scope.wait(loadOwnReportCallPage(db, fileId, purpose,
+      rsids.slice(offset, offset + 200), page)));
+    if (!rows) throw new Error("own_report_calls_unavailable");
+    calls.push(...rows);
+  }
+  return { calls, confirm: source.confirm };
+}
+
 /**
  * Shared report-only read. Callers must authorize the subject before an admin
  * read.
@@ -89,53 +104,64 @@ export async function loadReportCallRows(db: Db, subjectId: string, rsids: reado
   const byFile = new Map(files.map((file) => [file.id, file]));
   const legacyFiles = files.filter(file => file.single_logical_sample_verified_at === null);
   const failedModern = new Set<string>();
-  if (purpose) for (const file of files.filter(file => file.single_logical_sample_verified_at != null)) {
-    const fileCalls: ReportCall[] = [];
-    for (let offset = 0; offset < rsids.length; offset += 200) {
-      const rows = await allPages(page => loadOwnReportCallPage(db, file.id, purpose, rsids.slice(offset, offset + 200), page));
-      if (!rows) { failedModern.add(file.id); break; }
-      fileCalls.push(...rows);
+  const confirmations = new Map<string, () => Promise<void>>();
+  const scope = createOwnReportReadScope();
+  try {
+    if (purpose) for (const file of files.filter(file => file.single_logical_sample_verified_at != null)) {
+      try {
+        const loaded = await loadModernCalls(db, subjectId, file.id, purpose, rsids, scope);
+        calls.push(...loaded.calls);
+        confirmations.set(file.id, loaded.confirm);
+      } catch {
+        // A partial prepared read must never fall back to database rows.
+        failedModern.add(file.id);
+      }
     }
-    if (!failedModern.has(file.id)) calls.push(...fileCalls);
-  }
-  // Bound both IN lists, and exhaust each deterministic page before resolving.
-  for (let fileOffset = 0; fileOffset < legacyFiles.length; fileOffset += 100) {
-    const fileIds = legacyFiles.slice(fileOffset, fileOffset + 100).map((file) => file.id);
-    for (let i = 0; i < rsids.length; i += 200) {
-      const chunk = rsids.slice(i, i + 200);
-      const [variants, observations] = await Promise.all([
-        allPages((offset) => {
-          let query = db.from("user_variants").select("file_id,rsid,chrom,pos,ref,alt,genotype")
-            .eq("subject_id", subjectId).in("file_id", fileIds).in("rsid", chunk)
-            .order("file_id").order("id").range(offset, offset + PAGE - 1);
-          if (ownerId) query = query.eq("user_id", ownerId);
-          return query;
-        }),
-        allPages((offset) => {
-          let query = db.from("report_observed_calls")
-            .select("file_id,rsid,chrom,pos,ref,alt,genotype,usable,source_sha256,extraction_version,source_build")
-            .eq("subject_id", subjectId).in("file_id", fileIds).in("rsid", chunk)
-            .order("file_id").order("source_line").range(offset, offset + PAGE - 1);
-          if (ownerId) query = query.eq("user_id", ownerId);
-          return query;
-        }),
-      ]);
-      if (!variants || !observations) return { calls: [], fileCount: files.length, checkedFileIds };
-      const certified = observations.filter((row) => {
-        const file = byFile.get(row.file_id);
-        return file?.observed_call_version === OBSERVED_CALL_VERSION &&
-          row.extraction_version === file.observed_call_version && row.source_build === file.build &&
-          /^[0-9a-f]{64}$/.test(row.source_sha256) && row.source_sha256 === file.observed_call_sha256;
-      });
-      // Do not hide conflicting or unusable evidence by picking one store.
-      calls.push(...variants, ...certified);
+    // Bound both IN lists, and exhaust each deterministic page before resolving.
+    for (let fileOffset = 0; fileOffset < legacyFiles.length; fileOffset += 100) {
+      const fileIds = legacyFiles.slice(fileOffset, fileOffset + 100).map((file) => file.id);
+      for (let i = 0; i < rsids.length; i += 200) {
+        const chunk = rsids.slice(i, i + 200);
+        const [variants, observations] = await Promise.all([
+          allPages((offset) => {
+            let query = db.from("user_variants").select("file_id,rsid,chrom,pos,ref,alt,genotype")
+              .eq("subject_id", subjectId).in("file_id", fileIds).in("rsid", chunk)
+              .order("file_id").order("id").range(offset, offset + PAGE - 1);
+            if (ownerId) query = query.eq("user_id", ownerId);
+            return query;
+          }),
+          allPages((offset) => {
+            let query = db.from("report_observed_calls")
+              .select("file_id,rsid,chrom,pos,ref,alt,genotype,usable,source_sha256,extraction_version,source_build")
+              .eq("subject_id", subjectId).in("file_id", fileIds).in("rsid", chunk)
+              .order("file_id").order("source_line").range(offset, offset + PAGE - 1);
+            if (ownerId) query = query.eq("user_id", ownerId);
+            return query;
+          }),
+        ]);
+        if (!variants || !observations) return { calls: [], fileCount: files.length, checkedFileIds };
+        const certified = observations.filter((row) => {
+          const file = byFile.get(row.file_id);
+          return file?.observed_call_version === OBSERVED_CALL_VERSION &&
+            row.extraction_version === file.observed_call_version && row.source_build === file.build &&
+            /^[0-9a-f]{64}$/.test(row.source_sha256) && row.source_sha256 === file.observed_call_sha256;
+        });
+        // Do not hide conflicting or unusable evidence by picking one store.
+        calls.push(...variants, ...certified);
+      }
     }
+    // A withdrawal during the paged read must not escape as an analytic response.
+    const current = await filterOwnAnalysisFiles(db, subjectId, purpose, files.filter(f => !failedModern.has(f.id)), { gateLegacy });
+    const currentIds = new Set(current.map(f => f.id));
+    // A new grant or completed run does not revive evidence captured under the old one.
+    for (const [fileId, confirm] of confirmations) if (currentIds.has(fileId)) {
+      try { await confirm(); } catch { currentIds.delete(fileId); }
+    }
+    return { calls: calls.filter(c => currentIds.has(c.file_id)), fileCount: currentIds.size,
+      checkedFileIds: checkedFileIds.filter(id => currentIds.has(id)) };
+  } finally {
+    scope.close();
   }
-  // A withdrawal during the paged read must not escape as an analytic response.
-  const current = await filterOwnAnalysisFiles(db, subjectId, purpose, files.filter(f => !failedModern.has(f.id)), { gateLegacy });
-  const currentIds = new Set(current.map(f => f.id));
-  return { calls: calls.filter(c => currentIds.has(c.file_id)), fileCount: current.length,
-    checkedFileIds: checkedFileIds.filter(id => currentIds.has(id)) };
 }
 
 export async function getSubjectReportCalls(db: Db, subjectId: string, templates: readonly ReportTemplate[],

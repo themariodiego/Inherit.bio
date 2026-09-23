@@ -992,6 +992,74 @@
       "evidence": [
         "docs/design/ui-renewal/README.md"
       ]
+    },
+    {
+      "name": "UK Cancer Genetics Group paper archive",
+      "category": "cited-organisation",
+      "aliases": [
+        "ukcgg.org/media/12580/insight-apc-pi1307k.pdf"
+      ],
+      "reason": "Hosts the full published APC I1307K meta-analysis read in the dated source correction. Only the reviewed PDF path is registered.",
+      "evidence": [
+        "docs/sources/reviews/apc-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "Institute of Cancer Research paper repository",
+      "category": "cited-organisation",
+      "aliases": [
+        "repository.icr.ac.uk/server/api/core/bitstreams/99e2e771-711d-4bdd-b509-f58f0a8610f1/content"
+      ],
+      "reason": "Hosts the published 2025 APC I1307K cohort paper read in the dated source correction. Only that paper's repository object is registered.",
+      "evidence": [
+        "docs/sources/reviews/apc-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "Nature FGFR2 paper supplement",
+      "category": "cited-organisation",
+      "aliases": [
+        "nature.com/articles/nature05887#MOESM272"
+      ],
+      "reason": "Publisher locator for the FGFR2 supplementary tables read in the dated source correction. Only the cited paper's supplement locator is registered.",
+      "evidence": [
+        "docs/sources/reviews/fgfr2-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "University of Zurich pharmacology archive",
+      "category": "cited-organisation",
+      "aliases": [
+        "pharma.uzh.ch/dam/jcr:00000000-2992-0cf5-0000-000020c5cb44/Retey_Clin_Pharmacol_Ther_2007.pdf"
+      ],
+      "reason": "Hosts the full primary paper used for the dated ADORA2A sleep-association correction; the institution is named in the paper's author affiliations. Only the cited PDF path is registered, not the whole archive host.",
+      "evidence": [
+        "docs/sources/reviews/adora2a-correction-20260923.md",
+        "data/citations.json"
+      ]
+    },
+    {
+      "name": "NCRAD APOE joint-marker chart",
+      "category": "cited-organisation",
+      "aliases": [
+        "ncrad.iu.edu/bank-samples/apoe-genotyping/"
+      ],
+      "reason": "Primary joint-marker chart read for the dated APOE explanation correction. This full-path alias is a content-name exception under the existing substring classifier, not URL authorization.",
+      "evidence": [
+        "docs/sources/reviews/apoe-correction-20260923.md",
+        "docs/sources/ncrad/apoe-genotypes-2026-09-23.json"
+      ]
+    },
+    {
+      "name": "JAMA APOE meta-analysis abstract",
+      "category": "cited-organisation",
+      "aliases": [
+        "jamanetwork.com/journals/jama/article-abstract/418446"
+      ],
+      "reason": "Publisher author abstract independently read for the dated APOE explanation correction. This full-path alias is a content-name exception under the existing substring classifier, not URL authorization.",
+      "evidence": [
+        "docs/sources/reviews/apoe-correction-20260923.md"
+      ]
     }
   ]
 }

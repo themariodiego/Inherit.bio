@@ -8198,6 +8198,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      own_report_call_source_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;
+          p_expected?: string | null
+        }
+        Returns: Json
+      }
       read_own_report_calls_v1: {
         Args: {
           p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;

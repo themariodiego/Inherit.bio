@@ -1,5 +1,254 @@
 # Test diff register
 
+## TCF7L2 source scope · 23 September 2026
+
+Six additive cases preserve the exact C>T call contract, trial population and
+CT uncertainty; they bind all four corrected strings to dated primary evidence
+and reject changed prose or marker attribution. Existing canonical claims and
+all earlier report tests remain; only measured aggregate counts expand.
+The undated-citation backlog decreases by one. No acceptance row, route or
+density ratchet changes. Tests do not establish assay or clinical validity.
+The historical matcher adds the four exact prior fields from the committed
+TCF7L2 source change; existing six batches and all original assertions remain.
+
+## Historical report correction boundaries · 23 September 2026
+
+New regression cases bind 32 exact superseded fields from seven reviewed source
+changes, including 24 resolver-consistent saved genotype explanations. They
+preserve unknown wording as unknown, immutable captured data, source identity,
+own and Family sensitive-result gates, and every original assertion.
+
+Copilot cases prove refusal before nonce consumption, provider dispatch or
+new chat commits, including an older assistant paraphrase and known outcomes
+without a catalog. Pagination and final authority checks retain their bounds.
+Client handler and actual page-key tests distinguish a fresh nonce from a
+changed source projection. Existing current APOE/FGFR2 browser cases gain four
+no-false-warning assertions; no fixture, assertion, timeout or gate is removed.
+JSON/text export cases preserve the original captured objects and add only
+correction metadata. Notices live in the scanned copy registry.
+
+Local tests do not claim an old-capture browser journey, generated route-type
+validation, hosted inference or clinical review. The scoped behavior and
+conservative whole-context refusal are documented in
+`docs/report-scientific-corrections.md`.
+
+## TREM2 source scope · 23 September 2026
+
+The R47H report keeps its C/T marker and association direction, while removing
+unsupported lifetime reassurance and the claim that a TT call is probably
+an error. Six additive cases cover allele identity (including rejection of
+the same-rsID R47L alternative), missing calls, genotype limits, dated source
+bindings and actual report rendering with changed-text/key refusal. The
+existing canonical baselines and regression assertions remain; only measured
+aggregate counts expand for four strings and two primary publications.
+The undated-citation ratchet falls by two. This is source-scoped regression
+coverage, not clinical or full-catalog validation.
+
+## Prepared journey cleanup fixture · 23 September 2026
+
+CI run 35807399737 passed 528 browser cases. The prepared plain case reached
+selected-file deletion and timed out; the following gzip case refused the
+still-enabled worker. The fixture had selected Supabase prepared artifacts,
+whose cleanup adapter deliberately cannot acknowledge unverified physical
+deletion. The production refusal and its existing tests remain unchanged.
+
+Both complete prepared cases now select the supported R2 gateway protocol.
+The actual production gateway runs over TLS against a bounded synthetic
+binding inside the existing isolated CI namespace. It checks checksums,
+versions, ranges and conditional writes; retained empty tombstones prevent
+late writes. The application and one worker use the same ephemeral signer;
+the gateway receives only its public half. No provider endpoint, published
+port, proxy allowlist, production configuration or cleanup bound changes.
+
+Additive tests cover scope refusal, captured configuration restoration,
+concurrent drift, gateway authentication, immutable versions, late writes,
+resource limits and protected aggregate evidence. Existing Supabase fixture
+tests are preserved. Each browser case retains the exact genotype, ancestry,
+history, withdrawal, original-object deletion, database cleanup and 204
+assertions. It additionally reconciles every acknowledged job artifact,
+including scratch, with the retained empty markers and zero payload bytes.
+The two cases share the gateway lifetime; there is no reset between them.
+All existing browser and worker deadlines remain unchanged. This is synthetic
+CI integration evidence, not hosted R2, physical erasure or large-file capacity.
+
+## Preparation image dependency patches · 23 September 2026
+
+The frozen dependency install runs before the preparation image copies its
+source files. Its workspace and lockfile now name a local dependency patch,
+but the Dockerfile did not copy that patch into the image. The next image
+build therefore lacked a required install input, even though the worker does
+not import the patched browser dependency.
+
+The Dockerfile now copies the patch directory before installation. One
+additive configuration test compares the workspace and lockfile patch paths,
+checks the files and build-context exclusions, and resolves their image
+destinations using only COPY instructions before the install. Against the
+old Dockerfile, this case fails while all 17 existing cases pass. The change
+preserves the unprivileged user, frozen install, script restrictions, worker
+entry, deployment guard and every existing assertion. No worker behavior,
+runtime setting or safety bound changes. An actual image build remains a
+separate validation step; no build or deployment ran while authoring this fix.
+
+## Register the cited primary-paper path · 23 September 2026
+
+CI run 35805911265 passed the full unit suite, then the name gate refused the
+unregistered university-hosted PDF used by the ADORA2A review. The gate's G6.2
+contract permits organisations named in cited papers with an evidence-backed
+reason. The paper names the hosting institution in its author affiliations.
+
+One cited-organisation entry registers only that PDF path. The original source
+link and access evidence stay intact. A new test admits the exact path while
+refusing the bare host, a different paper and a lookalike host; private denylist
+matching still overrides the public entry. Existing fixtures, scan scope,
+baseline, provider carve-out and all gate code remain unchanged. The actual
+private denylist is available in CI; local tests do not replace that gate.
+
+## Source dates after the ADORA2A correction · 23 September 2026
+
+CI run 35805197191 passed 5,745 unit tests and failed the science-page date
+assertion. All 21 sources were rendered, but the test expected every source to
+carry the original 6 September date. The two added sources correctly carry
+their 23 September access date. No application change is needed.
+
+The test retains the original 19 dated sources, requires the two new dates,
+and now checks each source's unique entry, one time element, exact date
+attribute and visible date against its record. Existing source-link and
+incomplete-coverage checks remain. The corrected brain-health report also
+joins the existing real Chromium DOM checks for exact registered prose,
+genotype bindings and source anchors. No test or assertion is removed, and
+no old review date or scientific evidence is changed.
+
+## Ordinary reports from prepared sources · 23 September 2026
+
+CI run 35798620915 passed 528 browser cases, including complete own-genome
+journeys from Overview and My Genome. The prepared-source case failed at its
+unchanged A/C genotype assertion on the ordinary report URL. The completed
+source was valid, but that page requested calls from the database-only reader,
+which refuses prepared sources. The report incorrectly showed no coverage.
+
+The ordinary reader now selects a completed database or prepared source under
+the report purpose. New tests cover exact source and subject identity, current
+session, receipt changes, withdrawal and regrant, changes during object reads,
+later-page and later-chunk failures, and final confirmation before release.
+The aggregate tests preserve conflicting loci, conflicting genotypes, no-calls
+and failed quality across prepared, database and legacy files. Existing Family
+authority and all older report and Copilot tests remain unchanged.
+
+Prepared reads share one 30-second deadline, 10,000 evidence records and 2 MB
+across files and chunks. The existing bounded rsID reader moves to a neutral
+module; compatibility exports retain its Copilot callers. Exact duplicates
+still consume the evidence budget. An exhausted scope cannot confirm an
+earlier result, and any prepared failure cannot fall back to database calls.
+
+Additive SQL cases use genuine completed fixtures for both backends and check
+the exact result, run, source and full published membership receipt, invalid
+purpose, session expiry, and closed role privileges. They preserve all previous
+assertions and execute through enabled triggers. They still require CI; local
+unit checks do not establish database or hosted behavior. The failing browser
+assertion and existing timeouts are unchanged. No capacity or release row is
+claimed from this correction.
+
+## ADORA2A report source correction · 23 September 2026
+
+The canonical content fixture preserves all 71 original claims, 19 sources,
+eight report hashes, review dates and twelve interpretation bindings. A separate
+case binds the corrected ADORA2A object, its four exact strings and two dated
+sources, including the distinction between abstract and full-paper access.
+The combined registry must contain exactly 75 claims and 21 sources.
+
+Claims-gate counts increase only for those additions. Removing the same existing
+earwax claim still produces both missing and stale ledger findings; the remaining
+registered count is now 74. All negative and drift checks remain. Prior source
+quotation allocations are included in the unchanged 25-word limit. The actual
+two new citation dates lower the undated-citation ratchet from 189 to 187.
+
+These checks bind reviewed seed text and source records. They do not establish
+clinical validation, a hosted reseed, corrected historical report snapshots or
+completion of the remaining catalog and release acceptance work.
+
+## Optional preparation phase metrics · 23 September 2026
+
+New collector tests cover fixed labels, bounded pending state, wall and process
+CPU deltas, bad clocks, saturated counters, late results, frozen snapshots and
+throwing or rejected sinks. Operator option tests keep metrics opt-in and
+reject unknown or duplicate arguments.
+
+The real synthetic pipeline runs with and without the collector and compares
+all result data, stored bytes, authority order and checkpoint order. Separate
+failure cases distinguish an acknowledged canonical checkpoint from active
+rsID work and refuse a changed checkpoint ACK. Worker tests retain original
+results and failures while checking final metrics on idle, success, failure
+and cancellation. Transport tests require unchanged request counts, lazy
+reads, actual EOF, and separate transport and post-read authority outcomes;
+the R2 case uses a synthetic transport and the actual writer and reader.
+
+No existing test, timeout, authority check or capacity bound is removed or
+relaxed. These are local instrumentation tests, not hosted timing or a new
+capacity result. They do not change release acceptance evidence.
+
+## Buffered merge head selection · 22 September 2026
+
+`merge.test.ts` and `canonical-merge.test.ts` each add an eight-input case that
+compares the buffered output order, requires no further reads while downstream
+is paused, then aborts before another buffered emission or block acquisition.
+All existing receipt, hash/EOF, order, count and terminal assertions remain.
+No tests were removed or relaxed. These are preservation tests for a CPU
+optimization and also pass on the baseline implementation; the reproducible
+synthetic paired benchmark records the performance evidence separately in
+`docs/evidence/prepared-merge-buffered-heads-20260922.md`.
+
+## Drain existing scratch before new preparation · 22 September 2026
+
+`cleanup-integration.test.ts` adds serial multi-page progress and stop-boundary
+coverage for scratch cleanup. It keeps the existing owner/account single-page
+assertions. `own-preparation-worker-loop.test.ts` changes the asserted order to
+cleanup before preparation, because the former order lets a new hour-long job
+delay existing scratch cleanup. The same preparation, shutdown, coded-error and
+operator-withdrawal assertions remain; new cases forbid preparation after
+bounded, failed, unresolved, cancelled or zero-progress cleanup and allow it
+after a later drain observes no eligible claim. No test is skipped or removed.
+
+The new aggregate drain has a 150-second envelope and 256-page ceiling. Existing
+16-entry pages, 25-second operations, 30-second claims and immutable deletion
+deadlines are unchanged. Unit tests do not prove hosted deadline compliance.
+
+## Standard upload grants reject other provider transports · 22 September 2026
+
+`supabase/tests/own_upload_storage_authorization.sql` adds a refusal matrix for
+15 missing or nonstandard operation settings: TUS, S3, signed upload, update,
+an unqualified name and an extended name. Each request also supplies spoofed
+headers asserting the permitted operation. The matrix requires an RLS refusal,
+then checks that the exact session remains issued and no object row was added.
+The existing valid fixtures now set the trusted standard operation. Every
+existing key, size, ownership, consumption and revocation assertion remains;
+the elevated completion cases clear the operation to check that the service
+trigger retains its independent authority checks.
+
+`e2e/own-upload-transport.spec.ts` adds an installed-provider regression. It
+issues one real grant after the consent screens, requires both an ordinary
+empty TUS create and a metadata-spoofing create to fail with 403, and requires
+the standard upsert route to report its permission refusal. It checks that the
+session remains issued, then uses the same grant for standard object creation
+and finalization, verifying the exact stored bytes at both stages. This makes
+a bad or consumed grant fail the success path instead of appearing to prove
+transport binding. The existing complete UI upload journey is unchanged.
+
+Each TUS refusal is asserted before the next attempt. If a regression returns
+a resource location, the test first attempts one bounded termination of only
+the decoded exact synthetic bucket, staging key and version through the local
+provider. That response does not prove physical deletion. The reviewed provider
+source places the permission probe before allocation; CI must still establish
+the installed provider's HTTP propagation and refusal behavior.
+
+Local verification passed 159 targeted token, issuance, finalization and
+retention tests, changed-file lint, TypeScript and the readability gate.
+Playwright discovery found this test and the existing positive journey;
+discovery is not execution. pgTAP and the browser regression remain unexecuted
+pending CI because the local Docker runtime was unavailable. No local provider
+request, source-byte upload, database mutation or hosted migration was used to
+prepare this change, and no red/green runtime result is claimed. Upload limits,
+route and density ratchets, and finalization bounds are unchanged.
+
 ## A focus precondition that does not depend on window focus · 21 September 2026
 
 `e2e/search.spec.ts`'s `openWithShortcut` establishes that focus sits on the
@@ -2159,3 +2408,467 @@ extractor or legal statement is removed or relaxed.
   fixture hit an existing consistency constraint; an explicit constraint-refusal
   assertion remains, and the stale-source probe changes both revision fields
   coherently before requiring the same member-gate refusal. No guard is bypassed.
+
+## Genome widget settings and keyboard controls · 22 September 2026
+
+- The first full CI run exposed overlapping drag/gear targets and an incorrect
+  first-menu-item assumption. Two additional native cases check real pointer
+  hit testing inside a padded host while resizing through 320/390/1280 pixels
+  in both themes. Native axe coverage now uses the complete app tag set,
+  including WCAG 2.2 AA and best-practice rules. The app journey asserts the
+  actual first height action, then ArrowDown and focus on the name action;
+  every edit, cancel and focus-return assertion remains.
+
+- `scripts/igv-interactions.test.ts` adds actual installed-library Chromium
+  checks for track settings, dialogs, colors, ordering, display modes and
+  removal, with normal tab traversal, mobile reflow, target size and axe checks.
+  Existing keyboard and accessibility tests are unchanged.
+- `e2e/genome-data.spec.ts` adds a settings edit/cancel/menu/page Escape journey
+  after the existing synthetic upload, retaining every previous assertion.
+  Full-app CI remains required; no acceptance or density threshold changes.
+- See `docs/evidence/genome-widget-controls-20260922.md` for remaining interaction
+  inventory and verification limits. G1.13b remains NO.
+
+## Native genome track scrolling · 22 September 2026
+
+- The inherited geometry correction and full app axe tags are retained. The
+  combined widget, scrolling, popover, keyboard and copy checks pass 49 cases;
+  full-app verification of the corrected head remains required.
+
+- `scripts/igv-track-scrolling.test.ts` adds seven installed-library Chromium
+  checks for keyboard and pointer endpoints, real content movement, resize,
+  focus return, target size, reflow, axe and normal tab traversal. Overlapping
+  annotations are explicitly a UI fixture, not prepared DNA or capacity proof.
+- `e2e/genome-data.spec.ts` adds a separately labelled synthetic-response UI
+  journey while preserving every real source/preparation test and response.
+  No existing test, assertion, timeout or acceptance threshold changes.
+- `docs/evidence/genome-track-scrolling-20260922.md` records the scope and the
+  remaining context-menu and popover work. Full-app CI is still required.
+
+## Genome context menus and detail popovers · 22 September 2026
+
+- Eight new installed-library Chromium cases exercise track-label keyboard
+  activation, native modal focus containment, context-menu arrow navigation,
+  PNG/SVG downloads through existing callbacks, pointer-opened detail closure,
+  repeated alerts, cleanup and reattachment. The main journey runs at three
+  widths in both themes with axe, 44-pixel targets, reflow and normal Tab order.
+- The new real-app keyboard detail/export journey retains all existing genome
+  data assertions and uses the ordinary synthetic upload from the suite.
+  Full-app execution is still pending CI; no test or threshold is relaxed.
+- The 47 targeted widget, keyboard and copy cases pass. Remaining full-scope
+  evidence is recorded in `docs/evidence/genome-popovers-20260922.md`.
+
+## Composed first-viewport control count · 22 September 2026
+
+- The shared control counter now enters open shadow roots and assigned slots,
+  retaining its selectors, viewport boundary, exclusions and twelve-control
+  threshold. The ancestry suite uses the same implementation.
+- Five native Chromium regressions cover the omitted controls, nested roots,
+  slots, composed navigation exclusions and a real thirteen-control refusal
+  case. The existing fourteen keyboard-audit cases also pass.
+- No test, assertion or threshold is removed. Native fixture counts are not
+  app-layout evidence; the complete app sweeps must pass with this counter.
+  The frozen pixel-area baseline is unchanged and G1.13b remains NO.
+
+## Upload after genome browsing · 22 September 2026
+
+- Four native Chromium cases cover the installed viewer's File reference,
+  unchanged network methods, uploads during and after viewing, refusal,
+  redirects and cancellation. Synthetic test origins are explicit fixtures.
+- The existing real-app network audit retains all origin/tracker assertions
+  and adds a same-document link journey back to upload, followed by actual
+  Storage, finalization and preparation. A document marker prevents a reload
+  from masking the old permanent XHR patch. No existing test is removed or
+  weakened; full-app CI remains required.
+
+## Genome viewer lifecycle · 22 September 2026
+
+- Eight new standalone Chromium cases cover normal disposal, late initialization
+  after unmount, timeout with late completion, repeated region replacement,
+  prior cancellation, late disposal errors and explicit rejected/missing-handle
+  creation fixtures. The native
+  cases verify shadow roots, global registry visits and actual keyboard/resize
+  callback behavior, including preservation of an unrelated listener/viewer.
+- The installed library supplies real synthetic rendering; its instance
+  callbacks provide observation without global event or network patches.
+  No existing test, timeout or threshold is removed or weakened. Full-app CI
+  remains required; see `docs/evidence/genome-browser-lifecycle-20260922.md`.
+- The two real-app Escape assertions now inspect the focused control's actual
+  shadow root, preserving the requirement that focus has left that tree after
+  Escape when each instance lives in its own child host.
+
+## Native navigation option and resize API · 22 September 2026
+
+- The existing false multi-select option was ignored by the installed widget,
+  which the composed first-viewport census caught as 13 controls against 12.
+  Three new native tests cover false, true and absent options through resize;
+  enabled selection must still toggle the actual native track-selection state.
+- Checking uncaught errors reproduced the nonexistent resize method in all
+  fourteen interaction cases. Native interaction, scrolling and popover tests
+  now fail on page errors. The adapter calls the observed instance-bound handler.
+- A pointer-popover test now clicks its synthetic marker's actual reference-frame
+  coordinate after resizing and verifies its name, retaining the dialog, axe and
+  Escape requirements. The old midpoint no longer named that marker after the
+  resize correction. No count, density, route, test or timeout bound changes.
+
+
+## Native viewer initialization failure cleanup · 22 September 2026
+
+- Four native Chromium cases cover the installed ESM and UMD package entries,
+  each with a real synthetic reference File read rejection and repeated normal
+  removal. They inspect actual keyboard/resize listeners and shadow roots;
+  a separate live viewer must keep rendering, searching and returning its
+  synthetic feature after its neighbor fails.
+- Both cases retain uncaught-error and network-origin assertions. No global
+  event method is replaced, no existing test is removed, and no threshold is
+  changed. The dependency patch is registered only for IGV 3.8.5. See
+  `docs/evidence/igv-native-initialization-patch-assessment-20260922.md` for
+  clean-install evidence and the limits of the measured failure path.
+
+## Genome browser to upload navigation waypoints · 22 September 2026
+
+- The same-document network audit now requires the My Genome URL, heading,
+  tools region and viewer removal before following the subject-bar upload link.
+  The hub has two upload links, so the second click is scoped to that bar.
+  The upload URL is checked before the existing picker, Storage, finalization,
+  preparation and origin assertions. Existing timeouts are unchanged.
+- A failed transition retains only fixed route/stage names, response statuses,
+  bounded event kinds and error counts. Two standalone Chromium cases verify
+  removal of request/error content, the event bound and listener cleanup.
+- CI run 35744757008 retained the original browser page after both clicks;
+  it did not record which route request or transition failed. The absent hub
+  waypoint is a demonstrated test gap, not a proven cause of that failure.
+  No application behavior, network limit or release verdict changes here.
+
+
+## Detached viewer mutation cleanup · 22 September 2026
+
+- The new `scripts/igv-detached-cleanup.test.ts` exercises the installed native
+  viewer and all current interaction adapters. After its real unknown-position
+  alert is closed, a queued viewport mutation is delivered with the host
+  detached and disposal scheduled for a later task. The next task must run,
+  remove the native roots, render the next page and produce no browser errors.
+- A test-only observer watchdog bounds an otherwise infinite microtask loop;
+  reaching the watchdog is an assertion failure. The regression fails without
+  the scrolling adapter's attached-host guard and passes with it. The guard
+  prevents detached controls being repeatedly removed and recreated before
+  passive cleanup can run. No existing assertion, timeout or threshold changes.
+- CI run 35755611547 had received the My Genome HTTP 200 response and updated
+  URL, but its heading assertion stalled until the 120-second test timeout.
+  This regression demonstrates the teardown defect behind that failure shape;
+  the existing complete same-document upload journey still has to pass CI.
+
+## Own prepared-source Copilot rsID reader · 23 September 2026
+
+- Fifty-seven new synthetic cases cover bounded rsID lookup, the published
+  source boundary and a standalone Copilot call adapter. Real parser and
+  materializer bytes pass through mocked authenticated HTTP and the existing
+  genotype policy for calls, reference observations, no-calls and conflicting
+  loci. Rewritten index hashes exercise wrong-rsID pointers, offsets outside
+  actual records and repeated pointers, separately from transport corruption.
+- The reader retains source-only evidence and repeated observations. The adapter
+  refuses selected unmapped or unsupported evidence and discards a duplicate
+  variant only after finding its exact normalized original in the complete
+  selection. Cursor hashes bind both roots and the query. Tests cover short and
+  empty continuations, byte limits, scratch gaps, source changes, late refusals,
+  finite deadlines and callbacks used after their scope closes. The limits
+  remain 50 query IDs, 1,000 records per page, 10,000 aggregate records and 2 MB;
+  the whole adapter has a 30-second deadline and an eleven-page work bound.
+- All 1,298 prepared-source and Copilot tests pass. Changed files pass lint and
+  the readability gate. Existing tests and safety bounds are preserved. These
+  fixtures make no real provider, database or inference calls. Prepared sources
+  still need the coordinated Copilot projection and dispatcher integration;
+  this change does not activate a new source, grant, tool or history path, and
+  does not establish hosted deletion, retirement or release acceptance evidence.
+
+## Captured own ancestry in Copilot · 22 September 2026
+
+- The new route regression supplies an authorized completed ancestry projection
+  and executes the existing `list_reports` and `get_report` tools. It failed on
+  the prior implementation with HTTP 403 before tool dispatch; it now passes
+  and asserts exactly the existing five tool names. All assertions are outside
+  the route's error-catching callback.
+- Focused reader and presentation cases compare both distinct regional VCF
+  fixtures with the ancestry page's display arithmetic. They use observed calls,
+  including literal reference observations, retain historical five-region and
+  lineage states, withhold partial regional estimates, and reject changed
+  receipts, current catalog collisions, invented percentages and citations.
+- The database fixture generates a real captured ancestry result using the
+  existing normalization and selected-purpose APIs. New assertions cover exact
+  source/journal binding, actual service-role access, post-read source/capture/
+  purpose changes, and ancestry withdrawal's frozen paired-message purge.
+  Regrant cannot revive old context or history; an independent conversation,
+  source observations, other reports and successor-grant messages survive.
+- The original zero-coverage ancestry DTO is relocated unchanged into a shared
+  `.inc` fixture, with only each test's source binding supplied as an argument.
+  The original generation test retains its exact source tuple and assertions;
+  the Copilot test adds no reference identifier literals. Static substitution
+  reproduces the original expression byte for byte.
+- Own-Copilot v1 evidence is seeded as historical signatures and paired rows;
+  the current v2 resolver must refuse it. Fresh explicit permission must create
+  new purpose and cloud-signature evidence under the unchanged five scope
+  identifiers. Exact queued cleanup must remove the superseded pairs. The
+  fixture changes no artifact body, trigger or assertion bound.
+- Local validation: 438 targeted tests across 17 suites, generated type checking,
+  changed-file lint and readability passed. The pgTAP additions and the integrated
+  upload/report/ancestry/Copilot browser journey remain pending CI. No hosted
+  model, database, provider, upload or cleanup measurement was made here.
+
+
+## Complete own-genome browser journey · 23 September 2026
+
+- Two new scenarios start at Overview and My Genome, respectively. Each uploads
+  a single synthetic VCF composed from the existing regional and caffeine
+  fixtures through the actual file picker, finalization and preparation path.
+  Storage bytes and the source digest must match before any analysis purpose
+  is selected. No purpose grant, result or prepared state is seeded.
+- The person explicitly chooses reports and ancestry, follows the hub and report
+  links, and sees the resulting genotype and ancestry. Copilot remains unavailable
+  until separate explicit consent names ancestry and the configured provider.
+- The existing controlled HTTPS inference fixture receives the actual report and
+  ancestry tool results. Assertions compare page-rendered parent and split-region
+  percentages, support note, caveat and marker coverage to the captured evidence;
+  every regional range stays explicitly unavailable. Citation receipts, paired
+  history and the unchanged source are checked across reload and withdrawal.
+  Withdrawing ancestry refuses the old chat before another provider call, removes
+  the ancestry figures and preserves the independent report and source.
+- These cases exercise the normal database preparation path. A separate prepared
+  object journey is still required. The fixture controls inference only; it is
+  not evidence of hosted model quality, clinical validity or large-file capacity.
+- Lint, TypeScript and test discovery pass locally. Browser execution is pending
+  CI; no existing assertion, test timeout or acceptance threshold was changed.
+
+## Prepared own sources in Copilot · 23 September 2026
+
+- A route regression provides a valid published-source projection to the actual
+  dispatcher and existing raw tool. It failed against the prior route/schema
+  with HTTP 403, before dispatch. The integration returns the exact observed
+  genotype and retains all five tool names, with no prepared SQL fallback.
+- Mixed-source tests preserve cross-locus conflict, reject foreign or prepared
+  IDs from the SQL selector, and discard partial calls on late refusal. One
+  whole-union deadline stops two sequential sources at 30 seconds; a stalled
+  database page is bounded too. Evidence omitted as exact duplicates still
+  consumes the shared record/byte budget, including before the next file starts.
+  Source-unavailable responses require a final full projection check.
+- The existing publication/report fixture adds real Copilot settings, current
+  permission, paired history and completed prepared report/ancestry reads. It
+  asserts unchanged database-source JSON, exact prepared/completed identities,
+  exclusion from both stale SQL selectors, and refusal after source, root,
+  unread member or store-authority changes. File-deletion preparation must
+  freeze the exact message/turn/projection-hash pairs and dependent suffix;
+  ancestry withdrawal must purge its exact pairs while preserving the separate
+  report and prepared source. These are SQL metadata and authority assertions,
+  not evidence of physical provider deletion.
+- The retirement fixture separately checks the gap between original metadata
+  removal and exact acknowledged retirement. Only the latter may preserve the
+  captured prepared projection. Its prior deadline and deletion assertions stay
+  intact. Existing synthetic recipient settings JSON is extracted unchanged
+  into a shared fixture; no endpoint is contacted and no new recipient is added.
+- Local validation: all 1,368 prepared-source/Copilot tests across 50 suites,
+  full TypeScript checking and changed-file lint pass. Type checking reuses
+  existing generated route declarations without running an application build.
+  The new pgTAP assertions and integrated prepared browser journey remain
+  pending CI. No database, provider, inference or hosted activation ran locally;
+  no release acceptance row is changed by these results.
+
+
+## Complete prepared-source browser journey · 23 September 2026
+
+- Added the actual prepared-object journey and the guarded CI-only fifth app
+  described in [its evidence record](evidence/own-prepared-genome-journey.md).
+  The fixture uploads a tiny synthetic source, requires a queued job and actual
+  worker publication, and verifies zero database-normalization fallback before
+  reading reports, ancestry and the raw genotype through Copilot. Withdrawal
+  and selected-file deletion use the existing product paths and exact source.
+- Configuration tests preserve all earlier local variants and require the new
+  case in qualified CI. Fixed command, isolated runtime identity, current queue,
+  captured configuration restoration and bounded uncertain completion are
+  exercised through injected adapters; they do not claim provider execution.
+- Independent review strengthened both normal and prepared journey reloads to
+  compare every ordered user/assistant message, its content and citations, and
+  the exact chat ID. A correct final answer cannot conceal corrupted earlier
+  report or raw-call history. No existing assertion or timeout is relaxed.
+- Targeted checks and discovery are local authoring evidence. Combined
+  database, browser and Storage execution remains pending the actual CI run.
+
+## Completed ancestry cleanup replay contract · 23 September 2026
+
+- Integrated CI run 35797716604 executed 3,493 database assertions and found
+  one incorrect expectation in the new ancestry fixture: a completed cleanup
+  replay returns SQL NULL, as the existing executor and its original regression
+  require. The first execution alone returns the completion response.
+- The corrected assertion checks the entire NULL result and first requires one
+  exact old-grant job with completed job, phase and manifest receipts. A full
+  snapshot must remain unchanged after regrant and replay. Existing old-pair
+  removal, independent history, successor-pair and ancestry-read assertions stay
+  intact. No executor behavior, safety bound or test is removed or relaxed.
+- The corrected database assertions require a new CI run; source review and
+  focused unit checks do not substitute for their execution.
+
+
+## Complete gzip prepared-source journey · 23 September 2026
+
+- Parameterized the existing complete prepared-source browser journey with a
+  second gzip case. The plain case and every existing assertion remain. Both
+  cases use the same 169-record, 7,937-byte decoded source and pin its SHA-256;
+  gzip must decompress to those exact bytes. Each case independently requires
+  the fixed ancestry region/split percentages and 168-of-168 coverage calculated
+  from the pinned uncompressed fixture, without inter-test result sharing.
+  Stored-original byte and hash
+  assertions compare against each case's actual uploaded buffer.
+- Both cases require real 202 admission, one fixed worker and 200 publication,
+  zero SQL-normalization fallback, report/ancestry/raw Copilot agreement, exact
+  citations and ordered history, withdrawal and selected-file deletion. Every
+  case keeps the existing 300-second budget; worker limits, zero retries and
+  all queue/configuration/namespace guards are unchanged.
+- Cases run sequentially with separate fixture invocations. Selected-file
+  deletion removes the job and cascades its cleanup receipts; the next case
+  still refuses any residual job or cleanup. Monthly admissions remain counted.
+  A failure before cleanup is not bypassed, reset or silently retried.
+- Local checks are authoring evidence only. The added gzip case requires actual
+  isolated CI browser, database and Storage execution before it can be claimed
+  as verified. This adds no hosted capacity or release acceptance claim.
+
+## Prepared report identity assertion syntax · 23 September 2026
+
+- CI run 35806680706 passed the first 87 assertions in the prepared report
+  authority fixture, then stopped because subtraction bound before JSON
+  selection in the next assertion. Parentheses now select the identity object
+  before removing its prepared-source metadata. The expected identity and the
+  complete comparison remain unchanged; no assertion, trigger or bound moves.
+- A read-only constant-expression probe preserves the exact synthetic identity
+  and rejects a different identity. Independent review found no further syntax
+  issue in the remaining new assertions. Full fixture execution remains a CI
+  requirement; the constant-expression probe does not establish its result.
+
+## Preparation image build check · 23 September 2026
+
+- Added a separate pull-request check that builds the production worker
+  Dockerfile with its actual frozen dependency install and repository context.
+  This catches missing package patches before a hosted deployment. The worker
+  is never started, and the image is neither published nor deployed.
+- Two additive configuration tests require the bounded build-only command,
+  read-only checkout without persisted credentials, and change filters for
+  every current Dockerfile input. Existing deployment guards and CI checks
+  remain unchanged. The local suite passes all 20 tests; actual image build
+  verification requires the new remote check and is not yet claimed.
+
+## APOE separate-marker explanation correction · 23 September 2026
+
+- Added 13 focused tests binding the unchanged GRCh38 alleles and emerging
+  evidence tier, direct/complement calls, and the actual resolver/rendering
+  boundary. Missing and no-call partners in both directions, CC/TT, dual CT,
+  an unrecognized partner and conflicting source observations cannot emit an
+  APOE type or personal odds from a separate marker explanation.
+- The existing attribution renderer refuses historical wording, mismatched
+  marker identity and changed genotype. Older captured templates retain
+  their original text and remain a separate release follow-up; this correction
+  applies to newly generated reports using the corrected template.
+- Seven exact claims bind two primary author abstracts and one short NCRAD
+  joint-marker chart excerpt. A separate aggregate test preserves every prior
+  binding while adding these seven. Existing count fixtures move only by the
+  measured additions, and the undated-citation bound decreases from 181 to
+  179; no scanner, caller, coverage rule or safety bound is relaxed.
+- The focused report, canonical registry, rendered-source, claims-gate and
+  template suites pass 185 tests in ten files. Changed TypeScript lint,
+  template, claims and readability checks pass locally. These checks are
+  source and regression evidence, not clinical validation or a hosted run.
+
+- Two additional source-name cases cover the reviewed NCRAD and JAMA paths,
+  retaining bare-host, unrelated-path, lookalike and private-denylist refusal.
+  They exercise the existing substring classifier, not strict URL or per-file
+  authorization. Previous allowances and scanner behavior remain unchanged.
+
+### 2026-09-23 — Overview Portrait navigation
+
+- Overview resolves a direct Portrait link only from the viewer's own Family
+  graph and a current, finally confirmed pair authority receipt. No pair ID
+  reaches the page from an unconfirmed candidate. Both Portrait directions,
+  account/session, endpoints, purpose, signatures, current consent artifact,
+  pair revision, pause, acknowledgment and independent-login state remain
+  required. Report permission cannot stand in for Portrait permission.
+- The navigation RPC shares the existing Portrait authority validation and
+  reads no files, sources, calls or results. The source-readiness path retains
+  its source-specific locks and receipt format; its SQL parity checks remain
+  separate from the navigation's no-source positive fixture.
+- New adapter tests exercise exact membership, both pair orientations, bounded
+  discovery, capability refusal, missing or mismatched metadata, final session
+  or authority drift and refusal after a failed confirmation. Existing
+  Overview href and own-result tests remain, with direct-link and fallback
+  composition assertions added. Discovery checks at most 50 current candidate
+  pairs in ID order; an eligible pair outside that bound may retain the safe
+  Family fallback. This is not a complete enumeration of every eligible pair.
+  Read, policy and RPC exceptions or malformed/error replies also keep that
+  fallback and expose no captured pair.
+- The existing no-file Portrait browser fixture supplies reciprocal grants,
+  independent logins and both acknowledgments. It now reaches the same gated
+  destination in one Overview click and adds a real permission-withdrawal
+  fallback check. Every earlier empty-state and result-withholding assertion
+  remains. Browser execution and database tests require the normal full CI;
+  local test discovery does not claim those journeys passed. The additional
+  withdrawal case makes the expected complete browser suite 531 cases, up
+  from 530, with no earlier assertion removed.
+- This fixes one eligible navigation path. It does not close G2.4, add carrier
+  results, change the destination's consent gate, or establish hosted readiness.
+
+### 2026-09-23 — Exact source heading in the sensitive-report test
+
+- The APOE gate test requires the exact `Sources` level-three heading. The
+  added `Position sources` heading made its earlier substring locator match
+  both headings, which failed the browser's strict locator check before the
+  reveal assertions. An exact match still fails when the required heading is
+  absent; it cannot substitute the position-source section.
+- Every gate, result-withholding, reveal, remembered-choice, accessibility and
+  raw-response assertion remains. No case, timeout or retry setting changes.
+  The full browser suite must pass on the new head before this is counted as
+  a verified application journey.
+
+### 2026-09-23 — Rendered date count for the TCF7L2 sources
+
+- The science-page test now expects 19 source records accessed on 23 September,
+  accounting for the three reviewed TCF7L2 records: Grant, Florez and the NCBI
+  marker-identity record. The prior 16 records remain unchanged. The separate
+  6 September count stays 19.
+- The test still checks every canonical source's unique link and record,
+  exact date attribute and visible date, total count and incomplete-review
+  disclosure. No test, source, assertion, timeout or retry is removed.
+- The complete local unit run also exposed two filesystem roots that used a
+  URL's encoded pathname directly. The glossary and route sweeps now convert
+  their module URLs with `fileURLToPath`, so a checkout with spaces reaches
+  the same actual files as CI. Their assertions and scan scope are unchanged.
+
+### 2026-09-23 — Pending invitation deletion does not imply refusal
+
+- Added database cases for the existing accountless adult invitation delete
+  operation through both its rights session and legacy mailed-token paths.
+  Each closes only its reserved subject. Deletion leaves both refusal-bar
+  stores unchanged, and a different inviter can issue a new invitation.
+  Explicit refusal still creates both global bars and blocks that invitation.
+- The new cases also hold replay refusal, contact shredding, token and session
+  consumption, unrelated subject state, expired and unrelated live bar rows,
+  and the private helper's restricted privileges. They do not equate closing
+  an empty reservation with deleting a held genome or proving Storage erasure.
+- Added the adult delete HTTP contract case and a signed-out browser deletion
+  journey. Existing invitation acceptance, refusal, scanner safety, privacy,
+  authority and legacy-link cases remain. No timeout, retry or route ratchet
+  changes. Database and browser execution remains CI work; discovery and
+  local source checks alone do not close G5.4 or G8.5.
+
+### Factor V Leiden source correction — 23 September 2026
+
+The new `src/lib/genome/f5-source.test.ts` checks the existing resolver's C/T
+orientation, all three covered genotypes, missing/no-call/unrelated alleles,
+exact dated evidence edges and rendered attribution. It also refuses the exact
+old CC paragraph and wrong rsID/genotype attribution. No caller, coverage rule,
+route or privacy gate changes. Existing assertions remain; canonical counts
+increase by four claims and three sources, and the undated template citation
+bound drops from 178 to 177 for the actually read Bertina citation. Full hosted,
+clinical or catalogue-wide validation is not claimed. This first commit does
+not rewrite historical snapshots or invent a correction commit identifier.
+
+The separate historical F5 follow-up appends four exact prior fields using the
+actual source-correction commit. Existing registry fixtures preserve the old
+32-field digest, add the four F5 fields, and exercise all 27 prior genotype
+interpretations through the same exact-text/identity matcher. Current corrected
+text remains unflagged; missing, malformed and wrong-identity controls remain.
+No matching rule, captured snapshot, source authority or Copilot logic changes.

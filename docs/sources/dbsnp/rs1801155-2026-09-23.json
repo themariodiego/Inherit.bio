@@ -1,0 +1,74 @@
+{
+  "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1801155",
+  "readAt": "2026-09-23T06:08:26.990Z",
+  "httpStatus": 200,
+  "scope": "Top-level GRCh38 placement extracted unchanged from the RefSNP response; other placements and clinical annotations omitted. No phenotype or personal-call inference.",
+  "responseSha256": "6b13a57b936a49f82cd0ee06d4f436c1bf0bf5dd1a59d89ac8edef55c5167d83",
+  "refsnp_id": "1801155",
+  "placement": {
+    "seq_id": "NC_000005.10",
+    "is_ptlp": true,
+    "placement_annot": {
+      "seq_type": "refseq_chromosome",
+      "mol_type": "genomic",
+      "seq_id_traits_by_assembly": [
+        {
+          "assembly_name": "GRCh38.p14",
+          "assembly_accession": "GCF_000001405.40",
+          "is_top_level": true,
+          "is_alt": false,
+          "is_patch": false,
+          "is_chromosome": true
+        }
+      ],
+      "is_aln_opposite_orientation": false,
+      "is_mismatch": false
+    },
+    "alleles": [
+      {
+        "allele": {
+          "spdi": {
+            "seq_id": "NC_000005.10",
+            "position": 112839513,
+            "deleted_sequence": "T",
+            "inserted_sequence": "T"
+          }
+        },
+        "hgvs": "NC_000005.10:g.112839514="
+      },
+      {
+        "allele": {
+          "spdi": {
+            "seq_id": "NC_000005.10",
+            "position": 112839513,
+            "deleted_sequence": "T",
+            "inserted_sequence": "A"
+          }
+        },
+        "hgvs": "NC_000005.10:g.112839514T>A"
+      },
+      {
+        "allele": {
+          "spdi": {
+            "seq_id": "NC_000005.10",
+            "position": 112839513,
+            "deleted_sequence": "T",
+            "inserted_sequence": "C"
+          }
+        },
+        "hgvs": "NC_000005.10:g.112839514T>C"
+      },
+      {
+        "allele": {
+          "spdi": {
+            "seq_id": "NC_000005.10",
+            "position": 112839513,
+            "deleted_sequence": "T",
+            "inserted_sequence": "G"
+          }
+        },
+        "hgvs": "NC_000005.10:g.112839514T>G"
+      }
+    ]
+  }
+}

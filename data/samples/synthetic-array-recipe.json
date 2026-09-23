@@ -1,0 +1,820 @@
+{
+  "schemaVersion": 1,
+  "classification": "Synthetic invented calls, retained from the original fixture. No real person or benchmark genotype.",
+  "originalFixtureSha256": "aa2cc50864d2447ff0ff8b32b7963142fddc122b15d3a5b7d9bc06673a84f1db",
+  "seed": 20260828,
+  "fillerCount": 2000,
+  "calls": [
+    {
+      "rsid": 35744813,
+      "chrom": "1",
+      "pos37": 1265460,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 228697,
+      "chrom": "1",
+      "pos37": 7887579,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 1801133,
+      "chrom": "1",
+      "pos37": 11856378,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 7521902,
+      "chrom": "1",
+      "pos37": 22490724,
+      "genotype": "AC"
+    },
+    {
+      "rsid": 324420,
+      "chrom": "1",
+      "pos37": 46870761,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 11209026,
+      "chrom": "1",
+      "pos37": 67705958,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 599839,
+      "chrom": "1",
+      "pos37": 109822166,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 2476601,
+      "chrom": "1",
+      "pos37": 114377568,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 11803731,
+      "chrom": "1",
+      "pos37": 152083325,
+      "genotype": "AT"
+    },
+    {
+      "rsid": 76763715,
+      "chrom": "1",
+      "pos37": 155205634,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 5082,
+      "chrom": "1",
+      "pos37": 161193683,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 6025,
+      "chrom": "1",
+      "pos37": 169519049,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 516134,
+      "chrom": "1",
+      "pos37": 182553693,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 699,
+      "chrom": "1",
+      "pos37": 230845794,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 4481887,
+      "chrom": "1",
+      "pos37": 248496863,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 6166,
+      "chrom": "2",
+      "pos37": 49189921,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 3827760,
+      "chrom": "2",
+      "pos37": 109513601,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 6733839,
+      "chrom": "2",
+      "pos37": 127892810,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 4988235,
+      "chrom": "2",
+      "pos37": 136608646,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 182549,
+      "chrom": "2",
+      "pos37": 136616754,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 10427255,
+      "chrom": "2",
+      "pos37": 146125523,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 1344706,
+      "chrom": "2",
+      "pos37": 185778428,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 7574865,
+      "chrom": "2",
+      "pos37": 191964633,
+      "genotype": "GT"
+    },
+    {
+      "rsid": 3087243,
+      "chrom": "2",
+      "pos37": 204738919,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 13387042,
+      "chrom": "2",
+      "pos37": 217905832,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 2943641,
+      "chrom": "2",
+      "pos37": 227093745,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 887829,
+      "chrom": "2",
+      "pos37": 234668570,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 10166942,
+      "chrom": "2",
+      "pos37": 234825093,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 11928865,
+      "chrom": "3",
+      "pos37": 7155702,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 53576,
+      "chrom": "3",
+      "pos37": 8804371,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 1801282,
+      "chrom": "3",
+      "pos37": 12393125,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 66800491,
+      "chrom": "3",
+      "pos37": 109634127,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 10936599,
+      "chrom": "3",
+      "pos37": 169492101,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 17300539,
+      "chrom": "3",
+      "pos37": 186559460,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 8192678,
+      "chrom": "4",
+      "pos37": 23815662,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 11940694,
+      "chrom": "4",
+      "pos37": 39414993,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 1801260,
+      "chrom": "4",
+      "pos37": 56301369,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 2282679,
+      "chrom": "4",
+      "pos37": 72608383,
+      "genotype": "GT"
+    },
+    {
+      "rsid": 356182,
+      "chrom": "4",
+      "pos37": 90626111,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 1229984,
+      "chrom": "4",
+      "pos37": 100239319,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 2200733,
+      "chrom": "4",
+      "pos37": 111710169,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 112782763,
+      "chrom": "4",
+      "pos37": 122618211,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 2736100,
+      "chrom": "5",
+      "pos37": 1286516,
+      "genotype": "AC"
+    },
+    {
+      "rsid": 16891982,
+      "chrom": "5",
+      "pos37": 33951693,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 1801155,
+      "chrom": "5",
+      "pos37": 112175211,
+      "genotype": "AT"
+    },
+    {
+      "rsid": 20541,
+      "chrom": "5",
+      "pos37": 131995964,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 33972313,
+      "chrom": "5",
+      "pos37": 138715502,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 2937573,
+      "chrom": "5",
+      "pos37": 166471198,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 17070145,
+      "chrom": "5",
+      "pos37": 167845791,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 12203592,
+      "chrom": "6",
+      "pos37": 396321,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 2153535,
+      "chrom": "6",
+      "pos37": 8369679,
+      "genotype": "CG"
+    },
+    {
+      "rsid": 1799945,
+      "chrom": "6",
+      "pos37": 26091179,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 1800562,
+      "chrom": "6",
+      "pos37": 26093141,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 10484554,
+      "chrom": "6",
+      "pos37": 31274555,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 4349859,
+      "chrom": "6",
+      "pos37": 31365787,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 3135388,
+      "chrom": "6",
+      "pos37": 32413051,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 2187668,
+      "chrom": "6",
+      "pos37": 32605884,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 7454108,
+      "chrom": "6",
+      "pos37": 32681483,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 1360780,
+      "chrom": "6",
+      "pos37": 35607571,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 75932628,
+      "chrom": "6",
+      "pos37": 41129252,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 2023239,
+      "chrom": "6",
+      "pos37": 88860482,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 7759938,
+      "chrom": "6",
+      "pos37": 105378954,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 2802292,
+      "chrom": "6",
+      "pos37": 108908518,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 1799971,
+      "chrom": "6",
+      "pos37": 154360797,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 10455872,
+      "chrom": "6",
+      "pos37": 161010118,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 1990622,
+      "chrom": "7",
+      "pos37": 12244161,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 4410790,
+      "chrom": "7",
+      "pos37": 17284577,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 1800795,
+      "chrom": "7",
+      "pos37": 22766645,
+      "genotype": "CG"
+    },
+    {
+      "rsid": 662,
+      "chrom": "7",
+      "pos37": 94937446,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 113993960,
+      "chrom": "7",
+      "pos37": 117199645,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 1726866,
+      "chrom": "7",
+      "pos37": 141672705,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 713598,
+      "chrom": "7",
+      "pos37": 141673345,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 11136000,
+      "chrom": "8",
+      "pos37": 27464519,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 6983267,
+      "chrom": "8",
+      "pos37": 128413305,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 1333049,
+      "chrom": "9",
+      "pos37": 22125503,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 2479106,
+      "chrom": "9",
+      "pos37": 126525212,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 10993994,
+      "chrom": "10",
+      "pos37": 46541774,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 10994336,
+      "chrom": "10",
+      "pos37": 62179812,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 7895833,
+      "chrom": "10",
+      "pos37": 69623057,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 7903146,
+      "chrom": "10",
+      "pos37": 114758349,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 2981582,
+      "chrom": "10",
+      "pos37": 123352317,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 1800955,
+      "chrom": "11",
+      "pos37": 636784,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 72921001,
+      "chrom": "11",
+      "pos37": 6889648,
+      "genotype": "AC"
+    },
+    {
+      "rsid": 10741657,
+      "chrom": "11",
+      "pos37": 14914878,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 5219,
+      "chrom": "11",
+      "pos37": 17409572,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 6265,
+      "chrom": "11",
+      "pos37": 27679916,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 11031006,
+      "chrom": "11",
+      "pos37": 30226528,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 10835638,
+      "chrom": "11",
+      "pos37": 30252352,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 1799963,
+      "chrom": "11",
+      "pos37": 46761055,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 174537,
+      "chrom": "11",
+      "pos37": 61552680,
+      "genotype": "GT"
+    },
+    {
+      "rsid": 1815739,
+      "chrom": "11",
+      "pos37": 66328095,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 1695,
+      "chrom": "11",
+      "pos37": 67352689,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 10830963,
+      "chrom": "11",
+      "pos37": 92708710,
+      "genotype": "CG"
+    },
+    {
+      "rsid": 1800497,
+      "chrom": "11",
+      "pos37": 113270828,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 1006737,
+      "chrom": "12",
+      "pos37": 2345295,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 11046205,
+      "chrom": "12",
+      "pos37": 21992326,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 34637584,
+      "chrom": "12",
+      "pos37": 40734202,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 4570625,
+      "chrom": "12",
+      "pos37": 72331923,
+      "genotype": "GT"
+    },
+    {
+      "rsid": 12821256,
+      "chrom": "12",
+      "pos37": 89328335,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 671,
+      "chrom": "12",
+      "pos37": 112241766,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 9536314,
+      "chrom": "13",
+      "pos37": 33628138,
+      "genotype": "GT"
+    },
+    {
+      "rsid": 12552,
+      "chrom": "13",
+      "pos37": 53625781,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 12913832,
+      "chrom": "15",
+      "pos37": 28365618,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 762551,
+      "chrom": "15",
+      "pos37": 75041917,
+      "genotype": "AC"
+    },
+    {
+      "rsid": 16969968,
+      "chrom": "15",
+      "pos37": 78882925,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 1051730,
+      "chrom": "15",
+      "pos37": 78894339,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 2229765,
+      "chrom": "15",
+      "pos37": 99478225,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 17822931,
+      "chrom": "16",
+      "pos37": 48258198,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 2066844,
+      "chrom": "16",
+      "pos37": 50745926,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 2066845,
+      "chrom": "16",
+      "pos37": 50756540,
+      "genotype": "CG"
+    },
+    {
+      "rsid": 9939609,
+      "chrom": "16",
+      "pos37": 53820527,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 708272,
+      "chrom": "16",
+      "pos37": 56996288,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 5882,
+      "chrom": "16",
+      "pos37": 57016092,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 1805007,
+      "chrom": "16",
+      "pos37": 89986117,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 1805008,
+      "chrom": "16",
+      "pos37": 89986144,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 1042522,
+      "chrom": "17",
+      "pos37": 7579472,
+      "genotype": "CG"
+    },
+    {
+      "rsid": 8070723,
+      "chrom": "17",
+      "pos37": 44081064,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 4939827,
+      "chrom": "18",
+      "pos37": 46453463,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 17782313,
+      "chrom": "18",
+      "pos37": 57851097,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 61729907,
+      "chrom": "19",
+      "pos37": 9325252,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 6511720,
+      "chrom": "19",
+      "pos37": 11202306,
+      "genotype": "GT"
+    },
+    {
+      "rsid": 12608932,
+      "chrom": "19",
+      "pos37": 17752689,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 429358,
+      "chrom": "19",
+      "pos37": 45411941,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 7412,
+      "chrom": "19",
+      "pos37": 45412079,
+      "genotype": "CC"
+    },
+    {
+      "rsid": 2287019,
+      "chrom": "19",
+      "pos37": 46202172,
+      "genotype": "TT"
+    },
+    {
+      "rsid": 601338,
+      "chrom": "19",
+      "pos37": 49206674,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 602662,
+      "chrom": "19",
+      "pos37": 49206985,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 16991615,
+      "chrom": "20",
+      "pos37": 5948227,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 1160312,
+      "chrom": "20",
+      "pos37": 22050503,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 1044396,
+      "chrom": "20",
+      "pos37": 61981134,
+      "genotype": "AA"
+    },
+    {
+      "rsid": 4680,
+      "chrom": "22",
+      "pos37": 19951271,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 5751876,
+      "chrom": "22",
+      "pos37": 24837301,
+      "genotype": "CT"
+    },
+    {
+      "rsid": 855791,
+      "chrom": "22",
+      "pos37": 37462936,
+      "genotype": "AG"
+    },
+    {
+      "rsid": 738409,
+      "chrom": "22",
+      "pos37": 44324727,
+      "genotype": "GG"
+    },
+    {
+      "rsid": 6152,
+      "chrom": "X",
+      "pos37": 66765627,
+      "genotype": "AG"
+    }
+  ],
+  "header": "# This data file generated by 23andMe at: Fri Aug 28 12:00:00 2026\n#\n# This is a SYNTHETIC file generated by scripts/generate-synthetic-sample.ts.\n# It belongs to no real person. Build 37 (GRCh37) coordinates.\n#\n# rsid\tchromosome\tposition\tgenotype\n"
+}

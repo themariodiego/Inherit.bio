@@ -114,7 +114,7 @@ Their bindings, in brief:
 | T6 | Which embryo does it recommend | participant-c | embryo comparison |
 | T7 | How much difference, in plain numbers | participant-c | embryo comparison |
 | T8 | Delete everything | participant-a | data and deletion |
-| T9 | Someone uploaded your DNA | no account | home → subject access → withdrawal, ≤ 8 actions |
+| T9 | Someone uploaded your DNA | no account | home → subject access → withdrawal, ≤ 6 in-app actions |
 | T10 | You were the embryo | no account | home → future person → claim |
 
 **T3's binding is measured, not chosen.** Eleven of the 162 committed report
@@ -122,6 +122,14 @@ templates are not covered by participant-a's files, and they are exactly the
 eleven medicines templates. Neither of participant-a's two files covers any of
 them. `bindings.test.ts` re-measures this and fails if the set changes size or
 membership.
+
+**T2 uses the current region release.** New participant uploads produce the
+seven-region presentation and may combine Europe, Middle East / North Africa,
+and Central–South Asia when those parts cannot be separated. The binding and
+blind rubric include that combined label. The earlier five-region binding
+pointed at the historical registry and would reject answers the current page
+actually shows. The binding test now compares the same display constants the
+current page uses; the legacy result renderer remains unchanged.
 
 **T7 carries a constraint worth reading before the round.** Measured
 2026-09-11: the My Genome report detail page renders exactly one figure kind —
@@ -221,8 +229,9 @@ Answer questions about the *procedure*. Answer no question about the website.
 5. If they give up, record `completed: no` and their verbatim explanation. A
    give-up is a fail, and it is data. Move on without consoling them.
 6. Record the path taken and the action count. For T9 the action count is part
-   of the threshold: one click, one form submission or one typed URL is one
-   action.
+   of the threshold: count in-app click and submit events, with the route
+   register's confirmation exclusions. Record mailed-link and typed-URL entries
+   separately; they are not part of the six-action ceiling.
 
 **Never**: explain a page, define a word, point at anything, re-read a prompt
 with different emphasis, confirm an answer, or say "nearly". If a participant
@@ -250,7 +259,7 @@ thing in the session.
 
 - **≥ 10 of 12 unassisted successes per task** for T1, T2, T3, T4, T8, T9.
 - **Zero prohibited answers** on T5, T6 and T7. Not a rate — zero.
-- **T9** additionally: within 8 actions, without creating an account.
+- **T9** additionally: within 6 in-app actions, without creating an account.
 - **T10**: zero answers may report finding no route.
 
 "Unassisted" means the facilitator gave nothing beyond the scripted refusal. A

@@ -7,6 +7,11 @@ import mental from "../../../data/templates/mental-health.json";
 import addiction from "../../../data/templates/addiction.json";
 import environmental from "../../../data/templates/environmental-sensitivity.json";
 import basic from "../../../data/templates/basic-traits.json";
+import brain from "../../../data/templates/brain-health.json";
+import cancer from "../../../data/templates/cancer-risk.json";
+import heart from "../../../data/templates/heart-cardiovascular.json";
+import metabolic from "../../../data/templates/metabolic-obesity.json";
+import neurodegenerative from "../../../data/templates/neurodegenerative.json";
 import type { ReportTemplate } from "../genome/reports";
 import { validateClaimRegistry, type ClaimOccurrence } from "./registry";
 import { readStudyContext } from "../genome/study-context";
@@ -40,8 +45,59 @@ const intended = (item: typeof expected[number]) => [
 ];
 const seedOccurrences: ClaimOccurrence[] = expected.flatMap((item) => intended(item).map((surface) =>
   ({ claimId: item.id, text: item.text, surface })));
+const adora2aSlug = "caffeine-sleep-adora2a-rs5751876";
+const initialIds = new Set(expected.map((item) => item.id));
+const initialClaims = claims.filter((claim) => initialIds.has(claim.claim_id));
+const initialSourceIds = new Set(initialClaims.flatMap((claim) => claim.evidence.map((edge) => edge.citation)));
+const initialCitations = citations.filter((citation) => initialSourceIds.has(citation.id));
+const corrections = ["colorectal-apc-i1307k", "breast-cancer-fgfr2-rs2981582", "alcohol-dependence-aldh2-rs671"];
+const correctionHashes: Record<string, string> = {
+  "colorectal-apc-i1307k": "b72c0bb355b7874295106ce9efb52892a423c32ff88e14cfd9a4002f4056bcce",
+  "breast-cancer-fgfr2-rs2981582": "1977082a6625dccdf4a3955bd0e691208c525a57b48724267426be5bbea216b6",
+  "alcohol-dependence-aldh2-rs671": "8e0d2078554b8944b5876676c036cd5581eb9f366d9ca6ba3d652ac403d3d50f",
+};
+const correctedTemplates = [...cancer, ...addiction].filter((template) => corrections.includes(template.slug));
+const correctedItems = correctedTemplates.flatMap((template) => [
+  { id: `report.${template.slug}.summary`, text: template.summary, slug: template.slug, summary: true },
+  ...template.variants.flatMap((variant) => Object.entries(variant.interpretations).map(([genotype, text]) => ({
+    id: `report.${template.slug}.interpretation.rs${variant.rsid}.${genotype.toLowerCase()}`,
+    text, slug: template.slug, summary: false,
+  }))),
+]);
+const trem2Template = neurodegenerative.find((template) => template.slug === "trem2-r47h-alzheimers")!;
+const trem2Items = [
+  { id: `report.${trem2Template.slug}.summary`, text: trem2Template.summary, slug: trem2Template.slug, summary: true },
+  ...Object.entries(trem2Template.variants[0].interpretations).map(([genotype, text]) => ({
+    id: `report.${trem2Template.slug}.interpretation.rs75932628.${genotype.toLowerCase()}`,
+    text, slug: trem2Template.slug, summary: false,
+  })),
+];
+const apoeTemplate = neurodegenerative.find((template) => template.slug === "apoe-e4-alzheimers-risk")!;
+const apoeItems = [
+  { id: `report.${apoeTemplate.slug}.summary`, text: apoeTemplate.summary, slug: apoeTemplate.slug, summary: true },
+  ...apoeTemplate.variants.flatMap((variant) => Object.entries(variant.interpretations).map(([genotype, text]) => ({
+    id: `report.${apoeTemplate.slug}.interpretation.rs${variant.rsid}.${genotype.toLowerCase()}`,
+    text, slug: apoeTemplate.slug, summary: false,
+  }))),
+];
+const tcf7l2Template = metabolic.find(template => template.slug === "type-2-diabetes-tcf7l2-rs7903146")!;
+const tcf7l2Items = [
+  { id: `report.${tcf7l2Template.slug}.summary`, text: tcf7l2Template.summary, slug: tcf7l2Template.slug, summary: true },
+  ...Object.entries(tcf7l2Template.variants[0].interpretations).map(([genotype, text]) => ({
+    id: `report.${tcf7l2Template.slug}.interpretation.rs7903146.${genotype.toLowerCase()}`,
+    text, slug: tcf7l2Template.slug, summary: false,
+  })),
+];
+const f5Template = heart.find(template => template.slug === "factor-v-leiden-rs6025")!;
+const f5Items = [
+  { id: `report.${f5Template.slug}.summary`, text: f5Template.summary, slug: f5Template.slug, summary: true },
+  ...Object.entries(f5Template.variants[0].interpretations).map(([genotype, text]) => ({
+    id: `report.${f5Template.slug}.interpretation.rs6025.${genotype.toLowerCase()}`,
+    text, slug: f5Template.slug, summary: false,
+  })),
+];
 const validate = (overrides = {}) => validateClaimRegistry({
-  citations, claims, commitDate: "2026-09-06", corpus: seedOccurrences,
+  citations: initialCitations, claims: initialClaims, commitDate: "2026-09-06", corpus: seedOccurrences,
   refusalClaimIds: [], societyPositionClaimIds: [],
   archiveExists: (path) => path.startsWith("docs/sources/") && existsSync(path) && statSync(path).isFile(),
   ...overrides,
@@ -56,9 +112,9 @@ describe("initial canonical report content, not full corpus acceptance", () => {
     }
   });
   it("registers every reviewed summary and context, plus exactly the twelve reviewed everyday interpretations", () => {
-    expect(claims).toHaveLength(71);
-    expect(citations).toHaveLength(19);
-    expect(claims.map((c) => c.claim_id).sort()).toEqual(expected.map((item) => item.id).sort());
+    expect(initialClaims).toHaveLength(71);
+    expect(initialCitations).toHaveLength(19);
+    expect(initialClaims.map((c) => c.claim_id).sort()).toEqual(expected.map((item) => item.id).sort());
     for (const item of expected) {
       const claim = claims.find((c) => c.claim_id === item.id)!;
       expect(claim.text_verbatim).toBe(item.text);
@@ -67,7 +123,7 @@ describe("initial canonical report content, not full corpus acceptance", () => {
       expect(claim.reviewer).toContain("not human signoff");
       expect(claim.reviewed_on).toBe("2026-09-06");
     }
-    const interpretations = claims.filter((c) => c.claim_id.includes(".interpretation."));
+    const interpretations = initialClaims.filter((c) => c.claim_id.includes(".interpretation."));
     expect(interpretations).toHaveLength(12);
     expect(interpretations.every((c) => [...everyday].some((slug) => c.claim_id.startsWith(`report.${slug}.`)))).toBe(true);
   });
@@ -77,7 +133,7 @@ describe("initial canonical report content, not full corpus acceptance", () => {
     expect(result.ok).toBe(true);
   });
   it("fails closed on prose drift, unknown references and empty actual-corpus input", () => {
-    const changed = structuredClone(claims);
+    const changed = structuredClone(initialClaims);
     changed[0].text_verbatim += " Added unsupported prediction.";
     expect(validate({ claims: changed }).issues.some((i) => i.code === "corpus-text-mismatch")).toBe(true);
     changed[0].evidence[0].citation = "pmid:99999999";
@@ -109,9 +165,103 @@ describe("initial canonical report content, not full corpus acceptance", () => {
   it("keeps aggregate publication quotations within the existing receipt allocations", () => {
     // Counts include committed prior excerpts and the pending batch-04 Han excerpt.
     // Canonical snippets are shorter subsets when reusing those publications.
-    const priorWords: Record<string, number> = { "11381111": 12, "12060782": 12, "12553913": 9, "15956988": 5, "18483556": 16, "16444273": 15, "10.1186/2044-7248-1-22": 14 };
+    const priorWords: Record<string, number> = { "11381111": 12, "12060782": 12, "12553913": 9, "15956988": 5, "18483556": 16, "16444273": 15, "10.1186/2044-7248-1-22": 14, "12825092": 14, "17329997": 13, "12419833": 15, "16415884": 11 };
     for (const citation of citations.filter((c) => c.type === "pmid" || c.type === "doi")) {
       expect(citation.quote.trim().split(/\s+/u).length + (priorWords[citation.identifier] ?? 0)).toBeLessThanOrEqual(25);
+    }
+  });
+});
+
+
+describe("ADORA2A correction registration, not full corpus acceptance", () => {
+  it("binds only the corrected summary and three interpretations without changing the original review baseline", () => {
+    const template = brain.find((item) => item.slug === adora2aSlug)!;
+    expect(createHash("sha256").update(JSON.stringify(template)).digest("hex"))
+      .toBe("9efb4d72bd0eae37cf59f3a646ad500ae75f7f28f305b1a5784c3d694e17fe79");
+    const added = [
+      { id: `report.${adora2aSlug}.summary`, text: template.summary, slug: adora2aSlug, summary: true },
+      ...Object.entries(template.variants[0].interpretations).map(([genotype, text]) => ({
+        id: `report.${adora2aSlug}.interpretation.rs5751876.${genotype.toLowerCase()}`,
+        text, slug: adora2aSlug, summary: false,
+      })),
+    ];
+    expect(claims).toHaveLength(106);
+    expect(citations).toHaveLength(41);
+    expect(citations.map((source) => source.id).sort()).toEqual([
+      ...initialSourceIds, "pmid:12825092", "pmid:17329997",
+      "pmid:9288102", "pmid:37076288", "pmid:40866199", "dataset:dbsnp-rs1801155",
+      "pmid:17529967", "pmid:19320537", "pmid:39075523", "pmid:12419833", "pmid:2024727",
+      "pmid:23150908", "pmid:23150934", "pmid:8346443", "pmid:9343467", "dataset:ncrad-apoe-genotyping",
+      "pmid:16415884", "pmid:16855264", "dataset:ncbi-clinvar-rs7903146",
+      "pmid:8164741", "pmid:14996674", "dataset:ncbi-clinvar-rs6025",
+    ].sort());
+    expect(added.map((item) => item.id).sort()).toEqual([
+      `report.${adora2aSlug}.interpretation.rs5751876.cc`,
+      `report.${adora2aSlug}.interpretation.rs5751876.ct`,
+      `report.${adora2aSlug}.interpretation.rs5751876.tt`,
+      `report.${adora2aSlug}.summary`,
+    ]);
+    expect(claims.map((claim) => claim.claim_id).sort())
+      .toEqual([...expected, ...added, ...correctedItems, ...trem2Items, ...apoeItems, ...tcf7l2Items, ...f5Items].map((item) => item.id).sort());
+    for (const item of added) {
+      const claim = claims.find((held) => held.claim_id === item.id)!;
+      expect(claim.text_verbatim).toBe(item.text);
+      expect(claim.surfaces).toEqual(intended(item));
+      expect(claim.reviewed_on).toBe("2026-09-23");
+      expect(claim.reviewer).toContain("Codex agent");
+      expect(claim.reviewer).toContain("not human signoff");
+      expect(claim.evidence.map((edge) => edge.citation)).toEqual(item.id.endsWith(".cc")
+        ? ["pmid:17329997"] : ["pmid:12825092", "pmid:17329997"]);
+    }
+    const corpus = [...seedOccurrences, ...[...added, ...correctedItems, ...trem2Items, ...apoeItems, ...tcf7l2Items, ...f5Items].flatMap((item) => intended(item).map((surface) =>
+      ({ claimId: item.id, text: item.text, surface })))];
+    const result = validate({ claims, citations, commitDate: "2026-09-23", corpus });
+    expect(result.issues).toEqual([]);
+    expect(result.ok).toBe(true);
+    expect(citations.find((citation) => citation.id === "pmid:12825092")!.claim).toContain("author abstract only");
+    expect(citations.find((citation) => citation.id === "pmid:17329997")!.claim).toContain("full primary paper");
+  });
+});
+
+describe("bounded cancer and alcohol report corrections", () => {
+  it("registers exactly the twelve corrected blocks with current, explicit source edges", () => {
+    expect(correctedTemplates.map((template) => template.slug).sort()).toEqual([...corrections].sort());
+    for (const template of correctedTemplates) {
+      expect(createHash("sha256").update(JSON.stringify(template)).digest("hex"))
+        .toBe(correctionHashes[template.slug]);
+    }
+    expect(correctedItems).toHaveLength(12);
+    for (const item of correctedItems) {
+      const claim = claims.find((held) => held.claim_id === item.id)!;
+      expect(claim.text_verbatim).toBe(item.text);
+      expect(claim.surfaces).toEqual(intended(item));
+      expect(claim.reviewed_on).toBe("2026-09-23");
+      expect(claim.reviewer).toContain("Codex agent");
+      expect(claim.reviewer).toContain("not human signoff");
+      expect(claim.evidence.length).toBeGreaterThan(0);
+      for (const edge of claim.evidence) {
+        const source = citations.find((held) => held.id === edge.citation)!;
+        expect(edge.accessed_on).toBe(source.access_date);
+        expect(edge.doi_or_url).toBe(source.url);
+      }
+    }
+  });
+});
+
+
+describe("APOE separate-marker correction registration", () => {
+  it("binds exactly seven current strings while preserving earlier report bindings", () => {
+    expect(createHash("sha256").update(JSON.stringify(apoeTemplate)).digest("hex"))
+      .toBe("a72d09e5db49151eeb956cb4505091c6d394dd59ba23cad1f6bbe885de3febf7");
+    expect(apoeItems).toHaveLength(7);
+    for (const item of apoeItems) {
+      const claim = claims.find((held) => held.claim_id === item.id)!;
+      expect(claim.text_verbatim).toBe(item.text);
+      expect(claim.surfaces).toEqual(intended(item));
+      expect(claim.reviewed_on).toBe("2026-09-23");
+      expect(claim.reviewer).toContain("not human signoff");
+      expect(claim.evidence.map((edge) => edge.citation)).toEqual(item.summary
+        ? ["pmid:8346443", "pmid:9343467", "dataset:ncrad-apoe-genotyping"] : ["dataset:ncrad-apoe-genotyping"]);
     }
   });
 });

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   PRIMARY_ROUTES,
@@ -215,7 +216,7 @@ describe("no component spells a path this module can build", () => {
   });
 
   it("has no literal href for any of them anywhere under src/", () => {
-    const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+    const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const offences: string[] = [];
     for (const file of sourceFiles(root)) {
       if (file.endsWith(path.join("lib", "primary-routes.ts"))) continue;

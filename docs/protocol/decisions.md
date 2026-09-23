@@ -3872,3 +3872,20 @@ taken, because the number moved.
   issuance refuses it with the size named. That makes (a) a safety net against
   the ceilings and `max_artifact_bytes` being configured out of step, rather
   than the path an ordinary person walks.
+
+## 2026-09-22 — Release completion protocol decisions
+
+- **Embryo chunks:** the owner selected corrections item 20 option 1. Remove both
+  extra headers for this route alone. Retain the strict cookie, live account and
+  originating auth session, exact Origin, shared fetch-metadata check, jurisdiction
+  guard and database-enforced chunk identity. No legal-evidence exception is implied.
+- **T9:** six in-app click/submit actions, with the existing confirmation exclusions;
+  record mailed-link and typed-URL entry separately. The eight-action wording in
+  the comprehension materials is superseded. No ratchet changes.
+- **Comprehension execution:** the owner authorized at least 600 simulations and
+  about 60 independent re-gradings, including multiple calls per simulation, and
+  asked engineering to choose the host and endpoint with a preference for the
+  existing edge provider. The owner then authorized a **US$50 total incremental cap**, covering inference,
+  CI usage and any required first month of the plan. This supersedes the earlier
+  US$25 choice. Spend only what is needed and stop before exceeding the cap.
+  No paid run has started. The model-identity evidence decision remains pending.

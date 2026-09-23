@@ -1,6 +1,6 @@
 # Build context for workers/prepared-worker/Dockerfile is the repository root
 # (its wrangler.json sets image_build_context to ../..). The image copies only
-# the package manifests, tsconfig.json, src/, data/, the route register and
+# the package manifests and patches, tsconfig.json, src/, data/, the route register and
 # two scripts, so
 # everything else stays out of the context sent to the Docker daemon.
 .git

@@ -1,0 +1,41 @@
+{
+  "row": "G1.13b",
+  "reviewDate": "2026-09-23",
+  "sourceHead": "109089d143e2efd723f7461cf7e493eac45fb4ae",
+  "run": 35834704734,
+  "attempt": 1,
+  "testedMergeSha": "6ba93840fdbf570d055858e3da0ff1658cdadf15",
+  "verifiedCiSha256": "c4186b1cb4cb28f8131310aedadfc825a774e8cf45183ad516757dae26bc3e2f",
+  "fullLogSha256": "cfe2dc769f641ea0d7f3e717aca1b114a46d9502fa08369d3e8cf96ef7630eb3",
+  "scopedFileHashesVerifiedBeforeNarrativeEdits": 50,
+  "browserPassRecords": 8,
+  "coreUnitTests": 78,
+  "coreUnitFiles": 10,
+  "supportingLifecycleTests": 17,
+  "supportingLifecycleFiles": 4,
+  "fullBrowserPasses": 530,
+  "noBrowserSkipsOrRetries": true,
+  "unchangedLedgerArrays": {
+    "reflow": [],
+    "targetSize": [],
+    "keyboardTraversal": []
+  },
+  "unchangedUndersizedControlOccurrenceRatchet": 0,
+  "changedAcceptanceVerdicts": [
+    "G1.13b"
+  ],
+  "otherGateRowBytesPreserved": 64,
+  "historicalG113bEvidencePreserved": true,
+  "candidateCount": {
+    "yes": 40,
+    "no": 25,
+    "total": 65
+  },
+  "limits": [
+    "No human assistive-technology study",
+    "No hosted capacity or deployment proof",
+    "No live inference proof",
+    "No density acceptance",
+    "No full release acceptance"
+  ]
+}

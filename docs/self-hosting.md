@@ -75,10 +75,11 @@ at http://127.0.0.1:54324), and upload
 The other two are here for reasons that are not this, and both used to be
 offered on this line:
 
-- **`synthetic_23andme.txt` is refused at preparation today**, with a 422.
-  850 of its 2135 positions do not lift to GRCh38, which is past the 5% the
-  liftover contract allows — defect D-133. Until that is fixed it is input for
-  the unit tests that read it, not for a first run.
+- **`synthetic_23andme.txt` has a repaired generator**, addressing D-133.
+  The previous file lost 850 of 2,135 positions at liftover. The repaired file
+  loses none in the shipped parser/chain test, within the unchanged 5% bound.
+  Its added browser upload/report check is awaiting CI, so this guide retains
+  the existing first-run sample until that journey has been verified.
 - **`HG001_GRCh38_chr20-22.vcf.gz` is a historical artifact.** It is consented,
   openly published GIAB reference material, and `data/samples/PROVENANCE.md`
   records that no current browser or pipeline test uses it as genetic input,
@@ -88,13 +89,13 @@ offered on this line:
   material the repository had already stopped using.
 
 The one above is synthetic, describes no person, and is GRCh38, so the
-liftover step that refuses the array sample does not apply to it. It carries
+liftover step does not apply to it. It carries
 120,073 records with 73 of the catalogue's 146 rsIDs present and 73 absent, so
 a first run shows both a covered result and an honest not-covered one.
 `src/lib/genome/pipeline-integration.test.ts` drives it through the parser and
-report resolution and asserts both outcomes. **What no test does yet is upload
-any of the three through the browser**, so this recommendation rests on that
-integration test and on the file's build, not on a proven end-to-end run.
+report resolution and asserts both outcomes. **No completed browser run yet verifies this first-run recommendation**.
+It rests on that integration test and the file's build; the newly added array
+journey is a separate check and does not exercise the recommended VCF.
 
 ### Local LLM copilot (the privacy-preferred setup)
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   BROWSER_EMPTY_REGION,
   BROWSER_FAILED,
@@ -9,208 +9,43 @@ import {
   BROWSER_LOADING,
   IGV_CONTROL_LABELS,
   TRACK_NAME,
+  TRACK_TEXT_CAPTION,
 } from "@/copy/genome/data";
-import { chromToName } from "@/lib/genome/types";
+import { chromToName, type VariantRecord } from "@/lib/genome/types";
+import { formatLocus } from "@/lib/genome/locus";
+import { labelIgvControls } from "./igv-accessibility";
+import { enhanceIgvInteractions } from "./igv-interactions";
+import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
+import { enhanceIgvPopovers } from "./igv-popovers";
+import { loadIgvReference } from "./igv-reference";
+import { createIgvBrowser } from "./igv-lifecycle";
+import { configureIgvNavigation } from "./igv-navigation";
+import { createLoadedTrack, observeTrackText, type TrackTextSnapshot } from "./igv-track-data";
+import { TrackTextAlternative } from "./track-text-alternative";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
 
-interface RegionVariant {
-  rsid: number | null;
-  chrom: number;
-  pos: number;
-  ref: string | null;
-  alt: string | null;
-  genotype: string;
-}
-
-// igv.js over the user's own data, privacy-preserving by construction:
-// the genome is a first-party chromsizes-only reference (no sequence host),
-// and the only data fetch is our own RLS-scoped region API. No third-party
-// origin is contacted — verified by the E2E network audit (which loads this
-// page and asserts the full set of request origins is first-party only).
-//
-// Keeping that claim true takes two mechanisms, because igv.js phones home
-// in two independent places (node_modules/igv/dist/igv.esm.js, v3.8.5):
-//
-// 1. `loadDefaultGenomes: false` in the createBrowser config — the
-//    documented option that stops GenomeUtils.initializeGenomes from
-//    fetching https://igv.org/genomes/genomes3.json (guarded by
-//    `config.loadDefaultGenomes !== false` in the dist).
-// 2. The XHR guard below — igv's transport (igvxhr) resolves EVERY string
-//    URL it loads through `convert()`, which lazily fetches
-//    https://igv.org/data/url_mappings.tsv the first time any URL (even our
-//    own /genomes/hg38.chrom.sizes) is loaded. No config option disables
-//    that, and igvxhr uses XMLHttpRequest, not fetch, so a fetch wrapper
-//    would not intercept it.
-
-/**
- * Fails any cross-origin XMLHttpRequest locally, before a connection is
- * opened. igv.js is the only XHR user in this app (the app itself uses
- * fetch), and every URL igv legitimately needs here is same-origin (the
- * chromsizes reference and the region API). igv treats the synthetic error
- * exactly like a network failure: its `convert()` url_mappings lookup is
- * wrapped in try/catch and proceeds with the unmapped URL, so rendering is
- * unaffected — the request simply never leaves the browser.
- */
-let xhrGuardInstalled = false;
-function installFirstPartyXhrGuard() {
-  if (xhrGuardInstalled || typeof window === "undefined") return;
-  xhrGuardInstalled = true;
-
-  const blocked = new WeakSet<XMLHttpRequest>();
-  const proto = XMLHttpRequest.prototype;
-  const originalOpen = proto.open;
-  const originalSend = proto.send;
-
-  proto.open = function (
-    this: XMLHttpRequest,
-    method: string,
-    url: string | URL,
-    async: boolean = true,
-    username?: string | null,
-    password?: string | null,
-  ) {
-    try {
-      const resolved = new URL(String(url), window.location.href);
-      if (resolved.origin === window.location.origin) {
-        blocked.delete(this);
-      } else {
-        blocked.add(this);
-      }
-    } catch {
-      // Malformed URL: let the native open raise its own error.
-    }
-    // Still open (open does not touch the network) so callers can set
-    // headers etc. without an InvalidStateError; send() is what we stop.
-    return originalOpen.call(this, method, url, async, username, password);
-  };
-
-  proto.send = function (
-    this: XMLHttpRequest,
-    body?: Document | XMLHttpRequestBodyInit | null,
-  ) {
-    if (blocked.has(this)) {
-      setTimeout(() => this.dispatchEvent(new ProgressEvent("error")), 0);
-      return;
-    }
-    return originalSend.call(this, body);
-  };
-}
+// The viewer receives only inline variant features and a local File containing
+// the public first-party chromosome sizes. Together with loadDefaultGenomes:
+// false this avoids igv's external registry and URL mapping requests. Do not
+// replace that File with a string URL: igv resolves strings externally first.
+// The full browser network audit checks the actual installed library.
 
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
-
-/**
- * Every root igv's markup can be in: the container it was handed, and any
- * shadow root it opened underneath.
- *
- * igv 3.8.5 renders its navbar into a shadow root, and `querySelector` does
- * not cross that boundary, so labelling the container alone silently matched
- * nothing — the zoom slider reached the page as a bare `<input type="range">`
- * and `e2e/a11y.spec.ts` caught it as the one violation on the variant
- * browser once that sweep covered the registered authenticated pages.
- */
-function igvRoots(container: HTMLElement): ParentNode[] {
-  const roots: ParentNode[] = [container];
-  for (const element of [container, ...container.querySelectorAll<HTMLElement>("*")]) {
-    if (element.shadowRoot) roots.push(element.shadowRoot);
-  }
-  return roots;
-}
-
-/**
- * igv.js (3.8.5) ships its navbar controls unlabeled: a bare <select> of
- * chromosomes, an unnamed zoom slider, and icon-only <div>s acting as
- * buttons. After createBrowser resolves we post-process the DOM igv built
- * and attach accessible names (and button roles where a plain div is
- * click-handled). Selectors follow the classnames in
- * node_modules/igv/dist/igv.esm.js — ChromosomeSelectWidget, ZoomWidget,
- * ResponsiveNavbar. Everything is best-effort inside try/catch: an igv
- * upgrade that renames a class must degrade to the old unlabeled state,
- * never crash the page.
- */
-function labelIgvControls(container: HTMLElement) {
-  try {
-    const roots = igvRoots(container);
-    const find = (selector: string): Element | null => {
-      for (const root of roots) {
-        const found = root.querySelector(selector);
-        if (found) return found;
-      }
-      return null;
-    };
-    const findAll = (selector: string): Element[] =>
-      roots.flatMap((root) => [...root.querySelectorAll(selector)]);
-    const label = (el: Element | null, name: string, asButton = false) => {
-      if (!el || el.hasAttribute("aria-label")) return;
-      el.setAttribute("aria-label", name);
-      if (asButton && !el.hasAttribute("role")) {
-        el.setAttribute("role", "button");
-      }
-    };
-
-    // Chromosome picker: a bare 26-option <select> with no name. Hidden by
-    // the config below, but named in case a config change shows it again.
-    label(
-      find(".igv-chromosome-select-widget-container select"),
-      IGV_CONTROL_LABELS.chromosome,
-    );
-
-    // Locus search box (placeholder-only otherwise) and its icon "button".
-    label(find("input.igv-search-input"), IGV_CONTROL_LABELS.locusSearch);
-    label(find(".igv-search-icon-container"), IGV_CONTROL_LABELS.locusSubmit, true);
-
-    // Zoom widget: [zoom-out div] [slider] [zoom-in div], per ZoomWidget's
-    // construction order in the igv dist.
-    const zoom = find(".igv-zoom-widget");
-    if (zoom) {
-      label(zoom.querySelector("input[type='range']"), IGV_CONTROL_LABELS.zoomSlider);
-      label(zoom.firstElementChild, IGV_CONTROL_LABELS.zoomOut, true);
-      label(zoom.lastElementChild, IGV_CONTROL_LABELS.zoomIn, true);
-    }
-
-    // Navbar toggle buttons (cursor guide, center line, track labels, …)
-    // are divs carrying only a title tooltip; promote it to a real name.
-    for (const btn of findAll(".igv-navbar-text-button, .igv-navbar-icon-button")) {
-      const title = btn.getAttribute("title");
-      if (title) label(btn, title, true);
-    }
-
-    // The igv logo is decorative.
-    find(".igv-logo")?.setAttribute("aria-hidden", "true");
-  } catch {
-    // Labeling is progressive enhancement over igv internals — never fatal.
-  }
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error(`igv.createBrowser timed out after ${ms}ms`)),
-      ms,
-    );
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}
 
 export function GenomeBrowser({
   fileId,
   locus,
+  subjectId,
 }: {
   fileId: string;
+  subjectId: string;
   locus: { chrom: number; start: number; end: number };
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const escapedRef = useRef<HTMLDivElement>(null);
+  const captionId = useId();
   // Outcome keyed by the mounted region: while the key doesn't match the
   // current props the browser is (re)initializing, so "loading" is derived
   // rather than reset via setState inside the effect.
@@ -223,10 +58,18 @@ export function GenomeBrowser({
   const current = outcome && outcome.key === regionKey ? outcome : null;
   const status = current?.status ?? "loading";
   const variantCount = current?.variantCount ?? null;
+  const [trackText, setTrackText] = useState<{
+    key: string; truncated: boolean; snapshot: TrackTextSnapshot;
+  } | null>(null);
+  const text = trackText?.key === regionKey ? trackText : null;
 
   useEffect(() => {
     let disposed = false;
-    let browserRef: unknown = null;
+    const request = new AbortController();
+    let disposeInteractions: (() => void) | undefined;
+    let disposeScrolling: (() => void) | undefined;
+    let disposePopovers: (() => void) | undefined;
+    let disposeText: (() => void) | undefined;
     const key = `${fileId}:${locus.chrom}:${locus.start}-${locus.end}`;
 
     async function mount() {
@@ -241,6 +84,7 @@ export function GenomeBrowser({
       const res = await fetch("/api/browse/region", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: request.signal,
         body: JSON.stringify({
           file: fileId, chromosome: chromName, start: locus.start, end: locus.end,
         }),
@@ -248,29 +92,35 @@ export function GenomeBrowser({
       if (!res.ok) {
         throw new Error(`region API responded ${res.status}`);
       }
-      const { variants } = (await res.json()) as { variants: RegionVariant[] };
+      const { variants, truncated } = (await res.json()) as { variants: VariantRecord[]; truncated: boolean };
       if (disposed) return;
+      const loaded = createLoadedTrack(variants);
 
-      installFirstPartyXhrGuard();
+      const referenceFile = await loadIgvReference(request.signal);
+      if (disposed) return;
 
       // Import igv's ESM build by subpath: the package's `browser` field
       // points at the UMD build, whose AMD-or-global dispatch leaves the
       // bundled module namespace empty (no createBrowser anywhere).
       interface IgvApi {
         createBrowser(el: HTMLElement, config: unknown): Promise<unknown>;
+        removeBrowser(browser: unknown): void;
       }
       const igvModule = (await import("igv/dist/igv.esm.js")) as unknown as {
         default?: IgvApi;
       } & IgvApi;
       const igv = igvModule.default ?? igvModule;
       if (disposed) return;
-      el.innerHTML = "";
       // igv's TS types don't model the chromsizes reference format or
       // inline `features` arrays; both are supported at runtime.
       const config = {
         // Without this, igv fetches its default genome registry from
         // igv.org on startup (see the privacy note above).
         loadDefaultGenomes: false,
+        // Unknown names stay local; the page's own search resolves names.
+        // Do not let location parameters add library tracks or sessions.
+        search: false,
+        queryParametersSupported: false,
         // The navbar keeps locus search and zoom only. Every other control
         // (chromosome picker, SVG export, sample names, multi-select, track
         // labels, centre line, cursor guide) is switched off through the
@@ -289,34 +139,46 @@ export function GenomeBrowser({
           id: "hg38-positions",
           name: "GRCh38 (positions only, no external sequence host)",
           format: "chromsizes",
-          fastaURL: "/genomes/hg38.chrom.sizes",
+          fastaURL: referenceFile,
         },
         locus: `${chromName}:${locus.start}-${locus.end}`,
         tracks: [
           {
+            id: "inherit-loaded-calls",
             name: TRACK_NAME,
             type: "annotation",
             format: "bed",
             displayMode: "EXPANDED",
             color: "#2E5C45",
-            features: variants.map((v) => ({
-              chr: chromName,
-              start: v.pos - 1,
-              end: v.pos,
-              name: `${v.rsid ? `rs${v.rsid} ` : ""}${v.genotype}${v.ref && v.alt ? ` (${v.ref}→${v.alt})` : ""}`,
-            })),
+            features: loaded.features,
           },
         ],
       };
-      browserRef = await withTimeout(
-        igv.createBrowser(el, config),
-        CREATE_BROWSER_TIMEOUT_MS,
+      const { browser, element } = await createIgvBrowser(
+        igv, el, config, request.signal, CREATE_BROWSER_TIMEOUT_MS,
       );
-      labelIgvControls(el);
+      if (disposed) return;
+      configureIgvNavigation(browser as Parameters<typeof configureIgvNavigation>[0]);
+      labelIgvControls(element, IGV_CONTROL_LABELS);
+      disposeInteractions = enhanceIgvInteractions(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvInteractions>[2]);
+      disposeScrolling = enhanceIgvTrackScrolling(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvTrackScrolling>[2]);
+      disposePopovers = enhanceIgvPopovers(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvPopovers>[2]);
+      disposeText = observeTrackText(browser as Parameters<typeof observeTrackText>[0], "inherit-loaded-calls",
+        { chromosome: chromName, start: locus.start, end: locus.end, rows: loaded.rows }, snapshot => {
+          if (!disposed) setTrackText({ key, truncated, snapshot });
+        });
       return variants.length;
     }
 
-    const el = containerRef.current;
+    function release() {
+      disposeText?.();
+      disposeInteractions?.();
+      disposeScrolling?.();
+      disposePopovers?.();
+      disposeText = disposeInteractions = disposeScrolling = disposePopovers = undefined;
+      request.abort();
+    }
+
     mount().then(
       (count) => {
         if (!disposed && count !== undefined) {
@@ -324,6 +186,7 @@ export function GenomeBrowser({
         }
       },
       () => {
+        release();
         if (!disposed) {
           setOutcome({ key, status: "error", variantCount: null });
         }
@@ -331,19 +194,15 @@ export function GenomeBrowser({
     );
     return () => {
       disposed = true;
-      if (browserRef && el) el.innerHTML = "";
+      release();
     };
   }, [fileId, locus.chrom, locus.start, locus.end]);
 
   /**
    * The keyboard escape WCAG 2.1 SC 2.1.2 asks for.
    *
-   * Tab past this browser's last control does not hand focus out of the
-   * region — it returns to a stop already visited. Everything holding focus
-   * in there is built by igv.js 3.8.5, shadow root included, so the tab order
-   * is not ours to rewrite without owning the widget. SC 2.1.2 is met by the
-   * second half of its own wording instead: focus can be moved away using
-   * only the keyboard, and the reader is told which key does it
+   * A forward exit independent of the number of controls inside the widget.
+   * The reader is told which key does it
    * (BROWSER_KEYBOARD_ESCAPE, rendered above the region and referenced by it
    * through aria-describedby, so it is announced on entry rather than only
    * read by someone who happened to look).
@@ -358,6 +217,10 @@ export function GenomeBrowser({
    */
   function leaveOnEscape(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.key !== "Escape") return;
+    // Let an open menu or native modal handle Escape first. Its own close
+    // restores the trigger; the next Escape still leaves the whole widget.
+    if (event.nativeEvent.composedPath().some(node => node instanceof HTMLElement
+      && node.getAttribute("data-igv-interaction") === "open")) return;
     const region = containerRef.current;
     if (!region) return;
     event.preventDefault();
@@ -386,7 +249,8 @@ export function GenomeBrowser({
   }
 
   return (
-    <div>
+    <figure data-slot="genome-track-figure" aria-labelledby={captionId} className="space-y-3">
+      <figcaption id={captionId} className="text-sm font-medium">{TRACK_TEXT_CAPTION}</figcaption>
       {/* Before the region in reading order, so a keyboard reader meets the
           escape before the thing it escapes; `aria-describedby` on the region
           repeats it on entry for a reader who arrives by Tab. */}
@@ -394,7 +258,7 @@ export function GenomeBrowser({
         {BROWSER_KEYBOARD_ESCAPE}
       </p>
       <div className="relative">
-        {/* igv owns this element's DOM (we clear it before handing it over),
+        {/* Each igv instance owns a child host and its shadow tree here,
             so React must never render children into it — states render as
             siblings/overlays instead. */}
         <div
@@ -435,11 +299,15 @@ export function GenomeBrowser({
       <div ref={escapedRef} tabIndex={-1}>
         <span className="sr-only">{BROWSER_KEYBOARD_ESCAPED}</span>
       </div>
-      {status === "ready" && variantCount === 0 ? (
+      <TrackTextAlternative subjectId={subjectId} loadedRange={formatLocus(locus)}
+        truncated={text?.truncated ?? false}
+        snapshot={text?.snapshot ?? { status: "loading", views: [] }} />
+      {status === "ready" && variantCount === 0 && text?.snapshot.status === "ready"
+        && text.snapshot.views.every(view => !view.outsideLoadedRange) ? (
         <p className="mt-2 max-w-prose rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
           {BROWSER_EMPTY_REGION}
         </p>
       ) : null}
-    </div>
+    </figure>
   );
 }

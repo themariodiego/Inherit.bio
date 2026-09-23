@@ -29,8 +29,8 @@
   {
     "slug": "alcohol-dependence-aldh2-rs671",
     "category": "addiction",
-    "title": "Alcohol dependence protection · ALDH2",
-    "summary": "ALDH2 clears acetaldehyde, a toxic product made when the body breaks down alcohol. The A copy at rs671, called ALDH2*2, is common in East Asian groups. It leaves the enzyme mostly inactive and can cause flushing after drinking. Because alcohol then feels unpleasant, A is strongly linked to less heavy drinking and alcohol dependence. This is one of the clearest known links between a gene and behavior.",
+    "title": "Alcohol by-product breakdown · ALDH2",
+    "summary": "ALDH2 helps clear acetaldehyde, a by-product of alcohol. The A form at rs671 lowers this enzyme’s activity and can cause flushing after drinking. Studies link this form to differences in drinking patterns. This report cannot predict your drinking habits, alcohol dependence or cancer risk.",
     "evidence": "emerging",
     "variants": [
       {
@@ -41,15 +41,34 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Plain summary: no flush variant here — this gene does not change your alcohol-related risks either way, and the usual guidance on drinking still applies. Two working copies of ALDH2. Acetaldehyde is cleared normally, no genetic flushing reaction, and no protection against heavy drinking from this locus. Drinking patterns for this genotype are shaped by culture, environment, and other genes.",
-          "AG": "Plain summary: This risk does not apply if little or no alcohol is used. Heavy drinking with this DNA type raises the risk of throat cancer. AG has one inactive ALDH2*2 copy and occurs mainly in people with East Asian ancestry. Acetaldehyde builds up after alcohol and often causes a red face and nausea. AG is linked to far less alcohol dependence. People who drink heavily despite flushing have a higher risk of esophageal cancer in population studies. The flush should be taken seriously.",
-          "AA": "Plain summary: Alcohol usually feels very unpleasant with AA. No extra risk applies if little or no alcohol is used. Heavy drinking despite flushing brings the highest acetaldehyde-related throat-cancer risk. AA has two inactive ALDH2*2 copies. Even small amounts of alcohol often cause strong flushing. Alcohol dependence is rare because drinking is so unpleasant. This is a common group pattern, not a rule for one person."
+          "GG": "Your file shows two G copies at rs671. It does not show the common A form linked to flushing. This position alone cannot tell how well your whole ALDH2 enzyme works, whether you flush, or whether you might develop alcohol dependence.",
+          "AG": "Your file shows one A copy at rs671. This form reduces clearance of acetaldehyde, a by-product of alcohol. A study of Japanese men linked AG to higher odds of esophageal cancer than GG among drinkers, including the study’s light-drinking group. That group result does not give your personal risk or establish a safe amount.",
+          "AA": "Your file shows two A copies at rs671. An early study found no measurable ALDH2 activity in two AA liver samples and higher blood acetaldehyde after alcohol than in GG. This small study does not tell how strongly you would react or how much you drink. It does not establish that AA carries more cancer risk than AG."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19320537", "label": "Brooks et al., PLoS Med 2009" }
+      {
+        "pmid": "19320537",
+        "label": "Brooks et al., PLoS Med 2009 — research review",
+        "accessedOn": "2026-09-23"
+      },
+      {
+        "pmid": "39075523",
+        "label": "Rwere et al., J Transl Med 2024",
+        "accessedOn": "2026-09-23"
+      },
+      {
+        "pmid": "12419833",
+        "label": "Yokoyama et al., Carcinogenesis 2002",
+        "accessedOn": "2026-09-23"
+      },
+      {
+        "pmid": "2024727",
+        "label": "Enomoto et al., Alcohol Clin Exp Res 1991",
+        "accessedOn": "2026-09-23"
+      }
     ]
   },
   {

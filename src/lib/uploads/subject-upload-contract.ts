@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { FileKind } from "../genome/types";
+import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 
 export const SUBJECT_UPLOAD_FORMATS = ["consumer-array-text-v1", "consumer-array-text-v2",
   "consumer-array-text-v3", "consumer-array-text-v4", "VCF", "VCF.GZ", "gVCF"] as const;
@@ -29,31 +30,17 @@ export const ownUploadLimitsSchema = z.object({
 }).strict();
 export type OwnUploadLimits = z.infer<typeof ownUploadLimitsSchema>;
 
-/** The most one upload request can carry, whatever a deployment configures.
- * `subject-upload-browser.ts` sends the file as a single POST to Supabase
- * Storage, which is the standard upload; the product implements neither
- * resumable (TUS) nor S3 multipart. Measured on the hosted preview stack on
- * 20 September 2026 rather than taken from the documentation: 5,242,880,000
- * bytes began transferring, while 5,368,708,096 and above were refused at
- * once with 413 Payload Too Large, served by Cloudflare on the declared
- * Content-Length, after about a megabyte. The project's own file size limit
- * governs what Storage keeps, not what one request may carry, so a ceiling
- * above this cannot be met however the ceilings are configured. This is the
- * largest size actually observed to be accepted, not the boundary itself. */
-export const SINGLE_REQUEST_MAXIMUM_BYTES = 5_242_880_000;
-
 /** The one ceiling that applies to a declared format, split exactly as
  * `private.issue_own_storage_upload_v1` splits it: arrays, gVCF, then every
- * other VCF. Issuance stores this same number as the session's
- * `maximum_decoded_bytes`, so a compressed source is measured against it
- * twice: as stored bytes now, as decompressed bytes later.
+ * other VCF. SQL stores the configured ceiling as `maximum_decoded_bytes`;
+ * this helper additionally caps stored bytes by the upload transport.
  *
  * Bounded by what the transport can carry. A configured ceiling above that is
  * a promise the uploader cannot keep: the lease is granted, the single POST is
  * refused at the edge, and the person watches a frozen percentage for five and
  * a half minutes before a failure that never mentions size. Returning the
  * smaller of the two makes the disclosure honest and refuses the file before
- * any of it is read. */
+ * the whole file is read. */
 export function uploadCeilingBytes(format: SubjectUploadFormat, limits: OwnUploadLimits): number {
   return Math.min(configuredCeilingBytes(format, limits), SINGLE_REQUEST_MAXIMUM_BYTES);
 }

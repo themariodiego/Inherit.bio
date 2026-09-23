@@ -55,7 +55,7 @@
     "slug": "type-2-diabetes-tcf7l2-rs7903146",
     "category": "metabolic-obesity",
     "title": "Type 2 diabetes · TCF7L2",
-    "summary": "TCF7L2 rs7903146 is the strongest common genetic variant for type 2 diabetes known, acting mainly through reduced insulin secretion. Each copy of the T allele is associated on average with higher odds of type 2 diabetes: a small shift for one copy and a moderate shift for two. Lifestyle factors such as weight, diet, and activity still dominate absolute risk.",
+    "summary": "TCF7L2 rs7903146 has been linked to type 2 diabetes. One trial studied overweight people with high blood sugar. TT was linked to a higher rate of diabetes than CC over about three years. These group results do not give your personal chance of diabetes.",
     "evidence": "emerging",
     "variants": [
       {
@@ -66,15 +66,16 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C allele, the genotype with the lowest average type 2 diabetes odds at this locus. This does not remove risk from other genetic and lifestyle factors, which together matter far more than any single variant.",
-          "CT": "One copy of T, found in about 40% of people with European ancestry. This result is linked to higher odds of type 2 diabetes versus CC (a small shift), mainly through slightly lower insulin release. Lifestyle changes prevented diabetes across all genotypes in trials.",
-          "TT": "Two copies of T, found in about 8% to 10% of people with European ancestry. This result is linked to higher odds of type 2 diabetes versus CC: a moderate shift. It is the largest known common-variant effect for this condition. Even so, most TT carriers do not develop diabetes. Weight and lifestyle strongly shape actual risk."
+          "CC": "Your file shows two C copies at rs7903146. CC was the comparison group in the trial. People with this genotype also developed diabetes, so this result does not rule it out.",
+          "CT": "Your file shows one C and one T at rs7903146. The trial did not find a higher rate of diabetes in CT than CC. This does not prove there is no effect; the study may have been too small to detect it.",
+          "TT": "Your file shows two T copies at rs7903146. In the trial, TT was linked to a higher rate of diabetes than CC. That result describes a group with high blood sugar, not your lifetime chance of diabetes."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "16415884", "label": "Grant et al., Nat Genet 2006" }
+      {"pmid": "16415884", "label": "Grant et al., Nat Genet 2006", "doi": "10.1038/ng1732", "accessedOn": "2026-09-23"},
+      {"pmid": "16855264", "label": "Florez et al., N Engl J Med 2006", "doi": "10.1056/NEJMoa062418", "accessedOn": "2026-09-23"}
     ]
   },
   {

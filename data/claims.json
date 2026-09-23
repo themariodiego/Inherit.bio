@@ -1564,5 +1564,875 @@
     "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
     "reviewed_on": "2026-09-06",
     "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.summary",
+    "text_verbatim": "The cited studies examined different responses to caffeine. TT was linked to greater anxiety after a single dose in infrequent users. CC was more common among people reporting sleep sensitivity. This marker does not predict your personal response.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12825092",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract only: 94 healthy infrequent users, 150 mg caffeine versus placebo, greater self-reported anxiety in TT than other groups. No full-paper review or CT-versus-CC ordering claimed."
+      },
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Results and Table 1, printed pp. 693–694: CC more frequent and TT less frequent among self-rated caffeine-sensitive than insensitive participants; CT frequencies similar. Methods pp. 696–697 limit the selected study population."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.interpretation.rs5751876.tt",
+    "text_verbatim": "Your file shows two T copies. In one study of infrequent caffeine users, TT was linked to greater anxiety after 150 mg caffeine. TT was less common among people reporting sleep sensitivity than among those reporting little sensitivity.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12825092",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract only: 94 healthy infrequent users, 150 mg caffeine versus placebo, greater self-reported anxiety in TT than other groups. No full-paper review or CT-versus-CC ordering claimed."
+      },
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Results and Table 1, printed pp. 693–694: CC more frequent and TT less frequent among self-rated caffeine-sensitive than insensitive participants; CT frequencies similar. Methods pp. 696–697 limit the selected study population."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.interpretation.rs5751876.ct",
+    "text_verbatim": "Your file shows one C and one T copy. These studies do not establish a general middle level of anxiety or sleep sensitivity for CT. They cannot predict your personal response.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:12825092",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract only compares TT with other genotype groups; it does not establish a CT-versus-CC anxiety ordering or a general middle level of sensitivity. No full-paper review or absence of all possible effects is claimed."
+      },
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Table 1, p. 694, has similar CT frequencies across self-rated sensitivity groups. Figure 4, p. 695, concerns a narrow nonREM beta-EEG endpoint after sleep deprivation, not a general personal sensitivity scale."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.caffeine-sleep-adora2a-rs5751876.interpretation.rs5751876.cc",
+    "text_verbatim": "Your file shows two C copies. CC was more common among people reporting caffeine-related sleep sensitivity. This was a group association. It cannot tell you your own sensitivity or caffeine limit.",
+    "surfaces": [
+      "/genome/[subject]/reports/caffeine-sleep-adora2a-rs5751876#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17329997",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Full paper Results and Table 1, printed pp. 693–694: CC more frequent and TT less frequent among self-rated caffeine-sensitive than insensitive participants; CT frequencies similar. Methods pp. 696–697 limit the selected study population."
+      }
+    ],
+    "net_impression_note": "Separate acute anxiety and sleep-sensitivity endpoints; no combined genotype ranking, personal dose limit or CYP1A2-speed modifier. Personal letters are supplied by the authorized report resolver, not the publication. Exact access scope and endpoint review: docs/sources/reviews/adora2a-correction-20260923.md. This is agent source review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent caffeine_source_verification; primary-source review with independent root reread (not human signoff)"
+  },
+  {
+    "claim_id": "report.colorectal-apc-i1307k.summary",
+    "text_verbatim": "APC I1307K is the A form at rs1801155. A review of studies in people of Ashkenazi Jewish ancestry linked it to higher colorectal cancer odds. Evidence in other populations is less clear. This report does not estimate your cancer risk or test for familial adenomatous polyposis.",
+    "surfaces": [
+      "/genome/[subject]/reports/colorectal-apc-i1307k#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:9288102",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/9288102/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Laken 1997 author abstract only: APC I1307K nucleotide identity and initial Ashkenazi Jewish observations. No full-paper read or current screening guidance claimed."
+      },
+      {
+        "citation": "pmid:37076288",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/37076288/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Valle 2023 systematic review and original meta-analysis: ancestry-specific colorectal cancer association, study heterogeneity and insufficient homozygote data. Relevant full-paper sections and tables read; no universal personal-risk or screening rule."
+      },
+      {
+        "citation": "pmid:40866199",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/40866199/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Allen 2025 published UK Biobank analysis, Methods, Results, Table 1 and Discussion read: broad intervals in Ashkenazi Jewish and non-Ashkenazi white groups. Non-significance does not establish no risk or identical effects across populations."
+      },
+      {
+        "citation": "dataset:dbsnp-rs1801155",
+        "doi_or_url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1801155",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Public forward-coordinate and allele identity only: GRCh38 chromosome 5, one-based position 112839514, T>A. Other alleles remain distinct; no personal call, ancestry or clinical interpretation."
+      }
+    ],
+    "net_impression_note": "Population-qualified study association, not personal cancer risk or a screening recommendation. Letters come from the authorized file resolver, not the paper; this report examines one marker and does not test the whole APC gene. Read scope: docs/sources/reviews/apc-correction-20260923.md. Agent review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.colorectal-apc-i1307k.interpretation.rs1801155.tt",
+    "text_verbatim": "Your file shows two T copies at this position, so it does not show the I1307K A form. This one marker does not rule out colorectal cancer or other APC changes. It cannot set your screening plan.",
+    "surfaces": [
+      "/genome/[subject]/reports/colorectal-apc-i1307k#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:37076288",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/37076288/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Valle 2023 systematic review and original meta-analysis: ancestry-specific colorectal cancer association, study heterogeneity and insufficient homozygote data. Relevant full-paper sections and tables read; no universal personal-risk or screening rule."
+      },
+      {
+        "citation": "dataset:dbsnp-rs1801155",
+        "doi_or_url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1801155",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Public forward-coordinate and allele identity only: GRCh38 chromosome 5, one-based position 112839514, T>A. Other alleles remain distinct; no personal call, ancestry or clinical interpretation."
+      }
+    ],
+    "net_impression_note": "Population-qualified study association, not personal cancer risk or a screening recommendation. Letters come from the authorized file resolver, not the paper; this report examines one marker and does not test the whole APC gene. Read scope: docs/sources/reviews/apc-correction-20260923.md. Agent review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.colorectal-apc-i1307k.interpretation.rs1801155.at",
+    "text_verbatim": "Your file shows one A and one T copy. Higher colorectal cancer odds were reported in Ashkenazi Jewish study groups. We cannot assume the same link in every population. A later UK Biobank study was too small to settle the link. This result alone does not set your screening plan.",
+    "surfaces": [
+      "/genome/[subject]/reports/colorectal-apc-i1307k#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:37076288",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/37076288/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Valle 2023 systematic review and original meta-analysis: ancestry-specific colorectal cancer association, study heterogeneity and insufficient homozygote data. Relevant full-paper sections and tables read; no universal personal-risk or screening rule."
+      },
+      {
+        "citation": "pmid:40866199",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/40866199/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Allen 2025 published UK Biobank analysis, Methods, Results, Table 1 and Discussion read: broad intervals in Ashkenazi Jewish and non-Ashkenazi white groups. Non-significance does not establish no risk or identical effects across populations."
+      },
+      {
+        "citation": "dataset:dbsnp-rs1801155",
+        "doi_or_url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1801155",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Public forward-coordinate and allele identity only: GRCh38 chromosome 5, one-based position 112839514, T>A. Other alleles remain distinct; no personal call, ancestry or clinical interpretation."
+      }
+    ],
+    "net_impression_note": "Population-qualified study association, not personal cancer risk or a screening recommendation. Letters come from the authorized file resolver, not the paper; this report examines one marker and does not test the whole APC gene. Read scope: docs/sources/reviews/apc-correction-20260923.md. Agent review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.colorectal-apc-i1307k.interpretation.rs1801155.aa",
+    "text_verbatim": "Your file shows two A copies. Too few people with this result have been studied to say whether two copies carry more risk than one. Do not assume twice the risk. This report does not estimate your chance of cancer.",
+    "surfaces": [
+      "/genome/[subject]/reports/colorectal-apc-i1307k#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:37076288",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/37076288/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Valle 2023 systematic review and original meta-analysis: ancestry-specific colorectal cancer association, study heterogeneity and insufficient homozygote data. Relevant full-paper sections and tables read; no universal personal-risk or screening rule."
+      },
+      {
+        "citation": "dataset:dbsnp-rs1801155",
+        "doi_or_url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1801155",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Public forward-coordinate and allele identity only: GRCh38 chromosome 5, one-based position 112839514, T>A. Other alleles remain distinct; no personal call, ancestry or clinical interpretation."
+      }
+    ],
+    "net_impression_note": "Population-qualified study association, not personal cancer risk or a screening recommendation. Letters come from the authorized file resolver, not the paper; this report examines one marker and does not test the whole APC gene. Read scope: docs/sources/reviews/apc-correction-20260923.md. Agent review, not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.breast-cancer-fgfr2-rs2981582.summary",
+    "text_verbatim": "A study of women in European and Asian study groups linked the A allele at this FGFR2 marker to higher breast cancer odds. This is a group association, not a personal risk estimate. This report does not assess BRCA1, BRCA2 or other causes of hereditary cancer.",
+    "surfaces": [
+      "/genome/[subject]/reports/breast-cancer-fgfr2-rs2981582#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17529967",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17529967/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Stage-3 Table 2 and the population-stratified risk analysis support the A-allele association in the studied women; Supplementary Table 8 p. 14 establishes G/A direction. The Discussion limits standalone prediction; this marker does not assay hereditary-cancer genes."
+      }
+    ],
+    "net_impression_note": "Association in the cited study groups, not a personal risk category or a clinical testing/screening instruction. Genotype letters come from the authorized report resolver, not the publication. The source does not assess the user or other hereditary-cancer loci. docs/sources/reviews/fgfr2-correction-20260923.md records full-paper and supplemental allele mapping access. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.breast-cancer-fgfr2-rs2981582.interpretation.rs2981582.aa",
+    "text_verbatim": "Your file shows two A copies. In the cited study, AA was associated with higher breast cancer odds than GG. This marker alone cannot tell you your chance of developing breast cancer.",
+    "surfaces": [
+      "/genome/[subject]/reports/breast-cancer-fgfr2-rs2981582#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17529967",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17529967/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Stage-3 Table 2: AA versus GG odds ratio 1.63 (95% CI 1.53–1.72). Supplementary Table 8 p. 14 binds the rare associated allele to A; the Discussion does not establish individual prediction."
+      }
+    ],
+    "net_impression_note": "Association in the cited study groups, not a personal risk category or a clinical testing/screening instruction. Genotype letters come from the authorized report resolver, not the publication. The source does not assess the user or other hereditary-cancer loci. docs/sources/reviews/fgfr2-correction-20260923.md records full-paper and supplemental allele mapping access. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.breast-cancer-fgfr2-rs2981582.interpretation.rs2981582.ag",
+    "text_verbatim": "Your file shows one A and one G copy. In the cited study, AG was associated with higher breast cancer odds than GG. This marker alone cannot tell you your chance of developing breast cancer.",
+    "surfaces": [
+      "/genome/[subject]/reports/breast-cancer-fgfr2-rs2981582#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17529967",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17529967/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Stage-3 Table 2: AG versus GG odds ratio 1.23 (95% CI 1.18–1.28). Supplementary Table 8 p. 14 binds the rare associated allele to A; the Discussion does not establish individual prediction."
+      }
+    ],
+    "net_impression_note": "Association in the cited study groups, not a personal risk category or a clinical testing/screening instruction. Genotype letters come from the authorized report resolver, not the publication. The source does not assess the user or other hereditary-cancer loci. docs/sources/reviews/fgfr2-correction-20260923.md records full-paper and supplemental allele mapping access. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.breast-cancer-fgfr2-rs2981582.interpretation.rs2981582.gg",
+    "text_verbatim": "Your file shows two G copies. GG was the comparison group in the cited study; AG and AA had higher breast cancer odds. A GG result does not rule out breast cancer or hereditary susceptibility.",
+    "surfaces": [
+      "/genome/[subject]/reports/breast-cancer-fgfr2-rs2981582#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17529967",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17529967/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 uses common homozygotes as the comparison group; Supplementary Table 8 p. 14 identifies G as the commoner lower-odds allele. GG is not a disease or hereditary-susceptibility rule-out result."
+      }
+    ],
+    "net_impression_note": "Association in the cited study groups, not a personal risk category or a clinical testing/screening instruction. Genotype letters come from the authorized report resolver, not the publication. The source does not assess the user or other hereditary-cancer loci. docs/sources/reviews/fgfr2-correction-20260923.md records full-paper and supplemental allele mapping access. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.alcohol-dependence-aldh2-rs671.summary",
+    "text_verbatim": "ALDH2 helps clear acetaldehyde, a by-product of alcohol. The A form at rs671 lowers this enzyme’s activity and can cause flushing after drinking. Studies link this form to differences in drinking patterns. This report cannot predict your drinking habits, alcohol dependence or cancer risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/alcohol-dependence-aldh2-rs671#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:19320537",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/19320537/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Enzyme and flushing mechanism, drinking-pattern context in the full research review; not primary-cohort or personal-outcome evidence."
+      },
+      {
+        "citation": "pmid:39075523",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/39075523/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Methods, human Results and Limitations: rs671 enzyme/response findings and the limits of a selected alcohol-challenge sample."
+      }
+    ],
+    "net_impression_note": "Keep each complete paragraph and its study limits. This is neither a personal risk estimate nor a safe drinking limit. See docs/sources/reviews/aldh2-correction-20260923.md for actual read scopes; intended surfaces are not a hosted-release claim.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent release_remaining_audit; source-content review (not human signoff)"
+  },
+  {
+    "claim_id": "report.alcohol-dependence-aldh2-rs671.interpretation.rs671.gg",
+    "text_verbatim": "Your file shows two G copies at rs671. It does not show the common A form linked to flushing. This position alone cannot tell how well your whole ALDH2 enzyme works, whether you flush, or whether you might develop alcohol dependence.",
+    "surfaces": [
+      "/genome/[subject]/reports/alcohol-dependence-aldh2-rs671#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:39075523",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/39075523/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Methods, human Results and Limitations: the common rs671 change and other ALDH2 variants; one position does not establish all enzyme function or personal alcohol outcomes."
+      }
+    ],
+    "net_impression_note": "Keep each complete paragraph and its study limits. This is neither a personal risk estimate nor a safe drinking limit. See docs/sources/reviews/aldh2-correction-20260923.md for actual read scopes; intended surfaces are not a hosted-release claim.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent release_remaining_audit; source-content review (not human signoff)"
+  },
+  {
+    "claim_id": "report.alcohol-dependence-aldh2-rs671.interpretation.rs671.ag",
+    "text_verbatim": "Your file shows one A copy at rs671. This form reduces clearance of acetaldehyde, a by-product of alcohol. A study of Japanese men linked AG to higher odds of esophageal cancer than GG among drinkers, including the study’s light-drinking group. That group result does not give your personal risk or establish a safe amount.",
+    "surfaces": [
+      "/genome/[subject]/reports/alcohol-dependence-aldh2-rs671#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12419833",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12419833/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract: 234 Japanese male cases and 634 controls; heterozygote association also in the defined light-drinking group, not a safe threshold or personal-risk estimate."
+      },
+      {
+        "citation": "pmid:39075523",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/39075523/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Methods and human Results: reduced acetaldehyde clearance in the selected rs671 heterozygote group; AA excluded."
+      }
+    ],
+    "net_impression_note": "Keep each complete paragraph and its study limits. This is neither a personal risk estimate nor a safe drinking limit. See docs/sources/reviews/aldh2-correction-20260923.md for actual read scopes; intended surfaces are not a hosted-release claim.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent release_remaining_audit; source-content review (not human signoff)"
+  },
+  {
+    "claim_id": "report.alcohol-dependence-aldh2-rs671.interpretation.rs671.aa",
+    "text_verbatim": "Your file shows two A copies at rs671. An early study found no measurable ALDH2 activity in two AA liver samples and higher blood acetaldehyde after alcohol than in GG. This small study does not tell how strongly you would react or how much you drink. It does not establish that AA carries more cancer risk than AG.",
+    "surfaces": [
+      "/genome/[subject]/reports/alcohol-dependence-aldh2-rs671#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:2024727",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/2024727/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Author abstract: no measurable activity in two mutant-homozygote liver samples and higher blood acetaldehyde after alcohol; the study measures metabolism, not AA-versus-AG cancer risk."
+      }
+    ],
+    "net_impression_note": "Keep each complete paragraph and its study limits. This is neither a personal risk estimate nor a safe drinking limit. See docs/sources/reviews/aldh2-correction-20260923.md for actual read scopes; intended surfaces are not a hosted-release claim.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent release_remaining_audit; source-content review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.summary",
+    "text_verbatim": "Studies linked the T variant at TREM2 R47H to higher odds of late-onset Alzheimer’s disease in the groups studied. This association does not tell you whether or when the condition might affect you.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.interpretation.rs75932628.cc",
+    "text_verbatim": "Your file shows two C copies at this position, so it does not show the T variant known as R47H. This report does not assess other TREM2 variants or your overall chance of developing Alzheimer’s disease.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.interpretation.rs75932628.ct",
+    "text_verbatim": "Your file shows one C and one T copy. The cited studies linked the R47H T variant to higher odds of Alzheimer’s disease in their study groups. They do not provide your personal lifetime chance of developing the condition.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstracts support the R47H group association, not a personal lifetime probability."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.trem2-r47h-alzheimers.interpretation.rs75932628.tt",
+    "text_verbatim": "Your file shows two T copies at this position. This report does not provide a separate risk estimate for this two-copy result or verify the accuracy of the original DNA test.",
+    "surfaces": [
+      "/genome/[subject]/reports/trem2-r47h-alzheimers#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23150908",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      },
+      {
+        "citation": "pmid:23150934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The association abstracts frame the report limits; the genotype letters come from the authorized resolver and the exact allele mapping in the source note, not a personal disease prediction from the publications."
+      }
+    ],
+    "net_impression_note": "Exact file letters and a group association only. No lifetime reassurance, personal probability, TT-specific effect or assay error likelihood is claimed. Full-paper tables were not read. docs/sources/reviews/trem2-correction-20260923.md records primary author-abstract access and NCBI forward allele/build mapping. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.summary",
+    "text_verbatim": "Studies linked APOE ε3/ε4 and ε4/ε4 to higher odds of Alzheimer’s disease than ε3/ε3 in the groups studied. This report shows rs429358 and rs7412 separately. It does not assign an APOE type or estimate your personal risk. Some marker combinations also need information about which letters were inherited together.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:8346443",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/8346443/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Family association context only; Farrer supplies the specific genotype comparison. No family-specific percentage is applied to the reader."
+      },
+      {
+        "citation": "pmid:9343467",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/9343467/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The abstract reports higher group odds for ε3/ε4 and ε4/ε4 relative to ε3/ε3, with population, age and sex limitations."
+      },
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs429358.tt",
+    "text_verbatim": "Your file shows two T copies at rs429358. This result is one part of APOE typing. This report does not combine it with rs7412 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs429358.ct",
+    "text_verbatim": "Your file shows one C and one T copy at rs429358. This result is one part of APOE typing. This report does not combine it with rs7412 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs429358.cc",
+    "text_verbatim": "Your file shows two C copies at rs429358. This result is one part of APOE typing. This report does not combine it with rs7412 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs7412.cc",
+    "text_verbatim": "Your file shows two C copies at rs7412. This result is one part of APOE typing. This report does not combine it with rs429358 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs7412.ct",
+    "text_verbatim": "Your file shows one C and one T copy at rs7412. This result is one part of APOE typing. This report does not combine it with rs429358 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.apoe-e4-alzheimers-risk.interpretation.rs7412.tt",
+    "text_verbatim": "Your file shows two T copies at rs7412. This result is one part of APOE typing. This report does not combine it with rs429358 to assign your APOE type or a personal disease risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/apoe-e4-alzheimers-risk#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "dataset:ncrad-apoe-genotyping",
+        "doi_or_url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Joint-marker chart and CT/CT ambiguity support the typing limitation. File letters and the current report’s separate-marker behavior come from the actual resolver, not from this source."
+      }
+    ],
+    "net_impression_note": "This report shows file letters separately; it does not combine or phase markers to assign an APOE type or personal disease risk. Primary author abstracts and the NCRAD joint-marker chart were read; no full-paper access or assay validation is claimed. docs/sources/reviews/apoe-correction-20260923.md records exact source and runtime limits. Historical captured templates keep their old text and cannot borrow this registration. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.summary",
+    "text_verbatim": "TCF7L2 rs7903146 has been linked to type 2 diabetes. One trial studied overweight people with high blood sugar. TT was linked to a higher rate of diabetes than CC over about three years. These group results do not give your personal chance of diabetes.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16415884",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16415884/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Original TCF7L2 locus discovery only. Its DG10S478 frequencies and relative risks are not transferred to rs7903146, and it does not support the later trial results."
+      },
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Study population, about-three-year follow-up and TT/CC group association; no personal lifetime probability."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.interpretation.rs7903146.cc",
+    "text_verbatim": "Your file shows two C copies at rs7903146. CC was the comparison group in the trial. People with this genotype also developed diabetes, so this result does not rule it out.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 records diabetes cases in the CC comparison group; that genotype does not exclude diabetes."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs7903146",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward rs7903146 C>T identity only. The actual genotype letters come from the existing authorized resolver, not a paper or a clinical classification."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.interpretation.rs7903146.ct",
+    "text_verbatim": "Your file shows one C and one T at rs7903146. The trial did not find a higher rate of diabetes in CT than CC. This does not prove there is no effect; the study may have been too small to detect it.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 did not detect higher incidence in CT versus CC; the discussion notes limited heterozygote power. This is not proof that CT has no association in other studies."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs7903146",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward rs7903146 C>T identity only. The actual genotype letters come from the existing authorized resolver, not a paper or a clinical classification."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.type-2-diabetes-tcf7l2-rs7903146.interpretation.rs7903146.tt",
+    "text_verbatim": "Your file shows two T copies at rs7903146. In the trial, TT was linked to a higher rate of diabetes than CC. That result describes a group with high blood sugar, not your lifetime chance of diabetes.",
+    "surfaces": [
+      "/genome/[subject]/reports/type-2-diabetes-tcf7l2-rs7903146#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16855264",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Table 2 supports higher incidence in TT versus CC in this high-risk trial, not a personal lifetime estimate."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs7903146",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward rs7903146 C>T identity only. The actual genotype letters come from the existing authorized resolver, not a paper or a clinical classification."
+      }
+    ],
+    "net_impression_note": "A study-specific account of a group with impaired glucose tolerance. No lifetime assurance, population genotype frequency, largest-effect ranking, general CT null effect, treatment recommendation or personal probability. See docs/sources/reviews/tcf7l2-correction-20260923.md. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.summary",
+    "text_verbatim": "Factor V Leiden is the T change at rs6025 in F5. It can make clotting factor V harder for activated protein C to turn off. A Danish adult study linked one or two T copies to more blood clots in veins. This site alone does not give your personal risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:8164741",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/8164741/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports resistance to activated protein C; no genotype-specific or personal probability is inferred."
+      },
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.interpretation.rs6025.cc",
+    "text_verbatim": "Your file shows two C copies at rs6025. It does not show the Factor V Leiden T change at this site. This does not rule out other causes of blood clots or measure your overall clot risk.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.interpretation.rs6025.ct",
+    "text_verbatim": "Your file shows one C and one T copy at rs6025. In a Danish adult study, one copy was linked to more blood clots in veins than no copies. The chance varies with age and personal circumstances. This result does not give your own probability.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.factor-v-leiden-rs6025.interpretation.rs6025.tt",
+    "text_verbatim": "Your file shows two T copies at rs6025. In a Danish adult study, two copies were linked to higher vein-clot risk than one copy. A clot is not certain, and this result does not give your personal chance of one.",
+    "surfaces": [
+      "/genome/[subject]/reports/factor-v-leiden-rs6025#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:14996674",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "The author abstract supports carrier group associations in Danish adults and variation across age and circumstances. The population finding does not establish a personal probability or clear other causes when the Leiden T change is absent."
+      },
+      {
+        "citation": "dataset:ncbi-clinvar-rs6025",
+        "doi_or_url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+        "accessed_on": "2026-09-23",
+        "what_it_supports": "Forward GRCh38 rs6025 C>T identity and transcript/legacy naming only. File letters come from the existing authorized resolver, not the source or a clinical classification."
+      }
+    ],
+    "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
+    "reviewed_on": "2026-09-23",
+    "reviewer": "Codex agent; primary-source review (not human signoff)"
   }
 ]

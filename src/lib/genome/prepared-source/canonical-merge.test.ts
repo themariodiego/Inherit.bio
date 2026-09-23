@@ -79,6 +79,16 @@ describe("canonical target-order merge", () => {
     expect((await iterator.next()).value).toEqual(record(2, 2)); expect(f.readBlock).toHaveBeenCalledTimes(3);
     await iterator.return(); expect(f.readBlock).toHaveBeenCalledTimes(3);
   });
+  it("preserves eight buffered heads and observes cancellation before emitting another", async () => {
+    const groups = Array.from({ length: 8 }, (_, i) => [[record(i + 1, i + 1), record(i + 9, i + 9)], [record(i + 17, i + 17)]]);
+    const f = await setup(groups), controller = new AbortController();
+    const iterator = mergeCanonicalRuns(f.runs, { binding, readBlock: f.readBlock, signal: controller.signal });
+    for (let i = 1; i <= 8; i++) expect((await iterator.next()).value).toEqual(record(i, i));
+    expect(f.readBlock).toHaveBeenCalledTimes(8);
+    await new Promise<void>(resolve => setImmediate(resolve)); expect(f.readBlock).toHaveBeenCalledTimes(8);
+    controller.abort(); await expect(iterator.next()).rejects.toMatchObject({ code: "aborted" });
+    expect(f.readBlock).toHaveBeenCalledTimes(8);
+  });
   it("handles all eight inputs", async () => {
     const records = Array.from({ length: 8 }, (_, i) => record(i + 1, 8 - i));
     const f = await setup(records.map(r => [[r]]));
