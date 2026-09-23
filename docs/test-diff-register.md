@@ -1,5 +1,35 @@
 # Test diff register
 
+## Ordinary reports from prepared sources · 23 September 2026
+
+CI run 35798620915 passed 528 browser cases, including complete own-genome
+journeys from Overview and My Genome. The prepared-source case failed at its
+unchanged A/C genotype assertion on the ordinary report URL. The completed
+source was valid, but that page requested calls from the database-only reader,
+which refuses prepared sources. The report incorrectly showed no coverage.
+
+The ordinary reader now selects a completed database or prepared source under
+the report purpose. New tests cover exact source and subject identity, current
+session, receipt changes, withdrawal and regrant, changes during object reads,
+later-page and later-chunk failures, and final confirmation before release.
+The aggregate tests preserve conflicting loci, conflicting genotypes, no-calls
+and failed quality across prepared, database and legacy files. Existing Family
+authority and all older report and Copilot tests remain unchanged.
+
+Prepared reads share one 30-second deadline, 10,000 evidence records and 2 MB
+across files and chunks. The existing bounded rsID reader moves to a neutral
+module; compatibility exports retain its Copilot callers. Exact duplicates
+still consume the evidence budget. An exhausted scope cannot confirm an
+earlier result, and any prepared failure cannot fall back to database calls.
+
+Additive SQL cases use genuine completed fixtures for both backends and check
+the exact result, run, source and full published membership receipt, invalid
+purpose, session expiry, and closed role privileges. They preserve all previous
+assertions and execute through enabled triggers. They still require CI; local
+unit checks do not establish database or hosted behavior. The failing browser
+assertion and existing timeouts are unchanged. No capacity or release row is
+claimed from this correction.
+
 ## ADORA2A report source correction · 23 September 2026
 
 The canonical content fixture preserves all 71 original claims, 19 sources,

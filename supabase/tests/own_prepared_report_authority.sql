@@ -109,6 +109,11 @@ create function pg_temp.generate(op text,p text default 'reports.polygenic',payl
 create function pg_temp.saved(expected text default null,reader_session uuid default '90000000-0000-4000-8000-000000000010') returns jsonb language sql as $$
  select public.own_captured_report_v1('90000000-0000-4000-8000-000000000001',reader_session,
  (select id from generation_subject),pg_temp.file_id(),'prepared-caffeine-fixture',expected); $$;
+create function pg_temp.call_source(expected text default null,source_file uuid default null,
+ purpose text default 'reports.polygenic',reader_session uuid default '90000000-0000-4000-8000-000000000010')
+ returns jsonb language sql as $$
+ select public.own_report_call_source_v1('90000000-0000-4000-8000-000000000001',reader_session,
+ coalesce(source_file,pg_temp.file_id()),purpose,expected); $$;
 create function pg_temp.ready() returns jsonb language sql as $$
  select private.own_report_ready_state_v1('90000000-0000-4000-8000-000000000001',pg_temp.file_id()); $$;
 create function pg_temp.envelope() returns jsonb language sql as $$ select jsonb_build_object(
@@ -127,12 +132,14 @@ set local role service_role;
 select is(pg_temp.generate('begin')->>'status','not_selected','published preparation alone grants no analysis');
 select is(pg_temp.ready(),null::jsonb,'preparation alone does not create ready eligibility');
 select is(pg_temp.saved(),null::jsonb,'preparation alone has no captured detail');
+select is(pg_temp.call_source(),null::jsonb,'store-only preparation cannot issue completed report call authority');
 reset role;
 -- Owner-only fixture inspection; no direct production table privileges are added.
 select is((select count(*) from private.own_analysis_runs where file_id=pg_temp.file_id()),0::bigint,'unselected source has no analysis journal');
 set local role service_role;
 select pg_temp.grant_report('reports.polygenic',repeat('c',64));
 insert into report_claims values('reports.polygenic',pg_temp.generate('begin'));
+select is(pg_temp.call_source(),null::jsonb,'a selected running report cannot issue completed call authority');
 select is((select receipt#>'{authorization,preparedSource}' from report_claims where purpose='reports.polygenic'),
  (select jsonb_build_object('version','own-prepared-report-source-v1','backend','prepared-object-v1',
  'manifestId',value->'manifestId','membershipSha256',value->'membershipSha256',
@@ -383,6 +390,113 @@ select ok(not has_function_privilege('anon','private.own_report_source_metadata_
  and not has_function_privilege('inherit_upload_only','private.own_report_source_metadata_v1(uuid,uuid,boolean)','EXECUTE'),'metadata helper is closed to client roles');
 select ok(not has_function_privilege('service_role','private.assert_own_report_run_current_v1(uuid,uuid,uuid,text,uuid,jsonb,boolean)','EXECUTE'),'terminal internal assertion is not an issued capability');
 select ok(not has_function_privilege('service_role','private.own_report_members_metadata_current_v1(uuid,uuid,jsonb)','EXECUTE'),'full ready metadata checker grants no direct read capability');
+-- Real completion fixtures above authorize the two backends independently.
+-- These receipts never read object bytes and cannot stand in for provider proof.
+set local role service_role;
+create temporary table report_call_sources as select 'prepared' label,pg_temp.call_source() value
+ union all select 'database',pg_temp.call_source(null,(select id from db_source));
+select is((select value->>'backend' from report_call_sources where label='prepared'),'prepared-object-v1','completed prepared report selects object backend');
+select is((select value->>'backend' from report_call_sources where label='database'),'database-v1','completed genuine normalization selects database backend');
+select ok((select bool_and(value ?& array['backend','selection','receipt']
+ and value-array['backend','selection','receipt']='{}'::jsonb and value->>'receipt'~'^[0-9a-f]{64}$') from report_call_sources),
+ 'both call-source responses are closed and have SHA-256 receipts');
+select is((select value#>'{selection,preparedSource}' from report_call_sources where label='prepared'),
+ (select receipt#>'{authorization,preparedSource}' from report_claims where purpose='reports.polygenic'),'call reader binds exactly the completed prepared manifest');
+select ok(not((select value->'selection' from report_call_sources where label='database') ? 'preparedSource'),
+ 'database call source does not contain a null or invented prepared source');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),
+ (select value from report_call_sources where label='prepared'),'unchanged prepared capture rechecks exactly');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='database'),(select id from db_source)),
+ (select value from report_call_sources where label='database'),'unchanged database capture rechecks exactly');
+select is(pg_temp.call_source(repeat('0',64)),null::jsonb,'wrong call-source receipt refuses access');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared'),(select id from db_source)),
+ null::jsonb,'prepared receipt cannot be applied to a different completed file');
+select ok((select bool_and(pg_temp.call_source(null,null,purpose) is null)
+ from unnest(array['ancestry','copilot','store','reports.monogenic',null]) purpose),
+ 'ancestry, Copilot, store, unselected monogenic and null purpose cannot borrow the polygenic result');
+select is(pg_temp.call_source('invalid'),null::jsonb,'malformed expected receipt fails closed');
+select is(pg_temp.call_source(null,gen_random_uuid()),null::jsonb,'unknown source fails closed');
+select is(pg_temp.call_source(null,null,'reports.polygenic',gen_random_uuid()),null::jsonb,'unbound session fails closed');
+reset role;
+select is((select value->'selection'-'preparedSource' from report_call_sources where label='prepared'),
+ (select jsonb_build_object('fileId',id,'subjectId',subject_id,'sourceRevision',upload_revision,'sourceSha256',sha256,
+ 'decodedSha256',source_sha256,'normalizedAt',normalization_completed_at) from public.genome_files where id=pg_temp.file_id()),
+ 'prepared selection carries only exact source identity used by the object reader');
+select is((select value->'selection' from report_call_sources where label='database'),
+ (select jsonb_build_object('fileId',id,'subjectId',subject_id,'sourceRevision',upload_revision,'sourceSha256',sha256,
+ 'decodedSha256',source_sha256,'normalizedAt',normalization_completed_at) from public.genome_files where id=(select id from db_source)),
+ 'database selection has the same exact identity without object metadata');
+savepoint call_source_revision;
+update public.genome_files set upload_revision=upload_revision+1,normalization_source_revision=normalization_source_revision+1 where id=pg_temp.file_id();
+select is(pg_temp.call_source(),null::jsonb,'changed source revision cannot become a new database fallback');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'changed source refuses the captured receipt');
+rollback to call_source_revision;
+savepoint call_source_database_manifest;
+update private.own_normalization_runs set manifest=manifest||'{"receiptProbe":true}'::jsonb where file_id=(select id from db_source);
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='database'),(select id from db_source)),
+ null::jsonb,'database normalization manifest is also bound to its captured receipt');
+rollback to call_source_database_manifest;
+savepoint call_source_member;
+delete from storage.objects where id=(select storage_object_id from private.own_preparation_artifacts
+ where id=(select (value->>'artifactId')::uuid from pub_receipts where label='artifact1'));
+select is(pg_temp.call_source(),null::jsonb,'missing unread non-root member refuses initial call-source capture');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'missing unread member refuses expected-receipt recheck');
+rollback to call_source_member;
+savepoint call_source_run;
+update private.own_analysis_runs set id=gen_random_uuid() where file_id=pg_temp.file_id() and purpose='reports.polygenic';
+select ok(pg_temp.call_source() is not null,'a completed replacement run still has independently current authority');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'run identity is bound to the receipt');
+rollback to call_source_run;
+savepoint call_source_claim;
+update private.own_analysis_runs set claim=gen_random_uuid() where file_id=pg_temp.file_id() and purpose='reports.polygenic';
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'run claim is bound to the receipt');
+rollback to call_source_claim;
+savepoint call_source_completed_at;
+update private.own_analysis_runs set completed_at=completed_at+interval '1 microsecond' where file_id=pg_temp.file_id() and purpose='reports.polygenic';
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'completion time is bound to the receipt');
+rollback to call_source_completed_at;
+savepoint call_source_result;
+-- The ordinary update remains forbidden by the existing immutable result guard.
+select throws_ok($$update private.own_analysis_runs set result=result||'{"receiptProbe":true}'::jsonb
+ where file_id=pg_temp.file_id() and purpose='reports.polygenic'$$,'55000','completed_report_is_immutable','completed report content remains immutable');
+-- A privileged synthetic replacement also cannot reuse a prior digest. Leave
+-- every trigger enabled and feed its original valid catalog-completion payload.
+create temporary table replaced_report_run as select * from private.own_analysis_runs where file_id=pg_temp.file_id() and purpose='reports.polygenic';
+delete from private.own_analysis_runs where file_id=pg_temp.file_id() and purpose='reports.polygenic';
+insert into private.own_analysis_runs select (jsonb_populate_record(null::private.own_analysis_runs,
+ to_jsonb(r)||jsonb_build_object('result',jsonb_set(r.result||'{"receiptProbe":true}'::jsonb,'{reports}',
+ (select jsonb_agg(item #- '{catalogSnapshot,templateSha256}') from jsonb_array_elements(r.result->'reports') item))))).* from replaced_report_run r;
+select is((select result from private.own_analysis_runs where file_id=pg_temp.file_id() and purpose='reports.polygenic'),
+ (select result||'{"receiptProbe":true}'::jsonb from replaced_report_run),'catalog trigger preserves the deliberately changed result and regenerates the identical catalog digest');
+select is((select to_jsonb(r)-'result' from private.own_analysis_runs r where file_id=pg_temp.file_id() and purpose='reports.polygenic'),
+ (select to_jsonb(r)-'result' from replaced_report_run r),'result probe preserves every run identity, claim and completion timestamp');
+select ok(pg_temp.call_source() is not null,'replacement result still passes the independent completion contract');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'result digest is bound to the receipt even with the same run id and claim');
+rollback to call_source_result;
+savepoint call_source_withdrawal;
+select public.revoke_directional_purpose_v1('90000000-0000-4000-8000-000000000001',
+ (select grant_id from public.purpose_grants where target_id=(select id from generation_subject) and purpose='reports.polygenic' and revoked_at is null));
+select is(pg_temp.call_source(),null::jsonb,'purpose withdrawal removes call-source authority');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'withdrawal refuses a previously issued receipt');
+select pg_temp.grant_report('reports.polygenic',repeat('8',64));
+select is(pg_temp.call_source(),null::jsonb,'regrant alone cannot revive an old completed report');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'regrant cannot revive a captured receipt');
+rollback to call_source_withdrawal;
+savepoint call_source_expired;
+update auth.sessions set not_after=clock_timestamp()-interval '1 second' where id='90000000-0000-4000-8000-000000000010';
+select is(pg_temp.call_source(),null::jsonb,'expired session cannot capture call authority');
+select is(pg_temp.call_source((select value->>'receipt' from report_call_sources where label='prepared')),null::jsonb,'expired session cannot recheck old authority');
+rollback to call_source_expired;
+select ok(has_function_privilege('service_role','public.own_report_call_source_v1(uuid,uuid,uuid,text,text)','EXECUTE')
+ and has_function_privilege('service_role','private.own_report_call_source_v1(uuid,uuid,uuid,text,text)','EXECUTE'),'service role can use the report call boundary');
+select ok((select bool_and(not has_function_privilege(role_name,fn,'EXECUTE'))
+ from unnest(array['anon','authenticated','inherit_upload_only']) role_name cross join unnest(array[
+ 'public.own_report_call_source_v1(uuid,uuid,uuid,text,text)','private.own_report_call_source_v1(uuid,uuid,uuid,text,text)']) fn),
+ 'neither wrapper nor private implementation is callable by client roles');
+select ok(not exists(select 1 from pg_proc p cross join lateral aclexplode(p.proacl) acl
+ where p.oid in('public.own_report_call_source_v1(uuid,uuid,uuid,text,text)'::regprocedure,
+ 'private.own_report_call_source_v1(uuid,uuid,uuid,text,text)'::regprocedure) and acl.grantee=0 and acl.privilege_type='EXECUTE'),
+ 'PUBLIC has no execute grant on either call-source function');
 \ir fixtures/own_prepared_copilot_assertions.inc
 select is((select enabled from private.own_preparation_config where singleton),false,'integration leaves preparation dispatch disabled');
 select * from finish();
