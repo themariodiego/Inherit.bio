@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { subjectFinalizationReceipt, subjectNormalizationReceipt, subjectQueuedPreparationReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { adminClient, completeOwnUploadConsent, createConfirmedUser, signIn } from "./helpers";
 import { generateOwnFileWithChosenReports } from "./own-report-helpers";
@@ -54,7 +55,7 @@ async function ask(page: Page, fixture: CopilotFixture, prompt: string, tool: Ca
 
 // The application, source, grants, captured results and cleanup are real. Only
 // inference is a controlled HTTPS fixture; this is never hosted model evidence.
-test("own prepared object: real source, chosen reports, ancestry, raw Copilot and revocation", async ({ page }) => {
+for (const compression of ["plain", "gzip"] as const) test(`own prepared ${compression === "gzip" ? "gzip " : ""}object: real source, chosen reports, ancestry, raw Copilot and revocation`, async ({ page }) => {
   test.setTimeout(300_000);
   await withPreparedJourney(process.env, async preparedFixture => {
     const scenario = { name: "aims-regional-merged-grch38.vcf", merged: true };
@@ -76,8 +77,16 @@ test("own prepared object: real source, chosen reports, ancestry, raw Copilot an
       const queued = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/process$/.test(response.url())
         && response.request().method() === "POST");
       for (const promise of [finalized, queued]) void promise.catch(() => {});
-      const bytes = await journeySource(scenario.name);
-      await page.locator('input[type="file"]').setInputFiles({ name: "synthetic.data", mimeType: "application/octet-stream", buffer: bytes });
+      const decoded = await journeySource(scenario.name);
+      expect(decoded).toHaveLength(7_937);
+      expect(createHash("sha256").update(decoded).digest("hex")).toBe("565abdb69fbd664b8b8a5999ac6927f1833387f18289c2901465633da15d2744");
+      expect(decoded.toString("utf8").trimEnd().split("\n").filter(line => !line.startsWith("#"))).toHaveLength(169);
+      const bytes = compression === "gzip" ? gzipSync(decoded) : decoded;
+      if (compression === "gzip") expect(gunzipSync(bytes)).toEqual(decoded);
+      await page.locator('input[type="file"]').setInputFiles({
+        name: compression === "gzip" ? "synthetic.vcf.gz" : "synthetic.data",
+        mimeType: compression === "gzip" ? "application/gzip" : "application/octet-stream", buffer: bytes,
+      });
       const finalization = await finalized;
       expect(finalization.status()).toBe(200);
       const { fileId } = subjectFinalizationReceipt.parse(await finalization.json());
@@ -121,6 +130,12 @@ test("own prepared object: real source, chosen reports, ancestry, raw Copilot an
         percent: parseFloat(element.querySelector('[data-slot="figure-value"]')!.textContent!),
       })))).sort(byCode);
       expect(displayed.every(row => Number.isFinite(row.percent))).toBe(true);
+      // Golden presentation from estimateRegionalFixture + presentRegionalShares
+      // on the pinned decoded VCF; neither case borrows the other case's result.
+      expect(displayed).toEqual([
+        { code: "AFR", percent: 2.4 }, { code: "AMR", percent: 0 }, { code: "EAS", percent: 0 },
+        { code: "EUR-MID-CSA", percent: 97.6 }, { code: "OCE", percent: 0 },
+      ]);
       const largest = [...displayed].sort((a, b) => b.percent - a.percent)[0];
       const caveat = await surface.locator('[data-slot="regional-caveat"]').innerText();
       const supportNote = await surface.locator('[data-slot="stored-support-note"]').innerText();
@@ -128,8 +143,10 @@ test("own prepared object: real source, chosen reports, ancestry, raw Copilot an
         .match(/^read ([\d,]+) of the ([\d,]+) positions this needs$/);
       expect(coverage).not.toBeNull();
       const markersRead = Number(coverage![1].replaceAll(",", ""));
+      expect([markersRead, Number(coverage![2].replaceAll(",", ""))]).toEqual([168, 168]);
       const minimum = (await surface.getByText(/^This result needs at least /).innerText()).match(/at least (\d+) usable/);
       expect(minimum).not.toBeNull();
+      expect(Number(minimum![1])).toBe(168);
       const splitDisclosure = surface.locator('details[data-slot="regional-split"]');
       if (scenario.merged) {
         await splitDisclosure.locator("summary").click();
@@ -141,6 +158,9 @@ test("own prepared object: real source, chosen reports, ancestry, raw Copilot an
       })))).sort(byCode);
       expect(displayedSplit).toHaveLength(scenario.merged ? 3 : 0);
       expect(displayedSplit.every(row => Number.isFinite(row.percent))).toBe(true);
+      expect(displayedSplit).toEqual([
+        { code: "CSA", percent: 0 }, { code: "EUR", percent: 32.2 }, { code: "MID", percent: 65.4 },
+      ]);
 
       await saveCopilotProvider(page, fixture.baseUrl);
       await openGenomeTool(page, "Copilot");

@@ -2538,3 +2538,27 @@ extractor or legal statement is removed or relaxed.
   intact. No executor behavior, safety bound or test is removed or relaxed.
 - The corrected database assertions require a new CI run; source review and
   focused unit checks do not substitute for their execution.
+
+
+## Complete gzip prepared-source journey · 23 September 2026
+
+- Parameterized the existing complete prepared-source browser journey with a
+  second gzip case. The plain case and every existing assertion remain. Both
+  cases use the same 169-record, 7,937-byte decoded source and pin its SHA-256;
+  gzip must decompress to those exact bytes. Each case independently requires
+  the fixed ancestry region/split percentages and 168-of-168 coverage calculated
+  from the pinned uncompressed fixture, without inter-test result sharing.
+  Stored-original byte and hash
+  assertions compare against each case's actual uploaded buffer.
+- Both cases require real 202 admission, one fixed worker and 200 publication,
+  zero SQL-normalization fallback, report/ancestry/raw Copilot agreement, exact
+  citations and ordered history, withdrawal and selected-file deletion. Every
+  case keeps the existing 300-second budget; worker limits, zero retries and
+  all queue/configuration/namespace guards are unchanged.
+- Cases run sequentially with separate fixture invocations. Selected-file
+  deletion removes the job and cascades its cleanup receipts; the next case
+  still refuses any residual job or cleanup. Monthly admissions remain counted.
+  A failure before cleanup is not bypassed, reset or silently retried.
+- Local checks are authoring evidence only. The added gzip case requires actual
+  isolated CI browser, database and Storage execution before it can be claimed
+  as verified. This adds no hosted capacity or release acceptance claim.

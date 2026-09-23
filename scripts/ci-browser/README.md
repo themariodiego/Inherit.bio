@@ -14,8 +14,10 @@ environment still reads local mode as off.
 The fifth CI variant, on port 3104, enables the preparation gate only for
 `e2e/own-prepared-genome-journey.spec.ts`. Its guarded setup temporarily enables
 the existing local database preparation configuration without changing any
-limit, runs one fixed bounded worker and restores the captured configuration.
-It refuses an unrelated queue or uncertain outcome. The complete boundary and
+limit, runs one fixed bounded worker per plain/gzip case and restores the captured
+configuration after each case. The next case requires an empty preparation and
+cleanup queue after the prior selected-file deletion. It refuses an unrelated
+queue or uncertain outcome. The complete boundary and
 remaining evidence limits are recorded in
 [`own-prepared-genome-journey.md`](../../docs/evidence/own-prepared-genome-journey.md).
 
