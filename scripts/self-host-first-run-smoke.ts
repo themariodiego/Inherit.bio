@@ -257,7 +257,8 @@ export async function runFirstRunSmoke(): Promise<void> {
       receipt.checks.confirmationRequired = true;
     });
     await step("jurisdictionDeclaration", async () => {
-      const country = page.getByLabel("Country you live in", { exact: true });
+      // A wrapping label also names the select by its chosen option, so match the prefix.
+      const country = page.getByRole("combobox", { name: /^Country you live in\b/ });
       await expect(country).toHaveValue(""); await country.selectOption("GB");
       await page.getByLabel("The country I chose is the country I live in.", { exact: true }).check();
       const declared = observe(page, `${LOCAL.app}/api/settings/jurisdiction`, OBSERVER_MS, "PUT");
