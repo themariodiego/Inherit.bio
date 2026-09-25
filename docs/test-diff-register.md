@@ -3002,6 +3002,13 @@ is weakened:
 - `e2e/auth.spec.ts`: after email verification, the first sign-in lands on the
   declaration with nothing chosen, declares through the form, and only then
   reaches the Overview it used to reach directly.
+- `scripts/self-host-first-run-smoke.ts` (the guided first-run CI journey):
+  email confirmation now lands on `/settings?next=%2Foverview` instead of
+  `/overview`, and a new `jurisdictionDeclaration` step declares GB through the
+  real form before continuing to `/overview`. Its request fence admits exactly
+  one `PUT /api/settings/jurisdiction`; `scripts/self-host-first-run-smoke.test.ts`
+  gains that allowance and three refusals (a POST, a query string, a repeat).
+  Every other fence rule and count is unchanged.
 
 New: `supabase/tests/jurisdiction_declaration.sql` (51 assertions; seven
 planted defects each caught), `src/app/api/settings/jurisdiction/route.test.ts`,
