@@ -58,6 +58,21 @@ insert into public.provider_recipient_grants(id,account_id,recipient_principal_i
  from (values (1,'79900000-0000-4000-8000-000000000001'::uuid),(2,'79900000-0000-4000-8000-000000000002'::uuid)) v(k,acct);
 select is((select count(*) from public.provider_recipient_grants where id::text like '7993000%'),2::bigint,
  'fixture: one recipient grant per account');
+-- A signature carrying encrypted name bytes, so the projection is proven to
+-- drop them, and one attestation on it; the other account signs one too.
+insert into public.consent_signatures(id,artifact_key,artifact_version,artifact_body_sha256,signer_principal_id,
+ signer_account_id,target_kind,target_id,purpose,statement_keys,signing_name_encrypted,jurisdiction_code,jurisdiction_revision,
+ subject_binding_revision)
+ select format('7994000%s-0000-4000-8000-000000000001',k)::uuid,'consent.upload-self',1,
+  (select body_sha256 from public.consent_artifacts where artifact_key='consent.upload-self' and version=1),
+  (select id from public.subject_principals where account_id=acct and subject_id=pg_temp.subject_of(acct) limit 1),
+  acct,'subject',pg_temp.subject_of(acct),'store',array['own-adult-dna'],'\x0102030405'::bytea,'GB',1,1
+ from (values (1,'79900000-0000-4000-8000-000000000001'::uuid),(2,'79900000-0000-4000-8000-000000000002'::uuid)) v(k,acct);
+insert into public.attestations(id,signature_id,principal_id,target_kind,target_id,kind,statement_keys,affirmed,attestation_revision)
+ select format('7995000%s-0000-4000-8000-000000000001',k)::uuid,format('7994000%s-0000-4000-8000-000000000001',k)::uuid,
+  (select id from public.subject_principals where account_id=acct and subject_id=pg_temp.subject_of(acct) limit 1),
+  'subject',pg_temp.subject_of(acct),'adult_control',array['fixture'],true,1
+ from (values (1,'79900000-0000-4000-8000-000000000001'::uuid),(2,'79900000-0000-4000-8000-000000000002'::uuid)) v(k,acct);
 
 -- Jobs through the real request and worker RPCs: an account export for each
 -- account and a subject export for the owner's own subject.
@@ -170,6 +185,24 @@ select is(pg_temp.history('owner','recipient-grants')->'rows'->0->>'id','7993000
  'recipient grants are the owner''s');
 select is(jsonb_array_length(pg_temp.history('owner','recipient-grants')->'rows'),1,'and only the owner''s');
 
+-- Signatures: what this account signed, never the encrypted signing name.
+select set_eq($$select (r->>'id')::uuid from jsonb_array_elements(pg_temp.history('owner','signatures')->'rows') r$$,
+ $$select id from public.consent_signatures where signer_account_id='79900000-0000-4000-8000-000000000001'$$,
+ 'signatures are exactly the ones the owner signed');
+select ok((select count(*) from public.consent_signatures where signer_account_id='79900000-0000-4000-8000-000000000001')>=3,
+ 'including the two real upload signatures and the fixture');
+select is((select array_agg(k order by k) from jsonb_object_keys(pg_temp.history('owner','signatures')->'rows'->0) k),
+ array['artifact_body_sha256','artifact_key','artifact_version','id','jurisdiction_code','jurisdiction_revision','purpose',
+  'signed_at','signer_principal_id','statement_keys','subject_binding_revision','target_id','target_kind'],
+ 'a signature row carries exactly the listed columns');
+select ok(not exists(select 1 from jsonb_array_elements(pg_temp.history('owner','signatures')->'rows') r
+ where r ? 'signing_name_encrypted' or r::text like '%\\x01020304%'),'no signature row carries the encrypted signing name');
+select is(pg_temp.history('owner','attestations')->'rows',
+ (select jsonb_agg(jsonb_build_object('id',id,'signature_id',signature_id,'principal_id',principal_id,'target_kind',target_kind,
+  'target_id',target_id,'kind',kind,'statement_keys',statement_keys,'affirmed',affirmed,'attestation_revision',attestation_revision,
+  'affirmed_at',affirmed_at)) from public.attestations where id='79950001-0000-4000-8000-000000000001'),
+ 'attestations are the owner''s, with the listed columns');
+
 -- The other account reads its own rows and none of the owner's.
 select set_eq($$select (r->>'id')::uuid from jsonb_array_elements(pg_temp.history('other','legacy-consents')->'rows') r$$,
  array['79920000-0000-4000-8000-000000000001'::uuid,'79920000-0000-4000-8000-000000000002'::uuid],
@@ -177,6 +210,11 @@ select set_eq($$select (r->>'id')::uuid from jsonb_array_elements(pg_temp.histor
 select is(pg_temp.history('other','demographics')->'rows'->0->>'chromosomal_sex','XY','and its own demographics');
 select is(pg_temp.history('other','recipient-grants')->'rows'->0->>'id','79930002-0000-4000-8000-000000000001',
  'and its own recipient grant');
+select is(pg_temp.history('other','signatures')->'rows'->0->>'id','79940002-0000-4000-8000-000000000001',
+ 'and its own signature');
+select is(jsonb_array_length(pg_temp.history('other','signatures')->'rows'),1,'and only its own');
+select is(pg_temp.history('other','attestations')->'rows'->0->>'id','79950002-0000-4000-8000-000000000001',
+ 'and its own attestation');
 
 -- A subject export keeps rows about that subject and refuses account-level classes.
 select throws_ok($$select pg_temp.history('owner-subject','legacy-consents')$$,'22023','invalid_request',
@@ -187,6 +225,9 @@ select ok((select bool_and(r->>'subject_id'=pg_temp.subject_of('79900000-0000-40
  from jsonb_array_elements(pg_temp.history('owner-subject','account-consents')->'rows') r),
  'a subject export''s consents are all about that subject');
 select is(jsonb_array_length(pg_temp.history('owner-subject','subjects')->'rows'),1,'a subject export reads its one subject');
+select ok((select bool_and(r->>'target_kind'='subject' and r->>'target_id'=pg_temp.subject_of('79900000-0000-4000-8000-000000000001')::text)
+ from jsonb_array_elements(pg_temp.history('owner-subject','signatures')->'rows') r),
+ 'a subject export''s signatures are all about that subject');
 
 -- Closed payloads.
 select throws_ok($$select pg_temp.raw('owner','{"kind":"legacy-consents"}')$$,'22023','invalid_request','afterId is required');
@@ -216,6 +257,11 @@ select throws_ok($$select pg_temp.history('owner','demographics')$$,'42501','not
 rollback to savepoint drift;
 update public.provider_recipient_grants set status='revoked',ended_at=clock_timestamp() where id='79930001-0000-4000-8000-000000000001';
 select throws_ok($$select pg_temp.history('owner','recipient-grants')$$,'42501','not_found','a recipient grant ended after capture fails the job');
+rollback to savepoint drift;
+insert into public.attestations(signature_id,principal_id,target_kind,target_id,kind,statement_keys,affirmed,attestation_revision)
+ values('79940001-0000-4000-8000-000000000001',(select principal_id from public.attestations where id='79950001-0000-4000-8000-000000000001'),
+  'subject',pg_temp.subject_of('79900000-0000-4000-8000-000000000001'),'adult_control',array['later'],true,1);
+select throws_ok($$select pg_temp.history('owner','attestations')$$,'42501','not_found','an attestation made after capture fails the job');
 rollback to savepoint drift;
 select lives_ok($$select pg_temp.history('owner','legacy-consents')$$,'after the rollback the unchanged job reads again');
 -- Another account's change does not touch this job.

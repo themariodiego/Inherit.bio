@@ -4,8 +4,9 @@
 --
 -- The authority graph becomes export-authority-v2. It adds, as whole rows, the
 -- account's legacy consents (consent_grants), subject principals, subject
--- account bindings, account-keyed subject consents, provider recipient grants
--- and the captured subjects' demographics. Any change to them after capture
+-- account bindings, account-keyed subject consents, provider recipient grants,
+-- the captured subjects' demographics, the consent signatures this account
+-- signed, and the attestations its principals made or its signatures carry. Any change to them after capture
 -- now fails the job, as a change to a source or grant already did. A job
 -- captured under v1 no longer matches and fails closed; none exists in
 -- production.
@@ -94,7 +95,8 @@ begin
     where c.subject_id in(select (x#>>'{subject,id}')::uuid from jsonb_array_elements(subjects)x)),
   -- v2: the requester's own history, whole rows, so any change after capture
   -- (a new or revoked legacy consent, a principal, binding, consent or
-  -- recipient-grant revision, a demographics edit) fails the job rather than
+  -- recipient-grant revision, a demographics edit, a new signature or
+  -- attestation) fails the job rather than
   -- being exported against a receipt that no longer describes it.
   'history',jsonb_build_object(
    'legacyConsents',case when p_target_kind='account' then (select coalesce(jsonb_agg(to_jsonb(c) order by c.id),'[]')
@@ -108,7 +110,13 @@ begin
    'recipientGrants',case when p_target_kind='account' then (select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]')
      from public.provider_recipient_grants x where x.account_id=a) else '[]'::jsonb end,
    'demographics',(select coalesce(jsonb_agg(to_jsonb(x) order by x.subject_id),'[]') from public.subject_demographics x
-     where x.subject_id in(select (y#>>'{subject,id}')::uuid from jsonb_array_elements(subjects)y))),
+     where x.subject_id in(select (y#>>'{subject,id}')::uuid from jsonb_array_elements(subjects)y)),
+   'signatures',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.consent_signatures x
+     where x.signer_account_id=a and (p_target_kind='account' or (x.target_kind='subject' and x.target_id=p_target_id))),
+   'attestations',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.attestations x
+     where (x.principal_id in(select id from public.subject_principals where account_id=a)
+       or x.signature_id in(select id from public.consent_signatures where signer_account_id=a))
+      and (p_target_kind='account' or (x.target_kind='subject' and x.target_id=p_target_id)))),
   'analysis',(select coalesce(jsonb_agg(to_jsonb(r) order by r.id),'[]') from private.own_analysis_runs r where r.file_id=any(file_ids)));
  receipt:=encode(extensions.digest(graph::text,'sha256'),'hex');
  -- Capture returns only closed metadata and a digest. The digest also hashes
@@ -149,7 +157,8 @@ begin
  elsif p_operation='history' then
   if (select count(*) from jsonb_object_keys(p_payload))<>2 or not(p_payload ?& array['kind','afterId'])
    or jsonb_typeof(p_payload->'kind') is distinct from 'string'
-   or p_payload->>'kind' not in ('legacy-consents','subjects','demographics','principals','bindings','account-consents','recipient-grants')
+   or p_payload->>'kind' not in ('legacy-consents','subjects','demographics','principals','bindings','account-consents','recipient-grants',
+    'signatures','attestations')
    or jsonb_typeof(p_payload->'afterId') not in ('null','string') then
    raise exception using errcode='22023',message='invalid_request'; end if;
  elsif (select count(*) from jsonb_object_keys(p_payload))<>(case when p_operation='check' then 2 else 3 end)
@@ -254,6 +263,27 @@ begin
     from public.subject_consents c where c.account_id=account_at
      and (e.target_kind='account' or c.subject_id=e.target_id)
      and (history_after is null or c.id>history_after) order by c.id limit 500) x;
+  elsif history_kind='signatures' then
+   -- Never the encrypted signing name: a signature is exported as what was
+   -- signed, about what, and when.
+   select coalesce(jsonb_agg(x.row order by x.id),'[]'),count(*),max(x.id::text)::uuid into page,member_count,last_at from (
+    select g.id,jsonb_build_object('id',g.id,'artifact_key',g.artifact_key,'artifact_version',g.artifact_version,
+     'artifact_body_sha256',g.artifact_body_sha256,'signer_principal_id',g.signer_principal_id,'target_kind',g.target_kind,
+     'target_id',g.target_id,'purpose',g.purpose,'statement_keys',g.statement_keys,'jurisdiction_code',g.jurisdiction_code,
+     'jurisdiction_revision',g.jurisdiction_revision,'subject_binding_revision',g.subject_binding_revision,
+     'signed_at',g.signed_at) as row
+    from public.consent_signatures g where g.signer_account_id=account_at
+     and (e.target_kind='account' or (g.target_kind='subject' and g.target_id=e.target_id))
+     and (history_after is null or g.id>history_after) order by g.id limit 500) x;
+  elsif history_kind='attestations' then
+   select coalesce(jsonb_agg(x.row order by x.id),'[]'),count(*),max(x.id::text)::uuid into page,member_count,last_at from (
+    select t.id,jsonb_build_object('id',t.id,'signature_id',t.signature_id,'principal_id',t.principal_id,
+     'target_kind',t.target_kind,'target_id',t.target_id,'kind',t.kind,'statement_keys',t.statement_keys,
+     'affirmed',t.affirmed,'attestation_revision',t.attestation_revision,'affirmed_at',t.affirmed_at) as row
+    from public.attestations t where (t.principal_id in(select id from public.subject_principals where account_id=account_at)
+      or t.signature_id in(select id from public.consent_signatures where signer_account_id=account_at))
+     and (e.target_kind='account' or (t.target_kind='subject' and t.target_id=e.target_id))
+     and (history_after is null or t.id>history_after) order by t.id limit 500) x;
   else
    select coalesce(jsonb_agg(x.row order by x.id),'[]'),count(*),max(x.id::text)::uuid into page,member_count,last_at from (
     select g.id,jsonb_build_object('id',g.id,'recipient_principal_id',g.recipient_principal_id,'provider_id',g.provider_id,

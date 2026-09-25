@@ -171,7 +171,9 @@ readable only under an export job.
 - its subject principals and subject account bindings;
 - its account-keyed subject consents;
 - its provider recipient grants;
-- the captured subjects' demographics.
+- the captured subjects' demographics;
+- the consent signatures it signed;
+- the attestations its principals made or its signatures carry.
 
 A new or revoked legacy consent, or any other revision of these rows after
 capture, now fails the job, as a changed source or grant already did. A job
@@ -190,12 +192,15 @@ record (`src/lib/export/subject-record.ts`):
 | `bindings` | `subject_account_bindings` for this account | all | that subject's |
 | `account-consents` | `subject_consents` for this account | all | that subject's |
 | `recipient-grants` | `provider_recipient_grants` for this account | all | refused |
+| `signatures` | `consent_signatures` this account signed | all | those about the subject |
+| `attestations` | `attestations` by its principals or on its signatures | all | those about the subject |
 
 - **Scope.** A subject export refuses the two account-level classes; the
   subject contract excludes unrelated legacy consents.
 - **Columns.** Every kind returns a listed set of columns, never a whole row,
   so a column added later is not exported by default. A subject row names no
-  account and no cohort.
+  account and no cohort. A signature never carries the encrypted signing
+  name.
 - **Pages.** Pages hold 500 rows in id order (demographics by subject id). A
   full page carries `nextAfterId`, so a class larger than the API's 1,000-row
   cap is read completely.
@@ -203,25 +208,29 @@ record (`src/lib/export/subject-record.ts`):
   after every read.
 - **Writes.** It writes nothing.
 
-`supabase/tests/export_archive_history_reader.sql` holds 50 rollback-only
+`supabase/tests/export_archive_history_reader.sql` holds 60 rollback-only
 assertions. It covers:
 
 - 1,003 legacy consents read in three pages, with none missing, repeated or out
   of order;
 - another account's rows of every class absent;
+- signatures without their encrypted signing name;
 - a subject export limited to its subject;
 - closed payloads;
 - unchanged job, attempt, export, nonce and history state;
 - drift after capture (a consent added or revoked, a demographics edit, an
-  ended recipient grant), each failing the job, while another account's change
-  does not;
+  ended recipient grant, a new attestation), each failing the job, while
+  another account's change does not;
 - a wrong receipt, a foreign attempt and an expired lease, each refused.
 
-Four planted regressions each fail it: a receipt without history, a cursor that
-repeats its boundary, legacy consents unscoped to the account, and account
-classes allowed in a subject export. The full suite passes: 93 files, 3,896
+Six planted regressions each fail it: a receipt without history, a cursor that
+repeats its boundary, legacy consents unscoped to the account, account classes
+allowed in a subject export, the encrypted signing name in a signature row, and
+signatures unscoped to the signer. The full suite passes: 93 files, 3,906
 assertions.
 
-**Not yet:** signatures and attestations (which need redaction), chats and
-messages, the legal-audit slice (which has no requester resolver), and the
+Signatures other people made about this account's subjects are not included;
+they belong to the non-self projections of step 3.
+
+**Not yet:** chats and messages, the legal-audit slice (which has no requester resolver), and the
 versioned member plan with its final set-equality check before ready.
