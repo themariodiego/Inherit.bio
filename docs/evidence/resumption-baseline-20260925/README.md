@@ -27,7 +27,7 @@ reference tables and the migration ledger only. No user table was read.
 | Production deployment | Hosting API, production deployments | `dpl_BimWfPBZby76ZcWB1umiLq1FHjd4`, READY, `57d6b4e`; nothing newer | Aliases not re-read | — |
 | Production migration ledger | Ledger names against `supabase/migrations`, by name as `gate:schema-drift` compares | 126 applied, 125 files. Missing: only the two embryo public doors withheld on purpose (D-132). Extra: the recorded operator scheduler and the two 23 September guarded-release rows | `gate:schema-drift` itself needs a database URL this host does not hold; its committed logic was run over the names instead | See below |
 | The two guarded-release rows | Their single statements re-read and hashed | SHA-256 `6389fc14…575c` and `216fb328…ad3c`, equal to the release record. All six repository migrations appear verbatim inside them with their original ledger rows; the only other schema text is expected-state JSON in the guards | — | Now recorded in `data/gates/operator-applied-migrations.json`, so `gate:schema-drift` reports only the real gap |
-| Deployed report catalog matches the corrected repository | Two independent comparisons of all 162 published `report_templates` rows; [catalog-parity.json](catalog-parity.json) | **154 identical, 8 not.** The eight are the eight batches of `data/report-scientific-corrections.json`; each equals its registered `previousCommit` in title, summary, variants and citations; all 36 registered pre-correction fields are live | Completed reports already captured from this catalog were not counted; that needs a read of user results | D-134: a guarded production refresh, which awaits the owner |
+| Deployed report catalog matches the corrected repository | Two independent comparisons of all 162 published `report_templates` rows; [catalog-parity.json](catalog-parity.json) | **154 identical, 8 not.** The eight are the eight batches of `data/report-scientific-corrections.json`; each equals its registered `previousCommit` in title, summary, variants and citations; all 36 registered pre-correction fields are live | Measured before the refresh, not in this row | D-134. Refreshed later the same day with the owner's approval; see `docs/evidence/production-catalog-refresh-20260925/` |
 
 ## What the catalog finding means
 
@@ -41,11 +41,13 @@ each new report captures it permanently, and Copilot refuses such a context.
 The full reading is D-134 in `docs/protocol/defects.md`.
 
 `pnpm gate:catalog-drift` now detects this, and running its committed
-comparison over the 162 production rows reports these eight and nothing else.
-It will pass after a refresh; completed reports stay as they were captured.
+comparison over the 162 production rows reported these eight and nothing else.
+The owner then approved a guarded refresh, applied the same day; the same
+comparison now reports nothing. Completed reports stay as they were captured.
 
 ## Not done here
 
-No production write, deployment, merge or paid activity. No hosted journey,
+No deployment, merge or paid activity. The one production write, the
+catalog refresh, is recorded separately with its own authorization. No hosted journey,
 billing read or credential probe. The handoff's `/tmp` receipts and local
 worktrees could not be consulted from this host.
