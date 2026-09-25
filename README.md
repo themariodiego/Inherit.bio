@@ -95,12 +95,13 @@ for its prerequisites. It is not a substitute for first-run setup.
 
 ## Gates
 
-Eleven `pnpm gate:*` checks read the repository rather than a description of
+Ten `pnpm gate:*` checks read the repository rather than a description of
 it: routes against the register, claims against their citations, copy against
 a plain-vocabulary list, environment variables against both the template and
 the self-hosting guide, secrets over the tracked tree *and its history*, plus
 jurisdictions, report templates, result headings, legal placeholders and
-comparator names.
+comparator names. Two more compare a deployed database with the repository:
+its migrations and its report catalog.
 
 `gate:names` is the one that cannot run from a clean checkout: its comparator
 denylist is private, and it reads the path in `NAME_DENYLIST_FILE`. Point that
@@ -125,6 +126,17 @@ built from those same files seconds earlier, so it could only ever confirm
 itself. It belongs against a deployed environment, after a deploy, and it
 **fails when it cannot check**: for a condition nothing else can see, a
 skipped check is indistinguishable from a healthy one.
+
+`gate:catalog-drift` is its counterpart for content. Deploying code never
+refreshes `public.report_templates`, so a corrected template in
+`data/templates` reaches nobody until the catalog is refreshed. Until then, a
+report whose deployed text is registered as superseded shows the
+historical-wording notice over that same old text. The gate compares
+every published report field with the repository and names the wording that
+`data/report-scientific-corrections.json` records as superseded. CI runs it
+once against the freshly seeded stack, which can only confirm its own model
+of the seed, not detect drift; run it with `SUPABASE_DB_URL` after each deploy
+and each catalog refresh.
 
 ## Deploy
 

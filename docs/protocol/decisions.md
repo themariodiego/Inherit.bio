@@ -3890,6 +3890,48 @@ taken, because the number moved.
   US$25 choice. Spend only what is needed and stop before exceeding the cap.
   No paid run has started. The model-identity evidence decision remains pending.
 
+## 2026-09-25 — Eight owner decisions, asked as selectable choices
+
+Asked in chat with the recommended option first; every choice below was the
+recommended one.
+
+- **Production report catalog (D-134):** engineering applies the guarded
+  refresh of exactly the eight rows the corrections register names, dry run
+  first, predecessor-checked and verified against `main` in the same
+  transaction. Applied the same day; the receipt is
+  `docs/evidence/production-catalog-refresh-20260925/`. This authorizes that
+  one refresh, not other production writes.
+- **Impact measurement:** one aggregate, read-only count of completed runs that
+  captured the superseded wording, with no identities or content. Taken the
+  same day: 3 runs, 24 report items.
+- **Export work:** the owner transferred `codex/async-export-delivery`
+  (`da576e5`) and its two untracked ZIP64 files as a verified bundle. It is
+  pushed unchanged as a backup and integrated onto `main` in its own branch
+  and pull request, not stacked on another.
+- **G5.6 brief paragraph:** the export branch's "Large-export storage and
+  action forms" paragraph is accepted as an owner decision and labelled as one.
+  It changes the internal storage representation only; data classes, privacy
+  scope, archive hash and the 24-hour deadline are unchanged, and ready
+  publication still requires a verified complete member set.
+- **Cloud runtime:** Docker, the local Supabase stack, pgTAP, `next typegen`,
+  builds and browser runs are permitted inside the isolated, disposable cloud
+  container used for this goal. The inherited restrictions still apply to the
+  owner's shared workstation, and CI remains the proof of record.
+- **Model identity in comprehension evidence (G3.1):** the pinned model
+  identifier and temperature may appear only in the run records under
+  `docs/comprehension-runs/<date>/`, as G3.1 requires. They stay out of
+  commits, pull-request text, comments and code. This resolves the conflict
+  the 22 September entry left pending.
+- **Jurisdiction declaration (G5.1a):** collected at first sign-in through a
+  required selection with no default, changeable in settings, every change
+  audited and re-evaluating active grants, as the brief specifies.
+- **Deny-only test jurisdiction (G5.1a, G5.1b):** a second reserved test row
+  may be added. It is selectable only under the existing test flag that a
+  production build refuses to start with, and it can only deny; it never
+  permits anything. It exists so the declared-prohibited and
+  permitted-actor-with-prohibited-subject proofs can be built. An ADR records
+  it, because the brief names a single reserved row.
+
 ## 2026-09-25 (later) — Export pull-request placement and production schema
 
 Asked in chat with the recommended option first; both choices were the
