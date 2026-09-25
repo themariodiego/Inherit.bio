@@ -3931,3 +3931,18 @@ recommended one.
   permits anything. It exists so the declared-prohibited and
   permitted-actor-with-prohibited-subject proofs can be built. An ADR records
   it, because the brief names a single reserved row.
+
+## 2026-09-25 (later) — Export pull-request placement and production schema
+
+Asked in chat with the recommended option first; both choices were the
+recommended ones.
+
+- **Export slices** are stacked pull requests, each small and reviewable: the
+  content reader (#211) targets the integration branch (#210) and merges after it.
+- **Production schema for export migrations:** after green CI, merge, then
+  apply exactly those migrations to production with a dry run, predecessor
+  checks and a postcheck, so production stays equal to `main` (the D-106
+  lesson). The functions are service-only and nothing in the application calls
+  them until export is finished. This covers the export persistence and
+  content-reader migrations only; every other production write still needs its
+  own approval.
