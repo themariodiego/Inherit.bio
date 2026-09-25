@@ -405,12 +405,12 @@ describe("the route gate holds the register to the code", () => {
       ledger: (ledger) => {
         ledger.storageBucketDivergence = (
           ledger.storageBucketDivergence as { bucket: string }[]
-        ).filter((known) => known.bucket !== "exports");
+        ).filter((known) => known.bucket !== "legal-evidence");
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created exports",
+      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created legal-evidence",
     );
   });
 

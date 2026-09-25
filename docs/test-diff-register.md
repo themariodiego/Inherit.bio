@@ -2872,3 +2872,81 @@ actual source-correction commit. Existing registry fixtures preserve the old
 interpretations through the same exact-text/identity matcher. Current corrected
 text remains unflagged; missing, malformed and wrong-identity controls remain.
 No matching rule, captured snapshot, source authority or Copilot logic changes.
+
+### 2026-09-23 — Bounded asynchronous export byte core
+
+- Added real-SDK injected-transport tests for immutable whole-object writes,
+  exact bytes and incremental hashes, reserved-key tracking, current-authority
+  receipt pinning, ordered pages, caller abort, deadlines and uncertain ACKs.
+  Existing export tests and all product routes remain unchanged.
+- The physical object boundary is the existing 4,000,000-byte download limit.
+  Beyond-2^32 validation uses virtual metadata through the actual manifest
+  accounting code; it is not a 4 GiB hashing, ZIP64 or hosted delivery proof.
+- No ready publication, database migration, worker dispatch, nonce route,
+  provider erasure or acceptance closure is represented by this core. Its
+  mandatory integration and write-fencing gaps are explicit in
+  `docs/async-export-delivery-core.md`. No existing test, retry or timeout is
+  removed or weakened.
+- Added a pure one-segment reader suite for current pinned authority, frozen
+  selection, exact provider identity/length/digest, owned-buffer delivery and
+  cancellation under a fixed total deadline. Injected objects prove the core
+  checks; they do not prove a live Storage GET adapter or an HTTP download route.
+
+### 2026-09-23 — Export action envelopes and storage contract
+
+- Added operation-token tests for exact route, origin, export scope, current
+  authority and separate CSRF binding, with distinct create/open-ready intent
+  and ready-export identity/revision. Adversarial cases cover cross-route
+  replay, expiry, malformed and noncanonical signed payloads, key rotation and
+  refusal of reviewer origins on routes that do not authorize them.
+- Repeated cryptographic verification is explicitly tested as repeatable;
+  only a later atomic database consumer can enforce one use. These tests do
+  not claim working route issuance, CSRF consumption or database authority.
+- The existing route and storage correspondence suites remain unchanged.
+  Their first run found the brief's changed hash pin and the byte core's new
+  nonliteral Storage call site. The register pin and call-site ledger now
+  record those exact changes. No route, response, export scope, retention
+  deadline, test, timeout, retry or acceptance ratchet is removed or relaxed.
+
+## Archive persistence boundaries · 23 September 2026
+
+A new rollback-only pgTAP suite covers the reachable own-account queue, live
+origin and complete-partition refusals, one-use operation envelopes, exact
+export-cookie possession, fresh attempts, sequential reserved objects, actual
+Storage metadata identity, bounded manifest pages and the explicit publication
+hold. Empty-job deletion preserves nonce replay protection; any reserved key,
+even one with a delete ACK, prevents metadata purge. No SQL or provider test
+was run locally, and no asynchronous export acceptance is claimed.
+
+The route gate's planted missing-bucket test now removes the still-missing
+legal-evidence entry instead of exports. The new migration creates only the
+registered private exports bucket; only that bucket-existence divergence is
+removed. The negative test and all other route, scope and retention assertions
+remain. No threshold or acceptance row changes.
+
+## Archive worker RPC bridge · 23 September 2026
+
+Added tests that run the existing segmentation core through the new worker RPC
+bridge, then record byte completion without publishing ready. They verify
+fixed job and attempt identity, receipt changes, the five-minute lease and
+original deadline, exact copied pages, malformed replies, cancellation,
+uncertain mutations, sticky cleanup responsibility and refusal to reuse a
+closed adapter. A real installed-SDK case verifies one POST after a transient
+failure with retries disabled. These are injected-transport tests, not database
+or hosted-export proof. Existing tests, timeouts and acceptance bounds remain.
+
+## Export work integrated onto main · 25 September 2026
+
+The owner-transferred export branch (`da576e5`) is merged with `main`; no
+existing test is modified. The two ZIP64 files that stayed untracked at
+transfer are committed unchanged (SHA-256 `7e052c78…` and `a846895d…`), adding
+`src/lib/exports/archive-zip64.test.ts`: 63 cases over header and end-record
+encoding, member order and name rules, counts, sizes, authority rechecks,
+spool integrity, cancellation, deadlines and cleanup. A real 604-member
+archive from the same producer was read byte for byte by four independent
+readers, outside the suite.
+
+The archive persistence pgTAP file ran for the first time. It exposed two
+migration defects rather than test defects, so the fix is in the migration and
+every assertion is unchanged: 77 pass, and the full suite passes 3,751. No
+test, timeout, retry, threshold or acceptance row is relaxed.
