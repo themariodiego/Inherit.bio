@@ -1,6 +1,7 @@
 # ADR-0032 — The jurisdiction declaration: one writer, a first-sign-in gate, and re-evaluation without a revision bump
 
-- Status: **Implementation decision for review** · 25 September 2026
+- Status: **Accepted** · 25 September 2026. The owner confirmed the no-bump
+  re-evaluation in chat the same day (`docs/protocol/decisions.md`).
 - Deciders: Inherit engineering, under the owner's decisions of 25 September 2026
   (`docs/protocol/decisions.md`): declare at first sign-in as specified, and add a
   block-only test jurisdiction row

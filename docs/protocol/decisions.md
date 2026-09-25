@@ -3967,3 +3967,22 @@ them in ADR 0032 for the owner to confirm or reverse:
 - **Flag-only refusals became account-aware.** Eight restricted write paths
   now also resolve the acting account's own declaration. Production behaviour
   is unchanged while no real jurisdiction is reviewed.
+
+## 2026-09-25 (evening) — Three owner confirmations, asked as selectable choices
+
+Asked in chat with the recommended option first; all three answers were the
+recommended ones.
+
+- **Export content reader in production:** after #211 merged, apply
+  `20260925130000_export_archive_content_reader.sql` to production now, guarded
+  the same way as the export persistence migration. Done the same evening;
+  the receipt is in `docs/evidence/export-content-reader-production-apply-20260925/`.
+- **Jurisdiction declaration (#212):** once CI is green, merge, then apply
+  `20260925140000_jurisdiction_declaration.sql` to production with the same
+  guarded single-statement pattern: dry run, predecessor checks including that
+  no profile already holds a code, postchecks and a receipt. This approval
+  covers that one migration.
+- **ADR 0032 confirmed:** the declaration does not bump
+  `jurisdiction_revision`. A changed country ends every restricted permission
+  the account takes part in, and adult self-analysis on the account's own
+  subject keeps its signing-time snapshot. The ADR is now Accepted.
