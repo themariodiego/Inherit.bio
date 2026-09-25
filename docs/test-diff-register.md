@@ -3039,3 +3039,18 @@ continued with a client-side push, and the router reused the redirect it had
 cached for that page. The new test forces that prefetch first. It failed
 locally against the push, in the same way as CI, and passes with the full
 page load the form now uses.
+
+## Export history reader · 25 September 2026
+
+Adds `supabase/tests/export_archive_history_reader.sql`: 50 rollback-only
+assertions for the new `history` operation of `export_archive_content_v1` and
+the `export-authority-v2` receipt. The fixture signs a real upload consent and
+opens three jobs through the existing request and worker RPCs. It inserts
+legacy consents, demographics and recipient grants directly. They are ordinary
+rows these tables hold, and the reader reads them rather than creating them.
+The local stack seeds no provider, so the file adds one synthetic provider row
+for the recipient grant's foreign key. Four planted regressions each fail it.
+
+No existing test is changed. The existing export tests still pass under the v2
+receipt, because each captures its own receipt rather than pinning one. No
+timeout, retry, threshold or acceptance row is relaxed.
