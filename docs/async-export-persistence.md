@@ -152,3 +152,8 @@ independent-session test; the prepared backend's reports gate, which is the
 existing helper's and has its own suite; and every member class beyond own
 genome files and their own results. This reader is not the complete member
 selector, and the publication hold remains.
+
+After #211 merged, the reader was applied to production the same day in one
+guarded statement, with its five dependencies pinned to the tested definitions
+(`docs/evidence/export-content-reader-production-apply-20260925/`). The
+deployed application does not call it.
