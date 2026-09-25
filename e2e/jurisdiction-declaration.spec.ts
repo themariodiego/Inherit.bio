@@ -8,7 +8,8 @@ import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers"
  * What this file proves, one test each:
  *   1. The first sign-in answers where the person lives before any product
  *      page: a required selection with nothing chosen, the published
- *      attestation, and then the page it asked for.
+ *      attestation, and then the page it asked for, including one the
+ *      navigation prefetched while the gate still redirected it.
  *   2. A signed-in browser cannot write its own declaration around the writer
  *      (D-135): the database refuses the column, not only the form.
  *   3. Declared-prohibited: an account declared as the block-only TEST-DENY
@@ -117,6 +118,31 @@ test("/settings: the first sign-in answers where the person lives, from a select
   await expect(page.locator('[data-slot="jurisdiction-current"]')).toHaveText("You told Inherit you live in France.");
   await expect(page.getByText(/Changing your country ends the Family and embryo permissions/)).toBeVisible();
   await expect(page.locator('[data-slot="jurisdiction"]').getByLabel("Country you live in")).toHaveValue("");
+});
+
+test("/settings: the first sign-in reaches a page the navigation prefetched before a country was saved", async ({ page }) => {
+  const email = `jurisdiction-prefetched-${runId}@e2e.local`;
+  await createConfirmedUser(email, PASSWORD, { jurisdiction: null });
+
+  // While no country is recorded, the gate answers the sidebar's own prefetch
+  // of Overview with the redirect back to this page. Saving must still leave.
+  const prefetched = page.waitForRequest(request => new URL(request.url()).pathname === "/overview"
+    && request.headers()["next-router-prefetch"] !== undefined);
+  await page.goto("/auth/sign-in?next=%2Foverview");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL(`${MAIN}/settings?next=${encodeURIComponent("/overview")}`);
+  await page.getByRole("navigation", { name: "App" }).getByRole("link", { name: "Overview" }).hover();
+  await prefetched;
+  await page.waitForLoadState("networkidle");
+
+  const section = page.locator('[data-slot="jurisdiction"]');
+  await section.getByLabel("Country you live in").selectOption("DE");
+  await section.getByLabel("The country I chose is the country I live in.").check();
+  await section.getByRole("button", { name: "Save country" }).click();
+  await page.waitForURL(`${MAIN}/overview`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Overview");
 });
 
 test("a signed-in browser cannot write its own jurisdiction around the declaration (D-135)", async () => {

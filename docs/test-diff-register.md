@@ -3019,3 +3019,12 @@ planted defects each caught), `src/app/api/settings/jurisdiction/route.test.ts`,
 contributor's code directly, because the writer would end the very share
 that case needs to stay current. The writer's own effect is proven separately,
 as the last test of that file. No timeout, retry, skip or ratchet changes.
+
+One more test in `e2e/jurisdiction-declaration.spec.ts` covers a first sign-in
+that continues to a page the navigation had already prefetched while the gate
+still redirected it (the sidebar's Overview). CI caught `e2e/auth.spec.ts`
+stuck on `/settings?next=%2Foverview` after a successful save. The form had
+continued with a client-side push, and the router reused the redirect it had
+cached for that page. The new test forces that prefetch first. It failed
+locally against the push, in the same way as CI, and passes with the full
+page load the form now uses.

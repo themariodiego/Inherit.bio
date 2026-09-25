@@ -65,8 +65,12 @@ export function JurisdictionForm({
       }
       setState("saved");
       form.reset();
-      if (next) router.push(next);
-      router.refresh();
+      // The first sign-in continues with a full page load. A client-side push
+      // reuses the redirect the router cached for `next` while no country was
+      // recorded (the sidebar prefetches Overview), and leaves the person
+      // here. A document request makes the gate read the answer just saved.
+      if (next) window.location.assign(next);
+      else router.refresh();
     } catch {
       setState("failed");
     }
