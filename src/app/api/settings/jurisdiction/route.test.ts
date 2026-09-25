@@ -42,6 +42,8 @@ const body = (overrides: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.unstubAllEnvs();
+  // CI sets the acceptance flag for the whole job; each case states its own.
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
   mocks.account = { user: { id: ACCOUNT }, sessionId: SESSION };
   mocks.rpc = [];
   mocks.result = { jurisdiction: "GB", changed: true, revokedGrants: 0 };
