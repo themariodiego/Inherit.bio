@@ -2,10 +2,9 @@
 
 **Your genome, on your terms.** Inherit is an open-source consumer genomics
 platform — created by [Plus Bio](https://www.plus.bio) as an open-source
-project for the public good — that gives an individual everything a
-commercial consumer-WGS service provides, without the platform ever selling
-sequencing, and with privacy engineering that is implemented rather than
-announced.
+project for the public good. It supports uploading your own genome data,
+reading informational reports, exploring ancestry, and asking a configured
+Copilot about your results. Inherit does not sell sequencing.
 
 Inherit operates as a legally separate entity from Plus Bio. It shares a
 design language with Plus Bio; accounts are separate, there is no SSO,
@@ -20,33 +19,37 @@ Plus Bio service in either direction** (see [About](/about) and the
    actually get back, shipping coverage incl. US-state exclusions, each
    provider's data practices, source links). You buy from the provider
    directly; Inherit never takes payment for sequencing.
-2. **Genome ingestion** — upload your own raw data. Array exports (23andMe,
-   AncestryDNA, MyHeritage, FamilyTreeDNA) and VCF/gVCF are fully processed
-   into a canonical GRCh38 variant store (GRCh37 arrays are lifted over).
-   BAM/CRAM are stored resumably (TUS direct-to-storage), hashed, and
-   re-downloadable; FASTQ/BAM analysis runs on a self-host
-   [worker](worker/README.md) — never claimed as serverless (see
-   [ADR-0001](docs/adr/0001-gating-decision-large-files-and-compute.md)).
+2. **Genome ingestion** — the own-genome uploader accepts supported array
+   exports (23andMe, AncestryDNA, MyHeritage, FamilyTreeDNA), VCF and gVCF.
+   It checks the source, stores it privately, and prepares supported calls
+   in GRCh38; supported GRCh37 inputs use the bundled liftover data. File
+   acceptance depends on the deployment's storage, upload and preparation
+   limits. The standard own upload is a single direct-to-Storage request.
+   The optional prepared-object worker is disabled by default; enabling it
+   does not establish large-file capacity. FASTQ alignment and BAM/CRAM
+   variant calling are not implemented in the [worker](worker/README.md).
 3. **Reports** — 162 genotype-specific report templates across 16
-   categories, each with citations (PMID/DOI), an evidence label, honest
-   "your file does not cover this variant" states, and an
-   informational-not-medical-advice line on the report itself. Polygenic
-   scores come with percentile context, a numeric coverage fraction, and a
-   mandatory ancestry-portability caveat. A scheduled research pipeline
-   watches GWAS/PGS/ClinVar releases and drafts new reports into a review
-   queue. Drafting is automatic; **publishing is not** — a template goes live
-   only once a human decision is recorded against it, and the publisher takes
-   no input from its caller, so nobody can name a draft and push it out
-   ([changelog](/changelog)).
+   categories, with citations (PMID/DOI), evidence labels, and explicit
+   missing-data states. A person chooses report purposes separately from
+   storing their file. Completed own reports capture their source and
+   content. Polygenic panels show coverage; personal scores, percentiles
+   and risk estimates are withheld because the current calculation has no
+   validated comparison group. A scheduled research pipeline watches
+   GWAS/PGS/ClinVar releases and drafts reports for review. The research
+   publisher requires a recorded human decision; the seed command installs
+   the bundled catalogue directly as published. Neither citations nor
+   automated tests establish clinical validation ([changelog](/changelog)).
 4. **Exploration & ancestry** — variant search (rsID/gene/position), an
-   embedded genome browser over your own data (first-party reference; no
-   external genome host is contacted), continental admixture against 1000
-   Genomes, and mtDNA/Y haplogroups with "what your file supports" labels.
-5. **Copilot** — a chat over your own genome. Bring your own key: a local
-   OpenAI-compatible endpoint (Ollama/LM Studio — the privacy-preferred
-   path) or Anthropic Claude. Before any genome-derived data goes to a cloud
-   provider, a consent dialog names the provider and the exact data classes;
-   grants are stored and revocable.
+   embedded genome browser over your own data, and ancestry estimates from
+   bundled reference markers. Current own ancestry uses seven broad regions
+   and mtDNA/Y lineage markers, with coverage and unavailable states. These
+   estimates depend on the supplied calls and reference panel.
+5. **Copilot** — a chat over your own genome and completed results. It
+   requires a configured connection and its own current permissions; upload
+   or report permission alone does not enable it. Cloud permission names
+   the recipient and data classes and can be withdrawn. A same-host endpoint
+   needs the separate local transport settings and an operator-established
+   network boundary described in the [self-hosting guide](docs/self-hosting.md).
 
 ## Privacy engineering, not privacy copy
 
@@ -57,8 +60,9 @@ Plus Bio service in either direction** (see [About](/about) and the
 - User genotypes are never sent to any third-party annotation API; the
   reference store is refreshed independently of any user's data
   ([ADR-0005](docs/adr/0005-annotation-reference-store.md)).
-- Deletion deletes (DB rows + storage objects, verified by test). Export is
-  one click, complete, and free forever.
+- File and account deletion use tracked cleanup work. A pending request is
+  not a deletion receipt; completion depends on the configured storage and
+  cleanup workers. Export is available from account settings.
 - Legal pages are product surfaces: law-enforcement policy + transparency
   report, deceased-customer process, a GINA explainer that names GINA's
   gaps, a change-of-control commitment, and a children's-data section —
@@ -71,17 +75,23 @@ Plus Bio service in either direction** (see [About](/about) and the
 - **Decisions**: [docs/adr/](docs/adr/README.md)
 - **Dataset licenses**: [docs/dataset-licenses.md](docs/dataset-licenses.md)
 
-```bash
-pnpm install
-pnpm supabase start        # local Postgres/Auth/Storage stack (Docker)
-cp .env.example .env.local # fill in values printed by supabase start
-pnpm seed                  # providers, report templates, PRS weights
-pnpm dev
-```
+Follow the [local first-run sequence](docs/self-hosting.md) in order. It
+covers the pinned package manager, local stack and migrations, environment
+loading for seeds, and the upload signer that Storage must accept. Copying
+`.env.example` and starting the app alone does not enable uploads.
 
-`pnpm test` runs unit tests; `pnpm e2e` runs the Playwright suite (RLS
-proof, network audit, upload/report flows) against a production build and
-the local stack.
+The [recorded first run](docs/evidence/self-host-first-run-20260923/README.md)
+passed on a fresh GitHub-hosted Ubuntu checkout on 23 September 2026.
+It followed the local guide through signup, the synthetic VCF upload and
+results, including limited ancestry and unconfigured Copilot states.
+This is separate from ordinary CI and does not prove hosted deployment,
+optional inference or large-file capacity.
+
+`pnpm test` runs unit tests, including three suites that need Chromium for
+real DOM checks. `pnpm e2e` invokes the guarded browser harness
+for the Playwright suite (RLS, network audit and upload/report flows). It
+requires the local stack and a production build; see the self-hosting guide
+for its prerequisites. It is not a substitute for first-run setup.
 
 ## Gates
 
@@ -123,8 +133,10 @@ skipped check is indistinguishable from a healthy one.
 The hosted instance at [inherit.bio](https://inherit.bio) runs on Vercel. A
 clone from the button needs the environment variables described in
 [docs/self-hosting.md](docs/self-hosting.md) before it serves anything, and
-large-file compute (FASTQ/BAM) stays on the self-hosted
-[worker](worker/README.md) either way.
+uploads also require Storage to accept the dedicated signer. The optional
+[prepared worker](worker/README.md) needs its own host, configuration and
+lifecycle checks; the deploy button does not start it. FASTQ alignment and
+BAM/CRAM variant calling remain unimplemented.
 
 **Apply migrations before the code that needs them, and check afterwards.** A
 deployment whose database is behind its application fails in the least visible

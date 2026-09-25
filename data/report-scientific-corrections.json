@@ -368,5 +368,53 @@
         "alt": "T"
       }
     ]
+  },
+  {
+    "slug": "factor-v-leiden-rs6025",
+    "correctedOn": "2026-09-23",
+    "reviewPath": "docs/sources/reviews/f5-correction-20260923.md",
+    "source": {
+      "previousCommit": "fe09e3e89784729be0cde0bee025b2b05c586b49",
+      "correctedCommit": "5eb72318047c66bf378eb3a63270f05a5ff4d3e4",
+      "templatePath": "data/templates/heart-cardiovascular.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260923.factor-v-leiden-rs6025.summary",
+        "field": "summary",
+        "oldText": "Factor V Leiden is T at rs6025, which changes R506 to Q in clotting factor V. It makes factor V harder for activated protein C to turn off. This shifts blood chemistry toward clots. It is the most common inherited vein-clot risk in people with European ancestry. About 3% to 5% of that group carry it."
+      },
+      {
+        "id": "scientific-correction.20260923.factor-v-leiden-rs6025.rs6025.cc",
+        "field": "interpretation",
+        "rsid": 6025,
+        "genotype": "CC",
+        "oldText": "No Factor V Leiden copy was found at this site. CC has the usual population clot risk from this gene. Other genes and situations still matter, such as surgery, little movement, and hormones."
+      },
+      {
+        "id": "scientific-correction.20260923.factor-v-leiden-rs6025.rs6025.ct",
+        "field": "interpretation",
+        "rsid": 6025,
+        "genotype": "CT",
+        "oldText": "One Factor V Leiden T copy is linked to a large shift upward in the chance of a vein clot. The lifetime chance is still modest for most carriers, and most never have a clot. Surgery, long periods without movement, pregnancy, and estrogen medicines can add to the risk. A clinician can explain the result with personal history."
+      },
+      {
+        "id": "scientific-correction.20260923.factor-v-leiden-rs6025.rs6025.tt",
+        "field": "interpretation",
+        "rsid": 6025,
+        "genotype": "TT",
+        "oldText": "Two Factor V Leiden T copies are rare. TT is linked to much higher vein-clot risk than usual: a large shift. This is a tendency, not a sure outcome. It is sensible to discuss TT with a clinician or genetic counselor."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 6025,
+        "gene": "F5",
+        "chrom": 1,
+        "pos38": 169549811,
+        "ref": "C",
+        "alt": "T"
+      }
+    ]
   }
 ]

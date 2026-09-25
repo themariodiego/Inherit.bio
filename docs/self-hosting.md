@@ -1,85 +1,100 @@
 # Self-hosting Inherit
 
-Two ways to run Inherit yourself: fully local (everything on your machine,
-good for trying it out and for local-LLM privacy) or hosted (Vercel +
-Supabase + Resend, what the public demo runs). Both start the same way.
+Start with the fresh local setup below. It runs the app, database, Auth,
+Storage and development mailbox on your machine. Hosted deployment and
+optional model or preparation services need additional configuration.
 
 ## Prerequisites
 
-- Node.js ≥ 20.9 and pnpm ≥ 9 (`corepack enable`) — the optional Tier-3
-  worker needs Node 22+
-- Docker (for the local Supabase stack and the optional worker)
+- Node.js 22.17.0 and pnpm 10.33.0 (`corepack enable`)
+- Docker Engine or Docker Desktop on Linux or macOS, using a local Unix socket
 - Git
+
+Use a fresh checkout and a shell without exported app credentials or hosted
+configuration. The local helper supports the repository's fixed ports:
+3000 for the app, 54321 for the API, 54322 for Postgres and 54324 for Mailpit.
+It refuses an existing `sequence` stack or volume. It does not migrate or
+rotate an existing installation. Keep any existing installation intact and
+use a separate machine for this first-run profile if those resources exist.
 
 ## 1. Clone and install
 
 ```bash
 git clone https://github.com/themariodiego/Inherit.bio.git
 cd Inherit.bio
-pnpm install
+corepack pnpm install --frozen-lockfile
 ```
 
 ## 2. Fully local (recommended first run)
 
-```bash
-pnpm supabase start
-```
-
-This boots Postgres, Auth, Storage, and Mailpit in Docker and applies every
-migration in `supabase/migrations/`. When it finishes it prints the local
-credentials. Create `.env.local` with them:
+Prepare the two distinct signing keys **before the first stack start**:
 
 ```bash
-cp .env.example .env.local
+corepack pnpm exec tsx scripts/self-host-local.ts prepare
 ```
 
-Then edit `.env.local`:
+The helper creates private files in the ignored `.inherit-local/` directory
+and sets `auth.signing_keys_path` in `supabase/config.toml`. The first key
+signs Auth tokens; the second entry contains only the upload signer's public
+key. The app keeps that upload key's private half separately. Do not commit
+the generated files or the local configuration change.
 
-| Variable | Value for local |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | `http://127.0.0.1:54321` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the `ANON_KEY` printed by `supabase start` |
-| `SUPABASE_SERVICE_ROLE_KEY` | the `SERVICE_ROLE_KEY` printed by `supabase start` |
-| `DATABASE_URL` | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` — **set this.** It builds the links inside outbound mail: invitations, rights and withdrawal links, and the cancel/export links in an account-deletion notice. It falls back to the hosted deployment rather than to localhost, so leaving it unset sends your users' mail links, and the rights tokens they carry, to a site you do not run. |
-| `BYOK_ENCRYPTION_KEY` | output of `openssl rand -base64 32` |
-| `JOBS_SECRET` | output of `openssl rand -hex 32` |
-| `INHERIT_UPLOAD_SIGNING_JWK` | the single line printed by the generator in section 5 — **the uploader needs it**: without it `POST /api/files/upload-session` answers 503 and no file can be staged. Your Supabase project must also accept what that key signs; section 5 says what that takes. |
-| `RESEND_API_KEY` | leave unset locally — **delete the line** the copy brought over: the template ships `re_YOUR_KEY`, and any non-empty value makes the app build a real client instead of no-opping. Unset, auth emails land in Mailpit (http://127.0.0.1:54324) and app emails no-op with a console note |
-| `EMAIL_FROM` | anything locally, e.g. `Inherit <inherit@localhost>` |
+Start the stock Supabase stack, then configure the app:
 
-Those are the values a first local run needs. `.env.example` declares more
-than that — the mail webhook, the upload size caps, the copilot's local-model
-policy, the normalization and prepared-WGS switches — and section 5 lists
-every one of them, including the variables you must deliberately leave unset.
+```bash
+corepack pnpm exec supabase start > .inherit-local/start.log 2>&1
+corepack pnpm exec tsx scripts/self-host-local.ts configure
+```
+
+Supabase starts Postgres, Auth, Storage and Mailpit and applies the checked-in
+migrations. Its startup log contains local credentials; keep it private.
+The helper reads the fresh `ANON_KEY` and `SERVICE_ROLE_KEY` from the running
+CLI, verifies their signer, and atomically creates a private `.env.local`.
+It checks the exact local container identities and refuses existing accounts,
+files or upload configuration before inserting the deployment-owned upload
+settings. It never resets a stack or retries an uncertain database write.
+
+This local profile allows at most 50 MiB for each array, VCF or gVCF source,
+1 GiB per account and 32 active uploads. These are admission limits, not
+measured preparation capacity. The prepared-genome path, external mail and
+model transports remain off. Auth verification mail goes to Mailpit at
+http://127.0.0.1:54324. Application mail needs the separate configuration in
+section 5. The helper generates new encryption and job secrets and sets both
+app origins to `http://localhost:3000`.
 
 Seed the reference data (provider directory, report templates, PRS
-weights):
+weights), explicitly loading the local file you just created:
 
 ```bash
-pnpm seed
+corepack pnpm exec tsx --env-file=.env.local scripts/seed.ts
 ```
+
+The seed script runs outside Next.js, so it does not load `.env.local`
+automatically. This command reads only that file; values already exported in
+your shell take precedence, so clear any hosted project URL or service-role
+key before running it locally. Hosted and CI runs that supply environment
+variables directly continue to use `pnpm seed`.
 
 Run it:
 
 ```bash
-pnpm dev
+corepack pnpm dev
 ```
 
-Open http://localhost:3000, sign up (the verification email is in Mailpit
-at http://127.0.0.1:54324), and upload
-`data/samples/synthetic-pipeline-grch38.vcf.gz`.
+Open http://localhost:3000 and sign up. Follow the verification link in
+Mailpit, complete the adult date-of-birth step, then visit **My Genome**.
+Read and select the storage permission before choosing
+`data/samples/synthetic-pipeline-grch38.vcf.gz`. Wait for processing, then
+select the report and ancestry purposes you want. These are separate from
+permission to store the file. Overview links back to the source and results;
+Copilot needs its own saved connection and permission before it can answer.
 
 `data/samples/` holds three files and only that one is a first-run sample.
 The other two are here for reasons that are not this, and both used to be
 offered on this line:
 
-- **`synthetic_23andme.txt` has a repaired generator**, addressing D-133.
-  The previous file lost 850 of 2,135 positions at liftover. The repaired file
-  loses none in the shipped parser/chain test, within the unchanged 5% bound.
-  Its added browser upload/report check is awaiting CI, so this guide retains
-  the existing first-run sample until that journey has been verified.
+- **`synthetic_23andme.txt` is a separate synthetic array fixture.** Its
+  parser and browser cases do not establish the documented VCF journey.
 - **`HG001_GRCh38_chr20-22.vcf.gz` is a historical artifact.** It is consented,
   openly published GIAB reference material, and `data/samples/PROVENANCE.md`
   records that no current browser or pipeline test uses it as genetic input,
@@ -93,26 +108,61 @@ liftover step does not apply to it. It carries
 120,073 records with 73 of the catalogue's 146 rsIDs present and 73 absent, so
 a first run shows both a covered result and an honest not-covered one.
 `src/lib/genome/pipeline-integration.test.ts` drives it through the parser and
-report resolution and asserts both outcomes. **No completed browser run yet verifies this first-run recommendation**.
-It rests on that integration test and the file's build; the newly added array
-journey is a separate check and does not exercise the recommended VCF.
+report resolution and asserts both outcomes. The [recorded first run](evidence/self-host-first-run-20260923/README.md)
+verified this exact sample in a browser on 23 September 2026: stock Storage
+upload, normalization, chosen reports, one covered call and one absent call.
+Its three ancestry markers produce an insufficient-coverage state, with a
+grey map and unreliable estimates hidden in a closed disclosure. This does
+not verify ancestry accuracy, every report or larger files. The array
+journey remains separate evidence.
 
-### Local LLM copilot (the privacy-preferred setup)
+### Optional local Copilot connection
 
-Run [Ollama](https://ollama.com) (`ollama pull llama3.1 && ollama serve`).
-First, because the copilot fetches the endpoint server-side, set
-`ALLOW_PRIVATE_LLM_ENDPOINTS=true` in `.env.local` and restart `pnpm dev` —
-this opts your self-hosted deployment into reaching a local/private model
-(it stays off by default so a shared deployment can't be used to reach
-internal addresses; cloud-metadata and link-local addresses are always
-refused). Then in **Settings → Copilot provider** choose *OpenAI-compatible*,
-base URL `http://localhost:11434/v1`, model `llama3.1`. Local endpoints need
-no consent grant (nothing leaves your infrastructure) and the chat shows a
-data-flow indicator saying exactly that.
+The first run leaves model access disabled. A local OpenAI-compatible server
+can be configured after establishing the same-host, egress-isolated network
+described in [own Copilot authority](own-copilot-authority.md). Section 5
+lists the four settings that must agree before the own-Copilot local
+transport is available. Those settings attest an existing network; they do
+not create isolation. `ALLOW_PRIVATE_LLM_ENDPOINTS` alone is insufficient.
 
-That flag governs the copilot's ordinary provider fetch. The own-copilot local
-transport is a separate and stricter mechanism with four more variables, all
-of which have to agree before it turns on; see section 5.
+Save your actual endpoint and the name of the model you installed in
+**Settings → Copilot provider**, then give the separate Copilot permission.
+Saving a connection does not grant permission or make a model request.
+The first-run browser check verifies the unconfigured state; it does not
+claim to verify optional local inference or paid external inference.
+
+### Automated verification of the documented first run
+
+The **Self-host first run** workflow follows the setup above on a fresh
+GitHub-hosted Ubuntu runner. Its browser check is deliberately restricted to
+that disposable environment. After starting the documented app, it uses:
+
+```bash
+corepack pnpm exec playwright install --with-deps chromium
+corepack pnpm exec tsx scripts/self-host-first-run-smoke.ts
+```
+
+The check runs once on the fresh setup. It signs up a synthetic account
+through the normal form, reads only its development verification email, and follows the
+sample upload and result journey. It uses the stock Storage service. It does
+not inject a user, completed result, permission or provider response into
+the database. A sanitized receipt goes to
+`test-results/self-host-first-run.json`; no credentials, mail content or raw
+genetic calls belong in that receipt.
+
+The workflow uses no hosted credentials. It records the checked-out commit,
+guide and fixture hashes, completed steps and cleanup outcomes. A successful
+ordinary CI run is not evidence for this guide. The dedicated run on
+23 September 2026 passed all 13 browser stages and all setup and cleanup
+steps. The [reviewed receipts and core-document audit](evidence/self-host-first-run-20260923/README.md)
+record the tested source, hashes and limits that close G7.2 on this candidate.
+Optional hosted setup, inference and preparation remain separate proof work.
+
+Stop the app with Ctrl-C when finished. `corepack pnpm exec supabase stop`
+stops this local stack while retaining its data. Keep `.inherit-local/` and
+`.env.local` private and together with this checkout. The verification
+workflow removes only its own disposable runner's local stack after the run;
+it never targets a hosted project.
 
 ### Tests
 
@@ -139,6 +189,8 @@ checkout rather than a missing prerequisite. The line above installs it once.
 CI does the same with `pnpm exec playwright install --with-deps chromium`
 before it runs anything.
 
+Run the full test suite in a separate clean checkout, before adding local
+configuration; keep the first-run checkout for the interactive app.
 One unit suite, `src/lib/claims/capture-emails.test.ts`, re-renders production
 email from the checkout and refuses to attest one that carries files git does
 not track — including the `.env.local` you just created, which it names
@@ -160,9 +212,9 @@ as root.
    pnpm supabase db push
    ```
 
-   In *Storage → Settings*, set the global file size limit to what your
-   plan and Tier-2 policy allow (Free caps objects at 50 MB; Pro allows up
-   to 500 GB — see ADR-0001). In *Authentication → Providers*, enable Email
+   In *Storage → Settings*, choose a file limit supported by your actual
+   plan and verified application upload path. Provider object capacity is
+   only one bound; see the sizing notes below. In *Authentication → Providers*, enable Email
    (confirmations on) and optionally GitHub OAuth (callback:
    `https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback`).
 
@@ -208,19 +260,32 @@ as root.
    pnpm seed
    ```
 
-### Production sizing notes
+5. **Upload authorization** also needs the deployment-owned
+   `private.upload_authorization_config` row and a dedicated upload signer
+   accepted by that project's Storage service. Migrations intentionally
+   leave the configuration row empty. Generating a private key or setting
+   an environment variable alone is insufficient. Follow
+   [the hosted upload readiness record](hosted-own-upload-readiness.md)
+   and the reviewed activation procedure for your exact deployment. The
+   local setup helper does not support hosted projects. Verify a synthetic
+   upload, finalization, selected result and withdrawal on an isolated
+   preview before opening the deployment to users.
 
-- **Free tier demo** (what the public demo runs): 500 MB database ≈ a
-  handful of processed array files (an array file inserts ~600 k variant
-  rows ≈ 45–60 MB with indexes); 1 GB storage; 50 MB max object —
-  Tier-2 BAM/CRAM is effectively demo-only. Set
-  `NEXT_PUBLIC_MAX_ARRAY_BYTES`, `NEXT_PUBLIC_MAX_VCF_BYTES` and
-  `NEXT_PUBLIC_MAX_BAM_BYTES` accordingly (see `src/lib/limits.ts`).
-- **Supabase Pro**: 8 GB+ database (≈ 100+ array users; VCFs cost more),
-  100 GB storage included, 500 GB max object — real Tier-2 support.
-- **Vercel**: Hobby caps functions at 300 s (fine for the demo caps); Pro
-  allows 800 s and per-minute cron. Processing a 200 MB VCF fits in 300 s;
-  raise caps only with Pro + tested headroom.
+### Capacity and activation
+
+- The current own-upload flow accepts the declared array and VCF/gVCF
+  formats, including supported compression. It refuses BAM, CRAM and FASTQ.
+  The ordinary transport is a single direct Storage request; resumable
+  large-file work is a separate proposal and qualification effort.
+- Own-upload limits come from the private database configuration. The
+  browser, issuer, provider, normalization and optional preparation each
+  enforce further bounds. Raising a Storage setting or an environment cap
+  does not prove that a file can be processed or produce every report.
+- Check your actual provider plan and runtime settings before selecting
+  limits. The [hosted proof](evidence/hosted-proof-20260919/README.md)
+  records observed sizes and failures; those observations do not establish
+  a larger supported ceiling. Do not infer processing time from the smaller
+  first-run sample.
 - **Prepared-genome admissions**: the database caps how many new full-genome
   preparations it admits per UTC calendar month. The cap is
   `monthly_admission_limit` on the private singleton row
@@ -233,7 +298,7 @@ as root.
   it. Raise it with a single `update` on that row once you have measured a
   month's worker and storage spend at the current cap.
 
-## 4. The Tier-3 worker (FASTQ/BAM analysis)
+## 4. Optional annotation worker
 
 See [worker/README.md](../worker/README.md). Short version:
 
@@ -269,7 +334,7 @@ does not declare. Copy the template, then work through these.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The publishable key of that same project. It routes browser requests through the Supabase gateway; it is never the upload authorization. |
 | `SUPABASE_SERVICE_ROLE_KEY` | The secret key of that same project: research-library pipeline, account deletion, privileged jobs. Server only — never under a name beginning NEXT_PUBLIC, and never in the browser bundle. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical public URL of this deployment, no trailing slash. It falls back to `http://localhost:3000`, so a missing value fails where you can see it. |
-| `NEXT_PUBLIC_APP_URL` | The origin used to build the links **inside outbound mail**: invitations, rights and withdrawal links, and the cancel/export links in an account-deletion notice. Set it explicitly. It sits beside `NEXT_PUBLIC_SITE_URL` and the two fall back in opposite directions — this one falls back to the hosted deployment at `https://www.inherit.bio`, so leaving it unset silently sends your users' mail links, and the rights tokens those links carry, to a site you do not run. |
+| `NEXT_PUBLIC_APP_URL` | The origin used to build links inside outbound mail: invitations, rights, withdrawal, and account-deletion controls. Set your own deployment's origin explicitly. Outside a Vercel runtime, an unset value throws when a mail link is built. Under Vercel, the fallback is `https://www.inherit.bio`, which is unsuitable for another operator's deployment. |
 | `BYOK_ENCRYPTION_KEY` | `openssl rand -base64 32`. It encrypts users' own model keys at rest and derives the keyed digests used to match values that are never stored in the clear. Anything that is not 32 bytes of base64 raises `BYOK_ENCRYPTION_KEY must be 32 bytes of base64`; changing it later leaves existing ciphertext undecryptable and existing digests unmatchable. |
 | `INHERIT_UPLOAD_SIGNING_JWK` | The server-only private key the upload route signs Storage bearers with, as one line of JSON — see *Generating the upload signing key* below. Unset or malformed, `POST /api/files/upload-session` answers 503 and nothing can be uploaded at all. Never give it a name beginning NEXT_PUBLIC and never reuse `BYOK_ENCRYPTION_KEY` for it. |
 | `EMAIL_FROM` | The sender for application mail. In a production build the mailer throws `EMAIL_FROM must use a verified sender in production` when it is unset; outside production it falls back to `Inherit <onboarding@resend.dev>`. |
@@ -328,7 +393,7 @@ reads its ceilings from the database instead of from these.
 
 | Variable | What to set, and what a missing or wrong value does |
 | --- | --- |
-| `ALLOW_PRIVATE_LLM_ENDPOINTS` | `true` only when self-hosting, so the copilot's ordinary server-side provider fetch may reach a loopback or RFC-1918 address (the Ollama setup in section 2). Left unset, those addresses are refused; cloud-metadata and link-local addresses are refused either way. |
+| `ALLOW_PRIVATE_LLM_ENDPOINTS` | `true` only when self-hosting, so the legacy server-side provider fetch may reach a loopback or RFC-1918 address. It does not enable the own-Copilot transport below. Left unset, those addresses are refused; cloud-metadata and link-local addresses are refused either way. |
 | `INHERIT_DEPLOYMENT_KIND` | Exactly `self-hosted-development`. Any other value, unset included, reads as unattested and leaves the local model transport off. |
 | `ALLOW_LOCAL_MODEL_ENDPOINTS` | Exactly `1`. |
 | `INHERIT_LOCAL_MODEL_HOST_ATTESTATION` | Exactly `same-host-egress-isolated-v1`. It records your claim that a same-host, egress-isolated network already exists; it neither builds nor verifies one. |
@@ -357,35 +422,45 @@ They are read under `src/`, they are deliberately absent from
 ### Generating the upload signing key
 
 `INHERIT_UPLOAD_SIGNING_JWK` is a P-256 private key in JWK form, on one line.
-Generate one:
+For the fresh local profile, use section 2's helper before starting Supabase.
+It generates separate keys, registers public verification material through
+the stock CLI, and writes the app's private key without printing it.
+
+An operator provisioning a different deployment can generate a key into a
+private, untracked file, then install it through that platform's secret store:
 
 ```bash
-node -e 'const c = require("node:crypto");
+node -e 'const c = require("node:crypto"); const fs = require("node:fs");
 const k = c.generateKeyPairSync("ec", { namedCurve: "prime256v1" });
-console.log(JSON.stringify({ ...k.privateKey.export({ format: "jwk" }), kid: c.randomUUID() }));'
+fs.writeFileSync(".env.upload-signing-jwk", JSON.stringify({
+  ...k.privateKey.export({ format: "jwk" }), kid: c.randomUUID(), alg: "ES256", use: "sig"
+}), { mode: 0o600, flag: "wx" });'
 ```
 
-Paste that single line into `.env.local` (or into your hosting platform's
-secret store). The route re-derives the public half from the private scalar
+Store the generated value as the server-only secret. The route re-derives the public half from the private scalar
 and refuses the key if they disagree, so a truncated or edited paste fails
 closed instead of signing.
 
 Supabase Storage then has to accept what the key signs. The upload bearer is
 issued for your `NEXT_PUBLIC_SUPABASE_URL` plus `/auth/v1`, so the project
-must verify tokens signed by this key's public half: locally that is the
-`signing_keys_path` entry `supabase/config.toml` ships commented out, and on
-a hosted project it is that project's own signing-key configuration. This
-guide does not automate either, and the one local browser upload recorded in
-this repository (`docs/local-upload-browser-verification.md`) ran a dedicated
-Storage instance that trusted a run-specific public key rather than the stock
-`pnpm supabase start` stack. Treat browser upload on a fresh self-host as
-unproven until you have registered the public half yourself and watched an
-object land.
+must verify tokens signed by this key's public half. The local helper sets
+`signing_keys_path` before startup. A hosted deployment needs its own reviewed
+provider configuration; never replace an existing Auth signing key with the
+upload signer. The historical browser harness uses a separate Storage
+process, so its success does not prove this stock first-run setup. The
+dedicated workflow above records that proof for the fresh local profile;
+it does not establish a hosted project's signer configuration.
 
 ## Troubleshooting
 
-- **Supabase start fails**: Docker must be running; `pnpm supabase stop
-  --no-backup` resets a wedged stack.
+- **Fresh setup stops**: read the bounded error code and private startup log.
+  Keep the generated files; do not rerun preparation, rotate keys or reset an
+  existing stack to get past a refusal. If `.inherit-local/configure-attempt.json`
+  exists, configuration may have committed even if the command failed later.
+  Reconcile that local database and pending environment before any new write.
+- **Supabase start fails**: confirm Docker is running and the local ports
+  are available. Inspect `.inherit-local/start.log` privately. The helper
+  never removes an existing volume or starts a replacement service for you.
 - **Sign-up email never arrives locally**: it's in Mailpit
   (http://127.0.0.1:54324), not your real inbox.
 - **Verification link goes to `localhost:3000/?code=…` on a hosted

@@ -2854,6 +2854,25 @@ extractor or legal statement is removed or relaxed.
   changes. Database and browser execution remains CI work; discovery and
   local source checks alone do not close G5.4 or G8.5.
 
+### Factor V Leiden source correction — 23 September 2026
+
+The new `src/lib/genome/f5-source.test.ts` checks the existing resolver's C/T
+orientation, all three covered genotypes, missing/no-call/unrelated alleles,
+exact dated evidence edges and rendered attribution. It also refuses the exact
+old CC paragraph and wrong rsID/genotype attribution. No caller, coverage rule,
+route or privacy gate changes. Existing assertions remain; canonical counts
+increase by four claims and three sources, and the undated template citation
+bound drops from 178 to 177 for the actually read Bertina citation. Full hosted,
+clinical or catalogue-wide validation is not claimed. This first commit does
+not rewrite historical snapshots or invent a correction commit identifier.
+
+The separate historical F5 follow-up appends four exact prior fields using the
+actual source-correction commit. Existing registry fixtures preserve the old
+32-field digest, add the four F5 fields, and exercise all 27 prior genotype
+interpretations through the same exact-text/identity matcher. Current corrected
+text remains unflagged; missing, malformed and wrong-identity controls remain.
+No matching rule, captured snapshot, source authority or Copilot logic changes.
+
 ### 2026-09-23 — Bounded asynchronous export byte core
 
 - Added real-SDK injected-transport tests for immutable whole-object writes,

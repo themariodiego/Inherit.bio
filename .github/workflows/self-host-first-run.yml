@@ -1,0 +1,216 @@
+name: Self-host first run
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/self-host-first-run.yml
+      - .env.example
+      - README.md
+      - docs/architecture.md
+      - docs/self-hosting.md
+      - scripts/self-host-*
+      - scripts/seed*.ts
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - patches/**
+      - supabase/config.toml
+      - supabase/migrations/**
+      - supabase/seed.sql
+      - data/**
+      - public/**
+      - src/**
+      - next.config.ts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guided-first-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.17.0
+          cache: pnpm
+      - name: Install the guide's pinned dependencies
+        id: install
+        run: corepack pnpm install --frozen-lockfile
+      - name: Install the guide's verification browser
+        id: browser
+        run: corepack pnpm exec playwright install --with-deps chromium
+      - name: Prepare fresh local signing keys before stack startup
+        id: prepare
+        run: corepack pnpm exec tsx scripts/self-host-local.ts prepare
+      - name: Start the stock local Supabase stack
+        id: stack
+        # The CLI prints credentials. Its private log is never an artifact.
+        run: corepack pnpm exec supabase start > .inherit-local/start.log 2>&1
+      - name: Configure only the newly created local stack
+        id: configure
+        run: corepack pnpm exec tsx scripts/self-host-local.ts configure
+      - name: Seed reference data using the guide's explicit env file
+        id: seed
+        run: corepack pnpm exec tsx --env-file=.env.local scripts/seed.ts > .inherit-local/seed.log 2>&1
+      - name: Run the documented app and synthetic first-run journey
+        id: journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          setsid corepack pnpm dev > .inherit-local/dev.log 2>&1 &
+          app_group=$!
+          stop_app() {
+            kill -TERM -- "-$app_group" 2>/dev/null || true
+            for _ in $(seq 1 10); do
+              if ! kill -0 -- "-$app_group" 2>/dev/null; then
+                wait "$app_group" 2>/dev/null || true
+                printf 'stopped\n' > .inherit-local/app-shutdown.txt
+                return 0
+              fi
+              sleep 1
+            done
+            kill -KILL -- "-$app_group" 2>/dev/null || true
+            for _ in $(seq 1 5); do
+              if ! kill -0 -- "-$app_group" 2>/dev/null; then
+                wait "$app_group" 2>/dev/null || true
+                printf 'forced-stop\n' > .inherit-local/app-shutdown.txt
+                return 1
+              fi
+              sleep 1
+            done
+            printf 'not-confirmed\n' > .inherit-local/app-shutdown.txt
+            return 1
+          }
+          trap 'status=$?; stop_app || status=1; exit "$status"' EXIT
+          ready=""
+          for _ in $(seq 1 90); do
+            if curl --silent --fail --max-time 2 --output /dev/null http://localhost:3000/auth/sign-in; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ -z "$ready" ]; then
+            echo 'The documented app did not become ready; the journey was not run.'
+            exit 1
+          fi
+          corepack pnpm exec tsx scripts/self-host-first-run-smoke.ts
+      - name: Record bounded setup diagnostics without log contents
+        if: failure() && steps.prepare.outcome == 'success'
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const cp = require('node:child_process');
+          const signatures = {
+            addressInUse: /address already in use/i,
+            healthFailure: /(?:failed|unhealthy).{0,80}health|health.{0,80}(?:failed|unhealthy)/i,
+            invalidSigningKey: /(?:invalid|failed|malformed).{0,80}(?:jwk|jwt|signing key)/i,
+            missingSigningOperation: /no signing key detected|no signing key found/i,
+            multipleSigningOperations: /multiple signing keys detected/i,
+            signingKeyReadFailure: /failed to read signing keys/i,
+            signingKeyDecodeFailure: /failed to decode signing keys/i,
+            imageUnavailable: /manifest unknown|pull access denied|failed to pull/i,
+            databasePermission: /permission denied for (?:schema|table|relation)/i,
+            missingRelation: /relation .{0,120} does not exist/i,
+          };
+          const logs = {};
+          for (const name of ['start', 'seed', 'dev']) {
+            let fd;
+            try {
+              fd = fs.openSync('.inherit-local/' + name + '.log', fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+              const info = fs.fstatSync(fd);
+              if (!info.isFile() || info.size > 2 * 1024 * 1024) {
+                logs[name] = { availability: 'not-inspected' };
+                continue;
+              }
+              const buffer = Buffer.alloc(2 * 1024 * 1024 + 1);
+              const count = fs.readSync(fd, buffer, 0, buffer.length, 0);
+              if (count > 2 * 1024 * 1024) { logs[name] = { availability: 'not-inspected' }; continue; }
+              const text = buffer.subarray(0, count).toString('utf8');
+              logs[name] = { availability: 'inspected', signatures: Object.fromEntries(
+                Object.entries(signatures).map(([code, pattern]) => [code, pattern.test(text)])) };
+            } catch { logs[name] = { availability: 'unavailable' }; }
+            finally { if (fd !== undefined) fs.closeSync(fd); }
+          }
+          const containers = {};
+          const format = '{"state":{{json .State.Status}},"exitCode":{{json .State.ExitCode}},"health":{{if .State.Health}}{{json .State.Health.Status}}{{else}}null{{end}}}';
+          for (const name of ['db', 'auth', 'storage', 'kong']) {
+            try {
+              const parsed = JSON.parse(cp.execFileSync('docker', ['inspect', '--format', format, 'supabase_' + name + '_sequence'],
+                { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 2000, maxBuffer: 4096 }));
+              if (!['created', 'running', 'paused', 'restarting', 'removing', 'exited', 'dead'].includes(parsed.state)
+                || !Number.isSafeInteger(parsed.exitCode) || ![null, 'starting', 'healthy', 'unhealthy'].includes(parsed.health)) throw new Error();
+              containers[name] = { state: parsed.state, exitCode: parsed.exitCode, health: parsed.health };
+            } catch { containers[name] = { availability: 'unavailable' }; }
+          }
+          fs.mkdirSync('test-results', { recursive: true });
+          fs.writeFileSync('test-results/self-host-first-run-diagnostics.json', JSON.stringify({
+            version: 1, recordedAt: new Date().toISOString(), logs, containers,
+            scope: 'fixed-signatures-and-local-service-states-only',
+          }, null, 2) + '\n');
+          NODE
+      - name: Stop only this fresh runner's owned local stack
+        id: cleanup
+        if: always() && steps.prepare.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm exec supabase stop --no-backup > .inherit-local/stop.log 2>&1
+          remaining_containers=$(docker container ls --all --filter label=com.supabase.cli.project=sequence --format '{{.ID}}')
+          remaining_volumes=$(docker volume ls --filter label=com.supabase.cli.project=sequence --format '{{.Name}}')
+          test -z "$remaining_containers"
+          test -z "$remaining_volumes"
+      - name: Record command outcomes without private logs
+        if: always()
+        env:
+          FIRST_RUN_INSTALL: ${{ steps.install.outcome }}
+          FIRST_RUN_BROWSER: ${{ steps.browser.outcome }}
+          FIRST_RUN_PREPARE: ${{ steps.prepare.outcome }}
+          FIRST_RUN_STACK: ${{ steps.stack.outcome }}
+          FIRST_RUN_CONFIGURE: ${{ steps.configure.outcome }}
+          FIRST_RUN_SEED: ${{ steps.seed.outcome }}
+          FIRST_RUN_JOURNEY: ${{ steps.journey.outcome }}
+          FIRST_RUN_CLEANUP: ${{ steps.cleanup.outcome }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+          const cp = require('node:child_process');
+          const names = ['install', 'browser', 'prepare', 'stack', 'configure', 'seed', 'journey', 'cleanup'];
+          const outcomes = Object.fromEntries(names.map(name => [name, process.env['FIRST_RUN_' + name.toUpperCase()]]));
+          const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+          let appShutdown = 'not-confirmed';
+          try {
+            const value = fs.readFileSync('.inherit-local/app-shutdown.txt', 'utf8').trim();
+            if (value === 'stopped' || value === 'forced-stop') appShutdown = value;
+          } catch {}
+          const receipt = {
+            version: 1, recordedAt: new Date().toISOString(),
+            commit: cp.execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+            guideSha256: hash('docs/self-hosting.md'),
+            workflowSha256: hash('.github/workflows/self-host-first-run.yml'),
+            node: process.version, runner: 'github-hosted-ubuntu-24.04', outcomes, appShutdown,
+            success: names.every(name => outcomes[name] === 'success') && appShutdown === 'stopped',
+          };
+          fs.mkdirSync('test-results', { recursive: true });
+          fs.writeFileSync('test-results/self-host-first-run-job.json', JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+      - name: Keep only the sanitized first-run receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-host-first-run
+          path: |
+            test-results/self-host-first-run.json
+            test-results/self-host-first-run-job.json
+            test-results/self-host-first-run-diagnostics.json
+          if-no-files-found: error
+          retention-days: 14
