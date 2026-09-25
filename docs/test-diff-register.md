@@ -2951,7 +2951,18 @@ migration defects rather than test defects, so the fix is in the migration and
 every assertion is unchanged: 77 pass, and the full suite passes 3,751. No
 test, timeout, retry, threshold or acceptance row is relaxed.
 
-### Jurisdiction declaration (G5.1a, G5.1b) — 25 September 2026
+## Export content reader · 25 September 2026
+
+Adds `supabase/tests/export_archive_content_reader.sql`, 44 rollback-only
+assertions for the new service-only reader. Its fixture builds one file
+through the real consent, normalization, grant and report functions and 104
+plain ready sources, then opens jobs and attempts through the existing request
+and worker RPCs; it seeds no result, grant bypass or ready export. Three
+planted regressions (a missing purpose gate, a repeating cursor and a real
+lease renewal) each fail it. No existing test, timeout, retry, threshold or
+acceptance row is changed.
+
+## Jurisdiction declaration (G5.1a, G5.1b) · 25 September 2026
 
 ADR 0032. The brief requires an undeclared account to resolve every restricted
 capability as `unreviewed`; under the acceptance flag it used to resolve
