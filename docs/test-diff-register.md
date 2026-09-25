@@ -2934,3 +2934,19 @@ uncertain mutations, sticky cleanup responsibility and refusal to reuse a
 closed adapter. A real installed-SDK case verifies one POST after a transient
 failure with retries disabled. These are injected-transport tests, not database
 or hosted-export proof. Existing tests, timeouts and acceptance bounds remain.
+
+## Export work integrated onto main · 25 September 2026
+
+The owner-transferred export branch (`da576e5`) is merged with `main`; no
+existing test is modified. The two ZIP64 files that stayed untracked at
+transfer are committed unchanged (SHA-256 `7e052c78…` and `a846895d…`), adding
+`src/lib/exports/archive-zip64.test.ts`: 63 cases over header and end-record
+encoding, member order and name rules, counts, sizes, authority rechecks,
+spool integrity, cancellation, deadlines and cleanup. A real 604-member
+archive from the same producer was read byte for byte by four independent
+readers, outside the suite.
+
+The archive persistence pgTAP file ran for the first time. It exposed two
+migration defects rather than test defects, so the fix is in the migration and
+every assertion is unchanged: 77 pass, and the full suite passes 3,751. No
+test, timeout, retry, threshold or acceptance row is relaxed.

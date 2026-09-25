@@ -1,8 +1,9 @@
 # Archive persistence: an intermediate database slice
 
-This migration is authored but has not run locally or on a provider. It does
-not activate a route, worker, scheduler, Storage upload or browser download.
-G5.6 remains incomplete. The existing synchronous export route is unchanged.
+This migration first ran on 25 September 2026, on a local stack built from
+every migration; it has never run on a hosted provider. It does not activate a
+route, worker, scheduler, Storage upload or browser download. G5.6 remains
+incomplete. The existing synchronous export route is unchanged.
 
 The new RPCs extend `generated_exports` and reuse `own_export_source_v1` for
 actual Auth, originating session, profile, own subject and source checks.
@@ -77,9 +78,15 @@ unchanged.
 
 The new pgTAP file authors authority, nonce, cookie, reservation, manifest,
 publication-hold and purge regressions. Its Storage rows are synthetic metadata
-inside a rollback transaction. Those cases have not been executed locally and
-are not evidence of provider upload, physical deletion, complete archive
-membership, ZIP64 delivery or independent-rights support.
+inside a rollback transaction. Its first execution, on 25 September, found two
+functions reusing a PL/pgSQL row variable name as a table alias:
+`export_archive_authority_v1` failed every request with `record "s" is not
+assigned yet`, and the worker's `page` operation failed with `42702` ambiguity.
+Renaming the four aliases fixed both; all 77 assertions then passed, as did
+the full suite of 3,751. Reverting only the worker rename fails assertion 58,
+so the suite covers it. These cases are still not evidence of provider upload,
+physical deletion, complete archive membership, ZIP64 delivery or
+independent-rights support.
 
 ## Worker RPC bridge
 

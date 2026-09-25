@@ -155,8 +155,15 @@ A separate metadata accounting test uses 1,075 virtual descriptors with a total
 of 4,296,000,017 bytes. It proves arithmetic/order/paging beyond 2^32. It does not
 hash or transfer 4 GiB, generate a ZIP64 archive or prove large hosted capacity.
 
-Still required: database authority/concurrency tests, full own and independent
+The ZIP64 producer (`archive-zip64.ts`) was checked on 25 September with a
+real 604-member, 9.66 MB archive it wrote itself: Info-ZIP, Python `zipfile`,
+libarchive (seeking and non-seeking) and 7-Zip 23.01 each read every member
+byte for byte. That archive is below 4 GiB, and macOS Archive Utility and
+Windows Explorer were not tried.
+
+Still required: concurrency tests beyond the rollback-only pgTAP suite, full own and independent
 rights journeys, source changes and revocation during generation/download,
-duplicate/expired nonces, late-write cleanup and deletion, ZIP64 interoperability
-and an actual large mixed-member archive with no missing content. No existing
+duplicate/expired nonces, late-write cleanup and deletion, reader coverage on
+the desktop platforms above, and an actual large mixed-member archive with no
+missing content. No existing
 test, timeout, route ratchet, acceptance verdict or safety bound is relaxed.
