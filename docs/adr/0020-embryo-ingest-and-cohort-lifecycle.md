@@ -194,6 +194,22 @@ and tested, one job executor, and a flag.
 
 ## Decision
 
+**Runtime qualification, 22 September 2026.** The preceding claim that chunk
+and complete routes need only wiring to a finished substrate is too broad.
+`docs/embryo-ingest-unwind-runtime.md` and the closing comment in
+`20260905203457_embryo_ingest_unwind_runtime.sql` explicitly leave out the
+physical Storage writer fence, conclusive in-flight drain and deletion ACK,
+and terminal graph-purge transaction. An empty listing or a cancelled upload
+does not prove that an in-flight write cannot land later. These remain required
+before accepting source bytes; the public ingest routes and availability flag
+must not bypass them. The standalone build-inference component and 61,617-site
+reference now exist, with provenance at
+`data/ref/BUILD_DISCRIMINATING_SITES_PROVENANCE.md`. They do not write a session,
+issue a mapping/build challenge, enable ingest, or close D-131's missing
+source-format/build binding. The decision and challenge stores still need
+transactional writers. This qualification preserves the earlier findings as
+history and changes no threshold or acceptance mark.
+
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
    its `sample_ordinal`. Source sample labels, column headers and file
    names are used only transiently in bounded memory to associate rows;

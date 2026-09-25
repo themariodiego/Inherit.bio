@@ -1,0 +1,1338 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-22T08:27:01.332Z",
+  "ensemblRelease": {
+    "releases": [
+      116
+    ]
+  },
+  "scope": "Public variant coordinate metadata only; no participant or reference-sample genotypes.",
+  "chainSha256": "351de3cd4a01d9fcffd38881981767b697090d2eba876740891b96d5c546b100",
+  "referenceSha256": "03c17745990c0396f4ca6020e963d6b359eef94350f99c4fe066224580c89d5e",
+  "sites": 61617,
+  "candidateSnps": 62010,
+  "uniquelyMappedDiscriminatingCandidates": 61685,
+  "selection": "Ten evenly spaced 1 Mb windows per autosome; all_chips SNPs; unique rsIDs and one-to-one same-autosome chain inverses; exclude equal-build positions and every cross-site or cross-build coordinate collision.",
+  "sources": [
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:112662011-113662010?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "1a55c34eb8bd95aba3c85a408eaecedf5d6f34580df55e18ffcd91c84c202c25",
+      "records": 1871,
+      "retrievedAt": "2026-09-22T08:22:45.900Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:135294413-136294412?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:22:42.156Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:157926815-158926814?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "ca946d1dd6431c21463ca2ff27b804fe1ffa92ebde9fec2c77b2800f239b0180",
+      "records": 2570,
+      "retrievedAt": "2026-09-22T08:22:45.476Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:180559217-181559216?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b8c98d0c100e648251f34c51e96a1c7cc62592221bc90b9316d102752b5569ff",
+      "records": 1972,
+      "retrievedAt": "2026-09-22T08:22:49.701Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:203191619-204191618?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3478831e139b70848b42f0c1722537956be36620a296e7082cc6b6fbbf18815e",
+      "records": 2185,
+      "retrievedAt": "2026-09-22T08:22:49.243Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:22132403-23132402?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b173d98f2d088dc7b69cf43cda95964ef0820059470990472d7c08dc61fe6eec",
+      "records": 2318,
+      "retrievedAt": "2026-09-22T08:22:44.261Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:225824021-226824020?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a9464c143e5ef71f5d5c6cc4ca641116f66fbb0310a72df981a920574adda1c9",
+      "records": 1848,
+      "retrievedAt": "2026-09-22T08:22:48.977Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:44764805-45764804?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "24f6d70fc36eb7e25d152f5f71adcac52183f7950177fc0a9b9efe245d6b9846",
+      "records": 1601,
+      "retrievedAt": "2026-09-22T08:22:44.926Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:67397207-68397206?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b0cf78fba7e40a8396093a8c0b1a17fec78acdcfc75c04a07828053f4e3864e4",
+      "records": 2137,
+      "retrievedAt": "2026-09-22T08:22:42.041Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/1:90029609-91029608?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "fa4ba7c4d1186d42fa85b11890c78b4ec343bd9f2847edb696b2eabde972d020",
+      "records": 1624,
+      "retrievedAt": "2026-09-22T08:22:41.662Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:108970619-109970618?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e625bcb74077466baf156045ce9d819fcfa211a69d0ead981e395ff68a4c9220",
+      "records": 188,
+      "retrievedAt": "2026-09-22T08:24:17.393Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:11663403-12663402?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "af4046d645d9105e2848acadf874be0fcdd395fbefe02b8510b718983ed1d1e6",
+      "records": 324,
+      "retrievedAt": "2026-09-22T08:24:05.217Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:121134021-122134020?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "937d7bf1ba8776389399ba1fbb3c26ae72fb0aa3d93b88d895ab9a3ed4ad993b",
+      "records": 278,
+      "retrievedAt": "2026-09-22T08:24:13.567Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:23826805-24826804?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "ab40fa971f3f4517b5b393404d1eed883ea56a8e08a6f8f1869f92333941f006",
+      "records": 226,
+      "retrievedAt": "2026-09-22T08:24:10.202Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:35990207-36990206?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b1201a6ad3b316a6dc924fc8a8d5f0896c66ead68061bfb2d5a88698a38ba434",
+      "records": 197,
+      "retrievedAt": "2026-09-22T08:24:06.831Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:48153609-49153608?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e5d2ef2395f11e609d21ce289c7d5cf600c4f8c6ab2328c804dd8e899d33e286",
+      "records": 290,
+      "retrievedAt": "2026-09-22T08:24:10.989Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:60317011-61317010?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9a69f2cba954de8cece1244c50939c6f7bdef471d11abee17b52581887c97051",
+      "records": 351,
+      "retrievedAt": "2026-09-22T08:24:07.254Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:72480413-73480412?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "99dbc8821352916e355f6b50032728cc523c79efa5e98503ecdcadf0fa9682f7",
+      "records": 135,
+      "retrievedAt": "2026-09-22T08:24:09.129Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:84643815-85643814?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3bcc203887b4977c6d533f4cbb321cd8e9d8860977396f5255b6effa963cbde5",
+      "records": 196,
+      "retrievedAt": "2026-09-22T08:24:13.284Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/10:96807217-97807216?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e6cf2a011cdb38ce454a629d9982cddc23e41f7444aecb10fdfe809ff8e96e38",
+      "records": 229,
+      "retrievedAt": "2026-09-22T08:24:11.433Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:110025419-111025418?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "140e9cd3aeb871621ee8b73938cc21200ccc876516e68618ee1ef3d148c71473",
+      "records": 208,
+      "retrievedAt": "2026-09-22T08:24:21.896Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:11780603-12780602?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "eb58e38c9b253f366a9ab96cd5c5497efb3075b6a2c515fcb953869ceb2f8a0a",
+      "records": 279,
+      "retrievedAt": "2026-09-22T08:24:12.177Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:122306021-123306020?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "53d786cfa11cab07ae2a39b45aa360f7cc02e1a3e8707c48564ecd738be0f6fa",
+      "records": 239,
+      "retrievedAt": "2026-09-22T08:24:22.623Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:24061205-25061204?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "41d30b1ac32467746cae3268a5db13968f47505bef335a344096efcfb5967f08",
+      "records": 242,
+      "retrievedAt": "2026-09-22T08:24:17.061Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:36341807-37341806?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "31a7550beb726a0b75a1f506661c32f2f27490e2f1aa2497eb5119607022be98",
+      "records": 211,
+      "retrievedAt": "2026-09-22T08:24:17.163Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:48622409-49622408?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "66e090783277ee3572bd65320a340a0691e751876c237bcf37eda21503b63783",
+      "records": 106,
+      "retrievedAt": "2026-09-22T08:24:17.448Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:60903011-61903010?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "543c981a774ef94dc49197817447dfaf4ad5c6e8e57366f6d789bf23e289f021",
+      "records": 282,
+      "retrievedAt": "2026-09-22T08:24:19.640Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:73183613-74183612?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d75af26c54d4eacfffb361fdde7656d1c02b4d721f997c73343bb0921dd3b667",
+      "records": 230,
+      "retrievedAt": "2026-09-22T08:24:19.760Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:85464215-86464214?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9216ac04cf897f1f1a0d0ae17632df112c26314a2785b7b6da5124e274678ae4",
+      "records": 203,
+      "retrievedAt": "2026-09-22T08:24:19.996Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/11:97744817-98744816?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "8481fcf94f72c4c03da97f4fd39dc8226576c649d9a75f2b03f3a3b87dc2e9e3",
+      "records": 190,
+      "retrievedAt": "2026-09-22T08:24:20.035Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:108543435-109543434?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a176a266faeaa94968afb769b49b8c8d5a18237f870580502e55b1d776b405fa",
+      "records": 289,
+      "retrievedAt": "2026-09-22T08:24:30.370Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:11615938-12615937?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "8160cea39ac3feb6e747c24c160c1780b877ffa420651263cfc309990cfb92a6",
+      "records": 277,
+      "retrievedAt": "2026-09-22T08:24:22.081Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:120659372-121659371?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "dcf307cb8e704e5e2432ce88e392a6a36b7ffc0225ba31d8d8ac65a8f972ef0b",
+      "records": 286,
+      "retrievedAt": "2026-09-22T08:24:26.382Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:23731875-24731874?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "71995eccea0bd798d6c2ea26c9f2a5a0d77e98e898bbcfc05024896b3ac30f43",
+      "records": 229,
+      "retrievedAt": "2026-09-22T08:24:22.389Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:35847812-36847811?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:24:24.854Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:47963749-48963748?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5e6db1faecc61c50467f4e539c62c318db0b1881820bd893f748ce3829eacde4",
+      "records": 250,
+      "retrievedAt": "2026-09-22T08:24:24.656Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:60079686-61079685?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "dd3f25e734b413788b5d62f73715ccfaa106c1f72d58c06308a9095c49b03894",
+      "records": 173,
+      "retrievedAt": "2026-09-22T08:24:29.689Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:72195624-73195623?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a3a882c8539beb2907eac80e97b5f9e9bdf4e761254856f5dcb159ab634560e5",
+      "records": 164,
+      "retrievedAt": "2026-09-22T08:24:24.825Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:84311561-85311560?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5ef19537b9ec64bfe2e20fc6f82d79373804d3c5107e3a51c3ca79b5f3cdc572",
+      "records": 174,
+      "retrievedAt": "2026-09-22T08:24:25.482Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/12:96427498-97427497?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c8d906c8a3d27f1d408bde47a7ddaef4077b372ad4e5693b802bd1be03d226c6",
+      "records": 240,
+      "retrievedAt": "2026-09-22T08:24:27.424Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:103467571-104467570?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f4ae0d026f56e513b1a4cd41617e7d158452514aee13e55678b8b59d82d488f7",
+      "records": 233,
+      "retrievedAt": "2026-09-22T08:24:35.951Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:20293515-21293514?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6f8cd639d95c4bd8c60061d4f7a4d485464a9036813b7f7025b1f2872d27a795",
+      "records": 244,
+      "retrievedAt": "2026-09-22T08:24:29.681Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:30690272-31690271?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "2fd708a59113e21e4e5a1e3e69af60a1e9d0dbd486f6a8a9a49051f86a49f558",
+      "records": 247,
+      "retrievedAt": "2026-09-22T08:24:28.429Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:41087029-42087028?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6ab0769864c0336463bf19e1a24fc644b827a3c337e64f277d98ada0b77f0c13",
+      "records": 183,
+      "retrievedAt": "2026-09-22T08:24:35.338Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:51483786-52483785?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "055be5de2dd69d029fffe0e91e017db13f0d3a4ed2329f4f19352d7ff7192ebb",
+      "records": 192,
+      "retrievedAt": "2026-09-22T08:24:32.521Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:61880543-62880542?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "cfc14b830f68264f4f822043ff69d93138be2ef7eb673937a582699bb0f27f4c",
+      "records": 180,
+      "retrievedAt": "2026-09-22T08:24:31.998Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:72277300-73277299?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "eb8da46040acb064183e70f67e361f4776548a9c512f604148ed3222c4a3c787",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:24:32.837Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:82674057-83674056?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "369c763e0885262a936489e1613e21b97cbbae3cd6d06d722d052ebc3af43347",
+      "records": 196,
+      "retrievedAt": "2026-09-22T08:24:35.851Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:93070814-94070813?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "8713b4f4873da31380e5f398d568329427ce5c06bdf83347fa8670f464dea435",
+      "records": 220,
+      "retrievedAt": "2026-09-22T08:24:34.509Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/13:9896758-10896757?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:24:27.146Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:18962495-19962494?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "79e345f8ea5a0e3837ed814d9b57a306c24f839a62e6c670251adee881909d43",
+      "records": 65,
+      "retrievedAt": "2026-09-22T08:24:36.954Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:28693742-29693741?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "efccd2eef63922b3fa98f17f45c39ddb7597eec3c484b80efbd5df7995890c33",
+      "records": 165,
+      "retrievedAt": "2026-09-22T08:24:36.724Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:38424989-39424988?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e931c9f1e7c4a647d8b094c65e3a7277e6ebea7a8144bc2083aca015470e7bed",
+      "records": 175,
+      "retrievedAt": "2026-09-22T08:24:39.411Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:48156236-49156235?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6cde9c80c8e83a5c90603d3cdec8b7be6afa522d7188428cd10e0adbaa37ee8c",
+      "records": 185,
+      "retrievedAt": "2026-09-22T08:24:37.570Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:57887483-58887482?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "2c2792ba77957951e4c1dfdf316a2d818bd7c1a2ef117fa64212176934bccd2c",
+      "records": 201,
+      "retrievedAt": "2026-09-22T08:24:39.520Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:67618730-68618729?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "41cb3d99bc50747ed6ad502350b0cd8e823d34d66a9b23c3b84286734b2d26f0",
+      "records": 189,
+      "retrievedAt": "2026-09-22T08:24:39.744Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:77349977-78349976?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a5a94981f373ed7756d4a4129c4758b95add9cfd6043a660225c0d6ff04f1ea4",
+      "records": 234,
+      "retrievedAt": "2026-09-22T08:24:39.809Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:87081224-88081223?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b50d0ea9a9140e54b70f545f5a1cdffe4bac9d354cf46f87d29302976e222c7f",
+      "records": 268,
+      "retrievedAt": "2026-09-22T08:24:41.231Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:9231248-10231247?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:24:34.559Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/14:96812471-97812470?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4040f04f4a8a23834624132065944ca98b6b42830f655044d36512bba86de676",
+      "records": 229,
+      "retrievedAt": "2026-09-22T08:24:41.144Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:18043853-19043852?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:24:40.351Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:27315779-28315778?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "fd31566faa317d077b008189f54e516bee712143f5c912dbffddb148e95d28bf",
+      "records": 259,
+      "retrievedAt": "2026-09-22T08:24:43.275Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:36587706-37587705?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9f634a3899175905d875738c769dd723da8c3645f49dec913ae71d11a2e3052c",
+      "records": 224,
+      "retrievedAt": "2026-09-22T08:24:43.136Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:45859632-46859631?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6ea28213ea6e4f35c4c02d4be0280d5267765b3860c9e1cfeaac87cf8b8e5cf4",
+      "records": 202,
+      "retrievedAt": "2026-09-22T08:24:43.231Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:55131558-56131557?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e5af7cc0005ed81c0fe7b3f760783a4516a8bd7d354d2f937e14e48d6515239c",
+      "records": 213,
+      "retrievedAt": "2026-09-22T08:24:43.217Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:64403484-65403483?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e57104a990a2c90ba40310309700cf4305e74e1db13e44c6954d01b1aefa160c",
+      "records": 211,
+      "retrievedAt": "2026-09-22T08:24:46.833Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:73675411-74675410?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e96ad6ff2ceeb5f70c48a1625de86dce5d3d2bb6c651a125d303cadb0b16fa4d",
+      "records": 264,
+      "retrievedAt": "2026-09-22T08:24:48.094Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:82947337-83947336?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "35a41f1efbfc77c28f39659e50c4e62cbebfbaf217c7f6842bb36455fe742486",
+      "records": 196,
+      "retrievedAt": "2026-09-22T08:24:44.380Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:8771927-9771926?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:24:40.642Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/15:92219263-93219262?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6489ee227cee7f10e9fe64389f35924ecb7a7e9e1484edd5cea074ef4a5b4362",
+      "records": 326,
+      "retrievedAt": "2026-09-22T08:24:46.964Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:15925154-16925153?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "2605d2add3f8f08a559a03f2e0274168e524847e3c8abea74c27c1bde0ac6d2a",
+      "records": 151,
+      "retrievedAt": "2026-09-22T08:24:49.474Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:24137731-25137730?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c29632ef295b19cd1f3fd0dc2f839e883946870fdcac18781aaee372537d422e",
+      "records": 237,
+      "retrievedAt": "2026-09-22T08:24:48.544Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:32350308-33350307?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6887c69c7001e58b4f2ec45bb85464b30639dbb78e791cc15a97d27ef537ecf3",
+      "records": 42,
+      "retrievedAt": "2026-09-22T08:24:53.734Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:40562885-41562884?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:24:49.635Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:48775461-49775460?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b18b40fb69f4abeeb4ea0366e815a85f46db8b6b994688942ad18b700d247650",
+      "records": 245,
+      "retrievedAt": "2026-09-22T08:24:52.622Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:56988038-57988037?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "1370e8d366ace372ebe55fdab3859fda959b654974c768c3a5c1411c38780910",
+      "records": 297,
+      "retrievedAt": "2026-09-22T08:24:55.270Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:65200615-66200614?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "09aba81ecffb44c052c2eafef1ae24acf03178940f998a6f5467a0c11a8b0848",
+      "records": 272,
+      "retrievedAt": "2026-09-22T08:24:55.391Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:73413192-74413191?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3cdfaf02dae7d0a495c3c11937c8a63d4141abacdde638112f07aec950e0d43f",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:24:55.957Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:7712577-8712576?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "98ab895ab682de4c25f423fe034520a73791da71d40d22e7d50010d3dc79d983",
+      "records": 369,
+      "retrievedAt": "2026-09-22T08:24:48.023Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/16:81625769-82625768?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c1d299a3cc997ac810316977495047fd90145d49e437091ba95e9905e3d68ec1",
+      "records": 382,
+      "retrievedAt": "2026-09-22T08:24:57.526Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:14637717-15637716?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6dbaf7fc2449d396ea641b57323fa985d41a69611d7d8e26e763b461f7c0f351",
+      "records": 287,
+      "retrievedAt": "2026-09-22T08:24:58.656Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:22206575-23206574?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f6f8edabbe2834f3eae927057f35565c4ca0b8ea0eb0add4e819d6dbc5054c79",
+      "records": 70,
+      "retrievedAt": "2026-09-22T08:24:59.110Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:29775434-30775433?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3ec74755cd37e124412fef26529695d68c6d229af5e27392e57fa9fe0208a4e1",
+      "records": 144,
+      "retrievedAt": "2026-09-22T08:25:01.560Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:37344292-38344291?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "de71fb10495d607e780859c19dc0a6023bdd2985a3c549cd70c70f10f006392a",
+      "records": 140,
+      "retrievedAt": "2026-09-22T08:25:02.908Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:44913150-45913149?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3de9ded426edab41bc0913d63177ab4df447c8daf0c22617e3abce79d121f72d",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:25:00.750Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:52482008-53482007?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "734d688fd2186d97e9b6ac676bbd1b96f35cb00de2210bec6bb74b27765ff007",
+      "records": 189,
+      "retrievedAt": "2026-09-22T08:25:01.691Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:60050867-61050866?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3a23786b06383a390023a9544b37b8e258297b5d014e7dd3daae90cb89a8d875",
+      "records": 144,
+      "retrievedAt": "2026-09-22T08:25:02.602Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:67619725-68619724?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "83f082b59e7edb933d805d31c8f1928889d60dd776ac0bc3f7f000e631e9f6d1",
+      "records": 221,
+      "retrievedAt": "2026-09-22T08:25:02.816Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:7068859-8068858?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "331e2c506be2df5616fb78a122a5a53ef3356c0a89e0a6839b0fdf8b706e69de",
+      "records": 365,
+      "retrievedAt": "2026-09-22T08:24:58.636Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/17:75188583-76188582?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f54a6e7a266eb6820ed55ab51bba3c15f94889c29100314267fba5b04bdd1cea",
+      "records": 309,
+      "retrievedAt": "2026-09-22T08:25:02.690Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:14113325-15113324?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d1b758150f12f3c1764d0c1f9ed7f087cedcb64028b1b938df2de57404cca4d7",
+      "records": 106,
+      "retrievedAt": "2026-09-22T08:25:03.571Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:21419987-22419986?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e013f704a92596d31215cf5038b82472dc4368d7cf68ad5d16f6d004dcaf49c8",
+      "records": 184,
+      "retrievedAt": "2026-09-22T08:25:05.521Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:28726650-29726649?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "04d05cb18de157794bfc191c9eadf7a375dce981e60a9be2b1a6b0262940ed92",
+      "records": 160,
+      "retrievedAt": "2026-09-22T08:25:05.478Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:36033312-37033311?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "68ef09fe6273af633546c6ad75aadd5650c00fb6d07d921d16ca62f91d5fed79",
+      "records": 229,
+      "retrievedAt": "2026-09-22T08:25:05.812Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:43339974-44339973?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c1615e57a416913736bb6376e5ecc72be60cbbe97ac582459b231307c5eb416e",
+      "records": 193,
+      "retrievedAt": "2026-09-22T08:25:08.729Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:50646636-51646635?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "af1b17f42e7f86dc6ee9202064b586b7f27b904eb09f2ba20efa98950e7d8d5a",
+      "records": 240,
+      "retrievedAt": "2026-09-22T08:25:08.713Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:57953299-58953298?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "99e6cbd2d6a5b0dfd59b0b4eccc1d940a8e34b77f3d16f911a313390d65a9f17",
+      "records": 267,
+      "retrievedAt": "2026-09-22T08:25:08.531Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:65259961-66259960?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6c102c7d3002e4bd5dd5629419cd1566520e446a08e818b14f55d75ac64437c2",
+      "records": 208,
+      "retrievedAt": "2026-09-22T08:25:11.495Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:6806663-7806662?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "7e9b025072b5dcec51f9735b4c8bf5229bc2112ffbd0a55b7d96723ab549a9f8",
+      "records": 292,
+      "retrievedAt": "2026-09-22T08:25:07.871Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/18:72566623-73566622?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "42e1f0aa6187c33ec862e1a686cb3dd4b678ca350d774cb120c1d776de6a4fbe",
+      "records": 272,
+      "retrievedAt": "2026-09-22T08:25:12.289Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:10157749-11157748?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "05e2853da04daa177018ca9d6aec96451fd2f6dd20c5e79b515502f8c50022fd",
+      "records": 253,
+      "retrievedAt": "2026-09-22T08:25:12.284Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:15486623-16486622?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "66049dd3e7c1e0176f5247f8ad196a671452c7eb7afc384336391e42a5bb29c8",
+      "records": 289,
+      "retrievedAt": "2026-09-22T08:25:15.902Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:20815497-21815496?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "17ccd8863a72aebbd30b3549b0d93c957d024cd13b2ac3d5269e2ba014ffe00e",
+      "records": 203,
+      "retrievedAt": "2026-09-22T08:25:15.372Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:26144371-27144370?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:25:13.470Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:31473246-32473245?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "65f0f939c571b1ce08cc1b180634639460749b150d06542c83f59f01e73079c7",
+      "records": 220,
+      "retrievedAt": "2026-09-22T08:25:19.685Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:36802120-37802119?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a8937c43d13534a9d7652ced46911bb40d938a4b7acd84bde848e1a8e24d0d42",
+      "records": 199,
+      "retrievedAt": "2026-09-22T08:25:19.716Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:42130994-43130993?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "97ba6aee6cea07a6e869e0ca66b27c066a0cfc5c71e83bbe8804df535c632a04",
+      "records": 194,
+      "retrievedAt": "2026-09-22T08:25:17.772Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:47459868-48459867?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "62e10eda63a61e5a5aaf653765995ade9f6d3915337ddf7b9c2c2d196e8da2a2",
+      "records": 285,
+      "retrievedAt": "2026-09-22T08:25:18.356Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:4828875-5828874?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "cde5b5e1b779a9686eb4513ccbed94f7fd0cbfee1cf09473302e732c0dd5feb0",
+      "records": 292,
+      "retrievedAt": "2026-09-22T08:25:12.063Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/19:52788742-53788741?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f06fdfe90fa47a9299808d526001de61dae03db803fab61e2b2bd1cf0ab7d0c8",
+      "records": 342,
+      "retrievedAt": "2026-09-22T08:25:24.022Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:109587968-110587967?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c4237a041dae0d6c4d41b48a2a1dbf785eb4262c8c04d81dd0dc5bf2f7beca2d",
+      "records": 74,
+      "retrievedAt": "2026-09-22T08:22:56.709Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:131605562-132605561?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "47e8b5ece668adcd3f3f969b095cdbfff26f13ef2b92a399ab7b4adc6dc6960b",
+      "records": 122,
+      "retrievedAt": "2026-09-22T08:22:59.339Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:153623155-154623154?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "789be4bb5d25a9362212ce696c745a861a5f654b01c0f8110ac8f62666506ba3",
+      "records": 171,
+      "retrievedAt": "2026-09-22T08:23:00.127Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:175640749-176640748?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9cbf0012b96a777e8233144a01b0e52bbc4817a3fbc50a297881a9b4f2739c4c",
+      "records": 212,
+      "retrievedAt": "2026-09-22T08:23:00.955Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:197658342-198658341?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9cd507f22182410995d3be70f5c7719c5b8e57a8b2ac733d75a45e5b1039191d",
+      "records": 172,
+      "retrievedAt": "2026-09-22T08:23:04.867Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:21517594-22517593?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "658bd6a93f3920604ac1ec71992c1d510935317c11279e56450b62e632507877",
+      "records": 164,
+      "retrievedAt": "2026-09-22T08:22:49.170Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:219675936-220675935?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d3facc94affbb7b397dacc35086bcb501282d7bbebb36ad4cc98e28f93518804",
+      "records": 246,
+      "retrievedAt": "2026-09-22T08:23:00.885Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:43535188-44535187?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c4cd35d003bf4cff7dc5a0fea3e2b5ae39adc9a868108671c2c3d35fee02bd42",
+      "records": 370,
+      "retrievedAt": "2026-09-22T08:22:59.336Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:65552781-66552780?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "8988d66601e06013f2c0c397af0da8cfbf7eca5d716c7c6555c86c0bc757c99d",
+      "records": 233,
+      "retrievedAt": "2026-09-22T08:22:52.190Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/2:87570375-88570374?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "2837ca1b5fa937cd6183d3953566dd30ff44c55d29dea1fce4a07fd3e8ed8662",
+      "records": 112,
+      "retrievedAt": "2026-09-22T08:22:55.385Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:11217122-12217121?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "eebac6b0942da06645b46908de42a1f6794ae0d44f656b2f7202e9b672e8a840",
+      "records": 210,
+      "retrievedAt": "2026-09-22T08:25:22.824Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:17075682-18075681?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "bda515d920bd884ce35274057b449eb3e284a49317ddec72919b1a7b5ed123e8",
+      "records": 332,
+      "retrievedAt": "2026-09-22T08:25:26.372Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:22934243-23934242?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c25a66509f8dff914248076057f90e81add31ad2b6b3fff2a1ae82188de7b896",
+      "records": 279,
+      "retrievedAt": "2026-09-22T08:25:27.989Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:28792804-29792803?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "12d187346266b91d2d324ebf7485356667128478052b219604e163c7f38b72b7",
+      "records": 2,
+      "retrievedAt": "2026-09-22T08:25:25.372Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:34651364-35651363?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b794cac0f31c464871170971116ffbe047f228dbde2de758463118c189f2c34c",
+      "records": 342,
+      "retrievedAt": "2026-09-22T08:25:27.039Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:40509925-41509924?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d8469e698886a50b088c072a8144b7284a5440325af73d1fc893d62042a03d3e",
+      "records": 273,
+      "retrievedAt": "2026-09-22T08:25:26.245Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:46368486-47368485?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "464e5b3dbeaeb159328aadb185088429d129f168ca3019817125f75d69aef822",
+      "records": 265,
+      "retrievedAt": "2026-09-22T08:25:28.769Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:52227046-53227045?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e15c599f2f4b7df27633936b9577a5e4dc8a886bf8f81bd75d6a51f91655fb1c",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:25:27.825Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:5358561-6358560?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b862c5ef5666a084a2a428221fa9c230f7b48ef86aee9b4a2ac8a7c7a34050a3",
+      "records": 301,
+      "retrievedAt": "2026-09-22T08:25:22.169Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/20:58085607-59085606?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b51caee085e814415a999ccd94cfe230cee1107d34ee87d6c87645a139108f9a",
+      "records": 292,
+      "retrievedAt": "2026-09-22T08:25:31.171Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:12239087-13239086?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "ce9b55c2cb0d8288bf10fc891ba1c1034668da81d074b1e9641f135c19b18f43",
+      "records": 16,
+      "retrievedAt": "2026-09-22T08:25:28.623Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:16485449-17485448?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a8110e4c98ec2617c26b9be0f510e39f080fa1c456105e12a445d5a13bc04ec4",
+      "records": 221,
+      "retrievedAt": "2026-09-22T08:25:29.785Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:20731811-21731810?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f9587b60ed846d56b2aae40f1ad4e36262e97c268442842fd6c9ba0012016c25",
+      "records": 216,
+      "retrievedAt": "2026-09-22T08:25:30.755Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:24978173-25978172?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5644df83b1f5e9d73ae3ca2bfd6ced4fe75381cc4bc724b0e86b10facd29867a",
+      "records": 185,
+      "retrievedAt": "2026-09-22T08:25:34.611Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:29224535-30224534?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3ae995518500f95600f14c8089f3fdb14996b52c55b6d8f932f37596ce99ec12",
+      "records": 233,
+      "retrievedAt": "2026-09-22T08:25:31.448Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:33470897-34470896?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f34b994296a64f70ef001234381277d440ff2a0334ee4abb54ac4869cfc395bb",
+      "records": 257,
+      "retrievedAt": "2026-09-22T08:25:31.797Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:3746363-4746362?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:25:27.909Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:37717259-38717258?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "cf2776b8e06882071bb4ae365991f5d84d1a56c48021af642a8f9180bdfe2c47",
+      "records": 274,
+      "retrievedAt": "2026-09-22T08:25:34.622Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:41963621-42963620?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "35b768389bfb22d897e37188b301255c9bf2f74f7734f6bd7ad58c0b9841263e",
+      "records": 372,
+      "retrievedAt": "2026-09-22T08:25:33.490Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/21:7992725-8992724?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "44604f234555a8ff6b6d8d312ebeed49885ef485e3227a8f5b14f01e2d8354ee",
+      "records": 1,
+      "retrievedAt": "2026-09-22T08:25:29.719Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:13359583-14359582?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:25:33.735Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:17979443-18979442?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "abd5a2fe20aaa9451331b91fd4626e03faebb0b68926bcc0b61ef10335683b56",
+      "records": 106,
+      "retrievedAt": "2026-09-22T08:25:34.279Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:22599304-23599303?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e68faf47e4c0dba2dccb1daa56925241bc3033ffef895a5dd8b454d691bfa959",
+      "records": 238,
+      "retrievedAt": "2026-09-22T08:25:36.627Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:27219165-28219164?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "259dcba80c49c4635026eeaa81de34c1868083e98e561f1194c388eb7c10aa6f",
+      "records": 261,
+      "retrievedAt": "2026-09-22T08:25:36.866Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:31839026-32839025?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c75890ffe59d2b87276351e49fffc43f2091e04e33548195d934928d870a6cff",
+      "records": 263,
+      "retrievedAt": "2026-09-22T08:25:37.023Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:36458886-37458885?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e2ff291ee869e270eb63c374687493f98baee7b1cd93bb1f5571967c1717b8c7",
+      "records": 363,
+      "retrievedAt": "2026-09-22T08:25:36.954Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:41078747-42078746?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6d2b6112d26671f34e74ae911510d6487d464e71417f506d73d83f955686f490",
+      "records": 198,
+      "retrievedAt": "2026-09-22T08:25:39.220Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:4119861-5119860?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:25:32.484Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:45698608-46698607?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "84eca42cd7f7feeeca0a1ea91e1389819271f420870b0c462f473b87db85e329",
+      "records": 338,
+      "retrievedAt": "2026-09-22T08:25:39.320Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/22:8739722-9739721?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:25:32.557Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:107661215-108661214?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c5be85efa3e495d31fb924d140fc8dc63b4f6d89cb8e71a78b883b2746a1cd1f",
+      "records": 206,
+      "retrievedAt": "2026-09-22T08:23:08.092Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:125688084-126688083?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "032f1f6e6a9b3d324f4a4d483fcb4db196966dd8fb9df115fb7432929429ef8f",
+      "records": 247,
+      "retrievedAt": "2026-09-22T08:23:10.747Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:143714953-144714952?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f2541a7a9d9bc72eef8a5f0ec0090fe09f7262e80727b2105fa68bba84898a5e",
+      "records": 186,
+      "retrievedAt": "2026-09-22T08:23:11.570Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:161741822-162741821?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f7a889884fbcbd56d6f974f38f1c00698de81baf7dfd21380e5acc47b1255d39",
+      "records": 221,
+      "retrievedAt": "2026-09-22T08:23:16.097Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:17526870-18526869?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d447d6f439c321be4e0c259833aef85d87f00bfe70431bd0f4b3d9ed16317833",
+      "records": 175,
+      "retrievedAt": "2026-09-22T08:23:04.830Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:179768691-180768690?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "991a6e70846883996cdf1d4cc21f49a40e5396a3ee9f88dc9dbab08961715537",
+      "records": 189,
+      "retrievedAt": "2026-09-22T08:23:15.718Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:35553739-36553738?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "00ae867cff46cb8c32e4ded7e2c82da5eb6032d58e2fe31c5f35ab10bfd797ad",
+      "records": 219,
+      "retrievedAt": "2026-09-22T08:23:07.197Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:53580608-54580607?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a33632c291ab97c9089346b05730f31c8f78167587a191681af71c50a7abcea9",
+      "records": 268,
+      "retrievedAt": "2026-09-22T08:23:04.936Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:71607477-72607476?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "30fbfd2637cf3a8e334b81a57df2f8b77dd421dd0b6ed23fba1458f564f528e1",
+      "records": 307,
+      "retrievedAt": "2026-09-22T08:23:11.400Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/3:89634346-90634345?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "71d60069e35040844e93de944c8dce9ffe410b09ab681965ae96cdc75c6cfef4",
+      "records": 94,
+      "retrievedAt": "2026-09-22T08:23:09.766Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:103253394-104253393?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "eb24501faa42e381e4b3cf2fcfecda6bd66e3002b0c521ab153b5114ff6bb35d",
+      "records": 147,
+      "retrievedAt": "2026-09-22T08:23:20.668Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:120545626-121545625?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3cb40d751d3cd08037fc511ec7f37e44fa7f7b039c5f7926c0b27cf636bd1915",
+      "records": 214,
+      "retrievedAt": "2026-09-22T08:23:22.879Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:137837859-138837858?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "89369ec21798f03ff01b0d5645756b5d3daa553546843f2b0802bbd04f813760",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:23:21.326Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:155130091-156130090?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6b1aacf1ceb0c94f94c1675a34ee6dcc971fdcce8af0b1c0de538902c8c761ec",
+      "records": 240,
+      "retrievedAt": "2026-09-22T08:23:24.008Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:16792233-17792232?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "53c8c9a7e2fc5d29b867d8d3fd36525a07137595057453a244db468e994b9ca6",
+      "records": 236,
+      "retrievedAt": "2026-09-22T08:23:15.224Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:172422323-173422322?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e0a77d822125defec4dbf061c16a662a5cc4c5cfb3751a43296de7431ff68123",
+      "records": 170,
+      "retrievedAt": "2026-09-22T08:23:25.384Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:34084465-35084464?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9ad663f44578c5f5871f6849fbda2b6f188439e13a0eddb63e975471ee04aa52",
+      "records": 165,
+      "retrievedAt": "2026-09-22T08:23:17.336Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:51376697-52376696?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e0bc060514e44a7c0b1998104d54883a80fbb905ad9c93bc53f207c649bb1983",
+      "records": 110,
+      "retrievedAt": "2026-09-22T08:23:19.694Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:68668930-69668929?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "10da703a35b05c9be2254a766af901983bf74493408ff618555a2985275622e4",
+      "records": 218,
+      "retrievedAt": "2026-09-22T08:23:20.466Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/4:85961162-86961161?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "71aba17a1426573372b5cae7771e0340775a5d5e8304eaee045bfcf885dd960f",
+      "records": 159,
+      "retrievedAt": "2026-09-22T08:23:20.499Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:115024347-116024346?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "76c525f7b4f9a90663dbb858331c44e426768d398e77d5563b110617d05056fa",
+      "records": 248,
+      "retrievedAt": "2026-09-22T08:23:31.606Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:131527825-132527824?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "7cf0cfd20c570cd6eebfa4899efc01addb39d2abaa861c3553be9c9da4ca92a6",
+      "records": 259,
+      "retrievedAt": "2026-09-22T08:23:31.890Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:148031303-149031302?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f6e032a98a327edf9d377a28cf28faf60640e021be2f93f663ce7d03f31f8825",
+      "records": 271,
+      "retrievedAt": "2026-09-22T08:23:31.509Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:16003479-17003478?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "03b0d811b7bcbe588285c2b18ab052b08a1431ada3c08a4eff007c1fd660bba4",
+      "records": 240,
+      "retrievedAt": "2026-09-22T08:23:24.737Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:164534781-165534780?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9db43fa7cdb1250b836938012da2cfae1001fd46d02829b2be7254dff6795b31",
+      "records": 140,
+      "retrievedAt": "2026-09-22T08:23:31.505Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:32506957-33506956?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4bfc65402a81a38a58f2e1f9fbf39d29a4fa9944c6762925bfcbbd511f23c621",
+      "records": 237,
+      "retrievedAt": "2026-09-22T08:23:27.772Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:49010435-50010434?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:23:26.585Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:65513913-66513912?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d1abefd678b4ecc299502d354bf1178071b7464976b4ae2a9f5d741c68a8983c",
+      "records": 211,
+      "retrievedAt": "2026-09-22T08:23:29.163Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:82017391-83017390?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f74bb4b645096db1b196e20c60fe1b3dd10e371b3667b8f84cafedb324348cac",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:23:28.528Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/5:98520869-99520868?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "bc886b8793aa2989f6f51be5a6e174a93d379f6cf6eefe6669cb06d16559be1a",
+      "records": 159,
+      "retrievedAt": "2026-09-22T08:23:29.398Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:108194714-109194713?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "04c2ac02bb760de001dbaecccf91a6832464478adef2b625abe5ea731e55ab74",
+      "records": 179,
+      "retrievedAt": "2026-09-22T08:23:38.388Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:123722531-124722530?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "1ff2ea09220a12dcfcd7ef917a12d37d35e76ddd54933a57e99b122352a15b69",
+      "records": 221,
+      "retrievedAt": "2026-09-22T08:23:38.677Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:139250347-140250346?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b76824743c0f9d09040721b2af8273ce3b890a8ac264fd1746bd031185538b71",
+      "records": 166,
+      "retrievedAt": "2026-09-22T08:23:38.925Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:15027817-16027816?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a1b9ea8e8cb8483044a6d3c33d1fc0cd92f9e3c233e49291e4c3333a24fa1a0a",
+      "records": 215,
+      "retrievedAt": "2026-09-22T08:23:33.760Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:154778163-155778162?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d12ae1b68c91f72b08d83b703550e9d419ac3132556352bdaaafb72dfa19a859",
+      "records": 276,
+      "retrievedAt": "2026-09-22T08:23:41.357Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:30555633-31555632?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "e2cb4be38e3ed83ace113ffb42c81b9ef05977959559d9abee8453cdf1cf80ad",
+      "records": 1047,
+      "retrievedAt": "2026-09-22T08:23:32.332Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:46083449-47083448?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "9b0ac06b8844acb08095ffd1190ee491647bfff5068403a72dbc9f44cc61ad13",
+      "records": 262,
+      "retrievedAt": "2026-09-22T08:23:35.481Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:61611266-62611265?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "33364db8cad9ee6fa20dc6f0fbab6c953cc99365a00f9716953d2a0bf9f0500e",
+      "records": 164,
+      "retrievedAt": "2026-09-22T08:23:35.898Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:77139082-78139081?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5b362899aa56d7f797b31cc7c91553c595b4d1b55f68607fe3eaad12dc427ea0",
+      "records": 178,
+      "retrievedAt": "2026-09-22T08:23:36.704Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/6:92666898-93666897?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "ca329c67600feac0ee9afb8fd1b63b505ccdf349104fc6f2b9d0b6164294f633",
+      "records": 236,
+      "retrievedAt": "2026-09-22T08:23:35.782Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:100901983-101901982?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "d35d3ecde6974f6da8088737ada712b2193982807fd51afb55544f3d45d422df",
+      "records": 310,
+      "retrievedAt": "2026-09-22T08:23:47.484Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:115387981-116387980?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "210d849339228dd4618e6b591392f4363380a31c55cb328c79c1a0d13931d6e2",
+      "records": 158,
+      "retrievedAt": "2026-09-22T08:23:46.319Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:129873978-130873977?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "220582a2e1d6578a3dbaddf155dd0c6b6413475b01e7bc8a00e5bce5bd8043f4",
+      "records": 177,
+      "retrievedAt": "2026-09-22T08:23:49.647Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:13985998-14985997?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "fe40a64050e5864c3d4b59cb123baea0dda53c612cdde9f0b716b0913bd156cd",
+      "records": 506,
+      "retrievedAt": "2026-09-22T08:23:42.935Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:144359976-145359975?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "3b9a6b8fb82633c7a62fc9c8f82a3a53308c67f0a7a03a273bb2963857f45749",
+      "records": 204,
+      "retrievedAt": "2026-09-22T08:23:49.712Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:28471996-29471995?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "f78641a4737c3609ea58c2d938425db816e2d4ffd6e8ba2ffe59e0b31e18a230",
+      "records": 245,
+      "retrievedAt": "2026-09-22T08:23:42.443Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:42957993-43957992?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "81cbec2af62ba16c8a6ee5bc4fb327798b86e371cdf79ffa8e7cff002d782521",
+      "records": 185,
+      "retrievedAt": "2026-09-22T08:23:43.128Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:57443991-58443990?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5dbe260a52bf1b72794a9529617b334cadc28db28a9bea92dfc4fee49e3e23c3",
+      "records": 58,
+      "retrievedAt": "2026-09-22T08:23:45.999Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:71929988-72929987?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5114a74e0a852e6e5842c5e24cbb34cebd932d11ddfc2844ebb7d4321ffda1f8",
+      "records": 178,
+      "retrievedAt": "2026-09-22T08:23:46.522Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/7:86415986-87415985?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c9c52cd7ba4235748d32318c27047bbdb852962701b381e041b45f41625672f6",
+      "records": 185,
+      "retrievedAt": "2026-09-22T08:23:44.075Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:105055372-106055371?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b400c80e49f1baeb817ec65644d7337f774326a524ffa4838a44ffb795d984d6",
+      "records": 164,
+      "retrievedAt": "2026-09-22T08:23:53.446Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:118249794-119249793?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a7838c146934635c2b54d0a61af9d729632158962c5cb30b3f890a12eb42f766",
+      "records": 250,
+      "retrievedAt": "2026-09-22T08:23:55.414Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:12694422-13694421?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "829242971cfd463192c64353bd9db1739f7e0a786d1c37042aa2cc99b9a005e9",
+      "records": 349,
+      "retrievedAt": "2026-09-22T08:23:50.968Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:131444215-132444214?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "59a78f2182fb9493e5f8edb914baf2e816ba86053c0691401c6f9d8b434ff230",
+      "records": 244,
+      "retrievedAt": "2026-09-22T08:23:57.025Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:25888843-26888842?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "8711c6a79c288591060a6e9e00b740981d4e2baec459abf527c4bbef2900eb83",
+      "records": 243,
+      "retrievedAt": "2026-09-22T08:23:50.028Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:39083265-40083264?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b25f85340a2795bacdf2893ce01cce0a3505c1e4df62faa6d05bd7938c7b176e",
+      "records": 199,
+      "retrievedAt": "2026-09-22T08:23:54.028Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:52277686-53277685?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6871b87160aea5c6374d98a5e296f1f41772472f70353531288d1fddd9305862",
+      "records": 179,
+      "retrievedAt": "2026-09-22T08:23:54.009Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:65472108-66472107?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "55b10bac742f238c86313504650b5d85833887a9e5cd5c29eb81a7ffadd080ad",
+      "records": 205,
+      "retrievedAt": "2026-09-22T08:23:51.982Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:78666529-79666528?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "cf52ef6fb94637e70ef7cce75dd0c5f2a7198a08a7b96a7a93dc6a65c928ca19",
+      "records": 181,
+      "retrievedAt": "2026-09-22T08:23:51.704Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/8:91860951-92860950?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a18930560c7abcfd24d785df9c602f79c7dc65a7fcdad11ac816cc21a1dde9dc",
+      "records": 171,
+      "retrievedAt": "2026-09-22T08:23:57.015Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:100150704-101150703?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "602fb71edf9cab3043e444edc6edaeaccd0ac24469b95ba56a39db477dd020cd",
+      "records": 164,
+      "retrievedAt": "2026-09-22T08:24:05.081Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:112732042-113732041?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "c63d730c3eb3a078884e7637fae1cb8761143de70964be3e2b69642919072343",
+      "records": 265,
+      "retrievedAt": "2026-09-22T08:24:03.965Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:12081338-13081337?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "5521f23b508e93ff62177567cec96b440b6bb3c98c352392cc928fa0d958a11d",
+      "records": 276,
+      "retrievedAt": "2026-09-22T08:23:56.476Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:125313380-126313379?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "a92beb32bc6cd49e381c3439be689168a7c76ba0dc43ea7cadfed0dab056d382",
+      "records": 221,
+      "retrievedAt": "2026-09-22T08:24:04.026Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:24662676-25662675?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "6a49b1a8e40ebc0f8b857373dd1635a59274177401af747ba13058fe91156610",
+      "records": 246,
+      "retrievedAt": "2026-09-22T08:23:59.924Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:37244014-38244013?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "ff9a5ddf3180fd87ee630cb58ae8644465ebaee107b33ea7dbbd88977db7aaef",
+      "records": 224,
+      "retrievedAt": "2026-09-22T08:24:00.428Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:49825352-50825351?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "records": 0,
+      "retrievedAt": "2026-09-22T08:23:57.504Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:62406690-63406689?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "8e0f13f1b7682d57a343374fa7087992686ef3ed41347e9b9988574e08b35815",
+      "records": 27,
+      "retrievedAt": "2026-09-22T08:23:59.126Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:74988028-75988027?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "cc32bb3ad2d24e1464c77ccaca5e9db89d4201a235a3d12f7fc5d29f7f20cb2a",
+      "records": 238,
+      "retrievedAt": "2026-09-22T08:24:01.541Z"
+    },
+    {
+      "url": "https://rest.ensembl.org/overlap/region/human/9:87569366-88569365?feature=variation;variant_set=all_chips;content-type=application/json",
+      "sha256": "b40a2bc3dab9452df60a4fd28732614e83d6a5505456a409d77126f161faf618",
+      "records": 218,
+      "retrievedAt": "2026-09-22T08:24:01.901Z"
+    }
+  ]
+}
