@@ -41,6 +41,8 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
     fence.admit(`${API}/auth/v1/token?grant_type=pkce`, "OPTIONS");
     fence.admit(`${API}/auth/v1/user`, "OPTIONS"); fence.admit(`${API}/auth/v1/user`, "GET");
     fence.admit(`${API}/auth/v1/token?grant_type=pkce`, "POST");
+    fence.admit(`${APP}/api/settings/jurisdiction`, "PUT");
+    expect(() => fence.admit(`${APP}/api/settings/jurisdiction`, "PUT")).toThrow();
     for (const [endpoint, count] of [[`${APP}/api/account/completion`, 1], [`${APP}/api/consents`, 4],
       [`${APP}/api/files/upload-session`, 1], [`${APP}/api/files/${ID}/finalize`, 1],
       [`${APP}/api/files/${ID}/process`, 2], [`${API}/storage/v1/object/genomes/${ID}`, 1]] as const) {
@@ -53,6 +55,8 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
     [`${APP}/api/jobs/mail`, "GET"], [`${APP}/api/cron/retention`, "GET"], [`${API}/auth/v1/admin/users`, "POST"],
     [`${API}/rest/v1/genome_files`, "GET"], [`${API}/storage/v1/object/genomes/${ID}`, "DELETE"],
     [`${API}/auth/v1/token?grant_type=password`, "POST"], [`${APP}/api/consents?extra=1`, "POST"],
+    [`${APP}/api/settings/jurisdiction`, "POST"], [`${APP}/api/settings/jurisdiction?code=GB`, "PUT"],
+    [`${APP}/api/account/completion`, "PUT"],
     [`${API}/auth/v1/signup?redirect_to=https://example.invalid`, "OPTIONS"],
     [`${API}/auth/v1/token?grant_type=pkce&extra=1`, "OPTIONS"],
     ["http://EXAMPLE_USER:EXAMPLE_PASSWORD@localhost:3000/overview", "GET"],

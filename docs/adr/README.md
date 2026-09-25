@@ -37,3 +37,4 @@ writing a superseding ADR, not silently drifting.
 | [0029](./0029-density-contract.md) | The density contract: measured budgets rather than review judgement, and the accessibility rule wins where they conflict | Proposed |
 | [0030](./0030-hosted-preparation-on-cloudflare-containers.md) | Hosted preparation on Cloudflare Containers: a five-minute cron wakes one standard-1 container that runs one pass and exits | Accepted by owner decision |
 | [0031](./0031-own-upload-zip-preflight.md) | Open a bounded single-file own-DNA ZIP locally; store the contained source | Accepted for draft implementation; unreleased |
+| [0032](./0032-jurisdiction-declaration.md) | The jurisdiction declaration: one writer, a first-sign-in gate, and re-evaluation without a revision bump | Accepted |

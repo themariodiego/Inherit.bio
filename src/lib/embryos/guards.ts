@@ -2,7 +2,12 @@ import "server-only";
 
 import { isSameOrigin } from "@/lib/account-deletion";
 import { encryptSecret } from "@/lib/crypto";
-import { isTestJurisdictionEnabled, resolveCapability } from "@/lib/legal/jurisdictions";
+import {
+  accountCapability,
+  isTestJurisdictionEnabled,
+  resolveCapability,
+  type JurisdictionCapability,
+} from "@/lib/legal/jurisdictions";
 import { ClosedShapeError, SENSITIVE_HEADERS, blockedResponse, closedObject, sensitiveJson } from "./api";
 import { CSRF_HEADER, verifyEmbryoOperation, type EmbryoOperationClaims } from "./operation-token";
 
@@ -38,6 +43,25 @@ export function originDenied(request: Request): Response | null {
 export function jurisdictionDenied(env: Readonly<Record<string, string | undefined>> = process.env): Response | null {
   if (isTestJurisdictionEnabled(env)) return null;
   const decision = resolveCapability(null, "embryo_analysis", { testJurisdiction: false });
+  return sensitiveJson({ error: "jurisdiction_unavailable", message: decision.userFacingCopy }, 403);
+}
+
+/**
+ * The same gate for the acting account (G5.1a, G5.1b). The flag rule above
+ * still answers first; the account's own declared jurisdiction must then
+ * permit the capability too. It is read when the request arrives, so a
+ * declaration changed after the page loaded is the one that decides, and an
+ * undeclared or block-only account is refused with its decision's copy.
+ */
+export async function accountJurisdictionDenied(
+  accountId: string,
+  capability: JurisdictionCapability = "embryo_analysis",
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<Response | null> {
+  const flag = jurisdictionDenied(env);
+  if (flag) return flag;
+  const decision = await accountCapability(accountId, capability, { testJurisdiction: isTestJurisdictionEnabled(env) });
+  if (decision.status === "permitted") return null;
   return sensitiveJson({ error: "jurisdiction_unavailable", message: decision.userFacingCopy }, 403);
 }
 

@@ -35,6 +35,16 @@ test("sign-up sends a verification email; the link yields a signed-in session", 
   expect(link, "verification link must be present").toBeTruthy();
 
   await page.goto(link!.replace(/&amp;/g, "&"));
+  // G5.1a: the first sign-in answers where the person lives before any product
+  // page, from a required selection with nothing chosen for them.
+  await page.waitForURL(/\/settings\?next=/, { timeout: 30_000 });
+  await expect(page.locator("main").getByText(USER.email, { exact: true })).toBeVisible();
+  const country = page.getByLabel("Country you live in");
+  await expect(country).toHaveValue("");
+  await expect(country).toHaveAttribute("required", "");
+  await country.selectOption("DE");
+  await page.getByLabel("The country I chose is the country I live in.").check();
+  await page.getByRole("button", { name: "Save country" }).click();
   await page.waitForURL(/\/(?:dashboard|overview)/, { timeout: 30_000 });
   await expect(page.getByText(USER.email)).toBeVisible();
 });

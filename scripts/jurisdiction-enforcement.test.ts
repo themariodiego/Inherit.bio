@@ -32,10 +32,17 @@ import { describe, expect, it } from "vitest";
  */
 export const AREA = /(family|embryo|cohort|portrait|carrier|invitation|rights|withdraw|subject)/i;
 export const MECHANISMS: [RegExp, string][] = [
-  [/\b(?:familyCapability|personCapability|accountCapability|cohortCapability|embryoCapability|resolveCapability|resolveSubjectRoute)\s*\(/,
+  [/\b(?:familyCapability|personCapability|accountCapability|cohortCapability|embryoCapability|resolveCapability|resolveSubjectRoute|accountJurisdictionDenied)\s*\(/,
     "capability resolver call"],
-  [/\bjurisdictionDenied\s*\(|\bisTestJurisdictionEnabled\s*\(|\bINHERIT_TEST_JURISDICTION\b/, "fail-closed jurisdiction refusal"],
 ];
+/**
+ * A surface that reads only the acceptance flag is no longer counted: once a
+ * person declares where they live (G5.1a, ADR 0032), the flag says the
+ * fixture is on, not that this account may act. Every such refusal became
+ * the account-aware `accountJurisdictionDenied`, and a new one is reported
+ * as unguarded rather than accepted.
+ */
+export const FLAG_ONLY = /\bjurisdictionDenied\s*\(|\bisTestJurisdictionEnabled\s*\(|\bINHERIT_TEST_JURISDICTION\b/;
 /** A file whose whole body re-exports another route inherits its enforcement. */
 const ALIAS = /^\s*(?:\/\/[^\n]*\n|\s)*export\s*\{\s*[A-Z,\s]+\}\s*from\s*"([^"]+)"\s*;?\s*$/;
 const IMPORT = /import\s+(?:[^"';]*?\s+from\s+)?["']([^"']+)["']/g;
@@ -177,11 +184,13 @@ describe("every restricted-capability surface enforces or is classified", () => 
   it("reaches every mechanism class and the one-hop delegation somewhere, so a renamed resolver cannot pass silently", () => {
     const reached = surfaces.map(file => mechanismFor(root, file) ?? "");
     expect(reached.some(name => name === "capability resolver call")).toBe(true);
-    expect(reached.some(name => name === "fail-closed jurisdiction refusal")).toBe(true);
+    expect(reached.every(name => !name.includes("fail-closed")), "no surface relies on the acceptance flag alone").toBe(true);
     expect(aliasTarget(root, "src/app/api/embryo-cohorts/[id]/withdraw/route.ts")).toBe("src/app/api/cohorts/[id]/restrict/route.ts");
     expect(mechanismFor(root, "src/app/(app)/embryos/upload/page.tsx")).toBe("capability resolver call via src/app/(app)/embryos/context.ts");
     expect(mechanismFor(root, "src/app/(app)/genome/[subject]/data/browser/page.tsx")).toBe("capability resolver call");
-    expect(mechanismFor(root, "src/app/api/subject-drafts/route.ts")).toBe("fail-closed jurisdiction refusal");
+    expect(mechanismFor(root, "src/app/api/subject-drafts/route.ts")).toBe("capability resolver call");
+    expect(mechanismFor(root, "src/app/api/invitations/route.ts")).toBe("capability resolver call");
+    expect(FLAG_ONLY.test(readFileSync(path.join(root, "src/app/api/subject-drafts/route.ts"), "utf8"))).toBe(false);
   });
 });
 
@@ -223,6 +232,18 @@ describe("planted trees prove the gate in both directions", () => {
       expect(mechanismFor(root, "src/app/(app)/embryos/page.tsx")).toBe("capability resolver call via src/app/(app)/embryos/context.ts");
       expect(unexplained(root, {})).toEqual(["src/app/(app)/embryos/far/page.tsx", "src/app/(app)/embryos/server.ts"]);
       expect(unexplained(root, { "src/app/api/family/guarded/route.ts": "reason" }).includes("src/app/api/family/alias/route.ts")).toBe(false);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("reports a route that reads only the acceptance flag as unguarded", () => {
+    const root = plant({
+      "src/app/api/family/flag-only/route.ts": 'import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";\n' +
+        'export async function POST() { if (!isTestJurisdictionEnabled()) return new Response(null, { status: 409 }); return Response.json({}); }\n',
+      "src/app/api/family/account/route.ts": 'import { accountJurisdictionDenied } from "@/lib/embryos/guards";\n' +
+        'export async function POST() { return (await accountJurisdictionDenied("a")) ?? Response.json({}); }\n',
+    });
+    try {
+      expect(unexplained(root, {})).toEqual(["src/app/api/family/flag-only/route.ts"]);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 

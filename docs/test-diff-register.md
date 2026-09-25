@@ -2961,3 +2961,81 @@ and worker RPCs; it seeds no result, grant bypass or ready export. Three
 planted regressions (a missing purpose gate, a repeating cursor and a real
 lease renewal) each fail it. No existing test, timeout, retry, threshold or
 acceptance row is changed.
+
+## Jurisdiction declaration (G5.1a, G5.1b) · 25 September 2026
+
+ADR 0032. The brief requires an undeclared account to resolve every restricted
+capability as `unreviewed`; under the acceptance flag it used to resolve
+`permitted`. Tests that encoded the old rule change with it, and no assertion
+is weakened:
+
+- `src/lib/legal/jurisdictions.test.ts`: "resolves every account to the
+  TEST-LOCAL row under the flag" no longer expects an unset code to be
+  permitted, and a new case proves it is `unreviewed`. "Is permitted for
+  everyone under the TEST-LOCAL flag" becomes "only when everyone has
+  declared", and passing `XX` now proves the TEST-DENY row blocks rather than
+  permits. The over-accounts case now splits the same way. New cases cover
+  TEST-DENY under the flag and its stored code being unregistered without it.
+- `src/lib/embryos/access.test.ts`, `src/lib/family/access.test.ts`,
+  `src/app/(marketing)/embryo-analysis/page.test.ts`: the accounts that expect
+  `permitted` under the flag are now declared (`GB`, `FR`) instead of unset.
+  The same assertions hold. The production cases keep their unset accounts.
+- `scripts/jurisdiction-enforcement.test.ts`: a surface that reads only the
+  acceptance flag no longer counts as enforcement, because the flag now says
+  the acceptance row is on, not that this account may act. Every such surface
+  moved to the account-aware `accountJurisdictionDenied`, which joins the
+  resolver-call pattern. The expectation that `subject-drafts` reaches the
+  flag-only class becomes a resolver call. A new planted tree proves a
+  flag-only route is reported as unguarded. This is stricter than before.
+- `scripts/env-gate.test.ts`: the direct-read count goes from 19 to 18, and the
+  binding count from 6 to 7. `subject-drafts` no longer reads the flag
+  directly, and `declarableCode` adds a defaulted `env` binding.
+- `src/lib/embryos/ingest-http.test.ts`, `src/app/api/embryo-cohorts/route.test.ts`:
+  the admin mock also answers the profile read the account-aware refusal
+  makes, with every account declared. A new ingest case proves an undeclared
+  or block-only account is refused before any ingest authority is asked.
+- `supabase/tests/embryo_ingest_chunks.sql` and
+  `supabase/tests/fixtures/embryo_cohort_pre_finalize.inc` wrote `GB` straight
+  into `jurisdiction_code`, which the new check constraint refuses. They now
+  declare through `declare_jurisdiction_v1`, the real writer, with each
+  account's own live session.
+- `e2e/helpers.ts`: `createConfirmedUser` declares `GB` by default, as a real
+  account has done at its first sign-in, and accepts `{ jurisdiction: null }`
+  for the specs that prove the gate. `e2e/report-counts.spec.ts` and
+  `e2e/mail-expiry.spec.ts`, which create users directly, declare the same way.
+  Every `*.nojurisdiction.spec.ts` therefore now runs on declared-unreviewed
+  accounts rather than unset ones. Their refusals and copy are unchanged, and
+  `e2e/jurisdiction-declaration.nojurisdiction.spec.ts` proves the declaration
+  is what they read. The one spec that asserted the decision's source,
+  `e2e/embryos.nojurisdiction.spec.ts`, now expects `default` (a catalogue
+  country without a signed review) instead of `unset`, and its title says
+  "declared-unreviewed". The copy it checks is identical.
+- `e2e/auth.spec.ts`: after email verification, the first sign-in lands on the
+  declaration with nothing chosen, declares through the form, and only then
+  reaches the Overview it used to reach directly.
+- `scripts/self-host-first-run-smoke.ts` (the guided first-run CI journey):
+  email confirmation now lands on `/settings?next=%2Foverview` instead of
+  `/overview`, and a new `jurisdictionDeclaration` step declares GB through the
+  real form before continuing to `/overview`. Its request fence admits exactly
+  one `PUT /api/settings/jurisdiction`; `scripts/self-host-first-run-smoke.test.ts`
+  gains that allowance and three refusals (a POST, a query string, a repeat).
+  Every other fence rule and count is unchanged.
+
+New: `supabase/tests/jurisdiction_declaration.sql` (51 assertions; seven
+planted defects each caught), `src/app/api/settings/jurisdiction/route.test.ts`,
+`src/lib/legal/jurisdiction-declaration.test.ts`, `src/proxy.test.ts`,
+`e2e/jurisdiction-declaration.spec.ts`,
+`e2e/jurisdiction-declaration.nojurisdiction.spec.ts`, and two G5.1b tests in
+`e2e/family-health-picture.spec.ts`. The G5.1b read-time case writes the
+contributor's code directly, because the writer would end the very share
+that case needs to stay current. The writer's own effect is proven separately,
+as the last test of that file. No timeout, retry, skip or ratchet changes.
+
+One more test in `e2e/jurisdiction-declaration.spec.ts` covers a first sign-in
+that continues to a page the navigation had already prefetched while the gate
+still redirected it (the sidebar's Overview). CI caught `e2e/auth.spec.ts`
+stuck on `/settings?next=%2Foverview` after a successful save. The form had
+continued with a client-side push, and the router reused the redirect it had
+cached for that page. The new test forces that prefetch first. It failed
+locally against the push, in the same way as CI, and passes with the full
+page load the form now uses.

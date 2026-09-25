@@ -4,7 +4,7 @@ import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
 import {
   closedResponse,
   csrfOperation,
-  jurisdictionDenied,
+  accountJurisdictionDenied,
   originDenied,
   readJson,
   requestForbidden,
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   if (!context) return unauthorized();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
-  const denied = jurisdictionDenied();
+  const denied = await accountJurisdictionDenied(context.user.id);
   if (denied) return denied;
 
   const parsed = coParentInvitationBody.safeParse(await readJson(request));

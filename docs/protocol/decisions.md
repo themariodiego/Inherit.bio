@@ -3946,3 +3946,43 @@ recommended ones.
   them until export is finished. This covers the export persistence and
   content-reader migrations only; every other production write still needs its
   own approval.
+
+## 2026-09-25 (G5.1a) — Jurisdiction declaration: engineering decisions for owner review
+
+Implementing the owner's jurisdiction decisions above raised three questions
+the brief does not settle. Engineering decided them as follows and records
+them in ADR 0032 for the owner to confirm or reverse:
+
+- **Re-evaluation does not bump `jurisdiction_revision`.** Every existing
+  signature, grant and completed own report binds that revision, and the
+  signature row is immutable. A bump at the first declaration, which every
+  existing person meets at their next sign-in, would have ended all ten
+  current own-genome permissions in production and hidden every saved report.
+  Instead a changed declaration ends every current restricted permission the
+  account takes part in (the register's "require re-signing"), and adult
+  self-analysis on the account's own subject stays current.
+- **The block-only row is stored as `XX`,** an ISO user-assigned code that
+  names no country. It is accepted only under the acceptance flag, and read as
+  unregistered without it.
+- **Flag-only refusals became account-aware.** Eight restricted write paths
+  now also resolve the acting account's own declaration. Production behaviour
+  is unchanged while no real jurisdiction is reviewed.
+
+## 2026-09-25 (evening) — Three owner confirmations, asked as selectable choices
+
+Asked in chat with the recommended option first; all three answers were the
+recommended ones.
+
+- **Export content reader in production:** after #211 merged, apply
+  `20260925130000_export_archive_content_reader.sql` to production now, guarded
+  the same way as the export persistence migration. Done the same evening;
+  the receipt is in `docs/evidence/export-content-reader-production-apply-20260925/`.
+- **Jurisdiction declaration (#212):** once CI is green, merge, then apply
+  `20260925140000_jurisdiction_declaration.sql` to production with the same
+  guarded single-statement pattern: dry run, predecessor checks including that
+  no profile already holds a code, postchecks and a receipt. This approval
+  covers that one migration.
+- **ADR 0032 confirmed:** the declaration does not bump
+  `jurisdiction_revision`. A changed country ends every restricted permission
+  the account takes part in, and adult self-analysis on the account's own
+  subject keeps its signing-time snapshot. The ADR is now Accepted.

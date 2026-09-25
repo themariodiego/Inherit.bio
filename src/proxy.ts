@@ -98,7 +98,7 @@ export async function proxy(request: NextRequest) {
   if (user && (isProtected || path.startsWith("/api/"))) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("deletion_requested_at")
+      .select("deletion_requested_at, jurisdiction_code")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -124,6 +124,18 @@ export async function proxy(request: NextRequest) {
         url.search = "";
         return withSensitiveHeaders(NextResponse.redirect(url));
       }
+    }
+
+    // G5.1a: where a person lives is declared once, at first sign-in, before
+    // any product page. Settings stay open: the declaration is made there, and
+    // export, deletion and consent withdrawal are rights nothing may block.
+    // Endpoints are not redirected; each one already resolves an undeclared
+    // account's restricted capabilities as unreviewed on the server.
+    if (isProtected && profile && profile.jurisdiction_code === null && !path.startsWith("/settings")) {
+      // A fresh URL, not a clone: a clone of `/family/` keeps its trailing slash.
+      const url = new URL("/settings", request.url);
+      url.searchParams.set("next", `${path}${request.nextUrl.search}`);
+      return withSensitiveHeaders(NextResponse.redirect(url));
     }
   }
 

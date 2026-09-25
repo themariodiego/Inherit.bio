@@ -5144,7 +5144,10 @@ export type Database = {
           digest_opt_in: boolean
           display_name: string | null
           id: string
+          jurisdiction_attestation_sha256: string | null
+          jurisdiction_attestation_version: number | null
           jurisdiction_code: string | null
+          jurisdiction_declared_at: string | null
           jurisdiction_revision: number
           mail_contact_revision: number
           non_self_upload_suspended_at: string | null
@@ -5158,7 +5161,10 @@ export type Database = {
           digest_opt_in?: boolean
           display_name?: string | null
           id: string
+          jurisdiction_attestation_sha256?: string | null
+          jurisdiction_attestation_version?: number | null
           jurisdiction_code?: string | null
+          jurisdiction_declared_at?: string | null
           jurisdiction_revision?: number
           mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
@@ -5172,7 +5178,10 @@ export type Database = {
           digest_opt_in?: boolean
           display_name?: string | null
           id?: string
+          jurisdiction_attestation_sha256?: string | null
+          jurisdiction_attestation_version?: number | null
           jurisdiction_code?: string | null
+          jurisdiction_declared_at?: string | null
           jurisdiction_revision?: number
           mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
@@ -7889,6 +7898,17 @@ export type Database = {
           p_account_id: string
           p_subject_id: string
           p_chromosomal_sex: string | null
+        }
+        Returns: Json
+      }
+      declare_jurisdiction_v1: {
+        Args: {
+          p_account_id: string
+          p_session_id: string
+          p_code: string
+          p_attestation_version: number
+          p_attestation_sha256: string
+          p_test_jurisdiction: boolean
         }
         Returns: Json
       }

@@ -9,6 +9,7 @@ import { COPILOT_LOCAL_ONLY, PERSON_H1, noFileYet, noneCovered, notShared, repor
 import { NOT_DIAGNOSTIC } from "../src/copy/reports/strings";
 import path from "node:path";
 import {
+  DEFAULT_TEST_JURISDICTION,
   acceptAdultInvitation,
   adminClient,
   adultInvitationToken,
@@ -17,6 +18,7 @@ import {
   drainMailUntil,
   expectAxeClean,
   firstViewportInteractives,
+  setDeclaredJurisdiction,
   signIn,
 } from "./helpers";
 import { CARRIER_FIXTURE_POSITIONS, type FixtureGenotype } from "./fixtures/carrier-pair-positions";
@@ -648,6 +650,68 @@ test("/family/[person] complete: past the Tier-2 gate with both report layers gr
   await expect(page.getByText(COPILOT_LOCAL_ONLY, { exact: true })).toBeAttached();
 });
 
+/** The block-only row's own sentence (data/jurisdictions.json TEST-DENY), retyped. */
+const TEST_DENY_SENTENCE = "This capability is blocked for the TEST-DENY acceptance fixture.";
+
+/** Every share B has made, current or ended, in a stable order. */
+async function sharesFromB() {
+  const result = await adminClient().from("purpose_grants")
+    .select("grant_id,grant_revision,purpose,revoked_at,revocation_reason")
+    .eq("target_id", selfSubjectB).eq("artifact_key", "consent.share-with-adult").order("grant_id");
+  expect(result.error).toBeNull();
+  return result.data!;
+}
+
+/**
+ * G5.1b (ADR 0032): a permitted reader and a prohibited contributor. A is
+ * declared GB, which the flag resolves to TEST-LOCAL; B's declaration becomes
+ * the block-only TEST-DENY row's stored code while B's shares stay exactly as
+ * they were. B's answer is written directly: through the declaration writer
+ * it would also end those shares, and A would then be refused for want of a
+ * permission rather than by the jurisdiction check this case exists to prove.
+ * The writer's own effect is the last test in this file.
+ *
+ * "No result data is serialised" is read from the served documents, RSC
+ * payload included: none of the report links the page listed, and not the
+ * report's own title, which only a permitted page renders.
+ */
+test("/family/[person] jurisdiction-unavailable: a permitted reader whose contributor's declared jurisdiction is prohibited is refused, and none of the shared result reaches the page", async ({ page }) => {
+  await signIn(page, A.email, A.password);
+  await passGate(page);
+  await page.goto(`/family/s-${invitedSubjectB}`);
+  const reports = page.locator(`[data-layer] a[href^="/genome/s-${invitedSubjectB}/reports/"]`);
+  const hrefs = await reports.evaluateAll(links => links.map(link => link.getAttribute("href") ?? ""));
+  expect(hrefs.length).toBeGreaterThan(0);
+  await page.goto(hrefs[0]);
+  const reportTitle = (await page.locator("main h1").first().textContent())?.trim() ?? "";
+  expect(reportTitle.length, "the permitted report page names its report").toBeGreaterThan(0);
+  const sharesBefore = await sharesFromB();
+
+  await setDeclaredJurisdiction(accountB, "XX");
+  try {
+    const person = await page.goto(`/family/s-${invitedSubjectB}`);
+    expect(person?.status()).toBe(200);
+    const personDocument = await person!.text();
+    await expect(page.getByText(TEST_DENY_SENTENCE, { exact: true })).toBeVisible();
+    await expect(page.locator("[data-layer]")).toHaveCount(0);
+    for (const href of hrefs) expect(personDocument, "no shared report is linked or serialised").not.toContain(href);
+
+    const report = await page.goto(hrefs[0]);
+    expect(report?.status()).toBe(200);
+    const reportDocument = await report!.text();
+    await expect(page.getByRole("heading", { name: "Not available in this jurisdiction yet" })).toBeVisible();
+    expect(reportDocument, "the refused report page carries none of the report").not.toContain(reportTitle);
+    await expect(page.locator("[data-claim-block], [data-figure-kind]")).toHaveCount(0);
+
+    expect(await sharesFromB(), "the shares never changed: the jurisdiction decided").toEqual(sharesBefore);
+  } finally {
+    await setDeclaredJurisdiction(accountB, DEFAULT_TEST_JURISDICTION);
+  }
+  // Answered back, the same shares read again.
+  await page.goto(`/family/s-${invitedSubjectB}`);
+  await expect(reports).toHaveCount(hrefs.length);
+});
+
 test("the carrier panel withholds unbound clinical labels and explicitly states unavailable", async ({
   page,
 }) => {
@@ -983,4 +1047,38 @@ test("/family/health-picture empty: revoking one direction leaves the page count
   await page.goto("/overview");
   await expect(page.locator("[data-subject-pair]")).toHaveCount(0);
   await expect(page.getByText("carrier match")).toHaveCount(0);
+});
+
+/**
+ * G5.1a's re-evaluation through the real writer (ADR 0032). B declares the
+ * block-only row's code from B's own session, and the declaration transaction
+ * ends every restricted permission B took part in, as sharer or recipient,
+ * recorded as a jurisdiction change rather than a withdrawal. Both adults'
+ * sources and own report permissions are untouched: adult self-analysis is
+ * the one capability no jurisdiction restricts. Last in the file because it
+ * ends the shares every earlier test reads.
+ */
+test("changing where B lives ends every Family permission B took part in, and leaves both adults' own sources and report permissions", async ({ page }) => {
+  const current = (await sharesFromB()).filter(row => row.revoked_at === null);
+  expect(current.length, "B still shares at least one layer with A").toBeGreaterThan(0);
+  await signIn(page, B.email, B.password);
+  const { data: published } = await adminClient().from("consent_artifacts").select("version, body_sha256")
+    .eq("artifact_key", "attestation.jurisdiction").is("superseded_at", null).single();
+  const answer = await page.request.put("/api/settings/jurisdiction", {
+    headers: { origin: "http://localhost:3100", "content-type": "application/json" },
+    data: { code: "XX", attestationVersion: published!.version, attestationHash: published!.body_sha256, affirmed: true },
+  });
+  expect(answer.status()).toBe(200);
+  expect(await answer.json()).toEqual({ status: "updated", jurisdiction: "XX", capabilityReevaluation: "complete" });
+
+  const after = await sharesFromB();
+  for (const row of current) {
+    expect(after.find(candidate => candidate.grant_id === row.grant_id), row.purpose)
+      .toMatchObject({ revocation_reason: "jurisdiction_changed" });
+  }
+  const received = await adminClient().from("purpose_grants").select("grant_id,revoked_at,revocation_reason")
+    .eq("target_id", selfSubjectA).eq("artifact_key", "consent.share-with-adult").is("revoked_at", null);
+  expect(received.error).toBeNull();
+  expect(received.data, "nothing A shares with B stays current either").toEqual([]);
+  await expectSourcesAndOwnPermissionsPreserved();
 });

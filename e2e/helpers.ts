@@ -164,8 +164,10 @@ export async function findUserByEmail(admin: SupabaseClient, email: string) {
 export async function createConfirmedUser(
   email: string,
   password: string,
+  options: { jurisdiction?: string | null } = {},
 ): Promise<string> {
   const admin = adminClient();
+  const jurisdiction = options.jurisdiction === undefined ? DEFAULT_TEST_JURISDICTION : options.jurisdiction;
   // Idempotent: reuse any leftover user with this email.
   const existing = await findUserByEmail(admin, email);
   if (existing) {
@@ -174,6 +176,7 @@ export async function createConfirmedUser(
       email_confirm: true,
     });
     if (error) throw new Error(`updateUser: ${error.message}`);
+    await setDeclaredJurisdiction(existing.id, jurisdiction);
     return existing.id;
   }
   const { data, error } = await admin.auth.admin.createUser({
@@ -182,7 +185,44 @@ export async function createConfirmedUser(
     email_confirm: true,
   });
   if (error || !data.user) throw new Error(`createUser: ${error?.message}`);
+  await setDeclaredJurisdiction(data.user.id, jurisdiction);
   return data.user.id;
+}
+
+/**
+ * The country a helper-made account has declared: a real catalogue code, so
+ * under the acceptance flag it resolves to TEST-LOCAL and without the flag to
+ * the default unreviewed row, exactly as every account did before a
+ * declaration existed (G5.1a, ADR 0032).
+ */
+export const DEFAULT_TEST_JURISDICTION = "GB";
+
+/**
+ * Records where a test account lives. A real person answers at their first
+ * sign-in, through `PUT /api/settings/jurisdiction`; that path and its gate are
+ * proven in `e2e/jurisdiction-declaration.spec.ts` and `e2e/auth.spec.ts`.
+ * Every other spec needs an account that has already answered, so the service
+ * client writes the same four columns the writer stores, with the published
+ * attestation. It revokes nothing, which is also why the G5.1b case uses it:
+ * the writer would end the very permissions that case needs to stay current.
+ * `null` leaves the account undeclared.
+ */
+export async function setDeclaredJurisdiction(accountId: string, code: string | null): Promise<void> {
+  const admin = adminClient();
+  let attestation: { version: number; body_sha256: string } | null = null;
+  if (code !== null) {
+    const { data, error } = await admin.from("consent_artifacts").select("version, body_sha256")
+      .eq("artifact_key", "attestation.jurisdiction").is("superseded_at", null).single();
+    if (error || !data) throw new Error(`attestation.jurisdiction: ${error?.message ?? "not published"}`);
+    attestation = data as { version: number; body_sha256: string };
+  }
+  const { error } = await admin.from("profiles").update({
+    jurisdiction_code: code,
+    jurisdiction_declared_at: code === null ? null : new Date().toISOString(),
+    jurisdiction_attestation_version: attestation?.version ?? null,
+    jurisdiction_attestation_sha256: attestation?.body_sha256 ?? null,
+  }).eq("id", accountId);
+  if (error) throw new Error(`profiles jurisdiction: ${error.message}`);
 }
 
 /** Sign the browser session in through the UI. */
