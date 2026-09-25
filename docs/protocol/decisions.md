@@ -3931,3 +3931,24 @@ recommended one.
   permits anything. It exists so the declared-prohibited and
   permitted-actor-with-prohibited-subject proofs can be built. An ADR records
   it, because the brief names a single reserved row.
+
+## 2026-09-25 (G5.1a) — Jurisdiction declaration: engineering decisions for owner review
+
+Implementing the owner's jurisdiction decisions above raised three questions
+the brief does not settle. Engineering decided them as follows and records
+them in ADR 0032 for the owner to confirm or reverse:
+
+- **Re-evaluation does not bump `jurisdiction_revision`.** Every existing
+  signature, grant and completed own report binds that revision, and the
+  signature row is immutable. A bump at the first declaration, which every
+  existing person meets at their next sign-in, would have ended all ten
+  current own-genome permissions in production and hidden every saved report.
+  Instead a changed declaration ends every current restricted permission the
+  account takes part in (the register's "require re-signing"), and adult
+  self-analysis on the account's own subject stays current.
+- **The block-only row is stored as `XX`,** an ISO user-assigned code that
+  names no country. It is accepted only under the acceptance flag, and read as
+  unregistered without it.
+- **Flag-only refusals became account-aware.** Eight restricted write paths
+  now also resolve the acting account's own declaration. Production behaviour
+  is unchanged while no real jurisdiction is reviewed.

@@ -91,6 +91,12 @@
         "readings": []
       },
       {
+        "artifactKey": "attestation.jurisdiction",
+        "version": 1,
+        "migration": "20260925140000_jurisdiction_declaration.sql",
+        "readings": []
+      },
+      {
         "artifactKey": "attestation.embryo-single-parent-basis",
         "version": 1,
         "migration": "20260905103317_embryo_cohort_runtime.sql",

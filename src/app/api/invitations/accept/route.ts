@@ -5,7 +5,7 @@ import { EMBRYO_ARTIFACT_STATEMENT_KEYS, typedNameIsValid } from "@/lib/embryos/
 import {
   closedResponse,
   encryptedLiteral,
-  jurisdictionDenied,
+  accountJurisdictionDenied,
   originDenied,
   readJson,
   unauthorized,
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   if (!context) return unauthorized();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
-  const denied = jurisdictionDenied();
+  const denied = await accountJurisdictionDenied(context.user.id);
   if (denied) return denied;
 
   const sessionHash = readRightsSessionHash(request);

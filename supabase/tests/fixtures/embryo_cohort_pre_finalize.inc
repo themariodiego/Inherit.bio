@@ -26,12 +26,15 @@ values
   ('7a000000-0000-4000-8000-0000000000c1', '7a000000-0000-0000-0000-000000000003',
    clock_timestamp(), clock_timestamp(), 'aal1');
 
-update public.profiles set jurisdiction_code = 'GB'
-where id in (
-  '7a000000-0000-0000-0000-000000000001',
-  '7a000000-0000-0000-0000-000000000002',
-  '7a000000-0000-0000-0000-000000000003'
-);
+-- A code now needs a declaration record; declare through the one writer.
+select public.declare_jurisdiction_v1(account, session, 'GB', 1,
+  (select body_sha256 from public.consent_artifacts
+   where artifact_key = 'attestation.jurisdiction' and version = 1), false)
+from (values
+  ('7a000000-0000-0000-0000-000000000001'::uuid, '7a000000-0000-4000-8000-0000000000a1'::uuid),
+  ('7a000000-0000-0000-0000-000000000002'::uuid, '7a000000-0000-4000-8000-0000000000b1'::uuid),
+  ('7a000000-0000-0000-0000-000000000003'::uuid, '7a000000-0000-4000-8000-0000000000c1'::uuid)
+) as declared(account, session);
 
 -- ---------------------------------------------------------------------------
 -- Artifacts

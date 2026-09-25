@@ -2,7 +2,7 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { adminClient, seededTemplateCount, signIn } from "./helpers";
+import { DEFAULT_TEST_JURISDICTION, adminClient, seededTemplateCount, setDeclaredJurisdiction, signIn } from "./helpers";
 import { LAYER_DEFINITIONS } from "../src/copy/reports/strings";
 import { inspectReportCounts } from "./report-count-audit";
 
@@ -13,8 +13,10 @@ async function assertCounts(page: Page) {
 }
 
 test.beforeAll(async () => {
-  const { error } = await adminClient().auth.admin.createUser({ ...account, email_confirm: true });
+  const { data, error } = await adminClient().auth.admin.createUser({ ...account, email_confirm: true });
   expect(error).toBeNull();
+  // Answered at first sign-in, as every account has (G5.1a).
+  await setDeclaredJurisdiction(data.user!.id, DEFAULT_TEST_JURISDICTION);
 });
 
 test("real report counts stay single-layer through upload, Overview, both libraries, filters and search", async ({ page }) => {

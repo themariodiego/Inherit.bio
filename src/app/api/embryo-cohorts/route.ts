@@ -1,7 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, rpcErrorResponse, sensitiveJson } from "@/lib/embryos/api";
 import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "@/lib/embryos/cohort-create";
-import { jurisdictionDenied, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
 import { ingestRequestOrigin } from "@/lib/embryos/ingest-http";
 import { ingestCookie } from "@/lib/embryos/ingest-session";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   // The register puts an `embryo_analysis` guard at route scope. Without it
   // the refusal would be whatever `rpcErrorResponse` makes of the private
   // transaction's 42501, instead of the registered 403 and its copy.
-  const unavailable = jurisdictionDenied();
+  const unavailable = await accountJurisdictionDenied(account.user.id);
   if (unavailable) return unavailable;
 
   // The origin the session is minted with must be derived the same way every

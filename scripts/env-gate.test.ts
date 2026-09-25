@@ -111,10 +111,16 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // 19 since D-098, which is the shape of the fix rather than a lost read:
     // `NEXT_PUBLIC_APP_URL` used to be read directly at two call sites and is
     // now read once, through `applicationOrigin`'s defaulted `env` parameter,
-    // so it moved from the direct column into a sixth binding.
-    expect(result.directReadKeyCount).toBe(19);
+    // so it moved from the direct column into a sixth binding. It is 18 since
+    // G5.1a (ADR 0032): `/api/subject-drafts` read `INHERIT_TEST_JURISDICTION`
+    // directly to decide alone, and now asks the acting account's resolved
+    // capability, which reads the flag through `isTestJurisdictionEnabled`.
+    // The seventh binding is the same shape in `declarableCode`
+    // (`src/lib/legal/jurisdiction-declaration.ts`), which admits the
+    // block-only row's stored code only while that flag is on.
+    expect(result.directReadKeyCount).toBe(18);
     expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(6);
+    expect(result.boundBindingCount).toBe(7);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(34);
     expect(result.templateKeyCount).toBe(27);

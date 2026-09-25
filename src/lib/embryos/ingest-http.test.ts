@@ -1,4 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// The acting account's declared jurisdiction is read through the service
+// client (G5.1a); every account here has declared GB unless a test says not.
+const declared = vi.hoisted(() => ({ codes: new Map<string, string | null>() }));
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({
+    from: () => ({ select: () => ({ in: async (_column: string, ids: string[]) => ({
+      data: ids.map((id) => ({ id, jurisdiction_code: declared.codes.has(id) ? declared.codes.get(id) : "GB" })), error: null,
+    }) }) }),
+  }),
+}));
+beforeEach(() => declared.codes.clear());
 import { authorizeIngestHttpRequest, ingestAuthorization, ingestChunkEnvelope, ingestRequestOrigin, readIngestChunk } from "./ingest-http";
 import { ingestCookieName } from "./ingest-session";
 import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
@@ -116,6 +128,18 @@ describe("HTTP credential orchestration", () => {
         expect(result.response.status).toBe(status);
         expect(result.response.headers.get("cache-control")).toBe("private, no-store");
       }
+      expect(rpc).not.toHaveBeenCalled();
+      expect(req.bodyUsed).toBe(false);
+    }
+  });
+  it("denies an account whose own declaration does not permit embryo analysis, before any ingest authority", async () => {
+    for (const code of [null, "XX"]) {
+      declared.codes.set(SESSION, code);
+      const rpc = vi.fn();
+      const req = validRequest();
+      const result = await authorizeIngestHttpRequest(req, SESSION, account, rpc, env);
+      expect(result.kind).toBe("denied");
+      if (result.kind === "denied") expect(result.response.status).toBe(403);
       expect(rpc).not.toHaveBeenCalled();
       expect(req.bodyUsed).toBe(false);
     }
