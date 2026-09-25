@@ -109,3 +109,43 @@ implement a dispatcher, expose a route or remove the database publication hold.
 Tests use the installed SDK with an injected transport. They do not execute SQL
 or prove a configured provider transport's redirect, origin or response-size
 limits; that service transport still needs its own integration checks.
+
+## Content reader
+
+`public.export_archive_content_v1` (migration `20260925130000`) is the first
+slice of `docs/export-member-selection-design.md`: a service-only, read-only
+reader for one archive attempt. Every call takes origin, route, contract and
+target from the stored job, recomputes the full authority graph against the
+pinned receipt, and requires the job's exact active `writing` attempt with an
+unexpired lease; it checks all of that again before returning. It writes
+nothing: no nonce, lease renewal or row change.
+
+- `context` returns the stored origin, route, contract, target, partitions,
+  receipt, file count, lease and deadline, for the worker only.
+- `files` pages every file in the captured partitions, 100 at a time by id,
+  as exact current source snapshots. A file with no exact source refuses the
+  whole read; it is never filtered out as the older list does.
+- `check`, `variants`, `observed` and `ancestry` delegate to the existing
+  per-file projection after the job checks. Prepared sources still refuse raw
+  rows with `prepared_object_reader_required`.
+- `reports` and `prs` export a completed run only under its purpose's current
+  grant on **both** backends. The older helper applied that gate only to
+  prepared sources, so on the database backend it still returns a report
+  whose grant expired before the export was captured; this reader does not.
+  Saved results are returned verbatim, never regenerated.
+
+Its 44 pgTAP assertions ran locally with the full suite (91 files, 3,795
+assertions). They cover the stored context, two keyset pages over 105 files
+with nothing omitted or repeated, an empty account, malformed payloads, a
+caller-supplied or foreign receipt, a foreign attempt, foreign and
+out-of-partition files, a stopped attempt, an expired lease, an ended session,
+a file added after capture, an unready file, the pre-capture expired grant and
+an unchanged job, attempt, export, nonce, segment and download state after
+every read. Planting a missing gate, a cursor that repeats its boundary or a
+real lease renewal each fails its assertion.
+
+Not covered: drift during a read from another session, which needs an
+independent-session test; the prepared backend's reports gate, which is the
+existing helper's and has its own suite; and every member class beyond own
+genome files and their own results. This reader is not the complete member
+selector, and the publication hold remains.
