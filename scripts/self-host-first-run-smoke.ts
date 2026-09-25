@@ -21,7 +21,7 @@ const SAMPLE_SHA = "46c46da43500f3b1ad5f01524c4ac9bcb52b2bd9a1dcc5b3c33aa8dbbc6a
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const OBSERVER_MS = 60_000;
 const expect = baseExpect.configure({ timeout: OBSERVER_MS });
-const STEPS = ["preflight", "signup", "emailConfirmation", "accountCompletion", "uploadConsent",
+const STEPS = ["preflight", "signup", "emailConfirmation", "jurisdictionDeclaration", "accountCompletion", "uploadConsent",
   "stockStorageUpload", "normalization", "reportChoices", "reportGeneration", "coveredReport",
   "absentReport", "storedAncestryFallback", "copilotWithoutProvider"] as const;
 type Step = typeof STEPS[number];
@@ -65,6 +65,8 @@ export function requestFence() {
         requireProof(!url.pathname.startsWith("/api/") || new RegExp(`^/api/files/${UUID}/status$`).test(url.pathname));
         return;
       }
+      // The first sign-in declares where the person lives once (G5.1a).
+      if (method === "PUT" && url.pathname === "/api/settings/jurisdiction" && !url.search) return once("jurisdiction", 1);
       requireProof(method === "POST" && !url.search);
       if (url.pathname === "/api/account/completion") return once("completion", 1);
       if (url.pathname === "/api/consents") return once("consents", 4);
@@ -189,8 +191,8 @@ async function confirmation(address: string): Promise<string> {
   }
   throw new Error("first_run_confirmation_timeout");
 }
-function observe(page: Page, endpoint: string | RegExp, timeout = OBSERVER_MS): Promise<Response> {
-  const promise = page.waitForResponse(response => response.request().method() === "POST"
+function observe(page: Page, endpoint: string | RegExp, timeout = OBSERVER_MS, method = "POST"): Promise<Response> {
+  const promise = page.waitForResponse(response => response.request().method() === method
     && (typeof endpoint === "string" ? response.url() === endpoint : endpoint.test(response.url())), { timeout });
   void promise.catch(() => {}); return promise;
 }
@@ -249,9 +251,20 @@ export async function runFirstRunSmoke(): Promise<void> {
       await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
     });
     await step("emailConfirmation", async () => {
-      await page.goto(await confirmation(address)); await expect(page).toHaveURL(`${LOCAL.app}/overview`);
+      // The first product page asks where the person lives before anything else (G5.1a).
+      await page.goto(await confirmation(address)); await expect(page).toHaveURL(`${LOCAL.app}/settings?next=%2Foverview`);
       await expect(page.getByText(address, { exact: true }).first()).toBeVisible();
       receipt.checks.confirmationRequired = true;
+    });
+    await step("jurisdictionDeclaration", async () => {
+      const country = page.getByLabel("Country you live in", { exact: true });
+      await expect(country).toHaveValue(""); await country.selectOption("GB");
+      await page.getByLabel("The country I chose is the country I live in.", { exact: true }).check();
+      const declared = observe(page, `${LOCAL.app}/api/settings/jurisdiction`, OBSERVER_MS, "PUT");
+      await page.getByRole("button", { name: "Save country", exact: true }).click();
+      requireProof((await declared).status() === 200);
+      await expect(page).toHaveURL(`${LOCAL.app}/overview`);
+      receipt.checks.jurisdictionDeclaredAtFirstSignIn = true;
     });
     await step("accountCompletion", async () => {
       await page.getByRole("link", { name: "I have a DNA file", exact: true }).click();

@@ -82,7 +82,9 @@ corepack pnpm dev
 ```
 
 Open http://localhost:3000 and sign up. Follow the verification link in
-Mailpit, complete the adult date-of-birth step, then visit **My Genome**.
+Mailpit. The first page asks which country you live in: Inherit never guesses
+it, and your own DNA results do not depend on it. Choose one, confirm, and
+save. Then complete the adult date-of-birth step and visit **My Genome**.
 Read and select the storage permission before choosing
 `data/samples/synthetic-pipeline-grch38.vcf.gz`. Wait for processing, then
 select the report and ancestry purposes you want. These are separate from
