@@ -6,6 +6,14 @@ The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;
 the integration evidence is in the G1.16 row of `docs/acceptance-matrix.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
+**Update, 25 September 2026.** G5.1a and G5.1b are closed (#212, CI run
+36176206183). They did not close the way this document expected, after a
+signed jurisdiction review. The owner decided to collect the declaration at
+first sign-in anyway and to add a block-only test row, which lets the prohibited
+cases be built. G5.5's signed reviews are still what opens any capability in a
+real country. The sections below are dated snapshots; `docs/acceptance-matrix.md`
+holds the current count.
+
 ## What blocks each of the 27 remaining rows · 20 September 2026
 
 Main is **38 YES / 27 NO** of 65. Every row below was classified by reading its
