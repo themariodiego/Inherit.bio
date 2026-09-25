@@ -41,3 +41,10 @@ but generated route types and complete browser behavior remain CI checks.
 This finite register does not establish full-catalog accuracy, human clinical
 review, hosted deployment or release completion. No captured result is silently
 regenerated, and no acceptance row changes in this patch.
+
+Merging a correction does not deliver it: deploying code never refreshes a
+hosted catalog. On 25 September 2026 production still held the registered
+earlier text of all eight batches (D-134); it was refreshed the same day with
+the owner's approval, and the three reports already captured keep their
+notice. `pnpm gate:catalog-drift` reports that condition against a deployed
+database and is the check to run after every deploy and refresh.
