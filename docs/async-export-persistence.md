@@ -1,9 +1,12 @@
 # Archive persistence: an intermediate database slice
 
 This migration first ran on 25 September 2026, on a local stack built from
-every migration; it has never run on a hosted provider. It does not activate a
-route, worker, scheduler, Storage upload or browser download. G5.6 remains
-incomplete. The existing synchronous export route is unchanged.
+every migration. After #210 merged, the same day, it was applied to the
+production database in one guarded statement
+(`docs/evidence/export-persistence-production-apply-20260925/`). It does not
+activate a route, worker, scheduler, Storage upload or browser download, and
+the ready-publication hold is in place there too. G5.6 remains incomplete. The
+existing synchronous export route is unchanged.
 
 The new RPCs extend `generated_exports` and reuse `own_export_source_v1` for
 actual Auth, originating session, profile, own subject and source checks.
