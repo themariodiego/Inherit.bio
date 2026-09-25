@@ -149,12 +149,12 @@ begin
  perform private.own_export_source_v1(a,sess,null);
  select * into p from public.profiles where id=a;
  select coalesce(refresh_token_counter,0)+1 into session_revision from auth.sessions where id=sess and user_id=a;
- select sp.* into ap from public.subject_account_bindings b join public.subjects s on s.id=b.subject_id
+ select sp.* into ap from public.subject_account_bindings b join public.subjects subj on subj.id=b.subject_id
   join public.subject_principals sp on sp.id=b.account_principal_id
   join public.subject_principals subject_p on subject_p.id=b.subject_principal_id
-  where b.account_id=a and b.status='current' and s.subject_class='self' and s.subject_account_id=a
-   and s.lifecycle in ('active','restricted') and sp.account_id=a and sp.status='active' and sp.principal_kind='account_subject'
-   and subject_p.account_id=a and subject_p.subject_id=s.id and subject_p.status='active' and subject_p.principal_kind='account_subject';
+  where b.account_id=a and b.status='current' and subj.subject_class='self' and subj.subject_account_id=a
+   and subj.lifecycle in ('active','restricted') and sp.account_id=a and sp.status='active' and sp.principal_kind='account_subject'
+   and subject_p.account_id=a and subject_p.subject_id=subj.id and subject_p.status='active' and subject_p.principal_kind='account_subject';
  if ap.id is null then raise exception using errcode='42501',message='not_found'; end if;
  if p_target_kind='account' then
   if p_target_id<>a then raise exception using errcode='42501',message='not_found'; end if;
@@ -165,13 +165,13 @@ begin
    or exists(select 1 from public.embryo_cohorts c where c.status<>'purged' and (c.owner_account_id=a or exists(
     select 1 from public.embryo_participant_sets ps join public.subject_principals sp on sp.id=ps.principal_id
      where ps.cohort_id=c.id and sp.account_id=a and ps.revoked_at is null)))
-   or exists(select 1 from public.family_pairs pair join public.subjects s on s.id in (pair.subject_a_id,pair.subject_b_id)
-    where pair.status<>'purged' and (s.owner_account_id=a or s.subject_account_id=a))
+   or exists(select 1 from public.family_pairs pair join public.subjects subj on subj.id in (pair.subject_a_id,pair.subject_b_id)
+    where pair.status<>'purged' and (subj.owner_account_id=a or subj.subject_account_id=a))
    or exists(select 1 from public.directional_grants d join public.purpose_grants g using(grant_id)
     join public.subject_principals recipient on recipient.id=d.recipient_principal_id
     where (d.recipient_account_id=a or recipient.account_id=a) and d.status='current' and g.revoked_at is null
       and (g.expires_at is null or g.expires_at>clock_timestamp()) and (g.target_kind<>'subject' or not exists(
-       select 1 from public.subjects s where s.id=g.target_id and s.subject_account_id=a and s.subject_class in ('self','other_adult')))) then
+       select 1 from public.subjects subj where subj.id=g.target_id and subj.subject_account_id=a and subj.subject_class in ('self','other_adult')))) then
    raise exception using errcode='0A000',message='export_partition_projection_unavailable';
   end if;
  end if;
@@ -437,10 +437,10 @@ begin
   if actual_page is null or actual_page<>a.page_count or (actual_page>0 and exists(
     select 1 from private.export_archive_manifest_pages where attempt_id=a.id and page=actual_page-1 and jsonb_array_length(segments)<>128)) then
    raise exception using errcode='55000',message='export_sequence'; end if;
-  select coalesce(jsonb_agg(jsonb_build_object('ordinal',s.ordinal,'offset',s.byte_offset,'sizeBytes',s.byte_count,
-   'sha256',s.sha256,'objectKey',s.object_key,'objectId',s.object_id) order by s.ordinal),'[]') into descriptors
-   from private.export_archive_segments s where s.attempt_id=a.id and s.ordinal>=actual_page*128
-    and s.ordinal<actual_page*128+jsonb_array_length(p_payload->'segments') and s.acknowledged_at is not null;
+  select coalesce(jsonb_agg(jsonb_build_object('ordinal',seg.ordinal,'offset',seg.byte_offset,'sizeBytes',seg.byte_count,
+   'sha256',seg.sha256,'objectKey',seg.object_key,'objectId',seg.object_id) order by seg.ordinal),'[]') into descriptors
+   from private.export_archive_segments seg where seg.attempt_id=a.id and seg.ordinal>=actual_page*128
+    and seg.ordinal<actual_page*128+jsonb_array_length(p_payload->'segments') and seg.acknowledged_at is not null;
   if descriptors is distinct from p_payload->'segments' then raise exception using errcode='42501',message='not_found'; end if;
   insert into private.export_archive_manifest_pages(attempt_id,page,first_ordinal,segments,page_sha256)
    values(a.id,actual_page,actual_page*128,descriptors,encode(extensions.digest(descriptors::text,'sha256'),'hex'));
