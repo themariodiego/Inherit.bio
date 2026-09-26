@@ -240,3 +240,72 @@ one guarded statement. It pinned both replaced functions and the reader's five
 dependencies to the tested definitions, and refused if any export job existed
 (`docs/evidence/export-history-reader-production-apply-20260926/`). The
 deployed application does not call either function.
+
+## Chat reader
+
+Migration `20260925220000` adds the requester's own Copilot conversations,
+readable only under an export job.
+
+**The receipt covers chats (`export-authority-v3`).** It hashes every own chat
+on a captured subject, together with a digest of all its messages. A message
+added or changed after capture fails the job, and a v2 job fails closed.
+
+**Which chats and turns are exported.** `private.export_archive_chat_messages_v1`
+decides this, following the chat-history contract (`chat-history-projection-v1`).
+A chat is exported only when all of these hold:
+
+- it belongs to this account and is scoped to a captured subject;
+- its scope is `self`;
+- it is canonical, not legacy unverified;
+- the Copilot grant it was created under is still the same current revision;
+- for a cloud model, the provider consent it was created under is too.
+
+The export reads those grants directly, never the provider configuration or
+its transport. Changing or deleting the settings supersedes the grants. That
+ends the chats here, exactly as it ends them in the chat history, and queues
+their deletion.
+
+Within a chat, the first turn answered under a data projection that no longer
+holds is omitted whole, together with every later turn. A chat with nothing
+left is not listed.
+
+**Two closed operations:**
+
+- `chats` lists exportable chats, 100 per page by id.
+- `chat-messages` returns one chat's exportable messages in history order,
+  100 turns per page.
+
+Messages carry only the history fields: `id`, `role`, `content`, `citations`,
+`embryoFindings` and `createdAt`. No target ids, grant revisions, projections
+or provider payloads leave, and there is no model call. The helper is not
+callable by any role, including `service_role`.
+
+`supabase/tests/export_archive_chat_reader.sql` holds 37 rollback-only
+assertions. Two real conversations are committed through the Copilot protocol,
+and the other account has a real one of its own. It covers:
+
+- 103 chats listed across two pages, with none twice;
+- a 106-turn chat read in two pages, every message exactly once;
+- a stale turn, and the later turn after it, omitted whole;
+- the closed message fields;
+- a legacy chat, a stale-grant chat, another account's real conversation and
+  an unknown id, none of them listed or readable;
+- closed payloads;
+- unchanged state;
+- drift after capture (a new message, a revoked grant, deleted provider
+  settings), each failing the job.
+
+Six planted regressions each fail it:
+
+- no stale-turn cutoff;
+- no grant check;
+- no legacy check;
+- no account scoping at any of its four layers;
+- chats absent from the receipt;
+- the data projection in a message row.
+
+The full suite passes: 94 files, 3,943 assertions.
+
+Chats in other scopes (`subject`, `family`, `cohort` and `report`) are not
+exported. Today they cannot occur alongside a capturable job, and they belong
+to the non-self projections of step 3.

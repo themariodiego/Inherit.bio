@@ -3055,3 +3055,17 @@ for the recipient grant's foreign key. Six planted regressions each fail it.
 No existing test is changed. The existing export tests still pass under the v2
 receipt, because each captures its own receipt rather than pinning one. No
 timeout, retry, threshold or acceptance row is relaxed.
+
+## Export chat reader · 25 September 2026
+
+Adds `supabase/tests/export_archive_chat_reader.sql`: 37 rollback-only
+assertions for the `chats` and `chat-messages` reader operations and the
+`export-authority-v3` receipt. Three conversations are committed through the
+real Copilot protocol: two for the owner, one for another account. Every
+further message copies a real committed row and changes only its chat,
+ordinal and, for one turn, its data projection. The legacy and stale-grant
+chats copy a real chat and change only that flag or grant revision. No model
+endpoint is contacted. Six planted regressions each fail it.
+
+No existing test is changed. No timeout, retry, threshold or acceptance row is
+relaxed.
