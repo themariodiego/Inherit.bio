@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/legal-page";
+import { GDPR_LAUNCH, euLaunchOpen, ukLaunchOpen, type GdprContact } from "@/lib/legal/gdpr-launch";
 
 const purposeBases = [
   { key: "reports.monogenic", purpose: "Single-gene reports" },
@@ -20,7 +21,15 @@ export const metadata: Metadata = {
     "Inherit's GDPR purpose table, rights process, and EU and UK launch restrictions.",
 };
 
+/** One published contact: name, postal address and email, as appointed. */
+function contactLine(role: string, contact: GdprContact): string {
+  return `${role} is ${contact.name}, ${contact.postalAddress}, ${contact.email}.`;
+}
+
 export default function GdprPage() {
+  const { euRepresentative, ukRepresentative, dataProtectionOfficer } = GDPR_LAUNCH;
+  const euOpen = euLaunchOpen();
+  const ukOpen = ukLaunchOpen();
   return (
     <LegalPage
       eyebrow="Privacy"
@@ -43,22 +52,46 @@ export default function GdprPage() {
           heading: "EU and UK launch gate",
           body: (
             <>
-              <p>
-                The hosted service is not offered to people in the EU or UK.
-                The same holds for the rest of the EEA and for Switzerland.
-                Nobody can newly choose one of these countries as where they
-                live. Accounts that chose one before 26 September 2026 keep
-                their own results. Family features, embryo storage, and embryo
-                analysis remain off there. This is a launch restriction, not a
-                claim of GDPR compliance.
-              </p>
+              {euOpen && ukOpen ? (
+                <p>
+                  The hosted service is offered to people in the EU, the rest
+                  of the EEA, and the UK. Family features, embryo storage, and
+                  embryo analysis remain off there.
+                </p>
+              ) : (
+                <p>
+                  The hosted service is not offered to people in the{" "}
+                  {euOpen ? "UK" : ukOpen ? "EU or the rest of the EEA" : "EU or UK"}.
+                  {euOpen || ukOpen ? "" : " The same holds for the rest of the EEA."}{" "}
+                  Nobody can newly choose one of these countries as where they
+                  live. Accounts that chose one before 26 September 2026 keep
+                  their own results. Family features, embryo storage, and
+                  embryo analysis remain off there. This is a launch
+                  restriction, not a claim of GDPR compliance.
+                </p>
+              )}
               <p>
                 The controller is Mario Diego, an individual, reached at
-                privacy@inherit.bio. A postal contact has not been published. A
-                named data protection officer has not been appointed. Neither
-                an EU Article 27 representative nor a UK representative has
-                been appointed. Their names, working contacts, and postal
-                addresses must appear here before launch.
+                privacy@inherit.bio. A postal contact has not been published.{" "}
+                {dataProtectionOfficer
+                  ? contactLine("The data protection officer", dataProtectionOfficer)
+                  : "A named data protection officer has not been appointed."}{" "}
+                {euRepresentative
+                  ? contactLine("The EU Article 27 representative", euRepresentative)
+                  : null}{" "}
+                {ukRepresentative
+                  ? contactLine("The UK representative", ukRepresentative)
+                  : null}{" "}
+                {!euRepresentative && !ukRepresentative
+                  ? "Neither an EU Article 27 representative nor a UK representative has been appointed."
+                  : !euRepresentative
+                    ? "An EU Article 27 representative has not been appointed."
+                    : !ukRepresentative
+                      ? "A UK representative has not been appointed."
+                      : null}{" "}
+                {euOpen && ukOpen
+                  ? null
+                  : "Their names, working contacts, and postal addresses must appear here before launch."}
               </p>
               <p>
                 The same gate requires published impact-assessment summaries
@@ -132,6 +165,17 @@ export default function GdprPage() {
                 undo lawful work completed before withdrawal. The product must
                 explain any retention required by law or a live dispute hold.
               </p>
+              <p>
+                Processing outside these purposes has its own legal basis.
+                Running your account and sending its service email rests on
+                our contract with you, under Article 6(1)(b). The research
+                digest email rests on your consent, under Article 6(1)(a).
+                Keeping proof of your consents rests on a legal duty, under
+                Article 6(1)(c). Security logs, the adult age check, and
+                refusing connections from places under a full United States
+                embargo rest on legitimate interests, under Article 6(1)(f).
+                You may object to those.
+              </p>
             </>
           ),
         },
@@ -162,17 +206,37 @@ export default function GdprPage() {
           body: (
             <>
               <p>
-                The hosted application uses Supabase for its database and
-                storage. It uses Vercel for application hosting. A cloud model
+                Every processor is in the United States. A cloud model
                 receives genome-derived context only after separate consent
                 that names one provider and the data classes sent.
               </p>
+              <ul>
+                <li>
+                  <strong>Supabase</strong> holds the database and files in
+                  the United States. It uses standard contractual clauses.
+                </li>
+                <li>
+                  <strong>Vercel</strong> hosts the app in the United States.
+                  It is certified under the Data Privacy Framework, with the
+                  UK extension.
+                </li>
+                <li>
+                  <strong>Resend</strong> sends email from the United States.
+                  It is listed under the Data Privacy Framework, with the UK
+                  extension. Its terms also include standard contractual
+                  clauses.
+                </li>
+                <li>
+                  <strong>The cloud model you name</strong> is in the United
+                  States for the Anthropic, OpenAI and xAI presets. Its
+                  transfer method is not yet settled.
+                </li>
+              </ul>
               <p>
-                No EU or UK launch may rely on this summary alone. Before
-                launch, this page must name each actual destination country.
-                It must also name the transfer method for that destination,
-                such as an adequacy decision or approved contract clauses. A
-                current transfer review must support each published claim.
+                This list names each actual destination country and its
+                transfer method. A current transfer review must support each
+                published claim. That review is drafted but not yet approved,
+                so no EU or UK launch may rely on this list yet.
               </p>
             </>
           ),
@@ -181,13 +245,20 @@ export default function GdprPage() {
           id: "impact-assessments",
           heading: "Impact assessments",
           body: (
-            <p>
-              Family and Embryo Analysis need an impact assessment before any
-              EU or UK launch. Public summaries must describe the data flow,
-              risks, safeguards, remaining risk, reviewer, and review date. No
-              such summary is published today, so those features remain
-              unavailable in both territories.
-            </p>
+            <>
+              <p>
+                My Genome, Copilot and export have a drafted impact assessment
+                that is not yet approved. Its summary will appear here once a
+                reviewer approves it.
+              </p>
+              <p>
+                Family and Embryo Analysis need their own impact assessment
+                before any EU or UK launch. Public summaries must describe the
+                data flow, risks, safeguards, remaining risk, reviewer, and
+                review date. No such summary is published today, so those
+                features remain unavailable in both territories.
+              </p>
+            </>
           ),
         },
       ]}

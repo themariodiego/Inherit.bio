@@ -4097,3 +4097,22 @@ chose:
 The paused lists apply on the hosted deployment only (`VERCEL`/`VERCEL_ENV`
 set, the test `applicationOrigin` already uses): a self-hosted copy, and
 CI's local build, decide their own. The embargo applies everywhere.
+
+## 2026-09-26 (later) — GDPR preparation for an EU and UK launch
+
+The owner asked whether implementing the GDPR would make it acceptable to offer
+Inherit in the EU and UK. The answer given: much of it is already built, but
+the rest is appointments, contracts and sign-offs only the owner can make, and
+GDPR alone does not settle the EU medical-device question or the national
+genetic-testing laws of France, Portugal, Hungary, Norway and Switzerland. Asked
+as selectable choices, the owner chose the recommended options:
+
+- **Keep the EU/EEA, UK and Swiss pause from #227** until the GDPR preconditions
+  are met, then open the eligible countries. The high-risk ones stay paused.
+- **Start the GDPR work now.** `src/lib/legal/gdpr-launch.ts` now holds the
+  launch preconditions as data: EU and UK representatives, a data protection
+  officer, and the approval dates of the DPIA and the transfer assessment.
+  `pausedCountryCodesFor` opens a territory only when its preconditions are
+  all filled, and `/legal/gdpr` renders the same data. The drafts in
+  `docs/gdpr/` (DPIA, Article 30 record, transfer impact assessment, DPO
+  position, launch checklist) await owner and counsel approval.
