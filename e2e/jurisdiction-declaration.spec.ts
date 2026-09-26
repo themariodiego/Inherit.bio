@@ -85,8 +85,13 @@ test("/settings: the first sign-in answers where the person lives, from a select
   await expect(country).toHaveAttribute("required", "");
   const offered = await country.locator("option").evaluateAll(options => options.map(option => (option as HTMLOptionElement).value));
   expect(offered[0], "the first option is the empty prompt").toBe("");
-  expect(offered).toHaveLength(250);
-  for (const value of ["XX", "TEST-LOCAL", "TEST-DENY", "ZZ"]) expect(offered).not.toContain(value);
+  // The 249-country catalogue less the three under a comprehensive US
+  // embargo (`service-restrictions.ts`), plus the empty prompt. This build is
+  // not the hosted deployment, so no paused country is withheld.
+  expect(offered).toHaveLength(247);
+  for (const value of ["XX", "TEST-LOCAL", "TEST-DENY", "ZZ", "CU", "IR", "KP"]) expect(offered).not.toContain(value);
+  for (const value of ["FR", "DE", "GB"]) expect(offered).toContain(value);
+  await expect(section.locator('[data-slot="jurisdiction-withheld"]')).toContainText("Some countries are not in this list.");
   await expect(section.getByText(/Inherit uses it to decide which Family and embryo features the law there allows/)).toBeVisible();
 
   // Without the affirmation the browser does not submit, and nothing is stored.
