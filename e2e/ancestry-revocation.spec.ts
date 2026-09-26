@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 import { localE2eProject } from "../scripts/local-e2e-project";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";
-import { ANCESTRY_OFF, ANCESTRY_OFF_LINK, NOTHING_READ } from "../src/copy/ancestry";
+import { ANCESTRY_NOT_GENERATED, ANCESTRY_OFF, ANCESTRY_REPORTS_LINK, NOTHING_READ } from "../src/copy/ancestry";
 
 /** Aggregate only, and only this file's ancestry journal: no result payload,
  * no genotype, no credential and no other account is read. */
@@ -145,7 +145,7 @@ test("/genome/[subject]/ancestry consent-required: revoking ancestry deletes the
   const off = page.locator('[data-slot="ancestry-off"]');
   for (let panel = 0; panel < 3; panel += 1) {
     await expect(off.nth(panel).getByText(ANCESTRY_OFF, { exact: true })).toBeVisible();
-    await expect(off.nth(panel).getByRole("link", { name: ANCESTRY_OFF_LINK, exact: true }))
+    await expect(off.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
       .toHaveAttribute("href", "/genome/me/reports");
   }
   // The no-file sentence would be false here: a file was processed.
@@ -161,9 +161,31 @@ test("/genome/[subject]/ancestry consent-required: revoking ancestry deletes the
   // The step the page names is really there: its link lands on Choose your
   // reports, where the Ancestry choice is off and offers its own agreement
   // and control to turn it on (both render only while the choice is off).
-  await off.first().getByRole("link", { name: ANCESTRY_OFF_LINK, exact: true }).click();
+  await off.first().getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }).click();
   await page.waitForURL(url => url.pathname === "/genome/me/reports");
   const choicesAfter = page.getByRole("region", { name: "Choose your reports", exact: true });
   await expect(choicesAfter.getByRole("checkbox", { name: LABEL, exact: true })).toBeVisible();
   await expect(choicesAfter.getByRole("button", { name: `Enable ${LABEL}`, exact: true })).toBeVisible();
+
+  // Take that step and stop there. Turning Ancestry back on only grants it;
+  // the result comes from the separate generate step, so until that is
+  // pressed the page must neither say it is off nor say no file was
+  // processed. It says Ancestry is on and where the result is made.
+  await choicesAfter.getByRole("checkbox", { name: LABEL, exact: true }).check();
+  const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
+    && response.request().method() === "POST");
+  await choicesAfter.getByRole("button", { name: `Enable ${LABEL}`, exact: true }).click();
+  expect((await signed).status()).toBe(201);
+  await page.goto(ANCESTRY);
+  expect(await ancestryRunCount(fileId), "turning the choice on generates nothing by itself").toBe("0");
+  expect(await page.locator('[data-slot="ancestry-not-generated"]').count(),
+    "every ancestry panel says the result follows the generate step").toBe(3);
+  const notGenerated = page.locator('[data-slot="ancestry-not-generated"]');
+  for (let panel = 0; panel < 3; panel += 1) {
+    await expect(notGenerated.nth(panel).getByText(ANCESTRY_NOT_GENERATED, { exact: true })).toBeVisible();
+    await expect(notGenerated.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
+      .toHaveAttribute("href", "/genome/me/reports");
+  }
+  await expect(page.locator('[data-slot="ancestry-off"]')).toHaveCount(0);
+  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(0);
 });

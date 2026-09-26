@@ -34,18 +34,25 @@ describe("why the ancestry page has nothing to show", () => {
     expect(ancestryAbsence(ready(pending))).toBe("permission-off");
   });
 
-  it("file processed and Ancestry on: the page is not told it is off", () => {
-    expect(ancestryAbsence(ready(choice("ancestry", true)))).toBe("nothing-read");
+  it("file processed, Ancestry on, no stored result: the result is waiting on the generate step, not on a file", () => {
+    // Turning a choice on only grants it; "Generate selected reports" makes
+    // the result. Until that is pressed, "nothing to show until a file has
+    // been processed" is false, however long it lasts.
+    expect(ancestryAbsence(ready(choice("ancestry", true)))).toBe("not-generated");
   });
 
-  it("never claims Ancestry is off when the section could not load or has no Ancestry choice", () => {
+  it("never names a step when the section could not load, is not shown, or has no Ancestry choice", () => {
     expect(ancestryAbsence({ kind: "files-unavailable" })).toBe("nothing-read");
+    expect(ancestryAbsence({ kind: "hidden" })).toBe("nothing-read");
     expect(ancestryAbsence(ready(null))).toBe("nothing-read");
   });
 
   it("reads only the Ancestry choice, not the report choices beside it", () => {
-    const panel = ready(choice("ancestry", true));
-    panel.view.choices = panel.view.choices.map(entry => entry.purposeKey === "ancestry" ? entry : { ...entry, granted: false });
-    expect(ancestryAbsence(panel)).toBe("nothing-read");
+    const on = ready(choice("ancestry", true));
+    on.view.choices = on.view.choices.map(entry => entry.purposeKey === "ancestry" ? entry : { ...entry, granted: false });
+    expect(ancestryAbsence(on)).toBe("not-generated");
+    const off = ready(choice("ancestry", false));
+    expect(off.view.choices.filter(entry => entry.granted)).toHaveLength(2);
+    expect(ancestryAbsence(off)).toBe("permission-off");
   });
 });

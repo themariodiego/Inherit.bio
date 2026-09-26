@@ -11,8 +11,9 @@
  * with no Y data leads with the §2 sentence and keeps the XX gloss. The
  * term "haplogroup" is defined inline on its first occurrence per page
  * (`defineTerm`), never in a heading. A card with no row says why: nothing
- * has been processed yet, or Ancestry is off (with a link to where it is
- * turned back on).
+ * has been processed yet, Ancestry is off, or Ancestry is on and no result
+ * has been generated yet (the last two with a link to the Reports page,
+ * where that step is taken).
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { TermDefinition } from "@/components/figures/term-definition";
@@ -29,10 +30,10 @@ import {
   treeLine,
   storedModelLine,
 } from "@/copy/ancestry";
-import type { AncestryAbsence } from "@/lib/ancestry/absence";
+import type { AncestryReportsStep } from "@/lib/ancestry/absence";
 import { LINEAGE_TREES } from "@/lib/ancestry/panel";
 import type { CoverageSpec } from "@/lib/figures/spec";
-import { AncestryOffNote } from "./ancestry-absent";
+import { AncestryReportsNote } from "./ancestry-absent";
 
 /** The stored `HaplogroupCall`, or the `{ haplogroup: null }` row the process route writes when the file has no such chromosome. */
 export interface LineageCall {
@@ -57,13 +58,14 @@ interface LineageCardBaseProps {
 }
 
 /**
- * Why there is no row, read only when `call` is null. `permission-off` says
- * Ancestry is off and links to the subject's own Reports page, so it cannot
- * be passed without that link; `nothing-read` is the default.
+ * Why there is no row, read only when `call` is null. `permission-off` and
+ * `not-generated` each name a step on the subject's own Reports page and
+ * link there, so neither can be passed without that link; `nothing-read` is
+ * the default.
  */
 export type LineageCardProps = LineageCardBaseProps & (
-  | { absence?: Exclude<AncestryAbsence, "permission-off">; reportsHref?: string }
-  | { absence: "permission-off"; reportsHref: string }
+  | { absence?: "nothing-read"; reportsHref?: string }
+  | { absence: AncestryReportsStep; reportsHref: string }
 );
 
 const TEST_IDS = { mother: "mtdna", father: "ydna" } as const;
@@ -104,8 +106,8 @@ export function LineageCard(props: LineageCardProps) {
           <TermDefinition term="haplogroup" text="Haplogroup" />
         </p>
       ) : null}
-      {call === null && props.absence === "permission-off" ? (
-        <AncestryOffNote reportsHref={props.reportsHref} />
+      {call === null && (props.absence === "permission-off" || props.absence === "not-generated") ? (
+        <AncestryReportsNote step={props.absence} reportsHref={props.reportsHref} />
       ) : call === null ? (
         <p className="text-sm text-ink-muted">{supportNote ?? NOTHING_READ}</p>
       ) : hasCall ? (

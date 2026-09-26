@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PANEL, SOURCES } from "@/lib/ancestry/panel";
 import { REGIONAL_SOURCES } from "@/lib/ancestry/regional-panel";
 import * as copy from "./ancestry";
-import { ANCESTRY_OFF, ANCESTRY_OFF_LINK, NOTHING_READ, subContinental } from "./ancestry";
+import { ANCESTRY_NOT_GENERATED, ANCESTRY_OFF, ANCESTRY_REPORTS_LINK, NOTHING_READ, subContinental } from "./ancestry";
 import * as regional from "./regional-ancestry";
 
 /**
@@ -20,14 +20,26 @@ describe("the ancestry page's reasons for showing nothing", () => {
 
   it("says Ancestry is off, and where it is turned on, in the Reports page's own words", () => {
     expect(ANCESTRY_OFF).toBe("Ancestry is off. You can turn it on under Reports, in Choose your reports.");
-    expect(ANCESTRY_OFF_LINK).toBe("Open Reports");
+    expect(ANCESTRY_REPORTS_LINK).toBe("Open Reports");
     // Not a variant of the no-file sentence: a file has been processed here.
     expect(ANCESTRY_OFF).not.toContain("processed");
     expect(ANCESTRY_OFF).not.toContain("Nothing to show");
   });
 
-  it("puts no region count in either sentence", () => {
-    for (const sentence of [NOTHING_READ, ANCESTRY_OFF, ANCESTRY_OFF_LINK]) expect(sentence).not.toMatch(/\b(five|seven|\d+)\b/i);
+  it("says Ancestry is on and that the result comes from the generate step, without promising it is under way", () => {
+    expect(ANCESTRY_NOT_GENERATED).toBe(
+      "Ancestry is on. Your result appears here after you generate your selected reports under Reports.");
+    // The step it names is the Reports section's own button, "Generate selected reports".
+    expect(ANCESTRY_NOT_GENERATED).toMatch(/generate your selected reports/);
+    // Nothing is running, so no word of progress or time.
+    expect(ANCESTRY_NOT_GENERATED).not.toMatch(/prepar|progress|soon|minute|wait|being/i);
+    expect(ANCESTRY_NOT_GENERATED).not.toContain("Nothing to show");
+  });
+
+  it("puts no region count in any of the sentences", () => {
+    for (const sentence of [NOTHING_READ, ANCESTRY_OFF, ANCESTRY_NOT_GENERATED, ANCESTRY_REPORTS_LINK]) {
+      expect(sentence).not.toMatch(/\b(five|seven|\d+)\b/i);
+    }
   });
 });
 

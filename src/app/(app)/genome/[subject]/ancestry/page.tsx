@@ -11,8 +11,9 @@ import type { InputSourceView } from "@/lib/genome/input-sources";
  *
  * With no stored result, the page says why, in each panel: nothing has been
  * processed yet, or (own records only) a file has been processed and the
- * Ancestry choice is off. The second is read from the same "Choose your
- * reports" section the subject's Reports page renders, never inferred here.
+ * Ancestry choice is off, or it is on and no result has been generated yet.
+ * The last two are read from the same "Choose your reports" section the
+ * subject's Reports page renders, never inferred here.
  *
  * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
  * Neanderthals, where this comes from). No segmented control renders while
@@ -197,8 +198,8 @@ export default async function AncestryPage(
     rows = selectedRows.filter((row): row is AncestryResultRow => row !== undefined && current.has(row));
     fileCount = count; preparing = inPreparation;
     // Only a page with nothing to show asks why. The answer is the Reports
-    // page's own "Choose your reports" section: "off" exactly when that
-    // section is there and reads "Ancestry · Off".
+    // page's own "Choose your reports" section: "off" when that section is
+    // there and reads "Ancestry · Off", "not generated" when it reads "On".
     if (rows.length === 0) absence = ancestryAbsence(await loadOwnReportChoicesPanel(subject.routeSegment));
   }
   const admix = rows.find(row => row.kind === "admixture");

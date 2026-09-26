@@ -7,8 +7,9 @@ import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  ANCESTRY_NOT_GENERATED,
   ANCESTRY_OFF,
-  ANCESTRY_OFF_LINK,
+  ANCESTRY_REPORTS_LINK,
   CHIP_LABELS,
   DENISOVAN,
   IDENTITY,
@@ -32,6 +33,7 @@ import {
   panelLine,
 } from "@/copy/ancestry";
 import { REGIONAL_MAP_CAPTION, REGIONAL_MAP_LABEL } from "@/copy/regional-ancestry";
+import type { AncestryAbsence } from "@/lib/ancestry/absence";
 import { mapShapes } from "@/lib/ancestry/geometry";
 import { regionalMapShapes } from "@/lib/ancestry/regional-geometry";
 import { REGIONAL_REGIONS } from "@/lib/ancestry/regional-regions";
@@ -302,11 +304,11 @@ describe("AncestryRegions, no stored result", () => {
 
 describe("AncestryAbsent, the regions section with no stored result", () => {
   const REPORTS = "/genome/me/reports";
-  const absent = (absence: "nothing-read" | "permission-off", reportsHref = REPORTS) =>
+  const absent = (absence: AncestryAbsence, reportsHref = REPORTS) =>
     renderToStaticMarkup(h(AncestryAbsent, { shapes: regionalMapShapes(), absence, reportsHref }));
   const links = (html: string) => openingTags(html).filter((tag) => tag.tag === "a");
 
-  for (const absence of ["nothing-read", "permission-off"] as const) {
+  for (const absence of ["nothing-read", "permission-off", "not-generated"] as const) {
     it(`${absence}: draws the grey seven-region map with its own words and names no region count`, () => {
       const html = absent(absence);
       const svg = openingTags(html).find((tag) => tag.tag === "svg");
@@ -327,7 +329,9 @@ describe("AncestryAbsent, the regions section with no stored result", () => {
     const html = absent("nothing-read");
     expect(html).toMatch(new RegExp(`data-slot="nothing-read"[^>]*>${NOTHING_READ}<`));
     expect(html).not.toContain(ANCESTRY_OFF);
+    expect(html).not.toContain(ANCESTRY_NOT_GENERATED);
     expect(html).not.toContain('data-slot="ancestry-off"');
+    expect(html).not.toContain('data-slot="ancestry-not-generated"');
     expect(links(html)).toHaveLength(0);
   });
 
@@ -336,9 +340,22 @@ describe("AncestryAbsent, the regions section with no stored result", () => {
     expect(html).toContain('data-slot="ancestry-off"');
     expect(html).toContain(ANCESTRY_OFF);
     expect(html).not.toContain(NOTHING_READ);
+    expect(html).not.toContain(ANCESTRY_NOT_GENERATED);
     expect(html).not.toContain('data-slot="nothing-read"');
     expect(links(html).map((tag) => tag.attrs.href)).toEqual(["/genome/s-79140000-0000-4000-8000-000000000001/reports"]);
-    expect(html).toMatch(new RegExp(`<a [^>]*>${ANCESTRY_OFF_LINK}</a>`));
+    expect(html).toMatch(new RegExp(`<a [^>]*>${ANCESTRY_REPORTS_LINK}</a>`));
+  });
+
+  it("file processed, Ancestry on, nothing generated: says so and links to where the generate step is", () => {
+    const html = absent("not-generated", "/genome/s-79140000-0000-4000-8000-000000000001/reports");
+    expect(html).toContain('data-slot="ancestry-not-generated"');
+    expect(html).toContain(ANCESTRY_NOT_GENERATED);
+    expect(html).not.toContain(NOTHING_READ);
+    expect(html).not.toContain(ANCESTRY_OFF);
+    expect(html).not.toContain('data-slot="nothing-read"');
+    expect(html).not.toContain('data-slot="ancestry-off"');
+    expect(links(html).map((tag) => tag.attrs.href)).toEqual(["/genome/s-79140000-0000-4000-8000-000000000001/reports"]);
+    expect(html).toMatch(new RegExp(`<a [^>]*>${ANCESTRY_REPORTS_LINK}</a>`));
   });
 });
 
@@ -403,6 +420,7 @@ describe("LineageCard", () => {
     expect(html).toContain(NOTHING_READ);
     expect(html).not.toContain("data-claim-block");
     expect(html).not.toContain(ANCESTRY_OFF);
+    expect(html).not.toContain(ANCESTRY_NOT_GENERATED);
   });
 
   it("says Ancestry is off, with the link to Reports, when a file was processed and the choice is off", () => {
@@ -415,8 +433,27 @@ describe("LineageCard", () => {
       expect(html).toContain('data-slot="ancestry-off"');
       expect(html).toContain(ANCESTRY_OFF);
       expect(html).toContain('href="/genome/me/reports"');
-      expect(html).toContain(ANCESTRY_OFF_LINK);
+      expect(html).toContain(ANCESTRY_REPORTS_LINK);
       expect(html).not.toContain(NOTHING_READ);
+      expect(html).not.toContain(ANCESTRY_NOT_GENERATED);
+      expect(html).not.toContain(NO_Y_LEAD);
+      expect(html).not.toContain("data-claim-block");
+    }
+  });
+
+  it("says Ancestry is on and the result follows the generate step, with the link to Reports, when nothing was generated", () => {
+    for (const parent of ["mother", "father"] as const) {
+      const html = renderToStaticMarkup(h(LineageCard, {
+        parent, subjectId: SUBJECT, call: null, supportNote: null, defineTerm: parent === "mother",
+        absence: "not-generated", reportsHref: "/genome/me/reports",
+      }));
+      expect(html).toMatch(parent === "mother" ? /<h2[^>]*>Mother’s line<\/h2>/ : /<h2[^>]*>Father’s line<\/h2>/);
+      expect(html).toContain('data-slot="ancestry-not-generated"');
+      expect(html).toContain(ANCESTRY_NOT_GENERATED);
+      expect(html).toContain('href="/genome/me/reports"');
+      expect(html).toContain(ANCESTRY_REPORTS_LINK);
+      expect(html).not.toContain(NOTHING_READ);
+      expect(html).not.toContain(ANCESTRY_OFF);
       expect(html).not.toContain(NO_Y_LEAD);
       expect(html).not.toContain("data-claim-block");
     }

@@ -1,5 +1,23 @@
 # Test diff register
 
+## Ancestry on, nothing generated · 26 September 2026
+
+Turning Ancestry on only grants it; "Generate selected reports" makes the
+result. Until then the ancestry page said no file had been processed, for as
+long as nobody pressed it. Unit cases now cover the third reason (Ancestry
+on, prepared file, no stored result) in the selector, the page, the regions
+panel and both lineage cards. Two mutations were each caught: the old rule
+(on means nothing-read) failed four cases, and a card that ignored the new
+reason failed one. One page case that withdraws a row mid-read now expects
+this reason rather than nothing-read, since Ancestry is on there.
+
+No "being generated" state: generation runs inside one request and its only
+record in flight is a private journal nothing on the page reads.
+`ancestry-revocation.spec.ts` (not run here) now turns Ancestry back on
+without generating and asserts the new sentence and link in all three
+panels. `a11y.spec.ts` accepts it as a reason for a grey map. No register
+state changes, and no assertion, fixture or gate is removed.
+
 ## Ancestry off state and region count · 26 September 2026
 
 Production showed "Nothing to show until a file has been processed" under a

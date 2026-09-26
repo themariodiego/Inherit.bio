@@ -53,10 +53,12 @@ it("preserves own selected-row identity when A disappears and older B survives f
   mocks.own.mockResolvedValue({ rows: [a, b], confirm: async () => [b] });
   renderToStaticMarkup(await Page(props));
   expect(mocks.inputs.mock.calls[0][2]).toEqual([fileA]);
-  // A withdrawn row leaves nothing to show. With Ancestry still on, that is
-  // the no-result state: never a stale result and never "Ancestry is off".
+  // A withdrawn row leaves nothing to show: never a stale result, never an
+  // older file's result swapped in, and never "Ancestry is off" while the
+  // choice is on. With it on, the page points at the generate step, which is
+  // what makes a result again.
   expect(AncestryRegions).not.toHaveBeenCalled();
-  expect(vi.mocked(AncestryAbsent).mock.calls[0][0]).toMatchObject({ absence: "nothing-read" });
+  expect(vi.mocked(AncestryAbsent).mock.calls[0][0]).toMatchObject({ absence: "not-generated" });
   expect(InputProvenance).not.toHaveBeenCalled();
   expect(mocks.shared).not.toHaveBeenCalled();
 });
@@ -88,7 +90,19 @@ it("file processed but Ancestry off: every ancestry panel says so and links to t
     { parent: "father", absence: "permission-off", reportsHref: href },
   ]);
 });
-it("keeps nothing-read when the choices section is absent or could not load, rather than claiming Ancestry is off", async () => {
+it("file processed, Ancestry on, no stored result: every panel says the result follows the generate step, with the link", async () => {
+  mocks.own.mockResolvedValue({ rows: [], confirm: async () => [] });
+  mocks.choices.mockResolvedValue(choicesPanel(true));
+  renderToStaticMarkup(await Page(props));
+  expect(mocks.choices).toHaveBeenCalledExactlyOnceWith("me");
+  expect(vi.mocked(AncestryAbsent).mock.calls[0][0]).toMatchObject({ absence: "not-generated", reportsHref: "/genome/me/reports" });
+  expect(AncestryRegions).not.toHaveBeenCalled(); expect(RegionalAncestryRegions).not.toHaveBeenCalled();
+  expect(lineageProps()).toEqual([
+    { parent: "mother", absence: "not-generated", reportsHref: "/genome/me/reports" },
+    { parent: "father", absence: "not-generated", reportsHref: "/genome/me/reports" },
+  ]);
+});
+it("keeps nothing-read when the choices section is absent or could not load, rather than naming a step", async () => {
   mocks.own.mockResolvedValue({ rows: [], confirm: async () => [] });
   for (const panel of [{ kind: "files-unavailable" }, { kind: "hidden" }] as const) {
     vi.mocked(AncestryAbsent).mockClear(); mocks.choices.mockResolvedValue(panel);

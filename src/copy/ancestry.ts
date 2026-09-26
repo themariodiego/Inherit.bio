@@ -188,8 +188,18 @@ export const NOTHING_READ = "Nothing to show until a file has been processed.";
  */
 export const ANCESTRY_OFF = "Ancestry is off. You can turn it on under Reports, in Choose your reports.";
 
-/** The link beside ANCESTRY_OFF, to the subject's Reports page; the same words the My Genome tile uses. */
-export const ANCESTRY_OFF_LINK = "Open Reports";
+/**
+ * A file HAS been processed and Ancestry is on, but no result has been made
+ * yet. Turning a choice on only grants it; the result comes from the
+ * separate "Generate selected reports" step in the same section, and until
+ * that is taken NOTHING_READ would be false for as long as it lasts, which
+ * can be indefinitely. Promises no time, because nothing is running.
+ */
+export const ANCESTRY_NOT_GENERATED =
+  "Ancestry is on. Your result appears here after you generate your selected reports under Reports.";
+
+/** The link beside ANCESTRY_OFF and ANCESTRY_NOT_GENERATED, to the subject's Reports page; the same words the My Genome tile uses. */
+export const ANCESTRY_REPORTS_LINK = "Open Reports";
 
 export function storedModelLine(id: string | null, version: string | null): string {
   return `Stored source: ${id ?? "identity not recorded"}. Version: ${version ?? "not recorded"}.`;
