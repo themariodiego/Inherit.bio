@@ -23,6 +23,15 @@ import { describe, expect, it } from "vitest";
  * would not be caught, while `resolvedOptions()` — how the browser zone is
  * actually read — is. A fixed `timeZone: "UTC"` is deliberately not matched;
  * pinning a formatting zone is the opposite of inferring a person's.
+ *
+ * One read is permitted (owner decision, 26 September 2026, amending G5.1a
+ * for sanctions law): the request proxy hands Vercel's country and region
+ * headers straight to `isEmbargoedLocation`, to refuse connections from
+ * places under a comprehensive US embargo. The host sets those headers
+ * itself, so no third-party origin is involved; the read decides nothing
+ * about a declared jurisdiction and stores nothing. The scan removes exactly
+ * that call before looking, so any other use of the same headers, in the
+ * proxy or anywhere else, still fails.
  */
 const SIGNALS: [RegExp, string][] = [
   [/x-forwarded-for/i, "client IP header"],
@@ -35,6 +44,11 @@ const SIGNALS: [RegExp, string][] = [
   [/\bgeoip\b/i, "geo lookup"],
   [/\b(?:req|request)\.geo\b/, "edge geo object"],
 ];
+
+const SANCTIONS_READ = {
+  file: path.join("src", "proxy.ts"),
+  call: /isEmbargoedLocation\(\s*request\.headers\.get\("x-vercel-ip-country"\),\s*request\.headers\.get\("x-vercel-ip-country-region"\),\s*\)/g,
+};
 
 function productionSources(): { file: string; source: string }[] {
   const walk = (directory: string): string[] =>
@@ -57,8 +71,26 @@ describe("jurisdiction is declared, never inferred", () => {
     expect(sources.some(entry => entry.file.endsWith(`src${path.sep}proxy.ts`))).toBe(true);
   });
 
-  it("reads no IP, geo, language or browser-timezone signal anywhere", () => {
+  it("reads no IP, geo, language or browser-timezone signal anywhere, but the one sanctions check", () => {
     const found = sources.flatMap(({ file, source }) => SIGNALS
+      .filter(([pattern]) => pattern.test(file === SANCTIONS_READ.file ? source.replace(SANCTIONS_READ.call, "") : source))
+      .map(([, label]) => `${file}: ${label}`));
+    expect(found).toEqual([]);
+  });
+
+  it("finds the sanctions check exactly once, so the exception cannot outlive or outgrow it", () => {
+    const proxy = sources.find(entry => entry.file === SANCTIONS_READ.file);
+    expect(proxy?.source.match(SANCTIONS_READ.call)).toHaveLength(1);
+  });
+
+  it("would still catch a second read of the same headers in the proxy", () => {
+    const proxy = sources.find(entry => entry.file === SANCTIONS_READ.file)!;
+    const planted = `${proxy.source}\nconst c = request.headers.get("x-vercel-ip-country");\n`;
+    expect(SIGNALS.some(([pattern]) => pattern.test(planted.replace(SANCTIONS_READ.call, "")))).toBe(true);
+  });
+
+  it("reads no signal in any file other than the proxy, unchanged", () => {
+    const found = sources.filter(({ file }) => file !== SANCTIONS_READ.file).flatMap(({ file, source }) => SIGNALS
       .filter(([pattern]) => pattern.test(source))
       .map(([, label]) => `${file}: ${label}`));
     expect(found).toEqual([]);

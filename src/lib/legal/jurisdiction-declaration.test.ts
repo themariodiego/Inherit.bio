@@ -2,8 +2,15 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import jurisdictionsJson from "../../../data/jurisdictions.json";
-import { declarableCode, jurisdictionChoices, jurisdictionName } from "./jurisdiction-declaration";
+import {
+  declarableCode,
+  declarationChoices,
+  isHostedDeployment,
+  jurisdictionChoices,
+  jurisdictionName,
+} from "./jurisdiction-declaration";
 import type { JurisdictionsFile } from "./jurisdictions";
+import { EMBARGOED_COUNTRY_CODES, PAUSED_COUNTRY_CODES } from "./service-restrictions";
 
 const FILE = jurisdictionsJson as unknown as JurisdictionsFile;
 const FLAG = { INHERIT_TEST_JURISDICTION: "1" } as const;
@@ -26,6 +33,51 @@ describe("jurisdiction choices", () => {
   it("never offers a test value, even with the acceptance flag on", () => {
     const codes = choices.map((choice) => choice.code);
     for (const value of FILE.productionPolicy.testPseudoJurisdictionValues) expect(codes).not.toContain(value);
+  });
+});
+
+describe("declaration choices", () => {
+  const codes = (current: string | null, pausesApply = true) =>
+    declarationChoices(current, pausesApply).map((choice) => choice.code);
+  const withheld = new Set([...EMBARGOED_COUNTRY_CODES, ...PAUSED_COUNTRY_CODES]);
+
+  it("offers a new account on the hosted service the catalogue without embargoed or paused countries, still sorted", () => {
+    expect(codes(null).sort()).toEqual(FILE.realJurisdictionCatalog.codes.filter((code) => !withheld.has(code)).sort());
+    expect(codes(null)).toEqual(jurisdictionChoices().map((choice) => choice.code).filter((code) => !withheld.has(code)));
+  });
+
+  it("keeps a paused country only for the account that already declared it", () => {
+    expect(codes("FR")).toContain("FR");
+    expect(codes("FR")).not.toContain("DE");
+    expect(codes("GB")).toContain("GB");
+    expect(codes("US")).not.toContain("GB");
+  });
+
+  it("never offers an embargoed country, even to an account that declared it or off the hosted service", () => {
+    for (const code of EMBARGOED_COUNTRY_CODES) {
+      expect(codes(code)).not.toContain(code);
+      expect(codes(code, false)).not.toContain(code);
+    }
+  });
+
+  it("offers every other catalogue country where the paused list does not apply", () => {
+    expect(codes(null, false).sort()).toEqual(
+      FILE.realJurisdictionCatalog.codes.filter((code) => !EMBARGOED_COUNTRY_CODES.includes(code)).sort(),
+    );
+  });
+
+  it("names a withheld country an account already declared", () => {
+    expect(jurisdictionName("CU")).toBe("Cuba");
+    expect(jurisdictionName("FR")).toBe("France");
+  });
+});
+
+describe("isHostedDeployment", () => {
+  it("is the platform's own marker, never an operator setting", () => {
+    expect(isHostedDeployment({ VERCEL: "1" })).toBe(true);
+    expect(isHostedDeployment({ VERCEL_ENV: "production" })).toBe(true);
+    expect(isHostedDeployment({})).toBe(false);
+    expect(isHostedDeployment({ NEXT_PUBLIC_SITE_URL: "https://inherit.bio" })).toBe(false);
   });
 });
 

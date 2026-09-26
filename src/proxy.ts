@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { LOCATION_UNAVAILABLE_BODY, LOCATION_UNAVAILABLE_TITLE } from "@/copy/availability";
+import { isEmbargoedCountry, isEmbargoedLocation } from "@/lib/legal/service-restrictions";
 
 /**
  * Response headers every page or endpoint that can read or write user,
@@ -26,9 +28,51 @@ function withSensitiveHeaders<T extends NextResponse>(response: T): T {
   return response;
 }
 
+/**
+ * The rights an account keeps whatever else blocks it: export, deletion and
+ * its cancellation, consent withdrawal, and handing a record on.
+ */
+function isRightsEndpoint(path: string): boolean {
+  return path === "/api/export" ||
+    path === "/api/account/delete" ||
+    path === "/api/account/delete/cancel" ||
+    (path.startsWith("/api/consents/") && path.endsWith("/revoke")) ||
+    path.startsWith("/api/subjects/transfer");
+}
+
+/**
+ * The answer to a connection the hosting provider locates in a place under a
+ * comprehensive US embargo (`service-restrictions.ts`): 451, with nothing
+ * that needs a further request, and never cached.
+ */
+function locationUnavailable(path: string): NextResponse {
+  const response = path.startsWith("/api/")
+    ? NextResponse.json({ error: "not_available_in_location" }, { status: 451 })
+    : new NextResponse(
+        `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+          `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+          `<title>${LOCATION_UNAVAILABLE_TITLE}</title></head><body><main>` +
+          `<h1>${LOCATION_UNAVAILABLE_TITLE}</h1><p>${LOCATION_UNAVAILABLE_BODY}</p>` +
+          `</main></body></html>`,
+        { status: 451, headers: { "Content-Type": "text/html; charset=utf-8" } },
+      );
+  return withSensitiveHeaders(response);
+}
+
 // Next.js 16 proxy (successor to middleware): keeps the Supabase auth session
 // fresh and gates the authenticated app shell.
 export async function proxy(request: NextRequest) {
+  // Sanctions come before everything else, sign-in included. Vercel sets
+  // these headers from the connection's address and overwrites any a client
+  // sends; nothing here stores them. Without them (a local run) nothing is
+  // refused.
+  if (isEmbargoedLocation(
+    request.headers.get("x-vercel-ip-country"),
+    request.headers.get("x-vercel-ip-country-region"),
+  )) {
+    return locationUnavailable(request.nextUrl.pathname);
+  }
+
   // This generic document must not look up an account or an invitation.
   // Its handler sets its own nonce CSP and non-authorizing candidate cookie.
   if (request.nextUrl.pathname === "/withdraw/request") {
@@ -103,14 +147,7 @@ export async function proxy(request: NextRequest) {
       .maybeSingle();
 
     if (profile?.deletion_requested_at) {
-      const allowedApi =
-        path === "/api/export" ||
-        path === "/api/account/delete" ||
-        path === "/api/account/delete/cancel" ||
-        (path.startsWith("/api/consents/") && path.endsWith("/revoke")) ||
-        path.startsWith("/api/subjects/transfer");
-
-      if (path.startsWith("/api/") && !allowedApi) {
+      if (path.startsWith("/api/") && !isRightsEndpoint(path)) {
         return withSensitiveHeaders(
           NextResponse.json(
             { error: "account_deletion_notice_period" },
@@ -123,6 +160,20 @@ export async function proxy(request: NextRequest) {
         url.pathname = "/settings/data";
         url.search = "";
         return withSensitiveHeaders(NextResponse.redirect(url));
+      }
+    }
+
+    // An account that declared a country under a comprehensive US embargo
+    // keeps its rights and may correct its answer; nothing else is served.
+    // Settings says why and holds both.
+    if (profile && isEmbargoedCountry(profile.jurisdiction_code)) {
+      if (path.startsWith("/api/") && !isRightsEndpoint(path) && path !== "/api/settings/jurisdiction") {
+        return withSensitiveHeaders(
+          NextResponse.json({ error: "not_available_in_jurisdiction" }, { status: 451 }),
+        );
+      }
+      if (isProtected && !path.startsWith("/settings")) {
+        return withSensitiveHeaders(NextResponse.redirect(new URL("/settings", request.url)));
       }
     }
 

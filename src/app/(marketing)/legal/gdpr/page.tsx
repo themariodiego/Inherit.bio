@@ -29,7 +29,7 @@ export default function GdprPage() {
           GDPR <span className="accent">status.</span>
         </>
       }
-      effectiveDate="2026-09-01"
+      effectiveDate="2026-09-26"
       intro={
         <p>
           Genetic data is special-category data under Article 9. Each purpose
@@ -45,16 +45,20 @@ export default function GdprPage() {
             <>
               <p>
                 The hosted service is not offered to people in the EU or UK.
-                Family features, embryo storage, and embryo analysis remain off
-                there. This is a launch restriction, not a claim of GDPR
-                compliance.
+                The same holds for the rest of the EEA and for Switzerland.
+                Nobody can newly choose one of these countries as where they
+                live. Accounts that chose one before 26 September 2026 keep
+                their own results. Family features, embryo storage, and embryo
+                analysis remain off there. This is a launch restriction, not a
+                claim of GDPR compliance.
               </p>
               <p>
-                The controller&rsquo;s legal identity and postal contact have
-                not been published. A named data protection officer has not
-                been appointed. Neither an EU Article 27 representative nor a
-                UK representative has been appointed. Their names, working
-                contacts, and postal addresses must appear here before launch.
+                The controller is Mario Diego, an individual, reached at
+                privacy@inherit.bio. A postal contact has not been published. A
+                named data protection officer has not been appointed. Neither
+                an EU Article 27 representative nor a UK representative has
+                been appointed. Their names, working contacts, and postal
+                addresses must appear here before launch.
               </p>
               <p>
                 The same gate requires published impact-assessment summaries

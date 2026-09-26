@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   rpc: [] as Array<[string, Record<string, unknown>]>,
   result: null as unknown,
   error: null as { code?: string; message?: string } | null,
+  current: null as string | null,
+  currentError: null as { message: string } | null,
+  reads: 0,
 }));
 
 // Only the account context is replaced; `isSameOrigin` stays real.
@@ -23,6 +26,17 @@ vi.mock("@/lib/supabase/admin", () => ({
       mocks.rpc.push([name, args]);
       return { data: mocks.result, error: mocks.error };
     },
+    // The account's current answer, read only when a paused country is chosen.
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => {
+            mocks.reads += 1;
+            return { data: { jurisdiction_code: mocks.current }, error: mocks.currentError };
+          },
+        }),
+      }),
+    }),
   }),
 }));
 
@@ -48,6 +62,9 @@ beforeEach(() => {
   mocks.rpc = [];
   mocks.result = { jurisdiction: "GB", changed: true, revokedGrants: 0 };
   mocks.error = null;
+  mocks.current = null;
+  mocks.currentError = null;
+  mocks.reads = 0;
 });
 
 describe("PUT /api/settings/jurisdiction", () => {
@@ -132,5 +149,59 @@ describe("PUT /api/settings/jurisdiction", () => {
     expect((await put(body())).status).toBe(404);
     mocks.result = { jurisdiction: "FR", changed: true, revokedGrants: 0 };
     expect((await put(body())).status).toBe(404);
+  });
+});
+
+describe("places Inherit does not take new declarations from", () => {
+  it.each(["CU", " ir ", "KP"])("never records %j, a country under a US embargo, on any deployment", async (code) => {
+    mocks.current = code.trim().toUpperCase();
+    const response = await put(body({ code }));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["code"] });
+    expect(mocks.rpc).toEqual([]);
+    expect(mocks.reads).toBe(0);
+  });
+
+  it.each([
+    ["a first declaration", null],
+    ["a change from another country", "US"],
+  ])("on the hosted deployment, refuses a paused country as %s, like an unknown code", async (_label, current) => {
+    vi.stubEnv("VERCEL", "1");
+    mocks.current = current;
+    const response = await put(body({ code: "FR" }));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["code"] });
+    expect(mocks.rpc).toEqual([]);
+    expect(mocks.reads).toBe(1);
+  });
+
+  it("lets an account keep, and re-affirm, the paused country it already declared", async () => {
+    vi.stubEnv("VERCEL", "1");
+    mocks.current = "FR";
+    mocks.result = { jurisdiction: "FR", changed: false, revokedGrants: 0 };
+    const response = await put(body({ code: "fr" }));
+    expect(response.status).toBe(200);
+    expect(mocks.rpc[0]?.[1]).toMatchObject({ p_code: "FR" });
+  });
+
+  it("answers an opaque 404 when the current answer cannot be read, and writes nothing", async () => {
+    vi.stubEnv("VERCEL", "1");
+    mocks.currentError = { message: "unavailable" };
+    expect((await put(body({ code: "FR" }))).status).toBe(404);
+    expect(mocks.rpc).toEqual([]);
+  });
+
+  it("does not read the current answer for a country that is not paused", async () => {
+    vi.stubEnv("VERCEL", "1");
+    mocks.result = { jurisdiction: "US", changed: true, revokedGrants: 0 };
+    expect((await put(body({ code: "US" }))).status).toBe(200);
+    expect(mocks.reads).toBe(0);
+  });
+
+  it("off the hosted deployment, records a paused country without reading the current answer", async () => {
+    mocks.result = { jurisdiction: "FR", changed: true, revokedGrants: 0 };
+    expect((await put(body({ code: "FR" }))).status).toBe(200);
+    expect(mocks.reads).toBe(0);
+    expect(mocks.rpc[0]?.[1]).toMatchObject({ p_code: "FR" });
   });
 });

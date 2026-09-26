@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,13 @@ import {
   JURISDICTION_SAVED,
   JURISDICTION_SAVE_FAILED,
   JURISDICTION_SELECT_LABEL,
+  JURISDICTION_WITHHELD,
+  JURISDICTION_WITHHELD_LINK,
   jurisdictionCurrent,
+  jurisdictionNotServed,
 } from "@/copy/settings/jurisdiction";
+import { isEmbargoedCountry } from "@/lib/legal/service-restrictions";
+import { route } from "@/lib/primary-routes";
 
 /**
  * The declaration control for `profiles.jurisdiction_code` (G5.1a, ADR 0032),
@@ -27,6 +33,10 @@ import {
  * one. The attestation version and hash the page was rendered with travel in
  * the request, so a page older than the published text is refused rather
  * than recorded against words the person did not see.
+ *
+ * The list leaves out the countries `service-restrictions.ts` withholds, and
+ * says so with a link to the public list, so a missing country is explained
+ * rather than silent.
  */
 export function JurisdictionForm({
   choices,
@@ -87,6 +97,9 @@ export function JurisdictionForm({
           {jurisdictionCurrent(current.name)}
         </p>
       ) : null}
+      {current && isEmbargoedCountry(current.code) ? (
+        <p className="text-sm text-ink" data-slot="jurisdiction-not-served">{jurisdictionNotServed(current.name)}</p>
+      ) : null}
       <form
         className="space-y-4"
         onSubmit={(event) => {
@@ -109,6 +122,12 @@ export function JurisdictionForm({
               ))}
             </select>
           </label>
+          <p className="max-w-prose text-sm text-ink-muted" data-slot="jurisdiction-withheld">
+            {JURISDICTION_WITHHELD}{" "}
+            <Link href={route("legal.where-inherit-works")} className="link-target underline underline-offset-4 hover:text-ink">
+              {JURISDICTION_WITHHELD_LINK}
+            </Link>
+          </p>
           <p className="max-w-prose text-sm text-ink-muted">{attestation.summary}</p>
           <details className="max-w-prose text-sm text-ink-muted">
             <summary className="link-target cursor-pointer underline underline-offset-4">{JURISDICTION_READ_ATTESTATION}</summary>

@@ -30,6 +30,17 @@ export const JURISDICTION_REQUIRED =
 
 export const JURISDICTION_SELECT_LABEL = "Country you live in";
 
+/** Below the list: why some countries are missing from it (`service-restrictions.ts`). */
+export const JURISDICTION_WITHHELD =
+  "Some countries are not in this list. Inherit is not open to new people there: some because of sanctions law, others until the legal work for them is done.";
+
+export const JURISDICTION_WITHHELD_LINK = "See where Inherit works";
+
+/** Shown to an account whose recorded country is under a US embargo. */
+export function jurisdictionNotServed(countryName: string): string {
+  return `Inherit is not available to people who live in ${countryName}, because of United States sanctions law. You can still export or delete your data under Data. If your answer was a mistake, change it below.`;
+}
+
 /** The empty first option: the selection starts with no country chosen. */
 export const JURISDICTION_PLACEHOLDER = "Choose a country";
 

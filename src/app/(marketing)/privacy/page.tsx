@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           Privacy <span className="accent">policy.</span>
         </>
       }
-      effectiveDate="2026-08-28"
+      effectiveDate="2026-09-26"
       intro={
         <>
           <p>
@@ -40,6 +40,22 @@ export default function PrivacyPage() {
       }
       sections={[
         {
+          id: "who-runs-inherit",
+          heading: "Who runs Inherit",
+          body: (
+            <>
+              <p>
+                Inherit is not a company yet. <strong>Mario Diego</strong> runs
+                it as an individual and is the controller of your data: the
+                person who decides how it is used and who answers for it.
+                Contact him about your data at privacy@inherit.bio. If Inherit
+                becomes a company, this page will name it before that company
+                handles any of your data.
+              </p>
+            </>
+          ),
+        },
+        {
           id: "data-we-collect",
           heading: "Data we collect",
           body: (
@@ -49,11 +65,10 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Account data.</strong> Your email address and a
                   password hash (or the identifier from your chosen sign-in
-                  method), plus the settings you choose in the app. If you
-                  optionally tell us your country and, for the United States,
-                  your state — used only to tailor legal information such as
-                  our <Link href="/legal/gina">GINA explainer</Link> — you pick
-                  them from dropdowns. We deliberately provide no field for a
+                  method), plus the settings you choose in the app. Before you
+                  use Inherit, you tell us the country you live in, picked
+                  from a list. We use it only to decide which features the
+                  law there allows. We deliberately provide no field for a
                   street address and do not collect one.
                 </li>
                 <li>
@@ -76,7 +91,14 @@ export default function PrivacyPage() {
               <ul>
                 <li>
                   <strong>No street addresses.</strong> Location, where
-                  relevant at all, is a country/state dropdown — nothing finer.
+                  relevant at all, is the country you pick — nothing finer.
+                  One check uses your connection instead: to obey United
+                  States sanctions law, the app reads the country and region
+                  our hosting provider reports for each connection&rsquo;s
+                  internet address, and refuses places under a full embargo.
+                  It does not store that location or use it for anything
+                  else. See{" "}
+                  <Link href={route("legal.where-inherit-works")}>where Inherit works</Link>.
                 </li>
                 <li>
                   <strong>No third-party trackers of any kind.</strong> No
@@ -99,12 +121,25 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                The hosted service uses two infrastructure providers as data
-                processors. <strong>Supabase</strong> handles the database and
-                file storage, including your genome files and derived variants.
-                <strong>Vercel</strong> hosts the app. Each provider works only
-                on our instructions under a data processing agreement. Neither
-                may use your data for its own purposes.
+                The hosted service uses three infrastructure providers as data
+                processors, all in the United States.{" "}
+                <strong>Supabase</strong> handles the database and file
+                storage, including your genome files and derived variants.{" "}
+                <strong>Vercel</strong> hosts the app. <strong>Resend</strong>{" "}
+                sends Inherit&rsquo;s email, so it receives your email address
+                and the messages we send you, never your genome data or
+                results. Each provider works only on our instructions under a
+                data processing agreement. None may use your data for its own
+                purposes.
+              </p>
+              <p>
+                If you live outside the United States, using these providers
+                transfers your data there. Supabase relies on standard
+                contractual clauses for that. Vercel is certified under the
+                EU&ndash;US, UK and Swiss&ndash;US Data Privacy Frameworks.
+                Resend is listed under the EU&ndash;US Data Privacy Framework
+                and its UK extension, and its terms also include standard
+                contractual clauses.
               </p>
               <p>
                 If you prefer that no company — including us — hold your
@@ -323,7 +358,7 @@ export default function PrivacyPage() {
                   is AGPL-3.0 open source, the platform itself cannot be taken
                   away from you: you can export your data and self-host the
                   same software, permanently, regardless of what happens to
-                  the company.
+                  whoever runs the hosted service.
                 </li>
               </ul>
             </>
@@ -331,13 +366,14 @@ export default function PrivacyPage() {
         },
         {
           id: "plus-bio",
-          heading: "Inherit and Plus Bio: created by, legally separate",
+          heading: "Inherit and Plus Bio: created by, not run by",
           body: (
             <>
               <p>
                 Plus Bio created Inherit as an open-source project for the
-                public good. Inherit operates as a legally separate entity.
-                Creation does not mean access. The separation keeps your
+                public good. Plus Bio does not run Inherit, pay for it or hold
+                its accounts, and has no access to its data. Creation does not
+                mean access. The separation keeps your
                 genetic data from becoming an asset of Plus Bio or any other
                 commercial business. The following rules are binding:
               </p>
@@ -357,8 +393,9 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   Plus Bio&rsquo;s commercial operations have no access to
-                  Inherit data under this policy. Inherit is legally separate.
-                  A change of control at Plus Bio cannot transfer your data.
+                  Inherit data under this policy. Plus Bio has no role in
+                  running Inherit, so a change of control at Plus Bio cannot
+                  transfer your data.
                 </li>
               </ul>
             </>
