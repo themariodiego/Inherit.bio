@@ -4034,3 +4034,16 @@ recommended one, except the Copilot one, which the entry says.
   provider step: the settings form, the consent and the state before a key
   exists. The model conversation stays proven in CI only, and the evidence
   records that gap.
+
+## 2026-09-26 — Copilot and the person's own assistant subscription (ADR 0033)
+
+The owner asked whether people could use an existing ChatGPT, Claude or Grok
+subscription for own Copilot instead of an API key. ADR 0033 records what was
+checked. Signing in to a consumer subscription inside Inherit stays rejected
+for all three vendors, because none permits it for third-party apps.
+
+Asked as a selectable choice among four options (A proposed), the owner chose
+**D**: build neither the read-only Inherit connector nor the "copy a safe
+summary" button. Own Copilot keeps bring-your-own-key, with the Claude,
+ChatGPT and Grok presets. ADR 0033 is marked not adopted; its findings stay as
+the record, and revisiting it is a new decision.
