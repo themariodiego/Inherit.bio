@@ -1,6 +1,6 @@
 const body = `Contact: mailto:security@inherit.bio
-Canonical: https://www.inherit.bio/.well-known/security.txt
-Policy: https://www.inherit.bio/legal/incident-response
+Canonical: https://inherit.bio/.well-known/security.txt
+Policy: https://inherit.bio/legal/incident-response
 Preferred-Languages: en
 Expires: 2027-09-01T00:00:00.000Z
 `;

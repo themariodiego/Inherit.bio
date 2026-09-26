@@ -15,8 +15,8 @@ project for the public good. Inherit operates as a legally separate concern from
 Plus Bio's commercial product: accounts are separate, there is no SSO, and no
 personal, health, or genetic data flows between Inherit and any Plus Bio service
 in either direction. That separation is a product commitment, described on the
-[About page](https://www.inherit.bio/about) and in the
-[privacy policy](https://www.inherit.bio/privacy), and it is not subject to
+[About page](https://inherit.bio/about) and in the
+[privacy policy](https://inherit.bio/privacy), and it is not subject to
 change by a code review — see "Commitments that outrank the maintainer" below.
 
 ## How decisions are made
@@ -69,7 +69,7 @@ maintainers resolve disagreement.
 Inherit carries a public change-of-control commitment, published as a product
 surface rather than as a promise in a README. If the project or Plus Bio is
 acquired, that commitment governs. See the
-[privacy policy](https://www.inherit.bio/privacy).
+[privacy policy](https://inherit.bio/privacy).
 
 ## Contact
 

@@ -63,7 +63,7 @@ nothing is logged, and the Worker forwards no other binding.
 
 The production gateway's `SIGNING_PUBLIC_KEYS` in `../prepared-artifacts/wrangler.json`
 carries the public half of the app's upload signer as served by
-`https://www.inherit.bio/.well-known/inherit-upload-jwks.json` (kid
+`https://inherit.bio/.well-known/inherit-upload-jwks.json` (kid
 `d5e4e50d-7017-4c8f-9435-22c07b5234a9`, committed 18 September 2026). A public
 key is not a secret. `scripts/cloudflare-deploy-guard.ts` refuses a production
 deploy whose committed keys differ from the served ones, so a rotated signer

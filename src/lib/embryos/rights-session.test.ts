@@ -100,7 +100,7 @@ describe("rights session", () => {
     const { RIGHTS_COOKIE_NAME, newRightsSessionSecret, readRightsSessionHash, rightsSessionHash } = await load();
     const secret = newRightsSessionSecret();
     const request = (cookie: string) =>
-      new Request("https://www.inherit.bio/api/invitations/accept", { method: "POST", headers: { cookie } });
+      new Request("https://inherit.bio/api/invitations/accept", { method: "POST", headers: { cookie } });
     expect(readRightsSessionHash(request(`${RIGHTS_COOKIE_NAME}=${secret}`))).toBe(rightsSessionHash(secret));
     expect(readRightsSessionHash(request(`a=1; ${RIGHTS_COOKIE_NAME}=${secret}; b=2`))).toBe(rightsSessionHash(secret));
     expect(readRightsSessionHash(request(`a=1;${RIGHTS_COOKIE_NAME}=${secret};b=2`))).toBe(rightsSessionHash(secret));
@@ -118,7 +118,7 @@ describe("rights session", () => {
     const { RIGHTS_COOKIE_NAME, newRightsSessionSecret, readRightsSessionHash } = await load();
     const secret = newRightsSessionSecret();
     const request = (headers: Record<string, string>) =>
-      new Request("https://www.inherit.bio/api/invitations/accept", { method: "POST", headers });
+      new Request("https://inherit.bio/api/invitations/accept", { method: "POST", headers });
     expect(readRightsSessionHash(request({}))).toBeNull();
     expect(readRightsSessionHash(request({ cookie: "" }))).toBeNull();
     expect(readRightsSessionHash(request({ cookie: "a=1; b=2" }))).toBeNull();

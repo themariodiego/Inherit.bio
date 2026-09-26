@@ -45,7 +45,7 @@ Good places to start:
 - **Report templates.** 120+ genotype-specific templates live in the seed data.
   Each needs citations (PMID/DOI), an evidence label, and honest "your file does
   not cover this variant" handling. New templates go through the human review
-  queue — see the [changelog](https://www.inherit.bio/changelog).
+  queue — see the [changelog](https://inherit.bio/changelog).
 - **Provider directory accuracy.** Prices with capture dates, sequencing depth,
   the raw files a provider actually returns, shipping coverage. If a listing is
   stale, a correction with a source link is a genuinely useful contribution.
