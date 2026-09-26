@@ -4004,3 +4004,33 @@ away. Both are in migration `20260925220000` and are easy to reverse:
   The chat history already hides them. Exporting them would hand back content
   whose basis may since have been revoked. The alternative is to export them
   marked as unverified history.
+
+## 2026-09-26 — Owner decisions, asked as selectable choices
+
+Asked in chat with the recommended option first. Every answer below is the
+recommended one, except the Copilot one, which the entry says.
+
+- **Chat export choices confirmed.** Both choices in the entry above stand:
+  - a chat's exportability follows its own grants, never the provider settings;
+  - legacy unverified chats are not exported.
+
+  #216 then merged, and `20260925220000_export_archive_chat_reader.sql` was
+  applied to production the same guarded way. The receipt is in
+  `docs/evidence/export-chat-reader-production-apply-20260926/`.
+- **Next priority: validate the own-genome journey on production, signed in.**
+  The owner then widened it: finish and validate `/genome/me`, including
+  `/genome/me/reports`, `/genome/me/ancestry` and `/copilot/me`. That approves
+  these production writes:
+  - **One test account**, signed up through the real sign-up page with an
+    address the owner controls (a Gmail `+` alias). Its mail, three messages
+    or so, is read through the connected mailbox.
+  - **Synthetic genome files only.**
+  - **Cleanup:** every uploaded file is deleted during the run, and the
+    account then goes through the normal 7-day deletion notice. No deadline
+    is moved.
+- **Copilot: skip the live conversation.** The owner did not choose the
+  recommended option, which was to add a spend-limited provider key to the
+  environment. So `/copilot/me` is validated on production only up to the
+  provider step: the settings form, the consent and the state before a key
+  exists. The model conversation stays proven in CI only, and the evidence
+  records that gap.
