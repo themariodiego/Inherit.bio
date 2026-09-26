@@ -77,7 +77,7 @@ export function requestFence() {
     }
     if (url.pathname === "/auth/v1/signup" && ["OPTIONS", "POST"].includes(method)) {
       requireProof([...url.searchParams.keys()].join(",") === "redirect_to"
-        && url.searchParams.get("redirect_to") === `${LOCAL.app}/auth/callback?next=/overview`);
+        && url.searchParams.get("redirect_to") === `${LOCAL.app}/auth/callback?next=/overview&flow=signup`);
       if (method === "OPTIONS") return;
       return once("signup", 1);
     }
@@ -106,7 +106,7 @@ export function confirmationLink(body: unknown): string {
   const url = new URL(first.replaceAll("&amp;", "&"));
   requireProof(url.origin === LOCAL.origin && url.pathname === "/auth/v1/verify" && !url.username && !url.password
     && !url.hash && url.searchParams.get("type") === "signup"
-    && url.searchParams.get("redirect_to") === `${LOCAL.app}/auth/callback?next=/overview`
+    && url.searchParams.get("redirect_to") === `${LOCAL.app}/auth/callback?next=/overview&flow=signup`
     && Boolean(url.searchParams.get("token") || url.searchParams.get("token_hash")));
   return url.href;
 }

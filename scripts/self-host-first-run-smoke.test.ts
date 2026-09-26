@@ -9,7 +9,8 @@ const env = { CI: "true", GITHUB_ACTIONS: "true", RUNNER_ENVIRONMENT: "github-ho
 const configured = { version: 1, configuredAt: "2026-09-23T09:00:00Z", configSha256: "config", guideSha256: "guide",
   sourceRevision: "commit", project: "sequence", apiOrigin: API, appOrigin: APP, mailOrigin: "http://127.0.0.1:54324",
   authKid: "auth", uploadKid: "upload" };
-const link = `${API}/auth/v1/verify?token=synthetic&type=signup&redirect_to=${encodeURIComponent(`${APP}/auth/callback?next=/overview`)}`;
+const REDIRECT = `${APP}/auth/callback?next=/overview&flow=signup`;
+const link = `${API}/auth/v1/verify?token=synthetic&type=signup&redirect_to=${encodeURIComponent(REDIRECT)}`;
 
 describe("remote first-run smoke boundaries (no browser or provider execution)", () => {
   it("requires the pinned hosted Linux runner and rejects arguments or bypasses", () => {
@@ -30,13 +31,14 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
     expect(confirmationLink({ Text: `Confirm: ${link}` })).toBe(link);
     expect(confirmationLink({ HTML: `<a href="${link.replaceAll("&", "&amp;")}">Confirm</a>` })).toBe(link);
     for (const altered of [link.replace(API, "https://example.invalid"), link.replace("type=signup", "type=recovery"),
-      link.replace(encodeURIComponent(`${APP}/auth/callback?next=/overview`), encodeURIComponent("https://example.invalid"))])
+      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent("https://example.invalid")),
+      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent(`${APP}/auth/callback?next=/overview`))])
       expect(() => confirmationLink({ Text: altered })).toThrow();
   });
   it("permits the actual flow but prevents repeated issuance, finalization, storage or generation", () => {
     const fence = requestFence();
     fence.admit(`${APP}/overview?_rsc=read`, "GET");
-    const signup = `${API}/auth/v1/signup?redirect_to=${encodeURIComponent(`${APP}/auth/callback?next=/overview`)}`;
+    const signup = `${API}/auth/v1/signup?redirect_to=${encodeURIComponent(REDIRECT)}`;
     fence.admit(signup, "OPTIONS"); fence.admit(signup, "POST");
     fence.admit(`${API}/auth/v1/token?grant_type=pkce`, "OPTIONS");
     fence.admit(`${API}/auth/v1/user`, "OPTIONS"); fence.admit(`${API}/auth/v1/user`, "GET");

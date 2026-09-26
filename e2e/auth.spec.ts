@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { SIGN_IN_ERRORS, SIGN_IN_STATUS } from "../src/copy/sign-in";
 import { adminClient, clearMailbox, latestEmailTo } from "./helpers";
 
 // A2 — the real email flows: sign-up → verification email → verified
@@ -75,4 +76,50 @@ test("password reset flow works end-to-end", async ({ page }) => {
   await page.getByLabel("Password").fill(newPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL(/\/(?:dashboard|overview)/);
+});
+
+test("a sign-up link opened in another browser confirms the email and says so", async ({
+  page,
+  browser,
+}) => {
+  const other = { email: `authflow-other-${Date.now()}@e2e.local`, password: "e2e-auth-pw-3" };
+  await page.goto("/auth/sign-up");
+  await page.getByLabel("Email").fill(other.email);
+  await page.getByLabel("Password").fill(other.password);
+  await page.getByRole("button", { name: "Sign up" }).click();
+  await expect(page.getByText("Check your email")).toBeVisible();
+
+  const mail = await latestEmailTo(other.email);
+  expect(mail, "verification email must arrive").not.toBeNull();
+  const link = /https?:\/\/[^\s"<>]+verify[^\s"<>]*/.exec(mail!.body)?.[0]?.replace(/&amp;/g, "&");
+  expect(link, "verification link must be present").toBeTruthy();
+
+  // A second context holds no PKCE verifier for this flow, like a phone
+  // opening the mail after signing up on a laptop. Supabase still confirms
+  // the address, so the page says so instead of a bare sign-in form.
+  const elsewhere = await browser.newContext();
+  try {
+    const phone = await elsewhere.newPage();
+    await phone.goto(link!);
+    await phone.waitForURL(/\/auth\/sign-in\?notice=email_confirmed/, { timeout: 30_000 });
+    await expect(phone.locator("main").getByRole("status")).toHaveText(SIGN_IN_STATUS.email_confirmed);
+
+    // The link is now used: `/verify` refuses it, even in the browser that
+    // signed up, and the page says why instead of echoing Supabase's text.
+    await page.goto(link!);
+    await page.waitForURL(/\/auth\/sign-in\?error=link_expired#?$/, { timeout: 30_000 });
+    await expect(page.locator("main").getByRole("alert")).toHaveText(SIGN_IN_ERRORS.link_expired);
+    // `/verify` wrote its own error text into the fragment it redirected to;
+    // the callback's empty fragment keeps that text out of the address bar.
+    expect(new URL(page.url()).hash).toBe("");
+    expect(page.url()).not.toContain("error_description");
+
+    // The notice is true: the password chosen at sign-up now works.
+    await phone.getByLabel("Email").fill(other.email);
+    await phone.getByLabel("Password").fill(other.password);
+    await phone.getByRole("button", { name: "Sign in", exact: true }).click();
+    await phone.waitForURL(/\/settings\?next=/, { timeout: 30_000 });
+  } finally {
+    await elsewhere.close();
+  }
 });
