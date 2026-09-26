@@ -1,6 +1,8 @@
 # ADR-0033 — Copilot through the person's own assistant subscription: a read-only Inherit connector the person adds, never a subscription sign-in inside Inherit
 
-- Status: **Proposed** · 26 September 2026. Nothing here is built or approved.
+- Status: **Not adopted** · owner decision 26 September 2026: option D.
+  Own Copilot stays bring-your-own-key with the Claude, ChatGPT and Grok
+  presets (option c). Nothing in options (a), (b) or (d) is built.
 - Deciders: the owner. The consent text needs the owner's approval and, if the
   connector is classed as a restricted capability, a signed legal review under
   `signedReviewContract` in `data/jurisdictions.json`.
@@ -383,9 +385,10 @@ Sizes are engineering days, before review and legal time.
 | 3 | The three personal-data tools behind their scopes; projection filter; database, unit and browser tests; export and deletion integration; register updates. | 8–12 days |
 | 4 | A manual check with each registry app, with dated evidence, then the capability register row. | 2–3 days |
 
-## Decision needed
+## Decision
 
-Choose one:
+The owner chose **D** on 26 September 2026, asked as a selectable choice
+with A marked as proposed. The four choices were:
 
 - **A.** Build (d) now, and start phase 0 of (b). Build phases 2–4 only after
   the consent text and the classification are approved. *(Proposed.)*
@@ -395,3 +398,15 @@ Choose one:
 
 Whichever is chosen, option (a) stays rejected for all three vendors until a
 vendor publishes terms that allow it for third-party apps.
+
+What D means now:
+
+- Own Copilot keeps its one path: the person's own API key for a provider
+  they choose, with the Claude, ChatGPT and Grok presets filling in the
+  provider's address and a model. The output guard, the consent grants and
+  the chat history's rules stay as they are.
+- No connector, authorization server, token store or "copy a safe summary"
+  button is built, and no register, consent text or acceptance row changes.
+- The findings above stay as the record of what was checked on 26 September
+  2026. Revisiting (b) or (d) is a new decision, and should re-read each
+  vendor's terms first, since they change.

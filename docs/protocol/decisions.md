@@ -4004,3 +4004,16 @@ away. Both are in migration `20260925220000` and are easy to reverse:
   The chat history already hides them. Exporting them would hand back content
   whose basis may since have been revoked. The alternative is to export them
   marked as unverified history.
+
+## 2026-09-26 — Copilot and the person's own assistant subscription (ADR 0033)
+
+The owner asked whether people could use an existing ChatGPT, Claude or Grok
+subscription for own Copilot instead of an API key. ADR 0033 records what was
+checked. Signing in to a consumer subscription inside Inherit stays rejected
+for all three vendors, because none permits it for third-party apps.
+
+Asked as a selectable choice among four options (A proposed), the owner chose
+**D**: build neither the read-only Inherit connector nor the "copy a safe
+summary" button. Own Copilot keeps bring-your-own-key, with the Claude,
+ChatGPT and Grok presets. ADR 0033 is marked not adopted; its findings stay as
+the record, and revisiting it is a new decision.
