@@ -38,3 +38,4 @@ writing a superseding ADR, not silently drifting.
 | [0030](./0030-hosted-preparation-on-cloudflare-containers.md) | Hosted preparation on Cloudflare Containers: a five-minute cron wakes one standard-1 container that runs one pass and exits | Accepted by owner decision |
 | [0031](./0031-own-upload-zip-preflight.md) | Open a bounded single-file own-DNA ZIP locally; store the contained source | Accepted for draft implementation; unreleased |
 | [0032](./0032-jurisdiction-declaration.md) | The jurisdiction declaration: one writer, a first-sign-in gate, and re-evaluation without a revision bump | Accepted |
+| [0033](./0033-copilot-through-own-assistant-connector.md) | Copilot through the person's own assistant subscription: a read-only Inherit connector the person adds, never a subscription sign-in inside Inherit | Proposed |

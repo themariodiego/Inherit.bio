@@ -1060,6 +1060,61 @@
       "evidence": [
         "docs/sources/reviews/apoe-correction-20260923.md"
       ]
+    },
+    {
+      "name": "Manifest article on ChatGPT subscription sign-in",
+      "category": "cited-organisation",
+      "aliases": [
+        "manifest.build/blog/chatgpt-plus-tokens-third-party-harnesses/"
+      ],
+      "reason": "Dated article read on 26 September 2026 for the subscription sign-in options in the proposed assistant-connector decision. Only this article path is registered, not URL authorization.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "Warp Grok subscription guide",
+      "category": "cited-organisation",
+      "aliases": [
+        "docs.warp.dev/agent-platform/inference/grok-subscription/"
+      ],
+      "reason": "Third-party guide read on 26 September 2026 describing subscription sign-in through the vendor's OAuth, cited in the proposed assistant-connector decision. Only this guide path is registered.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "LobeHub SuperGrok provider guide",
+      "category": "cited-organisation",
+      "aliases": [
+        "lobehub.com/docs/usage/providers/supergrok"
+      ],
+      "reason": "Third-party guide cited on 26 September 2026 for subscription sign-in in the proposed assistant-connector decision. Only this guide path is registered.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "Grok connectors documentation",
+      "category": "cited-organisation",
+      "aliases": [
+        "docs.x.ai/grok/connectors"
+      ],
+      "reason": "Vendor documentation read on 26 September 2026 for custom MCP connector availability in the proposed assistant-connector decision. Only this documentation path is registered.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "MCP authorization specification",
+      "category": "cited-organisation",
+      "aliases": [
+        "modelcontextprotocol.io/specification/2026-07-28/basic/authorization"
+      ],
+      "reason": "Protocol specification revision 2026-07-28 read on 26 September 2026 for the connector authorization design. Only this revision path is registered, not URL authorization.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
     }
   ]
 }
