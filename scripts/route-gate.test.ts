@@ -105,10 +105,14 @@ describe("the route gate holds the register to the code", () => {
     // on 2026-09-18 (evening): four owner-signed waivers on states the product
     // cannot render as a distinct page (the ancestry page's partial-coverage,
     // the data page's not-covered, the Family hub's not-covered and
-    // partial-coverage), each with its reason beside it in the register. Pinned
-    // exactly rather than as a floor, so
+    // partial-coverage), each with its reason beside it in the register. 152 ->
+    // 153 on 2026-09-26: the ancestry page's consent-required waiver withdrawn,
+    // because the page now renders that state - "Ancestry is off", named and
+    // linked to where it is turned on - and the same change proves it
+    // (e2e/ancestry-revocation.spec.ts), so the unproven count does not move.
+    // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(152);
+    expect(result.requiredStateCount).toBe(153);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7

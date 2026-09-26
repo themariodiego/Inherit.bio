@@ -46,12 +46,19 @@ export const NEANDERTHAL_EYEBROW = "Neanderthal ancestry";
 
 // ---------------------------------------------------------------------------
 // The regions section: map, toggle, chips, table, panel.
+//
+// "Five" in this section is true of one thing only: a result captured under
+// the historical five-region panel (`PANEL`, before 2026-09-15), which is
+// still stored and still shown to the people it was made for. The
+// seven-region surface has its own words (`src/copy/regional-ancestry.ts`),
+// and a page with no result draws the seven-region map, so none of the
+// five-region sentences may appear on either.
 // ---------------------------------------------------------------------------
 
-/** Accessible name of the inline map. */
+/** Accessible name of the inline map; historical five-region results only. */
 export const MAP_LABEL = "World map of five broad regions";
 
-/** The map's caption and the table's caption: one sentence, the same words. */
+/** The map's caption and the table's caption: one sentence, the same words. Historical five-region results only. */
 export const MAP_CAPTION =
   "Five broad regions where DNA like yours is common today. Darker means a larger share.";
 
@@ -127,7 +134,7 @@ export function markersLine(markersUsed: number, panel: PanelFacts, minMarkers: 
 export const MARKER_GLOSS =
   "A marker is one DNA position that differs between people and helps tell regions apart.";
 
-/** The resolution limit in plain words (G4.4). */
+/** The resolution limit in plain words (G4.4), for a historical five-region result read under the recognised panel. */
 export const RESOLUTION_LIMIT =
   "Five broad regions is the finest this panel can tell apart. It cannot place DNA within a region.";
 
@@ -171,6 +178,18 @@ export const NOISE = "Treat these as statistical noise, not as an estimate of yo
 
 /** No stored result for this subject yet (no file has been processed): the map stays grey and each card says so. */
 export const NOTHING_READ = "Nothing to show until a file has been processed.";
+
+/**
+ * A file HAS been processed and the Ancestry choice is off, so NOTHING_READ
+ * would be false. This is said exactly when "Choose your reports" on the
+ * subject's Reports page shows "Ancestry · Off" — never turned on, turned
+ * off, or off until a changed permission is agreed again — and each ancestry
+ * panel says it for itself, beside a link to that page.
+ */
+export const ANCESTRY_OFF = "Ancestry is off. You can turn it on under Reports, in Choose your reports.";
+
+/** The link beside ANCESTRY_OFF, to the subject's Reports page; the same words the My Genome tile uses. */
+export const ANCESTRY_OFF_LINK = "Open Reports";
 
 export function storedModelLine(id: string | null, version: string | null): string {
   return `Stored source: ${id ?? "identity not recorded"}. Version: ${version ?? "not recorded"}.`;

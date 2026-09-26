@@ -9,6 +9,11 @@ import type { InputSourceView } from "@/lib/genome/input-sources";
  * the historical or seven-region presentation. Geometry is decoded on the
  * server and passed as plain data; nothing here recomputes an estimate.
  *
+ * With no stored result, the page says why, in each panel: nothing has been
+ * processed yet, or (own records only) a file has been processed and the
+ * Ancestry choice is off. The second is read from the same "Choose your
+ * reports" section the subject's Reports page renders, never inferred here.
+ *
  * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
  * Neanderthals, where this comes from). No segmented control renders while
  * only the continental tier qualifies (design §4.3).
@@ -20,6 +25,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
+import { AncestryAbsent } from "@/components/results/ancestry/ancestry-absent";
 import { AncestryRegions, type AncestryResultView } from "@/components/results/ancestry/ancestry-regions";
 import { RegionalAncestryRegions } from "@/components/results/ancestry/regional-ancestry-regions";
 import { LineageCard, type LineageCall } from "@/components/results/ancestry/lineage-card";
@@ -46,6 +52,8 @@ import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
+import { ancestryAbsence, type AncestryAbsence } from "@/lib/ancestry/absence";
+import { loadOwnReportChoicesPanel } from "@/lib/uploads/prepare-own-report-choices";
 
 /**
  * One resolver for both domains (design §2.2): this account's own records,
@@ -160,6 +168,7 @@ export default async function AncestryPage(
   let rows: AncestryResultRow[], fileCount: number | null, preparing: boolean;
   let regionInputs: InputSourceView[], maternalInputs: InputSourceView[], paternalInputs: InputSourceView[];
   let confirmationRequired = false, preparedUnavailable = false;
+  let absence: AncestryAbsence = "nothing-read";
   if (person) {
     const captured = await loadSharedAncestrySnapshot(admin, {
       subjectId: dataSubjectId, counterpartAccountId: person.counterpartAccountId,
@@ -187,13 +196,21 @@ export default async function AncestryPage(
     const current = new Set(await captured.confirm());
     rows = selectedRows.filter((row): row is AncestryResultRow => row !== undefined && current.has(row));
     fileCount = count; preparing = inPreparation;
+    // Only a page with nothing to show asks why. The answer is the Reports
+    // page's own "Choose your reports" section: "off" exactly when that
+    // section is there and reads "Ancestry · Off".
+    if (rows.length === 0) absence = ancestryAbsence(await loadOwnReportChoicesPanel(subject.routeSegment));
   }
   const admix = rows.find(row => row.kind === "admixture");
   const mt = rows.find(row => row.kind === "mtdna");
   const y = rows.find(row => row.kind === "ydna");
   const sevenRegion = isSevenRegionPanel(admix);
-  const regions = admix && !sevenRegion ? admixtureView(admix.result, admix.support_note ?? "") : null;
+  // The five-region presentation, its words and its sources are for a stored
+  // historical result only; a page with no result draws the current map.
+  const historical = admix !== undefined && !sevenRegion;
+  const regions = historical ? admixtureView(admix.result, admix.support_note ?? "") : null;
   const subjectParams = { subject: subject.routeSegment };
+  const reportsHref = route("genome.reports", subjectParams);
 
   return (
     <div className="page-stack mx-auto max-w-5xl space-y-8">
@@ -228,7 +245,11 @@ export default async function AncestryPage(
         <h2 id="regions-heading" className="text-lg font-semibold text-ink">
           {REGIONS_HEADING}
         </h2>
-        {sevenRegion ? <RegionalAncestryRegions
+        {!admix ? <AncestryAbsent
+          shapes={regionalMapShapes()}
+          absence={absence}
+          reportsHref={reportsHref}
+        /> : sevenRegion ? <RegionalAncestryRegions
           subjectId={dataSubjectId}
           shapes={regionalMapShapes()}
           panel={SEVEN_ANCESTRY_PANEL}
@@ -255,6 +276,8 @@ export default async function AncestryPage(
           defineTerm
           knownTree={mt?.model_id === LINEAGE_TREES.mother.id && mt.model_version === LINEAGE_TREES.mother.version}
           modelRecord={mt ? { id: mt.model_id, version: mt.model_version } : undefined}
+          absence={absence}
+          reportsHref={reportsHref}
         />
         <LineageCard
           parent="father"
@@ -264,6 +287,8 @@ export default async function AncestryPage(
           defineTerm={false}
           knownTree={y?.model_id === LINEAGE_TREES.father.id && y.model_version === LINEAGE_TREES.father.version}
           modelRecord={y ? { id: y.model_id, version: y.model_version } : undefined}
+          absence={absence}
+          reportsHref={reportsHref}
         />
       </div>
 
@@ -285,7 +310,7 @@ export default async function AncestryPage(
           {SOURCES_HEADING}
         </h2>
         <ul data-slot="ancestry-sources" className="space-y-2 text-sm leading-relaxed">
-          {(sevenRegion ? REGIONAL_SOURCES : SOURCES).map((source) => (
+          {(historical ? SOURCES : REGIONAL_SOURCES).map((source) => (
             <li key={source.id}>
               <span className="font-medium text-ink">{source.title}</span>
               <span className="text-ink-muted">{` — ${source.detail}`}</span>

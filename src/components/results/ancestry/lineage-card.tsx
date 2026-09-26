@@ -10,7 +10,9 @@
  * The card
  * with no Y data leads with the §2 sentence and keeps the XX gloss. The
  * term "haplogroup" is defined inline on its first occurrence per page
- * (`defineTerm`), never in a heading.
+ * (`defineTerm`), never in a heading. A card with no row says why: nothing
+ * has been processed yet, or Ancestry is off (with a link to where it is
+ * turned back on).
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { TermDefinition } from "@/components/figures/term-definition";
@@ -27,8 +29,10 @@ import {
   treeLine,
   storedModelLine,
 } from "@/copy/ancestry";
+import type { AncestryAbsence } from "@/lib/ancestry/absence";
 import { LINEAGE_TREES } from "@/lib/ancestry/panel";
 import type { CoverageSpec } from "@/lib/figures/spec";
+import { AncestryOffNote } from "./ancestry-absent";
 
 /** The stored `HaplogroupCall`, or the `{ haplogroup: null }` row the process route writes when the file has no such chromosome. */
 export interface LineageCall {
@@ -40,7 +44,7 @@ export interface LineageCall {
   note?: string;
 }
 
-export interface LineageCardProps {
+interface LineageCardBaseProps {
   parent: "mother" | "father";
   subjectId: string;
   /** null when no ancestry result row exists for the subject yet. */
@@ -52,13 +56,24 @@ export interface LineageCardProps {
   modelRecord?: { id: string | null; version: string | null };
 }
 
+/**
+ * Why there is no row, read only when `call` is null. `permission-off` says
+ * Ancestry is off and links to the subject's own Reports page, so it cannot
+ * be passed without that link; `nothing-read` is the default.
+ */
+export type LineageCardProps = LineageCardBaseProps & (
+  | { absence?: Exclude<AncestryAbsence, "permission-off">; reportsHref?: string }
+  | { absence: "permission-off"; reportsHref: string }
+);
+
 const TEST_IDS = { mother: "mtdna", father: "ydna" } as const;
 const HEADINGS = { mother: MOTHER_LINE_HEADING, father: FATHER_LINE_HEADING } as const;
 
 /** The stored "XX genomes" note is the one the gloss explains. */
 const XX_NOTE = "XX genomes";
 
-export function LineageCard({ parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord }: LineageCardProps) {
+export function LineageCard(props: LineageCardProps) {
+  const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord } = props;
   const headingId = `${TEST_IDS[parent]}-heading`;
   const hasCall = call !== null && call.haplogroup !== null;
   // `classify()` always reports tested markers; the no-chromosome row has none.
@@ -89,7 +104,9 @@ export function LineageCard({ parent, subjectId, call, supportNote, defineTerm, 
           <TermDefinition term="haplogroup" text="Haplogroup" />
         </p>
       ) : null}
-      {call === null ? (
+      {call === null && props.absence === "permission-off" ? (
+        <AncestryOffNote reportsHref={props.reportsHref} />
+      ) : call === null ? (
         <p className="text-sm text-ink-muted">{supportNote ?? NOTHING_READ}</p>
       ) : hasCall ? (
         <>
