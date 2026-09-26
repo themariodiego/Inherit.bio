@@ -374,7 +374,7 @@ test("task depth T3 costs three counted actions, exactly its registered ceiling"
     && url.searchParams.get("layer") === "variant_call");
 
   // 3. A one-position report whose position this file does not carry.
-  await page.getByRole("link", { name: /^Warfarin, one position · VKORC1,/ }).click();
+  await page.getByRole("link", { name: /^VKORC1, one position,/ }).click();
   await page.waitForURL((url) => url.pathname === "/genome/me/reports/vkorc1-rs9923231-one-position");
   await expect(page.locator("main h1")).toBeVisible();
 

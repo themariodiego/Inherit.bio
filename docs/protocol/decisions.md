@@ -4116,3 +4116,26 @@ as selectable choices, the owner chose the recommended options:
   all filled, and `/legal/gdpr` renders the same data. The drafts in
   `docs/gdpr/` (DPIA, Article 30 record, transfer impact assessment, DPO
   position, launch checklist) await owner and counsel approval.
+
+## 2026-09-26 (evening) — Medicines reports lead with the gene
+
+The owner asked how services like Promethease convey pharmacogenomic results
+without legal risk. The finding: they do not avoid it; they lower it. The
+FDA's November 2018 warning covered software that interprets genetic data,
+and its April 2019 statement records that most firms met its concerns by
+removing specific medication names from patient reports; the one consumer
+pharmacogenetic report it authorized in 2018 had to warn against using it to
+start, stop or change medication. Asked as a selectable choice, the owner
+chose the recommended option, **gene-first, cite drugs**:
+
+- Every Medicines title is the gene and position ("CYP2C19, the *2 position").
+- A drug appears only as what CPIC's guideline for that gene covers. No
+  reading of the letters names a drug; each ends "how any medicine works in
+  you".
+- "What you can do" opens with "Do not start, stop or change any medicine
+  because of this report."
+
+Production serves report text from `public.report_templates`, which a deploy
+does not refresh, and completed reports keep the wording they captured. The
+eleven production rows therefore need their own guarded refresh after this
+merges; that write needs the owner's approval.

@@ -275,11 +275,33 @@ describe("the Medicines category ships (ADR 0021)", () => {
   });
 });
 
+describe("Medicines reports lead with the gene, never the drug (owner decision, 26 September 2026)", () => {
+  const DRUG = /\b(?:warfarin|clopidogrel|statins?|thiopurines?|fluorouracil|capecitabine|tacrolimus|NSAIDs?)\b/i;
+
+  it("titles every report by gene and position, with no drug name", () => {
+    for (const template of medicines) {
+      expect(template.title, template.slug).not.toMatch(DRUG);
+      expect(template.title.startsWith(template.variants[0].gene), template.slug).toBe(true);
+    }
+  });
+
+  it("names a drug only as what CPIC's guideline covers, and never in a reading of the letters", () => {
+    for (const template of medicines) {
+      for (const sentence of template.summary.split(/(?<=\.)\s+/)) {
+        if (DRUG.test(sentence)) expect(sentence, template.slug).toMatch(/^CPIC(?:’s|'s| \()/);
+      }
+      for (const [key, text] of Object.entries(template.variants[0].interpretations)) {
+        expect(text, `${template.slug} ${key}`).not.toMatch(DRUG);
+      }
+    }
+  });
+});
+
 describe("the report renderer’s fixed strings for Medicines (ADR 0021)", () => {
   it("renders the Medicines “What you can do” string for that category only", () => {
     expect(whatYouCanDo("medicines")).toBe(WHAT_YOU_CAN_DO_MEDICINES);
     expect(WHAT_YOU_CAN_DO_MEDICINES).toBe(
-      "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.",
+      "Do not start, stop or change any medicine because of this report. Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.",
     );
     for (const category of CATEGORY_TAXONOMY.map((entry) => entry.id).filter((id) => id !== "medicines")) {
       expect(whatYouCanDo(category), category).toBe(NOTHING_TO_DO);
