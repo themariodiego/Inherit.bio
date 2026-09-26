@@ -433,9 +433,9 @@ export default function PrivacyPage() {
                   applies.
                 </li>
                 <li>
-                  <strong>Withdraw consent</strong> — revoke any LLM-provider
-                  consent at any time in{" "}
-                  <Link href={route("settings.index")}>Settings</Link> (GDPR Article 7(3)).
+                  <strong>Withdraw consent</strong> — revoke any consent you
+                  gave, for any purpose or AI provider, at any time in{" "}
+                  <Link href={route("settings.consents")}>Settings</Link> (GDPR Article 7(3)).
                 </li>
                 <li>
                   <strong>No sale, no sharing</strong> — we do not sell or
@@ -456,7 +456,8 @@ export default function PrivacyPage() {
               <p>
                 Most rights are self-serve in the app. For anything that is
                 not, email privacy@inherit.bio and we will respond within
-                30 days.
+                30 days. The legal basis for each use of your data is on the{" "}
+                <Link href="/legal/gdpr">GDPR status page</Link>.
               </p>
             </>
           ),

@@ -23,7 +23,7 @@ export default function AvailabilityPage() {
     </> },
     { id: "paused", heading: "Countries not open to new people", body: <>
       <p>The hosted service is not taking new people from these countries: {countryNames(PAUSED_COUNTRY_CODES)}.</p>
-      <p>Some are paused while the law there is reviewed. The EU, the rest of the EEA, the UK and Switzerland wait for the representatives the <Link href="/legal/gdpr">GDPR status page</Link> names. If you already chose one of these countries, nothing changes for you. Nobody can newly choose one, including when changing an earlier answer.</p>
+      <p>Some are paused while the law there is reviewed. The EU, the rest of the EEA and the UK wait for the steps the <Link href="/legal/gdpr">GDPR status page</Link> names. If you already chose one of these countries, nothing changes for you. Nobody can newly choose one, including when changing an earlier answer.</p>
     </> },
     { id: "change", heading: "How availability changes", body: <p>A capability can be enabled only by a versioned jurisdiction rule backed by a current citation and a human legal sign-off. Automated systems cannot create that sign-off.</p> },
   ]} />;

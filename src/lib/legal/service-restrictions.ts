@@ -10,6 +10,7 @@
  * They are the owner's risk decisions, not legal findings, and a signed
  * review can change them.
  */
+import { GDPR_LAUNCH, euLaunchOpen, ukLaunchOpen, type GdprLaunchState } from "./gdpr-launch";
 
 /**
  * Countries under a comprehensive United States embargo (31 CFR parts 510,
@@ -60,21 +61,22 @@ export const EU_EEA_COUNTRY_CODES: readonly string[] = [
 ];
 
 /**
- * The launch gate `/legal/gdpr` states: the hosted service is not offered to
- * people in the EU or UK until the representatives it names are appointed.
- * Switzerland is held with them.
+ * Countries paused for new declarations on the hosted deployment, for a given
+ * EU/UK launch state: the high-risk ones, plus the EU/EEA while its launch is
+ * closed and the UK while its launch is closed (`gdpr-launch.ts`, the gate
+ * `/legal/gdpr` states). An account that already declared one keeps it;
+ * nobody may newly declare one, whether signing up or changing their answer.
+ * A self-hosted copy decides its own list.
  */
-const LAUNCH_GATE_COUNTRY_CODES: readonly string[] = [...EU_EEA_COUNTRY_CODES, "GB", "CH"];
+export function pausedCountryCodesFor(state: GdprLaunchState): string[] {
+  return [...new Set([
+    ...HIGH_RISK_COUNTRY_CODES,
+    ...(euLaunchOpen(state) ? [] : EU_EEA_COUNTRY_CODES),
+    ...(ukLaunchOpen(state) ? [] : ["GB"]),
+  ])].sort();
+}
 
-/**
- * Countries paused for new declarations on the hosted deployment: the high
- * risk ones and the launch gate. An account that already declared one keeps
- * it; nobody may newly declare one, whether signing up or changing their
- * answer. A self-hosted copy decides its own list.
- */
-export const PAUSED_COUNTRY_CODES: readonly string[] = [
-  ...new Set([...HIGH_RISK_COUNTRY_CODES, ...LAUNCH_GATE_COUNTRY_CODES]),
-].sort();
+export const PAUSED_COUNTRY_CODES: readonly string[] = pausedCountryCodesFor(GDPR_LAUNCH);
 
 export function isEuEeaCountry(code: string | null | undefined): boolean {
   return typeof code === "string" && EU_EEA_COUNTRY_CODES.includes(code);
