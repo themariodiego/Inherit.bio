@@ -6,7 +6,8 @@ project for the public good. It supports uploading your own genome data,
 reading informational reports, exploring ancestry, and asking a configured
 Copilot about your results. Inherit does not sell sequencing.
 
-Inherit operates as a legally separate entity from Plus Bio. It shares a
+Inherit is not a company yet: Mario Diego runs the hosted service at
+inherit.bio as an individual, and Plus Bio does not run it. It shares a
 design language with Plus Bio; accounts are separate, there is no SSO,
 and **no personal, health, or genetic data flows between Inherit and any
 Plus Bio service in either direction** (see [About](/about) and the

@@ -4047,3 +4047,53 @@ Asked as a selectable choice among four options (A proposed), the owner chose
 summary" button. Own Copilot keeps bring-your-own-key, with the Claude,
 ChatGPT and Grok presets. ADR 0033 is marked not adopted; its findings stay as
 the record, and revisiting it is a new decision.
+
+## 2026-09-26 — Legal protection decisions after the country research
+
+The owner asked for legal reviews of every country Inherit accepts and for
+the list of countries where full capability would be safe. The research
+(a private document, not committed) found none: 0 of 249 codes is even a
+candidate with conditions, and nothing is safe without a signed review.
+Asked as selectable choices with the recommended option first, the owner
+chose:
+
+- **Block comprehensively embargoed places, at sign-up and by IP.** Cuba,
+  Iran and North Korea are no longer declarable. An account that declared
+  one keeps only its rights (export, deletion, consent withdrawal, handing a
+  record on) and may correct its answer. Every request Vercel locates in
+  those countries, or in Ukraine's Crimea (UA-43), Sevastopol (UA-40),
+  Donetsk (UA-14) or Luhansk (UA-09) regions, is answered 451. Production
+  had no account declared in CU, IR or KP when this shipped (read-only
+  check, 26 September 2026). Lists: `src/lib/legal/service-restrictions.ts`.
+- **G5.1a amended for that one read.** Asked separately, the owner chose to
+  keep the check in app code: the request proxy may read Vercel's
+  `x-vercel-ip-country` and `x-vercel-ip-country-region` headers, only to
+  refuse embargoed places, storing nothing. `scripts/jurisdiction-inference.test.ts`
+  removes exactly that call before scanning, so every other IP, geo,
+  language or time-zone read still fails, and it fails if the call goes
+  away while the exception stays. The declaration itself is still never
+  inferred.
+- **Name the operator.** Inherit is not incorporated. The privacy page,
+  About page, README and GDPR status page now say that Mario Diego runs it
+  as an individual and is the controller, contact privacy@inherit.bio, and
+  that Plus Bio does not run, pay for or hold accounts for Inherit. The
+  privacy page adds Resend as a processor, each processor's transfer
+  mechanism, and the sanctions location check. The false "legally separate
+  entity" wording is gone. The Terms, which name no counterparty, are
+  unchanged here because a material change needs 30 days' email notice.
+- **Pause new sign-ups from the 29 high-risk countries** (research tier C).
+  An account that already declared one keeps it; nobody may newly declare
+  one, including by changing an earlier answer.
+- **Pause EU/EEA, UK and Swiss sign-ups too.** `/legal/gdpr` already said
+  the hosted service is not offered in the EU or UK, but the declaration
+  list offered them and production held three EU accounts. The same pause
+  now enforces the page. The three accounts keep working.
+- **EU/EEA health reports: a disclaimer only.** The owner did not choose the
+  recommended option (hide health reports for EU/EEA users until counsel
+  decides). A viewer who declared an EU or EEA country sees one more line
+  under "What this doesn't mean" on every report outside everyday traits:
+  not a diagnostic test, not certified as a medical device in the EU.
+
+The paused lists apply on the hosted deployment only (`VERCEL`/`VERCEL_ENV`
+set, the test `applicationOrigin` already uses): a self-hosted copy, and
+CI's local build, decide their own. The embargo applies everywhere.

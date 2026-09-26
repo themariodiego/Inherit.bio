@@ -86,6 +86,14 @@ export const WHAT_THIS_DOESNT_MEAN_GENERIC = "It does not say what will happen t
 
 export const WHAT_THIS_DOESNT_MEAN_NOT_COVERED = "A missing result is not a negative result.";
 
+/**
+ * Added for a viewer who declared an EU or EEA country, on every report
+ * outside everyday traits (owner decision, 26 September 2026): the EU rules
+ * for diagnostic tests may treat health reports as a medical device.
+ */
+export const WHAT_THIS_DOESNT_MEAN_EU_DEVICE =
+  "It is not a diagnostic test, and Inherit is not certified as a medical device in the EU. Do not base a medical decision on it. A doctor can arrange a clinical test.";
+
 // ---------------------------------------------------------------------------
 // Layer labels and definitions (§4 §1.3; X5.1). The definition is repeated
 // verbatim wherever the layer name is used as a chip, count or group title.

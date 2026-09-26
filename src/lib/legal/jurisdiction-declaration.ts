@@ -9,6 +9,7 @@ import {
   normaliseJurisdictionCode,
   type JurisdictionsFile,
 } from "./jurisdictions";
+import { declarationRestriction } from "./service-restrictions";
 
 /**
  * The declaration half of G5.1a (ADR 0032): what a person may choose, the
@@ -41,6 +42,34 @@ export function jurisdictionChoices(): JurisdictionChoice[] {
   return FILE.realJurisdictionCatalog.codes
     .map((code) => ({ code, name: names.of(code) ?? code }))
     .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+/**
+ * Whether this is the hosted deployment, whose operator decided the paused
+ * list (`service-restrictions.ts`). `VERCEL` and `VERCEL_ENV` are set by the
+ * platform and never by an operator: the same test `applicationOrigin` uses.
+ * A self-hosted copy, and CI's local build, decide their own lists.
+ */
+export function isHostedDeployment(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return env.VERCEL !== undefined || env.VERCEL_ENV !== undefined;
+}
+
+/**
+ * The countries the declaration form offers: the catalogue without the
+ * countries Inherit does not serve, and, on the hosted deployment, without
+ * the countries paused for new declarations unless one is the account's
+ * current answer. Other lists, such as a co-parent's country when refusing,
+ * keep the whole catalogue.
+ */
+export function declarationChoices(
+  current: string | null,
+  pausesApply: boolean = isHostedDeployment(),
+): JurisdictionChoice[] {
+  return jurisdictionChoices().filter(
+    (choice) => declarationRestriction(choice.code, current, pausesApply) === null,
+  );
 }
 
 /** The name a declared code is shown with; the block-only row's stored code names itself. */

@@ -8,7 +8,7 @@ import { localAuthDestination } from "@/lib/auth/local-destination";
 import { declaredChromosomalSexFrom } from "@/lib/family/chromosomal-sex";
 import {
   currentJurisdictionAttestation,
-  jurisdictionChoices,
+  declarationChoices,
   jurisdictionName,
   readDeclaredJurisdiction,
 } from "@/lib/legal/jurisdiction-declaration";
@@ -70,7 +70,7 @@ export default async function SettingsPage({
       </header>
       {user && attestation ? (
         <JurisdictionForm
-          choices={jurisdictionChoices()}
+          choices={declarationChoices(declaredCode)}
           current={declaredCode ? { code: declaredCode, name: jurisdictionName(declaredCode) } : null}
           attestation={attestation}
           next={next}

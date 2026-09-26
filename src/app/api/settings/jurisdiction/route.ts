@@ -4,8 +4,11 @@ import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import {
   declarableCode,
   declarationResult,
+  isHostedDeployment,
   jurisdictionWriteBody,
+  readDeclaredJurisdiction,
 } from "@/lib/legal/jurisdiction-declaration";
+import { declarationRestriction, isPausedCountry } from "@/lib/legal/service-restrictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -20,6 +23,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * declaration with that attestation, appends one legal-audit event and ends
  * every restricted permission that bound the old answer, in one transaction.
  *
+ * Two kinds of country are held back (`service-restrictions.ts`): one under a
+ * comprehensive US embargo is never recorded, and on the hosted deployment
+ * one paused for new sign-ups is recorded only for an account that already
+ * declared it. Both are refused like an unknown code; the page does not
+ * offer them.
+ *
  * The response is `jurisdiction-write-v1` and nothing else: no revoked count,
  * no account id. A stale or unknown attestation is `invalid-request-v1`, like
  * any other invalid field, so a caller learns nothing about which part failed.
@@ -33,6 +42,14 @@ export async function PUT(request: Request) {
   if (!parsed.success) return invalidRequest(["body"]);
   const code = declarableCode(parsed.data.code);
   if (!code) return invalidRequest(["code"]);
+  // Only a paused code on the hosted deployment needs the current answer;
+  // everything else is decided by the code alone, without a read.
+  const pausesApply = isHostedDeployment();
+  const current = pausesApply && isPausedCountry(code)
+    ? await readDeclaredJurisdiction(context.user.id).catch(() => undefined)
+    : null;
+  if (current === undefined) return notFound();
+  if (declarationRestriction(code, current, pausesApply)) return invalidRequest(["code"]);
 
   const { data, error } = await createAdminClient().rpc("declare_jurisdiction_v1", {
     p_account_id: context.user.id,
