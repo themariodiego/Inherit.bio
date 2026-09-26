@@ -193,11 +193,13 @@
       "category": "dependency-platform",
       "aliases": [
         "openai",
-        "openai.com"
+        "openai.com",
+        "chatgpt"
       ],
-      "reason": "Supported bring-your-own-key model API and installed SDK adapter.",
+      "reason": "Supported bring-your-own-key model API and installed SDK adapter. ChatGPT is the same organisation's chat product, named only to label the Copilot provider preset and to say that a chat subscription is separate from an API key.",
       "evidence": [
-        "package.json"
+        "package.json",
+        "src/copy/settings/copilot-providers.ts"
       ]
     },
     {
@@ -213,6 +215,22 @@
       "reason": "Supported bring-your-own-key model API and installed SDK adapter. The two hosts also appear in this repository's own history: every commit trailer carries a claude.ai session link, and a squash-merge copies the pull-request body's claude.com attribution line into the commit message on main. Same organisation, already reviewed here; the alias list simply predated the second domain.",
       "evidence": [
         "package.json"
+      ]
+    },
+    {
+      "name": "xAI",
+      "category": "dependency-platform",
+      "aliases": [
+        "xai",
+        "x.ai",
+        "grok",
+        "supergrok"
+      ],
+      "reason": "Supported bring-your-own-key model API, offered as a Copilot provider preset and reached through the installed OpenAI-compatible SDK adapter. Grok and SuperGrok are the same organisation's models and chat subscription, named only to label the preset and to say that a chat subscription is separate from an API key.",
+      "evidence": [
+        "package.json",
+        "src/lib/copilot/provider-presets.ts",
+        "src/copy/settings/copilot-providers.ts"
       ]
     },
     {
