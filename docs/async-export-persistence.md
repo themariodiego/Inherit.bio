@@ -234,3 +234,9 @@ they belong to the non-self projections of step 3.
 
 **Not yet:** chats and messages, the legal-audit slice (which has no requester resolver), and the
 versioned member plan with its final set-equality check before ready.
+
+After #215 merged on 26 September, the migration was applied to production in
+one guarded statement. It pinned both replaced functions and the reader's five
+dependencies to the tested definitions, and refused if any export job existed
+(`docs/evidence/export-history-reader-production-apply-20260926/`). The
+deployed application does not call either function.
