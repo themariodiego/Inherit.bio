@@ -12,7 +12,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ANTHROPIC_MODELS } from "@/lib/llm";
+import {
+  COPILOT_PRESET_ADDRESS_HINT,
+  COPILOT_PRESET_GUIDE_HEADING,
+  COPILOT_PRESET_GUIDES,
+  COPILOT_PRESET_MODEL_HINTS,
+  COPILOT_PRESET_NAMES,
+} from "@/copy/settings/copilot-providers";
+import {
+  COPILOT_PROVIDER_PRESETS,
+  copilotPresetBaseUrl,
+  copilotPresetFor,
+  copilotPresetTarget,
+  isCopilotProviderPreset,
+  type CopilotProviderPreset,
+} from "@/lib/copilot/provider-presets";
+import { ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL } from "@/lib/llm";
 
 export function LlmSettingsForm({
   current,
@@ -27,19 +42,23 @@ export function LlmSettingsForm({
   } | null;
 }) {
   const router = useRouter();
-  const [provider, setProvider] = useState<"anthropic" | "openai_compatible">(
-    current?.provider ?? "anthropic",
-  );
+  // A preset only fills `provider` and `base_url`; the custom endpoint keeps
+  // its own typed address, so choosing a preset never overwrites it.
+  const [preset, setPreset] = useState<CopilotProviderPreset>(copilotPresetFor(current));
   const [baseUrl, setBaseUrl] = useState(
     current?.base_url ?? (localAvailable ? "http://localhost:11434/v1" : ""),
   );
   const [model, setModel] = useState(
     current?.model ??
-      (current?.provider === "openai_compatible" ? "llama3.1" : "claude-sonnet-5"),
+      (current?.provider === "openai_compatible" ? "llama3.1" : DEFAULT_ANTHROPIC_MODEL),
   );
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const { provider, base_url } = copilotPresetTarget(preset, baseUrl);
+  const presetUrl = copilotPresetBaseUrl(preset);
+  const guide = preset === "custom" ? null : COPILOT_PRESET_GUIDES[preset];
+  const modelHint = preset === "openai" || preset === "xai" ? COPILOT_PRESET_MODEL_HINTS[preset] : null;
 
   return (
     <form
@@ -54,10 +73,10 @@ export function LlmSettingsForm({
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
               provider,
-              base_url: provider === "openai_compatible" ? baseUrl : null,
+              base_url,
               model:
                 provider === "anthropic" && !ANTHROPIC_MODELS.includes(model as never)
-                  ? "claude-sonnet-5"
+                  ? DEFAULT_ANTHROPIC_MODEL
                   : model,
               api_key: apiKey || null,
             }),
@@ -72,39 +91,60 @@ export function LlmSettingsForm({
       <div className="space-y-1.5">
         <Label htmlFor="llm-provider">Provider</Label>
         <Select
-          value={provider}
+          value={preset}
           onValueChange={(v) => {
-            const p = v as "anthropic" | "openai_compatible";
-            setProvider(p);
-            setModel(p === "anthropic" ? "claude-sonnet-5" : "llama3.1");
+            if (!isCopilotProviderPreset(v)) return;
+            setPreset(v);
+            // Model names differ between providers and change often, so a
+            // named preset starts empty and the person types one.
+            setModel(v === "anthropic" ? DEFAULT_ANTHROPIC_MODEL : v === "custom" ? "llama3.1" : "");
           }}
         >
           <SelectTrigger id="llm-provider" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="openai_compatible">
-              OpenAI-compatible endpoint
-            </SelectItem>
-            <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+            {COPILOT_PROVIDER_PRESETS.map((p) => (
+              <SelectItem key={p} value={p}>
+                {COPILOT_PRESET_NAMES[p]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        {provider === "openai_compatible" ? (
+        {preset === "custom" ? (
           <p className="text-xs text-ink-muted">
             {localAvailable ? "This server can use the local model addresses set by its owner." : "This server can use external HTTPS providers. It cannot reach a model on your computer."}
           </p>
+        ) : null}
+        {guide ? (
+          <div className="space-y-2 rounded-xl border border-line bg-card p-4 text-sm">
+            <p className="font-medium">{COPILOT_PRESET_GUIDE_HEADING}</p>
+            <ul className="list-disc space-y-1 pl-5 text-ink-muted">
+              <li>{guide.key}</li>
+              <li>{guide.spending}</li>
+              <li>{guide.subscription}</li>
+              <li>{guide.disclosure}</li>
+            </ul>
+          </div>
         ) : null}
       </div>
 
       {provider === "openai_compatible" ? (
         <div className="space-y-1.5">
           <Label htmlFor="llm-base-url">Base URL</Label>
-          <Input
-            id="llm-base-url"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder={localAvailable ? "http://localhost:11434/v1" : "https://your-provider.example/v1"}
-          />
+          {presetUrl ? (
+            <Input id="llm-base-url" value={presetUrl} readOnly aria-describedby="llm-base-url-preset" />
+          ) : (
+            <Input
+              id="llm-base-url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder={localAvailable ? "http://localhost:11434/v1" : "https://your-provider.example/v1"}
+            />
+          )}
+          {presetUrl ? (
+            <p id="llm-base-url-preset" className="text-xs text-ink-muted">{COPILOT_PRESET_ADDRESS_HINT}</p>
+          ) : null}
           <p className="text-xs text-ink-muted">
             The server verifies the destination. Saving does not grant permission to send your information.
           </p>
@@ -122,7 +162,7 @@ export function LlmSettingsForm({
               {ANTHROPIC_MODELS.map((m) => (
                 <SelectItem key={m} value={m}>
                   {m}
-                  {m === "claude-sonnet-5" ? " (default)" : ""}
+                  {m === DEFAULT_ANTHROPIC_MODEL ? " (default)" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -132,9 +172,14 @@ export function LlmSettingsForm({
             id="llm-model"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="llama3.1"
+            placeholder={preset === "custom" ? "llama3.1" : undefined}
+            required={preset !== "custom"}
+            aria-describedby={modelHint ? "llm-model-hint" : undefined}
           />
         )}
+        {modelHint ? (
+          <p id="llm-model-hint" className="text-xs text-ink-muted">{modelHint}</p>
+        ) : null}
       </div>
 
       <div className="space-y-1.5">
@@ -144,7 +189,7 @@ export function LlmSettingsForm({
             <span className="font-normal text-ink-muted">
               (stored, ends …{current.key_last4})
             </span>
-          ) : provider === "openai_compatible" ? (
+          ) : preset === "custom" ? (
             <span className="font-normal text-ink-muted">
               (optional if your provider does not need one)
             </span>
@@ -156,6 +201,7 @@ export function LlmSettingsForm({
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           autoComplete="off"
+          required={(preset === "openai" || preset === "xai") && !current?.key_last4}
           placeholder={current?.key_last4 ? "Enter to replace" : "sk-…"}
         />
         <p className="text-xs text-ink-muted">
