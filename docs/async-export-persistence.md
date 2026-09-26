@@ -303,3 +303,14 @@ The full suite passes: 94 files, 3,943 assertions.
 Chats in other scopes (`subject`, `family`, `cohort` and `report`) are not
 exported. Today they cannot occur alongside a capturable job, and they belong
 to the non-self projections of step 3.
+
+After #216 merged on 26 September, the migration was applied to production in
+one guarded statement
+(`docs/evidence/export-chat-reader-production-apply-20260926/`). The owner
+confirmed both chat choices first. The statement pinned:
+
+- both replaced functions, and the six existing functions the new code calls;
+- the columns of the five tables the chat helper reads;
+- no export job existing.
+
+The deployed application does not call any of these functions.
