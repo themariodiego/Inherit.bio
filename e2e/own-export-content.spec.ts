@@ -42,7 +42,8 @@ test("own export keeps both originals, includes only generated findings and pres
     expect(manifest.warnings ?? []).toEqual([]);
     expect(zip.getEntries().filter(entry => entry.entryName.startsWith("originals/"))).toHaveLength(2);
     for (const source of sources) {
-      expect(zip.readFile(`originals/${source.id}`)).toEqual(source.bytes);
+      // Both fixtures are uncompressed VCFs, so each is named `.vcf` (F3).
+      expect(zip.readFile(`originals/${source.id}.vcf`)).toEqual(source.bytes);
       const variants = await admin.from("user_variants").select("rsid,chrom,pos,ref,alt,genotype", { count: "exact" })
         .eq("file_id", source.id).order("id");
       expect(variants.error).toBeNull();

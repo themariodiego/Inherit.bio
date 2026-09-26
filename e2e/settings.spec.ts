@@ -420,10 +420,14 @@ test("/settings/data complete: both exit rights render, and the export names wha
   await expect(exportSection.getByRole("link", { name: "Download export" }))
     .toHaveAttribute("href", "/api/export");
   // Each named class is a promise about the archive's scope, not decoration.
-  for (const claimed of ["your uploads", "DNA variants we found", "results",
-    "consent records", "legal audit records", "saved chats"]) {
+  for (const claimed of ["your uploads", "DNA variants we found", "results", "saved chats",
+    "consent and permission records", "birth date", "the country you chose"]) {
     await expect(exportSection, `the export names ${claimed}`).toContainText(claimed);
   }
+  // F4, 26 Sep 2026: the page promised legal audit records and a production
+  // export had none, because nothing yet selects one account's audit rows. The
+  // gap is stated, not implied.
+  await expect(exportSection).toContainText("Legal audit records are not in it yet.");
 
   // The second right. Held here rather than driven: e2e/settings.spec.ts
   // already schedules one real deletion above, and once is enough.
