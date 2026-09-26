@@ -81,7 +81,7 @@ describe("authentication callback redirects", () => {
   it("preserves failed verification and does not stamp independent login", async () => {
     mocks.exchange.mockResolvedValue({ error: { message: "invalid" } });
     const response = await GET(request("/files"));
-    expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed");
+    expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
     expect(mocks.user).not.toHaveBeenCalled();
     expect(mocks.mark).not.toHaveBeenCalled();
   });
@@ -98,7 +98,7 @@ describe("sign-up confirmation links", () => {
     mocks.exchange.mockResolvedValue({ error: { code, message: "synthetic library text" } });
     const response = await GET(request("/overview", false, { flow: "signup" }));
     const { location, message } = signInTarget(response);
-    expect(location).toBe("https://inherit.example.test/auth/sign-in?notice=email_confirmed&next=%2Foverview");
+    expect(location).toBe("https://inherit.example.test/auth/sign-in?notice=email_confirmed&next=%2Foverview#");
     expect(message).toEqual({ role: "status", text: "Your email is confirmed. Sign in to continue." });
     expect(mocks.user).not.toHaveBeenCalled();
     expect(mocks.mark).not.toHaveBeenCalled();
@@ -114,7 +114,7 @@ describe("sign-up confirmation links", () => {
     mocks.exchange.mockResolvedValue({ error: { code, message: "synthetic library text" } });
     for (const extra of [{}, { flow: "recovery" }] as Query[]) {
       const { location, message } = signInTarget(await GET(request("/overview", false, extra)));
-      expect(location).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed");
+      expect(location).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
       expect(message?.role).toBe("alert");
     }
   });
@@ -122,7 +122,7 @@ describe("sign-up confirmation links", () => {
     for (const error of [{ code: "unexpected_failure", message: "x" }, { message: "no code at all" }]) {
       mocks.exchange.mockResolvedValue({ error });
       const response = await GET(request("/overview", false, { flow: "signup" }));
-      expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed");
+      expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
     }
   });
 });
@@ -130,7 +130,7 @@ describe("sign-up confirmation links", () => {
 describe("used or expired email links", () => {
   it.each<Query>([{}, { flow: "signup" }])("sends a refused link to link_expired without echoing its text (%o)", async (extra) => {
     const { location, message } = signInTarget(await GET(refusedLink({ ...EXPIRED_LINK, ...extra })));
-    expect(location).toBe("https://inherit.example.test/auth/sign-in?error=link_expired");
+    expect(location).toBe("https://inherit.example.test/auth/sign-in?error=link_expired#");
     expect(message?.role).toBe("alert");
     expect(location).not.toContain("invalid");
     expect(message?.text).not.toContain("invalid");
@@ -138,11 +138,22 @@ describe("used or expired email links", () => {
     expect(mocks.verify).not.toHaveBeenCalled();
     expect(mocks.mark).not.toHaveBeenCalled();
   });
+  it("ends the fragment, so a browser drops the error text `/verify` put in it", async () => {
+    // Browsers keep the request's fragment across a redirect whose Location
+    // has none; an empty one replaces it.
+    for (const response of [await GET(refusedLink(EXPIRED_LINK)), await GET(refusedLink({})),
+      await (mocks.exchange.mockResolvedValue({ error: { code: "flow_state_expired", message: "x" } }),
+        GET(request("/overview", false, { flow: "signup" })))]) {
+      const location = response.headers.get("location")!;
+      expect(location.endsWith("#")).toBe(true);
+      expect(new URL(location).hash).toBe("");
+    }
+  });
   it("keeps verification_failed for other error parameters, such as a cancelled GitHub sign-in", async () => {
     for (const params of [{ error: "access_denied", error_description: "The user denied the request" },
       { error: "server_error", error_code: "unexpected_failure" }, {}] as Query[]) {
       const response = await GET(refusedLink(params));
-      expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed");
+      expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
     }
     expect(mocks.exchange).not.toHaveBeenCalled();
   });

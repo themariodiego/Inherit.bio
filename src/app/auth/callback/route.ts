@@ -29,6 +29,11 @@ function toSignIn(
 ) {
   const target = new URL("/auth/sign-in", origin);
   for (const [name, value] of Object.entries(query)) target.searchParams.set(name, value);
+  // An empty fragment, on purpose. `/verify` puts its error text in the
+  // fragment of the URL it redirects here, and a browser carries a fragment
+  // over a redirect whose Location has none (RFC 9110, section 10.2.2), so
+  // Supabase's wording would stay in the address bar of the sign-in page.
+  target.hash = "#";
   return NextResponse.redirect(target);
 }
 

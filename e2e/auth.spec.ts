@@ -107,8 +107,12 @@ test("a sign-up link opened in another browser confirms the email and says so", 
     // The link is now used: `/verify` refuses it, even in the browser that
     // signed up, and the page says why instead of echoing Supabase's text.
     await page.goto(link!);
-    await page.waitForURL(/\/auth\/sign-in\?error=link_expired$/, { timeout: 30_000 });
+    await page.waitForURL(/\/auth\/sign-in\?error=link_expired#?$/, { timeout: 30_000 });
     await expect(page.locator("main").getByRole("alert")).toHaveText(SIGN_IN_ERRORS.link_expired);
+    // `/verify` wrote its own error text into the fragment it redirected to;
+    // the callback's empty fragment keeps that text out of the address bar.
+    expect(new URL(page.url()).hash).toBe("");
+    expect(page.url()).not.toContain("error_description");
 
     // The notice is true: the password chosen at sign-up now works.
     await phone.getByLabel("Email").fill(other.email);
