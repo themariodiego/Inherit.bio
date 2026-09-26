@@ -12,6 +12,9 @@ async function downloadOriginal(page: Page, fileId: string, fixture: string) {
   const transfer = page.waitForEvent("download");
   await page.locator(`a[href="/api/files/${fileId}/download"]`).click();
   const download = await transfer;
+  // F3: the generic stored name plus the extension of the stored type, so the
+  // saved file opens. Every fixture here is an uncompressed VCF.
+  expect(download.suggestedFilename()).toBe("Genome file.vcf");
   const localPath = await download.path();
   expect(localPath).not.toBeNull();
   expect(readFileSync(localPath!)).toEqual(readFileSync(fixture));

@@ -55,4 +55,29 @@ describe("original download route", () => {
   it("cancels without starting a range when the browser closes before consuming", async () => {
     const response=await run();await response.body!.cancel();expect(fetch).not.toHaveBeenCalled();
   });
+  // F3, 26 Sep 2026: the canonical path stores the generic `Genome file`, so the
+  // browser saved a file with no extension that nothing would open.
+  describe("the saved name of a canonical original", () => {
+    const raw = createHash("sha256").update(bytes).digest("hex"), decoded = "d".repeat(64);
+    const receipt = () => { const captured = source();
+      mocks.rpc.mockImplementation(async name => ({ data: name === "own_original_download_state_v1" ? state() : { source: captured, originalName: "Genome file" }, error: null })); };
+    it("keeps the generic name and adds the extension of the stored type, gzip included", async () => {
+      mocks.file.mockResolvedValue({ data: { bucket_path: other, original_name: "Genome file", file_type: "vcf", sha256: raw, source_sha256: decoded } });
+      receipt(); const response = await run(); expect(response.status).toBe(200);
+      expect(response.headers.get("content-disposition")).toBe("attachment; filename*=UTF-8''Genome%20file.vcf.gz");
+      await response.arrayBuffer();
+    });
+    it("names an uncompressed gVCF by its own double extension", async () => {
+      mocks.file.mockResolvedValue({ data: { bucket_path: other, original_name: "Genome file", file_type: "gvcf", sha256: raw, source_sha256: raw } });
+      receipt(); const response = await run();
+      expect(response.headers.get("content-disposition")).toBe("attachment; filename*=UTF-8''Genome%20file.g.vcf");
+      await response.arrayBuffer();
+    });
+    it("signs the database-backed download under the same name", async () => {
+      mocks.file.mockResolvedValue({ data: { bucket_path: other, original_name: "Genome file", file_type: "array_23andme", sha256: raw, source_sha256: raw } });
+      mocks.rpc.mockResolvedValue({ data: state(false), error: null });
+      expect((await run()).status).toBe(307);
+      expect(mocks.sign).toHaveBeenCalledWith(other, 300, { download: "Genome file.txt" });
+    });
+  });
 });
