@@ -3986,3 +3986,21 @@ recommended ones.
   `jurisdiction_revision`. A changed country ends every restricted permission
   the account takes part in, and adult self-analysis on the account's own
   subject keeps its signing-time snapshot. The ADR is now Accepted.
+
+## 2026-09-25 (night) — Export of own Copilot conversations: engineering decisions for owner review
+
+Two choices the register leaves open, taken conservatively while the owner was
+away. Both are in migration `20260925220000` and are easy to reverse:
+
+- **A chat's exportability follows its own grants, not the current provider
+  settings.** It is exported while the Copilot grant it was created under
+  (and, for a cloud model, the provider consent) is the same current revision.
+  In this schema, changing or deleting the settings supersedes those grants,
+  so such chats leave the export exactly as they leave the chat history, and
+  their deletion is already queued. The export never needs the provider to be
+  reachable.
+- **Legacy unverified chats are not exported.** They predate canonical chat
+  authority, so nothing proves which grants and data they were answered under.
+  The chat history already hides them. Exporting them would hand back content
+  whose basis may since have been revoked. The alternative is to export them
+  marked as unverified history.
