@@ -7,9 +7,9 @@ accordingly.
 ## Reporting a vulnerability
 
 Email **security@inherit.bio**. This is the same contact published in
-[`/.well-known/security.txt`](https://www.inherit.bio/.well-known/security.txt),
+[`/.well-known/security.txt`](https://inherit.bio/.well-known/security.txt),
 and the full policy is at
-[inherit.bio/legal/incident-response](https://www.inherit.bio/legal/incident-response).
+[inherit.bio/legal/incident-response](https://inherit.bio/legal/incident-response).
 
 Please do **not** open a public issue for a security defect.
 

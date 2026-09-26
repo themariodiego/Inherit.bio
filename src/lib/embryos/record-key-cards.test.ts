@@ -111,9 +111,9 @@ describe("claim link", () => {
     // platform an unset value is refused rather than guessed at.
     vi.stubEnv("VERCEL", "1");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
-    expect(canonicalOrigin()).toBe("https://www.inherit.bio");
+    expect(canonicalOrigin()).toBe("https://inherit.bio");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
-    expect(canonicalOrigin()).toBe("https://www.inherit.bio");
+    expect(canonicalOrigin()).toBe("https://inherit.bio");
     vi.stubEnv("VERCEL", undefined);
     expect(() => canonicalOrigin()).toThrow(/NEXT_PUBLIC_APP_URL is unset/);
   });
@@ -121,7 +121,7 @@ describe("claim link", () => {
   it("points at the future-person claim route on the given or canonical origin", () => {
     vi.stubEnv("VERCEL", "1");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
-    expect(claimUrl()).toBe("https://www.inherit.bio/future-person/claim");
+    expect(claimUrl()).toBe("https://inherit.bio/future-person/claim");
     expect(claimUrl("https://staging.example.test")).toBe("https://staging.example.test/future-person/claim");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.test");
     expect(claimUrl()).toBe("https://staging.example.test/future-person/claim");
@@ -185,7 +185,7 @@ describe("card shapes", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
     const card = cohortCard(CARD_TWO);
     expect(Object.keys(card)).toEqual(COHORT_CARD_KEYS);
-    expect(card.claim_url).toBe("https://www.inherit.bio/future-person/claim");
+    expect(card.claim_url).toBe("https://inherit.bio/future-person/claim");
     expect(card.closing_date_words).toBe("1 June 2047");
   });
 

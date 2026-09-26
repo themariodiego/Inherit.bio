@@ -3,7 +3,7 @@
 The order in which the prepared-genome path (single-sample VCF, VCF.gz and
 gVCF on Cloudflare, ADR-0030) goes from the inert configuration in this
 repository to a proven, enabled production path. Each step names who does
-it. Nothing before step 8 changes what a person can do on `www.inherit.bio`.
+it. Nothing before step 8 changes what a person can do on `inherit.bio`.
 The owner's decisions behind this order are recorded in
 `docs/mvp-acceptance-next.md` (18 September 2026).
 

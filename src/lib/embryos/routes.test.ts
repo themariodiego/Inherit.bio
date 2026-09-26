@@ -377,7 +377,7 @@ describe("api.embryo-disposition", () => {
     const card = { record_key: "0123456789ABCDEFGHJK", closing_date_iso: "2047-06-05", closing_date_state: "definitive_transferred_claim_window" };
     const delivered = dispositionResponse(
       { embryoId: EMBRYO_ID, disposition: "transferred", effectiveAt: AT, retentionExpiresAt: LATER, recipientSetRevision: 2, callerState: "delivered_inline", card },
-      "https://www.inherit.bio",
+      "https://inherit.bio",
     );
     expect(delivered).toEqual({
       status: 200,
@@ -389,7 +389,7 @@ describe("api.embryo-disposition", () => {
         recordKeyDelivery: { recipientSetRevision: 2, callerState: "delivered_inline" },
         recordKeyCard: {
           recordKey: "0123456789ABCDEFGHJK",
-          claimUrl: "https://www.inherit.bio/future-person/claim",
+          claimUrl: "https://inherit.bio/future-person/claim",
           closingDateWords: "5 June 2047",
           closingDateIso: "2047-06-05",
           closingDateState: "definitive_transferred_claim_window",

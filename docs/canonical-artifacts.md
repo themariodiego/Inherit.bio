@@ -3,7 +3,7 @@
 Status: binding
 Baseline application SHA: `864736979c92a08ba77e8580d61946eba6864918`
 Brief SHA-256: `2914f42bba3ccdb34816f07c23b4cffdee14f3328b4fa5f2a0f231133be9abbe`
-Platform: GitHub `themariodiego/Inherit.bio`; canonical domain `www.inherit.bio`; Supabase project **Inherit** (`zuvloczwgrayonqabnss`); Vercel project `sequence` (`prj_K7bVowhjFr0uIapXraH41hthJkgy`) pending a separately reviewed platform rename.
+Platform: GitHub `themariodiego/Inherit.bio`; canonical domain `inherit.bio`; Supabase project **Inherit** (`zuvloczwgrayonqabnss`); Vercel project `sequence` (`prj_K7bVowhjFr0uIapXraH41hthJkgy`) pending a separately reviewed platform rename.
 
 This file is the index required by X0.2. An item has one authority. Generated code, tests, seed files and rendered copy may consume an authority, but may not redefine it. A differing second definition is a defect.
 
