@@ -198,6 +198,7 @@
     "/genome/[subject] jurisdiction-unavailable",
     "/genome/[subject] processing",
     "/genome/[subject]/ancestry complete",
+    "/genome/[subject]/ancestry consent-required",
     "/genome/[subject]/ancestry empty",
     "/genome/[subject]/ancestry jurisdiction-unavailable",
     "/genome/[subject]/ancestry not-covered",

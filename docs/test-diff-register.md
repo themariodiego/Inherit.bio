@@ -1,5 +1,43 @@
 # Test diff register
 
+## Ancestry on, nothing generated · 26 September 2026
+
+Turning Ancestry on only grants it; "Generate selected reports" makes the
+result. Until then the ancestry page said no file had been processed, for as
+long as nobody pressed it. Unit cases now cover the third reason (Ancestry
+on, prepared file, no stored result) in the selector, the page, the regions
+panel and both lineage cards. Two mutations were each caught: the old rule
+(on means nothing-read) failed four cases, and a card that ignored the new
+reason failed one. One page case that withdraws a row mid-read now expects
+this reason rather than nothing-read, since Ancestry is on there.
+
+No "being generated" state: generation runs inside one request and its only
+record in flight is a private journal nothing on the page reads.
+`ancestry-revocation.spec.ts` (not run here) now turns Ancestry back on
+without generating and asserts the new sentence and link in all three
+panels. `a11y.spec.ts` accepts it as a reason for a grey map. No register
+state changes, and no assertion, fixture or gate is removed.
+
+## Ancestry off state and region count · 26 September 2026
+
+Production showed "Nothing to show until a file has been processed" under a
+"Five broad regions" caption to someone whose file was processed and who had
+turned Ancestry off. Unit cases now cover the three states (no file, Ancestry
+off, result present), the Reports page's choices section as the one source
+for "off", both lineage cards, and the rule that only historical five-region
+results name five regions. One page case changed its expectation from the
+legacy component with no result to the new absent state; all its other
+assertions remain.
+
+Browser specs changed and NOT run here (the shared stack was in use):
+`ancestry-revocation.spec.ts` now asserts the off sentence and link in all
+three panels, and is retitled from `empty` to `consent-required`, the state
+it now renders. `genome-data-empty.spec.ts` adds the ancestry `empty` proof
+with a fresh account that processed nothing. `a11y.spec.ts` accepts the off
+note as the reason a grey map is grey. The register drops the ancestry
+consent-required waiver; required pairs go 152 to 153 and unproven stay 11.
+No assertion, fixture or gate is removed.
+
 ## TCF7L2 source scope · 23 September 2026
 
 Six additive cases preserve the exact C>T call contract, trial population and

@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ actor: vi.fn(), target: vi.fn(), rpc: vi.fn(),
 vi.mock("./own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.target }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }) }));
-import { prepareOwnReportChoices } from "./prepare-own-report-choices";
+import { loadOwnReportChoicesPanel, prepareOwnReportChoices } from "./prepare-own-report-choices";
 import { OWN_REPORT_CHOICES, OWN_REPORT_PURPOSES } from "./own-report-purpose";
 import { readOwnReportPresentation } from "./own-report-token";
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
@@ -27,11 +27,12 @@ beforeEach(() => {
   mocks.target.mockResolvedValue({ id: subjectId, subjectAccountId: accountId, subjectClass: "self" });
   mocks.rpc.mockResolvedValue({ data: snapshot, error: null });
   results = { consent_artifacts: { data: artifacts, error: null }, purpose_grants: { data: [], error: null },
-    directional_grants: { data: [], error: null }, consent_artifact_changes: { data: [], error: null } };
+    directional_grants: { data: [], error: null }, consent_artifact_changes: { data: [], error: null },
+    genome_files: { data: [], error: null } };
   mocks.from.mockImplementation((table: string) => {
     const query: Record<string, unknown> = {};
     const used: string[] = [];
-    for (const method of ["select", "eq", "in", "is", "lte", "or", "gt"]) query[method] = (...args: unknown[]) => {
+    for (const method of ["select", "eq", "in", "is", "lte", "or", "gt", "not", "order"]) query[method] = (...args: unknown[]) => {
       used.push(method); calls.push([table, method, ...args]); return query;
     };
     // Two reads hit consent_artifacts: the live documents, and the superseding
@@ -140,5 +141,44 @@ describe("own report choices presentation", () => {
       await prepareOwnReportChoices();
       expect(calls).toContainEqual(["consent_artifacts", "gt", "version", 1]);
     });
+  });
+});
+
+/**
+ * The "Choose your reports" section as the Reports page renders it. The
+ * ancestry page reads the same answer to decide whether to say "Ancestry is
+ * off", so it must be `ready` only when that section is really shown.
+ */
+describe("the Choose your reports section", () => {
+  const prepared = (id: string, created_at: string, revisions = [3, 3]) =>
+    ({ id, created_at, normalization_source_revision: revisions[0], upload_revision: revisions[1] });
+  it("is hidden when no file has been prepared, whatever the choices say", async () => {
+    expect(await loadOwnReportChoicesPanel()).toEqual({ kind: "hidden" });
+    expect(calls).toContainEqual(["genome_files", "eq", "subject_id", subjectId]);
+    expect(calls).toContainEqual(["genome_files", "not", "single_logical_sample_verified_at", "is", null]);
+    expect(calls).toContainEqual(["genome_files", "not", "normalization_completed_at", "is", null]);
+  });
+  it("is hidden when the only file is prepared from an older upload revision", async () => {
+    results.genome_files.data = [prepared(accountId, "2026-09-20T10:00:00Z", [2, 3])];
+    expect(await loadOwnReportChoicesPanel()).toEqual({ kind: "hidden" });
+  });
+  it("is hidden, without reading files, when there are no own-account choices for this record", async () => {
+    mocks.target.mockResolvedValue({ id: subjectId, subjectAccountId: accountId, subjectClass: "embryo" });
+    expect(await loadOwnReportChoicesPanel("s-other")).toEqual({ kind: "hidden" });
+    expect(mocks.target).toHaveBeenCalledWith(accountId, "s-other");
+    expect(calls.some(([table]) => table === "genome_files")).toBe(false);
+  });
+  it("says it could not load, rather than hiding or showing off-by-default choices, when the file read fails", async () => {
+    results.genome_files = { data: null, error: { message: "private detail" } };
+    expect(await loadOwnReportChoicesPanel()).toEqual({ kind: "files-unavailable" });
+  });
+  it("is ready with the choices and the prepared files, newest first, when both exist", async () => {
+    results.genome_files.data = [prepared(accountId, "2026-09-21T10:00:00Z"), prepared(sessionId, "2026-09-20T10:00:00Z")];
+    const panel = await loadOwnReportChoicesPanel();
+    if (panel.kind !== "ready") throw Error("expected ready");
+    expect(panel.files).toEqual([{ id: accountId, label: "File 1 · uploaded 2026-09-21" },
+      { id: sessionId, label: "File 2 · uploaded 2026-09-20" }]);
+    expect(panel.view.choices.find(c => c.purposeKey === "ancestry")?.granted).toBe(false);
+    expect(calls).toContainEqual(["genome_files", "order", "created_at", { ascending: false }]);
   });
 });

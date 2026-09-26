@@ -1541,13 +1541,16 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         expect.soft(focusable, "every region drawn on the map is reachable without a pointer").toBe(drawn);
         expect.soft(rows, "every region drawn on the map has a row of its own in the table").toBe(drawn);
       } else {
-        // A grey map states nothing — too few markers were read — so there is
-        // nothing for a list to restate; what has to be there is the sentence
-        // saying so, and (in the grey state) the raw numbers behind a summary,
-        // which the sweep above opened from the keyboard.
+        // A grey map states nothing — too few markers were read, nothing has
+        // been processed, (this sweep's account, which chose trait reports
+        // only) Ancestry is off, or it is on with nothing generated yet — so
+        // there is nothing for a list to restate;
+        // what has to be there is the sentence saying which, and (in the grey
+        // state) the raw numbers behind a summary, which the sweep above
+        // opened from the keyboard.
         expect.soft(await page.locator('[data-slot="ancestry-map"] path[tabindex="0"]').count(),
           "a grey map states nothing, so it offers nothing to focus").toBe(0);
-        await expect.soft(page.locator('[data-slot="grey-state"], [data-slot="nothing-read"]').first(),
+        await expect.soft(page.locator('[data-slot="grey-state"], [data-slot="nothing-read"], [data-slot="ancestry-off"], [data-slot="ancestry-not-generated"]').first(),
           "a grey map says in words why it is grey").toBeVisible();
       }
     });
