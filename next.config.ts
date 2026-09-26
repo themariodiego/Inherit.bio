@@ -9,6 +9,9 @@ if (
   );
 }
 
+/** Every path except the scheduled and operator job endpoints; see redirects(). */
+const ALIAS_HOST_SOURCE = "/:path((?!api/(?:cron|jobs)/).*)";
+
 const nextConfig: NextConfig = {
   // Runtime data files read with fs (not imported) must be traced into the
   // serverless bundle explicitly.
@@ -35,24 +38,31 @@ const nextConfig: NextConfig = {
   // read a host `value` as a regular expression, so the dots are escaped and
   // each entry matches its one host: preview deployments and localhost never
   // match and are never redirected.
+  //
+  // Paths under /api/cron/ and /api/jobs/ are the one exception, and answer on
+  // every host. Vercel calls the scheduled jobs in vercel.json on a production
+  // URL its documentation does not name, and does not follow a redirect it
+  // gets back, so a 308 there would stop mail delivery and retention without
+  // an error. Every route under both prefixes answers only a bearer secret, so
+  // no session or page is served on an alias host by leaving them.
   async redirects() {
     return [
       {
-        source: "/:path*",
+        source: ALIAS_HOST_SOURCE,
         has: [{ type: "host", value: "www\\.inherit\\.bio" }],
-        destination: "https://inherit.bio/:path*",
+        destination: "https://inherit.bio/:path",
         permanent: true,
       },
       {
-        source: "/:path*",
+        source: ALIAS_HOST_SOURCE,
         has: [{ type: "host", value: "sequence\\.plus\\.bio" }],
-        destination: "https://inherit.bio/:path*",
+        destination: "https://inherit.bio/:path",
         permanent: true,
       },
       {
-        source: "/:path*",
+        source: ALIAS_HOST_SOURCE,
         has: [{ type: "host", value: "sequence-murex\\.vercel\\.app" }],
-        destination: "https://inherit.bio/:path*",
+        destination: "https://inherit.bio/:path",
         permanent: true,
       },
       { source: "/signup", destination: "/auth/sign-up", permanent: true },

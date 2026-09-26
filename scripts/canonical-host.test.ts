@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parse, stringify, type ParsedUrlQuery } from "node:querystring";
 import { fileURLToPath, format } from "node:url";
@@ -29,6 +29,8 @@ interface OriginAlias {
   destination: { originFrom: string };
   pathAndQuery: string;
   expectedStatus: number;
+  exceptPathPrefixes: string[];
+  exceptReason: string;
 }
 
 const register = JSON.parse(readFileSync(path.join(ROOT, "docs/route-register.json"), "utf8")) as {
@@ -76,6 +78,23 @@ function resolve(redirects: ConfiguredRedirect[], host: string, pathAndQuery: st
 
 const aliasHosts = register.originAliases.map((alias) => new URL(alias.origin).host);
 
+/**
+ * Vercel calls these on a production URL its documentation does not name, and
+ * a cron request that gets a redirect back stops there, so none may redirect.
+ */
+const cronPaths = (JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf8")) as {
+  crons: { path: string }[];
+}).crons.map((cron) => cron.path);
+
+/** Every route under the exempt prefixes, read off the app directory. */
+function jobRoutePaths(): string[] {
+  return ["cron", "jobs"].flatMap((segment) =>
+    readdirSync(path.join(ROOT, "src/app/api", segment), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `/api/${segment}/${entry.name}`),
+  );
+}
+
 describe("the canonical host", () => {
   it("is inherit.bio, and every registered alias is a permanent redirect to it that keeps path and query", () => {
     expect(register.canonicalOrigin).toBe("https://inherit.bio");
@@ -86,7 +105,9 @@ describe("the canonical host", () => {
         destination: { originFrom: "canonicalOrigin" },
         pathAndQuery: "preserve-exactly",
         expectedStatus: 308,
+        exceptPathPrefixes: ["/api/cron/", "/api/jobs/"],
       });
+      expect(alias.exceptReason).toMatch(/cron-does-not-follow-redirects/);
     }
   });
 
@@ -101,9 +122,9 @@ describe("the canonical host", () => {
       );
       expect(entries, host).toHaveLength(1);
       expect(entries[0]).toEqual({
-        source: "/:path*",
+        source: "/:path((?!api/(?:cron|jobs)/).*)",
         has: [{ type: "host", value: host.replaceAll(".", "\\.") }],
-        destination: `${register.canonicalOrigin}/:path*`,
+        destination: `${register.canonicalOrigin}/:path`,
         permanent: true,
       });
       expect(getRedirectStatus(entries[0])).toBe(alias.expectedStatus);
@@ -128,6 +149,13 @@ describe("the canonical host", () => {
       const root = resolve(redirects, host, "/");
       expect(root?.status, host).toBe(308);
       expect(new URL(root!.location).href, host).toBe("https://inherit.bio/");
+    }
+    for (const host of aliasHosts) {
+      // Deep paths keep every segment, and the query survives beside them.
+      expect(resolve(redirects, host, "/genome/me/reports/abc/detail?tab=evidence"), host).toEqual({
+        status: 308,
+        location: "https://inherit.bio/genome/me/reports/abc/detail?tab=evidence",
+      });
     }
     // The host is compared as the router sees it: lower-cased, port dropped.
     expect(resolve(redirects, "WWW.Inherit.Bio:443", "/overview")).toEqual({
@@ -158,6 +186,27 @@ describe("the canonical host", () => {
     for (const host of unredirected) {
       expect(resolve(redirects, host, "/genome/me/reports?from=mail"), host).toBeNull();
       expect(resolve(redirects, host, "/"), host).toBeNull();
+    }
+  });
+
+  it("never redirects a scheduled or operator job on any host, and exempts nothing else", async () => {
+    const redirects = await configuredRedirects();
+    const jobs = jobRoutePaths();
+    expect(jobs).toEqual(expect.arrayContaining(cronPaths));
+    for (const cronPath of cronPaths) {
+      expect(register.originAliases[0].exceptPathPrefixes.some((prefix) => cronPath.startsWith(prefix)), cronPath).toBe(true);
+    }
+    for (const host of aliasHosts) {
+      for (const jobPath of jobs) {
+        expect(resolve(redirects, host, jobPath), `${host}${jobPath}`).toBeNull();
+      }
+      // Near misses on the prefix are ordinary paths, and redirect.
+      for (const nearMiss of ["/api/jobs", "/api/cron", "/api/jobsx/mail", "/api/uploads/finalize", "/xapi/jobs/mail", "/genome/api/jobs/mail"]) {
+        expect(resolve(redirects, host, nearMiss), `${host}${nearMiss}`).toEqual({
+          status: 308,
+          location: `https://inherit.bio${nearMiss}`,
+        });
+      }
     }
   });
 

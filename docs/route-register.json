@@ -12,7 +12,12 @@
       },
       "pathAndQuery": "preserve-exactly",
       "fragment": "client-retained-by-browser",
-      "expectedStatus": 308
+      "expectedStatus": 308,
+      "exceptPathPrefixes": [
+        "/api/cron/",
+        "/api/jobs/"
+      ],
+      "exceptReason": "scheduled-and-operator-job-endpoints-answer-only-a-bearer-secret-and-vercel-cron-does-not-follow-redirects"
     },
     {
       "origin": "https://sequence.plus.bio",
@@ -22,7 +27,12 @@
       },
       "pathAndQuery": "preserve-exactly",
       "fragment": "client-retained-by-browser",
-      "expectedStatus": 308
+      "expectedStatus": 308,
+      "exceptPathPrefixes": [
+        "/api/cron/",
+        "/api/jobs/"
+      ],
+      "exceptReason": "scheduled-and-operator-job-endpoints-answer-only-a-bearer-secret-and-vercel-cron-does-not-follow-redirects"
     },
     {
       "origin": "https://sequence-murex.vercel.app",
@@ -32,7 +42,12 @@
       },
       "pathAndQuery": "preserve-exactly",
       "fragment": "client-retained-by-browser",
-      "expectedStatus": 308
+      "expectedStatus": 308,
+      "exceptPathPrefixes": [
+        "/api/cron/",
+        "/api/jobs/"
+      ],
+      "exceptReason": "scheduled-and-operator-job-endpoints-answer-only-a-bearer-secret-and-vercel-cron-does-not-follow-redirects"
     }
   ],
   "policyContracts": {
