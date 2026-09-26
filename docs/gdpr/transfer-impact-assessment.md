@@ -48,7 +48,7 @@ is for Supabase, and for the model providers until a mechanism is settled.
   - Reports say its statutory authority lapsed on 12 June 2026 after Congress did not extend it again.
   - Collection under existing court certifications reportedly continues until about March 2027.
   - Counsel must confirm the current position.
-  - Sources: [EFF, June 2026](https://www.eff.org/deeplinks/2026/06/victory-702-has-expired); [CNBC, 30 April 2026](https://www.cnbc.com/2026/04/30/fisa-section-702-congress-extension.html); [Brennan Center resource page](https://www.brennancenter.org/our-work/research-reports/section-702-foreign-intelligence-surveillance-act-fisa-2026-resource-page).
+  - Sources (secondary, checked 26 September 2026): EFF, "Victory! 702 has Expired!" (June 2026); CNBC, report on the short-term extension (30 April 2026); the Brennan Center's Section 702 2026 resource page.
 - **Executive Order 12333** governs collection outside FISA, including in
   transit. TLS on every hop limits it.
 
