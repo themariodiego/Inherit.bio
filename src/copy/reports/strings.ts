@@ -41,9 +41,11 @@ export const NOTHING_TO_DO =
  * string is false on a position a prescribing guideline names, and filling
  * the heading with advice is what §6.4 forbids; this sentence is true and
  * gives none. Selected by `whatYouCanDo` for the `medicines` category only.
+ * Its first sentence is the warning the FDA required on the only authorized
+ * consumer pharmacogenetic reports (owner decision, 26 September 2026).
  */
 export const WHAT_YOU_CAN_DO_MEDICINES =
-  "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
+  "Do not start, stop or change any medicine because of this report. Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
 
 export const WHAT_YOU_CAN_DO_ALCOHOL_FLUSH =
   "You can discuss this result, any flushing, and your drinking history with a doctor if you wish. Inherit does not set an intake limit or tell you what care you need.";

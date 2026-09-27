@@ -71,7 +71,7 @@ const NOTHING_TO_DO =
   "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.";
 /** The Medicines "What you can do" string (ADR 0021), rendered for that category only. */
 const WHAT_YOU_CAN_DO_MEDICINES =
-  "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
+  "Do not start, stop or change any medicine because of this report. Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
 /** The evidence sentence a variant_call report renders (ADR 0021). */
 const VARIANT_CALL_EVIDENCE =
   "This position is named by a published prescribing guideline. Inherit reads the letters only.";
