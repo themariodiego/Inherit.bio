@@ -82,5 +82,6 @@ shortcut around this decision.
 The owner decision is whether to authorize the R2 qualification or retain
 Supabase while obtaining those provider capabilities. A backend switch and
 multipart implementation need this decision because the approved proposal
-explicitly chose Supabase TUS. Read-only investigation, the proof harness and
-hardening existing direct-upload grants can continue independently.
+explicitly chose Supabase TUS. Read-only investigation, the proof harness
+(parked on 27 September at commit `eabad36d`, not on `main`) and hardening
+existing direct-upload grants can continue independently.
