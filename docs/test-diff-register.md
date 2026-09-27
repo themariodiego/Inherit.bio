@@ -1,5 +1,23 @@
 # Test diff register
 
+## Private embryo configuration prerequisites · 22 September 2026
+
+Adds `supabase/tests/embryo_ingest_session_configuration.sql` without removing
+an existing assertion. It checks credential and cohort binding, exact retry
+identity, challenge shape and expiry, closed mappings, immutable configuration,
+revocation and the unchanged retention target. The injected nonce contention
+case proves rollback, not concurrent-backend execution. pgTAP remains unrun
+locally pending CI; no database or hosted upload proof is claimed.
+
+The embryo-only approved header change from PR #187 carries its original HTTP
+and route-gate tests. The latter plant unread headers on the legal-evidence chunk
+route, which still requires them, preserving each original rejection assertion.
+
+Landed on 27 September directly on `main`, without #189, with the migration
+re-dated to `20260927120000`. The test file is unchanged. The full pgTAP
+suite (96 files, 4,075 assertions) passed locally after the guarded apply
+rehearsal on a stack at production's schema.
+
 ## Ancestry on, nothing generated · 26 September 2026
 
 Turning Ancestry on only grants it; "Generate selected reports" makes the
