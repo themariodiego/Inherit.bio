@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadPatterns, normalise, prohibitedHit } from "./prohibited";
 import { REGIONAL_REGIONS, REGIONAL_COMBINED_NAME } from "../../src/lib/ancestry/regional-regions";
+import { sniff } from "../../src/lib/genome/parsers/sniff";
+import { OWN_REPORT_PURPOSES } from "../../src/lib/uploads/own-report-purpose";
 
 /**
  * G3.2 says a task must be bound to a named account, a named fixture and the
@@ -29,7 +31,11 @@ interface Task {
 interface Bindings {
   schemaVersion: number; measuredOn: string;
   measurement: Record<string, number | string>;
-  accounts: { id: string; role: string; files: string[] }[];
+  accounts: {
+    id: string; role: string; files: string[];
+    seed?: { email: string; by: string; fileTypes: string[]; purposes: string[]; order?: string } | null;
+    seedBlockedBy?: string;
+  }[];
   tasks: Task[];
 }
 
@@ -96,6 +102,43 @@ describe("every comprehension task is bound to something that exists", () => {
     for (const fixture of referenced) {
       expect(existsSync(path.join(ROOT, fixture)), fixture).toBe(true);
     }
+  });
+
+  /**
+   * A named account nothing creates is not a seed account, and a facilitator
+   * rebuilding one by hand would build a slightly different account each
+   * round. So every account that starts a round holding something is built by
+   * the browser seed this names, through the product's own upload path, or
+   * says in the bindings why it cannot be. The file types are read from each
+   * fixture's own bytes by the product's sniffer rather than retyped, and the
+   * account that answers T2 must upload the file T2 reads last, because the
+   * ancestry page shows the most recently completed estimate.
+   */
+  it("builds every participant account through the seed, or names what blocks it", () => {
+    for (const account of bindings.accounts) {
+      if (account.id === "no-account") {
+        expect(account.seed, "T9 and T10 start with no account to seed").toBeUndefined();
+        continue;
+      }
+      if (account.seed === null) {
+        expect(account.seedBlockedBy, `${account.id} names what stops its seed`).toMatch(/\S/);
+        continue;
+      }
+      const seed = account.seed;
+      expect(seed, `${account.id} is seeded or names its blocker`).toBeDefined();
+      expect(seed!.email).toBe(`${account.id}@e2e.local`);
+      expect(existsSync(path.join(ROOT, seed!.by)), seed!.by).toBe(true);
+      expect(readFileSync(path.join(ROOT, seed!.by), "utf8"), `${seed!.by} builds ${account.id}`)
+        .toContain(`"${account.id}"`);
+      expect(seed!.fileTypes).toEqual(account.files.map((file) => sniff(readFileSync(path.join(ROOT, file))).kind));
+      expect(new Set(seed!.purposes).size).toBe(seed!.purposes.length);
+      for (const purpose of seed!.purposes) expect(OWN_REPORT_PURPOSES, account.id).toContain(purpose);
+      if (!account.files.length) expect(seed!.purposes, `${account.id} holds no file to choose reports for`).toEqual([]);
+    }
+    const t2 = bindings.tasks.find((task) => task.id === "T2")!;
+    const reader = bindings.accounts.find((account) => account.id === t2.account)!;
+    expect(reader.seed?.purposes).toContain("ancestry");
+    expect(reader.files.at(-1), "the file T2 reads is uploaded last").toBe(t2.fixtures[0]);
   });
 
   it("names only routes the register declares as pages", () => {
