@@ -134,7 +134,7 @@
     "slug": "factor-v-leiden-rs6025",
     "category": "heart-cardiovascular",
     "title": "Factor V Leiden · F5",
-    "summary": "Factor V Leiden is T at rs6025, which changes R506 to Q in clotting factor V. It makes factor V harder for activated protein C to turn off. This shifts blood chemistry toward clots. It is the most common inherited vein-clot risk in people with European ancestry. About 3% to 5% of that group carry it.",
+    "summary": "Factor V Leiden is the T change at rs6025 in F5. It can make clotting factor V harder for activated protein C to turn off. A Danish adult study linked one or two T copies to more blood clots in veins. This site alone does not give your personal risk.",
     "evidence": "emerging",
     "variants": [
       {
@@ -145,15 +145,26 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "No Factor V Leiden copy was found at this site. CC has the usual population clot risk from this gene. Other genes and situations still matter, such as surgery, little movement, and hormones.",
-          "CT": "One Factor V Leiden T copy is linked to a large shift upward in the chance of a vein clot. The lifetime chance is still modest for most carriers, and most never have a clot. Surgery, long periods without movement, pregnancy, and estrogen medicines can add to the risk. A clinician can explain the result with personal history.",
-          "TT": "Two Factor V Leiden T copies are rare. TT is linked to much higher vein-clot risk than usual: a large shift. This is a tendency, not a sure outcome. It is sensible to discuss TT with a clinician or genetic counselor."
+          "CC": "Your file shows two C copies at rs6025. It does not show the Factor V Leiden T change at this site. This does not rule out other causes of blood clots or measure your overall clot risk.",
+          "CT": "Your file shows one C and one T copy at rs6025. In a Danish adult study, one copy was linked to more blood clots in veins than no copies. The chance varies with age and personal circumstances. This result does not give your own probability.",
+          "TT": "Your file shows two T copies at rs6025. In a Danish adult study, two copies were linked to higher vein-clot risk than one copy. A clot is not certain, and this result does not give your personal chance of one."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8164741", "label": "Bertina et al., Nature 1994" }
+      {
+        "pmid": "8164741",
+        "label": "Bertina et al., Nature 1994",
+        "doi": "10.1038/369064a0",
+        "accessedOn": "2026-09-23"
+      },
+      {
+        "pmid": "14996674",
+        "doi": "10.7326/0003-4819-140-5-200403020-00008",
+        "label": "Juul et al., Annals of Internal Medicine 2004",
+        "accessedOn": "2026-09-23"
+      }
     ]
   },
   {

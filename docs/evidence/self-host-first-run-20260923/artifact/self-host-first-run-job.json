@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "recordedAt": "2026-09-23T08:24:48.177Z",
+  "commit": "b659df57f072763704219b20e92b049d0cef461a",
+  "guideSha256": "e615ab545f1cdf191b921499289d19bf3aabb1ad37b22faa7be5bfacbfc7fb4d",
+  "workflowSha256": "ec8ee813504372894e706c5aac9ef2862925a4133146348162c3d120771a4d25",
+  "node": "v22.17.0",
+  "runner": "github-hosted-ubuntu-24.04",
+  "outcomes": {
+    "install": "success",
+    "browser": "success",
+    "prepare": "success",
+    "stack": "success",
+    "configure": "success",
+    "seed": "success",
+    "journey": "success",
+    "cleanup": "success"
+  },
+  "appShutdown": "stopped",
+  "success": true
+}

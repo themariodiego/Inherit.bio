@@ -3,6 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
+import {
+  COPILOT_PRESET_GUIDES,
+  COPILOT_PRESET_MODEL_HINTS,
+  COPILOT_PRESET_NAMES,
+} from "../src/copy/settings/copilot-providers";
+import { COPILOT_PROVIDER_PRESETS } from "../src/lib/copilot/provider-presets";
 
 /**
  * Three account-management route states, driven on a fresh confirmed account
@@ -150,7 +156,7 @@ test("/settings processing: the digest switch is held while its write is in flig
 
 /**
  * `/settings/copilot processing`. `LlmSettingsForm` holds a `busy` flag
- * (`llm-settings-form.tsx:41`) and disables its submit while the POST to
+ * (`llm-settings-form.tsx:56`) and disables its submit while the POST to
  * `/api/llm/settings` is in flight. The label does NOT change here — unlike
  * the auth forms and the revoke control, this one only disables — so the
  * assertion is the disabled state alone, which is what stops a second save of
@@ -184,6 +190,51 @@ test("/settings/copilot processing: the save control is held while the provider 
   } finally {
     release();
   }
+});
+
+/**
+ * The provider presets are a client convenience: choosing one fills the
+ * provider and a fixed address, and the person types the model and key. Nothing
+ * is saved here, because saving resolves the named host and this suite's
+ * network refuses public DNS; the request body a preset produces is covered by
+ * `src/components/settings/llm-settings-form.test.ts`. The custom endpoint is
+ * the option every other spec in this directory still drives by its old name.
+ */
+test("the Copilot provider presets fill the address and leave the model and key to the person", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto("/settings/copilot");
+  const provider = page.getByLabel("Provider", { exact: true });
+  const baseUrl = page.getByLabel("Base URL");
+  const model = page.getByLabel("Model", { exact: true });
+
+  await provider.click();
+  await expect(page.getByRole("option")).toHaveText(COPILOT_PROVIDER_PRESETS.map((preset) => COPILOT_PRESET_NAMES[preset]));
+  await page.getByRole("option", { name: COPILOT_PRESET_NAMES.openai, exact: true }).click();
+  await expect(baseUrl).toHaveValue("https://api.openai.com/v1");
+  await expect(baseUrl).not.toBeEditable();
+  await expect(model).toHaveValue("");
+  for (const line of Object.values(COPILOT_PRESET_GUIDES.openai)) {
+    await expect(page.getByText(line, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByText(COPILOT_PRESET_MODEL_HINTS.openai, { exact: true })).toBeVisible();
+
+  await provider.click();
+  await page.getByRole("option", { name: COPILOT_PRESET_NAMES.xai, exact: true }).click();
+  await expect(baseUrl).toHaveValue("https://api.x.ai/v1");
+  await expect(baseUrl).not.toBeEditable();
+  await expect(model).toHaveValue("");
+  await expect(page.getByText(COPILOT_PRESET_GUIDES.xai.subscription, { exact: true })).toBeVisible();
+
+  await provider.click();
+  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
+  await expect(baseUrl).toBeEditable();
+  await expect(baseUrl).not.toHaveValue("https://api.x.ai/v1");
+  await expect(page.getByText(COPILOT_PRESET_GUIDES.xai.subscription, { exact: true })).toHaveCount(0);
+
+  await provider.click();
+  await page.getByRole("option", { name: COPILOT_PRESET_NAMES.anthropic, exact: true }).click();
+  await expect(baseUrl).toHaveCount(0);
+  await expect(page.getByText(COPILOT_PRESET_GUIDES.anthropic.key, { exact: true })).toBeVisible();
 });
 
 /**
@@ -420,10 +471,14 @@ test("/settings/data complete: both exit rights render, and the export names wha
   await expect(exportSection.getByRole("link", { name: "Download export" }))
     .toHaveAttribute("href", "/api/export");
   // Each named class is a promise about the archive's scope, not decoration.
-  for (const claimed of ["your uploads", "DNA variants we found", "results",
-    "consent records", "legal audit records", "saved chats"]) {
+  for (const claimed of ["your uploads", "DNA variants we found", "results", "saved chats",
+    "consent and permission records", "birth date", "the country you chose"]) {
     await expect(exportSection, `the export names ${claimed}`).toContainText(claimed);
   }
+  // F4, 26 Sep 2026: the page promised legal audit records and a production
+  // export had none, because nothing yet selects one account's audit rows. The
+  // gap is stated, not implied.
+  await expect(exportSection).toContainText("Legal audit records are not in it yet.");
 
   // The second right. Held here rather than driven: e2e/settings.spec.ts
   // already schedules one real deletion above, and once is enough.

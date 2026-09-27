@@ -277,7 +277,11 @@ test("/family/portrait/[pairId] empty: with no file on either side the page name
   page,
 }) => {
   await signIn(page, A.email, A.password);
-  await page.goto(`/family/portrait/${pairId}`);
+  await page.goto("/overview");
+  const portraitLink = page.locator('a[aria-labelledby="box-family-portrait-label"]');
+  await expect(portraitLink).toHaveAttribute("href", `/family/portrait/${pairId}`);
+  await portraitLink.click();
+  await expect(page).toHaveURL(`/family/portrait/${pairId}`);
 
   // Past the domain's one Tier-2 gate, which stands whether or not there is
   // anything behind it.
@@ -323,4 +327,18 @@ test("/family/portrait/[pairId] empty: with no file on either side the page name
   expect(sentences.filter((sentence) => sentence === VIEWER_NO_FILE_YET)).toHaveLength(1);
   expect(sentences.some((sentence) => /hasn’t added a file yet\. There is nothing to show\.$/u.test(sentence))).toBe(true);
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
+});
+
+test("Overview withdraws the direct Portrait link on the next request after a real permission withdrawal", async ({ page }) => {
+  await signIn(page, A.email, A.password);
+  await page.goto("/overview");
+  await expect(page.locator('a[aria-labelledby="box-family-portrait-label"]')).toHaveAttribute("href", `/family/portrait/${pairId}`);
+  await page.goto(`/family/s-${invitedSubjectB}/permissions`);
+  const portrait = page.locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Portrait$/ }) });
+  await portrait.getByRole("button", { name: "Turn off" }).click();
+  await expect(portrait.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  await page.goto("/overview");
+  await expect(page.locator('a[aria-labelledby="box-family-portrait-label"]')).toHaveAttribute("href", "/family");
+  expect(await page.locator("main").innerHTML()).not.toContain(pairId);
 });

@@ -28,6 +28,9 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 const USER = { email: `gate-user-${randomUUID()}@e2e.local`, password: "e2e-gate-pw" };
 
 const FGFR2_SLUG = "breast-cancer-fgfr2-rs2981582";
+const FGFR2_AG_INTERPRETATION = "Your file shows one A and one G copy. "
+  + "In the cited study, AG was associated with higher breast cancer odds than GG. "
+  + "This marker alone cannot tell you your chance of developing breast cancer.";
 
 const GENOTYPE_NODE = '[data-figure-kind="genotype"]';
 const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
@@ -80,6 +83,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await expect(page.locator(GENOTYPE_NODE)).toHaveCount(0);
   await expect(page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE)).toHaveCount(0);
   await expect(page.getByText(LIMIT_OF_FILE)).toHaveCount(0);
+  await expect(page.locator('[data-slot="report-scientific-correction"]')).toHaveCount(0);
 
   // Header, summary, sources, and the not-diagnostic line stay visible
   // around the gate. The h1 is the report name (the title up to its gene
@@ -91,7 +95,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await expect(
     page.getByRole("heading", { name: "Where this comes from" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { level: 3, name: "Sources" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: "Sources", exact: true })).toBeVisible();
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
 
   // Click through the gate: "Show my result" is a link to the same URL with
@@ -100,6 +104,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await page.getByRole("link", { name: "Show my result" }).click();
   await page.waitForURL(/reveal=1/);
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
+  await expect(page.locator('[data-slot="report-scientific-correction"]')).toHaveCount(0);
   await expect(
     page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE).first(),
   ).toBeVisible();
@@ -230,13 +235,15 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   const gatedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}`);
   expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
   expect(gatedHtml).not.toContain("A/G");
-  expect(gatedHtml).not.toContain("One copy of the A risk allele");
+  expect(gatedHtml).not.toContain(FGFR2_AG_INTERPRETATION);
+  expect(gatedHtml).not.toContain('data-slot="report-scientific-correction"');
 
   // The same URL with ?reveal=1 does serve the result.
   const revealedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}?reveal=1`);
   expect(revealedHtml).toContain(GENOTYPE_NODE.slice(1, -1));
   expect(revealedHtml).toContain("A/G");
-  expect(revealedHtml).toContain("One copy of the A risk allele");
+  expect(revealedHtml).toContain(FGFR2_AG_INTERPRETATION);
+  expect(revealedHtml).not.toContain('data-slot="report-scientific-correction"');
 
   // Cross-account regression: a choice stored for ANOTHER user id — or under
   // the old un-scoped device-global key — must not un-gate this account.

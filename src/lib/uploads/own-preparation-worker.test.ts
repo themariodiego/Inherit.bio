@@ -15,6 +15,7 @@ vi.mock("node:fs/promises", () => ({ readFile: mocks.chain }));
 vi.mock("./own-preparation-pipeline", () => ({ runOwnPreparationPipeline: mocks.pipeline }));
 import { runNextOwnPreparation } from "./own-preparation-worker";
 import { PreparedStorageWriteError } from "../genome/prepared-source/storage-writer";
+import { PreparationMetrics, type PreparationMetricsEvent } from "./preparation-metrics";
 function fixture() {
   const now = Date.now(), jobId = randomUUID(), attemptId = randomUUID();
   const source = { fileId: randomUUID(), subjectId: randomUUID(), sourceRevision: 1,
@@ -62,6 +63,34 @@ const called = (name: string) => mocks.rpc.mock.calls.filter(([n]) => n === name
 beforeEach(() => { vi.resetAllMocks(); mocks.chain.mockResolvedValue(Buffer.from("synthetic chain")); });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 describe("actual preparation worker protocol adapter (transport and pipeline mocked)", () => {
+  it.each(["prepared", "idle", "failed", "aborted"] as const)("emits one sanitized %s aggregate without changing the worker result", async outcome => {
+    const f = fixture(), sink = vi.fn(), controller = new AbortController(); let time = 0;
+    const metrics = new PreparationMetrics(sink, { now: () => time++, cpu: () => null });
+    if (outcome === "idle") f.overrides.set("claim_next_own_preparation_work_v1", () => ({ data: null, error: null }));
+    else mocks.pipeline.mockImplementation(async (options: OwnPreparationPipelineOptions) => {
+      options.metrics?.enterPhase("rsid_runs");
+      if (outcome === "aborted") controller.abort();
+      if (outcome === "failed" || outcome === "aborted") throw new Error("private pipeline details");
+      return { publication: f.publication };
+    });
+    const work = runNextOwnPreparation({ metrics, signal: controller.signal });
+    if (outcome === "prepared" || outcome === "idle") await expect(work).resolves.toMatchObject({ status: outcome });
+    else await expect(work).rejects.toMatchObject({ code: outcome === "aborted" ? "aborted" : "unavailable" });
+    expect(sink).toHaveBeenCalledOnce(); const event = sink.mock.calls[0][0] as PreparationMetricsEvent;
+    expect(event.outcome).toBe(outcome); expect(event.activePhase).toBe(outcome === "idle" ? "claim" : outcome === "prepared" ? "publication" : "rsid_runs");
+    expect(Object.values(event.phases).reduce((sum, phase) => sum + phase.operations.rpc.started, 0)).toBe(mocks.rpc.mock.calls.length);
+    expect(event.phases[event.activePhase].completed).toBe(outcome === "prepared" || outcome === "idle");
+    if (outcome !== "idle") expect(mocks.pipeline.mock.calls[0][0].metrics).toBe(metrics);
+    for (const privateValue of [f.source.fileId, f.claim.attemptId, f.source.rawSha256, f.source.objectKey, "private pipeline details"])
+      expect(JSON.stringify(event)).not.toContain(privateValue);
+  });
+  it.each(["throw", "reject"])("keeps an original worker failure when the metrics sink can %s", async mode => {
+    fixture(); mocks.pipeline.mockRejectedValue(new PreparedStorageWriteError("unavailable", 2000));
+    const sink = vi.fn(() => { if (mode === "throw") throw new Error("sink detail"); return Promise.reject(new Error("sink detail")); });
+    await expect(runNextOwnPreparation({ metrics: new PreparationMetrics(sink) })).rejects.toMatchObject({ code: "unavailable" });
+    await new Promise(resolve => setImmediate(resolve)); expect(called("fail_own_preparation_claim_v1")).toHaveLength(1);
+    expect(sink).toHaveBeenCalledOnce();
+  });
   it("returns idle without creating transports or reading original when no claim exists", async () => {
     const f = fixture(); f.overrides.set("claim_next_own_preparation_work_v1", () => ({ data: null, error: null }));
     expect(await runNextOwnPreparation()).toEqual({ status: "idle" });

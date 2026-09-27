@@ -3872,3 +3872,275 @@ taken, because the number moved.
   issuance refuses it with the size named. That makes (a) a safety net against
   the ceilings and `max_artifact_bytes` being configured out of step, rather
   than the path an ordinary person walks.
+
+## 2026-09-22 — Release completion protocol decisions
+
+- **Embryo chunks:** the owner selected corrections item 20 option 1. Remove both
+  extra headers for this route alone. Retain the strict cookie, live account and
+  originating auth session, exact Origin, shared fetch-metadata check, jurisdiction
+  guard and database-enforced chunk identity. No legal-evidence exception is implied.
+- **T9:** six in-app click/submit actions, with the existing confirmation exclusions;
+  record mailed-link and typed-URL entry separately. The eight-action wording in
+  the comprehension materials is superseded. No ratchet changes.
+- **Comprehension execution:** the owner authorized at least 600 simulations and
+  about 60 independent re-gradings, including multiple calls per simulation, and
+  asked engineering to choose the host and endpoint with a preference for the
+  existing edge provider. The owner then authorized a **US$50 total incremental cap**, covering inference,
+  CI usage and any required first month of the plan. This supersedes the earlier
+  US$25 choice. Spend only what is needed and stop before exceeding the cap.
+  No paid run has started. The model-identity evidence decision remains pending.
+
+## 2026-09-25 — Eight owner decisions, asked as selectable choices
+
+Asked in chat with the recommended option first; every choice below was the
+recommended one.
+
+- **Production report catalog (D-134):** engineering applies the guarded
+  refresh of exactly the eight rows the corrections register names, dry run
+  first, predecessor-checked and verified against `main` in the same
+  transaction. Applied the same day; the receipt is
+  `docs/evidence/production-catalog-refresh-20260925/`. This authorizes that
+  one refresh, not other production writes.
+- **Impact measurement:** one aggregate, read-only count of completed runs that
+  captured the superseded wording, with no identities or content. Taken the
+  same day: 3 runs, 24 report items.
+- **Export work:** the owner transferred `codex/async-export-delivery`
+  (`da576e5`) and its two untracked ZIP64 files as a verified bundle. It is
+  pushed unchanged as a backup and integrated onto `main` in its own branch
+  and pull request, not stacked on another.
+- **G5.6 brief paragraph:** the export branch's "Large-export storage and
+  action forms" paragraph is accepted as an owner decision and labelled as one.
+  It changes the internal storage representation only; data classes, privacy
+  scope, archive hash and the 24-hour deadline are unchanged, and ready
+  publication still requires a verified complete member set.
+- **Cloud runtime:** Docker, the local Supabase stack, pgTAP, `next typegen`,
+  builds and browser runs are permitted inside the isolated, disposable cloud
+  container used for this goal. The inherited restrictions still apply to the
+  owner's shared workstation, and CI remains the proof of record.
+- **Model identity in comprehension evidence (G3.1):** the pinned model
+  identifier and temperature may appear only in the run records under
+  `docs/comprehension-runs/<date>/`, as G3.1 requires. They stay out of
+  commits, pull-request text, comments and code. This resolves the conflict
+  the 22 September entry left pending.
+- **Jurisdiction declaration (G5.1a):** collected at first sign-in through a
+  required selection with no default, changeable in settings, every change
+  audited and re-evaluating active grants, as the brief specifies.
+- **Deny-only test jurisdiction (G5.1a, G5.1b):** a second reserved test row
+  may be added. It is selectable only under the existing test flag that a
+  production build refuses to start with, and it can only deny; it never
+  permits anything. It exists so the declared-prohibited and
+  permitted-actor-with-prohibited-subject proofs can be built. An ADR records
+  it, because the brief names a single reserved row.
+
+## 2026-09-25 (later) — Export pull-request placement and production schema
+
+Asked in chat with the recommended option first; both choices were the
+recommended ones.
+
+- **Export slices** are stacked pull requests, each small and reviewable: the
+  content reader (#211) targets the integration branch (#210) and merges after it.
+- **Production schema for export migrations:** after green CI, merge, then
+  apply exactly those migrations to production with a dry run, predecessor
+  checks and a postcheck, so production stays equal to `main` (the D-106
+  lesson). The functions are service-only and nothing in the application calls
+  them until export is finished. This covers the export persistence and
+  content-reader migrations only; every other production write still needs its
+  own approval.
+
+## 2026-09-25 (G5.1a) — Jurisdiction declaration: engineering decisions for owner review
+
+Implementing the owner's jurisdiction decisions above raised three questions
+the brief does not settle. Engineering decided them as follows and records
+them in ADR 0032 for the owner to confirm or reverse:
+
+- **Re-evaluation does not bump `jurisdiction_revision`.** Every existing
+  signature, grant and completed own report binds that revision, and the
+  signature row is immutable. A bump at the first declaration, which every
+  existing person meets at their next sign-in, would have ended all ten
+  current own-genome permissions in production and hidden every saved report.
+  Instead a changed declaration ends every current restricted permission the
+  account takes part in (the register's "require re-signing"), and adult
+  self-analysis on the account's own subject stays current.
+- **The block-only row is stored as `XX`,** an ISO user-assigned code that
+  names no country. It is accepted only under the acceptance flag, and read as
+  unregistered without it.
+- **Flag-only refusals became account-aware.** Eight restricted write paths
+  now also resolve the acting account's own declaration. Production behaviour
+  is unchanged while no real jurisdiction is reviewed.
+
+## 2026-09-25 (evening) — Three owner confirmations, asked as selectable choices
+
+Asked in chat with the recommended option first; all three answers were the
+recommended ones.
+
+- **Export content reader in production:** after #211 merged, apply
+  `20260925130000_export_archive_content_reader.sql` to production now, guarded
+  the same way as the export persistence migration. Done the same evening;
+  the receipt is in `docs/evidence/export-content-reader-production-apply-20260925/`.
+- **Jurisdiction declaration (#212):** once CI is green, merge, then apply
+  `20260925140000_jurisdiction_declaration.sql` to production with the same
+  guarded single-statement pattern: dry run, predecessor checks including that
+  no profile already holds a code, postchecks and a receipt. This approval
+  covers that one migration.
+- **ADR 0032 confirmed:** the declaration does not bump
+  `jurisdiction_revision`. A changed country ends every restricted permission
+  the account takes part in, and adult self-analysis on the account's own
+  subject keeps its signing-time snapshot. The ADR is now Accepted.
+
+## 2026-09-25 (night) — Export of own Copilot conversations: engineering decisions for owner review
+
+Two choices the register leaves open, taken conservatively while the owner was
+away. Both are in migration `20260925220000` and are easy to reverse:
+
+- **A chat's exportability follows its own grants, not the current provider
+  settings.** It is exported while the Copilot grant it was created under
+  (and, for a cloud model, the provider consent) is the same current revision.
+  In this schema, changing or deleting the settings supersedes those grants,
+  so such chats leave the export exactly as they leave the chat history, and
+  their deletion is already queued. The export never needs the provider to be
+  reachable.
+- **Legacy unverified chats are not exported.** They predate canonical chat
+  authority, so nothing proves which grants and data they were answered under.
+  The chat history already hides them. Exporting them would hand back content
+  whose basis may since have been revoked. The alternative is to export them
+  marked as unverified history.
+
+## 2026-09-26 — Owner decisions, asked as selectable choices
+
+Asked in chat with the recommended option first. Every answer below is the
+recommended one, except the Copilot one, which the entry says.
+
+- **Chat export choices confirmed.** Both choices in the entry above stand:
+  - a chat's exportability follows its own grants, never the provider settings;
+  - legacy unverified chats are not exported.
+
+  #216 then merged, and `20260925220000_export_archive_chat_reader.sql` was
+  applied to production the same guarded way. The receipt is in
+  `docs/evidence/export-chat-reader-production-apply-20260926/`.
+- **Next priority: validate the own-genome journey on production, signed in.**
+  The owner then widened it: finish and validate `/genome/me`, including
+  `/genome/me/reports`, `/genome/me/ancestry` and `/copilot/me`. That approves
+  these production writes:
+  - **One test account**, signed up through the real sign-up page with an
+    address the owner controls (a Gmail `+` alias). Its mail, three messages
+    or so, is read through the connected mailbox.
+  - **Synthetic genome files only.**
+  - **Cleanup:** every uploaded file is deleted during the run, and the
+    account then goes through the normal 7-day deletion notice. No deadline
+    is moved.
+- **Copilot: skip the live conversation.** The owner did not choose the
+  recommended option, which was to add a spend-limited provider key to the
+  environment. So `/copilot/me` is validated on production only up to the
+  provider step: the settings form, the consent and the state before a key
+  exists. The model conversation stays proven in CI only, and the evidence
+  records that gap.
+
+## 2026-09-26 — Copilot and the person's own assistant subscription (ADR 0033)
+
+The owner asked whether people could use an existing ChatGPT, Claude or Grok
+subscription for own Copilot instead of an API key. ADR 0033 records what was
+checked. Signing in to a consumer subscription inside Inherit stays rejected
+for all three vendors, because none permits it for third-party apps.
+
+Asked as a selectable choice among four options (A proposed), the owner chose
+**D**: build neither the read-only Inherit connector nor the "copy a safe
+summary" button. Own Copilot keeps bring-your-own-key, with the Claude,
+ChatGPT and Grok presets. ADR 0033 is marked not adopted; its findings stay as
+the record, and revisiting it is a new decision.
+
+## 2026-09-26 — Legal protection decisions after the country research
+
+The owner asked for legal reviews of every country Inherit accepts and for
+the list of countries where full capability would be safe. The research
+(a private document, not committed) found none: 0 of 249 codes is even a
+candidate with conditions, and nothing is safe without a signed review.
+Asked as selectable choices with the recommended option first, the owner
+chose:
+
+- **Block comprehensively embargoed places, at sign-up and by IP.** Cuba,
+  Iran and North Korea are no longer declarable. An account that declared
+  one keeps only its rights (export, deletion, consent withdrawal, handing a
+  record on) and may correct its answer. Every request Vercel locates in
+  those countries, or in Ukraine's Crimea (UA-43), Sevastopol (UA-40),
+  Donetsk (UA-14) or Luhansk (UA-09) regions, is answered 451. Production
+  had no account declared in CU, IR or KP when this shipped (read-only
+  check, 26 September 2026). Lists: `src/lib/legal/service-restrictions.ts`.
+- **G5.1a amended for that one read.** Asked separately, the owner chose to
+  keep the check in app code: the request proxy may read Vercel's
+  `x-vercel-ip-country` and `x-vercel-ip-country-region` headers, only to
+  refuse embargoed places, storing nothing. `scripts/jurisdiction-inference.test.ts`
+  removes exactly that call before scanning, so every other IP, geo,
+  language or time-zone read still fails, and it fails if the call goes
+  away while the exception stays. The declaration itself is still never
+  inferred.
+- **Name the operator.** Inherit is not incorporated. The privacy page,
+  About page, README and GDPR status page now say that Mario Diego runs it
+  as an individual and is the controller, contact privacy@inherit.bio, and
+  that Plus Bio does not run, pay for or hold accounts for Inherit. The
+  privacy page adds Resend as a processor, each processor's transfer
+  mechanism, and the sanctions location check. The false "legally separate
+  entity" wording is gone. The Terms, which name no counterparty, are
+  unchanged here because a material change needs 30 days' email notice.
+- **Pause new sign-ups from the 29 high-risk countries** (research tier C).
+  An account that already declared one keeps it; nobody may newly declare
+  one, including by changing an earlier answer.
+- **Pause EU/EEA, UK and Swiss sign-ups too.** `/legal/gdpr` already said
+  the hosted service is not offered in the EU or UK, but the declaration
+  list offered them and production held three EU accounts. The same pause
+  now enforces the page. The three accounts keep working.
+- **EU/EEA health reports: a disclaimer only.** The owner did not choose the
+  recommended option (hide health reports for EU/EEA users until counsel
+  decides). A viewer who declared an EU or EEA country sees one more line
+  under "What this doesn't mean" on every report outside everyday traits:
+  not a diagnostic test, not certified as a medical device in the EU.
+
+The paused lists apply on the hosted deployment only (`VERCEL`/`VERCEL_ENV`
+set, the test `applicationOrigin` already uses): a self-hosted copy, and
+CI's local build, decide their own. The embargo applies everywhere.
+
+## 2026-09-26 (later) — GDPR preparation for an EU and UK launch
+
+The owner asked whether implementing the GDPR would make it acceptable to offer
+Inherit in the EU and UK. The answer given: much of it is already built, but
+the rest is appointments, contracts and sign-offs only the owner can make, and
+GDPR alone does not settle the EU medical-device question or the national
+genetic-testing laws of France, Portugal, Hungary, Norway and Switzerland. Asked
+as selectable choices, the owner chose the recommended options:
+
+- **Keep the EU/EEA, UK and Swiss pause from #227** until the GDPR preconditions
+  are met, then open the eligible countries. The high-risk ones stay paused.
+- **Start the GDPR work now.** `src/lib/legal/gdpr-launch.ts` now holds the
+  launch preconditions as data: EU and UK representatives, a data protection
+  officer, and the approval dates of the DPIA and the transfer assessment.
+  `pausedCountryCodesFor` opens a territory only when its preconditions are
+  all filled, and `/legal/gdpr` renders the same data. The drafts in
+  `docs/gdpr/` (DPIA, Article 30 record, transfer impact assessment, DPO
+  position, launch checklist) await owner and counsel approval.
+
+## 2026-09-26 (evening) — Medicines reports lead with the gene
+
+The owner asked how services like Promethease convey pharmacogenomic results
+without legal risk. The finding: they do not avoid it; they lower it. The
+FDA's November 2018 warning covered software that interprets genetic data,
+and its April 2019 statement records that most firms met its concerns by
+removing specific medication names from patient reports; the one consumer
+pharmacogenetic report it authorized in 2018 had to warn against using it to
+start, stop or change medication. Asked as a selectable choice, the owner
+chose the recommended option, **gene-first, cite drugs**:
+
+- Every Medicines title is the gene and position ("CYP2C19, the *2 position").
+- A drug appears only as what CPIC's guideline for that gene covers. No
+  reading of the letters names a drug; each ends "how any medicine works in
+  you".
+- "What you can do" opens with "Do not start, stop or change any medicine
+  because of this report."
+
+Production serves report text from `public.report_templates`, which a deploy
+does not refresh, and completed reports keep the wording they captured. The
+eleven production rows therefore need their own guarded refresh after this
+merges; that write needs the owner's approval.
+
+**Update, 27 September.** The owner approved the guarded refresh on
+26 September ("Yes, guarded refresh"). It ran on 27 September after #229 merged:
+the eleven rows now equal `main`, and the four completed runs keep the wording
+they captured (`docs/evidence/production-catalog-refresh-20260927-medicines/`).

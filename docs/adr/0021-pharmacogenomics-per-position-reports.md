@@ -13,6 +13,16 @@
 > was recorded. Historical rationale remains below; neither error is a current
 > claim or a reason to withhold the corrected letter reading.
 
+> **Amendment, 2026-09-26 (owner decision, `docs/protocol/decisions.md`):**
+> every Medicines report is now titled by gene and position, for example
+> "CYP2C19, the *2 position", and names a drug only as what CPIC's guideline
+> for that gene covers. Readings of the letters name no drug and end "how any
+> medicine works in you". "What you can do" now opens with "Do not start,
+> stop or change any medicine because of this report." The FDA's 2019 record
+> says most firms met its concerns by removing medication names from patient
+> reports, and the one authorized consumer report carried that warning.
+> Titles and quoted strings below are the historical ones.
+
 ## Context
 
 ADR 0018 withheld pharmacogenomics on an obstacle classified safety (primary)

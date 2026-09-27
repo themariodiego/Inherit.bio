@@ -67,7 +67,7 @@ test("/embryos jurisdiction-unavailable: the register's copy, every tile blocked
   await expectNothingPrivate(page);
 });
 
-test("/embryos/upload, /embryos/request-data, /embryos/compare and /embryos/[embryoId] jurisdiction-unavailable: the unset decision's copy and nothing private", async ({
+test("/embryos/upload, /embryos/request-data, /embryos/compare and /embryos/[embryoId] jurisdiction-unavailable: the declared-unreviewed decision's copy and nothing private", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
@@ -77,7 +77,10 @@ test("/embryos/upload, /embryos/request-data, /embryos/compare and /embryos/[emb
     const unavailable = page.locator('[data-slot="jurisdiction-unavailable"]');
     await expect(unavailable, path).toHaveCount(1);
     await expect(unavailable, path).toContainText(UNREVIEWED_COPY);
-    await expect(unavailable, path).toHaveAttribute("data-jurisdiction-source", "unset");
+    // Declared GB (createConfirmedUser): a catalogue country with no signed
+    // review answers from the default row, with the same unreviewed copy an
+    // undeclared account read before a declaration existed (G5.1a).
+    await expect(unavailable, path).toHaveAttribute("data-jurisdiction-source", "default");
     // The upload flow renders no question and no control under a refused jurisdiction.
     await expect(page.locator('[data-slot="upload-flow"]'), path).toHaveCount(0);
     await expect(page.locator("main input, main fieldset, main form"), path).toHaveCount(0);

@@ -1,4 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// The acting account's declared jurisdiction is read through the service
+// client (G5.1a); every account here has declared GB unless a test says not.
+const declared = vi.hoisted(() => ({ codes: new Map<string, string | null>() }));
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({
+    from: () => ({ select: () => ({ in: async (_column: string, ids: string[]) => ({
+      data: ids.map((id) => ({ id, jurisdiction_code: declared.codes.has(id) ? declared.codes.get(id) : "GB" })), error: null,
+    }) }) }),
+  }),
+}));
+beforeEach(() => declared.codes.clear());
 import { authorizeIngestHttpRequest, ingestAuthorization, ingestChunkEnvelope, ingestRequestOrigin, readIngestChunk } from "./ingest-http";
 import { ingestCookieName } from "./ingest-session";
 import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
@@ -7,7 +19,7 @@ const SESSION = "a0000000-0000-4000-8000-000000000001";
 const url = `https://inherit.example/api/embryo-ingest/${SESSION}/chunks/0`;
 function request(headers: Record<string, string> = {}, body?: ReadableStream<Uint8Array>) {
   return new Request(url, { method: "PUT", headers: { origin: "https://inherit.example",
-    "content-type": "application/octet-stream", "content-length": "4", ...headers },
+    "sec-fetch-site": "same-origin", "content-type": "application/octet-stream", "content-length": "4", ...headers },
   ...(body ? { body, duplex: "half" } : {}) });
 }
 const metadata = { status: "authorized", session: SESSION, cohortId: SESSION, uploadId: SESSION, ingestRevision: 1,
@@ -21,6 +33,14 @@ describe("ingest HTTP boundary", () => {
       expect(ingestRequestOrigin(request({ origin }))).toBeNull();
     }
     expect(ingestRequestOrigin(new Request(url, { headers: { "sec-fetch-site": "same-origin" } }))).toBeNull();
+  });
+  it("requires same-origin fetch metadata even alongside a matching Origin", () => {
+    for (const value of ["cross-site", "same-site", "none", ""]) {
+      expect(ingestRequestOrigin(request({ "sec-fetch-site": value }))).toBeNull();
+    }
+    const missing = request();
+    missing.headers.delete("sec-fetch-site");
+    expect(ingestRequestOrigin(missing)).toBeNull();
   });
   it("does not touch the body during envelope validation", () => {
     const req = request();
@@ -98,6 +118,7 @@ describe("HTTP credential orchestration", () => {
   it("denies before database access or body reads for missing auth, origin, jurisdiction or cookie", async () => {
     for (const [req, context, settings, status] of [
       [validRequest(), null, env, 401], [request({ origin: "https://evil.example" }), account, env, 403],
+      [request({ "sec-fetch-site": "cross-site" }), account, env, 403],
       [validRequest(), account, {}, 403], [request(), account, env, 404],
     ] as const) {
       const rpc = vi.fn();
@@ -107,6 +128,18 @@ describe("HTTP credential orchestration", () => {
         expect(result.response.status).toBe(status);
         expect(result.response.headers.get("cache-control")).toBe("private, no-store");
       }
+      expect(rpc).not.toHaveBeenCalled();
+      expect(req.bodyUsed).toBe(false);
+    }
+  });
+  it("denies an account whose own declaration does not permit embryo analysis, before any ingest authority", async () => {
+    for (const code of [null, "XX"]) {
+      declared.codes.set(SESSION, code);
+      const rpc = vi.fn();
+      const req = validRequest();
+      const result = await authorizeIngestHttpRequest(req, SESSION, account, rpc, env);
+      expect(result.kind).toBe("denied");
+      if (result.kind === "denied") expect(result.response.status).toBe(403);
       expect(rpc).not.toHaveBeenCalled();
       expect(req.bodyUsed).toBe(false);
     }

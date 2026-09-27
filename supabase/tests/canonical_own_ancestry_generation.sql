@@ -111,15 +111,11 @@ select throws_ok($$select pg_temp.generate('check')$$,'42501','not_found','ended
 rollback to session_ended;
 -- Closed zero-panel-coverage adapter DTO. The supplied synthetic call is outside
 -- this panel. No population or lineage claim is inferred from that absence.
-create temporary table ancestry_output as select jsonb_build_object('ancestry',jsonb_build_object(
- 'schemaVersion',1,'computationRevision','own-ancestry-content-v1',
- 'source',jsonb_build_object('fileId','78700000-0000-4000-8000-000000000040','subjectId',(select id from ancestry_subject),
+\ir fixtures/own_ancestry_empty_content.inc
+create temporary table ancestry_output as select pg_temp.empty_ancestry_output(
+ jsonb_build_object('fileId','78700000-0000-4000-8000-000000000040','subjectId',(select id from ancestry_subject),
   'normalizedBuild','GRCh38','callEncoding','vcf-literal','sourceRevision',1,'sourceSha256',repeat('a',64),
-  'normalizedAt',receipt#>'{authorization,normalizedAt}'),
- 'panel','{"id":"aims-kidd-seldin-168","version":"2026-08-28","provenance":"data/ref/AIMS_PROVENANCE.md","markerSha256":"e8109eedd184ab1fd3dedf9385357bd64ec166c3c3597e04d0213c1e1ed7064b","markerCount":168,"minimumMarkers":42}'::jsonb,
- 'admixture','{"kind":"admixture","result":{"proportions":{"AFR":0.2,"AMR":0.2,"EAS":0.2,"EUR":0.2,"SAS":0.2},"markersUsed":0,"note":"Low confidence: only 0 of 168 ancestry-informative markers had usable genotypes; proportions are unreliable."},"support_note":"Low confidence: only 0 of 168 ancestry-informative markers had usable genotypes; proportions are unreliable.","model_id":"aims-kidd-seldin-168","model_version":"2026-08-28","coverage":0,"result_state":"not_covered","basis":"modelled","range":{"unavailable":true},"resolution":"five-broad-regions"}'::jsonb,
- 'panelPositions','{"called":0,"missing":168,"noCall":0,"filtered":0,"conflicting":0,"unsupported":0}'::jsonb,
- 'lineages','[{"kind":"mtdna","state":"unavailable","reason":"no_supplied_positions","observedPositions":0},{"kind":"ydna","state":"unavailable","reason":"no_supplied_positions","observedPositions":0}]'::jsonb)) payload
+  'normalizedAt',receipt#>'{authorization,normalizedAt}')) payload
  from claims where purpose='ancestry';
 select throws_ok($$select pg_temp.generate('complete','ancestry','{"reports":[],"prs":[]}')$$,
  '22023','invalid_request','ancestry cannot publish a report or PRS envelope');

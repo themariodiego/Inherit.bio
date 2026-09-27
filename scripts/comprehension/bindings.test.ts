@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadPatterns, normalise, prohibitedHit } from "./prohibited";
+import { REGIONAL_REGIONS, REGIONAL_COMBINED_NAME } from "../../src/lib/ancestry/regional-regions";
 
 /**
  * G3.2 says a task must be bound to a named account, a named fixture and the
@@ -21,7 +22,7 @@ interface Coverage { fixture: string; rsids?: string[]; covered?: boolean; aimsC
 interface Task {
   id: string; prompt: string; account: string; fixtures: string[]; routes: string[];
   templateSlugs: string[]; success: string; prohibitedClass: string | null;
-  coverage?: Coverage[]; copyAnchors?: string[]; regionLabels?: string[];
+  coverage?: Coverage[]; copyAnchors?: string[]; regionLabels?: string[]; regionSource?: string;
   figureSources?: string[]; maxActions?: number; requiresCapability?: string;
   withheldVariant?: { prompt: string; when: string; routes: string[] };
 }
@@ -177,21 +178,19 @@ describe("the coverage claims that make T1 and T3 gradeable are re-measured", ()
     expect(aims.filter((r) => mixed.has(r)).length).toBe(bindings.measurement.aimsInAimsMixedFixture);
   });
 
-  /**
-   * Both directions, because the first draft of T2 named the five 1000 Genomes
-   * superpopulation labels, four of which the product deliberately refuses to
-   * print. Checking only that a label exists somewhere would not have caught
-   * it; checking it against the denylist the product enforces does.
-   */
+  /** Bind new participant uploads to the shipped regional presentation, not
+   * the legacy five-region registry still kept for historical results. */
   it("names every ancestry region the product labels, and none it forbids", () => {
-    const regions = (JSON.parse(
-      readFileSync(path.join(ROOT, "data/ref/regions/regions.json"), "utf8"),
-    ) as { regions: { display_name: string }[] }).regions.map((r) => r.display_name);
+    const regions = [...REGIONAL_REGIONS.map(region => region.name), REGIONAL_COMBINED_NAME];
     const denied = (JSON.parse(
       readFileSync(path.join(ROOT, "data/ref/regions/label-denylist.json"), "utf8"),
     ) as { words: string[] }).words.map((w) => w.toLowerCase());
     const t2 = bindings.tasks.find((t) => t.id === "T2")!;
+    expect(t2.regionSource).toBe("data/ref/regions/regions-v3.json");
     expect([...(t2.regionLabels ?? [])].sort()).toEqual([...regions].sort());
+    const rubric = readFileSync(path.join(ROOT, "scripts/comprehension/rubric.md"), "utf8")
+      .split("## T2 —")[1].split("## T3 —")[0];
+    for (const label of regions) expect(rubric).toContain(label);
     for (const label of t2.regionLabels ?? []) {
       const words = label.toLowerCase().split(/[^a-z]+/).filter(Boolean);
       for (const word of words) expect(denied, `T2 -> ${label}`).not.toContain(word);

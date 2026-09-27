@@ -1,8 +1,8 @@
 /**
  * The genome browser's search and the figures it yields (brief §7.3, X4).
  *
- * Every letter the browser shows is produced here, which is what
- * `computed:genome/browser` on those figures states. An rsID or a gene
+ * The client-safe figure helpers are re-exported here, preserving the
+ * `computed:genome/browser` origin on those figures. An rsID or a gene
  * search resolves its genotypes through `getPreparedSourceGenotypes`, which
  * yields one agreed call per position or records a conflict; a region search
  * reads the active prepared source's own rows. The coverage pair under the
@@ -20,9 +20,6 @@ import {
   rsidNotCovered,
   rsidUnknown,
 } from "@/copy/genome/data";
-import { GENOTYPE_LABEL } from "@/copy/reports/strings";
-import type { ComputedModule } from "@/lib/figures/contract";
-import type { GenotypeSpec } from "@/lib/figures/spec";
 import type { Db } from "./load";
 import {
   locusAround,
@@ -34,10 +31,7 @@ import { getPreparedSourceGenotypes } from "./prepared-sources";
 import { CLINICAL_GENES, matchTraitSuggestion, type TraitTopic } from "./search-guidance";
 import { parseRsid } from "./types";
 
-/** The module every browser figure names as the origin of its number. */
-export const BROWSER_MODULE = "genome/browser" satisfies ComputedModule;
-
-const BROWSER_PROVENANCE = { kind: "computed", module: BROWSER_MODULE } as const;
+export { BROWSER_MODULE, browserCoverage, genotypeFigures, loadedTrackFigures } from "./browser-figures";
 
 /** Rows the region search returns at most; the page says so when it is reached. */
 export const REGION_ROW_LIMIT = 200;
@@ -238,46 +232,4 @@ export async function search(admin: Db, subjectId: string, fileId: string, query
   const trait = await searchTrait(admin, query);
   if (trait) return trait;
   return { ...EMPTY, message: noReferenceMatch(query), showReportsLink: true };
-}
-
-/**
- * One observed `genotype` figure per covered row. `figureIndex` maps a hit to
- * its figure so the table can place the rendered node in its own cell, and is
- * null for a row with no letters to show.
- */
-export function genotypeFigures(hits: readonly Hit[]): {
-  specs: GenotypeSpec[];
-  figureIndex: (number | null)[];
-} {
-  const specs: GenotypeSpec[] = [];
-  const figureIndex = hits.map((hit) => {
-    if (hit.genotype === null) return null;
-    specs.push({
-      kind: "genotype",
-      class: "variant-call",
-      basis: "observed",
-      provenance: BROWSER_PROVENANCE,
-      genotype: hit.genotype,
-      label: GENOTYPE_LABEL,
-    });
-    return specs.length - 1;
-  });
-  return { specs, figureIndex };
-}
-
-/**
- * The coverage pair under the results table: the searched positions that
- * yielded letters, over every position searched. A no-call and a position
- * the files disagree about were not read, and neither is counted.
- */
-export function browserCoverage(hits: readonly Hit[]): {
-  read: number;
-  needed: number;
-  module: typeof BROWSER_MODULE;
-} {
-  return {
-    read: hits.filter((hit) => hit.genotype !== null && hit.genotype !== "--" && !hit.conflict).length,
-    needed: hits.length,
-    module: BROWSER_MODULE,
-  };
 }

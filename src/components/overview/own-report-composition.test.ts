@@ -6,8 +6,10 @@ import { ProcessingPanel } from "./processing-panel";
 import { Count } from "@/components/reports/count";
 import type { AncestryResultRow } from "@/lib/ancestry/own-results";
 import { PREPARED_REPORTS, STATE_C } from "@/copy/overview";
+import { DomainSection } from "./domain-section";
 
-const mocks = vi.hoisted(() => ({ summary: vi.fn(), ancestry: vi.fn(), confirm: vi.fn(), fileRows: [] as unknown[], calls: [] as string[] }));
+const mocks = vi.hoisted(() => ({ summary: vi.fn(), ancestry: vi.fn(), confirm: vi.fn(), portrait: vi.fn(), portraitConfirm: vi.fn(), fileRows: [] as unknown[], calls: [] as string[] }));
+vi.mock("@/lib/family/overview-portrait-target", () => ({ loadOverviewPortraitTarget: mocks.portrait }));
 vi.mock("@/lib/ancestry/own-results", () => ({ loadAncestryResultSnapshot: mocks.ancestry }));
 vi.mock("./own-report-summary", () => ({ loadOwnOverviewReports: mocks.summary }));
 vi.mock("@/lib/subjects", () => ({
@@ -28,7 +30,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
 }) }));
 import OverviewPage from "@/app/(app)/overview/page";
 
-type NodeProps = { children?: ReactNode; href?: string; reports?: unknown[]; value?: number; layerClass?: string };
+type NodeProps = { children?: ReactNode; href?: string; reports?: unknown[]; value?: number; layerClass?: string; boxes?: Array<{ id: string; href: string }> };
 function nodes(node: ReactNode): Array<React.ReactElement<NodeProps>> {
   if (Array.isArray(node)) return node.flatMap(nodes);
   if (!isValidElement<NodeProps>(node)) return [];
@@ -50,9 +52,21 @@ beforeEach(() => {
   vi.clearAllMocks(); mocks.calls.length = 0; mocks.fileRows = [];
   mocks.ancestry.mockResolvedValue({ rows: [], confirm: mocks.confirm });
   mocks.confirm.mockResolvedValue([]);
+  mocks.portrait.mockResolvedValue({ confirm: mocks.portraitConfirm }); mocks.portraitConfirm.mockResolvedValue(null);
   mocks.summary.mockResolvedValue({ hasReports: false, hasPreparedSource: false, estimateCount: 0, variantCallCount: 0, showStarter: false, starter: [] });
 });
 describe("Overview own-report composition", () => {
+  it.each([null, "77300000-0000-4000-8000-000000000006"])("uses only the finally confirmed Portrait target %s", async pairId => {
+    mocks.portraitConfirm.mockResolvedValue(pairId);
+    mocks.fileRows = [preparedFile]; capturedAncestry();
+    const tree = await OverviewPage();
+    const box = nodes(tree).filter(node => node.type === DomainSection).flatMap(node => node.props.boxes ?? [])
+      .find(box => box.id === "box-family-portrait");
+    expect(box?.href).toBe(pairId ? `/family/portrait/${pairId}` : "/family");
+    expect(mocks.portraitConfirm).toHaveBeenCalledOnce();
+    expect(mocks.portraitConfirm.mock.invocationCallOrder[0]).toBeGreaterThan(mocks.ancestry.mock.invocationCallOrder[0]);
+    expect(mocks.confirm).toHaveBeenCalledOnce();
+  });
   it("preserves no-file Start here without genetic or ancestry reads", async () => {
     const tree = await OverviewPage();
     expect(nodes(tree).filter(node => node.type === StartHere)).toHaveLength(1);

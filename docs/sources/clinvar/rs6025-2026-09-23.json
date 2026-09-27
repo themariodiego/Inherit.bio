@@ -1,0 +1,23 @@
+{
+  "url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+  "readAt": "2026-09-23T11:39:23.676662+00:00",
+  "scope": "Independent agent directly read Variant Details identity fields on the official page; scoped excerpt only. No submitted clinical classification, frequency, risk estimate or uploaded assay validation is used.",
+  "accession": "VCV000000642.133",
+  "variationId": 642,
+  "rsid": 6025,
+  "assembly": "GRCh38",
+  "chrom": 1,
+  "pos": 169549811,
+  "ref": "C",
+  "alt": "T",
+  "hgvs": "NC_000001.11:g.169549811C>T",
+  "canonicalSpdi": "NC_000001.11:169549810:C:T",
+  "transcript": "NM_000130.5:c.1601G>A",
+  "protein": "NP_000121.2:p.Arg534Gln",
+  "historicalAliases": [
+    "R506Q",
+    "Arg506Gln",
+    "Factor V Leiden"
+  ],
+  "quote": "NC_000001.11:g.169549811C>T NM_000130.5:c.1601G>A NP_000121.2:p.Arg534Gln"
+}

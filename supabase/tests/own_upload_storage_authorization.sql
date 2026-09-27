@@ -59,6 +59,34 @@ begin
 end;
 $$;
 select pg_temp.set_upload_claims();
+-- Each call models Storage's trusted route setting. Browser-looking headers
+-- cannot replace that setting, including when it is absent or empty.
+create function pg_temp.denied_upload_operation(p_operation text) returns text language plpgsql as $$
+begin
+ perform set_config('storage.operation',p_operation,true);
+ perform set_config('request.headers','{"storage.operation":"storage.object.upload","x-storage-operation":"storage.object.upload"}',true);
+ return throws_ok($probe$insert into storage.objects(bucket_id,name,metadata)
+  values('genomes',current_setting('request.jwt.claims')::jsonb->>'staging_key',
+   '{"contentLength":8,"mimetype":"application/octet-stream"}')$probe$,
+  '42501',null,'the browser grant refuses provider operation '||coalesce(nullif(p_operation,''),'(unset)'));
+end;
+$$;
+set local role inherit_upload_only;
+select pg_temp.denied_upload_operation(operation) from unnest(array[
+ null,'','object.upload','storage.object.upload_update','storage.object.upload_signed',
+ 'storage.object.sign_upload_url','storage.tus.upload.create','storage.tus.upload.create_signed',
+ 'storage.tus.upload.part','storage.tus.upload.delete','storage.s3.upload',
+ 'storage.s3.upload.create_multipart','storage.s3.upload.part','storage.s3.upload.complete_multipart',
+ 'storage.object.upload.extra'
+]) operation;
+reset role;
+select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),
+ 'issued','denied protocol probes leave the exact upload grant unconsumed');
+select is((select count(*) from storage.objects where bucket_id='genomes'
+ and name=(select receipt->>'stagingKey' from role_upload)),0::bigint,
+ 'denied protocol probes create no object metadata');
+select set_config('storage.operation','storage.object.upload',true);
+select set_config('request.headers','{}',true);
 set local role inherit_upload_only;
 select is(private.authorize_storage_upload_insert(),true,'the exact live bearer authorizes its one insert');
 select is(private.assert_live_authenticated_session(),jsonb_build_object('authorized',true,
@@ -101,6 +129,9 @@ rollback to provider_probe;
 select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),
  'issued','the provider probe rollback restores the unconsumed session');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
+-- The provider's completed-object transaction still uses its existing exact
+-- authority/size/owner trigger; it does not require the browser-probe setting.
+select set_config('storage.operation','',true);
 set local role service_role;
 select throws_ok($$insert into storage.objects(bucket_id,name,owner_id,metadata)
  values('genomes',(select receipt->>'stagingKey' from role_upload),'76200000-0000-4000-8000-000000000001','{"size":7}')$$,
@@ -133,6 +164,7 @@ select is((select status from public.upload_sessions where id=(select (receipt->
  'uploaded','elevated completion durably consumes the exact session');
 update role_upload set receipt=pg_temp.issue_role_upload();
 select pg_temp.set_upload_claims();
+select set_config('storage.operation','storage.object.upload',true);
 update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
  where account_id='76200000-0000-4000-8000-000000000001' and consent_type='upload_class';
 set local role inherit_upload_only;

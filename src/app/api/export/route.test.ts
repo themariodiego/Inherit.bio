@@ -9,18 +9,22 @@ const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid:
   // carried no report-purpose check at all.
   legacyFiles: [] as Array<Record<string, unknown>>, processed: [] as Array<Record<string, unknown>>,
   templates: [] as Array<Record<string, unknown>>, grants: new Set<string>(), genotypeReads: [] as string[],
-  revokeAfterBuild: false, reportGrantChecks: 0 }));
+  revokeAfterBuild: false, reportGrantChecks: 0,
+  // F5: what the chat reader answers, and what it was asked.
+  subjects: [] as Array<Record<string, unknown>>, chats: [] as unknown[], chatFailure: false,
+  chatCalls: [] as Array<{ actor: unknown; subjectIds: readonly string[] }> }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: {
   getUser: async () => ({ data: { user: { id: "12345678-1234-4234-8234-000000000001", email: "synthetic@e2e.local" } } }),
   getClaims: async () => ({ data: { claims: { sub: "12345678-1234-4234-8234-000000000001", session_id: "12345678-1234-4234-8234-000000000002" } } }),
 } }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
   const from = (table: string) => {
-    const rows = table === "ancestry_results" ? mocks.legacyRows : table === "genome_files" ? mocks.legacyFiles : [];
+    const rows = table === "ancestry_results" ? mocks.legacyRows : table === "genome_files" ? mocks.legacyFiles
+      : table === "subjects" ? mocks.subjects : [];
     // The genome_files read is paged by `fetchAllRows`, which stops on the
     // first empty page. Answer the offset honestly or it never terminates.
     let offset = 0;
-    const builder = { select: () => builder, eq: () => builder, is: () => builder, order: () => builder,
+    const builder = { select: () => builder, eq: () => builder, is: () => builder, in: () => builder, order: () => builder,
       range: (start: number) => { offset = start; return builder; },
       then: (resolve: (value: unknown) => unknown) =>
         Promise.resolve({ data: rows.slice(offset), error: null }).then(resolve) };
@@ -65,10 +69,16 @@ vi.mock("@/lib/genome/load", () => ({
     templates.flatMap(template => template.variants.map(variant => variant.rsid)),
 }));
 vi.mock("@/lib/genome/prs-output", () => ({ loadPrsForExport: async () => [] }));
+vi.mock("@/lib/export/own-chats", () => ({ ownChatsForExport: async (_admin: unknown, actor: unknown, subjectIds: readonly string[]) => {
+  mocks.chatCalls.push({ actor, subjectIds });
+  if (mocks.chatFailure) throw new Error("export unavailable");
+  return mocks.chats;
+} }));
 vi.mock("@/lib/exports/own-subject-content", async importOriginal => {
   const original = await importOriginal<typeof import("@/lib/exports/own-subject-content")>();
   return { ...original, ownSubjectExportContent: () => ({
-    list: async () => Array.from({ length: mocks.count }, (_, i) => ({ file: { id: mocks.prepared && i === 0 ? mocks.preparedId : `file-${i}`, upload_revision: 1, sha256: "a".repeat(64), size_bytes: 15, storage_object_id: "12345678-1234-4234-8234-000000000005", bucket_path: "12345678-1234-4234-8234-000000000006", subject_id: "subject", original_name: "Genome file", variant_count: 1 }, ...(mocks.prepared && i === 0 ? { preparedSource: { backend: "prepared-object-v1", manifestId: mocks.manifestId } } : {}) })),
+    list: async () => Array.from({ length: mocks.count }, (_, i) => ({ file: { id: mocks.prepared && i === 0 ? mocks.preparedId : `file-${i}`, upload_revision: 1, sha256: "a".repeat(64), size_bytes: 15, storage_object_id: "12345678-1234-4234-8234-000000000005", bucket_path: "12345678-1234-4234-8234-000000000006", subject_id: "subject", original_name: "Genome file", variant_count: 1,
+      file_type: "vcf", source_sha256: (mocks.prepared && i === 0 ? "b" : "a").repeat(64) }, ...(mocks.prepared && i === 0 ? { preparedSource: { backend: "prepared-object-v1", manifestId: mocks.manifestId } } : {}) })),
     check: async () => { if (mocks.authorityFail || (mocks.failAfterState && mocks.stateRead)) throw new Error("export unavailable"); },
     original: async (s: { file: { id: string } }) => { mocks.originalReads.push(s.file.id); await mocks.pauseOriginal; return new Blob([`original-${s.file.id}`]); },
     preparedRecords: async (_: unknown, consume: (records: unknown[], signal: AbortSignal, header: unknown) => Promise<void>) => {
@@ -104,7 +114,8 @@ vi.mock("@/lib/uploads/prepared-original-download", async importOriginal => {
 });
 import { GET } from "./route";
 beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false;
-  mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0; });
+  mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0;
+  mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -112,7 +123,8 @@ describe("canonical export ZIP integration", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     const zip = new AdmZip(Buffer.from(await response.arrayBuffer()));
     for (const id of ["file-0", "file-1"]) {
-      expect(zip.readAsText(`originals/${id}`)).toBe(`original-${id}`);
+      // F3: the opaque per-file name carries its type's extension.
+      expect(zip.readAsText(`originals/${id}.vcf`)).toBe(`original-${id}`);
       expect(zip.readAsText(`variants/${id}.csv`)).toBe("rsid,chrom,pos_grch38,ref,alt,genotype\nrs1,1,100,A,G,A/G\n");
       expect(JSON.parse(zip.readAsText(`observed/${id}.json`))).toEqual([{ source_line: 9, genotype: "--", usable: false }]);
     }
@@ -191,7 +203,7 @@ it("exports prepared records as complete JSONL and leaves another database sourc
   expect(zip.getEntry(`variants/${mocks.preparedId}.csv`)).toBeNull();
   expect(zip.getEntry(`observed/${mocks.preparedId}.json`)).toBeNull();
   expect(zip.readAsText("variants/file-1.csv")).toContain("A/G");
-  expect(zip.readAsText(`originals/${mocks.preparedId}`)).toBe("prepared-original");
+  expect(zip.readAsText(`originals/${mocks.preparedId}.vcf.gz`)).toBe("prepared-original");
   expect(mocks.variantReads).toBe(1);
   expect(JSON.parse(zip.readAsText("manifest.json")).contents.find((e: { path: string }) => e.path === `canonical/${mocks.preparedId}.jsonl`).count).toBe(2);
 });
@@ -204,20 +216,20 @@ it("refuses a complete ZIP after prepared stream failure rather than falling bac
 it("omits only a confirmed retired prepared original while preserving records, reports and the other original", async () => {
   mocks.prepared = true; mocks.retired = true;
   const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
-  expect(zip.getEntry(`originals/${mocks.preparedId}`)).toBeNull();
+  expect(zip.getEntry(`originals/${mocks.preparedId}.vcf.gz`)).toBeNull();
   expect(zip.getEntry(`canonical/${mocks.preparedId}.jsonl`)).not.toBeNull();
   expect(zip.readAsText("reports.json")).toContain("Stored interpretation");
-  expect(zip.readAsText("originals/file-1")).toBe("original-file-1");
+  expect(zip.readAsText("originals/file-1.vcf")).toBe("original-file-1");
   const manifest = JSON.parse(zip.readAsText("manifest.json"));
   expect(manifest.note).toContain("your available original uploaded files (expired originals are identified in warnings)");
-  expect(manifest.warnings).toEqual([`originals/${mocks.preparedId} omitted: the original retention period has ended. Prepared records and saved reports remain included.`]);
-  expect(manifest.contents.some((entry: { path: string }) => entry.path === `originals/${mocks.preparedId}`)).toBe(false);
+  expect(manifest.warnings).toEqual([`originals/${mocks.preparedId}.vcf.gz omitted: the original retention period has ended. Prepared records and saved reports remain included.`]);
+  expect(manifest.contents.some((entry: { path: string }) => entry.path.startsWith(`originals/${mocks.preparedId}`))).toBe(false);
   expect(mocks.originalReads).toEqual(["file-1"]); expect(mocks.streamReads).toBe(0); expect(mocks.authChecks).toBe(0);
 });
 it("uses live authority throughout prepared-original streaming without the Blob download", async () => {
   mocks.prepared = true; mocks.count = 1;
   const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
-  expect(zip.readAsText(`originals/${mocks.preparedId}`)).toBe("prepared-original");
+  expect(zip.readAsText(`originals/${mocks.preparedId}.vcf.gz`)).toBe("prepared-original");
   expect(mocks.originalReads).toEqual([]); expect(mocks.streamReads).toBe(1); expect(mocks.authChecks).toBe(3);
 });
 it.each(["stateInvalid", "stateError", "authorityFail", "changedSource", "failStreamCheck", "failAfterState", "failFinalStreamCheck"] as const)("refuses prepared export on %s, without original fallback", async key => {
@@ -304,4 +316,55 @@ describe("legacy report purposes in the export", () => {
     mocks.revokeAfterBuild = true;
     await expect((await GET()).arrayBuffer()).rejects.toThrow();
   });
+});
+
+/**
+ * F5, 26 Sep 2026. `chats.json` said "Copilot conversations are not stored
+ * server-side" when there were none, which has been false since canonical
+ * chats were stored, and carried every stored chat when there were some. It
+ * now carries what the chat reader returns and says so honestly when empty.
+ */
+describe("chats.json", () => {
+  const archive = async () => new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+  const listed = (zip: AdmZip, path: string) =>
+    JSON.parse(zip.readAsText("manifest.json")).contents.find((entry: { path: string }) => entry.path === path);
+
+  it("says plainly that the chat history has nothing, rather than that nothing is stored", async () => {
+    const zip = await archive();
+    expect(JSON.parse(zip.readAsText("chats.json"))).toEqual({ note: "Your chat history has no saved Copilot conversations.", chats: [] });
+    expect(zip.readAsText("chats.json")).not.toContain("not stored");
+    expect(listed(zip, "chats.json").count).toBe(0);
+  });
+
+  it("writes the chats the history shows, asked for this account's own subjects under this session", async () => {
+    mocks.subjects = [{ id: "subject", subject_account_id: "12345678-1234-4234-8234-000000000001" }];
+    const message = { id: "m", role: "user", content: [{ type: "text", text: "hello" }], citations: [], embryoFindings: [], createdAt: "2026-09-26T00:00:00Z" };
+    mocks.chats = [{ id: "chat", subject_id: "subject", scope_kind: "self", created_at: "2026-09-26T00:00:00Z", messages: [message] }];
+    const zip = await archive();
+    expect(JSON.parse(zip.readAsText("chats.json"))).toEqual({ chats: mocks.chats });
+    expect(listed(zip, "chats.json")).toMatchObject({ count: 1 });
+    expect(listed(zip, "chats.json").description).toContain("as your chat history shows them");
+    expect(mocks.chatCalls).toEqual([{ subjectIds: ["subject"],
+      actor: { accountId: "12345678-1234-4234-8234-000000000001", sessionId: "12345678-1234-4234-8234-000000000002" } }]);
+  });
+
+  it("fails the archive rather than shipping it without the chats it could not check", async () => {
+    mocks.chatFailure = true;
+    await expect((await GET()).arrayBuffer()).rejects.toThrow("export unavailable");
+  });
+});
+
+/** F4, 26 Sep 2026: the archive states what it holds and what it does not yet. */
+it("lists the permission records and profile facts, and says legal audit records are not yet included", async () => {
+  const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+  const manifest = JSON.parse(zip.readAsText("manifest.json"));
+  const record = JSON.parse(zip.readAsText("subject-record.json"));
+  expect(Object.keys(record)).toEqual(expect.arrayContaining(["profiles", "consent_signatures", "purpose_grants", "attestations"]));
+  const entry = manifest.contents.find((item: { path: string }) => item.path === "subject-record.json");
+  expect(entry.description).toContain("never the name you signed with");
+  expect(entry.description).toContain("your birth date and declared country");
+  expect(entry.description).toContain("Legal audit records are not yet included.");
+  // The privacy policy's export promise stays verbatim.
+  expect(manifest.note).toContain("your original uploaded files, all derived variants, all reports, and your chat history");
+  expect(manifest.note).toContain("Legal audit records are not yet included.");
 });

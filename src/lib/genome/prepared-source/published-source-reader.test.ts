@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { publicationFixture } from "./prepare-genome-publication.fixtures";
 import { prepareGenomePublication } from "./prepare-genome-publication";
-import { createOwnPreparedCoordinateReader, type OwnPreparedSource } from "./published-source-reader";
+import { createOwnPreparedCoordinateReader, createOwnPreparedRsidReader, withOwnPreparedSource, type OwnPreparedSource } from "./published-source-reader";
+import { readOwnPreparedCopilotCalls, type PreparedCopilotSelection } from "../../copilot/own-prepared-calls";
+import { ownGenotypeResult } from "../../copilot/own-chat-content";
 import { jobId, attemptId, row } from "./materialize-canonical.fixtures";
 import type { PreparedStoredArtifact } from "./storage-writer";
 
@@ -10,8 +12,8 @@ const origin = "https://synthetic.invalid", credential = "synthetic-placeholder"
 const actor = { accountId: "11111111-1111-4111-8111-111111111111", sessionId: "22222222-2222-4222-8222-222222222222" };
 const manifestId = "88888888-8888-4888-8888-888888888888";
 type Override = (url: string, init: RequestInit) => Response | Promise<Response> | undefined;
-async function setup(rows?: string[], build: "GRCh37" | "GRCh38" = "GRCh38") {
-  const f = await publicationFixture(rows, build);
+async function setup(rows?: string[], build: "GRCh37" | "GRCh38" = "GRCh38", scratchGap = 0) {
+  const f = await publicationFixture(rows, build, scratchGap);
   const publication = await prepareGenomePublication({ canonical: f.canonical, rsid: f.root,
     expected: { binding: f.binding, jobId, attemptId, firstRsidArtifactSequence: f.root.firstArtifactSequence } },
   { ...f, check: async () => {} });
@@ -226,5 +228,72 @@ describe("published canonical source reader (synthetic HTTP, not hosted proof)",
     const result = await f.read(f.request, f);
     expect(result.source.manifestId).toBe(manifestId);
     expect(result.records.every(r => r.normalization.status === "normalized" && r.normalization.record.pos === 1)).toBe(true);
+  });
+});
+
+describe("published rsID reads (synthetic HTTP, not hosted proof)", () => {
+  it("reads authenticated rsID roots and all conflicting loci despite discarded scratch gaps", async () => {
+    const f = await setup([row(1), row(8).replace("rs8", "rs1"), row(10)], "GRCh38", 3);
+    const result = await createOwnPreparedRsidReader(actor)({ fileId: f.source.fileId, expectedManifestId: manifestId, rsids: [1] }, f);
+    expect(result.records).toEqual(f.records.filter(r => r.event.type !== "reference"
+      && (r.event.type === "variant" ? r.event.record.rsid : r.event.call.rsid) === 1));
+    expect(result.source).toEqual(f.source); expect(result.nextCursor).toBeNull();
+    expect(f.order).toContain(`storage:${f.publication.rsidRoot.receipt.artifactId}`);
+    for (const scratch of f.scratch) expect(f.provider.mock.calls.some(([url]) => url.endsWith(scratch.receipt.objectKey))).toBe(false);
+    for (let i = 0; i < f.order.length; i++) if (f.order[i].startsWith("storage:")) {
+      const id = f.order[i].slice(8);
+      expect(f.order.slice(0, i)).toContain(`member:${id}`); expect(f.order.slice(i + 1)).toContain(`member:${id}`);
+    }
+  });
+
+  it("pins the selected source before any artifact reads and again at final return", async () => {
+    const f = await setup(), checkSourceSelection = vi.fn(async (source: OwnPreparedSource) => { expect(source).toEqual(f.source); });
+    const read = createOwnPreparedRsidReader(actor), request = { fileId: f.source.fileId, expectedManifestId: manifestId, rsids: [1] };
+    await read(request, { ...f, checkSourceSelection }); expect(checkSourceSelection).toHaveBeenCalledTimes(2);
+    f.provider.mockClear(); checkSourceSelection.mockRejectedValue(new Error("synthetic projection mismatch"));
+    await expect(read(request, { ...f, checkSourceSelection })).rejects.toMatchObject({ code: "unavailable" });
+    expect(f.provider).toHaveBeenCalledTimes(1); expect(f.provider.mock.calls[0][0]).toContain("read_own_prepared_manifest_v1");
+  });
+
+  it("refuses corrupted rsID root bytes without returning absent coverage", async () => {
+    const f = await setup(); f.objects.get(f.publication.rsidRoot.receipt.objectKey)![0] ^= 1;
+    await expect(createOwnPreparedRsidReader(actor)({ fileId: f.source.fileId, expectedManifestId: manifestId, rsids: [999] }, f))
+      .rejects.toMatchObject({ code: "unavailable" });
+  });
+
+  it("retains unmapped selected rsID evidence and checks current source after the read", async () => {
+    const f = await setup([row(1), row(30)], "GRCh37"), read = createOwnPreparedRsidReader(actor);
+    const request = { fileId: f.source.fileId, expectedManifestId: manifestId, rsids: [30] };
+    expect((await read(request, f)).records.every(r => r.normalization.status === "unmapped")).toBe(true);
+    let reads = 0;
+    f.state.override = url => url.endsWith("read_own_prepared_manifest_v1") && ++reads === 2 ? new Response(null, { status: 403 }) : undefined;
+    await expect(read(request, f)).rejects.toMatchObject({ code: "unavailable" });
+  });
+
+  it("does not let the lazy rsID manifest reader escape its closed source scope", async () => {
+    const f = await setup(); let escaped: (() => Promise<unknown>) | undefined;
+    await withOwnPreparedSource(actor, { fileId: f.source.fileId, expectedManifestId: manifestId }, f, async access => {
+      escaped = access.readRsidManifest; return null;
+    });
+    const calls = f.provider.mock.calls.length;
+    await expect(escaped!()).rejects.toMatchObject({ code: "aborted" }); expect(f.provider).toHaveBeenCalledTimes(calls);
+  });
+
+  it.each([
+    { name: "called without reference metadata", rows: [row(1)], status: "called" },
+    { name: "reference observation", rows: [row(1, "0/0")], status: "called" },
+    { name: "no-call", rows: [row(1, "./.")], status: "no-call" },
+    { name: "conflicting locus", rows: [row(1), row(8).replace("rs8", "rs1")], status: "conflict" },
+  ])("carries $name through materialization, published reads and the existing genotype policy", async ({ rows, status }) => {
+    // The no-call-only preparation needs another usable, unselected locus.
+    const f = await setup([...rows, row(20)]), s = f.source;
+    const selection: PreparedCopilotSelection = { fileId: s.fileId, subjectId: s.subjectId, sourceRevision: s.sourceRevision,
+      sourceSha256: s.rawSha256, decodedSha256: s.decodedSha256, normalizedAt: s.preparedAt,
+      preparedSource: { version: "own-prepared-report-source-v1", backend: s.backend, manifestId: s.manifestId,
+        membershipSha256: s.membershipSha256, rootArtifactId: s.root.receipt.artifactId, rootSha256: s.root.receipt.sha256 } };
+    const calls = await readOwnPreparedCopilotCalls(actor, selection, [1], f);
+    expect(ownGenotypeResult(1, calls, null)).toMatchObject({ status });
+    expect(JSON.stringify(calls)).not.toMatch(/prepared\/|storageObjectId|membershipSha256|rootSha256/);
+    expect(f.provider.mock.calls.every(([url]) => url.includes("/rest/v1/rpc/") || url.includes("/genomes/prepared/"))).toBe(true);
   });
 });

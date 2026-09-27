@@ -71,9 +71,20 @@ In Supabase → **Authentication → URL Configuration**:
 - **Redirect URLs**: add
   - `https://inherit.bio/**`
   - `https://sequence-mariodiego.vercel.app/**` (still-working Vercel alias)
-  - `https://sequence-murex.vercel.app/**` (still-working Vercel alias)
   - optionally `https://sequence-*-mariodiego.vercel.app/**` for preview
     deployments
+
+`inherit.bio` is the one canonical host (owner decision, 26 September 2026).
+`www.inherit.bio`, `sequence.plus.bio` and `sequence-murex.vercel.app` answer
+every path with a 308 to the same path on `https://inherit.bio`
+(`next.config.ts`; `originAliases` in `docs/route-register.json`). None of
+them should be the Site URL, and none needs a Redirect URL entry: sign-up,
+password reset and GitHub sign-in build their return address from the page's
+own origin, and a page is no longer served on an alias host. The one exception
+is paths under `/api/cron/` and `/api/jobs/`, which answer on every host.
+Vercel calls the scheduled jobs in `vercel.json` on a production URL its
+documentation does not name, and a cron request that gets a redirect back
+stops there. Every route under those two prefixes answers only a bearer secret.
 
 ## Auth email (production)
 

@@ -1,0 +1,19 @@
+{
+  "url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+  "readAt": "2026-09-23T08:54:43.365530+00:00",
+  "accessScope": "Methodology, Apolipoprotein E text and genotype chart, and research-use limitation; excerpt and selected factual rows only, not a full-page archive.",
+  "quote": "determined based on the genotypes of two SNPs, rs7412 and rs429358",
+  "selectedGenotypeRows": [
+    {
+      "apoe": "ε1/ε3",
+      "rs429358": "CT",
+      "rs7412": "CT"
+    },
+    {
+      "apoe": "ε2/ε4",
+      "rs429358": "CT",
+      "rs7412": "CT"
+    }
+  ],
+  "scope": "The chart establishes joint-marker interpretation and double-heterozygote ambiguity. NCRAD assay procedures do not validate uploaded files or this application."
+}

@@ -16,7 +16,12 @@ import { classifyIntent, checkResponse, foldStreamChunks, type AllowedNumerals }
 import { prepareOwnCopilotProvider } from './own-provider-authority';
 import { checkOwnChat, ownChatRpc, ownChatSubject, ownChatHistorySchema, type OwnChatOperation } from './own-chat';
 import { readOwnChatToken, snapshotHash } from './own-chat-token';
-import { ownChatProjectionSchema, ownChatCallSchema, ownChatReportSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
+import { readOwnChatAncestry } from './own-chat-ancestry';
+import { readOwnChatCalls } from './own-chat-calls';
+import { capturedAncestryResult, OWN_ANCESTRY_REPORT, OWN_ANCESTRY_TITLE } from './own-chat-ancestry-content';
+import { ownChatProjectionSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, hasOwnChatReportCorrection, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
+import { readOwnChatReports } from './own-chat-report-context';
+import { ownChatCorrection } from './own-chat-correction';
 export const ownChatBodySchema = z.union([
     z.object({ contextToken: z.string().min(16).max(12000), message: z.string().trim().min(1).max(8000) }).strict(),
     z.object({ chatId: z.uuid(), message: z.string().trim().min(1).max(8000) }).strict(),
@@ -70,8 +75,6 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
             projection = ownChatProjectionSchema.parse(await ownChatRpc('prepare', provider.authority));
             if (!token || snapshotHash(projection) !== token.projectionHash)
                 return denied();
-            if (await ownChatRpc('begin', provider.authority, projection, null, { nonceHash: snapshotHash(token.nonce), expiresAt: new Date(token.expiresAt).toISOString() }) !== true)
-                return denied();
         }
         const check = async () => { if (request.signal.aborted)
             throw new Error('copilot_unavailable'); await checkOwnChat(provider.authority, projection); };
@@ -91,19 +94,21 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
             await check();
             return rows;
         }
-        const sourceIds = new Set([...projection.sources, ...projection.legacySources].map(s => s.id));
         async function calls(rsids: number[]) {
-            const rows = await pages('calls', ownChatCallSchema, { rsids });
-            if (rows.some(r => !sourceIds.has(r.file_id) || !rsids.includes(r.rsid)))
-                throw new Error('copilot_unavailable');
-            return rows;
+            return readOwnChatCalls(rsids, { authority: provider!.authority, projection, signal: request.signal, check,
+                readDatabasePage: offset => ownChatRpc('calls', provider!.authority, projection, chatId, { rsids, offset }) });
         }
+        const sourceUnavailable = async () => { await check(); return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' }; };
         async function reports() {
-            const rows = await pages('reports', ownChatReportSchema);
-            if (rows.some(r => !projection.sources.some(s => s.id === r.file_id && s.completed.some(c => c.purpose === r.purpose))))
-                throw new Error('copilot_unavailable');
-            return rows.filter(r => !isFixtureSlug(r.report.slug));
+            return readOwnChatReports(projection, { check,
+                readPage: offset => ownChatRpc('reports', provider!.authority, projection, chatId, { offset }) });
         }
+        // Inspect the whole bound report context before nonce consumption and
+        // before history or tools can reach a model, including old paraphrases.
+        if (hasOwnChatReportCorrection(await reports()))
+            return Response.json(ownChatCorrection(), { status: 409, headers });
+        if (!chatId && (!token || await ownChatRpc('begin', provider.authority, projection, null,
+            { nonceHash: snapshotHash(token.nonce), expiresAt: new Date(token.expiresAt).toISOString() }) !== true)) return denied();
         const legacyAnalysis = () => [...projection.legacySources.map(s => ({ file_id: s.id, status: 'historical_analysis_unavailable', note: LEGACY_SOURCE_LIMIT })),
             ...projection.unavailableSources.map(s => ({ file_id: s.id, status: s.reason, note: 'This source is not currently readable; no result is inferred.' }))];
         const rawProvenance = () => projection.legacySources.length ? { legacy_sources: projection.legacySources.map(s => ({ file_id: s.id, provenance: 'historical_normalization_unrecorded' })), provenance_note: LEGACY_RAW_NOTE } : {};
@@ -115,11 +120,13 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
                     if (!n)
                         return { error: 'not a valid rsID' };
                     if (projection.unavailableSources.length)
-                        return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' };
+                        return sourceUnavailable();
                     const { data: reference, error } = await db.from('ref_variants').select('rsid,chrom,pos38,ref,alt,gene_symbol').eq('rsid', n).maybeSingle();
                     if (error)
                         throw new Error('copilot_unavailable');
-                    const result = ownGenotypeResult(n, await calls([n]), reference);
+                    const selected = await calls([n]);
+                    if (selected.state === 'source_unavailable') return sourceUnavailable();
+                    const result = ownGenotypeResult(n, selected.calls, reference);
                     await check();
                     return { ...result, ...rawProvenance() };
                 } }),
@@ -127,31 +134,43 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
                 inputSchema: z.object({ gene: z.string().regex(/^[A-Za-z0-9-]{1,32}$/) }).strict(), execute: async ({ gene }) => {
                     await check();
                     if (projection.unavailableSources.length)
-                        return { error: 'source_unavailable', note: 'Some files are not currently readable, so the complete source union cannot be checked.' };
+                        return sourceUnavailable();
                     const { data: refs, error } = await db.from('ref_variants').select('rsid,chrom,pos38,ref,alt,gene_symbol').eq('gene_symbol', gene.toUpperCase()).order('rsid').limit(50);
                     if (error)
                         throw new Error('copilot_unavailable');
-                    const rows = refs?.length ? await calls(refs.map(r => r.rsid)) : [];
+                    const selected = refs?.length ? await calls(refs.map(r => r.rsid)) : { state: 'available' as const, calls: [] };
+                    if (selected.state === 'source_unavailable') return sourceUnavailable();
+                    const rows = selected.calls;
                     const result = { gene, variants: (refs ?? []).map(r => ({ ...ownGenotypeResult(r.rsid, rows, r), gene: r.gene_symbol })),
                         note: 'Only known reference positions are searched; this is not a complete gene screen.', ...rawProvenance() };
                     await check();
                     return result;
                 } }),
-            list_reports: tool({ description: 'List only existing completed reports authorized for this subject; never generates reports.',
+            list_reports: tool({ description: 'List existing completed reports and ancestry authorized for this subject; never generates results.',
                 inputSchema: z.object({ category: z.string().max(100).nullish() }).strict(), execute: async ({ category }) => {
                     await check();
                     const rows = await reports();
-                    const result = { reports: rows.filter(r => !category || r.report.catalogSnapshot?.template.category === category).map(r => ({ slug: r.report.slug, title: r.report.catalogSnapshot?.template.title ?? r.report.slug,
+                    const ancestry = (!category || category === 'ancestry') && projection.sources.some(s => s.completed.some(c => c.purpose === 'ancestry'))
+                        ? await readOwnChatAncestry(provider.authority, projection, check) : [];
+                    const result = { reports: [...rows.filter(r => !category || r.report.catalogSnapshot?.template.category === category).map(r => ({ slug: r.report.slug, title: r.report.catalogSnapshot?.template.title ?? r.report.slug,
                             category: r.report.catalogSnapshot?.template.category ?? null,
                             file_id: r.file_id, purpose: r.purpose, covered: r.report.covered, completed_at: r.completed_at })),
+                            ...ancestry.map(r => ({ slug: OWN_ANCESTRY_REPORT, title: OWN_ANCESTRY_TITLE, category: 'ancestry',
+                                file_id: r.fileId, purpose: 'ancestry', covered: r.content.admixture.result_state === 'available', completed_at: r.completedAt }))],
                         unavailable_sources: legacyAnalysis(), ...(category && rows.some(r => !r.report.catalogSnapshot) ? { limitation: 'Older reports without captured catalog categories cannot be matched to this category filter.' } : {}) };
                     await check();
                     return result;
                 } }),
-            get_report: tool({ description: 'Read captured report outcomes and source conflicts. Uncaptured current scientific metadata is not supplied.',
+            get_report: tool({ description: 'Read captured report outcomes and source conflicts. Use inherit:ancestry for separately enabled saved ancestry. Uncaptured current scientific metadata is not supplied.',
                 inputSchema: z.object({ slug: z.string().max(200) }).strict(), execute: async ({ slug }) => {
                     await check();
                     const rows = await reports();
+                    if (slug === OWN_ANCESTRY_REPORT) {
+                        const ancestry = await readOwnChatAncestry(provider.authority, projection, check);
+                        await check();
+                        return ancestry.length ? { slug: OWN_ANCESTRY_REPORT, sources: ancestry.map(capturedAncestryResult), unavailable_sources: legacyAnalysis() }
+                            : { slug: OWN_ANCESTRY_REPORT, error: 'ancestry_not_generated', note: 'No completed ancestry result is currently available under your selected purposes.', unavailable_sources: legacyAnalysis() };
+                    }
                     let result = capturedReportResult(rows, slug);
                     if ('error' in result && !isFixtureSlug(slug)) {
                         // Acknowledge only a real published lookup identifier. This

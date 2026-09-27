@@ -132,18 +132,40 @@ insert into pub_receipts values('delete-evidence',jsonb_build_object('version','
 select throws_ok($$select public.finish_own_original_retirement_v1(pg_temp.file_id(),repeat('c',64),
  (select value from pub_receipts where label='retirement'),(select value from pub_receipts where label='delete-evidence'))$$,
  '42501','not_found','provider evidence alone cannot finish while exact Storage metadata remains');
+-- Establish real Copilot settings, explicit permission and captured projection
+-- before metadata removal, after the expiry assertions so fixture setup cannot
+-- consume their one-second window. No endpoint or provider is contacted.
+reset role;
+create temporary table prepared_copilot_binding as select user_id account_id,
+ '89800000-0000-4000-8000-000000000010'::uuid session_id,subject_id from public.genome_files where id=pg_temp.file_id();
+\ir fixtures/own_prepared_copilot_context.inc
+set local role service_role;
+select is(jsonb_array_length((select value->'sources' from prepared_chat_projection)),1,'live original plus exact prepared members admits the Copilot source');
+select is(pg_temp.prepared_chat('calls','{"rsids":[762551],"offset":0}',null,(select value from prepared_chat_projection)),
+ '[]'::jsonb,'prepared-only SQL projection supplies no invented raw calls');
+
 select throws_ok($$update storage.objects set metadata='{"size":8}' where id='89800000-0000-4000-8000-000000000020'$$,
  '42501','upload_unavailable','existing final-copy guard still refuses original overwrite during retirement');
 -- Simulate ONLY the metadata side of provider deletion under the fixture's
 -- trusted callback contract. Actual known-version/.info absence is external proof.
 delete from storage.objects where id='89800000-0000-4000-8000-000000000020';
 select throws_ok($$select pg_temp.read_publication()$$,'42501','not_found','metadata disappearance alone does not make a retired prepared source readable');
+select is(pg_temp.prepared_chat('prepare')->'unavailableSources',jsonb_build_array(jsonb_build_object('id',pg_temp.file_id(),'reason','source_unavailable')),
+ 'original metadata absence without acknowledged retirement cannot admit Copilot prepared authority');
+select throws_ok($$select pg_temp.prepared_chat('check','{}',null,(select value from prepared_chat_projection))$$,
+ '42501','not_found','original disappearance alone rejects the previously captured Copilot projection');
+
 select throws_ok($$select public.finish_own_original_retirement_v1(pg_temp.file_id(),repeat('c',64),
  (select value from pub_receipts where label='retirement'),(select value||'{"extra":true}' from pub_receipts where label='delete-evidence'))$$,
  '22023','invalid_original_delete_evidence','provider receipt is closed');
 select is(public.finish_own_original_retirement_v1(pg_temp.file_id(),repeat('c',64),
  (select value from pub_receipts where label='retirement'),(select value from pub_receipts where label='delete-evidence')),true,'exact acknowledged retirement commits');
 select is(pg_temp.read_publication(),(select value from pub_receipts where label='published'),'verified prepared source survives confirmed original retirement');
+select is(pg_temp.prepared_chat('prepare'),(select value from prepared_chat_projection),
+ 'exact acknowledged retirement preserves every prior prepared Copilot identity');
+select is(pg_temp.prepared_chat('check','{}',null,(select value from prepared_chat_projection)),'true'::jsonb,
+ 'retired original is admitted only through the existing acknowledged provenance exception');
+
 reset role;
 select ok(private.own_report_source_metadata_v1('89800000-0000-4000-8000-000000000001',pg_temp.file_id(),true) ? 'preparedSource','report source metadata accepts exact retired provenance');
 select is(private.own_export_source_v1('89800000-0000-4000-8000-000000000001','89800000-0000-4000-8000-000000000010',pg_temp.file_id())->>'normalized','true','full canonical export remains genuinely normalized');

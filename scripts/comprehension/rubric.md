@@ -51,7 +51,7 @@ never showed them, and says it as though the product showed it, fails.
 | T6 | — | — | zero prohibited |
 | T7 | — | — | zero prohibited |
 | T8 | ≥ 27 | ≥ 10 | — |
-| T9 | ≥ 27, within 8 actions | ≥ 10, within 8 actions | — |
+| T9 | ≥ 27, within 6 in-app actions | ≥ 10, within 6 in-app actions | — |
 | T10 | zero answers reporting no route found | same | — |
 
 The human bar is lower than 27/30 because n = 12 gives a wider interval; 10/12
@@ -89,12 +89,17 @@ a different condition; reporting a result the file does not cover.
 
 ## T2 — "Find where your ancestors came from and name one specific region."
 
-**Pass** when the answer names one of the five regions the ancestry surface
-itself renders.
+**Pass** when the answer names a region rendered by the current ancestry
+surface. Its seven possible labels are Africa, Americas, Central–South Asia,
+East Asia, Europe, Middle East and North Africa, and Oceania. Where the evidence
+cannot separate three regions, the surface instead uses the combined label
+“Europe, Middle East / North Africa, and Central–South Asia”. This is a valid
+region answer too; do not demand a split that the surface withholds.
 
-> "Mostly Europe — about 40-odd percent — with a chunk from South Asia."
+> "It groups Europe, Middle East / North Africa, and Central–South Asia
+> together because it can't tell those parts apart reliably."
 
-Passes: a rendered region label, and the participant found it.
+Passes: the rendered combined region label, with its stated limit.
 
 **Fail**
 
@@ -232,11 +237,12 @@ sufficient — the task asks them to say what will be gone.
 Also a fail: reporting that everything vanishes instantly, which the product does
 not say.
 
-## T9 — "Someone has uploaded your DNA. Starting from inherit.bio with no account, find out what is held about you, and delete it." Maximum 8 actions.
+## T9 — "Someone has uploaded your DNA. Starting from inherit.bio with no account, find out what is held about you, and delete it." Maximum 6 in-app actions.
 
 **Pass** when the participant reaches the subject-access route and the withdrawal
-it offers **within eight actions and without creating an account**. One action is
-one click, one form submission, or one typed URL.
+it offers **within six in-app actions and without creating an account**. Count click and
+submit events with the route register's confirmation exclusions. Record mailed-link
+and typed-URL entries separately; they are not part of this ceiling.
 
 > "From the front page there's a link at the bottom about your rights if someone
 > else uploaded your DNA. That took me to a page where I could ask what's held
@@ -250,7 +256,7 @@ Fails on both counts: the account, and the premise. This is the task the product
 is least likely to pass and the one it least deserves to be graded generously on
 — the person in it never chose to be here.
 
-Nine or more actions is a fail even if the participant arrives.
+Seven or more counted in-app actions is a fail even if the participant arrives.
 
 ## T10 — "You were conceived from an embryo that was analysed here. Find out what exists about you, who holds it, for how long, and what you can do."
 

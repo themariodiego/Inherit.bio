@@ -60,8 +60,10 @@ export type CanonicalOptions = {
  * records remain provisional until terminal summary AND actual EOF. Any failure
  * invalidates every emitted record; caller owns artifact cleanup/publication.
  * Receipts bind integrity only: no actor/store/purpose authorization is done here.
- * Source hashes and merge completeness must have been verified by the upstream
- * pipeline, not inferred from caller-provided strings.
+ * The upstream pipeline verifies source hashes and each block before yielding
+ * events. expectedMergeSummary is an expectation from that verified parser/run
+ * graph, not proof of completeness: the actual matching merge terminal and EOF
+ * are required before this generator emits its canonical summary.
  *
  * Holds one input event, its bounded output and the first variant at the current
  * SOURCE position, plus the existing reference-chain index (no all-call map).

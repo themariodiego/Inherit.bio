@@ -8,7 +8,7 @@ import { loadCoParentReview } from "@/lib/embryos/co-parent-review";
 import { CoParentReviewForm } from "@/components/embryo/co-parent-review-form";
 import { InvitationRefusalForm, InvitationRefusalReceipt } from "@/components/embryo/invitation-refusal-form";
 import { loadInvitationRefusal } from "@/lib/embryos/invitation-refusal";
-import jurisdictions from "../../../../../data/jurisdictions.json";
+import { jurisdictionChoices } from "@/lib/legal/jurisdiction-declaration";
 
 export const metadata: Metadata = { title: "Review your request", robots: { index: false, follow: false } };
 
@@ -35,8 +35,5 @@ export default async function RightsSessionPage() {
       <InvitationRefusalForm nonce={refusal.nonce} />
     </section>
   );
-  const names = new Intl.DisplayNames(["en"], { type: "region" });
-  const countries = jurisdictions.realJurisdictionCatalog.codes.map(code => ({ code, name: names.of(code) ?? code }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  return <CoParentReviewForm review={review} countries={countries} refusalNonce={refusal.nonce} />;
+  return <CoParentReviewForm review={review} countries={jurisdictionChoices()} refusalNonce={refusal.nonce} />;
 }

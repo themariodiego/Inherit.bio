@@ -2,15 +2,15 @@
   "purpose": "Every place where the product and G1.11's claims and provenance rules disagree today. scripts/claims-gate.ts (pnpm gate:claims) runs ten checks: the citation register's schema, the local snapshot of every non-permanent source, the claim register's evidence, the surfaces claims name, every provenance expression built in src/, the provenance attribute on every claim or figure element, the exempt-numeral rule, report-body registration, template citation registration, and the seven designated surfaces. Each check compares what it finds against the matching group here in both directions: an unlisted divergence fails, and a listed one that no longer exists fails too, so a fix has to bring the ledger down with it and nothing can quietly give a registration back.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. Every entry below is an open finding measured exactly, not an accepted state \u2014 acceptance is a line in docs/acceptance-matrix.md, and G1.11 stands at NO there. The point of the ledger is that the distance from the rule is written down and can only shrink.",
   "howEntriesAreMatched": "The seven checks whose findings name a single record hold the finding sentence verbatim, because there is nothing in it to recount. The three that carry counts \u2014 report-body registration, template citation registration and the designated surfaces \u2014 hold the counts, and scripts/claims-gate.ts rebuilds the sentence from them through the same function the check itself uses. So one prose block gaining a registration moves a number, and a number that moves fails in both directions rather than matching a stale sentence.",
-  "granularity": "The report-body backlog is 675 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 675 rows would be 675 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
+  "granularity": "The report-body backlog is 640 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 640 rows would be 640 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
   "citationSchema": [],
-  "citationSchemaNote": "Empty, and checked in both directions so it cannot stay empty through a regression. All 19 entries in data/citations.json carry the eight fields G1.11 names, a type inside pmid|doi|statute|registry|regulator|dataset, a resolvable https URL, a real calendar access date and a supporting quotation of 25 words or fewer.",
+  "citationSchemaNote": "Empty, checked in both directions. All 41 entries in data/citations.json carry the required eight fields, supported citation types, resolvable HTTPS URLs, actual access dates and quotations of 25 words or fewer.",
   "sourceSnapshot": [],
-  "sourceSnapshotNote": "Empty for the same reason. Seven of the 19 sources are Ensembl records, which are live web pages rather than permanent identifiers, and all seven carry a local snapshot under docs/sources/ensembl/ that exists on disk. The other twelve are PMIDs and one DOI, which C4 exempts because they resolve to a fixed record.",
+  "sourceSnapshotNote": "Empty. Eleven of the 41 sources have local snapshots: seven Ensembl records, one NCBI RefSNP record, one NCRAD chart excerpt and two NCBI ClinVar identity excerpts. Twenty-nine PMIDs and one DOI use permanent identifiers. Publication notes distinguish full-paper access, review articles and abstract-only reads.",
   "claimEvidence": [],
-  "claimEvidenceNote": "Empty: every one of the 71 canonical claims carries verbatim text, at least one surface, and at least one piece of evidence whose citation is in data/citations.json with an accessed_on equal to that source's access_date. This is the half of G1.11 that is finished, over the eight reports it covers.",
+  "claimEvidenceNote": "Empty: all 106 claims carry exact text, declared surfaces and evidence bound to canonical sources with matching access dates. Sixteen reports have registered statements; this remains partial catalog coverage, not full G1.11 acceptance.",
   "claimSurface": [],
-  "claimSurfaceNote": "Empty: every surface the 71 claims name resolves \u2014 a page route in docs/route-register.json, the export:account-export-v1 contract, or the research-digest mail fixture \u2014 and every report slug named is one a template in data/templates publishes.",
+  "claimSurfaceNote": "Empty: every surface the 106 claims name resolves to a page route in docs/route-register.json, the account export contract or the research-digest mail fixture; every named report slug exists in a template.",
   "figureProvenance": [
     {
       "finding": "src/components/embryo/compare/compare-cell.tsx builds a citation provenance whose id is the expression withinFamily.citation_ids[0], which no static reader can resolve",
@@ -24,19 +24,19 @@
   "claimAttributeNote": "Empty: exactly three components in this repository emit data-claim, data-claim-id or data-figure-kind \u2014 Claim, Figure and RelativeFigure \u2014 and all three carry data-provenance on the same element.",
   "exemptNumeral": [],
   "exemptNumeralNote": "Empty: every element claiming the UI-chrome exemption names one of G1.11's six kinds as a literal, and none of them also carries a claim or figure marker.",
-  "reportBodyRegistrationNote": "746 prose blocks are rendered by the 162 report templates; 71 are registered canonical claims and 675 are not. src/lib/claims/presentation.ts returns a claim only when data/claims.json holds the key it looks up (report.<slug>.summary, report.<slug>.interpretation.rs<rsid>.<sorted genotype>, report.<slug>.study.<identifier>.<field>) and the canonical text_verbatim matches the template string character for character; anything else renders as bare prose with no numbered source link behind it. Closing an entry therefore means, per block: read the source, record it in data/citations.json with its access date and a supporting quotation of 25 words or fewer, and add the claim with text_verbatim identical to the template string and evidence whose accessed_on equals that source's access_date. That is a source review per statement, not a data-entry pass. The two batches that produced today's 71 statements each read the underlying publications and wrote up what they support \u2014 docs/sources/reviews and docs/sources/everyday/review.md \u2014 and between them covered eight reports out of 162.",
+  "reportBodyRegistrationNote": "746 prose blocks are rendered by 162 report templates; 106 are registered canonical claims and 640 are not. Registration requires a source-specific review, actual access date, supporting quotation and exact match between the template string and data/claims.json text_verbatim. The presentation layer rejects citation borrowing when text or keys differ. The original 71 statements cover eight reports; four ADORA2A statements and twelve APC, FGFR2 and ALDH2 statements add four more. Exact access scopes and independent agent review are recorded in docs/sources/reviews/*-correction-20260923.md and report-corrections-independent-20260923.md. No full-catalog or clinical acceptance is claimed. Four TREM2 strings now bind to the two primary author abstracts with explicit access limits in trem2-correction-20260923.md. Seven APOE strings bind two author abstracts and the joint-marker chart with explicit access and historical-snapshot limits in apoe-correction-20260923.md. Four TCF7L2 and four F5 strings also have exact bindings; their dated correction notes record the study populations and access limits.",
   "reportBodyRegistration": [
     {
       "file": "data/templates/addiction.json",
-      "unregisteredBlocks": 39,
+      "unregisteredBlocks": 35,
       "totalBlocks": 44,
-      "reports": 10,
-      "summaries": 9,
-      "interpretations": 30,
+      "reports": 9,
+      "summaries": 8,
+      "interpretations": 27,
       "studyContexts": 0,
-      "why": "One report here is registered: problem-substance-use-faah-rs324420, from the first review batch, whose summary and four study-context paragraphs are canonical claims. Its three genotype interpretations are not \u2014 the first batch registered summaries and study contexts only, and genotype interpretations arrived with the everyday-trait batch \u2014 so the file still reports nine of ten summaries and all thirty interpretations. The other nine reports have never been reviewed.",
-      "closing": "Three interpretation claims for the FAAH report, whose sources are already in the register and are the cheapest registration in the catalogue; then nine reports of source review for the rest.",
-      "blocker": "review \u2014 39 statements need a source read and an access date recorded before they can be registered, and no code change can produce that honestly."
+      "why": "Two reports have registered statements: the FAAH summary and four study-context paragraphs from the first batch, and the corrected ALDH2 summary and three genotype explanations. FAAH interpretations and the other eight reports remain unreviewed.",
+      "closing": "Source review for three FAAH interpretations and the eight remaining reports, then 35 exact claim bindings.",
+      "blocker": "review \u2014 35 statements need a source read and an access date recorded before they can be registered, and no code change can produce that honestly."
     },
     {
       "file": "data/templates/aesthetic-cosmetic.json",
@@ -70,33 +70,33 @@
       "summaries": 6,
       "interpretations": 21,
       "studyContexts": 4,
-      "why": "The four everyday-trait reports released by PR72 \u2014 cilantro soapy taste, asparagus odour detection, photic sneeze reflex and earwax type \u2014 are the only fully registered reports in the catalogue, eight blocks each and 32 in all. What is left is the other six reports, plus the four study-context paragraphs of bitter-taste-tas2r38, the fifth report here that carries study prose and was not in the batch. This file also holds the catalogue's only registered DOI source.",
+      "why": "The four everyday-trait reports released by PR72 \u2014 cilantro soapy taste, asparagus odour detection, photic sneeze reflex and earwax type \u2014 are fully registered reports, eight blocks each and 32 in all. What is left is the other six reports, plus the four study-context paragraphs of bitter-taste-tas2r38, the fifth report here that carries study prose and was not in the batch. This file also holds the catalogue's only registered DOI source.",
       "closing": "Six reports of source review, then 31 claim entries. This is the file where the smallest amount of work would produce the first fully registered template.",
       "blocker": "review \u2014 31 statements need a source read and an access date recorded."
     },
     {
       "file": "data/templates/brain-health.json",
-      "unregisteredBlocks": 40,
+      "unregisteredBlocks": 36,
       "totalBlocks": 40,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 30,
+      "reports": 9,
+      "summaries": 9,
+      "interpretations": 27,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
-      "closing": "Ten reports of source review, then 40 claim entries.",
-      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+      "why": "The corrected ADORA2A summary and three genotype interpretations are now exact canonical claims. The other nine summaries and 27 interpretations remain unregistered.",
+      "closing": "Source review and exact registration for the remaining 36 statements.",
+      "blocker": "review \u2014 the remaining statements need source-specific support and an honest access scope."
     },
     {
       "file": "data/templates/cancer-risk.json",
-      "unregisteredBlocks": 40,
+      "unregisteredBlocks": 32,
       "totalBlocks": 40,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 30,
+      "reports": 8,
+      "summaries": 8,
+      "interpretations": 24,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed, and this is the category where an unsourced sentence costs a reader the most: every summary and every genotype interpretation about cancer risk currently renders with no citation bound to it.",
-      "closing": "Ten reports of source review, then 40 claim entries. Highest priority of the sixteen on reader harm, not on size.",
-      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+      "why": "APC I1307K and FGFR2 now have reviewed summaries and genotype interpretations registered as eight exact canonical claims. Eight other reports remain unregistered.",
+      "closing": "Source review and exact registration for the remaining eight summaries and 24 interpretations.",
+      "blocker": "review \u2014 32 statements still need source-specific support and an honest access scope."
     },
     {
       "file": "data/templates/environmental-sensitivity.json",
@@ -124,15 +124,15 @@
     },
     {
       "file": "data/templates/heart-cardiovascular.json",
-      "unregisteredBlocks": 40,
+      "unregisteredBlocks": 36,
       "totalBlocks": 40,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 30,
+      "reports": 9,
+      "summaries": 9,
+      "interpretations": 27,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
-      "closing": "Ten reports of source review, then 40 claim entries.",
-      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+      "why": "The F5 summary and three genotype interpretations now have exact source bindings. Nine other reports remain unregistered.",
+      "closing": "Review the remaining nine reports and register their 36 body strings.",
+      "blocker": "review \u2014 36 statements still need actual source support and access dates."
     },
     {
       "file": "data/templates/lifestyle-wellness.json",
@@ -184,27 +184,27 @@
     },
     {
       "file": "data/templates/metabolic-obesity.json",
-      "unregisteredBlocks": 40,
+      "unregisteredBlocks": 36,
       "totalBlocks": 40,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 30,
+      "reports": 9,
+      "summaries": 9,
+      "interpretations": 27,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
-      "closing": "Ten reports of source review, then 40 claim entries.",
-      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+      "why": "The TCF7L2 summary and three interpretations are source-reviewed and registered; nine reports remain unregistered.",
+      "closing": "Review the remaining nine reports and register their 36 exact body strings.",
+      "blocker": "review \u2014 36 statements still need supporting sources and actual access dates."
     },
     {
       "file": "data/templates/neurodegenerative.json",
-      "unregisteredBlocks": 43,
+      "unregisteredBlocks": 32,
       "totalBlocks": 43,
-      "reports": 10,
-      "summaries": 10,
-      "interpretations": 33,
+      "reports": 8,
+      "summaries": 8,
+      "interpretations": 24,
       "studyContexts": 0,
-      "why": "Nothing here has been reviewed. Thirty-three interpretations because one of the ten reports reads two variants. This file also cites the most distinct sources of any template file, which is the matching entry in templateCitationRegistration below.",
-      "closing": "Ten reports of source review, then 43 claim entries.",
-      "blocker": "review \u2014 43 statements need a source read and an access date recorded."
+      "why": "The corrected TREM2 and APOE summaries and genotype interpretations have eleven exact bindings with explicit source-access limits. Eight other reports remain unregistered.",
+      "closing": "Source review and exact registration for the remaining eight summaries and 24 interpretations.",
+      "blocker": "review \u2014 32 statements still need source-specific support and an honest access scope."
     },
     {
       "file": "data/templates/reproductive-family.json",
@@ -219,14 +219,14 @@
       "blocker": "review \u2014 40 statements need a source read and an access date recorded."
     }
   ],
-  "templateCitationRegistrationNote": "The 162 templates carry 221 citation references; 20 resolve to an entry in data/citations.json and 201 do not. Across the whole catalogue those 201 references are 177 distinct sources, almost all PMIDs. A reference the register does not hold is a study the product names to a reader with no recorded access date, no supporting quotation and nothing in the repository showing the source was ever opened, which is exactly what C4 exists to prevent. Closing an entry means adding one data/citations.json record per distinct source: id, type, identifier, a URL an independent reader can resolve, the exact access date, a verbatim quotation of 25 words or fewer that supports what the report says, and the claim it supports. A PMID is a permanent identifier, so C4 needs no docs/sources snapshot for it; the quote and the access date still require the record to be opened and read. This group and the report-body group are the same work seen from two sides \u2014 the sources have to exist before the prose above them can be registered \u2014 so the two shrink together.",
+  "templateCitationRegistrationNote": "The 162 templates carry 227 citation references; 42 resolve to data/citations.json and 185 do not. Those unresolved references represent 162 distinct sources. Each remaining source needs actual access, a dated canonical record and a supporting quotation within the publication-level budget. Shared-source registration reduces a missing-reference count without claiming review of another report's prose. Permanent identifiers remove the need for local paper copies; they do not substitute for source reading.",
   "templateCitationRegistration": [
     {
       "file": "data/templates/addiction.json",
-      "absentSources": 11,
-      "citedSources": 12,
-      "why": "Eleven of twelve references are absent; 11 distinct sources. The one that resolves is the FAAH review batch's own source.",
-      "closing": "11 publications opened, quoted and dated.",
+      "absentSources": 10,
+      "citedSources": 15,
+      "why": "Ten of fifteen references are absent; 10 distinct sources. Five resolve: the FAAH source and four sources read for the corrected ALDH2 report, with the exact review/abstract/full-article scopes recorded.",
+      "closing": "10 publications opened, quoted and dated, with exact access scope.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     },
     {
@@ -255,19 +255,19 @@
     },
     {
       "file": "data/templates/brain-health.json",
-      "absentSources": 9,
+      "absentSources": 7,
       "citedSources": 11,
-      "why": "Nine of eleven references are absent; 9 distinct sources. Two resolve because they are shared with an already reviewed report.",
-      "closing": "9 publications opened, quoted and dated.",
+      "why": "Seven of eleven references remain absent; 7 distinct sources. The two ADORA2A publications now resolve, alongside two references shared with earlier reviewed reports.",
+      "closing": "7 publications opened, quoted and dated, with exact access scope.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     },
     {
       "file": "data/templates/cancer-risk.json",
-      "absentSources": 15,
-      "citedSources": 15,
-      "why": "Every reference in the file is absent, and all fifteen are distinct sources: no cancer-risk report shares a source with another.",
-      "closing": "15 publications opened, quoted and dated.",
-      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+      "absentSources": 12,
+      "citedSources": 16,
+      "why": "Four references now resolve: three APC publications and the FGFR2 paper. Twelve other references remain absent.",
+      "closing": "12 publications opened, quoted and dated, with exact read scope.",
+      "blocker": "review \u2014 the remaining references still need actual source access and supporting quotations."
     },
     {
       "file": "data/templates/environmental-sensitivity.json",
@@ -279,18 +279,18 @@
     },
     {
       "file": "data/templates/gastrointestinal.json",
-      "absentSources": 15,
+      "absentSources": 12,
       "citedSources": 15,
-      "why": "Every reference in the file is absent; 13 distinct sources. This is also the file with fifteen unregistered study-context paragraphs, and those paragraphs describe these very studies.",
-      "closing": "13 publications opened, quoted and dated.",
+      "why": "Twelve of fifteen references remain absent; 10 distinct sources. Three ALDH2 publications now resolve after the addiction-report correction. That shared source registration does not certify this file\u2019s prose, study contexts or source matching.",
+      "closing": "10 missing publications opened, quoted and dated; review every statement against the actual source scope.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     },
     {
       "file": "data/templates/heart-cardiovascular.json",
-      "absentSources": 11,
-      "citedSources": 11,
-      "why": "Every reference in the file is absent; 10 distinct sources.",
-      "closing": "10 publications opened, quoted and dated.",
+      "absentSources": 10,
+      "citedSources": 12,
+      "why": "The Bertina and Juul author abstracts are registered with explicit access limits; ten references to nine other sources remain absent.",
+      "closing": "Read, quote and date the nine remaining distinct sources.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     },
     {
@@ -327,30 +327,30 @@
     },
     {
       "file": "data/templates/metabolic-obesity.json",
-      "absentSources": 11,
-      "citedSources": 11,
-      "why": "Every reference in the file is absent; 11 distinct sources.",
-      "closing": "11 publications opened, quoted and dated.",
-      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+      "absentSources": 10,
+      "citedSources": 12,
+      "why": "Grant original-discovery abstract and the Florez primary trial are registered with explicit read scopes; ten other distinct sources remain absent.",
+      "closing": "Open, read, quote and date the ten remaining publications.",
+      "blocker": "review \u2014 source registration requires actual access and content review."
     },
     {
       "file": "data/templates/neurodegenerative.json",
-      "absentSources": 17,
+      "absentSources": 13,
       "citedSources": 17,
-      "why": "Every reference in the file is absent, and all seventeen are distinct sources \u2014 the most of any template file.",
-      "closing": "17 publications opened, quoted and dated.",
+      "why": "The two TREM2 and two APOE publications are registered from actual author abstracts with access dates. Thirteen other distinct sources remain absent.",
+      "closing": "13 publications opened, quoted and dated.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     },
     {
       "file": "data/templates/reproductive-family.json",
-      "absentSources": 15,
+      "absentSources": 14,
       "citedSources": 15,
-      "why": "Every reference in the file is absent, and all fifteen are distinct sources.",
-      "closing": "15 publications opened, quoted and dated.",
+      "why": "The Bertina source now resolves after the F5 source correction; 14 other references remain absent. Shared-source registration does not review this file\u2019s prose or source matching.",
+      "closing": "Read, quote and date the 14 remaining distinct sources; separately review the prose against the sources.",
       "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
     }
   ],
-  "designatedSurfaceNote": "G1.11 named seven surfaces whose string blocks must be emitted through the shared claim component with a mandatory citationId; glossary definitions left that list on 2026-09-18 (evening) by corrections item 15, the owner's decision that a definition is not a claim, so six remain. Five of them diverge, in two ways the gate reports separately: a page whose module graph never reaches src/components/claims/claim.tsx cannot be emitting anything through it, and a surface no claim in data/claims.json is bound to has nothing registered to emit. Report bodies are the one designated surface that reaches the component and carries bound claims, which is why they appear in the two groups above rather than this one. All 71 claims name report routes, the account export contract and one mail fixture, so every other surface is unbound by construction.",
+  "designatedSurfaceNote": "G1.11 named seven surfaces whose string blocks must be emitted through the shared claim component with a mandatory citationId; glossary definitions left that list on 2026-09-18 (evening) by corrections item 15, the owner's decision that a definition is not a claim, so six remain. Five of them diverge, in two ways the gate reports separately: a page whose module graph never reaches src/components/claims/claim.tsx cannot be emitting anything through it, and a surface no claim in data/claims.json is bound to has nothing registered to emit. Report bodies are the one designated surface that reaches the component and carries bound claims, which is why they appear in the two groups above rather than this one. All 98 claims name report routes, the account export contract and one mail fixture, so every other surface is unbound by construction.",
   "designatedSurface": [
     {
       "surface": "consent summaries",
@@ -364,7 +364,7 @@
     {
       "surface": "consent summaries",
       "kind": "unbound",
-      "why": "No claim in data/claims.json names any of the five consent routes. All 71 claims name /genome/[subject]/reports/<slug>, export:account-export-v1, and for eight of them the research-digest mail fixture, so this surface has nothing registered to render.",
+      "why": "No claim in data/claims.json names any of the five consent routes. All 98 claims name /genome/[subject]/reports/<slug>, export:account-export-v1, and for fourteen of them the research-digest mail fixture, so this surface has nothing registered to render.",
       "closing": "Follows the entry above: the binding exists once the summaries are registered claims. It is listed separately because the two are separately observable \u2014 a surface can reach the component and still have nothing bound to it, and vice versa.",
       "blocker": "owner decision \u2014 the same one; a claim cannot be bound to a surface before it is decided that its prose is a claim."
     },

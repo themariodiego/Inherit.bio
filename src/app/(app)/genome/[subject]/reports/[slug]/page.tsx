@@ -1,4 +1,6 @@
 import { loadOwnStoredReportSnapshot } from "@/lib/genome/own-stored-report";
+import { reportScientificCorrections } from "@/lib/genome/report-scientific-corrections";
+import { ScientificCorrectionNotice } from "@/components/reports/scientific-correction-notice";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -43,6 +45,7 @@ import {
   STRAND_FLIP_NOTE,
   TECHNICAL_NOTE,
   UNRECOGNIZED_NOTE,
+  WHAT_THIS_DOESNT_MEAN_EU_DEVICE,
   WHAT_THIS_DOESNT_MEAN_GENERIC,
   WHAT_THIS_DOESNT_MEAN_NOT_COVERED,
   coverageSentence,
@@ -76,6 +79,8 @@ import {
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
 import { grantedLayers, LAYER_PURPOSES, viewerMaySee } from "@/lib/family/access";
+import { euDeviceNoticeApplies } from "@/lib/legal/eu-device-notice";
+import { readDeclaredJurisdiction } from "@/lib/legal/jurisdiction-declaration";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { loadSharedReportSnapshot } from "@/lib/family/shared-report-results";
 import { resolveStoredSharedReport, selectSharedReport, sharedReportsForSlug } from "@/lib/family/shared-report-display";
@@ -481,9 +486,16 @@ export default async function ReportDetailPage(
   // D16, "fewer claims, not more caveats": one generic bullet that is true
   // for traits and conditions alike, and a second only when a shown result
   // has a position the file does not cover.
-  const doesntMeanBullets = anyNotCovered
-    ? [WHAT_THIS_DOESNT_MEAN_GENERIC, WHAT_THIS_DOESNT_MEAN_NOT_COVERED]
-    : [WHAT_THIS_DOESNT_MEAN_GENERIC];
+  // The EU sentence depends on where the viewer said they live, so it is read
+  // only for a report it could apply to.
+  const viewerCode = categoryId === "everyday-traits"
+    ? null
+    : await readDeclaredJurisdiction(user.id).catch(() => null);
+  const doesntMeanBullets = [
+    WHAT_THIS_DOESNT_MEAN_GENERIC,
+    ...(anyNotCovered ? [WHAT_THIS_DOESNT_MEAN_NOT_COVERED] : []),
+    ...(euDeviceNoticeApplies(categoryId, viewerCode) ? [WHAT_THIS_DOESNT_MEAN_EU_DEVICE] : []),
+  ];
 
   // The mandated coverage sentence (§2 §4.4e) names "this estimate", so it
   // renders on that layer only, and only with a shown result.
@@ -550,6 +562,7 @@ export default async function ReportDetailPage(
         </nav> : null}
         {sharedReport ? <p className="text-sm text-ink-muted">Saved on <time dateTime={sharedReport.completedAt}>
           {sharedReport.completedAt.slice(0, 10)}</time>. Each saved result uses one source file.</p> : null}
+        {reportScientificCorrections(template).length > 0 ? <ScientificCorrectionNotice /> : null}
         <ul data-slot="chip-row" className="space-y-2 text-sm">
           <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span data-chip="layer" className={CHIP}>

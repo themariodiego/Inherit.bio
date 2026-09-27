@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { encryptSecret, hmacSecret } from "@/lib/crypto";
+import { accountCapability } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,7 +32,10 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return new Response("Unauthorized", { status: 401 });
 
-  if (process.env.INHERIT_TEST_JURISDICTION !== "1") {
+  // The inviter's own declared jurisdiction, read now rather than when the
+  // form loaded (G5.1a, G5.1b). Without the acceptance flag every account
+  // resolves unreviewed, as before.
+  if ((await accountCapability(user.id, "third_party_adult_analysis")).status !== "permitted") {
     return NextResponse.json({ error: "jurisdiction_unavailable" }, { status: 409 });
   }
 

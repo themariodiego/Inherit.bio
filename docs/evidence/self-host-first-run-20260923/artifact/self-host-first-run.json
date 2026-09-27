@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "outcome": "passed",
+  "startedAt": "2026-09-23T08:23:31.338Z",
+  "steps": {
+    "preflight": "passed",
+    "signup": "passed",
+    "emailConfirmation": "passed",
+    "accountCompletion": "passed",
+    "uploadConsent": "passed",
+    "stockStorageUpload": "passed",
+    "normalization": "passed",
+    "reportChoices": "passed",
+    "reportGeneration": "passed",
+    "coveredReport": "passed",
+    "absentReport": "passed",
+    "storedAncestryFallback": "passed",
+    "copilotWithoutProvider": "passed"
+  },
+  "checks": {
+    "stockLocalConfiguration": true,
+    "confirmationRequired": true,
+    "separateExplicitUploadConsent": true,
+    "stockStorageAcknowledged": true,
+    "onlyChosenReportPurposes": true,
+    "coveredCallMatchesCommittedSample": true,
+    "absenceIsNotAResult": true,
+    "storedInsufficientMarkerResult": true,
+    "providerAbsentNoInference": true,
+    "noUnexpectedBrowserRequests": true,
+    "noPageErrors": true
+  },
+  "continuationRejections": 0,
+  "scope": "stock-local-signup-upload-and-result-surfaces",
+  "paidInference": false,
+  "shutdownVerified": false,
+  "commit": "b659df57f072763704219b20e92b049d0cef461a",
+  "configSha256": "3983cb92a6c587c6ccc99f1077560693d1e3a9bb760e3ff76336743d0f40759a",
+  "guideSha256": "e615ab545f1cdf191b921499289d19bf3aabb1ad37b22faa7be5bfacbfc7fb4d",
+  "configuredReceiptSha256": "6d99b8a86dec45dad535fec77cf0f1dae8c597842d73594b278a38bfea191587",
+  "fixtureSha256": "46c46da43500f3b1ad5f01524c4ac9bcb52b2bd9a1dcc5b3c33aa8dbbc6a2b44",
+  "finishedAt": "2026-09-23T08:24:30.344Z"
+}

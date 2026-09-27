@@ -7,7 +7,7 @@ import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "./coho
  * credentials alongside the five public values, so the case that matters most
  * here is the one that proves neither credential survives into a body.
  */
-const ORIGIN = "https://www.inherit.bio";
+const ORIGIN = "https://inherit.bio";
 const SECRET = "A".repeat(43);
 const CHALLENGE = "kZ9Qd3yQ8wq7fF2bN5hT1xV4cR6sJ0mL2pY8uW3aE7g";
 

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { PERSONAL_RESULT_LABEL, WITH_RESULTS_LABEL, NO_RESULT_MATCHES } from "@/copy/reports/personal-previews";
 import type { PersonalPreview } from "@/lib/genome/report-previews";
 import { Count } from "./count";
+import { ScientificCorrectionNotice } from "./scientific-correction-notice";
 import {
   EMPTY_REPORT_FILTER_SNAPSHOT, MAX_REPORT_QUERY_LENGTH, reportFilterSnapshot, withReportFilters,
   type ReportFilterState,
@@ -46,6 +47,8 @@ export interface LibraryCard {
   slug: string;
   title: string;
   summary: string;
+  /** Public template status, with no selected-genotype correction detail. */
+  scientificCorrection?: boolean;
   evidenceLabel: string;
   /** Gene symbol of every template variant; searched alongside the title. */
   genes: string[];
@@ -130,6 +133,7 @@ function EstimateCard({ card, subject }: { card: LibraryCard; subject: string })
       ) : (
         <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{card.summary}</p>
       )}
+      {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
       <p className="mt-2">
         <StatusPill status={card.status} />
       </p>
@@ -151,6 +155,7 @@ function VariantCallRow({ card, subject }: { card: LibraryCard; subject: string 
         {card.evidenceLabel}
       </Badge>
       <p className="w-full text-sm text-ink-muted">{card.summary}</p>
+      {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
       <p>
         <StatusPill status={card.status} />
       </p>

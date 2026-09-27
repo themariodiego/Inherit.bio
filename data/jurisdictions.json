@@ -14,7 +14,7 @@
       "country": "exactly two ASCII letters and present in realJurisdictionCatalog.codes",
       "subdivision": "country prefix, hyphen, and one to three uppercase ASCII letters or digits; the country prefix must be in realJurisdictionCatalog.codes and the full normalized subdivision code must be an exact committed key in realJurisdictions with displayName and an explicit decision for every capability. The entry may remain fail-closed with every status unreviewed and every review null; each permitted or prohibited decision requires its own exact signedReviewContract reference.",
       "lookupOrder": ["for a committed subdivision, use its exact capability decision; a missing subdivision capability is invalid and never inherits a country decision", "for an alpha-2 country, use its exact realJurisdictions capability override when present", "otherwise use the defaultRealJurisdiction capability"],
-      "testPseudoValue": "TEST-LOCAL is handled only by productionPolicy and testJurisdictions, never by the real-code grammar",
+      "testPseudoValue": "TEST-LOCAL, and TEST-DENY stored as XX, are handled only by productionPolicy and testJurisdictions, never by the real-code grammar",
       "unknownOrMalformed": "reject the write, including every syntactically valid but unregistered subdivision; never silently coerce, infer, or select a nearby jurisdiction"
     },
     "countryCodeSource": {
@@ -157,12 +157,33 @@
         "embryo_statistical_estimate": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
         "carrier_match": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."}
       }
+    },
+    "TEST-DENY": {
+      "reserved": true,
+      "productionAllowed": false,
+      "selectableWhen": "runtime-environment-is-test and INHERIT_TEST_JURISDICTION=1, through the declaration writer only; never offered in a picker",
+      "storedAs": "XX",
+      "storedAsReason": "profiles.jurisdiction_code holds exactly two letters. XX is an ISO 3166-1 user-assigned code that names no country, so no real declaration can collide with it.",
+      "capabilities": {
+        "third_party_adult_analysis": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_heritability": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_portrait": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_portrait_abo": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_portrait_rh": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_portrait_red_hair": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_portrait_lactase_persistence": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "family_portrait_earwax": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "embryo_analysis": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "embryo_single_locus": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "embryo_statistical_estimate": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."},
+        "carrier_match": {"status":"prohibited","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-09-25","review":null,"reason":"The block-only acceptance fixture proves the prohibited branch of every restricted capability (G5.1a, G5.1b) without a real determination.","userFacingCopy":"This capability is blocked for the TEST-DENY acceptance fixture."}
+      }
     }
   },
   "productionPolicy": {
     "refuseStartWhenTestJurisdictionEnabled": true,
     "hideTestJurisdictions": true,
-    "testPseudoJurisdictionValues": ["TEST-LOCAL"],
+    "testPseudoJurisdictionValues": ["TEST-LOCAL", "TEST-DENY", "XX"],
     "persistedTestPseudoValueWrite": "reject",
     "persistedTestPseudoValueRead": "reject-and-record-configuration-error",
     "refuseStartWhenPersistedTestPseudoValueExistsIn": ["profiles.jurisdiction", "subject_consents.jurisdiction"],

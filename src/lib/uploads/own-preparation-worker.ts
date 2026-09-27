@@ -12,6 +12,7 @@ import { createPreparedArtifactFetch } from "../genome/prepared-source/storage-a
 import { preparedStoredArtifactSchema } from "../genome/prepared-source/artifact-identity";
 import { runOwnPreparationPipeline, type OwnPreparationCheckpoint } from "./own-preparation-pipeline";
 import { ownPreparationOriginalSchema } from "./own-preparation-source";
+import type { PreparationMetrics } from "./preparation-metrics";
 
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/), date = z.iso.datetime({ offset: true });
 const claimSchema = z.object({ version: z.literal("own-preparation-claim-v1"), jobId: uuid, attemptId: uuid,
@@ -45,7 +46,7 @@ const fail = (code: OwnPreparationWorkerError["code"]): never => { throw new Own
  * Publication response uncertainty is also never retried here. Cleanup must use
  * the full registered job, including acknowledged and uncertain scratch writes.
  */
-export async function runNextOwnPreparation(options: { signal?: AbortSignal; expectedFileId?: string } = {}): Promise<
+export async function runNextOwnPreparation(options: { signal?: AbortSignal; expectedFileId?: string; metrics?: PreparationMetrics } = {}): Promise<
   { status: "idle" } | { status: "prepared"; fileId: string; jobId: string; manifestId: string }> {
   const controller = new AbortController();
   const signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal;
@@ -54,6 +55,7 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
   let renewTimer: ReturnType<typeof setTimeout> | undefined;
   let renewal: Promise<void> | undefined;
   let stopped = false;
+  let metricOutcome: "prepared" | "idle" | "failed" | "aborted" = "failed";
   const active = () => { if (signal.aborted) fail("aborted"); };
   async function wait<T>(pending: PromiseLike<T>, current = signal): Promise<T> {
     const started = Promise.resolve(pending);
@@ -75,16 +77,18 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
       active();
       const timeout = new AbortController(), timer = setTimeout(() => timeout.abort(), 30_000); timer.unref();
       const bounded = AbortSignal.any([current, signal, timeout.signal]);
+      const measured = options.metrics?.operation("rpc");
       try {
         const result = await wait(call(name, args).abortSignal(bounded), bounded);
         if (result.error) fail("unavailable");
-        return result.data;
-      } finally { clearTimeout(timer); }
+        measured?.(true); return result.data;
+      } finally { clearTimeout(timer); measured?.(false); }
     }
     const claimTokenHash = createHash("sha256").update(randomBytes(32)).digest("hex");
     const raw = await rpc("claim_next_own_preparation_work_v1", { p_claim_token_hash: claimTokenHash });
-    if (raw === null) return { status: "idle" };
+    if (raw === null) { metricOutcome = "idle"; return { status: "idle" }; }
     const { claim, actor } = workSchema.parse(raw);
+    options.metrics?.enterPhase("setup");
     if (options.expectedFileId && options.expectedFileId !== claim.source.fileId) fail("integrity_mismatch");
     const hardRemaining = Date.parse(claim.jobDeadline) - Date.now();
     if (hardRemaining <= 0) fail("integrity_mismatch");
@@ -131,7 +135,7 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
     if (checkpoint.revision !== 0 || checkpoint.checkpoint !== null || checkpoint.nextArtifactSequence !== 0)
       fail("integrity_mismatch");
     const chain = await wait(readFile(path.join(process.cwd(), "data/ref/chain/GRCh37_to_GRCh38.chain.gz")));
-    const writeArtifact = createPreparedArtifactWriter({ jobId: claim.jobId, attemptId: claim.attemptId, claimTokenHash });
+    const writeArtifact = createPreparedArtifactWriter({ jobId: claim.jobId, attemptId: claim.attemptId, claimTokenHash }, options.metrics);
     // A refused reservation that names its byte count is the one failure this
     // worker can end deliberately. Measured on 20 September 2026: a job that
     // spends its artifact budget is never retried, because a fresh claim must
@@ -142,7 +146,7 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
     // comparison and refuses one its rows do not establish, so a wrong guess
     // here cannot reach the person as a sentence about their file. A refusal
     // leaves the ordinary path exactly as it was.
-    const result = await runOwnPreparationPipeline({ jobId: claim.jobId, attemptId: claim.attemptId,
+    const result = await runOwnPreparationPipeline({ jobId: claim.jobId, attemptId: claim.attemptId, metrics: options.metrics,
       firstArtifactSequence: 0, signal, liftover: { chainBytes: chain, sha256: createHash("sha256").update(chain).digest("hex") },
       maximumUnmappedFraction: register.policyContracts["genome-liftover-v1"].maximumUnmappedFraction,
       original: { source: claim.source, signal, check: async (source, current) => {
@@ -151,7 +155,7 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
         method: "GET", signal: current, cache: "no-store", redirect: "error",
         headers: { Authorization: `Bearer ${config.key}`, apikey: config.key, Range: `bytes=${start}-${end}`, "Accept-Encoding": "identity" },
       }) },
-      writeArtifact, readArtifact: createPreparedArtifactFetch(),
+      writeArtifact, readArtifact: createPreparedArtifactFetch(options.metrics),
       check: async (artifact, current) => {
         if (!artifact) { await check(current); return; }
         const parsed = preparedStoredArtifactSchema.parse(await rpc("check_own_preparation_artifact_v1", {
@@ -179,6 +183,7 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
     stopped = true; if (renewTimer) clearTimeout(renewTimer);
     if (renewal) await wait(renewal);
     await check();
+    options.metrics?.enterPhase("publication");
     const published = publishedSchema.parse(await rpc("publish_own_prepared_manifest_v1", {
       ...args, p_account_id: actor.accountId, p_session_id: actor.sessionId, p_payload: result.publication.payload,
     }));
@@ -188,9 +193,10 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
       || !equal(published.summary, result.publication.payload.summary)
       || published.memberCount !== result.publication.members.length) fail("integrity_mismatch");
     active();
+    metricOutcome = "prepared";
     return { status: "prepared", fileId: published.fileId, jobId: claim.jobId, manifestId: published.manifestId };
   } catch (error) {
-    if (signal.aborted) fail("aborted");
+    if (signal.aborted) { metricOutcome = "aborted"; fail("aborted"); }
     if (error instanceof OwnPreparationWorkerError) throw error;
     return fail("unavailable");
   } finally {
@@ -201,5 +207,6 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
     controller.abort();
     // A rejected late renewal is already observed; no cancellation implies a
     // provider-side rollback and no secrets are copied into diagnostics.
+    options.metrics?.finish(metricOutcome);
   }
 }

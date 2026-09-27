@@ -3,7 +3,8 @@ import "server-only";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { assertStorageUploadSignerAvailable, mintStorageUploadToken, storageUploadAuthorizationSchema } from "./storage-upload-token";
-import { directUploadReceipt, SINGLE_REQUEST_MAXIMUM_BYTES, uploadCeilingBytes, uploadSessionBody } from "./subject-upload-contract";
+import { directUploadReceipt, uploadCeilingBytes, uploadSessionBody } from "./subject-upload-contract";
+import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 import { canonicalUploadsPaused } from "./canonical-upload-pause";
 import { readOwnUploadLimits } from "./own-upload-limits";
 

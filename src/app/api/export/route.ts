@@ -3,7 +3,10 @@ import { PassThrough, Readable } from "node:stream";
 import { finished } from "node:stream/promises";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
-import { subjectRecordOf, subjectRecordRowCount } from "@/lib/export/subject-record";
+import { ownSubjectIds, subjectRecordOf, subjectRecordRowCount } from "@/lib/export/subject-record";
+import { ownChatsForExport } from "@/lib/export/own-chats";
+import { EXPORT_CHATS_EMPTY } from "@/copy/settings/data-export";
+import { originalDownloadName, originalFileExtension } from "@/lib/uploads/original-download-name";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
 import {
@@ -346,52 +349,6 @@ function renderReportsTxt(
   return out.join("\n");
 }
 
-/** Chat history from the chats/chat_messages tables. The current Copilot UI
- * keeps conversations client-side only, so an empty result is stated
- * explicitly rather than shipped as a bare empty list. */
-async function buildChats(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-) {
-  const chats = await fetchAllRows((from, to) =>
-    admin
-      .from("chats")
-      .select("id, title, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true })
-      .range(from, to),
-  );
-  if (chats.length === 0) {
-    return {
-      note: "Copilot conversations are not stored server-side",
-      chats: [],
-    };
-  }
-
-  const messages = await fetchAllRows((from, to) =>
-    admin
-      .from("chat_messages")
-      .select("chat_id, role, content, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true })
-      .range(from, to),
-  );
-  const byChat = new Map<string, { role: string; content: unknown; created_at: string }[]>();
-  for (const m of messages) {
-    const list = byChat.get(m.chat_id) ?? [];
-    list.push({ role: m.role, content: m.content, created_at: m.created_at });
-    byChat.set(m.chat_id, list);
-  }
-  return {
-    chats: chats.map((c) => ({
-      id: c.id,
-      title: c.title,
-      created_at: c.created_at,
-      messages: byChat.get(c.id) ?? [],
-    })),
-  };
-}
-
 // Existing synchronous ZIP delivery (not the completed large-export contract): original uploads + normalized variants + computed
 // report results + polygenic scores + ancestry + consents + chat history,
 // as a ZIP stream. Free, forever — there is deliberately no billing,
@@ -474,7 +431,8 @@ export async function GET() {
       });
       contents.push({
         path: "consents.json",
-        description: "Your cloud-LLM consent grant and revocation history.",
+        description: "Your cloud-LLM consent grant and revocation history. The consents you signed, "
+          + "and the permissions and affirmations that rest on them, are in subject-record.json.",
         count: (consents ?? []).length,
       });
 
@@ -486,8 +444,11 @@ export async function GET() {
         description:
           "Who the database says you are and what you agreed to: your own subject rows, "
           + "the principals and bindings that connect them to this account, your subject-level "
-          + "consent history, and the provider grants recorded against this account. Rows about "
-          + "other people are not here, by construction.",
+          + "consent history, the consents and disclosures you signed (never the name you signed "
+          + "with), the permissions on your own subjects that rest on them, the affirmations you "
+          + "made, your birth date and declared country, and the provider grants recorded against "
+          + "this account. Legal audit records are not yet included. Rows about other people are "
+          + "not here, by construction.",
         count: subjectRecordRowCount(subjectRecord),
       });
 
@@ -500,7 +461,9 @@ export async function GET() {
       for (const snapshot of canonical) {
         const f = snapshot.file;
         // Own-subject originals have opaque per-file names, so two uploads
-        // with the same safe display label cannot overwrite each other.
+        // with the same safe display label cannot overwrite each other. The
+        // name carries the stored type's extension, or nothing opens it.
+        const originalPath = `originals/${f.id}${originalFileExtension(f)}`;
         assertActive();
         const blob = snapshot.preparedSource ? null : await ownContent.original(snapshot, key => admin.storage.from("genomes").download(key));
         assertActive();
@@ -574,7 +537,7 @@ export async function GET() {
           await ownContent.check(snapshot); assertActive();
           if (state.retired) {
             expiredOriginals = true;
-            warnings.push(`originals/${f.id} omitted: the original retention period has ended. Prepared records and saved reports remain included.`);
+            warnings.push(`${originalPath} omitted: the original retention period has ended. Prepared records and saved reports remain included.`);
             continue;
           }
           async function authorize(expected: unknown, signal: AbortSignal) {
@@ -598,9 +561,9 @@ export async function GET() {
         }
         members.add(original);
         original.once("close", () => members.delete(original));
-        archive.append(original, { name: `originals/${f.id}` });
+        archive.append(original, { name: originalPath });
         await finished(original); assertActive();
-        contents.push({ path: `originals/${f.id}`, description: "Your original upload, byte-for-byte." });
+        contents.push({ path: originalPath, description: "Your original upload, byte-for-byte." });
       }
 
       // Legacy rows never supply canonical ancestry. The checked reader uses
@@ -726,14 +689,19 @@ export async function GET() {
         count: prs.length,
       });
 
-      const chats = await buildChats(admin, user.id);
+      // Exactly the conversations the chat history shows (F5; the rules and
+      // the owner's decision are in src/lib/export/own-chats.ts).
+      const chats = await ownChatsForExport(admin, exportActor, ownSubjectIds(subjectRecord), assertActive);
       assertActive();
-      archive.append(JSON.stringify(chats, null, 2), { name: "chats.json" });
+      archive.append(JSON.stringify(chats.length ? { chats } : { note: EXPORT_CHATS_EMPTY, chats }, null, 2),
+        { name: "chats.json" });
       contents.push({
         path: "chats.json",
         description:
-          "Your chat history (Copilot conversations stored server-side).",
-        count: chats.chats.length,
+          "Your saved Copilot conversations, as your chat history shows them. A chat is here only while "
+          + "the Copilot permission it was started under is still current, and it stops before the first "
+          + "answer given from data that has since changed. Older unverified chats are not included.",
+        count: chats.length,
       });
 
       // Per genome file: normalized variants as CSV (streamed page by page
@@ -759,11 +727,12 @@ export async function GET() {
           .download(f.bucket_path);
         assertActive();
         if (blob) {
+          const legacyPath = `originals/${originalDownloadName(f)}`;
           archive.append(Readable.fromWeb(blob.stream() as never), {
-            name: `originals/${f.original_name}`,
+            name: legacyPath,
           });
           contents.push({
-            path: `originals/${f.original_name}`,
+            path: legacyPath,
             description: "Your original upload, byte-for-byte.",
           });
         }
@@ -796,7 +765,7 @@ export async function GET() {
         ...(warnings.length > 0 ? { warnings } : {}),
         note: "Export is free and always will be. This archive contains "
           + (expiredOriginals ? "your available original uploaded files (expired originals are identified in warnings)" : "your original uploaded files")
-          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, and consent history. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
+          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, your consent and permission records, and your birth date and declared country. Legal audit records are not yet included. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte, each named with the extension of its file type; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
       };
       archive.append(JSON.stringify(manifest, null, 2), {
         name: "manifest.json",

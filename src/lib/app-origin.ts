@@ -32,7 +32,7 @@ import "server-only";
 
 /** Kept identical to `canonicalOrigin` in `docs/route-register.json`, which is
  * the authority for it; `src/lib/app-origin.test.ts` fails if the two drift. */
-const HOSTED_ORIGIN = "https://www.inherit.bio";
+const HOSTED_ORIGIN = "https://inherit.bio";
 
 export const UNSET_APP_URL_MESSAGE =
   "NEXT_PUBLIC_APP_URL is unset. It builds the links inside outbound mail - invitations, " +

@@ -33,6 +33,7 @@ import {
 } from "@/copy/overview";
 import { familyCapability, permits, viewerMaySee } from "@/lib/family/access";
 import { resolveBoxHref } from "@/lib/overview-entry-boxes";
+import { loadOverviewPortraitTarget } from "@/lib/family/overview-portrait-target";
 import {
   countCarrierMatches,
   readCarrierConditions,
@@ -123,9 +124,11 @@ export default async function OverviewPage() {
   const selfFiles = ((fileRows ?? []) as FileRow[]).filter(
     (file) => self != null && file.subject_id === self.id,
   );
-  const [ownReports, ancestry] = self ? await Promise.all([
-    loadOwnOverviewReports(admin, self.id), selfFiles.length ? loadAncestryResultSnapshot(admin, supabase, self.id) : Promise.resolve(null),
-  ]) : [null, null];
+  const [ownReports, ancestry, portraitTarget] = await Promise.all([
+    self ? loadOwnOverviewReports(admin, self.id) : Promise.resolve(null),
+    self && selfFiles.length ? loadAncestryResultSnapshot(admin, supabase, self.id) : Promise.resolve(null),
+    loadOverviewPortraitTarget(admin, user.id, self, family),
+  ]);
   let ownAncestry = ancestry?.rows.find(row => row.kind === "admixture");
   let hasAncestry = Boolean(ownAncestry);
   const hasReports = ownReports?.hasReports ?? false;
@@ -257,7 +260,8 @@ export default async function OverviewPage() {
 
   // Confirm the same saved result after all other awaited page reads, before
   // presenting ancestry readiness or coverage from the captured content.
-  ownAncestry = (await ancestry?.confirm())?.find(row => row.kind === "admixture");
+  const [confirmedAncestry, portraitPairId] = await Promise.all([ancestry?.confirm(), portraitTarget.confirm()]);
+  ownAncestry = confirmedAncestry?.find(row => row.kind === "admixture");
   hasAncestry = Boolean(ownAncestry);
   state = resolveState();
   const needsReportChoice = !hasReports && !hasAncestry && (ownReports?.hasPreparedSource ?? false);
@@ -272,7 +276,7 @@ export default async function OverviewPage() {
       id: boxDomId(box.id),
       label: box.label,
       description: box.description,
-      href: resolveBoxHref(box, { firstAdultSegment, cohortId }),
+      href: resolveBoxHref(box, { firstAdultSegment, cohortId, portraitPairId }),
     }));
   const ledeFor = (domain: DomainId) =>
     DOMAIN_SECTIONS.find((section) => section.id === domain)!.lede;
