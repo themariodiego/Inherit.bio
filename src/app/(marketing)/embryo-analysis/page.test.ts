@@ -57,9 +57,9 @@ describe("the public embryo-analysis page's jurisdiction claim", () => {
   it("is asking about production, and the TEST-LOCAL fixture is deliberately excluded", () => {
     // Stated as an assertion rather than a comment, because it is the reason
     // the page does not call the resolver: with the acceptance flag on, the
-    // fixture row answers `permitted` for any code at all.
-    expect(resolveCapability(null, "embryo_analysis", { testJurisdiction: true }).status).toBe("permitted");
-    expect(resolveCapability(null, "embryo_analysis", { testJurisdiction: true }).jurisdictionCode)
+    // fixture row answers `permitted` for any declared code at all.
+    expect(resolveCapability("GB", "embryo_analysis", { testJurisdiction: true }).status).toBe("permitted");
+    expect(resolveCapability("GB", "embryo_analysis", { testJurisdiction: true }).jurisdictionCode)
       .toBe("TEST-LOCAL");
   });
 });

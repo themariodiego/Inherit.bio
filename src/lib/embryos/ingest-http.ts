@@ -5,7 +5,7 @@ import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } fr
 import { EmbryoTransportError } from "./ingest-lines";
 import { isIngestSessionId, readIngestCookieHash } from "./ingest-session";
 import { notFound, rpcErrorResponse, unavailable } from "./api";
-import { jurisdictionDenied, requestForbidden, unauthorized } from "./guards";
+import { accountJurisdictionDenied, requestForbidden, unauthorized } from "./guards";
 
 const uuid = z.string().refine(isIngestSessionId);
 const revision = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
@@ -57,7 +57,7 @@ export async function authorizeIngestHttpRequest(
   if (!account) return { kind: "denied", response: unauthorized() };
   const origin = ingestRequestOrigin(request);
   if (!origin) return { kind: "denied", response: requestForbidden() };
-  const jurisdiction = jurisdictionDenied(env);
+  const jurisdiction = await accountJurisdictionDenied(account.accountId, "embryo_analysis", env);
   if (jurisdiction) return { kind: "denied", response: jurisdiction };
   if (!isIngestSessionId(session) || new URL(request.url).search !== "") return { kind: "denied", response: notFound() };
   const hash = readIngestCookieHash(request, session, env.NODE_ENV === "production");

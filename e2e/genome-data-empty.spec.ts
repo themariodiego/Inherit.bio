@@ -1,13 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { ANCESTRY_OFF, NOTHING_READ } from "../src/copy/ancestry";
 import { BROWSER_NO_FILE, SCORE_COVERAGE_NO_FILE } from "../src/copy/genome/data";
+import { ANCESTRY_PREPARING } from "../src/copy/genome/preparation";
 import { NO_FILE_YET } from "../src/copy/reports/strings";
 
 /**
- * `empty` on three My Genome routes: an account that has uploaded nothing at
+ * `empty` on four My Genome routes: an account that has uploaded nothing at
  * all. Two `/genome/[subject]/data*` pages, and — added 2026-09-13 alongside
- * that route's `processing` proof — one report opened directly.
+ * that route's `processing` proof — one report opened directly. The ancestry
+ * page joined them on 2026-09-26, when its revocation journey became the
+ * `consent-required` proof it describes (`e2e/ancestry-revocation.spec.ts`)
+ * and "nothing to show until a file has been processed" was left to the one
+ * account it is true of.
  *
  * THE CAUSE IS ESTABLISHED, NOT INFERRED, for the same reason `/overview
  * empty` now establishes it. Three different situations render almost
@@ -93,4 +99,32 @@ test("/genome/[subject]/reports/[slug] empty: no file, so one report says to add
   await expect(page.getByText("Choose this result type in", { exact: false })).toHaveCount(0);
   // The report itself still renders: the account has no result, not no page.
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
+test("/genome/[subject]/ancestry empty: no file, so every ancestry panel says nothing has been read yet", async ({ page }) => {
+  const email = `genome-ancestry-empty-${randomUUID()}@e2e.local`;
+  const password = "synthetic-genome-ancestry-empty-password";
+  const accountId = await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+
+  const { data: files, error } = await adminClient()
+    .from("genome_files").select("id").eq("user_id", accountId);
+  expect(error).toBeNull();
+  expect(files, "empty because nothing was uploaded").toEqual([]);
+
+  await page.goto("/genome/me/ancestry");
+  await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
+  await expect(page.locator('[data-slot="nothing-read"]')).toHaveText(NOTHING_READ);
+  // The regions panel and both parent lines each say it for themselves.
+  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(3);
+  // The two neighbours this account is not in: a file in preparation, and a
+  // processed file with Ancestry off. Either would tell someone who has sent
+  // nothing that something of theirs is here.
+  await expect(page.getByText(ANCESTRY_PREPARING, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(ANCESTRY_OFF, { exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-slot="ancestry-off"]')).toHaveCount(0);
+  // An empty page draws the current seven-region map, and names no count
+  // that only a historical five-region result carries.
+  expect(await page.locator("main").innerText()).not.toMatch(/\bfive\b/i);
+  expect(await page.locator("main").innerText()).not.toMatch(/\d\.\d\s*%/);
 });

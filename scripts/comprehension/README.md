@@ -32,8 +32,10 @@ write, inspect the journal and provider charges before manually recovering the
 lock. Do not delete or reset the journal to resume work.
 
 The journal contains only the approved amounts and opaque request ids. It does
-not contain credentials, answers, model identifiers or browser context. The
-model-identity evidence policy remains an owner decision before publishing runs.
+not contain credentials, answers, model identifiers or browser context. Under
+the owner's 25 September decision, the pinned model identifier and temperature
+appear only in the run records under `docs/comprehension-runs/<date>/`. They
+stay out of commits, pull-request text, comments and code.
 
 ## Assessing recorded results
 
@@ -147,8 +149,8 @@ capability withholding still requires real transcripts and the release process.
 ## Qualifying execution remains blocked
 
 `preflightQualifyingRun` always refuses live execution. Current prerequisites
-include the unresolved publication policy for the required pinned inference
-identity; externally enforced participant/grader isolation; the verified
+include a run record that carries the pinned model identifier and temperature,
+which the 25 September decision allows but nothing writes yet; externally enforced participant/grader isolation; the verified
 production build under the test jurisdiction; complete bound T6, T7, T9 and T10
 fixtures; and verified provider token/cost bounds. An authored adapter saying
 that a task is ready cannot clear any of these blockers. No real participant,

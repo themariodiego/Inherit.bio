@@ -1,0 +1,60 @@
+{
+  "what": "Repository follow-up to the hosted proof, 22 September 2026. No new hosted measurement was made.",
+  "base": "d1c3c1de2fe6a2ff6f2c612939137565f00bba82",
+  "existingOnMain": "The uploadCeilingBytes clamp and issuance's pre-RPC 413 refusal already existed. This follow-up shares their transport constant with the browser, fixes disclosure, and closes the early-refusal gap when deployment limits are unavailable.",
+  "reusedMeasurements": {
+    "receipt": "upload-transport-limit.json",
+    "largestRequestThatBeganTransferringBytes": 5242880000,
+    "smallestImmediatelyRefusedRequestBytes": 5368708096,
+    "policy": "Keep the conservative single-request cap at 5,242,880,000 stored bytes.",
+    "notEstablished": "Accepted probes were deliberately aborted. They do not prove completed storage, an exact transport boundary, or preparation at that size. The gVCF ceiling cannot reach 8 GiB through this upload path."
+  },
+  "localVerification": {
+    "method": "Unit tests exercise the copy registry, render the Uploader to static HTML, and drive the actual browser upload and issuance functions with mocked network and authority boundaries. Oversized browser files use size metadata on a tiny synthetic File; they allocate and transfer no multi-gigabyte data.",
+    "regressionsReproducedBeforeFix": "Five copy/rendering assertions failed because the distinct gVCF limit was missing. Four browser assertions failed on early refusal or Storage 413 classification.",
+    "result": "209 tests passed across six targeted suites; readability and route gates passed; all 11 changed source/test files passed ESLint. The secret gate passed after staging.",
+    "testCommand": "corepack pnpm exec vitest run src/lib/uploads/subject-upload-browser.test.ts src/lib/uploads/subject-upload-issuance.test.ts src/lib/uploads/own-upload-limits.test.ts src/copy/upload/consent.test.ts src/components/uploads/uploader.test.ts src/components/uploads/own-upload-entry.test.ts",
+    "gateCommands": ["corepack pnpm gate:readability", "corepack pnpm gate:routes", "corepack pnpm gate:secrets"],
+    "coverage": [
+      "Equal and absent gVCF ceilings retain the combined sentence; distinct higher and lower gVCF ceilings are named.",
+      "An 8 GiB configured gVCF ceiling is disclosed as at most 5242 MB for the current upload path, alongside the separate VCF limit.",
+      "An over-transport File is refused with the numeric cap before any content read, hash, issuance fetch or XHR, including when deployment limits are null or absent.",
+      "A Storage 413 is reported as a size refusal without inventing an unknown lower ceiling or attempting finalization.",
+      "Issuance refuses over-transport declarations for every supported subject format before its database RPC or signer, even if the simulated SQL issuer would authorize them.",
+      "The exact transport cap can reach issuance; lower configured format ceilings and account limits remain enforced."
+    ],
+    "notEstablished": "These are local regression tests, not a hosted browser journey, a production deployment verification, or a throughput, memory, cleanup or preparation-capacity measurement."
+  },
+  "candidate768MiB": {
+    "status": "skipped_missing_preview_credentials",
+    "requestedSourceBytes": 805306368,
+    "prerequisiteCheck": "The preview service-role key, Vercel bypass token and branch anon key were absent from the process environment. The task worktree and existing checkout had no populated environment file. No credential values were printed or requested in chat.",
+    "playwrightChromiumExecutablePresent": true,
+    "missing": [
+      "INHERIT_PREVIEW_SUPABASE_SERVICE_ROLE_KEY",
+      "INHERIT_PREVIEW_VERCEL_BYPASS_TOKEN",
+      "preview branch anon key"
+    ],
+    "action": "Per the objective's explicit conditional, no fixture was generated and no hosted journey was attempted.",
+    "artifactCount": null,
+    "artifactBytes": null,
+    "artifactBytesPerSourceByte": null,
+    "claimToPublishedSeconds": null,
+    "admissionToPublishedSeconds": null,
+    "marginSeconds": null,
+    "marginArtifacts": null,
+    "marginArtifactBytes": null,
+    "futureMethod": "Record both admission-to-publication and claim-to-publication. Compute time margin from created_at + max_job_seconds, including queue time; compute count and byte margins against 4096 artifacts and 1,073,741,824 bytes. A failed run is a result, not permission to replace measurement with a projection.",
+    "largestCompletedPlainVcfInThisHostedRecordBytes": 67108990,
+    "largestCompletedPlainVcfReceipt": "measurements.json: runs[label=vcf-64mib-held]",
+    "notEstablished": "No result at 768 MiB, no actual artifact ratio there, no margin against any of the three ceilings, and no larger supported preparation ceiling. The 64 MiB fixture is the largest completed plain VCF in this hosted record, not a universal size guarantee."
+  },
+  "finalizationProposal": {
+    "ownerChoice": "Keep the bounds; propose clearer progress and retry wording.",
+    "measuredBasis": "ceiling-finalization-logs.json records a 37.985-second copy and eventual finalization through retries; the operation timeout remains 30 seconds.",
+    "proposedCopy": "Your file is in private storage. Large files may take several tries to finish. We will try again; you do not need to upload it again.",
+    "scope": "Use progress wording only for a marked retryable finalization response or preserved staged-upload handle while retries remain. Keep terminal size, integrity, authorization and format refusals as errors. After the bounded retries are spent, retain the manual Finish upload action and explain that automatic tries have ended.",
+    "status": "Proposal only. Finalization timeouts, leases, cancellation and retry scheduling were not changed."
+  },
+  "untouched": "Production and preview configuration, database contents, deployed workers, the preview bucket, container-memory collection and final bucket reconciliation. No teardown, production activation, multipart upload implementation or cross-attempt preparation resumption."
+}

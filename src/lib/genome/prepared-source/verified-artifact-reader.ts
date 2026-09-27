@@ -2,11 +2,13 @@ import { preparedStoredArtifactSchema } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { type PreparedStoredArtifact } from "./storage-writer";
+import type { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 export type VerifiedArtifactReadOptions = {
   readArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => AsyncIterable<Uint8Array> | Promise<AsyncIterable<Uint8Array>>;
   check: (artifact: PreparedStoredArtifact, signal: AbortSignal) => Promise<void>;
   signal: AbortSignal;
+  metrics?: PreparationMetrics;
 };
 export class VerifiedArtifactReadError extends Error {
   constructor(readonly code: "invalid_artifact" | "integrity_mismatch" | "unavailable" | "aborted") {
@@ -42,6 +44,7 @@ function preflight(value: unknown, depth = 0): void {
  * best-effort; cleanup errors never replace the integrity/authority failure. */
 export async function readVerifiedPreparedArtifact(rawArtifact: PreparedStoredArtifact,
   options: VerifiedArtifactReadOptions): Promise<Uint8Array> {
+  const measured = options.metrics?.operation("artifact_read");
   const deadline = new AbortController(), signal = AbortSignal.any([options.signal, deadline.signal]);
   const timer = setTimeout(() => deadline.abort(), 30_000); timer.unref();
   const active = () => { if (signal.aborted) throw new VerifiedArtifactReadError("aborted"); };
@@ -81,10 +84,10 @@ export async function readVerifiedPreparedArtifact(rawArtifact: PreparedStoredAr
       bytes.set(next.value, count); digest.update(bytes.subarray(count, count + next.value.byteLength)); count += next.value.byteLength;
     }
     if (count !== bytes.length || digest.digest("hex") !== artifact.receipt.sha256) throw new VerifiedArtifactReadError("integrity_mismatch");
-    await wait(options.check(structuredClone(artifact), signal)); active(); return bytes;
+    await wait(options.check(structuredClone(artifact), signal)); active(); measured?.(true, bytes.length); return bytes;
   } catch (error) {
     if (signal.aborted) throw new VerifiedArtifactReadError("aborted");
     if (error instanceof VerifiedArtifactReadError) throw error;
     throw new VerifiedArtifactReadError("unavailable");
-  } finally { clearTimeout(timer); signal.removeEventListener("abort", abort); close(); deadline.abort(); }
+  } finally { clearTimeout(timer); signal.removeEventListener("abort", abort); close(); deadline.abort(); measured?.(false); }
 }

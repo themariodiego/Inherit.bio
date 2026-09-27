@@ -28,7 +28,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  */
 
 export const GATEWAY_CONFIG = "workers/prepared-artifacts/wrangler.json";
-export const PRODUCTION_JWKS_URL = "https://www.inherit.bio/.well-known/inherit-upload-jwks.json";
+/** The canonical host, never an alias: every alias answers 308 (next.config.ts)
+ * and the fetch below refuses to follow a redirect. */
+export const PRODUCTION_JWKS_URL = "https://inherit.bio/.well-known/inherit-upload-jwks.json";
 export type DeployTarget = "production" | "preview";
 
 export interface PublicSigningKey {

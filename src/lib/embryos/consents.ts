@@ -10,7 +10,7 @@ import {
   closedResponse,
   csrfOperation,
   encryptedLiteral,
-  jurisdictionDenied,
+  accountJurisdictionDenied,
   originDenied,
   requestForbidden,
   unauthorized,
@@ -68,10 +68,10 @@ async function profileJurisdictionCode(admin: Admin, accountId: string): Promise
 export async function embryoConsent(request: Request, payload: unknown): Promise<Response> {
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
-  const denied = jurisdictionDenied();
-  if (denied) return denied;
   const context = await getSensitiveAccountContext();
   if (!context) return unauthorized();
+  const denied = await accountJurisdictionDenied(context.user.id);
+  if (denied) return denied;
 
   const signature = signDraftArtifactBody.safeParse(payload);
   if (signature.success) return signDraftArtifact(request, context.user.id, context.sessionId, signature.data);

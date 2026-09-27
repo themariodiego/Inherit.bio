@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { LLM_DATA_CLASSES } from "@/lib/llm";
+import { OWN_COPILOT_DATA_CLASSES } from "@/copy/copilot/own-disclosure";
 import type { OwnCopilotPermissionView } from "@/lib/copilot/own-consent";
 
 export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView }) {
@@ -24,7 +24,7 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView 
     <p className="text-sm text-ink-muted">{view.providerClass === "local"
       ? "This model runs beside your self-hosted Inherit server."
       : "The information below will be sent to this external provider when you ask Copilot a question."}</p>
-    <ul className="list-disc pl-5 text-sm">{LLM_DATA_CLASSES.map(line => <li key={line}>{line}</li>)}</ul>
+    <ul className="list-disc pl-5 text-sm">{OWN_COPILOT_DATA_CLASSES.map(line => <li key={line}>{line}</li>)}</ul>
     <p className="text-sm text-ink-muted">Your original DNA file is not sent. Report types still need their separate permission. Changing the provider, model or key ends this permission.</p>
     {view.artifacts.map(artifact => <details key={artifact.key} className="text-sm">
       <summary className="cursor-pointer underline">{artifact.key === purposeArtifact.key ? "Copilot permission text" : "Cloud disclosure permission text"} · version {artifact.version}</summary>

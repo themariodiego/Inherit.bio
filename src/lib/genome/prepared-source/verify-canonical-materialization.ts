@@ -10,6 +10,7 @@ import type { CanonicalBinding, CanonicalSummary } from "./canonical-schema";
 import type { CanonicalMaterializationReceipt } from "./materialize-canonical";
 import type { PreparedStoredArtifact } from "./storage-writer";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
+import type { PreparationMetrics } from "../../uploads/preparation-metrics";
 
 export const CANONICAL_VERIFICATION_DEADLINE_MS = 300_000;
 const MAX_ARTIFACTS = 4096;
@@ -23,6 +24,7 @@ export type CanonicalVerificationOptions = {
   readArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => AsyncIterable<Uint8Array> | Promise<AsyncIterable<Uint8Array>>;
   check: (manifest: CanonicalMaterializationReceipt, artifact: PreparedStoredArtifact | null, signal: AbortSignal) => Promise<void>;
   signal?: AbortSignal;
+  metrics?: PreparationMetrics;
 };
 export class CanonicalVerificationError extends Error {
   constructor(readonly code: "invalid_manifest" | "integrity_mismatch" | "unavailable" | "aborted") {
@@ -102,7 +104,7 @@ export async function verifyCanonicalMaterialization(rawManifest: unknown,
     await check(null);
 
     const read = (artifact: PreparedStoredArtifact) => readVerifiedPreparedArtifact(artifact, {
-      signal, readArtifact: options.readArtifact,
+      signal, readArtifact: options.readArtifact, metrics: options.metrics,
       check: (current, currentSignal) => options.check(structuredClone(manifest), structuredClone(current), currentSignal),
     });
 

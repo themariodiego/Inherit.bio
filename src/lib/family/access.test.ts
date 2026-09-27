@@ -56,7 +56,7 @@ describe("family access", () => {
   it("reads the TEST-LOCAL row only under the acceptance flag", async () => {
     const permitted = await familyCapability(VIEWER, [COUNTERPART], "third_party_adult_analysis", {
       testJurisdiction: true,
-      readJurisdictionCodes: codes({}),
+      readJurisdictionCodes: codes({ [VIEWER]: "GB", [COUNTERPART]: "FR" }),
     });
     expect(permitted.status).toBe("permitted");
     expect(permitted.jurisdictionCode).toBe("TEST-LOCAL");

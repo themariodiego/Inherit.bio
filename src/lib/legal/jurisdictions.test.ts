@@ -3,6 +3,8 @@ import jurisdictionsJson from "../../../data/jurisdictions.json";
 import {
   CAPABILITY_STATUSES,
   JURISDICTION_CAPABILITIES,
+  TEST_DENY_JURISDICTION_CODE,
+  TEST_DENY_STORED_CODE,
   TEST_JURISDICTION_CODE,
   accountCapability,
   familyCapability,
@@ -18,6 +20,7 @@ import {
 const FILE = jurisdictionsJson as unknown as JurisdictionsFile;
 const DEFAULT_COPY = FILE.defaultRealJurisdiction.capabilities.family_portrait!.userFacingCopy;
 const TEST_COPY = FILE.testJurisdictions[TEST_JURISDICTION_CODE]!.capabilities.family_portrait!.userFacingCopy;
+const DENY_COPY = FILE.testJurisdictions[TEST_DENY_JURISDICTION_CODE]!.capabilities.family_portrait!.userFacingCopy;
 const off = { testJurisdiction: false } as const;
 const on = { testJurisdiction: true } as const;
 
@@ -87,6 +90,18 @@ describe("jurisdiction vocabulary", () => {
 });
 
 describe("resolveCapability", () => {
+  it("keeps every shipped real-country capability unreviewed under G5.5's zero-permitted default", () => {
+    expect(Object.keys(FILE.realJurisdictions)).toEqual([]);
+    expect(FILE.realJurisdictionCatalog.codes).toHaveLength(249);
+    expect(JURISDICTION_CAPABILITIES).toHaveLength(12);
+    for (const code of FILE.realJurisdictionCatalog.codes) {
+      for (const capability of JURISDICTION_CAPABILITIES) {
+        expect(resolveCapability(code, capability, off), `${code}/${capability}`)
+          .toMatchObject({ status: "unreviewed", source: "default", jurisdictionCode: code });
+      }
+    }
+  });
+
   it("reads an unset code as unreviewed with the default copy", () => {
     for (const code of [null, undefined, "", "  "]) {
       expect(resolveCapability(code, "family_portrait", off)).toEqual({
@@ -121,7 +136,7 @@ describe("resolveCapability", () => {
     expect(decision.source).toBe("unregistered");
   });
 
-  it("resolves every account to the TEST-LOCAL row under the flag", () => {
+  it("resolves every declared account to the TEST-LOCAL row under the flag", () => {
     for (const capability of JURISDICTION_CAPABILITIES) {
       const decision = resolveCapability("GB", capability, on);
       expect(decision, capability).toEqual({
@@ -132,7 +147,32 @@ describe("resolveCapability", () => {
         source: "test-local",
       });
     }
-    expect(resolveCapability(null, "carrier_match", on).status).toBe("permitted");
+  });
+
+  it("keeps an undeclared account unreviewed under the flag too (G5.1a)", () => {
+    for (const capability of JURISDICTION_CAPABILITIES) {
+      const decision = resolveCapability(null, capability, on);
+      expect(decision.status, capability).toBe("unreviewed");
+      expect(decision.source, capability).toBe("unset");
+      expect(decision.jurisdictionCode, capability).toBeNull();
+    }
+  });
+
+  it("resolves the block-only fixture's stored code to TEST-DENY under the flag", () => {
+    expect(TEST_DENY_STORED_CODE).toBe("XX");
+    expect(FILE.realJurisdictionCatalog.codes).not.toContain(TEST_DENY_STORED_CODE);
+    for (const capability of JURISDICTION_CAPABILITIES) {
+      const decision = resolveCapability(" xx ", capability, on);
+      expect(decision.status, capability).toBe("prohibited");
+      expect(decision.source, capability).toBe("test-deny");
+      expect(decision.jurisdictionCode, capability).toBe(TEST_DENY_JURISDICTION_CODE);
+    }
+    expect(resolveCapability("XX", "family_portrait", on).userFacingCopy).toBe(DENY_COPY);
+  });
+
+  it("never reaches TEST-DENY without the flag: its stored code is unregistered", () => {
+    const decision = resolveCapability(TEST_DENY_STORED_CODE, "family_portrait", off);
+    expect(decision).toMatchObject({ status: "unreviewed", source: "unregistered", jurisdictionCode: "XX" });
   });
 
   it("refuses an unknown capability", () => {
@@ -228,8 +268,15 @@ describe("familyCapabilityFromCodes (G5.1b)", () => {
     expect(familyCapabilityFromCodes("GB", [], "family_portrait", { ...off, data }).status).toBe("permitted");
   });
 
-  it("is permitted for everyone under the TEST-LOCAL flag", () => {
-    expect(familyCapabilityFromCodes(null, [null, "XX"], "family_heritability", on).status).toBe("permitted");
+  it("is permitted under the TEST-LOCAL flag only when everyone has declared", () => {
+    expect(familyCapabilityFromCodes("GB", ["FR", "DE"], "family_heritability", on).status).toBe("permitted");
+    expect(familyCapabilityFromCodes("GB", [null], "family_heritability", on).status).toBe("unreviewed");
+  });
+
+  it("blocks a permitted actor with a TEST-DENY contributor under the flag", () => {
+    const decision = familyCapabilityFromCodes("GB", ["FR", "XX"], "third_party_adult_analysis", on);
+    expect(decision.status).toBe("prohibited");
+    expect(decision.source).toBe("test-deny");
   });
 });
 
@@ -273,13 +320,23 @@ describe("familyCapability over accounts", () => {
     expect(decision).toMatchObject({ status: "unreviewed", source: "unset", jurisdictionCode: null });
   });
 
-  it("resolves to TEST-LOCAL under the flag whatever the profiles say", async () => {
-    const decision = await familyCapability("viewer", ["unset"], "family_portrait", {
+  it("resolves declared accounts to TEST-LOCAL under the flag, whatever their real codes say", async () => {
+    const decision = await familyCapability("viewer", ["signed"], "family_portrait", {
       ...on,
       data,
       readJurisdictionCodes,
     });
     expect(decision.status).toBe("permitted");
     expect(decision.jurisdictionCode).toBe(TEST_JURISDICTION_CODE);
+  });
+
+  it("keeps an undeclared contributor blocking under the flag", async () => {
+    const decision = await familyCapability("viewer", ["unset"], "family_portrait", {
+      ...on,
+      data,
+      readJurisdictionCodes,
+    });
+    expect(decision.status).toBe("unreviewed");
+    expect(decision.source).toBe("unset");
   });
 });

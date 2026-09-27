@@ -80,4 +80,11 @@ describe("seven-region ancestry surface", () => {
     expect(html).toContain('data-fit-converged="false"'); expect(html).toContain('data-slot="fit-limit"');
     expect(html).toContain("calculation limit"); expect(html).toContain(result.note);
   });
+  it("never names five regions: the historical five-region words stay with historical results", () => {
+    const below = { ...result, markersUsed: 120 };
+    for (const [state, value] of [["shown", result], ["below minimum", below], ["no usable result", null]] as const) {
+      const html = render(value);
+      expect(html.replace(/<[^>]+>/g, " "), state).not.toMatch(/\bfive\b/i);
+    }
+  });
 });

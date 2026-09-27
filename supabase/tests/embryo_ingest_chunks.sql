@@ -26,7 +26,11 @@ begin
   insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
     (v_auth,v_owner,clock_timestamp(),clock_timestamp(),'aal1'),
     (v_parent_auth,v_parent,clock_timestamp(),clock_timestamp(),'aal1');
-  update public.profiles set jurisdiction_code='GB' where id in (v_owner,v_parent);
+  -- A code now needs a declaration record; declare through the one writer.
+  perform public.declare_jurisdiction_v1(v_owner,v_auth,'GB',1,
+    (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and version=1),false);
+  perform public.declare_jurisdiction_v1(v_parent,v_parent_auth,'GB',1,
+    (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and version=1),false);
   v_owner_hash:=encode(extensions.digest(v_owner::text,'sha256'),'hex');
   v_parent_hash:=encode(extensions.digest(v_parent::text,'sha256'),'hex');
   v_rights_hash:=encode(extensions.digest(gen_random_uuid()::text,'sha256'),'hex');

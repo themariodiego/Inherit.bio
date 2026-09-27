@@ -6,79 +6,107 @@ run serverless lives in the optional self-host worker
 ([ADR-0001](adr/0001-gating-decision-large-files-and-compute.md)).
 
 ```
-Browser ──TUS (6 MiB chunks)──────────────► Supabase Storage  (private bucket,
-   │                                            │               per-user prefix RLS)
-   │  supabase-js (anon key, RLS)               │ stream
-   ├──────────────► Supabase Postgres ◄─────────┤
-   │                  (RLS everywhere)          │
-   │  fetch /api/*                              │
-   └──────────────► Next.js on Vercel ──────────┘
-                      │  service role (server only)
-                      │
-        Vercel Cron ──┤  /api/jobs/research-refresh   (GWAS/PGS/ClinVar release watch)
-                      │  /api/jobs/annotation-refresh (Ensembl enrichment of ref store)
-                      │
-     Self-host worker ┴─ direct Postgres: worker_jobs queue (SKIP LOCKED)
+Browser ── one scoped upload request ──► Supabase Storage (private originals)
+   │                                          │
+   │ metadata / consent / result requests     │ verified source read
+   └──────────────────────────► Next.js app ◄──┘
+                                  │ server-only authority checks
+                                  ▼
+                            Supabase Postgres
+                         (RLS + purpose-bound RPCs)
+                                  ▲
+             optional prepared worker ──► private prepared artifacts
 ```
 
-## Data model (all user tables RLS owner-only)
+The diagram shows the current own-genome path. Its standard upload uses a
+single direct-to-Storage request with a dedicated upload-only bearer, not a
+normal login token. Legacy TUS uploads and the older `worker_jobs` consumer
+are separate paths; neither makes the own uploader resumable.
 
-- `genome_files` — one row per upload; tier 1 (fully processed) or 2
-  (stored). Status machine: `uploading → uploaded → parsing → annotated`
-  (or `failed`), Tier 2: `stored`. Measured processing timestamps feed
-  `processing_time_stats()` for honest p50/p95 labels.
-- `user_variants` — canonical GRCh38 store, one row per called variant
-  (arrays: every genotyped position incl. no-calls skipped at parse; VCF:
-  variant lines only). Indexed by (user, rsid) and (user, chrom, pos).
-- `ref_variants` / `ref_genes` / `prs_scores` / `prs_weights` — the
-  reference store: report-relevant slices of public datasets, seeded from
-  the template catalog and enriched on a schedule
-  ([ADR-0005](adr/0005-annotation-reference-store.md)). World-readable, no
-  user data.
-- `report_templates` — the report library, status-driven
-  (`draft/review/published/retired`); the research pipeline inserts
-  `review` drafts; publishing writes `changelog_entries` and triggers the
-  opt-in digest.
-- `user_prs`, `ancestry_results` — materialized per-file results computed at
-  process time.
-- `llm_settings` + `llm_keys` (zero client grants; AES-256-GCM ciphertext),
-  `consent_grants`, `chats`/`chat_messages` — the copilot surface
-  ([ADR-0004](adr/0004-llm-copilot-privacy-model.md)).
-- `providers` — the directory as data: products, prices with capture dates,
-  shipping structure, state exclusions, source URLs, last-verified dates.
-- `worker_jobs` — the Tier-3 queue.
+## Data model
 
-## Processing pipeline (Tier 1)
+- `genome_files` holds file ownership, subject, processing state and source
+  provenance. Own upload leases and finalization checks bind the exact
+  source to the authenticated account and session.
+- `user_variants` and `report_observed_calls` hold normalized database-backed
+  calls. Missing, filtered and conflicting observations are not negative
+  findings. Prepared sources instead use registered private objects and a
+  published manifest; their readers do not fall back to database calls.
+- `private.own_analysis_runs` binds each completed own result to its file,
+  purpose, grant, source revision and captured content. `user_prs` and
+  `ancestry_results` also remain in use by older processing paths.
+- `purpose_grants` and consent records govern separate storage, report,
+  ancestry and Copilot uses. Server-only RPCs recheck current authority;
+  possession of a file identifier or a service-role client is not a user
+  permission.
+- `llm_settings` and `llm_keys` hold connection settings and encrypted keys.
+  Own Copilot captures its permitted source/result context and rechecks it
+  before provider requests, tool reads and message commits
+  ([own Copilot authority](own-copilot-authority.md)).
+- `ref_variants`, `ref_genes`, `prs_scores` and `prs_weights` are public
+  reference data, seeded independently of user genomes and enriched on a
+  schedule ([ADR-0005](adr/0005-annotation-reference-store.md)).
+- `report_templates` holds the status-driven report library
+  (`draft/review/published/retired`). The research pipeline creates review
+  drafts; its publisher requires a recorded human decision. The seed command
+  installs the bundled catalogue directly as published.
+- `providers` holds directory products, dated prices, shipping rules and
+  source URLs.
+- `private.own_preparation_jobs` is the canonical preparation queue;
+  `worker_jobs` is the separate older annotation queue.
 
-`/api/files/[id]/process` (Node runtime, 300 s):
+## Own-genome processing
 
-1. Stream the object from Storage (service role) — never through a request
-   body.
-2. Sniff/parse: array formats or VCF/gVCF (`src/lib/genome/parsers/`),
-   streaming line parsers with per-vendor genotype normalization.
-3. GRCh37 arrays → GRCh38 via bundled Ensembl chain file
-   (`src/lib/genome/liftover.ts`).
-4. Batch-insert `user_variants` (10 k rows/request).
-5. Compute admixture (EM over AIM panel), mtDNA/Y haplogroups (tree walk
-   over curated markers), PRS (dosage × weight with palindrome-safe strand
-   handling, analytic percentile under HWE) — all from bundled,
-   license-audited reference data, all labeled with what the file supports.
-6. Report-ready email via Resend.
+1. Account completion and current storage consent precede upload issuance.
+   The database supplies deployment and account limits; the transport also
+   imposes a stored-byte bound. The signer must be accepted by Storage.
+2. The browser checks and hashes supported array, VCF or gVCF input, sends
+   the source directly to Storage, and requests finalization. Finalization
+   validates the stored source, integrity and single-sample structure.
+3. `/api/files/[id]/process` dispatches to ordinary normalization or, when
+   both deployment and database admission allow it, queued preparation.
+   Supported GRCh37 calls use bundled liftover data to reach GRCh38.
+4. Report purposes are selected separately. Generation reads the authorized
+   source, resolves the current published templates, and commits captured
+   results. Ancestry uses the bundled regional and lineage panels, retaining
+   coverage and unavailable states. Polygenic output is coverage only;
+   the existing calculation does not provide a validated personal score,
+   percentile or risk estimate (`src/lib/genome/prs-output.ts`).
+5. Report-ready mail is queued through the authorized completion path. Mail
+   delivery needs the separate email configuration and delivery jobs.
 
-Reports are **not** materialized: report pages resolve templates against
-`user_variants` at query time (`src/lib/genome/reports.ts`), so template
-updates apply instantly and deletion surfaces stay small.
+Completed own per-file reports and ancestry retain captured content and
+provenance; updating a template does not rewrite those results. Library
+previews and legacy readers also exist, so a live template page must not be
+mistaken for a new completed analysis. Copilot has separate current consent
+and connection requirements and reads the permitted captured results.
+
+## Optional prepared-object path
+
+`INHERIT_PREPARED_WGS_ENABLED` defaults to `false`. Enabling the flag alone
+is insufficient: database admission, source and artifact budgets, a
+compatible running worker, and configured artifact storage must agree.
+`pnpm worker:prepared` is the operator-started entry; hosted worker and
+artifact-gateway code is under `workers/`. Preparation publishes a verified
+manifest before report readers can use its objects. Cleanup uses registered
+artifact identities and provider-specific fencing; an acknowledgement is
+not proof that all payload bytes are gone.
+
+This path does not change the upload transport or its limits. A configured
+ceiling or passing small synthetic fixture does not establish full-size WGS
+capacity. See [self-hosting](self-hosting.md), [worker setup](../worker/README.md)
+and the [large-file proposal](large-file-upload-proposal.md).
 
 ## Privacy invariants (enforced, not asserted)
 
 | Invariant | Enforcement |
 | --- | --- |
-| No genome data through Vercel request bodies | TUS direct-to-storage; 4.5 MB body cap makes violations fail loudly |
+| Own upload bytes bypass the app request body | Scoped direct-to-Storage upload; app routes handle metadata, authorization and finalization |
 | No third-party requests from rendered pages | `e2e/network-audit.spec.ts` — origin allowlist is first-party only (fonts self-hosted) |
 | No user data to annotation APIs | Reference ETL keyed by the platform catalog; joins happen in Postgres ([ADR-0005](adr/0005-annotation-reference-store.md)) |
-| No cloud LLM without named consent | 403 `consent_required` server-side before any tool runs; grants revocable (`e2e` copilot spec) |
-| Cross-user isolation | RLS on every table + storage prefix policies; attacked directly in `e2e/rls.spec.ts` |
-| Deletion deletes | Storage prefix walk + auth-user cascade; verified by privileged re-query in `e2e/deletion-export.spec.ts` |
+| Own Copilot requires current named permission | Source, grant and connection checks before provider requests, tool reads and commits; denial returns no provider result |
+| Cross-user isolation | RLS, scoped Storage authorization and server-only authority RPCs; direct API checks in `e2e/rls.spec.ts` and own-journey tests |
+| Deletion has a tracked completion state | Own upload, file and account cleanup require storage work and completion checks; pending work is not reported as completed deletion |
 | BYOK keys unreadable | `llm_keys` has zero anon/authenticated grants; AES-256-GCM under env key |
 
 ## The genome browser without a third-party reference

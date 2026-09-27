@@ -7,6 +7,25 @@ export interface AccountDeletionNoticeProps {
   exportUrl: string;
 }
 
+// "3 October 2026 at 11:51 UTC": the moment the notice period ends, spelled
+// out in UTC so that no reader has to parse a timestamp.
+function deadlineInWords(iso: string): string {
+  const moment = new Date(iso);
+  const date = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(moment);
+  const time = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "UTC",
+  }).format(moment);
+  return `${date} at ${time} UTC`;
+}
+
 const button = {
   backgroundColor: brand.forest,
   color: brand.paper,
@@ -29,7 +48,8 @@ export function AccountDeletionNoticeEmail({
           color: brand.inkMuted,
         }}
       >
-        Your Inherit account is scheduled for deletion on {noticeEndsAt}. No
+        Your Inherit account is scheduled for deletion on{" "}
+        {deadlineInWords(noticeEndsAt)}. No
         physical deletion will begin before then. You can export your data or
         cancel the request during the notice period.
       </Text>

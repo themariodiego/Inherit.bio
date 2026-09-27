@@ -79,9 +79,10 @@ test("every exported file names the subject the database resolved for it", async
   // question and must never arrive unnoticed. `subject_demographics` is the
   // live example — it entered on 2026-09-14 with the chromosomal-sex
   // declaration (D-031) and this assertion is what caught it.
+  // F4 (26 Sep 2026) added the four permission and profile classes below.
   expect(Object.keys(record).sort()).toEqual([
-    "provider_recipient_grants", "subject_account_bindings", "subject_consents",
-    "subject_demographics", "subject_principals", "subjects",
+    "attestations", "consent_signatures", "profiles", "provider_recipient_grants", "purpose_grants",
+    "subject_account_bindings", "subject_consents", "subject_demographics", "subject_principals", "subjects",
   ]);
   expect(record.subjects.length, "the person's own subject is in their own record").toBeGreaterThan(0);
   for (const subject of record.subjects) {
@@ -105,6 +106,32 @@ test("every exported file names the subject the database resolved for it", async
   // touched. `e2e/settings.spec.ts` is where a declaration is made and read
   // back; this spec is about whose rows the archive carries.
   expect(record.subject_demographics, "no declaration was made in this account").toHaveLength(0);
+
+  // F4: the facts and permissions a production export used to miss, each
+  // checked against the database rather than trusted. The upload journey
+  // records a birth date and signs its consent and disclosure, so none of
+  // these checks is vacuous.
+  expect(record.profiles, "exactly this account's own profile").toHaveLength(1);
+  expect(record.profiles[0].id).toBe(accountId);
+  expect(record.profiles[0].date_of_birth, "the birth date the upload journey recorded").toBe("1990-01-01");
+  const signed = await adminClient().from("consent_signatures").select("id").eq("signer_account_id", accountId);
+  expect(signed.error).toBeNull();
+  const signedIds = new Set((signed.data ?? []).map(row => row.id));
+  expect(signedIds.size, "the upload journey signed something").toBeGreaterThan(0);
+  expect(new Set(record.consent_signatures.map((row: { id: string }) => row.id)), "every signature this account made, and no other")
+    .toEqual(signedIds);
+  for (const row of record.consent_signatures) {
+    expect(row, "a signature never carries the encrypted signing name").not.toHaveProperty("signing_name_encrypted");
+  }
+  for (const grant of record.purpose_grants) {
+    expect(ours.has(grant.target_id), "a purpose grant is about a subject this account IS").toBe(true);
+    expect(signedIds.has(grant.signature_id), "and rests on this account's own signature").toBe(true);
+  }
+  const ownPrincipals = new Set(record.subject_principals.map((row: { id: string }) => row.id));
+  for (const row of record.attestations) {
+    expect(ownPrincipals.has(row.principal_id) || signedIds.has(row.signature_id),
+      "an attestation this account's principal made or its signature carries").toBe(true);
+  }
   // The manifest must not understate what the archive carries.
   const listed = (manifest.contents ?? []).find((entry: { path: string }) => entry.path === "subject-record.json");
   expect(listed, "the manifest lists the subject record").toBeTruthy();

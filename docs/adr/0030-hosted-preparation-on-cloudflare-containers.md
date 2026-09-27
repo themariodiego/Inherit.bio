@@ -7,8 +7,8 @@
 ## Decision
 
 The canonical prepared WGS worker is an operator-started process,
-`pnpm worker:prepared --once`, that runs one preparation attempt and one
-cleanup page and exits (`scripts/prepared-worker.run.mts`,
+`pnpm worker:prepared --once`, that drains bounded cleanup, runs at most one
+preparation attempt when no cleanup is eligible, and exits (`scripts/prepared-worker.run.mts`,
 `src/lib/uploads/own-preparation-worker-loop.ts`). ADR-0025 left where that
 process runs as a deployment requirement. This decision names the host.
 

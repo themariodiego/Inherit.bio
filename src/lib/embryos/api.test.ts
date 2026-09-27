@@ -44,7 +44,7 @@ function expectSensitive(response: Response) {
 }
 
 function post(headers: Record<string, string> = {}): Request {
-  return new Request("https://www.inherit.bio/api/cohorts/x/restrict", { method: "POST", headers });
+  return new Request("https://inherit.bio/api/cohorts/x/restrict", { method: "POST", headers });
 }
 
 /**

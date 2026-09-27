@@ -32,6 +32,7 @@ import {
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import { reportScientificCorrections } from "@/lib/genome/report-scientific-corrections";
 import { loadPersonalPreviews } from "@/lib/genome/report-previews";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { InputProvenance } from "@/components/reports/input-provenance";
@@ -213,6 +214,7 @@ export default async function ReportsPage(
         slug: template.slug,
         title: template.title,
         summary: template.summary,
+        scientificCorrection: reportScientificCorrections(template).length > 0,
         evidenceLabel: EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence,
         genes: template.variants.map((variant) => variant.gene),
         status: (stored.has(template.slug) || (layerCalls.get(activeLayer)?.fileCount ?? 0) > 0) ? (covered ? "covered" : "not-covered") : "awaiting",

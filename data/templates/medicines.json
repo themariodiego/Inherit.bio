@@ -2,8 +2,8 @@
   {
     "slug": "vkorc1-rs9923231-one-position",
     "category": "pharmacogenomics",
-    "title": "Warfarin, one position · VKORC1",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses one position to name its two VKORC1 forms. This reads that position in VKORC1 and shows the letters your file has there. It says nothing about how warfarin works in you, and it is not a dose.",
+    "title": "VKORC1, one position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses one position to name its two VKORC1 forms. This reads that position in VKORC1 and shows the letters your file has there. CPIC's guideline for this gene covers warfarin. It says nothing about how any medicine works in you, and it is not a dose.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -16,9 +16,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Your file shows C on both copies at this position. CPIC calls C the reference form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose.",
-          "CT": "Your file shows C on one copy and T on the other. CPIC calls T the variant form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose.",
-          "TT": "Your file shows T on both copies at this position. CPIC calls T the variant form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose."
+          "CC": "Your file shows C on both copies at this position. CPIC calls C the reference form of VKORC1. This says nothing about how any medicine works in you, and it is not a dose.",
+          "CT": "Your file shows C on one copy and T on the other. CPIC calls T the variant form of VKORC1. This says nothing about how any medicine works in you, and it is not a dose.",
+          "TT": "Your file shows T on both copies at this position. CPIC calls T the variant form of VKORC1. This says nothing about how any medicine works in you, and it is not a dose."
         }
       }
     ],
@@ -50,8 +50,8 @@
   {
     "slug": "cyp2c19-rs4244285-one-position",
     "category": "pharmacogenomics",
-    "title": "Clopidogrel, the *2 position · CYP2C19",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 43 positions to name CYP2C19 forms. This reads the one where an A marks the *2 form. It cannot say which pair of forms you carry, or how clopidogrel works in you.",
+    "title": "CYP2C19, the *2 position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 43 positions to name CYP2C19 forms. This reads the one where an A marks the *2 form. CPIC's guideline for this gene covers clopidogrel. It cannot say which pair of forms you carry, or how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -98,8 +98,8 @@
   {
     "slug": "cyp2c19-rs12248560-one-position",
     "category": "pharmacogenomics",
-    "title": "Clopidogrel, one CYP2C19 position",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 43 positions to name CYP2C19 forms. This reads one of them. A T here is part of the *17 form, and also of *44 and *45, so this is not a *17 call. It cannot say how clopidogrel works in you.",
+    "title": "CYP2C19, one position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 43 positions to name CYP2C19 forms. This reads one of them. A T here is part of the *17 form, and also of *44 and *45, so this is not a *17 call. CPIC's guideline for this gene covers clopidogrel. It cannot say how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -146,8 +146,8 @@
   {
     "slug": "cyp2c9-rs1799853-one-position",
     "category": "pharmacogenomics",
-    "title": "Warfarin and NSAIDs, the *2 position · CYP2C9",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) reads 88 CYP2C9 positions across both copies. This reads the one where a T marks the *2 form; *35, *61 and *92 carry it. This cannot say which forms you carry, or how warfarin or NSAIDs work in you.",
+    "title": "CYP2C9, the *2 position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) reads 88 CYP2C9 positions across both copies. This reads the one where a T marks the *2 form; *35, *61 and *92 carry it. CPIC's guidelines for this gene cover warfarin and NSAIDs. This cannot say which forms you carry, or how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -199,8 +199,8 @@
   {
     "slug": "cyp2c9-rs1057910-one-position",
     "category": "pharmacogenomics",
-    "title": "Warfarin and NSAIDs, the *3 position · CYP2C9",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) reads 88 CYP2C9 positions across both copies. This reads the one where a C marks the *3 form; *18 and *68 carry it. This cannot say which forms you carry, or how warfarin or NSAIDs work in you.",
+    "title": "CYP2C9, the *3 position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) reads 88 CYP2C9 positions across both copies. This reads the one where a C marks the *3 form; *18 and *68 carry it. CPIC's guidelines for this gene cover warfarin and NSAIDs. This cannot say which forms you carry, or how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -252,8 +252,8 @@
   {
     "slug": "slco1b1-rs4149056-one-position",
     "category": "pharmacogenomics",
-    "title": "Statins, the *5 position · SLCO1B1",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) writes a statin guideline that reads three genes. This reads one SLCO1B1 position in one of them: where a C marks the *5 form; *15, *40 and *47 carry it. It cannot say how statins work in you.",
+    "title": "SLCO1B1, the *5 position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) writes a statin guideline that reads three genes. This reads one SLCO1B1 position in one of them: where a C marks the *5 form; *15, *40 and *47 carry it. It cannot say how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -300,8 +300,8 @@
   {
     "slug": "tpmt-rs1800462-one-position",
     "category": "pharmacogenomics",
-    "title": "Thiopurines, the *2 position · TPMT",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 45 positions to name TPMT forms. This reads the one where a G marks the *2 form. It cannot say which pair of TPMT forms you carry, or how thiopurine medicines work in you.",
+    "title": "TPMT, the *2 position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 45 positions to name TPMT forms. This reads the one where a G marks the *2 form. CPIC's guideline for this gene covers thiopurine medicines. It cannot say which pair of TPMT forms you carry, or how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -348,8 +348,8 @@
   {
     "slug": "tpmt-rs1800460-one-position",
     "category": "pharmacogenomics",
-    "title": "Thiopurines, another position · TPMT",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 45 positions to name TPMT forms. This reads the one where a T marks the *3B form; with a second position, not read here, it is part of *3A. It cannot say which pair of forms you carry, or how thiopurine medicines work in you.",
+    "title": "TPMT, another position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 45 positions to name TPMT forms. This reads the one where a T marks the *3B form; with a second position, not read here, it is part of *3A. CPIC's guideline for this gene covers thiopurine medicines. It cannot say which pair of forms you carry, or how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -396,8 +396,8 @@
   {
     "slug": "nudt15-rs116855232-one-position",
     "category": "pharmacogenomics",
-    "title": "Thiopurines, one position · NUDT15",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 20 positions to name NUDT15 forms. This reads one position where T occurs in CPIC’s *3 definition. This is not a *3 call: the other positions and your pair of forms are not read here. It cannot say how thiopurine medicines work in you.",
+    "title": "NUDT15, one position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 20 positions to name NUDT15 forms. This reads one position where T occurs in CPIC’s *3 definition. This is not a *3 call: the other positions and your pair of forms are not read here. CPIC's guideline for this gene covers thiopurine medicines. It cannot say how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -444,8 +444,8 @@
   {
     "slug": "dpyd-rs3918290-one-position",
     "category": "pharmacogenomics",
-    "title": "Fluorouracil and capecitabine, the *2A position · DPYD",
-    "summary": "This is one of the positions guidelines list for DPYD. C on both copies here says nothing about the other positions, which this report does not read. CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 83 positions for DPYD. At this one, a T marks the *2A form. It cannot say how fluorouracil or capecitabine work in you.",
+    "title": "DPYD, the *2A position",
+    "summary": "This is one of the positions guidelines list for DPYD. C on both copies here says nothing about the other positions, which this report does not read. CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 83 positions for DPYD. At this one, a T marks the *2A form. CPIC's guideline for this gene covers fluorouracil and capecitabine. It cannot say how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -492,8 +492,8 @@
   {
     "slug": "cyp3a5-rs776746-one-position",
     "category": "pharmacogenomics",
-    "title": "Tacrolimus, the *3 position · CYP3A5",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 7 positions to name CYP3A5 forms. This reads the one where a C marks the *3 form. It cannot say which pair of CYP3A5 forms you carry, or how tacrolimus works in you.",
+    "title": "CYP3A5, the *3 position",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 7 positions to name CYP3A5 forms. This reads the one where a C marks the *3 form. CPIC's guideline for this gene covers tacrolimus. It cannot say which pair of CYP3A5 forms you carry, or how any medicine works in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,

@@ -14,7 +14,7 @@ describe("payment-processor origins", () => {
 
   it("does not fire on the words legal prose uses innocently", () => {
     expect(paymentOrigin("a git checkout; there is deliberately no billing; ReadyEnvelope")).toBeNull();
-    expect(paymentOrigin("https://www.inherit.bio/providers quotes other companies' prices")).toBeNull();
+    expect(paymentOrigin("https://inherit.bio/providers quotes other companies' prices")).toBeNull();
   });
 
   it("is the same list the gate and the browser suite share, and carries no state between calls", () => {

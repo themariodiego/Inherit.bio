@@ -7,7 +7,7 @@ import { loadPersonas, participantPersonaPrompt, type Persona } from "./personas
 import type { PatternFile } from "./prohibited";
 import { digest, freeze, opaque, settingsSchema, taskIds, type Settings } from "./conductor-contract";
 
-export const qualificationBlockers = ["published-identity-pin-policy-unresolved", "external-process-isolation-unproven",
+export const qualificationBlockers = ["pinned-identity-run-record-unbuilt", "external-process-isolation-unproven",
   "production-build-under-test-jurisdiction-unverified", "T6-real-fixture-unready", "T7-real-fixture-unready",
   "T9-real-fixture-unready", "T10-real-fixture-unready",
   "provider-token-and-cost-bounds-unverified"] as const;

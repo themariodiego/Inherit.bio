@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
+import { originalDownloadName } from "@/lib/uploads/original-download-name";
 
 export const maxDuration = 300;
 const stateSchema = z.object({ version: z.literal("own-original-download-state-v1"), fileId: z.uuid(),
@@ -19,7 +20,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return failure("Unauthorized", 401);
-  const { data: file } = await supabase.from("genome_files").select("bucket_path, original_name").eq("id", id).maybeSingle();
+  const { data: file } = await supabase.from("genome_files").select("bucket_path, original_name, file_type, sha256, source_sha256").eq("id", id).maybeSingle();
   if (!file) return failure("Not found", 404);
   const admin = createAdminClient(), rpc = admin.rpc.bind(admin) as unknown as Rpc;
   try {
@@ -31,8 +32,9 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
     if (state.fileId !== id) throw new Error("original_unavailable");
     if (state.retired) return failure("The original file is no longer available.", 410);
     if (!state.prepared) {
-      // Ordinary legacy ownership/signing behavior remains unchanged.
-      const { data, error } = await admin.storage.from("genomes").createSignedUrl(file.bucket_path, 300, { download: file.original_name });
+      // Ordinary legacy ownership/signing behavior remains unchanged; only the
+      // saved name gains the extension its stored type is known to have.
+      const { data, error } = await admin.storage.from("genomes").createSignedUrl(file.bucket_path, 300, { download: originalDownloadName(file) });
       if (error || !data) return failure("Could not sign URL", 500);
       return NextResponse.redirect(data.signedUrl);
     }
@@ -58,7 +60,9 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
       },
       async cancel() { controller.abort(); try { await iterator.return(undefined); } catch { /* no provider details */ } },
     }, { highWaterMark: 0 });
-    const name = encodeURIComponent(authorized.originalName).replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    // The authorized raw hash, not the earlier row read, says what these bytes are.
+    const saved = originalDownloadName({ ...file, original_name: authorized.originalName, sha256: authorized.source.rawSha256 });
+    const name = encodeURIComponent(saved).replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
     return new Response(body, { headers: { "Cache-Control": "private, no-store", "Content-Type": "application/octet-stream",
       "Content-Length": String(authorized.source.sizeBytes), "Content-Disposition": `attachment; filename*=UTF-8''${name}`,
       "X-Content-Type-Options": "nosniff" } });

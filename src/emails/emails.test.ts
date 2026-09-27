@@ -12,6 +12,7 @@ import { RecordKeyAddendumEmail } from "./record-key-addendum";
 import { EmbryoDispositionNoticeEmail } from "./embryo-disposition-notice";
 import { CohortRestrictionNoticeEmail } from "./cohort-restriction-notice";
 import { EmbryoDraftExpiredEmail } from "./embryo-draft-expired";
+import { AccountDeletionNoticeEmail } from "./account-deletion";
 import { mailSubject, renderMail, type MailTemplate } from "@/lib/email";
 
 const ATTRIBUTION =
@@ -28,6 +29,31 @@ describe("abandoned embryo upload notice", () => {
     expect(html).toContain("retained by Inherit.");
     expect(html).toContain("Every Record Key Card issued for this upload is invalid");
     expect(html).not.toMatch(/Embryo [0-9]|closing date|record_key|rs[0-9]+/);
+  });
+});
+
+describe("account deletion notice", () => {
+  it("spells the deadline out in UTC instead of printing a timestamp", async () => {
+    // The payload's own format: production sent this value on 26 September 2026.
+    const html = await render(
+      createElement(AccountDeletionNoticeEmail, {
+        noticeEndsAt: "2026-10-03T11:51:13.946371+00:00",
+        cancelUrl: "https://example.test/settings/data",
+        exportUrl: "https://example.test/api/export",
+      }),
+    );
+    expect(html).toContain("3 October 2026 at 11:51 UTC");
+    expect(html).not.toMatch(/2026-10-03|T11:51|\+00:00/);
+    // A deadline just before midnight UTC keeps its UTC date, whatever the
+    // server's own time zone.
+    const late = await render(
+      createElement(AccountDeletionNoticeEmail, {
+        noticeEndsAt: "2026-12-31T23:59:59+00:00",
+        cancelUrl: "https://example.test/settings/data",
+        exportUrl: "https://example.test/api/export",
+      }),
+    );
+    expect(late).toContain("31 December 2026 at 23:59 UTC");
   });
 });
 

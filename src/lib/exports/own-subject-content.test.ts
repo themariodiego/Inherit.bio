@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "./own-subject-content";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
+import neurodegenerative from "../../../data/templates/neurodegenerative.json";
+import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
+import { REPORT_SCIENTIFIC_CORRECTION_NOTICE } from "../genome/report-scientific-corrections";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
 import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
 import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
@@ -23,6 +26,19 @@ const source = snapshot();
 const saved = { purpose: "reports.polygenic", completed_at: "2026-09-06T00:00:00Z", report: { slug: "test", covered: true,
   conflictingRsids: [3], variants: [{ rsid: 1, outcome: { status: "genotyped", genotype: "AA", interpretation: "Actual stored outcome", strandFlipped: false } },
     { rsid: 2, outcome: { status: "no-call" } }, { rsid: 3, outcome: { status: "not-covered" } }] } };
+const oldTrem2Interpretation = "Two copies of R47H. This result is extremely rare and has been reported only a few times. An array call this rare is likely to be a test error. Confirm it with clinical-quality sequencing before trying to interpret it.";
+function correctionExport(historical: boolean, captureCatalog: boolean) {
+  const template = reportCatalogTemplateSchema.parse({
+    ...neurodegenerative.find(row => row.slug === "trem2-r47h-alzheimers"),
+    layer: "estimate", estimate_kind: "single_locus",
+  });
+  if (historical) template.variants[0].interpretations.TT = oldTrem2Interpretation;
+  return { ...saved, report: { slug: template.slug, covered: true, conflictingRsids: [],
+    variants: [{ rsid: 75932628, outcome: { status: "genotyped", genotype: "TT",
+      interpretation: template.variants[0].interpretations.TT, strandFlipped: false } }],
+    ...(captureCatalog ? { catalogSnapshot: { schemaVersion: 1, templateSha256: "b".repeat(64), template } } : {}),
+  } };
+}
 function db(handler: (args: Parameters<OwnExportRpc>[1]) => unknown) {
   return vi.fn<OwnExportRpc>(async (_, args) => ({ data: handler(args), error: null }));
 }
@@ -33,6 +49,39 @@ function ancestryResult() {
       normalizedBuild: "GRCh38", callEncoding: "vcf-literal" }, calls: [], panel: CURRENT_OWN_ANCESTRY_PANEL }) };
 }
 describe("own-subject export content", () => {
+  it.each([false, true])("adds correction metadata without changing saved content (catalog=%s)", async captureCatalog => {
+    const row = correctionExport(true, captureCatalog), before = structuredClone(row);
+    const rpc = db(a => a.p_operation === "check" ? source : a.p_offset ? [] : [row]);
+    const result = (await ownSubjectExportContent(rpc, actor).reports(source)).reports[0];
+    expect(row).toEqual(before);
+    expect(result.catalogSnapshot).toEqual(before.report.catalogSnapshot);
+    expect(result).toMatchObject({ slug: before.report.slug, completed_at: before.completed_at,
+      purpose: before.purpose, covered: true, conflictingRsids: [],
+      scientific_correction: { status: "known-superseded", notice: REPORT_SCIENTIFIC_CORRECTION_NOTICE,
+        corrections: [{ field: "interpretation", rsid: 75932628, genotype: "TT", correctedOn: "2026-09-23" }] },
+      variants: [{ rsid: "rs75932628", status: "genotyped", genotype: "TT",
+        interpretation: oldTrem2Interpretation, strand_flipped: false }] });
+    expect(result.scientific_correction?.corrections).toHaveLength(1);
+    const printed = renderOwnSubjectReport(result);
+    expect(printed.startsWith(REPORT_SCIENTIFIC_CORRECTION_NOTICE)).toBe(true);
+    expect(printed).toContain(oldTrem2Interpretation);
+    expect(printed).toContain(`Completed: ${before.completed_at}`);
+    expect(printed).toContain(captureCatalog ? `Catalog SHA-256: ${"b".repeat(64)}` : "did not capture the catalog revision");
+  });
+  it.each([false, true])("does not mark current captured wording as superseded (catalog=%s)", async captureCatalog => {
+    const row = correctionExport(false, captureCatalog);
+    const result = (await ownSubjectExportContent(db(a => a.p_operation === "check" ? source : a.p_offset ? [] : [row]), actor).reports(source)).reports[0];
+    expect(result).not.toHaveProperty("scientific_correction");
+    expect(renderOwnSubjectReport(result)).not.toContain(REPORT_SCIENTIFIC_CORRECTION_NOTICE);
+  });
+  it("does not label unknown no-catalog wording or an unrelated report as corrected", async () => {
+    const unknown = correctionExport(true, false); unknown.report.variants[0].outcome.interpretation = "Unregistered historical wording.";
+    const unrelated = correctionExport(true, false); unrelated.report.slug = "unrelated-report";
+    const results = (await ownSubjectExportContent(db(a => a.p_operation === "check" ? source : a.p_offset ? [] : [unknown, unrelated]), actor).reports(source)).reports;
+    expect(results.every(result => !("scientific_correction" in result))).toBe(true);
+    expect(results[0].variants[0].interpretation).toBe("Unregistered historical wording.");
+    expect(results[1].variants[0].interpretation).toBe(oldTrem2Interpretation);
+  });
   it("exports the exact seven-region capture and caveat, then refuses a withdrawn capture", async () => {
     const previous = ancestryResult();
     const result = computeOwnAncestryContentV3({ source: previous.result.source,

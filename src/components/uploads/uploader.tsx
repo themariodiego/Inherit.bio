@@ -10,9 +10,10 @@ import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { megabytesOf } from "@/lib/genome/ingest-limits";
 import { route } from "@/lib/primary-routes";
-import { remainingAccountBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
+import { remainingAccountBytes, uploadCeilingBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { BrowserPreparationError, BrowserUploadError, finishStagedUpload, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 import { AUTO_FINISH_DELAYS_MS } from "@/lib/uploads/finish-retry-policy";
+import { MAXIMUM_LOCAL_ZIP_BYTES } from "@/lib/uploads/own-upload-zip";
 import { PreparationRecovery } from "./preparation-recovery";
 import { StagedUploadRecovery } from "./staged-upload-recovery";
 
@@ -36,6 +37,7 @@ function uploadError(error: unknown, limits: OwnUploadLimits | null): Extract<Ph
   // the per-file ceiling, an account with no room, and a compressed file
   // whose unpacked contents are too big need three different responses.
   const messages = {
+    archive_invalid: OWN_UPLOAD_COPY.archiveInvalid,
     unrecognised_format: INGEST_REFUSALS.unrecognised_format,
     too_large: limitBytes === undefined
       ? OWN_UPLOAD_COPY.tooLargeUnknownLimit : OWN_UPLOAD_COPY.tooLarge(megabytesOf(limitBytes)),
@@ -158,8 +160,15 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
           or a VCF, VCF.GZ or gVCF file. Files go directly to private storage.
           We check the complete file before saving it. You choose separately which results to make.
         </p>
+        <p className="mt-2 max-w-md text-sm text-ink-muted">
+          {OWN_UPLOAD_COPY.zipStatement(megabytesOf(MAXIMUM_LOCAL_ZIP_BYTES))}
+        </p>
         {limits ? <p className="mt-2 max-w-md text-sm text-ink-muted">
-          {OWN_UPLOAD_COPY.limitStatement(megabytesOf(limits.maximumArrayBytes), megabytesOf(limits.maximumVcfBytes))}
+          {OWN_UPLOAD_COPY.limitStatement(
+            megabytesOf(uploadCeilingBytes("consumer-array-text-v1", limits)),
+            megabytesOf(uploadCeilingBytes("VCF", limits)),
+            megabytesOf(uploadCeilingBytes("gVCF", limits)),
+          )}
         </p> : null}
       </div>
       <Button onClick={() => inputRef.current?.click()} disabled={disabled || busy}>Choose file</Button>
