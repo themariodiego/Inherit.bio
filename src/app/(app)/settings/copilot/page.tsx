@@ -14,7 +14,7 @@ export default async function CopilotSettingsPage() {
   const { data: llm } = await supabase.from("llm_settings").select("provider, base_url, model, key_last4").maybeSingle();
   const permission = await prepareOwnCopilotPermission();
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="page-stack mx-auto max-w-2xl space-y-8">
       <header className="space-y-2"><p className="eyebrow">Settings</p><h1 className="display text-3xl">Copilot model</h1></header>
       <LlmSettingsForm localAvailable={modelRuntime().localAllowed} current={llm ? { provider: llm.provider as "anthropic" | "openai_compatible", base_url: llm.base_url, model: llm.model, key_last4: llm.key_last4 } : null} />
       <OwnCopilotPermission view={permission} />

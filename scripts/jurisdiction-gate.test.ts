@@ -2,8 +2,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { afterAll, describe, expect, it } from "vitest";
-import { UNIMPLEMENTED, frontMatter, parseStrictDate, runJurisdictionGate } from "./jurisdiction-gate";
+import { frontMatter, parseStrictDate, runJurisdictionGate } from "./jurisdiction-gate";
 
 /**
  * Every check is planted, because a gate that has never failed is a gate
@@ -63,6 +64,7 @@ interface Overrides {
 
 /** A repository carrying the real jurisdictions file with one planted change. */
 function plant(overrides: Overrides = {}): string {
+  overrides = { ...overrides, review: overrides.review && structuredClone(overrides.review) };
   const root = mkdtempSync(path.join(tmpdir(), "jurisdiction-gate-"));
   temporaryRoots.push(root);
   mkdirSync(path.join(root, "data"), { recursive: true });
@@ -86,12 +88,26 @@ function plant(overrides: Overrides = {}): string {
   overrides.data?.(file);
   writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
 
+  // Exercise actual Git ancestry and historical content, never a mocked SHA.
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8",
+    env: { ...process.env, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null" }, stdio: ["ignore", "pipe", "pipe"] }).trim();
+  git("init", "-q");
+  git("add", "data/jurisdictions.json");
+  git("-c", "user.name=Synthetic fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false",
+    "commit", "-qm", "Synthetic reviewed decision");
+  const reviewedSha = git("rev-parse", "HEAD");
+  if (overrides.review?.gitSha === SHA) {
+    overrides.review.gitSha = reviewedSha;
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+  }
+
   if (overrides.review && overrides.record !== null) {
     mkdirSync(path.join(root, `docs/reviews/jurisdictions/${CODE}`), { recursive: true });
     writeFileSync(
       path.join(root, RECORD_PATH),
-      overrides.record ?? recordFor(overrides.review),
+      overrides.record?.replace(`gitSha: ${SHA}\n`, `gitSha: ${reviewedSha}\n`) ?? recordFor(overrides.review),
     );
+    git("add", RECORD_PATH);
   }
   return root;
 }
@@ -104,19 +120,67 @@ describe("the jurisdiction gate holds the signed-review contract", () => {
     expect(result.failures).toEqual([]);
     expect(result.capabilityCount).toBe(12);
     expect(result.catalogCodeCount).toBe(249);
-    // The measurement that makes priorities 4 and 5 unreachable in production.
-    expect(result.realJurisdictionCount).toBe(0);
+    // The measurement that makes priorities 4 and 5 unreachable in production:
+    // no committed decision is reviewed. The committed entries are the 50 US
+    // states and DC (ADR 0032, 27 Sep 2026), every capability unreviewed, so a
+    // US state can be decided on its own once a signed review exists.
     expect(result.reviewedDecisionCount).toBe(0);
+    expect(result.realJurisdictionCount).toBe(51);
     expect(result.checkedDateCount).toBeGreaterThan(10);
   });
 
-  it("reports the contract checks it does not implement, rather than implying none", () => {
-    expect(UNIMPLEMENTED.length).toBe(2);
-    expect(UNIMPLEMENTED.join(" ")).toContain("gitSha");
+  it("reports verified history only for a decision actually compared with its ancestor", () => {
+    expect(runJurisdictionGate(plant({ review: validReview() }), "2026-09-11").verifiedHistoryCount).toBe(1);
+    expect(runJurisdictionGate(REPOSITORY_ROOT, "2026-09-11").verifiedHistoryCount).toBe(0);
   });
 
   it("accepts a complete signed review, so the failures below are about the defect", () => {
     expect(failures(plant({ review: validReview() }))).toEqual([]);
+  });
+
+  it("fails when any real jurisdiction permits a research-only capability (ADR 0034)", () => {
+    const root = plant({ review: validReview() });
+    const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
+    const row = (file.realJurisdictions as Json)[CODE] as Json;
+    row.capabilities = {
+      ...(row.capabilities as Json),
+      embryo_statistical_estimate: {
+        status: "permitted",
+        accessedOn: "2026-09-01",
+        review: validReview({
+          capability: "embryo_statistical_estimate",
+          path: `docs/reviews/jurisdictions/${CODE}/embryo_statistical_estimate.md`,
+          scope: `/realJurisdictions/${CODE}/capabilities/embryo_statistical_estimate`,
+        }),
+      },
+    };
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+    expect(failures(root).join("\n")).toContain(
+      `/realJurisdictions/${CODE}/capabilities/embryo_statistical_estimate: embryo_statistical_estimate is research-only`,
+    );
+  });
+
+  it("does not treat a research-only prohibition as a research-only breach", () => {
+    const root = plant({ review: validReview() });
+    const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
+    const row = (file.realJurisdictions as Json)[CODE] as Json;
+    row.capabilities = {
+      ...(row.capabilities as Json),
+      embryo_statistical_estimate: { status: "prohibited", accessedOn: "2026-09-01", review: null },
+    };
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+    const reported = failures(root).join("\n");
+    expect(reported).not.toContain("is research-only");
+    expect(reported).toContain("requires the signed review reference object");
+  });
+
+  it("fails when the research-only list no longer pins polygenic embryo estimates", () => {
+    const root = plant({
+      data: (file) => {
+        (file.productionPolicy as Json).researchOnlyCapabilities = [];
+      },
+    });
+    expect(failures(root).join("\n")).toContain("research-only: productionPolicy.researchOnlyCapabilities is []");
   });
 
   it("fails when a permitted decision carries no review at all", () => {

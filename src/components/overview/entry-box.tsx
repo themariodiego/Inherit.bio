@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 // One Overview entry box (docs/route-register.json →
 // navigationContract.overviewBoxContract): the whole box is ONE link whose
@@ -25,10 +26,11 @@ export function EntryBoxGrid({ boxes }: { boxes: readonly EntryBox[] }) {
               href={box.href}
               aria-labelledby={labelId}
               aria-describedby={descriptionId}
-              className="block min-h-11 rounded-2xl border border-line bg-card p-5 transition-colors hover:border-forest focus-visible:border-forest focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="link-surface block h-full min-h-11 rounded-2xl border border-line bg-card p-6 focus-visible:border-forest focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
-              <span id={labelId} className="block text-lg font-semibold text-ink">
+              <span id={labelId} className="flex items-start justify-between gap-4 text-lg font-semibold text-ink">
                 {box.label}
+                <ArrowUpRight aria-hidden="true" className="link-arrow mt-1 size-4 shrink-0 text-forest" />
               </span>
               <span
                 id={descriptionId}

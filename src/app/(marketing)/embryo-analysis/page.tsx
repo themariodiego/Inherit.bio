@@ -19,7 +19,11 @@ export default function EmbryoAnalysisPage() {
         <h2 className="font-medium">Not available in any production jurisdiction yet</h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
           Embryo tools need a review by a legal expert and a list of approved
-          models. Neither is ready, so these tools stay off on the hosted service.
+          conditions. Neither is ready, so these tools stay off on the hosted service.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+          Embryo scores that add up many small effects are for research only.
+          Inherit will not offer them as a service.
         </p>
       </section>
       <section className="mt-6 rounded-2xl bg-tint p-6">

@@ -13,8 +13,14 @@
  * Where at least one block renders, the panel ends with the provenance of
  * the runs check every block rests on: the cited definition of a run, with
  * its DOI as the link (D-040).
+ *
+ * Where the panel shows any result, a shared change or none, it also states
+ * once what the check cannot tell you (`CARRIER_LIMITS`, 27 Sep 2026). The
+ * "unavailable" sentence is not a result, so it never carries them.
  */
 import {
+  CARRIER_LIMITS,
+  CARRIER_LIMITS_HEADING,
   CARRIER_MATCHES_HEADING,
   CARRIER_MATCHES_ID,
   NO_CLASSIFIED_POSITIONS,
@@ -53,6 +59,8 @@ export function CarrierPanel({
   unavailableCopy?: string;
 }) {
   const anyBlock = !unavailableCopy && groups.some((group) => group.matches.length > 0);
+  const anyResult = !unavailableCopy
+    && groups.some((group) => group.matches.length > 0 || group.classifiedPositions > 0);
   return (
     <section
       id={CARRIER_MATCHES_ID}
@@ -92,6 +100,16 @@ export function CarrierPanel({
           )}
         </div>
       ))}
+      {anyResult ? (
+        <div data-slot="carrier-limits" className="max-w-prose space-y-2">
+          <h3 className="text-base font-medium">{CARRIER_LIMITS_HEADING}</h3>
+          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink-muted">
+            {CARRIER_LIMITS.map((limit) => (
+              <li key={limit}>{limit}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {anyBlock ? (
         <p data-slot="runs-provenance" className="max-w-prose text-sm leading-relaxed text-ink-muted">
           {RUNS_PROVENANCE}{" "}

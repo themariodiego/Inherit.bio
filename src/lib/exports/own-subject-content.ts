@@ -5,6 +5,7 @@ import { Readable } from "node:stream";
 import { createGunzip } from "node:zlib";
 import { serializePrsCoverage } from "../genome/prs-output";
 import { reportCatalogSnapshotSchema } from "../genome/report-catalog-snapshot";
+import { reportOutcomeScientificCorrections, reportScientificCorrections, REPORT_SCIENTIFIC_CORRECTION_NOTICE } from "../genome/report-scientific-corrections";
 import { isFixtureSlug } from "../../components/reports/library";
 import { preparedReportSourceSchema } from "../genome/prepared-source/report-call-pages";
 import { exportOwnPreparedRecords, type OwnPreparedExportHeader } from "../genome/prepared-source/export-source";
@@ -139,9 +140,15 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
       const reports = [];
       for await (const page of pages("reports", snapshot, resultSchema)) for (const row of page) {
         if (isFixtureSlug(row.report.slug)) continue;
+        const corrections = [...new Map([
+          ...(row.report.catalogSnapshot ? reportScientificCorrections(row.report.catalogSnapshot.template) : []),
+          ...reportOutcomeScientificCorrections(row.report.slug, row.report.variants),
+        ].map(correction => [correction.id, correction])).values()];
         reports.push({ slug: row.report.slug, purpose: row.purpose, completed_at: row.completed_at,
           covered: row.report.covered, conflictingRsids: row.report.conflictingRsids,
           ...(row.report.catalogSnapshot ? { catalogSnapshot: row.report.catalogSnapshot } : {}),
+          ...(corrections.length ? { scientific_correction: { status: "known-superseded" as const,
+            notice: REPORT_SCIENTIFIC_CORRECTION_NOTICE, corrections } } : {}),
           provenance_note: row.report.catalogSnapshot
             ? "These are the stored outcomes and the report reference captured when they were generated."
             : "These are the stored outcomes. Generation did not capture the catalog revision, report description, evidence level or citations.",
@@ -192,7 +199,8 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
 /** Printable canonical content uses only the same captured data as JSON. */
 export function renderOwnSubjectReport(report: Awaited<ReturnType<ReturnType<typeof ownSubjectExportContent>["reports"]>>["reports"][number]) {
   const catalog = report.catalogSnapshot;
-  return [catalog?.template.title ?? report.slug, `Report: ${report.slug}`, `Purpose: ${report.purpose}`, `Completed: ${report.completed_at}`, `Covered at generation: ${report.covered ? "yes" : "no"}`, report.provenance_note,
+  return [...(report.scientific_correction ? [report.scientific_correction.notice] : []),
+    catalog?.template.title ?? report.slug, `Report: ${report.slug}`, `Purpose: ${report.purpose}`, `Completed: ${report.completed_at}`, `Covered at generation: ${report.covered ? "yes" : "no"}`, report.provenance_note,
     ...(catalog ? [catalog.template.summary, `Evidence at generation: ${catalog.template.evidence}`,
       `Catalog SHA-256: ${catalog.templateSha256}`,
       ...catalog.template.citations.map(c => `Source: ${c.label}${c.pmid ? ` — https://pubmed.ncbi.nlm.nih.gov/${c.pmid}/` : ""}${c.doi ? ` — https://doi.org/${c.doi}` : ""}${c.accessedOn ? ` (read ${c.accessedOn})` : ""}`)] : []),

@@ -3,7 +3,9 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { currentOwnUploadAccount } from "./own-upload-context";
-import { OWN_REPORT_CHOICES, OWN_REPORT_PURPOSES, OWN_REPORT_STATEMENTS, type OwnReportChoicesView } from "./own-report-purpose";
+import {
+  OWN_REPORT_CHOICES, OWN_REPORT_PURPOSES, OWN_REPORT_STATEMENTS, type OwnReportChoicesPanel, type OwnReportChoicesView,
+} from "./own-report-purpose";
 import { mintOwnReportPresentation, ownReportSnapshot } from "./own-report-token";
 
 /** A server-rendered own-account permissions panel, never a client-selected recipient. */
@@ -77,4 +79,29 @@ export async function prepareOwnReportChoices(subject = "me"): Promise<OwnReport
       token: presentation.token, statementKeys: [...OWN_REPORT_STATEMENTS], reconsent });
   }
   return { kind: "ready", subjectId: target.id, choices };
+}
+
+/**
+ * What the Reports page's "Choose your reports" section renders from: the
+ * choices above, and the prepared files they can run on. The section shows
+ * only when both exist, so a page that points a person at it asks this
+ * rather than guessing. The ancestry page says "Ancestry is off" only when
+ * this is `ready` with the Ancestry choice off, which is exactly when that
+ * section shows "Ancestry · Off".
+ */
+export async function loadOwnReportChoicesPanel(subject = "me"): Promise<OwnReportChoicesPanel> {
+  const view = await prepareOwnReportChoices(subject).catch(() => ({ kind: "unavailable" as const }));
+  if (view.kind !== "ready") return { kind: "hidden" };
+  // Metadata only, after resolving the signed-in account's own subject. Never
+  // imply that prepared source rows are themselves an authorised report.
+  const { data, error } = await createAdminClient().from("genome_files")
+    .select("id, created_at, normalization_source_revision, upload_revision")
+    .eq("subject_id", view.subjectId).not("single_logical_sample_verified_at", "is", null)
+    .not("normalization_completed_at", "is", null).in("status", ["stored", "annotated"])
+    .order("created_at", { ascending: false });
+  if (error) return { kind: "files-unavailable" };
+  const files = (data ?? []).filter(file => file.normalization_source_revision === file.upload_revision)
+    .map((file, index) => ({ id: file.id, label: `File ${index + 1} · uploaded ${file.created_at.slice(0, 10)}` }));
+  if (files.length === 0) return { kind: "hidden" };
+  return { kind: "ready", view, files };
 }

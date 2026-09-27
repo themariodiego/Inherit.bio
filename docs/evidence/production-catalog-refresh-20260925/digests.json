@@ -1,0 +1,114 @@
+{
+  "alcohol-dependence-aldh2-rs671": {
+    "predecessorMd5": {
+      "t": "937e8db67a0560ed021312662c7f1d64",
+      "s": "71de893866ee03a80faa637daa1455ad",
+      "v": "7b59f6ed51aba8279724c52002789148",
+      "c": "1eb792ee2e2e9aea4068bcc0e91225e6"
+    },
+    "successorMd5": {
+      "t": "ec6b562d7b9d528fee623a1cfb22a5dd",
+      "s": "8ed17b09b73bd755c2ca086952f09628",
+      "v": "add3d432e938d433010f9acc415a71e5",
+      "c": "9634353e71ad40729cfcf732fd87b0bb"
+    }
+  },
+  "apoe-e4-alzheimers-risk": {
+    "predecessorMd5": {
+      "t": "8b65889775289a0f897bceeb97287284",
+      "s": "7398be4f93c31fbdf7b58a934b9fa7c9",
+      "v": "1546b58d741597903b85daee2ded3116",
+      "c": "1383fbde5a020856ef7ed5dae490db16"
+    },
+    "successorMd5": {
+      "t": "8b65889775289a0f897bceeb97287284",
+      "s": "09609a8760b0096aa258d2cc75ab2210",
+      "v": "4ec4f14ae1e8120be4787c502b84b3e4",
+      "c": "3b386944eb1d7487ec19ad315ef7b3d4"
+    }
+  },
+  "breast-cancer-fgfr2-rs2981582": {
+    "predecessorMd5": {
+      "t": "b564e18c1d18ec080936ee01cca378b4",
+      "s": "fe197d226c072ca1bc5af3145f15357f",
+      "v": "5918c929e06bb54c57c1d5042d0f0a4b",
+      "c": "4818160674a8c98591d9b620ebcf619f"
+    },
+    "successorMd5": {
+      "t": "b564e18c1d18ec080936ee01cca378b4",
+      "s": "59437328e2c0c7dbbcad4ba551313361",
+      "v": "3844d27af96283952b455da56cef4c5e",
+      "c": "ca79af10b858fce77e8d68e8bbc69c4f"
+    }
+  },
+  "caffeine-sleep-adora2a-rs5751876": {
+    "predecessorMd5": {
+      "t": "d6b0d7c9773204381811a031f6b112d0",
+      "s": "c193c40f5d6db631e79fcbbfd31f1997",
+      "v": "e6cec85405aa4daaee94264cba66cfa3",
+      "c": "875699ffeb83643bcff03bb3f82e6276"
+    },
+    "successorMd5": {
+      "t": "d6b0d7c9773204381811a031f6b112d0",
+      "s": "b3b50ee9d0e1af4cb7ad183b0e40307b",
+      "v": "0436519757ca4a63dd121ae4f3933543",
+      "c": "753eb6a8ccb853d6452a4a8137e25637"
+    }
+  },
+  "colorectal-apc-i1307k": {
+    "predecessorMd5": {
+      "t": "377eb94fc52c67035429467e3fdfd939",
+      "s": "8e664193d8081fd6fd39950d398e417d",
+      "v": "5a83172c28d9efedf1ada17601db7ad9",
+      "c": "47cc9df4aba2173620e3ecbb87c33cd8"
+    },
+    "successorMd5": {
+      "t": "377eb94fc52c67035429467e3fdfd939",
+      "s": "8f88b1c1379775079080d83aafce644f",
+      "v": "77d194ce1017f7ec419cb05d82dc9f1e",
+      "c": "0c8662f0a1f9f5086802bbbb58a2babc"
+    }
+  },
+  "factor-v-leiden-rs6025": {
+    "predecessorMd5": {
+      "t": "ac578b2f9868522babedc4fcc48e9ee4",
+      "s": "8a2ae0e5b0ef0ce3c33543ed65cb1bab",
+      "v": "43906d4d9dcbdf53d9f5bb27c6434e29",
+      "c": "07b38399ff3aad602cb765fbe5fc8fb9"
+    },
+    "successorMd5": {
+      "t": "ac578b2f9868522babedc4fcc48e9ee4",
+      "s": "f66f088a51e752493081e97bb2ff452d",
+      "v": "2d003fa91aa190f6a537c26ebf6478a8",
+      "c": "3a1918cd06e9e8fdf2329fd2fcdc8e00"
+    }
+  },
+  "trem2-r47h-alzheimers": {
+    "predecessorMd5": {
+      "t": "3eabb17ca95bb86ac2670df5023d34f9",
+      "s": "743b172f716050812c32ae4f77300fe2",
+      "v": "a530a867bf76ffa38a67a16800773881",
+      "c": "6f86f9c483f0655a8fa769bfef4281e6"
+    },
+    "successorMd5": {
+      "t": "3eabb17ca95bb86ac2670df5023d34f9",
+      "s": "7c929c9b863ba2d0ae85438bd5aa5df1",
+      "v": "2308e6084e66be985e3875f37429ae5c",
+      "c": "2212d2300edc2bf303f05d2776806fcc"
+    }
+  },
+  "type-2-diabetes-tcf7l2-rs7903146": {
+    "predecessorMd5": {
+      "t": "7b50a77870dd829d57ee63849bcef5f4",
+      "s": "fd8a260c7f5b052b9225f3dabbb9be66",
+      "v": "2758e77d44038c43c9f84f281f49d783",
+      "c": "c591a84963098a1a897e53355d83b905"
+    },
+    "successorMd5": {
+      "t": "7b50a77870dd829d57ee63849bcef5f4",
+      "s": "981635967d676e20ada98e9385c4b3c7",
+      "v": "b31ce8cb3af798d7f0a1e01f1c63ebde",
+      "c": "e28b8f4370d5b1fc88d79f29c50c5440"
+    }
+  }
+}

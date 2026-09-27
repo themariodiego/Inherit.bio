@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -110,8 +104,13 @@ function depthTip(depth: string): string {
 // fade appears only while there is more table to the right — a swipe
 // affordance on narrow screens. The fade is a decorative, pointer-inert,
 // aria-hidden overlay, so it is invisible to axe.
-function ScrollableTable({ children, labelledBy }:
-  { children: ReactNode; labelledBy: string }) {
+function ScrollableTable({
+  children,
+  labelledBy,
+}: {
+  children: ReactNode;
+  labelledBy: string;
+}) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState(false);
 
@@ -185,8 +184,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
         availability: availabilityFor(p, country, usState || undefined),
       }))
       .filter(
-        ({ provider }) =>
-          depth === "all" || depthClass(provider).has(depth),
+        ({ provider }) => depth === "all" || depthClass(provider).has(depth),
       )
       .sort((a, b) => {
         if (a.availability.available !== b.availability.available) {
@@ -210,8 +208,8 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             <strong className="font-medium text-ink">
               Genotyping array (~$30–120):
             </strong>{" "}
-            tests a set of common variants. Inherit can prepare supported
-            array text files; each report depends on the positions covered.
+            tests a set of common variants. Inherit can prepare supported array
+            text files; each report depends on the positions covered.
           </li>
           <li>
             <strong className="font-medium text-ink">
@@ -221,13 +219,13 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             unclear; a VCF/gVCF file is needed for upload.
           </li>
           <li>
-            <strong className="font-medium text-ink">Exome/other:</strong>{" "}
-            reads protein-coding regions; coverage varies.
+            <strong className="font-medium text-ink">Exome/other:</strong> reads
+            protein-coding regions; coverage varies.
           </li>
         </ul>
         <p className="mt-2 text-sm">
-          Check which raw files the lab provides before you buy. Choose
-          reports after your file is prepared; no test type covers every finding.
+          Check which raw files the lab provides before you buy. Choose reports
+          after your file is prepared; no test type covers every finding.
         </p>
       </section>
 
@@ -287,8 +285,8 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
         </div>
         <p className="basis-full text-xs text-ink-muted">
           Location is used only to filter this list, in your browser. Inherit
-          never asks for a street address and never takes payment — you buy
-          from the provider directly.
+          never asks for a street address and never takes payment — you buy from
+          the provider directly.
         </p>
       </div>
 
@@ -300,164 +298,224 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             (prod) => compatFor(prod).kind !== "none",
           );
           return (
-          <li
-            key={p.slug}
-            data-testid={`provider-${p.slug}`}
-            className={`rounded-2xl border border-line bg-card p-5 ${availability.available ? "" : "opacity-60"}`}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 id={`provider-${p.slug}-name`} className="font-medium">{p.name}</h2>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  Ships to: {p.ships_to}
-                  {p.shipping.note ? ` (${p.shipping.note})` : ""}
-                </p>
+            <li
+              key={p.slug}
+              data-testid={`provider-${p.slug}`}
+              className={`rounded-2xl border border-line bg-card p-6 ${availability.available ? "" : "opacity-60"}`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 id={`provider-${p.slug}-name`} className="font-medium">
+                    {p.name}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    Ships to: {p.ships_to}
+                    {p.shipping.note ? ` (${p.shipping.note})` : ""}
+                  </p>
+                </div>
               </div>
-              {/* min-w-0 + flex-wrap + wrapping badges: long gating text
+
+              {availability.available && availability.stateFlag ? (
+                <p
+                  data-testid="state-exclusion-flag"
+                  className="mt-3 rounded-lg bg-tint px-3 py-2 text-xs"
+                >
+                  ⚠ {availability.stateFlag}
+                </p>
+              ) : null}
+
+              <div className="mt-6 space-y-6 lg:hidden">
+                {p.products.map((prod, index) => {
+                  const compat = compatFor(prod);
+                  return (
+                    <section
+                      key={index}
+                      className="border-t border-line pt-4"
+                      aria-label={prod.name}
+                    >
+                      <h3 className="font-medium">{prod.name}</h3>
+                      <p
+                        className={`mt-2 text-sm font-medium ${compat.kind === "full" ? "text-forest" : "text-ink-muted"}`}
+                      >
+                        {compat.label}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                        {compat.detail}
+                      </p>
+                      <dl className="mt-4 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-4 gap-y-3 text-sm">
+                        <dt className="text-ink-muted">Price</dt>
+                        <dd>
+                          {prod.price}
+                          <span className="mt-1 block text-xs text-ink-muted">
+                            Captured {p.last_verified_at}
+                          </span>
+                        </dd>
+                        <dt className="text-ink-muted">Raw files you get</dt>
+                        <dd>
+                          {(prod.formats_returned ?? []).join(", ") || "—"}
+                        </dd>
+                        <dt className="text-ink-muted">Depth</dt>
+                        <dd>{prod.depth}</dd>
+                        <dt className="text-ink-muted">
+                          Advertised turnaround
+                        </dt>
+                        <dd>{prod.turnaround || "—"}</dd>
+                      </dl>
+                    </section>
+                  );
+                })}
+              </div>
+              <div className="hidden lg:block">
+                {/* Desktop comparison keeps compatibility next to the product.
+                Narrow screens use the labelled product summaries above. */}
+                <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
+                  <table className="w-full min-w-[44rem] text-left text-sm">
+                    <thead>
+                      <tr className="text-xs text-ink-muted">
+                        <th className="pb-1 pr-4 font-normal">Product</th>
+                        <th className="pb-1 pr-4 font-normal">
+                          Works with Inherit
+                        </th>
+                        <th className="pb-1 pr-4 font-normal">Depth</th>
+                        <th className="pb-1 pr-4 font-normal">
+                          Price (captured {p.last_verified_at})
+                        </th>
+                        <th className="pb-1 pr-4 font-normal">
+                          Raw files you get
+                        </th>
+                        <th className="pb-1 font-normal">
+                          Advertised turnaround
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {p.products.map((prod, i) => {
+                        const tip = depthTip(prod.depth);
+                        const compat = compatFor(prod);
+                        return (
+                          <tr
+                            key={i}
+                            className="border-t border-line align-top"
+                          >
+                            <td className="py-1.5 pr-4">{prod.name}</td>
+                            <td className="py-1.5 pr-4">
+                              <Badge
+                                variant={
+                                  compat.kind === "full"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                title={compat.detail}
+                                className={`max-w-[13rem] whitespace-normal rounded-lg text-left text-xs leading-4 ${
+                                  compat.kind === "none" ? "text-ink-muted" : ""
+                                }`}
+                              >
+                                {compat.label}
+                              </Badge>
+                            </td>
+                            <td
+                              className={`py-1.5 pr-4 ${tip ? "cursor-help" : ""}`}
+                              title={tip || undefined}
+                              aria-label={
+                                tip ? `${prod.depth} — ${tip}` : undefined
+                              }
+                            >
+                              {prod.depth}
+                            </td>
+                            <td className="py-1.5 pr-4">{prod.price}</td>
+                            <td className="py-1.5 pr-4 text-xs">
+                              {(prod.formats_returned ?? []).join(", ") || "—"}
+                            </td>
+                            <td className="py-1.5 text-xs">
+                              {prod.turnaround || "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </ScrollableTable>
+              </div>
+
+              <div className="mt-6">
+                {/* min-w-0 + flex-wrap + wrapping badges: long gating text
                   wraps inside the card instead of forcing the page wider
                   and pushing the buy button off-screen. */}
-              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
-                {p.gating ? (
-                  <Badge
-                    variant="secondary"
-                    className="max-w-full shrink whitespace-normal rounded-lg text-left"
-                  >
-                    {p.gating}
-                  </Badge>
-                ) : null}
-                {availability.available ? (
-                  <Button
-                    asChild
-                    size="sm"
-                    variant={anyUsable ? "default" : "outline"}
-                    className={anyUsable ? undefined : "text-ink-muted"}
-                  >
-                    <a
-                      href={p.checkout_url}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      title={
-                        anyUsable
-                          ? undefined
-                          : "This provider returns no raw file Inherit can use"
-                      }
+                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+                  {p.gating ? (
+                    <Badge
+                      variant="secondary"
+                      className="max-w-full shrink whitespace-normal rounded-lg text-left"
                     >
-                      Buy through provider ↗
-                    </a>
-                  </Button>
-                ) : (
-                  <Badge
-                    variant="secondary"
-                    className="max-w-full shrink whitespace-normal rounded-lg text-left"
-                  >
-                    {availability.reason}
-                  </Badge>
-                )}
+                      {p.gating}
+                    </Badge>
+                  ) : null}
+                  {availability.available ? (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant={anyUsable ? "default" : "outline"}
+                      className={anyUsable ? undefined : "text-ink-muted"}
+                    >
+                      <a
+                        href={p.checkout_url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        title={
+                          anyUsable
+                            ? undefined
+                            : "This provider returns no raw file Inherit can use"
+                        }
+                      >
+                        Buy through provider ↗
+                      </a>
+                    </Button>
+                  ) : (
+                    <Badge
+                      variant="secondary"
+                      className="max-w-full shrink whitespace-normal rounded-lg text-left"
+                    >
+                      {availability.reason}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {availability.available && availability.stateFlag ? (
-              <p
-                data-testid="state-exclusion-flag"
-                className="mt-3 rounded-lg bg-tint px-3 py-2 text-xs"
-              >
-                ⚠ {availability.stateFlag}
-              </p>
-            ) : null}
-
-            {/* "Works with Inherit" is the decision column, so it sits
-                second — right after the product name — where it stays
-                visible on narrow screens instead of far off to the right. */}
-            <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
-              <table className="w-full min-w-[44rem] text-left text-sm">
-                <thead>
-                  <tr className="text-xs text-ink-muted">
-                    <th className="pb-1 pr-4 font-normal">Product</th>
-                    <th className="pb-1 pr-4 font-normal">Works with Inherit</th>
-                    <th className="pb-1 pr-4 font-normal">Depth</th>
-                    <th className="pb-1 pr-4 font-normal">Price (captured {p.last_verified_at})</th>
-                    <th className="pb-1 pr-4 font-normal">Raw files you get</th>
-                    <th className="pb-1 font-normal">Advertised turnaround</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {p.products.map((prod, i) => {
-                    const tip = depthTip(prod.depth);
-                    const compat = compatFor(prod);
-                    return (
-                      <tr key={i} className="border-t border-line align-top">
-                        <td className="py-1.5 pr-4">{prod.name}</td>
-                        <td className="py-1.5 pr-4">
-                          <Badge
-                            variant={
-                              compat.kind === "full" ? "secondary" : "outline"
-                            }
-                            title={compat.detail}
-                            className={`max-w-[13rem] whitespace-normal rounded-lg text-left text-[11px] leading-4 ${
-                              compat.kind === "none" ? "text-ink-muted" : ""
-                            }`}
-                          >
-                            {compat.label}
-                          </Badge>
-                        </td>
-                        <td
-                          className={`py-1.5 pr-4 ${tip ? "cursor-help" : ""}`}
-                          title={tip || undefined}
-                          aria-label={
-                            tip ? `${prod.depth} — ${tip}` : undefined
-                          }
-                        >
-                          {prod.depth}
-                        </td>
-                        <td className="py-1.5 pr-4">{prod.price}</td>
-                        <td className="py-1.5 pr-4 text-xs">
-                          {(prod.formats_returned ?? []).join(", ") || "—"}
-                        </td>
-                        <td className="py-1.5 text-xs">
-                          {prod.turnaround || "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </ScrollableTable>
-
-            <div className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-muted">
-              {p.data_practices_note ? (
+              <div className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-muted">
+                {p.data_practices_note ? (
+                  <p>
+                    <strong>Data practices:</strong> {p.data_practices_note}{" "}
+                    {p.privacy_policy_url ? (
+                      <a
+                        href={p.privacy_policy_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline underline-offset-2"
+                      >
+                        Privacy policy ↗
+                      </a>
+                    ) : null}
+                  </p>
+                ) : null}
                 <p>
-                  <strong>Data practices:</strong> {p.data_practices_note}{" "}
-                  {p.privacy_policy_url ? (
+                  Verified {p.last_verified_at} ·{" "}
+                  {p.source_urls.slice(0, 3).map((u, i) => (
                     <a
-                      href={p.privacy_policy_url}
+                      key={u}
+                      href={u}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline underline-offset-2"
                     >
-                      Privacy policy ↗
+                      source {i + 1}{" "}
                     </a>
-                  ) : null}
+                  ))}
+                  {p.affiliate
+                    ? "· Inherit may earn a commission if you buy through this affiliate link. We show this here so you can see it."
+                    : "· No affiliate relationship."}
                 </p>
-              ) : null}
-              <p>
-                Verified {p.last_verified_at} ·{" "}
-                {p.source_urls.slice(0, 3).map((u, i) => (
-                  <a
-                    key={u}
-                    href={u}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2"
-                  >
-                    source {i + 1}{" "}
-                  </a>
-                ))}
-                {p.affiliate
-                  ? "· Inherit may earn a commission if you buy through this affiliate link. We show this here so you can see it."
-                  : "· No affiliate relationship."}
-              </p>
-            </div>
-          </li>
+              </div>
+            </li>
           );
         })}
       </ul>

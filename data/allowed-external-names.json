@@ -193,11 +193,13 @@
       "category": "dependency-platform",
       "aliases": [
         "openai",
-        "openai.com"
+        "openai.com",
+        "chatgpt"
       ],
-      "reason": "Supported bring-your-own-key model API and installed SDK adapter.",
+      "reason": "Supported bring-your-own-key model API and installed SDK adapter. ChatGPT is the same organisation's chat product, named only to label the Copilot provider preset and to say that a chat subscription is separate from an API key.",
       "evidence": [
-        "package.json"
+        "package.json",
+        "src/copy/settings/copilot-providers.ts"
       ]
     },
     {
@@ -213,6 +215,22 @@
       "reason": "Supported bring-your-own-key model API and installed SDK adapter. The two hosts also appear in this repository's own history: every commit trailer carries a claude.ai session link, and a squash-merge copies the pull-request body's claude.com attribution line into the commit message on main. Same organisation, already reviewed here; the alias list simply predated the second domain.",
       "evidence": [
         "package.json"
+      ]
+    },
+    {
+      "name": "xAI",
+      "category": "dependency-platform",
+      "aliases": [
+        "xai",
+        "x.ai",
+        "grok",
+        "supergrok"
+      ],
+      "reason": "Supported bring-your-own-key model API, offered as a Copilot provider preset and reached through the installed OpenAI-compatible SDK adapter. Grok and SuperGrok are the same organisation's models and chat subscription, named only to label the preset and to say that a chat subscription is separate from an API key.",
+      "evidence": [
+        "package.json",
+        "src/lib/copilot/provider-presets.ts",
+        "src/copy/settings/copilot-providers.ts"
       ]
     },
     {
@@ -980,6 +998,140 @@
       "evidence": [
         "docs/adr/0030-hosted-preparation-on-cloudflare-containers.md",
         "workers/prepared-worker/README.md"
+      ]
+    },
+    {
+      "name": "React Bits",
+      "category": "cited-organisation",
+      "aliases": [
+        "reactbits.dev"
+      ],
+      "reason": "User-requested visual reference for UI microinteractions; cited in the design review, with no new runtime dependency or scientific claim.",
+      "evidence": [
+        "docs/design/ui-renewal/README.md"
+      ]
+    },
+    {
+      "name": "UK Cancer Genetics Group paper archive",
+      "category": "cited-organisation",
+      "aliases": [
+        "ukcgg.org/media/12580/insight-apc-pi1307k.pdf"
+      ],
+      "reason": "Hosts the full published APC I1307K meta-analysis read in the dated source correction. Only the reviewed PDF path is registered.",
+      "evidence": [
+        "docs/sources/reviews/apc-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "Institute of Cancer Research paper repository",
+      "category": "cited-organisation",
+      "aliases": [
+        "repository.icr.ac.uk/server/api/core/bitstreams/99e2e771-711d-4bdd-b509-f58f0a8610f1/content"
+      ],
+      "reason": "Hosts the published 2025 APC I1307K cohort paper read in the dated source correction. Only that paper's repository object is registered.",
+      "evidence": [
+        "docs/sources/reviews/apc-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "Nature FGFR2 paper supplement",
+      "category": "cited-organisation",
+      "aliases": [
+        "nature.com/articles/nature05887#MOESM272"
+      ],
+      "reason": "Publisher locator for the FGFR2 supplementary tables read in the dated source correction. Only the cited paper's supplement locator is registered.",
+      "evidence": [
+        "docs/sources/reviews/fgfr2-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "University of Zurich pharmacology archive",
+      "category": "cited-organisation",
+      "aliases": [
+        "pharma.uzh.ch/dam/jcr:00000000-2992-0cf5-0000-000020c5cb44/Retey_Clin_Pharmacol_Ther_2007.pdf"
+      ],
+      "reason": "Hosts the full primary paper used for the dated ADORA2A sleep-association correction; the institution is named in the paper's author affiliations. Only the cited PDF path is registered, not the whole archive host.",
+      "evidence": [
+        "docs/sources/reviews/adora2a-correction-20260923.md",
+        "data/citations.json"
+      ]
+    },
+    {
+      "name": "NCRAD APOE joint-marker chart",
+      "category": "cited-organisation",
+      "aliases": [
+        "ncrad.iu.edu/bank-samples/apoe-genotyping/"
+      ],
+      "reason": "Primary joint-marker chart read for the dated APOE explanation correction. This full-path alias is a content-name exception under the existing substring classifier, not URL authorization.",
+      "evidence": [
+        "docs/sources/reviews/apoe-correction-20260923.md",
+        "docs/sources/ncrad/apoe-genotypes-2026-09-23.json"
+      ]
+    },
+    {
+      "name": "JAMA APOE meta-analysis abstract",
+      "category": "cited-organisation",
+      "aliases": [
+        "jamanetwork.com/journals/jama/article-abstract/418446"
+      ],
+      "reason": "Publisher author abstract independently read for the dated APOE explanation correction. This full-path alias is a content-name exception under the existing substring classifier, not URL authorization.",
+      "evidence": [
+        "docs/sources/reviews/apoe-correction-20260923.md"
+      ]
+    },
+    {
+      "name": "Manifest article on ChatGPT subscription sign-in",
+      "category": "cited-organisation",
+      "aliases": [
+        "manifest.build/blog/chatgpt-plus-tokens-third-party-harnesses/"
+      ],
+      "reason": "Dated article read on 26 September 2026 for the subscription sign-in options in the proposed assistant-connector decision. Only this article path is registered, not URL authorization.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "Warp Grok subscription guide",
+      "category": "cited-organisation",
+      "aliases": [
+        "docs.warp.dev/agent-platform/inference/grok-subscription/"
+      ],
+      "reason": "Third-party guide read on 26 September 2026 describing subscription sign-in through the vendor's OAuth, cited in the proposed assistant-connector decision. Only this guide path is registered.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "LobeHub SuperGrok provider guide",
+      "category": "cited-organisation",
+      "aliases": [
+        "lobehub.com/docs/usage/providers/supergrok"
+      ],
+      "reason": "Third-party guide cited on 26 September 2026 for subscription sign-in in the proposed assistant-connector decision. Only this guide path is registered.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "Grok connectors documentation",
+      "category": "cited-organisation",
+      "aliases": [
+        "docs.x.ai/grok/connectors"
+      ],
+      "reason": "Vendor documentation read on 26 September 2026 for custom MCP connector availability in the proposed assistant-connector decision. Only this documentation path is registered.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
+      ]
+    },
+    {
+      "name": "MCP authorization specification",
+      "category": "cited-organisation",
+      "aliases": [
+        "modelcontextprotocol.io/specification/2026-07-28/basic/authorization"
+      ],
+      "reason": "Protocol specification revision 2026-07-28 read on 26 September 2026 for the connector authorization design. Only this revision path is registered, not URL authorization.",
+      "evidence": [
+        "docs/adr/0033-copilot-through-own-assistant-connector.md"
       ]
     }
   ]

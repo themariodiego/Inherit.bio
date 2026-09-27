@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Button } from "@/components/ui/button";
+import { signInMessage } from "@/copy/sign-in";
 import { createClient } from "@/lib/supabase/client";
 import { localAuthDestination } from "@/lib/auth/local-destination";
 
@@ -12,12 +13,24 @@ function SignInInner() {
   const router = useRouter();
   const params = useSearchParams();
   const next = localAuthDestination(params.get("next"));
+  // A fixed code set by the auth callback; unknown values show nothing.
+  const message = signInMessage(params);
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="display text-2xl">Welcome back</h1>
       </div>
+      {message ? (
+        <p
+          role={message.role}
+          className={`rounded-xl border border-line bg-card p-4 text-sm ${
+            message.role === "alert" ? "text-danger" : "text-ink"
+          }`}
+        >
+          {message.text}
+        </p>
+      ) : null}
       <AuthForm
         fields={[
           { name: "email", label: "Email", type: "email", autoComplete: "email" },

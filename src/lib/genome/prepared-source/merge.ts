@@ -137,7 +137,9 @@ export async function* mergePreparedRuns(input: readonly PreparedRunReceipt[], o
     let selected: typeof states[number] | undefined;
     let selectedEvent: PreparedEvent | undefined;
     for (const state of states) {
-      const event = await head(state);
+      // Verified buffered heads need no async hop; block acquisition still owns
+      // the hash/schema/order/count checks and bounded read cancellation.
+      const event = state.offset < state.events.length ? state.events[state.offset] : await head(state);
       if (event && (!selectedEvent || compare(key(event), key(selectedEvent)) < 0)) {
         selected = state; selectedEvent = event;
       }

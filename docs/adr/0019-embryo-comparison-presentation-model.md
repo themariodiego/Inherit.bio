@@ -1,6 +1,6 @@
 # ADR 0019: The embryo comparison presentation model: a matrix in file order, never a ranking
 
-- Status: Accepted
+- Status: Accepted; point 5 amended by [ADR 0034](./0034-embryo-sex-and-estimates-scope.md) (2026-09-27)
 - Date: 2026-09-04
 - G7.1 name: "the embryo-comparison presentation model"
 - Absorbs the brief's A.12 names "embryo-comparison-not-ranking" and "no-cognitive-ability-or-embryo-sex-outputs"

@@ -3,6 +3,7 @@
 import type { Build, ParseResult, ReferenceCall, VariantRecord } from "../types";
 import { chromToNumber, parseRsid } from "../types";
 import { observedVcfCall, type ObservedCall } from "../observed-calls";
+import { isUnspecifiedAllele } from "./gvcf";
 
 // chr1 lengths pin the reference build.
 const CHR1_LEN_GRCH38 = 248956422;
@@ -60,7 +61,7 @@ export type VcfParseEvent =
  *   never become variant records, but they are kept in `referenceCalls`,
  *   because they are the file's own evidence of what it recorded between
  *   its differences (runs of homozygosity, D-040). gVCF rows whose ALT
- *   carries <NON_REF> describe a range, not a call, and are dropped without
+ *   carries <NON_REF> or <*> describe a range, not a call, and are dropped without
  *   counting, so a gVCF contributes no reference call.
  */
 export async function* streamVcf(
@@ -148,18 +149,19 @@ export async function* streamVcf(
       continue;
     }
 
-    // Reference rows / gVCF blocks: nothing but REF or <NON_REF> called.
+    // Reference rows / gVCF blocks: nothing but REF or an unspecified allele.
     const calledAlts = [
-      ...new Set(gtAlleles.filter((a) => a !== ref && a !== "<NON_REF>")),
+      ...new Set(gtAlleles.filter((a) => a !== ref && !isUnspecifiedAllele(a))),
     ];
     if (calledAlts.length === 0) {
       // A row that calls the reference on every copy is a reference call:
       // not a variant, but a recorded position all the same. A row whose
-      // ALT list carries <NON_REF> is a gVCF block (a range, with END= in
+      // ALT list carries <NON_REF> or <*> is a gVCF block (a range, with END= in
       // INFO), not a call at one position, so it is not one; a gVCF that
       // records its reference only as blocks therefore yields no reference
       // call, and the runs measure says it cannot measure it.
-      if (!alts.includes("<NON_REF>")) {
+      if (!alts.some(isUnspecifiedAllele) && !/(?:^|;)(?:END|SVLEN)=/.test(f[7])
+        && !f[8].split(":").includes("LEN")) {
         referenceCallCount++;
         yield { type: "reference", line: lineNumber, call: {
           chrom,
@@ -170,7 +172,7 @@ export async function* streamVcf(
       }
       continue;
     }
-    if (gtAlleles.includes("<NON_REF>")) continue; // half-block oddity
+    if (gtAlleles.some(isUnspecifiedAllele)) continue; // unresolved allele, not a literal call
 
     const genotype =
       gtAlleles.length === 1

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { PERSONAL_RESULT_LABEL, WITH_RESULTS_LABEL, NO_RESULT_MATCHES } from "@/copy/reports/personal-previews";
 import type { PersonalPreview } from "@/lib/genome/report-previews";
 import { Count } from "./count";
+import { ScientificCorrectionNotice } from "./scientific-correction-notice";
 import {
   EMPTY_REPORT_FILTER_SNAPSHOT, MAX_REPORT_QUERY_LENGTH, reportFilterSnapshot, withReportFilters,
   type ReportFilterState,
@@ -46,6 +47,8 @@ export interface LibraryCard {
   slug: string;
   title: string;
   summary: string;
+  /** Public template status, with no selected-genotype correction detail. */
+  scientificCorrection?: boolean;
   evidenceLabel: string;
   /** Gene symbol of every template variant; searched alongside the title. */
   genes: string[];
@@ -109,7 +112,7 @@ function EstimateCard({ card, subject }: { card: LibraryCard; subject: string })
   return (
     <li
       data-card="estimate"
-      className="relative h-full rounded-xl border border-line bg-card p-4 transition-colors focus-within:border-forest hover:border-forest"
+      className="link-surface relative h-full rounded-xl border border-line bg-card p-4 transition-colors focus-within:border-forest hover:border-forest"
     >
       <div className="grid grid-cols-[1fr_auto] items-start gap-2">
         <h3 className="text-sm font-medium">
@@ -130,6 +133,7 @@ function EstimateCard({ card, subject }: { card: LibraryCard; subject: string })
       ) : (
         <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{card.summary}</p>
       )}
+      {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
       <p className="mt-2">
         <StatusPill status={card.status} />
       </p>
@@ -142,7 +146,7 @@ function VariantCallRow({ card, subject }: { card: LibraryCard; subject: string 
   return (
     <li
       data-card="variant-call"
-      className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-paper px-4 py-3 transition-colors focus-within:border-forest hover:border-forest"
+      className="link-surface relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-paper px-4 py-3 transition-colors focus-within:border-forest hover:border-forest"
     >
       <h3 className="text-sm font-medium">
         <CardLink card={card} subject={subject} />
@@ -151,6 +155,7 @@ function VariantCallRow({ card, subject }: { card: LibraryCard; subject: string 
         {card.evidenceLabel}
       </Badge>
       <p className="w-full text-sm text-ink-muted">{card.summary}</p>
+      {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
       <p>
         <StatusPill status={card.status} />
       </p>
@@ -306,7 +311,7 @@ export function ReportLibrary({
               <ul
                 className={cn(
                   "gap-3",
-                  layerClass === "estimate" ? "grid sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col",
+                  layerClass === "estimate" ? "grid lg:grid-cols-2 xl:grid-cols-3" : "flex flex-col",
                 )}
               >
                 {visibleCards.map((c) => (

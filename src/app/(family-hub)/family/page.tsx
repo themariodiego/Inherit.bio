@@ -54,7 +54,7 @@ function jurisdictionCopy(): string[] {
 
 function PublicPanels() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16">
+    <div className="page-stack mx-auto max-w-4xl px-6 py-16">
       <p className="eyebrow">{FAMILY_H1}</p>
       <h1 className="display mt-4 text-4xl sm:text-5xl">{FAMILY_H1}</h1>
       <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">{FAMILY_LEDE}</p>
@@ -193,7 +193,7 @@ export default async function FamilyPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="mx-auto max-w-4xl space-y-12 md:space-y-16"
+      className="page-stack mx-auto max-w-4xl space-y-12 md:space-y-16"
     >
       <header className="space-y-3">
         <h1 className="display text-4xl">{FAMILY_H1}</h1>
@@ -210,7 +210,7 @@ export default async function FamilyPage() {
         </Button>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {HUB_TILES.map((tile) => {
           const href = allowed ? tileHref[tile.id] : null;
           return (

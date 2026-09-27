@@ -230,6 +230,26 @@ export function noCarrierMatches(positions: number): string {
 export const NO_CLASSIFIED_POSITIONS =
   "This check is unavailable. Inherit cannot yet verify the evidence for each gene change. This is not a negative carrier screen.";
 
+/**
+ * What any carrier result here cannot tell you: rendered once in the panel
+ * whenever it shows a result, a shared change or none, and never beside the
+ * "unavailable" sentence (owner decision, 27 Sep 2026). Modelled on the
+ * warnings FDA requires of consumer carrier tests (21 CFR 866.5940(b)(6)): the
+ * limits of coverage, false results, confirmation, ancestry, and not replacing
+ * a doctor. The per-pregnancy sentence above stays because the brief mandates
+ * it. FDA's own wording says such a test tells you nothing about a child's
+ * risk, and that tension is recorded for counsel in `docs/protocol/decisions.md`.
+ */
+export const CARRIER_LIMITS_HEADING = "What this check cannot tell you";
+
+export const CARRIER_LIMITS: readonly string[] = [
+  "It is not a diagnosis, and it cannot test a pregnancy.",
+  "It reads only some positions in each gene. No shared change does not rule out that a child could be affected.",
+  "It can show a change that a clinical test would not find. Confirm any result with a clinical laboratory before you act on it.",
+  "Your ancestry can affect how well it works.",
+  "It does not replace a visit to your doctor.",
+];
+
 /** The name each person's own reading is rendered beside, in the block header. */
 export function carrierPersonPrefix(name: string): string {
   return `${name}:`;

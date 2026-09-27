@@ -119,6 +119,10 @@
       "why": "The account-deletion purge groups a database manifest by bucketId and removes each group. Same limitation, same database allowlist."
     },
     {
+      "site": "(database-selected) src/lib/exports/archive-segment-storage.ts",
+      "why": "The static scanner classifies the nonliteral ARCHIVE_BUCKET argument as database-selected. The imported constant and closed attempt validator permit only exports. This create-only byte adapter is not yet wired to a route or worker; it requires exact server-owned reservation keys and does not establish database authorization or provider cleanup."
+    },
+    {
       "site": "(database-selected) src/lib/uploads/file-deletion-backstop.ts",
       "why": "The source.revocation-7d backstop (D-126) redoes a stranded self file deletion: it removes admin.storage.from(target.bucket) where the bucket and name come from the claimed private.genome_file_deletions record, whose check constraint pins the bucket to genomes. Same limitation as DELETE /api/files/[id], same database allowlist."
     }
@@ -129,7 +133,7 @@
       "prefixIds": [
         "storage.export-v1"
       ],
-      "why": "storage.export-v1 declares the archive prefix, the opaque archive-name contract and the export.generated-artifact-24h retention id for the large-export delivery contract. No file under src, worker/src or workers addresses the bucket, which matches docs/route-divergence.json recording the same bucket as declared-not-created and POST /api/export as unbuilt. The declared access rules therefore protect nothing yet.",
+      "why": "The static scanner finds no literal exports bucket call. archive-segment-storage.ts now uses the closed imported ARCHIVE_BUCKET constant, which the scanner records separately as database-selected. That byte adapter has no product route or worker caller yet. The declared manifest namespace, authorization and export.generated-artifact-24h cleanup remain integration requirements; the existing POST /api/export is still unbuilt. This scanner category is not evidence that the byte adapter has no Storage call.",
       "closing": "Addressed when largeExportDeliveryContract is built."
     },
     {

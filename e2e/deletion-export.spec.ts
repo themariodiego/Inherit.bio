@@ -35,10 +35,13 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   const raw = await page.request.get("/api/export");
   expect(raw.status()).toBe(200);
   const rawZip = new AdmZip(Buffer.from(await raw.body()));
-  for (const [id, fixture] of [[vcfFileId, vcfPath], [tinyFileId, tinyPath]]) {
-    expect(rawZip.readFile(`originals/${id}`)).toEqual(readFileSync(fixture));
+  // F3: each original is named with its type's extension, `.gz` included when
+  // the stored bytes are compressed, so the saved file opens.
+  const originals = [[`originals/${vcfFileId}.vcf.gz`, vcfPath], [`originals/${tinyFileId}.vcf`, tinyPath]] as const;
+  for (const [name, fixture] of originals) {
+    expect(rawZip.readFile(name)).toEqual(readFileSync(fixture));
   }
-  expect(gunzipSync(rawZip.readFile(`originals/${vcfFileId}`)!)).toEqual(pagination.decoded);
+  expect(gunzipSync(rawZip.readFile(`originals/${vcfFileId}.vcf.gz`)!)).toEqual(pagination.decoded);
   expect(JSON.parse(rawZip.readAsText("reports.json")).every((file: { report_count: number }) => file.report_count === 0)).toBe(true);
   expect(JSON.parse(rawZip.readAsText("prs.json"))).toEqual([]);
   // Coverage rows and the caffeine interpretation require genuine explicit
@@ -159,10 +162,14 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   }
   expect(covered.some(report => report.slug === "caffeine-metabolism-cyp1a2-rs762551"
     && report.variants.some(variant => Boolean(variant.interpretation)))).toBe(true);
-  for (const [id, fixture] of [[vcfFileId, vcfPath], [tinyFileId, tinyPath]]) {
-    expect(zip.readFile(`originals/${id}`)).toEqual(readFileSync(fixture));
+  for (const [name, fixture] of originals) {
+    expect(zip.readFile(name)).toEqual(readFileSync(fixture));
   }
-  expect(gunzipSync(zip.readFile(`originals/${vcfFileId}`)!)).toEqual(pagination.decoded);
+  expect(gunzipSync(zip.readFile(`originals/${vcfFileId}.vcf.gz`)!)).toEqual(pagination.decoded);
+  // F5: this account never used Copilot, and the archive says so honestly
+  // rather than claiming conversations are not stored.
+  expect(JSON.parse(zip.readAsText("chats.json")))
+    .toEqual({ note: "Your chat history has no saved Copilot conversations.", chats: [] });
 
   const prsText = zip.readAsText("prs.json");
   const prs = JSON.parse(prsText) as { file_id: string; status: string; reason: string; coverage: { matched: number; required: number } | null }[];

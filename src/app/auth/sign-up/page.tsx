@@ -56,7 +56,10 @@ export default function SignUpPage() {
             email,
             password,
             options: {
-              emailRedirectTo: `${window.location.origin}/auth/callback?next=/overview`,
+              // `flow=signup` lets the callback say the email is confirmed
+              // when the link opens in another browser or after the PKCE
+              // flow state has expired.
+              emailRedirectTo: `${window.location.origin}/auth/callback?next=/overview&flow=signup`,
             },
           });
           if (error) return error.message;

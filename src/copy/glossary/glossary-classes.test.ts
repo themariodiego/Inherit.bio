@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { glossaryEntries, glossaryEntry, renderableGlossaryEntries } from "./index";
 
@@ -13,7 +14,7 @@ import { glossaryEntries, glossaryEntry, renderableGlossaryEntries } from "./ind
  * no longer exists, which would make the artifact read as more considered than
  * it is. Both fail here.
  */
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..", "..");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 interface Classes {
   schemaVersion: number;
   rule: string;

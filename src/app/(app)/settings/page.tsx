@@ -2,8 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChromosomalSexControl } from "@/components/settings/chromosomal-sex-control";
 import { DigestToggle } from "@/components/settings/digest-toggle";
+import { JurisdictionForm } from "@/components/settings/jurisdiction-form";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
+import { localAuthDestination } from "@/lib/auth/local-destination";
 import { declaredChromosomalSexFrom } from "@/lib/family/chromosomal-sex";
+import {
+  countriesWithSubdivisions,
+  currentJurisdictionAttestation,
+  declarationChoices,
+  jurisdictionName,
+  readDeclaration,
+  subdivisionChoices,
+  subdivisionName,
+} from "@/lib/legal/jurisdiction-declaration";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,12 +29,23 @@ const sections = [
   { href: route("settings.consents"), title: "Consents", copy: "Review and revoke grants by purpose." },
 ] as const;
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const supabase = await createClient();
-  const [{ data: { user } }, { data: profile }] = await Promise.all([
+  const [{ data: { user } }, { data: profile }, query, attestation] = await Promise.all([
     supabase.auth.getUser(),
     supabase.from("profiles").select("digest_opt_in").maybeSingle(),
+    searchParams,
+    currentJurisdictionAttestation(),
   ]);
+  // G5.1a: the first sign-in is sent here until a country is declared, with
+  // the page it asked for as `next`; only a local path is ever followed.
+  const declaration = user ? await readDeclaration(user.id) : { code: null, subdivision: null };
+  const declaredCode = declaration.code;
+  const next = typeof query.next === "string" && !declaredCode ? localAuthDestination(query.next) : null;
 
   // The declaration is per subject, and the only subject in scope on this page
   // is the one this account IS (D-031). An account that also holds another
@@ -44,15 +66,30 @@ export default async function SettingsPage() {
       : null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
+    <div className="page-stack mx-auto max-w-3xl space-y-10">
       <header className="space-y-2">
         <p className="eyebrow">Account</p>
         <h1 className="display text-3xl">Settings</h1>
         <p className="text-base text-ink-muted">{user?.email}</p>
       </header>
+      {user && attestation ? (
+        <JurisdictionForm
+          choices={declarationChoices(declaredCode)}
+          states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
+          current={declaredCode ? {
+            code: declaredCode,
+            name: jurisdictionName(declaredCode),
+            state: declaration.subdivision
+              ? { code: declaration.subdivision, name: subdivisionName(declaration.subdivision) }
+              : null,
+          } : null}
+          attestation={attestation}
+          next={next}
+        />
+      ) : null}
       <nav aria-label="Settings sections" className="grid gap-4 sm:grid-cols-2">
         {sections.map((section) => (
-          <Link key={section.href} href={section.href} className="rounded-2xl border border-line bg-card p-5 hover:border-forest">
+          <Link key={section.href} href={section.href} className="link-surface rounded-2xl border border-line bg-card p-6 hover:border-forest">
             <h2 className="font-medium">{section.title}</h2>
             <p className="mt-2 text-sm text-ink-muted">{section.copy}</p>
           </Link>

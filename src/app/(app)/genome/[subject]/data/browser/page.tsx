@@ -139,7 +139,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
     <div
       data-surface="standard"
       data-density-primary-content="true"
-      className="mx-auto max-w-5xl space-y-8"
+      className="page-stack mx-auto max-w-5xl space-y-8"
     >
       <Breadcrumbs
         items={[
@@ -308,7 +308,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
                 {/* inherit-figure-exempt: the region shown is a coordinate range, not a result figure */}
                 {formatLocus(locus)}
               </p>
-              <GenomeBrowser fileId={active.id} locus={locus} />
+              <GenomeBrowser fileId={active.id} locus={locus} subjectId={dataSubjectId} />
               <p className="max-w-prose text-sm text-ink-muted">{FIRST_PARTY_NOTE}</p>
             </section>
           ) : null}

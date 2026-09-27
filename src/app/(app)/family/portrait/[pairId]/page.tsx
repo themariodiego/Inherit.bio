@@ -267,7 +267,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   if (sourceSnapshot && !await sourceSnapshot.confirm()) notFound();
 
   return (
-    <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
+    <div data-surface="standard" className="page-stack mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
           { label: NAV_LABELS.family, href: route("family.index") },

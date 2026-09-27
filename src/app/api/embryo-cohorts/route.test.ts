@@ -36,6 +36,11 @@ vi.mock("@/lib/supabase/admin", () => ({
       mocks.rpc.push([name, args]);
       return { data: mocks.result, error: mocks.error };
     },
+    // The acting account's declared jurisdiction (G5.1a): declared, so the
+    // flag's TEST-LOCAL row answers for it.
+    from: () => ({ select: () => ({ in: async (_column: string, ids: string[]) => ({
+      data: ids.map((id) => ({ id, jurisdiction_code: "GB" })), error: null,
+    }) }) }),
   }),
 }));
 

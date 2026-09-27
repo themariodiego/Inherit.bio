@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { adminClient, signIn } from "./helpers";
+import { DEFAULT_TEST_JURISDICTION, adminClient, setDeclaredJurisdiction, signIn } from "./helpers";
 import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 import { subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
 
@@ -10,10 +10,12 @@ test("a processed self-upload queues one report-ready notice without deadline re
   const password = "e2e-mail-expiry-password";
   const admin = adminClient();
   // A unique synthetic identity needs no lookup or mutation of other accounts.
-  const { error: createError } = await admin.auth.admin.createUser({
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
     email, password, email_confirm: true,
   });
   expect(createError).toBeNull();
+  // Answered at first sign-in, as every account has (G5.1a).
+  await setDeclaredJurisdiction(created.user!.id, DEFAULT_TEST_JURISDICTION);
   await signIn(page, email, password);
   const fileId = await uploadOwnFilePrepared(page,
     path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });

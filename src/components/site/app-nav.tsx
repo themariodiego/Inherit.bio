@@ -3,6 +3,7 @@
 import { CircleDot, Dna, LayoutDashboard, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   NAV_ITEMS,
   NAV_LANDMARK_LABEL,
@@ -44,26 +45,69 @@ export function AppNav({
   leading?: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [highlighted, setHighlighted] = useState<number | null>(null);
+  const currentIndex = NAV_ITEMS.findIndex((item) =>
+    isActive(pathname, item.href),
+  );
+  const highlightIndex = highlighted ?? currentIndex;
+  const listRef = useRef<HTMLDivElement>(null);
+  const glideRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const glide = glideRef.current;
+    if (!list || !glide) return;
+    const items = list.querySelectorAll<HTMLElement>("[data-nav-item]");
+    const update = () => {
+      const item = items[highlightIndex];
+      if (!item) return;
+      glide.style.height = `${item.offsetHeight}px`;
+      glide.style.transform = `translateY(${item.offsetTop}px)`;
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(list);
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, [highlightIndex]);
 
   if (variant === "sidebar") {
     return (
       <nav aria-label={NAV_LANDMARK_LABEL} className="space-y-8">
         {leading ? <div>{leading}</div> : null}
-        <div className="flex flex-col gap-3">
-          {NAV_ITEMS.map((item) => {
+        <div
+          ref={listRef}
+          className="relative isolate flex flex-col gap-3"
+          onPointerLeave={() => setHighlighted(null)}
+        >
+          {highlightIndex >= 0 ? (
+            <span
+              ref={glideRef}
+              aria-hidden="true"
+              data-slot="nav-glide"
+              className="pointer-events-none absolute inset-x-0 -z-10 h-11 rounded-xl bg-tint transition-transform duration-200 ease-out motion-reduce:transition-none"
+            />
+          ) : null}
+          {NAV_ITEMS.map((item, index) => {
             const active = isActive(pathname, item.href);
+            const Icon = ICONS[item.id];
             return (
               <Link
                 key={item.id}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                data-nav-item
+                onPointerEnter={() => setHighlighted(index)}
+                onFocus={() => setHighlighted(index)}
+                onBlur={() => setHighlighted(null)}
                 className={cn(
-                  "rounded-full px-3 py-2 text-base transition-colors",
+                  "app-nav-link rounded-xl px-3 py-2 text-base transition-colors",
                   active
-                    ? "bg-tint font-medium text-ink"
-                    : "text-ink-muted hover:bg-tint hover:text-ink",
+                    ? "font-medium text-ink"
+                    : "text-ink-muted hover:text-ink",
                 )}
               >
+                <Icon aria-hidden="true" className="size-5 shrink-0" />
                 {item.label}
               </Link>
             );

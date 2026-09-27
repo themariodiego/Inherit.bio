@@ -33,7 +33,7 @@ export default async function ChatPage(
     return (
       <div className="mx-auto flex min-h-[32rem] max-w-3xl flex-col gap-4">
         <header><p className="eyebrow mb-2">Copilot</p><h1 className="display text-3xl">Ask about {subject.displayLabel}</h1></header>
-        <OwnChatPanel contextToken={ownChat.contextToken} info={ownChat.providerInfo}
+        <OwnChatPanel key={ownChat.contextHash} contextToken={ownChat.contextToken} info={ownChat.providerInfo}
           chats={ownChat.chats} displayLabel={subject.displayLabel} />
       </div>
     );
@@ -41,7 +41,7 @@ export default async function ChatPage(
   if (ownChat?.kind === "unavailable" && ownChat.reason !== "provider_unavailable") {
     if (ownChat.reason === "account_required" || ownChat.reason === "scope_unavailable") notFound();
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="page-stack mx-auto max-w-3xl space-y-6">
         <header><p className="eyebrow mb-2">Copilot</p><h1 className="display text-3xl">Ask about {subject.displayLabel}</h1></header>
         <p>{ownChat.reason === "consent_required"
           ? "Choose what Copilot may use before asking about your file. Saving a provider does not grant that permission."

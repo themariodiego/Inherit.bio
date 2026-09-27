@@ -7,7 +7,7 @@ import {
   csrfOperation,
   encryptedHex,
   encryptedLiteral,
-  jurisdictionDenied,
+  accountJurisdictionDenied,
   originDenied,
   readJson,
   requestForbidden,
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   if (!context?.user.email) return unauthorized();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
-  const denied = jurisdictionDenied();
+  const denied = await accountJurisdictionDenied(context.user.id);
   if (denied) return denied;
 
   const parsed = cohortDraftBody.safeParse(await readJson(request));

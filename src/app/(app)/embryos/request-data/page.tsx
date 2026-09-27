@@ -33,7 +33,7 @@ export default async function EmbryoRequestDataPage() {
   const { decision } = viewer;
 
   return (
-    <div data-surface="flow" className="mx-auto max-w-3xl space-y-8">
+    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
       <Breadcrumbs
         items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: REQUEST_DATA_H1 }]}
       />

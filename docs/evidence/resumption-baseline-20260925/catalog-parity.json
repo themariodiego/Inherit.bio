@@ -1,0 +1,254 @@
+{
+  "measuredOn": "2026-09-25",
+  "project": "zuvloczwgrayonqabnss",
+  "deployment": {
+    "vercel": "dpl_BimWfPBZby76ZcWB1umiLq1FHjd4",
+    "commit": "57d6b4efd3247d91f2c144ad90d27ce3ca15d445"
+  },
+  "repositoryCommit": "57d6b4efd3247d91f2c144ad90d27ce3ca15d445",
+  "method": "Read-only SQL. md5 of title, summary, variants::text and citations::text for every published row, compared with the same digests of data/templates rendered as jsonb::text renders (object keys ordered by length, then bytes; \", \" and \": \" separators). Enumerated columns evidence, layer, estimate_kind, category and pgs_id compared as text.",
+  "published": {
+    "production": 162,
+    "repository": 162,
+    "identical": 154,
+    "different": 8,
+    "onlyInProduction": [],
+    "onlyInRepository": []
+  },
+  "registeredPreCorrectionFieldsPresent": 36,
+  "drifted": {
+    "alcohol-dependence-aldh2-rs671": {
+      "templatePath": "data/templates/addiction.json",
+      "previousCommit": "ed34723f8ff99141f43e6b14d712ba3ad3983027",
+      "correctedCommit": "7f28d2525c764637e2aa3ac5a50a3ec7cfe97995",
+      "registeredPreCorrectionFields": 5,
+      "productionMd5": {
+        "title": "937e8db67a0560ed021312662c7f1d64",
+        "summary": "71de893866ee03a80faa637daa1455ad",
+        "variants": "7b59f6ed51aba8279724c52002789148",
+        "citations": "1eb792ee2e2e9aea4068bcc0e91225e6"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "ec6b562d7b9d528fee623a1cfb22a5dd",
+        "summary": "8ed17b09b73bd755c2ca086952f09628",
+        "variants": "add3d432e938d433010f9acc415a71e5",
+        "citations": "9634353e71ad40729cfcf732fd87b0bb"
+      },
+      "differsFromMain": [
+        "title",
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "apoe-e4-alzheimers-risk": {
+      "templatePath": "data/templates/neurodegenerative.json",
+      "previousCommit": "fa1ff303380aea46aa914bb0a33c183fcceeab12",
+      "correctedCommit": "2bdd8c859be3cdb012e2162192cd223dab306d12",
+      "registeredPreCorrectionFields": 7,
+      "productionMd5": {
+        "title": "8b65889775289a0f897bceeb97287284",
+        "summary": "7398be4f93c31fbdf7b58a934b9fa7c9",
+        "variants": "1546b58d741597903b85daee2ded3116",
+        "citations": "1383fbde5a020856ef7ed5dae490db16"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "8b65889775289a0f897bceeb97287284",
+        "summary": "09609a8760b0096aa258d2cc75ab2210",
+        "variants": "4ec4f14ae1e8120be4787c502b84b3e4",
+        "citations": "3b386944eb1d7487ec19ad315ef7b3d4"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "breast-cancer-fgfr2-rs2981582": {
+      "templatePath": "data/templates/cancer-risk.json",
+      "previousCommit": "ed34723f8ff99141f43e6b14d712ba3ad3983027",
+      "correctedCommit": "7f28d2525c764637e2aa3ac5a50a3ec7cfe97995",
+      "registeredPreCorrectionFields": 4,
+      "productionMd5": {
+        "title": "b564e18c1d18ec080936ee01cca378b4",
+        "summary": "fe197d226c072ca1bc5af3145f15357f",
+        "variants": "5918c929e06bb54c57c1d5042d0f0a4b",
+        "citations": "4818160674a8c98591d9b620ebcf619f"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "b564e18c1d18ec080936ee01cca378b4",
+        "summary": "59437328e2c0c7dbbcad4ba551313361",
+        "variants": "3844d27af96283952b455da56cef4c5e",
+        "citations": "ca79af10b858fce77e8d68e8bbc69c4f"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "caffeine-sleep-adora2a-rs5751876": {
+      "templatePath": "data/templates/brain-health.json",
+      "previousCommit": "1c875e3c3a8b4c67edc1a645c12747aa4546e188",
+      "correctedCommit": "038ae9ba357437ba44f48cfe690bb4e932d9aea2",
+      "registeredPreCorrectionFields": 4,
+      "productionMd5": {
+        "title": "d6b0d7c9773204381811a031f6b112d0",
+        "summary": "c193c40f5d6db631e79fcbbfd31f1997",
+        "variants": "e6cec85405aa4daaee94264cba66cfa3",
+        "citations": "875699ffeb83643bcff03bb3f82e6276"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "d6b0d7c9773204381811a031f6b112d0",
+        "summary": "b3b50ee9d0e1af4cb7ad183b0e40307b",
+        "variants": "0436519757ca4a63dd121ae4f3933543",
+        "citations": "753eb6a8ccb853d6452a4a8137e25637"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "colorectal-apc-i1307k": {
+      "templatePath": "data/templates/cancer-risk.json",
+      "previousCommit": "ed34723f8ff99141f43e6b14d712ba3ad3983027",
+      "correctedCommit": "7f28d2525c764637e2aa3ac5a50a3ec7cfe97995",
+      "registeredPreCorrectionFields": 4,
+      "productionMd5": {
+        "title": "377eb94fc52c67035429467e3fdfd939",
+        "summary": "8e664193d8081fd6fd39950d398e417d",
+        "variants": "5a83172c28d9efedf1ada17601db7ad9",
+        "citations": "47cc9df4aba2173620e3ecbb87c33cd8"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "377eb94fc52c67035429467e3fdfd939",
+        "summary": "8f88b1c1379775079080d83aafce644f",
+        "variants": "77d194ce1017f7ec419cb05d82dc9f1e",
+        "citations": "0c8662f0a1f9f5086802bbbb58a2babc"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "factor-v-leiden-rs6025": {
+      "templatePath": "data/templates/heart-cardiovascular.json",
+      "previousCommit": "fe09e3e89784729be0cde0bee025b2b05c586b49",
+      "correctedCommit": "5eb72318047c66bf378eb3a63270f05a5ff4d3e4",
+      "registeredPreCorrectionFields": 4,
+      "productionMd5": {
+        "title": "ac578b2f9868522babedc4fcc48e9ee4",
+        "summary": "8a2ae0e5b0ef0ce3c33543ed65cb1bab",
+        "variants": "43906d4d9dcbdf53d9f5bb27c6434e29",
+        "citations": "07b38399ff3aad602cb765fbe5fc8fb9"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "ac578b2f9868522babedc4fcc48e9ee4",
+        "summary": "f66f088a51e752493081e97bb2ff452d",
+        "variants": "2d003fa91aa190f6a537c26ebf6478a8",
+        "citations": "3a1918cd06e9e8fdf2329fd2fcdc8e00"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "trem2-r47h-alzheimers": {
+      "templatePath": "data/templates/neurodegenerative.json",
+      "previousCommit": "fa1ff303380aea46aa914bb0a33c183fcceeab12",
+      "correctedCommit": "2bdd8c859be3cdb012e2162192cd223dab306d12",
+      "registeredPreCorrectionFields": 4,
+      "productionMd5": {
+        "title": "3eabb17ca95bb86ac2670df5023d34f9",
+        "summary": "743b172f716050812c32ae4f77300fe2",
+        "variants": "a530a867bf76ffa38a67a16800773881",
+        "citations": "6f86f9c483f0655a8fa769bfef4281e6"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "3eabb17ca95bb86ac2670df5023d34f9",
+        "summary": "7c929c9b863ba2d0ae85438bd5aa5df1",
+        "variants": "2308e6084e66be985e3875f37429ae5c",
+        "citations": "2212d2300edc2bf303f05d2776806fcc"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    },
+    "type-2-diabetes-tcf7l2-rs7903146": {
+      "templatePath": "data/templates/metabolic-obesity.json",
+      "previousCommit": "40ffa44b1d2e029fcf2c6b130f27a74e67da5867",
+      "correctedCommit": "014d01587f2094bfab2ae9dfab59e9df288dfd8e",
+      "registeredPreCorrectionFields": 4,
+      "productionMd5": {
+        "title": "7b50a77870dd829d57ee63849bcef5f4",
+        "summary": "fd8a260c7f5b052b9225f3dabbb9be66",
+        "variants": "2758e77d44038c43c9f84f281f49d783",
+        "citations": "c591a84963098a1a897e53355d83b905"
+      },
+      "productionEqualsPreviousCommit": {
+        "title": true,
+        "summary": true,
+        "variants": true,
+        "citations": true
+      },
+      "mainMd5": {
+        "title": "7b50a77870dd829d57ee63849bcef5f4",
+        "summary": "981635967d676e20ada98e9385c4b3c7",
+        "variants": "b31ce8cb3af798d7f0a1e01f1c63ebde",
+        "citations": "e28b8f4370d5b1fc88d79f29c50c5440"
+      },
+      "differsFromMain": [
+        "summary",
+        "variants",
+        "citations"
+      ]
+    }
+  }
+}

@@ -188,5 +188,225 @@
     "access_date": "2026-09-06",
     "quote": "G/R",
     "claim": "ABCC11 transcripts are reverse-strand; forward T at rs17822931 maps Gly180 to Arg. Another alternate allele exists, so an unreviewed G call must not acquire a C/T interpretation."
+  },
+  {
+    "id": "pmid:12825092",
+    "type": "pmid",
+    "identifier": "12825092",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12825092/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "greater increases in anxiety",
+    "claim": "Alsene 2003 author abstract only: greater acute self-reported anxiety in 1976TT than other genotypes among 94 healthy infrequent users after 150 mg caffeine versus placebo. Full text not accessed; no CT-versus-CC ordering, sleep direction or personal prediction certified."
+  },
+  {
+    "id": "pmid:17329997",
+    "type": "pmid",
+    "identifier": "17329997",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/17329997/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "higher proportion of sensitive subjects had the C/C genotype",
+    "claim": "Rétey 2007 full primary paper, Results/Table 1 pp. 693–694 and Methods pp. 696–697: CC enrichment and lower TT frequency in self-rated caffeine-sensitive versus insensitive participants; CT frequencies similar. Figure 4 supports only a narrow sleep-EEG endpoint, not a general CT middle ranking. Read scope and primary PDF URL: docs/sources/reviews/adora2a-correction-20260923.md."
+  },
+  {
+    "id": "pmid:9288102",
+    "type": "pmid",
+    "identifier": "9288102",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/9288102/",
+    "quote": "T to A at APC nucleotide 3920",
+    "claim": "Laken 1997 author abstract only: APC I1307K nucleotide identity and initial Ashkenazi Jewish observations. No full-paper read or current screening guidance claimed.",
+    "archived_path": null,
+    "access_date": "2026-09-23"
+  },
+  {
+    "id": "pmid:37076288",
+    "type": "pmid",
+    "identifier": "37076288",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/37076288/",
+    "quote": "insufficient data to determine",
+    "claim": "Valle 2023 systematic review and original meta-analysis: ancestry-specific colorectal cancer association, study heterogeneity and insufficient homozygote data. Relevant full-paper sections and tables read; no universal personal-risk or screening rule.",
+    "archived_path": null,
+    "access_date": "2026-09-23"
+  },
+  {
+    "id": "pmid:40866199",
+    "type": "pmid",
+    "identifier": "40866199",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/40866199/",
+    "quote": "lack power to demonstrate or confidently refute association",
+    "claim": "Allen 2025 published UK Biobank analysis, Methods, Results, Table 1 and Discussion read: broad intervals in Ashkenazi Jewish and non-Ashkenazi white groups. Non-significance does not establish no risk or identical effects across populations.",
+    "archived_path": null,
+    "access_date": "2026-09-23"
+  },
+  {
+    "id": "dataset:dbsnp-rs1801155",
+    "type": "dataset",
+    "identifier": "NCBI RefSNP rs1801155 GRCh38.p14",
+    "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1801155",
+    "quote": "NC_000005.10:g.112839514T>A",
+    "claim": "Public forward-coordinate and allele identity only: GRCh38 chromosome 5, one-based position 112839514, T>A. Other alleles remain distinct; no personal call, ancestry or clinical interpretation.",
+    "archived_path": "docs/sources/dbsnp/rs1801155-2026-09-23.json",
+    "access_date": "2026-09-23"
+  },
+  {
+    "id": "pmid:17529967",
+    "type": "pmid",
+    "identifier": "17529967",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/17529967/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "higher risk of breast cancer in homozygous than in heterozygous carriers",
+    "claim": "Easton 2007 full primary paper: stage-3 Table 2 compares AG and AA with GG; Supplementary Table 8 p. 14 identifies G as the commoner lower-odds allele. The study supports a group association, not a personal probability, screening instruction or hereditary-cancer exclusion. Main Methods, population limits and exact access scope: docs/sources/reviews/fgfr2-correction-20260923.md."
+  },
+  {
+    "id": "pmid:19320537",
+    "type": "pmid",
+    "identifier": "19320537",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/19320537/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "Social and Cultural Factors Modulate Alcohol Drinking",
+    "claim": "Brooks 2009 full publisher research review: enzyme mechanism, flushing and context-dependent drinking patterns; review synthesis, not a primary cohort or personal dependence/cancer prediction."
+  },
+  {
+    "id": "pmid:39075523",
+    "type": "pmid",
+    "identifier": "39075523",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/39075523/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "excluded if homozygous for rs671",
+    "claim": "Rwere 2024 full primary paper, relevant Methods, human Results and Limitations: selected AG/GG alcohol challenge and other ALDH2 variants; AA excluded. Does not establish dependence, cancer incidence or whole-gene function from rs671 alone."
+  },
+  {
+    "id": "pmid:12419833",
+    "type": "pmid",
+    "identifier": "12419833",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12419833/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "Light drinkers",
+    "claim": "Yokoyama 2002 author abstract only: Japanese male case-control association between heterozygous inactive ALDH2 and esophageal cancer among drinkers, including light drinkers. No AA comparison, safe intake or personal absolute-risk calibration."
+  },
+  {
+    "id": "pmid:2024727",
+    "type": "pmid",
+    "identifier": "2024727",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/2024727/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "two cases of the mutant homozygote",
+    "claim": "Enomoto 1991 author abstract only, truncated at 250 words: two AA liver samples without detectable ALDH2 activity and increased blood acetaldehyde after alcohol. No cancer endpoint, general symptom prediction or full-sample demographic verification."
+  },
+  {
+    "id": "pmid:23150908",
+    "type": "pmid",
+    "identifier": "23150908",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/23150908/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "a significant risk of Alzheimer's disease in Iceland",
+    "claim": "Jonsson 2013 author abstract, Figure 1 caption and indexed opening Methods/Results were read. The R47H T variant was associated with higher Alzheimer disease odds in the studied groups; this is not a personal lifetime estimate or a test-accuracy assessment. Full paper and tables were inaccessible. Exact access scope and allele mapping: docs/sources/reviews/trem2-correction-20260923.md."
+  },
+  {
+    "id": "pmid:23150934",
+    "type": "pmid",
+    "identifier": "23150934",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/23150934/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "Heterozygous rare variants in TREM2 are associated with a significant increase in the risk of Alzheimer's disease.",
+    "claim": "Guerreiro 2013 author abstract and figure captions only. The abstract reports an R47H association and concludes that rare heterozygous TREM2 variants are associated with increased Alzheimer disease risk. It does not validate the imported assay or supply a personal lifetime estimate. Full paper and tables were inaccessible. Exact access scope: docs/sources/reviews/trem2-correction-20260923.md."
+  },
+  {
+    "id": "pmid:8346443",
+    "type": "pmid",
+    "identifier": "8346443",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/8346443/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "gene dose is a major risk factor for late onset AD",
+    "claim": "Corder 1993 author abstract only, read through primary PubMed indexing. Association in 42 late-onset Alzheimer disease families; family-specific quantities do not calibrate a reader’s personal risk. Full paper, Methods and tables were inaccessible. Exact scope: docs/sources/reviews/apoe-correction-20260923.md."
+  },
+  {
+    "id": "pmid:9343467",
+    "type": "pmid",
+    "identifier": "9343467",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/9343467/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "the risk of AD associated with a given genotype varies with sex",
+    "claim": "Farrer 1997 author abstract only, read on PubMed and JAMA. Genotype-specific odds relative to ε3/ε3 varied by study population, age and sex; no personal lifetime estimate or single-marker APOE assignment is supplied. Full paper and tables were inaccessible. Exact scope: docs/sources/reviews/apoe-correction-20260923.md."
+  },
+  {
+    "id": "dataset:ncrad-apoe-genotyping",
+    "type": "dataset",
+    "identifier": "ncrad-apoe-genotyping",
+    "url": "https://ncrad.iu.edu/bank-samples/apoe-genotyping/",
+    "archived_path": "docs/sources/ncrad/apoe-genotypes-2026-09-23.json",
+    "access_date": "2026-09-23",
+    "quote": "determined based on the genotypes of two SNPs, rs7412 and rs429358",
+    "claim": "Primary NCRAD genotype chart: APOE typing uses both rs429358 and rs7412, with two distinct types listed for CT/CT. The local excerpt records only this method boundary; it does not validate the application or an uploaded assay. Exact scope: docs/sources/reviews/apoe-correction-20260923.md."
+  },
+  {
+    "id": "pmid:16415884",
+    "type": "pmid",
+    "identifier": "16415884",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/16415884/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "Compared with non-carriers, heterozygous and homozygous carriers of the at-risk alleles",
+    "claim": "Grant 2006 complete author abstract read through the official Europe PMC core record. Original TCF7L2 locus association; the abstract names DG10S478, so its genotype frequencies and relative risks are not transferred to rs7903146. Full paper inaccessible. Exact access and scope: docs/sources/reviews/tcf7l2-correction-20260923.md."
+  },
+  {
+    "id": "pmid:16855264",
+    "type": "pmid",
+    "identifier": "16855264",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/16855264/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "participants with the risk-conferring TT genotype at rs7903146 were more likely to have progression",
+    "claim": "Florez 2006 primary article methods, results, Table 2 and discussion read. Overweight participants with impaired glucose tolerance followed for about three years: higher diabetes incidence for TT than CC; CT excess not detected and limited power acknowledged. This does not provide personal lifetime risk, equal intervention benefit or assay accuracy. Exact scope: docs/sources/reviews/tcf7l2-correction-20260923.md."
+  },
+  {
+    "id": "dataset:ncbi-clinvar-rs7903146",
+    "type": "dataset",
+    "identifier": "ncbi-clinvar-rs7903146",
+    "url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+    "archived_path": "docs/sources/clinvar/rs7903146-2026-09-23.json",
+    "access_date": "2026-09-23",
+    "quote": "NC_000010.11:g.112998590C>T",
+    "claim": "Official Variant Details identity only: VCV000007413.7 links rs7903146 to forward GRCh38 chr10:112998590 C>T. Submitted clinical interpretations and population frequencies are not used. A matched locus does not validate an uploaded DNA assay."
+  },
+  {
+    "id": "pmid:8164741",
+    "type": "pmid",
+    "identifier": "8164741",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/8164741/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "not properly inactivated by APC",
+    "claim": "Bertina 1994 complete publisher author abstract read; full paper was subscription-only. Supports the original Factor V Leiden activated-protein-C resistance mechanism, not a personal clot probability or usual risk for CC. Exact access scope: docs/sources/reviews/f5-correction-20260923.md."
+  },
+  {
+    "id": "pmid:14996674",
+    "type": "pmid",
+    "identifier": "14996674",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/14996674/",
+    "archived_path": null,
+    "access_date": "2026-09-23",
+    "quote": "The lowest absolute 10-year risks",
+    "claim": "Juul 2004 complete author abstract read via indexed primary PubMed; independent agent also read it directly. Cohort of 9,253 randomly selected Danish adults, 23-year follow-up and hospitalization/death from venous thromboembolism. Carrier group risks differed from noncarriers and varied by age, smoking and body mass index; not a personal prediction or lifetime reassurance. No full paper, tables or assay validation claimed. Scope: docs/sources/reviews/f5-correction-20260923.md."
+  },
+  {
+    "id": "dataset:ncbi-clinvar-rs6025",
+    "type": "dataset",
+    "identifier": "ncbi-clinvar-rs6025",
+    "url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/VCV000000642.133",
+    "archived_path": "docs/sources/clinvar/rs6025-2026-09-23.json",
+    "access_date": "2026-09-23",
+    "quote": "NC_000001.11:g.169549811C>T NM_000130.5:c.1601G>A NP_000121.2:p.Arg534Gln",
+    "claim": "Official Variant Details identity fields only, directly read by the independent agent: VCV000000642.133 links rs6025 to GRCh38 chr1:169549811 C>T, transcript G>A and historical R506Q naming. No clinical classification, population frequency or consumer assay validation is used. Reference status differs between assemblies and does not imply benignity."
   }
 ]

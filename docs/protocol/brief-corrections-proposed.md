@@ -1621,6 +1621,12 @@ assistant turn, and `e2e/copilot-redteam.spec.ts` counts it on every response.
 
 ## 20. The chunk route's two required headers, and which of three answers to take
 
+**SIGNED 2026-09-22, APPLIED: option 1, drop both headers only from the embryo chunk route.**
+The live account/session, strict cookie, exact Origin, shared fetch-metadata guard,
+jurisdiction guard and database chunk identity remain required. Mapping, completion,
+cancellation and legal-evidence chunks retain their separate contracts. The text
+below records the choices put to the owner; it is no longer a pending decision.
+
 `docs/route-register.json` makes two headers required on `api.embryo-ingest-chunk`.
 Neither can be served as written, for different reasons, and the route is
 otherwise ready to build. This is the decision that picks which route gets
@@ -1690,3 +1696,11 @@ reports two of sixteen declared required headers as served by nothing.
    `UNPROVEN_ROUTE_STATE_PAIRS` by the exact number the gate reports, and diff
    the proven set against the ledger before touching the number.
 5. Record the outcome in `docs/protocol/decisions.md`.
+
+## 21. T9 action ceiling and entry events
+
+**SIGNED 2026-09-22, APPLIED.** The owner chose six in-app actions, with mailed-link
+entry recorded separately. The brief, register, bindings, rubric and human protocol
+now count click and submit events with the existing registered confirmation
+exclusions. Typed-URL entry is also recorded separately. The former eight-action
+ceiling is superseded; no route or task-depth ratchet is raised.

@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * <AncestryRegions> — the regions section of the ancestry page (brief §4.6,
+ * <AncestryRegions> — the regions section of the ancestry page for a result
+ * captured under the historical five-region panel (brief §4.6,
  * A.8, G4.4, X13, X16.5): the map, the "Show only what’s well supported"
  * toggle, the two chips, the always-visible table, the click panel and the
  * sentences G4.4 requires, all inside ONE <ClaimBlock> so every
@@ -29,6 +30,8 @@ import { ClaimBlock } from "@/components/figures/claim-block";
 import {
   CHIP_LABELS,
   IDENTITY,
+  MAP_CAPTION,
+  MAP_LABEL,
   MARKER_GLOSS,
   NOISE,
   NOTHING_READ,
@@ -78,7 +81,12 @@ export interface AncestryRegionsProps {
   shapes: MapShapes;
   panel: PanelFacts;
   minMarkers: number;
-  /** null when the subject has no stored admixture result yet. */
+  /**
+   * null when no result can be read from the stored historical row. The page
+   * renders <AncestryAbsent> rather than this component when there is no
+   * admixture row at all, so the five-region words here reach only a
+   * historical five-region result.
+   */
   result: AncestryResultView | null;
   /** The toggle's starting state; the brief's default is on. */
   initialWellSupportedOnly?: boolean;
@@ -109,7 +117,7 @@ export function AncestryRegions({
 function NoResult({ shapes }: { shapes: MapShapes }) {
   return (
     <div className="space-y-4">
-      <AncestryMap shapes={shapes} rows={[]} mode="grey" />
+      <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} />
       <p data-slot="nothing-read" className="text-sm text-ink-muted">
         {NOTHING_READ}
       </p>
@@ -132,7 +140,7 @@ function GreyRegions({
   const figures: StandaloneFigureSpec[] = rows.map((row) => shareSpec(row.share, row.range));
   return (
     <div className="space-y-4">
-      <AncestryMap shapes={shapes} rows={[]} mode="grey" />
+      <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} />
       {/* inherit-figure-exempt: mandated §4.6 grey-state sentence; a count of positions, not a result figure */}
       <p data-slot="grey-state" className="text-base text-ink">
         {greyState(result.markersUsed, panel)}
@@ -219,6 +227,8 @@ function ShownRegions({
         <div className="min-w-0 space-y-4">
           <AncestryMap
             shapes={shapes}
+            label={MAP_LABEL}
+            caption={MAP_CAPTION}
             rows={visibleRows}
             mode="shown"
             selectedCode={openCode}

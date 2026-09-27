@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import allowedNames from "../data/allowed-external-names.json";
 import {
   containsName,
   foldWords,
@@ -128,5 +129,31 @@ describe("external hostname classification", () => {
       expect(scanDenylist(text, "src/fixture.test.ts", [denied])).toHaveLength(1);
       expect(scanDenylist(text, "<commit-message>", [denied], "a".repeat(40))).toHaveLength(1);
     }
+  });
+
+  it.each([
+    ["University of Zurich pharmacology archive",
+      "pharma.uzh.ch/dam/jcr:00000000-2992-0cf5-0000-000020c5cb44/Retey_Clin_Pharmacol_Ther_2007.pdf",
+      "adora2a"],
+    ["UK Cancer Genetics Group paper archive", "ukcgg.org/media/12580/insight-apc-pi1307k.pdf", "apc"],
+    ["Institute of Cancer Research paper repository",
+      "repository.icr.ac.uk/server/api/core/bitstreams/99e2e771-711d-4bdd-b509-f58f0a8610f1/content", "apc"],
+    ["Nature FGFR2 paper supplement", "nature.com/articles/nature05887#MOESM272", "fgfr2"],
+    ["NCRAD APOE joint-marker chart", "ncrad.iu.edu/bank-samples/apoe-genotyping/", "apoe"],
+    ["JAMA APOE meta-analysis abstract", "jamanetwork.com/journals/jama/article-abstract/418446", "apoe"],
+  ])("registers only the reviewed path for %s and retains private-name refusal", (name, paper, review) => {
+    const entry = allowedNames.entries.find(row => row.name === name)!;
+    expect(entry.category).toBe("cited-organisation");
+    expect(entry.aliases).toEqual([paper]);
+    expect(entry.evidence).toContain(`docs/sources/reviews/${review}-correction-20260923.md`);
+    expect(scanExternalHosts(url(`www.${paper}`), "docs/source-review.md", [entry])).toEqual([]);
+    const host = paper.split("/")[0];
+    for (const other of [host, `${host}/unreviewed-paper.pdf`, `${host}.unreviewed.com`]) {
+      expect(scanExternalHosts(url(other), "docs/source-review.md", [entry])).toHaveLength(1);
+    }
+    const denied = ["outside", "genome"].join("");
+    const text = `${url(`www.${paper}`)} ${denied}`;
+    expect(scanExternalHosts(text, "docs/source-review.md", [entry])).toEqual([]);
+    expect(scanDenylist(text, "docs/source-review.md", [denied])).toHaveLength(1);
   });
 });

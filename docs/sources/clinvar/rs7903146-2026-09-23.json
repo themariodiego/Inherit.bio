@@ -1,0 +1,16 @@
+{
+  "url": "https://www.ncbi.nlm.nih.gov/clinvar/variation/7413/",
+  "readAt": "2026-09-23T10:13:28.660339+00:00",
+  "scope": "Selected Variant Details identity fields read directly from the official page. No clinical submission, classification, frequency or consumer-assay validation is used.",
+  "accession": "VCV000007413.7",
+  "variationId": 7413,
+  "rsid": 7903146,
+  "assembly": "GRCh38",
+  "chrom": 10,
+  "pos": 112998590,
+  "ref": "C",
+  "alt": "T",
+  "hgvs": "NC_000010.11:g.112998590C>T",
+  "canonicalSpdi": "NC_000010.11:112998589:C:T",
+  "quote": "NC_000010.11:g.112998590C>T"
+}

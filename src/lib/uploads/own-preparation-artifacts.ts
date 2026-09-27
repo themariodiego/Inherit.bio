@@ -6,8 +6,10 @@ import { assertPreparedMetadataBounds } from "../genome/prepared-source/canonica
 import type { PreparedArtifactDescriptor } from "../genome/prepared-source/storage-writer";
 import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity, type PreparedStoredArtifact } from "../genome/prepared-source/artifact-identity";
 import { readVerifiedPreparedArtifact } from "../genome/prepared-source/verified-artifact-reader";
+import type { PreparationMetrics } from "./preparation-metrics";
 
 export type OwnPreparationArtifactIO = {
+  metrics?: PreparationMetrics;
   jobId: string; attemptId: string; firstArtifactSequence: number; signal: AbortSignal;
   writeArtifact: (input: { descriptor: PreparedArtifactDescriptor; bytes: Uint8Array }, signal?: AbortSignal) => Promise<PreparedStoredArtifact>;
   readArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => AsyncIterable<Uint8Array> | Promise<AsyncIterable<Uint8Array>>;
@@ -82,6 +84,7 @@ export function createOwnPreparationArtifacts(options: OwnPreparationArtifactIO)
   async function write(input: { descriptor: PreparedArtifactDescriptor; bytes: Uint8Array }, signal = options.signal): Promise<PreparedStoredArtifact> {
     preparationActive(signal);
     if (failed || busy) preparationFail("invalid_state"); busy = true;
+    const measured = options.metrics?.operation("artifact_write");
     try {
       if (!(input.bytes instanceof Uint8Array) || input.bytes.length < 1 || input.bytes.length > 8_388_608 || next >= 4096) preparationFail("too_large");
       const bytes = Uint8Array.from(input.bytes), expected: PreparedArtifactDescriptor = {
@@ -98,18 +101,18 @@ export function createOwnPreparationArtifacts(options: OwnPreparationArtifactIO)
         if (identities.has(key)) preparationFail("integrity_mismatch"); identities.add(key);
       }
       await preparationWait(Promise.resolve(options.check(structuredClone(ack), signal)), signal);
-      all.push(ack); return structuredClone(ack);
+      all.push(ack); measured?.(true, bytes.length); return structuredClone(ack);
     } catch (error) {
       failed = true;
       if (error instanceof OwnPreparationPipelineError) throw error;
-      preparationFail("unavailable");
-    } finally { busy = false; }
+      return preparationFail("unavailable");
+    } finally { busy = false; measured?.(false); }
   }
   async function persist(bytes: Uint8Array) {
     return write({ bytes, descriptor: { kind: "container", sequence: next, byteCount: bytes.length, sha256: preparationSha256(bytes) } });
   }
   async function read(artifact: PreparedStoredArtifact, signal = options.signal) {
-    return readVerifiedPreparedArtifact(artifact, { signal, readArtifact: options.readArtifact, check: options.check });
+    return readVerifiedPreparedArtifact(artifact, { signal, readArtifact: options.readArtifact, check: options.check, metrics: options.metrics });
   }
   return { write, persist, read, get nextSequence() { return next; }, get artifacts() { return structuredClone(all); } };
 }

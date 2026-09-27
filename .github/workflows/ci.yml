@@ -87,6 +87,14 @@ jobs:
         run: pnpm test:invitation-locks
       - name: Seed local Supabase
         run: pnpm seed
+      # Not drift detection: the catalog was seeded from data/templates one step
+      # earlier. This proves the gate's database path and that its model of what
+      # the seed writes still matches scripts/seed.ts, so a deployed comparison
+      # can be trusted in either direction (D-134).
+      - name: Catalog drift gate, seed self-consistency
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          SUPABASE_DB_URL="$DB_URL" pnpm gate:catalog-drift
       - name: Prepare credential-free isolated Linux runtime image
         run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Production build with current local public configuration

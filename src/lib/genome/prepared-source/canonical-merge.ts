@@ -136,7 +136,9 @@ export async function* mergeCanonicalRuns(input: readonly CanonicalRunReceipt[],
     let selected: typeof states[number] | undefined;
     let selectedEvent: CanonicalRecord | undefined;
     for (const state of states) {
-      const event = await head(state);
+      // Keep verified buffered heads synchronous; acquiring a new block still
+      // performs the same integrity, ordering and cancellation checks.
+      const event = state.offset < state.records.length ? state.records[state.offset] : await head(state);
       if (event && (!selectedEvent || compareCanonicalRecords(event, selectedEvent) < 0)) {
         selected = state; selectedEvent = event;
       }

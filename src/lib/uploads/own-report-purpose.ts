@@ -31,3 +31,16 @@ export type OwnReportChoicesView = { kind: "unavailable" } | {
     reconsent: { signedVersion: number; changes: Array<{ version: number; summary: string }> } | null;
   }>;
 };
+
+/**
+ * The "Choose your reports" section exactly as `/genome/[subject]/reports`
+ * renders it. `hidden` is every case where the section does not render at
+ * all (no own-account choices for this record, or no prepared file for them
+ * to run on); `files-unavailable` is the one where it renders only a line
+ * saying the choices could not load. Anything that tells a person to go to
+ * that section reads this, so it can only point at a section that is there.
+ */
+export type OwnReportChoicesPanel =
+  | { kind: "hidden" }
+  | { kind: "files-unavailable" }
+  | { kind: "ready"; view: Extract<OwnReportChoicesView, { kind: "ready" }>; files: Array<{ id: string; label: string }> };

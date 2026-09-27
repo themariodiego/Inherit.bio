@@ -44,6 +44,11 @@
   --size-control: 44px;
   --size-row: 56px;
   --size-navbar: 64px;
+  --line-strong: #76857b;
+  --surface-inset: #eef1e4;
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-feedback: 160ms;
+  --motion-reveal: 220ms;
 }
 
 .dark {
@@ -66,6 +71,8 @@
   --subject-5: #7fc4c4;
   --subject-6: #e0a0be;
   --subject-7: #a9b6ad;
+  --line-strong: #6c7b73;
+  --surface-inset: #1b241e;
 }
 
 @theme inline {
@@ -113,6 +120,7 @@
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 
   --radius-pill: 9999px;
+  --text-xs: 0.8125rem;
 }
 
 body {
@@ -134,9 +142,9 @@ body {
 
 /* Uppercase letter-spaced micro-eyebrow */
 .eyebrow {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-muted);
 }
@@ -193,4 +201,106 @@ body {
     align-items: center;
     min-height: var(--size-control);
   }
+}
+
+/* Shared reading rhythm. The original colour and font identity stays intact. */
+html { scroll-padding-top: 10rem; }
+::selection { background: var(--tint); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--forest); outline-offset: 4px; }
+main { overflow-wrap: break-word; }
+.app-content h1.display { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); }
+.app-content h2.display { line-height: 1.2; }
+.page-stack > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
+.page-stack > [data-slot="breadcrumbs"] { margin-bottom: 0; }
+[data-slot="breadcrumbs"] ol { column-gap: 0.5rem; row-gap: 0; }
+[data-subject-bar] { min-height: 3.5rem; height: auto; padding-block: 0.25rem; }
+.app-rail { position: sticky; top: 0; height: 100dvh; overflow-y: auto; gap: 2rem; }
+.app-rail > * { flex-shrink: 0; }
+.app-nav-link { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 44px; }
+.app-nav-link::before {
+  content: ""; position: absolute; inset: 8px auto 8px -1px; width: 2px;
+  border-radius: 9999px; background: var(--forest); opacity: 0;
+  transform: scaleY(0.4); transition: opacity 160ms, transform 220ms var(--ease-settle);
+}
+.app-nav-link[aria-current="page"]::before { opacity: 1; transform: scaleY(1); }
+.app-nav-link svg { stroke-width: 1.6; }
+.site-nav-link { position: relative; }
+.site-nav-link::after {
+  content: ""; position: absolute; bottom: 6px; left: 0; right: 0; height: 1px;
+  background: currentColor; transform: scaleX(0); transform-origin: left;
+  transition: transform var(--motion-reveal) var(--ease-settle);
+}
+.site-nav-link:hover::after, .site-nav-link:focus-visible::after { transform: scaleX(1); }
+
+/* React Bits Micro inspirations: Sling Button feedback, Refine Frame outlines,
+   Squish Switch thumb, and the gliding emphasis of Glide Select. CSS keeps
+   server rendering and native keyboard behaviour; it never delays an action. */
+[data-slot="button"] {
+  max-width: 100%; min-height: 44px; height: auto; padding-block: 0.625rem;
+  white-space: normal; text-align: center;
+  transition: background-color var(--motion-feedback), border-color var(--motion-feedback),
+    color var(--motion-feedback), transform var(--motion-feedback) var(--ease-settle);
+}
+[data-slot="button"][data-variant="outline"] { border-color: var(--line-strong); box-shadow: none; }
+[data-slot="button"]:active:not(:disabled) { transform: scale(0.98); }
+[data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"] {
+  border-color: var(--line-strong); box-shadow: none;
+  transition: border-color var(--motion-feedback), outline-color var(--motion-feedback);
+}
+.link-surface {
+  position: relative; transition: border-color var(--motion-feedback), background-color var(--motion-feedback);
+}
+.link-surface:hover, .link-surface:focus-within { border-color: var(--forest); background: var(--surface-inset); }
+.link-surface .link-arrow { transition: transform var(--motion-reveal) var(--ease-settle); }
+.link-surface:hover .link-arrow, .link-surface:focus-within .link-arrow { transform: translateX(3px); }
+summary { cursor: pointer; border-radius: 0.625rem; }
+details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) var(--ease-settle); }
+@keyframes disclosure-in { from { opacity: 0.5; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.theme-toggle svg { animation: theme-turn 220ms var(--ease-settle); }
+@keyframes theme-turn { from { opacity: 0; transform: rotate(-25deg) scale(0.8); } to { opacity: 1; transform: none; } }
+[data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"] {
+  box-shadow: 0 8px 32px rgb(20 32 27 / 0.12);
+}
+
+/* Marketing: an editorial guide, with clear steps and no invented results. */
+.landing-hero { display: grid; align-items: center; gap: 4rem; padding-block: 5rem; }
+.landing-hero h1 .accent { display: block; }
+.landing-hero h1 { font-size: clamp(2.75rem, 2rem + 3.4vw, 4.75rem); max-width: 12ch; }
+.genome-guide { border: 1px solid var(--line); border-radius: 1.25rem; background: var(--surface-inset); padding: 2rem; }
+.guide-row { display: flex; gap: 1rem; padding-block: 1.5rem; border-top: 1px solid var(--line); }
+.guide-row > svg { flex: none; color: var(--forest); stroke-width: 1.4; }
+.guide-row p { max-width: 30ch; }
+.process-step { border-top: 1px solid var(--line); padding-top: 1.5rem; }
+.process-number { font-variant-numeric: tabular-nums; color: var(--forest); font-size: 0.8125rem; letter-spacing: 0.08em; }
+.legal-body { font-size: 1rem; line-height: 1.75; }
+.legal-toc a { border-radius: 0.625rem; padding-inline: 0.75rem; transition: color 160ms, background-color 160ms; }
+.legal-toc a:hover, .legal-toc a:focus-visible { background: var(--surface-inset); color: var(--ink); }
+.legal-section { scroll-margin-top: 11rem; }
+.legal-section:target > h2 { color: var(--forest); }
+.auth-form-surface { border-radius: 1.25rem; border: 1px solid var(--line); background: var(--card); padding: 2rem; }
+.auth-form-surface h1 { font-size: 2rem; }
+
+@media (min-width: 1024px) {
+  .landing-hero { grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr); padding-block: 4rem; }
+}
+@media (max-width: 767px) {
+  .landing-hero { gap: 3rem; padding-block: 3rem; }
+  .genome-guide { padding: 1.5rem; }
+  .auth-form-surface { padding: 1.5rem; }
+  .app-content { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+  [data-subject-bar] { gap: 0.5rem; flex-wrap: wrap; }
+  [data-subject-bar] [data-slot="subject-name"] { max-width: 10rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important; transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-slot="button"]:active:not(:disabled), .link-surface .link-arrow,
+  .app-nav-link::before { transform: none; }
+}
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid Highlight; }
+  .app-nav-link[aria-current="page"] { outline: 1px solid Highlight; }
+  [data-slot="button"], input, textarea, select { border: 1px solid ButtonText; }
 }

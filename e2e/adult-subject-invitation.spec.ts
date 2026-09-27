@@ -302,3 +302,95 @@ test("/withdraw/[token] complete: a token mailed before the change still answers
     .from("subject_invitations").select("status").eq("id", invitation.id).single();
   expect(after?.status, "the old path still records, not merely renders").not.toBe("pending");
 });
+
+test("signed-out current-session deletion closes only the empty reservation without refusing future invitations", async ({ page, request }) => {
+  const address = `adult-delete-${crypto.randomUUID()}@e2e.local`;
+  await signIn(page, INVITER.email, INVITER.password);
+  const { link, token } = await inviteAndRead(page, request, address, "the deletion invitation");
+  const admin = adminClient();
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  // Bind every check to the mailed credential, not the newest invitation in a shared queue.
+  const invitationRead = await admin.from("subject_invitations")
+    .select("id, target_id, email_hmac, invitee_principal_id, status")
+    .eq("token_hash", tokenHash).eq("invitation_kind", "adult_subject").single();
+  expect(invitationRead.error).toBeNull();
+  expect(invitationRead.data?.status).toBe("pending");
+  const invitation = invitationRead.data!;
+  expect(invitation.invitee_principal_id).not.toBeNull();
+  const credential = await admin.from("token_hashes").select("id, candidate_id, status")
+    .eq("token_hash", tokenHash).single();
+  expect(credential.error).toBeNull();
+  expect(credential.data?.status).toBe("current");
+  const candidate = await admin.from("invitation_candidates").select("contact_reference_id")
+    .eq("invitation_id", invitation.id).single();
+  expect(candidate.error).toBeNull();
+  expect(candidate.data).not.toBeNull();
+  const contactId = candidate.data!.contact_reference_id;
+  const contactBefore = await admin.from("encrypted_contact_references").select("status, contact_ciphertext")
+    .eq("id", contactId).single();
+  expect(contactBefore.error).toBeNull();
+  expect(contactBefore.data?.status).toBe("current");
+  expect(contactBefore.data?.contact_ciphertext).not.toBeNull();
+  const filesBefore = await admin.from("genome_files").select("id", { count: "exact", head: true })
+    .eq("subject_id", invitation.target_id);
+  expect(filesBefore.error).toBeNull();
+  expect(filesBefore.count, "this fixture proves pending-record deletion, not held-genome erasure").toBe(0);
+  const refusalRows = async () => {
+    const [legacy, canonical] = await Promise.all([
+      admin.from("invitation_refusal_hmacs").select("email_hmac, refusal_revision, created_at, expires_at")
+        .eq("email_hmac", invitation.email_hmac),
+      admin.from("contact_refusal_bars").select("contact_hmac, target_kind, target_id, refusal_revision, created_at, expires_at")
+        .eq("contact_hmac", invitation.email_hmac),
+    ]);
+    expect(legacy.error).toBeNull();
+    expect(canonical.error).toBeNull();
+    return { legacy: legacy.data, canonical: canonical.data };
+  };
+  const refusalsBefore = await refusalRows();
+  expect(refusalsBefore).toEqual({ legacy: [], canonical: [] });
+
+  await page.request.post("/auth/sign-out");
+  await page.context().clearCookies();
+  await page.goto(link);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL("http://localhost:3100/withdraw/session");
+  await expect(page.getByRole("link", { name: "Sign in to accept" })).toBeVisible();
+  const sessionBefore = await admin.from("rights_sessions").select("id, status")
+    .eq("token_hash_id", credential.data!.id).eq("purpose", "adult-subject-invitation").single();
+  expect(sessionBefore.error).toBeNull();
+  expect(sessionBefore.data?.status).toBe("active");
+
+  await page.getByRole("button", { name: "Delete reserved record", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Reserved record deleted" })).toBeVisible();
+  await expect(page.getByText("The empty reserved subject was closed. No genetic file or derived result existed for it.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete reserved record", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refuse", exact: true })).toHaveCount(0);
+  const after = await admin.from("subject_invitations").select("status, email_encrypted, terminal_at")
+    .eq("id", invitation.id).single();
+  expect(after.error).toBeNull();
+  expect(after.data).toEqual({ status: "revoked", email_encrypted: null, terminal_at: expect.any(String) });
+  const subject = await admin.from("subjects").select("lifecycle").eq("id", invitation.target_id).single();
+  expect(subject.error).toBeNull();
+  expect(subject.data?.lifecycle).toBe("purged");
+  const principal = await admin.from("subject_principals").select("status").eq("id", invitation.invitee_principal_id!).single();
+  expect(principal.error).toBeNull();
+  expect(principal.data?.status).toBe("deleted");
+  const draft = await admin.from("adult_subject_drafts").select("id", { count: "exact", head: true })
+    .eq("subject_id", invitation.target_id);
+  expect(draft.error).toBeNull();
+  expect(draft.count).toBe(0);
+  const contact = await admin.from("encrypted_contact_references").select("status, contact_ciphertext, ended_at")
+    .eq("id", contactId).single();
+  expect(contact.error).toBeNull();
+  expect(contact.data).toEqual({ status: "shredded", contact_ciphertext: null, ended_at: expect.any(String) });
+  const spent = await admin.from("token_hashes").select("status, ended_at").eq("id", credential.data!.id).single();
+  expect(spent.error).toBeNull();
+  expect(spent.data).toEqual({ status: "consumed", ended_at: expect.any(String) });
+  const tokenCandidate = await admin.from("token_candidates").select("state").eq("id", credential.data!.candidate_id).single();
+  expect(tokenCandidate.error).toBeNull();
+  expect(tokenCandidate.data?.state).toBe("invalidated");
+  const session = await admin.from("rights_sessions").select("status, ended_at").eq("id", sessionBefore.data!.id).single();
+  expect(session.error).toBeNull();
+  expect(session.data).toEqual({ status: "consumed", ended_at: expect.any(String) });
+  expect(await refusalRows(), "deletion must not create either refusal-bar record").toEqual(refusalsBefore);
+});

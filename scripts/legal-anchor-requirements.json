@@ -91,6 +91,12 @@
         "readings": []
       },
       {
+        "artifactKey": "attestation.jurisdiction",
+        "version": 2,
+        "migration": "20260927100000_jurisdiction_subdivision.sql",
+        "readings": []
+      },
+      {
         "artifactKey": "attestation.embryo-single-parent-basis",
         "version": 1,
         "migration": "20260905103317_embryo_cohort_runtime.sql",
@@ -173,14 +179,14 @@
       },
       {
         "artifactKey": "consent.own-copilot-cloud",
-        "version": 1,
-        "migration": "20260907081757_canonical_own_copilot_authority.sql",
+        "version": 2,
+        "migration": "20260922222858_own_copilot_captured_ancestry.sql",
         "readings": []
       },
       {
         "artifactKey": "consent.own-copilot-local",
-        "version": 1,
-        "migration": "20260907081757_canonical_own_copilot_authority.sql",
+        "version": 2,
+        "migration": "20260922222858_own_copilot_captured_ancestry.sql",
         "readings": []
       },
       {

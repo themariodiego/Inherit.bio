@@ -1,0 +1,63 @@
+{
+  "label": "vcf-gzip-768mib-cleanup-follow-up-20260923",
+  "method": "Bounded SELECT-only observation on the existing synthetic preview attempt, inside BEGIN READ ONLY with a five-second statement timeout and ROLLBACK. No cleanup was invoked and no new upload or provider-object operation was performed.",
+  "environment": {
+    "project": "iofjhrtcyawjjhuxbgfd",
+    "deploymentId": "dpl_Bg8Yqtaa4jQhUCZ57dMj2smx8Ppr",
+    "deploymentCommit": "00d529faffeacab0c2159609700bf414657ae0e6",
+    "worker": "inherit-prepared-worker-preview",
+    "bucket": "inherit-prepared-preview",
+    "containerImageSha256": "fa063ea39beeb2bf1650d4264f1a9303aa356312d4a48886b1c9f151054daeaa"
+  },
+  "priorJourney": "vcfgz-768mib-deadline-20260922.json",
+  "fileId": "4f16c6f4-b809-43ac-9e37-f837da653750",
+  "jobId": "073724a4-a81e-4bc9-83d5-7cff376691e8",
+  "cleanupId": "a56c3ee5-f30d-4517-95dd-fad012004434",
+  "admittedAt": "2026-09-22T13:01:56.889531Z",
+  "jobDeadline": "2026-09-22T14:01:56.889531Z",
+  "observation": {
+    "cleanup": {
+      "mode": "unpublished-scratch",
+      "state": "complete",
+      "attempts": 130,
+      "entry_count": 2065,
+      "completed_at": "2026-09-23T00:55:59.618497+00:00",
+      "cleanup_deadline": "2026-09-22T15:01:56.889531+00:00"
+    },
+    "observed_at": "2026-09-23T02:07:03.002017+00:00",
+    "original_file": {
+      "status": "uploaded",
+      "stored_bytes": 161905161,
+      "has_completed_normalization": false,
+      "stored_sha256_matches_attempt": true
+    },
+    "remaining_job_rows": 0,
+    "transaction_read_only": "on",
+    "remaining_artifact_rows": 0,
+    "remaining_checkpoint_rows": 0,
+    "remaining_cleanup_entry_rows": 0
+  },
+  "calculatedIntervals": {
+    "method": "Subtract stored timestamps; the admission timestamp is from the linked original journey, and cleanup deadline/completion are from this observation.",
+    "admissionToCleanupCompleteSeconds": 42842.728966,
+    "cleanupDeadlineLatenessSeconds": 35642.728966
+  },
+  "interpretation": [
+    "Preparation still failed to publish within its unchanged hour; later cleanup does not make that journey successful.",
+    "The retained cleanup receipt records completion after 130 claims and 2,065 entries. Job, artifact, checkpoint and cleanup-entry rows are now absent.",
+    "The original file remains uploaded with the exact stored byte count and hash from this synthetic attempt; no completed normalization is recorded.",
+    "The same configured container image digest was observed through read-only Cloudflare application metadata on 23 September at 01:52:19 UTC. Candidate cleanup batching changes were not deployed by this task.",
+    "The earlier pending observations remain valid historical snapshots. These later database timestamps establish completion and lateness, not independent physical R2 reconciliation or a measured throughput improvement."
+  ],
+  "limits": {
+    "physicalProviderErasureVerified": false,
+    "peakContainerMemoryMeasured": false,
+    "publishedSource": false,
+    "reportRendered": false,
+    "capacityRaised": false,
+    "boundsChanged": false,
+    "productionTouched": false,
+    "previewTornDown": false
+  },
+  "query": "begin read only;\nset local statement_timeout = '5s';\nselect jsonb_build_object(\n 'observed_at',clock_timestamp(),'transaction_read_only',current_setting('transaction_read_only'),\n 'cleanup',(select jsonb_build_object('state',state,'mode',mode,'attempts',attempts,'entry_count',entry_count,\n 'cleanup_deadline',cleanup_deadline,'completed_at',completed_at)\n from private.own_prepared_cleanups where id='a56c3ee5-f30d-4517-95dd-fad012004434'::uuid\n and job_id='073724a4-a81e-4bc9-83d5-7cff376691e8'::uuid),\n 'remaining_job_rows',(select count(*) from private.own_preparation_jobs where id='073724a4-a81e-4bc9-83d5-7cff376691e8'::uuid),\n 'remaining_artifact_rows',(select count(*) from private.own_preparation_artifacts where job_id='073724a4-a81e-4bc9-83d5-7cff376691e8'::uuid),\n 'remaining_checkpoint_rows',(select count(*) from private.own_preparation_checkpoints where job_id='073724a4-a81e-4bc9-83d5-7cff376691e8'::uuid),\n 'remaining_cleanup_entry_rows',(select count(*) from private.own_prepared_cleanup_entries where cleanup_id='a56c3ee5-f30d-4517-95dd-fad012004434'::uuid),\n 'original_file',(select jsonb_build_object('status',status,'stored_bytes',size_bytes,\n 'stored_sha256_matches_attempt',sha256='7b2a9238c3fd1124bd6d4e9cebdc7057112f056aa5864ef05b79f834f0a5922c',\n 'has_completed_normalization',normalization_completed_at is not null)\n from public.genome_files where id='4f16c6f4-b809-43ac-9e37-f837da653750'::uuid)\n) as observation;\nrollback;"
+}

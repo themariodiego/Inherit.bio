@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 import { localE2eProject } from "../scripts/local-e2e-project";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";
-import { NOTHING_READ } from "../src/copy/ancestry";
+import { ANCESTRY_NOT_GENERATED, ANCESTRY_OFF, ANCESTRY_REPORTS_LINK, NOTHING_READ } from "../src/copy/ancestry";
 
 /** Aggregate only, and only this file's ancestry journal: no result payload,
  * no genotype, no credential and no other account is read. */
@@ -74,31 +74,36 @@ test.beforeAll(async () => {
 });
 
 /**
- * `/genome/[subject]/ancestry empty`, and this pair needs its history stated
- * because this register REJECTED it earlier. An ancestry title once read
- * "lineage empty states" and the gate counted this pair by accident; the
- * claim was withdrawn and the title reworded, because on that page the
- * ancestry result was present and it was only the lineage cards below it that
- * had nothing to show. The evidence here is the opposite: after revocation
- * there is no ancestry result at all - the test asserts the derived rows are
- * deleted, not hidden - and the page falls back to the component the product
- * itself calls `NoResult`, a grey map and "Nothing to show until a file has
- * been processed."
+ * `/genome/[subject]/ancestry consent-required`. Until 26 September 2026 this
+ * same journey proved `empty`, and the reason it no longer does is the
+ * product changing, not the reading.
  *
- * `empty` rather than `consent-required`, and the distinction is the same one
- * that separated the Health Picture's empty state: this page names no
- * outstanding step and offers no way to give consent back. The CAUSE here is
- * a revoked recorded grant, which is exactly what `consent-required` is made
- * of - but the register names STATES, not causes, and a page that asks for
- * nothing is not asking for consent. Compare
- * `/genome/[subject]/reports consent-required`, where a superseded document
- * makes the library name the version, say what changed and put the accept
- * control in the same block. That page asks. This one shows nothing.
+ * The cause here has always been a revoked recorded grant, which is exactly
+ * what `consent-required` is made of; it was titled `empty` because the page
+ * named no outstanding step and offered no way to give the grant back - it
+ * fell back to "Nothing to show until a file has been processed." That
+ * sentence was false for this person (a file HAD been processed), and on 26
+ * September 2026 it was seen in production saying so. The page now says
+ * "Ancestry is off", names where it is turned back on (Reports, in Choose
+ * your reports) and links there, in every ancestry panel. That is the
+ * register's definition of `consent-required` - a recorded, revocable consent
+ * is missing, and the page names the outstanding step and links to where it
+ * is given - and it is no longer the definition of `empty`, which has no
+ * step. `/genome/[subject]/ancestry empty` is now proven where the sentence
+ * is true, by an account that has processed nothing
+ * (`e2e/genome-data-empty.spec.ts`).
+ *
+ * The step is named on this page and taken on the Reports page, as
+ * `consent-required-page-v1` allows ("a scoped empty state with consent
+ * management navigation"); this page puts no accept control of its own
+ * beside it. The link's target is asserted, and so is the control it lands
+ * on, so the claim is that the step is really there rather than that a link
+ * exists.
  *
  * The map mode and the sentence are asserted rather than the slot's presence
  * alone, so the state is read from the product's own naming of it.
  */
-test("/genome/[subject]/ancestry empty: revoking ancestry deletes the derived result and the surface falls back to nothing read, on the very next load", async ({ page }) => {
+test("/genome/[subject]/ancestry consent-required: revoking ancestry deletes the derived result and every panel says Ancestry is off and links to where it is turned on, on the very next load", async ({ page }) => {
   test.setTimeout(240_000);
   await signIn(page, USER.email, USER.password);
   const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), MIXED_FIXTURE), { fileType: "vcf" });
@@ -110,6 +115,7 @@ test("/genome/[subject]/ancestry empty: revoking ancestry deletes the derived re
   const percentagesBefore = await page.locator("main").innerText();
   expect(percentagesBefore, "the shown state prints region shares").toMatch(/\d\.\d\s*%/);
   await expect(page.locator('[data-slot="nothing-read"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="ancestry-off"]')).toHaveCount(0);
   expect(await ancestryRunCount(fileId), "the derived result exists before revocation").toBe("1");
 
   // Revoke the way a person does, through the control that offers it.
@@ -127,18 +133,59 @@ test("/genome/[subject]/ancestry empty: revoking ancestry deletes the derived re
   await page.goto(ANCESTRY);
   expect(await page.locator('[data-slot="ancestry-map"][data-mode="shown"]').count(),
     "a revoked result must not still be shown").toBe(0);
-  expect(await page.locator('[data-slot="nothing-read"]').count(),
-    "the surface states that nothing was read").toBe(1);
+  // Three panels - the regions and the two parent lines below them - and each
+  // says it for itself, so every ancestry output is accounted for rather than
+  // only the first. Counted without waiting, like the check above.
+  expect(await page.locator('[data-slot="ancestry-off"]').count(),
+    "every ancestry panel says Ancestry is off").toBe(3);
   // Read the state from the product's own naming of it: the map drops to its
-  // grey no-result mode and the paragraph is the NoResult sentence verbatim.
+  // grey mode, and every panel carries the off sentence verbatim and a link
+  // to this subject's Reports page.
   await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
-  await expect(page.locator('[data-slot="nothing-read"]')).toHaveText(NOTHING_READ);
-  // The sentence is on the page three times, not once: the regions panel and
-  // the two outputs below it each say it for themselves, so every ancestry
-  // output is empty rather than just the one carrying the slot.
-  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(3);
+  const off = page.locator('[data-slot="ancestry-off"]');
+  for (let panel = 0; panel < 3; panel += 1) {
+    await expect(off.nth(panel).getByText(ANCESTRY_OFF, { exact: true })).toBeVisible();
+    await expect(off.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
+      .toHaveAttribute("href", "/genome/me/reports");
+  }
+  // The no-file sentence would be false here: a file was processed.
+  await expect(page.locator('[data-slot="nothing-read"]')).toHaveCount(0);
+  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(0);
+  // Nor does a page with no result name the historical five-region map.
+  expect(await page.locator("main").innerText(), "no five-region count on an empty page").not.toMatch(/\bfive\b/i);
   expect(await page.locator("main").innerText(),
     "no region share survives the revocation").not.toMatch(/\d\.\d\s*%/);
   expect(await ancestryRunCount(fileId),
     "the derived result is deleted, not merely hidden").toBe("0");
+
+  // The step the page names is really there: its link lands on Choose your
+  // reports, where the Ancestry choice is off and offers its own agreement
+  // and control to turn it on (both render only while the choice is off).
+  await off.first().getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }).click();
+  await page.waitForURL(url => url.pathname === "/genome/me/reports");
+  const choicesAfter = page.getByRole("region", { name: "Choose your reports", exact: true });
+  await expect(choicesAfter.getByRole("checkbox", { name: LABEL, exact: true })).toBeVisible();
+  await expect(choicesAfter.getByRole("button", { name: `Enable ${LABEL}`, exact: true })).toBeVisible();
+
+  // Take that step and stop there. Turning Ancestry back on only grants it;
+  // the result comes from the separate generate step, so until that is
+  // pressed the page must neither say it is off nor say no file was
+  // processed. It says Ancestry is on and where the result is made.
+  await choicesAfter.getByRole("checkbox", { name: LABEL, exact: true }).check();
+  const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
+    && response.request().method() === "POST");
+  await choicesAfter.getByRole("button", { name: `Enable ${LABEL}`, exact: true }).click();
+  expect((await signed).status()).toBe(201);
+  await page.goto(ANCESTRY);
+  expect(await ancestryRunCount(fileId), "turning the choice on generates nothing by itself").toBe("0");
+  expect(await page.locator('[data-slot="ancestry-not-generated"]').count(),
+    "every ancestry panel says the result follows the generate step").toBe(3);
+  const notGenerated = page.locator('[data-slot="ancestry-not-generated"]');
+  for (let panel = 0; panel < 3; panel += 1) {
+    await expect(notGenerated.nth(panel).getByText(ANCESTRY_NOT_GENERATED, { exact: true })).toBeVisible();
+    await expect(notGenerated.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
+      .toHaveAttribute("href", "/genome/me/reports");
+  }
+  await expect(page.locator('[data-slot="ancestry-off"]')).toHaveCount(0);
+  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(0);
 });

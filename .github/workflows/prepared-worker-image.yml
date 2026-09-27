@@ -1,0 +1,38 @@
+# Build the production Dockerfile without starting its worker or publishing an
+# image. The public runner receives no provider configuration or credentials.
+name: Prepared worker image
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/prepared-worker-image.yml"
+      - ".dockerignore"
+      - "workers/prepared-worker/Dockerfile"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "patches/**"
+      - "tsconfig.json"
+      - "scripts/prepared-worker.run.mts"
+      - "scripts/server-only-shim.mjs"
+      - "data/**"
+      - "docs/route-register.json"
+      - "src/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepared-worker-image-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build the prepared worker image
+        run: docker build --pull --file workers/prepared-worker/Dockerfile --tag inherit-prepared-worker:ci .

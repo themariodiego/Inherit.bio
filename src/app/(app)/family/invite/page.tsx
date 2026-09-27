@@ -38,7 +38,7 @@ export default async function FamilyInvitePage() {
   }
 
   return (
-    <div data-surface="flow" className="mx-auto max-w-3xl space-y-8">
+    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
       <Breadcrumbs
         items={[
           { label: NAV_LABELS.family, href: route("family.index") },

@@ -114,7 +114,8 @@ const REQUIRED = [
       /family\.portrait/i,
       /embryo\.analysis/i,
       /not offered to people in the EU or UK/i,
-      /controller.*legal identity and postal contact have not been published/i,
+      /controller is Mario Diego, an individual/i,
+      /postal contact has not been published/i,
       /data protection officer has not been appointed/i,
       /EU Article 27 representative nor a UK representative has been appointed/i,
       /within one month/i,
@@ -399,16 +400,20 @@ test("an unknown legal artifact reaches Inherit's own not-found page, not the fr
   }
 });
 
-test("Plus Bio disclosure is accurate (created by, legally separate, no data flow)", async ({
+test("Plus Bio disclosure is accurate (created by, not run by, no data flow)", async ({
   page,
 }) => {
   await page.goto("/about");
   const body = (await page.locator("main").innerText()).toLowerCase();
   expect(body).toContain("plus bio");
-  // The relationship must state both halves: created by Plus Bio AND legally
-  // separate — creation without separation or vice versa misstates it.
+  // The relationship must state both halves: created by Plus Bio AND not run
+  // by it — creation without separation or vice versa misstates it. Inherit
+  // is not incorporated (owner decision, 26 September 2026), so the page
+  // names the individual who runs it instead of a separate legal entity.
   expect(body).toMatch(/created by plus bio/);
-  expect(body).toMatch(/legally separate/);
+  expect(body).toMatch(/plus bio does not run inherit/);
+  expect(body).toMatch(/mario diego runs it as an individual/);
+  expect(body).not.toMatch(/legally separate|separate legal entity/);
   expect(body).toMatch(/public good/);
   expect(body).toMatch(/no.*data.*flow|data.*(does not|never|doesn't).*(flow|pass|move)/);
 });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { createAdminClient } from "../../supabase/admin";
 import { prepareAccountCleanup, prepareFileCleanup, drainPreparedScratch } from "./cleanup-integration";
 import { drainOwnPreparedCleanup } from "./cleanup";
@@ -16,6 +16,7 @@ function fixture(...values: unknown[]) {
   return { rpc, admin: { rpc } as unknown as ReturnType<typeof createAdminClient> };
 }
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(drainOwnPreparedCleanup).mockResolvedValue({ processed: 1, completed: true, pending: false, failed: false, unresolved: false }); });
+afterEach(() => { vi.useRealTimers(); });
 describe("prepared cleanup integration", () => {
   it("uses wrapped SQL even for legacy files and never contacts the prepared provider", async () => {
     const f = fixture(complete); expect(await prepareFileCleanup(f.admin, {})).toEqual({ error: null, original, complete: true });
@@ -61,6 +62,77 @@ describe("prepared cleanup integration", () => {
     await expect(prepareFileCleanup(f.admin, {}, controller.signal)).rejects.toThrow(); expect(f.rpc).not.toHaveBeenCalled();
   });
   it("validates the bounded selector count before draining a global queue", async () => {
-    expect(await drainPreparedScratch(fixture(6).admin, new AbortController().signal)).toEqual({ processed: 0, failed: 1 }); expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
+    expect(await drainPreparedScratch(fixture(6).admin, new AbortController().signal)).toEqual({ processed: 0, failed: 1, stop: "failed" }); expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
+  });
+});
+
+describe("bounded scratch page drain", () => {
+  const page = { processed: 16, completed: false, pending: true, failed: false, unresolved: false };
+  const empty = { ...page, processed: 0, pending: false };
+  it("drains 33 entries across three fresh pages, then observes no eligible claim", async () => {
+    vi.mocked(drainOwnPreparedCleanup).mockResolvedValueOnce(page).mockResolvedValueOnce(page)
+      .mockResolvedValueOnce({ ...page, processed: 1, completed: true, pending: false }).mockResolvedValueOnce(empty);
+    const f = fixture(1), signal = new AbortController().signal;
+    expect(await drainPreparedScratch(f.admin, signal)).toEqual({ processed: 33, failed: 0, stop: "idle" });
+    expect(f.rpc).toHaveBeenCalledTimes(1); expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(4);
+    expect(vi.mocked(drainOwnPreparedCleanup).mock.calls.every(([admin, options]) => admin === f.admin
+      && options?.signal instanceof AbortSignal && options.cleanupId === undefined)).toBe(true);
+  });
+  it("keeps pages serial and passes one shared aggregate signal", async () => {
+    let finish!: (value: typeof page) => void;
+    vi.mocked(drainOwnPreparedCleanup).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+      .mockResolvedValueOnce(empty);
+    const work = drainPreparedScratch(fixture(0).admin, new AbortController().signal);
+    await vi.waitFor(() => expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(1));
+    finish(page); await work;
+    const calls = vi.mocked(drainOwnPreparedCleanup).mock.calls;
+    expect(calls).toHaveLength(2); expect(calls[0][1]?.signal).toBe(calls[1][1]?.signal);
+  });
+  it.each(["failed", "unresolved"] as const)("stops after a partial %s page without retrying it", async mode => {
+    vi.mocked(drainOwnPreparedCleanup).mockResolvedValueOnce(page).mockResolvedValueOnce({ ...page, processed: 3, [mode]: true });
+    expect(await drainPreparedScratch(fixture(1).admin, new AbortController().signal)).toEqual({ processed: 19, failed: 1, stop: mode });
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(2);
+  });
+  it("stops after a thrown page while preserving earlier acknowledged progress", async () => {
+    vi.mocked(drainOwnPreparedCleanup).mockResolvedValueOnce(page).mockRejectedValueOnce(new Error("private provider detail"));
+    expect(await drainPreparedScratch(fixture(1).admin, new AbortController().signal)).toEqual({ processed: 16, failed: 1, stop: "failed" });
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(2);
+  });
+  it.each([true, false])("stops on zero-entry completion=%s without calling the queue empty", async completed => {
+    vi.mocked(drainOwnPreparedCleanup).mockResolvedValue({ ...page, processed: 0, completed });
+    expect(await drainPreparedScratch(fixture(1).admin, new AbortController().signal)).toEqual({ processed: 0, failed: 0, stop: "no_progress" });
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(1);
+  });
+  it("bounds continuously successful work to 256 pages without calling it complete", async () => {
+    vi.mocked(drainOwnPreparedCleanup).mockResolvedValue(page);
+    expect(await drainPreparedScratch(fixture(1).admin, new AbortController().signal)).toEqual({ processed: 4096, failed: 0, stop: "bounded" });
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(256);
+  });
+  it("cancels the active page at 150 seconds and never starts another", async () => {
+    vi.useFakeTimers(); let active!: AbortSignal;
+    vi.mocked(drainOwnPreparedCleanup).mockImplementationOnce(async (_admin, options) => {
+      active = options!.signal!;
+      await new Promise<void>(resolve => active.addEventListener("abort", () => resolve(), { once: true }));
+      return { ...page, processed: 2, failed: true };
+    });
+    const work = drainPreparedScratch(fixture(1).admin, new AbortController().signal);
+    await vi.advanceTimersByTimeAsync(149_999); expect(active.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await work).toEqual({ processed: 2, failed: 1, stop: "bounded" });
+    expect(active.aborted).toBe(true); expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it("keeps a shorter caller budget and refuses a page after external cancellation", async () => {
+    const controller = new AbortController();
+    vi.mocked(drainOwnPreparedCleanup).mockImplementationOnce(async (_admin, options) => {
+      controller.abort(); expect(options!.signal!.aborted).toBe(true); return page;
+    });
+    expect(await drainPreparedScratch(fixture(1).admin, controller.signal)).toEqual({ processed: 16, failed: 0, stop: "cancelled" });
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(1);
+  });
+  it("does not select work for an already cancelled caller", async () => {
+    const controller = new AbortController(); controller.abort(); const f = fixture(1);
+    expect(await drainPreparedScratch(f.admin, controller.signal)).toEqual({ processed: 0, failed: 0, stop: "cancelled" });
+    expect(f.rpc).not.toHaveBeenCalled(); expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
   });
 });

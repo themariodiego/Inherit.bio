@@ -27,7 +27,7 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-1">
       <SkipLink />
-      <aside className="hidden w-56 shrink-0 flex-col justify-between border-r border-line bg-card px-4 py-6 md:flex">
+      <aside className="app-rail hidden w-48 shrink-0 flex-col justify-between border-r border-line bg-card px-4 py-8 md:flex lg:w-56">
         <AppNav
           variant="sidebar"
           leading={<Wordmark className="px-2 text-xl" />}
@@ -51,7 +51,7 @@ export function AppShell({
           >
             <ThemeToggle />
             {userEmail ? (
-              <span className="hidden text-sm text-ink-muted sm:inline">
+              <span className="hidden max-w-64 truncate text-sm text-ink-muted lg:inline">
                 {userEmail}
               </span>
             ) : null}
@@ -96,7 +96,7 @@ export function AppShell({
         <main
           id="main"
           tabIndex={-1}
-          className="min-w-0 flex-1 px-4 pt-8 pb-20 focus:outline-none min-[360px]:px-6 md:px-8 md:pb-8"
+          className="app-content min-w-0 flex-1 px-4 pt-8 pb-20 focus:outline-none min-[360px]:px-6 md:px-8 md:pb-8 lg:px-12"
         >
           {children}
         </main>

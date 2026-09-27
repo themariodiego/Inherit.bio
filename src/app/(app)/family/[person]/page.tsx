@@ -157,7 +157,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
   const subject = { ...person.handle, displayLabel: person.displayLabel };
 
   return (
-    <div data-surface="standard" className="mx-auto max-w-4xl space-y-8">
+    <div data-surface="standard" className="page-stack mx-auto max-w-4xl space-y-8">
       <Breadcrumbs
         items={[
           { label: NAV_LABELS.family, href: route("family.index") },

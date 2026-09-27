@@ -349,5 +349,20 @@
     "historicalScope": "The earlier recommendation and projections above describe the 19-20 September observations. This dated follow-up supersedes any suggestion there that time is not a relevant constraint or that nothing between 64 MiB and 2 GiB has been tried. The earlier credential-gated skip remains an accurate historical record; credentials became available for this later attempt.",
     "boundsChanged": false,
     "productionTouched": false
+  },
+  "followUp20260923": {
+    "status": "Failed compressed attempt eventually completed database cleanup; preparation still failed",
+    "receipt": "journeys/vcfgz-768mib-cleanup-20260923.json",
+    "cleanupCompletedAt": "2026-09-23T00:55:59.618497Z",
+    "cleanupDeadlineLatenessSeconds": 35642.728966,
+    "admissionToCleanupCompleteSeconds": 42842.728966,
+    "cleanupClaims": 130,
+    "cleanupEntries": 2065,
+    "remainingJobArtifactCheckpointAndEntryRows": 0,
+    "originalUploadedFileRetained": true,
+    "physicalProviderErasureVerified": false,
+    "newCapacityEstablished": false,
+    "boundsChanged": false,
+    "productionTouched": false
   }
 }

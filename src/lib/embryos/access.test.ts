@@ -56,7 +56,8 @@ describe("embryo access", () => {
   });
 
   it("reads the TEST-LOCAL row only under the acceptance flag", async () => {
-    const permitted = await embryoCapability(VIEWER, [PARENT], EMBRYO_ANALYSIS, { testJurisdiction: true, readJurisdictionCodes: codes({}) });
+    const declared = codes({ [VIEWER]: "GB", [PARENT]: "FR" });
+    const permitted = await embryoCapability(VIEWER, [PARENT], EMBRYO_ANALYSIS, { testJurisdiction: true, readJurisdictionCodes: declared });
     expect(permitted.status).toBe("permitted");
     expect(permitted.jurisdictionCode).toBe("TEST-LOCAL");
     const production = await embryoCapability(VIEWER, [PARENT], EMBRYO_ANALYSIS, { testJurisdiction: false, readJurisdictionCodes: codes({}) });
@@ -78,12 +79,13 @@ describe("embryo access", () => {
       VIEWER,
       cohort({ requiredUploadPrincipalAccountIds: [VIEWER], requiredUploadPrincipalsWithoutAccount: 1 }),
       EMBRYO_ANALYSIS,
-      { testJurisdiction: true, readJurisdictionCodes: codes({}) },
+      { testJurisdiction: true, readJurisdictionCodes: codes({ [VIEWER]: "GB" }) },
     );
     expect(result.status).toBe("unreviewed");
     expect(result.source).toBe("unset");
     expect(result.userFacingCopy).toBe("This part of Inherit is not available here because its legal review is not complete.");
-    const complete = await cohortCapability(VIEWER, cohort(), EMBRYO_ANALYSIS, { testJurisdiction: true, readJurisdictionCodes: codes({}) });
+    const complete = await cohortCapability(VIEWER, cohort(), EMBRYO_ANALYSIS,
+      { testJurisdiction: true, readJurisdictionCodes: codes({ [VIEWER]: "GB", [PARENT]: "FR" }) });
     expect(complete.status).toBe("permitted");
   });
 

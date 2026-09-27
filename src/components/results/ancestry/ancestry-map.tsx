@@ -1,6 +1,10 @@
 /**
- * <AncestryMap> — the inline SVG world map of the five broad regions (brief
- * §4.6, A.8, X16.5). One encoding: fill opacity ∝ the interval's lower bound
+ * <AncestryMap> — the inline SVG world map of broad regions (brief §4.6, A.8,
+ * X16.5): the seven-region locator, or the five-region one for a historical
+ * result, whichever `shapes` the caller passes. The caller also names it and
+ * captions it, because the words differ by version and a default would put
+ * one version's region count under the other's map. One encoding: fill
+ * opacity ∝ the interval's lower bound
  * (floor 0.15) through a radial gradient whose outer 30% of radius fades to
  * transparent (a feather of 15% of the bounding-box width, the X16.5
  * minimum); a share whose lower bound is 0 is a dashed hairline with no fill.
@@ -19,7 +23,6 @@ import type { KeyboardEvent } from "react";
 import type { MapShapes } from "@/lib/ancestry/geometry";
 import type { RegionRowView } from "@/lib/ancestry/view";
 import { VIEWBOX } from "@/lib/geo/project";
-import { MAP_CAPTION, MAP_LABEL } from "@/copy/ancestry";
 import { cn } from "@/lib/utils";
 
 /** Where the feather starts, as a share of the gradient radius: the outer 30% fades. */
@@ -32,9 +35,9 @@ export function gradientId(code: string): string {
 }
 
 export interface AncestryMapProps {
-  /** Version-specific wording; historical captures keep the five-region defaults. */
-  label?: string;
-  caption?: string;
+  /** Version-specific wording: the five-region words for a historical result only. */
+  label: string;
+  caption: string;
   shapes: MapShapes;
   /** Visible rows in descending share order; ignored in grey mode. */
   rows: RegionRowView[];
@@ -49,7 +52,7 @@ export interface AncestryMapProps {
 }
 
 export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover, onActivate,
-  label = MAP_LABEL, caption = MAP_CAPTION }: AncestryMapProps) {
+  label, caption }: AncestryMapProps) {
   const shapeByCode = new Map(shapes.regions.map((shape) => [shape.code, shape]));
   const shown = mode === "shown";
   const stopStyle = { stopColor: "var(--forest)" };

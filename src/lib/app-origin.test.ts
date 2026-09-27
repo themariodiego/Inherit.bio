@@ -11,11 +11,11 @@ describe("the origin outbound mail links are built from", () => {
   });
 
   it("keeps the hosted fallback on the platform that sets VERCEL", () => {
-    expect(applicationOrigin({ VERCEL: "1" })).toBe("https://www.inherit.bio");
-    expect(applicationOrigin({ VERCEL_ENV: "production" })).toBe("https://www.inherit.bio");
+    expect(applicationOrigin({ VERCEL: "1" })).toBe("https://inherit.bio");
+    expect(applicationOrigin({ VERCEL_ENV: "production" })).toBe("https://inherit.bio");
     // Empty and whitespace are unset, not a configured empty origin.
-    expect(applicationOrigin({ VERCEL: "1", NEXT_PUBLIC_APP_URL: "" })).toBe("https://www.inherit.bio");
-    expect(applicationOrigin({ VERCEL: "1", NEXT_PUBLIC_APP_URL: "   " })).toBe("https://www.inherit.bio");
+    expect(applicationOrigin({ VERCEL: "1", NEXT_PUBLIC_APP_URL: "" })).toBe("https://inherit.bio");
+    expect(applicationOrigin({ VERCEL: "1", NEXT_PUBLIC_APP_URL: "   " })).toBe("https://inherit.bio");
   });
 
   it("refuses to build a link anywhere else, naming what an unset value would leak", () => {
@@ -29,7 +29,10 @@ describe("the origin outbound mail links are built from", () => {
   it("agrees with the register, which is the authority for the canonical origin", () => {
     const register = JSON.parse(
       readFileSync(path.join(process.cwd(), "docs/route-register.json"), "utf8"),
-    ) as { canonicalOrigin: string };
+    ) as { canonicalOrigin: string; originAliases: { origin: string }[] };
     expect(applicationOrigin({ VERCEL: "1" })).toBe(register.canonicalOrigin);
+    // A mail link on an alias host lands on a redirect, and the session the
+    // reader already holds is on the canonical host, not that one.
+    expect(register.originAliases.map((alias) => alias.origin)).not.toContain(applicationOrigin({ VERCEL: "1" }));
   });
 });

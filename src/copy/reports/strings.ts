@@ -41,9 +41,11 @@ export const NOTHING_TO_DO =
  * string is false on a position a prescribing guideline names, and filling
  * the heading with advice is what §6.4 forbids; this sentence is true and
  * gives none. Selected by `whatYouCanDo` for the `medicines` category only.
+ * Its first sentence is the warning the FDA required on the only authorized
+ * consumer pharmacogenetic reports (owner decision, 26 September 2026).
  */
 export const WHAT_YOU_CAN_DO_MEDICINES =
-  "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
+  "Do not start, stop or change any medicine because of this report. Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
 
 export const WHAT_YOU_CAN_DO_ALCOHOL_FLUSH =
   "You can discuss this result, any flushing, and your drinking history with a doctor if you wish. Inherit does not set an intake limit or tell you what care you need.";
@@ -85,6 +87,14 @@ export const COUNSELLOR_NO_ROUTE =
 export const WHAT_THIS_DOESNT_MEAN_GENERIC = "It does not say what will happen to you.";
 
 export const WHAT_THIS_DOESNT_MEAN_NOT_COVERED = "A missing result is not a negative result.";
+
+/**
+ * Added for a viewer who declared an EU or EEA country, on every report
+ * outside everyday traits (owner decision, 26 September 2026): the EU rules
+ * for diagnostic tests may treat health reports as a medical device.
+ */
+export const WHAT_THIS_DOESNT_MEAN_EU_DEVICE =
+  "It is not a diagnostic test, and Inherit is not certified as a medical device in the EU. Do not base a medical decision on it. A doctor can arrange a clinical test.";
 
 // ---------------------------------------------------------------------------
 // Layer labels and definitions (§4 §1.3; X5.1). The definition is repeated

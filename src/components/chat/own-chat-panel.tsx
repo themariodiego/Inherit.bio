@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
 import type { ChatProviderInfo } from "./chat-panel";
 import { route } from "@/lib/primary-routes";
+import { OWN_CHAT_CORRECTION_NOTICE, ownChatCorrectionSchema } from "@/lib/copilot/own-chat-correction";
 
 const citation = z.object({ id: z.string().min(1).max(2000), label: z.string().min(1).max(100_000),
   href: z.string().max(4000).refine(value => {
@@ -23,7 +24,7 @@ const content = z.object({ role: z.literal("assistant"), content: z.string().max
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
 }).strict();
 const completion = z.object({ chatId: z.uuid(), message: content }).strict();
-const history = z.object({ chatId: z.uuid(), scope: z.object({ kind: z.literal("self"),
+const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.literal("self"),
   displayLabel: z.string().max(200) }).strict(), messages: z.array(z.object({
   id: z.uuid(), role: z.enum(["user", "assistant"]), content: z.string().max(100_000),
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
@@ -44,13 +45,14 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [correction, setCorrection] = useState(false);
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => { pending.current?.abort(); }, []);
-  const awaitingContext = chatId === null && usedToken === contextToken;
+  const awaitingContext = !correction && chatId === null && usedToken === contextToken;
 
   async function submit() {
     const message = input.trim();
-    if (!message || busy || awaitingContext || pending.current) return;
+    if (!message || busy || correction || awaitingContext || pending.current) return;
     const controller = new AbortController();
     pending.current = controller;
     setBusy(true); setError(null);
@@ -62,6 +64,14 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
         body: JSON.stringify(chatId ? { chatId, message } : { contextToken, message }),
       });
       if (!response.ok) {
+        if (response.status === 409) {
+          const blocked = ownChatCorrectionSchema.safeParse(await response.clone().json().catch(() => null));
+          if (blocked.success) {
+            await response.body?.cancel();
+            if (!controller.signal.aborted) setCorrection(true);
+            return;
+          }
+        }
         await response.body?.cancel();
         if ([401, 403, 404, 409].includes(response.status)) {
           setMessages([]); setChatId(null);
@@ -114,7 +124,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
       const result = history.parse(await response.json());
       if (result.chatId !== id || result.scope.displayLabel !== displayLabel) throw new Error("unexpected_chat");
       if (controller.signal.aborted) return;
-      setChatId(id); setMessages(result.messages); setInput("");
+      setChatId(id); setMessages(result.messages); setInput(""); setCorrection(Boolean(result.correction));
     } catch {
       if (!controller.signal.aborted) {
         setError("This conversation is no longer available with your current permissions.");
@@ -134,7 +144,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
         <Link href={route("settings.copilot")} className="underline underline-offset-2">Review or withdraw permission</Link>
       </div>
       <div className="flex flex-wrap items-start gap-3 text-sm">
-        <Button type="button" variant="outline" disabled={busy} onClick={() => {
+        <Button type="button" variant="outline" disabled={busy || correction} onClick={() => {
           setChatId(null); setMessages([]); setInput(""); setError(null); router.refresh();
         }}>New conversation</Button>
         {chats.length > 0 ? <details>
@@ -146,6 +156,9 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
           </li>)}</ul>
         </details> : null}
       </div>
+      {correction ? <p role="status" data-slot="chat-scientific-correction" className="rounded-xl border border-line bg-card p-4 text-sm">
+        {OWN_CHAT_CORRECTION_NOTICE}
+      </p> : null}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-live="polite" aria-busy={busy}>
         {messages.length === 0 ? <p className="rounded-xl border border-line bg-card p-5 text-sm text-ink-muted">
           Ask about your own file or a report you chose. Answers explain what was found, its sources, and what remains unknown.
@@ -163,11 +176,11 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       {awaitingContext && !busy ? <p role="status" className="text-sm text-ink-muted">Checking your permission…</p> : null}
       <form className="flex items-end gap-2" onSubmit={event => { event.preventDefault(); void submit(); }}>
-        <Textarea value={input} onChange={event => setInput(event.target.value)} maxLength={8000} disabled={busy || awaitingContext}
+        <Textarea value={input} onChange={event => setInput(event.target.value)} maxLength={8000} disabled={busy || correction || awaitingContext}
           onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault(); void submit();
           } }} placeholder="Ask about your genome…" aria-label="Message the copilot" rows={2} className="min-h-0 resize-none" />
-        <Button type="submit" disabled={busy || awaitingContext || !input.trim()}>Send</Button>
+        <Button type="submit" disabled={busy || correction || awaitingContext || !input.trim()}>Send</Button>
       </form>
     </div>
   );

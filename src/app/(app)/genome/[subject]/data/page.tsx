@@ -113,7 +113,7 @@ export default async function GenomeDataPage(
     { kind: "report", purpose: "reports.polygenic" });
 
   return (
-    <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
+    <div data-surface="standard" className="page-stack mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
           { label: domain.label, href: domain.href },

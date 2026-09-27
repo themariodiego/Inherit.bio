@@ -30,7 +30,7 @@
     "slug": "breast-cancer-fgfr2-rs2981582",
     "category": "cancer-risk",
     "title": "Breast cancer · FGFR2",
-    "summary": "An intronic variant in FGFR2 is among the most consistently replicated common breast cancer risk variants. Each copy of the A allele at rs2981582 is linked on average to higher odds of breast cancer: a small shift. It is often reported as the T allele on the opposite strand. The link is mainly with estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test. A reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
+    "summary": "A study of women in European and Asian study groups linked the A allele at this FGFR2 marker to higher breast cancer odds. This is a group association, not a personal risk estimate. This report does not assess BRCA1, BRCA2 or other causes of hereditary cancer.",
     "evidence": "emerging",
     "variants": [
       {
@@ -41,15 +41,15 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A risk allele, carried by roughly 15% of people of European ancestry. Associated on average with higher odds of breast cancer compared with GG: a moderate shift. This is a modest probability shift from one common variant; family history, reproductive factors, and many other variants together matter more.",
-          "AG": "One copy of the A risk allele. On average this is associated with higher odds of breast cancer compared with GG: a small shift. This is one small factor among many influences on breast cancer risk and does not predict disease on its own.",
-          "GG": "Two copies of the G allele, the most common genotype. Associated with somewhat lower average odds of breast cancer at this locus. Overall risk still depends on family history, other genetic variants, and non-genetic factors, and routine screening guidance is unchanged."
+          "AA": "Your file shows two A copies. In the cited study, AA was associated with higher breast cancer odds than GG. This marker alone cannot tell you your chance of developing breast cancer.",
+          "AG": "Your file shows one A and one G copy. In the cited study, AG was associated with higher breast cancer odds than GG. This marker alone cannot tell you your chance of developing breast cancer.",
+          "GG": "Your file shows two G copies. GG was the comparison group in the cited study; AG and AA had higher breast cancer odds. A GG result does not rule out breast cancer or hereditary susceptibility."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17529967", "label": "Easton et al., Nature 2007" }
+      { "pmid": "17529967", "doi": "10.1038/nature05887", "label": "Easton et al., Nature 2007", "accessedOn": "2026-09-23" }
     ]
   },
   {
@@ -161,7 +161,7 @@
     "slug": "colorectal-apc-i1307k",
     "category": "cancer-risk",
     "title": "Colorectal cancer · APC I1307K",
-    "summary": "APC I1307K (A at rs1801155) makes a short DNA stretch less stable. About 6-7% of people with Ashkenazi Jewish ancestry carry it. Carriers have higher average odds of colorectal cancer: a moderate shift. I1307K does not cause the high-risk condition called familial adenomatous polyposis.",
+    "summary": "APC I1307K is the A form at rs1801155. A review of studies in people of Ashkenazi Jewish ancestry linked it to higher colorectal cancer odds. Evidence in other populations is less clear. This report does not estimate your cancer risk or test for familial adenomatous polyposis.",
     "evidence": "emerging",
     "variants": [
       {
@@ -172,16 +172,17 @@
         "ref": "T",
         "alt": "A",
         "interpretations": {
-          "TT": "No copies of the I1307K variant. Colorectal cancer risk at this position is not elevated. Family history, age, lifestyle, and other genetic factors still shape overall risk. Standard screening guidance applies.",
-          "AT": "One copy of the I1307K variant, most often seen in people with Ashkenazi Jewish ancestry. Associated on average with higher odds of colorectal cancer: a moderate shift. This is a moderate, probabilistic risk factor, not a polyposis syndrome. It is one factor among many. Discussing family history and screening timing with a clinician can put it in context.",
-          "AA": "Two I1307K copies. This result is rare, even among people with Ashkenazi Jewish ancestry. Too few people with this result have been studied to estimate its cancer risk. Do not assume it carries twice the risk of one copy. Family history and screening advice are more useful for care."
+          "TT": "Your file shows two T copies at this position, so it does not show the I1307K A form. This one marker does not rule out colorectal cancer or other APC changes. It cannot set your screening plan.",
+          "AT": "Your file shows one A and one T copy. Higher colorectal cancer odds were reported in Ashkenazi Jewish study groups. We cannot assume the same link in every population. A later UK Biobank study was too small to settle the link. This result alone does not set your screening plan.",
+          "AA": "Your file shows two A copies. Too few people with this result have been studied to say whether two copies carry more risk than one. Do not assume twice the risk. This report does not estimate your chance of cancer."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "9288102", "label": "Laken et al., Nat Genet 1997" },
-      { "pmid": "37076288", "label": "Valle et al., J Med Genet 2023" }
+      { "pmid": "9288102", "label": "Laken et al., Nat Genet 1997", "accessedOn": "2026-09-23" },
+      { "pmid": "37076288", "label": "Valle et al., J Med Genet 2023", "accessedOn": "2026-09-23" },
+      { "pmid": "40866199", "label": "Allen et al., J Med Genet 2025", "accessedOn": "2026-09-23" }
     ]
   },
   {

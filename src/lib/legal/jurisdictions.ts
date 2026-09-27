@@ -12,8 +12,12 @@
  * code is `unreviewed` (`productionPolicy.missingJurisdictionStatus`). A
  * real `permitted` or `prohibited` decision without its signed review object
  * is read as `unreviewed` (the file's own fail-closed rule). Under
- * `INHERIT_TEST_JURISDICTION=1` every account resolves to the `TEST-LOCAL`
- * row (X12.3); that pseudo-value is never reachable through a real code.
+ * `INHERIT_TEST_JURISDICTION=1` every declared account resolves to the
+ * `TEST-LOCAL` row (X12.3), except one declared as the block-only `TEST-DENY`
+ * fixture's stored code (`XX`), which resolves to that row's `prohibited`
+ * decisions (G5.1a, G5.1b). An undeclared account is `unreviewed` with or
+ * without the flag: until a person declares, every restricted capability
+ * stays closed (G5.1a). Neither pseudo-row is reachable without the flag.
  *
  * `familyCapability` implements G5.1b: the acting account and every
  * contributor are resolved separately and the strictest answer wins, where
@@ -48,15 +52,19 @@ export const JURISDICTION_CAPABILITIES = [
 export type JurisdictionCapability = (typeof JURISDICTION_CAPABILITIES)[number];
 
 export const TEST_JURISDICTION_CODE = "TEST-LOCAL";
+/** The block-only acceptance row: every restricted capability `prohibited`. */
+export const TEST_DENY_JURISDICTION_CODE = "TEST-DENY";
 export const TEST_JURISDICTION_ENV = "INHERIT_TEST_JURISDICTION";
 
 export type DecisionSource =
   | "test-local"
+  | "test-deny"
   | "subdivision"
   | "country"
   | "default"
   | "unset"
-  | "unregistered";
+  | "unregistered"
+  | "research-only";
 
 export interface CapabilityDecision {
   capability: JurisdictionCapability;
@@ -76,6 +84,8 @@ interface CapabilityRecord {
 
 interface JurisdictionEntry {
   displayName?: string;
+  /** For a test row that a profile can hold: the two-letter code it is stored as. */
+  storedAs?: string;
   capabilities: Record<string, CapabilityRecord | undefined>;
 }
 
@@ -90,10 +100,17 @@ export interface JurisdictionsFile {
     missingCapabilityStatus: string;
     missingJurisdictionStatus: string;
     testPseudoJurisdictionValues: readonly string[];
+    researchOnlyCapabilities: readonly string[];
   };
 }
 
 const FILE = jurisdictionsJson as unknown as JurisdictionsFile;
+
+const COUNTRY = /^[A-Z]{2}$/;
+const SUBDIVISION = /^[A-Z]{2}-[A-Z0-9]{1,3}$/;
+
+/** The code a profile holds when it is declared as the block-only fixture. */
+export const TEST_DENY_STORED_CODE: string = FILE.testJurisdictions[TEST_DENY_JURISDICTION_CODE]?.storedAs ?? "";
 
 function assertFileShape(file: JurisdictionsFile): void {
   const listed = [...file.capabilities];
@@ -108,11 +125,31 @@ function assertFileShape(file: JurisdictionsFile): void {
       throw new Error(`data/jurisdictions.json names an unknown status: ${status}`);
     }
   }
+  for (const capability of file.productionPolicy.researchOnlyCapabilities) {
+    if (!(JURISDICTION_CAPABILITIES as readonly string[]).includes(capability)) {
+      throw new Error(`data/jurisdictions.json names an unknown research-only capability: ${capability}`);
+    }
+  }
   if (file.productionPolicy.missingJurisdictionStatus !== "unreviewed") {
     throw new Error("data/jurisdictions.json missingJurisdictionStatus must be unreviewed");
   }
   if (!file.productionPolicy.testPseudoJurisdictionValues.includes(TEST_JURISDICTION_CODE)) {
     throw new Error(`data/jurisdictions.json must reserve ${TEST_JURISDICTION_CODE}`);
+  }
+  const deny = file.testJurisdictions[TEST_DENY_JURISDICTION_CODE];
+  const stored = deny?.storedAs;
+  if (!deny || typeof stored !== "string" || !COUNTRY.test(stored) || file.realJurisdictionCatalog.codes.includes(stored)) {
+    throw new Error(`data/jurisdictions.json must store ${TEST_DENY_JURISDICTION_CODE} as a two-letter code outside the catalogue`);
+  }
+  for (const value of [TEST_DENY_JURISDICTION_CODE, stored]) {
+    if (!file.productionPolicy.testPseudoJurisdictionValues.includes(value)) {
+      throw new Error(`data/jurisdictions.json must reserve ${value}`);
+    }
+  }
+  for (const capability of JURISDICTION_CAPABILITIES) {
+    if (deny.capabilities[capability]?.status !== "prohibited") {
+      throw new Error(`data/jurisdictions.json ${TEST_DENY_JURISDICTION_CODE} must prohibit ${capability}`);
+    }
   }
 }
 
@@ -132,8 +169,6 @@ export function isTestJurisdictionEnabled(
   return env[TEST_JURISDICTION_ENV] === "1";
 }
 
-const COUNTRY = /^[A-Z]{2}$/;
-const SUBDIVISION = /^[A-Z]{2}-[A-Z0-9]{1,3}$/;
 
 /** Trim and upper-case, as the file's normalisation rule says; empty becomes null. */
 export function normaliseJurisdictionCode(raw: string | null | undefined): string | null {
@@ -194,8 +229,27 @@ function decisionFrom(
 }
 
 /**
+ * ADR 0034: a research-only capability (polygenic embryo estimates) may only
+ * run inside an ethics-board-approved study, and a jurisdiction review cannot
+ * stand in for that. So a real `permitted` decision for one reads as
+ * unreviewed here, whatever the file says; `gate:jurisdictions` refuses to
+ * commit one. A real `prohibited` decision stands. The TEST-LOCAL acceptance
+ * row is not a real jurisdiction and is not clamped.
+ */
+function researchOnly(
+  data: JurisdictionsFile,
+  decision: CapabilityDecision,
+  fallback: CapabilityRecord,
+): CapabilityDecision {
+  if (decision.status !== "permitted") return decision;
+  if (!data.productionPolicy.researchOnlyCapabilities.includes(decision.capability)) return decision;
+  return { ...decision, status: "unreviewed", userFacingCopy: fallback.userFacingCopy, source: "research-only" };
+}
+
+/**
  * One account's decision for one capability, from its declared code.
- * Unset → `unreviewed`; under the test flag → the TEST-LOCAL row.
+ * Unset → `unreviewed`, flag or not; under the test flag a declared code →
+ * the TEST-LOCAL row, or the TEST-DENY row for its stored code.
  */
 export function resolveCapability(
   jurisdictionCode: string | null | undefined,
@@ -212,25 +266,27 @@ export function resolveCapability(
   }
   const testEnabled = options.testJurisdiction ?? isTestJurisdictionEnabled();
 
-  if (testEnabled) {
-    const row = data.testJurisdictions[TEST_JURISDICTION_CODE];
-    return decisionFrom(
-      capability,
-      row?.capabilities[capability],
-      fallback,
-      TEST_JURISDICTION_CODE,
-      "test-local",
-      false,
-    );
-  }
-
   const code = normaliseJurisdictionCode(jurisdictionCode);
   if (code === null) {
     return decisionFrom(capability, undefined, fallback, null, "unset", true);
   }
 
-  // TEST-LOCAL is handled only by the flag above, never by the real-code
-  // grammar; a persisted pseudo-value reads as unregistered.
+  if (testEnabled) {
+    const deny = data.testJurisdictions[TEST_DENY_JURISDICTION_CODE];
+    const denied = deny !== undefined && code === deny.storedAs;
+    const key = denied ? TEST_DENY_JURISDICTION_CODE : TEST_JURISDICTION_CODE;
+    return decisionFrom(
+      capability,
+      data.testJurisdictions[key]?.capabilities[capability],
+      fallback,
+      key,
+      denied ? "test-deny" : "test-local",
+      false,
+    );
+  }
+
+  // The test rows are handled only by the flag above, never by the real-code
+  // grammar; a persisted pseudo-value, XX included, reads as unregistered.
   if (data.productionPolicy.testPseudoJurisdictionValues.includes(code)) {
     return decisionFrom(capability, undefined, fallback, code, "unregistered", true);
   }
@@ -242,14 +298,18 @@ export function resolveCapability(
       return decisionFrom(capability, undefined, fallback, code, "unregistered", true);
     }
     // A committed subdivision answers for itself and never inherits.
-    return decisionFrom(capability, entry.capabilities[capability], fallback, code, "subdivision", true);
+    return researchOnly(
+      data,
+      decisionFrom(capability, entry.capabilities[capability], fallback, code, "subdivision", true),
+      fallback,
+    );
   }
 
   if (COUNTRY.test(code) && data.realJurisdictionCatalog.codes.includes(code)) {
     const override = data.realJurisdictions[code];
     const record = override?.capabilities[capability];
     if (override && record) {
-      return decisionFrom(capability, record, fallback, code, "country", true);
+      return researchOnly(data, decisionFrom(capability, record, fallback, code, "country", true), fallback);
     }
     return decisionFrom(capability, fallback, fallback, code, "default", true);
   }
@@ -290,20 +350,37 @@ export function familyCapabilityFromCodes(
   ]);
 }
 
-/** Reads `profiles.jurisdiction_code` for a set of accounts; a missing profile reads as unset. */
+/**
+ * Reads each account's declared code for a set of accounts; a missing profile
+ * reads as unset. The code is the declared state when there is one
+ * (`profiles.jurisdiction_subdivision`, e.g. `US-NY`), else the country: a
+ * committed subdivision answers for itself and never inherits, so a US state
+ * is decided on its own. An account that declared only a country is resolved
+ * as that country, which for the United States is the fail-closed default.
+ */
 export type JurisdictionCodeReader = (
   accountIds: readonly string[],
 ) => Promise<ReadonlyMap<string, string | null>>;
+
+/** The one rule for which declared value the resolver reads. */
+export function declaredResolutionCode(
+  countryCode: string | null | undefined,
+  subdivisionCode: string | null | undefined,
+): string | null {
+  return subdivisionCode ?? countryCode ?? null;
+}
 
 export const readJurisdictionCodes: JurisdictionCodeReader = async (accountIds) => {
   const codes = new Map<string, string | null>();
   if (accountIds.length === 0) return codes;
   const { data, error } = await createAdminClient()
     .from("profiles")
-    .select("id, jurisdiction_code")
+    .select("id, jurisdiction_code, jurisdiction_subdivision")
     .in("id", [...new Set(accountIds)]);
   if (error) throw new Error(`profiles.jurisdiction_code read failed: ${error.message}`);
-  for (const row of data ?? []) codes.set(row.id, row.jurisdiction_code);
+  for (const row of data ?? []) {
+    codes.set(row.id, declaredResolutionCode(row.jurisdiction_code, row.jurisdiction_subdivision));
+  }
   return codes;
 };
 

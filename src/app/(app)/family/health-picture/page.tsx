@@ -340,7 +340,7 @@ export default async function FamilyHealthPicturePage() {
   }));
 
   return (
-    <div data-surface="wide-data" className="mx-auto max-w-[90rem] space-y-10">
+    <div data-surface="wide-data" className="page-stack mx-auto max-w-[90rem] space-y-10">
       <Breadcrumbs
         items={[
           { label: NAV_LABELS.family, href: route("family.index") },

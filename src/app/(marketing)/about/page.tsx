@@ -5,7 +5,7 @@ import { LegalPage } from "@/components/legal/legal-page";
 export const metadata: Metadata = {
   title: "About Inherit & the Plus Bio relationship",
   description:
-    "What Inherit is, what it will never do, its AGPL-3.0 license, and exactly how it relates to Plus Bio — created by Plus Bio, legally separate, zero shared data.",
+    "What Inherit is, what it will never do, its AGPL-3.0 license, who runs it, and exactly how it relates to Plus Bio — created by Plus Bio, not run by it, zero shared data.",
 };
 
 export default function AboutPage() {
@@ -39,7 +39,8 @@ export default function AboutPage() {
                 directly. Some links may earn Inherit a commission, which we
                 show beside the link. You can upload a file from 23andMe,
                 AncestryDNA, MyHeritage, or FamilyTreeDNA. You can also add a
-                VCF, BAM, or CRAM file. Inherit reads the file for you.
+                VCF or gVCF file. BAM, CRAM and FASTQ files are not accepted.
+                Inherit reads the supported file for you.
               </p>
               <p>
                 Each report shows its evidence, sources, and any variant your
@@ -107,7 +108,7 @@ export default function AboutPage() {
               </p>
               <p>
                 Open code makes our privacy promises part of the design, not
-                just a policy. If the Inherit company let you down, you could
+                just a policy. If whoever runs Inherit let you down, you could
                 export your data, copy the code, and run it yourself. Read the{" "}
                 <Link href="/legal/self-hosting">self-hosting guide</Link>.
               </p>
@@ -116,23 +117,26 @@ export default function AboutPage() {
         },
         {
           id: "plus-bio",
-          heading: "Created by Plus Bio, legally separate",
+          heading: "Created by Plus Bio, run separately",
           body: (
             <>
               <p>
                 <strong>Plus Bio created Inherit.</strong> Its team built the
                 software, shared its design, and released the code for the
-                public good. Inherit is a <strong>separate legal entity</strong>,
-                not a Plus Bio product line. It has its own domain, accounts,
-                and duties to you.
+                public good. Inherit is not a Plus Bio product line, and it is
+                not a company yet: <strong>Mario Diego</strong> runs it as an
+                individual and answers to you for your data. Plus Bio does not
+                run Inherit, pay for it or hold its accounts. Inherit has its
+                own domain, accounts, and duties to you.
               </p>
               <ul>
                 <li>
                   <strong>Why separate?</strong> Genetic data should never sit
-                  on a commercial balance sheet. The legal separation means
-                  your genome is not an asset of Plus Bio&rsquo;s business — in
-                  an acquisition, an audit, or a lawsuit involving Plus Bio,
-                  Inherit&rsquo;s data is simply not part of it.
+                  on a commercial balance sheet. Because Plus Bio does not run
+                  Inherit, your genome is not an asset of Plus Bio&rsquo;s
+                  business — in an acquisition, an audit, or a lawsuit
+                  involving Plus Bio, Inherit&rsquo;s data is simply not part
+                  of it.
                 </li>
                 <li>
                   Inherit uses its own domain, <strong>inherit.bio</strong>, and

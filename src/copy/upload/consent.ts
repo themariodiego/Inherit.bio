@@ -15,6 +15,9 @@ export const OWN_UPLOAD_COPY = {
   unavailable: "We cannot prepare this upload right now. Your existing files and results have not changed.",
   uploadsPaused: "New uploads are temporarily paused. Please try again later. Your existing files and reports are still available.",
   underage: "Inherit is for adults aged 18 or older.",
+  zipStatement: (megabytes: number) =>
+    `You can choose a ZIP with one DNA file. We open it on your device and save only the file inside. Both must fit within ${megabytes} MB. The DNA file's normal size limit also applies.`,
+  archiveInvalid: "We could not open this ZIP as one DNA file. Unzip it on your device, then choose the raw DNA file inside. No file was uploaded.",
   /**
    * The size sentences. Each names the measurement that actually refused the
    * file, because they call for different actions: a file over the per-file

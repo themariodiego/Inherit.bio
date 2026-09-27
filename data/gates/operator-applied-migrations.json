@@ -6,6 +6,16 @@
       "name": "install_own_report_retention_scheduler",
       "why": "An operator-only pg_cron installation. Its own preflight refuses unless current_user is postgres, the database is postgres and pg_cron is in shared_preload_libraries — conditions the ordinary migration flow cannot promise — and it deliberately creates an INACTIVE job that a separate operator step activates. Observed applied to production 2026-09-08; no file with this name has ever existed under supabase/migrations in this repository's history.",
       "recordedOn": "2026-09-13"
+    },
+    {
+      "name": "own_genome_release_phase_a_guarded",
+      "why": "The ledger row the hosted apply tool wrote for the owner-approved guarded envelope that applied phase A of the 23 September release. Its single statement (SHA-256 6389fc140f03ffe0310fab707db9dfb3fbb42d1e0c9b2a5d32740775723e575c, re-read 2026-09-25) contains four repository migrations verbatim - own_upload_standard_transport_binding, own_report_call_source, family_portrait_navigation and pending_invitation_delete_without_refusal - plus their original ledger rows; everything else in it is preflight and postcheck guarding, whose only schema text is expected-state JSON. It adds no schema beyond those files and is kept, not deleted, per the release record.",
+      "recordedOn": "2026-09-25"
+    },
+    {
+      "name": "own_genome_release_phase_c_guarded",
+      "why": "The ledger row the hosted apply tool wrote for the owner-approved guarded envelope that applied phase C of the 23 September release, after the compatible application deployed. Its single statement (SHA-256 216fb328355128371dfe1298d417dc3de0ef89c99cd2c003dedfc540740dad3c, re-read 2026-09-25) contains own_copilot_captured_ancestry and own_copilot_prepared_sources verbatim plus their original ledger rows; the rest is guarding whose only schema text is expected-state JSON. It adds no schema beyond those files and is kept, not deleted, per the release record.",
+      "recordedOn": "2026-09-25"
     }
   ]
 }

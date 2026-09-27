@@ -159,7 +159,7 @@
     "slug": "caffeine-sleep-adora2a-rs5751876",
     "category": "brain-health",
     "title": "Caffeine, anxiety & sleep · ADORA2A",
-    "summary": "Caffeine keeps people alert by blocking adenosine A2A receptors. The ADORA2A gene provides the instructions for these receptors. Studies repeatedly link the T copy at rs5751876 to more anxiety after caffeine. People with TT were more likely to report anxiety after a moderate dose. On average, they also reported more sleep problems after caffeine.",
+    "summary": "The cited studies examined different responses to caffeine. TT was linked to greater anxiety after a single dose in infrequent users. CC was more common among people reporting sleep sensitivity. This marker does not predict your personal response.",
     "evidence": "emerging",
     "variants": [
       {
@@ -170,16 +170,16 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "TT": "Two T copies were linked to the most anxiety after moderate caffeine doses in controlled studies. This type also appears more often among people who say caffeine harms their sleep. Late caffeine may be more disruptive on average. Personal tolerance also depends on usual intake and CYP1A2 speed.",
-          "CT": "One T and one C copy form a middle group. Studies place it between the other two types for anxiety and sleep problems after caffeine. People vary widely within each group. Usual intake and CYP1A2 speed also shape the response.",
-          "CC": "Two copies of the C allele. Associated on average with less caffeine-induced anxiety and less self-reported sleep disturbance from caffeine than TT at this locus. This does not make caffeine sleep-neutral; dose and timing still matter for everyone."
+          "TT": "Your file shows two T copies. In one study of infrequent caffeine users, TT was linked to greater anxiety after 150 mg caffeine. TT was less common among people reporting sleep sensitivity than among those reporting little sensitivity.",
+          "CT": "Your file shows one C and one T copy. These studies do not establish a general middle level of anxiety or sleep sensitivity for CT. They cannot predict your personal response.",
+          "CC": "Your file shows two C copies. CC was more common among people reporting caffeine-related sleep sensitivity. This was a group association. It cannot tell you your own sensitivity or caffeine limit."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12825092", "label": "Alsene et al., Neuropsychopharmacology 2003" },
-      { "pmid": "17329997", "label": "Rétey et al., Clin Pharmacol Ther 2007" }
+      { "pmid": "12825092", "doi": "10.1038/sj.npp.1300232", "label": "Alsene et al., Neuropsychopharmacology 2003", "accessedOn": "2026-09-23" },
+      { "pmid": "17329997", "doi": "10.1038/sj.clpt.6100102", "label": "Rétey et al., Clin Pharmacol Ther 2007", "accessedOn": "2026-09-23" }
     ]
   },
   {

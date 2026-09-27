@@ -1,0 +1,33 @@
+{
+  "reviewedOn": "2026-09-23",
+  "criterion": "G7.2",
+  "testedHead": "5061cedee32f899a3c254fb8571a4926d2234d59",
+  "testedMerge": "b659df57f072763704219b20e92b049d0cef461a",
+  "testedTree": "46aab78aedc95ee4654ee928e709939ded8d52a2",
+  "runId": 35836543091,
+  "coreDocuments": {
+    "README.md": {
+      "testedSha256": "33118a5176c34b15616fc294ae7518667a23f7a7b8277b1f11d2e36883829e59",
+      "reconciledSha256": "2e1d95b4b5974b2b7bc953cf5c19c986e3e5cff709cae14263333ba0bc8d9202",
+      "changeAfterTest": "proof-status prose only; setup commands unchanged"
+    },
+    "docs/architecture.md": {
+      "testedSha256": "d5eb8cba41b764ea72342085f3ca8a0023dd14915d381f4379343409a3ceb9c6",
+      "reconciledSha256": "d5eb8cba41b764ea72342085f3ca8a0023dd14915d381f4379343409a3ceb9c6",
+      "changeAfterTest": "none"
+    },
+    "docs/self-hosting.md": {
+      "testedSha256": "e615ab545f1cdf191b921499289d19bf3aabb1ad37b22faa7be5bfacbfc7fb4d",
+      "reconciledSha256": "5cddc0de393e84a519971664726b80231abad1bcfa28b6f33565b3968ee16eb1",
+      "changeAfterTest": "proof-status prose only; setup commands unchanged"
+    },
+    ".env.example": {
+      "testedSha256": "65f75ffae1b8dd0af8c9cc1766aa25e0bb906920ad0ff231e37eaee1ebfa4eb2",
+      "reconciledSha256": "65f75ffae1b8dd0af8c9cc1766aa25e0bb906920ad0ff231e37eaee1ebfa4eb2",
+      "changeAfterTest": "none"
+    }
+  },
+  "receiptBytesPreserved": true,
+  "guideCommandBlocksUnchanged": true,
+  "scope": "Fresh local guide and updated core documentation; not full release or hosted activation."
+}
