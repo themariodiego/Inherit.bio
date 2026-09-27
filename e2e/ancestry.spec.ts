@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { adminClient, createConfirmedUser, seededTemplateCount, signIn } from "./helpers";

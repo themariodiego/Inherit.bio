@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import path from "node:path";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared } from "./own-report-helpers";

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { adminClient, createConfirmedUser, drainMailUntil, signIn, acceptAdultInvitation, adultInvitationToken, adultInvitationUrl } from "./helpers";

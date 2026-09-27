@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { createConfirmedUser, signIn } from "./helpers";
 import { FAMILY_H1, HUB_TILES } from "@/copy/family/index";
 import { HEALTH_PICTURE_H1 } from "@/copy/family/health-picture";
