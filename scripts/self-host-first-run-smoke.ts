@@ -260,7 +260,7 @@ export async function runFirstRunSmoke(): Promise<void> {
       // A wrapping label also names the select by its chosen option, so match the prefix.
       const country = page.getByRole("combobox", { name: /^Country you live in\b/ });
       await expect(country).toHaveValue(""); await country.selectOption("GB");
-      await page.getByLabel("The country I chose is the country I live in.", { exact: true }).check();
+      await page.getByLabel("The place I chose is where I live.", { exact: true }).check();
       const declared = observe(page, `${LOCAL.app}/api/settings/jurisdiction`, OBSERVER_MS, "PUT");
       await page.getByRole("button", { name: "Save country", exact: true }).click();
       requireProof((await declared).status() === 200);

@@ -3,11 +3,15 @@ import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import jurisdictionsJson from "../../../data/jurisdictions.json";
 import {
+  countriesWithSubdivisions,
   declarableCode,
+  declarableSubdivision,
   declarationChoices,
   isHostedDeployment,
   jurisdictionChoices,
   jurisdictionName,
+  subdivisionChoices,
+  subdivisionName,
 } from "./jurisdiction-declaration";
 import type { JurisdictionsFile } from "./jurisdictions";
 import { EMBARGOED_COUNTRY_CODES, PAUSED_COUNTRY_CODES } from "./service-restrictions";
@@ -115,6 +119,60 @@ describe("the attestation text", () => {
 
   it("states the one thing confirmed and says the answer is never inferred", () => {
     expect(body).toContain("1. The country I chose is the country I live in.");
+    expect(body).toMatch(/does not use your internet address, your browser language or your time zone/);
+    expect(body).toMatch(/Your own DNA results do not depend on it/);
+  });
+});
+
+describe("the United States state (ADR 0032, 27 Sep 2026)", () => {
+  it("asks for a state in the United States only", () => {
+    expect(countriesWithSubdivisions()).toEqual(["US"]);
+    expect(subdivisionChoices("GB")).toEqual([]);
+  });
+
+  it("offers the 50 states and DC, named and sorted for reading", () => {
+    const states = subdivisionChoices("US");
+    expect(states).toHaveLength(51);
+    expect(states.every((state) => /^US-[A-Z]{2}$/.test(state.code))).toBe(true);
+    expect(states.map((state) => state.name)).toEqual([...states.map((state) => state.name)].sort((a, b) => a.localeCompare(b, "en")));
+    expect(states.find((state) => state.code === "US-NY")?.name).toBe("New York");
+    expect(states.find((state) => state.code === "US-DC")?.name).toBe("District of Columbia");
+    expect(subdivisionName("US-CA")).toBe("California");
+  });
+
+  it("requires one committed state for the United States, normalised", () => {
+    expect(declarableSubdivision("US", " us-ny ")).toEqual({ subdivision: "US-NY" });
+    for (const raw of [undefined, null, "", "US-ZZ", "US-PR", "CA-ON", "NY", "US"]) {
+      expect(declarableSubdivision("US", raw), String(raw)).toBe("invalid");
+    }
+  });
+
+  it("refuses any state for a country that asks for none", () => {
+    expect(declarableSubdivision("GB", undefined)).toEqual({ subdivision: null });
+    expect(declarableSubdivision("GB", "")).toEqual({ subdivision: null });
+    expect(declarableSubdivision("GB", "GB-ENG")).toBe("invalid");
+    expect(declarableSubdivision("CA", "US-NY")).toBe("invalid");
+  });
+});
+
+describe("the attestation text, version 2", () => {
+  const source = fs.readFileSync("content/legal/attestation.jurisdiction/v2.md", "utf8");
+  const body = source.split("</section>")[1].trim();
+  const summary = source.match(/<section data-legal-summary>\n([\s\S]*?)\n<\/section>/)?.[1].trim();
+
+  it("binds the legal file body, its hash and the migration seed without a second copy", () => {
+    const hash = crypto.createHash("sha256").update(body).digest("hex");
+    expect(source).toContain(`body_sha256: ${hash}`);
+    expect(source).toContain("version: 2");
+    const migration = fs.readFileSync("supabase/migrations/20260927100000_jurisdiction_subdivision.sql", "utf8");
+    expect(migration).toContain(`$artifact$${body}$artifact$`);
+    expect(migration).toContain(`'${hash}'`);
+    expect(migration).toContain(`'${summary}'`);
+  });
+
+  it("asks for the state in the United States and still says the answer is never inferred", () => {
+    expect(body).toContain("If you live in the United States, you also tell Inherit which state.");
+    expect(body).toContain("1. The place I chose is where I live.");
     expect(body).toMatch(/does not use your internet address, your browser language or your time zone/);
     expect(body).toMatch(/Your own DNA results do not depend on it/);
   });

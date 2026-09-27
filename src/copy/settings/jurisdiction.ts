@@ -19,7 +19,7 @@
 export const JURISDICTION_HEADING = "Where you live";
 
 export const JURISDICTION_BODY =
-  "Some Inherit features depend on the law where you live. Choose the country you live in. Inherit never guesses it from your connection, your browser or your time zone.";
+  "Some Inherit features depend on the law where you live. Choose the country you live in, and your state if you live in the United States. Inherit never guesses it from your connection, your browser or your time zone.";
 
 export const JURISDICTION_OWN_RESULTS =
   "Your own DNA results do not depend on this answer.";
@@ -44,18 +44,23 @@ export function jurisdictionNotServed(countryName: string): string {
 /** The empty first option: the selection starts with no country chosen. */
 export const JURISDICTION_PLACEHOLDER = "Choose a country";
 
+/** Shown only once a country with states is chosen (today the United States; ADR 0032). */
+export const JURISDICTION_STATE_LABEL = "State you live in";
+
+export const JURISDICTION_STATE_PLACEHOLDER = "Choose a state";
+
 /** The attestation's one statement, affirmed by the checkbox. */
-export const JURISDICTION_AFFIRM = "The country I chose is the country I live in.";
+export const JURISDICTION_AFFIRM = "The place I chose is where I live.";
 
 export const JURISDICTION_READ_ATTESTATION = "Read what you are confirming";
 
 export const JURISDICTION_SAVE = "Save country";
 
 export const JURISDICTION_CHANGE_WARNING =
-  "Changing your country ends the Family and embryo permissions you gave under your old answer. You are asked again before any of them is used.";
+  "Changing your country or state ends the Family and embryo permissions you gave under your old answer. You are asked again before any of them is used.";
 
-export function jurisdictionCurrent(countryName: string): string {
-  return `You told Inherit you live in ${countryName}.`;
+export function jurisdictionCurrent(countryName: string, stateName: string | null = null): string {
+  return stateName ? `You told Inherit you live in ${stateName}, ${countryName}.` : `You told Inherit you live in ${countryName}.`;
 }
 
 export const JURISDICTION_SAVED = "Saved.";

@@ -3,6 +3,7 @@ import { invalidRequest, notFound, sensitiveJson } from "@/lib/embryos/api";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import {
   declarableCode,
+  declarableSubdivision,
   declarationResult,
   isHostedDeployment,
   jurisdictionWriteBody,
@@ -16,12 +17,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * one route that declares where the signed-in person lives.
  *
  * The code is the person's own choice from the catalogue, validated here
- * against `data/jurisdictions.json` and again by the database. Nothing about
- * the request (address, headers, locale) is consulted. The body is the
- * register's closed shape: the code, the attestation version and hash the
- * page showed, and `affirmed: true`. `declare_jurisdiction_v1` stores the
- * declaration with that attestation, appends one legal-audit event and ends
- * every restricted permission that bound the old answer, in one transaction.
+ * against `data/jurisdictions.json` and again by the database. A country with
+ * committed states (today only the United States) also needs one of them; any
+ * other country takes none (ADR 0032, 27 Sep 2026). Nothing about the request
+ * (address, headers, locale) is consulted. The body is the register's closed
+ * shape: the code, the state where one is asked, the attestation version and
+ * hash the page showed, and `affirmed: true`. `declare_jurisdiction_v2` stores
+ * the declaration with that attestation, appends one legal-audit event and
+ * ends every restricted permission that bound the old answer, in one
+ * transaction.
  *
  * Two kinds of country are held back (`service-restrictions.ts`): one under a
  * comprehensive US embargo is never recorded, and on the hosted deployment
@@ -42,6 +46,8 @@ export async function PUT(request: Request) {
   if (!parsed.success) return invalidRequest(["body"]);
   const code = declarableCode(parsed.data.code);
   if (!code) return invalidRequest(["code"]);
+  const state = declarableSubdivision(code, parsed.data.subdivision);
+  if (state === "invalid") return invalidRequest(["subdivision"]);
   // Only a paused code on the hosted deployment needs the current answer;
   // everything else is decided by the code alone, without a read.
   const pausesApply = isHostedDeployment();
@@ -51,16 +57,19 @@ export async function PUT(request: Request) {
   if (current === undefined) return notFound();
   if (declarationRestriction(code, current, pausesApply)) return invalidRequest(["code"]);
 
-  const { data, error } = await createAdminClient().rpc("declare_jurisdiction_v1", {
+  const { data, error } = await createAdminClient().rpc("declare_jurisdiction_v2", {
     p_account_id: context.user.id,
     p_session_id: context.sessionId,
     p_code: code,
+    p_subdivision: state.subdivision,
     p_attestation_version: parsed.data.attestationVersion,
     p_attestation_sha256: parsed.data.attestationHash,
     p_test_jurisdiction: isTestJurisdictionEnabled(),
   });
   if (error) return error.code === "22023" ? invalidRequest(["attestation"]) : notFound();
   const result = declarationResult.safeParse(data);
-  if (!result.success || result.data.jurisdiction !== code) return notFound();
+  if (!result.success || result.data.jurisdiction !== code || result.data.subdivision !== state.subdivision) {
+    return notFound();
+  }
   return sensitiveJson({ status: "updated", jurisdiction: code, capabilityReevaluation: "complete" });
 }

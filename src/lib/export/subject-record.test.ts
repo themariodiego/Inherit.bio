@@ -149,12 +149,12 @@ describe("the subject record in the free export", () => {
     ]);
   });
 
-  it("carries the birth date and the declared country from this account's own profile", async () => {
+  it("carries the birth date and the declared country and state from this account's own profile", async () => {
     const record = (await subjectRecordOf(admin([]), ACCOUNT))!;
     expect(record.profiles).toHaveLength(1);
     expect(Object.keys(record.profiles[0] as object).sort()).toEqual([
       "date_of_birth", "id", "jurisdiction_attestation_sha256", "jurisdiction_attestation_version",
-      "jurisdiction_code", "jurisdiction_declared_at", "jurisdiction_revision",
+      "jurisdiction_code", "jurisdiction_declared_at", "jurisdiction_revision", "jurisdiction_subdivision",
     ]);
   });
 

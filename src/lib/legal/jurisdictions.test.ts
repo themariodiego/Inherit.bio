@@ -98,7 +98,19 @@ describe("jurisdiction vocabulary", () => {
 
 describe("resolveCapability", () => {
   it("keeps every shipped real-country capability unreviewed under G5.5's zero-permitted default", () => {
-    expect(Object.keys(FILE.realJurisdictions)).toEqual([]);
+    // The only committed entries are the 50 US states and DC (ADR 0032,
+    // 27 Sep 2026): each fail-closed, every capability unreviewed with no review.
+    const committed = Object.entries(FILE.realJurisdictions);
+    expect(committed).toHaveLength(51);
+    for (const [code, entry] of committed) {
+      expect(code, code).toMatch(/^US-[A-Z]{2}$/);
+      expect(entry?.displayName, code).toBeTruthy();
+      for (const capability of JURISDICTION_CAPABILITIES) {
+        expect(entry?.capabilities[capability], `${code}/${capability}`).toMatchObject({ status: "unreviewed", review: null });
+        expect(resolveCapability(code, capability, off), `${code}/${capability}`)
+          .toMatchObject({ status: "unreviewed", source: "subdivision", jurisdictionCode: code });
+      }
+    }
     expect(FILE.realJurisdictionCatalog.codes).toHaveLength(249);
     expect(JURISDICTION_CAPABILITIES).toHaveLength(12);
     for (const code of FILE.realJurisdictionCatalog.codes) {
@@ -130,7 +142,7 @@ describe("resolveCapability", () => {
   });
 
   it("reads an unregistered or malformed code as unreviewed, never a nearby jurisdiction", () => {
-    for (const code of ["XX", "GBR", "G1", "GB-", "US-CA"]) {
+    for (const code of ["XX", "GBR", "G1", "GB-", "CA-ON", "US-ZZ"]) {
       const decision = resolveCapability(code, "family_portrait", off);
       expect(decision.status, code).toBe("unreviewed");
       expect(decision.source, code).toBe("unregistered");

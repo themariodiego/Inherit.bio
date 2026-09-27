@@ -1,6 +1,6 @@
 # ADR-0032 — The jurisdiction declaration: one writer, a first-sign-in gate, and re-evaluation without a revision bump
 
-- Status: **Accepted** · 25 September 2026. The owner confirmed the no-bump
+- Status: **Accepted** · 25 September 2026; amended 27 September 2026 (United States state). The owner confirmed the no-bump
   re-evaluation in chat the same day (`docs/protocol/decisions.md`).
 - Deciders: Inherit engineering, under the owner's decisions of 25 September 2026
   (`docs/protocol/decisions.md`): declare at first sign-in as specified, and add a
@@ -122,7 +122,51 @@ chats and model contexts. Each of those re-checks its grants when it runs, so
 ending the grant stops it; nothing cancels them separately. Subject source
 consents (`subject_consents`) are not re-evaluated; reading such a file for
 analysis requires a restricted grant, which is. Subdivisions stay undeclarable:
-none is committed, and the column holds two letters.
+none is committed, and the column holds two letters. *(Superseded for the
+United States by the amendment below.)*
+
+## Amendment, 27 September 2026: the United States state
+
+The owner decided on 27 September 2026 to keep partner features off in
+production while a US launch is prepared (`docs/protocol/decisions.md`). A US
+launch has to decide New York, and other restrictive states, separately from
+the rest. The resolver has always answered a committed subdivision for itself;
+now a person can declare one.
+
+- **Data.** `data/jurisdictions.json` commits the 50 states and DC as
+  subdivisions (`US-AL` … `US-WY`). Every capability of every entry is
+  `unreviewed` with `review: null`, so nothing opens for anyone. A state is
+  permitted only by its own signed review, and never inherits the country's.
+- **Storage.** The state lives in its own column,
+  `profiles.jurisdiction_subdivision`, not in `jurisdiction_code`. Consent
+  signatures and grants copy the country code under two-letter checks, and
+  adult self-analysis signs through them. A check ties the state to the declared
+  country, and the server-only guard covers the new column.
+- **Writer.** `declare_jurisdiction_v2` takes the country and the state and is
+  the one writer. A changed state ends restricted grants exactly as a changed
+  country does. The audit event records the state only when one is declared,
+  so every other event keeps its shape. `declare_jurisdiction_v1` remains, for
+  the build that is live when the migration is applied, as a wrapper that
+  keeps the recorded state when the country is unchanged and returns only its
+  own three keys.
+- **Attestation.** Version 2 of `attestation.jurisdiction` names the state
+  ("The place I chose is where I live."); version 1 is superseded with its body
+  intact.
+- **Resolution.** `readJurisdictionCodes` resolves the declared state when there
+  is one, else the country (`declaredResolutionCode`). An account that declared
+  only "United States" resolves to the fail-closed default for the country.
+- **Form and route.** The declaration form shows a required state list only
+  once the United States is chosen. `PUT /api/settings/jurisdiction` requires
+  exactly one committed state for a country with committed states and refuses
+  a state for any other; its response is unchanged. The export includes the
+  declared state.
+
+Verified by:
+- `supabase/tests/jurisdiction_subdivision.sql`;
+- `jurisdiction_declaration.sql`, which now reaches the writer through the
+  version 1 wrapper;
+- the route and declaration unit tests;
+- the new state journey in `e2e/jurisdiction-declaration.spec.ts`.
 
 ## Verification
 

@@ -7,10 +7,13 @@ import { DATA_AND_METHODS } from "@/copy/reports/strings";
 import { localAuthDestination } from "@/lib/auth/local-destination";
 import { declaredChromosomalSexFrom } from "@/lib/family/chromosomal-sex";
 import {
+  countriesWithSubdivisions,
   currentJurisdictionAttestation,
   declarationChoices,
   jurisdictionName,
-  readDeclaredJurisdiction,
+  readDeclaration,
+  subdivisionChoices,
+  subdivisionName,
 } from "@/lib/legal/jurisdiction-declaration";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
@@ -40,7 +43,8 @@ export default async function SettingsPage({
   ]);
   // G5.1a: the first sign-in is sent here until a country is declared, with
   // the page it asked for as `next`; only a local path is ever followed.
-  const declaredCode = user ? await readDeclaredJurisdiction(user.id) : null;
+  const declaration = user ? await readDeclaration(user.id) : { code: null, subdivision: null };
+  const declaredCode = declaration.code;
   const next = typeof query.next === "string" && !declaredCode ? localAuthDestination(query.next) : null;
 
   // The declaration is per subject, and the only subject in scope on this page
@@ -71,7 +75,14 @@ export default async function SettingsPage({
       {user && attestation ? (
         <JurisdictionForm
           choices={declarationChoices(declaredCode)}
-          current={declaredCode ? { code: declaredCode, name: jurisdictionName(declaredCode) } : null}
+          states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
+          current={declaredCode ? {
+            code: declaredCode,
+            name: jurisdictionName(declaredCode),
+            state: declaration.subdivision
+              ? { code: declaration.subdivision, name: subdivisionName(declaration.subdivision) }
+              : null,
+          } : null}
           attestation={attestation}
           next={next}
         />

@@ -409,7 +409,7 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
   }
   console.log(
     `jurisdiction gate passed: ${result.capabilityCount} restricted capabilities, ` +
-      `${result.catalogCodeCount} catalogue codes, ${result.realJurisdictionCount} reviewed jurisdictions, ` +
+      `${result.catalogCodeCount} catalogue codes, ${result.realJurisdictionCount} committed real jurisdictions or subdivisions, ` +
       `${result.reviewedDecisionCount} signed decisions, ${result.checkedDateCount} dates checked ` +
       `(oldest ${result.oldestDateAgeDays} days), ${result.verifiedHistoryCount} exact ancestor decisions verified.`,
   );

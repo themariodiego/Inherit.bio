@@ -4171,6 +4171,15 @@ selectable choices, the owner decided:
   restrictive states can be decided separately, and carrier warnings modelled
   on FDA's rules for consumer carrier tests. The owner looks for US counsel and
   a genetic-counselling partner.
+  - **Built with it:**
+    - `declare_jurisdiction_v2`, with 51 unreviewed US state entries (ADR 0032, amended).
+    - A "What this check cannot tell you" list on the carrier panel.
+  - **For counsel:** FDA's rule for consumer carrier tests (21 CFR 866.5940)
+    requires a warning that the test says nothing about a newborn child's
+    risk. The brief mandates the panel's per-pregnancy sentence ("For each
+    pregnancy, about 25 in 100…"). No wording can satisfy both. So the list
+    adopts every other FDA concept, and the conflict waits for a US counsel's
+    view before any launch.
 - **The 17 draft PRs from 22 September: triage and report** (recommended).
   Engineering checks each against `main` and recommends land, update or close.
   Nothing merges without the owner's approval.

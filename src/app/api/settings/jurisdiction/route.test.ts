@@ -60,7 +60,7 @@ beforeEach(() => {
   vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
   mocks.account = { user: { id: ACCOUNT }, sessionId: SESSION };
   mocks.rpc = [];
-  mocks.result = { jurisdiction: "GB", changed: true, revokedGrants: 0 };
+  mocks.result = { jurisdiction: "GB", subdivision: null, changed: true, revokedGrants: 0 };
   mocks.error = null;
   mocks.current = null;
   mocks.currentError = null;
@@ -73,8 +73,8 @@ describe("PUT /api/settings/jurisdiction", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "updated", jurisdiction: "GB", capabilityReevaluation: "complete" });
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.rpc).toEqual([["declare_jurisdiction_v1", {
-      p_account_id: ACCOUNT, p_session_id: SESSION, p_code: "GB",
+    expect(mocks.rpc).toEqual([["declare_jurisdiction_v2", {
+      p_account_id: ACCOUNT, p_session_id: SESSION, p_code: "GB", p_subdivision: null,
       p_attestation_version: 1, p_attestation_sha256: HASH, p_test_jurisdiction: false,
     }]]);
   });
@@ -85,7 +85,7 @@ describe("PUT /api/settings/jurisdiction", () => {
   });
 
   it("never reports how many permissions ended", async () => {
-    mocks.result = { jurisdiction: "GB", changed: true, revokedGrants: 3 };
+    mocks.result = { jurisdiction: "GB", subdivision: null, changed: true, revokedGrants: 3 };
     expect(Object.keys(await (await put(body())).json()).sort()).toEqual(["capabilityReevaluation", "jurisdiction", "status"]);
   });
 
@@ -126,7 +126,7 @@ describe("PUT /api/settings/jurisdiction", () => {
 
   it("accepts the block-only fixture's code only under the acceptance flag, and says so to the database", async () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
-    mocks.result = { jurisdiction: "XX", changed: true, revokedGrants: 0 };
+    mocks.result = { jurisdiction: "XX", subdivision: null, changed: true, revokedGrants: 0 };
     const response = await put(body({ code: "xx" }));
     expect(response.status).toBe(200);
     expect(mocks.rpc[0]?.[1]).toMatchObject({ p_code: "XX", p_test_jurisdiction: true });
@@ -145,10 +145,40 @@ describe("PUT /api/settings/jurisdiction", () => {
   });
 
   it("refuses a writer result it does not recognise rather than forwarding it", async () => {
-    mocks.result = { jurisdiction: "GB", changed: true, revokedGrants: 0, accountId: ACCOUNT };
+    mocks.result = { jurisdiction: "GB", subdivision: null, changed: true, revokedGrants: 0, accountId: ACCOUNT };
     expect((await put(body())).status).toBe(404);
-    mocks.result = { jurisdiction: "FR", changed: true, revokedGrants: 0 };
+    mocks.result = { jurisdiction: "FR", subdivision: null, changed: true, revokedGrants: 0 };
     expect((await put(body())).status).toBe(404);
+    mocks.result = { jurisdiction: "GB", changed: true, revokedGrants: 0 };
+    expect((await put(body())).status).toBe(404);
+  });
+});
+
+describe("the United States state (ADR 0032, 27 Sep 2026)", () => {
+  it("records a US declaration with its state, normalised, through the one writer", async () => {
+    mocks.result = { jurisdiction: "US", subdivision: "US-NY", changed: true, revokedGrants: 0 };
+    const response = await put(body({ code: "us", subdivision: " us-ny " }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "updated", jurisdiction: "US", capabilityReevaluation: "complete" });
+    expect(mocks.rpc[0]).toEqual(["declare_jurisdiction_v2", expect.objectContaining({ p_code: "US", p_subdivision: "US-NY" })]);
+  });
+
+  it.each([
+    ["a US declaration without a state", { code: "US" }],
+    ["a state that is not committed", { code: "US", subdivision: "US-ZZ" }],
+    ["another country's state", { code: "US", subdivision: "CA-ON" }],
+    ["a state for a country that asks for none", { code: "GB", subdivision: "GB-ENG" }],
+    ["a US state under the wrong country", { code: "CA", subdivision: "US-NY" }],
+  ])("refuses %s as invalid-request-v1 without calling the writer", async (_label, overrides) => {
+    const response = await put(body(overrides));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["subdivision"] });
+    expect(mocks.rpc).toEqual([]);
+  });
+
+  it("refuses a writer result whose state differs from the one asked for", async () => {
+    mocks.result = { jurisdiction: "US", subdivision: "US-TX", changed: true, revokedGrants: 0 };
+    expect((await put(body({ code: "US", subdivision: "US-NY" }))).status).toBe(404);
   });
 });
 
@@ -178,7 +208,7 @@ describe("places Inherit does not take new declarations from", () => {
   it("lets an account keep, and re-affirm, the paused country it already declared", async () => {
     vi.stubEnv("VERCEL", "1");
     mocks.current = "FR";
-    mocks.result = { jurisdiction: "FR", changed: false, revokedGrants: 0 };
+    mocks.result = { jurisdiction: "FR", subdivision: null, changed: false, revokedGrants: 0 };
     const response = await put(body({ code: "fr" }));
     expect(response.status).toBe(200);
     expect(mocks.rpc[0]?.[1]).toMatchObject({ p_code: "FR" });
@@ -193,13 +223,13 @@ describe("places Inherit does not take new declarations from", () => {
 
   it("does not read the current answer for a country that is not paused", async () => {
     vi.stubEnv("VERCEL", "1");
-    mocks.result = { jurisdiction: "US", changed: true, revokedGrants: 0 };
-    expect((await put(body({ code: "US" }))).status).toBe(200);
+    mocks.result = { jurisdiction: "US", subdivision: "US-NY", changed: true, revokedGrants: 0 };
+    expect((await put(body({ code: "US", subdivision: "US-NY" }))).status).toBe(200);
     expect(mocks.reads).toBe(0);
   });
 
   it("off the hosted deployment, records a paused country without reading the current answer", async () => {
-    mocks.result = { jurisdiction: "FR", changed: true, revokedGrants: 0 };
+    mocks.result = { jurisdiction: "FR", subdivision: null, changed: true, revokedGrants: 0 };
     expect((await put(body({ code: "FR" }))).status).toBe(200);
     expect(mocks.reads).toBe(0);
     expect(mocks.rpc[0]?.[1]).toMatchObject({ p_code: "FR" });

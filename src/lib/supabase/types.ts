@@ -5149,6 +5149,7 @@ export type Database = {
           jurisdiction_code: string | null
           jurisdiction_declared_at: string | null
           jurisdiction_revision: number
+          jurisdiction_subdivision: string | null
           mail_contact_revision: number
           non_self_upload_suspended_at: string | null
         }
@@ -5166,6 +5167,7 @@ export type Database = {
           jurisdiction_code?: string | null
           jurisdiction_declared_at?: string | null
           jurisdiction_revision?: number
+          jurisdiction_subdivision?: string | null
           mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
         }
@@ -5183,6 +5185,7 @@ export type Database = {
           jurisdiction_code?: string | null
           jurisdiction_declared_at?: string | null
           jurisdiction_revision?: number
+          jurisdiction_subdivision?: string | null
           mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
         }
@@ -7906,6 +7909,18 @@ export type Database = {
           p_account_id: string
           p_session_id: string
           p_code: string
+          p_attestation_version: number
+          p_attestation_sha256: string
+          p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      declare_jurisdiction_v2: {
+        Args: {
+          p_account_id: string
+          p_session_id: string
+          p_code: string
+          p_subdivision: string | null
           p_attestation_version: number
           p_attestation_sha256: string
           p_test_jurisdiction: boolean

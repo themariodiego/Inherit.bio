@@ -350,20 +350,37 @@ export function familyCapabilityFromCodes(
   ]);
 }
 
-/** Reads `profiles.jurisdiction_code` for a set of accounts; a missing profile reads as unset. */
+/**
+ * Reads each account's declared code for a set of accounts; a missing profile
+ * reads as unset. The code is the declared state when there is one
+ * (`profiles.jurisdiction_subdivision`, e.g. `US-NY`), else the country: a
+ * committed subdivision answers for itself and never inherits, so a US state
+ * is decided on its own. An account that declared only a country is resolved
+ * as that country, which for the United States is the fail-closed default.
+ */
 export type JurisdictionCodeReader = (
   accountIds: readonly string[],
 ) => Promise<ReadonlyMap<string, string | null>>;
+
+/** The one rule for which declared value the resolver reads. */
+export function declaredResolutionCode(
+  countryCode: string | null | undefined,
+  subdivisionCode: string | null | undefined,
+): string | null {
+  return subdivisionCode ?? countryCode ?? null;
+}
 
 export const readJurisdictionCodes: JurisdictionCodeReader = async (accountIds) => {
   const codes = new Map<string, string | null>();
   if (accountIds.length === 0) return codes;
   const { data, error } = await createAdminClient()
     .from("profiles")
-    .select("id, jurisdiction_code")
+    .select("id, jurisdiction_code, jurisdiction_subdivision")
     .in("id", [...new Set(accountIds)]);
   if (error) throw new Error(`profiles.jurisdiction_code read failed: ${error.message}`);
-  for (const row of data ?? []) codes.set(row.id, row.jurisdiction_code);
+  for (const row of data ?? []) {
+    codes.set(row.id, declaredResolutionCode(row.jurisdiction_code, row.jurisdiction_subdivision));
+  }
   return codes;
 };
 

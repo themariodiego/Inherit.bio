@@ -120,9 +120,12 @@ describe("the jurisdiction gate holds the signed-review contract", () => {
     expect(result.failures).toEqual([]);
     expect(result.capabilityCount).toBe(12);
     expect(result.catalogCodeCount).toBe(249);
-    // The measurement that makes priorities 4 and 5 unreachable in production.
-    expect(result.realJurisdictionCount).toBe(0);
+    // The measurement that makes priorities 4 and 5 unreachable in production:
+    // no committed decision is reviewed. The committed entries are the 50 US
+    // states and DC (ADR 0032, 27 Sep 2026), every capability unreviewed, so a
+    // US state can be decided on its own once a signed review exists.
     expect(result.reviewedDecisionCount).toBe(0);
+    expect(result.realJurisdictionCount).toBe(51);
     expect(result.checkedDateCount).toBeGreaterThan(10);
   });
 
