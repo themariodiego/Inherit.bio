@@ -6,13 +6,19 @@ point of running both is that the numbers are comparable.
 
 ## How grading works
 
-**Grading is blind and external.** A grader receives only this file and the
-verbatim answer. Never the persona, never the page the participant was on,
+**Grading is blind and external.** For each answer, a grader receives only this
+file's unchanged shared instructions and the exact relevant task section,
+together with the verbatim answer. The same deterministic rubric slice is used
+for simulated grading, independent re-grading and the human round; its full
+source and selection version are pinned before a run. No separate task metadata
+is supplied. Never the persona, never the page the participant was on,
 never the path they took, never the brief, never the repository, never how any
 other answer was graded. A grader who can see the page grades the page.
 
-The only other input is the task's recorded `completed` flag and, for T9, the
-action count — both mechanical, both captured by the session rather than judged.
+Completion and action counts are mechanical checks applied by the conductor
+after blind grading. They are never supplied to either grader. The answer's
+account of what happened is graded here; the recorded browser outcome is checked
+separately. Both checks must pass where the task requires completion.
 
 **Two paths, and either one fails the gate.** Alongside this rubric,
 `prohibited-patterns.json` detects the three prohibited-answer classes without a

@@ -1,0 +1,545 @@
+{
+  "schemaVersion": 1,
+  "personas": [
+    {
+      "id": "p_050929533135",
+      "seed": 1893382559,
+      "profile": {
+        "synthetic": true,
+        "age": 22,
+        "firstLanguage": "Spanish",
+        "englishReading": "comfortable",
+        "digitalConfidence": "high",
+        "background": "retail assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_cf875bcef5d4",
+      "seed": 1152334979,
+      "profile": {
+        "synthetic": true,
+        "age": 68,
+        "firstLanguage": "Danish",
+        "englishReading": "fluent",
+        "digitalConfidence": "moderate",
+        "background": "retired bus driver",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_2e2d2313253d",
+      "seed": 1866309801,
+      "profile": {
+        "synthetic": true,
+        "age": 35,
+        "firstLanguage": "English",
+        "englishReading": "fluent",
+        "digitalConfidence": "low",
+        "background": "kitchen assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_d85e53ba2a82",
+      "seed": 1967840896,
+      "profile": {
+        "synthetic": true,
+        "age": 49,
+        "firstLanguage": "Polish",
+        "englishReading": "comfortable",
+        "digitalConfidence": "high",
+        "background": "warehouse picker",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_9af44a96afab",
+      "seed": 44038700,
+      "profile": {
+        "synthetic": true,
+        "age": 27,
+        "firstLanguage": "Arabic",
+        "englishReading": "comfortable",
+        "digitalConfidence": "moderate",
+        "background": "hotel receptionist",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_b9b900cf99ee",
+      "seed": 101524393,
+      "profile": {
+        "synthetic": true,
+        "age": 74,
+        "firstLanguage": "English",
+        "englishReading": "fluent",
+        "digitalConfidence": "high",
+        "background": "retired shop assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_eeaaa78f2f5a",
+      "seed": 630421879,
+      "profile": {
+        "synthetic": true,
+        "age": 19,
+        "firstLanguage": "Swedish",
+        "englishReading": "comfortable",
+        "digitalConfidence": "low",
+        "background": "cafe assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_4a3dfab51735",
+      "seed": 1332329120,
+      "profile": {
+        "synthetic": true,
+        "age": 58,
+        "firstLanguage": "Turkish",
+        "englishReading": "basic",
+        "digitalConfidence": "moderate",
+        "background": "cleaner",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_3ddc806372a4",
+      "seed": 143104300,
+      "profile": {
+        "synthetic": true,
+        "age": 41,
+        "firstLanguage": "French",
+        "englishReading": "fluent",
+        "digitalConfidence": "high",
+        "background": "delivery driver",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_dc7436d7feec",
+      "seed": 2063785894,
+      "profile": {
+        "synthetic": true,
+        "age": 32,
+        "firstLanguage": "Portuguese",
+        "englishReading": "comfortable",
+        "digitalConfidence": "low",
+        "background": "homemaker",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_82251b03f167",
+      "seed": 2072721116,
+      "profile": {
+        "synthetic": true,
+        "age": 63,
+        "firstLanguage": "German",
+        "englishReading": "fluent",
+        "digitalConfidence": "moderate",
+        "background": "tailor",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_50982ca0aa1d",
+      "seed": 1741421100,
+      "profile": {
+        "synthetic": true,
+        "age": 24,
+        "firstLanguage": "Somali",
+        "englishReading": "basic",
+        "digitalConfidence": "high",
+        "background": "shop assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_1b42b55330ec",
+      "seed": 1348185988,
+      "profile": {
+        "synthetic": true,
+        "age": 53,
+        "firstLanguage": "Italian",
+        "englishReading": "comfortable",
+        "digitalConfidence": "low",
+        "background": "grounds worker",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_232659bfd497",
+      "seed": 1804295594,
+      "profile": {
+        "synthetic": true,
+        "age": 37,
+        "firstLanguage": "Urdu",
+        "englishReading": "basic",
+        "digitalConfidence": "moderate",
+        "background": "bakery assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_553bfe98df46",
+      "seed": 943083787,
+      "profile": {
+        "synthetic": true,
+        "age": 46,
+        "firstLanguage": "Romanian",
+        "englishReading": "comfortable",
+        "digitalConfidence": "high",
+        "background": "bus driver",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_9766a30f3a8d",
+      "seed": 977653906,
+      "profile": {
+        "synthetic": true,
+        "age": 71,
+        "firstLanguage": "Norwegian",
+        "englishReading": "fluent",
+        "digitalConfidence": "low",
+        "background": "retired postal worker",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_43a0a2177fab",
+      "seed": 862718320,
+      "profile": {
+        "synthetic": true,
+        "age": 29,
+        "firstLanguage": "Hindi",
+        "englishReading": "comfortable",
+        "digitalConfidence": "moderate",
+        "background": "warehouse packer",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_5660cfa414d2",
+      "seed": 772938718,
+      "profile": {
+        "synthetic": true,
+        "age": 60,
+        "firstLanguage": "Dutch",
+        "englishReading": "fluent",
+        "digitalConfidence": "high",
+        "background": "ticket seller",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_8f194688dd6f",
+      "seed": 523411042,
+      "profile": {
+        "synthetic": true,
+        "age": 20,
+        "firstLanguage": "English",
+        "englishReading": "fluent",
+        "digitalConfidence": "moderate",
+        "background": "cinema attendant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_94c7fde79d50",
+      "seed": 1061687517,
+      "profile": {
+        "synthetic": true,
+        "age": 44,
+        "firstLanguage": "Farsi",
+        "englishReading": "basic",
+        "digitalConfidence": "low",
+        "background": "laundry assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_7f3d3345cc3c",
+      "seed": 1177826318,
+      "profile": {
+        "synthetic": true,
+        "age": 55,
+        "firstLanguage": "Finnish",
+        "englishReading": "comfortable",
+        "digitalConfidence": "high",
+        "background": "office clerk",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_933cebab2288",
+      "seed": 803418589,
+      "profile": {
+        "synthetic": true,
+        "age": 34,
+        "firstLanguage": "Ukrainian",
+        "englishReading": "comfortable",
+        "digitalConfidence": "high",
+        "background": "shop assistant",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_9dae4c65ca2b",
+      "seed": 1279413273,
+      "profile": {
+        "synthetic": true,
+        "age": 67,
+        "firstLanguage": "Bengali",
+        "englishReading": "basic",
+        "digitalConfidence": "low",
+        "background": "retired factory worker",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_af4c8b80a63d",
+      "seed": 2086136756,
+      "profile": {
+        "synthetic": true,
+        "age": 26,
+        "firstLanguage": "Mandarin",
+        "englishReading": "comfortable",
+        "digitalConfidence": "moderate",
+        "background": "restaurant server",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_66438ead8335",
+      "seed": 1246156543,
+      "profile": {
+        "synthetic": true,
+        "age": 48,
+        "firstLanguage": "English",
+        "englishReading": "fluent",
+        "digitalConfidence": "high",
+        "background": "craft seller",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_6ce93c12f491",
+      "seed": 310215392,
+      "profile": {
+        "synthetic": true,
+        "age": 39,
+        "firstLanguage": "Tamil",
+        "englishReading": "basic",
+        "digitalConfidence": "low",
+        "background": "delivery driver",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_10b86dc43b29",
+      "seed": 1742662349,
+      "profile": {
+        "synthetic": true,
+        "age": 76,
+        "firstLanguage": "Danish",
+        "englishReading": "fluent",
+        "digitalConfidence": "moderate",
+        "background": "retired cleaner",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_6e7ca7fb544a",
+      "seed": 917735494,
+      "profile": {
+        "synthetic": true,
+        "age": 57,
+        "firstLanguage": "Greek",
+        "englishReading": "comfortable",
+        "digitalConfidence": "low",
+        "background": "hotel housekeeper",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_caa9d1c70eb9",
+      "seed": 1441734051,
+      "profile": {
+        "synthetic": true,
+        "age": 31,
+        "firstLanguage": "Spanish",
+        "englishReading": "fluent",
+        "digitalConfidence": "high",
+        "background": "freight loader",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    },
+    {
+      "id": "p_05aec9dbbb3c",
+      "seed": 1323486716,
+      "profile": {
+        "synthetic": true,
+        "age": 23,
+        "firstLanguage": "Polish",
+        "englishReading": "basic",
+        "digitalConfidence": "moderate",
+        "background": "market stall worker",
+        "biologyTraining": "secondary school at most",
+        "medicineTraining": "secondary school at most",
+        "statisticsTraining": "secondary school at most",
+        "softwareTraining": "secondary school at most",
+        "projectConnection": false,
+        "priorGenomicsProductExperience": false
+      }
+    }
+  ]
+}

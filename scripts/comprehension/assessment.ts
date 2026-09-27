@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { loadPatterns, prohibitedHit } from "./prohibited";
+import { loadPatterns, prohibitedHit, type PatternFile } from "./prohibited";
 
 const tasks = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"] as const;
 const thresholdTasks = ["T1", "T2", "T3", "T4", "T8", "T9"] as const;
@@ -60,7 +60,7 @@ export interface RunAssessment {
 /** Enforce G3.3 without treating missing records or grader output as a pass.
  * This checks recorded evidence; it cannot establish that a browser action or
  * independent grading process actually happened. The runner must prove both. */
-export function assessRun(input: unknown, humanSuccesses?: HumanSuccesses): RunAssessment {
+export function assessRun(input: unknown, humanSuccesses?: HumanSuccesses, pinnedPatterns?: PatternFile): RunAssessment {
   const run = runSchema.parse(input);
   const human = humanSuccesses === undefined ? undefined : humanRoundSchema.parse(humanSuccesses);
   const expected = new Set(run.personaIds.flatMap(personaId => tasks.map(taskId => key({ taskId, personaId }))));
@@ -68,7 +68,7 @@ export function assessRun(input: unknown, humanSuccesses?: HumanSuccesses): RunA
   const seen = new Set<string>();
   const sessions = new Set<string>();
   const sample = regradeSample(run.personaIds, run.samplingSeed);
-  const classes = loadPatterns().classes;
+  const classes = (pinnedPatterns ?? loadPatterns()).classes;
   const failures: string[] = [];
   const successes = Object.fromEntries(tasks.map(taskId => [taskId, 0]));
   let agreed = 0;
