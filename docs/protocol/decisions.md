@@ -4139,3 +4139,8 @@ Production serves report text from `public.report_templates`, which a deploy
 does not refresh, and completed reports keep the wording they captured. The
 eleven production rows therefore need their own guarded refresh after this
 merges; that write needs the owner's approval.
+
+**Update, 27 September.** The owner approved the guarded refresh on
+26 September ("Yes, guarded refresh"). It ran on 27 September after #229 merged:
+the eleven rows now equal `main`, and the four completed runs keep the wording
+they captured (`docs/evidence/production-catalog-refresh-20260927-medicines/`).
