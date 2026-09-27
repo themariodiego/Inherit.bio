@@ -118,6 +118,10 @@ export function runJurisdictionGate(
   const requiredFields = (reference.requiredFields ?? []) as string[];
   const markdown = (contract.markdownRecord ?? {}) as Record<string, unknown>;
   const frontMatterFields = (markdown.frontMatterFields ?? []) as string[];
+  const policy = (file.productionPolicy ?? {}) as Record<string, unknown>;
+  const researchOnly = (Array.isArray(policy.researchOnlyCapabilities)
+    ? policy.researchOnlyCapabilities
+    : []) as string[];
   const freshness = (file.freshnessContract ?? {}) as Record<string, number | string>;
   const warnAfter = Number(freshness.warnAfterDays ?? 300);
   const failAbove = Number(freshness.failAboveDays ?? 365);
@@ -125,6 +129,20 @@ export function runJurisdictionGate(
   const asOf = parseStrictDate(asOfDate ?? new Date().toISOString().slice(0, 10));
   if (!asOf) {
     failures.push(`freshness: asOfDate ${asOfDate} is not a strict Gregorian YYYY-MM-DD date`);
+  }
+
+  // --- Research-only capabilities (ADR 0034) --------------------------------
+  //
+  // The owner decided on 27 September 2026 that polygenic embryo estimates
+  // are research-only: they may only run inside an ethics-board-approved
+  // study, which no jurisdiction review can stand in for. The list is pinned
+  // so that dropping the capability from it is a failure to read, not an edit.
+  const PINNED_RESEARCH_ONLY = ["embryo_statistical_estimate"];
+  if (JSON.stringify(researchOnly) !== JSON.stringify(PINNED_RESEARCH_ONLY)) {
+    failures.push(
+      `research-only: productionPolicy.researchOnlyCapabilities is ${JSON.stringify(researchOnly)}; ` +
+        `ADR 0034 pins ${JSON.stringify(PINNED_RESEARCH_ONLY)}`,
+    );
   }
 
   // --- Default deny, which is the whole basis of G5.5 -----------------------
@@ -178,6 +196,12 @@ export function runJurisdictionGate(
       if (!statuses.includes(String(decision.status))) {
         failures.push(`${at}: status ${String(decision.status)} is not one of ${statuses.join(", ")}`);
         continue;
+      }
+      if (decision.status === "permitted" && researchOnly.includes(capability)) {
+        failures.push(
+          `${at}: ${capability} is research-only (ADR 0034); no jurisdiction review can permit it, ` +
+            `only an ethics-board-approved study can run it`,
+        );
       }
       if (decision.status === "unreviewed") {
         if (decision.review !== null) {
@@ -385,7 +409,7 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
   }
   console.log(
     `jurisdiction gate passed: ${result.capabilityCount} restricted capabilities, ` +
-      `${result.catalogCodeCount} catalogue codes, ${result.realJurisdictionCount} reviewed jurisdictions, ` +
+      `${result.catalogCodeCount} catalogue codes, ${result.realJurisdictionCount} committed real jurisdictions or subdivisions, ` +
       `${result.reviewedDecisionCount} signed decisions, ${result.checkedDateCount} dates checked ` +
       `(oldest ${result.oldestDateAgeDays} days), ${result.verifiedHistoryCount} exact ancestor decisions verified.`,
   );

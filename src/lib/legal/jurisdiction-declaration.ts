@@ -14,8 +14,10 @@ import { declarationRestriction } from "./service-restrictions";
 /**
  * The declaration half of G5.1a (ADR 0032): what a person may choose, the
  * attestation they affirm, and the closed request the register's
- * `api.jurisdiction` accepts. `public.declare_jurisdiction_v1` is the only
- * writer; this module never writes a profile itself.
+ * `api.jurisdiction` accepts. `public.declare_jurisdiction_v2` is the only
+ * writer (version 1 is a wrapper over it for one release); this module never
+ * writes a profile itself. A country with committed subdivisions, which today
+ * is only the United States, also asks for the state.
  *
  * Nothing here reads a request header, an address, a locale or a time zone.
  * Country names are rendered in one fixed display language, so the list a
@@ -78,6 +80,45 @@ export function jurisdictionName(code: string): string {
 }
 
 /**
+ * The states a country's declaration asks for: its committed subdivisions in
+ * `data/jurisdictions.json`, named by their committed `displayName` and
+ * sorted for reading (ADR 0032, 27 Sep 2026). Empty for a country with none,
+ * which is every country but the United States today.
+ */
+export function subdivisionChoices(countryCode: string): JurisdictionChoice[] {
+  return Object.entries(FILE.realJurisdictions)
+    .filter(([code, entry]) => code.startsWith(`${countryCode}-`) && typeof entry?.displayName === "string")
+    .map(([code, entry]) => ({ code, name: entry?.displayName as string }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+/** Every country whose declaration also asks for a state, in catalogue order. */
+export function countriesWithSubdivisions(): string[] {
+  return FILE.realJurisdictionCatalog.codes.filter((code) => subdivisionChoices(code).length > 0);
+}
+
+/** The committed name of a declared state, or the code itself. */
+export function subdivisionName(code: string): string {
+  return FILE.realJurisdictions[code]?.displayName ?? code;
+}
+
+/**
+ * The state a declaration stores beside `country`, or `invalid`. A country with
+ * committed states requires exactly one of them; any other country takes none,
+ * so a state can never be recorded against the wrong country or invented.
+ */
+export function declarableSubdivision(
+  country: string,
+  raw: string | null | undefined,
+): { subdivision: string | null } | "invalid" {
+  const choices = subdivisionChoices(country);
+  const value = normaliseJurisdictionCode(raw ?? null);
+  if (choices.length === 0) return value === null ? { subdivision: null } : "invalid";
+  if (value === null) return "invalid";
+  return choices.some((choice) => choice.code === value) ? { subdivision: value } : "invalid";
+}
+
+/**
  * The code a declaration may store, or null. A catalogue alpha-2 country is
  * declarable; a subdivision is not while none is committed, and the column
  * holds two letters. The block-only row's stored code is declarable only
@@ -99,6 +140,7 @@ export function declarableCode(
 export const jurisdictionWriteBody = z
   .object({
     code: z.string().max(16),
+    subdivision: z.string().max(16).optional(),
     attestationVersion: z.number().int().positive(),
     attestationHash: z.string().regex(/^[0-9a-f]{64}$/),
     affirmed: z.literal(true),
@@ -109,6 +151,7 @@ export const jurisdictionWriteBody = z
 export const declarationResult = z
   .object({
     jurisdiction: z.string().regex(/^[A-Z]{2}$/),
+    subdivision: z.string().regex(/^[A-Z]{2}-[A-Z0-9]{1,3}$/).nullable(),
     changed: z.boolean(),
     revokedGrants: z.number().int().nonnegative(),
   })
@@ -138,13 +181,20 @@ export async function currentJurisdictionAttestation(): Promise<JurisdictionAtte
   };
 }
 
-/** The account's declared code, or null while nothing is declared. */
-export async function readDeclaredJurisdiction(accountId: string): Promise<string | null> {
+/** The account's declared country and state; both null while nothing is declared. */
+export async function readDeclaration(
+  accountId: string,
+): Promise<{ code: string | null; subdivision: string | null }> {
   const { data, error } = await createAdminClient()
     .from("profiles")
-    .select("jurisdiction_code")
+    .select("jurisdiction_code, jurisdiction_subdivision")
     .eq("id", accountId)
     .maybeSingle();
   if (error) throw new Error(`profiles.jurisdiction_code read failed: ${error.message}`);
-  return data?.jurisdiction_code ?? null;
+  return { code: data?.jurisdiction_code ?? null, subdivision: data?.jurisdiction_subdivision ?? null };
+}
+
+/** The account's declared country, or null while nothing is declared. */
+export async function readDeclaredJurisdiction(accountId: string): Promise<string | null> {
+  return (await readDeclaration(accountId)).code;
 }

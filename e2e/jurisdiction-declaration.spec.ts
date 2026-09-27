@@ -40,11 +40,12 @@ async function attestation(): Promise<{ version: number; body_sha256: string }> 
 }
 
 /** Declares through the real route, from the signed-in page's own context, as the settings form does. */
-async function declare(page: Page, code: string) {
+async function declare(page: Page, code: string, subdivision?: string) {
   const { version, body_sha256 } = await attestation();
   return page.request.put("/api/settings/jurisdiction", {
     headers: { origin: MAIN, "content-type": "application/json" },
-    data: { code, attestationVersion: version, attestationHash: body_sha256, affirmed: true },
+    data: { code, ...(subdivision === undefined ? {} : { subdivision }), attestationVersion: version,
+      attestationHash: body_sha256, affirmed: true },
   });
 }
 
@@ -100,7 +101,7 @@ test("/settings: the first sign-in answers where the person lives, from a select
   await expect(page).toHaveURL(/\/settings\?next=/);
   expect(await declaredCode(accountId)).toBeNull();
 
-  await section.getByLabel("The country I chose is the country I live in.").check();
+  await section.getByLabel("The place I chose is where I live.").check();
   await section.getByRole("button", { name: "Save country" }).click();
   await page.waitForURL(`${MAIN}/genome/me/reports`);
 
@@ -121,8 +122,66 @@ test("/settings: the first sign-in answers where the person lives, from a select
   await expect(page).toHaveURL(`${MAIN}/overview`);
   await page.goto("/settings");
   await expect(page.locator('[data-slot="jurisdiction-current"]')).toHaveText("You told Inherit you live in France.");
-  await expect(page.getByText(/Changing your country ends the Family and embryo permissions/)).toBeVisible();
+  await expect(page.getByText(/Changing your country or state ends the Family and embryo permissions/)).toBeVisible();
   await expect(page.locator('[data-slot="jurisdiction"]').getByLabel("Country you live in")).toHaveValue("");
+});
+
+test("/settings: a person in the United States also chooses their state, and only a person there is asked (ADR 0032)", async ({ page }) => {
+  const email = `jurisdiction-state-${runId}@e2e.local`;
+  const accountId = await createConfirmedUser(email, PASSWORD, { jurisdiction: null });
+  const startedAt = new Date().toISOString();
+  await page.goto("/auth/sign-in?next=%2Foverview");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL(`${MAIN}/settings?next=${encodeURIComponent("/overview")}`);
+
+  const section = page.locator('[data-slot="jurisdiction"]');
+  const state = section.locator('[data-slot="jurisdiction-state"]');
+  await expect(state).toHaveCount(0);
+  await section.getByLabel("Country you live in").selectOption("FR");
+  await expect(state).toHaveCount(0);
+
+  await section.getByLabel("Country you live in").selectOption("US");
+  const stateSelect = section.getByLabel("State you live in");
+  await expect(stateSelect).toHaveValue("");
+  await expect(stateSelect).toHaveAttribute("required", "");
+  const states = await stateSelect.locator("option").evaluateAll(options => options.map(option => (option as HTMLOptionElement).value));
+  expect(states[0], "the first option is the empty prompt").toBe("");
+  expect(states).toHaveLength(52);
+  for (const value of ["US-NY", "US-CA", "US-DC", "US-WY"]) expect(states).toContain(value);
+  expect(states).not.toContain("US-PR");
+
+  // Without a state the browser does not submit, and nothing is stored.
+  await section.getByLabel("The place I chose is where I live.").check();
+  await section.getByRole("button", { name: "Save country" }).click();
+  await expect(page).toHaveURL(/\/settings\?next=/);
+  expect(await declaredCode(accountId)).toBeNull();
+
+  await stateSelect.selectOption("US-NY");
+  await section.getByRole("button", { name: "Save country" }).click();
+  await page.waitForURL(`${MAIN}/overview`);
+  const { data: profile } = await adminClient().from("profiles")
+    .select("jurisdiction_code, jurisdiction_subdivision").eq("id", accountId).single();
+  expect(profile).toEqual({ jurisdiction_code: "US", jurisdiction_subdivision: "US-NY" });
+  const { data: events } = await adminClient().from("legal_audit_log").select("coded_context")
+    .eq("event_code", "jurisdiction.declared").gte("occurred_at", startedAt);
+  expect((events ?? []).some(event => event.coded_context.code === "US" && event.coded_context.subdivision === "US-NY"),
+    "the ledger event records the state").toBe(true);
+  await page.goto("/settings");
+  await expect(page.locator('[data-slot="jurisdiction-current"]')).toHaveText("You told Inherit you live in New York, United States.");
+
+  // The route refuses a US answer without a committed state, and records a changed state.
+  const missing = await declare(page, "US");
+  expect(missing.status()).toBe(422);
+  expect(await missing.json()).toEqual({ error: "invalid_request", issues: ["subdivision"] });
+  const invented = await declare(page, "US", "US-ZZ");
+  expect(invented.status()).toBe(422);
+  const moved = await declare(page, "US", "US-TX");
+  expect(moved.status()).toBe(200);
+  const { data: after } = await adminClient().from("profiles")
+    .select("jurisdiction_code, jurisdiction_subdivision").eq("id", accountId).single();
+  expect(after).toEqual({ jurisdiction_code: "US", jurisdiction_subdivision: "US-TX" });
 });
 
 test("/settings: the first sign-in reaches a page the navigation prefetched before a country was saved", async ({ page }) => {
@@ -144,7 +203,7 @@ test("/settings: the first sign-in reaches a page the navigation prefetched befo
 
   const section = page.locator('[data-slot="jurisdiction"]');
   await section.getByLabel("Country you live in").selectOption("DE");
-  await section.getByLabel("The country I chose is the country I live in.").check();
+  await section.getByLabel("The place I chose is where I live.").check();
   await section.getByRole("button", { name: "Save country" }).click();
   await page.waitForURL(`${MAIN}/overview`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Overview");
@@ -155,7 +214,7 @@ test("a signed-in browser cannot write its own jurisdiction around the declarati
   const accountId = await createConfirmedUser(email, PASSWORD);
   const client = anonClient();
   expect((await client.auth.signInWithPassword({ email, password: PASSWORD })).error).toBeNull();
-  for (const patch of [{ jurisdiction_code: "XX" }, { jurisdiction_revision: 9 },
+  for (const patch of [{ jurisdiction_code: "XX" }, { jurisdiction_revision: 9 }, { jurisdiction_subdivision: "US-NY" },
     { jurisdiction_code: null, jurisdiction_declared_at: null, jurisdiction_attestation_version: null, jurisdiction_attestation_sha256: null }]) {
     const { error } = await client.from("profiles").update(patch).eq("id", accountId);
     expect(error?.code, JSON.stringify(patch)).toBe("42501");

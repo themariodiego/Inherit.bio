@@ -475,6 +475,31 @@ describe("carrier panel", () => {
     expect(without).not.toContain(copy.RUNS_SOURCE_DOI);
   });
 
+  it("states once what the check cannot tell you whenever it shows a result, and never beside unavailable", () => {
+    const render = (groups: Parameters<typeof CarrierPanel>[0]["groups"], unavailableCopy?: string) =>
+      renderToStaticMarkup(h(CarrierPanel, { groups, viewerAccountId: VIEWER, unavailableCopy }));
+    const withMatch = render([
+      { key: "one", people: PEOPLE, matches: [match()], classifiedPositions: 40, positionsBothCover: 7 },
+    ]);
+    const withNone = render([
+      { key: "one", people: PEOPLE, matches: [], classifiedPositions: 40, positionsBothCover: 7 },
+    ]);
+    for (const html of [withMatch, withNone]) {
+      expect(html.match(/data-slot="carrier-limits"/g)).toHaveLength(1);
+      expect(html).toContain(copy.CARRIER_LIMITS_HEADING);
+      for (const limit of copy.CARRIER_LIMITS) expect(html).toContain(limit.replace(/’/g, "&#x27;"));
+    }
+    expect(withNone).toContain("No shared change does not rule out that a child could be affected.");
+    const unavailable = render([
+      { key: "one", people: PEOPLE, matches: [], classifiedPositions: 0, positionsBothCover: 0 },
+    ]);
+    expect(unavailable).not.toContain('data-slot="carrier-limits"');
+    const refused = render([
+      { key: "one", people: PEOPLE, matches: [match()], classifiedPositions: 40, positionsBothCover: 7 },
+    ], "This part of Inherit is not available here because its legal review is not complete.");
+    expect(refused).not.toContain('data-slot="carrier-limits"');
+  });
+
   it("lists one block per match and no count above them", () => {
     const html = renderToStaticMarkup(
       h(CarrierPanel, {

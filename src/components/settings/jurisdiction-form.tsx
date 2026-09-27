@@ -17,6 +17,8 @@ import {
   JURISDICTION_SAVED,
   JURISDICTION_SAVE_FAILED,
   JURISDICTION_SELECT_LABEL,
+  JURISDICTION_STATE_LABEL,
+  JURISDICTION_STATE_PLACEHOLDER,
   JURISDICTION_WITHHELD,
   JURISDICTION_WITHHELD_LINK,
   jurisdictionCurrent,
@@ -37,21 +39,30 @@ import { route } from "@/lib/primary-routes";
  * The list leaves out the countries `service-restrictions.ts` withholds, and
  * says so with a link to the public list, so a missing country is explained
  * rather than silent.
+ *
+ * A country with committed states (today only the United States) also asks
+ * for the state, in a second required list shown only once that country is
+ * chosen (ADR 0032, 27 Sep 2026). Like the country, it starts empty.
  */
 export function JurisdictionForm({
   choices,
+  states,
   current,
   attestation,
   next,
 }: {
   choices: readonly { code: string; name: string }[];
-  current: { code: string; name: string } | null;
+  /** Each country that also asks for a state, with its states. */
+  states: Readonly<Record<string, readonly { code: string; name: string }[]>>;
+  current: { code: string; name: string; state: { code: string; name: string } | null } | null;
   attestation: { version: number; sha256: string; summary: string; body: string };
   /** Where the first sign-in continues once a country is saved; null on an ordinary visit. */
   next: string | null;
 }) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [country, setCountry] = useState("");
+  const stateChoices = states[country] ?? [];
 
   async function save(form: HTMLFormElement) {
     const data = new FormData(form);
@@ -62,6 +73,7 @@ export function JurisdictionForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: String(data.get("jurisdictionCode") ?? ""),
+          ...(stateChoices.length > 0 ? { subdivision: String(data.get("jurisdictionSubdivision") ?? "") } : {}),
           attestationVersion: attestation.version,
           attestationHash: attestation.sha256,
           affirmed: data.get("affirmed") === "on",
@@ -75,6 +87,7 @@ export function JurisdictionForm({
       }
       setState("saved");
       form.reset();
+      setCountry("");
       // The first sign-in continues with a full page load. A client-side push
       // reuses the redirect the router cached for `next` while no country was
       // recorded (the sidebar prefetches Overview), and leaves the person
@@ -94,7 +107,7 @@ export function JurisdictionForm({
       <p className="text-sm text-ink-muted">{JURISDICTION_OWN_RESULTS}</p>
       {current ? (
         <p className="text-sm text-ink" data-slot="jurisdiction-current" data-jurisdiction-code={current.code}>
-          {jurisdictionCurrent(current.name)}
+          {jurisdictionCurrent(current.name, current.state?.name ?? null)}
         </p>
       ) : null}
       {current && isEmbargoedCountry(current.code) ? (
@@ -113,7 +126,8 @@ export function JurisdictionForm({
             <select
               required
               name="jurisdictionCode"
-              defaultValue=""
+              value={country}
+              onChange={(event) => setCountry(event.currentTarget.value)}
               className="mt-2 block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3"
             >
               <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
@@ -122,6 +136,23 @@ export function JurisdictionForm({
               ))}
             </select>
           </label>
+          {stateChoices.length > 0 ? (
+            <label className="block text-sm text-ink" data-slot="jurisdiction-state">
+              {JURISDICTION_STATE_LABEL}
+              <select
+                required
+                key={country}
+                name="jurisdictionSubdivision"
+                defaultValue=""
+                className="mt-2 block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3"
+              >
+                <option value="" disabled>{JURISDICTION_STATE_PLACEHOLDER}</option>
+                {stateChoices.map((choice) => (
+                  <option key={choice.code} value={choice.code}>{choice.name}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <p className="max-w-prose text-sm text-ink-muted" data-slot="jurisdiction-withheld">
             {JURISDICTION_WITHHELD}{" "}
             <Link href={route("legal.where-inherit-works")} className="link-target underline underline-offset-4 hover:text-ink">

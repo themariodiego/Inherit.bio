@@ -20652,6 +20652,7 @@
         "contentType": "application/json",
         "closedBody": {
           "code": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
+          "subdivision": "optional-normalized-committed-realJurisdictions-subdivision-of-code-required-exactly-when-code-has-committed-subdivisions-ADR-0032-amended-2026-09-27",
           "attestationVersion": "required-current-server-published-version",
           "attestationHash": "required-lowercase-sha256-matching-the-current-server-artifact",
           "affirmed": {

@@ -27,9 +27,11 @@ values
    clock_timestamp(), clock_timestamp(), 'aal1');
 
 -- A code now needs a declaration record; declare through the one writer.
-select public.declare_jurisdiction_v1(account, session, 'GB', 1,
+select public.declare_jurisdiction_v1(account, session, 'GB',
+  (select version from public.consent_artifacts
+   where artifact_key = 'attestation.jurisdiction' and superseded_at is null),
   (select body_sha256 from public.consent_artifacts
-   where artifact_key = 'attestation.jurisdiction' and version = 1), false)
+   where artifact_key = 'attestation.jurisdiction' and superseded_at is null), false)
 from (values
   ('7a000000-0000-0000-0000-000000000001'::uuid, '7a000000-0000-4000-8000-0000000000a1'::uuid),
   ('7a000000-0000-0000-0000-000000000002'::uuid, '7a000000-0000-4000-8000-0000000000b1'::uuid),

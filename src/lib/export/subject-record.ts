@@ -86,8 +86,8 @@ export interface SubjectRecord {
   attestations: unknown[];
 }
 
-const PROFILE_COLUMNS = "id,date_of_birth,jurisdiction_code,jurisdiction_revision,jurisdiction_declared_at,"
-  + "jurisdiction_attestation_version,jurisdiction_attestation_sha256";
+const PROFILE_COLUMNS = "id,date_of_birth,jurisdiction_code,jurisdiction_subdivision,jurisdiction_revision,"
+  + "jurisdiction_declared_at,jurisdiction_attestation_version,jurisdiction_attestation_sha256";
 const SIGNATURE_COLUMNS = "id,artifact_key,artifact_version,artifact_body_sha256,signer_principal_id,target_kind,"
   + "target_id,purpose,statement_keys,jurisdiction_code,jurisdiction_revision,subject_binding_revision,signed_at";
 const ATTESTATION_COLUMNS = "id,signature_id,principal_id,target_kind,target_id,kind,statement_keys,affirmed,"

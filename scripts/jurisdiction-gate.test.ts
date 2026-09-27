@@ -120,9 +120,12 @@ describe("the jurisdiction gate holds the signed-review contract", () => {
     expect(result.failures).toEqual([]);
     expect(result.capabilityCount).toBe(12);
     expect(result.catalogCodeCount).toBe(249);
-    // The measurement that makes priorities 4 and 5 unreachable in production.
-    expect(result.realJurisdictionCount).toBe(0);
+    // The measurement that makes priorities 4 and 5 unreachable in production:
+    // no committed decision is reviewed. The committed entries are the 50 US
+    // states and DC (ADR 0032, 27 Sep 2026), every capability unreviewed, so a
+    // US state can be decided on its own once a signed review exists.
     expect(result.reviewedDecisionCount).toBe(0);
+    expect(result.realJurisdictionCount).toBe(51);
     expect(result.checkedDateCount).toBeGreaterThan(10);
   });
 
@@ -133,6 +136,51 @@ describe("the jurisdiction gate holds the signed-review contract", () => {
 
   it("accepts a complete signed review, so the failures below are about the defect", () => {
     expect(failures(plant({ review: validReview() }))).toEqual([]);
+  });
+
+  it("fails when any real jurisdiction permits a research-only capability (ADR 0034)", () => {
+    const root = plant({ review: validReview() });
+    const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
+    const row = (file.realJurisdictions as Json)[CODE] as Json;
+    row.capabilities = {
+      ...(row.capabilities as Json),
+      embryo_statistical_estimate: {
+        status: "permitted",
+        accessedOn: "2026-09-01",
+        review: validReview({
+          capability: "embryo_statistical_estimate",
+          path: `docs/reviews/jurisdictions/${CODE}/embryo_statistical_estimate.md`,
+          scope: `/realJurisdictions/${CODE}/capabilities/embryo_statistical_estimate`,
+        }),
+      },
+    };
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+    expect(failures(root).join("\n")).toContain(
+      `/realJurisdictions/${CODE}/capabilities/embryo_statistical_estimate: embryo_statistical_estimate is research-only`,
+    );
+  });
+
+  it("does not treat a research-only prohibition as a research-only breach", () => {
+    const root = plant({ review: validReview() });
+    const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
+    const row = (file.realJurisdictions as Json)[CODE] as Json;
+    row.capabilities = {
+      ...(row.capabilities as Json),
+      embryo_statistical_estimate: { status: "prohibited", accessedOn: "2026-09-01", review: null },
+    };
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+    const reported = failures(root).join("\n");
+    expect(reported).not.toContain("is research-only");
+    expect(reported).toContain("requires the signed review reference object");
+  });
+
+  it("fails when the research-only list no longer pins polygenic embryo estimates", () => {
+    const root = plant({
+      data: (file) => {
+        (file.productionPolicy as Json).researchOnlyCapabilities = [];
+      },
+    });
+    expect(failures(root).join("\n")).toContain("research-only: productionPolicy.researchOnlyCapabilities is []");
   });
 
   it("fails when a permitted decision carries no review at all", () => {

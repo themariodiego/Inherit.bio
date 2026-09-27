@@ -92,8 +92,8 @@
       },
       {
         "artifactKey": "attestation.jurisdiction",
-        "version": 1,
-        "migration": "20260925140000_jurisdiction_declaration.sql",
+        "version": 2,
+        "migration": "20260927100000_jurisdiction_subdivision.sql",
         "readings": []
       },
       {
