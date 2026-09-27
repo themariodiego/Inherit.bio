@@ -1,5 +1,16 @@
 # Test diff register
 
+## Resumable-upload diagnostic harness parked · 27 September 2026
+
+#203 recorded the zero-byte resumable-upload authority proof, together with a
+diagnostic runner in `scripts/resumable-upload` and its 58 tests across four
+suites. On 27 September the owner chose to land the proof and the decision
+documents and to park the harness. The runner and its tests are therefore not
+on `main`. They remain in commit `eabad36d`, in the history of
+`codex/resumable-upload-contract`, where they passed full CI on 22 September
+(run 35787271362). The measured receipt came from the earlier authorized
+probe, not from this runner. No existing test or timeout changes.
+
 ## Embryo nonce capabilities · 22 September 2026
 
 `embryo_nonce_capabilities.sql` adds actual service-role refusals for direct

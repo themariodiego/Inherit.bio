@@ -1,0 +1,100 @@
+{
+  "startedAt": "2026-09-22T16:39:05.351Z",
+  "project": "iofjhrtcyawjjhuxbgfd",
+  "app": "https://inherit-24p1eqxmf-mariodiego.vercel.app",
+  "storage": "https://iofjhrtcyawjjhuxbgfd.storage.supabase.co",
+  "sourceBytesSent": 0,
+  "declaredBytes": 512,
+  "events": [
+    {
+      "at": "2026-09-22T16:39:12.889Z",
+      "name": "synthetic-session-ready"
+    },
+    {
+      "at": "2026-09-22T16:39:14.498Z",
+      "name": "issuance",
+      "status": 201
+    },
+    {
+      "at": "2026-09-22T16:39:15.230Z",
+      "name": "create-empty",
+      "status": 201,
+      "offset": null,
+      "length": null,
+      "tusVersion": "1.0.0"
+    },
+    {
+      "at": "2026-09-22T16:39:15.546Z",
+      "name": "head-live-grant",
+      "status": 200,
+      "offset": "0",
+      "length": "512",
+      "tusVersion": "1.0.0"
+    },
+    {
+      "at": "2026-09-22T16:39:15.717Z",
+      "name": "head-no-bearer",
+      "status": 400,
+      "offset": null,
+      "length": null,
+      "tusVersion": null
+    },
+    {
+      "at": "2026-09-22T16:39:16.016Z",
+      "name": "head-anonymous-bearer",
+      "status": 200,
+      "offset": "0",
+      "length": "512",
+      "tusVersion": "1.0.0"
+    },
+    {
+      "at": "2026-09-22T16:39:16.429Z",
+      "name": "terminate-empty-live-grant",
+      "status": 204,
+      "offset": null,
+      "length": null,
+      "tusVersion": "1.0.0"
+    },
+    {
+      "at": "2026-09-22T16:39:16.633Z",
+      "name": "head-after-termination",
+      "status": 404,
+      "offset": null,
+      "length": null,
+      "tusVersion": "1.0.0"
+    }
+  ],
+  "conclusion": "offset-readable-without-upload-authority",
+  "uploadId": "73e5e561-ae69-43b4-8528-be84d494d4c2",
+  "stagingKey": "e86d3219-8020-44e4-b678-287e35a01771",
+  "expiresAt": "2026-09-22T17:09:14.000Z",
+  "protocolTerminationConfirmed": true,
+  "finishedAt": "2026-09-22T16:39:16.633Z",
+  "method": "Real preview app sign-in with existing synthetic account; ordinary same-origin issuance. One restricted-bearer TUS POST declared512 bytes and sent no body. Sequential HEAD with live upload bearer, no bearer, and public anonymous bearer. Finally exact live-bearer TUS DELETE and HEAD. No PATCH, file selection, finalization or preparation.",
+  "deployedStorageRevision": null,
+  "interpretation": {
+    "authorization": "Public anonymous bearer returned offset and declared length for the known upload URL without account/session/subject/consent authority. Missing bearer was rejected; this is not unauthenticated JWT bypass.",
+    "termination": "204 then404 confirm protocol termination only. Physical backend inventory was unavailable; do not infer all provider-side records/fragments were physically purged.",
+    "capacity": "No source bytes, complete transfer, finalization, preparation or increased capacity was measured."
+  },
+  "databaseObservation": {
+    "at": "2026-09-22T16:40:23.200645Z",
+    "uploadStatus": "issued",
+    "storageObjectRows": 0,
+    "s3ProtocolRows": 0,
+    "finalizedFileId": null,
+    "stagingRetentionStatus": "pending",
+    "stagingRetentionDeadline": "2026-09-22T18:39:14.633145Z",
+    "caveat": "S3 protocol rows are not an inventory of physical TUS uploads. Upload authority row remains until ordinary retention handles it; no metadata cleanup was forced."
+  },
+  "laterRetentionObservation": {
+    "at": "2026-09-22T21:08:30.031990Z",
+    "uploadStatus": "issued",
+    "completedObjectRows": 0,
+    "finalizedFileId": null,
+    "retentionPhaseStatus": "pending",
+    "retentionPhaseDeadline": "2026-09-22T18:39:14.633145Z",
+    "deadlineMet": false,
+    "caveat": "App retention phase remained pending past deadline for this empty probe. No source bytes were sent; no physical backend inventory or scheduler cause was established. Cleanup was not forced."
+  }
+}
