@@ -55,6 +55,13 @@ function synthetic(): JurisdictionsFile {
         family_portrait: permitted("GB permitted copy", { outcome: "approved" }),
         family_heritability: permitted("GB unsigned copy", null),
         carrier_match: prohibited("GB prohibited copy"),
+        embryo_single_locus: permitted("GB single-locus copy", { outcome: "approved" }),
+        embryo_statistical_estimate: permitted("GB estimate copy", { outcome: "approved" }),
+      },
+    },
+    FR: {
+      capabilities: {
+        embryo_statistical_estimate: prohibited("FR estimate prohibited copy"),
       },
     },
     "GB-ENG": {
@@ -194,6 +201,27 @@ describe("resolveCapability", () => {
         source: "country",
       });
       expect(resolveCapability("GB", "carrier_match", { ...off, data }).status).toBe("prohibited");
+    });
+
+    it("never lets a signed review permit a research-only capability (ADR 0034)", () => {
+      expect(FILE.productionPolicy.researchOnlyCapabilities).toEqual(["embryo_statistical_estimate"]);
+      const estimate = resolveCapability("GB", "embryo_statistical_estimate", { ...off, data });
+      expect(estimate).toEqual({
+        capability: "embryo_statistical_estimate",
+        status: "unreviewed",
+        userFacingCopy: DEFAULT_COPY,
+        jurisdictionCode: "GB",
+        source: "research-only",
+      });
+      // The same signed shape still permits a capability that is not research-only.
+      expect(resolveCapability("GB", "embryo_single_locus", { ...off, data }).status).toBe("permitted");
+      // A prohibition is stricter than research-only and stands.
+      expect(resolveCapability("FR", "embryo_statistical_estimate", { ...off, data })).toMatchObject({
+        status: "prohibited",
+        source: "country",
+      });
+      // The acceptance fixture is not a real jurisdiction and is not clamped.
+      expect(resolveCapability("GB", "embryo_statistical_estimate", on).status).toBe("permitted");
     });
 
     it("reads a permitted decision without its signed review as unreviewed", () => {

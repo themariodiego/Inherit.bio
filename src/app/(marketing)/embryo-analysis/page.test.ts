@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import jurisdictions from "../../../../data/jurisdictions.json";
-import { resolveCapability } from "@/lib/legal/jurisdictions";
+import { resolveCapability, type JurisdictionsFile } from "@/lib/legal/jurisdictions";
 
 /**
  * `/embryo-analysis` is a public page that states a fact about the catalog:
@@ -61,5 +61,23 @@ describe("the public embryo-analysis page's jurisdiction claim", () => {
     expect(resolveCapability("GB", "embryo_analysis", { testJurisdiction: true }).status).toBe("permitted");
     expect(resolveCapability("GB", "embryo_analysis", { testJurisdiction: true }).jurisdictionCode)
       .toBe("TEST-LOCAL");
+  });
+
+  it("holds the research-only sentence: no production jurisdiction can permit embryo scores (ADR 0034)", () => {
+    // Even a register that signed every code as permitting the estimate layer
+    // must leave it closed, because only an ethics-board study may run it.
+    const permitted = { status: "permitted", review: { outcome: "approved" }, userFacingCopy: "synthetic" };
+    const data = structuredClone(jurisdictions) as unknown as JurisdictionsFile;
+    for (const code of file.realJurisdictionCatalog.codes) {
+      (data.realJurisdictions as Record<string, unknown>)[code] = {
+        capabilities: { embryo_statistical_estimate: permitted },
+      };
+    }
+    const open = productionCodes.filter(
+      (code) =>
+        resolveCapability(code, "embryo_statistical_estimate", { testJurisdiction: false, data }).status ===
+        "permitted",
+    );
+    expect(open).toEqual([]);
   });
 });

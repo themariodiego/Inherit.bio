@@ -188,6 +188,8 @@
     "persistedTestPseudoValueRead": "reject-and-record-configuration-error",
     "refuseStartWhenPersistedTestPseudoValueExistsIn": ["profiles.jurisdiction", "subject_consents.jurisdiction"],
     "missingCapabilityStatus": "unreviewed",
+    "researchOnlyCapabilities": ["embryo_statistical_estimate"],
+    "researchOnlyRule": "ADR 0034: a research-only capability may only run inside an ethics-board-approved study, which is not a jurisdiction decision. No real jurisdiction or subdivision may mark it permitted; the release gate refuses one and the runtime resolver reads one as unreviewed. prohibited and unreviewed remain valid.",
     "missingJurisdictionStatus": "unreviewed",
     "requireSignedReviewForRealPermittedStatus": true,
     "requireSignedReviewForRealProhibitedStatus": true,

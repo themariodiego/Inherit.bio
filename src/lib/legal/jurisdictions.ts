@@ -63,7 +63,8 @@ export type DecisionSource =
   | "country"
   | "default"
   | "unset"
-  | "unregistered";
+  | "unregistered"
+  | "research-only";
 
 export interface CapabilityDecision {
   capability: JurisdictionCapability;
@@ -99,6 +100,7 @@ export interface JurisdictionsFile {
     missingCapabilityStatus: string;
     missingJurisdictionStatus: string;
     testPseudoJurisdictionValues: readonly string[];
+    researchOnlyCapabilities: readonly string[];
   };
 }
 
@@ -121,6 +123,11 @@ function assertFileShape(file: JurisdictionsFile): void {
   for (const status of file.statusValues) {
     if (!(CAPABILITY_STATUSES as readonly string[]).includes(status)) {
       throw new Error(`data/jurisdictions.json names an unknown status: ${status}`);
+    }
+  }
+  for (const capability of file.productionPolicy.researchOnlyCapabilities) {
+    if (!(JURISDICTION_CAPABILITIES as readonly string[]).includes(capability)) {
+      throw new Error(`data/jurisdictions.json names an unknown research-only capability: ${capability}`);
     }
   }
   if (file.productionPolicy.missingJurisdictionStatus !== "unreviewed") {
@@ -222,6 +229,24 @@ function decisionFrom(
 }
 
 /**
+ * ADR 0034: a research-only capability (polygenic embryo estimates) may only
+ * run inside an ethics-board-approved study, and a jurisdiction review cannot
+ * stand in for that. So a real `permitted` decision for one reads as
+ * unreviewed here, whatever the file says; `gate:jurisdictions` refuses to
+ * commit one. A real `prohibited` decision stands. The TEST-LOCAL acceptance
+ * row is not a real jurisdiction and is not clamped.
+ */
+function researchOnly(
+  data: JurisdictionsFile,
+  decision: CapabilityDecision,
+  fallback: CapabilityRecord,
+): CapabilityDecision {
+  if (decision.status !== "permitted") return decision;
+  if (!data.productionPolicy.researchOnlyCapabilities.includes(decision.capability)) return decision;
+  return { ...decision, status: "unreviewed", userFacingCopy: fallback.userFacingCopy, source: "research-only" };
+}
+
+/**
  * One account's decision for one capability, from its declared code.
  * Unset → `unreviewed`, flag or not; under the test flag a declared code →
  * the TEST-LOCAL row, or the TEST-DENY row for its stored code.
@@ -273,14 +298,18 @@ export function resolveCapability(
       return decisionFrom(capability, undefined, fallback, code, "unregistered", true);
     }
     // A committed subdivision answers for itself and never inherits.
-    return decisionFrom(capability, entry.capabilities[capability], fallback, code, "subdivision", true);
+    return researchOnly(
+      data,
+      decisionFrom(capability, entry.capabilities[capability], fallback, code, "subdivision", true),
+      fallback,
+    );
   }
 
   if (COUNTRY.test(code) && data.realJurisdictionCatalog.codes.includes(code)) {
     const override = data.realJurisdictions[code];
     const record = override?.capabilities[capability];
     if (override && record) {
-      return decisionFrom(capability, record, fallback, code, "country", true);
+      return researchOnly(data, decisionFrom(capability, record, fallback, code, "country", true), fallback);
     }
     return decisionFrom(capability, fallback, fallback, code, "default", true);
   }

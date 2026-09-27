@@ -4144,3 +4144,33 @@ merges; that write needs the owner's approval.
 26 September ("Yes, guarded refresh"). It ran on 27 September after #229 merged:
 the eleven rows now equal `main`, and the four completed runs keep the wording
 they captured (`docs/evidence/production-catalog-refresh-20260927-medicines/`).
+
+## 2026-09-27 — Partner and embryo scope after the market research
+
+The owner asked how consumer services that sell partner and embryo analysis
+manage the legal risk. The finding: none avoids it. The lower-risk services
+wrap their results in structure Inherit does not have: a physician's order, a
+certified laboratory, genetic counselling, protective terms, and New York
+excluded. The narrowest also report the least. Inherit's product rules are
+already stricter than the market's on consent, traits and ranking. Asked as
+selectable choices, the owner decided:
+
+- **Embryo sex: only for a serious sex-linked condition** (recommended option).
+  No embryo sex result, ever; X and Y calls may be read only to work out a
+  registered serious sex-linked condition. The 22 September request for a
+  DNA-based sex result is withdrawn, and draft #189 must be narrowed before it
+  can land. ADR 0034.
+- **Polygenic embryo estimates: research only** (the recommended option was to
+  drop them). The design stays, but no jurisdiction review can switch it on:
+  `embryo_statistical_estimate` is research-only in `data/jurisdictions.json`.
+  The gate and the resolver enforce it, and `/embryo-analysis` says so.
+  ADR 0034.
+- **Partner results: stay off in production, and prepare a US launch**
+  (recommended). Family stays closed everywhere. Engineering builds two things:
+  a state-level declaration for the United States, so New York and the other
+  restrictive states can be decided separately, and carrier warnings modelled
+  on FDA's rules for consumer carrier tests. The owner looks for US counsel and
+  a genetic-counselling partner.
+- **The 17 draft PRs from 22 September: triage and report** (recommended).
+  Engineering checks each against `main` and recommends land, update or close.
+  Nothing merges without the owner's approval.

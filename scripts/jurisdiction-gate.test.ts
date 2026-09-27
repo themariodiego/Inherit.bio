@@ -135,6 +135,51 @@ describe("the jurisdiction gate holds the signed-review contract", () => {
     expect(failures(plant({ review: validReview() }))).toEqual([]);
   });
 
+  it("fails when any real jurisdiction permits a research-only capability (ADR 0034)", () => {
+    const root = plant({ review: validReview() });
+    const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
+    const row = (file.realJurisdictions as Json)[CODE] as Json;
+    row.capabilities = {
+      ...(row.capabilities as Json),
+      embryo_statistical_estimate: {
+        status: "permitted",
+        accessedOn: "2026-09-01",
+        review: validReview({
+          capability: "embryo_statistical_estimate",
+          path: `docs/reviews/jurisdictions/${CODE}/embryo_statistical_estimate.md`,
+          scope: `/realJurisdictions/${CODE}/capabilities/embryo_statistical_estimate`,
+        }),
+      },
+    };
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+    expect(failures(root).join("\n")).toContain(
+      `/realJurisdictions/${CODE}/capabilities/embryo_statistical_estimate: embryo_statistical_estimate is research-only`,
+    );
+  });
+
+  it("does not treat a research-only prohibition as a research-only breach", () => {
+    const root = plant({ review: validReview() });
+    const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
+    const row = (file.realJurisdictions as Json)[CODE] as Json;
+    row.capabilities = {
+      ...(row.capabilities as Json),
+      embryo_statistical_estimate: { status: "prohibited", accessedOn: "2026-09-01", review: null },
+    };
+    writeFileSync(path.join(root, "data/jurisdictions.json"), JSON.stringify(file));
+    const reported = failures(root).join("\n");
+    expect(reported).not.toContain("is research-only");
+    expect(reported).toContain("requires the signed review reference object");
+  });
+
+  it("fails when the research-only list no longer pins polygenic embryo estimates", () => {
+    const root = plant({
+      data: (file) => {
+        (file.productionPolicy as Json).researchOnlyCapabilities = [];
+      },
+    });
+    expect(failures(root).join("\n")).toContain("research-only: productionPolicy.researchOnlyCapabilities is []");
+  });
+
   it("fails when a permitted decision carries no review at all", () => {
     const root = plant({ review: validReview() });
     const file = JSON.parse(readFileSync(path.join(root, "data/jurisdictions.json"), "utf8")) as Json;
