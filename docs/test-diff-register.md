@@ -1,5 +1,16 @@
 # Test diff register
 
+## A single missing embryo call stays single · 27 September 2026
+
+`src/lib/embryos/table-transport.test.ts` gains two cases, on chromosomes 1
+and 22. A laboratory table's `.` or `-` is one missing call and now stays `.`;
+`--` and `./.` stay `./.`. Before, both became `./.`, doubling the call. Both
+cases fail on the previous transport and pass on the fix. This is #189's
+commit `0ed2e8bf` without its X and Y cases (chromosomes 23 and 24), which ADR
+0034 leaves out: `main` still discards those records at ingest, and the
+existing "drops non-autosomal loci" case still holds that. No existing
+assertion changes.
+
 ## Resumable-upload diagnostic harness parked · 27 September 2026
 
 #203 recorded the zero-byte resumable-upload authority proof, together with a
