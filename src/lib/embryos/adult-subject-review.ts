@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { hmacSecret } from "@/lib/crypto";
+import { contactDigestCandidates } from "@/lib/hmac-keyring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { looseAdmin } from "@/lib/uploads/other-adult-upload-server";
 import { mintPublicFormToken, readPublicFormToken } from "./operation-token";
@@ -131,7 +131,7 @@ export async function loadAdultSubjectReview(
   const acceptanceBlockedBy = !context ? "sign-in" as const
     : !email || !context.user.email_confirmed_at
       || context.user.id === draft.owner_account_id
-      || hmacSecret(normalizeContact(email), "contact-email-v1") !== invitation.email_hmac
+      || !contactDigestCandidates(normalizeContact(email)).includes(invitation.email_hmac)
       ? "other-account" as const
       : null;
 

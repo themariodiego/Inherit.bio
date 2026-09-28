@@ -1,5 +1,31 @@
 # Test diff register
 
+## Embryo Storage write fence · 28 September 2026
+
+`supabase/tests/embryo_ingest_write_fence.sql` is new, with 202 assertions for
+`20260928100000_embryo_ingest_write_fence.sql`. It covers every guard refusal
+(caller role, unknown or case-variant name, size, version shape, expired
+window, non-open, fenced and revoked sessions, deletion-listed name, UPDATE),
+the rollback probe admitted and the committed probe refused, landing, the
+chunk commit gate, window renewal and retry exhaustion, the fence time, reopen
+refusal, and settle's writable, draining and settled answers. Planted
+regressions each fail it: dropping the window expiry check (1 failure),
+dropping the chunk gate trigger (18), matching the namespace case-sensitively
+(2) and dropping the session fence trigger (19).
+
+`supabase/tests/embryo_ingest_chunks.sql` is strengthened, and all 62 original
+assertions stay. Its attempt fixture moved into
+`supabase/tests/fixtures/embryo_ingest_attempt.inc`, shared with the new file.
+The code is unchanged; one comment no longer says no Storage calls occur. The
+include also adds `pg_temp.write_fragment_objects`. The two commits of chunks
+that carry fragments now first write both objects as the service role, as the
+real writer must. Three assertions are added: a commit before the objects land
+is refused, and each fixture write lands two objects. 65 assertions.
+
+`supabase/tests/v2_contracts.sql` counts 127 purge stores instead of 125,
+because `private.embryo_ingest_write_intents` and
+`private.embryo_ingest_write_fences` are registered. No other assertion moves.
+
 ## Two-embryo fixture for participant-c · 28 September 2026
 
 `e2e/fixtures/embryo-pair-grch38.vcf` is new, written by the new

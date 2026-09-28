@@ -1,5 +1,6 @@
 begin;
 select plan(36);
+\ir fixtures/invitation_quota_keys.inc
 -- Isolate the real mail claimer inside this rollback-only synthetic fixture.
 update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
 insert into auth.users(id,email,raw_user_meta_data) values
@@ -13,7 +14,7 @@ declare i record; raw_token text; token_digest text; session_digest text; opened
 begin
  select * into strict i from public.create_adult_subject_invitation_v1(p_account,
   decode('00112233445566778899aabbccddeeff','hex'),p_contact,
-  encode(extensions.digest(p_label,'sha256'),'hex'),true);
+  encode(extensions.digest(p_label,'sha256'),'hex'),true,p_quota_keys => pg_temp.invitation_quota_keys());
  if i.invitation_id is null then raise exception 'fixture invitation was not issued'; end if;
  select delivery_token into strict raw_token from public.claim_mail_outbox();
  token_digest:=encode(extensions.digest(raw_token,'sha256'),'hex');
@@ -132,7 +133,7 @@ select is((select count(*) from public.contact_refusal_bars where contact_hmac=r
  1::bigint,'session refusal still records the second live global bar');
 create temporary table blocked as select * from public.create_adult_subject_invitation_v1(
  '7d000000-0000-4000-8000-000000000001',decode('00112233445566778899aabbccddeeff','hex'),repeat('a',64),
- encode(extensions.digest('after-explicit-refusal','sha256'),'hex'),true);
+ encode(extensions.digest('after-explicit-refusal','sha256'),'hex'),true,p_quota_keys => pg_temp.invitation_quota_keys());
 select ok((select invitation_id is null and subject_id is null from blocked),
  'explicit refusal remains a real global bar for a different inviter');
 select is(public.respond_adult_subject_invitation_v1((select token_hash from legacy_reinvited),'refuse'),

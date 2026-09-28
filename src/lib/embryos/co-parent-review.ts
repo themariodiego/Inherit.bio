@@ -1,6 +1,7 @@
 import "server-only";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { decryptSecret, hmacSecret } from "@/lib/crypto";
+import { decryptSecret } from "@/lib/crypto";
+import { contactDigestCandidates } from "@/lib/hmac-keyring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentArtifact } from "@/lib/legal/artifacts";
 import { isTestJurisdictionEnabled, resolveCapability } from "@/lib/legal/jurisdictions";
@@ -53,7 +54,9 @@ export async function loadCoParentReview(request: Request, now = Date.now()) {
     .eq("target_kind", "cohort_draft").eq("target_id", session.target_id)
     .eq("invitation_kind", "co_parent").eq("status", "pending")
     .eq("invitation_revision", session.authority_revision)
-    .eq("email_hmac", hmacSecret(normalizeContact(context.user.email), "contact-email-v1"))
+    // Any held key revision may be the one this invitation was written under;
+    // acceptance itself is decided by the database keyring.
+    .in("email_hmac", contactDigestCandidates(normalizeContact(context.user.email)))
     .gt("expires_at", new Date(now).toISOString()).maybeSingle();
   if (invitationError || !invitation) return null;
 
