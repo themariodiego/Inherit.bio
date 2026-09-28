@@ -400,3 +400,34 @@ describe("finalization read-ahead", () => {
     expect(mocks.copy).not.toHaveBeenCalled();
   });
 });
+
+describe("another adult's held upload", () => {
+  const held = { uploadId, status: "stored_quarantined", analysisState: "quarantined" };
+  it("stops at the held receipt: same validation, no file identity in the answer", async () => {
+    mocks.rpc.mockImplementation(async (name, params) =>
+      name === "complete_own_upload_finalization_v1" ? { data: held, error: null } : rpc(name, params));
+    const response = await send();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(held);
+    expect(mocks.copy).toHaveBeenCalledExactlyOnceWith(stagingKey, finalKey);
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  });
+  it("answers a finished held upload again without copying or reading anything", async () => {
+    mocks.rpc.mockImplementation(async (name, params) =>
+      name === "begin_own_upload_finalization_v1" ? { data: { status: "held", uploadId }, error: null } : rpc(name, params));
+    const response = await send();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(held);
+    expect(mocks.copy).not.toHaveBeenCalled();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+  it("refuses a held receipt for any other upload", async () => {
+    const other = "33333333-3333-4333-8333-333333333333";
+    mocks.rpc.mockImplementation(async (name, params) =>
+      name === "complete_own_upload_finalization_v1" ? { data: { ...held, uploadId: other }, error: null } : rpc(name, params));
+    expect((await send()).status).toBe(503);
+    mocks.rpc.mockImplementation(async (name, params) =>
+      name === "begin_own_upload_finalization_v1" ? { data: { status: "held", uploadId: other }, error: null } : rpc(name, params));
+    expect((await send()).status).toBe(503);
+  });
+});

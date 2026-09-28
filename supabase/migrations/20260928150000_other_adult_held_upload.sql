@@ -323,9 +323,9 @@ revoke all on function public.sign_other_adult_upload_artifact_v1(uuid,uuid,uuid
 grant execute on function public.sign_other_adult_upload_artifact_v1(uuid,uuid,uuid,integer,text,text[],bytea,text,boolean) to service_role;
 
 -- 6. Issuance ----------------------------------------------------------------
--- The own issuer's body with the held-upload authority, one live held or
--- in-flight upload per reserved subject, a declared hash, and held bytes
--- counted against the uploader's own allowance.
+-- The own issuer's body with the held-upload authority, no second upload
+-- once one is held (the unique held index also refuses a second completion),
+-- a declared hash, and held bytes counted against the uploader's allowance.
 create function private.issue_other_adult_held_upload_v1(p_account_id uuid,p_session_id uuid,p_subject_id uuid,
  p_declared_format text,p_size_bytes bigint,p_sha256 text,p_test_jurisdiction boolean)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private
@@ -345,8 +345,7 @@ begin
   raise exception using errcode='55000',message='upload_unavailable'; end if;
  c:=private.other_adult_upload_store_authority_v1(p_account_id,p_session_id,p_subject_id);
  if exists(select 1 from public.upload_sessions where subject_id=p_subject_id
-   and upload_authority_kind='other-adult-held'
-   and (status='held' or (status in ('issued','uploaded','validating') and expires_at>clock_timestamp()))) then
+   and upload_authority_kind='other-adult-held' and status='held') then
   raise exception using errcode='55000',message='upload_unavailable'; end if;
  v_max:=case when p_declared_format like 'consumer-array-text-v%' then limits.maximum_array_bytes
   when p_declared_format='gVCF' then coalesce(limits.maximum_gvcf_bytes,limits.maximum_vcf_bytes) else limits.maximum_vcf_bytes end;

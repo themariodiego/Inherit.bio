@@ -75,6 +75,47 @@ export function artifactStatements(body: string): string[] {
   return [...body.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => match[2]!.trim());
 }
 
+/**
+ * One pending reservation as its uploader sees it: a label, dates and one
+ * state. No address, file name, hash or object identity ever reaches it.
+ */
+export const otherAdultTargetState = z.object({
+  subjectId: uuid,
+  label: z.string().min(1).max(200),
+  invitedAt: z.string(),
+  answerBy: z.string(),
+  state: z.enum(["unsigned", "signed", "held", "reviewing"]),
+  heldAt: z.string().nullable(),
+  deleteBy: z.string().nullable(),
+}).strict();
+export type OtherAdultTargetState = z.infer<typeof otherAdultTargetState>;
+
+export interface OtherAdultConsentView {
+  token: string;
+  version: number;
+  effectiveOn: string;
+  summary: string;
+  body: string;
+  statements: { key: string; text: string }[];
+  /** The artifact's own false-statement warning, shown above the signing control. */
+  warning: string;
+}
+
+export type OtherAdultTarget = OtherAdultTargetState & {
+  /** Present only for an unsigned reservation: the artifact to sign now. */
+  consent?: OtherAdultConsentView;
+  /** Set when this reservation cannot be signed yet, and why. */
+  blockedBy?: "account-completion" | "unavailable";
+};
+
+/** The artifact's false-statement warning, read from its own body. */
+export function artifactWarning(body: string): string | null {
+  const start = body.indexOf("Signing this when it is not true");
+  if (start < 0) return null;
+  const end = body.indexOf("\n", start);
+  return body.slice(start, end < 0 ? undefined : end).trim();
+}
+
 /** The held-upload finalization receipt: stored, unreadable, nothing analysed. */
 export const heldFinalizationReceipt = z.object({
   uploadId: uuid,
