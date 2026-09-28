@@ -133,7 +133,7 @@
     "slug": "chronotype-per3-rs228697",
     "category": "brain-health",
     "title": "Chronotype · PER3",
-    "summary": "PER3 is a circadian clock gene long studied for links to sleep timing. The missense variant rs228697 (Pro415Ala) was associated with evening preference in a Japanese screening study: the minor G allele was more frequent among evening types and in people with delayed sleep-wake phase disorder. Evidence is early-stage and the effect, if real, is small.",
+    "summary": "PER3 is a circadian clock gene long studied for links to sleep timing. The missense variant rs228697 (Pro864Ala) was associated with evening preference in a Japanese screening study: the minor G allele was more frequent among evening types and in people with a free-running circadian rhythm sleep disorder. The study found no link to delayed sleep-phase type. Evidence is early-stage and the effect, if real, is small.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -145,14 +145,14 @@
         "alt": "G",
         "interpretations": {
           "CC": "Two copies of the common C allele. In the available studies this genotype was not associated with a shift toward eveningness at this locus. Sleep timing is highly polygenic and strongly shaped by light, schedule, and age.",
-          "CG": "One G copy was found more often among evening types and people with delayed sleep-wake phase in a Japanese study. The study groups were limited, so this is an early result. One DNA change has little effect on sleep timing, if any.",
+          "CG": "One G copy was found more often among evening types and people with a free-running circadian rhythm in a Japanese study. The study groups were limited, so this is an early result. One DNA change has little effect on sleep timing, if any.",
           "GG": "Two copies of the less common G allele. If the reported association holds, this genotype would lean furthest toward evening preference at this locus, but the evidence base is small and needs replication in more populations."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "25201053", "label": "Hida et al., Sci Rep 2014" }
+      { "pmid": "25201053", "label": "Hida et al., Sci Rep 2014", "accessedOn": "2026-09-28" }
     ]
   },
   {

@@ -180,6 +180,12 @@ select throws_ok($$select pg_temp.declare_b('GB')$$,'42501','not_found','an acco
 rollback to deletion_notice;
 select is((select jurisdiction_code from public.profiles where id='79810000-0000-4000-8000-000000000001'),null,'every refusal left B undeclared');
 
+-- Who acted on a ledger event is derived per transaction (20260928160000), and
+-- this file is one transaction whose setup consumed B's nonces and set B's
+-- browser JWT above. The server declares in its own transaction, under the
+-- service role and with no nonce, so it starts from a clear context and, as in
+-- production, names no one.
+select set_config('inherit.legal_audit_actor','',true), set_config('request.jwt.claims','',true);
 create temporary table events_before as select pg_temp.events('jurisdiction.declared') declared,
  pg_temp.events('jurisdiction.reaffirmed') reaffirmed, pg_temp.events('purpose.revoked') revoked, pg_temp.own_grants() own;
 select is(pg_temp.declare_b('GB'),jsonb_build_object('jurisdiction','GB','changed',true,'revokedGrants',1),
