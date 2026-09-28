@@ -43,6 +43,8 @@ export class RunHistory {
   private currentRevision?: string;
   private unresolvedResources = new Set<string>();
   get unfinished(): boolean { return [...this.runs.values()].some(run => !run.finish); }
+  /** The revision full runs are currently accumulating on, if any. */
+  get revision(): string | undefined { return this.currentRevision; }
   get revisionStopRequired(): boolean { return this.failedRevisions >= 3; }
   get resourceStopRequired(): boolean { return this.unresolvedResources.size > 0; }
   settingsFor(runId: string): Readonly<Settings> {
@@ -54,12 +56,19 @@ export class RunHistory {
   apply(input: unknown): HistoryEvent {
     const event = historyEventSchema.parse(input);
     if (event.kind === "start") {
-      if (this.unfinished || this.revisionStopRequired || this.resourceStopRequired || this.runs.has(event.manifest.runId)
-        || this.closedRevisions.has(event.manifest.revision)) throw new Error("Run history refuses start");
-      if (this.currentRevision && this.currentRevision !== event.manifest.revision
-        && !this.closedRevisions.has(this.currentRevision)) throw new Error("Close the previous revision before changing it");
+      if (this.unfinished || this.revisionStopRequired || this.resourceStopRequired || this.runs.has(event.manifest.runId)) {
+        throw new Error("Run history refuses start");
+      }
+      // Only full runs take part in revision tracking. A calibration or smoke
+      // run never counts toward the stopping rule, so it neither needs the
+      // previous revision closed nor holds the next one open.
+      if (isFullRun(event.manifest)) {
+        if (this.closedRevisions.has(event.manifest.revision)) throw new Error("Run history refuses start");
+        if (this.currentRevision && this.currentRevision !== event.manifest.revision
+          && !this.closedRevisions.has(this.currentRevision)) throw new Error("Close the previous revision before changing it");
+        this.currentRevision = event.manifest.revision;
+      }
       this.runs.set(event.manifest.runId, { manifest: event.manifest, keys: new Set() });
-      this.currentRevision = event.manifest.revision;
     } else if (event.kind === "close-revision") {
       // Calibration and smoke runs are recorded but never count toward the
       // two-consecutive-clean-runs rule.

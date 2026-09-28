@@ -1,5 +1,5 @@
 /**
- * `pnpm comprehension:run <config.json> [--plan]`
+ * `pnpm comprehension:run <config.json> [--plan | --close-revision]`
  *
  * Validates the operator's local run configuration, prints what the run will
  * do and the most it can reserve, and then runs `e2e/comprehension-run.spec.ts`
@@ -16,14 +16,30 @@ import path from "node:path";
 import { maximumTokenCost } from "./budget";
 import { taskIds } from "./conductor-contract";
 import { seedSkips } from "./conductor-inputs";
+import { InstrumentJournal } from "./instrument-journal";
 import { inferenceOf, runConfigSchema } from "./run-config";
 
 const argv = process.argv.slice(2);
 const planOnly = argv.includes("--plan");
 const file = argv.find(argument => !argument.startsWith("--")) ?? process.env.INHERIT_COMPREHENSION_CONFIG;
-if (!file) throw new Error("Usage: pnpm comprehension:run <absolute path to run configuration> [--plan]");
+if (!file) throw new Error("Usage: pnpm comprehension:run <absolute path to run configuration> [--plan | --close-revision]");
 const configPath = path.resolve(file);
 const config = runConfigSchema.parse(JSON.parse(readFileSync(configPath, "utf8")));
+
+if (argv.includes("--close-revision")) {
+  // Before full runs move to a new product revision, close the one they were
+  // on. Closure reads that revision's last two full runs: clean on the same
+  // settings, or a failed revision. Three failed revisions in a row stop every
+  // further run, and the affected capability enters the withheld path.
+  const journal = await InstrumentJournal.open(config.effortDirectory, config.limitMicroDollars, config.otherCostsMicroDollars,
+    config.provider.kind === "local-deterministic-stub" ? "dry" : "live");
+  try {
+    const revision = journal.history.revision;
+    if (revision) await journal.append({ kind: "close-revision", revision });
+    console.log(JSON.stringify({ closed: revision ?? null, withheldPathRequired: journal.history.revisionStopRequired }, null, 2));
+  } finally { await journal.close(); }
+  process.exit(0);
+}
 const tasks = config.tasks ?? [...taskIds];
 const personas = config.personas ?? 30;
 const skipped = seedSkips().filter(skip => tasks.includes(skip.taskId));

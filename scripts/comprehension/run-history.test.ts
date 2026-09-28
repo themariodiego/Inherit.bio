@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { RunHistory } from "./run-history";
-import { manifest } from "./conductor-fixtures";
+import { inputs, manifest, settings } from "./conductor-fixtures";
+import { createLiveManifest } from "./conductor-inputs";
 
 const stop = (history: RunHistory, runId: string) => history.apply({ kind: "finish", runId,
   status: "stopped", instrumentClean: false, failure: "adapter-failed" });
@@ -90,6 +91,32 @@ describe("chronological instrument history", () => {
     expect(() => history.apply({ ...unknown, resource: "process" })).toThrow("Unknown");
     history.apply(unknown); stop(history, pinned.runId);
     expect(() => history.apply({ kind: "close-revision", revision: pinned.revision })).toThrow("closure refused");
+  });
+
+  it("keeps calibration and smoke runs out of revision tracking and records only declared skips", () => {
+    const partial = (runId: string, revision: string) => createLiveManifest(inputs, { kind: "calibration", runId, revision,
+      samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T6"], personaIds: [inputs.personas[0].id],
+      inference: { label: "local/deterministic-stub", provider: "local-deterministic-stub", identityCommitment: "c".repeat(64) },
+      build: { baseUrl: "http://localhost:3100", buildId: "synthetic-build", jurisdiction: "TEST-LOCAL" },
+      skipped: [{ taskId: "T6", reason: "blocked" }], blockers: [] });
+    const history = new RunHistory();
+    complete(history, "full-a", true, "a".repeat(40));
+    // A calibration on a new revision needs no closure and holds nothing open.
+    const calibration = partial("calibration-b", "b".repeat(40));
+    history.apply({ kind: "start", manifest: calibration });
+    expect(history.revision).toBe("a".repeat(40));
+    expect(() => history.apply({ kind: "skipped", runId: "calibration-b", personaId: inputs.personas[0].id, taskId: "T1", reason: "x" }))
+      .toThrow("declares skipped");
+    history.apply({ kind: "skipped", runId: "calibration-b", personaId: inputs.personas[0].id, taskId: "T6", reason: "blocked" });
+    stop(history, "calibration-b");
+    // A full run still cannot move to a new revision until the old one closes.
+    expect(() => history.apply({ kind: "start", manifest: manifest("full-b", "b".repeat(40)) })).toThrow("Close the previous");
+    history.apply({ kind: "close-revision", revision: "a".repeat(40) });
+    history.apply({ kind: "start", manifest: manifest("full-b", "b".repeat(40)) });
+    expect(history.revision).toBe("b".repeat(40));
+    // A dry run never skips a task.
+    expect(() => history.apply({ kind: "skipped", runId: "full-b", personaId: inputs.personas[0].id, taskId: "T6", reason: "x" }))
+      .toThrow("declares skipped");
   });
 
   it("returns frozen history snapshots that cannot erase an unfavorable event", () => {

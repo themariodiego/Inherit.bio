@@ -34,6 +34,12 @@ suites pass unchanged against the refactored conductor. Five suites are new:
   twelve eligible, consented, unassisted sessions, the thresholds, the T9
   ceiling, both prohibited-answer paths and the adjustment rule.
 
+`scripts/comprehension/run-history.test.ts` gains one test: a calibration or
+smoke run neither needs the previous revision closed nor holds the next one
+open, while a full run still cannot change revision before closure, and only
+a task the manifest declares skipped may be skipped. It failed with the
+exemption reverted. No existing test in the file changes.
+
 One validation range widens, in the safe direction. The settings schema
 bounded token prices with the token-count bound, so no price could exceed
 US$1 per million tokens. That is below real output prices, and the only way

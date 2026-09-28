@@ -19,6 +19,7 @@ inference, any CI charges and any required first month of the hosting plan.
 ```sh
 pnpm comprehension:run /absolute/path/run.json --plan   # validate and print the plan
 pnpm comprehension:run /absolute/path/run.json          # run it
+pnpm comprehension:run /absolute/path/run.json --close-revision   # before full runs move to a new revision
 pnpm comprehension:records status                       # the stopping rule over committed runs
 pnpm comprehension:records check docs/comprehension-runs/<date>/<runId>
 ```
