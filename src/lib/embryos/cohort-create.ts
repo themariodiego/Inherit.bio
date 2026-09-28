@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } from "@/lib/genome/ingest-limits";
+import { route } from "@/lib/primary-routes";
 import { cohortCard, parseRpcCards, type CohortCard } from "./record-key-cards";
 
 /**
@@ -92,6 +93,9 @@ export interface CohortCreatedBody {
     maximumChunks: number;
     maximumInputBytes: number;
     sampleHandles: { ordinal: number; handle: string }[];
+    expiresAt: string;
+    operationNonce: string;
+    configureRoute: string;
   };
   record_key_delivery: {
     recipient_set_revision: number;
@@ -114,9 +118,23 @@ export interface CohortCreatedBody {
  * recipients; `not_a_card_recipient` yields an empty array whatever the RPC
  * put in `cards`, which is the register's `recipientRule` and the reason the
  * caller state is read before the array rather than after it.
+ *
+ * ADR 0035 adds three members of the embryo branch of `upload-session-v1`:
+ *
+ * - `expiresAt`, the session's fixed deadline, in UTC;
+ * - `operationNonce`, which the caller mints after the finalize transaction
+ *   commits (`mintIngestSessionOperation`, operation `ingest_session_open`,
+ *   bound to this account, auth session and upload session) and which is good
+ *   for exactly one configure request or one mapping inspection;
+ * - `configureRoute`, the path of `api.embryo-ingest-configure` for this
+ *   session, built from the route register.
+ *
+ * `chunkRoute` and `completeRoute` are still absent: their routes are not
+ * built yet, and a response must not direct a browser to a URL that 404s.
  */
-export function cohortCreatedBody(result: unknown, origin?: string): CohortCreatedBody {
+export function cohortCreatedBody(result: unknown, operationNonce: string, origin?: string): CohortCreatedBody {
   const { cohort, ingest } = cohortFinalizeResult.parse(result);
+  if (typeof operationNonce !== "string" || operationNonce.length === 0) throw new Error("missing operation nonce");
   const recipient = cohort.caller_state === "delivered_inline";
   return {
     cohort_id: cohort.cohort_id,
@@ -130,6 +148,9 @@ export function cohortCreatedBody(result: unknown, origin?: string): CohortCreat
       maximumChunks: LIMITS.maximumChunks,
       maximumInputBytes: LIMITS.maximumUncompressedInputBytes,
       sampleHandles: ingest.sampleHandles.map((handle) => ({ ordinal: handle.ordinal, handle: handle.handle })),
+      expiresAt: new Date(ingest.expiresAt).toISOString(),
+      operationNonce,
+      configureRoute: route("api.embryo-ingest-configure", { session: ingest.session }),
     },
     record_key_delivery: {
       recipient_set_revision: cohort.recipient_set_revision,
