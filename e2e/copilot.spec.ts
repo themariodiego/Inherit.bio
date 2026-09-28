@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createConfirmedUser, signIn } from "./helpers";

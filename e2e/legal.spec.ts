@@ -1,5 +1,6 @@
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { createConfirmedUser, signIn } from "./helpers";
 import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 import fs from "node:fs";

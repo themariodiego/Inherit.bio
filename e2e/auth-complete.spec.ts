@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 
 /**

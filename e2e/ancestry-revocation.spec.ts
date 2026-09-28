@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { localE2eProject } from "../scripts/local-e2e-project";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";

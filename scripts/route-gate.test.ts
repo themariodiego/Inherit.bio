@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { createdBuckets, exportedMethods, runRouteGate, titleProves } from "./route-gate";
+import { createdBuckets, exportedMethods, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
 
 /**
  * The gate is only worth having if a planted defect fails it, so every check
@@ -453,6 +453,29 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  it("fails when a spec proves a route state without running the network audit", async () => {
+    // `/about complete` is already proven elsewhere, so the planted title adds
+    // no proof and the ratchet is unmoved; only the audit rule can fire.
+    const root = plant({
+      extraSpec: 'import { expect, test } from "@playwright/test";\n'
+        + 'test("/about complete: planted proof", async () => { expect(true).toBe(true); });\n',
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContainEqual(expect.stringContaining(
+      "network audit: e2e/planted.spec.ts proves a registered (route, state) pair"));
+    expect(failures.join("\n")).not.toContain("route state ratchet:");
+  });
+
+  it("accepts the same proof once the spec takes its test from the audited module", async () => {
+    const root = plant({
+      extraSpec: 'import { type Page } from "@playwright/test";\n'
+        + 'import { expect, test } from "./audited-test";\n'
+        + 'test("/about complete: planted proof", async () => { expect(true).toBe(true); });\n',
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.filter((failure) => failure.startsWith("network audit:"))).toEqual([]);
+  });
+
   it("fails loudly rather than passing when the walkers find nothing", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "route-gate-empty-"));
     temporaryRoots.push(root);
@@ -494,6 +517,15 @@ describe("the detectors the gate is built from", () => {
       ),
     ).toEqual(["one", "two"]);
     expect(createdBuckets("select id from storage.buckets;")).toEqual([]);
+  });
+
+  it("reads where a spec takes test from", () => {
+    expect(takesAuditedTest('import { expect, test } from "./audited-test";')).toBe(true);
+    expect(takesAuditedTest('import { type Page } from "@playwright/test";\nimport { expect, test } from "./audited-test";')).toBe(true);
+    expect(takesAuditedTest('import { expect, test } from "@playwright/test";')).toBe(false);
+    // Importing the module is not enough while test itself still comes from Playwright.
+    expect(takesAuditedTest('import { expect } from "./audited-test";\nimport { test } from "@playwright/test";')).toBe(false);
+    expect(takesAuditedTest('import { test } from "./audited-test";\nimport { test as raw } from "@playwright/test";')).toBe(false);
   });
 
   it("requires the path and the state to be whole, separate tokens", () => {

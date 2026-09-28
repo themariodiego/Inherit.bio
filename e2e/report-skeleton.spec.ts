@@ -1,5 +1,6 @@
 import { generateOwnFileWithChosenReports, uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";

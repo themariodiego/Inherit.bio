@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { OWN_UPLOAD_COPY as COPY } from "../src/copy/upload/consent";

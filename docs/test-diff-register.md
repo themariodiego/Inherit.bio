@@ -1,5 +1,30 @@
 # Test diff register
 
+## The network audit runs inside every state-proving spec · 27 September 2026
+
+`e2e/audited-test.ts` adds an automatic Playwright fixture. It records every
+request from every browser context a test opens, including contexts made with
+`browser.newContext()` or `browser.newPage()`. After a test that ended as
+expected, it holds each context to the checks `assertNoThirdParty` makes in
+the accessibility sweep: no origin outside this deployment's API and app
+ports, no tracker-like host, and no `fbq`, `gtag` or `dataLayer` global or
+payment-processor origin on any page still open. The 37 specs whose titles
+prove a registered (route, state) pair now take `test` and `expect` from it
+instead of `@playwright/test`. No test body, assertion, timeout or retry
+changes. Every test in those specs gains the audit; none loses anything.
+
+`gate:routes` fails a proving spec that does not take `test` from the audited
+module. `scripts/route-gate.test.ts` gains three cases: a planted proving spec
+on plain Playwright fails, the same spec on the audited module passes, and the
+import detector refuses a spec that still takes `test` from Playwright. A local
+run of the fixture against a throwaway page passed a clean page and failed a
+third-party request from the default page, one from a new context, and a
+defined `window.dataLayer`; those throwaway specs are not committed. The 37
+specs then ran with the audit through `scripts/run-upload-browser.mts --full`
+against the local stack and real Storage provider: 201 passed. One Copilot test
+failed before its body ran and its serial neighbour did not run, because that
+spec needs the isolated HTTPS model daemon only CI starts.
+
 ## A single missing embryo call stays single · 27 September 2026
 
 `src/lib/embryos/table-transport.test.ts` gains two cases, on chromosomes 1

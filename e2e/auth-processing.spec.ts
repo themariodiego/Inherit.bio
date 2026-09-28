@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import { createConfirmedUser, signIn } from "./helpers";
 

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { adminClient, createConfirmedUser, expectAxeClean, firstViewportInteractives, signIn } from "./helpers";
 import { NO_COHORT_SENTENCE, STANDING_STATEMENT } from "@/copy/embryos/compare";
 import {

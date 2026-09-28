@@ -900,6 +900,8 @@ export interface RouteGateResult {
   /** Test titles built by interpolation, which a static reader cannot resolve. */
   unresolvableTitleCount: number;
   browserTestTitleCount: number;
+  /** Specs that prove a (route, state) pair, all of which must run the network audit (G1.7). */
+  stateProvingSpecCount: number;
 }
 
 /** Only `page` and `route` files create a URL; everything else is scaffolding. */
@@ -1059,6 +1061,47 @@ export function titleProves(title: string, routePath: string, stateId: string): 
   return anchoredSpans(title, stateId, STATE_CONTINUES).some(([start, end]) =>
     pathSpans.some(([pathStart, pathEnd]) => end <= pathStart || start >= pathEnd),
   );
+}
+
+/** The module a proving spec must take `test` from, so its states are network-audited (G1.7). */
+export const STATE_AUDIT_MODULE = "./audited-test";
+
+interface BrowserSpec {
+  file: string;
+  titles: string[];
+  /** True when the spec takes `test` from the audited module and not from Playwright itself. */
+  audited: boolean;
+}
+
+function specTitles(source: string): string[] {
+  return [...source.matchAll(/\b(?:test|it)(?:\.\w+)*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/g)]
+    .map((match) => match[2]);
+}
+
+/** Whether a spec's `test` comes from the audited module rather than from `@playwright/test`. */
+export function takesAuditedTest(source: string): boolean {
+  const importsTest = (from: string) => new RegExp(
+    `import\\s*\\{[^}]*\\btest\\b[^}]*\\}\\s*from\\s*["']${from.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}["']`,
+  ).test(source);
+  return importsTest(STATE_AUDIT_MODULE) && !importsTest("@playwright/test");
+}
+
+function browserSpecs(directory: string): BrowserSpec[] {
+  const specs: BrowserSpec[] = [];
+  const walk = (current: string) => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.spec\.ts$/.test(entry.name)) continue;
+      const source = readFileSync(full, "utf8");
+      specs.push({ file: path.relative(path.dirname(directory), full), titles: specTitles(source), audited: takesAuditedTest(source) });
+    }
+  };
+  walk(directory);
+  return specs;
 }
 
 function browserTestTitles(directory: string): string[] {
@@ -1601,6 +1644,25 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     );
   }
 
+  // 5a. The network audit rides with every proof (G1.7). The register-derived
+  // sweep audits each route only in the state its VISIT URL produces; the
+  // other states exist only inside the specs whose titles prove them, so a
+  // proving spec that runs without the audit leaves that state unaudited.
+  let stateProvingSpecCount = 0;
+  for (const spec of browserSpecs(path.join(repositoryRoot, BROWSER_TESTS))) {
+    const proves = spec.titles.some((title) => register.routes.some((entry) =>
+      requiredStates(register, entry).some((state) => titleProves(title, entry.path, state))));
+    if (!proves) continue;
+    stateProvingSpecCount++;
+    if (!spec.audited) {
+      failures.push(
+        `network audit: ${spec.file} proves a registered (route, state) pair but takes \`test\` ` +
+          `from @playwright/test instead of ${STATE_AUDIT_MODULE}, so that state is never audited ` +
+          `for third-party origins, tracker hosts or tracker globals (G1.7).`,
+      );
+    }
+  }
+
   // 6. Every pre-existing route (G2.3). The ledger lists what the baseline
   // commit served, and each entry is held to the register in both directions:
   // an entry the register does not carry, a kind or disposition that
@@ -1753,6 +1815,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     provenStateCount: proven.size,
     unresolvableTitleCount: unresolvableTitles.length,
     browserTestTitleCount: titles.length,
+    stateProvingSpecCount,
   };
 }
 
@@ -1776,7 +1839,8 @@ async function main() {
       `read by the product, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
       `by ${result.browserTestTitleCount} browser tests ` +
       `(${result.unresolvableTitleCount} of them built by interpolation, which this static ` +
-      `reader cannot resolve and does not guess at)`,
+      `reader cannot resolve and does not guess at), and every one of the ` +
+      `${result.stateProvingSpecCount} proving specs runs the network audit`,
   );
 }
 

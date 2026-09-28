@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 
 /**
  * The six `versioned-document` routes in their `complete` state: a committed
