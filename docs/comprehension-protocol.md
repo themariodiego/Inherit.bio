@@ -10,12 +10,14 @@ thing only the operator can do. `docs/release-checklist.md` records that as
 launch-blocking. Where a round has been run, its per-task results belong in
 `docs/comprehension-results-<date>.md`, one file per round, and nowhere else.
 
-**As of 2026-09-11, G3.3 is not green** — `scripts/comprehension/` carries the
-protocol's shared instruments (the rubric, the prohibited-answer patterns, the
-task bindings and their test) but not the 30-persona harness, and
-`docs/comprehension-runs/` does not exist. So this document completes G3.4's own
-half and G3.4 remains NO on the other half. That is the honest state and it is
-recorded in `docs/acceptance-matrix.md` rather than smoothed over here.
+**As of 2026-09-28, G3.3 is not green.** The 30-persona harness now exists
+(`scripts/comprehension/README.md`) and has run end to end against the local
+build only with a deterministic stub, which is never evidence. No model
+credential exists, so `docs/comprehension-runs/` holds no run. T6 and T7
+cannot run until embryo ingest lands, so no run could be clean yet anyway.
+This document completes G3.4's own half, and G3.4 remains NO on the other
+half. That is recorded in `docs/acceptance-matrix.md` rather than smoothed
+over here.
 
 ## What a facilitator needs
 
@@ -26,6 +28,9 @@ recorded in `docs/acceptance-matrix.md` rather than smoothed over here.
 | `scripts/comprehension/rubric.md` | The grading instrument, shared with the simulated round |
 | `scripts/comprehension/prohibited-patterns.json` | The reproducible half of prohibited-answer detection |
 | `scripts/comprehension/bindings.test.ts` | Resolves every binding against the repository; run it before the round |
+| `pnpm comprehension:human sheet P01` | One participant's session sheet: opening, closing and every prompt verbatim |
+| `pnpm comprehension:human rubric T5` | The exact rubric slice a grader receives for one task |
+| `pnpm comprehension:human template` / `tally` | A blank round file, and per-task results from a filled one |
 
 Run `npx vitest run scripts/comprehension/` before a round. It re-measures the
 coverage claims the tasks depend on and fails if a fixture, template, route,
@@ -90,6 +95,15 @@ Four participant contexts are defined in `bindings.json`:
   cohort upload (owner decision, 28 September 2026).
 - **no-account** — T9 and T10 start signed out at the marketing home page.
   Creating an account is not a permitted step in either.
+
+**T9's fixture.** Nobody can upload another adult's DNA today; what another
+adult can do is reserve a record for someone and invite them, and the owner
+decided on 28 September 2026 that T9 measures that path. Before the
+participant arrives, a second test account reserves a record for a synthetic
+address and sends the invitation (`/family/invite`, as
+`e2e/task-depth.spec.ts` does). Show the participant that one email, in a
+mail client beside the browser, when T9 starts. Opening its link is an entry:
+record it separately, and never count it toward the six actions.
 
 Every fixture is synthetic and belongs to no person. **A real genetic file must
 never be used in this protocol**, including a facilitator's own.
@@ -272,6 +286,30 @@ participant, not graded generously.
 simulated threshold for that task rises to **29/30** and the simulated round is
 re-run. The humans calibrate the simulation; a disagreement is resolved in the
 humans' favour, every time.
+
+## Running the round with the kit
+
+1. Before the round: `npx vitest run scripts/comprehension/`, then seed a
+   fresh context for each participant (`pnpm seed:participants` builds the
+   named accounts; reset or clear between participants).
+2. For each participant: `pnpm comprehension:human sheet P01` prints the
+   sheet the facilitator reads from. Add `--t6-withheld` only when
+   `embryo_analysis` is withheld in the running environment.
+3. Keep the round file outside the repository while the round runs:
+   `pnpm comprehension:human template > round.json`, then fill in what each
+   session produced: eligibility answers, consent, whether the facilitator
+   helped, and per task the variant, completion, path, counted actions,
+   entries, whether an account was created, and the verbatim answer.
+4. Grading: give each grader, for each answer, only
+   `pnpm comprehension:human rubric <task>` and the verbatim answer. Record the
+   verdict as `grade`; record a second grader's independent verdict as
+   `regrade` where you re-grade.
+5. `pnpm comprehension:human tally round.json` refuses a round that is not
+   twelve eligible, consented, unassisted sessions, applies the thresholds
+   and the committed prohibited-answer patterns, and prints per-task results
+   and any simulated threshold the adjustment rule raises to 29/30.
+
+The kit only counts what people recorded. It never writes a results file.
 
 ## Recording results
 
