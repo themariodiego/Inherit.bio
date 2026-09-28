@@ -180,8 +180,9 @@ was always registered, and its `methodDivergence` row is removed.
   the POST.
 - **The POSTs.** `POST /api/account/delete` and `/cancel` verify the nonce,
   then call `request_account_deletion_v2` or `cancel_account_deletion_v2`.
-  These record the nonce hash once and run the unchanged v1 body in the same
-  transaction. A replay inside the lifetime fails as `invalid_operation_nonce`,
+  These are public invoker doors over private definer bodies, in the house
+  style. Each body records the nonce hash once and runs the unchanged v1 body
+  in the same transaction. A replay inside the lifetime fails as `invalid_operation_nonce`,
   and a failed operation spends nothing. The GET is deleted, so a GET on the
   path is not served.
 - **Two migrations, in deploy order.**

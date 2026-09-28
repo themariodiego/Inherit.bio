@@ -19,6 +19,13 @@ select ok(has_function_privilege('service_role','public.cancel_account_deletion_
  'the service role cancels through v2');
 select ok(not has_function_privilege('authenticated','public.request_account_deletion_v2(uuid,uuid,text,timestamp with time zone,bytea,text,text)','EXECUTE'),
  'a signed-in user cannot call v2 directly');
+select ok(not has_function_privilege('authenticated','private.request_account_deletion_v2(uuid,uuid,text,timestamp with time zone,bytea,text,text)','EXECUTE')
+ and not has_function_privilege('authenticated','private.cancel_account_deletion_v2(uuid,uuid,text,timestamp with time zone,text)','EXECUTE'),
+ 'nor its private bodies');
+select is((select string_agg(p.oid::regprocedure::text||':'||p.prosecdef,',' order by n.nspname)
+ from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.proname='request_account_deletion_v2'),
+ 'private.request_account_deletion_v2(uuid,uuid,text,timestamp with time zone,bytea,text,text):true,request_account_deletion_v2(uuid,uuid,text,timestamp with time zone,bytea,text,text):false',
+ 'the public door is an invoker over a private definer body');
 select ok(not has_function_privilege('service_role','private.record_account_operation_nonce_v1(uuid,uuid,text,text,timestamp with time zone)','EXECUTE'),
  'the nonce recorder is reachable only through v2');
 

@@ -65,9 +65,11 @@ removed or loosened.
   leftover deletion rows emptied inside the rolled-back transaction.
 
 **New tests.**
-- `supabase/tests/account_operation_nonce_rendered.sql`, 21 assertions:
+- `supabase/tests/account_operation_nonce_rendered.sql`, 23 assertions:
   - the issuing function is gone, v1 is out of the service role's reach, and
     the recorder is reachable only through v2;
+  - v2 is a public invoker door over a private definer body, and neither is
+    open to a signed-in user;
   - nothing is stored before the operation;
   - the expiry bound holds, and a stale session cannot spend a nonce;
   - v2 records one spent hash, and a failed operation records none;

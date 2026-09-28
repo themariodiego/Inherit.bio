@@ -62,7 +62,7 @@ $$;
 revoke all on function private.record_account_operation_nonce_v1(uuid, uuid, text, text, timestamptz)
   from public, anon, authenticated, service_role;
 
-create function public.request_account_deletion_v2(
+create function private.request_account_deletion_v2(
   p_account_id uuid,
   p_session_id uuid,
   p_nonce_hash text,
@@ -85,7 +85,7 @@ begin
 end;
 $$;
 
-create function public.cancel_account_deletion_v2(
+create function private.cancel_account_deletion_v2(
   p_account_id uuid,
   p_session_id uuid,
   p_nonce_hash text,
@@ -105,13 +105,54 @@ begin
 end;
 $$;
 
-revoke all on function public.request_account_deletion_v2(uuid, uuid, text, timestamptz, bytea, text, text)
+-- Invoker doors: the inner EXECUTE check is the real barrier, and only
+-- service_role holds it.
+create function public.request_account_deletion_v2(
+  p_account_id uuid,
+  p_session_id uuid,
+  p_nonce_hash text,
+  p_nonce_expires_at timestamptz,
+  p_contact_ciphertext bytea,
+  p_contact_hmac text,
+  p_notice_idempotency_key text
+)
+returns table (deletion_id uuid, status text, notice_ends_at timestamptz)
+language sql
+security invoker
+set search_path = ''
+as $$
+  select * from private.request_account_deletion_v2(
+    p_account_id, p_session_id, p_nonce_hash, p_nonce_expires_at, p_contact_ciphertext,
+    p_contact_hmac, p_notice_idempotency_key);
+$$;
+
+create function public.cancel_account_deletion_v2(
+  p_account_id uuid,
+  p_session_id uuid,
+  p_nonce_hash text,
+  p_nonce_expires_at timestamptz,
+  p_notice_idempotency_key text
+)
+returns table (status text, cancelled_at timestamptz)
+language sql
+security invoker
+set search_path = ''
+as $$
+  select * from private.cancel_account_deletion_v2(
+    p_account_id, p_session_id, p_nonce_hash, p_nonce_expires_at, p_notice_idempotency_key);
+$$;
+
+revoke all on function
+  private.request_account_deletion_v2(uuid, uuid, text, timestamptz, bytea, text, text),
+  private.cancel_account_deletion_v2(uuid, uuid, text, timestamptz, text),
+  public.request_account_deletion_v2(uuid, uuid, text, timestamptz, bytea, text, text),
+  public.cancel_account_deletion_v2(uuid, uuid, text, timestamptz, text)
   from public, anon, authenticated;
-grant execute on function public.request_account_deletion_v2(uuid, uuid, text, timestamptz, bytea, text, text)
-  to service_role;
-revoke all on function public.cancel_account_deletion_v2(uuid, uuid, text, timestamptz, text)
-  from public, anon, authenticated;
-grant execute on function public.cancel_account_deletion_v2(uuid, uuid, text, timestamptz, text)
+grant execute on function
+  private.request_account_deletion_v2(uuid, uuid, text, timestamptz, bytea, text, text),
+  private.cancel_account_deletion_v2(uuid, uuid, text, timestamptz, text),
+  public.request_account_deletion_v2(uuid, uuid, text, timestamptz, bytea, text, text),
+  public.cancel_account_deletion_v2(uuid, uuid, text, timestamptz, text)
   to service_role;
 
 notify pgrst, 'reload schema';
