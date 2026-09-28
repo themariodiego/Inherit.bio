@@ -1,0 +1,790 @@
+{
+  "adiponectin-adipoq-rs17300539": {
+    "predecessorCitationsMd5": "f538dce2dc2a97075c3b2174a920d87d",
+    "successorCitationsMd5": "11a003b894d1aae53d2519f7ff9fa63a",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "age-at-menarche-lin28b": {
+    "predecessorCitationsMd5": "e360ca1c29514b0c2a53b5a04f5c315c",
+    "successorCitationsMd5": "2a83f755d927ee71a4ae111514f7ec1e",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "age-at-menopause-mcm8": {
+    "predecessorCitationsMd5": "b374eeec012afe45a2a9cfe4cf3fc198",
+    "successorCitationsMd5": "b04f0faea35fa906ab305a787b3280c4",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "age-related-hearing-grm7": {
+    "predecessorCitationsMd5": "15b83d6d0fd3f531168bad1099694d79",
+    "successorCitationsMd5": "95a5343dc3a1d1a3b4d266ac471b5e7f",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "air-pollution-response-gstp1": {
+    "predecessorCitationsMd5": "966110a3346cbcc80f462dc5f6b09323",
+    "successorCitationsMd5": "1df2275875d44b300ad5cfee38f34253",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "alcohol-consumption-klb-rs11940694": {
+    "predecessorCitationsMd5": "99499be94662a1c6414d3d0a07781f54",
+    "successorCitationsMd5": "4ab163ab30e8e7f5fbbb669623495e46",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "alcohol-dependence-adh1b-rs1229984": {
+    "predecessorCitationsMd5": "1b2d09fd3f74e14bb328dd30a83e54a1",
+    "successorCitationsMd5": "e13fab1199338ca5471e28c262e02979",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "alcohol-metabolism-adh1b-rs1229984": {
+    "predecessorCitationsMd5": "46fda30a781793bef8252e4966dd599c",
+    "successorCitationsMd5": "a24f7370fc5fde6b1c6de42b433f5a51",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "allergic-sensitization-il13": {
+    "predecessorCitationsMd5": "8c0feb392b435b52750ffc96314e31b0",
+    "successorCitationsMd5": "6f913470db5c79291cb7bd7e6d798cca",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "androstenone-smell-or7d4": {
+    "predecessorCitationsMd5": "048eb56ca535464a0c540c29031eec91",
+    "successorCitationsMd5": "47dae8d8e8a4f464ddeb475ac7bfe8c3",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "ankylosing-spondylitis-hla-b27": {
+    "predecessorCitationsMd5": "e4cefce7533d515db87687aea2fbbcca",
+    "successorCitationsMd5": "125e5b0ea68e7a3f218ae61f24c28ce7",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "atrial-fibrillation-pitx2-rs2200733": {
+    "predecessorCitationsMd5": "9cab5fb3ce4303eb182c49f7914d12bb",
+    "successorCitationsMd5": "490444abf8fbecab2fe4026bca81a249",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "attention-chrna4-rs1044396": {
+    "predecessorCitationsMd5": "3b6cf1b5c7ddd19b1bb420c613f29dac",
+    "successorCitationsMd5": "068290e83bc78d429ae61cfdc6319d0a",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "autoimmune-thyroid-ctla4": {
+    "predecessorCitationsMd5": "a694e25d268b950213e3ef3a05d1031f",
+    "successorCitationsMd5": "75b3f860735dae1e3d0ce921c7b2dc30",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "bin1-rs6733839-alzheimers": {
+    "predecessorCitationsMd5": "41f1653e2056f1d2f5fd2e76d7bdd46b",
+    "successorCitationsMd5": "acde93e53609997aa57aaca8335d8d71",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "bipolar-association-ank3-rs10994336": {
+    "predecessorCitationsMd5": "1e2169c031558c0d8c15b0b8d2c80270",
+    "successorCitationsMd5": "49382a633a4fc5270b41df90987a001d",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "bipolar-association-cacna1c-rs1006737": {
+    "predecessorCitationsMd5": "1e2169c031558c0d8c15b0b8d2c80270",
+    "successorCitationsMd5": "49382a633a4fc5270b41df90987a001d",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "bitter-taste-tas2r38": {
+    "predecessorCitationsMd5": "66e884d6af32ba6e8494e0f617abe03c",
+    "successorCitationsMd5": "96c54645f4326e87ddaa9939193fba12",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "bitter-taste-tas2r38-rs713598": {
+    "predecessorCitationsMd5": "5a495f03c2ce2889c8d80e195335c03a",
+    "successorCitationsMd5": "b07bfa992b7f3ae75e845a6795fcf8e4",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "blond-hair-kitlg-rs12821256": {
+    "predecessorCitationsMd5": "2db2fcc29742cc05738fc5cdbf2ffa49",
+    "successorCitationsMd5": "274f71a70d97ef2b315b4699a9b4f2b5",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "blood-pressure-agt-m235t": {
+    "predecessorCitationsMd5": "47c2949df92974c0334738b626780894",
+    "successorCitationsMd5": "0a2a3217b8cba3468dccd150ce28f737",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "breast-cancer-2q35-rs13387042": {
+    "predecessorCitationsMd5": "abdc28ac1fee2f81b133212b26f27bc7",
+    "successorCitationsMd5": "7325c608e5fcf9c6ac7a0550c2f80c07",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "cannabis-dependence-cnr1-rs2023239": {
+    "predecessorCitationsMd5": "9bdb6e85a0bcfd37830405cdbe7a0f2e",
+    "successorCitationsMd5": "8532da9705702a81b3a417f788c95719",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "celiac-disease-hla-dq2-5": {
+    "predecessorCitationsMd5": "9b3798620e4e8e2908553e116c640c95",
+    "successorCitationsMd5": "87f42a5daa2b0cbe1d2d59b3dfe24128",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "celiac-hla-dq2-tag-rs2187668": {
+    "predecessorCitationsMd5": "802eb1178c7dc9c13ad6aa07a2c9b513",
+    "successorCitationsMd5": "96bbba69a2d1aaf641bb0b16c7f4b35e",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "chronotype-clock-rs1801260": {
+    "predecessorCitationsMd5": "c7915ef6afc3abc46c2ff0d159be4cbb",
+    "successorCitationsMd5": "4050e7bc60af7fe05c3b910a7ca55291",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "clu-rs11136000-alzheimers": {
+    "predecessorCitationsMd5": "5b2964ce5c19a6de060b7ed63eccd88c",
+    "successorCitationsMd5": "0ed00002bf4b6fa35e0851397adcd0ab",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "cognition-cacna1c-rs1006737": {
+    "predecessorCitationsMd5": "1e2169c031558c0d8c15b0b8d2c80270",
+    "successorCitationsMd5": "49382a633a4fc5270b41df90987a001d",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "cognitive-aging-klotho-rs9536314": {
+    "predecessorCitationsMd5": "331a8b9794547611b0ec15ab60bf2840",
+    "successorCitationsMd5": "35ec6485743e4f81fe5e73096498d89e",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "cold-sensitivity-trpm8": {
+    "predecessorCitationsMd5": "0301115713a96c430f99b126bf66a3f6",
+    "successorCitationsMd5": "c90f41c21c7b7b54f28cbc9a609d57e8",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "colorectal-smad7-rs4939827": {
+    "predecessorCitationsMd5": "c2cf6d13fba6656b898318d1921f9e58",
+    "successorCitationsMd5": "bbe5263feb4e3bb5a3f9503515bdec84",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "coronary-artery-disease-9p21": {
+    "predecessorCitationsMd5": "dfc1abcd6d29f15d3425e83149971049",
+    "successorCitationsMd5": "fd8e46e166aee2e97f69dad6a0f434b8",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "crohns-disease-nod2": {
+    "predecessorCitationsMd5": "9ef87ffccb79c56bd55e0a2bdeaae814",
+    "successorCitationsMd5": "cd8d0937e36c8ad412082aea540b52b0",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "cystic-fibrosis-cftr-f508del-informational": {
+    "predecessorCitationsMd5": "31175e116a7ccbb068b21acf84fd801c",
+    "successorCitationsMd5": "6020166db7e13c75479cf8bcac938d35",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "depression-gwas-olfm4-rs12552": {
+    "predecessorCitationsMd5": "0cdf7732c1d201f1d2f900646a1edbfa",
+    "successorCitationsMd5": "0add1703690d711ae906a29dc114e451",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "dizygotic-twinning-fshb-region": {
+    "predecessorCitationsMd5": "0321251b07465d4a37416ffed2c61a9f",
+    "successorCitationsMd5": "6f8d8905cb94c9be34b92ccd69584a77",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "earlobe-attachment-edar": {
+    "predecessorCitationsMd5": "4cc9092146a35a7c2a8672c18b0e244a",
+    "successorCitationsMd5": "11acce3d17119364beb94d130dc015b7",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "earwax-body-odor-abcc11-rs17822931": {
+    "predecessorCitationsMd5": "84ac1d8694636a2f0723c6ef70c4f5ab",
+    "successorCitationsMd5": "e0982b5cc0f77a50f26940d622524522",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "emotional-reactivity-tph2-rs4570625": {
+    "predecessorCitationsMd5": "aaab9683ad9446d8454ce65e8e404036",
+    "successorCitationsMd5": "3936c4da9aa661b31a2e66bc2e757dc6",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "endometriosis-wnt4-region": {
+    "predecessorCitationsMd5": "1302981436a491ef0072dc1522e9d9ee",
+    "successorCitationsMd5": "2ed30a815267cb0a2722c86e23cff158",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "endurance-trainability-ppargc1a-rs8192678": {
+    "predecessorCitationsMd5": "561884c00a72b1cf5a2a83e6d18f8aca",
+    "successorCitationsMd5": "7e6960041a6ed0ef3837b8c66242bff9",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "episodic-memory-kibra-rs17070145": {
+    "predecessorCitationsMd5": "c03528096ce311c7d59cfa48edd1ebbc",
+    "successorCitationsMd5": "53c7dd8b9e11389430304935c9461667",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "executive-function-comt-rs4680": {
+    "predecessorCitationsMd5": "32f8ddb7b97e6f012a200a647129185f",
+    "successorCitationsMd5": "bb21fb2945038bb424963b1758472733",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "eye-color-herc2-rs12913832": {
+    "predecessorCitationsMd5": "3e6ae57533fda2c249a8ce4cc6f70570",
+    "successorCitationsMd5": "1514dbb93e87064d2f0c21027168fc9d",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "fasting-glucose-mtnr1b-rs10830963": {
+    "predecessorCitationsMd5": "56463fec1671448715ec678e776b0b28",
+    "successorCitationsMd5": "25628770c392d8daee733ef161811fd9",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "fatty-liver-pnpla3-rs738409": {
+    "predecessorCitationsMd5": "e467d2b44ff2339f9dd93a04cd4a40ba",
+    "successorCitationsMd5": "2dd768984016a12614ccca9889c0316a",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "freckling-sun-sensitivity-irf4-rs12203592": {
+    "predecessorCitationsMd5": "8125c88ddf1dfbb429c08a75bc60a936",
+    "successorCitationsMd5": "10aa81a6d6d073b1c3cb8c61aa204b57",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "fsh-levels-fshb-promoter-rs10835638": {
+    "predecessorCitationsMd5": "6756fc8e776bdd37bedb01822a6cfc77",
+    "successorCitationsMd5": "5491fd4330e35a6520c7eb2787424a7a",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "gba1-n370s-parkinsons": {
+    "predecessorCitationsMd5": "259680ee7221ca7238dba429c233cc8f",
+    "successorCitationsMd5": "4d87afa2b625045c1fb692e6cfccfbba",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "gilbert-syndrome-ugt1a1-rs887829": {
+    "predecessorCitationsMd5": "b1005a9a039f6c9a1e2963d4b6710ad6",
+    "successorCitationsMd5": "72b0f7912d300b60ec2730107dd0ed07",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "hair-curl-tchh-rs11803731": {
+    "predecessorCitationsMd5": "f62c8cdec5f68803a6a9e4cc072218af",
+    "successorCitationsMd5": "542f115ad7ccc01adf446822c730a19d",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "hair-thickness-edar-rs3827760": {
+    "predecessorCitationsMd5": "9f3f18beb1e795e1da656357fe531d92",
+    "successorCitationsMd5": "07e98dcd7d739c396fd1548643f9e2d4",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "hdl-cholesterol-cetp-taqib": {
+    "predecessorCitationsMd5": "1419ed79021cd4f175516afcfd9579d5",
+    "successorCitationsMd5": "0719b9b563038ee8b486e9a80eec197d",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "hemochromatosis-hfe-c282y-rs1800562": {
+    "predecessorCitationsMd5": "3d2242e04f283a307975d82b9d2af44b",
+    "successorCitationsMd5": "673c45e6facc925965f21b958fc1131c",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "hemochromatosis-hfe-h63d-rs1799945": {
+    "predecessorCitationsMd5": "3d2242e04f283a307975d82b9d2af44b",
+    "successorCitationsMd5": "673c45e6facc925965f21b958fc1131c",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "inflammatory-bowel-disease-il23r": {
+    "predecessorCitationsMd5": "f9d1f1365c87014c398754f25f9d463c",
+    "successorCitationsMd5": "b53fc76df659c84c9b192466e5302fbe",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "insulin-resistance-irs1-rs2943641": {
+    "predecessorCitationsMd5": "6470b0e3624f21885361e0b20dc71693",
+    "successorCitationsMd5": "f1027b67ef821ce1a55354b56efe7996",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "iron-status-tmprss6-rs855791": {
+    "predecessorCitationsMd5": "74ce9176f926d9efe7326b5059cbfcbc",
+    "successorCitationsMd5": "7a98c28bba82e5d2e8faafec2dc26c7a",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "ldl-cholesterol-ldlr-rs6511720": {
+    "predecessorCitationsMd5": "cc57a0280017d04c5c6afa0480f88f04",
+    "successorCitationsMd5": "0c4fa9f64ac3c7824daa806543fd5b54",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "ldl-cholesterol-sort1-rs599839": {
+    "predecessorCitationsMd5": "62ce88c6b082a1d8eb0fdf1c13dd559f",
+    "successorCitationsMd5": "763b14153646770542e0cc8495db752c",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "lipoprotein-a-lpa-rs10455872": {
+    "predecessorCitationsMd5": "b1efce66d666b132b434254a19385eeb",
+    "successorCitationsMd5": "9b2d3205490b3f40b9a68686fe69bc06",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "longevity-apoe-e2-e4": {
+    "predecessorCitationsMd5": "2bf263af5bb35c96c864463a8ae0602c",
+    "successorCitationsMd5": "9ffa8452f6a96fb031d4cfacb8363fff",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-cetp-i405v-rs5882": {
+    "predecessorCitationsMd5": "ec736e44bde30b58326d64f1956eca5a",
+    "successorCitationsMd5": "31190425ebe98a15f7ba69686d9dafac",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-foxo3-rs2802292": {
+    "predecessorCitationsMd5": "a9cd575b667c2eaaf4637d77f2100de8",
+    "successorCitationsMd5": "aab1c0e6c746b57b90ea3f2f03290742",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-igf1r-rs2229765": {
+    "predecessorCitationsMd5": "435ce0c94767e13fc3c98dcb48079c5b",
+    "successorCitationsMd5": "72a58aa63f8de6ba57ad99cfefc5c85f",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-il6-rs1800795": {
+    "predecessorCitationsMd5": "9d82cbfb3256ad2603d33df3f275a0fb",
+    "successorCitationsMd5": "3afffff9fad1e7be0d87c03c84c6f14c",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-klotho-kl-vs-rs9536314": {
+    "predecessorCitationsMd5": "17761bfd753f55629a7179843b485fe7",
+    "successorCitationsMd5": "09a233fb277d89065cd13b12f73e5668",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-sirt1-rs7895833": {
+    "predecessorCitationsMd5": "ce027b3a1d3dee4868e7a3aa57e694f7",
+    "successorCitationsMd5": "780c4fda6650718ccde146c11a85eed9",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-telomere-terc-rs10936599": {
+    "predecessorCitationsMd5": "2d85596b16d82c853c6ff30a02dc28da",
+    "successorCitationsMd5": "956bd4cb0b33ee9bfc7bae35c51bff8a",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-telomere-tert-rs2736100": {
+    "predecessorCitationsMd5": "2d85596b16d82c853c6ff30a02dc28da",
+    "successorCitationsMd5": "956bd4cb0b33ee9bfc7bae35c51bff8a",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "longevity-tp53-pro72-rs1042522": {
+    "predecessorCitationsMd5": "3ca9566fe0fcf09ebbb1de8b4ce2aa73",
+    "successorCitationsMd5": "2ce7d380b763e0fa7c4d70ef097ae21a",
+    "templatePath": "data/templates/longevity.json"
+  },
+  "lrrk2-g2019s-parkinsons": {
+    "predecessorCitationsMd5": "a724e25c8531d686702bc4a37ecdec7b",
+    "successorCitationsMd5": "7926082fc1b3993efa73ef62b511e0a7",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "lung-cancer-chrna3-rs1051730": {
+    "predecessorCitationsMd5": "454e187679bd0acd6634c6aaa39db7fd",
+    "successorCitationsMd5": "6b0b04fa552c9d872eb48365b913521c",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "lung-cancer-tert-rs2736100": {
+    "predecessorCitationsMd5": "5f58b8dd31451ae02616fbd8e4dd7874",
+    "successorCitationsMd5": "336b21c5e87321bd7baea589619e69a8",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "lupus-stat4": {
+    "predecessorCitationsMd5": "8d633c5f5ebad4117d738ff019c70784",
+    "successorCitationsMd5": "719be7779619ce08033f90160fa83d37",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "male-pattern-baldness-20p11-rs1160312": {
+    "predecessorCitationsMd5": "090e702764a957d322d48b6370ecd518",
+    "successorCitationsMd5": "c380c2c9522896c6cf1317b9c0972dda",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "male-pattern-baldness-ar-rs6152": {
+    "predecessorCitationsMd5": "5ae21da715ade61223052cd340657173",
+    "successorCitationsMd5": "d364f1e30d5be3e8a0903e9327f4cb31",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "mapt-h1-h2-tauopathy": {
+    "predecessorCitationsMd5": "cabd566845bfede581aed2cc8815081d",
+    "successorCitationsMd5": "39481f970bb1bec95a04c464bfa0376d",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "melanoma-mc1r-r151c": {
+    "predecessorCitationsMd5": "4ba63814995680317116beb894f989a4",
+    "successorCitationsMd5": "1eaec3014fb17e44dceed4b853789021",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "memory-plasticity-bdnf-rs6265": {
+    "predecessorCitationsMd5": "5b27d5311d97b76da0f41f8b606868fd",
+    "successorCitationsMd5": "94b0dc166d4e5e4c133f92f9a13e628a",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "misophonia-chewing-sounds-tenm2": {
+    "predecessorCitationsMd5": "841401a6d9601459c4ea23f85a8e16d9",
+    "successorCitationsMd5": "34ee7393fcac9c720cbd7a2f983c6ad3",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "morning-chronotype-rgs16-rs516134": {
+    "predecessorCitationsMd5": "76ae272a20a10e0a9424368215e4ce25",
+    "successorCitationsMd5": "6c1260e3138d8230cb80601c1a3f5bad",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "mthfr-c677t-homocysteine": {
+    "predecessorCitationsMd5": "3a5e46943c9e071ee22dc3eb1ded1844",
+    "successorCitationsMd5": "ad0adbfbb00786c34c5550f6f2741862",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "multiple-sclerosis-hla-drb1-1501": {
+    "predecessorCitationsMd5": "afa9f62fe6fba960a1906496cd375b13",
+    "successorCitationsMd5": "7bfa967518df675d3ab44e244ef61143",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "muscle-composition-actn3-rs1815739": {
+    "predecessorCitationsMd5": "89bac09e40096c1b5874798347582911",
+    "successorCitationsMd5": "5d0d30abf583a13bdabdc0e62a907ae9",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "nicotine-dependence-chrna5-rs16969968": {
+    "predecessorCitationsMd5": "fc89aab85ad79f4b93a82e1b5c60829d",
+    "successorCitationsMd5": "260bcdbc8927d1068d54203d4b8741db",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "norovirus-secretor-fut2-rs601338": {
+    "predecessorCitationsMd5": "4fc0ad72990b880116ab640ce4ddd1d7",
+    "successorCitationsMd5": "86b02847c9be3d0c1916116a75d69ded",
+    "templatePath": "data/templates/gastrointestinal.json"
+  },
+  "novelty-seeking-drd4-rs1800955": {
+    "predecessorCitationsMd5": "4fd31622d55f2d95b23ea6b69d8e430a",
+    "successorCitationsMd5": "8e01a173f79d217cda3bfe4427d2b848",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "obesity-fto-rs9939609": {
+    "predecessorCitationsMd5": "bc0c5e29dcb58134e9127a6ca368a5b9",
+    "successorCitationsMd5": "4d690aa0806fcc691295e05294e7dce1",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "obesity-mc4r-rs17782313": {
+    "predecessorCitationsMd5": "2065dab762c54472538ace642eb2fec9",
+    "successorCitationsMd5": "8b50d24edfe843556ff2b7f6515c2e74",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "omega-3-conversion-fads1-rs174537": {
+    "predecessorCitationsMd5": "b555d5f3be71852b554133e4d3dfabca",
+    "successorCitationsMd5": "90129ccb0e34dcef3d76fdf1de92d4cc",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "opioid-response-oprm1-rs1799971": {
+    "predecessorCitationsMd5": "9b83b22377c1fadf562559bdfaeed32f",
+    "successorCitationsMd5": "be3d70114889a4a9fbfa5b9c0a3aa4da",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "organophosphate-sensitivity-pon1": {
+    "predecessorCitationsMd5": "a07d7f4e854621870bb0432a36175771",
+    "successorCitationsMd5": "38b695768a79803b7ed9610cf3b70204",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "ovarian-fsh-response-fshr-asn680ser": {
+    "predecessorCitationsMd5": "bfb96a8a82f9720afc0f686ea3753999",
+    "successorCitationsMd5": "762bc8a7ef3d20b04b0cfe790ff4bdfe",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "photic-sneeze-reflex-zeb2": {
+    "predecessorCitationsMd5": "b5919daaf14485cb5a98d64820ad5384",
+    "successorCitationsMd5": "f3731bf0792912fa8ec79985a5fdca31",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "polycystic-ovary-syndrome-dennd1a": {
+    "predecessorCitationsMd5": "355861896d614069b7845820bcc99064",
+    "successorCitationsMd5": "6910cf6a41027bdb99f9f428f394134d",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "pregnancy-thrombosis-factor-v-leiden": {
+    "predecessorCitationsMd5": "019588642be23ee69ef7462f6f0f3428",
+    "successorCitationsMd5": "7ba641e32b1fc10772e153fdfd014c8e",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "prostate-cancer-msmb-rs10993994": {
+    "predecessorCitationsMd5": "72555a5f5d65bba8070359a76e1b4e2c",
+    "successorCitationsMd5": "5f2cd405b2436259458c96edc79ed748",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "prostate-colorectal-8q24-rs6983267": {
+    "predecessorCitationsMd5": "57270f129641b8d142f66a5d8a15683d",
+    "successorCitationsMd5": "e40ad43036e6ab8b578f37673d4e67cf",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "prothrombin-g20210a-rs1799963": {
+    "predecessorCitationsMd5": "b2e177111cb61e05be033cd5b145eb01",
+    "successorCitationsMd5": "4efdbac85d6ec1df5c32beb47bc3fe65",
+    "templatePath": "data/templates/heart-cardiovascular.json"
+  },
+  "psoriasis-hla-c-0602": {
+    "predecessorCitationsMd5": "077bffd0e419aaec8b4b751001ac763e",
+    "successorCitationsMd5": "869ca9fa1255cb9768da85360bd797b1",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "recurrent-pregnancy-loss-anxa5-m2": {
+    "predecessorCitationsMd5": "b5fbe1710f6f15071d08eea832d8e606",
+    "successorCitationsMd5": "ba164a6be8865007d7348b6d1e976764",
+    "templatePath": "data/templates/reproductive-family.json"
+  },
+  "red-hair-fair-skin-mc1r-rs1805007": {
+    "predecessorCitationsMd5": "694979fbc3703ca463c5282b401213bc",
+    "successorCitationsMd5": "2867590e8a5718fa8cc3ad36a7072b32",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "reward-sensitivity-ankk1-rs1800497": {
+    "predecessorCitationsMd5": "520187f5a4b0c6a2840fba8502b2c006",
+    "successorCitationsMd5": "30595d171e0556efbbef1f7b9ec66f89",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "rheumatoid-arthritis-ptpn22": {
+    "predecessorCitationsMd5": "5a89643d5fd7d0951b02897a990e8ee8",
+    "successorCitationsMd5": "7e965c3f4d25f7c92a3a5c9de7feb024",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "saturated-fat-bmi-apoa2-rs5082": {
+    "predecessorCitationsMd5": "3c5a533a4047233bf28572c614ddeba9",
+    "successorCitationsMd5": "a45ec93261dd530e2d4af8c475ba61d3",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "schizophrenia-association-znf804a-rs1344706": {
+    "predecessorCitationsMd5": "a1e867a16d8341d6fef5b63bf1673980",
+    "successorCitationsMd5": "7f5fc7ff4425ef41a221f962bee4a6f9",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "skin-pigmentation-tanning-slc45a2-rs16891982": {
+    "predecessorCitationsMd5": "5064bfc9f6be918b9126fa36c20cfeab",
+    "successorCitationsMd5": "c65992f5ec3e730538269d89c517b053",
+    "templatePath": "data/templates/aesthetic-cosmetic.json"
+  },
+  "sleep-duration-abcc9-rs11046205": {
+    "predecessorCitationsMd5": "bfcec283e3dcfa03714836539ec77dd6",
+    "successorCitationsMd5": "046c9d518fbdea896bc9b034a52df4ac",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "smoking-initiation-bdnf-rs6265": {
+    "predecessorCitationsMd5": "a067b306ea46cbaba2fa5e99caee6fd0",
+    "successorCitationsMd5": "dcbf79b46b51810cfd8632b28b1f9b23",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "snca-rs356182-parkinsons": {
+    "predecessorCitationsMd5": "0d0f535ccf07e64f9e1955ec88aaf9e9",
+    "successorCitationsMd5": "be9b3b40e20499b99894c1b2883ec746",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "social-cognition-oxtr-rs53576": {
+    "predecessorCitationsMd5": "e470e3ef26eaa8d85ef1d909fe70d1c4",
+    "successorCitationsMd5": "0f554035f5b9a12a8b50e70814ec0e70",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "social-sensitivity-oxtr-rs53576": {
+    "predecessorCitationsMd5": "e470e3ef26eaa8d85ef1d909fe70d1c4",
+    "successorCitationsMd5": "0f554035f5b9a12a8b50e70814ec0e70",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "sprint-power-actn3": {
+    "predecessorCitationsMd5": "10b11d9bf7883909eab9ebb02fc916eb",
+    "successorCitationsMd5": "4225ab4de589b30207c9430c437448d8",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "stress-response-fkbp5-rs1360780": {
+    "predecessorCitationsMd5": "9d689538e9d1bb9399f296191fdcacc7",
+    "successorCitationsMd5": "d0717867807e1ed18f4f0776e78a5ff8",
+    "templatePath": "data/templates/mental-health.json"
+  },
+  "sun-sensitivity-mc1r-variants": {
+    "predecessorCitationsMd5": "0a08bc32efdcd5dc7798799a52d89f84",
+    "successorCitationsMd5": "43319660169d6caebd8727c578e35159",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "sweet-taste-sensitivity-tas1r3": {
+    "predecessorCitationsMd5": "57d6226f625764c75cb6db7bf42c53d0",
+    "successorCitationsMd5": "5ed880d5847b26341d437e683c1c579f",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "tanning-response-irf4": {
+    "predecessorCitationsMd5": "16118ce34dd5b688022b8df1238e9e8d",
+    "successorCitationsMd5": "cd9a673b8da8e59656f9878b60a172e2",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "tmem106b-ftd-modifier": {
+    "predecessorCitationsMd5": "e0b662bff6825c2b78a11ec0d7c60f1e",
+    "successorCitationsMd5": "ba358bd6bbe3bddb8f2fd08f5c1710b4",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "tp53-codon-72-rs1042522": {
+    "predecessorCitationsMd5": "553ef25537c13828443a16e59729667f",
+    "successorCitationsMd5": "a985b8492b3952317d9869d6126528b7",
+    "templatePath": "data/templates/cancer-risk.json"
+  },
+  "type-1-diabetes-hla-dr3-dr4": {
+    "predecessorCitationsMd5": "895496596e44a7f0b269e920f913bf1b",
+    "successorCitationsMd5": "49077401effb6700659f2556a6f50455",
+    "templatePath": "data/templates/autoimmune.json"
+  },
+  "type-2-diabetes-kcnj11-e23k": {
+    "predecessorCitationsMd5": "0bb5706639067ce8959dba1708afd770",
+    "successorCitationsMd5": "6d8c619bc450da1cd891768a0661da83",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "type-2-diabetes-pparg-pro12ala": {
+    "predecessorCitationsMd5": "ba87842cc3994342e3e89ec5543a98ae",
+    "successorCitationsMd5": "16059e03c26dbc7d6b854062f39ee261",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "unc13a-als-susceptibility": {
+    "predecessorCitationsMd5": "365bfd30551be568eb96003e50013a10",
+    "successorCitationsMd5": "f197300f83c87b2ec8ce7ad1574de4f6",
+    "templatePath": "data/templates/neurodegenerative.json"
+  },
+  "vitamin-b12-fut2-rs602662": {
+    "predecessorCitationsMd5": "ba9fa1ca1800e1be6b6172dac241a0a8",
+    "successorCitationsMd5": "72f072fb95f452c350e9d6c847b32f05",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "vitamin-c-slc23a1-rs33972313": {
+    "predecessorCitationsMd5": "648e4dd5d9f64ac1db59258c2f270a83",
+    "successorCitationsMd5": "4ae294c6e4f25356692ec8c0142c5229",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "vitamin-d-cyp2r1-rs10741657": {
+    "predecessorCitationsMd5": "cea01f090f74e930e88d1ca84d1583d0",
+    "successorCitationsMd5": "0d8d314ec57942d8c39e64bffc565869",
+    "templatePath": "data/templates/lifestyle-wellness.json"
+  },
+  "vitamin-d-sunlight-gc": {
+    "predecessorCitationsMd5": "56800545605b227f18ca268dbbb5e169",
+    "successorCitationsMd5": "31a2ecf1ba0db24237210566b4d96a3c",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "weight-loss-diet-response-gipr-rs2287019": {
+    "predecessorCitationsMd5": "f21bcc03e5fc6a767f1e733801522433",
+    "successorCitationsMd5": "75e61e37621fce46ef78c0acaa4c20a5",
+    "templatePath": "data/templates/metabolic-obesity.json"
+  },
+  "_catalog": {
+    "predecessor": {
+      "commit": "f40e61745433c278c112e0cb4dfd75af1f3431c7",
+      "catalogMd5": "ba371662d06b340c2778ea6945eb684f",
+      "published": 162
+    },
+    "successor": {
+      "commit": "1291052fa9bd19dc095c5c7273b20fae32bd9b85",
+      "catalogMd5": "e024bd182f979efb6852617f59b8ee9e",
+      "published": 162
+    },
+    "changedRows": [
+      "adiponectin-adipoq-rs17300539",
+      "age-at-menarche-lin28b",
+      "age-at-menopause-mcm8",
+      "age-related-hearing-grm7",
+      "air-pollution-response-gstp1",
+      "alcohol-consumption-klb-rs11940694",
+      "alcohol-dependence-adh1b-rs1229984",
+      "alcohol-metabolism-adh1b-rs1229984",
+      "allergic-sensitization-il13",
+      "androstenone-smell-or7d4",
+      "ankylosing-spondylitis-hla-b27",
+      "atrial-fibrillation-pitx2-rs2200733",
+      "attention-chrna4-rs1044396",
+      "autoimmune-thyroid-ctla4",
+      "bin1-rs6733839-alzheimers",
+      "bipolar-association-ank3-rs10994336",
+      "bipolar-association-cacna1c-rs1006737",
+      "bitter-taste-tas2r38",
+      "bitter-taste-tas2r38-rs713598",
+      "blond-hair-kitlg-rs12821256",
+      "blood-pressure-agt-m235t",
+      "breast-cancer-2q35-rs13387042",
+      "cannabis-dependence-cnr1-rs2023239",
+      "celiac-disease-hla-dq2-5",
+      "celiac-hla-dq2-tag-rs2187668",
+      "chronotype-clock-rs1801260",
+      "clu-rs11136000-alzheimers",
+      "cognition-cacna1c-rs1006737",
+      "cognitive-aging-klotho-rs9536314",
+      "cold-sensitivity-trpm8",
+      "colorectal-smad7-rs4939827",
+      "coronary-artery-disease-9p21",
+      "crohns-disease-nod2",
+      "cystic-fibrosis-cftr-f508del-informational",
+      "depression-gwas-olfm4-rs12552",
+      "dizygotic-twinning-fshb-region",
+      "earlobe-attachment-edar",
+      "earwax-body-odor-abcc11-rs17822931",
+      "emotional-reactivity-tph2-rs4570625",
+      "endometriosis-wnt4-region",
+      "endurance-trainability-ppargc1a-rs8192678",
+      "episodic-memory-kibra-rs17070145",
+      "executive-function-comt-rs4680",
+      "eye-color-herc2-rs12913832",
+      "fasting-glucose-mtnr1b-rs10830963",
+      "fatty-liver-pnpla3-rs738409",
+      "freckling-sun-sensitivity-irf4-rs12203592",
+      "fsh-levels-fshb-promoter-rs10835638",
+      "gba1-n370s-parkinsons",
+      "gilbert-syndrome-ugt1a1-rs887829",
+      "hair-curl-tchh-rs11803731",
+      "hair-thickness-edar-rs3827760",
+      "hdl-cholesterol-cetp-taqib",
+      "hemochromatosis-hfe-c282y-rs1800562",
+      "hemochromatosis-hfe-h63d-rs1799945",
+      "inflammatory-bowel-disease-il23r",
+      "insulin-resistance-irs1-rs2943641",
+      "iron-status-tmprss6-rs855791",
+      "ldl-cholesterol-ldlr-rs6511720",
+      "ldl-cholesterol-sort1-rs599839",
+      "lipoprotein-a-lpa-rs10455872",
+      "longevity-apoe-e2-e4",
+      "longevity-cetp-i405v-rs5882",
+      "longevity-foxo3-rs2802292",
+      "longevity-igf1r-rs2229765",
+      "longevity-il6-rs1800795",
+      "longevity-klotho-kl-vs-rs9536314",
+      "longevity-sirt1-rs7895833",
+      "longevity-telomere-terc-rs10936599",
+      "longevity-telomere-tert-rs2736100",
+      "longevity-tp53-pro72-rs1042522",
+      "lrrk2-g2019s-parkinsons",
+      "lung-cancer-chrna3-rs1051730",
+      "lung-cancer-tert-rs2736100",
+      "lupus-stat4",
+      "male-pattern-baldness-20p11-rs1160312",
+      "male-pattern-baldness-ar-rs6152",
+      "mapt-h1-h2-tauopathy",
+      "melanoma-mc1r-r151c",
+      "memory-plasticity-bdnf-rs6265",
+      "misophonia-chewing-sounds-tenm2",
+      "morning-chronotype-rgs16-rs516134",
+      "mthfr-c677t-homocysteine",
+      "multiple-sclerosis-hla-drb1-1501",
+      "muscle-composition-actn3-rs1815739",
+      "nicotine-dependence-chrna5-rs16969968",
+      "norovirus-secretor-fut2-rs601338",
+      "novelty-seeking-drd4-rs1800955",
+      "obesity-fto-rs9939609",
+      "obesity-mc4r-rs17782313",
+      "omega-3-conversion-fads1-rs174537",
+      "opioid-response-oprm1-rs1799971",
+      "organophosphate-sensitivity-pon1",
+      "ovarian-fsh-response-fshr-asn680ser",
+      "photic-sneeze-reflex-zeb2",
+      "polycystic-ovary-syndrome-dennd1a",
+      "pregnancy-thrombosis-factor-v-leiden",
+      "prostate-cancer-msmb-rs10993994",
+      "prostate-colorectal-8q24-rs6983267",
+      "prothrombin-g20210a-rs1799963",
+      "psoriasis-hla-c-0602",
+      "recurrent-pregnancy-loss-anxa5-m2",
+      "red-hair-fair-skin-mc1r-rs1805007",
+      "reward-sensitivity-ankk1-rs1800497",
+      "rheumatoid-arthritis-ptpn22",
+      "saturated-fat-bmi-apoa2-rs5082",
+      "schizophrenia-association-znf804a-rs1344706",
+      "skin-pigmentation-tanning-slc45a2-rs16891982",
+      "sleep-duration-abcc9-rs11046205",
+      "smoking-initiation-bdnf-rs6265",
+      "snca-rs356182-parkinsons",
+      "social-cognition-oxtr-rs53576",
+      "social-sensitivity-oxtr-rs53576",
+      "sprint-power-actn3",
+      "stress-response-fkbp5-rs1360780",
+      "sun-sensitivity-mc1r-variants",
+      "sweet-taste-sensitivity-tas1r3",
+      "tanning-response-irf4",
+      "tmem106b-ftd-modifier",
+      "tp53-codon-72-rs1042522",
+      "type-1-diabetes-hla-dr3-dr4",
+      "type-2-diabetes-kcnj11-e23k",
+      "type-2-diabetes-pparg-pro12ala",
+      "unc13a-als-susceptibility",
+      "vitamin-b12-fut2-rs602662",
+      "vitamin-c-slc23a1-rs33972313",
+      "vitamin-d-cyp2r1-rs10741657",
+      "vitamin-d-sunlight-gc",
+      "weight-loss-diet-response-gipr-rs2287019"
+    ]
+  }
+}
