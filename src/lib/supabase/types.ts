@@ -7766,6 +7766,68 @@ export type Database = {
         }
         Returns: string
       }
+      claim_session_live_v1: {
+        Args: { p_session_hash: string }
+        Returns: boolean
+      }
+      open_claim_document_session_v1: {
+        Args: {
+          p_claim_session_hash: string
+          p_cookie_hash: string
+          p_create_nonce_hash: string
+          p_document_kind: string
+          p_media_type: string
+          p_sha256: string
+          p_size_bytes: number
+        }
+        Returns: Json
+      }
+      reserve_claim_document_chunk_v1: {
+        Args: { p_byte_count: number; p_cookie_hash: string; p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
+      }
+      settle_claim_document_chunk_v1: {
+        Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string; p_written: boolean }
+        Returns: string
+      }
+      begin_claim_document_completion_v1: {
+        Args: { p_chunk_count: number; p_complete_nonce_hash: string; p_cookie_hash: string; p_session_id: string }
+        Returns: Json
+      }
+      finish_claim_document_completion_v1: {
+        Args: {
+          p_complete_nonce_hash: string
+          p_cookie_hash: string
+          p_object_key: string | null
+          p_outcome: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      claim_next_claim_document_scan_v1: {
+        Args: { p_lease_hash: string }
+        Returns: Json
+      }
+      record_claim_document_scan_v1: {
+        Args: {
+          p_document_id: string
+          p_lease_hash: string
+          p_outcome: string
+          p_scan_engine: string | null
+          p_scanned_sha256: string | null
+          p_signature_at: string | null
+          p_signature_version: number | null
+        }
+        Returns: string
+      }
+      claim_document_objects_due_v1: {
+        Args: { p_limit: number }
+        Returns: { object_key: string }[]
+      }
+      confirm_claim_document_objects_deleted_v1: {
+        Args: { p_object_keys: string[]; p_route_id: string }
+        Returns: number
+      }
       authorize_mail_submission_v1: {
         Args: { p_outbox_id: string; p_attempt_ordinal: number }
         Returns: boolean

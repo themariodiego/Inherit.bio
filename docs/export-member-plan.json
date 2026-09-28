@@ -28,6 +28,18 @@
     }
   },
   "tables": {
+    "private.claim_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed pieces of an identity document in upload, deleted once composed or refused. The export contracts always exclude identity documents and evidence bytes."
+    },
+    "private.claim_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Claim document upload sessions: an evidence cookie hash, one-time nonce hashes and a hard expiry. Exporting it would be a security defect, not completeness."
+    },
+    "private.claim_documents": {
+      "disposition": "excluded-protected",
+      "reason": "A claimant's sealed identity documents and their scan verdicts. The export contracts always exclude identity documents and evidence bytes, and no account holds one."
+    },
     "private.embryo_ingest_write_fences": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write fences and their drain state. It is machinery, not the person's record."
