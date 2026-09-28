@@ -36,6 +36,12 @@ create function pg_temp.published() returns text language sql as $$
     (select string_agg(to_jsonb(v)::text,',' order by v.embryo_id,v.chromosome,v.position) from public.embryo_variants v
       join public.embryos e on e.id=v.embryo_id where e.cohort_id=(select cohort_id from live)),
     (select to_jsonb(c)::text from public.embryo_cohorts c where c.id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(g)::text,',' order by g.id) from public.genome_files g
+      join public.subjects x on x.id=g.subject_id where x.cohort_id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(x)::text,',' order by x.file_id) from private.embryo_canonical_sources x
+      where x.cohort_id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(p)::text||to_jsonb(m)::text,',' order by p.id) from private.embryo_canonical_parts p
+      join private.embryo_canonical_source_parts m on m.part_id=p.id where p.session_id=(select id from live)),
     (select to_jsonb(w)::text from public.worker_jobs w where w.id=(select id from job))));
 $$;
 
@@ -48,6 +54,8 @@ select is(public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.t
   '[[1,1000,"A","G","A/G"],[7,3000,"T","C","C/C"]]')->>'rows','2','embryo 1 stages its calls');
 select is(public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.token(),2,0,
   '[[22,9000,"C","T","C/T"]]')->>'rows','1','embryo 3 stages its call');
+select is(pg_temp.land_parts(0,pg_temp.token())+pg_temp.land_parts(2,pg_temp.token()),4,
+  'embryos 1 and 3 copy their fragments into canonical parts');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),0,
   pg_temp.outcome('passed','pass','{}',10,2))->>'outcome','passed','embryo 1 passes');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),1,
@@ -133,7 +141,7 @@ select is(public.confirm_embryo_ingest_unwind_storage_v1(pg_temp.unwind())->>'st
 -- ---------------------------------------------------------------------------
 create temporary table done as select public.complete_embryo_ingest_unwind_v1(pg_temp.unwind()) body;
 select is((select body - 'completedAt' from done),
-  '{"status":"complete","objects":6,"fragments":6,"handles":3}'::jsonb,
+  '{"status":"complete","objects":6,"fragments":6,"handles":3,"parts":0}'::jsonb,
   'the fragment, handle-map and inventory rows are removed');
 select is((select count(*) from public.embryo_ingest_fragments where session_id=(select id from live))
   +(select count(*) from private.embryo_ingest_write_intents where session_id=(select id from live))
@@ -147,7 +155,7 @@ select is((select count(*) from storage.objects so where so.bucket_id='genomes'
 select is((select count(*) from public.embryo_ingest_chunks where session_id=(select id from live)),2::bigint,
   'the stored chunk receipts stay with the published session');
 select is(pg_temp.published(),(select digest from before_cleanup),
-  'every published embryo, subject, QC row, genotype, the cohort and the job are exactly as published');
+  'every published embryo, subject, QC row, genotype, file row, canonical source and bound part, the cohort and the job are exactly as published');
 select is((select count(*) from public.embryo_variants v join public.embryos e on e.id=v.embryo_id
     where e.cohort_id=(select cohort_id from live)),3::bigint,'the three published genotypes remain');
 select is((select count(*) from public.embryo_qc q join public.embryos e on e.id=q.embryo_id
@@ -159,7 +167,7 @@ select is((select state||':'||(cohort_id is null and session_id is null and draf
   'the cleanup completes holding no live reference');
 select is((select jsonb_build_object('event',event_code,'principal',audit_principal_id,'context',coded_context)
     from public.legal_audit_log order by seq desc limit 1),
-  '{"event":"embryo.ingest.fragments-removed","principal":null,"context":{"objects":6,"fragments":6,"handles":3}}'::jsonb,
+  '{"event":"embryo.ingest.fragments-removed","principal":null,"context":{"objects":6,"fragments":6,"handles":3,"parts":0}}'::jsonb,
   'the audit event carries counts only');
 select is(public.complete_embryo_ingest_unwind_v1(pg_temp.unwind()) - 'completedAt','{"status":"complete"}'::jsonb,
   'completing again is a no-op');

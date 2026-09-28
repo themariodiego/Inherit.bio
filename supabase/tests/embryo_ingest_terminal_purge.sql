@@ -77,6 +77,7 @@ begin
   insert into graph select distinct p_label,'principal',p.principal_id from public.embryo_participant_sets p
     where p.cohort_id=c.id;
   insert into graph select p_label,'fragment',object_id from public.embryo_ingest_fragments where session_id=s.id;
+  insert into graph select p_label,'part',id from private.embryo_canonical_parts where session_id=s.id;
   insert into graph select p_label,'storage-object',storage_object_id from private.embryo_ingest_write_intents
     where session_id=s.id and storage_object_id is not null;
   insert into graph select p_label,'signature',id from public.consent_signatures
@@ -107,7 +108,8 @@ begin
     when 'fragment' then 'public.embryo_ingest_fragments' when 'signature' then 'public.consent_signatures'
     when 'attestation' then 'public.attestations' when 'invitation' then 'public.subject_invitations'
     when 'rights-session' then 'public.rights_sessions' when 'outbox' then 'public.mail_outbox'
-    when 'contact' then 'public.encrypted_contact_references' when 'storage-object' then 'storage.objects' end;
+    when 'contact' then 'public.encrypted_contact_references' when 'storage-object' then 'storage.objects'
+    when 'part' then 'private.embryo_canonical_parts' end;
   execute format('select count(*) from %s where %I in (select id from graph where label=$1 and kind=$2)',
     v_table,case p_kind when 'fragment' then 'object_id' else 'id' end) into n using p_label,p_kind;
   return n;
@@ -138,6 +140,8 @@ select throws_ok($$select private.embryo_ingest_attempt_residue_v1('{}'::uuid[],
 -- Attempt A: a completed upload with a staged split result, then failed
 -- ---------------------------------------------------------------------------
 insert into attempts(label,session) select 'a',id from live;
+-- The attempt fixture cleared the R2 bucket; canonical parts always go to R2.
+update private.embryo_ingest_object_config set r2_bucket='inherit-embryo-synthetic' where singleton;
 update private.embryo_split_config set enabled=true;
 update public.worker_jobs set status='cancelled',finished_at=clock_timestamp(),claim_token_hash=null,
   claim_expires_at=null,claimed_by=null
@@ -146,10 +150,16 @@ select is((public.claim_embryo_split_job_v1(repeat('c',64),'synthetic-worker')->
   'the split worker claims attempt A''s job');
 select is(public.stage_embryo_split_variants_v1((select id from job),1,repeat('c',64),0,0,
   '[[1,1000,"A","G","A/G"]]')->>'status','staged','it stages one synthetic genotype for embryo 1');
+select is(pg_temp.land_parts(0,repeat('c',64)),2,'it copies embryo 1''s two fragments into canonical parts');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,repeat('c',64),0,
   jsonb_build_object('outcome','passed','qc',jsonb_build_object('sites_expected',10,'sites_called',10,
     'call_rate',1,'autosomal_het_rate',0.3,'mean_depth',null,'qc_verdict','pass','qc_reasons','[]'::jsonb),
     'failureReason',null,'variantCount',1))->>'outcome','passed','and records a pending outcome for it');
+-- A copy for embryo 2 is reserved and never landed; a short claim bounds
+-- its write window.
+update public.worker_jobs set claim_expires_at=clock_timestamp()+interval '5 seconds' where id=(select id from job);
+select is(public.reserve_embryo_canonical_part_v1((select id from job),1,repeat('c',64),1,0)->>'backend','r2',
+  'a part for embryo 2 is reserved and left open');
 select is(private.fail_embryo_split_v1(pg_temp.sid('a'),(select id from job),'stale-binding','cancelled')->>'status',
   'failure_pending','the attempt then fails');
 select is(pg_temp.plan('a'),'storage_pending','the unwind is planned');
@@ -184,7 +194,14 @@ select is(private.embryo_ingest_attempt_residue_v1(array[gen_random_uuid()],
     array(select bucket_id||'/'||object_name from public.embryo_ingest_delete_objects where unwind_id=pg_temp.uid('a'))),
   '{"registered":{"storage.objects":6},"unregistered":{},"unverifiable":0}'::jsonb,
   'the residual check sees Storage metadata still at each fragment key');
-select is(pg_temp.dispose_all('a'),6,'all six fragment objects are deleted with exact evidence');
+select is((select count(*) from public.embryo_ingest_delete_objects where unwind_id=pg_temp.uid('a')
+    and source_kind='canonical-part'),3::bigint,'the inventory lists every part of the session, landed or not');
+select is(pg_temp.dispose_all('a'),8,'the six fragments and both landed parts are disposed of with exact evidence');
+select is((public.confirm_embryo_ingest_unwind_storage_v1(pg_temp.uid('a'))->'unresolved'->>'pending')::integer,1,
+  'a part whose write window is still open is not claimed, and keeps storage unconfirmed');
+select pg_sleep(greatest(0,extract(epoch from (select max(write_expires_at) from private.embryo_canonical_parts
+  where session_id=pg_temp.sid('a'))-clock_timestamp()))+0.05);
+select is(pg_temp.dispose_all('a'),1,'once its window has closed it gets a verified marker too');
 select is(public.confirm_embryo_ingest_unwind_storage_v1(pg_temp.uid('a'))->>'status','storage_confirmed',
   'the unwind is storage_confirmed');
 select ok((select public.embryo_ingest_unwind_work_v1(100) @> jsonb_build_array(jsonb_build_object(
@@ -223,7 +240,7 @@ select ok(exists(select 1 from public.embryo_cohorts where id=(select cohort_id 
 
 create temporary table a_done as select pg_temp.complete('a') body;
 select is((select body - 'completedAt' from a_done),
-  '{"status":"complete","notices":2,"objects":6,"deliveryUnavailable":0}'::jsonb,
+  '{"status":"complete","notices":2,"objects":9,"deliveryUnavailable":0}'::jsonb,
   'a storage-confirmed abandoned attempt is purged in one transaction');
 
 -- Absence, proved
@@ -235,7 +252,7 @@ select is(pg_temp.remaining('a',k),0::bigint,format('no %s of attempt A remains'
   from (select distinct kind k from graph where label='a') x order by k;
 select is((select count(*) from graph where label='a' and kind=k),n,format('the capture held %s %s rows',n,k))
   from (values ('subject',3::bigint),('embryo',3::bigint),('principal',2::bigint),('fragment',6::bigint),
-    ('job',1::bigint)) v(k,n);
+    ('job',1::bigint),('part',3::bigint)) v(k,n);
 select is((select count(*) from private.embryo_split_variants where session_id=pg_temp.sid('a'))
   +(select count(*) from private.embryo_split_ordinals where session_id=pg_temp.sid('a'))
   +(select count(*) from private.embryo_ingest_write_intents where session_id=pg_temp.sid('a'))
@@ -278,7 +295,7 @@ select is((select count(*) from public.embryo_terminal_mail where unwind_id=pg_t
 select is((select jsonb_build_object('event',event_code,'principal',audit_principal_id,'context',coded_context)
     from public.legal_audit_log order by seq desc limit 1),
   '{"event":"embryo.ingest.abandoned-no-source","principal":null,
-    "context":{"objects":6,"notices":2,"delivery_unavailable":0}}'::jsonb,
+    "context":{"objects":9,"notices":2,"delivery_unavailable":0}}'::jsonb,
   'the audit event carries counts only, with no principal or identifier');
 
 -- Replays
