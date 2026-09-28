@@ -180,6 +180,10 @@ select ok((select public.embryo_ingest_unwind_work_v1(100) @> jsonb_build_array(
     'unwindId',pg_temp.uid('a'),'purpose','abandoned','state','storage_pending'))),
   'the work list shows the unwind waiting on storage');
 
+select is(private.embryo_ingest_attempt_residue_v1(array[gen_random_uuid()],
+    array(select bucket_id||'/'||object_name from public.embryo_ingest_delete_objects where unwind_id=pg_temp.uid('a'))),
+  '{"registered":{"storage.objects":6},"unregistered":{},"unverifiable":0}'::jsonb,
+  'the residual check sees Storage metadata still at each fragment key');
 select is(pg_temp.dispose_all('a'),6,'all six fragment objects are deleted with exact evidence');
 select is(public.confirm_embryo_ingest_unwind_storage_v1(pg_temp.uid('a'))->>'status','storage_confirmed',
   'the unwind is storage_confirmed');

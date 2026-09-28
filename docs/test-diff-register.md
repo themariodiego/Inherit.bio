@@ -5,14 +5,15 @@
 Two new files test `20260930130000_embryo_ingest_terminal_purge.sql`. Both
 counts include their fixture's own assertions.
 
-`supabase/tests/embryo_ingest_terminal_purge.sql` has 139 assertions. It covers:
+`supabase/tests/embryo_ingest_terminal_purge.sql` has 140 assertions. It covers:
 
 - grants;
 - the unwind's frozen identity, and inventory that cannot be inserted
   disposed or added after planning;
 - no purge before `storage_confirmed`;
-- the residual check refusing a row in an unregistered table, a row in a
-  registered store and a store it cannot examine;
+- the residual check seeing Storage metadata at a fragment key, and refusing
+  a row in an unregistered table, a row in a registered store and a store it
+  cannot examine;
 - a completed attempt with staged split rows purged, with absence proved in
   every store;
 - the kept uploader principal and accounts;

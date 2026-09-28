@@ -168,8 +168,11 @@ begin
       v_total := v_total + n;
     end loop;
     if r.store_name = 'storage.objects' then
-      select count(*) into n from storage.objects so
-        where so.bucket_id||'/'||so.name = any (coalesce(p_objects, '{}'::text[]));
+      -- By exact bucket and name, so the lookup uses the name index.
+      select count(*) into n
+        from unnest(coalesce(p_objects, '{}'::text[])) o(object)
+        join storage.objects so on so.bucket_id = split_part(o.object, '/', 1)
+          and so.name = substr(o.object, length(split_part(o.object, '/', 1)) + 2);
       v_total := v_total + n;
     end if;
     if v_total > 0 then
