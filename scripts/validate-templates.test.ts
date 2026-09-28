@@ -1,6 +1,10 @@
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   BANNED_PATTERNS,
+  CARRIER_BANNED_PATTERNS,
+  carrierLanguage,
   MEDICINES_BANNED_PATTERNS,
   MEDICINES_CATEGORY,
   bannedLanguage,
@@ -157,6 +161,61 @@ describe("medicinesBannedLanguage (ADR 0021)", () => {
       "drug choice (ADR 0021)",
       "should-take language (ADR 0021)",
     ]);
+  });
+});
+
+describe("carrierLanguage (owner decision, 28 September 2026)", () => {
+  it("names carrier status and a chance per pregnancy", () => {
+    expect(carrierLanguage("One copy, which is consistent with CF carrier status.")).toEqual([
+      "carrier status (owner decision 2026-09-28)",
+    ]);
+    expect(carrierLanguage("so it does not rule out Carrier  Status.")).toEqual([
+      "carrier status (owner decision 2026-09-28)",
+    ]);
+    expect(carrierLanguage("If both partners carry a CF-causing variant, each pregnancy has a 1-in-4 chance of CF.")).toEqual([
+      "per-pregnancy chance (owner decision 2026-09-28)",
+    ]);
+    expect(carrierLanguage("about 25 in 100 for every pregnancy")).toEqual([
+      "per-pregnancy chance (owner decision 2026-09-28)",
+    ]);
+    expect(carrierLanguage("a chance per pregnancy")).toEqual(["per-pregnancy chance (owner decision 2026-09-28)"]);
+    expect(CARRIER_BANNED_PATTERNS.map(([, why]) => why)).toEqual([
+      "carrier status (owner decision 2026-09-28)",
+      "per-pregnancy chance (owner decision 2026-09-28)",
+    ]);
+  });
+
+  it("leaves carrier screening, carriers of a trait and pregnancy itself alone", () => {
+    expect(carrierLanguage("This report checks only F508del. It is not carrier screening.")).toEqual([]);
+    expect(carrierLanguage("Most carriers never develop psoriasis.")).toEqual([]);
+    expect(carrierLanguage("Pregnancy also raises clot risk. If you plan a pregnancy, speak with a clinician.")).toEqual([]);
+    expect(carrierLanguage("higher odds of a dizygotic twin pregnancy per G copy")).toEqual([]);
+  });
+
+  it("finds none in any seed template, and the CF report keeps its finding, caveats and laboratory line", () => {
+    const dir = path.join(process.cwd(), "data", "templates");
+    const found: string[] = [];
+    let cf: { variants: { interpretations: Record<string, string> }[] } | undefined;
+    for (const file of readdirSync(dir).filter((name) => name.endsWith(".json"))) {
+      const templates = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as ({ slug: string } & Parameters<
+        typeof templateProseFields
+      >[0])[];
+      for (const template of templates) {
+        for (const field of templateProseFields(template)) {
+          for (const why of carrierLanguage(field)) found.push(`${template.slug}: ${why}`);
+        }
+        if (template.slug === "cystic-fibrosis-cftr-f508del-informational") cf = template as typeof cf;
+      }
+    }
+    expect(found).toEqual([]);
+    const readings = cf?.variants[0].interpretations ?? {};
+    expect(Object.keys(readings).sort()).toEqual(["TCTTTCTT", "TT", "TTCTT"]);
+    expect(readings.TTCTT).toMatch(/^One copy of F508del\./);
+    expect(readings.TTCTT).toContain("Consumer arrays can misread this site.");
+    expect(readings.TTCTT).toContain("A clinical lab should confirm the result before you act on it.");
+    expect(readings.TTCTT).not.toMatch(/\bcarriers?\b|1-in-4|partners?/i);
+    expect(readings.TCTTTCTT).toContain("this checks only one CFTR variant");
+    expect(readings.TT).toContain("A clinical lab should confirm the result.");
   });
 });
 
