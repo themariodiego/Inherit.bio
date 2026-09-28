@@ -1,27 +1,35 @@
 import "server-only";
 
-import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  EmbryoFragmentStorageError,
+  parseEmbryoWriteTargets,
+  writeEmbryoFragment,
+  type EmbryoFragmentRpc,
+  type EmbryoWriteTarget,
+} from "./fragment-storage";
 
 /**
- * Where the chunk route puts each per-embryo fragment. The route never
- * chooses a name: a reservation creates the server-owned object identities,
- * the store reports each one's exact name and state, and the route writes
- * exactly the bytes it validated to exactly that name.
+ * Where the chunk route puts each per-embryo fragment
+ * (docs/embryo-fragment-storage.md). The route never chooses a name: the
+ * reservation creates the server-owned identities, `embryo_ingest_write_targets_v1`
+ * reports each one's exact receipt and state, and the route writes exactly
+ * the bytes it validated against exactly that receipt.
  *
- * This is the seam, not a backend. The owner moved embryo upload objects to a
- * versioned, listable store with create-only writes (ADR 0025's approach, so
- * an interrupted write can be proved absent), and the safeguards stream owns
- * that backend. Until it lands `embryoFragmentStore()` answers null and the
- * chunk route refuses before it reserves anything.
+ * Embryo upload objects live in a private R2 bucket behind the signed
+ * fragment gateway, with create-only writes (owner decision of 28 September,
+ * ADR 0025's approach), so an interrupted write can later be proved absent.
+ * This module is the chunk route's one seam onto that backend; the transport
+ * itself is `src/lib/embryos/fragment-storage.ts`.
  */
 
 export type FragmentTargetState = "open" | "landed" | "uncertain";
 
 export interface FragmentTarget {
   ordinal: number;
-  /** The exact server-owned object name. Opaque to the route. */
-  objectName: string;
   state: FragmentTargetState;
+  /** The exact receipt SQL issued. Presented back unchanged. */
+  receipt: EmbryoWriteTarget;
 }
 
 export type FragmentTargets =
@@ -30,37 +38,58 @@ export type FragmentTargets =
   | { status: "denied" };
 
 /**
- * `written`: created now. `exists`: an object is already at that name, so it
- * may have landed on an earlier try; the caller re-reads the targets.
- * `refused`: the store would not accept this write now (a closed window, a
- * fence); the caller re-reads the targets, which may renew the window.
+ * `landed`: written create-only, read back to EOF and acknowledged by SQL.
+ * `retry`: the intent is still open (the store was unavailable, the window
+ * closed, the read-back or acknowledgement did not match, or the request was
+ * aborted); re-read the targets, which renew an expired window, and retry.
+ * `conflict`: the key holds something other than these bytes; this fragment
+ * can never land, so retrying is pointless.
  */
-export type FragmentWriteOutcome = "written" | "exists" | "refused";
+export type FragmentWriteOutcome = "landed" | "retry" | "conflict";
 
 export interface EmbryoFragmentStore {
-  /** The reserved chunk's fragment targets, renewing an expired write window where the store allows it. */
+  /** The reserved chunk's targets. Reading them renews an expired open window. Throws when the answer breaks its contract. */
   targets(session: string, sequence: number): Promise<FragmentTargets>;
-  /** One create-only write of exactly these bytes, whose SHA-256 is `sha256`, at `target.objectName`. */
-  write(session: string, sequence: number, target: FragmentTarget, bytes: Uint8Array, sha256: string): Promise<FragmentWriteOutcome>;
+  /** Land one fragment at its receipt. Never throws. */
+  write(target: FragmentTarget, bytes: Uint8Array, signal: AbortSignal): Promise<FragmentWriteOutcome>;
+}
+
+type Rpc = (name: string, args: Record<string, unknown>) => {
+  abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }>;
+} & PromiseLike<{ data: unknown; error: unknown }>;
+
+/** The R2-backed store over a service-role RPC. Exported for tests; routes use `embryoFragmentStore()`. */
+export function r2FragmentStore(rpc: Rpc, write: typeof writeEmbryoFragment = writeEmbryoFragment): EmbryoFragmentStore {
+  return {
+    async targets(session, sequence) {
+      const { data, error } = await rpc("embryo_ingest_write_targets_v1", { p_session_id: session, p_sequence: sequence });
+      if (error) throw new EmbryoFragmentStorageError("unavailable");
+      const parsed = parseEmbryoWriteTargets(data);
+      if (!("targets" in parsed)) return { status: parsed.status === "failure_pending" ? "failure_pending" : "denied" };
+      return {
+        status: parsed.status,
+        targets: parsed.targets.map((target) => ({ ordinal: target.receipt.ordinal, state: target.state, receipt: target.receipt })),
+      };
+    },
+    async write(target, bytes, signal) {
+      try {
+        await write({ rpc: rpc as EmbryoFragmentRpc, target: target.receipt, bytes, signal });
+        return "landed";
+      } catch (error) {
+        return error instanceof EmbryoFragmentStorageError && error.code === "conflict" ? "conflict" : "retry";
+      }
+    },
+  };
 }
 
 /**
- * The configured store, or null when this deployment has none. A backend
- * registers itself here when it lands; nothing else constructs one.
+ * The configured store, or null when this deployment names no fragment
+ * gateway. Presence is all this checks; `writeEmbryoFragment` validates the
+ * origin and bucket exactly on every write, and `reserve_embryo_ingest_chunk_v1`
+ * refuses until an operator selects a backend in SQL.
  */
-export function embryoFragmentStore(): EmbryoFragmentStore | null {
-  return null;
+export function embryoFragmentStore(env: Readonly<Record<string, string | undefined>> = process.env): EmbryoFragmentStore | null {
+  if (!env.INHERIT_EMBRYO_R2_ORIGIN || !env.INHERIT_EMBRYO_R2_BUCKET) return null;
+  const admin = createAdminClient();
+  return r2FragmentStore(admin.rpc.bind(admin) as unknown as Rpc);
 }
-
-const target = z.object({
-  ordinal: z.number().int().min(0).max(63),
-  objectName: z.string().min(1).max(1024),
-  state: z.enum(["open", "landed", "uncertain"]),
-}).strict();
-
-/** A store's answer, checked before the route acts on it: a closed shape, one target per ordinal. */
-export const fragmentTargets = z.discriminatedUnion("status", [
-  z.object({ status: z.enum(["reserved", "stored"]), targets: z.array(target).max(64) }).strict(),
-  z.object({ status: z.literal("failure_pending") }).strict(),
-  z.object({ status: z.literal("denied") }).strict(),
-]);

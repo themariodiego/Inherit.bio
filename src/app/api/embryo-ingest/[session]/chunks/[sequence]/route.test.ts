@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * `PUT /api/embryo-ingest/[session]/chunks/[sequence]` against a mocked
- * database and an in-memory fragment store standing in for the backend the
- * safeguards stream is building. Chunks come from the real browser rewrite
- * over a synthetic three-sample VCF; every SYNTHETIC or PRIVATE label is
- * invented here.
+ * database and a double of the fragment store, to reach every branch of the
+ * route's reserve, targets, write and commit order. `route.r2.test.ts` runs
+ * the same route through the real R2 writer and gateway. Chunks come from the
+ * real browser rewrite over a synthetic three-sample VCF; every SYNTHETIC or
+ * PRIVATE label is invented here.
  */
 const ACCOUNT = "12345678-1234-4234-8234-000000000001";
 const AUTH_SESSION = "12345678-1234-4234-8234-0000000000a1";
@@ -19,14 +20,18 @@ const CHALLENGE = crypto.randomBytes(32).toString("base64url");
 const HANDLES = [0, 1, 2].map(() => crypto.randomBytes(32).toString("base64url"));
 const REVISION = 912_345;
 
-type Target = { ordinal: number; objectName: string; state: "open" | "landed" | "uncertain" };
+type Receipt = {
+  version: "embryo-ingest-write-target-v1"; sessionId: string; sequence: number; ordinal: number;
+  backend: "r2" | "supabase"; bucket: string; objectKey: string; byteCount: number; sha256: string; writeExpiresAt: string;
+};
+type Target = { ordinal: number; state: "open" | "landed" | "uncertain"; receipt: Receipt };
 const mocks = vi.hoisted(() => ({
   account: null as { user: { id: string }; sessionId: string } | null,
   calls: [] as { name: string; args: Record<string, unknown> }[],
   results: {} as Record<string, { data: unknown; error: { code?: string } | null }>,
   store: null as null | {
     targets: (session: string, sequence: number) => Promise<unknown>;
-    write: (session: string, sequence: number, target: Target, bytes: Uint8Array, sha256: string) => Promise<string>;
+    write: (target: Target, bytes: Uint8Array, signal: AbortSignal) => Promise<string>;
   },
 }));
 
@@ -99,25 +104,45 @@ function call(request: Request, sequence = "0") {
 
 const named = (name: string) => mocks.calls.filter((entry) => entry.name === name);
 
-/** An in-memory create-only store: a name is written once, and then it has landed. */
-function memoryStore(behaviour: { outcomes?: string[]; throwOnWrite?: boolean; ordinals?: number[] } = {}) {
-  const objects = new Map<string, Uint8Array>();
-  const written: { target: Target; bytes: Uint8Array; sha256: string; copy: Uint8Array }[] = [];
+type Fragment = { ordinal: number; bytes: number; lines: number; sha256: string };
+const KEYS = [0, 1, 2].map(() => `embryo/${crypto.randomUUID()}`);
+
+/**
+ * A double of the fragment store over what the reservation recorded: one
+ * receipt per reserved fragment, `open` until written and then `landed`.
+ * `outcomes` scripts successive writes; `receipts` rewrites what it reports.
+ */
+function memoryStore(behaviour: {
+  outcomes?: string[]; throwOnTargets?: boolean; answer?: unknown;
+  receipts?: (receipt: Receipt) => Receipt; states?: Record<number, Target["state"]>;
+} = {}) {
+  const landed = new Set<number>(Object.entries(behaviour.states ?? {})
+    .filter(([, state]) => state === "landed").map(([ordinal]) => Number(ordinal)));
+  const written: { target: Target; bytes: Uint8Array; copy: Uint8Array; signal: AbortSignal }[] = [];
   const outcomes = [...(behaviour.outcomes ?? [])];
+  const reserved = () => (named("reserve_embryo_ingest_chunk_v1").at(-1)?.args.p_fragments ?? []) as Fragment[];
   const store = {
-    objects, written,
-    targets: vi.fn(async () => ({
-      status: "reserved",
-      targets: (behaviour.ordinals ?? [0, 1, 2]).map((ordinal) => {
-        const objectName = `synthetic/${SESSION}/${ordinal}.vcf`;
-        return { ordinal, objectName, state: objects.has(objectName) ? "landed" : "open" };
-      }),
-    })),
-    write: vi.fn(async (_session: string, _sequence: number, target: Target, bytes: Uint8Array, sha256: string) => {
-      if (behaviour.throwOnWrite) throw new Error("PRIVATE provider failure");
-      const outcome = outcomes.shift() ?? "written";
-      if (outcome === "written" || outcome === "exists") objects.set(target.objectName, bytes.slice());
-      written.push({ target, bytes, sha256, copy: bytes.slice() });
+    written, landed,
+    targets: vi.fn(async (session: string, sequence: number) => {
+      if (behaviour.throwOnTargets) throw new Error("PRIVATE targets failure");
+      if (behaviour.answer) return behaviour.answer;
+      return {
+        status: "reserved",
+        targets: reserved().map((fragment) => {
+          const receipt: Receipt = {
+            version: "embryo-ingest-write-target-v1", sessionId: session, sequence, ordinal: fragment.ordinal,
+            backend: "r2", bucket: "inherit-embryo-test", objectKey: KEYS[fragment.ordinal], byteCount: fragment.bytes,
+            sha256: fragment.sha256, writeExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+          };
+          const state = behaviour.states?.[fragment.ordinal] ?? (landed.has(fragment.ordinal) ? "landed" : "open");
+          return { ordinal: fragment.ordinal, state, receipt: behaviour.receipts ? behaviour.receipts(receipt) : receipt };
+        }),
+      };
+    }),
+    write: vi.fn(async (target: Target, bytes: Uint8Array, signal: AbortSignal) => {
+      const outcome = outcomes.shift() ?? "landed";
+      if (outcome === "landed") landed.add(target.ordinal);
+      written.push({ target, bytes, copy: bytes.slice(), signal });
       return outcome;
     }),
   };
@@ -240,29 +265,34 @@ describe("terminal branches, recorded before any reservation or write", () => {
   });
 });
 
-describe("reserve, write, commit", () => {
-  it("reserves exactly what it validated, writes each fragment to its reported name, commits, and answers 204", async () => {
+describe("reserve, targets, write, commit", () => {
+  it("reserves exactly what it validated, lands each fragment at its receipt, commits, and answers 204", async () => {
     const bytes = await browserChunk();
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    const response = await call(put(bytes.slice()));
+    const request = put(bytes.slice());
+    const response = await call(request);
     expect(response.status).toBe(204);
     expect(await response.text()).toBe("");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     const [reserve] = named("reserve_embryo_ingest_chunk_v1");
     expect(reserve.args).toMatchObject({ p_session_id: SESSION, p_sequence: 0, p_sha256: sha(bytes), p_byte_count: bytes.byteLength, p_record_count: 2 });
-    const fragments = reserve.args.p_fragments as { ordinal: number; bytes: number; lines: number; sha256: string }[];
+    const fragments = reserve.args.p_fragments as Fragment[];
     expect(fragments.map((fragment) => fragment.ordinal)).toEqual([0, 1, 2]);
+    expect(store.targets).toHaveBeenCalledExactlyOnceWith(SESSION, 0);
     expect(store.written.map((entry) => entry.target.ordinal)).toEqual([0, 1, 2]);
     for (const entry of store.written) {
-      const reserved = fragments[entry.target.ordinal];
-      expect(entry.sha256).toBe(reserved.sha256);
-      expect(sha(entry.copy)).toBe(reserved.sha256);
-      expect(entry.copy.byteLength).toBe(reserved.bytes);
+      const fragment = fragments[entry.target.ordinal];
+      expect(entry.target.receipt).toMatchObject({ sessionId: SESSION, sequence: 0, byteCount: fragment.bytes, sha256: fragment.sha256 });
+      expect(sha(entry.copy)).toBe(fragment.sha256);
+      expect(entry.copy.byteLength).toBe(fragment.bytes);
+      expect(entry.signal).toBe(request.signal);
       const text = new TextDecoder().decode(entry.copy);
       for (const secret of [CHALLENGE, ...HANDLES, "SYNTHETIC_", "PRIVATE"]) expect(text).not.toContain(secret);
       // The route zero-fills its own buffers once the request is done.
       expect(entry.bytes.every((byte) => byte === 0)).toBe(true);
     }
+    // The order docs/embryo-fragment-storage.md fixes: reserve, targets, writes, commit.
+    expect(mocks.calls.map((entry) => entry.name).slice(-2)).toEqual(["reserve_embryo_ingest_chunk_v1", "commit_embryo_ingest_chunk_v1"]);
     expect(named("commit_embryo_ingest_chunk_v1").map((entry) => entry.args))
       .toEqual([{ p_session_id: SESSION, p_sequence: 0, p_sha256: sha(bytes) }]);
     expect(named("fail_embryo_ingest_attempt_v1")).toEqual([]);
@@ -273,49 +303,93 @@ describe("reserve, write, commit", () => {
   it("resumes an identical retry: a stored receipt writes nothing and commits idempotently", async () => {
     mocks.results.reserve_embryo_ingest_chunk_v1 = { data: { status: "stored", objects: [] }, error: null };
     expect((await call(put(await browserChunk()))).status).toBe(204);
+    expect(store.targets).not.toHaveBeenCalled();
     expect(store.write).not.toHaveBeenCalled();
     expect(named("commit_embryo_ingest_chunk_v1")).toHaveLength(1);
   });
 
-  it("writes only the fragments still open on a resumed reservation", async () => {
-    store.objects.set(`synthetic/${SESSION}/1.vcf`, new Uint8Array([1]));
+  it("skips fragments that already landed on a resumed reservation", async () => {
+    store = memoryStore({ states: { 1: "landed" } });
+    mocks.store = store;
     expect((await call(put(await browserChunk()))).status).toBe(204);
     expect(store.written.map((entry) => entry.target.ordinal)).toEqual([0, 2]);
   });
 
-  it("treats a duplicate object as possibly landed, re-reads the targets, and commits", async () => {
-    store = memoryStore({ outcomes: ["exists"] });
+  it("re-reads the targets after a write that did not land, rewrites only what is still open, and commits", async () => {
+    store = memoryStore({ outcomes: ["landed", "retry", "landed"] });
     mocks.store = store;
     expect((await call(put(await browserChunk()))).status).toBe(204);
     expect(store.targets).toHaveBeenCalledTimes(2);
+    expect(store.written.map((entry) => entry.target.ordinal)).toEqual([0, 1, 2, 1]);
     expect(named("commit_embryo_ingest_chunk_v1")).toHaveLength(1);
   });
 
-  it("answers the retryable 503, and never commits, when a write stays refused", async () => {
-    store = memoryStore({ outcomes: ["refused", "written", "written", "refused"] });
+  it("answers the retryable 503, and never commits, when a write still has not landed on the second pass", async () => {
+    store = memoryStore({ outcomes: ["retry", "landed", "landed", "retry"] });
     mocks.store = store;
     expect((await call(put(await browserChunk()))).status).toBe(503);
     expect(named("commit_embryo_ingest_chunk_v1")).toEqual([]);
     expect(named("fail_embryo_ingest_attempt_v1")).toEqual([]);
   });
 
-  it("answers 503 when the store fails, without copying its error anywhere", async () => {
-    store = memoryStore({ throwOnWrite: true });
+  it("fails the attempt when a key holds other bytes, because that fragment can never land", async () => {
+    store = memoryStore({ outcomes: ["conflict"] });
     mocks.store = store;
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await call(put(await browserChunk()))).status).toBe(404);
+    expect(store.written).toHaveLength(1);
+    expect(named("fail_embryo_ingest_attempt_v1").map((entry) => entry.args.p_code)).toEqual(["chunk"]);
+    expect(named("prepare_embryo_ingest_unwind_v1")).toHaveLength(1);
+    expect(named("commit_embryo_ingest_chunk_v1")).toEqual([]);
+  });
+
+  it("answers 503, not a terminal answer, when that failure cannot be recorded", async () => {
+    store = memoryStore({ outcomes: ["conflict"] });
+    mocks.store = store;
+    mocks.results.fail_embryo_ingest_attempt_v1 = { data: null, error: { code: "55P03" } };
+    expect((await call(put(await browserChunk()))).status).toBe(503);
+    expect(named("prepare_embryo_ingest_unwind_v1")).toEqual([]);
+  });
+
+  it("fails the attempt, writing nothing, when a receipt describes other bytes than the fragment it validated", async () => {
+    store = memoryStore({ receipts: (receipt) => receipt.ordinal === 2 ? { ...receipt, sha256: "0".repeat(64) } : receipt });
+    mocks.store = store;
+    expect((await call(put(await browserChunk()))).status).toBe(404);
+    expect(store.write).not.toHaveBeenCalled();
+    expect(named("fail_embryo_ingest_attempt_v1").map((entry) => entry.args.p_code)).toEqual(["chunk"]);
+    expect(named("commit_embryo_ingest_chunk_v1")).toEqual([]);
+  });
+
+  it.each([
+    ["another session's receipt", { receipts: (receipt: Receipt) => ({ ...receipt, sessionId: crypto.randomUUID() }) }],
+    ["another chunk's receipt", { receipts: (receipt: Receipt) => ({ ...receipt, sequence: 1 }) }],
+    ["a Supabase receipt, which only tests may select", { receipts: (receipt: Receipt) => ({ ...receipt, backend: "supabase" as const }) }],
+    ["an uncertain target", { states: { 0: "uncertain" as const } }],
+    ["targets that are not one per embryo", { answer: { status: "reserved", targets: [] } }],
+    ["a targets door that fails", { throwOnTargets: true }],
+  ])("writes nothing and answers the retryable 503 for %s", async (_label, behaviour) => {
+    store = memoryStore(behaviour);
+    mocks.store = store;
     const response = await call(put(await browserChunk()));
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain("PRIVATE");
-    expect(log).not.toHaveBeenCalled();
+    expect(store.write).not.toHaveBeenCalled();
     expect(named("commit_embryo_ingest_chunk_v1")).toEqual([]);
-    log.mockRestore();
+    expect(named("fail_embryo_ingest_attempt_v1")).toEqual([]);
   });
 
-  it("writes nothing when the store's targets are not exactly one per embryo", async () => {
-    store = memoryStore({ ordinals: [0, 1] });
+  it("dispatches the unwind when reading the targets fails the attempt", async () => {
+    store = memoryStore({ answer: { status: "failure_pending" } });
     mocks.store = store;
-    expect((await call(put(await browserChunk()))).status).toBe(503);
+    expect((await call(put(await browserChunk()))).status).toBe(404);
+    expect(named("prepare_embryo_ingest_unwind_v1")).toHaveLength(1);
     expect(store.write).not.toHaveBeenCalled();
+  });
+
+  it("answers a session the targets door no longer serves with the opaque 404", async () => {
+    store = memoryStore({ answer: { status: "denied" } });
+    mocks.store = store;
+    expect((await call(put(await browserChunk()))).status).toBe(404);
+    expect(named("prepare_embryo_ingest_unwind_v1")).toEqual([]);
   });
 
   it("dispatches the unwind when the reservation fails the attempt", async () => {
@@ -323,6 +397,12 @@ describe("reserve, write, commit", () => {
     expect((await call(put(await browserChunk()))).status).toBe(404);
     expect(named("prepare_embryo_ingest_unwind_v1").map((entry) => entry.args)).toEqual([{ p_cohort_id: COHORT, p_ingest_revision: 4 }]);
     expect(store.write).not.toHaveBeenCalled();
+  });
+
+  it("answers the retryable 503 while no backend is selected, since the reservation rolled back", async () => {
+    mocks.results.reserve_embryo_ingest_chunk_v1 = { data: null, error: { code: "55000" } };
+    expect((await call(put(await browserChunk()))).status).toBe(503);
+    expect(store.targets).not.toHaveBeenCalled();
   });
 
   it("answers a session that is no longer open with the opaque 404", async () => {
@@ -338,7 +418,8 @@ describe("reserve, write, commit", () => {
     mocks.calls = [];
     store = memoryStore();
     mocks.store = store;
-    mocks.results.commit_embryo_ingest_chunk_v1 = { data: null, error: { code: "42501" } };
+    // 55000 embryo_chunk_objects_unlanded: the commit gate found a fragment not landed.
+    mocks.results.commit_embryo_ingest_chunk_v1 = { data: null, error: { code: "55000" } };
     expect((await call(put(await browserChunk()))).status).toBe(503);
   });
 

@@ -1,6 +1,6 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, unavailable } from "@/lib/embryos/api";
-import { embryoFragmentStore, fragmentTargets, type EmbryoFragmentStore, type FragmentTarget } from "@/lib/embryos/fragment-store";
+import { embryoFragmentStore, type EmbryoFragmentStore, type FragmentTargets } from "@/lib/embryos/fragment-store";
 import { accountJurisdictionDenied, unauthorized } from "@/lib/embryos/guards";
 import {
   chunkBinding,
@@ -18,15 +18,17 @@ import {
   type ValidatedChunk,
 } from "@/lib/embryos/ingest-chunk";
 import { dispatchIngestAttemptFailure, failIngestAttempt } from "@/lib/embryos/ingest-failure";
-import { authorizeIngestHttpRequest, ingestChunkEnvelope, readIngestChunk } from "@/lib/embryos/ingest-http";
+import { authorizeIngestHttpRequest, ingestChunkEnvelope, readIngestChunk, type IngestAuthorizationArgs } from "@/lib/embryos/ingest-http";
 import { EmbryoTransportError } from "@/lib/embryos/ingest-lines";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * `PUT /api/embryo-ingest/[session]/chunks/[sequence]` (register
  * `api.embryo-ingest-chunk`). TEST-LOCAL only; `EMBRYO_INGEST_AVAILABLE`
- * stays false, and until a fragment store is configured this route refuses
- * before it authorizes, reads or reserves anything.
+ * stays false. Until this deployment names the R2 fragment gateway
+ * (`INHERIT_EMBRYO_R2_ORIGIN`, `INHERIT_EMBRYO_R2_BUCKET`) the route refuses
+ * before it authorizes, reads or reserves anything, and until an operator
+ * selects a backend in SQL the reservation itself refuses.
  *
  * `policy.requestAuthority`: the live account and originating auth session,
  * the `embryo_analysis` guard, exact Origin with same-origin fetch metadata
@@ -37,9 +39,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * `serverWork`, in order: read the bounded body, bind its header to the one
  * issued challenge, revision, build and handle set, validate the whole chunk
- * (`validateEmbryoVcfChunk`) and only then reserve it. Each per-embryo
- * fragment goes to exactly the server-owned name the store reports, and the
- * commit refuses unless every fragment has landed there.
+ * (`validateEmbryoVcfChunk`) and only then reserve it. Then, as
+ * docs/embryo-fragment-storage.md fixes the order: read the write targets,
+ * land each open fragment at its exact receipt with `writeEmbryoFragment`
+ * (create-only, read back to EOF, acknowledged by SQL), and commit, which
+ * refuses unless every fragment has landed.
  *
  * Every terminal branch (framing, header, format, a limit, an aborted body)
  * is recorded through `fail_embryo_ingest_attempt_v1` before any reservation
@@ -93,25 +97,28 @@ export async function PUT(request: Request, context: { params: Promise<{ session
     } catch (error) {
       return reject(chunkRejection(error));
     }
-    return await persistChunk(store, credentials.p_ingest_session_id, envelope.sequence, chunk, authority);
+    return await persistChunk(store, request.signal, credentials, envelope.sequence, chunk, authority);
   } finally {
     zeroizeChunk(bytes, chunk);
   }
 }
 
 /**
- * Reserve, write, commit. Every database refusal of the attempt dispatches
- * the unwind and reads as the opaque 404; contention, an unready store or a
- * fragment that has not landed yet is the retryable 503, which the browser
- * answers by sending the identical chunk again.
+ * Reserve, write, commit, in the order docs/embryo-fragment-storage.md fixes.
+ * Every database refusal of the attempt dispatches the unwind and reads as
+ * the opaque 404; contention, an unready store or a fragment that has not
+ * landed yet is the retryable 503, which the browser answers by sending the
+ * identical chunk again. A fragment that can never land fails the attempt.
  */
 async function persistChunk(
   store: EmbryoFragmentStore,
-  session: string,
+  signal: AbortSignal,
+  credentials: IngestAuthorizationArgs,
   sequence: number,
   chunk: ValidatedChunk,
   authority: { cohortId: string; ingestRevision: number; sampleCount: number },
 ): Promise<Response> {
+  const session = credentials.p_ingest_session_id;
   const admin = createAdminClient();
   const refusedAttempt = async () => {
     await dispatchIngestAttemptFailure(authority);
@@ -124,16 +131,23 @@ async function persistChunk(
     p_fragments: reservationFragments(chunk),
   });
   const receipt = chunkReceipt.safeParse(reserved.data);
+  // Includes 55000 embryo_object_backend_unavailable: no backend is selected,
+  // and the whole reservation rolled back.
   if (reserved.error || !receipt.success) return noReferrer(unavailable());
   if (receipt.data.status === "failure_pending") return refusedAttempt();
   if (receipt.data.status === "denied") return noReferrer(notFound());
 
   if (receipt.data.status === "reserved") {
-    const written = await writeFragments(store, session, sequence, chunk, authority.sampleCount);
+    const written = await writeFragments(store, signal, session, sequence, chunk, authority.sampleCount);
     if (written === "failure_pending") return refusedAttempt();
-    if (written !== "landed") return noReferrer(written === "denied" ? notFound() : unavailable());
+    if (written === "denied") return noReferrer(notFound());
+    if (written === "retry") return noReferrer(unavailable());
+    if (written === "never") {
+      return (await failIngestAttempt(credentials, authority, "chunk")) ? noReferrer(notFound()) : noReferrer(unavailable());
+    }
   }
 
+  // Refuses (55000 embryo_chunk_objects_unlanded) until every fragment landed.
   const committed = await admin.rpc("commit_embryo_ingest_chunk_v1", {
     p_session_id: session, p_sequence: sequence, p_sha256: chunk.sha256,
   });
@@ -145,48 +159,54 @@ async function persistChunk(
 }
 
 /**
- * Write every open fragment to its reported name, at most twice. A duplicate
- * on retry means it may already have landed, and a refusal may be a closed
- * window the store renews, so both re-read the targets once. `landed` means
- * no target is still open; only the commit proves they all arrived.
+ * Read the targets, then land every open fragment at its exact receipt, in at
+ * most two passes. Any write that did not land leaves its intent open, so the
+ * second pass re-reads the targets (renewing an expired window) and writes
+ * only what is still open. `landed` means no target is still open; only the
+ * commit proves they all arrived.
+ *
+ * `never`: a receipt disagrees with the fragment this route validated, or
+ * the key already holds other bytes. That fragment can never land, so the
+ * attempt is failed rather than retried.
  */
 async function writeFragments(
   store: EmbryoFragmentStore,
+  signal: AbortSignal,
   session: string,
   sequence: number,
   chunk: ValidatedChunk,
   sampleCount: number,
-): Promise<"landed" | "retry" | "failure_pending" | "denied"> {
+): Promise<"landed" | "retry" | "never" | "failure_pending" | "denied"> {
   const byOrdinal = new Map(chunk.fragments.map((fragment) => [fragment.ordinal, fragment]));
+  if (byOrdinal.size !== sampleCount) return "retry";
   for (let pass = 0; pass < 2; pass += 1) {
-    let targets: FragmentTarget[];
+    let answer: FragmentTargets;
     try {
-      const parsed = fragmentTargets.safeParse(await store.targets(session, sequence));
-      if (!parsed.success) return "retry";
-      if (parsed.data.status === "failure_pending" || parsed.data.status === "denied") return parsed.data.status;
-      targets = parsed.data.targets;
+      answer = await store.targets(session, sequence);
     } catch {
       return "retry";
     }
-    // One target per ordinal the session reserved, exactly: a VCF chunk
-    // splits every record into every embryo's fragment.
+    if (answer.status === "failure_pending" || answer.status === "denied") return answer.status;
+    const targets = answer.targets;
+    // Exactly one receipt per embryo: a VCF chunk splits every record into
+    // every embryo's fragment. A receipt for another session or chunk, or a
+    // non-R2 backend, is a contract breach: write nothing.
     const ordinals = targets.map((target) => target.ordinal).sort((a, b) => a - b);
-    if (ordinals.length !== sampleCount || ordinals.some((ordinal, index) => ordinal !== index) ||
-      byOrdinal.size !== sampleCount) return "retry";
+    if (ordinals.length !== sampleCount || ordinals.some((ordinal, index) => ordinal !== index)) return "retry";
+    for (const target of targets) {
+      const { receipt } = target;
+      if (receipt.sessionId !== session || receipt.sequence !== sequence || receipt.ordinal !== target.ordinal ||
+        receipt.backend !== "r2" || target.state === "uncertain") return "retry";
+      const fragment = byOrdinal.get(target.ordinal)!;
+      if (receipt.byteCount !== fragment.bytes.byteLength || receipt.sha256 !== fragment.sha256) return "never";
+    }
     const open = targets.filter((target) => target.state === "open");
-    if (targets.some((target) => target.state === "uncertain")) return "retry";
     if (open.length === 0) return "landed";
     let again = false;
     for (const target of open) {
-      const fragment = byOrdinal.get(target.ordinal)!;
-      let outcome: string;
-      try {
-        outcome = await store.write(session, sequence, target, fragment.bytes, fragment.sha256);
-      } catch {
-        return "retry";
-      }
-      if (outcome === "exists" || outcome === "refused") again = true;
-      else if (outcome !== "written") return "retry";
+      const outcome = await store.write(target, byOrdinal.get(target.ordinal)!.bytes, signal);
+      if (outcome === "conflict") return "never";
+      if (outcome === "retry") again = true;
     }
     if (!again) return "landed";
   }
