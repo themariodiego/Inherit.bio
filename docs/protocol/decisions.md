@@ -4384,3 +4384,31 @@ reviewer.
   `deleteAfter: 2026-10-14`. After that date the correspondence test fails
   for every pull request until `/api/withdraw`, `/withdraw/[token]`, their
   browser test and both rows are deleted. A warning only was declined.
+
+## 2026-09-28 (afternoon) — Embryo purge and canonical-source questions
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all four. They come from ADR 0020
+safeguard 3 (the terminal purge, #262) and worker unit 4a (canonical
+sources, #263). Both are TEST-LOCAL, and production embryo ingest stays off.
+
+- **An approved single-parent legal review outlives a purged attempt.** When
+  an abandoned embryo upload is purged, the `legal_reviews` row that approved
+  its single-parent draft is kept as a retained outcome. The zero-residual
+  check gets one closed, named skip for `legal_reviews.target_id` and no
+  wider one. Deleting it with the draft, or never purging such an attempt
+  until the register decides, was declined.
+- **Retention control rows are terminalized, not deleted.** After a purge the
+  due phase and its retention row are marked `succeeded` /
+  `ingest_abandoned_no_source` and kept for crash recovery and replay
+  defence, as the register's zero-residual rule says. They hold only random
+  identifiers. Deleting them, which would first need a housekeeping retention
+  ID, was declined.
+- **An ambiguous contact is never guessed at.** A Record Key recipient with
+  more than one current contact gets a coded `delivery_unavailable` terminal
+  notice slot. Using the newest contact was declined.
+- **Embryo sources do not use the parent's own upload allowance.** A published
+  embryo's canonical source is a `genome_files` row on the embryo's subject,
+  invisible in My files. Own-upload accounting excludes embryo-subject and
+  cohort rows; embryo ingest keeps its own payload limits. Counting them was
+  declined.
