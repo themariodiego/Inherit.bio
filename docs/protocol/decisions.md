@@ -4298,6 +4298,36 @@ questions at the end of `docs/carrier-importer-design.md`.
   needs its signed jurisdiction review (G5.5) before the path is offered
   there. Keeping the text test-only until counsel reviewed it was declined.
 
+## 2026-09-28 (later) — Comprehension harness: engineering choices for owner review
+
+The 22 September entry asked engineering to choose the host and endpoint.
+These are the choices the live harness makes. None of them has spent money.
+
+- **Endpoint:** any OpenAI-compatible chat-completions endpoint over HTTPS,
+  named only in the operator's local run file. The preferred instance is the
+  existing edge provider's AI gateway, as the owner preferred. No credential
+  exists yet, so no paid call has been made.
+- **Credential:** read from one named variable in the operator's own shell,
+  documented as `COMPREHENSION_MODEL_API_KEY`, and handed only to each isolated
+  inference process. It is never deployment configuration, never in
+  `.env.example` and never under `src/`, so the commitment that LLM keys are
+  never deployment-level stands unchanged. Nobody is asked for a key; scored
+  runs wait until one exists in the environment.
+- **Model identity:** applies the 25 September decision above. The pinned
+  identifier and temperatures are written into a real run's `manifest.json`
+  under `docs/comprehension-runs/<date>/` and nowhere else. The journal, traces
+  and logs carry only a non-identifying label, and a test fails if a recorded
+  identifier appears in any other tracked file or commit message.
+- **Spend:** one journal for the whole effort reserves each call's maximum
+  before it is sent. The order is fixed: a stub smoke run, then a calibration
+  (one task, about five personas), then full runs. A paid full run refuses to
+  start without a calibration on the same model and settings whose measured
+  cost, plus 25%, fits what is left of US$50.
+- **Isolation:** a browser context and a freshly seeded account per
+  simulation; a separate operating-system process per inference call.
+- **T9's fixture:** the reserved-record invitation the owner chose today, with
+  the mail shown beside the page. Opening it is an entry, never an action.
+
 ## 2026-09-28 (evening) — Carrier review, Path B text, Family Copilot, nonces and two register rows
 
 Asked in chat as selectable choices, with the recommended option first. The
