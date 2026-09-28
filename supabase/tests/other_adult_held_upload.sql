@@ -39,6 +39,21 @@ insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
  ('0a5e0000-0000-4000-8000-000000000019','0a5e0000-0000-4000-8000-000000000009',now(),now(),'aal1');
 update public.profiles set date_of_birth=date '1990-01-01' where id in
  ('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000002','0a5e0000-0000-4000-8000-000000000009');
+-- The uploader has also stored their own DNA, so their own readers are live:
+-- a held file must not appear through them either.
+insert into public.account_operation_nonces(nonce_hash,account_id,session_id,operation,expires_at)
+ select repeat(letter,64),'0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',
+ 'own_upload_artifact_sign',clock_timestamp()+interval '9 minutes' from unnest(array['1','2']) letter;
+select public.sign_own_upload_artifact_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',
+ (select id from public.subjects where subject_account_id='0a5e0000-0000-4000-8000-000000000001' and subject_class='self'),
+ 'disclosure.insurance-and-discrimination',1,
+ (select body_sha256 from public.consent_artifacts where artifact_key='disclosure.insurance-and-discrimination' and version=1),
+ array['understood'],1,1,1,1,1,repeat('1',64));
+select public.sign_own_upload_artifact_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',
+ (select id from public.subjects where subject_account_id='0a5e0000-0000-4000-8000-000000000001' and subject_class='self'),
+ 'consent.upload-self',1,
+ (select body_sha256 from public.consent_artifacts where artifact_key='consent.upload-self' and version=1),
+ array['own-adult-dna'],1,1,1,1,1,repeat('2',64));
 
 -- 1. The draft artifact ------------------------------------------------------
 create temporary table draft_text as select
@@ -306,10 +321,10 @@ select is((select coalesce(string_agg(distinct fn,', '),'') from reader_calls wh
 select is((select count(*) from reader_calls where fn in ('private.own_upload_store_authority_v1','private.own_upload_context_v1')
  and args='0a5e0000-0000-4000-8000-000000000001/'||pg_temp.sid('accept')::text and outcome='refused'),2::bigint,
  'the own-subject authority itself refuses the uploader for the reservation');
--- The account-wide export list, which is not subject-scoped, sees nothing held either.
-select is(position(pg_temp.fxv('accept','final') in public.own_subject_export_content_v1('list',
- '0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011')::text),0,
- 'the uploader''s export lists nothing held');
+-- The account-wide export list, which is not subject-scoped, answers the
+-- uploader (whose own store consent is live) and lists nothing held.
+select is(public.own_subject_export_content_v1('list','0a5e0000-0000-4000-8000-000000000001',
+ '0a5e0000-0000-4000-8000-000000000011'),'[]'::jsonb,'the uploader''s own export lists no file at all');
 
 -- 6. Recipient review closes the upload window -------------------------------
 select is((select count(*) from public.activate_rights_session_v1(
@@ -429,6 +444,22 @@ select is((select count(*) from public.upload_sessions where id=pg_temp.fxv('ref
 -- 9. The older token path cannot accept a file its page never showed ----------
 select lives_ok($$select pg_temp.present('legacy','5')$$,'(legacy) presented');
 select lives_ok($$select pg_temp.sign('legacy','5')$$,'(legacy) signed');
+-- Consent is rechecked at every transport step, not only at issuance.
+create function pg_temp.stage_after_revocation(p_name text) returns void language plpgsql as $$
+declare r jsonb;
+begin
+ r:=pg_temp.issue(p_name,repeat('9',64));
+ update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
+  where subject_id=pg_temp.sid(p_name) and account_id='0a5e0000-0000-4000-8000-000000000001'
+   and consent_type='upload_class' and revoked_at is null;
+ perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+ perform set_config('role','service_role',true);
+ insert into storage.objects(bucket_id,name,owner_id,metadata)
+  values('genomes',r->>'stagingKey','0a5e0000-0000-4000-8000-000000000001','{"size":8}');
+end;
+$$;
+select throws_ok($$select pg_temp.stage_after_revocation('legacy')$$,'42501','upload_unavailable',
+ 'a withdrawn uploader consent stops the Storage write of a lease already issued');
 select is((select h->>'status' from (select pg_temp.hold('legacy',repeat('c',64)) h) x),'stored_quarantined','(legacy) held');
 select is(public.respond_adult_subject_invitation_v1((select token_hash from fx where name='legacy'),'confirm',
  '0a5e0000-0000-4000-8000-000000000002',repeat('4',64)),'unavailable',
