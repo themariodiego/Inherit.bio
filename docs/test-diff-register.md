@@ -55,6 +55,13 @@ Expectations changed by this feature, each with a dated comment:
   plan behaves as before.
 - `supabase/tests/v2_contracts.sql`: the purge-store count is 130, from the
   merge of main (the legal audit link) with worker-3 (two split stores).
+- `scripts/route-gate.test.ts`: required states move 154 -> 155. The waiver
+  of `not-covered` on `/copilot/[scope]` is withdrawn: the group scopes'
+  closed unavailable page is that state in the register
+  (`copilot-transport-availability-v1`). The existing test in
+  `e2e/copilot-group-scopes.spec.ts` that follows the Family box to it now
+  carries the title `/copilot/[scope] not-covered: …`. The gate reads 144 of
+  155 proven, so the unproven count stays 11.
 
 Planted regressions, each caught and then restored:
 

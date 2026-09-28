@@ -29,7 +29,7 @@ test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
 });
 
-test("the Family Copilot box opens the Family group scope, which says plainly why it cannot run here and reads nothing", async ({ page }) => {
+test("/copilot/[scope] not-covered: the Family Copilot box opens the Family group scope, which says plainly why it cannot run here and reads nothing", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/overview");
   // Overview gives each box's label the DOM id `box-{id with dots as dashes}-label`.
