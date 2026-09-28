@@ -257,7 +257,7 @@ Storage deletion acknowledgement or terminal notice producer is added.
    waiting on storage or on completion.
 
    **Canonical parts and sources, 30 September 2026**
-   (`20260930140000_embryo_canonical_part_disposal.sql`, tested by
+   (`20260930132000_embryo_canonical_part_disposal.sql`, tested by
    `supabase/tests/embryo_canonical_part_disposal.sql` and the two suites
    above). The split worker's canonical parts
    (`20260930123000_embryo_canonical_sources.sql`) are R2 objects under

@@ -5,7 +5,7 @@
 Two new files:
 
 - `supabase/tests/embryo_canonical_part_disposal.sql` has 96 assertions,
-  fixture included, for `20260930140000_embryo_canonical_part_disposal.sql`.
+  fixture included, for `20260930132000_embryo_canonical_part_disposal.sql`.
   An attempt copies one embryo, leaves one copy open and fails. A second
   attempt then publishes. The file covers:
   - the published cleanup listing exactly the three unbound parts, landed or

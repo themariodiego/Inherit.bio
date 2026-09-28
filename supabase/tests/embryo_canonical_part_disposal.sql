@@ -1,6 +1,6 @@
 begin;
 select no_plan();
--- Canonical parts and sources in the unwind machinery (20260930140000).
+-- Canonical parts and sources in the unwind machinery (20260930132000).
 -- One synthetic three-embryo upload: attempt one copies embryo 1 and starts a
 -- copy for embryo 3, then fails transiently; attempt two publishes embryos 1
 -- and 3 from new copies. The published cleanup must dispose of attempt one's
