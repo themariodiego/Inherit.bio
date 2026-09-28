@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { loadPersonas, participantPersonaPrompt, type Persona } from "./personas";
+import { findRepositoryRoot } from "./repository";
 import type { PatternFile } from "./prohibited";
 import { digest, freeze, opaque, settingsSchema, taskIds, type Settings } from "./conductor-contract";
 
@@ -16,7 +16,7 @@ const taskSchema = z.object({ id: z.enum(taskIds), prompt: z.string().min(1), ac
   fixtures: z.array(z.string().min(1)), withheldVariant: z.object({ prompt: z.string().min(1) }).passthrough().optional(),
 }).passthrough();
 const bindingsSchema = z.object({ tasks: z.array(taskSchema).length(10) }).passthrough();
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = findRepositoryRoot();
 export const repositoryRoot = root;
 export type ConductorInputs = Readonly<{ personas: readonly Persona[]; tasks: readonly z.infer<typeof taskSchema>[];
   rubric: string; patterns: PatternFile; pins: Record<string, string>; inputDigest: string }>;

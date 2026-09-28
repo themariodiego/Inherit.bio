@@ -181,7 +181,9 @@ export function stubParticipant(payload: ParticipantPayload, settings: WorkerSet
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
   const stepsLeft = settings.maxSteps - payload.history.length;
   if (candidates.length && payload.history.length < 5 && stepsLeft > 0) return { kind: "click", target: candidates[0].id };
-  const sentences = lines.filter(line => !line.startsWith("[")).flatMap(line => line.split(/(?<=[.!?])\s+/))
+  // Page text only: never a control line or the harness's own framing lines.
+  const sentences = lines.filter(line => !/^(?:\[|Page title:|Note:|\(Showing|---|Email:)/.test(line))
+    .flatMap(line => line.split(/(?<=[.!?])\s+/))
     .map(text => text.trim()).filter(text => text.length > 20)
     .map((text, index) => ({ text, index, score: overlap(task, words(text)) }))
     .sort((left, right) => right.score - left.score || left.index - right.index).slice(0, 2);
@@ -207,7 +209,7 @@ export function stubGrader(payload: GraderPayload) {
 const approximateTokens = (value: string) => Math.ceil(bytes(value) / 4);
 
 async function callChat(provider: Extract<Provider, { kind: "openai-compatible-chat" }>, messages: Message[],
-  temperature: number, settings: WorkerSettings, environment: NodeJS.ProcessEnv) {
+  temperature: number, settings: WorkerSettings, environment: Record<string, string | undefined>) {
   const endpoint = new URL(provider.endpoint);
   const loopback = endpoint.hostname === "127.0.0.1" || endpoint.hostname === "localhost";
   if (endpoint.protocol !== "https:" && !(endpoint.protocol === "http:" && loopback)) throw new Error("Endpoint must be HTTPS");
@@ -230,7 +232,7 @@ async function callChat(provider: Extract<Provider, { kind: "openai-compatible-c
     requestDigest: sha256(JSON.stringify(sampling)) };
 }
 
-export async function handle(request: WorkerRequest, environment: NodeJS.ProcessEnv = process.env) {
+export async function handle(request: WorkerRequest, environment: Record<string, string | undefined> = process.env) {
   const { role, settings, provider } = request;
   if (provider.kind === "isolation-probe") {
     return { value: { cwd: process.cwd(), environmentKeys: Object.keys(environment).sort() },

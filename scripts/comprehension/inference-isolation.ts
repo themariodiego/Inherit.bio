@@ -19,18 +19,20 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { LiveEnvironment, Payload, ProcessAdapter, Role, Settings } from "./conductor-contract";
 import { repositoryRoot } from "./conductor-inputs";
 import type { Provider, WorkerRequest } from "./inference-worker";
 
-export const WORKER = fileURLToPath(new URL("./inference-worker.ts", import.meta.url));
+export const WORKER = path.join(repositoryRoot, "scripts/comprehension/inference-worker.ts");
 const PROXY_VARIABLES = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy",
   "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE"] as const;
 const REPLY_LIMIT = 1_048_576;
+/** A plain environment map. The app's global types make NODE_ENV required on
+ * ProcessEnv, and a scrubbed child environment deliberately has none. */
+export type Environment = Record<string, string | undefined>;
 
 /** Exactly what a child process may see, and nothing else. */
-export function childEnvironment(provider: Provider, parent: NodeJS.ProcessEnv = process.env): Record<string, string> {
+export function childEnvironment(provider: Provider, parent: Environment = process.env): Record<string, string> {
   const environment: Record<string, string> = { PATH: parent.PATH ?? "/usr/bin:/bin", LANG: "C.UTF-8" };
   if (provider.kind !== "openai-compatible-chat") return environment;
   if (!/^[A-Z][A-Z0-9_]{2,63}$/.test(provider.apiKeyVariable)) throw new Error("Invalid credential variable name");
@@ -49,8 +51,8 @@ function workerSettings(settings: Readonly<Settings>): WorkerRequest["settings"]
 
 async function runChild(request: WorkerRequest, directory: string, environment: Record<string, string>,
   signal: AbortSignal, started: (child: ChildProcess) => void): Promise<unknown> {
-  const child = spawn(process.execPath, ["--experimental-strip-types", "--no-warnings", WORKER],
-    { cwd: directory, env: environment, stdio: ["pipe", "pipe", "ignore"] });
+  const child: ChildProcess = spawn(process.execPath, ["--experimental-strip-types", "--no-warnings", WORKER],
+    { cwd: directory, env: environment as unknown as NodeJS.ProcessEnv, stdio: ["pipe", "pipe", "ignore"] });
   started(child);
   const kill = () => { if (child.exitCode === null) child.kill("SIGKILL"); };
   signal.addEventListener("abort", kill, { once: true });
@@ -70,7 +72,7 @@ async function runChild(request: WorkerRequest, directory: string, environment: 
 
 /** The live environment's process factory: one fresh directory and one fresh
  * child per acquired process, and exactly one call per process. */
-export function isolatedProcesses(provider: Provider, parent: NodeJS.ProcessEnv = process.env): LiveEnvironment["openProcess"] {
+export function isolatedProcesses(provider: Provider, parent: Environment = process.env): LiveEnvironment["openProcess"] {
   const environment = childEnvironment(provider, parent);
   return async ({ id, role }: Readonly<{ id: string; role: Role }>): Promise<ProcessAdapter> => {
     const directory = await mkdtemp(path.join(tmpdir(), "inherit-comprehension-call-"));
@@ -101,7 +103,7 @@ export interface IsolationReport {
 }
 
 /** Spawn a child exactly as a real call would and report what it could see. */
-export async function probeIsolation(provider: Provider, parent: NodeJS.ProcessEnv = process.env): Promise<IsolationReport> {
+export async function probeIsolation(provider: Provider, parent: Environment = process.env): Promise<IsolationReport> {
   const environment = childEnvironment(provider, parent);
   const directory = await mkdtemp(path.join(tmpdir(), "inherit-comprehension-probe-"));
   try {

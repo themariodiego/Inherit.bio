@@ -3,6 +3,7 @@
  *
  *   pnpm comprehension:human sheet [P01] [--t6-withheld]   one participant's facilitator sheet
  *   pnpm comprehension:human template                     a blank round file for the facilitator
+ *   pnpm comprehension:human rubric T5                    the exact rubric slice a grader receives
  *   pnpm comprehension:human tally <round.json>           per-task results against the thresholds
  *
  * The sheet reads the opening and closing scripts verbatim from
@@ -22,7 +23,7 @@ import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import bindings from "./bindings.json";
 import { taskIds, verdictSchema, type TaskId } from "./conductor-contract";
-import { repositoryRoot } from "./conductor-inputs";
+import { repositoryRoot, taskRubric } from "./conductor-inputs";
 import { loadPatterns, prohibitedHit, type PatternFile } from "./prohibited";
 
 const THRESHOLD_TASKS = ["T1", "T2", "T3", "T4", "T8", "T9"] as const;
@@ -170,12 +171,16 @@ function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (command === "sheet") {
     console.log(facilitatorSheet(rest.find(value => !value.startsWith("--")) ?? "P01", rest.includes("--t6-withheld")));
+  } else if (command === "rubric" && rest[0]) {
+    // The same deterministic slice the simulated graders receive: the shared
+    // instructions and the one task section, and nothing else.
+    console.log(taskRubric(readFileSync(path.join(repositoryRoot, "scripts/comprehension/rubric.md"), "utf8"), z.enum(taskIds).parse(rest[0])));
   } else if (command === "template") {
     console.log(JSON.stringify(blankRound(), null, 2));
   } else if (command === "tally" && rest[0]) {
     console.log(JSON.stringify(tallyRound(JSON.parse(readFileSync(path.resolve(rest[0]), "utf8"))), null, 2));
   } else {
-    console.error("Usage: pnpm comprehension:human sheet [P01] [--t6-withheld] | template | tally <round.json>");
+    console.error("Usage: pnpm comprehension:human sheet [P01] [--t6-withheld] | rubric <T1..T10> | template | tally <round.json>");
     process.exitCode = 2;
   }
 }
