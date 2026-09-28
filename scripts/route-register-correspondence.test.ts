@@ -542,7 +542,8 @@ describe("the register's storage prefixes and the buckets the code addresses agr
 
   it("addresses no bucket that no migration creates, except the ones recorded", () => {
     const created = migrationBuckets(MIGRATIONS);
-    expect(created.size).toBeGreaterThan(2);
+    // Not an empty scan: the two buckets the migrations leave in place.
+    expect([...created]).toEqual(expect.arrayContaining(["exports", "genomes"]));
     const live = sites.filter(site => {
       const bucket = site.slice(0, site.indexOf(" "));
       return bucket !== DATABASE_SELECTED && !created.has(bucket);

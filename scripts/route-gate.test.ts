@@ -426,29 +426,45 @@ describe("the route gate holds the register to the code", () => {
   it("reads a dropped bucket as gone, so its old ledger row is stale", async () => {
     const root = plant({
       ledger: (ledger) => {
-        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "genomes-staging",
-          direction: "created-not-declared", createdBy: "supabase/migrations/20260831224054_storage_and_download_sessions.sql" });
-      },
-    });
-    const { failures } = await runRouteGate(root);
-    expect(failures).toContain(
-      "storage bucket: recorded in docs/route-divergence.json but no longer present: created-not-declared genomes-staging",
-    );
-  });
-
-  it("fails when a storage row's evidence no longer says what the row says", async () => {
-    const root = plant({
-      ledger: (ledger) => {
-        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
-          if (known.bucket === "generated-artifacts") known.createdBy = "supabase/migrations/20260923123240_export_archive_persistence.sql";
-          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
+        for (const bucket of ["genomes-staging", "generated-artifacts"]) {
+          (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket,
+            direction: "created-not-declared", createdBy: "supabase/migrations/20260831224054_storage_and_download_sessions.sql" });
         }
       },
     });
     const { failures } = await runRouteGate(root);
-    expect(failures).toContain("storage bucket: generated-artifacts names createdBy "
-      + "supabase/migrations/20260923123240_export_archive_persistence.sql, which does not create it");
-    expect(failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    for (const bucket of ["genomes-staging", "generated-artifacts"]) {
+      expect(failures).toContain(
+        `storage bucket: recorded in docs/route-divergence.json but no longer present: created-not-declared ${bucket}`,
+      );
+    }
+  });
+
+  /**
+   * No created-not-declared row is left once generated-artifacts is dropped,
+   * so the planted one is made real: exports loses its prefix, and its row
+   * names first the wrong migration, then the right one as the control.
+   */
+  it("fails when a storage row's evidence no longer says what the row says", async () => {
+    const plantExportsRow = (createdBy: string) => plant({
+      register: (register) => {
+        register.storagePrefixes = (register.storagePrefixes as { bucket: string }[])
+          .filter((prefix) => prefix.bucket !== "exports");
+      },
+      ledger: (ledger) => {
+        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
+          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
+        }
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "exports",
+          direction: "created-not-declared", createdBy });
+      },
+    });
+    const wrong = await runRouteGate(plantExportsRow("supabase/migrations/20260831224054_storage_and_download_sessions.sql"));
+    expect(wrong.failures).toContain("storage bucket: exports names createdBy "
+      + "supabase/migrations/20260831224054_storage_and_download_sessions.sql, which does not create it");
+    expect(wrong.failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    const right = await runRouteGate(plantExportsRow("supabase/migrations/20260923123240_export_archive_persistence.sql"));
+    expect(right.failures.filter((failure) => failure.startsWith("storage bucket: exports names createdBy"))).toEqual([]);
   });
 
   it("fails when a method row names a file the route is not built in", async () => {

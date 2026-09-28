@@ -92,14 +92,6 @@
   ],
   "storageBucketDivergence": [
     {
-      "bucket": "generated-artifacts",
-      "direction": "created-not-declared",
-      "createdBy": "supabase/migrations/20260831224054_storage_and_download_sessions.sql",
-      "why": "Created as a Storage bucket, and nothing in src writes an object to it. The same literal is used elsewhere as a retention disposition target class over database rows (public.report_artifacts, public.generated_exports, public.download_sessions, public.model_contexts), so the name carries two meanings and only the row meaning is exercised. An empty private bucket is not a leak, but an undeclared one is a place for a later write to land unnoticed. Re-read 2026-09-28: the bucket was made on 2026-08-31 for single-object export archives, recorded as public.genome_storage_objects rows with generated_export_id set, and that table's bucket CHECK still admits it. The register has since moved every archive object to exports (storage.export-v1; lifecycleDispositionContracts objectClass exports.generated-archive, whose selector names the single-object form the legacy archive handle, in bucket exports). So the schema and the register disagree about where that handle lives, and dropping the bucket is a choice about that handle, not only about an empty bucket.",
-      "priority": "Priority 2 \u2014 saved results",
-      "closing": "An owner decision, set out with its migration in docs/register-divergence-proposals.md section 4: drop the bucket and narrow public.genome_storage_objects.bucket_id to the buckets the register names, with the same refuse-if-anything-is-there guard as 20260930140000_drop_genomes_staging_bucket.sql (A, recommended), or declare a prefix for objects nothing writes (B). Either removes this row; scripts/route-gate.ts now reads bucket drops from the migrations, so the row goes stale the moment the drop lands."
-    },
-    {
       "bucket": "legal-evidence",
       "direction": "declared-not-created",
       "declaredBy": "storage.legal-evidence-v1",
