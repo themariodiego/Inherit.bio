@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "release": "clinvar-2026-09",
+  "generatedAt": "2026-09-28T09:04:00.616Z",
+  "scope": "Public reference assertions only: ClinVar's classification of exact alleles, ClinGen's gene-disease validity and NCBI reference letters. No person's genome.",
+  "evidenceBar": "Pathogenic or likely pathogenic (germline), ClinVar review status of two stars or more, no conflicting classification, ClinVar names the condition's MONDO disease, and ClinGen rates the gene-disease link Definitive or Strong for autosomal recessive inheritance.",
+  "alleleKeys": "GRCh38 is the key the reader matches; GRCh37 is ClinVar's own placement of the same allele, kept as evidence. Only single-letter changes and simple insertions or deletions that share one anchor letter are keyed, left-aligned; the other spellings of an insertion or deletion inside a repeat are listed from the reference sequence.",
+  "conditionsSha256": "7f792ba60479f66d38fd3010501a9923f6f433b9fe3050e34502efa9881de37e",
+  "extractSha256": "5d977d9a31723cc0e91d0c191c29af1645d84cbb46940eeb3bf0eb7dbce25bcf",
+  "assertions": 2850,
+  "sources": {
+    "clinvar": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/archive/variant_summary_2026-09.txt.gz",
+      "retrievedAt": "2026-09-28T08:40:57.000Z",
+      "lastModified": "Thu, 03 Sep 2026 04:05:02 GMT",
+      "sha256": "186ad2838a138f0bc7a79b1b7b6dde5533b105175d293e1131652889529804c9",
+      "bytes": 442495433,
+      "release": "2026-09",
+      "rows": 9049133,
+      "terms": "https://www.ncbi.nlm.nih.gov/clinvar/docs/maintenance_use/"
+    },
+    "clingen": {
+      "url": "https://search.clinicalgenome.org/kb/gene-validity/download",
+      "retrievedAt": "2026-09-28T08:41:06.000Z",
+      "lastModified": "Mon, 28 Sep 2026 08:41:08 GMT",
+      "sha256": "2851dedb7bae1cbee71fb8e6589f2e1ffb99e44e2244a7785af744c562263dff",
+      "bytes": 1122516,
+      "fileCreated": "2026-09-28",
+      "curations": 3679,
+      "terms": "https://clinicalgenome.org/docs/terms-of-use/ (CC0 1.0; attribution and access date requested)"
+    },
+    "acmg": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=8488021&rettype=xml",
+      "retrievedAt": "2026-09-28T08:41:26.000Z",
+      "lastModified": null,
+      "sha256": "242878d46bcf7822fcc56ad7db3a76ba1de47ab7edfe5ee5c0064de1e07e7d90",
+      "bytes": 188208,
+      "pmid": "34285390",
+      "pmcid": "PMC8488021"
+    },
+    "reference": [
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000001.10&rettype=fasta&retmode=text&seq_start=76189473&seq_stop=76229439",
+        "retrievedAt": "2026-09-28T09:03:49.588Z",
+        "lastModified": null,
+        "sha256": "ab2b30109e9ada70e3b2901b622b22d8f55758759ba775123c95d5313bac763f",
+        "bytes": 40626,
+        "gene": "ACADM",
+        "build": "GRCh37",
+        "accession": "NC_000001.10",
+        "start": 76189473,
+        "end": 76229439
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000001.11&rettype=fasta&retmode=text&seq_start=75723788&seq_stop=75763754",
+        "retrievedAt": "2026-09-28T09:03:50.375Z",
+        "lastModified": null,
+        "sha256": "5a3f217994113d626dd4917d5994e4a6a595d04a50c9fc3f40f861eeca9fc3d9",
+        "bytes": 40626,
+        "gene": "ACADM",
+        "build": "GRCh38",
+        "accession": "NC_000001.11",
+        "start": 75723788,
+        "end": 75763754
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000017.10&rettype=fasta&retmode=text&seq_start=3378455&seq_stop=3403382",
+        "retrievedAt": "2026-09-28T09:03:51.049Z",
+        "lastModified": null,
+        "sha256": "e89724f5c6090ed3ca9d49e04fc5781732b9f3686c19e729d67b439d991538ab",
+        "bytes": 25372,
+        "gene": "ASPA",
+        "build": "GRCh37",
+        "accession": "NC_000017.10",
+        "start": 3378455,
+        "end": 3403382
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000017.11&rettype=fasta&retmode=text&seq_start=3475161&seq_stop=3500088",
+        "retrievedAt": "2026-09-28T09:03:51.697Z",
+        "lastModified": null,
+        "sha256": "8c6df28d18b3d9aa03dbbf108d36b698e2cc0279ed440c98c5330a6b5b2b2466",
+        "bytes": 25372,
+        "gene": "ASPA",
+        "build": "GRCh38",
+        "accession": "NC_000017.11",
+        "start": 3475161,
+        "end": 3500088
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000013.10&rettype=fasta&retmode=text&seq_start=52507914&seq_stop=52586910",
+        "retrievedAt": "2026-09-28T09:03:52.361Z",
+        "lastModified": null,
+        "sha256": "f767bc39473c2a95513488da9f7073490746fef161aeb5a97e26f7712b90d6fe",
+        "bytes": 80215,
+        "gene": "ATP7B",
+        "build": "GRCh37",
+        "accession": "NC_000013.10",
+        "start": 52507914,
+        "end": 52586910
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000013.11&rettype=fasta&retmode=text&seq_start=51933778&seq_stop=52012774",
+        "retrievedAt": "2026-09-28T09:03:53.109Z",
+        "lastModified": null,
+        "sha256": "0b030c13bcc600a02c63796db471e7fe971423d620902d636ebfa97cc620f6ba",
+        "bytes": 80215,
+        "gene": "ATP7B",
+        "build": "GRCh38",
+        "accession": "NC_000013.11",
+        "start": 51933778,
+        "end": 52012774
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.13&rettype=fasta&retmode=text&seq_start=117119135&seq_stop=117308146",
+        "retrievedAt": "2026-09-28T09:03:54.169Z",
+        "lastModified": null,
+        "sha256": "75710fb4ce0809958b97f62ddf512788838d84e9a5265ff721011ac5971c9ab8",
+        "bytes": 191803,
+        "gene": "CFTR",
+        "build": "GRCh37",
+        "accession": "NC_000007.13",
+        "start": 117119135,
+        "end": 117308146
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.14&rettype=fasta&retmode=text&seq_start=117479081&seq_stop=117668092",
+        "retrievedAt": "2026-09-28T09:03:54.883Z",
+        "lastModified": null,
+        "sha256": "202aa4c558ae41cd9685b93cb397a6bae5642a4557ff2c7a20169ea9c6a339e5",
+        "bytes": 191803,
+        "gene": "CFTR",
+        "build": "GRCh38",
+        "accession": "NC_000007.14",
+        "start": 117479081,
+        "end": 117668092
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000011.9&rettype=fasta&retmode=text&seq_start=71145440&seq_stop=71156999",
+        "retrievedAt": "2026-09-28T09:03:55.579Z",
+        "lastModified": null,
+        "sha256": "aab1ffd1dc7e565eb8674edbc06747da80304420f65341456aa1a41ea7998dbc",
+        "bytes": 11814,
+        "gene": "DHCR7",
+        "build": "GRCh37",
+        "accession": "NC_000011.9",
+        "start": 71145440,
+        "end": 71156999
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000011.10&rettype=fasta&retmode=text&seq_start=71434394&seq_stop=71445953",
+        "retrievedAt": "2026-09-28T09:03:56.289Z",
+        "lastModified": null,
+        "sha256": "14d4afb78865227a8931a0c2e35aaf255a312a79a3f3d30da402c5a3810069eb",
+        "bytes": 11815,
+        "gene": "DHCR7",
+        "build": "GRCh38",
+        "accession": "NC_000011.10",
+        "start": 71434394,
+        "end": 71445953
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000017.10&rettype=fasta&retmode=text&seq_start=78077341&seq_stop=78094677",
+        "retrievedAt": "2026-09-28T09:03:56.952Z",
+        "lastModified": null,
+        "sha256": "0725df1567c29c03b80ebf978aeee3196c0dd6637a7e7d0f140e07c1578791f8",
+        "bytes": 17674,
+        "gene": "GAA",
+        "build": "GRCh37",
+        "accession": "NC_000017.10",
+        "start": 78077341,
+        "end": 78094677
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000017.11&rettype=fasta&retmode=text&seq_start=80103542&seq_stop=80120878",
+        "retrievedAt": "2026-09-28T09:03:57.743Z",
+        "lastModified": null,
+        "sha256": "00bef63a7e57121dfac28c5de9da7b7f699316328d449860a6630082b1fc1655",
+        "bytes": 17674,
+        "gene": "GAA",
+        "build": "GRCh38",
+        "accession": "NC_000017.11",
+        "start": 80103542,
+        "end": 80120878
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000015.9&rettype=fasta&retmode=text&seq_start=72635449&seq_stop=72669314",
+        "retrievedAt": "2026-09-28T09:03:58.448Z",
+        "lastModified": null,
+        "sha256": "aff302a54f21fe9d1dc4e5ecb8922410dd33e20e986c71ec727553d05fa06a34",
+        "bytes": 34438,
+        "gene": "HEXA",
+        "build": "GRCh37",
+        "accession": "NC_000015.9",
+        "start": 72635449,
+        "end": 72669314
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000015.10&rettype=fasta&retmode=text&seq_start=72343108&seq_stop=72376973",
+        "retrievedAt": "2026-09-28T09:03:59.151Z",
+        "lastModified": null,
+        "sha256": "e55a7d46eb9b3df7449753aff4e01453b3a7880a62e9d9faebcb1730e566f15b",
+        "bytes": 34439,
+        "gene": "HEXA",
+        "build": "GRCh38",
+        "accession": "NC_000015.10",
+        "start": 72343108,
+        "end": 72376973
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000012.11&rettype=fasta&retmode=text&seq_start=103231950&seq_stop=103316075",
+        "retrievedAt": "2026-09-28T09:03:59.864Z",
+        "lastModified": null,
+        "sha256": "0799afae8c3e1180b103ae502b50f5ba8cbce0b4a94e92fc9e62bcf864761ed2",
+        "bytes": 85419,
+        "gene": "PAH",
+        "build": "GRCh37",
+        "accession": "NC_000012.11",
+        "start": 103231950,
+        "end": 103316075
+      },
+      {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000012.12&rettype=fasta&retmode=text&seq_start=102838172&seq_stop=102922297",
+        "retrievedAt": "2026-09-28T09:04:00.527Z",
+        "lastModified": null,
+        "sha256": "3a8b00148e42f4c85834f90178d7857469fd37aafefc8715a53436830d4d9653",
+        "bytes": 85419,
+        "gene": "PAH",
+        "build": "GRCh38",
+        "accession": "NC_000012.12",
+        "start": 102838172,
+        "end": 102922297
+      }
+    ]
+  },
+  "counts": {
+    "MONDO:0009061": {
+      "grch38Rows": 6165,
+      "imported": 781,
+      "excluded": {
+        "not-pathogenic": 4673,
+        "not-germline": 177,
+        "below-two-stars": 505,
+        "conflicting": 0,
+        "condition-not-named": 17,
+        "no-grch38-key": 1,
+        "not-simple": 11,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0010100": {
+      "grch38Rows": 1351,
+      "imported": 135,
+      "excluded": {
+        "not-pathogenic": 1017,
+        "not-germline": 35,
+        "below-two-stars": 164,
+        "conflicting": 0,
+        "condition-not-named": 0,
+        "no-grch38-key": 0,
+        "not-simple": 0,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0009861": {
+      "grch38Rows": 1700,
+      "imported": 706,
+      "excluded": {
+        "not-pathogenic": 800,
+        "not-germline": 37,
+        "below-two-stars": 151,
+        "conflicting": 0,
+        "condition-not-named": 0,
+        "no-grch38-key": 1,
+        "not-simple": 5,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0008721": {
+      "grch38Rows": 1079,
+      "imported": 166,
+      "excluded": {
+        "not-pathogenic": 703,
+        "not-germline": 41,
+        "below-two-stars": 167,
+        "conflicting": 0,
+        "condition-not-named": 0,
+        "no-grch38-key": 0,
+        "not-simple": 2,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0010079": {
+      "grch38Rows": 517,
+      "imported": 76,
+      "excluded": {
+        "not-pathogenic": 333,
+        "not-germline": 15,
+        "below-two-stars": 92,
+        "conflicting": 0,
+        "condition-not-named": 0,
+        "no-grch38-key": 0,
+        "not-simple": 1,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0010200": {
+      "grch38Rows": 3692,
+      "imported": 386,
+      "excluded": {
+        "not-pathogenic": 2852,
+        "not-germline": 99,
+        "below-two-stars": 349,
+        "conflicting": 0,
+        "condition-not-named": 1,
+        "no-grch38-key": 0,
+        "not-simple": 5,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0010035": {
+      "grch38Rows": 1158,
+      "imported": 133,
+      "excluded": {
+        "not-pathogenic": 856,
+        "not-germline": 20,
+        "below-two-stars": 147,
+        "conflicting": 0,
+        "condition-not-named": 0,
+        "no-grch38-key": 0,
+        "not-simple": 2,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    },
+    "MONDO:0009290": {
+      "grch38Rows": 3622,
+      "imported": 467,
+      "excluded": {
+        "not-pathogenic": 2767,
+        "not-germline": 53,
+        "below-two-stars": 325,
+        "conflicting": 0,
+        "condition-not-named": 0,
+        "no-grch38-key": 0,
+        "not-simple": 10,
+        "not-left-aligned": 0,
+        "assembly-disagreement": 0,
+        "reference-mismatch": 0
+      }
+    }
+  }
+}
