@@ -1,5 +1,16 @@
 # Test diff register
 
+## Family Copilot citation link matched exactly · 28 September 2026
+
+`e2e/copilot-family.spec.ts` looked up the person citation by the link name
+"Shared by <name>". The report citation's label, "<title> (shared by
+<name>)", also contains that phrase, and Playwright's default name match is a
+case-insensitive substring, so the locator found two links and failed in CI.
+It now matches the name exactly. That is stricter: it still requires the
+person link and its href, and it no longer accepts any link that merely
+contains the phrase. The report citation stays asserted through the stored
+message's `citations[1]`.
+
 ## Family Copilot scope turned on everywhere · 28 September 2026
 
 The owner chose to turn the Family Copilot scope on in production (PR #260).
