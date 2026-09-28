@@ -4210,3 +4210,32 @@ owner chose the recommended option on all four.
 - **Carrier importer: design first.** Engineering proposes the sources, the
   review-status threshold and the conditions in scope, for approval before
   anything is imported. Carrier results stay withheld until then.
+
+## 2026-09-28 (later) — Carrier importer answers and parallel work streams
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all four. The first three answer the
+questions at the end of `docs/carrier-importer-design.md`.
+
+- **Carrier evidence bar: the brief's rule.** A carrier variant is reported
+  only when ClinVar gives it two stars or more, with no conflicting
+  submissions, as pathogenic or likely pathogenic, and ClinGen rates the
+  gene–disease link Definitive or Strong. The three-star-only alternative was
+  declined.
+- **Starter conditions: a short autosomal recessive list.** Drawn from the
+  ACMG carrier-screening practice resource, each with a Definitive or Strong
+  ClinGen rating, and limited to conditions whose common pathogenic alleles
+  are single-letter or small changes that arrays and VCFs can read.
+  Conditions that need copy-number or repeat testing, such as spinal muscular
+  atrophy and fragile X, are excluded. X-linked conditions come only after
+  ADR 0034's serious-condition review. Engineering proposes the exact list
+  with its sources in the importer's pull request.
+- **The live cystic fibrosis report is reworded now.**
+  `cystic-fibrosis-cftr-f508del-informational` drops "carrier status" and the
+  per-pregnancy 1-in-4 sentence. It keeps the finding, the caveats and the
+  laboratory line. The change reaches production through the guarded
+  catalogue refresh, with a receipt.
+- **One branch per work stream.** Each parallel work stream pushes its own
+  `claude/<stream>` branch and opens its own draft pull request, so CI runs in
+  parallel. One integrator still reviews each pull request, merges them one
+  at a time and applies every production change through the guarded path.
