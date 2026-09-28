@@ -14,8 +14,8 @@
         "ref": "TCTT",
         "alt": "T",
         "interpretations": {
-          "TCTTTCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out carrier status. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
-          "TTCTT": "One copy of F508del, which is consistent with CF carrier status. Carriers are healthy. If both partners carry a CF-causing variant, each pregnancy has a 1-in-4 chance of CF. Consumer arrays can misread this site. A clinical lab should confirm the result before you act on it. A genetic counselor can explain what it means for family planning.",
+          "TCTTTCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out the others. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
+          "TTCTT": "One copy of F508del. Consumer arrays can misread this site. A clinical lab should confirm the result before you act on it. A genetic counselor can explain what it means for family planning.",
           "TT": "Two copies of F508del. This is the most common genotype in people with CF, which is usually found in childhood. This result would be unexpected in an adult with no known CF. An array error is likely because this site is hard to read. A clinical lab should confirm the result. You should also speak with a genetic counselor."
         }
       }
@@ -24,7 +24,8 @@
     "citations": [
       {
         "pmid": "2475911",
-        "label": "Riordan et al., Science 1989"
+        "label": "Riordan et al., Science 1989",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -53,7 +54,8 @@
     "citations": [
       {
         "pmid": "18567894",
-        "label": "Grigorova et al., Hum Reprod 2008"
+        "label": "Grigorova et al., Hum Reprod 2008",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -82,7 +84,8 @@
     "citations": [
       {
         "pmid": "17339269",
-        "label": "Bogdanova et al., Hum Mol Genet 2007"
+        "label": "Bogdanova et al., Hum Mol Genet 2007",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -111,11 +114,13 @@
     "citations": [
       {
         "pmid": "19448619",
-        "label": "Stolk et al., Nat Genet 2009"
+        "label": "Stolk et al., Nat Genet 2009",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "19448621",
-        "label": "He et al., Nat Genet 2009"
+        "label": "He et al., Nat Genet 2009",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -144,7 +149,8 @@
     "citations": [
       {
         "pmid": "27132594",
-        "label": "Mbarek et al., Am J Hum Genet 2016"
+        "label": "Mbarek et al., Am J Hum Genet 2016",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -173,11 +179,13 @@
     "citations": [
       {
         "pmid": "19448623",
-        "label": "Ong et al., Nat Genet 2009"
+        "label": "Ong et al., Nat Genet 2009",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "25231870",
-        "label": "Perry et al., Nature 2014"
+        "label": "Perry et al., Nature 2014",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -206,11 +214,13 @@
     "citations": [
       {
         "pmid": "23104006",
-        "label": "Nyholt et al., Nat Genet 2012"
+        "label": "Nyholt et al., Nat Genet 2012",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "28537267",
-        "label": "Sapkota et al., Nat Commun 2017"
+        "label": "Sapkota et al., Nat Commun 2017",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -239,11 +249,13 @@
     "citations": [
       {
         "pmid": "21151128",
-        "label": "Chen et al., Nat Genet 2011"
+        "label": "Chen et al., Nat Genet 2011",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "22885925",
-        "label": "Shi et al., Nat Genet 2012"
+        "label": "Shi et al., Nat Genet 2012",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -272,7 +284,8 @@
     "citations": [
       {
         "pmid": "10999835",
-        "label": "Perez Mayorga et al., J Clin Endocrinol Metab 2000"
+        "label": "Perez Mayorga et al., J Clin Endocrinol Metab 2000",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -301,11 +314,13 @@
     "citations": [
       {
         "pmid": "8164741",
-        "label": "Bertina et al., Nature 1994"
+        "label": "Bertina et al., Nature 1994",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "12648968",
-        "label": "Rey et al., Lancet 2003"
+        "label": "Rey et al., Lancet 2003",
+        "accessedOn": "2026-09-28"
       }
     ]
   }

@@ -7970,6 +7970,10 @@ export type Database = {
         }
         Returns: Json
       }
+      embryo_ingest_write_targets_v1: {
+        Args: { p_sequence: number; p_session_id: string }
+        Returns: Json
+      }
       enqueue_account_mail: {
         Args: {
           p_account_id: string
@@ -8211,6 +8215,10 @@ export type Database = {
           draft_id: string
           owner_account_id: string
         }[]
+      }
+      settle_embryo_ingest_writes_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
       }
       sign_embryo_artifact_v1: {
         Args: {

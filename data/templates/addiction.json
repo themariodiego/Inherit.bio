@@ -23,7 +23,7 @@
     "pgs_id": null,
     "citations": [
       { "pmid": "17158188", "label": "Saccone et al., Hum Mol Genet 2007" },
-      { "pmid": "18385739", "label": "Thorgeirsson et al., Nature 2008" }
+      { "pmid": "18385739", "label": "Thorgeirsson et al., Nature 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -94,7 +94,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "21497796", "label": "Li et al., Biol Psychiatry 2011" }
+      { "pmid": "21497796", "label": "Li et al., Biol Psychiatry 2011", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -120,8 +120,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "9689128", "label": "Bond et al., PNAS 1998" },
-      { "pmid": "26392368", "label": "Schwantes-An et al., Behav Genet 2016" }
+      { "pmid": "9689128", "label": "Bond et al., PNAS 1998", "accessedOn": "2026-09-28" },
+      { "pmid": "26392368", "label": "Schwantes-An et al., Behav Genet 2016", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -147,7 +147,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17453061", "label": "Munafò et al., Mol Psychiatry 2007" }
+      { "pmid": "17453061", "label": "Munafò et al., Mol Psychiatry 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -173,7 +173,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18705688", "label": "Haughey et al., Addiction 2008" }
+      { "pmid": "18705688", "label": "Haughey et al., Addiction 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -225,7 +225,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "27911795", "label": "Schumann et al., PNAS 2016" }
+      { "pmid": "27911795", "label": "Schumann et al., PNAS 2016", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -287,7 +287,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20418890", "label": "Tobacco and Genetics Consortium, Nat Genet 2010" }
+      { "pmid": "20418890", "label": "Tobacco and Genetics Consortium, Nat Genet 2010", "accessedOn": "2026-09-28" }
     ]
   }
 ]

@@ -22,7 +22,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12553913", "label": "Egan et al., Cell 2003" }
+      { "pmid": "12553913", "label": "Egan et al., Cell 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -48,7 +48,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17053149", "label": "Papassotiropoulos et al., Science 2006" }
+      { "pmid": "17053149", "label": "Papassotiropoulos et al., Science 2006", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -74,7 +74,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "11381111", "label": "Egan et al., PNAS 2001" }
+      { "pmid": "11381111", "label": "Egan et al., PNAS 2001", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -100,7 +100,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008" }
+      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -126,7 +126,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "9779516", "label": "Katzenberg et al., Sleep 1998" }
+      { "pmid": "9779516", "label": "Katzenberg et al., Sleep 1998", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -205,7 +205,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "24813892", "label": "Dubal et al., Cell Rep 2014" }
+      { "pmid": "24813892", "label": "Dubal et al., Cell Rep 2014", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -231,7 +231,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19934046", "label": "Rodrigues et al., PNAS 2009" }
+      { "pmid": "19934046", "label": "Rodrigues et al., PNAS 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -257,7 +257,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "15733200", "label": "Parasuraman et al., Psychol Sci 2005" }
+      { "pmid": "15733200", "label": "Parasuraman et al., Psychol Sci 2005", "accessedOn": "2026-09-28" }
     ]
   }
 ]
