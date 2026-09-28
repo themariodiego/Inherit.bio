@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { ClaimDocuments } from "@/components/future-person/claim-documents";
 import { FuturePersonClaimForm } from "@/components/future-person/claim-form";
 import {
   CLAIM_EYEBROW,
@@ -10,7 +11,9 @@ import {
   FUTURE_PERSON_CLAIM_COPY,
   KEEP_LINE,
 } from "@/copy/rights/future-person-claim";
-import { CLAIM_FORM_TOKEN_HEADER } from "@/lib/future-person/claim-session";
+import { CLAIM_FORM_TOKEN_HEADER, CLAIM_SESSION_COOKIE, sha256Hex } from "@/lib/future-person/claim-session";
+import { mintClaimDocumentNonce } from "@/lib/future-person/evidence-session";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 
 export const metadata: Metadata = { title: "Claim a future-person record" };
@@ -27,10 +30,24 @@ export const metadata: Metadata = { title: "Claim a future-person record" };
  *
  * Where no embryo record can exist on this deployment, the page says claims
  * are not open and offers no form at all, so it collects nothing.
+ *
+ * A browser that already holds a live claim sees the documents step instead
+ * of the start form, with a one-time nonce bound to its claim cookie. The
+ * only thing read is whether that claim is live.
  */
+async function liveClaimNonce(): Promise<string | null> {
+  const secret = (await cookies()).get(CLAIM_SESSION_COOKIE)?.value;
+  if (!secret) return null;
+  const nonce = mintClaimDocumentNonce(secret);
+  if (!nonce) return null;
+  const { data, error } = await createAdminClient().rpc("claim_session_live_v1", { p_session_hash: sha256Hex(secret) });
+  return !error && data === true ? nonce : null;
+}
+
 export default async function FuturePersonClaimPage() {
   const open = futurePersonClaimsOpen();
-  const formToken = open ? (await headers()).get(CLAIM_FORM_TOKEN_HEADER) : null;
+  const documentNonce = open ? await liveClaimNonce() : null;
+  const formToken = open && !documentNonce ? (await headers()).get(CLAIM_FORM_TOKEN_HEADER) : null;
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
       <p className="eyebrow">{CLAIM_EYEBROW}</p>
@@ -49,7 +66,12 @@ export default async function FuturePersonClaimPage() {
           {FUTURE_PERSON_CLAIM_COPY["future-person.claim.no-profile-no-guess"]}
         </p>
       </section>
-      {open && formToken ? (
+      {documentNonce ? (
+        <div className="mt-8 space-y-4">
+          <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
+          <ClaimDocuments nonce={documentNonce} />
+        </div>
+      ) : open && formToken ? (
         <div className="mt-8 space-y-4">
           <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
           <FuturePersonClaimForm formToken={formToken} />

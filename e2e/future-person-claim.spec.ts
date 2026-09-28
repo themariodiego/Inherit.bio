@@ -175,3 +175,47 @@ test("/future-person/claim complete: a Record Key, a Recovery Key and a keyless 
   expect(answers[1]).toEqual(answers[0]);
   expect(answers[2]).toEqual(answers[0]);
 });
+
+/**
+ * The documents step. After a start the page offers it to the browser that
+ * holds the claim. A file goes up in one evidence session and then waits,
+ * quarantined, for the scan worker; no worker runs in the browser suite, so
+ * the page must say the file is being checked and say nothing more. The
+ * verdicts themselves are proven against the database
+ * (supabase/tests/future_person_claim_documents.sql) and in the worker's unit
+ * tests.
+ */
+test("/future-person/claim processing: a sent file waits, quarantined, for its virus check", async ({ page, context }) => {
+  await ownNetwork(context);
+  await page.goto("/future-person/claim");
+  await fillClaim(page, "keyless-start");
+  const started = page.waitForResponse("**/api/future-person/claim");
+  await page.locator("main form").getByRole("button", { name: "Start my claim", exact: true }).click();
+  expect((await started).status()).toBe(202);
+
+  const documents = page.getByRole("region", { name: "Send your files" });
+  await expect(documents).toBeVisible();
+  await expect(page.locator("main form"), "the start form is gone once a claim is live").toHaveCount(0);
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), randomBytes(2048)]);
+  await documents.getByLabel("Picture ID").setInputFiles({ name: "picture-id.png", mimeType: "image/png", buffer: png });
+
+  const opened = page.waitForResponse("**/api/future-person/claim/session/documents");
+  const chunk = page.waitForResponse("**/api/evidence/*/chunks/0");
+  const completed = page.waitForResponse("**/api/evidence/*/complete");
+  await documents.getByRole("button", { name: "Send this file" }).first().click();
+  const session = await opened;
+  expect(session.status()).toBe(201);
+  const body = await session.json() as Record<string, unknown>;
+  expect(Object.keys(body).sort()).toEqual(["chunkBytes", "chunkRoute", "completeRoute", "documentKind", "expiresAt",
+    "maximumChunks", "maximumDocumentBytes", "session"]);
+  expect(JSON.stringify(body)).not.toMatch(/future-person-identity|picture-id/u);
+  expect((await chunk).status()).toBe(204);
+  const done = await completed;
+  expect(done.status()).toBe(202);
+  expect(await done.json()).toEqual({ status: "scanning" });
+  await expect(documents.getByRole("status")).toHaveText("We are checking this file.");
+  // The evidence cookie is HttpOnly: no script on the page can read it.
+  const evidence = (await context.cookies()).find((cookie) => /^(__Host-)?inherit-evidence$/.test(cookie.name));
+  expect(evidence).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/" });
+  expect(await page.evaluate(() => document.cookie)).toBe("");
+});

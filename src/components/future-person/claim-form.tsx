@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,10 +45,11 @@ function cardKey(value: string): string {
  * The claim start (register api.future-person-claim). The page served the
  * form token; the browser already holds its cookie. The server answers every
  * accepted start the same way, so this form learns nothing about any record
- * and shows nothing about one. After a start, the next step (documents) is
- * named but not offered, because it is not built.
+ * and shows nothing about one. After a start the page is refreshed, and it
+ * offers the documents step to the browser that now holds the claim.
  */
 export function FuturePersonClaimForm({ formToken }: { formToken: string }) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("record-key");
   const [pending, setPending] = useState(false);
   const [received, setReceived] = useState(false);
@@ -117,6 +119,8 @@ export function FuturePersonClaimForm({ formToken }: { formToken: string }) {
         setPending(false);
         if (response.status === 202) {
           setReceived(true);
+          // The page now holds a live claim and renders the documents step.
+          router.refresh();
           return;
         }
         if (response.status === 422) {
