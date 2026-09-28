@@ -160,6 +160,29 @@ The next source-accepting work must supply all of the following:
    - deleting fragments and handles after publication;
    - the chunk and completion routes and browser journeys.
 
+   **Canonical sources exist, 2026-09-28.**
+   `20260930123000_embryo_canonical_sources.sql` gives each embryo that passes
+   QC its own canonical source. After the worker analyses a passing embryo, it
+   reads each of its fragments again, checks it against the manifest, and
+   copies it byte for byte into a new R2 object under a fresh `embryo/<uuid>`
+   key. Each copy is reserved first (`reserve_embryo_canonical_part_v1`), then
+   written create-only through the fragment gateway, read back and landed
+   (`ack_embryo_canonical_part_v1`), all under the live claim. A pass is
+   recorded only when every fragment has exactly one landed part. A QC failure
+   is recorded only with no part, so no object is ever written for it.
+   The publication transaction then gives each pass, and only each pass:
+   - one immutable source that binds its exact landed parts;
+   - one `genome_files` row owned by the cohort owner, on that embryo's
+     subject. The row carries that embryo's own composed digest and a neutral
+     name, and is `normalization_complete` at the publication commit;
+   - its genotypes, pointing at that row through `source_file_id`.
+
+   The owner's generic file read (Files list, downloads) no longer returns
+   an embryo or cohort row. Still missing: parts in the unwind inventory,
+   disposal of parts that no source binds (from a retried or failed
+   attempt), and source deletion at the retention deadline, at restriction
+   and in the terminal purge.
+
 ADR 0034 (27 September) allows X and Y calls to be read only to work out a
 registered serious sex-linked condition, and none is registered. This
 configuration work supplies no threshold or display conclusion. No acceptance
