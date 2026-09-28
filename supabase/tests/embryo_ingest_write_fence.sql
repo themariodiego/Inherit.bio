@@ -100,9 +100,11 @@ select is((select array_agg(store_name order by store_order) from public.purge_t
   where target_id='upload-and-ingest-working-state' and store_name like 'private.embryo_ingest_write_%'),
   array['private.embryo_ingest_write_intents','private.embryo_ingest_write_fences'],
   'intents and fences are registered with the ingest working-state purge target');
+-- Every ingest store that predates the fence is public; later private
+-- stores (20260929101000's disposals) may follow these two.
 select ok((select min(store_order) from public.purge_target_stores where store_name like 'private.embryo_ingest_write_%')
   > (select max(store_order) from public.purge_target_stores where target_id='upload-and-ingest-working-state'
-    and store_name not like 'private.embryo_ingest_write_%'),
+    and store_name not like 'private.%'),
   'the new stores take the next store orders after every existing ingest store');
 select ok(exists(select 1 from pg_trigger where tgrelid='storage.objects'::regclass
   and tgname='guard_embryo_ingest_object' and tgtype&2=2 and tgtype&4=4 and tgtype&16=16),
