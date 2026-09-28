@@ -126,8 +126,11 @@ grant select on table public.other_adult_held_uploads to service_role;
 
 -- A held source is upload working state; its Storage objects stay in the
 -- upload-working manifest of its session, which the executor deletes.
+-- The next free position, as the embryo write fence registers its stores:
+-- a fixed number would collide with whichever migration took it first.
 insert into public.purge_target_stores(target_id,store_name,store_order)
-values ('upload-and-ingest-working-state','public.other_adult_held_uploads',33);
+ select 'upload-and-ingest-working-state','public.other_adult_held_uploads',coalesce(max(store_order),0)+1
+ from public.purge_target_stores where target_id='upload-and-ingest-working-state';
 
 alter table public.account_operation_nonces drop constraint account_operation_nonces_operation_check;
 alter table public.account_operation_nonces add constraint account_operation_nonces_operation_check
@@ -285,12 +288,18 @@ revoke all on function private.path_b_uploader_consent_v1(uuid,uuid,uuid,bigint)
 grant execute on function private.path_b_uploader_consent_v1(uuid,uuid,uuid,bigint) to service_role;
 
 -- 4. Reserving a Path B draft (api.subject-drafts, closed-subject-draft-create-v1)
-create function private.create_path_b_adult_draft_v1(p_account_id uuid,p_session_id uuid,p_display_name text,
+-- The body receives one digest: the active revision's, handed over by the
+-- keyed definer below once the presented set has resolved against the
+-- keyring. The contact row and its index take that digest's revision, and the
+-- keyring's link trigger indexes the same contact under every other usable
+-- revision of the declared set.
+create function private.create_path_b_adult_draft_core_v1(p_account_id uuid,p_session_id uuid,p_display_name text,
  p_date_of_birth date,p_contact_ciphertext bytea,p_contact_hmac text,p_request_key text,p_test_jurisdiction boolean)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private
 as $function$
 declare u jsonb; d public.adult_subject_drafts%rowtype; v_subject uuid; v_principal uuid; v_contact uuid;
  v_name text:=btrim(p_display_name); v_expires timestamptz:=clock_timestamp()+interval '30 days';
+ v_revision bigint;
 begin
  if p_test_jurisdiction is distinct from true then
   raise exception using errcode='42501',message='not_found'; end if;
@@ -319,27 +328,56 @@ begin
   'esignature',p_request_key) returning * into d;
  insert into public.draft_participant_slots(adult_draft_id,slot_kind,principal_id,slot_revision,state)
  values(d.id,'adult_subject',v_principal,1,'pending');
+ -- The revision the digest was computed under, never an assumed one: after a
+ -- rotation an undeclared digest is refused here rather than filed as 1.
+ v_revision:=private.contact_hmac_key_revision_v1(p_contact_hmac);
  insert into public.encrypted_contact_references(principal_id,contact_ciphertext,contact_hmac,key_revision,
   authority_revision,status)
- values(v_principal,p_contact_ciphertext,p_contact_hmac,1,1,'current') returning id into v_contact;
+ values(v_principal,p_contact_ciphertext,p_contact_hmac,v_revision,1,'current') returning id into v_contact;
  insert into public.contact_hmac_indexes(contact_reference_id,contact_hmac,hmac_key_revision,status,expires_at)
- values(v_contact,p_contact_hmac,1,'current',v_expires);
+ values(v_contact,p_contact_hmac,v_revision,'current',v_expires);
  perform private.append_legal_audit_event('subject-draft.created',null,'api.subject-drafts','accepted',
   jsonb_build_object('adult_flow','path-b-subject-esignature','revision',1));
  return jsonb_build_object('subjectDraftId',v_subject,'state','awaiting_uploader_artifact',
   'next','sign_uploader_artifact','expiresAt',v_expires);
 end;
 $function$;
-revoke all on function private.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean)
- from public,anon,authenticated,inherit_upload_only;
-grant execute on function private.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean) to service_role;
+revoke all on function private.create_path_b_adult_draft_core_v1(uuid,uuid,text,date,bytea,text,text,boolean)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+-- The keyed definer (hmac_keyring, invitation_keyring_quota_doors): the shared
+-- invitation transition lock first, so no call sees half a rotation; then the
+-- presented set resolved against the keyring, failing closed when a usable
+-- revision is missing; then the set declared for this transaction only.
+create function private.create_path_b_adult_draft_keyed_v1(p_account_id uuid,p_session_id uuid,p_display_name text,
+ p_date_of_birth date,p_contact_ciphertext bytea,p_contact_hmac text,p_request_key text,p_test_jurisdiction boolean,
+ p_contact_hmac_set jsonb)
+returns jsonb language plpgsql security definer set search_path=''
+as $function$
+declare v_set jsonb; v_result jsonb;
+begin
+ perform private.lock_invitation_transitions_v1();
+ v_set:=private.resolve_hmac_set_v1('contact',p_contact_hmac,p_contact_hmac_set);
+ if v_set is not null then
+  perform private.declare_contact_alias_groups_v1(jsonb_build_array(v_set)); end if;
+ v_result:=private.create_path_b_adult_draft_core_v1(p_account_id,p_session_id,p_display_name,p_date_of_birth,
+  p_contact_ciphertext,coalesce(v_set->>private.hmac_active_revision_v1('contact')::text,p_contact_hmac),
+  p_request_key,p_test_jurisdiction);
+ perform private.declare_contact_alias_groups_v1('[]'::jsonb);
+ return v_result;
+end;
+$function$;
+revoke all on function private.create_path_b_adult_draft_keyed_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+grant execute on function private.create_path_b_adult_draft_keyed_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb)
+ to service_role;
 create function public.create_path_b_adult_draft_v1(p_account_id uuid,p_session_id uuid,p_display_name text,
- p_date_of_birth date,p_contact_ciphertext bytea,p_contact_hmac text,p_request_key text,p_test_jurisdiction boolean)
-returns jsonb language sql security invoker set search_path=pg_catalog
-as $function$ select private.create_path_b_adult_draft_v1(p_account_id,p_session_id,p_display_name,p_date_of_birth,p_contact_ciphertext,p_contact_hmac,p_request_key,p_test_jurisdiction); $function$;
-revoke all on function public.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean)
+ p_date_of_birth date,p_contact_ciphertext bytea,p_contact_hmac text,p_request_key text,p_test_jurisdiction boolean,
+ p_contact_hmac_set jsonb default null)
+returns jsonb language sql security invoker set search_path=''
+as $function$ select private.create_path_b_adult_draft_keyed_v1(p_account_id,p_session_id,p_display_name,p_date_of_birth,p_contact_ciphertext,p_contact_hmac,p_request_key,p_test_jurisdiction,p_contact_hmac_set); $function$;
+revoke all on function public.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb)
  from public,anon,authenticated,inherit_upload_only;
-grant execute on function public.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean) to service_role;
+grant execute on function public.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb) to service_role;
 
 -- 5. The Path B subject -----------------------------------------------------
 -- What the uploader may sign for: their own Path B draft (not yet confirmed)
@@ -547,8 +585,11 @@ grant execute on function public.sign_other_adult_upload_artifact_v1(uuid,uuid,u
 -- 8. The e-signature request (api.invitations, path-b-subject-esignature) -----
 -- Only after the uploader's signature, and only to the exact address the draft
 -- holds: a mismatch, a foreign or used draft, a missing signature and a live
--- refusal bar all return the same receipt and write nothing.
-create function private.create_path_b_invitation_v1(p_account_id uuid,p_session_id uuid,p_subject_id uuid,
+-- refusal bar all return the same receipt and write nothing. The body compares
+-- one digest (the one the stored contact was written under); the keyed definer
+-- below declares the whole presented set first, so the bar check walks every
+-- usable revision.
+create function private.create_path_b_invitation_core_v1(p_account_id uuid,p_session_id uuid,p_subject_id uuid,
  p_contact_hmac text,p_idempotency_key text,p_test_jurisdiction boolean)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private
 as $function$
@@ -603,16 +644,57 @@ begin
  return v_received;
 end;
 $function$;
-revoke all on function private.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean)
- from public,anon,authenticated,inherit_upload_only;
-grant execute on function private.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean) to service_role;
+revoke all on function private.create_path_b_invitation_core_v1(uuid,uuid,uuid,text,text,boolean)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+-- The keyed definer: the transition lock, then the per-account and per-network
+-- invitation attempt quota (global-contact-refusal-bar-v1.quotaAuthority)
+-- before any identity, draft or address match. A missing key set fails the
+-- whole call; an exhausted quota writes nothing else and returns the receipt
+-- a barred address gets. Then the presented set resolves against the keyring
+-- (a set missing a usable revision fails closed) and is declared, and the body
+-- is handed the digest under the revision the draft's contact was written
+-- under, or the active one, which the body then refuses as a mismatch.
+create function private.create_path_b_invitation_keyed_v1(p_account_id uuid,p_session_id uuid,p_subject_id uuid,
+ p_contact_hmac text,p_idempotency_key text,p_test_jurisdiction boolean,p_contact_hmac_set jsonb,p_quota_keys jsonb)
+returns jsonb language plpgsql security definer set search_path=''
+as $function$
+declare v_set jsonb; v_contact text:=p_contact_hmac; v_stored public.encrypted_contact_references%rowtype;
+ v_result jsonb;
+begin
+ perform private.lock_invitation_transitions_v1();
+ if not private.consume_invitation_attempt_quota_v1(p_quota_keys) then
+  return jsonb_build_object('status','received'); end if;
+ v_set:=private.resolve_hmac_set_v1('contact',p_contact_hmac,p_contact_hmac_set);
+ if v_set is not null then
+  perform private.declare_contact_alias_groups_v1(jsonb_build_array(v_set));
+  select e.* into v_stored from public.adult_subject_drafts d
+   join public.draft_participant_slots slot on slot.adult_draft_id=d.id
+    and slot.slot_kind='adult_subject' and slot.state='pending'
+   join public.subject_principals sp on sp.id=slot.principal_id and sp.status='pending'
+   join public.encrypted_contact_references e on e.principal_id=sp.id and e.status='current'
+   where d.subject_id=p_subject_id and d.owner_account_id=p_account_id
+    and d.adult_flow='path-b-subject-esignature'
+   limit 1;
+  v_contact:=private.presented_contact_digest_v1(v_set,v_stored.contact_hmac,v_stored.key_revision);
+ end if;
+ v_result:=private.create_path_b_invitation_core_v1(p_account_id,p_session_id,p_subject_id,v_contact,
+  p_idempotency_key,p_test_jurisdiction);
+ perform private.declare_contact_alias_groups_v1('[]'::jsonb);
+ return v_result;
+end;
+$function$;
+revoke all on function private.create_path_b_invitation_keyed_v1(uuid,uuid,uuid,text,text,boolean,jsonb,jsonb)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+grant execute on function private.create_path_b_invitation_keyed_v1(uuid,uuid,uuid,text,text,boolean,jsonb,jsonb)
+ to service_role;
 create function public.create_path_b_invitation_v1(p_account_id uuid,p_session_id uuid,p_subject_id uuid,
- p_contact_hmac text,p_idempotency_key text,p_test_jurisdiction boolean)
-returns jsonb language sql security invoker set search_path=pg_catalog
-as $function$ select private.create_path_b_invitation_v1(p_account_id,p_session_id,p_subject_id,p_contact_hmac,p_idempotency_key,p_test_jurisdiction); $function$;
-revoke all on function public.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean)
+ p_contact_hmac text,p_idempotency_key text,p_test_jurisdiction boolean,
+ p_contact_hmac_set jsonb default null,p_quota_keys jsonb default null)
+returns jsonb language sql security invoker set search_path=''
+as $function$ select private.create_path_b_invitation_keyed_v1(p_account_id,p_session_id,p_subject_id,p_contact_hmac,p_idempotency_key,p_test_jurisdiction,p_contact_hmac_set,p_quota_keys); $function$;
+revoke all on function public.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean,jsonb,jsonb)
  from public,anon,authenticated,inherit_upload_only;
-grant execute on function public.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean) to service_role;
+grant execute on function public.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean,jsonb,jsonb) to service_role;
 
 -- 9. The person signs (api.withdraw confirm, adult-subject-confirmation-v1) --
 -- The no-account branch of path-b-token-or-account: the rights session the

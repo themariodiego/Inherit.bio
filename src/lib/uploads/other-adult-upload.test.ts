@@ -15,6 +15,7 @@ vi.mock("@/lib/legal/jurisdiction-declaration", async (original) => {
 });
 
 import { hmacSecret } from "@/lib/crypto";
+import { legacyContactDigest } from "@/lib/hmac-keyring";
 import { mintPublicFormToken } from "@/lib/embryos/operation-token";
 import { newRightsSessionSecret, RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { parseArtifactFile } from "@/lib/legal/artifact-file";
@@ -58,6 +59,18 @@ const requestId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const input = { accountId, sessionId, subjectId, artifactVersion: 1, artifactBodySha256: "a".repeat(64) };
 const KEYS = [...OTHER_ADULT_UPLOAD_STATEMENT_KEYS];
 const SUBJECT_KEYS = [...SUBJECT_ESIGNATURE_STATEMENT_KEYS];
+const KEY_2 = crypto.randomBytes(32).toString("base64");
+const NETWORK = "192.0.2.44";
+
+/** The address under every held contact revision, never one bare digest. */
+function expectContactSet(args: Record<string, unknown>) {
+  expect(args.p_contact_hmac).toBeNull();
+  const set = args.p_contact_hmac_set as Record<string, string>;
+  expect(Object.keys(set)).toEqual(["1", "2"]);
+  expect(set["1"]).toBe(legacyContactDigest("relative@e2e.local"));
+  expect(set["2"]).toMatch(/^[0-9a-f]{64}$/);
+  expect(set["2"]).not.toBe(set["1"]);
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -260,7 +273,8 @@ describe("POST /api/subject-drafts, the Path B body", () => {
     return createPathBDraft(sameOrigin("https://inherit.bio/api/subject-drafts", payload,
       { "x-inherit-csrf": token, ...headers }), payload);
   }
-  it("reserves a draft with an encrypted address and an HMAC, and answers the register's receipt", async () => {
+  it("reserves a draft with an encrypted address keyed under every held revision, and answers the register's receipt", async () => {
+    vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
     mocks.rpc.mockResolvedValueOnce({ data: receipt, error: null });
     const response = await draft();
     expect(response.status).toBe(201);
@@ -268,12 +282,18 @@ describe("POST /api/subject-drafts, the Path B body", () => {
     const [name, args] = mocks.rpc.mock.calls[0]!;
     expect(name).toBe("create_path_b_adult_draft_v1");
     expect(args).toMatchObject({ p_account_id: accountId, p_session_id: sessionId, p_display_name: "Synthetic Relative",
-      p_date_of_birth: "1980-05-05", p_contact_hmac: hmacSecret("relative@e2e.local", "contact-email-v1"),
-      p_test_jurisdiction: true });
+      p_date_of_birth: "1980-05-05", p_test_jurisdiction: true });
+    expectContactSet(args);
+    expect(args).not.toHaveProperty("p_quota_keys");
     expect(args.p_contact_ciphertext).toMatch(/^\\x[0-9a-f]+$/);
     expect(JSON.stringify(args)).not.toContain("relative@e2e.local");
     expect(args.p_request_key).toMatch(/^[0-9a-f]{64}$/);
   });
+  it.each([["keyed digest set incomplete"], ["keyed digest set required"]])(
+    "answers 503 when the database refuses the digest set (%s)", async (message) => {
+      mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "55000", message } });
+      expect((await draft()).status).toBe(503);
+    });
   it("refuses a person under 18 before the database", async () => {
     expect((await draft({ dateOfBirth: `${new Date().getUTCFullYear() - 10}-01-01` })).status).toBe(422);
     expect(mocks.rpc).not.toHaveBeenCalled();
@@ -292,20 +312,50 @@ describe("POST /api/invitations, the Path B request", () => {
     const token = mintPathBOperation(accountId, sessionId, "request-send", subjectId);
     const payload = { targetSubjectDraftId: subjectId, contactEmail: "relative@e2e.local" };
     return createPathBInvitation(sameOrigin("https://inherit.bio/api/invitations", payload,
-      { "x-inherit-csrf": token, ...headers }), payload);
+      { "x-inherit-csrf": token, "x-real-ip": NETWORK, ...headers }), payload);
   }
   it("sends only to the address the draft holds, keyed, with the same receipt either way", async () => {
+    vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
     mocks.rpc.mockResolvedValueOnce({ data: { status: "received" }, error: null });
     const response = await send();
     expect(response.status).toBe(202);
     expect(await response.json()).toEqual({ status: "received" });
     const [name, args] = mocks.rpc.mock.calls[0]!;
     expect(name).toBe("create_path_b_invitation_v1");
-    expect(args).toMatchObject({ p_subject_id: subjectId, p_contact_hmac: hmacSecret("relative@e2e.local", "contact-email-v1"),
-      p_test_jurisdiction: true });
+    expect(args).toMatchObject({ p_subject_id: subjectId, p_test_jurisdiction: true });
+    expectContactSet(args);
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "not_found" } });
     expect(await (await send()).json()).toEqual({ status: "received" });
   });
+  it("sends both attempt-quota keys under every held revision, and no account id or network in the clear", async () => {
+    vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
+    mocks.rpc.mockResolvedValueOnce({ data: { status: "received" }, error: null });
+    await send();
+    const args = mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
+    const quota = args.p_quota_keys as Record<string, Record<string, string>>;
+    expect(Object.keys(quota)).toEqual(["1", "2"]);
+    for (const revision of Object.values(quota)) {
+      expect(Object.keys(revision).sort()).toEqual(["authenticated-principal", "source-network"]);
+      for (const digest of Object.values(revision)) expect(digest).toMatch(/^[0-9a-f]{64}$/);
+    }
+    const serialized = JSON.stringify(args);
+    for (const plain of ["relative@e2e.local", NETWORK, `|${accountId}`]) expect(serialized).not.toContain(plain);
+  });
+  it("keeps the idempotency key stable when a contact revision is added", async () => {
+    mocks.rpc.mockResolvedValue({ data: { status: "received" }, error: null });
+    vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
+    await send();
+    vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2},3:${crypto.randomBytes(32).toString("base64")}`);
+    await send();
+    const [first, second] = mocks.rpc.mock.calls.map((call) => (call[1] as { p_idempotency_key: string }).p_idempotency_key);
+    expect(first).toMatch(/^[0-9a-f]{64}$/);
+    expect(first).toBe(second);
+  });
+  it.each([["keyed digest set incomplete"], ["keyed digest set required"], ["rate limit keys required"]])(
+    "answers 503 when the database refuses the keys (%s)", async (message) => {
+      mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "55000", message } });
+      expect((await send()).status).toBe(503);
+    });
   it("refuses a token minted for another target", async () => {
     const token = mintPathBOperation(accountId, sessionId, "request-send", accountId);
     expect((await send({ "x-inherit-csrf": token })).status).toBe(403);

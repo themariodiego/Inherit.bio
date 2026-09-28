@@ -2,6 +2,8 @@ import "server-only";
 
 import { hmacSecret } from "@/lib/crypto";
 import { encryptedLiteral } from "@/lib/embryos/guards";
+import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
+import { invitationQuotaKeys } from "@/lib/invitation-quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isAdultOn,
@@ -20,7 +22,10 @@ import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
  *   - `POST /api/invitations` with `targetSubjectDraftId` sends the
  *     e-signature request to the address that draft already holds.
  * Both are same-origin, carry a page-minted operation token, and are refused
- * as an unknown resource wherever Path B is not available.
+ * as an unknown resource wherever Path B is not available. Both send the
+ * address under every contact key revision this deployment holds, never one
+ * bare digest; the request also sends the attempt-quota keys, which the
+ * database consumes before it matches anything.
  */
 
 function sameOrigin(request: Request): boolean {
@@ -40,11 +45,11 @@ export async function createPathBDraft(request: Request, payload: unknown): Prom
   const parsed = pathBDraftBody.safeParse(payload);
   if (!parsed.success || !isAdultOn(parsed.data.dateOfBirth)) return ownUploadJson({ error: "invalid_request" }, 422);
   const body = parsed.data;
-  const contactHmac = hmacSecret(body.contactEmail, "contact-email-v1");
   const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_adult_draft_v1", {
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_display_name: body.displayName,
     p_date_of_birth: body.dateOfBirth, p_contact_ciphertext: encryptedLiteral(body.contactEmail),
-    p_contact_hmac: contactHmac,
+    p_contact_hmac: null,
+    p_contact_hmac_set: contactDigestSet(body.contactEmail),
     p_request_key: hmacSecret(JSON.stringify(["adult-path-b-draft-v1", actor.accountId, body.requestId]),
       "mail-idempotency-v1"),
     p_test_jurisdiction: true,
@@ -74,16 +79,19 @@ export async function createPathBInvitation(request: Request, payload: unknown):
     sessionId: actor.sessionId, operation: "request-send", targetId: body.targetSubjectDraftId })) {
     return ownUploadJson({ error: "forbidden" }, 403);
   }
-  const contactHmac = hmacSecret(body.contactEmail, "contact-email-v1");
   const { error } = await heldUploadRpc(createAdminClient(), "create_path_b_invitation_v1", {
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: body.targetSubjectDraftId,
-    p_contact_hmac: contactHmac,
+    p_contact_hmac: null,
+    p_contact_hmac_set: contactDigestSet(body.contactEmail),
+    p_quota_keys: invitationQuotaKeys(actor.accountId, request.headers),
+    // The revision-1 digest keeps the idempotency key stable across a rotation.
     p_idempotency_key: hmacSecret(JSON.stringify(["adult-path-b-request-v1", actor.accountId,
-      body.targetSubjectDraftId, contactHmac]), "mail-idempotency-v1"),
+      body.targetSubjectDraftId, legacyContactDigest(body.contactEmail)]), "mail-idempotency-v1"),
     p_test_jurisdiction: true,
   });
-  // A mismatch, a foreign or used draft, a missing signature and a live
-  // refusal bar are the same receipt: the answer never says which.
+  // A mismatch, a foreign or used draft, a missing signature, a live refusal
+  // bar and an exhausted attempt quota are the same receipt: the answer never
+  // says which.
   if (error && error.code !== "42501" && error.code !== "22023") return ownUploadJson({ error: "unavailable" }, 503);
   return ownUploadJson({ status: "received" }, 202);
 }

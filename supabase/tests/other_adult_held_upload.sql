@@ -23,6 +23,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
+\ir fixtures/invitation_quota_keys.inc
 
 -- claim_mail_outbox hands out the oldest deliverable row; retire any queued
 -- mail on a shared developer database so every claim below is this suite's.
@@ -148,7 +149,7 @@ create function pg_temp.sign(p_subject uuid,p_nonce text,p_keys text[] default a
 $$;
 create function pg_temp.invite(p_subject uuid,p_hmac text,p_idem text,p_flag boolean default true) returns jsonb language sql as $$
  select public.create_path_b_invitation_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',
-  p_subject,p_hmac,p_idem,p_flag);
+  p_subject,p_hmac,p_idem,p_flag,p_quota_keys=>pg_temp.invitation_quota_keys());
 $$;
 -- Claim mail until the row for this target is claimed; returns its raw token's hash.
 create function pg_temp.claim_for(p_target uuid) returns text language plpgsql as $$
@@ -260,7 +261,8 @@ select throws_ok($$update public.adult_subject_drafts set adult_flow='path-a-own
 
 -- A Path A invitation from the same uploader, for contrast throughout.
 create temporary table path_a as select * from public.create_adult_subject_invitation_v1('0a5e0000-0000-4000-8000-000000000001',
- decode('00112233445566778899aabbccddeeff','hex'),repeat('4',64),repeat('4',64),true);
+ decode('00112233445566778899aabbccddeeff','hex'),repeat('4',64),repeat('4',64),true,
+ p_quota_keys=>pg_temp.invitation_quota_keys());
 grant select on path_a to service_role;
 insert into fx(name,subject_id,token_hash) select 'path-a',subject_id,pg_temp.claim_for(invitation_id) from path_a;
 
@@ -711,7 +713,135 @@ select ok((select subject_account_id='0a5e0000-0000-4000-8000-000000000002' and 
 select is((select count(*) from public.adult_subject_drafts where subject_id=pg_temp.sid('path-a')),0::bigint,
  'and its draft is consumed, as before');
 
--- 17. Privileges -----------------------------------------------------------------------------
+-- 17. The contact keyring and the invitation attempt quota ---------------------------------
+-- (20260928130000_hmac_keyring, 20260928130100_invitation_keyring_quota_doors)
+-- Synthetic digests stand in for the application's keyed contact digests.
+-- Every bare-digest call of this suite is above: after the rotation below a
+-- bare digest is refused, which is itself one of the checks.
+create function pg_temp.kd(p text) returns text language sql immutable as
+ $$ select encode(extensions.digest('path-b-keyring:'||p,'sha256'),'hex') $$;
+create function pg_temp.keyed_draft(p_name text,p_hmac text,p_set jsonb) returns jsonb language plpgsql as $$
+declare r jsonb;
+begin
+ r:=public.create_path_b_adult_draft_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',
+  'Synthetic Relative',date '1980-05-05',decode('00112233445566778899aabbccddeeff','hex'),p_hmac,
+  pg_temp.kd('request:'||p_name),true,p_contact_hmac_set=>p_set);
+ insert into fx(name,subject_id) values(p_name,(r->>'subjectDraftId')::uuid) on conflict(name) do nothing;
+ return r;
+end;
+$$;
+create function pg_temp.keyed_invite(p_subject uuid,p_hmac text,p_set jsonb,p_idem text,p_keys jsonb)
+returns jsonb language sql as $$
+ select public.create_path_b_invitation_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',
+  p_subject,p_hmac,pg_temp.kd('idem:'||p_idem),true,p_contact_hmac_set=>p_set,p_quota_keys=>p_keys);
+$$;
+create function pg_temp.pair(p text) returns jsonb language sql immutable as
+ $$ select jsonb_build_object('1',pg_temp.kd(p||'1'),'2',pg_temp.kd(p||'2')) $$;
+-- Nothing an exhausted or barred request could have written for a draft.
+create function pg_temp.request_rows(p_subject uuid) returns bigint language sql as $$
+ select (select count(*) from public.subject_invitations where target_kind='subject' and target_id=p_subject)
+  +(select count(*) from public.mail_outbox m join public.subject_invitations i on i.id=m.target_id
+    where i.target_id=p_subject)
+  +(select count(*) from public.adult_subject_drafts where subject_id=p_subject and state<>'draft')
+$$;
+
+-- Y is reserved and signed before the rotation, under revision 1 alone.
+select is((select r->>'state' from (select pg_temp.keyed_draft('key-y',pg_temp.kd('y1'),null) r) x),
+ 'awaiting_uploader_artifact','before any rotation a bare revision-1 digest still reserves a draft');
+select pg_temp.present(pg_temp.sid('key-y'),'3');
+select is((select s->>'recordKind' from (select pg_temp.sign(pg_temp.sid('key-y'),'3') s) x),'artifact_signature',
+ '(key-y) the uploader signs');
+select private.begin_hmac_key_rotation_v1('contact',2);
+
+-- A bare digest, or a set missing a usable revision, is refused after it.
+select throws_ok($$select pg_temp.keyed_draft('key-bare',pg_temp.kd('x1'),null)$$,'55000',
+ 'keyed digest set required','after a rotation a draft with a bare digest is refused');
+select throws_ok($$select pg_temp.keyed_draft('key-short',null,jsonb_build_object('1',pg_temp.kd('x1')))$$,'55000',
+ 'keyed digest set incomplete','a draft whose set misses the active revision is refused');
+select throws_ok($$select pg_temp.keyed_invite(pg_temp.sid('key-y'),pg_temp.kd('y1'),null,'y-bare',
+ pg_temp.invitation_quota_keys())$$,'55000','keyed digest set required',
+ 'after a rotation a request with a bare digest is refused');
+select throws_ok($$select pg_temp.keyed_invite(pg_temp.sid('key-y'),null,jsonb_build_object('1',pg_temp.kd('y1')),
+ 'y-short',pg_temp.invitation_quota_keys())$$,'55000','keyed digest set incomplete',
+ 'a request whose set misses a usable revision is refused');
+select is(pg_temp.request_rows(pg_temp.sid('key-y')),0::bigint,'... and neither refusal wrote a request');
+
+-- Z is reserved after the rotation: stored under the active revision and
+-- indexed under every usable one.
+select is((select r->>'state' from (select pg_temp.keyed_draft('key-z',null,pg_temp.pair('z')) r) x),
+ 'awaiting_uploader_artifact','a draft with the whole set is reserved');
+select ok((select e.contact_hmac=pg_temp.kd('z2') and e.key_revision=2
+ from public.encrypted_contact_references e join public.subject_principals sp on sp.id=e.principal_id
+ where sp.subject_id=pg_temp.sid('key-z') and e.status='current'),
+ 'the contact is stored under the active revision''s digest and records revision 2');
+select is((select jsonb_object_agg(h.hmac_key_revision::text,h.contact_hmac)
+ from public.contact_hmac_indexes h join public.encrypted_contact_references e on e.id=h.contact_reference_id
+ join public.subject_principals sp on sp.id=e.principal_id
+ where sp.subject_id=pg_temp.sid('key-z') and h.status='current'),pg_temp.pair('z'),
+ 'the contact is indexed under both usable revisions, each with its own digest');
+select is(private.declared_contact_aliases_v1(),'{}'::jsonb,'the declared set ends with the call');
+select pg_temp.present(pg_temp.sid('key-z'),'4');
+select pg_temp.sign(pg_temp.sid('key-z'),'4');
+select is(pg_temp.keyed_invite(pg_temp.sid('key-z'),null,pg_temp.pair('z'),'z',pg_temp.invitation_quota_keys()),
+ jsonb_build_object('status','received'),'(key-z) the request with the whole set is sent');
+select ok((select i.status='pending' and i.email_hmac=pg_temp.kd('z2') and i.email_hmac_key_revision=2
+  and m.state='queued' and m.template_payload=jsonb_build_object('request','esignature')
+ from public.subject_invitations i join public.mail_outbox m on m.target_id=i.id
+ where i.target_id=pg_temp.sid('key-z')),
+ '... one pending invitation under revision 2, and its mail is queued');
+
+-- A bar written under the rotated revision reaches a contact stored under
+-- revision 1 only through the presented set.
+insert into public.invitation_refusal_hmacs(email_hmac,refusal_revision,hmac_key_revision,created_at,expires_at)
+ values(pg_temp.kd('y2'),1,2,clock_timestamp(),clock_timestamp()+interval '365 days');
+select is(private.invitation_contact_barred_v1(pg_temp.kd('y1')),false,
+ 'one bare revision-1 digest would miss the bar written under revision 2');
+select is(pg_temp.keyed_invite(pg_temp.sid('key-y'),null,pg_temp.pair('y'),'y',pg_temp.invitation_quota_keys()),
+ jsonb_build_object('status','received'),'a request to a contact barred under the rotated revision returns the same receipt');
+select is(pg_temp.request_rows(pg_temp.sid('key-y')),0::bigint,
+ '... and is refused: no invitation, no mail, and the draft is still a draft');
+
+-- The attempt quota is consumed first; an exhausted quota writes nothing else.
+create temporary table quota_keys as select jsonb_build_object('1',jsonb_build_object(
+ 'authenticated-principal',pg_temp.kd('quota-account'),'source-network',pg_temp.kd('quota-network'))) k;
+grant select on quota_keys to service_role;
+select pg_temp.keyed_draft('key-q',null,pg_temp.pair('q'));
+select pg_temp.present(pg_temp.sid('key-q'),'5');
+select pg_temp.sign(pg_temp.sid('key-q'),'5');
+select is(pg_temp.keyed_invite(pg_temp.sid('key-q'),null,pg_temp.pair('w'),'q-wrong',(select k from quota_keys)),
+ jsonb_build_object('status','received'),'a request to an address the draft does not hold returns the receipt');
+select is((select request_count from public.rate_limit_hmac_buckets
+ where action_id='global-contact-refusal-bar-v1.invitation-attempt' and dimension='authenticated-principal'
+  and window_seconds=3600 and bucket_key_hmac=pg_temp.kd('quota-account')),1,
+ '... and still consumed one attempt: the quota comes before any address match');
+select is((select count(*) filter (where private.consume_invitation_attempt_quota_v1(k)) from quota_keys,
+ generate_series(1,9)),9::bigint,'nine more attempts reach the hourly ceiling of ten');
+select is(pg_temp.keyed_invite(pg_temp.sid('key-q'),null,pg_temp.pair('q'),'q',(select k from quota_keys)),
+ jsonb_build_object('status','received'),'the eleventh attempt returns the same receipt');
+select is(pg_temp.request_rows(pg_temp.sid('key-q')),0::bigint,
+ '... and writes nothing: no invitation, no mail, and the draft is still a draft');
+select is(pg_temp.keyed_invite(pg_temp.sid('key-q'),null,pg_temp.pair('q'),'q',pg_temp.invitation_quota_keys()),
+ jsonb_build_object('status','received'),'the same request under a quota with room');
+select is((select count(*) from public.subject_invitations where target_id=pg_temp.sid('key-q') and status='pending'),
+ 1::bigint,'... is sent, so the quota alone stopped the eleventh');
+select throws_ok($$select pg_temp.keyed_invite(pg_temp.sid('key-z'),null,pg_temp.pair('z'),'z-nokeys',null)$$,
+ '55000','rate limit keys required','a request without quota keys is refused');
+
+-- Only the keyed definers are callable, and only by the service role.
+select ok(not has_function_privilege('service_role',
+  'private.create_path_b_adult_draft_core_v1(uuid,uuid,text,date,bytea,text,text,boolean)','execute')
+ and not has_function_privilege('service_role',
+  'private.create_path_b_invitation_core_v1(uuid,uuid,uuid,text,text,boolean)','execute')
+ and has_function_privilege('service_role',
+  'public.create_path_b_adult_draft_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb)','execute')
+ and has_function_privilege('service_role',
+  'public.create_path_b_invitation_v1(uuid,uuid,uuid,text,text,boolean,jsonb,jsonb)','execute'),
+ 'the unkeyed bodies are callable by no API role; the keyed doors by the service role');
+select is((select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname='public' and p.proname in ('create_path_b_adult_draft_v1','create_path_b_invitation_v1')),2::bigint,
+ 'each Path B door has one signature, so no unkeyed overload remains');
+
+-- 18. Privileges -----------------------------------------------------------------------------
 select ok(not has_table_privilege('anon','public.other_adult_held_uploads','select')
  and not has_table_privilege('authenticated','public.other_adult_held_uploads','select')
  and not has_table_privilege('inherit_upload_only','public.other_adult_held_uploads','select')
