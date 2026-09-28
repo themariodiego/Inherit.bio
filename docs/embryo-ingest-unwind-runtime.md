@@ -225,11 +225,20 @@ Storage deletion acknowledgement or terminal notice producer is added.
    session clears the reference. Only the attempt's own job is deleted, and
    exactly one must match.
 
-   Not covered, and failing closed rather than purging partially:
-   - a single-parent case whose approved `legal_reviews` row names the draft.
-     The residual check refuses it until the owner decides whether that review
-     decision is kept.
-   - any store outside the plannable set. The planner already refuses those.
+   Not covered, and failing closed rather than purging partially: any store
+   outside the plannable set. The planner already refuses those.
+
+   **Retained single-parent review, 30 September 2026**
+   (`20260930131000_embryo_purge_retained_review.sql`, tested by
+   `supabase/tests/embryo_ingest_purge_retained_review.sql`). The owner decided
+   on 28 September to keep an approved single-parent basis review as a
+   retained human review decision. The residual check and the unwind
+   planner's store check skip exactly `legal_reviews.target_id`, and only for
+   a row with `target_kind = 'single_parent_basis'` and
+   `decision = 'approved'`. A parent-deceased attempt now plans and purges to
+   completion, and its review and evidence hash survive unchanged. A denied
+   review, a review of another kind, and a `target_id` in any other table
+   still stop the purge.
 
    **Published attempts, 30 September 2026** (same migration;
    `supabase/tests/embryo_ingest_published_cleanup.sql`). Publication plans a
@@ -246,6 +255,35 @@ Storage deletion acknowledgement or terminal notice producer is added.
    stay unchanged. A published unwind can never run the abandoned-attempt
    purge. `public.embryo_ingest_unwind_work_v1` lists the unwinds still
    waiting on storage or on completion.
+
+   **Canonical parts and sources, 30 September 2026**
+   (`20260930132000_embryo_canonical_part_disposal.sql`, tested by
+   `supabase/tests/embryo_canonical_part_disposal.sql` and the two suites
+   above). The split worker's canonical parts
+   (`20260930123000_embryo_canonical_sources.sql`) are R2 objects under
+   `embryo/<uuid>`. They go through the same claim, finish and confirm doors
+   as R2 fragments, with the same empty-marker evidence.
+   - An abandoned attempt's plan inventories every part of its session,
+     landed or not. Planning and the purge both refuse an attempt that holds
+     a canonical source or a file row. The purge deletes the part rows before
+     the session and the job, whose restrict references they hold.
+   - A published cleanup inventories only the parts no canonical source binds:
+     those of earlier or failed attempts. It deletes their rows after
+     `storage_confirmed`. A bound part is never claimed by any unwind, and
+     never counts as disposable.
+   - A part is claimed once it landed, or once its write window has closed. An
+     open window keeps the unwind `storage_pending`.
+   - `private.plan_embryo_source_deletion_v1(files, reason)` is the internal
+     planner for the retention-deadline, restriction and withdrawal slices.
+     The reason is `retention-deadline`, `restriction` or `withdrawal`. First it
+     refuses if anything but the source's own rows names a file. Then, in one
+     transaction, it deletes the membership, then the source, then the
+     genotypes, then the `genome_files` row, and proves no store names a
+     deleted file. The parts stay as rows under a `purpose = 'source'` unwind.
+     `complete_embryo_ingest_unwind_v1` deletes them once their markers are
+     proved. No caller is wired to it. `restrict_embryo_cohort_v1` is
+     unchanged: today it deletes QC and genotypes and keeps the file rows,
+     sources and parts.
 4. Final transaction and queue-production regressions, due-phase scheduling,
    zero-residual checks, provider retention verification and a reviewed rollout.
 

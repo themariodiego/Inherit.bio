@@ -265,6 +265,18 @@ disposal doors. The fragment and handle-map rows go only after
 calls either yet, and ingest stays unavailable. This paragraph changes no
 threshold or acceptance mark.
 
+**Canonical parts and sources, 30 September 2026.** The worker's per-embryo
+canonical parts now go through the same exact disposal, in
+`20260930132000_embryo_canonical_part_disposal.sql`. An abandoned attempt
+disposes of every part it wrote, and can never hold a source. A published
+cleanup disposes of only the parts no source binds. An internal planner
+deletes a published source for the later retention and restriction slices.
+It deletes the membership, then the source, then the genotypes, then the
+file row, and deletes the parts only after their markers are proved. On the
+owner's decision of 28 September, an approved single-parent review is kept
+through the purge (`20260930131000_embryo_purge_retained_review.sql`). Ingest
+stays unavailable. This paragraph changes no threshold or acceptance mark.
+
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
    its `sample_ordinal`. Source sample labels, column headers and file
    names are used only transiently in bounded memory to associate rows;

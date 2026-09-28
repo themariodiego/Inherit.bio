@@ -2,12 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { runEmbryoSplitWorkerLoop, type EmbryoSplitWorkerEvent } from "./split-worker-loop";
 
 afterEach(() => { vi.unstubAllEnvs(); });
+const writeCanonicalPart = async () => { throw new Error("no canonical store in these tests"); };
 
 describe("embryo split worker loop", () => {
   it("refuses to start outside the test jurisdiction", async () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     const runNext = vi.fn();
-    await expect(runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {}, readFragment: async () => new Uint8Array(), runNext }))
+    await expect(runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {}, readFragment: async () => new Uint8Array(), writeCanonicalPart, runNext }))
       .rejects.toMatchObject({ code: "worker_disabled" });
     expect(runNext).not.toHaveBeenCalled();
   });
@@ -26,7 +27,7 @@ describe("embryo split worker loop", () => {
       return next as never;
     });
     const result = await runEmbryoSplitWorkerLoop({ signal: new AbortController().signal,
-      emit: (event) => { events.push(event); }, readFragment: async () => new Uint8Array(), runNext, maximumIterations: 4 });
+      emit: (event) => { events.push(event); }, readFragment: async () => new Uint8Array(), writeCanonicalPart, runNext, maximumIterations: 4 });
     expect(events).toEqual(["split_published", "split_failure_pending", "split_requeued", "split_failed"]);
     expect(result).toEqual({ status: "limit", hadFailure: true });
     expect(JSON.stringify(events)).not.toMatch(/private/);
@@ -35,16 +36,25 @@ describe("embryo split worker loop", () => {
   it("stops between runs when the test jurisdiction is withdrawn", async () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
     const runNext = vi.fn(async () => { vi.stubEnv("INHERIT_TEST_JURISDICTION", ""); return { status: "published" } as never; });
-    await expect(runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {}, readFragment: async () => new Uint8Array(), runNext,
+    await expect(runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {}, readFragment: async () => new Uint8Array(), writeCanonicalPart, runNext,
       maximumIterations: 3 })).rejects.toMatchObject({ code: "worker_disabled" });
     expect(runNext).toHaveBeenCalledOnce();
+  });
+
+  it("hands every run exactly the injected fragment reader and canonical-part writer", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    const readFragment = async () => new Uint8Array();
+    const runNext = vi.fn(async () => ({ status: "idle" }) as never);
+    await runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {}, readFragment,
+      writeCanonicalPart, runNext, maximumIterations: 1 });
+    expect(runNext).toHaveBeenCalledWith(expect.objectContaining({ readFragment, writeCanonicalPart }));
   });
 
   it("rejects an unbounded or malformed iteration limit", async () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
     for (const maximumIterations of [0, 1001, 1.5]) {
       await expect(runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {},
-        readFragment: async () => new Uint8Array(), runNext: vi.fn(), maximumIterations })).rejects.toMatchObject({ code: "invalid_options" });
+        readFragment: async () => new Uint8Array(), writeCanonicalPart, runNext: vi.fn(), maximumIterations })).rejects.toMatchObject({ code: "invalid_options" });
     }
   });
 });

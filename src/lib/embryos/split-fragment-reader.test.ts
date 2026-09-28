@@ -1,7 +1,12 @@
-import { randomUUID } from "node:crypto";
-import { describe, expect, it, vi } from "vitest";
-import { EmbryoFragmentStorageError, type EmbryoStoredFragment } from "./fragment-storage";
-import { r2EmbryoFragmentReader } from "./split-fragment-reader";
+import { createHash, randomUUID } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createEmbryoFixtureSigner, createEmbryoFragmentGateway, EMBRYO_FIXTURE_BUCKET, EMBRYO_FIXTURE_ORIGIN,
+  EMBRYO_FIXTURE_SUPABASE_URL,
+} from "../../../scripts/ci-browser/embryo-fragment-fixture";
+import { EmbryoFragmentStorageError, type EmbryoFragmentRpc, type EmbryoR2WriteTarget,
+  type EmbryoStoredFragment } from "./fragment-storage";
+import { r2EmbryoCanonicalPartWriter, r2EmbryoFragmentReader } from "./split-fragment-reader";
 import { EmbryoSplitFragmentMismatch, type EmbryoFragmentRef } from "./split-worker";
 
 function stored(): EmbryoStoredFragment {
@@ -57,5 +62,57 @@ describe("R2 fragment reader for the split worker", () => {
       const read = vi.fn(async () => { throw new EmbryoFragmentStorageError(code); });
       await expect(r2EmbryoFragmentReader(read)(refFor(stored()), signal)).rejects.toMatchObject({ code });
     }
+  });
+});
+
+describe("R2 canonical-part writer for the split worker", () => {
+  // The undeployed gateway over an in-memory binding, as fragment-storage.test.ts runs it.
+  let gateway: ReturnType<typeof createEmbryoFragmentGateway>;
+  let methods: string[];
+  beforeEach(() => {
+    const signer = createEmbryoFixtureSigner();
+    gateway = createEmbryoFragmentGateway(signer.publicJwk);
+    methods = [];
+    vi.stubEnv("INHERIT_UPLOAD_SIGNING_JWK", JSON.stringify(signer.privateJwk));
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", EMBRYO_FIXTURE_SUPABASE_URL);
+    vi.stubEnv("INHERIT_EMBRYO_R2_ORIGIN", EMBRYO_FIXTURE_ORIGIN);
+    vi.stubEnv("INHERIT_EMBRYO_R2_BUCKET", EMBRYO_FIXTURE_BUCKET);
+    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
+      const request = new Request(input, init);
+      if (new URL(request.url).origin !== EMBRYO_FIXTURE_ORIGIN) throw new Error("unexpected origin");
+      methods.push(request.method);
+      return gateway.fetch(request);
+    }));
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+  const bytes = new TextEncoder().encode("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\n1\t12345\t.\tA\tG\n");
+  const target = (): EmbryoR2WriteTarget => ({ version: "embryo-ingest-write-target-v1", sessionId: randomUUID(),
+    sequence: 1, ordinal: 2, backend: "r2", bucket: EMBRYO_FIXTURE_BUCKET, objectKey: `embryo/${randomUUID()}`,
+    byteCount: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex"),
+    writeExpiresAt: new Date(Date.now() + 50_000).toISOString() });
+
+  it("writes create-only, reads back, and lands through the worker's ACK carrier only", async () => {
+    const t = target();
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const acknowledge: EmbryoFragmentRpc = (name, args) => ({ abortSignal: async () => {
+      calls.push({ name, args });
+      return { data: { receipt: args.p_expected, providerVersion: args.p_provider_version, etag: args.p_etag }, error: null };
+    } });
+    const stored = await r2EmbryoCanonicalPartWriter()({ target: t, bytes, acknowledge }, new AbortController().signal);
+    const object = gateway.values.get(t.objectKey)!;
+    expect(stored).toEqual({ receipt: t, providerVersion: object.version, etag: object.etag });
+    expect(methods).toEqual(["PUT", "GET"]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].args).toMatchObject({ p_expected: t, p_observed_byte_count: bytes.length, p_observed_sha256: t.sha256 });
+  });
+
+  it("does not land bytes that differ from the receipt", async () => {
+    const acknowledge = vi.fn();
+    const wrong = bytes.slice(); wrong[wrong.length - 2] = 67;
+    await expect(r2EmbryoCanonicalPartWriter()({ target: target(), bytes: wrong, acknowledge },
+      new AbortController().signal)).rejects.toMatchObject({ code: "invalid_request" });
+    expect(methods).toEqual([]);
+    expect(acknowledge).not.toHaveBeenCalled();
   });
 });

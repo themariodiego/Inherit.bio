@@ -1,5 +1,68 @@
 # Test diff register
 
+## Embryo canonical part disposal and source deletion · 30 September 2026
+
+Two new files:
+
+- `supabase/tests/embryo_canonical_part_disposal.sql` has 96 assertions,
+  fixture included, for `20260930132000_embryo_canonical_part_disposal.sql`.
+  An attempt copies one embryo, leaves one copy open and fails. A second
+  attempt then publishes. The file covers:
+  - the published cleanup listing exactly the three unbound parts, landed or
+    open, and never a bound one;
+  - the R2 marker path for each;
+  - the removal of the unbound part rows;
+  - every published row, file, source and bound part left unchanged;
+  - the source-deletion planner's refusals, including a dependant row
+    anywhere else;
+  - the planner's deletions in one transaction, and a clear residual check;
+  - the parts kept until their markers are proved, then removed;
+  - a second source planned at its retention deadline.
+- `supabase/tests/embryo_ingest_purge_retained_review.sql` has 16
+  assertions, for `20260930131000_embryo_purge_retained_review.sql`. A
+  parent-deceased attempt plans and purges to completion, and its approved
+  review and evidence hash survive unchanged. A denied review and another
+  table's `target_id` still stop the purge. After the purge, the residual
+  check still counts a denied review, an approved review of another kind and
+  another table's `target_id`.
+
+Existing files:
+
+- `supabase/tests/embryo_ingest_terminal_purge.sql` goes from 140 to 147
+  assertions. Its attempt now copies embryo 1 into canonical parts before
+  the pass, as the pass gate from `20260930123000` requires, and leaves a copy
+  for embryo 2 open. The three expected object counts move from 6 to 9: the
+  disposal count, the completion result and the audit context. New assertions
+  cover:
+  - the parts in the inventory;
+  - the open part left unclaimed while its window is open, then claimed;
+  - part rows in the absence proof.
+  No assertion was removed or loosened.
+- `supabase/tests/embryo_ingest_published_cleanup.sql` goes from 86 to 87.
+  - The test lands the published embryos' parts before their passes.
+  - The completion result and the audit context gain `"parts":0`.
+  - The published-rows digest now also covers file rows, canonical sources
+    and bound parts.
+  No assertion was removed or loosened.
+- `src/lib/embryos/unwind-storage.test.ts` accepts the `source` purpose and
+  refuses an unknown one.
+- `supabase/tests/v2_contracts.sql` pins 133 purge stores, from the merge: 130
+  here plus the three canonical-source stores. This unit adds no table.
+
+Planted regressions, each caught:
+
+- a published plan that lists bound parts;
+- a claim that ignores an open write window;
+- a plan that omits parts, combined with a blind uninventoried count;
+- the file row deleted before its genotypes;
+- parts deleted before their markers;
+- no dependant check;
+- a source finish before `storage_confirmed`;
+- a purge that keeps part rows;
+- a published cleanup that unbinds a published source;
+- the review skip widened three ways: to the whole `legal_reviews` table, to
+  every `target_id`, and to every review.
+
 ## Embryo terminal purge and published cleanup · 30 September 2026
 
 Two new files test `20260930130000_embryo_ingest_terminal_purge.sql`. Both
@@ -72,6 +135,45 @@ Existing files, with no assertion removed:
 - In `supabase/tests/embryo_ingest_write_fence.sql`, the store-order assertion
   now compares the fence's two stores with every pre-fence store. Those were
   all public, and a later private store follows the fence's two.
+
+## Embryo canonical sources · 28 September 2026
+
+`supabase/tests/embryo_canonical_sources.sql` is new, with 123 assertions
+(fixture included) for `20260930123000_embryo_canonical_sources.sql`: store
+and door grants, purge registration, reservation and ACK refusals, the pass
+gate, a retry that reserves new keys, publication refusals, the published
+file rows, sources and memberships, genotype binding, immutability, and the
+owner file read under `authenticated`, another account and `anon`.
+
+Existing suites changed, with no assertion removed or loosened:
+
+- `supabase/tests/fixtures/embryo_ingest_completed.inc` configures a synthetic
+  R2 bucket name for canonical parts and adds `pg_temp.land_parts`.
+- In `embryo_split_worker.sql` and `embryo_split_publication.sql`, the
+  `pg_temp.finish` helper lands the embryo's canonical parts before it records
+  a pass, as the worker now does. Every assertion is unchanged, except one.
+  The publication check that each genotype was bound to its own digest also
+  required `source_file_id is null`. It now requires the genotype to point at
+  its own embryo's file, which carries that same digest.
+- `supabase/tests/v2_contracts.sql`: the pinned purge-store count moves from
+  129 to 132 for the three new registered stores.
+- `src/lib/embryos/split-worker.test.ts`: every run passes the canonical-part
+  writer double. A passing embryo is now read twice, once to analyse it and
+  once to copy it. So the read-authority count goes from 4 to 8, and the
+  expected read order lists each passing embryo twice. The stale-binding case
+  still fails the read authority that follows embryo 1's recorded outcome;
+  that is now the fifth call, not the third, and four reads precede it. The
+  "never publishes" case still fails in the middle of embryo 2; that is now
+  after five calls, not three. Seven new cases cover the copies: byte-for-byte
+  copies of each embryo's own fragments landed before its outcome, none for a
+  QC failure, a failed write, a stale ACK, a receipt for another fragment, a
+  landed identity for another receipt, and a fragment changed between the two
+  reads.
+- `src/lib/embryos/split-worker-loop.test.ts` passes a writer and adds one
+  case: each run gets exactly the injected reader and writer.
+- `src/lib/embryos/split-fragment-reader.test.ts` adds two cases for the R2
+  canonical-part writer over the in-memory gateway binding
+  (`scripts/ci-browser/embryo-fragment-fixture.ts`).
 
 ## Embryo fragments on R2 · 29 September 2026
 

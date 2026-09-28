@@ -166,15 +166,17 @@ describe("completeEmbryoUnwind", () => {
 describe("listEmbryoUnwindWork", () => {
   it("returns the listed unwinds and clamps the limit", async () => {
     const work = [{ unwindId, purpose: "published", state: "storage_pending" },
-      { unwindId: randomUUID(), purpose: "abandoned", state: "storage_confirmed" }];
+      { unwindId: randomUUID(), purpose: "abandoned", state: "storage_confirmed" },
+      { unwindId: randomUUID(), purpose: "source", state: "storage_pending" }];
     const s = answer(work);
     expect(await listEmbryoUnwindWork({ rpc: s.rpc, limit: 500, signal: new AbortController().signal }))
       .toEqual(work);
     expect(s.log[0].args).toEqual({ p_limit: 100 });
   });
 
-  it("refuses a completed unwind or an extra field", async () => {
+  it("refuses a completed unwind, an unknown purpose or an extra field", async () => {
     for (const row of [{ unwindId, purpose: "abandoned", state: "complete" },
+      { unwindId, purpose: "restriction", state: "storage_pending" },
       { unwindId, purpose: "published", state: "storage_pending", cohortId: randomUUID() }]) {
       await expect(listEmbryoUnwindWork({ rpc: answer([row]).rpc, signal: new AbortController().signal }))
         .rejects.toThrow();

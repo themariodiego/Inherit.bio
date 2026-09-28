@@ -113,7 +113,7 @@ export async function drainEmbryoUnwindStorage(input: {
   return { status: confirmation.status, disposed, failed };
 }
 
-const workSchema = z.array(z.object({ unwindId: uuid, purpose: z.enum(["abandoned", "published"]),
+const workSchema = z.array(z.object({ unwindId: uuid, purpose: z.enum(["abandoned", "published", "source"]),
   state: z.enum(["storage_pending", "storage_confirmed"]) }).strict()).max(100);
 export type EmbryoUnwindWork = z.infer<typeof workSchema>[number];
 
