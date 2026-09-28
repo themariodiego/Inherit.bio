@@ -110,9 +110,14 @@ describe("the route gate holds the register to the code", () => {
     // because the page now renders that state - "Ancestry is off", named and
     // linked to where it is turned on - and the same change proves it
     // (e2e/ancestry-revocation.spec.ts), so the unproven count does not move.
-    // Pinned exactly rather than as a floor, so
+    // 153 -> 154 on 2026-09-28: `processing` supported on `public-rights-flow`
+    // because /future-person/claim now sends a request and shows it pending;
+    // /legal/appeals and /withdraw/[token] waive it with the profile's old
+    // reasons, so it adds exactly the one pair, and
+    // e2e/future-person-claim.spec.ts proves it, so the unproven count does
+    // not move. Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(153);
+    expect(result.requiredStateCount).toBe(154);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7

@@ -117,22 +117,27 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // capability, which reads the flag through `isTestJurisdictionEnabled`.
     // The seventh binding is the same shape in `declarableCode`
     // (`src/lib/legal/jurisdiction-declaration.ts`), which admits the
-    // block-only row's stored code only while that flag is on. It is 20 since
+    // block-only row's stored code only while that flag is on. It is 21:
     // the embryo fragment transport (`src/lib/embryos/fragment-storage.ts`)
-    // reads INHERIT_EMBRYO_R2_ORIGIN and INHERIT_EMBRYO_R2_BUCKET directly;
-    // both are declared in the template and named in the guide.
-    expect(result.directReadKeyCount).toBe(20);
+    // reads INHERIT_EMBRYO_R2_ORIGIN and INHERIT_EMBRYO_R2_BUCKET directly, and
+    // G5.4's keyring reads `INHERIT_HMAC_KEYRING` as the default argument of
+    // `keyedDigestSet`; all three are declared in the template and named in
+    // the guide. The eighth binding (G5.4, 2026-09-28) is `futurePersonClaimsOpen`
+    // (`src/lib/future-person/claims-open.ts`), which reads the same
+    // `INHERIT_TEST_JURISDICTION` through a defaulted `env` parameter, so it
+    // adds a binding and no new variable.
+    expect(result.directReadKeyCount).toBe(21);
     expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(7);
+    expect(result.boundBindingCount).toBe(8);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(36);
-    expect(result.templateKeyCount).toBe(29);
+    expect(result.readKeyCount).toBe(37);
+    expect(result.templateKeyCount).toBe(30);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(29);
-    expect(result.guideNamedCount).toBe(39);
+    expect(result.guideDocumentedKeyCount).toBe(30);
+    expect(result.guideNamedCount).toBe(40);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(7);
   });

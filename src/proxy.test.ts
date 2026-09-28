@@ -155,3 +155,94 @@ describe("places under a comprehensive US embargo", () => {
     });
   });
 });
+
+describe("the public Future Person claim (rights.future-person-claim)", () => {
+  const claimVisit = (method: string, path: string, headers: Record<string, string> = {}) =>
+    proxy(new NextRequest(`https://inherit.bio${path}`, { method, headers }));
+  const forwardedToken = (response: Response) => response.headers.get("x-middleware-request-x-inherit-claim-form-token");
+  const openClaims = () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
+  };
+  const closeClaims = () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+  };
+
+  it("gives the page a fresh form pair while claims are open, and reads no account", async () => {
+    openClaims();
+    try {
+      const first = await claimVisit("GET", "/future-person/claim");
+      const second = await claimVisit("GET", "/future-person/claim");
+      expect(mocks.sessionReads).toBe(0);
+      expect(mocks.selected).toEqual([]);
+      expect(first.headers.get("set-cookie")).toMatch(
+        /^inherit-claim-form=[A-Za-z0-9_-]{43}; Path=\/; Max-Age=600; HttpOnly; SameSite=Strict$/,
+      );
+      expect(forwardedToken(first)).toMatch(/^[A-Za-z0-9_-]+\.[0-9a-f]{64}$/);
+      expect(forwardedToken(first)).not.toBe(forwardedToken(second));
+      expect(first.headers.get("set-cookie")).not.toBe(second.headers.get("set-cookie"));
+      expect(first.headers.get("cache-control")).toBe("private, no-store");
+      expect(first.headers.get("referrer-policy")).toBe("no-referrer");
+    } finally {
+      closeClaims();
+    }
+  });
+
+  it("keeps the browser's form cookie when Next.js prefetches the page it is showing", async () => {
+    openClaims();
+    try {
+      const first = await claimVisit("GET", "/future-person/claim");
+      const cookie = first.headers.get("set-cookie")!.split(";")[0]!;
+      const prefetch = await claimVisit("GET", "/future-person/claim", {
+        cookie,
+        rsc: "1",
+        "next-router-prefetch": "1",
+      });
+      expect(prefetch.headers.get("set-cookie")!.split(";")[0]).toBe(cookie);
+      expect(forwardedToken(prefetch)).toMatch(/^[A-Za-z0-9_-]+\.[0-9a-f]{64}$/);
+      expect(forwardedToken(prefetch)).not.toBe(forwardedToken(first));
+      expect(mocks.sessionReads).toBe(0);
+    } finally {
+      closeClaims();
+    }
+  });
+
+  it("sets no cookie and forwards no token where claims are not open", async () => {
+    closeClaims();
+    const response = await claimVisit("GET", "/future-person/claim");
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(forwardedToken(response)).toBeNull();
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.sessionReads).toBe(0);
+  });
+
+  it("never forwards a token a client supplied itself", async () => {
+    closeClaims();
+    const closed = await claimVisit("GET", "/future-person/claim", { "x-inherit-claim-form-token": "forged.token" });
+    expect(forwardedToken(closed)).toBeNull();
+    openClaims();
+    try {
+      const open = await claimVisit("GET", "/future-person/claim", { "x-inherit-claim-form-token": "forged.token" });
+      expect(forwardedToken(open)).not.toBe("forged.token");
+      const head = await claimVisit("HEAD", "/future-person/claim", { "x-inherit-claim-form-token": "forged.token" });
+      expect(forwardedToken(head)).toBeNull();
+      expect(head.headers.get("set-cookie")).toBeNull();
+    } finally {
+      closeClaims();
+    }
+  });
+
+  it("lets the claim start through without reading an account", async () => {
+    openClaims();
+    try {
+      const response = await claimVisit("POST", "/api/future-person/claim", { "content-type": "application/json" });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+      expect(mocks.sessionReads).toBe(0);
+      expect(mocks.selected).toEqual([]);
+    } finally {
+      closeClaims();
+    }
+  });
+});

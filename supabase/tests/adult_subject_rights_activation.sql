@@ -1,5 +1,6 @@
 begin;
 select plan(38);
+\ir fixtures/invitation_quota_keys.inc
 
 -- Only synthetic accounts; the outer transaction rolls back.
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -16,7 +17,7 @@ create temporary table inv as
 select * from public.create_adult_subject_invitation_v1(
  '7b000000-0000-0000-0000-000000000001',
  decode('00112233445566778899aabbccddeeff','hex'),
- repeat('a',64), repeat('b',64), true
+ repeat('a',64), repeat('b',64), true, p_quota_keys => pg_temp.invitation_quota_keys()
 );
 create temporary table delivery as select * from public.claim_mail_outbox();
 create temporary table tok as select encode(extensions.digest(

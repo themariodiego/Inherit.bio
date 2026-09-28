@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ownChatsForExport } from "./own-chats";
+import { exportedTable } from "./member-plan";
 
 /**
  * F5: the synchronous export's `chats.json` carries exactly what the chat
@@ -218,6 +219,25 @@ describe("the chats the free export carries", () => {
     db.chat_messages = turn("visible", 1);
     onRead = table => { if (table === "chat_messages") db.purpose_grants[0].revoked_at = "2026-09-26T00:00:00Z"; };
     await expect(exportChats()).rejects.toThrow("export unavailable");
+  });
+
+  it("carries exactly the chat and message columns the export member plan exports", async () => {
+    db.chats = [chat("visible")];
+    db.chat_messages = turn("visible", 1);
+    const [exported] = await exportChats();
+    // A chat's own fields, plus the messages nested under it.
+    expect(new Set(Object.keys(exported).filter(key => key !== "messages")))
+      .toEqual(new Set(exportedTable("public.chats")!.columns));
+    // The history names of the message columns; chat_id is the nesting and
+    // embryoFindings is always the empty list, never a stored column.
+    const COLUMN_OF: Record<string, string> = { id: "id", role: "role", content: "content",
+      citations: "canonical_citations", createdAt: "created_at" };
+    const planned = exportedTable("public.chat_messages")!;
+    for (const message of exported.messages) {
+      const columns = Object.keys(message).filter(key => key !== "embryoFindings").map(key => COLUMN_OF[key]);
+      expect(new Set([...columns, "chat_id"])).toEqual(new Set(planned.columns));
+      for (const column of columns) expect(planned.withheld).not.toContain(column);
+    }
   });
 
   it("reads a chat longer than one API page completely", async () => {

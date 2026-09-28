@@ -12,25 +12,49 @@ const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid:
   revokeAfterBuild: false, reportGrantChecks: 0,
   // F5: what the chat reader answers, and what it was asked.
   subjects: [] as Array<Record<string, unknown>>, chats: [] as unknown[], chatFailure: false,
-  chatCalls: [] as Array<{ actor: unknown; subjectIds: readonly string[] }> }));
+  chatCalls: [] as Array<{ actor: unknown; subjectIds: readonly string[] }>,
+  // The member plan harness: whole database rows per table, answered with
+  // exactly the columns each read selects, as the API does.
+  tableRows: null as null | Record<string, Array<Record<string, unknown>>>, fromReads: [] as Array<{ table: string; select: string }>,
+  // The legal audit slice the database answers, one page per call.
+  legalAuditPages: [] as unknown[], legalAuditCalls: [] as Array<Record<string, unknown>>, legalAuditError: false,
+  project(row: Record<string, unknown>, select: string): Record<string, unknown> {
+    if (select.trim() === "*") return { ...row };
+    const out: Record<string, unknown> = {};
+    for (const token of select.split(",").map(part => part.trim())) {
+      const join = /^(\w+)!inner\((\w+)\)$/.exec(token);
+      if (join) out[join[1]] = { [join[2]]: "12345678-1234-4234-8234-000000000001" };
+      else if (token in row) out[token] = row[token];
+      else throw new Error(`no column ${token}`);
+    }
+    return out;
+  } }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: {
   getUser: async () => ({ data: { user: { id: "12345678-1234-4234-8234-000000000001", email: "synthetic@e2e.local" } } }),
   getClaims: async () => ({ data: { claims: { sub: "12345678-1234-4234-8234-000000000001", session_id: "12345678-1234-4234-8234-000000000002" } } }),
 } }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
   const from = (table: string) => {
-    const rows = table === "ancestry_results" ? mocks.legacyRows : table === "genome_files" ? mocks.legacyFiles
-      : table === "subjects" ? mocks.subjects : [];
+    const whole = mocks.tableRows?.[table];
+    const rows = whole ?? (table === "ancestry_results" ? mocks.legacyRows : table === "genome_files" ? mocks.legacyFiles
+      : table === "subjects" ? mocks.subjects : []);
     // The genome_files read is paged by `fetchAllRows`, which stops on the
     // first empty page. Answer the offset honestly or it never terminates.
-    let offset = 0;
-    const builder = { select: () => builder, eq: () => builder, is: () => builder, in: () => builder, order: () => builder,
+    let offset = 0, selected = "*";
+    const builder = { select: (columns = "*") => { selected = columns; mocks.fromReads.push({ table, select: columns }); return builder; },
+      eq: () => builder, is: () => builder, in: () => builder, order: () => builder,
       range: (start: number) => { offset = start; return builder; },
       then: (resolve: (value: unknown) => unknown) =>
-        Promise.resolve({ data: rows.slice(offset), error: null }).then(resolve) };
+        Promise.resolve({ data: (whole ? rows.map(row => mocks.project(row, selected)) : rows).slice(offset), error: null }).then(resolve) };
     return builder;
   };
   return { from, rpc: (name: string, args: { p_expected?: Record<string, unknown>; p_subject_id?: string; p_purpose?: string }) => {
+    if (name === "own_legal_audit_events_v1") {
+      mocks.legalAuditCalls.push(args);
+      const page = mocks.legalAuditPages[mocks.legalAuditCalls.length - 1] ?? { version: "legal-audit-slice-v1",
+        attributionStartedAt: "2026-09-28T16:00:00.000+00:00", events: [], nextAfterSeq: null };
+      return Promise.resolve(mocks.legalAuditError ? { data: null, error: { message: "unavailable" } } : { data: page, error: null }) as never;
+    }
     // The grant question is awaited directly, not through `abortSignal()`.
     if (name === "own_subject_purpose_granted_v1") {
       const granted = mocks.grants.has(`${args.p_subject_id} ${args.p_purpose}`);
@@ -113,9 +137,11 @@ vi.mock("@/lib/uploads/prepared-original-download", async importOriginal => {
   } };
 });
 import { GET } from "./route";
+import { exportMemberPlan, exportedTable, plannedArchiveMembers } from "@/lib/export/member-plan";
 beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false;
   mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0;
-  mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; });
+  mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; mocks.tableRows = null; mocks.fromReads = [];
+  mocks.legalAuditPages = []; mocks.legalAuditCalls = []; mocks.legalAuditError = false; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -355,7 +381,7 @@ describe("chats.json", () => {
 });
 
 /** F4, 26 Sep 2026: the archive states what it holds and what it does not yet. */
-it("lists the permission records and profile facts, and says legal audit records are not yet included", async () => {
+it("lists the permission records and profile facts, and points to the legal audit file", async () => {
   const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
   const manifest = JSON.parse(zip.readAsText("manifest.json"));
   const record = JSON.parse(zip.readAsText("subject-record.json"));
@@ -363,8 +389,122 @@ it("lists the permission records and profile facts, and says legal audit records
   const entry = manifest.contents.find((item: { path: string }) => item.path === "subject-record.json");
   expect(entry.description).toContain("never the name you signed with");
   expect(entry.description).toContain("your birth date and declared country");
-  expect(entry.description).toContain("Legal audit records are not yet included.");
+  expect(entry.description).toContain("Legal audit records are in legal-audit.json.");
   // The privacy policy's export promise stays verbatim.
   expect(manifest.note).toContain("your original uploaded files, all derived variants, all reports, and your chat history");
-  expect(manifest.note).toContain("Legal audit records are not yet included.");
+  expect(manifest.note).toContain("the legal audit records of what you did yourself (records that do not say who acted are left out)");
+  expect(manifest.note).not.toContain("not yet included. Unvalidated");
+});
+
+/**
+ * L-34 and the owner's decision of 28 Sep 2026: every archive carries
+ * `legal-audit.json` with the events the person caused themselves, exactly as
+ * the database selects them for this account and session. Events written
+ * before attribution began name no one, so the file is often empty; its note
+ * says why, and the manifest counts it rather than leaving it out.
+ */
+describe("legal-audit.json", () => {
+  const event = (seq: number) => ({ seq, occurred_at: "2026-09-28T17:00:00+00:00", event_code: "purpose.granted",
+    route_id: "api.consents", outcome_code: "accepted", coded_context: { purpose: "reports.polygenic", revision: 1 } });
+  const archive = async () => new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+
+  it("is present and says why it is empty when the person has caused no attributed event", async () => {
+    const zip = await archive();
+    const file = JSON.parse(zip.readAsText("legal-audit.json"));
+    expect(file).toEqual({ schema_version: "legal-audit-v1",
+      note: "These are the things you did yourself, as our legal audit records show them, since 28 September 2026. "
+        + "Records from before then do not say who acted, so they cannot be shown as yours. "
+        + "Records of what other people or the service did are left out. "
+        + "If the list is empty, that is why, not because nothing happened.",
+      attribution_started_at: "2026-09-28T16:00:00.000+00:00", events: [] });
+    const entry = JSON.parse(zip.readAsText("manifest.json")).contents
+      .find((item: { path: string }) => item.path === "legal-audit.json");
+    expect(entry).toMatchObject({ count: 0 });
+    expect(entry.description).toContain("what you did yourself");
+  });
+
+  it("asks for this account's own events under this session, and writes exactly what comes back", async () => {
+    mocks.legalAuditPages = [{ version: "legal-audit-slice-v1", attributionStartedAt: "2026-09-28T16:00:00.000+00:00",
+      events: [event(7), event(9)], nextAfterSeq: null }];
+    const zip = await archive();
+    expect(JSON.parse(zip.readAsText("legal-audit.json")).events).toEqual([event(7), event(9)]);
+    expect(mocks.legalAuditCalls).toEqual([{ p_account_id: "12345678-1234-4234-8234-000000000001",
+      p_session_id: "12345678-1234-4234-8234-000000000002", p_after_seq: null }]);
+    expect(JSON.parse(zip.readAsText("manifest.json")).contents
+      .find((item: { path: string }) => item.path === "legal-audit.json").count).toBe(2);
+  });
+
+  it("refuses the export rather than shipping a file that understates the ledger", async () => {
+    mocks.legalAuditError = true;
+    expect((await GET()).status).toBe(503);
+    mocks.legalAuditError = false; mocks.legalAuditCalls = [];
+    // A row carrying the pseudonym or a chain hash is not the closed shape.
+    mocks.legalAuditPages = [{ version: "legal-audit-slice-v1", attributionStartedAt: "2026-09-28T16:00:00.000+00:00",
+      events: [{ ...event(7), audit_principal_id: "12345678-1234-4234-8234-000000000099" }], nextAfterSeq: null }];
+    expect((await GET()).status).toBe(503);
+  });
+});
+
+/**
+ * G5.6, the export member plan held against a whole archive (28 Sep 2026).
+ *
+ * Every table the route reads answers with its WHOLE database row, built from
+ * the plan's own column lists - which `supabase/tests/export_member_plan.sql`
+ * holds equal to the real catalog. A withheld column carries a sentinel, and
+ * each read gets exactly the columns it selects, as the API answers. So a
+ * reader that selects `*` and writes the row, or names a withheld column, puts
+ * a sentinel in the archive and fails here.
+ */
+describe("the archive against the export member plan", () => {
+  const ACCOUNT = "12345678-1234-4234-8234-000000000001";
+  /** Values the route's own logic depends on; every other column says where it came from. */
+  const FIXED: Record<string, Record<string, unknown>> = {
+    "public.genome_files": { id: "legacy-0", subject_id: "subject", original_name: "Legacy file", variant_count: 1, file_type: "vcf" },
+    "public.ancestry_results": { file_id: "legacy-0", subject_id: "subject" },
+    "public.subjects": { id: "subject", subject_account_id: ACCOUNT },
+    "public.profiles": { id: ACCOUNT },
+  };
+  const wholeRow = (table: string) => {
+    const entry = exportedTable(table);
+    if (!entry) throw new Error(`${table} is read by the export but not exported in the plan`);
+    return Object.fromEntries([
+      ...entry.columns.map(column => [column, FIXED[table]?.[column] ?? `value:${table}.${column}`]),
+      ...entry.withheld.map(column => [column, `withheld:${table}.${column}`]),
+    ]);
+  };
+  const archive = async () => {
+    mocks.prepared = true; // one prepared canonical file and one database-backed one
+    mocks.processed = [{ id: "legacy-0", original_name: "Legacy file" }];
+    mocks.grants = new Set(["subject ancestry", "subject reports.monogenic", "subject reports.polygenic"]);
+    mocks.tableRows = Object.fromEntries(Object.entries(exportMemberPlan.tables)
+      .filter(([, entry]) => entry.disposition === "exported")
+      .map(([table]) => [table.replace(/^public\./, ""), [wholeRow(table)]]));
+    const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+    return zip.getEntries().map(entry => ({ name: entry.entryName, text: entry.getData().toString("utf8") }));
+  };
+
+  it("carries no withheld column of any table it reads", async () => {
+    const entries = await archive();
+    for (const { name, text } of entries) {
+      expect(text.match(/withheld:[a-z_.]+/g) ?? [], name).toEqual([]);
+    }
+    // Not vacuous: every table the route reads directly left something.
+    const everything = entries.map(entry => entry.text).join("\n");
+    const read = new Set(mocks.fromReads.map(each => each.table));
+    expect(read.size).toBeGreaterThanOrEqual(14);
+    for (const table of read) expect(everything, table).toContain(`value:public.${table}.`);
+  });
+
+  it("reads only tables the plan exports, never a credential", async () => {
+    await archive();
+    for (const { table } of mocks.fromReads) {
+      expect(exportMemberPlan.tables[`public.${table}`]?.disposition, table).toBe("exported");
+    }
+  });
+
+  it("holds exactly the members the plan names, and no other", async () => {
+    const names = (await archive()).map(entry => entry.name);
+    const members = new Set(names.map(name => (name.includes("/") ? name.slice(0, name.indexOf("/") + 1) : name)));
+    expect(members).toEqual(plannedArchiveMembers());
+  });
 });
