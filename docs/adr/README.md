@@ -40,3 +40,4 @@ writing a superseding ADR, not silently drifting.
 | [0032](./0032-jurisdiction-declaration.md) | The jurisdiction declaration: one writer, a first-sign-in gate, and re-evaluation without a revision bump | Accepted |
 | [0033](./0033-copilot-through-own-assistant-connector.md) | Copilot through the person's own assistant subscription: a read-only Inherit connector the person adds, never a subscription sign-in inside Inherit | Not adopted: owner chose bring-your-own-key and presets only |
 | [0034](./0034-embryo-sex-and-estimates-scope.md) | Embryo sex only for a serious sex-linked condition; polygenic embryo estimates for research only (amends 0019 point 5) | Accepted by owner decision |
+| [0035](./0035-embryo-vcf-configuration.md) | Embryo VCF configuration: the server reads the build from the header; register entries only | Accepted by owner decision |

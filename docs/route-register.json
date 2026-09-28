@@ -3565,7 +3565,8 @@
         "embryo-autosomal-only-v1",
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1"
-      ]
+      ],
+      "vcfConfiguration": "ADR-0035: a-VCF-session-is-configured-once-through-api.embryo-ingest-configure-from-the-sources-##fileformat-##reference-and-##contig-lines-and-its-sample-count-only; the-server-derives-the-build-with-the-product-parsers-header-rule-records-it-through-private.configure_embryo_ingest_session_v1-and-returns-the-transport-challenge-revision-completion-nonce-and-CSRF-token-in-embryo-vcf-transport-v1"
     },
     "own-report-synchronous-v1": {
       "decision": "docs/adr/0024-own-report-synchronous-generation.md",
@@ -12124,7 +12125,14 @@
               "session": "body.session"
             }
           },
-          "expiresAt": "ISO-8601-UTC-from-embryo.ingest-session-24h"
+          "expiresAt": "ISO-8601-UTC-from-embryo.ingest-session-24h",
+          "operationNonce": "one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-configure-request-for-a-VCF-or-one-api.embryo-ingest-mapping-inspection-for-a-table; every-later-nonce-arrives-in-the-response-it-follows",
+          "configureRoute": {
+            "routeFrom": "api.embryo-ingest-configure",
+            "params": {
+              "session": "body.session"
+            }
+          }
         }
       ],
       "embryoSetCookie": "secure-httpOnly-sameSite-strict-__Host-inherit-upload",
@@ -13285,6 +13293,69 @@
       "unknownFieldsRecursively": "forbidden",
       "messageSource": "src/copy/api/errors.ts#goneSuccessor",
       "requires": "superseding-ADR"
+    },
+    "embryo-vcf-transport-v1": {
+      "configured": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "build": {
+            "enum": [
+              "GRCh37",
+              "GRCh38"
+            ]
+          },
+          "challenge": "one-CSPRNG-at-least-128-bit-base64url-transport-challenge-bound-to-this-session-and-ingest-revision-and-stored-hash-only",
+          "revision": "positive-random-safe-integer-stored-with-the-challenge",
+          "completionNonce": "one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-complete-request",
+          "csrfToken": "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"
+        },
+        "unknownFields": "forbidden",
+        "headers": "private-no-store-no-referrer",
+        "use": "the-browser-writes-build-challenge-and-revision-into-the-regenerated-header-of-every-chunk-through-src/lib/embryos/vcf-transport.ts"
+      },
+      "buildUnknown": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "build_unknown"
+          },
+          "next": {
+            "labelCopyId": {
+              "const": "upload.build.ask-laboratory"
+            },
+            "route": {
+              "routeFrom": "embryos.request-data"
+            }
+          }
+        },
+        "unknownFields": "forbidden",
+        "effects": "mark-failure-pending-and-dispatch-policyResolvers.embryo-ingest-session-v1.attemptFailure-with-zero-publication-while-preserving-the-session-and-exact-due-target-until-that-identical-unwind-commits"
+      },
+      "cohortSingleSample": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "cohort_single_sample"
+          }
+        },
+        "unknownFields": "forbidden",
+        "effects": "the-same-attemptFailure-effects-as-buildUnknown"
+      },
+      "sampleCountMismatch": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "sample_count_mismatch"
+          }
+        },
+        "unknownFields": "forbidden",
+        "effects": "the-same-attemptFailure-effects-as-buildUnknown"
+      },
+      "selection": "exactly-one-branch-per-request; the-header-build-is-decided-before-the-sample-count-and-no-branch-returns-any-submitted-line-or-count"
     }
   },
   "responseContractBindings": {
@@ -13395,6 +13466,11 @@
       ],
       "api.embryo-ingest-chunk": [
         "embryo-ingest-chunk-v1",
+        "resource-not-found-v1"
+      ],
+      "api.embryo-ingest-configure": [
+        "embryo-vcf-transport-v1",
+        "invalid-request-v1",
         "resource-not-found-v1"
       ],
       "api.embryo-ingest-mapping": [
@@ -16665,6 +16741,71 @@
         "contracts": [
           "resource-authorization-v1"
         ]
+      },
+      "disposition": "kept"
+    },
+    {
+      "id": "api.embryo-ingest-configure",
+      "path": "/api/embryo-ingest/[session]/configure",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "upload-session",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "session": "opaque-database-session-id-matching-the-upload-session-cookie"
+      },
+      "methodRequestContracts": {
+        "POST": {
+          "contentType": "application/json",
+          "closedBody": {
+            "format": {
+              "const": "vcf"
+            },
+            "buildEvidence": "zero-through-64-source-meta-lines-each-at-most-512-characters-copied-verbatim-and-restricted-to-##fileformat-##reference-and-##contig-lines",
+            "sampleCount": "positive-safe-integer-count-of-the-source-VCF-sample-columns-never-their-names",
+            "nonce": "required-upload-session-bound-one-time-configure-or-mapping-inspection-nonce"
+          },
+          "unknownMissingOrInvalid": "invalid-request-v1",
+          "bodyLogAnalyticsAuditOrError": "forbidden",
+          "forbiddenFields": [
+            "header",
+            "chromLine",
+            "sampleNames",
+            "sampleLabel",
+            "embryoLabel",
+            "sourceLabel",
+            "labIdentifier",
+            "referenceBuild",
+            "build",
+            "sex",
+            "buildThreshold",
+            "inferenceMatchCount",
+            "inferenceAgreement"
+          ],
+          "forbiddenLines": "any-buildEvidence-line-other-than-##fileformat-##reference-or-##contig-including-##SAMPLE-##PEDIGREE-##source-and-the-#CHROM-column-line-is-invalid-request-v1-before-any-row-audit-log-or-object-write"
+        }
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "resolved",
+        "resolver": "embryo-ingest-session-v1",
+        "operation": "vcf-header-build-configuration",
+        "POST": "validate-the-bounded-meta-line-copy-in-memory-derive-the-build-only-through-the-product-VCF-parsers-header-rule-src/lib/genome/parsers/vcf.ts-buildFromHeader-accept-exactly-one-of-GRCh37-or-GRCh38-require-sampleCount-to-equal-the-cohort-drafts-immutable-embryoCount-then-record-format-vcf-and-the-canonical-build-once-through-private.configure_embryo_ingest_session_v1-issue-one-CSPRNG-transport-challenge-and-positive-random-revision-stored-hash-only-issue-the-one-time-completion-nonce-and-the-upload-session-bound-X-Inherit-CSRF-token-and-zeroize-the-submitted-lines; a-browser-declared-build-is-never-accepted-and-no-source-line-or-derivative-is-persisted-hashed-HMACed-or-logged",
+        "buildUnknown": "an-absent-conflicting-or-unknown-header-build-answers-embryo-vcf-transport-v1.buildUnknown; position-based-genome-build-inference-v1-stays-with-pgt_table-inputs-as-its-applicability-states",
+        "sampleCount": "one-sample-answers-embryo-vcf-transport-v1.cohortSingleSample-and-any-other-mismatch-with-the-immutable-embryoCount-answers-embryo-vcf-transport-v1.sampleCountMismatch; sample-names-are-never-compared-because-they-never-cross-the-request-boundary",
+        "terminalFailure": "every-terminal-build-or-sample-count-branch-invokes-the-identical-policyResolvers.embryo-ingest-session-v1.attemptFailure-unwind; a-retryable-invalid-request-is-nonterminal-and-preserves-the-live-session-and-fixed-due-target",
+        "buildOrder": "ADR-0035-point-7: built-with-api.embryo-ingest-chunk-and-api.embryo-ingest-complete-only-after-the-Storage-write-fence-deletion-acknowledgement-and-terminal-purge-that-ADR-0020-requires-before-any-route-accepts-embryo-bytes",
+        "contracts": [
+          "genetic-file-ingest-v1",
+          "genome-build-inference-v1",
+          "resource-authorization-v1",
+          "embryo-autosomal-only-v1"
+        ]
+      },
+      "methodSuccessResponseContracts": {
+        "POST": "embryo-vcf-transport-v1"
       },
       "disposition": "kept"
     },
