@@ -266,6 +266,19 @@
         ]
       },
       {
+        "artifactKey": "consent.upload-other-adult",
+        "version": 1,
+        "migration": "20260928150000_other_adult_held_upload.sql",
+        "readings": [
+          {
+            "class": "eligibility",
+            "finding": "present",
+            "words": "The person whose DNA this is is alive and 18 or older.",
+            "reading": "the uploader's warranty that the other adult is alive and 18 or older; the next statement is their warranty of holding that adult's permission"
+          }
+        ]
+      },
+      {
         "artifactKey": "consent.upload-self",
         "version": 1,
         "migration": "20260906102710_own_upload_consent.sql",
