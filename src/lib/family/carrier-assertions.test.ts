@@ -15,6 +15,7 @@ import {
   readClassifiedVariants,
   type CarrierPerson,
 } from "./carrier-pair";
+import { evaluateOneSided } from "./portrait";
 import { measureRunsOfHomozygosity, rohColumns, storedRohMeasure } from "./roh";
 
 /**
@@ -180,6 +181,28 @@ describe("the pair rule over reviewed assertions", () => {
       conditions: reference.conditions,
     });
     expect(match).toMatchObject({ kind: "no-probability", reason: "not-covered", uncovered: { dataSubjectId: "b", rsid: 1 } });
+  });
+});
+
+describe("the one-sided Portrait reading over reviewed rows", () => {
+  const one = (dataSubjectId: string, genotypes: [number, string][]) =>
+    ({ dataSubjectId, displayLabel: dataSubjectId, genotypes: new Map(genotypes) });
+
+  it("counts a reviewed deletion by its exact allele and carries the assertion's evidence, so no rsID is ever printed", () => {
+    const [reading] = evaluateOneSided({ a: one("a", [[1, "A/ATCT"]]), b: one("b", []),
+      refVariants: reference.refVariants, conditions: reference.conditions, matches: [] });
+    expect(reading).toMatchObject({ kind: "not-covered", gene: "CFTR", uncoveredRsid: 1,
+      carrier: { dataSubjectId: "a", variant: { rsid: 1, copies: "one copy",
+        evidence: { variantName: F508.variant_name, reviewStatus: "practice guideline", releaseId: "clinvar-2026-09" } } } });
+  });
+
+  it("reads the other file's own letters at the deletion as no second copy, and its deletion as a change", () => {
+    const [covered] = evaluateOneSided({ a: one("a", [[1, "A/ATCT"]]), b: one("b", [[1, "ATCT/ATCT"]]),
+      refVariants: reference.refVariants, conditions: reference.conditions, matches: [] });
+    expect(covered).toMatchObject({ kind: "no-second-copy", uncoveredRsid: null });
+    // Both files show the deletion: not one-sided, whatever the pair rule says.
+    expect(evaluateOneSided({ a: one("a", [[1, "A/ATCT"]]), b: one("b", [[1, "A/ATCT"]]),
+      refVariants: reference.refVariants, conditions: reference.conditions, matches: [] })).toEqual([]);
   });
 });
 

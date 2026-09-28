@@ -670,7 +670,7 @@ export async function resolveCarrierPair(
     return { matches: [], classifiedPositions, positionsBothCover: 0, genotypes: NO_GENOTYPES };
   }
   // Reviewed rows are read by exact allele at their own loci; only the
-  // synthetic rule fixtures, which carry no key, are read by rsID.
+  // rule tests' synthetic rows, which carry no key, are read by rsID.
   const exact = refVariants.every((variant) => variant.key !== undefined);
   const read = async (subjectId: string, files?: readonly string[]) => {
     if (!exact) return getSubjectGenotypesByRsid(supabase, subjectId, refVariants.map((variant) => variant.rsid), files);

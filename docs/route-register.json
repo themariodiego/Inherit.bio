@@ -15118,8 +15118,9 @@
         "rpc": "public.family_portrait_source_readiness_v1(account,session,pair,counterpart-account,expected-receipt)",
         "readBoundary": "after-both-own-session-Portrait-grants-independent-logins-acknowledgments-and-the-session-Tier-2-gate; metadata-only-presence-of-a-current-prepared-source-per-side-with-exact-store-source-object-normalization-and-endpoint-proof-and-server-only-exact-legacy-file-IDs; the-readiness-RPC-reads-no-variant-observed-call-reference-ROH-or-result-payload",
         "terminalConfirmation": "the-last-await-before-render-rechecks-the-captured-receipt-under-one-transaction-locking-both-current-endpoints-grants-and-source-metadata; mismatch-session-end-pause-withdrawal-or-source-change-denies-without-legacy-fallback",
-        "outputLimit": "canonical-source-readiness-only; canonical-clinical-outputs-remain-explicitly-unavailable; independently-valid-legacy-pair-output-is-preserved-using-only-the-captured-subject-bound-legacy-file-IDs-rechecked-for-null-canonical-markers-at-genotype-and-ROH-read-time; no-Portrait-result-or-new-export-derivative-is-created; this-does-not-complete-carrier-ROH-trait-or-whole-Portrait-acceptance",
-        "migration": "20260907142213_portrait_canonical_source_readiness.sql"
+        "outputLimit": "canonical-carrier-outputs-only-through-public.family_portrait_carrier_calls_v1-which-re-proves-the-captured-readiness-receipt-and-reads-each-current-prepared-source-at-the-reviewed-assertion-rule-loci-only-with-each-file's-stored-ROH-measure; a-null-or-refused-read-states-unavailable-never-negative; independently-valid-legacy-pair-output-is-preserved-using-only-the-captured-subject-bound-legacy-file-IDs-rechecked-for-null-canonical-markers-at-genotype-and-ROH-read-time-when-either-side-lacks-a-prepared-source; no-Portrait-result-or-new-export-derivative-is-created; this-does-not-complete-trait-or-whole-Portrait-acceptance",
+        "migration": "20260907142213_portrait_canonical_source_readiness.sql",
+        "carrierReaderMigration": "20260929130000_carrier_assertions.sql"
       },
       "kind": "page",
       "domain": "family",

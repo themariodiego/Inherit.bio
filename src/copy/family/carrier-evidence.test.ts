@@ -30,7 +30,7 @@ function withTermsReplaced(text: string): string {
   return result;
 }
 const F508 = { variantName: "NM_000492.3(CFTR):c.1521_1523del (p.Phe508del)", reviewStatus: "practice guideline",
-  lastEvaluated: "2004-03-03" };
+  lastEvaluated: "2004-03-03", releaseId: "clinvar-2026-09" };
 
 describe("reviewed carrier evidence copy", () => {
   it("ships the brief's laboratory line and penetrance label character for character", () => {
@@ -44,6 +44,8 @@ describe("reviewed carrier evidence copy", () => {
       + "(review status: practice guideline; last evaluated 3 March 2004).");
     expect(reviewedVariantLine("Another adult", { ...F508, lastEvaluated: null }, "CFTR", "Likely pathogenic"))
       .toContain("(review status: practice guideline; no date recorded).");
+    expect(reviewedVariantLine("You", { ...F508, releaseId: "synthetic-e2e-portrait" }, "CFTR", "Pathogenic"))
+      .toContain(" in CFTR. The test release classifies it as pathogenic (review status:");
   });
 
   it("writes a date the same way in every time zone and locale", () => {
@@ -63,7 +65,8 @@ describe("reviewed carrier evidence copy", () => {
       PENETRANCE_NOT_ESTABLISHED,
       assertionSourceLine("clinvar-2026-09", "2026-09-28"),
       assertionSourceLine("synthetic-e2e-portrait", "2026-09-28"),
-      reviewedVariantLine("fact", { variantName: "fact", reviewStatus: "fact", lastEvaluated: "2004-03-03" }, "fact", "fact"),
+      reviewedVariantLine("fact", { variantName: "fact", reviewStatus: "fact", lastEvaluated: "2004-03-03", releaseId: "clinvar-2026-09" }, "fact", "fact"),
+      reviewedVariantLine("fact", { variantName: "fact", reviewStatus: "fact", lastEvaluated: "2004-03-03", releaseId: "synthetic-e2e" }, "fact", "fact"),
     ];
     for (const text of texts) {
       expect(text).not.toMatch(/'/);

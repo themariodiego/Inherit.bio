@@ -17,16 +17,18 @@ export function writtenDate(iso: string): string {
 /**
  * One line per person for a reviewed assertion (brief lines 346 and 1335):
  * the variant by its ClinVar name, the classification, and ClinVar's review
- * status and last-evaluated date as text, next to the finding.
+ * status and last-evaluated date as text, next to the finding. A synthetic
+ * test release is never called ClinVar.
  */
 export function reviewedVariantLine(
   name: string,
-  evidence: { variantName: string; reviewStatus: string; lastEvaluated: string | null },
+  evidence: { variantName: string; reviewStatus: string; lastEvaluated: string | null; releaseId: string },
   gene: string,
   classification: string,
 ): string {
   const evaluated = evidence.lastEvaluated ? `last evaluated ${writtenDate(evidence.lastEvaluated)}` : "no date recorded";
-  return `${name}: ${evidence.variantName} in ${gene}. ClinVar classifies it as ${classification.toLowerCase()} `
+  const classifier = /^clinvar-\d{4}-\d{2}$/.test(evidence.releaseId) ? "ClinVar" : "The test release";
+  return `${name}: ${evidence.variantName} in ${gene}. ${classifier} classifies it as ${classification.toLowerCase()} `
     + `(review status: ${evidence.reviewStatus}; ${evaluated}).`;
 }
 

@@ -150,7 +150,7 @@ function Chips({
 /**
  * The name a sentence gives a person's change: ClinVar's name for a reviewed
  * assertion, whose key is an assertion id and never an rsID; the rsID for the
- * synthetic rule fixtures that key by one.
+ * rule tests' synthetic rows that key by one.
  */
 function variantLabel(readings: readonly CarrierVariantReading[], key: number): string {
   return readings.find((reading) => reading.rsid === key)?.evidence?.variantName ?? `rs${key}`;
