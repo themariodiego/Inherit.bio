@@ -4242,3 +4242,18 @@ questions at the end of `docs/carrier-importer-design.md`.
   `claude/<stream>` branch and opens its own draft pull request, so CI runs in
   parallel. One integrator still reviews each pull request, merges them one
   at a time and applies every production change through the guarded path.
+- **Embryo upload cleanup must be proved, not assumed.** Asked after the
+  Storage write fence was built. A write cut off mid-flight leaves an
+  `uncertain` intent. On Supabase Storage such a cleanup stays
+  `storage_pending`: the metadata fence does not prove the provider kept no
+  bytes. Embryo upload objects move to a store Inherit can list by version,
+  the approach ADR 0025 takes for prepared objects on R2. That means
+  create-only writes, then a placeholder at each uncertain key after the fence
+  time, checked by listing, before any "no data kept" notice. Accepting the
+  fence alone, or a different notice for such cohorts, was declined.
+- **Legal audit in exports: the person's own actions; an empty file first.**
+  The export ships an honest, empty `legal-audit.json` now. Engineering then
+  builds the slice of events the person caused themselves, and records who
+  acted on new events from here on. Past events cannot be attributed, because
+  every audit write so far recorded no person. Showing events others caused,
+  by role, was not chosen; it would need counsel.
