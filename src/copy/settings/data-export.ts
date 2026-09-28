@@ -32,7 +32,10 @@ export const EXPORT_CHATS_EMPTY = "Your chat history has no saved Copilot conver
 export const EXPORT_LEGAL_AUDIT_DESCRIPTION =
   "Legal audit records of what you did yourself. Records that do not say who acted are left out.";
 
-/** `legal-audit.json` while no legal audit record says who acted. */
-export const EXPORT_LEGAL_AUDIT_NONE_ATTRIBUTED =
-  "Our legal audit records do not yet say who acted, so none can be shown as yours. "
-  + "This file is empty for that reason, not because nothing happened.";
+/**
+ * The note at the top of `legal-audit.json`. `since` is the day the ledger
+ * began recording who acted. The file may be empty, and the note says why.
+ */
+export function exportLegalAuditNote(since: string): string {
+  return `These are the things you did yourself, as our legal audit records show them, since ${since}. Records from before then do not say who acted, so they cannot be shown as yours. Records of what other people or the service did are left out. If the list is empty, that is why, not because nothing happened.`;
+}

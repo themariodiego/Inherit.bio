@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid:
   // The member plan harness: whole database rows per table, answered with
   // exactly the columns each read selects, as the API does.
   tableRows: null as null | Record<string, Array<Record<string, unknown>>>, fromReads: [] as Array<{ table: string; select: string }>,
+  // The legal audit slice the database answers, one page per call.
+  legalAuditPages: [] as unknown[], legalAuditCalls: [] as Array<Record<string, unknown>>, legalAuditError: false,
   project(row: Record<string, unknown>, select: string): Record<string, unknown> {
     if (select.trim() === "*") return { ...row };
     const out: Record<string, unknown> = {};
@@ -47,6 +49,12 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
     return builder;
   };
   return { from, rpc: (name: string, args: { p_expected?: Record<string, unknown>; p_subject_id?: string; p_purpose?: string }) => {
+    if (name === "own_legal_audit_events_v1") {
+      mocks.legalAuditCalls.push(args);
+      const page = mocks.legalAuditPages[mocks.legalAuditCalls.length - 1] ?? { version: "legal-audit-slice-v1",
+        attributionStartedAt: "2026-09-28T16:00:00.000+00:00", events: [], nextAfterSeq: null };
+      return Promise.resolve(mocks.legalAuditError ? { data: null, error: { message: "unavailable" } } : { data: page, error: null }) as never;
+    }
     // The grant question is awaited directly, not through `abortSignal()`.
     if (name === "own_subject_purpose_granted_v1") {
       const granted = mocks.grants.has(`${args.p_subject_id} ${args.p_purpose}`);
@@ -132,7 +140,8 @@ import { GET } from "./route";
 import { exportMemberPlan, exportedTable, plannedArchiveMembers } from "@/lib/export/member-plan";
 beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false;
   mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0;
-  mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; mocks.tableRows = null; mocks.fromReads = []; });
+  mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; mocks.tableRows = null; mocks.fromReads = [];
+  mocks.legalAuditPages = []; mocks.legalAuditCalls = []; mocks.legalAuditError = false; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -389,19 +398,51 @@ it("lists the permission records and profile facts, and points to the legal audi
 
 /**
  * L-34 and the owner's decision of 28 Sep 2026: every archive carries
- * `legal-audit.json`. While no ledger event says who acted, it is empty and
- * says so, and the manifest counts it as empty rather than leaving it out.
+ * `legal-audit.json` with the events the person caused themselves, exactly as
+ * the database selects them for this account and session. Events written
+ * before attribution began name no one, so the file is often empty; its note
+ * says why, and the manifest counts it rather than leaving it out.
  */
-it("carries an honest, empty legal-audit.json while no ledger event says who acted", async () => {
-  const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
-  const file = JSON.parse(zip.readAsText("legal-audit.json"));
-  expect(file).toEqual({ schema_version: "legal-audit-v1",
-    note: "Our legal audit records do not yet say who acted, so none can be shown as yours. "
-      + "This file is empty for that reason, not because nothing happened.", events: [] });
-  const entry = JSON.parse(zip.readAsText("manifest.json")).contents
-    .find((item: { path: string }) => item.path === "legal-audit.json");
-  expect(entry).toMatchObject({ count: 0 });
-  expect(entry.description).toContain("what you did yourself");
+describe("legal-audit.json", () => {
+  const event = (seq: number) => ({ seq, occurred_at: "2026-09-28T17:00:00+00:00", event_code: "purpose.granted",
+    route_id: "api.consents", outcome_code: "accepted", coded_context: { purpose: "reports.polygenic", revision: 1 } });
+  const archive = async () => new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+
+  it("is present and says why it is empty when the person has caused no attributed event", async () => {
+    const zip = await archive();
+    const file = JSON.parse(zip.readAsText("legal-audit.json"));
+    expect(file).toEqual({ schema_version: "legal-audit-v1",
+      note: "These are the things you did yourself, as our legal audit records show them, since 28 September 2026. "
+        + "Records from before then do not say who acted, so they cannot be shown as yours. "
+        + "Records of what other people or the service did are left out. "
+        + "If the list is empty, that is why, not because nothing happened.",
+      attribution_started_at: "2026-09-28T16:00:00.000+00:00", events: [] });
+    const entry = JSON.parse(zip.readAsText("manifest.json")).contents
+      .find((item: { path: string }) => item.path === "legal-audit.json");
+    expect(entry).toMatchObject({ count: 0 });
+    expect(entry.description).toContain("what you did yourself");
+  });
+
+  it("asks for this account's own events under this session, and writes exactly what comes back", async () => {
+    mocks.legalAuditPages = [{ version: "legal-audit-slice-v1", attributionStartedAt: "2026-09-28T16:00:00.000+00:00",
+      events: [event(7), event(9)], nextAfterSeq: null }];
+    const zip = await archive();
+    expect(JSON.parse(zip.readAsText("legal-audit.json")).events).toEqual([event(7), event(9)]);
+    expect(mocks.legalAuditCalls).toEqual([{ p_account_id: "12345678-1234-4234-8234-000000000001",
+      p_session_id: "12345678-1234-4234-8234-000000000002", p_after_seq: null }]);
+    expect(JSON.parse(zip.readAsText("manifest.json")).contents
+      .find((item: { path: string }) => item.path === "legal-audit.json").count).toBe(2);
+  });
+
+  it("refuses the export rather than shipping a file that understates the ledger", async () => {
+    mocks.legalAuditError = true;
+    expect((await GET()).status).toBe(503);
+    mocks.legalAuditError = false; mocks.legalAuditCalls = [];
+    // A row carrying the pseudonym or a chain hash is not the closed shape.
+    mocks.legalAuditPages = [{ version: "legal-audit-slice-v1", attributionStartedAt: "2026-09-28T16:00:00.000+00:00",
+      events: [{ ...event(7), audit_principal_id: "12345678-1234-4234-8234-000000000099" }], nextAfterSeq: null }];
+    expect((await GET()).status).toBe(503);
+  });
 });
 
 /**

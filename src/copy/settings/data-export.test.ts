@@ -7,7 +7,7 @@ import {
   DATA_EXPORT_LEGAL_AUDIT,
   EXPORT_CHATS_EMPTY,
   EXPORT_LEGAL_AUDIT_DESCRIPTION,
-  EXPORT_LEGAL_AUDIT_NONE_ATTRIBUTED,
+  exportLegalAuditNote,
 } from "./data-export";
 
 /**
@@ -50,9 +50,13 @@ describe("the export's own description of what it holds", () => {
     expect(route).toContain('"legal-audit.json"');
     expect(EXPORT_LEGAL_AUDIT_DESCRIPTION).toContain("what you did yourself");
     expect(EXPORT_LEGAL_AUDIT_DESCRIPTION).toContain("do not say who acted are left out");
-    // An empty file says why it is empty, and never that nothing happened.
-    expect(EXPORT_LEGAL_AUDIT_NONE_ATTRIBUTED).toContain("do not yet say who acted");
-    expect(EXPORT_LEGAL_AUDIT_NONE_ATTRIBUTED).toContain("not because nothing happened");
+    // The file's own note names the day attribution began, says what is left
+    // out, and says an empty list is not "nothing happened".
+    const note = exportLegalAuditNote("28 September 2026");
+    expect(note).toContain("since 28 September 2026");
+    expect(note).toContain("Records from before then do not say who acted");
+    expect(note).toContain("Records of what other people or the service did are left out");
+    expect(note).toContain("not because nothing happened");
   });
 
   it("is the copy the page renders, with nothing written inline beside it", () => {

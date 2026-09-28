@@ -96,6 +96,14 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-protected",
       "reason": "Terminal notices carrying an encrypted contact. The export contracts always exclude contact values, identity documents and evidence bytes."
     },
+    "private.legal_audit_account_principals": {
+      "disposition": "excluded-internal",
+      "reason": "The link from an account to its audit pseudonym, which selects the requester's own events. It is deleted with the account, leaving the ledger unlinkable (L-49). It is machinery, not the person's record."
+    },
+    "private.legal_audit_attribution_config": {
+      "disposition": "reference",
+      "reason": "When the ledger began recording who acted. The export states it; it holds no person's data."
+    },
     "private.own_analysis_runs": {
       "disposition": "exported",
       "reason": "Saved report and ancestry results, returned verbatim under the purpose's current grant and never regenerated.",
@@ -308,7 +316,7 @@ create temporary table export_member_plan as select $plan$
     },
     "public.audit_principals": {
       "disposition": "excluded-internal",
-      "reason": "Audit pseudonyms. Which ledger events belong to a requester is the legal-audit resolver's question (docs/export-legal-audit-resolver.md). It is machinery, not the person's record."
+      "reason": "Audit pseudonyms. The requester's own is used only to select their events and never leaves. It is machinery, not the person's record."
     },
     "public.changelog_entries": {
       "disposition": "reference",
@@ -749,10 +757,25 @@ create temporary table export_member_plan as select $plan$
       "reason": "Invitation reminder mail. It is machinery, not the person's record."
     },
     "public.legal_audit_log": {
-      "disposition": "deferred",
-      "reason": "L-34 requires legal-audit.json with the requester's own slice. The owner chose, on 28 Sep 2026, the events a person caused themselves (docs/export-legal-audit-resolver.md, option A). Every event so far was written without saying who acted, so the file ships empty and says why (option C) until attribution and the requester's slice are built.",
+      "disposition": "exported",
+      "reason": "L-34 and the owner's decision of 28 Sep 2026 (docs/export-legal-audit-resolver.md, option A): the events a person caused themselves. An event names who acted only when the transaction proved it, by a consumed session-bound nonce or the person's own JWT, and only on the closed list of events a person causes; events written before attribution began (20260928160000) name no one and never leave. Never the pseudonym or the chain hashes.",
+      "scope": "audit_principal_id is the requesting account's own pseudonym (private.legal_audit_account_principals). Account exports only: an event records no subject.",
       "members": [
-        "archive:legal-audit.json"
+        "archive:legal-audit.json",
+        "reader:history.legal-audit"
+      ],
+      "columns": [
+        "seq",
+        "occurred_at",
+        "event_code",
+        "route_id",
+        "outcome_code",
+        "coded_context"
+      ],
+      "withheld": [
+        "audit_principal_id",
+        "previous_hash",
+        "row_hash"
       ]
     },
     "public.legal_audit_retention_checkpoints": {

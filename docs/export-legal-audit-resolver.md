@@ -1,7 +1,9 @@
 # Legal audit slice in the export: design note and owner question
 
-Status: needs an owner and counsel decision. Nothing here is built. Written
-28 September 2026 for G5.6 and L-34.
+Status: decided and built, 28 September 2026. The owner chose A, with C as
+the interim (docs/protocol/decisions.md). "What was built" at the end records
+what shipped and what still records no one. The analysis below is kept as it
+was put to the owner.
 
 ## What is required
 
@@ -115,3 +117,100 @@ it can be added later without changing A.
   `deferred`.
 - **In every case:** existing events stay unattributable. Back-filling them
   is not possible, because nothing recorded who caused them.
+
+## What was built
+
+Two changes. The first needs no migration and can ship alone.
+
+**C: the honest, empty file.** The synchronous export writes
+`legal-audit.json` in every archive, and the manifest counts it.
+`/settings/data` no longer says legal audit records are missing. It says:
+"It has a legal audit file of what you did yourself. Records that don't say
+who acted are left out." That sentence is true before and after A.
+
+**A: who acted, and the person's own slice.** Migration
+`20260928160000_legal_audit_attribution.sql`.
+
+- **Who acted is derived at append time.** Only
+  `private.append_legal_audit_event` is redefined. None of the 29 writer
+  functions (65 call sites) changes. The writer records an actor only when the
+  transaction already carries proof:
+  - consuming a session-bound, single-use operation nonce: embryo operation
+    nonces, purpose-grant nonces, and account operation nonces when their
+    `consumed_at` is set. A trigger on each table records that account for the
+    rest of the transaction;
+  - a request made with the person's own JWT (role `authenticated`). No writer
+    is callable that way today, so this path is dormant.
+- **Never guessed.** No proof, two different accounts in one transaction, or a
+  nonce and a JWT that disagree: the event records no one.
+- **Only a person's own acts.** An actor is recorded only on a closed list of
+  21 event codes a person causes: grants and revocations, jurisdiction and
+  chromosomal-sex declarations, family sharing pauses, portrait
+  acknowledgement, invitations, embryo signatures, cohorts, dispositions and
+  record keys, and rights sessions. Never on a job route. Purges, expiries,
+  retention, checkpoints and blocked responses are the service's acts and
+  record no one, even inside a person's transaction. A new event code records
+  no one until it is added to the list.
+- **The pseudonym.** Each account that acts gets one random audit pseudonym.
+  `private.legal_audit_account_principals` links the account to it. The link
+  is deleted with the account, which leaves every ledger row byte-identical
+  and no longer linkable to anyone (L-49). It is a registered purge store of
+  the `audit-principal-link-key-envelope` target, so the pinned store count
+  moves from 125 to 126.
+- **The chain hash covers the actor**, so attribution cannot be edited later.
+- **The synchronous export** reads `public.own_legal_audit_events_v1`, which
+  applies the export's account and session gate and returns the requester's
+  own events in pages of 500. Each event carries `seq`, `occurred_at`,
+  `event_code`, `route_id`, `outcome_code` and `coded_context`. It never
+  carries the pseudonym or the chain hashes. The file states when attribution
+  began, and says an empty list is not "nothing happened".
+- **The asynchronous export** gains a closed `legal-audit` history class,
+  paged by sequence. The receipt becomes `export-authority-v4` and hashes the
+  requester's slice, so an event the person causes after capture fails the
+  job. The class is account-only: an event records no subject.
+
+**Still records no one.** These writers authenticate without consuming a
+nonce, so their events name no one yet:
+
+| Writer | Events |
+| --- | --- |
+| `declare_jurisdiction_v2` | `jurisdiction.declared`, `jurisdiction.reaffirmed`, `purpose.revoked` |
+| `declare_chromosomal_sex_v1` | `demographics.chromosomal-sex` |
+| `pause_family_sharing_v1`, `resume_family_sharing_v1`, `stop_family_sharing_v1` | `family.sharing_*` |
+| `revoke_directional_purpose_v1` | `purpose.revoked` |
+| `acknowledge_portrait_v1` | `portrait.acknowledged` |
+| `create_adult_subject_invitation_v1` | `invitation.issued` |
+| `adult_subject_invitation_response_v1` | `invitation.accepted`, `invitation.refused`, `invitation.deleted` |
+| `activate_rights_session_v1`, `refuse_co_parent_invitation_v1` | rights-session nonces carry no account |
+
+Each closes the same way: have the route issue a session-bound operation
+nonce and the writer consume it, or have the writer note its own verified
+account. Both change the writer, so each is its own reviewed change.
+
+**Register divergence.** The register names an encrypted link
+(`audit_principal_links` with an envelope key in `audit_principal_link_keys`).
+Encryption only helps if the key is held outside the database, and an
+in-database append cannot reach such a key. The link here is a plain row with
+a foreign key, deleted with the account. Holding the key outside the database
+would need the application to create each pseudonym before the writer runs.
+That is a separate decision.
+
+**Tests.**
+
+- `supabase/tests/legal_audit_attribution.sql`: 67 assertions. They cover each
+  kind of proof, conflicts, service events, a real own-report grant, the chain
+  hash, the slice and its gate, pages across 1,000 events, unlinking, and the
+  asynchronous class and its receipt. Its last section plants a slice without
+  the account join and a writer without the closed list, and shows the checks
+  catch both.
+- Planted copies of the migration were each run against it and fail it: a
+  slice that exports another account's event, the same in the asynchronous
+  class, a system event attributed to a person, and a second account silently
+  replacing the first.
+- `src/lib/export/legal-audit.test.ts` and `src/app/api/export/route.test.ts`
+  hold the synchronous reader to a closed shape, full paging and a 503 on any
+  failure.
+- `e2e/export-subject-scope.spec.ts` chooses a report through the real page.
+  It then checks that `legal-audit.json` holds exactly the events the ledger
+  attributes to one actor, including that grant.
+

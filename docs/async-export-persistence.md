@@ -325,20 +325,21 @@ The deployed application does not call any of these functions.
 
 `docs/export-member-plan.json` (`export-member-plan-v1`, 28 September 2026)
 is the step 2 member plan. It names every table in the public and private
-schemas, 186 today, and gives each one a disposition and a reason:
+schemas, 188 with the legal audit migration, and gives each one a disposition
+and a reason:
 
 | Disposition | Tables | Meaning |
 | --- | --- | --- |
-| `exported` | 19 | The requester's own rows leave. Every column is listed as exported or withheld. |
+| `exported` | 20 | The requester's own rows leave. Every column is listed as exported or withheld. |
 | `excluded-credential` | 28 | A key, token, nonce or session, or its hash. Exporting it would be a security defect. |
 | `excluded-protected` | 20 | Contact values, identity HMACs, evidence documents and other ciphertext the contracts always exclude. |
-| `excluded-internal` | 57 | Processing, delivery, retention and security machinery. |
+| `excluded-internal` | 58 | Processing, delivery, retention and security machinery. |
 | `out-of-scope` | 10 | About a person, but not the requester's own record: drafts about someone else, staff workflow. |
-| `deferred` | 28 | Belongs in a complete export, but no reader exists yet. |
-| `reference` | 24 | Catalogs, registries and configuration. No person's data. |
+| `deferred` | 27 | Belongs in a complete export, but no reader exists yet. |
+| `reference` | 25 | Catalogs, registries and configuration. No person's data. |
 
-The 28 `deferred` entries are the open gaps: the legal audit ledger, the
-non-self and family projections, embryo cohorts and Future Person claims.
+The 27 `deferred` entries are the open gaps: the non-self and family
+projections, embryo cohorts and Future Person claims.
 Each names what blocks it.
 
 **Checked against the catalog.** `supabase/tests/export_member_plan.sql`
@@ -392,7 +393,42 @@ receipt, and comparing the members an attempt actually wrote against it
 before ready, need the archive producer, which is not connected. The
 publication hold stays.
 
-**Legal audit.** No legal audit event can be attributed to anyone today:
-all 65 writers pass a null principal and the pseudonym tables are empty. What
-a person's slice may show is an owner and counsel question, set out with
-options in `docs/export-legal-audit-resolver.md`.
+**Legal audit.** See the next section. The ledger moved from `deferred` to
+`exported` when attribution was built.
+
+## Legal audit
+
+Migration `20260928160000_legal_audit_attribution.sql` builds the owner's
+decision of 28 September 2026: the export carries the legal audit events a
+person caused themselves. Design, the writers that still record no one, and
+the register divergence are in `docs/export-legal-audit-resolver.md`.
+
+- **Who acted.** `private.append_legal_audit_event` records the acting
+  account's pseudonym when the transaction proves who acted: a consumed
+  session-bound nonce, or the person's own JWT. It does so only on a closed
+  list of events a person causes, and never on a job route. Nothing else
+  changes in the 29 writer functions. Events before the migration name no
+  one, for good.
+- **Receipt `export-authority-v4`** adds the requester's own slice for account
+  exports. An event the person causes after capture fails the job. An event
+  that names no one does not.
+- **History class `legal-audit`**, payload `{kind, afterSeq}`, pages of 500 by
+  ledger sequence. It returns `seq`, `occurred_at`, `event_code`, `route_id`,
+  `outcome_code` and `coded_context`, never the pseudonym or the chain hashes.
+  A subject export refuses the class, because an event records no subject.
+- **Synchronous export.** `public.own_legal_audit_events_v1` gives the same
+  rows behind the export's account and session gate. `legal-audit.json`
+  carries them with the day attribution began.
+
+`supabase/tests/legal_audit_attribution.sql` (67 assertions) covers all of
+this. The receipt change leaves the existing reader suites passing unchanged:
+history (60), chats (37), content (44) and persistence (77).
+
+**Production apply.** The migration redefines
+`private.export_archive_authority_v1` and `public.export_archive_content_v1`
+from their live definitions in `20260925220000`, and
+`private.append_legal_audit_event` from `20260831224033`. A guarded apply
+should pin all three predecessors. Deploy the route change only after the
+migration: without `public.own_legal_audit_events_v1` the free export answers
+503.
+

@@ -90,9 +90,13 @@ describe("the export member plan", () => {
       .toEqual(expect.arrayContaining(["canonical_projection", "authorization_fingerprint", "contributor_ids"]));
   });
 
-  it("names the legal audit ledger as an open gap rather than leaving it out silently", () => {
-    expect(exportMemberPlan.tables["public.legal_audit_log"]).toMatchObject({ disposition: "deferred" });
-    expect(exportMemberPlan.tables["public.legal_audit_log"].reason).toContain("docs/export-legal-audit-resolver.md");
+  it("exports the legal audit ledger's own events, never the pseudonym or the chain hashes", () => {
+    const ledger = exportedTable("public.legal_audit_log")!;
+    expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit"]);
+    expect(ledger.withheld).toEqual(["audit_principal_id", "previous_hash", "row_hash"]);
+    expect(ledger.reason).toContain("docs/export-legal-audit-resolver.md");
+    // The account-to-pseudonym link selects the slice and never leaves.
+    expect(exportMemberPlan.tables["private.legal_audit_account_principals"]?.disposition).toBe("excluded-internal");
   });
 });
 

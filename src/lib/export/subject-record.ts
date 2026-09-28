@@ -70,10 +70,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * 28 Sep 2026, so an account with more than 1,000 subject consents exported
  * the first 1,000.)
  *
- * Legal audit records are not here and cannot be yet: every legal audit event
- * is written with a null principal, so nothing selects one account's rows.
- * What a person's slice may show is an owner and counsel decision
- * (docs/export-legal-audit-resolver.md).
+ * Legal audit records are not here: the events a person caused themselves are
+ * in `legal-audit.json` (src/lib/export/legal-audit.ts;
+ * docs/export-legal-audit-resolver.md).
  */
 
 export interface SubjectRecord {
