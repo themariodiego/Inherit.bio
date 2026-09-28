@@ -170,7 +170,17 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
 
   const mail = await captureMail();
   const sessions = new Map<string, LiveSession>();
-  const openBrowser: LiveEnvironment["openBrowser"] = async ({ id, taskId, account: accountId }) => {
+  // The conductor records a failed session setup only as a stopped run. Say
+  // why, so the operator can act: setup is seeding and the browser, and never
+  // touches the model, so nothing here can carry the model identifier.
+  const openBrowser: LiveEnvironment["openBrowser"] = async (input, signal) => {
+    try { return await openSession(input, signal); }
+    catch (error) {
+      console.error(`Session setup failed for ${input.taskId}: ${error instanceof Error ? error.message.split("\n")[0].slice(0, 300) : "unknown"}`);
+      throw error;
+    }
+  };
+  const openSession: LiveEnvironment["openBrowser"] = async ({ id, taskId, account: accountId }) => {
     const account = accounts.find(candidate => candidate.id === accountId);
     if (!account || account.id === "participant-c") throw new Error(`No seed for ${accountId}`);
     const email = `cmp-${short}-${id.slice(0, 8)}@e2e.local`;
