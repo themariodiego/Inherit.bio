@@ -4420,3 +4420,43 @@ sources, #263). Both are TEST-LOCAL, and production embryo ingest stays off.
   readable only after a clean verdict bound to its exact bytes; stale
   signatures or an unreachable scanner fail closed. A hosted scanning API, and
   deferring the documents step, were declined.
+
+## 2026-09-28 (late afternoon) — Embryo notice and restriction, Path B account branch, claim documents
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all eight. All of it is TEST-LOCAL;
+nothing opens in production.
+
+- **The embryo upload-time rights notice is held until it can carry its
+  withdrawal.** Each notice recipient who is a disposition authority must get
+  an `embryo-parent-withdrawal` credential and a one-click withdrawal link.
+  Neither is usable yet, so the notice joins the publication transaction in
+  one change once the credential, the withdrawal page and the template's
+  required content exist. Embryo ingest stays off in production meanwhile.
+  Sending it without the link, or with a link that would 404, was declined.
+- **Restriction and withdrawal delete an embryo cohort's canonical sources.**
+  The restriction or withdrawal transaction calls the source-deletion planner
+  for every source file in the cohort, so nothing derived from a withdrawn
+  embryo survives it. Waiting for the 24-month retention deadline was
+  declined.
+- **An account holder confirming a Path B file signs the Path B text.**
+  `consent.subject-adult-esignature` v1, with the account's own declared
+  country in place of the country field. Path A's `consent.subject-adult` was
+  declined for this path.
+- **A Path B person's account deletion deletes the files held for them.** The
+  retention sweep deletes their Path B subject with the account. Keeping the
+  files held until the 30-day deadline was declined.
+- **Path B file answers stay on the email link** until the reading layer
+  lands; the account view of held files stays read-only. Answer buttons in the
+  account were declined for now.
+- **After the reading layer, `api.adult-subject-bind` comes next**, so a
+  person who confirmed without an account can later attach the subject to
+  one. The reviewed-document branch follows.
+- **Future Person claim chunks use a one-time database reservation, not a
+  chunk-nonce header.** Each chunk sequence is reserved once under a key the
+  database makes, the pattern accepted for embryo chunks on 22 September.
+  `X-Inherit-Chunk-Nonce` leaves the `api.evidence-chunk` contract. A per-chunk
+  minted token was declined.
+- **A claim document being scanned answers `202 {"status":"scanning"}`.**
+  `evidence-complete-v1` gains that interim answer beside `201
+  review_pending`. Holding the request open until the verdict was declined.
