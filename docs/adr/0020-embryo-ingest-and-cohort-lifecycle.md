@@ -267,7 +267,7 @@ threshold or acceptance mark.
 
 **Canonical parts and sources, 30 September 2026.** The worker's per-embryo
 canonical parts now go through the same exact disposal, in
-`20260930140000_embryo_canonical_part_disposal.sql`. An abandoned attempt
+`20260930132000_embryo_canonical_part_disposal.sql`. An abandoned attempt
 disposes of every part it wrote, and can never hold a source. A published
 cleanup disposes of only the parts no source binds. An internal planner
 deletes a published source for the later retention and restriction slices.

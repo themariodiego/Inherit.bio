@@ -171,7 +171,7 @@ objects go through steps 1 to 5 like any other.
 unwinds still waiting on storage or on completion.
 
 Canonical parts (added 30 September,
-`20260930140000_embryo_canonical_part_disposal.sql`) use the same receipts:
+`20260930132000_embryo_canonical_part_disposal.sql`) use the same receipts:
 an R2 marker at the part's exact `embryo/<uuid>` key. A part is claimed once
 it landed or its write window closed, and never while a canonical source
 binds it. A `purpose = 'source'` unwind, made by the internal source-deletion
