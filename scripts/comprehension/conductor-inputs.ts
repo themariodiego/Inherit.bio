@@ -38,7 +38,10 @@ export function loadConductorInputs(repository = root): ConductorInputs {
   const personas = loadPersonas(path.join(repository, "scripts/comprehension/personas.json"));
   const pins = { ...Object.fromEntries(Object.entries(sources).map(([key, text]) => [key, sha256(text)])),
     fixtures: sha256(JSON.stringify(fixtures)), rubricSelection: sha256("shared-preamble-and-exact-task-section-v1"),
-    participantPrompts: sha256(JSON.stringify(personas.map(participantPersonaPrompt))), instrumentVersion: sha256("dry-conductor-v1") };
+    participantPrompts: sha256(JSON.stringify(personas.map(participantPersonaPrompt))), instrumentVersion: sha256("dry-conductor-v1"),
+    // The worker renders every participant and grading prompt, so a change to
+    // it is a change of settings and starts a new stopping-rule sequence.
+    inferenceWorker: sha256(read("scripts/comprehension/inference-worker.ts")) };
   const content = { personas, tasks, rubric: sources.rubric, patterns: JSON.parse(sources.patterns) as PatternFile, pins };
   return freeze({ ...content, inputDigest: computeInputDigest(content) });
 }

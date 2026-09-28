@@ -85,6 +85,8 @@ export class RunRecord {
         patterns: { path: "scripts/comprehension/prohibited-patterns.json", sha256: input.inputs.pins.patterns },
         bindings: { path: "scripts/comprehension/bindings.json", sha256: input.inputs.pins.bindings },
         personas: { path: "scripts/comprehension/personas.json", sha256: input.inputs.pins.personas },
+        // Renders every prompt, so a record's grading requests can be re-rendered from it.
+        worker: { path: "scripts/comprehension/inference-worker.ts", sha256: input.inputs.pins.inferenceWorker },
         fixtures: fixtureDigests(input.inputs, repository),
       },
       temperature: { participant: input.manifest.settings.temperature,

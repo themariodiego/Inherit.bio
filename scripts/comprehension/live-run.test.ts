@@ -69,7 +69,7 @@ describe("a live run through the shared conductor", () => {
     expect(spend.simulations).toBe(2);
     const written = JSON.parse(await readFile(path.join(record.directory, "manifest.json"), "utf8"));
     expect(written).toMatchObject({ status: "completed", temperature: { participant: 0, grader: 0 },
-      identity: { label: STUB_LABEL }, inputs: { rubric: { sha256: inputs.pins.rubric } } });
+      identity: { label: STUB_LABEL }, inputs: { rubric: { sha256: inputs.pins.rubric }, worker: { sha256: inputs.pins.inferenceWorker } } });
     expect(Object.keys(written.inputs.fixtures)).toContain("data/samples/synthetic_23andme.txt");
     const history = (await readFile(path.join(effort, "dry-history.jsonl"), "utf8")).trimEnd().split("\n").map(line => JSON.parse(line));
     expect(history.filter(event => event.kind === "skipped")).toHaveLength(2);
