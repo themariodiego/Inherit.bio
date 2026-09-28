@@ -16,8 +16,9 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- checkpoints, cleanup plans/entries and original retirement add four stores.
 -- Legal audit attribution adds private.legal_audit_account_principals, the
 -- account-to-pseudonym link deleted with the account (20260928160000).
-select is((select count(*) from public.purge_target_stores), 126::bigint,
-  'all 126 purge stores, including private prepared-object working identities, are classified');
+-- The embryo-ingest write fence adds its write intents and session fences.
+select is((select count(*) from public.purge_target_stores), 128::bigint,
+  'all 128 purge stores, including private prepared-object and embryo write-fence working state and the legal audit account link, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

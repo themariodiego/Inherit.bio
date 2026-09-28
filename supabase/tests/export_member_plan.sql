@@ -48,6 +48,14 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.embryo_ingest_write_fences": {
+      "disposition": "excluded-internal",
+      "reason": "Embryo ingest write fences and their drain state. It is machinery, not the person's record."
+    },
+    "private.embryo_ingest_write_intents": {
+      "disposition": "excluded-internal",
+      "reason": "Embryo ingest write intents: fenced object names, reserved sizes and landing state. It is machinery, not the person's record."
+    },
     "private.export_archive_attempts": {
       "disposition": "excluded-internal",
       "reason": "Export attempt leases and byte counts. It is machinery, not the person's record."
