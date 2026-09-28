@@ -72,6 +72,10 @@
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for family reports. It is machinery, not the person's record."
     },
+    "private.future_person_claim_intakes": {
+      "disposition": "excluded-protected",
+      "reason": "Unfinished Future Person claim starts: sealed identity and contact ciphertext, a key hash and keyed digests, deleted within 24 hours. The export contracts always exclude contact values and identity. No account holds one."
+    },
     "private.genome_file_deletions": {
       "disposition": "excluded-credential",
       "reason": "Deletion work items carrying a claim token and its hash. Exporting it would be a security defect, not completeness."
@@ -79,6 +83,10 @@
     "private.health_picture_grant_snapshots": {
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for the health picture. It is machinery, not the person's record."
+    },
+    "private.hmac_key_versions": {
+      "disposition": "excluded-credential",
+      "reason": "The revisions of the contact and rate-limit HMAC keys and their states. The keys live outside the database; this is key machinery, and exporting it would be a security defect, not completeness."
     },
     "private.invitation_terminal_notices": {
       "disposition": "excluded-protected",
@@ -193,6 +201,14 @@
     "private.own_upload_finalization_checkpoints": {
       "disposition": "excluded-internal",
       "reason": "Upload finalization checkpoints. It is machinery, not the person's record."
+    },
+    "private.rights_purpose_matrix": {
+      "disposition": "reference",
+      "reason": "The rights-purpose matrix the database enforces: purposes, actions and routes. It holds no person's data."
+    },
+    "private.rights_session_purposes": {
+      "disposition": "excluded-credential",
+      "reason": "The purposes a rights session may be issued under, and the target kind each binds. It is rights-session credential machinery and holds no person's data."
     },
     "private.upload_authorization_config": {
       "disposition": "reference",
