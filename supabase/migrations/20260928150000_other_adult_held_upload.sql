@@ -390,6 +390,10 @@ revoke all on function public.issue_other_adult_held_upload_v1(uuid,uuid,uuid,te
 grant execute on function public.issue_other_adult_held_upload_v1(uuid,uuid,uuid,text,bigint,text,boolean) to service_role;
 
 -- 7. The transport: current bodies, one authority call each dispatched ------
+-- Recovery is unchanged for both kinds.
+-- There is no session-independent finalization: a retry requires the same
+-- currently authorized originating session within the original upload expiry,
+-- and no job resumes one.
 
 create or replace function private.authorize_storage_upload_insert()
 returns boolean language plpgsql security definer set search_path=pg_catalog,private
