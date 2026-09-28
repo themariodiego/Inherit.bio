@@ -9,20 +9,30 @@ import { OtherAdultNewPersonForm, OtherAdultUploadCard } from "./other-adult-upl
  * permission". Renders nothing outside TEST-LOCAL and nothing for an account
  * whose jurisdiction does not permit third-party adult analysis. A Path A
  * invitation never appears here: its inviter never uploads.
+ *
+ * It is secondary to the person's own upload (brief §5.2: never at equal
+ * prominence), so it stays closed until opened, and opens by itself once the
+ * account has someone in it.
  */
 export async function OtherAdultUploadSection() {
   const uploads = await prepareOtherAdultUploads().catch(() => null);
   if (!uploads) return null;
   const limits = await readOwnUploadLimits().catch(() => null);
   return (
-    <section aria-labelledby="other-adult-upload-heading" data-slot="other-adult-upload" className="space-y-4">
-      <h2 id="other-adult-upload-heading" className="display text-2xl">{COPY.heading}</h2>
-      <p className="text-sm leading-relaxed text-ink-muted">{COPY.detail}</p>
-      <p role="note" className="text-sm">{COPY.testNote}</p>
-      {uploads.targets.map(target => (
-        <OtherAdultUploadCard key={`${target.subjectId}:${target.state}:${target.consent?.token ?? ""}`} target={target} limits={limits} />
-      ))}
-      <OtherAdultNewPersonForm token={uploads.draftToken} />
+    <section aria-labelledby="other-adult-upload-heading" data-slot="other-adult-upload">
+      <details open={uploads.targets.length > 0} className="space-y-4">
+        <summary className="min-h-11 cursor-pointer">
+          <h2 id="other-adult-upload-heading" className="display inline text-2xl">{COPY.heading}</h2>
+        </summary>
+        <div className="mt-4 space-y-4">
+          <p className="text-sm leading-relaxed text-ink-muted">{COPY.detail}</p>
+          <p role="note" className="text-sm">{COPY.testNote}</p>
+          {uploads.targets.map(target => (
+            <OtherAdultUploadCard key={`${target.subjectId}:${target.state}:${target.consent?.token ?? ""}`} target={target} limits={limits} />
+          ))}
+          <OtherAdultNewPersonForm token={uploads.draftToken} />
+        </div>
+      </details>
     </section>
   );
 }

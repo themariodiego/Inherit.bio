@@ -15,9 +15,11 @@ export const OTHER_ADULT_UPLOAD_COPY = {
   newHeading: "Ask someone new",
   nameLabel: "Their full name",
   emailLabel: "Their email address",
-  birthLabel: "Their date of birth",
+  // Neither label nor button may share words with the own upload's "Date of
+  // birth" and "Continue" on the same page: a label is matched by its words.
+  birthLabel: "When they were born",
   birthError: "This person is under 18.",
-  detailsButton: "Continue",
+  detailsButton: "Save their details",
   detailsFailed: "We could not save these details. Check them and try again.",
   requestedOn: (date: string) => `Asked on ${date}.`,
   signHeading: "Your permission to add their file",

@@ -106,15 +106,27 @@ async function openRightsLink(page: Page, html: string | undefined) {
 }
 
 /**
+ * The Path B section of the upload page, opened. It is secondary to the
+ * person's own upload, so it starts closed until the account has someone in it.
+ */
+async function openPathB(page: Page) {
+  await page.goto("/files/upload");
+  const section = page.locator('[data-slot="other-adult-upload"]');
+  await expect(section.getByRole("heading", { name: COPY.heading })).toBeVisible();
+  if (!(await section.locator("details").evaluate(element => (element as HTMLDetailsElement).open))) {
+    await section.locator("summary").click();
+  }
+  await expect(section.getByRole("note")).toHaveText(COPY.testNote);
+  return section;
+}
+
+/**
  * The whole Path B setup for one person, through the screens: the uploader
  * reserves the draft, signs, and sends the request; the person signs with no
  * account. Returns the person's subject id.
  */
 async function pathBPerson(page: Page, request: APIRequestContext, person: { email: string; name: string }) {
-  await page.goto("/files/upload");
-  const section = page.locator('[data-slot="other-adult-upload"]');
-  await expect(section.getByRole("heading", { name: COPY.heading })).toBeVisible();
-  await expect(section.getByRole("note")).toHaveText(COPY.testNote);
+  const section = await openPathB(page);
   const form = section.locator('[data-slot="other-adult-new"]');
   await form.getByLabel(COPY.nameLabel).fill(person.name);
   await form.getByLabel(COPY.emailLabel).fill(person.email);
@@ -226,8 +238,7 @@ test("another adult's file under Path B: signed without an account, held unreada
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: SEND_BUTTON }).click();
   await expect(page.getByRole("status")).toContainText(REQUESTED_HEADING);
-  await page.goto("/files/upload");
-  const section = page.locator('[data-slot="other-adult-upload"]');
+  const section = await openPathB(page);
   await expect(section.locator('[data-slot="other-adult-new"]')).toBeVisible();
   await expect(section.locator("article:not([data-slot='other-adult-new'])")).toHaveCount(0);
 
