@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   account: vi.fn(),
   user: vi.fn(),
+  claims: vi.fn(),
   capability: vi.fn(),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
@@ -25,7 +26,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 const chain: Record<string, unknown> = {};
 chain.eq = () => chain;
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: mocks.user } }),
+  createClient: async () => ({ auth: { getUser: mocks.user, getClaims: mocks.claims } }),
 }));
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account, isSameOrigin: () => true }));
 vi.mock("@/lib/legal/jurisdictions", async (original) => ({
@@ -46,6 +47,7 @@ const ACCOUNT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const DRAFT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const INVITED = "invited-person@example.invalid";
 const NETWORK = "192.0.2.44";
+const AUTH_SESSION = "abababab-abab-4bab-8bab-abababababab";
 const KEY_2 = crypto.randomBytes(32).toString("base64");
 
 beforeEach(() => {
@@ -54,6 +56,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.account.mockResolvedValue({ user: { id: ACCOUNT, email: "owner@example.invalid" }, sessionId: "s" });
   mocks.user.mockResolvedValue({ data: { user: { id: ACCOUNT, email: "owner@example.invalid" } } });
+  mocks.claims.mockResolvedValue({ data: { claims: { sub: ACCOUNT, session_id: AUTH_SESSION } } });
   mocks.capability.mockResolvedValue({ status: "permitted" });
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -130,8 +133,19 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
     mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
     const response = await inviteAdult(adult());
     expect(response.status).toBe(202);
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_v1");
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_v2");
+    expect(sentArgs().p_session_id).toBe(AUTH_SESSION);
     expectKeyedCall(sentArgs());
+  });
+
+  it.each([
+    ["no verified claims", { data: { claims: undefined } }],
+    ["claims for another account", { data: { claims: { sub: DRAFT, session_id: AUTH_SESSION } } }],
+    ["claims without a session", { data: { claims: { sub: ACCOUNT } } }],
+  ])("refuses an invitation with %s and never calls the writer", async (_label, claims) => {
+    mocks.claims.mockResolvedValue(claims);
+    expect((await inviteAdult(adult())).status).toBe(401);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("answers an exhausted quota exactly as it answers an issued invitation", async () => {
@@ -164,7 +178,7 @@ describe("POST /api/withdraw/session (adult confirm)", () => {
     const hash = rightsSessionHash(secret);
     mocks.account.mockResolvedValue({
       user: { id: ACCOUNT, email: "Invited-Person@Example.invalid", email_confirmed_at: "2026-09-01T00:00:00Z" },
-      sessionId: "s",
+      sessionId: AUTH_SESSION,
     });
     mocks.rpc.mockResolvedValue({ data: "accepted", error: null });
     const response = await respond(new Request("https://inherit.bio/api/withdraw/session", {
@@ -176,8 +190,12 @@ describe("POST /api/withdraw/session (adult confirm)", () => {
       body: JSON.stringify({ operation: "confirm", nonce: mintPublicFormToken("adult-subject-respond", Date.now(), hash) }),
     }));
     expect(response.status).toBe(202);
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("respond_adult_subject_invitation_session_v1");
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("respond_adult_subject_invitation_session_v2");
     const args = sentArgs();
+    // The confirming account goes with its live auth session, so the writer
+    // can prove it and record who acted (20260930220000).
+    expect(args.p_account_id).toBe(ACCOUNT);
+    expect(args.p_auth_session_id).toBe(AUTH_SESSION);
     expect(args).not.toHaveProperty("p_account_email_hmac");
     const set = args.p_account_email_hmac_set as Record<string, string>;
     expect(Object.keys(set)).toEqual(["1", "2"]);

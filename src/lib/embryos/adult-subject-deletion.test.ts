@@ -42,7 +42,8 @@ describe("accountless pending adult reservation deletion HTTP contract", () => {
     expect(await response.json()).toEqual({ status: "accepted", operation: "delete" });
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(response.headers.get("set-cookie")).toBeNull();
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("respond_adult_subject_invitation_session_v1", {
+    // No account and no auth session: deletion records no one (20260930220000).
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("respond_adult_subject_invitation_session_v2", {
       p_session_hash: hash, p_nonce: authority!.nonce, p_action: "delete",
     });
     expect(mocks.account).not.toHaveBeenCalled();
@@ -56,7 +57,7 @@ describe("accountless pending adult reservation deletion HTTP contract", () => {
     const response = await POST(request(body));
     expect(response.status).toBe(202);
     expect(await response.json()).toEqual({ status: "accepted", operation: "refuse" });
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("respond_adult_subject_invitation_session_v1",
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("respond_adult_subject_invitation_session_v2",
       { p_session_hash: hash, p_nonce: expect.any(String), p_action: "refuse" });
     expect(mocks.account).not.toHaveBeenCalled();
   });

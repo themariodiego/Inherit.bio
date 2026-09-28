@@ -1,3 +1,4 @@
+import { verifiedAuthSessionId } from "@/lib/auth/session-id";
 import { revokeOwnCopilotConsent } from "@/lib/copilot/own-consent";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -47,8 +48,13 @@ export async function POST(
   }
 
   if (purposeGrant) {
-    const { data: revokedAt, error } = await admin.rpc("revoke_directional_purpose_v1", {
+    // v2 checks this live session is the account's own and records it as who
+    // acted (20260930220000).
+    const sessionId = await verifiedAuthSessionId(supabase, user.id);
+    if (!sessionId) return new Response("Unauthorized", { status: 401 });
+    const { data: revokedAt, error } = await admin.rpc("revoke_directional_purpose_v2", {
       p_account_id: user.id,
+      p_session_id: sessionId,
       p_grant_id: id,
     });
     if (error || !revokedAt) return new Response("Not found", { status: 404 });

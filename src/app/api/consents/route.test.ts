@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.getUser }, from: mocks.from }) }));
+const mocks = vi.hoisted(() => ({ actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.getUser, getClaims: mocks.getClaims }, from: mocks.from }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));
 // Keep the actual signed-token discriminators. Only the delegated handlers are
 // spied: a missing import/dispatch must exercise the real legacy fallback.
@@ -16,6 +16,7 @@ import { POST as revoke } from "./[id]/revoke/route";
 import { mintOwnCopilotConsent } from "@/lib/copilot/own-consent";
 import { mintOwnReportPresentation } from "@/lib/uploads/own-report-token";
 import { mintGrantPresentation, SHARE_WITH_ADULT_ARTIFACT, SHARE_WITH_ADULT_STATEMENT_KEYS } from "@/lib/family/grant-token";
+const authSessionId = "77900000-0000-4000-8000-000000000004";
 const accountId = "77900000-0000-4000-8000-000000000001", subjectId = "77900000-0000-4000-8000-000000000002", grantId = "77900000-0000-4000-8000-000000000003";
 const snapshot = { accountRevision: 1, authSessionRevision: 1, jurisdictionRevision: 1, subjectBindingRevision: 1, accountBindingRevision: 1, uploadConsentId: grantId, subjectLifecycleRevision: 1, originatingSessionRevision: 1, principalId: grantId, principalRevision: 1 };
 const artifact = { artifact_key: SHARE_WITH_ADULT_ARTIFACT, version: 1, body_sha256: "b".repeat(64) };
@@ -27,6 +28,7 @@ beforeEach(() => {
   mocks.actor.mockResolvedValue({ accountId, sessionId: subjectId });
   mocks.capability.mockResolvedValue({ status: "permitted" });
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
+  mocks.getClaims.mockResolvedValue({ data: { claims: { sub: accountId, session_id: authSessionId } } });
   mocks.from.mockImplementation((table: string) => row(table === "consent_artifacts" ? artifact : null));
   mocks.rpc.mockResolvedValue({ data: grantId, error: null });
   mocks.copilot.mockResolvedValue(Response.json({ granted: true }, { status: 201 }));
@@ -133,6 +135,16 @@ describe("actual revoke POST dispatcher", () => {
     mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
     mocks.rpc.mockResolvedValue({ data: "2026-09-07T10:00:00+00:00", error: null });
     expect((await revoke(request({}), { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
-    expect(mocks.revokeCopilot).not.toHaveBeenCalled(); expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_directional_purpose_v1", { p_account_id: accountId, p_grant_id: grantId });
+    expect(mocks.revokeCopilot).not.toHaveBeenCalled(); expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_directional_purpose_v2", { p_account_id: accountId, p_session_id: authSessionId, p_grant_id: grantId });
+  });
+  it.each([
+    ["no verified claims", { data: { claims: undefined } }],
+    ["claims for another account", { data: { claims: { sub: grantId, session_id: authSessionId } } }],
+    ["claims without a session", { data: { claims: { sub: accountId } } }],
+  ])("refuses an adult-purpose revocation with %s and never calls the writer", async (_label, claims) => {
+    mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
+    mocks.getClaims.mockResolvedValue(claims);
+    expect((await revoke(request({}), { params: Promise.resolve({ id: grantId }) })).status).toBe(401);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

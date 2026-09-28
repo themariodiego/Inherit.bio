@@ -7657,6 +7657,10 @@ export type Database = {
         Args: { p_account_id: string; p_subject_id: string }
         Returns: string
       }
+      acknowledge_portrait_v2: {
+        Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
+        Returns: string
+      }
       activate_rights_session_v1: {
         Args: {
           p_form_nonce: string
@@ -7888,6 +7892,23 @@ export type Database = {
           subject_id: string
         }[]
       }
+      create_adult_subject_invitation_v2: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string | null
+          p_contact_hmac_set: Json
+          p_idempotency_key: string
+          p_quota_keys: Json
+          p_session_id: string
+          p_test_jurisdiction: boolean
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          subject_id: string
+        }[]
+      }
       create_embryo_cohort_draft_v1: {
         Args: {
           p_account_id: string
@@ -7944,6 +7965,15 @@ export type Database = {
       declare_chromosomal_sex_v1: {
         Args: {
           p_account_id: string
+          p_subject_id: string
+          p_chromosomal_sex: string | null
+        }
+        Returns: Json
+      }
+      declare_chromosomal_sex_v2: {
+        Args: {
+          p_account_id: string
+          p_session_id: string
           p_subject_id: string
           p_chromosomal_sex: string | null
         }
@@ -8096,6 +8126,10 @@ export type Database = {
         Args: { p_account_id: string; p_counterpart_account_id: string }
         Returns: number
       }
+      pause_family_sharing_v2: {
+        Args: { p_account_id: string; p_counterpart_account_id: string; p_session_id: string }
+        Returns: number
+      }
       prepare_embryo_ingest_unwind_v1: {
         Args: { p_cohort_id: string; p_ingest_revision: number }
         Returns: Json
@@ -8180,6 +8214,17 @@ export type Database = {
         }
         Returns: string
       }
+      respond_adult_subject_invitation_session_v2: {
+        Args: {
+          p_account_email_hmac_set?: Json
+          p_account_id?: string
+          p_action: string
+          p_auth_session_id?: string
+          p_nonce: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
       respond_adult_subject_invitation_v1: {
         Args: {
           p_account_email_hmac?: string
@@ -8203,12 +8248,20 @@ export type Database = {
         Args: { p_account_id: string; p_counterpart_account_id: string }
         Returns: number
       }
+      resume_family_sharing_v2: {
+        Args: { p_account_id: string; p_counterpart_account_id: string; p_session_id: string }
+        Returns: number
+      }
       revoke_cloud_model_consent: {
         Args: { p_account_id: string; p_grant_id: string }
         Returns: boolean
       }
       revoke_directional_purpose_v1: {
         Args: { p_account_id: string; p_grant_id: string }
+        Returns: string
+      }
+      revoke_directional_purpose_v2: {
+        Args: { p_account_id: string; p_grant_id: string; p_session_id: string }
         Returns: string
       }
       run_due_embryo_retention_phases_v1: {
@@ -8435,6 +8488,13 @@ export type Database = {
       }
       stop_family_sharing_v1: {
         Args: { p_account_id: string; p_counterpart_account_id: string }
+        Returns: {
+          deleted_counts: Json
+          ended_at: string
+        }[]
+      }
+      stop_family_sharing_v2: {
+        Args: { p_account_id: string; p_counterpart_account_id: string; p_session_id: string }
         Returns: {
           deleted_counts: Json
           ended_at: string

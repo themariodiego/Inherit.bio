@@ -59,8 +59,9 @@ export async function POST(request: Request) {
   if (!context) return new Response("Unauthorized", { status: 401 });
 
   if (parsed.data.acknowledgement === "portrait") {
-    const { data, error } = await createAdminClient().rpc("acknowledge_portrait_v1", {
+    const { data, error } = await createAdminClient().rpc("acknowledge_portrait_v2", {
       p_account_id: context.user.id,
+      p_session_id: context.sessionId,
       p_subject_id: parsed.data.subjectId,
     });
     if (error || !data) return new Response("Not found", { status: 404 });

@@ -62,8 +62,11 @@ export async function POST(request: Request) {
   const context = await getSensitiveAccountContext();
   if (!context) return new Response("Unauthorized", { status: 401 });
 
-  const { data, error } = await createAdminClient().rpc("declare_chromosomal_sex_v1", {
+  // v2 checks this live session is the account's own and records it as who
+  // acted in the legal audit log (20260930220000).
+  const { data, error } = await createAdminClient().rpc("declare_chromosomal_sex_v2", {
     p_account_id: context.user.id,
+    p_session_id: context.sessionId,
     p_subject_id: parsed.data.subjectId,
     p_chromosomal_sex: parsed.data.chromosomalSex,
   });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { verifiedAuthSessionId } from "@/lib/auth/session-id";
 import { encryptSecret, hmacSecret } from "@/lib/crypto";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
 import { invitationQuotaKeys } from "@/lib/invitation-quota";
@@ -33,6 +34,10 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return new Response("Unauthorized", { status: 401 });
+  // The invitation writer checks this session is the inviter's own and live,
+  // and records it as who acted (20260930220000).
+  const sessionId = await verifiedAuthSessionId(supabase, user.id);
+  if (!sessionId) return new Response("Unauthorized", { status: 401 });
 
   // The inviter's own declared jurisdiction, read now rather than when the
   // form loaded (G5.1a, G5.1b). Without the acceptance flag every account
@@ -66,8 +71,9 @@ export async function POST(request: Request) {
   // counts this attempt against the account and network quotas before it
   // matches anything (global-contact-refusal-bar-v1). An exhausted quota
   // returns no invitation, exactly as a barred address does.
-  const { data, error } = await admin.rpc("create_adult_subject_invitation_v1", {
+  const { data, error } = await admin.rpc("create_adult_subject_invitation_v2", {
     p_account_id: user.id,
+    p_session_id: sessionId,
     p_contact_ciphertext: `\\x${encryptSecret(email).toString("hex")}`,
     p_contact_hmac: null,
     p_contact_hmac_set: contactDigestSet(email),

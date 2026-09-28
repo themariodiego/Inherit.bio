@@ -76,23 +76,27 @@ async function answerAdultSubject(
   operation: "confirm" | "refuse" | "delete",
 ) {
   let accountId: string | null = null;
+  let authSessionId: string | null = null;
   let accountEmailHmacs: DigestSet | null = null;
   if (operation === "confirm") {
     const context = await getSensitiveAccountContext();
     const email = context?.user.email;
     if (!context || !email || !context.user.email_confirmed_at) return notFound();
     accountId = context.user.id;
+    authSessionId = context.sessionId;
     accountEmailHmacs = contactDigestSet(normalizeContact(email));
   }
 
   const { data, error } = await createAdminClient().rpc(
-    "respond_adult_subject_invitation_session_v1",
+    // v2 records a confirming account as who acted, after checking its live
+    // auth session (20260930220000). Refusal and deletion carry no account.
+    "respond_adult_subject_invitation_session_v2",
     {
       p_session_hash: authority.sessionHash,
       p_action: operation,
       p_nonce: authority.nonce,
-      ...(accountId && accountEmailHmacs
-        ? { p_account_id: accountId, p_account_email_hmac_set: accountEmailHmacs }
+      ...(accountId && authSessionId && accountEmailHmacs
+        ? { p_account_id: accountId, p_auth_session_id: authSessionId, p_account_email_hmac_set: accountEmailHmacs }
         : {}),
     },
   );

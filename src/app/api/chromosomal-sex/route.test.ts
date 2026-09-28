@@ -15,6 +15,7 @@ import { POST } from "./route";
 
 const ACCOUNT = "77900000-0000-4000-8000-000000000001";
 const SUBJECT = "77900000-0000-4000-8000-000000000002";
+const SESSION = "77900000-0000-4000-8000-000000000003";
 
 function request(payload: unknown) {
   return new Request("https://inherit.test/api/chromosomal-sex", {
@@ -34,7 +35,7 @@ const declared = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.sameOrigin.mockReturnValue(true);
-  mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SUBJECT });
+  mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SESSION });
   mocks.rpc.mockResolvedValue({ data: declared, error: null });
 });
 
@@ -43,8 +44,11 @@ describe("POST /api/chromosomal-sex (D-031)", () => {
     const response = await POST(request({ subjectId: SUBJECT, chromosomalSex: "XX" }));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(declared);
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("declare_chromosomal_sex_v1", {
+    // The verified session goes with it, so the writer can prove it is the
+    // account's own and record who acted (20260930220000).
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("declare_chromosomal_sex_v2", {
       p_account_id: ACCOUNT,
+      p_session_id: SESSION,
       p_subject_id: SUBJECT,
       p_chromosomal_sex: "XX",
     });

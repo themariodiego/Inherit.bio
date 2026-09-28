@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isSameOrigin } from "@/lib/account-deletion";
+import { verifiedAuthSessionId } from "@/lib/auth/session-id";
 import { permits, personCapability } from "@/lib/family/access";
 import { resolveFamilyPerson } from "@/lib/family/graph";
 import { readSharingOperation } from "@/lib/family/grant-token";
@@ -53,6 +54,10 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
+  // Each writer checks this session is the account's own and live, and
+  // records it as who acted (20260930220000).
+  const sessionId = await verifiedAuthSessionId(supabase, user.id);
+  if (!sessionId) return new Response("Unauthorized", { status: 401 });
 
   const { person: segment } = await context.params;
   const person = await resolveFamilyPerson(user.id, segment);
@@ -71,8 +76,9 @@ export async function POST(
     ) {
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }
-    const { data, error } = await admin.rpc("stop_family_sharing_v1", {
+    const { data, error } = await admin.rpc("stop_family_sharing_v2", {
       p_account_id: user.id,
+      p_session_id: sessionId,
       p_counterpart_account_id: person.counterpartAccountId,
     });
     const row = data?.[0];
@@ -99,8 +105,9 @@ export async function POST(
     if (!permits(decision)) {
       return NextResponse.json({ error: "jurisdiction_unavailable" }, { status: 409 });
     }
-    const { error } = await admin.rpc("resume_family_sharing_v1", {
+    const { error } = await admin.rpc("resume_family_sharing_v2", {
       p_account_id: user.id,
+      p_session_id: sessionId,
       p_counterpart_account_id: person.counterpartAccountId,
     });
     if (error) {
@@ -112,8 +119,9 @@ export async function POST(
     );
   }
 
-  const { error } = await admin.rpc("pause_family_sharing_v1", {
+  const { error } = await admin.rpc("pause_family_sharing_v2", {
     p_account_id: user.id,
+    p_session_id: sessionId,
     p_counterpart_account_id: person.counterpartAccountId,
   });
   if (error) {
