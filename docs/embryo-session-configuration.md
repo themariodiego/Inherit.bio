@@ -87,6 +87,17 @@ The next source-accepting work must supply all of the following:
    `finalize_embryo_cohort_ingest_v1` creates the initial cohort/session; it does
    not complete uploaded fragments. No existing transaction enters
    `sanitization_pending` or enqueues that job from an ingest manifest.
+   **Completion exists, 2026-09-28; the consumer does not yet.**
+   `private.complete_embryo_ingest_v1` (door `public.complete_embryo_ingest_v1`,
+   `20260930120000_embryo_ingest_completion.sql`) reruns the shared door and
+   `private.embryo_ingest_binding_failure_v1`, requires every chunk `stored`, the
+   exact ordinal set and every fragment object landed at its reserved name and
+   size, then locks the manifest digest on the session, enqueues exactly one
+   `split_cohort_vcf` job bound to it and marks `sanitization_pending`, in one
+   transaction. A refusal uses `private.mark_embryo_ingest_failure_v1` and keeps
+   everything for the unwind. The unwind planner now admits that one job and
+   still refuses any other job on the cohort. No route calls it;
+   `supabase/tests/embryo_ingest_completion.sql` covers it.
 5. Whole-cohort publication, cleanup and real browser journeys before activation.
    The current fragment trigger requires a resolved build, while the register
    describes retaining sanitized unknown-build fragments pending a decision.
