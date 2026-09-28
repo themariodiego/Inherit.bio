@@ -36,6 +36,30 @@ const RECEIPTS: Record<Outcome, { title: string; body: string }> = {
   },
 };
 
+/**
+ * The same three outcomes when the inviter had added a DNA file for this
+ * reservation (TEST-LOCAL only). The sentences above say no file existed,
+ * which would then be false, so a held file gets its own.
+ */
+const HELD_RECEIPTS: Record<Outcome, { title: string; body: string }> = {
+  accepted: {
+    title: "Invitation accepted",
+    body: "The file added for you is now in your own account. Nothing has been analysed. The inviter received no genetic-data access.",
+  },
+  refused: {
+    title: "Invitation refused",
+    body: "The reserved subject was closed and the file added for you is being deleted. This address will not receive another invitation for this target.",
+  },
+  deleted: {
+    title: "Reserved record deleted",
+    body: "The reserved subject was closed and the file added for it is being deleted. Nothing was ever analysed.",
+  },
+};
+
+function day(value: string): string {
+  return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview }) {
   const [status, setStatus] = useState<Status>("ready");
 
@@ -58,13 +82,17 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
   }
 
   const receipt = status === "accepted" || status === "refused" || status === "deleted"
-    ? RECEIPTS[status] : null;
+    ? (review.heldUpload ? HELD_RECEIPTS : RECEIPTS)[status] : null;
   if (receipt) return (
     <section className="mx-auto max-w-3xl px-6 py-16" role="status">
       <p className="eyebrow">Your rights</p>
       <h1 className="display mt-4 text-4xl">{receipt.title}</h1>
       <p className="mt-5 max-w-prose text-ink-muted">{receipt.body}</p>
-      {status === "accepted" ? (
+      {status === "accepted" && review.heldUpload ? (
+        <Link href={route("files.index")} className="mt-6 inline-block text-sm underline underline-offset-2">
+          Open your files
+        </Link>
+      ) : status === "accepted" ? (
         <Link href={route("settings.people")} className="mt-6 inline-block text-sm underline underline-offset-2">
           Open people settings
         </Link>
@@ -78,14 +106,30 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
       <p className="eyebrow">Your rights</p>
       <h1 className="display mt-4 text-4xl">Review invitation</h1>
       <div className="mt-8 space-y-5 rounded-2xl border border-line bg-card p-6">
-        <div>
-          <h2 className="font-medium">No genetic data has been shared</h2>
-          <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-            Accepting creates a reserved subject under your account. It does
-            not give the sender access, permission to upload, or permission
-            to analyse your genetic data.
-          </p>
-        </div>
+        {review.heldUpload ? (
+          <div data-slot="held-upload">
+            <h2 className="font-medium">A DNA file was added for you</h2>
+            <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+              The person who invited you added a genome file on {day(review.heldUpload.addedOn)}.
+              Nobody can open it, and nothing has been analysed.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+              If you accept, the file moves to your own account. Nothing is
+              analysed until you choose, and the sender gets no access.
+              If you refuse or delete this record, the file is deleted.
+              If you do nothing, it is deleted on {day(review.heldUpload.deleteBy)}.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <h2 className="font-medium">No genetic data has been shared</h2>
+            <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+              Accepting creates a reserved subject under your account. It does
+              not give the sender access, permission to upload, or permission
+              to analyse your genetic data.
+            </p>
+          </div>
+        )}
         <div className="rounded-xl border border-line p-5">
           <h3 className="font-medium">What you agree to</h3>
           <p className="mt-2 text-sm text-ink-muted">
