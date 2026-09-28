@@ -373,6 +373,7 @@ network and the whole site shares that limit.
 | `INHERIT_PREPARED_WGS_ENABLED` | `false` for an ordinary self-host. The prepared-object path needs this flag *and* the database's own `own_preparation_config.enabled` gate; the operator-started preparation worker (`pnpm worker:prepared`, see `worker/README.md`) refuses to run without the flag. Setting it alone enables nothing. |
 | `INHERIT_PREPARED_R2_ORIGIN` | Empty unless the flag above is on. Then: the HTTPS origin of the signed artifact gateway — scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes the transport unavailable. |
 | `INHERIT_PREPARED_R2_BUCKET` | Empty unless the flag above is on. Then: the exact private bucket bound to that gateway and selected in the database configuration. A bucket that does not match this value is refused. |
+| `INHERIT_CLAMD_ADDRESS` | Read only by the claim document scan worker (`pnpm worker:claim-scan`). The clamd it scans with: `unix:/run/clamav/clamd.ctl` or `tcp:127.0.0.1:3310`. Unset or malformed, the worker refuses to start, and every Future Person claim document stays quarantined and unreadable. `test-double` is accepted only on a TEST-LOCAL, non-production build. See `docs/claim-document-scanning.md`. |
 
 #### Hosted preparation on Cloudflare
 
