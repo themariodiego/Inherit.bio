@@ -1,5 +1,28 @@
 # Test diff register
 
+## Comprehension participant seed · 27 September 2026
+
+`e2e/comprehension-participants.spec.ts` is new. It builds G3.2's
+`participant-a` (the array sample, then the AIMs VCF, each with all three
+report choices) and `participant-b` (no file) through the real upload and
+report-choice path, reading every value from
+`scripts/comprehension/bindings.json`. It asserts each held file by SHA-256,
+file type and stored status; every bound report choice complete and current in
+the run journal; the AIMs file's ancestry estimate newer than the array's; the
+three T1 reports showing an observed genotype; all eleven T3 reports
+not-covered; and every region T2 can name being a bound label. It never
+deletes, and it refuses an account holding anything else.
+
+`e2e/own-report-helpers.ts` gains `ownRunCompletions`, which reads journal
+flags and completion times only. No existing helper, test or timeout changes.
+
+`scripts/comprehension/bindings.test.ts` gains one test. Every account that
+starts a round holding something is either built by a seed that names it, with
+file types read by the product's sniffer from each fixture's own bytes, or
+names what blocks it; and T2's file is uploaded last. `bindings.json` gains a
+`seed` binding for `participant-a` and `participant-b`, and a `seedBlockedBy`
+reason for `participant-c`. No task binding changes.
+
 ## The network audit runs inside every state-proving spec · 27 September 2026
 
 `e2e/audited-test.ts` adds an automatic Playwright fixture. It records every

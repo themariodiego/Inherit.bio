@@ -20,12 +20,32 @@
         "data/samples/synthetic_23andme.txt",
         "e2e/fixtures/aims-mixed-grch38.vcf"
       ],
-      "why": "Two files, because no single committed fixture both answers a report task and supports an ancestry estimate. The array sample covers 151 of 162 report templates but only 5 of the 168 ancestry-informative markers, which the product reports as low confidence; the AIMs fixture covers all 168 and no report position."
+      "why": "Two files, because no single committed fixture both answers a report task and supports an ancestry estimate. The array sample covers 151 of 162 report templates but only 5 of the 168 ancestry-informative markers, which the product reports as low confidence; the AIMs fixture covers all 168 and no report position.",
+      "seed": {
+        "email": "participant-a@e2e.local",
+        "by": "e2e/comprehension-participants.spec.ts",
+        "fileTypes": [
+          "array_23andme",
+          "vcf"
+        ],
+        "purposes": [
+          "reports.monogenic",
+          "reports.polygenic",
+          "ancestry"
+        ],
+        "order": "The files are uploaded in the order listed and each is given all three report choices. The ancestry page shows the most recently completed ancestry result, so the AIMs file goes last: T2 then reads the estimate from 168 markers, not the array's low-confidence one from 5."
+      }
     },
     {
       "id": "participant-b",
       "role": "The friend named in T4, who has given participant A written permission. Holds no file of their own at the start of the round.",
-      "files": []
+      "files": [],
+      "seed": {
+        "email": "participant-b@e2e.local",
+        "by": "e2e/comprehension-participants.spec.ts",
+        "fileTypes": [],
+        "purposes": []
+      }
     },
     {
       "id": "participant-c",
@@ -34,7 +54,9 @@
         "e2e/fixtures/tiny-grch38.vcf",
         "e2e/fixtures/tiny-b-grch38.vcf"
       ],
-      "why": "Two distinct seeds, so a comparison surface has something to compare and G8.3's seed-differencing holds."
+      "why": "Two distinct seeds, so a comparison surface has something to compare and G8.3's seed-differencing holds.",
+      "seed": null,
+      "seedBlockedBy": "Two reasons, checked 2026-09-27. No embryo file path exists until the ingest slice lands (G2.6), and the owner's decision of 18 September 2026 closes a fixture-only seed path that would write the rows directly. And the two bound files could not be ingested even then: each is a single-sample VCF (one SAMPLE1 column), while the register's embryo-ingest completion contract refuses a cohort upload that resolves to exactly one sample (cohort_single_sample, 422). The account needs one synthetic VCF carrying both embryos as separate samples before any seed can build it."
     },
     {
       "id": "no-account",

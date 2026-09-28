@@ -146,3 +146,24 @@ export async function expectNoOwnAncestryResult(fileId: string): Promise<void> {
     `], { timeout: 10_000, maxBuffer: 8192 });
   expect(JSON.parse(stdout.trim())).toEqual({ journal: 0, legacy: 0 });
 }
+
+/** When each purpose's run completed for an own canonical fixture, and whether
+ * it is still complete under a live grant for the same source. Journal flags
+ * and timestamps only; no result payload, genotype or credential is read. */
+export async function ownRunCompletions(fileId: string): Promise<{
+  purpose: string; complete: boolean; completed_at: string | null;
+}[]> {
+  if (!/^[0-9a-f-]{36}$/.test(fileId)) throw new Error("Expected a canonical fixture identifier");
+  const { stdout } = await promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer, "psql", "-U", "postgres",
+    "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", `
+      select coalesce(json_agg(run order by purpose),'[]'::json) from (
+        select r.purpose,
+          r.state='complete' and r.completed_at is not null and r.source_revision=f.upload_revision
+            and r.source_sha256=f.sha256 and p.revoked_at is null and p.grant_revision=r.grant_revision as complete,
+          r.completed_at
+        from private.own_analysis_runs r join public.genome_files f on f.id=r.file_id
+        join public.purpose_grants p on p.grant_id=r.grant_id
+        where r.file_id='${fileId}'::uuid
+      ) run;`], { timeout: 10_000, maxBuffer: 8192 });
+  return JSON.parse(stdout.trim());
+}

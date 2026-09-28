@@ -10,6 +10,36 @@ grading and an independent 10% re-grade, with **US$50 maximum incremental spend*
 on 22 September 2026. This replaced the earlier US$25 choice. The cap includes
 inference, any CI charges and any required first month of the hosting plan.
 
+## Seeding the participant accounts
+
+`pnpm seed:participants` builds `participant-a` and `participant-b` in the
+local Docker stack, through the product's own upload path. It runs
+`e2e/comprehension-participants.spec.ts`, which reads every email, file, file
+type and report choice from `bindings.json`:
+
+- `participant-a@e2e.local` holds the array sample and then the AIMs VCF, each
+  with all three report choices. The AIMs file goes last because the ancestry
+  page shows the most recently completed estimate, and T2 reads that one.
+- `participant-b@e2e.local` holds no file. It is the friend T4 invites.
+
+Both use the synthetic local password in that spec. The seed never deletes.
+An account already holding exactly its seeded files and results passes as
+seeded. An account holding anything else is refused: clear it through
+Settings → Data (T8's own path) or reset the local stack, then seed again.
+The full browser suite runs the same spec, so CI shows when the seed breaks.
+
+Re-running it on a stack where both accounts are already seeded is safe. Both
+tests pass without uploading anything, and then the runner exits non-zero with
+`No browser upload crossed the actual provider proxy`. That guard belongs to the
+full suite, which must prove every run used the real Storage provider; a
+seeded account needs no upload. The two passing test lines above it are the
+seed's result.
+
+`participant-c` cannot be seeded yet, for the two reasons its `seedBlockedBy`
+records: there is no embryo ingest path until G2.6 lands, and its two bound
+files are single-sample VCFs, which the ingest contract refuses as
+`cohort_single_sample`. G3.2 stays NO until it can be built.
+
 ## Spending boundary
 
 `budget.ts` provides `SpendJournal`. Use one absolute journal path for the whole
