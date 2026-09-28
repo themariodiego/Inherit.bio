@@ -65,7 +65,8 @@ export const PATH_B_REQUEST_COPY = {
   heading: "A request to add your DNA file",
   detail: (label: string) =>
     `They wrote your name as ${label}. Nothing has been added yet, and they cannot see anything about you.`,
-  testNote: "This permission text is for tests only. It is not yet in use.",
+  // The text is approved; the way of asking is not open anywhere yet.
+  testNote: "This way of asking is for tests only. It is not yet in use.",
   statementsHeading: "Confirm each of these",
   typedNameLabel: "Type your full legal name to sign",
   typedNameError: "Type your first and family name, each two letters or more.",

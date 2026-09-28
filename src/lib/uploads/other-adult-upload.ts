@@ -8,10 +8,11 @@ import { z } from "zod";
  * `third_party_adult_analysis` to resolve to permitted.
  *
  * Two artifacts are signed on the way:
- *   - `consent.upload-other-adult` v1, the uploader's Tier-2 consent, approved
- *     by the owner and seeded by the migration;
- *   - `consent.subject-adult-esignature` v1, the person's own signature, a
- *     draft the owner has not approved, installed only under TEST-LOCAL.
+ *   - `consent.upload-other-adult` v2, the uploader's Tier-2 consent for
+ *     Path B (v1, approved earlier the same day, is kept and superseded);
+ *   - `consent.subject-adult-esignature` v1, the person's own signature.
+ * The owner approved both (docs/protocol/decisions.md, 2026-09-28) and the
+ * migration seeds both. Approving a text opens no jurisdiction.
  *
  * The statement keys are each artifact's numbered statements, in order. The
  * migration hard-codes the same arrays; the content tests hold them equal.
@@ -36,9 +37,6 @@ export const SUBJECT_ESIGNATURE_STATEMENT_KEYS = [
   "shown-what-uploader-sees",
   "may-withdraw-any-time",
 ] as const;
-
-/** The front-matter status of an artifact file the owner has not approved. */
-export const ARTIFACT_DRAFT_STATUS = "draft-awaiting-owner-approval";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/);

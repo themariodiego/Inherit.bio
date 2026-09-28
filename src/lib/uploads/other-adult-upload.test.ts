@@ -91,7 +91,7 @@ function sameOrigin(url: string, body: unknown, headers: Record<string, string> 
 }
 
 describe("the approved uploader artifact's statements", () => {
-  const file = parseArtifactFile(fs.readFileSync("content/legal/consent.upload-other-adult/v1.md", "utf8"))!;
+  const file = parseArtifactFile(fs.readFileSync("content/legal/consent.upload-other-adult/v2.md", "utf8"))!;
   it("reads one statement per published key and the warning from the signed body itself", () => {
     expect(artifactStatements(file.body)).toHaveLength(KEYS.length);
     expect(artifactStatements(file.body)[0]).toBe("The person whose DNA this is is alive and 18 or older.");

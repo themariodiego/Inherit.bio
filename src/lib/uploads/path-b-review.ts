@@ -21,7 +21,7 @@ import {
   artifactStatements,
   type AdultUploadRevisionView,
 } from "./other-adult-upload";
-import { ensureSubjectEsignatureArtifactInstalled, heldUploadRpc, looseAdmin } from "./other-adult-upload-server";
+import { heldUploadRpc, looseAdmin } from "./other-adult-upload-server";
 
 /**
  * The person's side of the register's Path B, on `/withdraw/session`, read
@@ -129,7 +129,6 @@ export async function loadPathBRequestReview(request: Request, now = Date.now())
       .maybeSingle(),
   ]);
   if (!subject || subject.lifecycle !== "draft" || !invitation) return null;
-  if (!(await ensureSubjectEsignatureArtifactInstalled(admin))) return null;
   const [{ data: artifact }, attestation] = await Promise.all([
     admin.from("consent_artifacts").select("version, effective_on, summary_markdown, body_markdown, body_sha256")
       .eq("artifact_key", SUBJECT_ESIGNATURE_ARTIFACT_KEY).is("superseded_at", null).maybeSingle(),

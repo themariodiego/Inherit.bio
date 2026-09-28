@@ -1,19 +1,14 @@
 import "server-only";
 
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { hmacSecret } from "@/lib/crypto";
 import { accountCapability, isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
-import { parseArtifactFile } from "@/lib/legal/artifact-file";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  ARTIFACT_DRAFT_STATUS,
   OTHER_ADULT_UPLOAD_ARTIFACT_KEY,
   OTHER_ADULT_UPLOAD_STATEMENT_KEYS,
-  SUBJECT_ESIGNATURE_ARTIFACT_KEY,
   artifactStatements,
   artifactWarning,
   otherAdultTargetState,
@@ -49,28 +44,6 @@ export async function otherAdultUploadAvailable(accountId: string): Promise<bool
   if (!isTestJurisdictionEnabled()) return false;
   const decision = await accountCapability(accountId, "third_party_adult_analysis").catch(() => null);
   return decision?.status === "permitted";
-}
-
-/**
- * The person's own artifact is a draft no migration seeds. Under TEST-LOCAL
- * the server installs it from the committed file through the one installer,
- * which accepts only the exact text pinned by hash in the migration.
- */
-export async function ensureSubjectEsignatureArtifactInstalled(admin: Admin): Promise<boolean> {
-  if (!isTestJurisdictionEnabled()) return false;
-  const { data: present } = await admin.from("consent_artifacts").select("version")
-    .eq("artifact_key", SUBJECT_ESIGNATURE_ARTIFACT_KEY).is("superseded_at", null).maybeSingle();
-  if (present) return true;
-  let source: string;
-  try {
-    source = fs.readFileSync(path.join(process.cwd(), "content/legal", SUBJECT_ESIGNATURE_ARTIFACT_KEY, "v1.md"), "utf8");
-  } catch { return false; }
-  const file = parseArtifactFile(source);
-  if (!file || file.meta.status !== ARTIFACT_DRAFT_STATUS) return false;
-  const { data, error } = await heldUploadRpc(admin, "install_test_local_subject_esignature_artifact_v1", {
-    p_body: file.body, p_summary: file.summary, p_effective_on: file.meta.effective_on, p_test_jurisdiction: true,
-  });
-  return !error && data === true;
 }
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);

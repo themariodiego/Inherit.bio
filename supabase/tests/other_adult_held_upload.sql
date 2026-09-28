@@ -2,8 +2,9 @@
 -- (20260928150000_other_adult_held_upload.sql; G2.6 adult half, G5.3).
 --
 -- Proves, on synthetic rows only, that:
---   * consent.upload-other-adult v1 is seeded as approved; the person's own
---     draft artifact installs only under TEST-LOCAL, as the exact pinned text;
+--   * consent.upload-other-adult v1 is kept, superseded by the approved v2
+--     that Path B signs, and the person's approved e-signature artifact is
+--     seeded under its own key;
 --   * a Path B draft checks 18 or older on the server, keeps its flow
 --     immutable, and is the only kind of reservation the uploader can sign
 --     for, request a signature for, or upload to;
@@ -62,62 +63,32 @@ select public.sign_own_upload_artifact_v1('0a5e0000-0000-4000-8000-000000000001'
  array['own-adult-dna'],1,1,1,1,1,repeat('2',64));
 
 -- 1. The artifacts -------------------------------------------------------------
-create temporary table esig_text as select
- $artifact$What this is:
-
-Someone who has a file of your DNA wants to add it to Inherit. They asked us to get your permission first. You can sign here without an Inherit account.
-
-We cannot check that the person accepting this invitation is the person whose DNA this is.
-
-What happens if you sign:
-
-The person who asked can then add a DNA file for you. Each time they add one, we email you. Nothing is made from that file until you say yes to it. If you say no, or do not answer within 30 days, we delete it.
-
-What they can see:
-
-Signing shows them no result about you. We show you what they can see about you. It never includes your results unless you choose to share them, one purpose at a time.
-
-What you can do later:
-
-You can say no to any file, or delete everything we hold about you, at any time. You do not need an account, and the person who asked does not need to agree.
-
-What you confirm:
-
-1. I know that the person who asked has a file of my DNA and wants to add it to Inherit.
-
-2. I agree that they may add it, and I understand that I will be asked about each file before anything is made from it.
-
-3. I understand that Inherit will show me what they can see about me.
-
-4. I understand that I can withdraw at any time, without an account, and that Inherit then deletes what it holds about me.
-
-How you sign:
-
-You sign by ticking each statement, choosing the country where you live, and typing your full legal name. Inherit stamps the date.$artifact$::text as body,
- $summary$Someone has a file of your DNA and wants to add it to Inherit. If you sign, they can add it. Nothing is made from a file until you say yes to that file. You can say no, or delete everything, at any time. You do not need an account.$summary$::text as summary;
-grant select on esig_text to service_role;
-
-select ok((select count(*)=1 and bool_and(effective_on=date '2026-09-28' and superseded_at is null
+-- The owner's decisions of 2026-09-28: consent.upload-other-adult v1 is kept as
+-- the earlier approved version and superseded by v2, which Path B signs; the
+-- person's consent.subject-adult-esignature v1 is approved and seeded. Every
+-- row's body hashes to its recorded hash (the files are held equal to these
+-- rows by content/legal/consent-upload-other-adult.test.ts).
+select ok((select count(*)=2 and bool_and(effective_on=date '2026-09-28'
   and body_sha256=encode(extensions.digest(convert_to(body_markdown,'UTF8'),'sha256'),'hex'))
  from public.consent_artifacts where artifact_key='consent.upload-other-adult'),
- 'consent.upload-other-adult v1 is seeded, approved and hash-verified');
-select is((select count(*) from public.consent_artifacts where artifact_key='consent.subject-adult-esignature'),0::bigint,
- 'no migration seeds the person''s unapproved draft artifact');
-select throws_ok($$select public.install_test_local_subject_esignature_artifact_v1(
- (select body from esig_text),(select summary from esig_text),date '2026-09-28',false)$$,
- '42501','not_found','the draft installs only under TEST-LOCAL');
-select throws_ok($$select public.install_test_local_subject_esignature_artifact_v1(
- (select body from esig_text)||' ',(select summary from esig_text),date '2026-09-28',true)$$,
- '22023','invalid_request','the installer accepts only the exact pinned body');
-select throws_ok($$select public.install_test_local_subject_esignature_artifact_v1(
- (select body from esig_text),(select summary from esig_text)||' ',date '2026-09-28',true)$$,
- '22023','invalid_request','the installer accepts only the exact pinned summary');
-select is(public.install_test_local_subject_esignature_artifact_v1(
- (select body from esig_text),(select summary from esig_text),date '2026-09-28',true),true,
- 'under TEST-LOCAL the exact draft installs');
-select is(public.install_test_local_subject_esignature_artifact_v1(
- (select body from esig_text),(select summary from esig_text),date '2026-09-28',true),true,
- 'a second install is a no-op on the identical row');
+ 'consent.upload-other-adult has two approved, hash-verified versions');
+select ok((select superseded_at is not null and summary_of_changes is null
+ from public.consent_artifacts where artifact_key='consent.upload-other-adult' and version=1),
+ 'v1 is kept, superseded, not deleted');
+select ok((select superseded_at is null and nullif(btrim(summary_of_changes),'') is not null
+  and body_markdown like '%6. I understand that nothing is analysed until they say yes to the file,%'
+ from public.consent_artifacts where artifact_key='consent.upload-other-adult' and version=2),
+ 'v2 is current, says what changed, and its statement 6 reads "until they say yes to the file"');
+select is((select version from private.current_hashed_artifact_v1('consent.upload-other-adult')),2,
+ 'the uploader''s current artifact is v2');
+select ok((select count(*)=1 and bool_and(version=1 and superseded_at is null and effective_on=date '2026-09-28'
+  and body_sha256=encode(extensions.digest(convert_to(body_markdown,'UTF8'),'sha256'),'hex'))
+ from public.consent_artifacts where artifact_key='consent.subject-adult-esignature'),
+ 'the person''s consent.subject-adult-esignature v1 is seeded, approved and hash-verified');
+select ok((select count(*)=1 and bool_and(superseded_at is null) from public.consent_artifacts
+ where artifact_key='consent.subject-adult'),'it keeps its own key: Path A''s consent.subject-adult is untouched');
+select is((select count(*) from pg_proc where proname='install_test_local_subject_esignature_artifact_v1'),0::bigint,
+ 'no TEST-LOCAL installer exists any more');
 
 -- 2. Helpers ---------------------------------------------------------------------
 create temporary table fx(name text primary key, subject_id uuid, token_hash text, session_hash text);
@@ -141,10 +112,11 @@ returns jsonb language sql as $$
 $$;
 create function pg_temp.sign(p_subject uuid,p_nonce text,p_keys text[] default array['subject-alive-and-adult',
  'subject-permission-held','lawfully-held-with-knowledge','contact-belongs-to-subject','no-excluded-relationship',
- 'held-until-accepted','no-uploader-access'],p_flag boolean default true) returns jsonb language sql as $$
+ 'held-until-accepted','no-uploader-access'],p_flag boolean default true,p_version integer default 2)
+returns jsonb language sql as $$
  select public.sign_other_adult_upload_artifact_v1('0a5e0000-0000-4000-8000-000000000001',
-  '0a5e0000-0000-4000-8000-000000000011',p_subject,1,
-  (select body_sha256 from public.consent_artifacts where artifact_key='consent.upload-other-adult' and version=1),
+  '0a5e0000-0000-4000-8000-000000000011',p_subject,p_version,
+  (select body_sha256 from public.consent_artifacts where artifact_key='consent.upload-other-adult' and version=p_version),
   p_keys,decode(repeat('ab',24),'hex'),repeat(p_nonce,64),p_flag);
 $$;
 create function pg_temp.invite(p_subject uuid,p_hmac text,p_idem text,p_flag boolean default true) returns jsonb language sql as $$
@@ -273,8 +245,10 @@ select throws_ok($$select pg_temp.present(pg_temp.sid('main'),'7',true,'0a5e0000
  '0a5e0000-0000-4000-8000-000000000019')$$,'42501','not_found','another account cannot sign for this draft');
 select throws_ok($$select pg_temp.present(pg_temp.sid('path-a'),'7')$$,'42501','not_found',
  'a Path A invitation is never something the inviter can sign an upload for');
-select is((select p->>'artifactKey' from (select pg_temp.present(pg_temp.sid('main'),'7') p) x),'consent.upload-other-adult',
- 'the uploader is presented the approved artifact');
+select is((select (p->>'artifactKey')||' v'||(p->>'artifactVersion') from (select pg_temp.present(pg_temp.sid('main'),'7') p) x),
+ 'consent.upload-other-adult v2','the uploader is presented the approved v2');
+select throws_ok($$select pg_temp.sign(pg_temp.sid('main'),'7',p_version=>1)$$,'55000','consent_artifact_changed',
+ 'the superseded v1 can no longer be signed');
 select throws_ok($$select pg_temp.sign(pg_temp.sid('main'),'7',array['subject-alive-and-adult'])$$,'22023','invalid_request',
  'every published statement must be affirmed, one by one');
 select throws_ok($$select pg_temp.sign(pg_temp.sid('main'),'8')$$,'42501','not_found',
@@ -284,8 +258,8 @@ select is(pg_temp.invite(pg_temp.sid('main'),repeat('a',64),repeat('a1',32)),jso
  'the request before the uploader signs returns the same receipt');
 select is((select count(*) from public.subject_invitations where target_id=pg_temp.sid('main')),0::bigint,
  '... and creates no invitation');
-select is((select s->>'recordKind' from (select pg_temp.sign(pg_temp.sid('main'),'7') s) x),'artifact_signature',
- 'the uploader signs consent.upload-other-adult for this exact draft');
+select is((select (s->>'recordKind')||' v'||(s->>'artifactVersion') from (select pg_temp.sign(pg_temp.sid('main'),'7') s) x),
+ 'artifact_signature v2','the uploader signs consent.upload-other-adult v2 for this exact draft');
 select throws_ok($$select pg_temp.sign(pg_temp.sid('main'),'7')$$,'42501','not_found','a presented nonce signs once');
 
 -- 5. The e-signature request -------------------------------------------------------
@@ -350,7 +324,7 @@ begin
    'contact-belongs-to-subject','no-excluded-relationship','held-until-accepted','no-uploader-access'],
   decode(repeat('ab',24),'hex'),'ZZ',p.jurisdiction_revision,s.subject_binding_revision
  from public.consent_artifacts a, public.subject_principals sp, public.profiles p, public.subjects s
- where a.artifact_key='consent.upload-other-adult' and a.version=1 and s.id=p_subject
+ where a.artifact_key='consent.upload-other-adult' and a.superseded_at is null and s.id=p_subject
   and p.id='0a5e0000-0000-4000-8000-000000000001' and sp.account_id=p.id and sp.principal_kind='account_subject'
   and sp.subject_id=(select id from public.subjects where subject_account_id=p.id and subject_class='self')
  returning id into v_signature;

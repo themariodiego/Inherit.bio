@@ -29,11 +29,10 @@
 -- the source after confirmation either. No genome_files row can ever be made
 -- from a held-kind session.
 --
--- TEST-LOCAL only. consent.upload-other-adult v1 is approved and seeded here;
--- the person's own artifact, consent.subject-adult-esignature, is a draft the
--- owner has not approved, installable only by the TEST-LOCAL installer below.
+-- TEST-LOCAL only. The uploader's consent.upload-other-adult v2 and the
+-- person's consent.subject-adult-esignature v1 are approved and seeded here.
 -- Every entry point requires the test-jurisdiction flag the server passes only
--- under INHERIT_TEST_JURISDICTION=1.
+-- under INHERIT_TEST_JURISDICTION=1: approving a text opens no jurisdiction.
 --
 -- Redefined functions keep their current bodies; each change is marked
 -- "20260928150000" in a comment beside it.
@@ -138,9 +137,14 @@ alter table public.account_operation_nonces add constraint account_operation_non
   'own_account_completion','other_adult_upload_artifact_sign'));
 
 -- 2. The artifacts ----------------------------------------------------------
--- consent.upload-other-adult v1, approved by the owner on 2026-09-28 as
--- written. content/legal/consent.upload-other-adult/v1.md is the source;
--- content/legal/consent-upload-other-adult.test.ts holds this seed equal to it.
+-- The owner's decisions of 2026-09-28 (docs/protocol/decisions.md). The files
+-- under content/legal are the source; content/legal/consent-upload-other-adult.test.ts
+-- holds every seed below equal to its file.
+--
+-- consent.upload-other-adult v1, approved in the morning as written. It still
+-- describes the declined account-based flow, and nobody has signed it: the
+-- flow is TEST-LOCAL. It is kept as the earlier approved version and
+-- superseded, exactly as the artifact history is preserved elsewhere.
 insert into public.consent_artifacts(artifact_key,version,body_sha256,body_markdown,summary_markdown,effective_on)
 values('consent.upload-other-adult',1,'2a943b563a40098e7cb4a689c8a5a5489bd5c12f1e1a013c8a878f6a93a3fc6b',
 $artifact$What this consent is:
@@ -182,40 +186,105 @@ How you sign:
 You sign by ticking each statement and typing your full legal name. Inherit stamps the date. Signing this when it is not true is a false statement you are making to us and to the person whose DNA this is. It may be a criminal offence where you live, and you agree to cover our costs if it causes harm.$artifact$,
 'You ask Inherit to hold another adult''s DNA file until they answer. Nobody can read it and nothing is analysed until they accept in their own account. If they refuse, or do not answer within 30 days, the file is deleted. You will not see their results unless they choose to share them. Signing this when it is not true may be a crime.',
 date '2026-09-28');
-
--- consent.subject-adult-esignature v1, the person's own Path B artifact: a
--- draft the owner has not approved. No migration seeds it. The installer takes
--- only this exact text, pinned by hash, and only under TEST-LOCAL.
-create function private.install_test_local_subject_esignature_artifact_v1(p_body text,p_summary text,
- p_effective_on date,p_test_jurisdiction boolean)
-returns boolean language plpgsql security definer set search_path=pg_catalog,private
-as $function$
+do $migration$
+declare affected integer;
 begin
- if p_test_jurisdiction is distinct from true then
-  raise exception using errcode='42501',message='not_found'; end if;
- if p_body is null or p_summary is null or p_effective_on is distinct from date '2026-09-28'
-  -- pinned-body-sha256:consent.subject-adult-esignature
-  or encode(extensions.digest(convert_to(p_body,'UTF8'),'sha256'),'hex')<>'eb8f46bcc608a8f59ef294bab88f8a1c59283ab3c9c5aded5b34229ec29b0b47'
-  -- pinned-summary-sha256:consent.subject-adult-esignature
-  or encode(extensions.digest(convert_to(p_summary,'UTF8'),'sha256'),'hex')<>'6fd980f2e7022245c21d35c0060d32c2dc5e01d36157c5c7088b77749c047dff' then
-  raise exception using errcode='22023',message='invalid_request'; end if;
- insert into public.consent_artifacts(artifact_key,version,body_sha256,body_markdown,summary_markdown,effective_on)
- values('consent.subject-adult-esignature',1,'eb8f46bcc608a8f59ef294bab88f8a1c59283ab3c9c5aded5b34229ec29b0b47',p_body,p_summary,p_effective_on)
- on conflict (artifact_key,version) do nothing;
- return exists(select 1 from public.consent_artifacts where artifact_key='consent.subject-adult-esignature'
-  and version=1 and body_markdown=p_body and summary_markdown=p_summary and effective_on=p_effective_on);
-end;
-$function$;
-revoke all on function private.install_test_local_subject_esignature_artifact_v1(text,text,date,boolean)
- from public,anon,authenticated,inherit_upload_only;
-grant execute on function private.install_test_local_subject_esignature_artifact_v1(text,text,date,boolean) to service_role;
-create function public.install_test_local_subject_esignature_artifact_v1(p_body text,p_summary text,
- p_effective_on date,p_test_jurisdiction boolean)
-returns boolean language sql security invoker set search_path=pg_catalog
-as $function$ select private.install_test_local_subject_esignature_artifact_v1(p_body,p_summary,p_effective_on,p_test_jurisdiction); $function$;
-revoke all on function public.install_test_local_subject_esignature_artifact_v1(text,text,date,boolean)
- from public,anon,authenticated,inherit_upload_only;
-grant execute on function public.install_test_local_subject_esignature_artifact_v1(text,text,date,boolean) to service_role;
+lock table public.consent_artifacts in access exclusive mode;
+alter table public.consent_artifacts disable trigger consent_artifacts_immutable;
+update public.consent_artifacts set superseded_at=clock_timestamp()
+ where artifact_key='consent.upload-other-adult' and version=1 and superseded_at is null
+  and body_sha256='2a943b563a40098e7cb4a689c8a5a5489bd5c12f1e1a013c8a878f6a93a3fc6b';
+get diagnostics affected=row_count;
+if affected<>1 then raise exception 'expected exactly one unchanged consent.upload-other-adult v1'; end if;
+alter table public.consent_artifacts enable trigger consent_artifacts_immutable;
+end
+$migration$;
+
+-- consent.upload-other-adult v2, approved in the evening for Path B: the same
+-- seven statements, with statement 6 reading "until they say yes to the file".
+-- Path B signs v2.
+insert into public.consent_artifacts(artifact_key,version,body_sha256,body_markdown,summary_markdown,effective_on,summary_of_changes)
+values('consent.upload-other-adult',2,'4e8268d8df172e8d14093f12e3c04b951ce0dcaa59a08c620fd98c3948fcd281',
+$artifact$What this consent is:
+
+You ask Inherit to hold a DNA file that belongs to another adult. You have their permission. Inherit asks them by email to sign their own consent, and then to say yes or no to each file you add.
+
+We cannot verify who you are or whose DNA this is. What we can do is make it impossible to do this by accident, keep a permanent record of exactly what you told us, and give the other person a real way to stop it.
+
+We cannot check that the person accepting this invitation is the person whose DNA this is.
+
+What happens to the file:
+
+The file is held apart until the other person answers. Inherit does not read it to make a result, a report, an ancestry estimate or a Copilot answer. Nobody can open it, including you.
+
+Each time you add a file, we email them. They can say yes or no to that file without an Inherit account. Nothing is analysed until they say yes to it.
+
+If they refuse, or do not answer within 30 days, Inherit deletes the file. They can also delete everything we hold about them at any time. Nothing is analysed.
+
+You will not see their results. They can choose to share results with you later, one purpose at a time, and they can stop at any time.
+
+What you confirm:
+
+1. The person whose DNA this is is alive and 18 or older.
+
+2. They gave me permission to upload their DNA to Inherit, and I can show that permission if asked.
+
+3. I got this file lawfully, and they know I have it.
+
+4. The email address I gave belongs to them.
+
+5. They are not my employee, job applicant, tenant or student, they are not applying to me for insurance, and I am not in a legal case against them.
+
+6. I understand that nothing is analysed until they say yes to the file, and that the file is deleted if they refuse or do not answer within 30 days.
+
+7. I understand that I will not see their results unless they choose to share them with me.
+
+How you sign:
+
+You sign by ticking each statement and typing your full legal name. Inherit stamps the date. Signing this when it is not true is a false statement you are making to us and to the person whose DNA this is. It may be a criminal offence where you live, and you agree to cover our costs if it causes harm.$artifact$,
+'You ask Inherit to hold another adult''s DNA file until they answer. We email them each time you add a file. Nobody can read it and nothing is analysed until they say yes to that file. If they refuse, or do not answer within 30 days, the file is deleted. You will not see their results unless they choose to share them. Signing this when it is not true may be a crime.',
+date '2026-09-28',
+'For Path B. The person is emailed each time a file is added, signs their own consent without an account, and says yes or no to each file. Nothing moves to their account. Statement 6 now reads until they say yes to the file.');
+
+-- consent.subject-adult-esignature v1, the person's own Path B consent,
+-- approved as written. It keeps its own key, so it never replaces Path A's
+-- consent.subject-adult. Approval opens no jurisdiction: the flow that asks
+-- for it stays TEST-LOCAL.
+insert into public.consent_artifacts(artifact_key,version,body_sha256,body_markdown,summary_markdown,effective_on)
+values('consent.subject-adult-esignature',1,'eb8f46bcc608a8f59ef294bab88f8a1c59283ab3c9c5aded5b34229ec29b0b47',
+$artifact$What this is:
+
+Someone who has a file of your DNA wants to add it to Inherit. They asked us to get your permission first. You can sign here without an Inherit account.
+
+We cannot check that the person accepting this invitation is the person whose DNA this is.
+
+What happens if you sign:
+
+The person who asked can then add a DNA file for you. Each time they add one, we email you. Nothing is made from that file until you say yes to it. If you say no, or do not answer within 30 days, we delete it.
+
+What they can see:
+
+Signing shows them no result about you. We show you what they can see about you. It never includes your results unless you choose to share them, one purpose at a time.
+
+What you can do later:
+
+You can say no to any file, or delete everything we hold about you, at any time. You do not need an account, and the person who asked does not need to agree.
+
+What you confirm:
+
+1. I know that the person who asked has a file of my DNA and wants to add it to Inherit.
+
+2. I agree that they may add it, and I understand that I will be asked about each file before anything is made from it.
+
+3. I understand that Inherit will show me what they can see about me.
+
+4. I understand that I can withdraw at any time, without an account, and that Inherit then deletes what it holds about me.
+
+How you sign:
+
+You sign by ticking each statement, choosing the country where you live, and typing your full legal name. Inherit stamps the date.$artifact$,
+'Someone has a file of your DNA and wants to add it to Inherit. If you sign, they can add it. Nothing is made from a file until you say yes to that file. You can say no, or delete everything, at any time. You do not need an account.',
+date '2026-09-28');
 
 -- A current artifact whose stored body still hashes to its recorded hash.
 create function private.current_hashed_artifact_v1(p_key text)

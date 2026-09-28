@@ -253,6 +253,12 @@
         ]
       },
       {
+        "artifactKey": "consent.subject-adult-esignature",
+        "version": 1,
+        "migration": "20260928150000_other_adult_held_upload.sql",
+        "readings": []
+      },
+      {
         "artifactKey": "consent.upload-embryo",
         "version": 1,
         "migration": "20260905103317_embryo_cohort_runtime.sql",
@@ -267,7 +273,7 @@
       },
       {
         "artifactKey": "consent.upload-other-adult",
-        "version": 1,
+        "version": 2,
         "migration": "20260928150000_other_adult_held_upload.sql",
         "readings": [
           {

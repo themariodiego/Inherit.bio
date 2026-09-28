@@ -247,7 +247,7 @@ describe("family copy", () => {
     expect(Object.values(permissions.PERMISSION_STATES)).toEqual(["On", "Off", "Expired"]);
   });
 
-  it("renders no Path B link while Path B does not exist", () => {
+  it("renders no Path B link while no real jurisdiction offers Path B (owner decision, 2026-09-28)", () => {
     expect(invite.PATH_B_AVAILABLE).toBe(false);
   });
 

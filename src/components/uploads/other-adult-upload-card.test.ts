@@ -29,7 +29,7 @@ import { PathBRequestForm } from "./path-b-request-form";
  * The screens `e2e/other-adult-upload.spec.ts` drives, rendered here so every
  * selector and sentence that spec relies on is pinned before a browser runs.
  */
-const uploader = parseArtifactFile(fs.readFileSync("content/legal/consent.upload-other-adult/v1.md", "utf8"))!;
+const uploader = parseArtifactFile(fs.readFileSync("content/legal/consent.upload-other-adult/v2.md", "utf8"))!;
 const person = parseArtifactFile(fs.readFileSync("content/legal/consent.subject-adult-esignature/v1.md", "utf8"))!;
 const texts = artifactStatements(uploader.body);
 const base: OtherAdultTarget = {
@@ -37,7 +37,7 @@ const base: OtherAdultTarget = {
   requestedAt: "2026-09-28T10:00:00Z", answerBy: "2026-10-28T10:00:00Z", state: "awaiting-request", signed: false,
   latest: null, operationToken: "o".repeat(40),
 };
-const consent = { token: "t".repeat(40), version: 1, effectiveOn: "2026-09-28", summary: uploader.summary, body: uploader.body,
+const consent = { token: "t".repeat(40), version: 2, effectiveOn: "2026-09-28", summary: uploader.summary, body: uploader.body,
   statements: OTHER_ADULT_UPLOAD_STATEMENT_KEYS.map((key, index) => ({ key, text: texts[index]! })),
   warning: artifactWarning(uploader.body)! };
 const render = (target: OtherAdultTarget) => renderToStaticMarkup(createElement(OtherAdultUploadCard, { target }));

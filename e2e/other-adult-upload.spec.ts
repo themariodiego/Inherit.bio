@@ -46,7 +46,7 @@ const FIXTURE = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
 const BYTES = fs.readFileSync(FIXTURE);
 const SHA256 = createHash("sha256").update(BYTES).digest("hex");
 const UPLOADER_ARTIFACT = parseArtifactFile(fs.readFileSync(path.join(process.cwd(),
-  "content/legal/consent.upload-other-adult/v1.md"), "utf8"))!;
+  "content/legal/consent.upload-other-adult/v2.md"), "utf8"))!;
 const PERSON_ARTIFACT = parseArtifactFile(fs.readFileSync(path.join(process.cwd(),
   "content/legal/consent.subject-adult-esignature/v1.md"), "utf8"))!;
 const UPLOADER_STATEMENTS = artifactStatements(UPLOADER_ARTIFACT.body);
