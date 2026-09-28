@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { Attribution, Wordmark } from "./wordmark";
 import { route } from "@/lib/primary-routes";
+import { PUBLIC_RIGHTS_FOOTER, PUBLIC_RIGHTS_FOOTER_HEADING } from "@/copy/navigation";
 
 const columns: { heading: string; links: { href: string; label: string }[] }[] =
   [
+    {
+      // The register's persistent public footer: each rights route one action
+      // from any public page, for a person who holds no account.
+      heading: PUBLIC_RIGHTS_FOOTER_HEADING,
+      links: PUBLIC_RIGHTS_FOOTER.map(({ href, label }) => ({ href, label })),
+    },
     {
       heading: "Product",
       links: [
@@ -40,7 +47,7 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
 export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-paper">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-4">
           <Wordmark />
           <p className="max-w-xs text-sm text-ink-muted">

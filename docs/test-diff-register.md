@@ -1,5 +1,33 @@
 # Test diff register
 
+## T9 measured, and the public rights links built · 28 September 2026
+
+`e2e/task-depth.spec.ts` gains the T9 measurement, on the real path the owner
+chose. Another adult reserves a record and invites a synthetic address in
+their own browser context, with the invitation mail captured from the app's
+real mail call. Then, signed out, the participant clicks the footer's "Someone
+uploaded my DNA" from the home page. The emailed link is opened and recorded
+as an entry event, not counted. "Continue" and "Delete reserved record"
+follow. The test asserts the review screen's "No genetic data has been shared"
+and the deletion receipt, exactly one entry event, and three counted actions
+against the register's ceiling of six. No existing test in the file changes.
+
+`src/components/site/footer.test.ts` is new, with 4 tests. It holds the copy,
+the footer and the legal index to
+`navigationContract.publicRightsReachability`: labels, copy ids, route ids,
+paths and rendered anchors. It failed when the footer's rights column was
+removed. `src/lib/primary-routes.test.ts` pins three more route ids,
+`legal.index`, `rights.subject-access` and `rights.future-person-claim`, and
+its no-literal-path rule moved `/legal/future-person`'s link onto `route()`.
+`scripts/route-gate.test.ts` now expects six of eight task-depth ceilings
+measured, and the two ratchet messages move from 2 to 1 unmeasured. That is the
+ratchet coming down with the measurement, as it is built to.
+
+`data/plain-vocabulary.json` gains six words the register's own labels use:
+access, analysed, object, retention, rights and someone. The labels are fixed
+verbatim by `publicRightsReachability`, so the readability gate's vocabulary
+grows to meet them rather than the labels changing.
+
 ## Comprehension participant seed · 27 September 2026
 
 `e2e/comprehension-participants.spec.ts` is new. It builds G3.2's

@@ -707,16 +707,15 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     (register.navigationContract as { taskDepthActions: TaskDepth }).taskDepthActions;
   const tasksOf = (bindings: Record<string, unknown>) => bindings.tasks as BoundTask[];
 
-  it("reads the real contract: eight ceilinged tasks, five of them measured", async () => {
+  it("reads the real contract: eight ceilinged tasks, six of them measured", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
     expect(result.taskDepthCeilingCount).toBe(8);
-    // T8, T4, T2, T1 and T3 are measured by `e2e/task-depth.spec.ts`. The three
-    // that remain cannot be measured here: T7 is bound to an embryo file
-    // no ingest path can produce; T6 waits on its withheld-variant scoping; and
-    // T9 cannot be settled by measuring at all, because its register ceiling and
-    // its binding count different units (docs/route-divergence.json).
-    expect(result.taskDepthMeasuredCount).toBe(5);
+    // T8, T4, T2, T1, T3 and T9 are measured by `e2e/task-depth.spec.ts`; T9
+    // since 2026-09-28, on the real path the owner chose, after the 22 September
+    // decision settled its ceiling. The two that remain, T6 and T7, are bound to
+    // embryo files no ingest path can produce yet.
+    expect(result.taskDepthMeasuredCount).toBe(6);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -802,7 +801,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 2 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 1 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
@@ -818,7 +817,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T7; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 2 of 7 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 1 of 7 ceilinged tasks are measured by no browser test",
     );
   });
 

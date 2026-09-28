@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/legal/legal-page";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = {
   title: "Future Person Charter",
@@ -61,7 +62,7 @@ export default function FuturePersonPage() {
               </li>
               <li>
                 We keep the record until you are 20. You can claim it for free
-                at <Link href="/future-person/claim">/future-person/claim</Link>{" "}
+                at <Link href={route("rights.future-person-claim")}>{route("rights.future-person-claim")}</Link>{" "}
                 any time before then. If no one has claimed it by then, we
                 delete it. Keeping a genetic record about someone who never
                 asked for it is worse than losing it.

@@ -63,8 +63,11 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "api.file-process",
   "marketing.providers",
   "science.index",
+  "legal.index",
   "legal.future-person",
   "legal.where-inherit-works",
+  "rights.subject-access",
+  "rights.future-person-claim",
 ];
 
 describe("primary routes", () => {
