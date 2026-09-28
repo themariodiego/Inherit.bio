@@ -4268,3 +4268,16 @@ questions at the end of `docs/carrier-importer-design.md`.
   means one review note per report, a correction notice on saved reports, and
   a guarded catalogue refresh with a receipt. Withholding the six first, or
   removing only the citations, was declined.
+- **Invitation limits may read the client address, as a keyed digest only.**
+  The register requires a per-network limit on invitation attempts (30 an
+  hour). The client address is read for that bucket as a second exact
+  exception beside the sanctions check. It is stored only as a keyed digest,
+  purged within 24 hours, and never used to infer a jurisdiction. The same
+  bucket may serve the per-network limits the register names for rights
+  activation, reissue, appeals and future-person claims. Keeping per-account
+  limits only was declined.
+- **G5.4 is judged under TEST-LOCAL.** The accountless rights routes, key
+  rotation, quotas and retention are accepted in the test jurisdiction.
+  Outside it, the routes answer "not available here" until a signed
+  jurisdiction review exists for that country and capability (G5.5).
+  Holding G5.4 until a real country is reviewed was declined.
