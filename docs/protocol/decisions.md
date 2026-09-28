@@ -4257,3 +4257,14 @@ questions at the end of `docs/carrier-importer-design.md`.
   acted on new events from here on. Past events cannot be attributed, because
   every audit write so far recorded no person. Showing events others caused,
   by role, was not chosen; it would need counsel.
+- **Six live reports that contradict their sources are corrected.** The
+  citation review of 28 September retrieved every undated source and found six
+  reports whose cited paper does not support what they say:
+  `nicotine-dependence-chrna5-rs16969968`, `caffeine-intake-ahr-rs4410790`,
+  `photic-sneeze-reflex-2q22`, `photic-sneeze-reflex-zeb2`,
+  `motion-sickness-susceptibility` and `chronotype-per3-rs228697`. Each is
+  corrected to match its source, or cites the right paper, through the
+  scientific-corrections register used for the 23 September ADORA2A fix. That
+  means one review note per report, a correction notice on saved reports, and
+  a guarded catalogue refresh with a receipt. Withholding the six first, or
+  removing only the citations, was declined.
