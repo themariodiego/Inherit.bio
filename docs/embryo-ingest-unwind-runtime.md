@@ -175,6 +175,77 @@ Storage deletion acknowledgement or terminal notice producer is added.
      the inventory rows.
    The storage-disposal migration leaves the plannable-store check untouched,
    so the job admission added with completion stays in force.
+
+   **Built, 30 September 2026**
+   (`20260930130000_embryo_ingest_terminal_purge.sql`, tested by
+   `supabase/tests/embryo_ingest_terminal_purge.sql`). Test-local only; no
+   route or scheduler calls it. `public.complete_embryo_ingest_unwind_v1` is
+   the one step after `storage_confirmed`. On an abandoned attempt it runs one
+   transaction:
+
+   - It refuses any unwind not yet `storage_confirmed`, and rechecks the frozen
+     matrix, the plannable stores, the storage evidence and the exact due tuple.
+   - Each frozen Record Key recipient must still be an exact current member.
+     Each gets one `embryo_terminal_mail` slot before anything is deleted. The
+     slot copies the recipient's single current contact ciphertext. With no
+     current contact, or more than one, it is a coded `delivery_unavailable`
+     slot. No rotated contact is revived and nothing is decrypted.
+   - It deletes, in foreign-key order:
+     - the split worker's pending rows, the disposal records and the inventory;
+     - the session, which cascades chunks, fragments, write intents, handle
+       maps, mapping challenges and the fence;
+     - then the attempt's own `split_cohort_vcf` job;
+     - key print rights, key hashes and recipients;
+     - rights sessions, invitations, reminders, deliveries and outbox rows,
+       whose token candidates and hashes cascade;
+     - contradictions, attestations, basis bindings, donor attributions,
+       signatures and participant sets;
+     - the pending embryos, then their quarantined subjects;
+     - contacts, the cohort, the draft with its slots, and the cohort-only
+       parent or donor principals;
+     - operation nonces bound to anything deleted.
+   - The uploader's shared account principal and every account are kept.
+   - It terminalizes, and does not delete, the exact
+     `ingest-abandoned-no-source` phase (`succeeded`,
+     `ingest_abandoned_no_source`) and its retention row, as the register's
+     zero-residual rule requires. The unwind completes holding no live
+     reference, and the audit event carries counts only.
+   - `private.embryo_ingest_attempt_residue_v1` then checks every
+     `purge_target_stores` entry and every other table in `public` and
+     `private`. Any row whose uuid or uuid[] column names a deleted row
+     fails the purge. So does Storage metadata at an inventoried key, and so
+     does a registered store that cannot be examined. The whole purge rolls
+     back and the unwind stays `storage_confirmed`. The skip list is closed:
+     - the retained pseudonymized audit targets;
+     - the retention control tuple;
+     - `private.invitation_terminal_notices.invitation_id`, which the register
+       excludes until its own class is due.
+
+   The manifest freeze forbids clearing `worker_job_id`, so deleting the
+   session clears the reference. Only the attempt's own job is deleted, and
+   exactly one must match.
+
+   Not covered, and failing closed rather than purging partially:
+   - a single-parent case whose approved `legal_reviews` row names the draft.
+     The residual check refuses it until the owner decides whether that review
+     decision is kept.
+   - any store outside the plannable set. The planner already refuses those.
+
+   **Published attempts, 30 September 2026** (same migration;
+   `supabase/tests/embryo_ingest_published_cleanup.sql`). Publication plans a
+   `purpose = 'published'` unwind in the same transaction, with an inventory
+   of every fragment object where its write intent says it lives. It never
+   lists a published source. The objects go through the same claim, finish
+   and confirm doors, with the same exact evidence. After `storage_confirmed`,
+   the completion step deletes:
+   - the fragment rows, with their write intents;
+   - the handle map;
+   - the disposal records and the inventory.
+
+   The session, chunks, fence and every published embryo, QC and genotype row
+   stay unchanged. A published unwind can never run the abandoned-attempt
+   purge. `public.embryo_ingest_unwind_work_v1` lists the unwinds still
+   waiting on storage or on completion.
 4. Final transaction and queue-production regressions, due-phase scheduling,
    zero-residual checks, provider retention verification and a reviewed rollout.
 

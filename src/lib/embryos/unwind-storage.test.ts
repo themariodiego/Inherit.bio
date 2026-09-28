@@ -5,7 +5,9 @@ import {
   EMBRYO_FIXTURE_SUPABASE_URL,
 } from "../../../scripts/ci-browser/embryo-fragment-fixture";
 import type { EmbryoFragmentRpc } from "./fragment-storage";
-import { drainEmbryoUnwindStorage, type EmbryoDisposalReceipt } from "./unwind-storage";
+import {
+  completeEmbryoUnwind, drainEmbryoUnwindStorage, listEmbryoUnwindWork, type EmbryoDisposalReceipt,
+} from "./unwind-storage";
 
 const sha = (value: string) => createHash("sha256").update(value).digest("hex");
 const unwindId = randomUUID();
@@ -132,5 +134,50 @@ describe("drainEmbryoUnwindStorage", () => {
       : { data: { status: "disposed", unwindId, ordinal: 2, state: "tombstoned" }, error: null });
     expect(await drainEmbryoUnwindStorage({ rpc: s.rpc, unwindId, signal: new AbortController().signal }))
       .toEqual({ status: "storage_confirmed", disposed: 1, failed: 1 });
+  });
+});
+
+/** SQL's side of one call, recording what it was asked. */
+function answer(data: unknown, error: unknown = null) {
+  const log: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const rpc: EmbryoFragmentRpc = (name, args) => ({
+    abortSignal: () => { log.push({ name, args }); return Promise.resolve({ data, error }); },
+  });
+  return { rpc, log };
+}
+
+describe("completeEmbryoUnwind", () => {
+  it.each(["complete", "storage_pending", "planned"] as const)("reports SQL's %s answer", async status => {
+    const s = answer({ status, completedAt: new Date().toISOString(), notices: 2 });
+    expect(await completeEmbryoUnwind({ rpc: s.rpc, unwindId, signal: new AbortController().signal }))
+      .toEqual({ status });
+    expect(s.log).toEqual([{ name: "complete_embryo_ingest_unwind_v1", args: { p_unwind_id: unwindId } }]);
+    expect(calls).toEqual([]);
+  });
+
+  it("refuses an answer outside the contract, and a database error", async () => {
+    for (const s of [answer({ status: "storage_confirmed" }), answer(null, { code: "55000" })]) {
+      await expect(completeEmbryoUnwind({ rpc: s.rpc, unwindId, signal: new AbortController().signal }))
+        .rejects.toThrow();
+    }
+  });
+});
+
+describe("listEmbryoUnwindWork", () => {
+  it("returns the listed unwinds and clamps the limit", async () => {
+    const work = [{ unwindId, purpose: "published", state: "storage_pending" },
+      { unwindId: randomUUID(), purpose: "abandoned", state: "storage_confirmed" }];
+    const s = answer(work);
+    expect(await listEmbryoUnwindWork({ rpc: s.rpc, limit: 500, signal: new AbortController().signal }))
+      .toEqual(work);
+    expect(s.log[0].args).toEqual({ p_limit: 100 });
+  });
+
+  it("refuses a completed unwind or an extra field", async () => {
+    for (const row of [{ unwindId, purpose: "abandoned", state: "complete" },
+      { unwindId, purpose: "published", state: "storage_pending", cohortId: randomUUID() }]) {
+      await expect(listEmbryoUnwindWork({ rpc: answer([row]).rpc, signal: new AbortController().signal }))
+        .rejects.toThrow();
+    }
   });
 });
