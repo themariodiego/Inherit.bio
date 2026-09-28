@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ownSubjectIds, subjectRecordOf, subjectRecordRowCount, type SubjectRecord } from "./subject-record";
+import { exportMemberPlan, exportedTable } from "./member-plan";
 
 /**
  * The scoping is the safety argument, so it is what these tests hold. A change
@@ -16,8 +17,13 @@ const SUBJECT = "99999999-9999-4999-8999-999999999999";
 const ACCOUNT = "11111111-1111-4111-8111-111111111111";
 /** The API's own cap: a page never holds more, whatever range is asked for. */
 const MAX_ROWS = 1000;
-/** Tables read with listed columns and pages rather than `select("*")`. */
-const LISTED = new Set(["profiles", "consent_signatures", "attestations", "purpose_grants"]);
+/** Every table the record reads, each with listed columns and pages (28 Sep 2026). */
+const LISTED = new Set([
+  "subjects", "subject_demographics", "subject_principals", "subject_account_bindings", "subject_consents",
+  "provider_recipient_grants", "profiles", "consent_signatures", "attestations", "purpose_grants",
+]);
+/** The columns the export member plan says leave for a table, as the reader names them. */
+const planned = (table: string) => exportedTable(`public.${table}`)!.columns.join(",");
 
 /**
  * A listed-column table answers with exactly the columns selected, so a
@@ -30,6 +36,8 @@ function listedRow(table: string, select: string, index: number): Record<string,
   for (const token of select.split(",")) {
     const join = /^(\w+)!inner\((\w+)\)$/.exec(token);
     if (join) row[join[1]] = { [join[2]]: ACCOUNT };
+    // The first subject is the one the other readers are keyed to.
+    else if (table === "subjects" && token === "id" && index === 0) row[token] = SUBJECT;
     else row[token] = token === "id" || token === "grant_id" ? `${table}-${String(index).padStart(5, "0")}` : `${table}.${token}`;
   }
   return row;
@@ -43,12 +51,7 @@ function admin(calls: Call[], options: { failing?: string; rows?: Record<string,
       let range: [number, number] | null = null;
       const answer = () => {
         if (table === options.failing) return { data: null, error: { message: "unavailable" } };
-        if (!LISTED.has(table)) {
-          const [, column, value] = call.filters[0] ?? [];
-          return table === "subjects"
-            ? { data: [{ id: SUBJECT, table, column, value }], error: null }
-            : { data: [{ table, column, value }], error: null };
-        }
+        if (!LISTED.has(table)) return { data: null, error: { message: `unexpected table ${table}` } };
         const all = Array.from({ length: options.rows?.[table] ?? 1 }, (_, i) => listedRow(table, call.select, i));
         const [from, to] = range ?? [0, all.length - 1];
         return { data: all.slice(from, Math.min(to + 1, from + MAX_ROWS)), error: null };
@@ -84,7 +87,7 @@ describe("the subject record in the free export", () => {
     // `subject_account_id` is the account a subject IS. `owner_account_id` is
     // the account that HOLDS it, and keying on that would export the subject
     // rows of every other person this account holds.
-    expect(calls).toContainEqual({ table: "subjects", select: "*", filters: [["eq", "subject_account_id", ACCOUNT]] });
+    expect(calls).toContainEqual({ table: "subjects", select: planned("subjects"), filters: [["eq", "subject_account_id", ACCOUNT]] });
     expect(calls.some((call) => call.filters.some(([, column]) => column === "owner_account_id"))).toBe(false);
 
     for (const table of [
@@ -93,12 +96,13 @@ describe("the subject record in the free export", () => {
       "subject_consents",
       "provider_recipient_grants",
     ]) {
-      expect(calls).toContainEqual({ table, select: "*", filters: [["eq", "account_id", ACCOUNT]] });
+      expect(calls).toContainEqual({ table, select: planned(table), filters: [["eq", "account_id", ACCOUNT]] });
     }
 
     // The declaration is keyed by subject, so it is filtered by the subject
     // ids `subjects` returned rather than by the account (D-031).
-    expect(calls).toContainEqual({ table: "subject_demographics", select: "*", filters: [["in", "subject_id", SUBJECT]] });
+    expect(calls).toContainEqual({ table: "subject_demographics", select: planned("subject_demographics"),
+      filters: [["in", "subject_id", SUBJECT]] });
 
     // F4: the permission records and the profile, each keyed to this account.
     const filtersOf = (table: string) => queries(calls).filter((call) => call.table === table).map((call) => call.filters);
@@ -182,7 +186,8 @@ describe("the subject record in the free export", () => {
       from(table: string) {
         const builder = client.from(table);
         if (table !== "subjects") return builder;
-        return { select: () => ({ eq: async () => ({ data: [], error: null }) }) };
+        const none = { select: () => none, eq: () => none, order: () => none, range: async () => ({ data: [], error: null }) };
+        return none;
       },
     } as unknown as SupabaseClient;
     const record = (await subjectRecordOf(empty, ACCOUNT))!;
@@ -227,6 +232,49 @@ describe("the subject record in the free export", () => {
       subject_account_bindings: [], subject_consents: [], provider_recipient_grants: [],
       profiles: [], consent_signatures: [], purpose_grants: [], attestations: [],
     })).toBe(0);
+  });
+
+  it("reads a subject-level class larger than one API page completely", async () => {
+    // Until 28 Sep 2026 these were single reads, capped at the API's 1,000 rows.
+    const calls: Call[] = [];
+    const record = (await subjectRecordOf(admin(calls, { rows: { subject_consents: 2503 } }), ACCOUNT))!;
+    const ids = (record.subject_consents as { id: string }[]).map((row) => row.id);
+    expect(ids).toHaveLength(2503);
+    expect(new Set(ids).size).toBe(2503);
+    expect(calls.filter((call) => call.table === "subject_consents")).toHaveLength(4);
+  });
+
+  /**
+   * The member plan is the reviewed statement of what leaves. Each table is
+   * read with exactly the columns the plan exports, so a withheld column -
+   * `owner_account_id`, which names another person's account when an adult is
+   * held by another uploader, or the encrypted signing name - cannot reach the
+   * archive, and a column added later is not exported until the plan says so.
+   */
+  it("reads every table with exactly the columns the export member plan exports", async () => {
+    const calls: Call[] = [];
+    const record = (await subjectRecordOf(admin(calls), ACCOUNT))!;
+    for (const table of LISTED) {
+      const entry = exportedTable(`public.${table}`)!;
+      for (const call of calls.filter((each) => each.table === table)) {
+        const columns = call.select.split(",").filter((token) => !token.includes("!inner("));
+        expect(new Set(columns), table).toEqual(new Set(entry.columns));
+        for (const withheld of entry.withheld) expect(columns, `${table}.${withheld}`).not.toContain(withheld);
+      }
+      for (const row of (record as unknown as Record<string, Record<string, unknown>[]>)[table]) {
+        expect(new Set(Object.keys(row)), table).toEqual(new Set(entry.columns));
+      }
+    }
+    expect(calls.find((call) => call.table === "subjects")!.select).not.toContain("owner_account_id");
+  });
+
+  it("carries exactly the tables the member plan places in subject-record.json", async () => {
+    const record = (await subjectRecordOf(admin([]), ACCOUNT))!;
+    const planned = Object.entries(exportMemberPlan.tables)
+      .filter(([, entry]) => "members" in entry && entry.members.includes("archive:subject-record.json"))
+      .map(([name]) => name.replace(/^public\./, ""));
+    expect(new Set(Object.keys(record))).toEqual(new Set(planned));
+    expect(new Set(Object.keys(record))).toEqual(LISTED);
   });
 
   it("names the subjects this account IS for the readers keyed by subject", () => {
