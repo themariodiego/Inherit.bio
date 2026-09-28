@@ -1,5 +1,19 @@
 # Test diff register
 
+## Prepared sources carry their runs of homozygosity · 28 September 2026
+
+`e2e/family-health-picture.spec.ts` ("both adults prepare their real source
+and generate chosen reports before sharing") asserted that every `roh_*`
+column of a prepared source stayed null, because canonical preparation did not
+measure runs of homozygosity. This branch now measures them from the verified
+bytes as they stream past and stores them once
+(`record_own_normalization_runs_v1`). The assertion is replaced by a stricter
+one: each source is `measured`, with no reason, and its total run bases,
+covered span bases and fraction equal exactly what the real calculator gives
+the committed fixture (`measureRunsOfHomozygosity`, which `roh.test.ts`
+already holds equal to the streaming accumulator). Nothing is loosened: a
+stamped, guessed or missing measure fails it.
+
 ## Family Copilot citation link matched exactly · 28 September 2026
 
 `e2e/copilot-family.spec.ts` looked up the person citation by the link name

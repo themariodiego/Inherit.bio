@@ -101,7 +101,14 @@ describe("store-only source normalization", () => {
     const response = await send(); expect(response.status).toBe(200); expect(await response.json()).toEqual(receipt);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(operations()).toEqual(["begin", "check", "check", "check", "stage", "stage", "complete"]);
-    expect(mocks.rpc.mock.calls.every(call => ["own_upload_normalization_v1", "register_own_normalization_positions_v1"].includes(call[0]))).toBe(true);
+    expect(mocks.rpc.mock.calls.every(call => ["own_upload_normalization_v1", "register_own_normalization_positions_v1",
+      "record_own_normalization_runs_v1"].includes(call[0]))).toBe(true);
+    // The runs measure is stored once, after publication, for this file only.
+    const runs = mocks.rpc.mock.calls.filter(call => call[0] === "record_own_normalization_runs_v1");
+    expect(runs).toEqual([["record_own_normalization_runs_v1", { p_account_id: accountId, p_session_id: sessionId,
+      p_file_id: fileId, p_runs: { status: "not_measurable", reason: "no-reference-calls" } }]]);
+    expect(mocks.rpc.mock.calls.findIndex(call => call[0] === "record_own_normalization_runs_v1"))
+      .toBeGreaterThan(mocks.rpc.mock.calls.findIndex(call => call[1].p_operation === "complete"));
     const registration = mocks.rpc.mock.calls.filter(call => call[0] === "register_own_normalization_positions_v1");
     expect(registration).toHaveLength(1);
     expect(registration[0][1]).toEqual({ p_account_id: accountId, p_session_id: sessionId, p_file_id: fileId,
@@ -111,6 +118,29 @@ describe("store-only source normalization", () => {
     expect(variant).toEqual({ rsid: 123, chrom: 1, pos: 100000, ref: "A", alt: "G", genotype: "A/G" });
     expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("SYNTHETIC");
     expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("purpose");
+  });
+  it("measures the runs of homozygosity from the source-build calls, reference calls included (D-030)", async () => {
+    // Thirty reference calls 60 kb apart make one run of 1.74 Mb; two
+    // heterozygous calls bound it and give the file its covered span.
+    const reference = Array.from({ length: 30 }, (_, index) =>
+      `1\t${5_000_000 + index * 60_000}\t.\tA\tG\t50\tPASS\t.\tGT:GQ:DP\t0/0:50:30\n`).join("");
+    const variants = "1\t1000000\t.\tC\tT\t50\tPASS\t.\tGT:GQ:DP\t0/1:50:30\n1\t10000000\t.\tC\tT\t50\tPASS\t.\tGT:GQ:DP\t0/1:50:30\n";
+    setSource(Buffer.from(header + variants.split("\n")[0] + "\n" + reference + variants.split("\n")[1] + "\n"));
+    expect((await send()).status).toBe(200);
+    const runs = mocks.rpc.mock.calls.filter(call => call[0] === "record_own_normalization_runs_v1");
+    expect(runs).toHaveLength(1);
+    expect(runs[0][1].p_runs).toEqual({ status: "measured", totalBases: 1_740_000, coveredBases: 9_000_000,
+      fraction: 1_740_000 / 9_000_000 });
+  });
+  it("keeps a published source when its runs measure cannot be stored", async () => {
+    const fallback = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name, args) => name === "record_own_normalization_runs_v1"
+      ? { data: null, error: { code: "42501" } } : fallback(name, args));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const response = await send();
+    expect(response.status).toBe(200); expect(await response.json()).toEqual(receipt);
+    expect(operations()).not.toContain("fail");
+    expect(warn).toHaveBeenCalledExactlyOnceWith("own_normalization_runs_unrecorded");
   });
   it("independently checks compressed raw identity and decompressed identity", async () => {
     setSource(Buffer.from(header + row), true);

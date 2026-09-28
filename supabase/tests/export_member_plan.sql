@@ -338,6 +338,14 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Audit pseudonyms. The requester's own is used only to select their events and never leaves. It is machinery, not the person's record."
     },
+    "public.carrier_condition_reviews": {
+      "disposition": "out-of-scope",
+      "reason": "Staff workflow: the named reviewer's decision to activate or deactivate a carrier condition. It is about the reviewer, not a requester's record."
+    },
+    "public.carrier_conditions": {
+      "disposition": "reference",
+      "reason": "The carrier-condition registry: gene, inheritance, the reviewed assertion release and whether the condition is active. It holds no person's data."
+    },
     "public.changelog_entries": {
       "disposition": "reference",
       "reason": "The public changelog. It holds no person's data."
@@ -412,6 +420,14 @@ create temporary table export_member_plan as select $plan$
         "legacy_unverified",
         "canonical_authority"
       ]
+    },
+    "public.clinical_assertion_releases": {
+      "disposition": "reference",
+      "reason": "Imported ClinVar assertion releases: source, date and digests. It holds no person's data."
+    },
+    "public.clinical_assertions": {
+      "disposition": "reference",
+      "reason": "Reviewed clinical assertions by variant and condition, imported from ClinVar. It holds no person's data."
     },
     "public.cloud_model_calls": {
       "disposition": "excluded-internal",
