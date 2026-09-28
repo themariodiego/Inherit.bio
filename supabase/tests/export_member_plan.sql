@@ -23,7 +23,7 @@ create temporary table export_member_plan as select $plan$
   "universe": "Every ordinary table in the public and private schemas. Set equality between this list and the database catalog is checked by supabase/tests/export_member_plan.sql, so a new table fails CI until it has an entry here.",
   "personScoped": "A table is person-scoped when a column is named user_id or account_id or ends in _user_id or _account_id, when it has a foreign key to auth.users or public.audit_principals, or when it has a foreign key to a person-scoped table. A person-scoped table may never be classified reference.",
   "dispositions": {
-    "exported": "The requester's own rows leave in the export. columns and withheld classify every column; withheld columns never leave.",
+    "exported": "The requester's own rows leave in the export. columns and withheld classify every column; withheld columns never leave. A member named archive: is a member of the synchronous archive; one named reader: is an asynchronous reader class whose rows become archive content.",
     "excluded-credential": "A credential, key, token, nonce or session, or its hash. Exporting it would be a security defect.",
     "excluded-protected": "A contact value, identity HMAC, evidence document or other ciphertext the export contracts always exclude.",
     "excluded-internal": "Processing, delivery, retention or security machinery. It is not the person's record.",
@@ -684,8 +684,7 @@ create temporary table export_member_plan as select $plan$
         "archive:manifest.json",
         "archive:reports.json",
         "archive:reports.txt",
-        "archive:canonical/",
-        "reader:files"
+        "archive:canonical/"
       ],
       "columns": [
         "id",

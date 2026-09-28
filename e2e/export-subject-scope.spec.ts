@@ -87,6 +87,10 @@ test("every exported file names the subject the database resolved for it", async
   expect(record.subjects.length, "the person's own subject is in their own record").toBeGreaterThan(0);
   for (const subject of record.subjects) {
     expect(subject.subject_account_id, "every exported subject IS this account").toBe(accountId);
+    // The export member plan withholds these (28 Sep 2026): for an adult held
+    // by another uploader, owner_account_id names that other person's account.
+    expect(subject, "a subject never names the account that holds it").not.toHaveProperty("owner_account_id");
+    expect(subject, "or a cohort").not.toHaveProperty("cohort_id");
   }
   for (const table of ["subject_principals", "subject_account_bindings", "subject_consents",
     "provider_recipient_grants"] as const) {
