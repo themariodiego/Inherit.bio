@@ -95,6 +95,26 @@ export function medicinesBannedLanguage(text: string): string[] {
 }
 
 /**
+ * Carrier rows for every template (owner decision, 28 September 2026, in
+ * `docs/protocol/decisions.md`). A report template reads one person's own
+ * file. It never names that person's carrier status, which is the consumer
+ * carrier statement FDA's rule for carrier tests addresses. It never gives a
+ * chance per pregnancy either: that needs both partners' results, and only
+ * the carrier-pair check reads two people (ADR 0017). Matched against every
+ * prose field, like the Medicines rows. A carrier template needs that
+ * decision changed first.
+ */
+export const CARRIER_BANNED_PATTERNS: readonly [RegExp, string][] = [
+  [/\bcarrier\s+status\b/i, "carrier status (owner decision 2026-09-28)"],
+  [/\b(?:each|every|per)\s+pregnanc(?:y|ies)\b/i, "per-pregnancy chance (owner decision 2026-09-28)"],
+];
+
+/** The label of every carrier row the text matches, in pattern order. */
+export function carrierLanguage(text: string): string[] {
+  return CARRIER_BANNED_PATTERNS.filter(([re]) => re.test(text)).map(([, why]) => why);
+}
+
+/**
  * The prose fields of a template, the ones a reader sees as Inherit's own
  * words: the title, the summary and every interpretation. A citation label
  * is the cited work's own title (a CPIC guideline is called a "dosing"
@@ -271,6 +291,12 @@ function main() {
           errors.push(`${id}: Medicines citations need accessedOn (ADR 0021)`);
       }
       for (const finding of sourceFindings(t.source)) errors.push(`${id}: ${finding}`);
+
+      for (const field of templateProseFields(t)) {
+        for (const why of carrierLanguage(field)) {
+          errors.push(`${id}: banned language (${why}): ${field.slice(0, 60)}`);
+        }
+      }
 
       // ADR 0021: a Medicines template is a variant_call over positions, with
       // its sources and their access dates in the file, and none of the
