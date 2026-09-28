@@ -149,8 +149,8 @@ select is((select count(*) from public.purge_manifests m join rows r on r.id=m.r
 create temporary table addenda as select m.* from public.mail_outbox m
   where m.template_id='record-key-addendum' and m.target_kind='embryo'
     and m.target_id in (select id from public.embryos where cohort_id=(select cohort_id from live));
-select is((select count(*) from public.mail_outbox)-(select n from before_mail),4::bigint,
-  'publication queues exactly four notices, all addenda');
+select is((select count(*) from public.mail_outbox)-(select n from before_mail),5::bigint,
+  'publication queues exactly five notices: four addenda and one upload-time rights notice');
 select is((select array_agg(format('%s:%s',template_payload->>'displayLabel',template_payload->>'kind')
     order by template_payload->>'displayLabel',recipient_principal_id) from addenda),
   array['Embryo 2:no-source','Embryo 2:no-source','Embryo 3:date-changed','Embryo 3:date-changed'],
@@ -167,8 +167,9 @@ select ok((select bool_and(token_purpose is null and token_target_id is null and
     and expires_at=(select t from commit_time)+interval '30 days') from addenda),
   'no notice carries a key, a token or a link, and each expires in 30 days');
 select is((select count(distinct idempotency_key) from addenda),4::bigint,'each notice has its own idempotency key');
-select is((select count(*) from public.mail_outbox where template_id='embryo-upload-notice'),0::bigint,
-  'no upload-time rights notice is queued yet (see the report)');
+select is((select count(*) from public.mail_outbox where template_id='embryo-upload-notice'
+    and target_id=(select cohort_id from live)),1::bigint,
+  'one upload-time rights notice is queued, to the co-parent (its own suite covers it)');
 
 -- ---------------------------------------------------------------------------
 -- The owner's own upload allowance and the source-facts read

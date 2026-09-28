@@ -48,6 +48,18 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.embryo_canonical_parts": {
+      "disposition": "excluded-internal",
+      "reason": "The object inventory of embryo canonical sources: keys, sizes, digests and provider versions, kept until each object is disposed of. It is machinery; the sanitized source it points to belongs to the embryo cohort projection."
+    },
+    "private.embryo_canonical_source_parts": {
+      "disposition": "excluded-internal",
+      "reason": "The exact parts of each embryo canonical source. It is machinery, not the person's record."
+    },
+    "private.embryo_canonical_sources": {
+      "disposition": "excluded-internal",
+      "reason": "The immutable binding of each passing embryo's canonical source to its genome_files row, digest and membership. It is machinery; it will bind variants/{file_id}.csv and originals/{file_id}/ to one embryo subject when the embryo cohort projection is built."
+    },
     "private.embryo_ingest_write_fences": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write fences and their drain state. It is machinery, not the person's record."
@@ -55,6 +67,22 @@ create temporary table export_member_plan as select $plan$
     "private.embryo_ingest_write_intents": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write intents: fenced object names, reserved sizes and landing state. It is machinery, not the person's record."
+    },
+    "private.embryo_split_config": {
+      "disposition": "reference",
+      "reason": "The switch that keeps the split_cohort_vcf worker off. It holds no person's data."
+    },
+    "private.embryo_split_ordinals": {
+      "disposition": "excluded-internal",
+      "reason": "Worker-only pending per-embryo QC outcomes of one split attempt, deleted when the cohort publishes. It is machinery, not the person's record; the published embryo_qc rows are the record."
+    },
+    "private.embryo_split_variants": {
+      "disposition": "excluded-internal",
+      "reason": "Worker-only pending genotypes of one split attempt, deleted when the cohort publishes. It is machinery, not the person's record; the published embryo_variants rows are the record."
+    },
+    "private.embryo_withdrawal_credentials": {
+      "disposition": "excluded-credential",
+      "reason": "The binding of each upload-time notice's withdrawal credential. Exporting it would be a security defect, not completeness."
     },
     "private.export_archive_attempts": {
       "disposition": "excluded-internal",

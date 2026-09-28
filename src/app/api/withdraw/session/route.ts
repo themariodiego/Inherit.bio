@@ -1,6 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { contactDigestSet, type DigestSet } from "@/lib/hmac-keyring";
 import { adultSubjectResponseBody, readAdultSubjectResponse } from "@/lib/embryos/adult-subject-review";
+import { embryoParentWithdrawalBody, readEmbryoParentWithdrawal, respondEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdrawal";
 import { notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
@@ -9,10 +10,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * `POST /api/withdraw/[token]` with the segment pinned to `session`
- * (register api.withdraw). Two rights holders answer here, and which one is
+ * (register api.withdraw). Three rights holders answer here, and which one is
  * answering is decided by the form token the page served, never by a field
  * in the body: an adult-subject form token cannot drive a co-parent refusal
- * and the reverse is equally impossible.
+ * or an embryo withdrawal, and no other pairing is possible either. The
+ * embryo-parent-withdrawal session refuses or deletes the whole cohort; the
+ * database rechecks its credential and the purpose matrix.
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
@@ -50,6 +53,16 @@ export async function POST(request: Request) {
   if (adult.success) {
     const authority = readAdultSubjectResponse(request, adult.data.nonce);
     if (authority) return answerAdultSubject(authority, adult.data.operation);
+  }
+
+  const embryo = embryoParentWithdrawalBody.safeParse(json);
+  if (embryo.success) {
+    const authority = readEmbryoParentWithdrawal(request, embryo.data.nonce);
+    if (authority) {
+      if (!(await respondEmbryoParentWithdrawal(authority, embryo.data.operation))) return notFound();
+      return closedResponse("api.withdraw", RECEIPT_KEYS,
+        { status: "accepted", operation: embryo.data.operation }, 202);
+    }
   }
 
   const body = invitationRefusalBody.safeParse(json);

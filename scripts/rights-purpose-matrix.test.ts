@@ -36,9 +36,9 @@ const matrix = resolver.purposeMatrix;
 const routeIds = new Set(register.routes.map((route) => route.id));
 const sql = readFileSync(MIGRATION, "utf8");
 
-/** The value tuples of one `insert into <table> (...) values ...;` in the migration. */
-function seedTuples(table: string): string[][] {
-  const statement = new RegExp(`insert into ${table.replace(".", "\\.")} \\([^)]*\\)\\s*values([\\s\\S]*?);`, "u").exec(sql);
+/** The value tuples of one `insert into <table> (...) values ...;` in a migration. */
+function seedTuples(table: string, text = sql): string[][] {
+  const statement = new RegExp(`insert into ${table.replace(".", "\\.")} \\([^)]*\\)\\s*values([\\s\\S]*?);`, "u").exec(text);
   if (!statement) throw new Error(`no seed for ${table}`);
   return [...statement[1]!.matchAll(/\(([^()]*)\)/gu)].map((tuple) =>
     tuple[1]!.split(",").map((value) => {
@@ -54,7 +54,10 @@ const seed: Row[] = seedTuples("private.rights_purpose_matrix").map(([purpose, k
   action: action!,
   route: route!,
 }));
-const sessionPurposes = seedTuples("private.rights_session_purposes").map(([sessionPurpose, matrixPurpose, kind, targetKind]) => ({
+// A purpose gains its row when its issuer lands, in that issuer's migration
+// (the matrix migration seeds the first two), so every migration is read.
+const sessionPurposes = readMigrations().filter((text) => text.includes("insert into private.rights_session_purposes"))
+  .flatMap((text) => seedTuples("private.rights_session_purposes", text)).map(([sessionPurpose, matrixPurpose, kind, targetKind]) => ({
   sessionPurpose: sessionPurpose!,
   matrixPurpose: matrixPurpose!,
   kind: kind || null,

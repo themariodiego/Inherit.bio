@@ -23,8 +23,10 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- (private.embryo_split_ordinals, private.embryo_split_variants).
 -- Embryo canonical sources add their part inventory, sources and membership
 -- (private.embryo_canonical_parts, _sources, _source_parts).
-select is((select count(*) from public.purge_target_stores), 134::bigint,
-  'all 134 purge stores, including private prepared-object, embryo write-fence, embryo split and embryo canonical-source state, the legal audit account link and claim intakes, are classified');
+-- The embryo-parent-withdrawal credential binding adds
+-- private.embryo_withdrawal_credentials to mail-token-and-rights-delivery-state.
+select is((select count(*) from public.purge_target_stores), 135::bigint,
+  'all 135 purge stores, including private prepared-object, embryo write-fence, embryo split, embryo canonical-source and withdrawal-credential state, the legal audit account link and claim intakes, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');
