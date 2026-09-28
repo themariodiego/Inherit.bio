@@ -22,8 +22,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17618284", "label": "Tomlinson et al., Nat Genet 2007" },
-      { "pmid": "17401363", "label": "Yeager et al., Nat Genet 2007" }
+      { "pmid": "17618284", "label": "Tomlinson et al., Nat Genet 2007", "accessedOn": "2026-09-28" },
+      { "pmid": "17401363", "label": "Yeager et al., Nat Genet 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -75,7 +75,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17529974", "label": "Stacey et al., Nat Genet 2007" }
+      { "pmid": "17529974", "label": "Stacey et al., Nat Genet 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -101,7 +101,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19165225", "label": "Whibley et al., Nat Rev Cancer 2009" }
+      { "pmid": "19165225", "label": "Whibley et al., Nat Rev Cancer 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -127,7 +127,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18366057", "label": "Raimondi et al., Int J Cancer 2008" }
+      { "pmid": "18366057", "label": "Raimondi et al., Int J Cancer 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -153,8 +153,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18385738", "label": "Hung et al., Nature 2008" },
-      { "pmid": "19628476", "label": "Keskitalo et al., Hum Mol Genet 2009" }
+      { "pmid": "18385738", "label": "Hung et al., Nature 2008", "accessedOn": "2026-09-28" },
+      { "pmid": "19628476", "label": "Keskitalo et al., Hum Mol Genet 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -208,7 +208,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18264097", "label": "Eeles et al., Nat Genet 2008" }
+      { "pmid": "18264097", "label": "Eeles et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -234,7 +234,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17934461", "label": "Broderick et al., Nat Genet 2007" }
+      { "pmid": "17934461", "label": "Broderick et al., Nat Genet 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -260,9 +260,9 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19836008", "label": "Landi et al., Am J Hum Genet 2009" },
-      { "pmid": "18978790", "label": "McKay et al., Nat Genet 2008" },
-      { "pmid": "19578367", "label": "Shete et al., Nat Genet 2009" }
+      { "pmid": "19836008", "label": "Landi et al., Am J Hum Genet 2009", "accessedOn": "2026-09-28" },
+      { "pmid": "18978790", "label": "McKay et al., Nat Genet 2008", "accessedOn": "2026-09-28" },
+      { "pmid": "19578367", "label": "Shete et al., Nat Genet 2009", "accessedOn": "2026-09-28" }
     ]
   }
 ]

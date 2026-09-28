@@ -60,7 +60,8 @@
       },
       {
         "pmid": "15723792",
-        "label": "Bufe et al., Curr Biol 2005"
+        "label": "Bufe et al., Curr Biol 2005",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -241,11 +242,13 @@
     "citations": [
       {
         "pmid": "26105758",
-        "label": "Adhikari et al., Nat Commun 2015"
+        "label": "Adhikari et al., Nat Commun 2015",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "29198719",
-        "label": "Shaffer et al., Am J Hum Genet 2017"
+        "label": "Shaffer et al., Am J Hum Genet 2017",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -322,7 +325,8 @@
     "citations": [
       {
         "pmid": "36760791",
-        "label": "Smit et al., Front Neurosci 2022"
+        "label": "Smit et al., Front Neurosci 2022",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -351,11 +355,13 @@
     "citations": [
       {
         "pmid": "12879365",
-        "label": "Yang et al., Am J Hum Genet 2003"
+        "label": "Yang et al., Am J Hum Genet 2003",
+        "accessedOn": "2026-09-28"
       },
       {
         "pmid": "10192379",
-        "label": "North et al., Nat Genet 1999"
+        "label": "North et al., Nat Genet 1999",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -384,7 +390,8 @@
     "citations": [
       {
         "pmid": "17873857",
-        "label": "Keller et al., Nature 2007"
+        "label": "Keller et al., Nature 2007",
+        "accessedOn": "2026-09-28"
       }
     ]
   },
@@ -413,7 +420,8 @@
     "citations": [
       {
         "pmid": "19559618",
-        "label": "Fushan et al., Curr Biol 2009"
+        "label": "Fushan et al., Curr Biol 2009",
+        "accessedOn": "2026-09-28"
       }
     ]
   }
