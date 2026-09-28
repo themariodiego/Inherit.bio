@@ -9,7 +9,7 @@ import { createLiveManifest, loadConductorInputs, repositoryRoot, seedSkips, typ
 import { isolatedProcesses } from "./inference-isolation";
 import { InstrumentJournal } from "./instrument-journal";
 import { checkRecord, gateStatus, type LoadedRecord, type RecordLine } from "./records";
-import { IDENTITY_BLOCKER, STUB_LABEL, labelProblem } from "./run-config";
+import { forbiddenInRecord, IDENTITY_BLOCKER, identityCommitment, inferenceOf, labelProblem, runConfigSchema, STUB_LABEL } from "./run-config";
 import { RECORD_ROOT, RunRecord, type RecordHeader } from "./run-record";
 
 // Authored harness checks only. No answer below is a participant's.
@@ -96,6 +96,33 @@ describe("a live run through the shared conductor", () => {
       .rejects.toThrow("would publish the model identity");
     expect(labelProblem("provider-a/config-1", "vendor-large-2")).toBeUndefined();
     expect(labelProblem("vendor/config-1", "vendor-large-2")).toMatch(/must not contain/);
+  });
+});
+
+describe("the local run configuration", () => {
+  const paid = { schemaVersion: 1, kind: "calibration", effortDirectory: "/private/effort", tasks: ["T1"], personas: 5,
+    samplingSeed: "d".repeat(64), settings: { ...settings, price: { inputMicroDollarsPerMillion: 1_000_000, outputMicroDollarsPerMillion: 5_000_000 } },
+    limitMicroDollars: 50_000_000, otherCostsMicroDollars: 0,
+    provider: { kind: "openai-compatible-chat", label: "provider-a/config-1", endpoint: "https://gateway.invalid/v1",
+      modelIdentifier: "synthetic-placeholder-identifier", apiKeyVariable: "COMPREHENSION_MODEL_API_KEY", identitySalt: "e".repeat(64) } };
+
+  it("accepts real prices, and refuses an absurd price, an identifying label, or a paid full run with no calibration", () => {
+    expect(runConfigSchema.parse(paid).settings.price.outputMicroDollarsPerMillion).toBe(5_000_000);
+    const absurd = structuredClone(paid); absurd.settings.price.outputMicroDollarsPerMillion = 100_000_001;
+    expect(runConfigSchema.safeParse(absurd).success).toBe(false);
+    expect(runConfigSchema.safeParse({ ...paid, provider: { ...paid.provider, label: "placeholder/config-1" } }).success).toBe(false);
+    expect(runConfigSchema.safeParse({ ...paid, kind: "live-run" }).success).toBe(false);
+    expect(runConfigSchema.safeParse({ ...paid, kind: "live-run", calibration: "/records/calibration" }).success).toBe(true);
+    expect(runConfigSchema.safeParse({ ...paid, provider: { kind: "local-deterministic-stub" } }).success).toBe(false);
+  });
+
+  it("commits to the same identity across runs of one configuration, and to a different one when the model changes", () => {
+    const config = runConfigSchema.parse(paid);
+    expect(identityCommitment(config)).toBe(identityCommitment(runConfigSchema.parse(structuredClone(paid))));
+    expect(identityCommitment(config)).not.toBe(identityCommitment(runConfigSchema.parse({ ...paid,
+      provider: { ...paid.provider, modelIdentifier: "another-synthetic-identifier" } })));
+    expect(JSON.stringify(inferenceOf(config))).not.toContain("synthetic-placeholder-identifier");
+    expect(forbiddenInRecord(config)).toEqual(["synthetic-placeholder-identifier", "e".repeat(64)]);
   });
 });
 

@@ -22,7 +22,7 @@ suites pass unchanged against the refactored conductor. Five suites are new:
   context per session.
 - `scripts/comprehension/completion.test.ts` (6) holds completion to the bound
   routes and slugs, T8 to a scheduled deletion, and T9 and T10 to no account.
-- `scripts/comprehension/live-run.test.ts` (6) runs `runLive` end to end with
+- `scripts/comprehension/live-run.test.ts` (8) runs `runLive` end to end with
   isolated stub processes and the record writer; refuses a stub record under
   `docs/comprehension-runs`, a real one anywhere else, and any line carrying
   the model identity; and applies the stopping rule: two clean runs on one
@@ -33,6 +33,17 @@ suites pass unchanged against the refactored conductor. Five suites are new:
   to the protocol's scripts and the bound prompts verbatim, and the tally to
   twelve eligible, consented, unassisted sessions, the thresholds, the T9
   ceiling, both prohibited-answer paths and the adjustment rule.
+
+One validation range widens, in the safe direction. The settings schema
+bounded token prices with the token-count bound, so no price could exceed
+US$1 per million tokens. That is below real output prices, and the only way
+to enter one was to understate it, which makes every reservation too small.
+Prices now have their own bound of US$100 per million tokens. A higher price
+only raises reservations; the US$50 cap and the journal are unchanged. Two
+new tests in `live-run.test.ts` accept a realistic paid configuration, refuse
+an absurd price, an identifying label, a paid full run with no calibration
+and a stub with no record root, and hold the identity commitment stable
+across runs of one configuration.
 
 `playwright.config.ts` keeps `e2e/comprehension-run.spec.ts` out of every
 default project; it has its own project only when `pnpm comprehension:run`

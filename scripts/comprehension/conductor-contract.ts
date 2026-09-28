@@ -5,6 +5,8 @@ export type TaskId = (typeof taskIds)[number];
 export const opaque = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 export const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const count = z.number().int().nonnegative().max(1_000_000);
+/** Integer millionths of a dollar per million tokens: at most US$100 per million. */
+const price = z.number().int().nonnegative().max(100_000_000);
 const route = z.string().max(2048).regex(/^\/(?!\/)[^\s?#\\]*$/);
 export const settingsSchema = z.object({
   // One pinned temperature for participants. Graders may pin their own; when
@@ -17,7 +19,10 @@ export const settingsSchema = z.object({
   // longer than one browser action or inference call.
   sessionSetupTimeoutMs: z.number().int().min(10).max(900_000).optional(),
   maximumInputTokens: count.min(1), maximumOutputTokens: count.min(1),
-  price: z.object({ inputMicroDollarsPerMillion: count, outputMicroDollarsPerMillion: count }).strict(),
+  // Its own bound, not the token-count one: that capped a price at US$1 per
+  // million tokens, below real output prices, and an understated price would
+  // make every reservation too small. A higher price only raises reservations.
+  price: z.object({ inputMicroDollarsPerMillion: price, outputMicroDollarsPerMillion: price }).strict(),
 }).strict();
 export type Settings = z.infer<typeof settingsSchema>;
 export const verdictSchema = z.object({ passed: z.boolean(), prohibited: z.boolean(), noRouteFound: z.boolean() }).strict();
