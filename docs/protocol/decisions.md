@@ -4183,3 +4183,30 @@ selectable choices, the owner decided:
 - **The 17 draft PRs from 22 September: triage and report** (recommended).
   Engineering checks each against `main` and recommends land, update or close.
   Nothing merges without the owner's approval.
+
+## 2026-09-28 — Four decisions that unblock the remaining acceptance rows
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all four.
+
+- **Embryo ingest: the server reads the VCF header.** The browser sends the
+  VCF header, and the server works out the genome build; a build the browser
+  declares stays forbidden. The server then returns the upload challenge,
+  revision and tokens. The cleanup safeguards ADR 0020 requires come before
+  any route accepts embryo bytes: the Storage write fence, the deletion
+  acknowledgement and the terminal purge. Then the three `api.embryo-ingest-*`
+  routes. Test jurisdiction only; production stays off, as decided on
+  27 September. Engineering's estimate is 8 to 10 pull requests, and the route
+  register entry comes first.
+- **participant-c gets one new two-sample file.** One synthetic VCF carries
+  both embryos as separate samples and is large enough to pass the ingest
+  checks. T6 and T7 are bound to it. The two single-sample files stay for the
+  tests that already use them.
+- **T9 is measured on the real path.** Nobody can upload another adult's DNA
+  today, so T9's premise is refused, as T4's is. The measurement counts the
+  in-app actions from the home page to Appeals, and from the emailed
+  invitation to deleting the reserved record. The email is an entry event,
+  recorded separately under the register's `entryEvents.T9`.
+- **Carrier importer: design first.** Engineering proposes the sources, the
+  review-status threshold and the conditions in scope, for approval before
+  anything is imported. Carrier results stay withheld until then.
