@@ -14084,7 +14084,7 @@
       "notApplicable": {
         "awaiting-choice": "/files and /files/upload are about the file itself rather than what to make from it, and /copilot/[scope] answers questions about results that already exist. None of the three renders an invitation to choose an analysis.",
         "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
-        "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table."
+        "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table. On 2026-09-28 /copilot/[scope] moved to the product-result profile: its Family scope surfaces third_party_adult_analysis and family_heritability, so this declaration now covers /files and /files/upload only."
       }
     },
     "restricted-flow": {
@@ -15469,10 +15469,11 @@
       },
       "surface": "standard",
       "width": "64rem",
-      "stateProfile": "own-product-result",
+      "stateProfile": "product-result",
       "notApplicableStates": {
         "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own \u2014 read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
-        "partial-coverage": "The same. Corrections item 10, signed 2026-09-13."
+        "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
+        "awaiting-choice": "A conversation answers questions about results that already exist; no scope renders an invitation to choose an analysis. Carried over unchanged from the own-product-result profile this route left on 2026-09-28."
       },
       "policy": {
         "mode": "resolved",

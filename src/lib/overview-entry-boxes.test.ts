@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ENTRY_BOXES } from "@/copy/overview";
 import { resolveBoxHref, type EntryBoxTargets } from "./overview-entry-boxes";
 import { route } from "./primary-routes";
+import { copilotGroupScopes } from "./copilot/group-scopes";
+
+const UNBUILT = { family: false, cohort: false };
+const FAMILY_BUILT = { family: true, cohort: false };
 
 // Five accounts, because the four resolved boxes branch on what the account
 // holds and a single shape would leave half of each branch unwalked.
@@ -39,10 +43,30 @@ describe("entry box targets", () => {
   it("sends the four resolved boxes to their blocking state rather than a dead route", () => {
     const empty = TARGETS["an account with neither an adult nor a cohort"];
     const byId = Object.fromEntries(ENTRY_BOXES.map(b => [b.id, b]));
-    expect(resolveBoxHref(byId["family.individual-risks"], empty)).toBe(route("family.index"));
-    expect(resolveBoxHref(byId["family.portrait"], empty)).toBe(route("family.index"));
-    expect(resolveBoxHref(byId["family.copilot"], empty)).toBe(route("family.index"));
-    expect(resolveBoxHref(byId["embryos.copilot"], empty)).toBe(route("embryos.index"));
+    expect(resolveBoxHref(byId["family.individual-risks"], empty, UNBUILT)).toBe(route("family.index"));
+    expect(resolveBoxHref(byId["family.portrait"], empty, UNBUILT)).toBe(route("family.index"));
+    expect(resolveBoxHref(byId["family.copilot"], empty, UNBUILT)).toBe(route("family.index"));
+    expect(resolveBoxHref(byId["embryos.copilot"], empty, UNBUILT)).toBe(route("embryos.index"));
+  });
+
+  it("opens the Family Copilot box on its group scope where that scope is built, and nowhere else", () => {
+    const byId = Object.fromEntries(ENTRY_BOXES.map(b => [b.id, b]));
+    for (const targets of Object.values(TARGETS)) {
+      expect(resolveBoxHref(byId["family.copilot"], targets, FAMILY_BUILT)).toBe(route("copilot.scope", { scope: "family" }));
+      expect(resolveBoxHref(byId["family.copilot"], targets, UNBUILT)).toBe(route("family.index"));
+    }
+    // The flag follows the TEST-LOCAL acceptance row and nothing else.
+    expect(copilotGroupScopes({ INHERIT_TEST_JURISDICTION: "1" })).toEqual(FAMILY_BUILT);
+    expect(copilotGroupScopes({})).toEqual(UNBUILT);
+    expect(copilotGroupScopes({ INHERIT_TEST_JURISDICTION: "", VERCEL: "1" })).toEqual(UNBUILT);
+  });
+
+  it("keeps the embryo Copilot box on the embryo hub until the cohort scope is built, and names a cohort in the register's grammar", () => {
+    const byId = Object.fromEntries(ENTRY_BOXES.map(b => [b.id, b]));
+    const withCohort = TARGETS["an account with a cohort but no adult"];
+    expect(resolveBoxHref(byId["embryos.copilot"], withCohort, FAMILY_BUILT)).toBe(route("embryos.index"));
+    expect(resolveBoxHref(byId["embryos.copilot"], withCohort, { family: true, cohort: true }))
+      .toBe(route("copilot.scope", { scope: "c-cohort-1" }));
   });
 
   it("routes individual risks to the adult once the account has one", () => {

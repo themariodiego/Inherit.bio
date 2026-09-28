@@ -18,7 +18,7 @@ import {
   OPEN_INHERIT_BUTTON,
   WHERE_THIS_WORKS_LINK,
 } from "@/copy/family/index";
-import { COPILOT_GROUP_SCOPES_AVAILABLE } from "@/copy/overview";
+import { copilotGroupScopes } from "@/lib/copilot/group-scopes";
 import { grantedLayers, hasReportGrant, permits, familyCapability } from "@/lib/family/access";
 import { listFamilyPeople, type FamilyPerson } from "@/lib/family/graph";
 import { confirmSharedReportReadiness, loadSharedReportReadiness } from "@/lib/family/shared-report-results";
@@ -182,11 +182,14 @@ export default async function FamilyPage() {
       ? route("family.person", { person: firstReadable.handle.routeSegment })
       : null,
     portrait: pairId ? route("family.portrait", { pairId }) : null,
-    // The Copilot scopes `family` and `s-{person}` do not resolve yet
-    // (src/app/(app)/copilot/[scope]/page.tsx reads the viewer's own
-    // subjects), so this tile states its blocking reason rather than
-    // shipping a link that answers 404.
-    copilot: COPILOT_GROUP_SCOPES_AVAILABLE ? route("copilot.scope", { scope: "family" }) : null,
+    // The Family group scope is built under TEST-LOCAL only
+    // (src/lib/copilot/group-scopes.ts), and it has something to read only
+    // once someone lets Copilot use what they share. Until both hold, the
+    // tile states its blocking reason ("Copilot opens once someone has
+    // shared something with you.") rather than linking to an empty scope.
+    copilot: copilotGroupScopes().family
+      && people.some((person) => person.sharing === "active" && person.grantsToViewer.has("copilot.local"))
+      ? route("copilot.scope", { scope: "family" }) : null,
   };
 
   return (
