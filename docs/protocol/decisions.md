@@ -4412,3 +4412,11 @@ sources, #263). Both are TEST-LOCAL, and production embryo ingest stays off.
   invisible in My files. Own-upload accounting excludes embryo-subject and
   cohort rows; embryo ingest keeps its own payload limits. Counting them was
   declined.
+- **Future Person identity documents are scanned by self-hosted ClamAV.**
+  The documents step of a Future Person claim (G5.4) takes identity papers
+  from the public, and the register requires a malware scan before any file is
+  stored. The scan runs as ClamAV in Inherit's own worker, so there is no new
+  processor and the documents never leave Inherit's infrastructure. A file is
+  readable only after a clean verdict bound to its exact bytes; stale
+  signatures or an unreachable scanner fail closed. A hosted scanning API, and
+  deferring the documents step, were declined.
