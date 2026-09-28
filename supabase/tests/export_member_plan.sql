@@ -100,6 +100,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for the health picture. It is machinery, not the person's record."
     },
+    "private.hmac_key_versions": {
+      "disposition": "excluded-credential",
+      "reason": "Revision states of the HMAC keys behind contact and rate-limit lookups. It holds no key material, but it is key-management state, so it stays with the credentials it describes."
+    },
     "private.invitation_terminal_notices": {
       "disposition": "excluded-protected",
       "reason": "Terminal notices carrying an encrypted contact. The export contracts always exclude contact values, identity documents and evidence bytes."
