@@ -23,6 +23,7 @@ import {
   OTHER_ADULT_UPLOAD_COPY as COPY,
   PATH_B_REQUEST_COPY as REQUEST,
 } from "../src/copy/upload/other-adult";
+import { day } from "../src/components/uploads/other-adult-lines";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
 
@@ -294,11 +295,12 @@ test("another adult's file under Path B: signed without an account, held unreada
     .eq("bucket_path", held.object_name)).count).toBe(0);
   expect((await admin.from("worker_jobs").select("id", { count: "exact", head: true }).eq("subject_id", subjectId)).count).toBe(0);
 
-  // The uploader sees one line: the person said yes, and nothing is made yet.
+  // The uploader sees one line: the person accepted the file, and nothing is made yet.
+  const added = await admin.from("other_adult_held_uploads").select("held_at").eq("id", held.id).single();
   await signIn(page, UPLOADER.email, UPLOADER.password);
   await page.goto("/files");
   await expect(page.locator('[data-slot="other-adult-held-rows"]').getByRole("status"))
-    .toHaveText(new RegExp(`^${CONFIRMER.name} said yes to the file added on .+\\. Nothing is made from it yet\\.$`));
+    .toHaveText(COPY.confirmedStatus(CONFIRMER.name, day(added.data!.held_at as string)));
 });
 
 test("another adult's file under Path B: refused without an account, then deleted with nothing left", async ({ page, request }) => {

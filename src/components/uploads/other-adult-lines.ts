@@ -1,5 +1,6 @@
-import { OTHER_ADULT_UPLOAD_COPY as COPY } from "@/copy/upload/other-adult";
-import type { PathBRevisionState } from "@/lib/uploads/other-adult-upload";
+// Relative imports: the browser spec reads these lines too.
+import { OTHER_ADULT_UPLOAD_COPY as COPY } from "../../copy/upload/other-adult";
+import type { PathBRevisionState } from "../../lib/uploads/other-adult-upload";
 
 /** A day as the Path B screens write it: "28 September 2026", in UTC. */
 export function day(value: string | null | undefined): string {
