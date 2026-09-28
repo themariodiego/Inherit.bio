@@ -1,5 +1,50 @@
 # Test diff register
 
+## Buckets read from the migrations, and dated divergences · 28 September 2026
+
+`e2e/rls.spec.ts`, `e2e/file-deletion.spec.ts` and
+`e2e/account-deletion-purge.spec.ts` no longer keep their own list of
+buckets. They read it from `scripts/storage-buckets.ts`, which applies bucket
+creates and drops in migration order, the same way `pnpm gate:routes` does.
+The set changes in two ways:
+
+- It gains `exports`, created on 23 September. The old hand-kept list never
+  included it, so the RLS suite had not attacked it.
+- It loses `genomes-staging`, which `20260930140000` drops.
+
+`e2e/rls.spec.ts` now asserts that the set includes `genomes` and `exports`
+and excludes `genomes-staging`, so the list can be neither empty nor stale.
+Its planted and attacking objects are `application/octet-stream`, because
+`exports` admits nothing else. Every assertion is otherwise unchanged.
+
+`scripts/run-upload-browser.mts --full` on all three specs passed 12 of 12,
+with no skips and no retries. Two earlier runs each had failures on the shared
+local stack, and each failure happened before any bucket code ran:
+
+- the first run: two UI uploads stuck at "Uploading to private storage…
+  100%";
+- the second run: `createUser: Database error creating new user`.
+
+Every test also passed in at least one of those runs.
+
+`scripts/route-gate.test.ts` gains five tests:
+
+- a dropped bucket's old ledger row fails as stale;
+- a storage row whose `createdBy` or `declaredBy` no longer says what the row
+  says fails;
+- a method row that names the wrong file fails;
+- the drop parser reads both delete shapes, and throws on any other;
+- creates and drops apply in file order and in statement order.
+
+`scripts/route-register-correspondence.test.ts` gains "deletes a dated
+divergence by its date", which fails after a row's `deleteAfter`. The
+allowlist test now also accepts rows in `allowlistedBucketNotCreated`, but
+only when the named migration really drops the bucket. The new pgTAP file
+`supabase/tests/drop_genomes_staging_bucket.sql` has 7 assertions. Each new
+check was planted and failed; the details are in
+`docs/register-divergence-proposals.md` section 8. No existing assertion was
+removed or loosened.
+
 ## Embryo Storage write fence · 28 September 2026
 
 `supabase/tests/embryo_ingest_write_fence.sql` is new, with 202 assertions for
