@@ -135,8 +135,8 @@ function pinnedSegments(entry: Entry): string[] {
 }
 
 const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as {
-  builtButNotRegistered: { path: string; file: string }[];
-  permissiveDynamicSegment: { routeId: string; path: string; file: string }[];
+  builtButNotRegistered: { path: string; file: string; deleteAfter?: string }[];
+  permissiveDynamicSegment: { routeId: string; path: string; file: string; deleteAfter?: string }[];
   kindDivergence: { routeId: string; path: string; file: string; declaredKind: string; builtKind: string }[];
   storageBucketDivergence: { bucket: string; direction: string }[];
   unregisteredServerActions: { file: string; export: string; why: string; closing: string }[];
@@ -183,6 +183,23 @@ describe("the route register and the App Router describe the same surface", () =
       .map(segment => ({ routeId: entry.id, path: entry.path, segment })));
     expect(open.map(found => `${found.routeId} ${found.path}`).sort())
       .toEqual(ledger.permissiveDynamicSegment.map(known => `${known.routeId} ${known.path}`).sort());
+  });
+
+  /** A divergence that exists only to finish a migration carries the date by
+   * which it must be gone. The D-081 legacy withdrawal link lives only as long
+   * as the last token #118 could have issued; after that date this fails until
+   * the route and its row are deleted, so the shim cannot outlive its reason. */
+  it("deletes a dated divergence by its date", () => {
+    const dated = [...ledger.builtButNotRegistered, ...ledger.permissiveDynamicSegment]
+      .filter(known => known.deleteAfter !== undefined);
+    expect(dated.map(known => known.path).sort()).toEqual(["/api/withdraw", "/withdraw/[token]"]);
+    for (const known of dated) {
+      expect(known.deleteAfter, known.path).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const due = Date.parse(`${known.deleteAfter}T23:59:59Z`);
+      expect(Number.isNaN(due), known.path).toBe(false);
+      expect(Date.now() <= due, `${known.path} was due for deletion after ${known.deleteAfter}: delete it and its row`)
+        .toBe(true);
+    }
   });
 
   it("leaves the unbuilt half of the register alone, but still measures it", () => {
