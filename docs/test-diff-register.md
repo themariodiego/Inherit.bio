@@ -135,6 +135,75 @@ Existing files, with no assertion removed:
     guard refuses before any conflict handling. That one change is its own
     commit, so it can move to the unit-1 pull request.
 
+## Comprehension live harness · 28 September 2026
+
+No existing test changes. The 100 tests in the nine existing comprehension
+suites pass unchanged against the refactored conductor. Six suites are new:
+
+- `scripts/comprehension/inference-isolation.test.ts` (7) spawns real child
+  processes. A stub reply is schema-valid and bounded. The isolation probe
+  sees an empty directory outside the checkout and only `LANG` and `PATH`
+  (plus the one credential and proxy variables for a real provider, never an
+  unrelated secret). A grading request sent to a loopback fake provider holds
+  only the rubric slice and the verbatim answer, and its digest omits the
+  model. A reply without usage fails, keeping the reservation. A process
+  takes one call. Prompts fit the pinned byte bound.
+- `scripts/comprehension/live-browser.test.ts` (3) launches Chromium against a
+  local synthetic site. It checks the text view and control ids, hidden text
+  left out, the synthetic-email guard, a stale control reported rather than
+  fatal, typed-URL and mailed-link entries recorded and not counted, real
+  click and submit events counted (Enter in a form counts two, as under
+  `e2e/task-depth.spec.ts`), an outside origin never reached, and a fresh
+  context per session.
+- `scripts/comprehension/completion.test.ts` (6) holds completion to the bound
+  routes and slugs, T8 to a scheduled deletion, and T9 and T10 to no account.
+- `scripts/comprehension/live-run.test.ts` (8) runs `runLive` end to end with
+  isolated stub processes and the record writer; refuses a stub record under
+  `docs/comprehension-runs`, a real one anywhere else, and a stub record
+  claiming a model; holds the settings digest stable for one model and
+  changed for another; and applies the stopping rule: two clean runs on one
+  revision and settings, never across a settings change or an intervening
+  failure, never with skipped tasks, and the withheld path after three failed
+  revisions. A tampered record fails the deterministic re-check.
+- `scripts/comprehension/identity-containment.test.ts` (5) holds the owner's
+  25 September decision: every identifier recorded under
+  `docs/comprehension-runs` must appear in no other tracked file and no commit
+  message (the scan reads over 1,000 files and every message); a leak is
+  reported by its location, never by repeating the identifier; a run with a
+  real provider shape against a loopback fake writes the identifier into its
+  record's `manifest.json` and into no other record file, journal or summary;
+  the writer refuses it in a response line and refuses a real run without it;
+  and the plan command never prints it. Two planted regressions failed it: the
+  record check disabled, and the plan printing the identifier.
+- `scripts/comprehension/human-round.test.ts` (5) holds the facilitator sheet
+  to the protocol's scripts and the bound prompts verbatim, and the tally to
+  twelve eligible, consented, unassisted sessions, the thresholds, the T9
+  ceiling, both prohibited-answer paths and the adjustment rule.
+
+`scripts/comprehension/run-history.test.ts` gains one test: a calibration or
+smoke run neither needs the previous revision closed nor holds the next one
+open, while a full run still cannot change revision before closure, and only
+a task the manifest declares skipped may be skipped. It failed with the
+exemption reverted. No existing test in the file changes.
+
+One validation range widens, in the safe direction. The settings schema
+bounded token prices with the token-count bound, so no price could exceed
+US$1 per million tokens. That is below real output prices, and the only way
+to enter one was to understate it, which makes every reservation too small.
+Prices now have their own bound of US$100 per million tokens. A higher price
+only raises reservations; the US$50 cap and the journal are unchanged. Two
+new tests in `live-run.test.ts` accept a realistic paid configuration, refuse
+an absurd price, an identifying label, a paid full run with no calibration
+and a stub with no record root, and hold the settings digest stable across
+runs of one configuration and changed when the model changes.
+
+`playwright.config.ts` keeps `e2e/comprehension-run.spec.ts` out of every
+default project; it has its own project only when `pnpm comprehension:run`
+sets `INHERIT_COMPREHENSION_RUN=1`. The default listing is unchanged at 547
+tests in 84 files. `prohibited.ts`, `personas.ts` and `conductor-inputs.ts`
+find the repository from the working directory instead of `import.meta`,
+because Playwright loads the runner's imports as CommonJS.
+
 ## Embryo Storage write fence · 28 September 2026
 
 `supabase/tests/embryo_ingest_write_fence.sql` is new, with 202 assertions for
