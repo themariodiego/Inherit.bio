@@ -47,12 +47,6 @@ export function readAdultSubjectResponse(request: Request, nonce: string, now = 
 
 export interface AdultSubjectReview {
   nonce: string;
-  /**
-   * A DNA file the inviter added for this reservation and that is held,
-   * unread, until this answer (TEST-LOCAL only; the database refuses the
-   * upload branch everywhere else). Dates only: never a name, hash or path.
-   */
-  heldUpload: { addedOn: string; deleteBy: string } | null;
   /** Why the accept control is not offered, or null when it is. */
   acceptanceBlockedBy: "sign-in" | "other-account" | null;
   artifact: {
@@ -122,16 +116,6 @@ export async function loadAdultSubjectReview(
   ]);
   if (draftError || principalError || artifactError || !draft || !principal || !artifact) return null;
 
-  // Read before the page renders, so the answer is to what the page shows:
-  // no file can be added once a rights session for this reservation exists.
-  const heldRead = admin.from("other_adult_held_uploads" as never) as unknown as {
-    select: (columns: string) => { eq: (column: string, value: string) => { eq: (column: string, value: string) => {
-      maybeSingle: () => PromiseLike<{ data: { held_at: string; fixed_deadline: string } | null; error: unknown }> } } };
-  };
-  const { data: held, error: heldError } = await heldRead.select("held_at, fixed_deadline")
-    .eq("subject_id", session.target_id).eq("state", "held").maybeSingle();
-  if (heldError) return null;
-
   // Signing in is offered, never required: the two controls that need no
   // account are the ones a person without one came here to use.
   const context = await getSensitiveAccountContext();
@@ -145,7 +129,6 @@ export async function loadAdultSubjectReview(
 
   return {
     nonce: mintPublicFormToken("adult-subject-respond", now, sessionHash),
-    heldUpload: held ? { addedOn: held.held_at, deleteBy: held.fixed_deadline } : null,
     acceptanceBlockedBy,
     artifact: {
       version: artifact.version,

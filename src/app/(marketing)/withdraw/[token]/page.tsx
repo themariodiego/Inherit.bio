@@ -41,12 +41,9 @@ const outcomes: Record<string, { title: string; body: string }> = {
     title: "Invitation refused",
     body: "The reserved subject was closed. This address will not receive another invitation for this target.",
   },
-  // This page reads no token state, so it cannot know whether a file was
-  // held for the reservation (TEST-LOCAL only). The sentence is true either
-  // way; the session page, which does read it, says which.
   deleted: {
     title: "Reserved record deleted",
-    body: "The reserved subject was closed. No result was ever made for it, and any file held for it is deleted.",
+    body: "The empty reserved subject was closed. No genetic file or derived result existed for it.",
   },
   unavailable: {
     title: "This link cannot be used",

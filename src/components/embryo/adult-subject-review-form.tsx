@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import type { AdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 import { route } from "@/lib/primary-routes";
-import { OTHER_ADULT_REVIEW_COPY as HELD } from "@/copy/upload/other-adult";
 
 /**
  * The three answers to an adult-subject invitation, from the rights session
@@ -37,10 +36,6 @@ const RECEIPTS: Record<Outcome, { title: string; body: string }> = {
   },
 };
 
-function day(value: string): string {
-  return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-}
-
 export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview }) {
   const [status, setStatus] = useState<Status>("ready");
 
@@ -62,21 +57,14 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
     } catch { setStatus("failed"); }
   }
 
-  // A file the inviter added and that was held for this answer (TEST-LOCAL
-  // only) gets its own sentence: the earlier ones say no file existed.
   const receipt = status === "accepted" || status === "refused" || status === "deleted"
-    ? { title: RECEIPTS[status].title,
-      body: review.heldUpload ? HELD.heldReceipts[status] : RECEIPTS[status].body } : null;
+    ? RECEIPTS[status] : null;
   if (receipt) return (
     <section className="mx-auto max-w-3xl px-6 py-16" role="status">
       <p className="eyebrow">Your rights</p>
       <h1 className="display mt-4 text-4xl">{receipt.title}</h1>
       <p className="mt-5 max-w-prose text-ink-muted">{receipt.body}</p>
-      {status === "accepted" && review.heldUpload ? (
-        <Link href={route("files.index")} className="mt-6 inline-block text-sm underline underline-offset-2">
-          {HELD.filesLink}
-        </Link>
-      ) : status === "accepted" ? (
+      {status === "accepted" ? (
         <Link href={route("settings.people")} className="mt-6 inline-block text-sm underline underline-offset-2">
           Open people settings
         </Link>
@@ -90,22 +78,14 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
       <p className="eyebrow">Your rights</p>
       <h1 className="display mt-4 text-4xl">Review invitation</h1>
       <div className="mt-8 space-y-5 rounded-2xl border border-line bg-card p-6">
-        {review.heldUpload ? (
-          <div data-slot="held-upload">
-            <h2 className="font-medium">{HELD.heldHeading}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-muted">{HELD.heldAdded(day(review.heldUpload.addedOn))}</p>
-            <p className="mt-3 text-sm leading-relaxed text-ink-muted">{HELD.heldChoices(day(review.heldUpload.deleteBy))}</p>
-          </div>
-        ) : (
-          <div>
-            <h2 className="font-medium">No genetic data has been shared</h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-              Accepting creates a reserved subject under your account. It does
-              not give the sender access, permission to upload, or permission
-              to analyse your genetic data.
-            </p>
-          </div>
-        )}
+        <div>
+          <h2 className="font-medium">No genetic data has been shared</h2>
+          <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+            Accepting creates a reserved subject under your account. It does
+            not give the sender access, permission to upload, or permission
+            to analyse your genetic data.
+          </p>
+        </div>
         <div className="rounded-xl border border-line p-5">
           <h3 className="font-medium">What you agree to</h3>
           <p className="mt-2 text-sm text-ink-muted">
