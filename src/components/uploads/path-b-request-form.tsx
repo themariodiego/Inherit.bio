@@ -20,8 +20,9 @@ type Status = "ready" | "pending" | Operation | "failed";
  * The register's Path B request, as the person it names reads it on
  * `/withdraw/session`: their own artifact (each statement its own checkbox),
  * the country they live in, and their typed name. No account is needed to
- * sign, refuse or delete. The artifact is a draft the owner has not approved,
- * and the page says so.
+ * sign, refuse or delete. Signed in with the invited address, they sign with
+ * that account instead and its own country counts (Path B's account branch).
+ * The flow is for tests only, and the page says so.
  */
 export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   const [status, setStatus] = useState<Status>("ready");
@@ -48,28 +49,34 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   async function sign(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!otherAdultTypedNameIsValid(typedName)) { setNameError(true); return; }
-    await send("confirm", {
-      subjectArtifact: {
-        artifactVersion: review.artifact.version, artifactPresentationToken: review.artifact.presentationToken,
-        affirmed: true, statementKeys: review.artifact.statements.map(statement => statement.key),
-        typedName: typedName.trim(),
-      },
+    const subjectArtifact = {
+      artifactVersion: review.artifact.version, artifactPresentationToken: review.artifact.presentationToken,
+      affirmed: true, statementKeys: review.artifact.statements.map(statement => statement.key),
+      typedName: typedName.trim(),
+    };
+    // Signed in with the invited address: the account's own country counts,
+    // so no country is sent (Path B's account branch).
+    await send("confirm", review.account ? { withAccount: true, subjectArtifact } : {
+      subjectArtifact,
       jurisdictionCode: country, jurisdictionAttestationVersion: review.attestation.version,
       jurisdictionAttestationHash: review.attestation.sha256, jurisdictionAffirmed: true,
     });
   }
 
-  if (status === "confirm" || status === "refuse" || status === "delete") return (
-    <section className="mx-auto max-w-3xl px-6 py-16" role="status">
-      <p className="eyebrow">Your rights</p>
-      <h1 className="display mt-4 text-4xl">{COPY.receipts[status].title}</h1>
-      <p className="mt-5 max-w-prose text-ink-muted">{COPY.receipts[status].body}</p>
-    </section>
-  );
+  if (status === "confirm" || status === "refuse" || status === "delete") {
+    const receipt = status === "confirm" && review.account ? COPY.receipts.confirmAccount : COPY.receipts[status];
+    return (
+      <section className="mx-auto max-w-3xl px-6 py-16" role="status">
+        <p className="eyebrow">Your rights</p>
+        <h1 className="display mt-4 text-4xl">{receipt.title}</h1>
+        <p className="mt-5 max-w-prose text-ink-muted">{receipt.body}</p>
+      </section>
+    );
+  }
 
   const busy = status === "pending";
   const ready = review.artifact.statements.every(statement => checked[statement.key])
-    && typedName.trim().length > 0 && country !== "" && affirmed;
+    && typedName.trim().length > 0 && (review.account !== null || (country !== "" && affirmed));
   return (
     <section className="mx-auto max-w-3xl px-6 py-16" data-slot="path-b-request">
       <p className="eyebrow">Your rights</p>
@@ -92,23 +99,29 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
           ))}
         </fieldset>
         <fieldset disabled={busy} className="space-y-4">
-          <label className="block space-y-2">
-            <span>{JURISDICTION_SELECT_LABEL}</span>
-            <select name="jurisdictionCode" required value={country} onChange={event => setCountry(event.target.value)}
-              className="block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3">
-              <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
-              {review.countries.map(choice => <option key={choice.code} value={choice.code}>{choice.name}</option>)}
-            </select>
-          </label>
-          <details className="text-sm">
-            <summary className="min-h-11 cursor-pointer underline underline-offset-2">{JURISDICTION_READ_ATTESTATION}</summary>
-            <p className="mt-2 whitespace-pre-wrap">{review.attestation.summary}</p>
-          </details>
-          <label className="flex min-h-11 items-start gap-3">
-            <input type="checkbox" name="jurisdictionAffirmed" checked={affirmed}
-              onChange={event => setAffirmed(event.target.checked)} className="mt-1 size-5 shrink-0 accent-forest" />
-            <span>{JURISDICTION_AFFIRM}</span>
-          </label>
+          {review.account ? (
+            <p role="note" className="text-sm" data-slot="path-b-account">{COPY.accountNote(review.account.country)}</p>
+          ) : (
+            <>
+              <label className="block space-y-2">
+                <span>{JURISDICTION_SELECT_LABEL}</span>
+                <select name="jurisdictionCode" required value={country} onChange={event => setCountry(event.target.value)}
+                  className="block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3">
+                  <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
+                  {review.countries.map(choice => <option key={choice.code} value={choice.code}>{choice.name}</option>)}
+                </select>
+              </label>
+              <details className="text-sm">
+                <summary className="min-h-11 cursor-pointer underline underline-offset-2">{JURISDICTION_READ_ATTESTATION}</summary>
+                <p className="mt-2 whitespace-pre-wrap">{review.attestation.summary}</p>
+              </details>
+              <label className="flex min-h-11 items-start gap-3">
+                <input type="checkbox" name="jurisdictionAffirmed" checked={affirmed}
+                  onChange={event => setAffirmed(event.target.checked)} className="mt-1 size-5 shrink-0 accent-forest" />
+                <span>{JURISDICTION_AFFIRM}</span>
+              </label>
+            </>
+          )}
           <label className="block space-y-2">
             <span>{COPY.typedNameLabel}</span>
             <Input name="typedName" autoComplete="name" maxLength={200} value={typedName}

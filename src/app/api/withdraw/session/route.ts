@@ -6,8 +6,12 @@ import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
 import { normalizeContact } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { adultUploadRevisionBody, pathBSubjectConfirmBody } from "@/lib/uploads/other-adult-upload";
-import { answerAdultUploadRevision, confirmPathBSubject } from "@/lib/uploads/path-b-respond";
+import { adultUploadRevisionBody, pathBAccountConfirmBody, pathBSubjectConfirmBody } from "@/lib/uploads/other-adult-upload";
+import {
+  answerAdultUploadRevision,
+  confirmPathBSubject,
+  confirmPathBSubjectWithAccount,
+} from "@/lib/uploads/path-b-respond";
 import { readAdultUploadRevisionResponse } from "@/lib/uploads/path-b-review";
 
 /**
@@ -52,8 +56,14 @@ export async function POST(request: Request) {
   if (json === null) return notFound();
 
   // The register's Path B (TEST-LOCAL only): the person's own signature of a
-  // request, and their answer to one held file. The adult-subject form token
-  // decides the first; the upload-revision form token the second.
+  // request, with or without their account, and their answer to one held
+  // file. The adult-subject form token decides the first; the upload-revision
+  // form token the second.
+  const pathBAccount = pathBAccountConfirmBody.safeParse(json);
+  if (pathBAccount.success) {
+    const authority = readAdultSubjectResponse(request, pathBAccount.data.nonce);
+    return authority ? confirmPathBSubjectWithAccount(authority, pathBAccount.data) : notFound();
+  }
   const pathB = pathBSubjectConfirmBody.safeParse(json);
   if (pathB.success) {
     const authority = readAdultSubjectResponse(request, pathB.data.nonce);

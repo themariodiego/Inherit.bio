@@ -1,7 +1,11 @@
-import { OTHER_ADULT_UPLOAD_COPY as COPY } from "@/copy/upload/other-adult";
-import { listOtherAdultTargets, prepareOtherAdultUploads } from "@/lib/uploads/other-adult-upload-server";
+import { HELD_FOR_YOU_COPY as HELD, OTHER_ADULT_UPLOAD_COPY as COPY } from "@/copy/upload/other-adult";
+import {
+  listOtherAdultTargets,
+  listSubjectHeldFiles,
+  prepareOtherAdultUploads,
+} from "@/lib/uploads/other-adult-upload-server";
 import { readOwnUploadLimits } from "@/lib/uploads/own-upload-limits";
-import { day, latestFileLine } from "./other-adult-lines";
+import { day, heldForYouLine, latestFileLine } from "./other-adult-lines";
 import { OtherAdultNewPersonForm, OtherAdultUploadCard } from "./other-adult-upload-card";
 
 /**
@@ -33,6 +37,33 @@ export async function OtherAdultUploadSection() {
           <OtherAdultNewPersonForm token={uploads.draftToken} />
         </div>
       </details>
+    </section>
+  );
+}
+
+/**
+ * Path B's account branch on the files list: for a person who confirmed a
+ * request with their account, each file someone added for them, read-only.
+ * The name the uploader typed, the kind, the dates and the state; answers
+ * come from each file's email.
+ */
+export async function HeldForYouRows() {
+  const people = await listSubjectHeldFiles().catch(() => null);
+  const shown = (people ?? []).filter(person => person.files.length > 0);
+  if (shown.length === 0) return null;
+  return (
+    <section aria-labelledby="held-for-you-heading" className="space-y-3" data-slot="held-for-you">
+      <h2 id="held-for-you-heading" className="display text-2xl">{HELD.heading}</h2>
+      {shown.map((person, index) => (
+        <div key={index} className="rounded-xl border border-line bg-card p-4">
+          <p className="text-sm text-ink-muted">{HELD.name(person.label)}</p>
+          <ul className="mt-2 space-y-2">
+            {person.files.map(file => (
+              <li key={`${file.addedOn}:${file.state}`}><p role="status" className="text-sm">{heldForYouLine(file)}</p></li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </section>
   );
 }

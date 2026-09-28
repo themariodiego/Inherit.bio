@@ -211,22 +211,38 @@ export type HeldFinalizationReceipt = z.infer<typeof heldFinalizationReceipt>;
  * request (register api.withdraw, the full confirm body): their artifact,
  * their country and the attestation they affirm.
  */
+const subjectArtifactSignature = z.object({
+  artifactVersion: z.number().int().positive().safe(),
+  artifactPresentationToken: z.string().min(16).max(4096),
+  affirmed: z.literal(true),
+  statementKeys: z.array(z.string().min(1).max(64)).min(1).max(8),
+  typedName: z.string().min(1).max(200),
+}).strict();
+
 export const pathBSubjectConfirmBody = z.object({
   operation: z.literal("confirm"),
   nonce: z.string().min(1).max(2_048),
-  subjectArtifact: z.object({
-    artifactVersion: z.number().int().positive().safe(),
-    artifactPresentationToken: z.string().min(16).max(4096),
-    affirmed: z.literal(true),
-    statementKeys: z.array(z.string().min(1).max(64)).min(1).max(8),
-    typedName: z.string().min(1).max(200),
-  }).strict(),
+  subjectArtifact: subjectArtifactSignature,
   jurisdictionCode: z.string().regex(/^[A-Z]{2}$/),
   jurisdictionAttestationVersion: z.number().int().positive().safe(),
   jurisdictionAttestationHash: sha256,
   jurisdictionAffirmed: z.literal(true),
 }).strict();
 export type PathBSubjectConfirmRequest = z.infer<typeof pathBSubjectConfirmBody>;
+
+/**
+ * The same confirmation made with the signed-in account (Path B's account
+ * branch, adult-subject-confirmation-v1): the same artifact and typed name,
+ * and no country field, because the account's own current declaration is the
+ * one that counts. The body cannot name the account; the session decides it.
+ */
+export const pathBAccountConfirmBody = z.object({
+  operation: z.literal("confirm"),
+  nonce: z.string().min(1).max(2_048),
+  withAccount: z.literal(true),
+  subjectArtifact: subjectArtifactSignature,
+}).strict();
+export type PathBAccountConfirmRequest = z.infer<typeof pathBAccountConfirmBody>;
 
 /** The same route, for one file revision: confirm it, refuse it, or delete everything. */
 export const adultUploadRevisionBody = z.union([
@@ -245,3 +261,22 @@ export const adultUploadRevisionView = z.object({
   confirmedOn: z.string().nullable(),
 }).strict();
 export type AdultUploadRevisionView = z.infer<typeof adultUploadRevisionView>;
+
+/**
+ * What the person's own account shows (Path B's account branch): for each
+ * person they were added as, the name the uploader typed and each current
+ * file's kind, dates and state. No identifier, uploader, address or hash.
+ */
+export const subjectHeldFile = z.object({
+  state: z.enum(["pending", "confirmed"]),
+  fileKind: z.enum(["array", "vcf"]),
+  addedOn: z.string(),
+  deleteBy: z.string().nullable(),
+  confirmedOn: z.string().nullable(),
+}).strict();
+export type SubjectHeldFile = z.infer<typeof subjectHeldFile>;
+export const subjectHeldFiles = z.array(z.object({
+  label: z.string().min(1).max(200),
+  files: z.array(subjectHeldFile).max(200),
+}).strict()).max(100);
+export type SubjectHeldFiles = z.infer<typeof subjectHeldFiles>;

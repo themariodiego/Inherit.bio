@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
-import { OtherAdultHeldRows } from "@/components/uploads/other-adult-upload-section";
+import { HeldForYouRows, OtherAdultHeldRows } from "@/components/uploads/other-adult-upload-section";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,7 @@ export default async function UploadsPage() {
       </div>
 
       <OtherAdultHeldRows />
+      <HeldForYouRows />
 
       <ul className="space-y-3">
         {(files ?? []).map((f) => (

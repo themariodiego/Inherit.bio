@@ -7,6 +7,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
 import {
   ADULT_UPLOAD_REVISION_COPY as REVISION,
+  HELD_FOR_YOU_COPY as HELD,
   OTHER_ADULT_UPLOAD_COPY as COPY,
   PATH_B_REQUEST_COPY as REQUEST,
 } from "@/copy/upload/other-adult";
@@ -21,7 +22,7 @@ import {
 } from "@/lib/uploads/other-adult-upload";
 import { AdultSubjectReviewForm } from "../embryo/adult-subject-review-form";
 import { AdultUploadRevisionForm } from "./adult-upload-revision-form";
-import { latestFileLine } from "./other-adult-lines";
+import { heldForYouLine, latestFileLine } from "./other-adult-lines";
 import { OtherAdultNewPersonForm, OtherAdultUploadCard } from "./other-adult-upload-card";
 import { PathBRequestForm } from "./path-b-request-form";
 
@@ -104,6 +105,15 @@ describe("the uploader's Path B screens", () => {
     const html = render({ ...base, state: "ready", signed: true, latest: { ...latest, state: "confirmed" } });
     expect(text(html)).toContain(COPY.confirmedStatus("Synthetic Relative", "28 September 2026"));
   });
+  it("tells the person, in their own account, what is waiting and what they said yes to", () => {
+    expect(heldForYouLine({ state: "pending", fileKind: "vcf", addedOn: "2026-09-28T11:00:00Z",
+      deleteBy: "2026-10-28T11:00:00Z", confirmedOn: null }))
+      .toBe(HELD.pending("28 September 2026", "vcf", "28 October 2026"));
+    expect(heldForYouLine({ state: "confirmed", fileKind: "array", addedOn: "2026-09-28T11:00:00Z",
+      deleteBy: null, confirmedOn: "2026-09-29T11:00:00Z" }))
+      .toBe(HELD.confirmed("28 September 2026", "array"));
+    expect(HELD.pending("28 September 2026", "vcf", "28 October 2026")).toMatch(/link in our email/);
+  });
   it("says why nothing can be done yet", () => {
     expect(text(render({ ...base, blockedBy: "account-completion" }))).toContain(COPY.accountFirstStatus);
     expect(text(render({ ...base, blockedBy: "unavailable" }))).toContain(COPY.unavailableStatus);
@@ -119,7 +129,21 @@ describe("the person's Path B screens", () => {
       statements: SUBJECT_ESIGNATURE_STATEMENT_KEYS.map((key, index) => ({ key, text: statements[index]! })) },
     countries: [{ code: "GB", name: "United Kingdom" }],
     attestation: { version: 1, sha256: "f".repeat(64), summary: "Attestation summary.", body: "Attestation body." },
+    account: null,
   };
+  it("signed in with the invited address, asks for the statements and name, and uses the account's country", () => {
+    const html = renderToStaticMarkup(createElement(PathBRequestForm, { review: { ...review, account: { country: "United Kingdom" } } }));
+    expect(html).toContain('data-slot="path-b-account"');
+    expect(text(html)).toContain(REQUEST.accountNote("United Kingdom"));
+    for (const statement of statements) expect(text(html)).toContain(statement);
+    expect(html.match(/type="checkbox"/g)).toHaveLength(4);
+    expect(text(html)).not.toContain(JURISDICTION_SELECT_LABEL);
+    expect(text(html)).not.toContain(JURISDICTION_AFFIRM);
+    expect(html).not.toContain('name="jurisdictionCode"');
+    expect(text(html)).toContain(REQUEST.typedNameLabel);
+    expect(text(html)).toContain(REQUEST.refuseButton);
+    expect(text(html)).toContain(REQUEST.deleteButton);
+  });
   it("asks the person to sign each of the four statements, with their country and name, and no account", () => {
     const html = renderToStaticMarkup(createElement(PathBRequestForm, { review }));
     expect(html).toContain('data-slot="path-b-request"');

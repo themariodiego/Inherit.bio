@@ -21,7 +21,8 @@ import {
   artifactStatements,
   type AdultUploadRevisionView,
 } from "./other-adult-upload";
-import { heldUploadRpc, looseAdmin } from "./other-adult-upload-server";
+import { contactDigestCandidates } from "@/lib/hmac-keyring";
+import { currentPathBAccount, heldUploadRpc, looseAdmin } from "./other-adult-upload-server";
 
 /**
  * The person's side of the register's Path B, on `/withdraw/session`, read
@@ -96,6 +97,12 @@ export interface PathBRequestReview {
   };
   countries: JurisdictionChoice[];
   attestation: JurisdictionAttestation;
+  /**
+   * Set when the person is signed in with the invited address and their own
+   * current country declaration: they confirm with that account, and its
+   * country counts (Path B's account branch). The database decides again.
+   */
+  account: { country: string } | null;
 }
 
 const sessionRow = z.object({
@@ -117,13 +124,13 @@ export async function loadPathBRequestReview(request: Request, now = Date.now())
     || session.data.status !== "active" || !(Date.parse(session.data.expires_at) > now)) return null;
   const nowIso = new Date(now).toISOString();
   const { data: draftData } = await looseAdmin(admin).from("adult_subject_drafts")
-    .select("adult_flow, state, fixed_expires_at").eq("subject_id", session.data.target_id).maybeSingle();
+    .select("adult_flow, state, fixed_expires_at, owner_account_id").eq("subject_id", session.data.target_id).maybeSingle();
   const draft = z.object({ adult_flow: z.literal("path-b-subject-esignature"), state: z.literal("invited"),
-    fixed_expires_at: z.string() }).safeParse(draftData);
+    fixed_expires_at: z.string(), owner_account_id: z.uuid() }).safeParse(draftData);
   if (!draft.success || !(Date.parse(draft.data.fixed_expires_at) > now)) return null;
   const [{ data: subject }, { data: invitation }] = await Promise.all([
     admin.from("subjects").select("display_label, lifecycle").eq("id", session.data.target_id).maybeSingle(),
-    admin.from("subject_invitations").select("id").eq("target_kind", "subject").eq("target_id", session.data.target_id)
+    admin.from("subject_invitations").select("id, email_hmac").eq("target_kind", "subject").eq("target_id", session.data.target_id)
       .eq("invitee_principal_id", session.data.principal_id).eq("invitation_kind", "adult_subject")
       .eq("status", "pending").eq("invitation_revision", session.data.authority_revision).gt("expires_at", nowIso)
       .maybeSingle(),
@@ -149,7 +156,37 @@ export async function loadPathBRequestReview(request: Request, now = Date.now())
     },
     countries: jurisdictionChoices(),
     attestation,
+    account: await pathBConfirmingAccount(invitation.email_hmac, draft.data.owner_account_id, attestation),
   };
+}
+
+const declaration = z.object({
+  jurisdiction_code: z.string().regex(/^[A-Z]{2}$/),
+  jurisdiction_declared_at: z.string(),
+  jurisdiction_attestation_version: z.number().int().positive(),
+  jurisdiction_attestation_sha256: z.string(),
+  deletion_requested_at: z.null(),
+});
+
+/**
+ * The signed-in account, when it may confirm this request as the person: the
+ * address the request was sent to (under any held contact key revision), not
+ * the uploader, not deleting, and with a current own country declaration.
+ * This only chooses the form; the database checks every one of these again.
+ */
+async function pathBConfirmingAccount(invitationEmailHmac: string, uploaderAccountId: string,
+  attestation: JurisdictionAttestation): Promise<{ country: string } | null> {
+  const account = await currentPathBAccount().catch(() => null);
+  if (!account?.email || account.accountId === uploaderAccountId
+    || !contactDigestCandidates(account.email).includes(invitationEmailHmac)) return null;
+  const { data } = await createAdminClient().from("profiles")
+    .select("jurisdiction_code, jurisdiction_declared_at, jurisdiction_attestation_version, jurisdiction_attestation_sha256, deletion_requested_at")
+    .eq("id", account.accountId).maybeSingle();
+  const profile = declaration.safeParse(data);
+  if (!profile.success || profile.data.jurisdiction_attestation_version !== attestation.version
+    || profile.data.jurisdiction_attestation_sha256 !== attestation.sha256) return null;
+  const code = profile.data.jurisdiction_code;
+  return { country: jurisdictionChoices().find(choice => choice.code === code)?.name ?? code };
 }
 
 /** The session hash and one-time nonce of a revision form this deployment served for this session. */

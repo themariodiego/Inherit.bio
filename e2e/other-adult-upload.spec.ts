@@ -20,6 +20,7 @@ import { EMAIL_LABEL, REQUESTED_HEADING, SEND_BUTTON } from "../src/copy/family/
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import {
   ADULT_UPLOAD_REVISION_COPY as REVISION,
+  HELD_FOR_YOU_COPY as HELD,
   OTHER_ADULT_UPLOAD_COPY as COPY,
   PATH_B_REQUEST_COPY as REQUEST,
 } from "../src/copy/upload/other-adult";
@@ -39,7 +40,11 @@ import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/
  *      to that one file, and still nothing reads it;
  *   2. a second person signs, a file is added, the person says no to it with
  *      no account, and the retention job deletes it, with a privileged
- *      re-query showing zero rows and zero Storage objects.
+ *      re-query showing zero rows and zero Storage objects;
+ *   3. Path B's account branch: a person signed in with the invited address
+ *      signs with that account (its declared country counts), sees the file
+ *      on their own Files page, and says yes to it signed in; still nothing
+ *      reads it.
  */
 
 const FIXTURE = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
@@ -56,6 +61,8 @@ const UPLOADER = { email: `path-b-uploader-${randomUUID()}@e2e.local`, password:
 const PATH_A_INVITEE = `path-a-invitee-${randomUUID()}@e2e.local`;
 const CONFIRMER = { email: `path-b-confirmer-${randomUUID()}@e2e.local`, name: "Synthetic Confirmer" };
 const REFUSER = { email: `path-b-refuser-${randomUUID()}@e2e.local`, name: "Synthetic Refuser" };
+const ACCOUNT_PERSON = { email: `path-b-account-${randomUUID()}@e2e.local`, name: "Synthetic Accountholder",
+  password: PASSWORD };
 const ORIGIN = "http://localhost:3100";
 
 interface CapturedEmail { to: string[] | string; subject: string; html?: string }
@@ -126,7 +133,8 @@ async function openPathB(page: Page) {
  * reserves the draft, signs, and sends the request; the person signs with no
  * account. Returns the person's subject id.
  */
-async function pathBPerson(page: Page, request: APIRequestContext, person: { email: string; name: string }) {
+async function pathBPerson(page: Page, request: APIRequestContext,
+  person: { email: string; name: string; password?: string }) {
   const section = await openPathB(page);
   const form = section.locator('[data-slot="other-adult-new"]');
   await form.getByLabel(COPY.nameLabel).fill(person.name);
@@ -164,6 +172,9 @@ async function pathBPerson(page: Page, request: APIRequestContext, person: { ema
     `the signature request to ${person.email}`);
   expect(requestMail.html).toContain("you do not need an account");
   await signOut(page);
+  // Path B's account branch: a person with an account signs in first, and
+  // then signs with that account; their declared country counts.
+  if (person.password) await signIn(page, person.email, person.password);
   await openRightsLink(page, requestMail.html);
   const review = page.locator('[data-slot="path-b-request"]');
   await expect(review.getByRole("heading", { name: REQUEST.heading })).toBeVisible();
@@ -174,18 +185,26 @@ async function pathBPerson(page: Page, request: APIRequestContext, person: { ema
     await expect(sign).toBeDisabled();
     await review.getByRole("checkbox", { name: statement, exact: true }).check();
   }
-  await review.getByLabel(JURISDICTION_SELECT_LABEL).selectOption("GB");
-  await review.getByRole("checkbox", { name: JURISDICTION_AFFIRM, exact: true }).check();
+  if (person.password) {
+    await expect(review.locator('[data-slot="path-b-account"]')).toHaveText(REQUEST.accountNote("United Kingdom"));
+    await expect(review.getByLabel(JURISDICTION_SELECT_LABEL)).toHaveCount(0);
+  } else {
+    await review.getByLabel(JURISDICTION_SELECT_LABEL).selectOption("GB");
+    await review.getByRole("checkbox", { name: JURISDICTION_AFFIRM, exact: true }).check();
+  }
   await review.getByLabel(REQUEST.typedNameLabel).fill(person.name);
   await sign.click();
   await expect(page.getByRole("heading", { name: REQUEST.receipts.confirm.title })).toBeVisible();
 
-  // An uploader-owned other_adult subject with no account of its own.
-  const uploaderId = (await findUserByEmail(adminClient(), UPLOADER.email))!.id;
-  const subject = await adminClient().from("subjects").select("id, lifecycle, subject_account_id")
+  // An uploader-owned other_adult subject: with no account of its own, or
+  // bound to the person's own account.
+  const admin = adminClient();
+  const uploaderId = (await findUserByEmail(admin, UPLOADER.email))!.id;
+  const personId = person.password ? (await findUserByEmail(admin, person.email))!.id : null;
+  const subject = await admin.from("subjects").select("id, lifecycle, subject_account_id")
     .eq("owner_account_id", uploaderId).eq("display_label", person.name).eq("subject_class", "other_adult").single();
   expect(subject.error).toBeNull();
-  expect(subject.data).toMatchObject({ lifecycle: "active", subject_account_id: null });
+  expect(subject.data).toMatchObject({ lifecycle: "active", subject_account_id: personId });
   return subject.data!.id as string;
 }
 
@@ -353,4 +372,52 @@ test("another adult's file under Path B: refused without an account, then delete
     const object = await admin.storage.from("genomes").download(name);
     expect(object.error, `Storage object ${name} is gone`).not.toBeNull();
   }
+});
+
+test("another adult's file under Path B: confirmed into the person's own account, listed on their Files page, answered signed in", async ({ page, request }) => {
+  test.setTimeout(360_000);
+  const admin = adminClient();
+  const personId = await createConfirmedUser(ACCOUNT_PERSON.email, ACCOUNT_PERSON.password);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  const subjectId = await pathBPerson(page, request, ACCOUNT_PERSON);
+
+  // The subject stays the uploader's; only its one confirmation principal
+  // became the person's account, and nothing grants or binds more.
+  const principal = await admin.from("subject_principals").select("principal_kind, account_id, status")
+    .eq("subject_id", subjectId).eq("status", "active").single();
+  expect(principal.data).toEqual({ principal_kind: "account_subject", account_id: personId, status: "active" });
+  expect((await admin.from("subject_account_bindings").select("id", { count: "exact", head: true })
+    .eq("subject_id", subjectId)).count).toBe(0);
+
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  const held = await addFile(page, ACCOUNT_PERSON);
+  expect(held.subject_id).toBe(subjectId);
+  const dates = await admin.from("other_adult_held_uploads").select("held_at, fixed_deadline").eq("id", held.id).single();
+  const added = day(dates.data!.held_at as string);
+
+  // The person's own account lists the file: the name, the kind, the dates.
+  await signOut(page);
+  await signIn(page, ACCOUNT_PERSON.email, ACCOUNT_PERSON.password);
+  await page.goto("/files");
+  const mine = page.locator('[data-slot="held-for-you"]');
+  await expect(mine.getByRole("heading", { name: HELD.heading })).toBeVisible();
+  await expect(mine.getByText(HELD.name(ACCOUNT_PERSON.name), { exact: true })).toBeVisible();
+  await expect(mine.getByRole("status")).toHaveText(HELD.pending(added, "vcf", day(dates.data!.fixed_deadline as string)));
+
+  // The notice, answered while signed in as the person.
+  const noticeMail = await drainMailUntil(request, mailTo(ACCOUNT_PERSON.email, "A DNA file was added for you on Inherit"),
+    `the upload-time notice to ${ACCOUNT_PERSON.email}`);
+  await openRightsLink(page, noticeMail.html);
+  const screen = page.locator('[data-slot="adult-upload-revision"]');
+  await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
+  await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+  const confirmed = await admin.from("other_adult_held_uploads").select("state, analysis_state").eq("id", held.id).single();
+  expect(confirmed.data).toEqual({ state: "confirmed", analysis_state: "confirmed_blocked_current_gate" });
+
+  await page.goto("/files");
+  await expect(page.locator('[data-slot="held-for-you"]').getByRole("status")).toHaveText(HELD.confirmed(added, "vcf"));
+  // Seeing the file is not reading it: nothing exists for either account to read.
+  expect(await derivedRows(personId)).toEqual(NONE);
+  expect((await admin.from("genome_files").select("id", { count: "exact", head: true })
+    .eq("subject_id", subjectId)).count).toBe(0);
 });

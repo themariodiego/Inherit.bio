@@ -68,6 +68,9 @@ export const PATH_B_REQUEST_COPY = {
   // The text is approved; the request itself is not open anywhere yet.
   testNote: "This request is for tests only. It is not yet in use.",
   statementsHeading: "Confirm each of these",
+  // Path B's account branch: signed in with the address the request went to.
+  accountNote: (country: string) =>
+    `You are signed in, so this is kept with your Inherit account. The country on your account, ${country}, is the one that counts.`,
   typedNameLabel: "Type your full legal name to sign",
   typedNameError: "Type your first and family name, each two letters or more.",
   signButton: "Sign",
@@ -79,6 +82,10 @@ export const PATH_B_REQUEST_COPY = {
     confirm: {
       title: "Request accepted",
       body: "They can now add a DNA file for you. We email you each time, and nothing is made from a file until you say yes to it.",
+    },
+    confirmAccount: {
+      title: "Request accepted",
+      body: "They can now add a DNA file for you. We email you each time, and you can also see each file on your Files page. Nothing is made from a file until you say yes to it.",
     },
     refuse: {
       title: "Request declined",
@@ -121,4 +128,18 @@ export const ADULT_UPLOAD_REVISION_COPY = {
       body: "Every file they added for you, and your signature, are being deleted.",
     },
   },
+} as const;
+
+/**
+ * Path B's account branch on `/files`: the files someone added for the
+ * signed-in person, read-only. Answers still come from the link in each
+ * file's email.
+ */
+export const HELD_FOR_YOU_COPY = {
+  heading: "Files added for you",
+  name: (label: string) => `They wrote your name as ${label}.`,
+  pending: (added: string, kind: "array" | "vcf", deleteBy: string) =>
+    `${kind === "array" ? "A raw data file" : "A VCF file"} added on ${added} is waiting for your answer. Use the link in our email to say yes or no. If you do nothing, it is deleted on ${deleteBy}.`,
+  confirmed: (added: string, kind: "array" | "vcf") =>
+    `You said yes to the ${kind === "array" ? "raw data file" : "VCF file"} added on ${added}. Nothing is made from it yet.`,
 } as const;

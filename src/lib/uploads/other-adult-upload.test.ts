@@ -35,6 +35,7 @@ import {
   otherAdultTypedNameIsValid,
   pathBDraftBody,
   pathBInvitationBody,
+  pathBAccountConfirmBody,
   pathBSubjectConfirmBody,
 } from "./other-adult-upload";
 import {
@@ -46,7 +47,7 @@ import {
 } from "./other-adult-upload-server";
 import { otherAdultUploadConsent } from "./other-adult-consent-route";
 import { createPathBDraft, createPathBInvitation } from "./path-b-routes";
-import { answerAdultUploadRevision, confirmPathBSubject } from "./path-b-respond";
+import { answerAdultUploadRevision, confirmPathBSubject, confirmPathBSubjectWithAccount } from "./path-b-respond";
 import { mintSubjectPresentation, readAdultUploadRevisionResponse } from "./path-b-review";
 import { POST as withdrawSession } from "@/app/api/withdraw/session/route";
 
@@ -378,8 +379,10 @@ describe("POST /api/withdraw/session, the person's Path B answers", () => {
     const confirmed = await withdrawSession(rights({ operation: "confirm", uploadRevisionAffirmed: true, nonce: revisionForm }));
     expect(confirmed.status).toBe(202);
     expect(await confirmed.json()).toEqual({ status: "accepted", operation: "confirm" });
+    // The signed-in account goes with the answer; the database refuses any
+    // account other than an account-bound person's own.
     expect(mocks.rpc).toHaveBeenLastCalledWith("respond_adult_upload_revision_v1",
-      { p_session_hash: hash, p_nonce: expect.any(String), p_action: "confirm" });
+      { p_session_hash: hash, p_nonce: expect.any(String), p_action: "confirm", p_account_id: accountId });
     // A revision confirmation without its affirmation is not a body at all.
     expect((await withdrawSession(rights({ operation: "confirm", nonce: revisionForm }))).status).toBe(404);
   });
@@ -432,6 +435,90 @@ describe("POST /api/withdraw/session, the person's Path B answers", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     expect((await confirmPathBSubject(authority, body)).status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("answers a file with no account when no one is signed in", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: null } });
+    mocks.rpc.mockResolvedValueOnce({ data: "refused", error: null });
+    expect((await answerAdultUploadRevision({ sessionHash: hash, nonce: "n".repeat(32) }, "refuse")).status).toBe(202);
+    expect(mocks.rpc).toHaveBeenLastCalledWith("respond_adult_upload_revision_v1",
+      { p_session_hash: hash, p_nonce: "n".repeat(32), p_action: "refuse", p_account_id: null });
+  });
+});
+
+describe("Path B's account branch: confirming a request with the signed-in account", () => {
+  const secret = newRightsSessionSecret();
+  const hash = rightsSessionHash(secret);
+  const KEY_2 = crypto.randomBytes(32).toString("base64");
+  function body(presentation: string) {
+    return { operation: "confirm" as const, nonce: "n", withAccount: true as const, subjectArtifact: { artifactVersion: 1,
+      artifactPresentationToken: presentation, affirmed: true as const, statementKeys: SUBJECT_KEYS, typedName: "Ada Lovelace" } };
+  }
+  beforeEach(() => {
+    vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
+    mocks.getUser.mockResolvedValue({ data: { user: { id: accountId, email: "Relative@E2E.local",
+      email_confirmed_at: "2026-09-01T00:00:00Z" } } });
+  });
+  it("keeps the account body closed: no country, no account id, and withAccount required", () => {
+    const valid = body("p".repeat(40));
+    expect(pathBAccountConfirmBody.safeParse(valid).success).toBe(true);
+    for (const patch of [{ withAccount: false }, { jurisdictionCode: "GB" }, { accountId }, { withAccount: undefined }]) {
+      expect(pathBAccountConfirmBody.safeParse({ ...valid, ...patch }).success).toBe(false);
+    }
+    // A no-account body is never read as an account body, or the reverse.
+    const { withAccount: _flag, ...withoutFlag } = valid;
+    expect(_flag).toBe(true);
+    expect(pathBAccountConfirmBody.safeParse(withoutFlag).success).toBe(false);
+    expect(pathBSubjectConfirmBody.safeParse(valid).success).toBe(false);
+  });
+  it("sends the account, its own session and its address as digests under every held revision, never bare", async () => {
+    vi.useFakeTimers(); vi.setSystemTime(NOW);
+    const authority = { sessionHash: hash, nonce: "n".repeat(32) };
+    mocks.rpc.mockResolvedValueOnce({ data: "accepted", error: null });
+    const response = await confirmPathBSubjectWithAccount(authority, body(mintSubjectPresentation(hash, 1, "b".repeat(64), NOW)));
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ status: "accepted", operation: "confirm" });
+    const [name, args] = mocks.rpc.mock.calls[0]!;
+    expect(name).toBe("confirm_path_b_subject_account_v1");
+    expect(args).toMatchObject({ p_session_hash: hash, p_artifact_version: 1, p_artifact_body_sha256: "b".repeat(64),
+      p_statement_keys: SUBJECT_KEYS, p_account_id: accountId, p_auth_session_id: sessionId,
+      p_account_email_hmac: null, p_test_jurisdiction: true });
+    const set = args.p_account_email_hmac_set as Record<string, string>;
+    expect(Object.keys(set)).toEqual(["1", "2"]);
+    expect(set["1"]).toBe(legacyContactDigest("relative@e2e.local"));
+    expect(JSON.stringify(args).toLowerCase()).not.toContain("relative@e2e.local");
+    expect(args).not.toHaveProperty("p_jurisdiction_code");
+  });
+  it("is the same 404 without a signed-in account, an unconfirmed address, a stale form or outside TEST-LOCAL", async () => {
+    vi.useFakeTimers(); vi.setSystemTime(NOW);
+    const authority = { sessionHash: hash, nonce: "n".repeat(32) };
+    const valid = body(mintSubjectPresentation(hash, 1, "b".repeat(64), NOW));
+    mocks.getUser.mockResolvedValueOnce({ data: { user: null } });
+    expect((await confirmPathBSubjectWithAccount(authority, valid)).status).toBe(404);
+    mocks.getUser.mockResolvedValueOnce({ data: { user: { id: accountId, email: "relative@e2e.local", email_confirmed_at: null } } });
+    expect((await confirmPathBSubjectWithAccount(authority, valid)).status).toBe(404);
+    expect((await confirmPathBSubjectWithAccount({ ...authority, sessionHash: "0".repeat(64) }, valid)).status).toBe(404);
+    expect((await confirmPathBSubjectWithAccount(authority, { ...valid,
+      subjectArtifact: { ...valid.subjectArtifact, statementKeys: SUBJECT_KEYS.slice(1) } })).status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValueOnce({ data: "unavailable", error: null });
+    expect((await confirmPathBSubjectWithAccount(authority, valid)).status).toBe(404);
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+    mocks.rpc.mockClear();
+    expect((await confirmPathBSubjectWithAccount(authority, valid)).status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("is reached only through the adult-subject form of this session", async () => {
+    const subjectForm = mintPublicFormToken("adult-subject-respond", Date.now(), hash);
+    const revisionForm = mintPublicFormToken("adult-upload-respond", Date.now(), hash);
+    const presentation = mintSubjectPresentation(hash, 1, "b".repeat(64));
+    mocks.rpc.mockResolvedValueOnce({ data: "accepted", error: null });
+    const request = (nonce: string) => sameOrigin("https://inherit.bio/api/withdraw/session",
+      { ...body(presentation), nonce }, { cookie: `${RIGHTS_COOKIE_NAME}=${secret}` });
+    expect((await withdrawSession(request(subjectForm))).status).toBe(202);
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("confirm_path_b_subject_account_v1");
+    mocks.rpc.mockClear();
+    expect((await withdrawSession(request(revisionForm))).status).toBe(404);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

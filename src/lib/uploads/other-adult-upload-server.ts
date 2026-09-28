@@ -12,9 +12,13 @@ import {
   artifactStatements,
   artifactWarning,
   otherAdultTargetState,
+  subjectHeldFiles,
   type OtherAdultTarget,
   type OtherAdultTargetState,
+  type SubjectHeldFiles,
 } from "./other-adult-upload";
+import { normalizeContact } from "@/lib/embryos/routes";
+import { createClient } from "@/lib/supabase/server";
 import { currentOwnUploadAccount } from "./own-upload-context";
 
 /**
@@ -141,6 +145,39 @@ export async function listOtherAdultTargets(): Promise<OtherAdultTargetState[] |
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_test_jurisdiction: true,
   });
   const parsed = z.array(otherAdultTargetState).safeParse(data);
+  return error || !parsed.success ? null : parsed.data;
+}
+
+/**
+ * The signed-in account as Path B's account branch needs it: its id, its own
+ * auth session, and its address only when the address is confirmed. Null
+ * when no one is signed in.
+ */
+export async function currentPathBAccount(): Promise<{ accountId: string; sessionId: string; email: string | null } | null> {
+  const client = await createClient();
+  const [{ data: userData }, { data: claimsData }] = await Promise.all([
+    client.auth.getUser(), client.auth.getClaims(),
+  ]);
+  const user = userData.user;
+  const claims = claimsData?.claims;
+  if (!user || claims?.sub !== user.id || typeof claims.session_id !== "string") return null;
+  const email = user.email && user.email_confirmed_at ? normalizeContact(user.email) : null;
+  return { accountId: user.id, sessionId: claims.session_id, email };
+}
+
+/**
+ * The files someone added for the signed-in person, under the account they
+ * confirmed with (Path B's account branch). Read-only. Null outside
+ * TEST-LOCAL or with no one signed in.
+ */
+export async function listSubjectHeldFiles(): Promise<SubjectHeldFiles | null> {
+  if (!isTestJurisdictionEnabled()) return null;
+  const actor = await currentPathBAccount();
+  if (!actor) return null;
+  const { data, error } = await heldUploadRpc(createAdminClient(), "subject_held_files_v1", {
+    p_account_id: actor.accountId, p_session_id: actor.sessionId, p_test_jurisdiction: true,
+  });
+  const parsed = subjectHeldFiles.safeParse(data);
   return error || !parsed.success ? null : parsed.data;
 }
 
