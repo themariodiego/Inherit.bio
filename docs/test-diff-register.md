@@ -1,5 +1,48 @@
 # Test diff register
 
+## Family Copilot scope turned on everywhere · 28 September 2026
+
+The owner chose to turn the Family Copilot scope on in production (PR #260).
+`copilotGroupScopes()` now answers `family: true` on every deployment and
+reads no environment. The transport, jurisdiction and grant gates are
+unchanged, and they are what keep another adult's data unread outside
+TEST-LOCAL.
+
+- `e2e/copilot-group-scopes.nojurisdiction.spec.ts` is new, with 3 tests on
+  the `jurisdiction-off` variant, the hosted stand-in (TEST-LOCAL flag unset,
+  no attested model, a GB account).
+  - The Overview box links `/copilot/family` and one click reaches the
+    registered unavailable page.
+  - Nothing past the transport decision renders, and no context token or
+    chat row is created for the account.
+  - The chat and history endpoints serve nothing.
+  - The Family hub's Copilot tile still states the jurisdiction refusal and
+    links nowhere.
+- `src/lib/copilot/group-scopes.test.ts`: the availability test now asserts
+  `family: true` under four environments, hosted production included.
+  Before, it asserted `family: false` outside TEST-LOCAL. The owner's
+  decision reverses that expectation; the test is not loosened, and it still
+  pins `cohort: false` everywhere.
+- `src/lib/overview-entry-boxes.test.ts` gains one test: with no scopes
+  passed, which is how Overview calls it, the Family box resolves to
+  `/copilot/family` and the Embryo box to `/embryos` for every account shape,
+  in three environments. The explicit built and unbuilt cases stay. The
+  assertions that the default followed the TEST-LOCAL flag are gone, because
+  the flag no longer governs it.
+- The Family hub's Copilot tile now links `/copilot/family` wherever the hub
+  itself is permitted, as the Overview box does. Before, it linked only once
+  someone granted `copilot.local`.
+  - `e2e/family.spec.ts` (`/family complete`) pinned the tile as unlinked.
+    It now pins its href and the absence of a blocked line.
+  - `e2e/copilot-group-scopes.spec.ts` asserted the blocked line. It now
+    follows the link to the unavailable page.
+  - `e2e/copilot-family.spec.ts`'s last assertion after revocation expected
+    the tile unlinked. It now expects the link. The same test still asserts
+    what revocation changes: the scope's empty state, zero surviving turns,
+    history 404 and no model call.
+- `scripts/env-gate.test.ts`: process.env bindings 8 -> 7. The binding this
+  branch added earlier the same day is gone, and no key is lost.
+
 ## Family group Copilot scope · 28 September 2026
 
 New tests, none loosened.

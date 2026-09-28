@@ -7,6 +7,26 @@ unavailable page until embryo publication exists. Nothing here is available on
 the hosted site: `/copilot/family` renders the registered unavailable page
 there, before anything is read.
 
+**Turned on everywhere, 28 September 2026 (owner decision, PR #260).**
+`copilotGroupScopes()` answers `family: true` on every deployment, and reads
+no environment. Overview's Family Copilot box therefore opens
+`/copilot/family` everywhere, as the register's box contract names it. The
+Family hub's Copilot tile opens it wherever the hub itself is permitted. What
+the scope can do is still decided per request, in this order:
+
+1. The transport. With no attested same-host model, which covers every hosted
+   deployment, the page is the closed unavailable page. The chat and history
+   endpoints serve nothing.
+2. The jurisdiction.
+3. The asker's own local model.
+4. Each adult's own grants.
+
+No real jurisdiction permits `third_party_adult_analysis` or
+`family_heritability` today, so nobody's data is read outside TEST-LOCAL. On
+a real jurisdiction the Family hub's own gate is unchanged: its tiles state
+the refusal and link nowhere. `e2e/copilot-group-scopes.nojurisdiction.spec.ts`
+proves the hosted case.
+
 Register sources: `policyResolvers.copilot-route-scope-v1` (the `family` and
 `c-{uuid}` segments), `scope-derived-v1` (`family:individual-risks`,
 `cohort:*`), `copilot-transport-availability-v1` (`true-non-self`),
@@ -123,7 +143,10 @@ When embryo publication exists, the scope should follow `scope-derived-v1`'s
   `family-chat-content.test.ts`, `family-chat-token.test.ts`,
   `group-scopes.test.ts`, `guard-people.test.ts`.
 - Browser: `e2e/copilot-group-scopes.spec.ts` (main variant: the registered
-  unavailable page, the boxes, 404s) and `e2e/copilot-family.spec.ts`
+  unavailable page, the boxes and the hub tile, 404s),
+  `e2e/copilot-group-scopes.nojurisdiction.spec.ts` (`jurisdiction-off`, the
+  hosted case: the box, the unavailable page, nothing minted or stored, the
+  endpoints, the hub's unchanged refusal) and `e2e/copilot-family.spec.ts`
   (`copilot-local` project: the journey, and `/copilot/[scope]
   jurisdiction-unavailable`). The journey needs the migration applied and the
   synthetic model fixture (`CANONICAL_COPILOT_CONTROL_URL`), which CI has.

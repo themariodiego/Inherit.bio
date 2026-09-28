@@ -182,14 +182,13 @@ export default async function FamilyPage() {
       ? route("family.person", { person: firstReadable.handle.routeSegment })
       : null,
     portrait: pairId ? route("family.portrait", { pairId }) : null,
-    // The Family group scope is built under TEST-LOCAL only
-    // (src/lib/copilot/group-scopes.ts), and it has something to read only
-    // once someone lets Copilot use what they share. Until both hold, the
-    // tile states its blocking reason ("Copilot opens once someone has
-    // shared something with you.") rather than linking to an empty scope.
-    copilot: copilotGroupScopes().family
-      && people.some((person) => person.sharing === "active" && person.grantsToViewer.has("copilot.local"))
-      ? route("copilot.scope", { scope: "family" }) : null,
+    // The Family group scope is built on every deployment since the owner's
+    // 2026-09-28 decision (src/lib/copilot/group-scopes.ts), so the tile opens
+    // it, as Overview's Family Copilot box does. That page states the rest:
+    // the registered unavailable page where no same-host model is attested
+    // (every hosted deployment), the jurisdiction refusal, or who has let
+    // Copilot read what they share, including nobody yet.
+    copilot: copilotGroupScopes().family ? route("copilot.scope", { scope: "family" }) : null,
   };
 
   return (

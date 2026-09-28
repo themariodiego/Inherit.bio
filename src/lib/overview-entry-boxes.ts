@@ -14,9 +14,10 @@ export interface EntryBoxTargets {
  * the account. Each of those four deliberately falls back to a domain landing
  * rather than a dead route. Portrait resolves only after its exact metadata
  * authority has been confirmed. The two Copilot boxes open their group scope
- * only where it is built (`copilotGroupScopes()`: Family under TEST-LOCAL,
- * the embryo cohort nowhere yet); `/copilot/family` itself then renders the
- * registered unavailable page on a deployment that cannot run a local model.
+ * only where it is built (`copilotGroupScopes()`: Family on every deployment
+ * since the owner's 2026-09-28 decision, the embryo cohort nowhere yet);
+ * `/copilot/family` itself then renders the registered unavailable page on a
+ * deployment that cannot run a local model, which includes every hosted one.
  *
  * The `default` branch is a self-link and is unreachable today only because
  * every box either carries a static `href` or has a case here. Nothing about

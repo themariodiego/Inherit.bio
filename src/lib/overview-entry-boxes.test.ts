@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ENTRY_BOXES } from "@/copy/overview";
 import { resolveBoxHref, type EntryBoxTargets } from "./overview-entry-boxes";
 import { route } from "./primary-routes";
@@ -55,10 +55,25 @@ describe("entry box targets", () => {
       expect(resolveBoxHref(byId["family.copilot"], targets, FAMILY_BUILT)).toBe(route("copilot.scope", { scope: "family" }));
       expect(resolveBoxHref(byId["family.copilot"], targets, UNBUILT)).toBe(route("family.index"));
     }
-    // The flag follows the TEST-LOCAL acceptance row and nothing else.
-    expect(copilotGroupScopes({ INHERIT_TEST_JURISDICTION: "1" })).toEqual(FAMILY_BUILT);
-    expect(copilotGroupScopes({})).toEqual(UNBUILT);
-    expect(copilotGroupScopes({ INHERIT_TEST_JURISDICTION: "", VERCEL: "1" })).toEqual(UNBUILT);
+  });
+
+  // The owner turned the Family scope on everywhere on 2026-09-28 (PR #260):
+  // with no scopes passed, which is how Overview calls it, the box goes where
+  // the register's box contract says (`copilot.scope`, `family`) for every
+  // account shape and in every environment, hosted production included.
+  it("opens the Family Copilot box on /copilot/family by default, on every deployment", () => {
+    const byId = Object.fromEntries(ENTRY_BOXES.map(b => [b.id, b]));
+    expect(copilotGroupScopes()).toEqual(FAMILY_BUILT);
+    for (const env of [{}, { INHERIT_TEST_JURISDICTION: "1" }, { VERCEL: "1", VERCEL_ENV: "production" }]) {
+      vi.unstubAllEnvs();
+      for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
+      for (const targets of Object.values(TARGETS)) {
+        expect(resolveBoxHref(byId["family.copilot"], targets), JSON.stringify(env))
+          .toBe(route("copilot.scope", { scope: "family" }));
+        expect(resolveBoxHref(byId["embryos.copilot"], targets), JSON.stringify(env)).toBe(route("embryos.index"));
+      }
+    }
+    vi.unstubAllEnvs();
   });
 
   it("keeps the embryo Copilot box on the embryo hub until the cohort scope is built, and names a cohort in the register's grammar", () => {

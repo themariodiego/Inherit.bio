@@ -301,7 +301,9 @@ test.describe("the Family group scope, end to end on the local model", () => {
     await pageA.goto("/copilot/family");
     await expect(pageA.locator('[data-slot="copilot-family-empty"]').getByRole("status")).toHaveText(FAMILY_EMPTY_NOTE);
     await expect(pageA.getByLabel("Message the copilot")).toHaveCount(0);
+    // The hub tile still opens the scope (it is built everywhere since
+    // 2026-09-28); what changed is what the scope can read, shown above.
     await pageA.goto("/family");
-    await expect(pageA.locator('[data-tile="copilot"]').getByRole("link")).toHaveCount(0);
+    await expect(pageA.locator('[data-tile="copilot"]').getByRole("link")).toHaveAttribute("href", "/copilot/family");
   });
 });

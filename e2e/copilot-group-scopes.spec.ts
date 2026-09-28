@@ -6,15 +6,17 @@ import { HUB_TILES } from "../src/copy/family/index";
 
 /**
  * The Copilot group scopes on a deployment that cannot run a local model:
- * this suite's main app, which runs under TEST-LOCAL (so the Family scope is
- * built) and attests no same-host model. That is exactly the hosted case the
- * register writes down (`copilot-transport-availability-v1`,
- * `true-non-self.hostedCloudRemoteOrUnverified`): the Family Overview box
- * opens `/copilot/family`, and it renders the closed unavailable page with no
- * context, composer, history or group data. The Family hub tile links there
- * only once someone lets Copilot read what they share. The
- * cohort scope is designed but not built, so the Embryos box stays on its hub
- * and an unreadable cohort segment is the same 404 as an unknown one.
+ * this suite's main app, which runs under TEST-LOCAL and attests no same-host
+ * model. That is the transport case the register writes down
+ * (`copilot-transport-availability-v1`,
+ * `true-non-self.hostedCloudRemoteOrUnverified`): the Family Overview box and
+ * the Family hub's Copilot tile open `/copilot/family`, and it renders the
+ * closed unavailable page with no context, composer, history or group data.
+ * The Family scope is built on every deployment since 2026-09-28 (PR #260);
+ * the hosted case itself, with the TEST-LOCAL flag unset, is
+ * `e2e/copilot-group-scopes.nojurisdiction.spec.ts`. The cohort scope is
+ * designed but not built, so the Embryos box stays on its hub and an
+ * unreadable cohort segment is the same 404 as an unknown one.
  *
  * The local-model journey itself is `e2e/copilot-family.spec.ts`, on the one
  * app variant that attests a same-host model.
@@ -58,13 +60,17 @@ test("the Family Copilot box opens the Family group scope, which says plainly wh
   await expect(page).toHaveURL(/\/overview$/);
 });
 
-test("the Family hub's Copilot tile says why it is closed while nobody lets Copilot read what they share", async ({ page }) => {
+test("the Family hub's Copilot tile opens the Family scope too, which says plainly why it cannot run here", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/family");
   const tile = page.locator('[data-tile="copilot"]');
-  await expect(tile.getByRole("link")).toHaveCount(0);
-  await expect(tile.locator('[data-slot="tile-blocked"]'))
-    .toHaveText(HUB_TILES.find((entry) => entry.id === "copilot")!.blocked);
+  const link = tile.getByRole("link", { name: HUB_TILES.find((entry) => entry.id === "copilot")!.label, exact: true });
+  await expect(link).toHaveAttribute("href", "/copilot/family");
+  await expect(tile.locator('[data-slot="tile-blocked"]')).toHaveCount(0);
+  await link.click();
+  await expect(page).toHaveURL(/\/copilot\/family$/);
+  await expect(page.locator('[data-slot="copilot-local-unavailable"]')).toBeVisible();
+  await expect(page.getByLabel("Message the copilot")).toHaveCount(0);
 });
 
 test("a chat request for the Family scope is refused here before any read, with the registered body", async ({ page }) => {
