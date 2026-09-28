@@ -106,3 +106,18 @@ begin
   return v_session;
 end;
 $$;
+
+-- Writes every reserved fragment object of one chunk the way Storage's final
+-- write does: an INSERT with a UUID-v4 version and metadata.size. Call it with
+-- the service-role claims and role set. Metadata rows only; a database test
+-- has no provider bytes.
+create function pg_temp.write_fragment_objects(p_session uuid, p_sequence integer)
+returns integer language sql as $$
+  with written as (
+    insert into storage.objects(bucket_id,name,version,metadata)
+    select f.bucket_id,f.object_name,gen_random_uuid()::text,jsonb_build_object('size',f.byte_count)
+      from public.embryo_ingest_fragments f
+      where f.session_id=p_session and f.sequence=p_sequence
+    returning 1)
+  select count(*)::integer from written;
+$$;

@@ -1,6 +1,6 @@
 begin;
 select no_plan();
--- pg_temp.new_attempt.
+-- pg_temp.new_attempt and pg_temp.write_fragment_objects.
 \ir fixtures/embryo_ingest_attempt.inc
 
 create function pg_temp.fragments() returns jsonb language sql as $$
@@ -29,6 +29,16 @@ select is((select accepted_bytes from public.embryo_ingest_sessions where id=(se
   100::bigint, 'retry does not double-charge bytes');
 select is((select accepted_chunks from public.embryo_ingest_sessions where id=(select id from attempt)),
   1, 'retry does not double-charge chunks');
+-- A commit is no longer a caller promise: the objects must have landed.
+select throws_ok($$select private.commit_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64))$$,
+  '55000','embryo_chunk_objects_unlanded','a chunk cannot commit before its reserved objects land');
+grant select on attempt to service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+set local role service_role;
+select is(pg_temp.write_fragment_objects((select id from attempt),0),2,
+  'the service writer lands both reserved objects');
+reset role;
+select set_config('request.jwt.claims','',true);
 select is(private.commit_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64))->>'status',
   'stored', 'verified objects commit their receipt');
 select is((select expected_next_sequence from public.embryo_ingest_sessions where id=(select id from attempt)),
@@ -79,6 +89,11 @@ select is(private.reserve_embryo_ingest_chunk_v1(
 update attempt set id=pg_temp.new_attempt(100);
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64),100,2,60,pg_temp.fragments())->>'status',
   'reserved','exact declared capacity is allowed');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+set local role service_role;
+select is(pg_temp.write_fragment_objects((select id from attempt),0),2,'capacity fixture objects land');
+reset role;
+select set_config('request.jwt.claims','',true);
 select is(private.commit_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64))->>'status','stored','capacity fixture commits');
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),1,repeat('e',64),1,0,1,'[]')->>'status',
   'failure_pending','cumulative capacity is authoritative');
