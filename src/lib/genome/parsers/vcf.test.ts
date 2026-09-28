@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { toLines } from "./lines";
-import { parseVcf, streamVcf } from "./vcf";
+import { buildFromHeaderLines, parseVcf, streamVcf } from "./vcf";
 
 const fixture = (name: string) =>
   fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url));
@@ -87,6 +87,26 @@ describe("parseVcf: build detection", () => {
       fromString("##contig=<ID=chr11,length=135086622>\n##reference=custom.fa\n")
     );
     expect(r.build).toBe("unknown");
+  });
+
+  /**
+   * ADR 0035: the embryo configure route decides a VCF's build from a bounded
+   * copy of its meta lines. It must be this parser's verdict, not a second
+   * rule that could drift from it.
+   */
+  it.each([
+    "##fileformat=VCFv4.2\n##reference=GRCh38",
+    "##reference=hg19.fa",
+    "##contig=<ID=chr1,length=248956422,assembly=GRCh38>\n##contig=<ID=chr2,length=242193529>",
+    "##contig=<ID=1,length=249250621>",
+    "##fileformat=VCFv4.2",
+    "##reference=GRCh380",
+    "##reference=GRCh38\n##reference=GRCh37",
+    "##reference=custom.fa\n##reference=GRCh38",
+    "##contig=<ID=1,length=248956422,assembly=GRCh37>",
+    "##contig=<ID=chr11,length=135086622>\n##reference=custom.fa",
+  ])("gives the streaming parser's verdict over a bounded copy of the meta lines: %s", async (header) => {
+    expect(buildFromHeaderLines(header.split("\n"))).toBe((await parseVcf(fromString(header))).build);
   });
 });
 
