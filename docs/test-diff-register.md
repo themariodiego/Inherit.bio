@@ -1,5 +1,50 @@
 # Test diff register
 
+## Two-embryo fixture for participant-c · 28 September 2026
+
+`e2e/fixtures/embryo-pair-grch38.vcf` is new, written by the new
+`scripts/generate-embryo-pair-fixture.ts` from a fixed seed. It carries two
+synthetic embryos as separate samples at 1,200 real GRCh38 autosomal positions
+read from `data/ref/build-discriminating-sites.json`, with invented alleles and
+genotypes. `scripts/embryo-pair-fixture.test.ts` (7 tests) checks it against
+the generator, the product's sniffer, the header build, autosomes only,
+contig lengths from the other fixtures, every position against the reference,
+and both call rates against the embryo quality policy.
+
+T6, T7 and `participant-c` in `scripts/comprehension/bindings.json` now name
+this file instead of the two single-sample files, which embryo ingest would
+refuse. `bindings.test.ts` gains one test: every embryo task's files must read
+as multi-sample. It failed when T6 was pointed back at the old files. No other
+test changes, and the two old fixtures stay for the tests that use them.
+
+## T9 measured, and the public rights links built · 28 September 2026
+
+`e2e/task-depth.spec.ts` gains the T9 measurement, on the real path the owner
+chose. Another adult reserves a record and invites a synthetic address in
+their own browser context, with the invitation mail captured from the app's
+real mail call. Then, signed out, the participant clicks the footer's "Someone
+uploaded my DNA" from the home page. The emailed link is opened and recorded
+as an entry event, not counted. "Continue" and "Delete reserved record"
+follow. The test asserts the review screen's "No genetic data has been shared"
+and the deletion receipt, exactly one entry event, and three counted actions
+against the register's ceiling of six. No existing test in the file changes.
+
+`src/components/site/footer.test.ts` is new, with 4 tests. It holds the copy,
+the footer and the legal index to
+`navigationContract.publicRightsReachability`: labels, copy ids, route ids,
+paths and rendered anchors. It failed when the footer's rights column was
+removed. `src/lib/primary-routes.test.ts` pins three more route ids,
+`legal.index`, `rights.subject-access` and `rights.future-person-claim`, and
+its no-literal-path rule moved `/legal/future-person`'s link onto `route()`.
+`scripts/route-gate.test.ts` now expects six of eight task-depth ceilings
+measured, and the two ratchet messages move from 2 to 1 unmeasured. That is the
+ratchet coming down with the measurement, as it is built to.
+
+`data/plain-vocabulary.json` gains six words the register's own labels use:
+access, analysed, object, retention, rights and someone. The labels are fixed
+verbatim by `publicRightsReachability`, so the readability gate's vocabulary
+grows to meet them rather than the labels changing.
+
 ## Comprehension participant seed · 27 September 2026
 
 `e2e/comprehension-participants.spec.ts` is new. It builds G3.2's

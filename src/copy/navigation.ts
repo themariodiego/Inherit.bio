@@ -43,3 +43,49 @@ export const NAV_LANDMARK_LABEL = "App";
 
 /** Accessible name of the header cluster (theme, account e-mail, sign out). */
 export const ACCOUNT_LANDMARK_LABEL = "Account";
+
+/**
+ * The public rights links (docs/route-register.json →
+ * navigationContract.publicRightsReachability). A person with no account
+ * reaches each one in the registered number of actions from the home page:
+ * the three in the persistent public footer are one action away, and the two
+ * on the legal index are two. Labels and copy ids are the register's own, and
+ * each href is built from the register's route id.
+ */
+export const PUBLIC_RIGHTS_FOOTER_HEADING = "Your rights";
+
+export const PUBLIC_RIGHTS_FOOTER = [
+  {
+    copyId: "navigation.rights.someone-uploaded-my-dna",
+    label: "Someone uploaded my DNA",
+    routeId: "rights.subject-access",
+    href: route("rights.subject-access"),
+  },
+  {
+    copyId: "navigation.rights.future-person-claim",
+    label: "I was born from an analysed embryo",
+    routeId: "rights.future-person-claim",
+    href: route("rights.future-person-claim"),
+  },
+  {
+    copyId: "navigation.rights.data-retention",
+    label: "Data rights and retention",
+    routeId: "legal.index",
+    href: route("legal.index"),
+  },
+] as const;
+
+export const LEGAL_INDEX_RIGHTS = [
+  {
+    copyId: "legal.index.access-object-delete",
+    label: "Access, object or delete data about me",
+    routeId: "rights.subject-access",
+    href: route("rights.subject-access"),
+  },
+  {
+    copyId: "legal.index.future-person-claim",
+    label: "Claim a future-person record",
+    routeId: "rights.future-person-claim",
+    href: route("rights.future-person-claim"),
+  },
+] as const;

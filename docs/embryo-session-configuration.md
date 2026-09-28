@@ -64,6 +64,13 @@ The next source-accepting work must supply all of the following:
    tokens and transport descriptor. The current cohort response deliberately
    omits the transport challenge and has no operation-token field. This patch
    does not invent an additional HTTP response field.
+   **Registered for VCF on 28 September (ADR 0035).** `api.embryo-ingest-configure`
+   takes the source's `##fileformat`, `##reference` and `##contig` lines and its
+   sample count. It answers `embryo-vcf-transport-v1` with the server-derived
+   build, the transport challenge and revision, the completion nonce and the
+   CSRF token. The first nonce arrives as `operationNonce` in the embryo branch
+   of `upload-session-v1`. Nothing is built yet, and tables still need their
+   own token presentation.
 2. The bounded mapping endpoint and client orchestration, including independent
    parser/header validation before these private writes. The handler must also
    validate the offered candidates in memory: persisted canonical index pairs

@@ -35,10 +35,12 @@ full suite, which must prove every run used the real Storage provider; a
 seeded account needs no upload. The two passing test lines above it are the
 seed's result.
 
-`participant-c` cannot be seeded yet, for the two reasons its `seedBlockedBy`
-records: there is no embryo ingest path until G2.6 lands, and its two bound
-files are single-sample VCFs, which the ingest contract refuses as
-`cohort_single_sample`. G3.2 stays NO until it can be built.
+`participant-c` cannot be seeded yet: there is no embryo ingest path until
+G2.6 lands, as its `seedBlockedBy` records. Its file is ready for that path.
+`e2e/fixtures/embryo-pair-grch38.vcf` carries two synthetic embryos as separate
+samples, because the ingest contract refuses a single-sample cohort upload as
+`cohort_single_sample`. The two single-sample files it replaced could never
+have been loaded. G3.2 stays NO until the account can be built.
 
 ## Spending boundary
 

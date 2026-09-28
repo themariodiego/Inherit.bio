@@ -85,7 +85,9 @@ Four participant contexts are defined in `bindings.json`:
   report position.
 - **participant-b** — the friend in T4. Holds no file.
 - **participant-c** — the intending parent in T6, T7 and T10, with
-  `e2e/fixtures/tiny-grch38.vcf` and `e2e/fixtures/tiny-b-grch38.vcf` loaded.
+  `e2e/fixtures/embryo-pair-grch38.vcf` loaded: one file carrying two synthetic
+  embryos as separate samples, because embryo ingest refuses a single-sample
+  cohort upload (owner decision, 28 September 2026).
 - **no-account** — T9 and T10 start signed out at the marketing home page.
   Creating an account is not a permitted step in either.
 

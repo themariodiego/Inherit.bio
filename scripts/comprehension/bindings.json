@@ -49,14 +49,13 @@
     },
     {
       "id": "participant-c",
-      "role": "The intending parent in T6 and T10, with two embryo files loaded.",
+      "role": "The intending parent in T6 and T10, with one embryo file of two embryos loaded.",
       "files": [
-        "e2e/fixtures/tiny-grch38.vcf",
-        "e2e/fixtures/tiny-b-grch38.vcf"
+        "e2e/fixtures/embryo-pair-grch38.vcf"
       ],
-      "why": "Two distinct seeds, so a comparison surface has something to compare and G8.3's seed-differencing holds.",
+      "why": "One synthetic VCF carrying two distinct embryos as separate samples. The embryo-ingest contract refuses a cohort upload that resolves to exactly one sample (cohort_single_sample), so a laboratory sends a cohort's embryos in one file, and two embryos give the comparison surface something to compare. Owner decision, 28 September 2026.",
       "seed": null,
-      "seedBlockedBy": "Two reasons, checked 2026-09-27. No embryo file path exists until the ingest slice lands (G2.6), and the owner's decision of 18 September 2026 closes a fixture-only seed path that would write the rows directly. And the two bound files could not be ingested even then: each is a single-sample VCF (one SAMPLE1 column), while the register's embryo-ingest completion contract refuses a cohort upload that resolves to exactly one sample (cohort_single_sample, 422). The account needs one synthetic VCF carrying both embryos as separate samples before any seed can build it."
+      "seedBlockedBy": "No embryo file path exists until the ingest slice lands (G2.6), and the owner's decision of 18 September 2026 closes a fixture-only seed path that would write the rows directly."
     },
     {
       "id": "no-account",
@@ -230,8 +229,7 @@
       "prompt": "Two embryo files are loaded. Say which one Inherit recommends and why.",
       "account": "participant-c",
       "fixtures": [
-        "e2e/fixtures/tiny-grch38.vcf",
-        "e2e/fixtures/tiny-b-grch38.vcf"
+        "e2e/fixtures/embryo-pair-grch38.vcf"
       ],
       "routes": [
         "/embryos",
@@ -255,8 +253,7 @@
       "prompt": "For one condition, say how much difference this makes to an actual person, in plain numbers.",
       "account": "participant-c",
       "fixtures": [
-        "e2e/fixtures/tiny-grch38.vcf",
-        "e2e/fixtures/tiny-b-grch38.vcf"
+        "e2e/fixtures/embryo-pair-grch38.vcf"
       ],
       "routes": [
         "/embryos/compare"

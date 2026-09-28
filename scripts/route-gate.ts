@@ -638,8 +638,17 @@ const UNPROVEN_ROUTE_STATE_PAIRS = 11;
  * 6. It is the first of the eight to be measured at all, and the one the
  * brief cares most about: the floor is the only number in the register that
  * exists to stop a journey being made too easy.
+ *
+ * 3 -> 2 on 2026-09-28: T9 is measured, on the real path the owner chose that
+ * day. Its premise, someone uploading your DNA, is refused today, so the test
+ * counts what a person can actually do: one footer click from the home page
+ * to the subject-access route, then, from the emailed invitation, "Continue"
+ * and "Delete reserved record". Three actions against a ceiling of six, with
+ * the email recorded as an entry event. The footer link did not exist before
+ * that day although `navigationContract.publicRightsReachability` required it.
+ * T6 and T7 remain, and both wait for embryo ingest.
  */
-const UNINSTRUMENTED_TASK_DEPTH_TASKS = 3;
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 2;
 
 /** The register's task-depth contract, as much of it as this gate reads. */
 interface TaskDepthContract {

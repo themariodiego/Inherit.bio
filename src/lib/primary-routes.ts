@@ -55,8 +55,11 @@ const ROUTE_PATTERNS = {
   "api.file-process": "/api/files/[id]/process",
   "marketing.providers": "/providers",
   "science.index": "/science",
+  "legal.index": "/legal",
   "legal.future-person": "/legal/future-person",
   "legal.where-inherit-works": "/legal/where-inherit-works",
+  "rights.subject-access": "/legal/appeals",
+  "rights.future-person-claim": "/future-person/claim",
 } as const;
 
 export type RouteId = keyof typeof ROUTE_PATTERNS;

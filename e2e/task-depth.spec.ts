@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { NAV_LABELS, NAV_LANDMARK_LABEL } from "@/copy/navigation";
+import { NAV_LABELS, NAV_LANDMARK_LABEL, PUBLIC_RIGHTS_FOOTER, PUBLIC_RIGHTS_FOOTER_HEADING } from "@/copy/navigation";
 import { ADD_ANOTHER_ADULT_BUTTON } from "@/copy/family";
 import { REGIONAL_COMBINED_NAME } from "@/lib/ancestry/regional-regions";
 import { LAYER_LABELS, SHOW_ALL_REPORTS } from "@/copy/reports/strings";
@@ -14,7 +15,7 @@ import {
   PATH_B_AVAILABLE,
   PATH_B_LINK,
 } from "@/copy/family/invite";
-import { createConfirmedUser, signIn } from "./helpers";
+import { adultInvitationToken, adultInvitationUrl, createConfirmedUser, drainMailUntil, signIn } from "./helpers";
 import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 
 /**
@@ -58,6 +59,7 @@ const REGISTER = JSON.parse(fs.readFileSync("docs/route-register.json", "utf8"))
       ceilings: Record<string, number>;
       floors: Record<string, number>;
       requirements: Record<string, string[]>;
+      entryEvents: Record<string, string>;
     };
     settingsDataReachability: { fromAnyAuthenticatedPageMaxActions: number };
   };
@@ -76,6 +78,8 @@ const INVITER = { email: `task-depth-t4-${randomUUID()}@e2e.local`, password: "e
 const READER = { email: `task-depth-t2-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 const ESTIMATES = { email: `task-depth-t1-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 const VARIANTS = { email: `task-depth-t3-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
+/** T9's other adult: the account that reserves a record for someone and invites them. */
+const RESERVER = { email: `task-depth-t9-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 
 /**
  * These measured task-depth journeys retain their GRCh38 VCF fixtures. The
@@ -148,6 +152,7 @@ test.beforeAll(async () => {
   await createConfirmedUser(READER.email, READER.password);
   await createConfirmedUser(ESTIMATES.email, ESTIMATES.password);
   await createConfirmedUser(VARIANTS.email, VARIANTS.password);
+  await createConfirmedUser(RESERVER.email, RESERVER.password);
 });
 
 /** Installs the counter on this document and on every one that follows it. */
@@ -537,6 +542,121 @@ test("task depth T4 costs two counted actions, well inside its registered ceilin
   // Recorded because the measurement is the point: four actions of headroom
   // against the ceiling, and the answer is two clicks from Overview.
   expect(spent, "the measured depth of the shipped path").toBe(2);
+});
+
+/**
+ * T9 — "Someone has uploaded your DNA. Starting from inherit.bio with no
+ * account, find out what is held about you, and delete it."
+ *
+ * Ceiling 6 in-app click/submit actions, with the registered confirmation
+ * exclusions, and mailed-link and typed-URL entries recorded separately
+ * (`taskDepthActions.entryEvents.T9`, the owner's decision of 22 September).
+ *
+ * The premise is refused, as T4's is, and that is measured rather than
+ * assumed. Nobody can upload another adult's DNA today: the other-adult upload
+ * path has no consent artifact (G5.3). What another adult CAN do is reserve a
+ * record for you and invite you, and the owner decided on 28 September that T9
+ * measures that real path. It has two legs:
+ *
+ *  1. From the home page, signed out, to the subject-access route: the
+ *     footer's "Someone uploaded my DNA". Before 28 September no link anywhere
+ *     led there, although `navigationContract.publicRightsReachability`
+ *     required it one action from home; `src/components/site/footer.test.ts`
+ *     now holds the footer to that contract.
+ *  2. The emailed invitation. Opening its link is an ENTRY event, recorded
+ *     here and not counted. Then the interstitial's "Continue", and "Delete
+ *     reserved record" on the review screen, which is also where the person
+ *     learns what is held: a reserved record with no genetic data.
+ *
+ * Setting up the reservation is another person's doing, so it happens in
+ * their own browser context before counting starts.
+ */
+test("task depth T9 costs three counted actions from the home page and the emailed invitation, inside its registered ceiling", async ({
+  browser,
+  page,
+  request,
+}, testInfo) => {
+  expect(CONTRACT.countedEvents, "the events this instrument listens for").toEqual(["click", "submit"]);
+  const ceiling = CONTRACT.ceilings.T9;
+  expect(ceiling, "T9 carries the owner's ceiling of six").toBe(6);
+  expect(CONTRACT.floors.T9, "T9 carries no floor").toBeUndefined();
+  expect(CONTRACT.entryEvents.T9, "T9's entry events are recorded separately").toMatch(/mailed-link and typed-URL entries/);
+
+  // The other adult's part: a reservation and its invitation, in their own
+  // context, read from the mail provider the app really calls.
+  const invitee = `task-depth-t9-invitee-${randomUUID()}@e2e.local`;
+  const captured: { to: string[] | string; html?: string }[] = [];
+  const mail = http.createServer((incoming, response) => {
+    let body = "";
+    incoming.on("data", (chunk) => (body += chunk));
+    incoming.on("end", () => {
+      if (incoming.method === "POST" && incoming.url?.includes("/emails")) {
+        captured.push(JSON.parse(body));
+        response.writeHead(200, { "content-type": "application/json" })
+          .end(JSON.stringify({ id: `task-depth-t9-${captured.length}` }));
+        return;
+      }
+      response.writeHead(200).end("{}");
+    });
+  });
+  await new Promise<void>((resolve) => mail.listen(8124, "127.0.0.1", resolve));
+  let token: string | undefined;
+  try {
+    const reserver = await browser.newContext();
+    const reserverPage = await reserver.newPage();
+    await signIn(reserverPage, RESERVER.email, RESERVER.password);
+    await reserverPage.goto("/family/invite");
+    await reserverPage.getByLabel("Their email address").fill(invitee);
+    await reserverPage.getByRole("checkbox").check();
+    await reserverPage.getByRole("button", { name: "Send invitation" }).click();
+    await expect(reserverPage.getByRole("status")).toContainText("Invitation requested");
+    await reserver.close();
+    const message = await drainMailUntil(request, () => captured.find((email) =>
+      (Array.isArray(email.to) ? email.to : [email.to]).includes(invitee)), "T9's invitation");
+    token = adultInvitationToken(message.html);
+  } finally {
+    await new Promise<void>((resolve) => mail.close(() => resolve()));
+  }
+  expect(token, "the invitation carries one fragment-form review link").toBeTruthy();
+
+  // The participant: no account, no session, starting at the home page.
+  await page.goto("/");
+  await expect(page.locator("main h1")).toBeVisible();
+  await startCounting(page);
+  const entries: string[] = [];
+
+  // 1. The footer's rights link, one action from home.
+  const subjectAccess = PUBLIC_RIGHTS_FOOTER.find((link) => link.routeId === "rights.subject-access")!;
+  await page.getByRole("navigation", { name: PUBLIC_RIGHTS_FOOTER_HEADING })
+    .getByRole("link", { name: subjectAccess.label, exact: true }).click();
+  await page.waitForURL((url) => url.pathname === subjectAccess.href);
+  await expect(page.getByRole("heading", { level: 1, name: "Appeals and corrections" })).toBeVisible();
+  // The route answers the first half without an account: object, and how.
+  await expect(page.getByText("You do not need an Inherit account to object or appeal.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Immediate objections" })).toBeVisible();
+
+  // The emailed link: an entry event, recorded and not counted.
+  entries.push("mailed-link");
+  await page.goto(adultInvitationUrl(token!));
+
+  // 2. The interstitial's one control.
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/withdraw/session");
+  // What is held, in the product's own words: a reservation and no genetic data.
+  await expect(page.getByRole("heading", { name: "No genetic data has been shared" })).toBeVisible();
+
+  // 3. The deletion itself.
+  await page.getByRole("button", { name: "Delete reserved record", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Reserved record deleted" })).toBeVisible();
+  await expect(page.getByText("The empty reserved subject was closed. No genetic file or derived result existed for it.", { exact: true })).toBeVisible();
+
+  const spent = await countedActions(page);
+  testInfo.annotations.push({ type: "T9 entry events", description: entries.join(", ") });
+  expect(entries, "exactly one entry event, the emailed link").toEqual(["mailed-link"]);
+  expect(spent, `T9 must not cost more than ${ceiling} actions`).toBeLessThanOrEqual(ceiling);
+  // Recorded because the measurement is the point: one action from home to the
+  // rights route, and two from the email to a deleted reservation.
+  expect(spent, "the measured depth of the shipped path").toBe(3);
 });
 
 test("task depth T8 costs three counted actions, which is exactly its registered floor", async ({

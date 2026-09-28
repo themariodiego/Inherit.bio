@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadPatterns, normalise, prohibitedHit } from "./prohibited";
 import { REGIONAL_REGIONS, REGIONAL_COMBINED_NAME } from "../../src/lib/ancestry/regional-regions";
-import { sniff } from "../../src/lib/genome/parsers/sniff";
+import { sniff, sniffV2 } from "../../src/lib/genome/parsers/sniff";
 import { OWN_REPORT_PURPOSES } from "../../src/lib/uploads/own-report-purpose";
 
 /**
@@ -139,6 +139,28 @@ describe("every comprehension task is bound to something that exists", () => {
     const reader = bindings.accounts.find((account) => account.id === t2.account)!;
     expect(reader.seed?.purposes).toContain("ancestry");
     expect(reader.files.at(-1), "the file T2 reads is uploaded last").toBe(t2.fixtures[0]);
+  });
+
+  /**
+   * Embryo ingest refuses a cohort upload that resolves to exactly one sample
+   * (`cohort_single_sample` in the route register), so a task bound to embryo
+   * analysis is bound to files that carry at least two embryos each. The two
+   * single-sample files T6 and T7 named until 28 September 2026 could never
+   * have been loaded; this is the check that would have said so.
+   */
+  it("binds every embryo task to multi-sample files that ingest can accept", () => {
+    const embryoTasks = bindings.tasks.filter((task) => task.requiresCapability === "embryo_analysis");
+    expect(embryoTasks.map((task) => task.id)).toEqual(["T6", "T7"]);
+    for (const task of embryoTasks) {
+      expect(task.fixtures.length, task.id).toBeGreaterThan(0);
+      for (const fixture of task.fixtures) {
+        const sniffed = sniffV2(readFileSync(path.join(ROOT, fixture)));
+        expect(sniffed.kind, `${task.id} ${fixture}`).toBe("vcf_multisample");
+        expect(sniffed.sampleCount, `${task.id} ${fixture}`).toBeGreaterThanOrEqual(2);
+      }
+      const account = bindings.accounts.find((candidate) => candidate.id === task.account)!;
+      expect(account.files, `${task.id} is bound to the files its account holds`).toEqual(task.fixtures);
+    }
   });
 
   it("names only routes the register declares as pages", () => {
