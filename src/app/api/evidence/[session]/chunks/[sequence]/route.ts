@@ -23,8 +23,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * claim's data key and written create-only; a failed write ends the session
  * too, and the retention job deletes whatever it left.
  *
- * The register's one-time chunk nonce header is not read; the fragment
- * reservation stands in for it. See docs/route-divergence.json.
+ * The one-time sequence reservation is the chunk authority (owner decision
+ * 2026-09-28, requestContract.chunkAuthority); no separate chunk nonce.
  */
 
 const CHUNK_BYTES = 4_000_000;

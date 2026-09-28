@@ -12224,7 +12224,19 @@
         "malware-clear",
         "fresh-envelope-encrypted-object",
         "fragment-deletion"
-      ]
+      ],
+      "scanning": {
+        "status": 202,
+        "contentType": "application/json",
+        "body": {
+          "status": {
+            "const": "scanning"
+          }
+        },
+        "retryAfterSeconds": 5,
+        "unknownFieldsRecursively": "forbidden",
+        "rule": "owner-decision-2026-09-28: while-the-composed-document-is-quarantined-awaiting-the-malware-scan-worker-the-route-answers-this-and-nothing-else; the-same-session-cookie-and-completion-nonce-may-repeat-the-request-to-read-the-outcome-and-the-201-is-returned-only-after-malware-clear"
+      }
     },
     "evidence-review-v1": {
       "status": 200,
@@ -18992,9 +19004,9 @@
         },
         "clientRangeOffsetOrObjectPath": "forbidden",
         "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session",
-          "X-Inherit-Chunk-Nonce": "one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256"
-        }
+          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session"
+        },
+        "chunkAuthority": "owner-decision-2026-09-28: the-server-reserves-each-session-sequence-once-in-the-transaction-that-rechecks-the-session-principal-target-lifecycle-cumulative-bytes-and-the-server-computed-chunk-sha256; a-replayed-or-reused-sequence-is-refused-so-no-separate-one-time-chunk-nonce-is-required"
       },
       "stateProfile": "endpoint",
       "policy": {

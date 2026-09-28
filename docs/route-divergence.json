@@ -312,18 +312,8 @@
       "served": "jurisdictionCode"
     }
   ],
-  "unreadRequiredHeadersNote": "Required headers that no source module reads remain checked in both directions. Owner decision 2026-09-22 removes both extra headers only from the embryo chunk route, whose strict cookie, live account/session, Origin and database chunk identity provide the approved authority. The legal-evidence chunk contract is unchanged and remains unresolved; ADR 0020 decision 9 does not establish an equivalent reservation mechanism there.",
-  "unreadRequiredHeaders": [
-    {
-      "routeId": "api.evidence-chunk",
-      "path": "/api/evidence/[session]/chunks/[sequence]",
-      "header": "X-Inherit-Chunk-Nonce",
-      "registerSource": "requestContract.requiredHeaders: 'one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256'",
-      "why": "The same header on the legal-evidence ingest path, where less can be concluded: that subsystem has tables (legal_evidence_ingest_sessions, legal_evidence_fragments and six more) but no chunk table, no reserve or commit RPC and no src/lib/evidence, so there is nothing yet for a nonce to be consumed by. The embryo finding above is not carried over to it, because the mechanism that makes the nonce redundant there - the chunk reservation row - has no counterpart here.",
-      "servedInstead": "Built 2026-09-28 for the claim document sessions, the only evidence sessions this deployment issues. The route reads X-Inherit-CSRF, a keyed digest of the session id and the evidence cookie hash, and requires the exact origin, same-origin fetch metadata and the host-only evidence cookie. The database then reserves the sequence in private.claim_document_fragments in the same transaction that rechecks the session, the live claim, the cumulative bytes and the server-computed SHA-256 of the body; a sequence can be reserved once, so a replayed chunk is refused (23505) without a nonce. That is the embryo answer arrived at on this route's own evidence, but it is an answer, not an approval.",
-      "closing": "An owner decision like the 2026-09-22 embryo one: accept the fragment reservation as the chunk authority and remove the header from api.evidence-chunk, or keep it and have a registered surface mint a token bound to session, sequence, length and SHA-256 before each chunk."
-    }
-  ],
+  "unreadRequiredHeadersNote": "Required headers that no source module reads remain checked in both directions. Owner decision 2026-09-22 removes both extra headers only from the embryo chunk route, whose strict cookie, live account/session, Origin and database chunk identity provide the approved authority. Owner decision 2026-09-28 does the same for api.evidence-chunk: each claim document chunk sequence is reserved once, in the transaction that rechecks the session, the claim, the cumulative bytes and the server-computed SHA-256, so the register no longer requires a separate one-time chunk nonce there.",
+  "unreadRequiredHeaders": [],
   "taskDepthCeilingDivergenceNote": "Resolved by owner decision 2026-09-22: T9 has a ceiling of six in-app click/submit actions with the registered confirmation exclusions. Mailed-link and typed-URL entry events are recorded separately. The brief, register, rubric and human protocol now use the same units. The gate still compares the empty divergence ledger in both directions.",
   "taskDepthCeilingDivergence": []
 }
