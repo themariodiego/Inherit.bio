@@ -22,7 +22,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17434869", "label": "Frayling et al., Science 2007" }
+      { "pmid": "17434869", "label": "Frayling et al., Science 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -48,7 +48,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18454148", "label": "Loos et al., Nat Genet 2008" }
+      { "pmid": "18454148", "label": "Loos et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -101,7 +101,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "10973253", "label": "Altshuler et al., Nat Genet 2000" }
+      { "pmid": "10973253", "label": "Altshuler et al., Nat Genet 2000", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -127,7 +127,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12540637", "label": "Gloyn et al., Diabetes 2003" }
+      { "pmid": "12540637", "label": "Gloyn et al., Diabetes 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -153,7 +153,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19060907", "label": "Prokopenko et al., Nat Genet 2009" }
+      { "pmid": "19060907", "label": "Prokopenko et al., Nat Genet 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -179,7 +179,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19734900", "label": "Rung et al., Nat Genet 2009" }
+      { "pmid": "19734900", "label": "Rung et al., Nat Genet 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -205,7 +205,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18776141", "label": "Hivert et al., Diabetes 2008" }
+      { "pmid": "18776141", "label": "Hivert et al., Diabetes 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -231,7 +231,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19901143", "label": "Corella et al., Arch Intern Med 2009" }
+      { "pmid": "19901143", "label": "Corella et al., Arch Intern Med 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -257,8 +257,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20935630", "label": "Speliotes et al., Nat Genet 2010" },
-      { "pmid": "22237064", "label": "Qi et al., Am J Clin Nutr 2012" }
+      { "pmid": "20935630", "label": "Speliotes et al., Nat Genet 2010", "accessedOn": "2026-09-28" },
+      { "pmid": "22237064", "label": "Qi et al., Am J Clin Nutr 2012", "accessedOn": "2026-09-28" }
     ]
   }
 ]
