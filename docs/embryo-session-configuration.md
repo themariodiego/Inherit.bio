@@ -101,6 +101,10 @@ The next source-accepting work must supply all of the following:
    explicitly says no Storage ACK or terminal graph-purge RPC exists. Its
    upload-staging manifest must use the recorded bucket rather than the old
    `genomes-staging` literal (D-130).
+   **The metadata write fence exists since 28 September**
+   (`20260928100000_embryo_ingest_write_fence.sql`); see item 1 of
+   `docs/embryo-ingest-unwind-runtime.md` for what it proves and what it does
+   not. The Storage acknowledgement, D-130 and the terminal unwind remain.
 4. An atomic ingest-completion transaction and a `split_cohort_vcf` consumer.
    `finalize_embryo_cohort_ingest_v1` creates the initial cohort/session; it does
    not complete uploaded fragments. No existing transaction enters

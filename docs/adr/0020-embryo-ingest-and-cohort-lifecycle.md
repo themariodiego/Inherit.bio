@@ -210,6 +210,24 @@ source-format/build binding. The decision and challenge stores still need
 transactional writers. This qualification preserves the earlier findings as
 history and changes no threshold or acceptance mark.
 
+**Write fence, 28 September 2026.** The first of the three safeguards named
+above now exists as test-local database code:
+`20260928100000_embryo_ingest_write_fence.sql`, tested by
+`supabase/tests/embryo_ingest_write_fence.sql`. It proves a Storage metadata
+fence and a time bound. Only a service-role INSERT naming an open, unexpired
+write intent of an open, unfenced, still-authorized session can create a row in
+the embryo namespace, and no UPDATE can touch one. A chunk cannot be committed
+until each of its objects has landed and still exists. When a session leaves
+`open`/`mapping_required`, a fence is stamped. After it, no admitted metadata
+write can land, and a fenced session never reopens. After the fence time,
+settling classifies every intent `landed` or `uncertain`. It does not prove
+physical absence. An `uncertain` intent may have left provider bytes at a
+version no metadata row names, so the unwind stays `storage_pending` for it.
+What evidence would settle that is an open owner question, recorded with
+options in `docs/embryo-ingest-unwind-runtime.md`. The deletion
+acknowledgement and the terminal graph purge are still missing, and ingest
+stays unavailable. This paragraph changes no threshold or acceptance mark.
+
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
    its `sample_ordinal`. Source sample labels, column headers and file
    names are used only transiently in bounded memory to associate rows;
