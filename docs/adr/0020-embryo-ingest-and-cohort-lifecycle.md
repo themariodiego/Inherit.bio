@@ -277,6 +277,14 @@ owner's decision of 28 September, an approved single-parent review is kept
 through the purge (`20260930131000_embryo_purge_retained_review.sql`). Ingest
 stays unavailable. This paragraph changes no threshold or acceptance mark.
 
+**Restriction deletes sources, 30 September 2026.** On the owner's decision
+of 28 September, restricting or withdrawing a cohort now deletes its
+canonical sources in the same transaction, through
+`private.delete_embryo_cohort_sources_v1`
+(`20260930150000_embryo_restriction_deletes_sources.sql`). Their parts follow
+once their markers are proved. Another cohort and the owner's own files are
+untouched. This paragraph changes no threshold or acceptance mark.
+
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
    its `sample_ordinal`. Source sample labels, column headers and file
    names are used only transiently in bounded memory to associate rows;
