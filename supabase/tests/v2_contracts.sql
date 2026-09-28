@@ -17,8 +17,10 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- The embryo-ingest write fence adds its write intents and session fences.
 -- The embryo split worker adds its two attempt-owned pending stores
 -- (private.embryo_split_ordinals, private.embryo_split_variants).
-select is((select count(*) from public.purge_target_stores), 129::bigint,
-  'all 129 purge stores, including private prepared-object, embryo write-fence and embryo split working state, are classified');
+-- Embryo canonical sources add their part inventory, sources and membership
+-- (private.embryo_canonical_parts, _sources, _source_parts).
+select is((select count(*) from public.purge_target_stores), 132::bigint,
+  'all 132 purge stores, including private prepared-object, embryo write-fence, embryo split and embryo canonical-source state, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

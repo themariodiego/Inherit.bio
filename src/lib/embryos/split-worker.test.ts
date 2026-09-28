@@ -6,8 +6,9 @@ import { embryoVcfChunks, validateEmbryoVcfChunk } from "./vcf-transport";
 import type { BrowserTransportBinding, ServerTransportBinding } from "./ingest-binding";
 import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
   type EmbryoSplitRow } from "./split-analysis";
-import { EmbryoSplitFragmentMismatch, runNextEmbryoSplit, type EmbryoFragmentRef, type EmbryoSplitFragment,
-  type EmbryoSplitRpc } from "./split-worker";
+import { EmbryoSplitFragmentMismatch, runNextEmbryoSplit, type EmbryoCanonicalPartWriter, type EmbryoFragmentRef,
+  type EmbryoSplitFragment, type EmbryoSplitRpc } from "./split-worker";
+import type { EmbryoR2WriteTarget, EmbryoStoredFragment } from "./fragment-storage";
 import { QC_THRESHOLDS } from "./qc-policy";
 
 // Synthetic only: every fragment below is derived in memory from the
@@ -64,7 +65,7 @@ function statedGenotypes(rows: string[], sample: number): Map<string, string | n
 
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
-/** An in-memory stand-in for the six database calls, holding their contract. */
+/** An in-memory stand-in for the database calls, holding their contract. */
 function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uint8Array }[], embryoCount = 2) {
   const jobId = randomUUID(), sessionId = randomUUID(), cohortId = randomUUID();
   // The fragment store double, keyed exactly as the reader interface is.
@@ -91,6 +92,10 @@ function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uin
     reads: [] as EmbryoFragmentRef[],
     landedFor: (fragment: EmbryoSplitFragment): unknown => ({ ...landed, ordinal: fragment.ordinal }),
     published: false,
+    // Canonical parts by `${ordinal}.${sequence}`: the receipt, and what landed.
+    parts: new Map<string, { target: EmbryoR2WriteTarget; landed: EmbryoStoredFragment | null }>(),
+    written: new Map<string, Uint8Array>(),
+    ackFailure: false,
   };
   const failure = { status: "failure_pending", cohortId, ingestRevision: 1, failureCode: "stale-binding" };
   const lease = { version: "embryo-split-lease-v1", jobId, attempt: 1, claimExpiresAt: claim.claimExpiresAt,
@@ -124,9 +129,37 @@ function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uin
         list.push({ batch, rows }); state.staged.set(ordinal, list);
         return { status: "staged", batch, rows: rows.length };
       }
+      case "reserve_embryo_canonical_part_v1": {
+        const ordinal = args.p_ordinal as number, sequence = args.p_sequence as number;
+        const fragment = listed.find((f) => f.ordinal === ordinal && f.sequence === sequence)!;
+        // The database's own refusals: a recorded embryo, a second reservation.
+        expect(state.outcomes.has(ordinal)).toBe(false);
+        expect(state.parts.has(`${ordinal}.${sequence}`)).toBe(false);
+        const target: EmbryoR2WriteTarget = { version: "embryo-ingest-write-target-v1", sessionId, sequence, ordinal,
+          backend: "r2", bucket: "inherit-embryo-synthetic", objectKey: `embryo/${randomUUID()}`,
+          byteCount: fragment.byteCount, sha256: fragment.sha256, writeExpiresAt: new Date(Date.now() + 60_000).toISOString() };
+        state.parts.set(`${ordinal}.${sequence}`, { target, landed: null });
+        return structuredClone(target);
+      }
+      case "ack_embryo_canonical_part_v1": {
+        if (state.ackFailure) return failure;
+        expect(args.p_job_id).toBe(jobId);
+        const part = state.parts.get(`${args.p_ordinal}.${args.p_sequence}`)!;
+        expect(args.p_expected).toEqual(part.target);
+        expect([args.p_observed_sha256, args.p_observed_byte_count]).toEqual([part.target.sha256, part.target.byteCount]);
+        part.landed = { receipt: part.target, providerVersion: args.p_provider_version as string, etag: args.p_etag as string };
+        return structuredClone(part.landed);
+      }
       case "finish_embryo_split_ordinal_v1": {
         const ordinal = args.p_ordinal as number, result = args.p_result as Record<string, unknown>;
         expect(Object.keys(result).sort()).toEqual(["failureReason", "outcome", "qc", "variantCount"]);
+        // The database's own gate: a pass holds a landed part per fragment, a failure none.
+        const own = [...state.parts.entries()].filter(([key]) => key.startsWith(`${ordinal}.`));
+        if (result.outcome === "passed") {
+          expect(own.map(([key]) => key).sort()).toEqual(listed.filter((f) => f.ordinal === ordinal)
+            .map((f) => `${ordinal}.${f.sequence}`).sort());
+          expect(own.every(([, part]) => part.landed !== null)).toBe(true);
+        } else expect(own).toEqual([]);
         if (result.outcome === "qc_fail_no_source") state.staged.delete(ordinal);
         else expect((state.staged.get(ordinal) ?? []).flatMap((b) => b.rows)).toHaveLength(result.variantCount as number);
         state.outcomes.set(ordinal, result);
@@ -154,8 +187,20 @@ function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uin
     if (!bytes) throw new Error("synthetic read failure");
     return bytes;
   };
+  // The canonical-source store double: checks the bytes against the receipt,
+  // then lands them through the carrier exactly as the R2 transport does.
+  const writeCanonicalPart: EmbryoCanonicalPartWriter = async ({ target, bytes, acknowledge }, signal) => {
+    expect([bytes.byteLength, sha(bytes)]).toEqual([target.byteCount, target.sha256]);
+    state.written.set(`${target.ordinal}.${target.sequence}`, bytes);
+    const { data, error } = await acknowledge("ack_embryo_ingest_r2_write_v1", {
+      p_session_id: target.sessionId, p_sequence: target.sequence, p_ordinal: target.ordinal, p_expected: target,
+      p_provider_version: "1".repeat(32), p_etag: "2".repeat(32), p_observed_sha256: sha(bytes),
+      p_observed_byte_count: bytes.byteLength }).abortSignal(signal);
+    if (error) throw new Error("synthetic write failure");
+    return data as EmbryoStoredFragment;
+  };
   const rowsFor = (ordinal: number) => (state.staged.get(ordinal) ?? []).flatMap((batch) => batch.rows);
-  return { state, rpc, readFragment, rowsFor, listed, key, sessionId };
+  return { state, rpc, readFragment, writeCanonicalPart, rowsFor, listed, key, sessionId };
 }
 
 describe("per-embryo analysis of derived fixture fragments", () => {
@@ -283,13 +328,13 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
   it("is idle when nothing is claimable", async () => {
     const db = fakeDatabase([]);
     db.state.claim = null;
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment })).resolves.toEqual({ status: "idle" });
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart })).resolves.toEqual({ status: "idle" });
     expect(db.state.calls).toEqual(["claim_embryo_split_job_v1"]);
   });
 
   it("stages every embryo in bounded ordered batches and records each outcome once", async () => {
     const db = fakeDatabase(await fragmentsFrom());
-    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, batchSize: 250 });
+    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart, batchSize: 250 });
     expect(result).toEqual({ status: "published", jobId: db.state.claim!.jobId, passed: 2, failed: 0 });
     expect(db.state.calls.at(-1)).toBe("publish_embryo_split_v1");
     expect(db.state.calls.filter((call) => call === "publish_embryo_split_v1")).toHaveLength(1);
@@ -302,17 +347,21 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
       for (const [chrom, pos, , , genotype] of db.rowsFor(ordinal)) expect(genotype).toBe(stated.get(`${chrom}:${pos}`));
       expect(db.state.outcomes.get(ordinal)).toMatchObject({ outcome: "passed", variantCount: called });
     }
-    // Read authority is established under the claim before every fragment read,
-    // and the claim is rechecked again before every outcome.
-    expect(db.state.calls.filter((call) => call === "read_embryo_split_fragment_v1")).toHaveLength(4);
+    // Read authority is established under the claim before every fragment read
+    // (each passing embryo is read twice: to analyse it, then to copy it), and
+    // the claim is rechecked again before every outcome.
+    expect(db.state.calls.filter((call) => call === "read_embryo_split_fragment_v1")).toHaveLength(8);
+    expect(db.state.calls.filter((call) => call === "reserve_embryo_canonical_part_v1")).toHaveLength(4);
+    expect(db.state.calls.filter((call) => call === "ack_embryo_canonical_part_v1")).toHaveLength(4);
     expect(db.state.calls.filter((call) => call === "check_embryo_split_claim_v1")).toHaveLength(2);
     expect(db.state.reported).toEqual([]);
   });
 
   it("asks the fragment store only for (session, sequence, ordinal) and the manifest facts", async () => {
     const db = fakeDatabase(await fragmentsFrom());
-    await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment });
-    expect(db.state.reads.map((ref) => `${ref.ordinal}.${ref.sequence}`)).toEqual(["0.0", "0.1", "1.0", "1.1"]);
+    await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart });
+    expect(db.state.reads.map((ref) => `${ref.ordinal}.${ref.sequence}`))
+      .toEqual(["0.0", "0.1", "0.0", "0.1", "1.0", "1.1", "1.0", "1.1"]);
     for (const ref of db.state.reads) {
       expect(Object.keys(ref).sort()).toEqual(["byteCount", "landed", "ordinal", "sequence", "sessionId", "sha256"]);
       expect(ref.sessionId).toBe(db.sessionId);
@@ -326,7 +375,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
   it("re-verifies bytes even when the store returns the wrong fragment", async () => {
     const db = fakeDatabase(await fragmentsFrom());
     const swapped = async (ref: EmbryoFragmentRef) => db.readFragment({ ...ref, ordinal: 1 - ref.ordinal });
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: swapped }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: swapped, writeCanonicalPart: db.writeCanonicalPart }))
       .resolves.toMatchObject({ status: "failure_pending", code: "chunk" });
     expect(db.state.staged.size).toBe(0);
   });
@@ -334,7 +383,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
   it("continues past an embryo that fails QC and never publishes its rows", async () => {
     const rows = editSample(records, 0, 4, () => "./.");
     const db = fakeDatabase(await fragmentsFrom(rows));
-    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, batchSize: 100 });
+    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart, batchSize: 100 });
     expect(result).toMatchObject({ status: "published", passed: 1, failed: 1 });
     expect(db.state.outcomes.get(0)).toMatchObject({ outcome: "qc_fail_no_source", failureReason: "embryo_call_rate",
       variantCount: 0, qc: { qc_verdict: "fail" } });
@@ -348,7 +397,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
   it("keeps a marginal embryo's own calls and fills nothing in", async () => {
     const rows = editSample(records, 1, 10, () => "./.");
     const db = fakeDatabase(await fragmentsFrom(rows));
-    await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment });
+    await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart });
     const sibling = statedGenotypes(rows, 0);
     const own = statedGenotypes(rows, 1);
     const called = [...own.values()].filter((genotype) => genotype !== null).length;
@@ -368,7 +417,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
     const bytes = db.state.objects.get(db.key(1, 1))!.slice();
     bytes[bytes.length - 2] = bytes[bytes.length - 2] === 48 ? 49 : 48;
     db.state.objects.set(db.key(1, 1), bytes);
-    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment });
+    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart });
     expect(result).toMatchObject({ status: "failure_pending", code: "chunk" });
     expect(db.state.reported).toEqual(["chunk"]);
     expect(db.state.outcomes.has(1)).toBe(false);
@@ -378,7 +427,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
     const fragments = await fragmentsFrom();
     fragments[0].bytes = encoder.encode(decoder.decode(fragments[0].bytes).replace(/\t\.\tGT:DP/, "\tNOTE=x\tGT:DP"));
     const db = fakeDatabase(fragments);
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
       .resolves.toMatchObject({ status: "failure_pending", code: "format" });
     expect(db.state.staged.size).toBe(0);
   });
@@ -387,7 +436,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
     const fragments = await fragmentsFrom();
     fragments[2].bytes = encoder.encode(decoder.decode(fragments[2].bytes).replace("##reference=GRCh38", "##reference=GRCh37"));
     const db = fakeDatabase(fragments);
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
       .resolves.toMatchObject({ status: "failure_pending", code: "build" });
   });
 
@@ -397,7 +446,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
       if (ref.ordinal === 1) throw new EmbryoSplitFragmentMismatch();
       return db.readFragment(ref);
     };
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: gone }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: gone, writeCanonicalPart: db.writeCanonicalPart }))
       .resolves.toMatchObject({ status: "failure_pending", code: "chunk" });
     expect(db.state.reported).toEqual(["chunk"]);
     expect(db.state.outcomes.has(1)).toBe(false);
@@ -409,14 +458,14 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
       const data = await db.rpc(name, args, signal);
       return name === "read_embryo_split_fragment_v1" ? { ...(data as object), sha256: "e".repeat(64) } : data;
     };
-    await expect(runNextEmbryoSplit({ rpc, readFragment: db.readFragment })).rejects.toMatchObject({ code: "integrity_mismatch" });
+    await expect(runNextEmbryoSplit({ rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart })).rejects.toMatchObject({ code: "integrity_mismatch" });
     expect(db.state.reads).toHaveLength(0);
   });
 
   it("requeues after a Storage read failure instead of guessing", async () => {
     const db = fakeDatabase(await fragmentsFrom());
     db.state.objects.delete(db.key(db.listed[1].sequence, db.listed[1].ordinal));
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
       .resolves.toMatchObject({ status: "requeued" });
     expect(db.state.reported).toEqual(["transient"]);
     expect(db.state.outcomes.size).toBe(0);
@@ -424,22 +473,23 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
 
   it("stops at once when a recheck finds the binding stale", async () => {
     const db = fakeDatabase(await fragmentsFrom());
-    db.state.failAt = { call: "read_embryo_split_fragment_v1", after: 2 };
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment }))
+    // Embryo 1 is read twice and recorded; the next read authority is refused.
+    db.state.failAt = { call: "read_embryo_split_fragment_v1", after: 4 };
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
       .resolves.toMatchObject({ status: "failure_pending", code: "stale-binding" });
     expect(db.state.outcomes.size).toBe(1);
-    expect(db.state.reads).toHaveLength(2);
+    expect(db.state.reads).toHaveLength(4);
     expect(db.state.calls.at(-1)).toBe("read_embryo_split_fragment_v1");
   });
 
   it("never publishes when any embryo is left without an outcome", async () => {
     for (const setup of [
       (db: ReturnType<typeof fakeDatabase>) => { db.state.objects.delete(db.key(1, 1)); },
-      (db: ReturnType<typeof fakeDatabase>) => { db.state.failAt = { call: "read_embryo_split_fragment_v1", after: 3 }; },
+      (db: ReturnType<typeof fakeDatabase>) => { db.state.failAt = { call: "read_embryo_split_fragment_v1", after: 5 }; },
     ]) {
       const db = fakeDatabase(await fragmentsFrom());
       setup(db);
-      await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment });
+      await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart });
       expect(db.state.published).toBe(false);
       expect(db.state.calls).not.toContain("publish_embryo_split_v1");
     }
@@ -451,12 +501,12 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
       const data = await db.rpc(name, args, signal);
       return name === "publish_embryo_split_v1" ? { ...(data as object), qcFailed: 1 } : data;
     };
-    await expect(runNextEmbryoSplit({ rpc, readFragment: db.readFragment })).rejects.toMatchObject({ code: "integrity_mismatch" });
+    await expect(runNextEmbryoSplit({ rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart })).rejects.toMatchObject({ code: "integrity_mismatch" });
   });
 
   it("refuses a claim whose fragment set omits an embryo", async () => {
     const db = fakeDatabase((await fragmentsFrom()).filter((f) => f.ordinal === 0));
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
       .rejects.toMatchObject({ code: "integrity_mismatch" });
     expect(db.state.calls).toEqual(["claim_embryo_split_job_v1"]);
   });
@@ -464,7 +514,7 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
   it("refuses a claim receipt with any unregistered field", async () => {
     const db = fakeDatabase(await fragmentsFrom());
     db.state.claim = { ...db.state.claim, sampleLabels: ["private"] };
-    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment }))
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
       .rejects.toMatchObject({ code: "unavailable" });
   });
 
@@ -475,7 +525,101 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
       await new Promise((resolve) => setTimeout(resolve, 25));
       return read(fragment);
     };
-    await runNextEmbryoSplit({ rpc: db.rpc, readFragment: slow, renewEveryMs: 5 });
+    await runNextEmbryoSplit({ rpc: db.rpc, readFragment: slow, writeCanonicalPart: db.writeCanonicalPart, renewEveryMs: 5 });
     expect(db.state.calls).toContain("renew_embryo_split_claim_v1");
+  });
+
+  it("copies each passing embryo's own fragments, byte for byte, before recording it", async () => {
+    const fragments = await fragmentsFrom();
+    const db = fakeDatabase(fragments);
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "published", passed: 2, failed: 0 });
+    expect([...db.state.written.keys()].sort()).toEqual(["0.0", "0.1", "1.0", "1.1"]);
+    for (const fragment of fragments) {
+      const key = `${fragment.ordinal}.${fragment.sequence}`;
+      // Its own bytes, never a sibling's, under a receipt naming exactly this fragment.
+      expect(db.state.written.get(key)).toEqual(fragment.bytes);
+      expect(db.state.parts.get(key)!.target).toMatchObject({ ordinal: fragment.ordinal, sequence: fragment.sequence,
+        sha256: sha(fragment.bytes), byteCount: fragment.bytes.byteLength });
+      expect(db.state.parts.get(key)!.landed).not.toBeNull();
+    }
+    // Every part of an embryo lands before that embryo's outcome is recorded.
+    const calls = db.state.calls;
+    const finishes = calls.flatMap((call, index) => call === "finish_embryo_split_ordinal_v1" ? [index] : []);
+    const acks = calls.flatMap((call, index) => call === "ack_embryo_canonical_part_v1" ? [index] : []);
+    expect(acks.slice(0, 2).every((index) => index < finishes[0])).toBe(true);
+    expect(acks.slice(2).every((index) => index > finishes[0] && index < finishes[1])).toBe(true);
+    expect(new Set([...db.state.parts.values()].map((part) => part.target.objectKey)).size).toBe(4);
+  });
+
+  it("writes no canonical part for an embryo that fails QC", async () => {
+    const rows = editSample(records, 0, 4, () => "./.");
+    const db = fakeDatabase(await fragmentsFrom(rows));
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "published", passed: 1, failed: 1 });
+    expect([...db.state.written.keys()].sort()).toEqual(["1.0", "1.1"]);
+    expect([...db.state.parts.keys()].some((key) => key.startsWith("0."))).toBe(false);
+  });
+
+  it("requeues when a canonical write fails, recording nothing for that embryo", async () => {
+    const db = fakeDatabase(await fragmentsFrom());
+    const failing: EmbryoCanonicalPartWriter = async (part, signal) => {
+      if (part.target.ordinal === 1 && part.target.sequence === 1) throw new Error("synthetic gateway failure");
+      return db.writeCanonicalPart(part, signal);
+    };
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: failing }))
+      .resolves.toMatchObject({ status: "requeued" });
+    expect(db.state.reported).toEqual(["transient"]);
+    expect(db.state.outcomes.has(0)).toBe(true);
+    expect(db.state.outcomes.has(1)).toBe(false);
+    expect(db.state.calls).not.toContain("publish_embryo_split_v1");
+  });
+
+  it("stops with the database's failure when the part ACK finds the binding stale", async () => {
+    const db = fakeDatabase(await fragmentsFrom());
+    db.state.ackFailure = true;
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "failure_pending", code: "stale-binding" });
+    expect(db.state.reported).toEqual([]);
+    expect(db.state.outcomes.size).toBe(0);
+  });
+
+  it("refuses a part receipt that names another fragment, before writing anything", async () => {
+    const db = fakeDatabase(await fragmentsFrom());
+    const rpc: EmbryoSplitRpc = async (name, args, signal) => {
+      const data = await db.rpc(name, args, signal);
+      return name === "reserve_embryo_canonical_part_v1" ? { ...(data as object), sha256: "e".repeat(64) } : data;
+    };
+    await expect(runNextEmbryoSplit({ rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
+      .rejects.toMatchObject({ code: "integrity_mismatch" });
+    expect(db.state.written.size).toBe(0);
+  });
+
+  it("refuses a landed identity for another receipt than the one reserved", async () => {
+    const db = fakeDatabase(await fragmentsFrom());
+    const elsewhere: EmbryoCanonicalPartWriter = async (part, signal) => {
+      const stored = await db.writeCanonicalPart(part, signal);
+      return { ...stored, receipt: { ...stored.receipt, objectKey: `embryo/${randomUUID()}` } };
+    };
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: elsewhere }))
+      .rejects.toMatchObject({ code: "integrity_mismatch" });
+    expect(db.state.outcomes.size).toBe(0);
+  });
+
+  it("ends the attempt as chunk when a fragment changes between analysis and copy", async () => {
+    const db = fakeDatabase(await fragmentsFrom());
+    const read = db.readFragment;
+    let seen = 0;
+    const changing = async (ref: EmbryoFragmentRef) => {
+      const bytes = await read(ref);
+      if (ref.ordinal !== 0 || ref.sequence !== 1 || ++seen < 2) return bytes;
+      const changed = bytes.slice();
+      changed[changed.length - 2] = changed[changed.length - 2] === 48 ? 49 : 48;
+      return changed;
+    };
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: changing, writeCanonicalPart: db.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "failure_pending", code: "chunk" });
+    expect(db.state.written.has("0.1")).toBe(false);
+    expect(db.state.outcomes.size).toBe(0);
   });
 });

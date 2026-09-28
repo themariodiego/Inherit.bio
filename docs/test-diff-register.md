@@ -1,5 +1,44 @@
 # Test diff register
 
+## Embryo canonical sources · 28 September 2026
+
+`supabase/tests/embryo_canonical_sources.sql` is new, with 123 assertions
+(fixture included) for `20260930123000_embryo_canonical_sources.sql`: store
+and door grants, purge registration, reservation and ACK refusals, the pass
+gate, a retry that reserves new keys, publication refusals, the published
+file rows, sources and memberships, genotype binding, immutability, and the
+owner file read under `authenticated`, another account and `anon`.
+
+Existing suites changed, with no assertion removed or loosened:
+
+- `supabase/tests/fixtures/embryo_ingest_completed.inc` configures a synthetic
+  R2 bucket name for canonical parts and adds `pg_temp.land_parts`.
+- In `embryo_split_worker.sql` and `embryo_split_publication.sql`, the
+  `pg_temp.finish` helper lands the embryo's canonical parts before it records
+  a pass, as the worker now does. Every assertion is unchanged, except one.
+  The publication check that each genotype was bound to its own digest also
+  required `source_file_id is null`. It now requires the genotype to point at
+  its own embryo's file, which carries that same digest.
+- `supabase/tests/v2_contracts.sql`: the pinned purge-store count moves from
+  129 to 132 for the three new registered stores.
+- `src/lib/embryos/split-worker.test.ts`: every run passes the canonical-part
+  writer double. A passing embryo is now read twice, once to analyse it and
+  once to copy it. So the read-authority count goes from 4 to 8, and the
+  expected read order lists each passing embryo twice. The stale-binding case
+  still fails the read authority that follows embryo 1's recorded outcome;
+  that is now the fifth call, not the third, and four reads precede it. The
+  "never publishes" case still fails in the middle of embryo 2; that is now
+  after five calls, not three. Seven new cases cover the copies: byte-for-byte
+  copies of each embryo's own fragments landed before its outcome, none for a
+  QC failure, a failed write, a stale ACK, a receipt for another fragment, a
+  landed identity for another receipt, and a fragment changed between the two
+  reads.
+- `src/lib/embryos/split-worker-loop.test.ts` passes a writer and adds one
+  case: each run gets exactly the injected reader and writer.
+- `src/lib/embryos/split-fragment-reader.test.ts` adds two cases for the R2
+  canonical-part writer over the in-memory gateway binding
+  (`scripts/ci-browser/embryo-fragment-fixture.ts`).
+
 ## Embryo fragments on R2 · 29 September 2026
 
 `supabase/tests/embryo_ingest_r2_fragments.sql` is new, with 88 assertions for
