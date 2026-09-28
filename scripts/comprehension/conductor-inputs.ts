@@ -17,6 +17,7 @@ const taskSchema = z.object({ id: z.enum(taskIds), prompt: z.string().min(1), ac
 }).passthrough();
 const bindingsSchema = z.object({ tasks: z.array(taskSchema).length(10) }).passthrough();
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+export const repositoryRoot = root;
 export type ConductorInputs = Readonly<{ personas: readonly Persona[]; tasks: readonly z.infer<typeof taskSchema>[];
   rubric: string; patterns: PatternFile; pins: Record<string, string>; inputDigest: string }>;
 
@@ -53,6 +54,79 @@ export const manifestSchema = z.object({ schemaVersion: z.literal(1), kind: z.li
     z.ZodLiteral<(typeof qualificationBlockers)[number]>, ...z.ZodLiteral<(typeof qualificationBlockers)[number]>[]]),
 }).strict();
 export type RunManifest = z.infer<typeof manifestSchema>;
+
+/** A live run's kind. Only a `live-run` of all 30 personas on all ten tasks
+ * counts toward G3.3's stopping rule; `calibration` measures cost on a small
+ * slice before any full run, and `smoke` proves the harness end to end. */
+export const liveRunKinds = ["live-run", "calibration", "smoke"] as const;
+export const providerKinds = ["local-deterministic-stub", "openai-compatible-chat"] as const;
+/** A non-identifying label such as `provider-a/config-1`. The exact model
+ * identifier never enters a committed record (see run-record.ts). */
+export const inferenceLabel = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*$/).max(64);
+const sha40 = z.string().regex(/^[0-9a-f]{40}$/);
+export const liveManifestSchema = z.object({ schemaVersion: z.literal(1), kind: z.enum(liveRunKinds),
+  qualifyingEvidence: z.boolean(), runId: opaque, revision: sha40, samplingSeed: digest, inputDigest: digest,
+  settingsDigest: digest, settings: settingsSchema, t6Variant: z.enum(["standard", "withheld"]),
+  personaIds: z.array(opaque).min(1).max(30), taskIds: z.array(z.enum(taskIds)).min(1).max(10),
+  pins: z.record(z.string(), digest),
+  inference: z.object({ label: inferenceLabel, provider: z.enum(providerKinds), identityCommitment: digest }).strict(),
+  build: z.object({ baseUrl: z.string().regex(/^http:\/\/(?:localhost|127\.0\.0\.1):\d{2,5}$/),
+    buildId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/), jurisdiction: z.literal("TEST-LOCAL") }).strict(),
+  skipped: z.array(z.object({ taskId: z.enum(taskIds), reason: z.string().min(1).max(1000) }).strict()),
+  blockers: z.array(z.string().regex(/^[A-Za-z0-9-]{1,80}$/)),
+}).strict().superRefine((manifest, context) => {
+  if (manifest.qualifyingEvidence !== (manifest.blockers.length === 0)) {
+    context.addIssue({ code: "custom", message: "Qualifying evidence requires an empty blocker list" });
+  }
+  if (new Set(manifest.taskIds).size !== manifest.taskIds.length || new Set(manifest.personaIds).size !== manifest.personaIds.length) {
+    context.addIssue({ code: "custom", message: "Duplicate task or persona" });
+  }
+  if (manifest.skipped.some(skip => !manifest.taskIds.includes(skip.taskId))) {
+    context.addIssue({ code: "custom", message: "A skipped task must be one of the run's tasks" });
+  }
+});
+export type LiveManifest = z.infer<typeof liveManifestSchema>;
+export type AnyManifest = RunManifest | LiveManifest;
+export const isFullRun = (manifest: AnyManifest) =>
+  manifest.kind === "instrument-dry-run" || (manifest.kind === "live-run" && manifest.taskIds.length === 10 && manifest.personaIds.length === 30);
+export const expectedSessions = (manifest: AnyManifest) =>
+  manifest.personaIds.length * (manifest.kind === "instrument-dry-run" ? 10 : manifest.taskIds.length);
+
+/** Tasks whose bound account no seed can build yet, with the binding's own
+ * reason. These are recorded as skipped, never as passed or failed answers. */
+export function seedSkips(repository = root): { taskId: (typeof taskIds)[number]; reason: string }[] {
+  const bindings = z.object({
+    accounts: z.array(z.object({ id: z.string(), seed: z.unknown().optional(), seedBlockedBy: z.string().optional() }).passthrough()),
+    tasks: z.array(z.object({ id: z.enum(taskIds), account: z.string() }).passthrough()),
+  }).passthrough().parse(JSON.parse(readFileSync(path.join(repository, "scripts/comprehension/bindings.json"), "utf8")));
+  return bindings.tasks.flatMap(task => {
+    const account = bindings.accounts.find(candidate => candidate.id === task.account);
+    if (!account) throw new Error(`Task ${task.id} names an unbound account`);
+    return account.seed === null && account.seedBlockedBy
+      ? [{ taskId: task.id, reason: `${account.id} cannot be seeded: ${account.seedBlockedBy}` }] : [];
+  });
+}
+
+export function createLiveManifest(inputs: ConductorInputs, input: { kind: (typeof liveRunKinds)[number]; runId: string;
+  revision: string; samplingSeed: string; settings: Settings; t6Variant?: "standard" | "withheld";
+  taskIds: readonly (typeof taskIds)[number][]; personaIds: readonly string[];
+  inference: LiveManifest["inference"]; build: LiveManifest["build"];
+  skipped: LiveManifest["skipped"]; blockers: readonly string[] }): Readonly<LiveManifest> {
+  if (computeInputDigest(inputs) !== inputs.inputDigest) throw new Error("Instrument input digest mismatch");
+  const settings = settingsSchema.parse(input.settings), t6Variant = input.t6Variant ?? "standard";
+  const known = new Set(inputs.personas.map(persona => persona.id));
+  if (input.personaIds.some(id => !known.has(id))) throw new Error("Unknown persona");
+  // Model configuration is part of "the same settings" for the stopping rule:
+  // a changed provider label or identity commitment starts a new sequence.
+  const settingsDigest = sha256(JSON.stringify({ inputs: inputs.inputDigest, settings, t6Variant, inference: input.inference }));
+  const blockers = [...new Set([...input.blockers, ...(input.kind === "live-run" ? [] : [`${input.kind}-is-not-a-full-run`]),
+    ...(input.inference.provider === "local-deterministic-stub" ? ["stub-provider-is-not-evidence"] : []),
+    ...input.skipped.map(skip => `${skip.taskId}-skipped`)])].sort();
+  return freeze(liveManifestSchema.parse({ schemaVersion: 1, kind: input.kind, qualifyingEvidence: blockers.length === 0,
+    runId: input.runId, revision: input.revision, samplingSeed: input.samplingSeed, inputDigest: inputs.inputDigest,
+    settingsDigest, settings, t6Variant, personaIds: [...input.personaIds], taskIds: [...input.taskIds], pins: inputs.pins,
+    inference: input.inference, build: input.build, skipped: input.skipped, blockers }));
+}
 
 export function createManifest(inputs: ConductorInputs, input: { runId: string; revision: string; samplingSeed: string;
   settings: Settings; t6Variant?: "standard" | "withheld" }) {

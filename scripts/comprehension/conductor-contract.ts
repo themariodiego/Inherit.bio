@@ -7,8 +7,15 @@ export const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const count = z.number().int().nonnegative().max(1_000_000);
 const route = z.string().max(2048).regex(/^\/(?!\/)[^\s?#\\]*$/);
 export const settingsSchema = z.object({
-  temperature: z.number().finite().min(0).max(2), maxSteps: z.number().int().min(1).max(100),
+  // One pinned temperature for participants. Graders may pin their own; when
+  // absent they use the same value. Both are recorded with the run.
+  temperature: z.number().finite().min(0).max(2), graderTemperature: z.number().finite().min(0).max(2).optional(),
+  maxSteps: z.number().int().min(1).max(100),
   maxAttempts: z.number().int().min(1).max(3), timeoutMs: z.number().int().min(10).max(60_000),
+  // Opening a live session seeds a fresh account through the product's own
+  // upload path, and its completion check reads the database; both may take
+  // longer than one browser action or inference call.
+  sessionSetupTimeoutMs: z.number().int().min(10).max(900_000).optional(),
   maximumInputTokens: count.min(1), maximumOutputTokens: count.min(1),
   price: z.object({ inputMicroDollarsPerMillion: count, outputMicroDollarsPerMillion: count }).strict(),
 }).strict();
@@ -56,8 +63,18 @@ export interface DryEnvironment {
   openBrowser(input: Readonly<{ id: string; taskId: TaskId; account: string; fixtures: readonly string[] }>, signal: AbortSignal): Promise<BrowserAdapter>;
   openProcess(input: Readonly<{ id: string; role: Role }>, signal: AbortSignal): Promise<ProcessAdapter>;
 }
+/** The live harness: a fresh browser context and seeded account per session
+ * against the local production build under TEST-LOCAL, and a fresh isolated
+ * child process per inference call (`live-browser.ts`, `inference-isolation.ts`). */
+export interface LiveEnvironment extends Omit<DryEnvironment, "kind"> {
+  kind: "live-local-build";
+}
+export type ConductorEnvironment = DryEnvironment | LiveEnvironment;
 export const inferenceResultSchema = z.object({ value: z.unknown(),
   usage: z.object({ complete: z.literal(true), inputTokens: count, outputTokens: count }).strict(),
+  // SHA-256 of the exact request body the isolated process sent, so a blind
+  // grading request can be re-rendered and audited from the committed record.
+  requestDigest: digest.optional(),
 }).strict();
 
 export function freeze<T>(input: T): Readonly<T> {
