@@ -4234,7 +4234,10 @@ questions at the end of `docs/carrier-importer-design.md`.
   `cystic-fibrosis-cftr-f508del-informational` drops "carrier status" and the
   per-pregnancy 1-in-4 sentence. It keeps the finding, the caveats and the
   laboratory line. The change reaches production through the guarded
-  catalogue refresh, with a receipt.
+  catalogue refresh, with a receipt. Asked afterwards: saved reports that
+  already captured the old wording keep it as captured, and no one is
+  contacted, as with the 25 and 27 September refreshes. New runs get the new
+  text. A "wording changed" notice on those saved reports was declined.
 - **One branch per work stream.** Each parallel work stream pushes its own
   `claude/<stream>` branch and opens its own draft pull request, so CI runs in
   parallel. One integrator still reviews each pull request, merges them one
