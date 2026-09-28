@@ -14,8 +14,8 @@
         "ref": "TCTT",
         "alt": "T",
         "interpretations": {
-          "TCTTTCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out carrier status. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
-          "TTCTT": "One copy of F508del, which is consistent with CF carrier status. Carriers are healthy. If both partners carry a CF-causing variant, each pregnancy has a 1-in-4 chance of CF. Consumer arrays can misread this site. A clinical lab should confirm the result before you act on it. A genetic counselor can explain what it means for family planning.",
+          "TCTTTCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out the others. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
+          "TTCTT": "One copy of F508del. Consumer arrays can misread this site. A clinical lab should confirm the result before you act on it. A genetic counselor can explain what it means for family planning.",
           "TT": "Two copies of F508del. This is the most common genotype in people with CF, which is usually found in childhood. This result would be unexpected in an adult with no known CF. An array error is likely because this site is hard to read. A clinical lab should confirm the result. You should also speak with a genetic counselor."
         }
       }
