@@ -372,7 +372,7 @@ describe("chats.json", () => {
 });
 
 /** F4, 26 Sep 2026: the archive states what it holds and what it does not yet. */
-it("lists the permission records and profile facts, and says legal audit records are not yet included", async () => {
+it("lists the permission records and profile facts, and points to the legal audit file", async () => {
   const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
   const manifest = JSON.parse(zip.readAsText("manifest.json"));
   const record = JSON.parse(zip.readAsText("subject-record.json"));
@@ -380,10 +380,28 @@ it("lists the permission records and profile facts, and says legal audit records
   const entry = manifest.contents.find((item: { path: string }) => item.path === "subject-record.json");
   expect(entry.description).toContain("never the name you signed with");
   expect(entry.description).toContain("your birth date and declared country");
-  expect(entry.description).toContain("Legal audit records are not yet included.");
+  expect(entry.description).toContain("Legal audit records are in legal-audit.json.");
   // The privacy policy's export promise stays verbatim.
   expect(manifest.note).toContain("your original uploaded files, all derived variants, all reports, and your chat history");
-  expect(manifest.note).toContain("Legal audit records are not yet included.");
+  expect(manifest.note).toContain("the legal audit records of what you did yourself (records that do not say who acted are left out)");
+  expect(manifest.note).not.toContain("not yet included. Unvalidated");
+});
+
+/**
+ * L-34 and the owner's decision of 28 Sep 2026: every archive carries
+ * `legal-audit.json`. While no ledger event says who acted, it is empty and
+ * says so, and the manifest counts it as empty rather than leaving it out.
+ */
+it("carries an honest, empty legal-audit.json while no ledger event says who acted", async () => {
+  const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+  const file = JSON.parse(zip.readAsText("legal-audit.json"));
+  expect(file).toEqual({ schema_version: "legal-audit-v1",
+    note: "Our legal audit records do not yet say who acted, so none can be shown as yours. "
+      + "This file is empty for that reason, not because nothing happened.", events: [] });
+  const entry = JSON.parse(zip.readAsText("manifest.json")).contents
+    .find((item: { path: string }) => item.path === "legal-audit.json");
+  expect(entry).toMatchObject({ count: 0 });
+  expect(entry.description).toContain("what you did yourself");
 });
 
 /**

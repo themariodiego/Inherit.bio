@@ -750,7 +750,10 @@ create temporary table export_member_plan as select $plan$
     },
     "public.legal_audit_log": {
       "disposition": "deferred",
-      "reason": "L-34 requires legal-audit.json with the requester's own slice. Every event today is written with a null audit principal, so no resolver can select one account's rows. What the slice may reveal is an owner and counsel decision (docs/export-legal-audit-resolver.md)."
+      "reason": "L-34 requires legal-audit.json with the requester's own slice. The owner chose, on 28 Sep 2026, the events a person caused themselves (docs/export-legal-audit-resolver.md, option A). Every event so far was written without saying who acted, so the file ships empty and says why (option C) until attribution and the requester's slice are built.",
+      "members": [
+        "archive:legal-audit.json"
+      ]
     },
     "public.legal_audit_retention_checkpoints": {
       "disposition": "excluded-internal",

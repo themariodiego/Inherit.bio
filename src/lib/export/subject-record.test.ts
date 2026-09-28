@@ -271,7 +271,7 @@ describe("the subject record in the free export", () => {
   it("carries exactly the tables the member plan places in subject-record.json", async () => {
     const record = (await subjectRecordOf(admin([]), ACCOUNT))!;
     const planned = Object.entries(exportMemberPlan.tables)
-      .filter(([, entry]) => "members" in entry && entry.members.includes("archive:subject-record.json"))
+      .filter(([, entry]) => "members" in entry && (entry.members ?? []).includes("archive:subject-record.json"))
       .map(([name]) => name.replace(/^public\./, ""));
     expect(new Set(Object.keys(record))).toEqual(new Set(planned));
     expect(new Set(Object.keys(record))).toEqual(LISTED);

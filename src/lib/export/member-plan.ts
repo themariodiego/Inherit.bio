@@ -41,8 +41,15 @@ const exportedEntry = z.object({
 }).strict();
 
 const excludedEntry = z.object({
-  disposition: z.enum(EXPORT_DISPOSITIONS).exclude(["exported"]),
+  disposition: z.enum(EXPORT_DISPOSITIONS).exclude(["exported", "deferred"]),
   reason,
+}).strict();
+
+/** A deferred class may already have its archive member, carrying no rows yet. */
+const deferredEntry = z.object({
+  disposition: z.literal("deferred"),
+  reason,
+  members: z.array(member).min(1).optional(),
 }).strict();
 
 const planSchema = z.object({
@@ -53,7 +60,7 @@ const planSchema = z.object({
     Record<(typeof EXPORT_DISPOSITIONS)[number], typeof reason>).strict(),
   objects: z.record(z.string(), z.object({ disposition: z.literal("exported"), members: z.array(member).min(1), reason }).strict()),
   tables: z.record(z.string().regex(/^(public|private)\.[a-z0-9_]+$/),
-    z.discriminatedUnion("disposition", [exportedEntry, excludedEntry])),
+    z.discriminatedUnion("disposition", [exportedEntry, deferredEntry, excludedEntry])),
 }).strict();
 
 export type ExportMemberPlan = z.infer<typeof planSchema>;
@@ -74,6 +81,6 @@ export function exportedTable(name: string, source: ExportMemberPlan = exportMem
 /** Every archive member the plan names, from its tables and its stored objects. */
 export function plannedArchiveMembers(source: ExportMemberPlan = exportMemberPlan): Set<string> {
   const members = [...Object.values(source.tables), ...Object.values(source.objects)]
-    .flatMap((entry) => ("members" in entry ? entry.members : []));
+    .flatMap((entry) => ("members" in entry ? entry.members ?? [] : []));
   return new Set(members.filter((name) => name.startsWith("archive:")).map((name) => name.slice("archive:".length)));
 }

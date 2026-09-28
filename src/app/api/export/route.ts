@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { ownSubjectIds, subjectRecordOf, subjectRecordRowCount } from "@/lib/export/subject-record";
 import { ownChatsForExport } from "@/lib/export/own-chats";
-import { EXPORT_CHATS_EMPTY } from "@/copy/settings/data-export";
+import { EXPORT_CHATS_EMPTY, EXPORT_LEGAL_AUDIT_DESCRIPTION, EXPORT_LEGAL_AUDIT_NONE_ATTRIBUTED } from "@/copy/settings/data-export";
 import { originalDownloadName, originalFileExtension } from "@/lib/uploads/original-download-name";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
@@ -447,7 +447,7 @@ export async function GET() {
           + "consent history, the consents and disclosures you signed (never the name you signed "
           + "with), the permissions on your own subjects that rest on them, the affirmations you "
           + "made, your birth date and declared country, and the provider grants recorded against "
-          + "this account. Legal audit records are not yet included. Rows about other people are "
+          + "this account. Legal audit records are in legal-audit.json. Rows about other people are "
           + "not here, by construction.",
         count: subjectRecordRowCount(subjectRecord),
       });
@@ -704,6 +704,13 @@ export async function GET() {
         count: chats.length,
       });
 
+      // L-34 and the owner's decision of 28 Sep 2026: the legal audit events
+      // this person caused themselves. No ledger event yet says who acted, so
+      // the file is empty and says why; it never carries a guessed row.
+      archive.append(JSON.stringify({ schema_version: "legal-audit-v1", note: EXPORT_LEGAL_AUDIT_NONE_ATTRIBUTED,
+        events: [] }, null, 2), { name: "legal-audit.json" });
+      contents.push({ path: "legal-audit.json", description: EXPORT_LEGAL_AUDIT_DESCRIPTION, count: 0 });
+
       // Per genome file: normalized variants as CSV (streamed page by page
       // to bound memory) and the original upload byte-for-byte.
       for (const f of legacyFiles) {
@@ -765,7 +772,7 @@ export async function GET() {
         ...(warnings.length > 0 ? { warnings } : {}),
         note: "Export is free and always will be. This archive contains "
           + (expiredOriginals ? "your available original uploaded files (expired originals are identified in warnings)" : "your original uploaded files")
-          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, your consent and permission records, and your birth date and declared country. Legal audit records are not yet included. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte, each named with the extension of its file type; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
+          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, your consent and permission records, your birth date and declared country, and the legal audit records of what you did yourself (records that do not say who acted are left out). Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte, each named with the extension of its file type; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
       };
       archive.append(JSON.stringify(manifest, null, 2), {
         name: "manifest.json",

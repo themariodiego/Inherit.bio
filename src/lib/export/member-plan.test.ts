@@ -100,7 +100,7 @@ describe("the asynchronous history reader against the plan", () => {
   const sql = latestDefinition("public.export_archive_content_v1");
   const kinds = /p_payload->>'kind' not in \(([^)]*)\)/.exec(sql)![1].split(",").map((kind) => kind.trim().replace(/'/g, ""));
   const planned = new Map(Object.entries(exportMemberPlan.tables).flatMap(([table, entry]) =>
-    "members" in entry ? entry.members.filter((name) => name.startsWith("reader:history."))
+    "members" in entry ? (entry.members ?? []).filter((name) => name.startsWith("reader:history."))
       .map((name) => [name.slice("reader:history.".length), table] as const) : []));
   const section = sql.slice(sql.indexOf("if history_kind='legacy-consents' then"), sql.indexOf("-- A full page says whether more follow"));
   const branches = new Map([...section.matchAll(/(?:if|elsif) history_kind='([a-z-]+)' then([\s\S]*?)(?=\n\s*(?:elsif|else)\b)/g)]
