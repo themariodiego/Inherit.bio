@@ -64,6 +64,10 @@
       "why": "Reads the uploaded object by genome_files.bucket_path before parsing."
     },
     {
+      "site": "genomes src/lib/embryos/unwind-storage.ts",
+      "why": "Deletes one landed Supabase-backed embryo fragment by its exact object id and version, as claimed by claim_embryo_ingest_object_disposals_v1 after an unwind's drain settled. The Storage DELETE result is the evidence finish_embryo_ingest_object_disposal_v1 checks."
+    },
+    {
       "site": "genomes src/lib/genome/prepared-source/original-retention.ts",
       "why": "Deletes one registered original object under source.original-calendar-month."
     },

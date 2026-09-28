@@ -228,6 +228,29 @@ options in `docs/embryo-ingest-unwind-runtime.md`. The deletion
 acknowledgement and the terminal graph purge are still missing, and ingest
 stays unavailable. This paragraph changes no threshold or acceptance mark.
 
+**Fragments on R2, 29 September 2026.** The owner answered that question on
+28 September: prove absence, do not assume it. Embryo fragments therefore move
+to a private R2 bucket behind their own undeployed gateway,
+`workers/embryo-fragments`. That gateway allows create-only writes, reads of
+one exact version, and permanent empty markers, as ADR 0025 does for prepared
+objects. `20260929100000_embryo_ingest_r2_fragments.sql` records each write
+intent's backend and lands an R2 fragment only through an exact ACK. That ACK
+shares the Supabase guard's admission check, so the fence and drain hold for
+both backends. The interface is `docs/embryo-fragment-storage.md`. The markers
+at uncertain keys and the deletion acknowledgement come next. The terminal
+purge follows them. This paragraph changes no threshold or acceptance mark.
+
+**Exact storage disposal, 29 September 2026.** The second safeguard is test-local
+code in `20260929101000_embryo_ingest_unwind_storage.sql`. After the drain
+settles, every R2 key gets a verified empty marker, and a landed Supabase
+object is deleted by exact id and version. Each disposal is recorded only with
+that exact evidence. `storage_confirmed` needs every inventory row proved; a
+trigger enforces this. An uncertain Supabase write, a vanished object or a
+lost acknowledgement keeps the unwind at `storage_pending`. The same migration
+fixes D-130 for the unwind builder. The terminal graph purge is the last
+safeguard, and ingest stays unavailable. This paragraph changes no threshold or
+acceptance mark.
+
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
    its `sample_ordinal`. Source sample labels, column headers and file
    names are used only transiently in bounded memory to associate rows;
