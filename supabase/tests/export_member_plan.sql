@@ -48,6 +48,10 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.embryo_ingest_object_config": {
+      "disposition": "reference",
+      "reason": "The operator's embryo fragment storage backend selection: provider, bucket and gateway audience. It holds no person's data."
+    },
     "private.embryo_ingest_write_fences": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write fences and their drain state. It is machinery, not the person's record."
