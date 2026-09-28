@@ -284,6 +284,22 @@ Storage deletion acknowledgement or terminal notice producer is added.
      proved. No caller is wired to it. `restrict_embryo_cohort_v1` is
      unchanged: today it deletes QC and genotypes and keeps the file rows,
      sources and parts.
+
+   **Restriction deletes the sources, 30 September 2026**
+   (`20260930150000_embryo_restriction_deletes_sources.sql`, tested by
+   `supabase/tests/embryo_restriction_source_deletion.sql`). The owner decided
+   on 28 September that restriction and withdrawal delete the cohort's
+   canonical sources. `private.delete_embryo_cohort_sources_v1(cohort, reason)`
+   takes the reason `restriction` or `withdrawal` and has no grant for any
+   role. It passes every canonical source file of the cohort to the planner
+   in the caller's transaction. `public.restrict_embryo_cohort_v1` calls it at
+   one marked point, after its genotype deletes. The door's signature, grants
+   and earlier effects are unchanged. Withdrawal (`api.embryo-withdraw`) is an
+   alias of that door, so it gets the same deletion. If anything else still
+   depends on a file, the whole restriction rolls back. The parts follow
+   through the source unwind once their markers are proved. Tests prove that
+   no store names a deleted file or part afterwards. Another cohort's source
+   and the owner's own file are untouched.
 4. Final transaction and queue-production regressions, due-phase scheduling,
    zero-residual checks, provider retention verification and a reviewed rollout.
 

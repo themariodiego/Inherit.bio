@@ -4227,3 +4227,7 @@ recommended option on all three.
   any other column, that names a deleted row still stops the purge.
 - **Two current contacts give no notice address.** A recipient with more
   than one current contact gets a `delivery_unavailable` slot, as built.
+- **Restriction deletes the sources** (asked after safeguards unit 4,
+  recommended option). Restricting or withdrawing a cohort deletes its
+  canonical sources in the same transaction. Their parts follow once their
+  disposal is proved.
