@@ -251,10 +251,12 @@ select throws_ok($$select pg_temp.commit('a')$$,'55000','embryo_chunk_objects_un
 set local role service_role;
 select throws_ok($$select pg_temp.put(pg_temp.name_of('a',0))$$,'42501','embryo_object_unavailable',
   'a landed name cannot be written again');
+-- No conflict target: hosted Storage replaced the (bucket_id, name) unique
+-- index with version-aware ones, and the guard refuses before any of them.
 select throws_ok($$insert into storage.objects(bucket_id,name,version,metadata)
   values('genomes',pg_temp.name_of('a',0),gen_random_uuid()::text,'{"size":80}')
-  on conflict(bucket_id,name) do update set metadata=excluded.metadata$$,
-  '42501','embryo_object_unavailable','an upsert cannot replace a landed object');
+  on conflict do nothing$$,
+  '42501','embryo_object_unavailable','an insert that tolerates conflicts still cannot touch a landed name');
 select throws_ok($$update storage.objects set metadata='{"size":80}'
   where bucket_id='genomes' and name=pg_temp.name_of('a',0)$$,'42501','embryo_object_unavailable',
   'even an identical UPDATE of an embryo object is refused');
