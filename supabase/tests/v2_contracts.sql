@@ -16,7 +16,8 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- checkpoints, cleanup plans/entries and original retirement add four stores.
 -- Legal audit attribution adds private.legal_audit_account_principals, the
 -- account-to-pseudonym link deleted with the account (20260928160000).
--- The embryo-ingest write fence adds its write intents and session fences.
+-- The embryo-ingest write fence adds its write intents and session fences,
+-- and the unwind's exact storage disposals add one more.
 -- The public Future Person claim start adds private.future_person_claim_intakes
 -- to claim-review-working-packages (G5.4).
 -- The embryo split worker adds its two attempt-owned pending stores
@@ -25,8 +26,8 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- (private.embryo_canonical_parts, _sources, _source_parts).
 -- The embryo-parent-withdrawal credential binding adds
 -- private.embryo_withdrawal_credentials to mail-token-and-rights-delivery-state.
-select is((select count(*) from public.purge_target_stores), 135::bigint,
-  'all 135 purge stores, including private prepared-object, embryo write-fence, embryo split, embryo canonical-source and withdrawal-credential state, the legal audit account link and claim intakes, are classified');
+select is((select count(*) from public.purge_target_stores), 136::bigint,
+  'all 136 purge stores, including private prepared-object, embryo write-fence, disposal, embryo split, embryo canonical-source and withdrawal-credential state, the legal audit account link and claim intakes, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');
