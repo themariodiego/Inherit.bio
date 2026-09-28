@@ -143,3 +143,32 @@ export const HELD_FOR_YOU_COPY = {
   confirmed: (added: string, kind: "array" | "vcf") =>
     `You said yes to the ${kind === "array" ? "raw data file" : "VCF file"} added on ${added}. Nothing is made from it yet.`,
 } as const;
+
+/**
+ * Path B's reading layer on `/files` (TEST-LOCAL only): the person's choices,
+ * one kind of result at a time, for themselves and for the person who added
+ * the file; and the uploader's one line about what was shared with them.
+ * Nothing is made either way yet, and both sides are told so.
+ */
+export const PATH_B_CHOICES_COPY = {
+  heading: "What can be made from your file",
+  detail: "Each kind of result is its own choice, for you and for the person who added your file. Nothing is made yet. Inherit cannot make results from a file added this way yet.",
+  layers: {
+    "reports.monogenic": "Observed genetic variants",
+    "reports.polygenic": "Trait reports and estimates",
+    ancestry: "Ancestry",
+  },
+  forYou: "For you",
+  forThem: "For the person who added your file",
+  on: "On",
+  off: "Off",
+  affirmSelf: "I want Inherit to make these results for me.",
+  affirmShare: "I let the person who added my file see this kind of result about my DNA.",
+  turnOn: "Turn on",
+  turnOff: "Turn off",
+  saving: "Saving…",
+  shareClosed: "Sharing with the person who added your file is not open yet.",
+  details: (version: number) => `Permission details · version ${version}`,
+  failed: "We could not confirm your choice. Refresh the page to check its current state before trying again.",
+  uploaderShared: (label: string, layers: string) => `${label} shared: ${layers}. Nothing is made from it yet.`,
+} as const;

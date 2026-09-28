@@ -1,4 +1,10 @@
-import { HELD_FOR_YOU_COPY as HELD, OTHER_ADULT_UPLOAD_COPY as COPY } from "@/copy/upload/other-adult";
+import {
+  HELD_FOR_YOU_COPY as HELD,
+  OTHER_ADULT_UPLOAD_COPY as COPY,
+  PATH_B_CHOICES_COPY as CHOICES,
+} from "@/copy/upload/other-adult";
+import { listPathBUploaderShares, preparePathBChoices } from "@/lib/uploads/path-b-purpose-server";
+import { PathBChoices } from "./path-b-choices";
 import {
   listOtherAdultTargets,
   listSubjectHeldFiles,
@@ -69,20 +75,37 @@ export async function HeldForYouRows() {
 }
 
 /**
+ * Path B's reading layer for the signed-in person: their choices, one kind of
+ * result at a time, for themselves and for the person who added their file.
+ */
+export async function PathBChoicesSection() {
+  const people = await preparePathBChoices().catch(() => null);
+  return people && people.length > 0 ? <PathBChoices people={people} /> : null;
+}
+
+/**
  * The files list's one line per Path B person with a file (brief §5.2: the
  * uploader sees the state, never the file). Read-only: no permission, no
  * upload, no file row.
  */
 export async function OtherAdultHeldRows() {
-  const targets = await listOtherAdultTargets().catch(() => null);
-  const rows = (targets ?? []).flatMap(target => {
+  const [targets, shares] = await Promise.all([
+    listOtherAdultTargets().catch(() => null), listPathBUploaderShares().catch(() => null),
+  ]);
+  // Path B's reading layer: what each account-bound person shared, and that
+  // nothing is made from it yet.
+  const shared = (shares ?? []).filter(share => share.shared.length > 0).map((share, index) => ({
+    key: `shared:${index}`, detail: null,
+    text: CHOICES.uploaderShared(share.label, share.shared.map(layer => CHOICES.layers[layer.purpose]).join(", ")),
+  }));
+  const rows = [...(targets ?? []).flatMap(target => {
     if (target.state === "pending") {
       return [{ key: target.subjectId, text: COPY.pendingStatus(target.label),
         detail: target.latest?.deleteBy ? COPY.pendingDeadline(day(target.latest.deleteBy)) : null }];
     }
     const line = latestFileLine(target.label, target.latest);
     return line ? [{ key: target.subjectId, text: line, detail: null }] : [];
-  });
+  }), ...shared];
   if (rows.length === 0) return null;
   return (
     <ul className="space-y-3" data-slot="other-adult-held-rows">

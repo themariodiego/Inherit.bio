@@ -19,6 +19,7 @@ import { isOtherAdultConsentPayload } from "@/lib/uploads/other-adult-upload";
 import { otherAdultUploadConsent } from "@/lib/uploads/other-adult-consent-route";
 import { ownUploadConsent } from "@/lib/uploads/own-consent-route";
 import { isOwnReportConsentPayload, ownReportConsent } from "@/lib/uploads/own-report-consent-route";
+import { isPathBPurposeConsentPayload, pathBPurposeConsent } from "@/lib/uploads/path-b-purpose-server";
 import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own-consent";
 
 /**
@@ -80,6 +81,9 @@ export async function POST(request: Request) {
   if (isOwnConsentPayload(payload)) return ownUploadConsent(request, payload);
   // The Tier-2 uploader body of the register's Path B (TEST-LOCAL only).
   if (isOtherAdultConsentPayload(payload)) return otherAdultUploadConsent(request, payload);
+  // Path B's reading layer (TEST-LOCAL only): one layer for the person or the
+  // uploader, under a presentation only this route's page could have minted.
+  if (isPathBPurposeConsentPayload(payload)) return pathBPurposeConsent(request, payload);
   if (isOwnReportConsentPayload(payload)) return ownReportConsent(request, payload);
   if (isOwnCopilotConsentPayload(payload)) return ownCopilotConsent(request, payload);
   if (isEmbryoConsentPayload(payload)) return embryoConsent(request, payload);
