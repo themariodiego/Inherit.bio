@@ -154,6 +154,11 @@ The capability register row is corrected in the same change as this document.
 Changing the published text is a production content change, so it waits for
 question 3.
 
+**Answered, 2026-09-28:** the owner chose to reword it now. The template drops
+"carrier status" and the per-pregnancy sentence and keeps the finding, the
+caveats and the laboratory line; `gate:templates` now refuses both phrases in
+any template. Production takes the text through the guarded catalogue refresh.
+
 ## Questions for the owner
 
 1. **Evidence threshold.**

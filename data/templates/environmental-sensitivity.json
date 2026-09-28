@@ -35,8 +35,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "7581459", "label": "Valverde et al., Nature Genetics 1995" },
-      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" }
+      { "pmid": "7581459", "label": "Valverde et al., Nature Genetics 1995", "accessedOn": "2026-09-28" },
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -62,8 +62,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008" },
-      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" }
+      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008", "accessedOn": "2026-09-28" },
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -147,7 +147,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genetics 2010" },
+      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genetics 2010", "accessedOn": "2026-09-28" },
       { "pmid": "30899065", "label": "Wang et al., Scientific Reports 2019" }
     ]
   },
@@ -174,7 +174,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "24465030", "label": "MacIntyre et al., Environmental Health Perspectives 2014" }
+      { "pmid": "24465030", "label": "MacIntyre et al., Environmental Health Perspectives 2014", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -200,7 +200,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8896566", "label": "Davies et al., Nature Genetics 1996" }
+      { "pmid": "8896566", "label": "Davies et al., Nature Genetics 1996", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -226,9 +226,9 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "29723195", "label": "Key et al., PLoS Genetics 2018" },
-      { "pmid": "31873179", "label": "Gavva et al., Scientific Reports 2019" },
-      { "pmid": "21666692", "label": "Chasman et al., Nature Genetics 2011" }
+      { "pmid": "29723195", "label": "Key et al., PLoS Genetics 2018", "accessedOn": "2026-09-28" },
+      { "pmid": "31873179", "label": "Gavva et al., Scientific Reports 2019", "accessedOn": "2026-09-28" },
+      { "pmid": "21666692", "label": "Chasman et al., Nature Genetics 2011", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -293,8 +293,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19047183", "label": "Friedman et al., Human Molecular Genetics 2009" },
-      { "pmid": "24146964", "label": "Luo et al., PLoS One 2013" }
+      { "pmid": "19047183", "label": "Friedman et al., Human Molecular Genetics 2009", "accessedOn": "2026-09-28" },
+      { "pmid": "24146964", "label": "Luo et al., PLoS One 2013", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -320,7 +320,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20541252", "label": "Wang et al., The Lancet 2010" }
+      { "pmid": "20541252", "label": "Wang et al., The Lancet 2010", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -346,7 +346,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "23817569", "label": "Hinds et al., Nature Genetics 2013" }
+      { "pmid": "23817569", "label": "Hinds et al., Nature Genetics 2013", "accessedOn": "2026-09-28" }
     ]
   }
 ]

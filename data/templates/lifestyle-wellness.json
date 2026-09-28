@@ -56,7 +56,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12879365", "label": "Yang et al., Am J Hum Genet 2003" }
+      { "pmid": "12879365", "label": "Yang et al., Am J Hum Genet 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -82,7 +82,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "30625151", "label": "Tharabenjasin et al., PLoS One 2019" }
+      { "pmid": "30625151", "label": "Tharabenjasin et al., PLoS One 2019", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -108,7 +108,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20541252", "label": "Wang et al., Lancet 2010" }
+      { "pmid": "20541252", "label": "Wang et al., Lancet 2010", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -134,7 +134,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18776911", "label": "Hazra et al., Nat Genet 2008" }
+      { "pmid": "18776911", "label": "Hazra et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -160,7 +160,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19148276", "label": "Tanaka et al., PLoS Genet 2009" }
+      { "pmid": "19148276", "label": "Tanaka et al., PLoS Genet 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -186,7 +186,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19820699", "label": "Benyamin et al., Nat Genet 2009" }
+      { "pmid": "19820699", "label": "Benyamin et al., Nat Genet 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -212,8 +212,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "22105623", "label": "Allebrandt et al., Mol Psychiatry 2013" },
-      { "pmid": "27494321", "label": "Jones et al., PLoS Genet 2016" }
+      { "pmid": "22105623", "label": "Allebrandt et al., Mol Psychiatry 2013", "accessedOn": "2026-09-28" },
+      { "pmid": "27494321", "label": "Jones et al., PLoS Genet 2016", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -239,7 +239,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "26835600", "label": "Hu et al., Nat Commun 2016" }
+      { "pmid": "26835600", "label": "Hu et al., Nat Commun 2016", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -265,7 +265,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20519558", "label": "Timpson et al., Am J Clin Nutr 2010" }
+      { "pmid": "20519558", "label": "Timpson et al., Am J Clin Nutr 2010", "accessedOn": "2026-09-28" }
     ]
   }
 ]
