@@ -39,3 +39,22 @@ export const OTHER_ADULT_UPLOAD_COPY = {
   unavailableStatus: "You cannot add a file for this person right now.",
   uploadFailed: "The file could not be added. Please try again.",
 } as const;
+
+/**
+ * The invited adult's side (`/withdraw/session`): what they are told when the
+ * person who invited them added a file for them, and the three receipts when
+ * one was held. Without a held file the page keeps its earlier sentences.
+ */
+export const OTHER_ADULT_REVIEW_COPY = {
+  heldHeading: "A DNA file was added for you",
+  heldAdded: (date: string) =>
+    `The person who invited you added a genome file on ${date}. Nobody can open it, and nothing has been analysed.`,
+  heldChoices: (date: string) =>
+    `If you accept, the file moves to your own account. Nothing is analysed until you choose, and the sender gets no access. If you refuse or delete this record, the file is deleted. If you do nothing, it is deleted on ${date}.`,
+  heldReceipts: {
+    accepted: "The file added for you is now in your own account. Nothing has been analysed. The inviter received no genetic-data access.",
+    refused: "The reserved subject was closed and the file added for you is being deleted. This address will not receive another invitation for this target.",
+    deleted: "The reserved subject was closed and the file added for it is being deleted. Nothing was ever analysed.",
+  },
+  filesLink: "Open your files",
+} as const;
