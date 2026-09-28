@@ -58,10 +58,35 @@ export const SENDING_BUTTON = "Working…";
 
 export const RECEIVED_HEADING = "We have your request";
 export const RECEIVED_BODY =
-  "Next you add a photo ID and a birth record, and a person on our team reviews them. That step is not open yet. Nothing you sent says whether a record exists.";
+  "Next you send a picture ID and a birth record, and a person on our team reviews them. Nothing you sent says whether a record exists.";
 
 export const LIMITED_STATUS = "Too many claims were started. Please try again.";
 export const EXPIRED_STATUS = "This page has expired. Open it again to start.";
 export const INVALID_STATUS = "Please check your details.";
 export const FAILED_STATUS = "Your claim could not be started. Please try again.";
 export const FIELD_ERROR = "Please check this.";
+
+/** The documents step, shown once this browser holds a live claim. */
+export const DOCUMENTS_HEADING = "Send your files";
+export const DOCUMENTS_INTRO =
+  "Send a photo ID and a birth record. We check each file for viruses before anyone opens it. Then a person on our team reviews them.";
+export const DOCUMENT_LABELS = {
+  "future-photo-identity": "Picture ID",
+  "future-birth-record": "Birth record",
+} as const;
+export const DOCUMENT_FILE_HINT = "A PDF, JPEG or PNG file, up to 20 MB.";
+export const SEND_FILE_BUTTON = "Send this file";
+export const DOCUMENT_STATUS = {
+  working: "Working…",
+  scanning: "We are checking this file.",
+  received: "We have this file. A person will review it.",
+  infected: "We found a virus in this file and deleted it.",
+  unscannable: "We could not check this file and deleted it.",
+  oversize: "This file is too much. Please send a small one.",
+  type: "This file is not a PDF, JPEG or PNG.",
+  integrity: "Part of this file is missing. Please try again.",
+  storage: "Part of this file is missing. Please try again.",
+  expired: "This claim has ended. We deleted what you sent.",
+  limited: "You have sent all the files we take.",
+  failed: "Your file could not be sent. Please try again.",
+} as const;

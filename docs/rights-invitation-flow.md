@@ -148,13 +148,52 @@ if the seed and the register differ in either direction.
 - A rate-limit key revision cannot retire while an intake written under it is
   unexpired, so a rotation cannot lift the one-live limit early.
 
-**Not built.** The documents step needs `legal-evidence-ingest-v1`, which
-needs a malware-scanning service and the `future-person-identity` bucket
-(G8.5). After it come the named-human review with MFA, the release, the
-claimant rights routes and keyless notice release. The received page says the
-next step is not open yet. The older `public.future_person_claim_sessions`
-table is left alone: it requires an embryo id, which a public start must never
-learn.
+**The documents step** (2026-09-28, local, not released). Migration
+`20260929151000_future_person_claim_documents.sql` builds
+`legal-evidence-ingest-v1` for the two claim document kinds, and the owner's
+choice of scanner, self-hosted ClamAV, runs in the scan worker
+(`docs/claim-document-scanning.md`).
+
+- A browser holding a live claim sees the documents step. The page renders a
+  one-time nonce bound to the claim cookie, and
+  `POST /api/future-person/claim/session/documents` opens one evidence
+  session for one document: its kind, declared type, size and SHA-256, a
+  hash-only evidence cookie and an expiry no later than the claim's. At most
+  three open sessions per claim, and three documents per kind.
+- `PUT /api/evidence/[session]/chunks/[sequence]` takes at most five chunks of
+  at most 4,000,000 bytes. The database reserves each sequence once, under a
+  key it makes in the private `future-person-identity` bucket. The server
+  hashes the bytes itself, seals them under the claim's data key with the key
+  as authenticated data, and writes them create-only. Too many bytes, a body
+  over the chunk limit or a failed write ends the session.
+- `POST /api/evidence/[session]/complete` spends the one-time completion
+  nonce, checks the chunks are exactly 0 to n-1 and add up to the declared
+  size, and composes one sealed object only if the SHA-256 and the type read
+  from the bytes match. The document is then **quarantined**. The route says
+  `202 {"status":"scanning"}` until the scan has answered, then `201
+  review_pending` or one closed refusal. evidence-complete-v1 promises only
+  the 201; the interim 202 is this build's answer to a scan that runs in a
+  worker, and is not yet in the register.
+- Only `private.record_claim_document_scan_v1` can mark a document clean: a
+  literal `OK`, bound to the document's SHA-256, under signatures at most 24
+  hours old. A trigger refuses any other path to clean. Infected,
+  unscannable and oversize documents are refused at once, their objects
+  deleted, and the ledger records the reason and nothing else.
+- `private.claim_document_review_object_v1` is the read gate the reviewer
+  routes will call. It returns nothing before a clean verdict, and nothing
+  after the claim ends. No API role can call it.
+- `jobs.retention` deletes fragments, refused documents and everything of an
+  ended claim, and the claim is purged only once no object is left behind it.
+
+**Not built.** The named-human review with MFA, the claim completion
+(`api.future-person-claim-complete`), the release, the claimant rights routes
+and keyless notice release. The register's one-time chunk-nonce header is
+not read; the fragment reservation stands in for it, pending an owner
+decision (`docs/route-divergence.json`). The older
+`public.future_person_claim_sessions` and `public.future_person_claim_documents`
+tables are left alone: the first requires an embryo id, and the second hangs
+off `public.future_person_claims`, which does too. A public claim must never
+learn one.
 
 ## Release receipt (2026-09-06)
 

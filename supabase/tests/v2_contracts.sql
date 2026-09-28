@@ -18,9 +18,11 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- account-to-pseudonym link deleted with the account (20260928160000).
 -- The embryo-ingest write fence adds its write intents and session fences.
 -- The public Future Person claim start adds private.future_person_claim_intakes
--- to claim-review-working-packages (G5.4).
-select is((select count(*) from public.purge_target_stores), 129::bigint,
-  'all 129 purge stores, including private prepared-object and embryo write-fence working state, the legal audit account link and claim intakes, are classified');
+-- to claim-review-working-packages (G5.4). Its documents step adds the
+-- evidence sessions and fragments (legal-evidence-working-and-private-objects)
+-- and the quarantined documents (claim-review-working-packages).
+select is((select count(*) from public.purge_target_stores), 132::bigint,
+  'all 132 purge stores, including private prepared-object and embryo write-fence working state, the legal audit account link and claim intakes and documents, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

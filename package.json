@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "worker:prepared": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/prepared-worker.run.mts",
+    "worker:claim-scan": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/claim-document-scan-worker.run.mts",
     "test:invitation-locks": "node scripts/invitation-transition-locks.mjs",
     "e2e": "tsx scripts/run-upload-browser.mts --full",
     "e2e:lighthouse": "tsx scripts/run-upload-browser.mts --lighthouse",

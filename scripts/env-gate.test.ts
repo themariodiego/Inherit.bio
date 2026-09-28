@@ -123,19 +123,22 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // The eighth binding (G5.4, 2026-09-28) is `futurePersonClaimsOpen`
     // (`src/lib/future-person/claims-open.ts`), which reads the same
     // `INHERIT_TEST_JURISDICTION` through a defaulted `env` parameter, so it
-    // adds a binding and no new variable.
+    // adds a binding and no new variable. The ninth (G5.4, 2026-09-28) is
+    // `claimScannerFrom` (`src/lib/scan/test-double-scanner.ts`), and it adds
+    // one new documented variable, `INHERIT_CLAMD_ADDRESS`, the scan worker's
+    // clamd socket.
     expect(result.directReadKeyCount).toBe(19);
-    expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(8);
+    expect(result.boundReadKeyCount).toBe(17);
+    expect(result.boundBindingCount).toBe(9);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(35);
-    expect(result.templateKeyCount).toBe(28);
+    expect(result.readKeyCount).toBe(36);
+    expect(result.templateKeyCount).toBe(29);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(28);
-    expect(result.guideNamedCount).toBe(38);
+    expect(result.guideDocumentedKeyCount).toBe(29);
+    expect(result.guideNamedCount).toBe(39);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(7);
   });

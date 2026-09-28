@@ -85,7 +85,9 @@ export async function proxy(request: NextRequest) {
   // the recipient from declining an invitation.
   if (request.nextUrl.pathname === "/api/rights/activate"
     || request.nextUrl.pathname === "/api/withdraw/session"
-    || request.nextUrl.pathname === "/api/future-person/claim") {
+    || request.nextUrl.pathname === "/api/future-person/claim"
+    || request.nextUrl.pathname.startsWith("/api/future-person/claim/session/")
+    || request.nextUrl.pathname.startsWith("/api/evidence/")) {
     return withSensitiveHeaders(NextResponse.next({ request }));
   }
   // The public claim page reads only what the claimant types: no account,

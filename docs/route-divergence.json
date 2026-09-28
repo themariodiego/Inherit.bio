@@ -116,14 +116,6 @@
       "why": "Evidence for claim and appeal review, declared with service-only access and application envelope encryption on top of provider at-rest encryption. Nothing creates it because the claim and appeal surfaces it serves are unbuilt.",
       "priority": "Priority 5 \u2014 future-person and claims",
       "closing": "Created with the declared policies and the document-specific data key when evidence ingest is built."
-    },
-    {
-      "bucket": "future-person-identity",
-      "direction": "declared-not-created",
-      "declaredBy": "storage.future-person-identity-v1",
-      "why": "Documentary review for Record-Key, claimant-Recovery-Key and keyless future-person claims, declared with named-human-reviewer-assignment access only and four retention ids. Unbuilt for the same reason.",
-      "priority": "Priority 5 \u2014 future-person and claims",
-      "closing": "Created with the declared policies and the claim-specific data key when future-person claim review is built."
     }
   ],
   "provenRouteStatesNote": "The (route, state) pairs a browser test title proves today, out of the 288 the register requires. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction, and UNPROVEN_ROUTE_STATE_PAIRS in that script holds the remainder. A title proves a pair when it names the registered route path and the state id as separate, non-overlapping, whole tokens, so \"empty-history\" does not prove \"empty\" and a state id appearing only inside the path proves nothing.",
@@ -328,8 +320,8 @@
       "header": "X-Inherit-Chunk-Nonce",
       "registerSource": "requestContract.requiredHeaders: 'one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256'",
       "why": "The same header on the legal-evidence ingest path, where less can be concluded: that subsystem has tables (legal_evidence_ingest_sessions, legal_evidence_fragments and six more) but no chunk table, no reserve or commit RPC and no src/lib/evidence, so there is nothing yet for a nonce to be consumed by. The embryo finding above is not carried over to it, because the mechanism that makes the nonce redundant there - the chunk reservation row - has no counterpart here.",
-      "servedInstead": "Nothing yet. This route is unbuilt and so is the transport beneath it.",
-      "closing": "The legal-evidence ingest slice being designed. Whoever designs it answers this header for this route on its own evidence; if it lands on the embryo answer, both rows go at once."
+      "servedInstead": "Built 2026-09-28 for the claim document sessions, the only evidence sessions this deployment issues. The route reads X-Inherit-CSRF, a keyed digest of the session id and the evidence cookie hash, and requires the exact origin, same-origin fetch metadata and the host-only evidence cookie. The database then reserves the sequence in private.claim_document_fragments in the same transaction that rechecks the session, the live claim, the cumulative bytes and the server-computed SHA-256 of the body; a sequence can be reserved once, so a replayed chunk is refused (23505) without a nonce. That is the embryo answer arrived at on this route's own evidence, but it is an answer, not an approval.",
+      "closing": "An owner decision like the 2026-09-22 embryo one: accept the fragment reservation as the chunk authority and remove the header from api.evidence-chunk, or keep it and have a registered surface mint a token bound to session, sequence, length and SHA-256 before each chunk."
     }
   ],
   "taskDepthCeilingDivergenceNote": "Resolved by owner decision 2026-09-22: T9 has a ceiling of six in-app click/submit actions with the registered confirmation exclusions. Mailed-link and typed-URL entry events are recorded separately. The brief, register, rubric and human protocol now use the same units. The gate still compares the empty divergence ledger in both directions.",

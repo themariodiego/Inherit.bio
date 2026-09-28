@@ -4,6 +4,7 @@ import { z } from "zod";
 import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { supabaseClaimObjectStore } from "@/lib/future-person/claim-objects";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 import { drainStrandedFileDeletions } from "@/lib/uploads/file-deletion-backstop";
@@ -125,6 +126,29 @@ export async function POST(request: Request) {
   );
   if (rateLimitPurgeError) failed++;
   else if (typeof purgedBuckets === "number") processed += purgedBuckets;
+
+  // Claim documents (evidence.ingest-session-24h, future-person.claim-intake-
+  // session-24h): delete the objects the database lists as due (fragments,
+  // refused documents, everything of an ended claim) and confirm each batch,
+  // so the claim below can go with no object left behind it.
+  try {
+    const objects = supabaseClaimObjectStore(admin);
+    for (let batch = 0; batch < 10; batch++) {
+      const { data: due, error: dueError } = await admin.rpc("claim_document_objects_due_v1", { p_limit: 100 });
+      if (dueError) { failed++; break; }
+      const keys = (Array.isArray(due) ? due : []).map((row: { object_key?: unknown }) => row.object_key).filter((key): key is string => typeof key === "string");
+      if (keys.length === 0) break;
+      await objects.remove(keys);
+      const { data: confirmed, error: confirmError } = await admin.rpc("confirm_claim_document_objects_deleted_v1", {
+        p_object_keys: keys, p_route_id: "jobs.retention",
+      });
+      if (confirmError) { failed++; break; }
+      if (typeof confirmed === "number") processed += confirmed;
+      if (keys.length < 100) break;
+    }
+  } catch {
+    failed++;
+  }
 
   // future-person.claim-intake-session-24h: an unfinished claim start is
   // deleted, with its sealed fields and their key, once its day or its idle
