@@ -232,6 +232,18 @@ describe("the public Future Person claim (rights.future-person-claim)", () => {
     }
   });
 
+  it.each([
+    "/api/future-person/claim/session/documents",
+    "/api/evidence/44444444-4444-4444-8444-444444444444/chunks/0",
+    "/api/evidence/44444444-4444-4444-8444-444444444444/complete",
+  ])("lets the documents step %s through without reading an account", async (path) => {
+    const response = await claimVisit(path.includes("/chunks/") ? "PUT" : "POST", path);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.sessionReads).toBe(0);
+    expect(mocks.selected).toEqual([]);
+  });
+
   it("lets the claim start through without reading an account", async () => {
     openClaims();
     try {
