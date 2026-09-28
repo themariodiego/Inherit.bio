@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { createdBuckets, exportedMethods } from "./route-gate";
+import { exportedMethods, migrationBuckets } from "./route-gate";
 
 /**
  * `docs/route-register.json` is the binding response-contract authority: a
@@ -246,6 +246,7 @@ const contractLedger = JSON.parse(readFileSync(CONTRACT_LEDGER, "utf8")) as {
   storageCallSites: { site: string }[];
   declaredPrefixBucketNotAddressed: { bucket: string }[];
   liveCallSiteOnUncreatedBucket: { bucket: string; file: string }[];
+  allowlistedBucketNotCreated: { bucket: string; droppedBy: string; constraints: string[] }[];
   objectKeyShapeNotDescribedByAnyPrefix: {
     id: string;
     bucket: string;
@@ -507,16 +508,23 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     // this allowlist constrains, so it is the only authority a static walk
     // has for them. An undeclared name here is the same defect the route
     // ledger already records against the migrations that create the bucket.
-    compareBothWays(buckets.filter(bucket => !declaredBuckets.has(bucket)),
-      ledger.storageBucketDivergence
+    compareBothWays(buckets.filter(bucket => !declaredBuckets.has(bucket)), [
+      ...ledger.storageBucketDivergence
         .filter(known => known.direction === "created-not-declared")
-        .map(known => known.bucket));
+        .map(known => known.bucket),
+      // A dropped bucket a constraint still admits (D-130), recorded rather
+      // than silently allowed. It must really be dropped, or the row is stale.
+      ...contractLedger.allowlistedBucketNotCreated.map(known => known.bucket),
+    ]);
+    const created = migrationBuckets(MIGRATIONS);
+    for (const known of contractLedger.allowlistedBucketNotCreated) {
+      expect(created.has(known.bucket), `${known.bucket} is recorded as not created`).toBe(false);
+      expect(readFileSync(known.droppedBy, "utf8"), known.droppedBy).toContain(`delete from storage.buckets where id = '${known.bucket}'`);
+    }
   });
 
   it("addresses no bucket that no migration creates, except the ones recorded", () => {
-    const created = new Set(readdirSync(MIGRATIONS)
-      .filter(name => name.endsWith(".sql"))
-      .flatMap(name => createdBuckets(readFileSync(path.join(MIGRATIONS, name), "utf8"))));
+    const created = migrationBuckets(MIGRATIONS);
     expect(created.size).toBeGreaterThan(2);
     const live = sites.filter(site => {
       const bucket = site.slice(0, site.indexOf(" "));

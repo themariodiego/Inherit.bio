@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { migrationBuckets } from "./storage-buckets";
 
 /**
  * `docs/route-register.json` is the binding authority for 160 routes, and
@@ -1027,20 +1028,9 @@ async function configuredRedirects(repositoryRoot: string): Promise<ConfigRedire
   return typeof redirects === "function" ? await redirects.call(loaded.default) : [];
 }
 
-/**
- * Bucket names created by a migration. Only the one shape appears in this
- * repository, and a second shape appearing later trips the floor guard below
- * rather than passing unnoticed.
- */
-export function createdBuckets(sql: string): string[] {
-  const found: string[] = [];
-  for (const statement of sql.matchAll(
-    /insert\s+into\s+storage\.buckets\s*\([^)]*\)\s*values\s*([\s\S]*?);/gi,
-  )) {
-    for (const row of statement[1].matchAll(/\(\s*'([^']+)'/g)) found.push(row[1]);
-  }
-  return found;
-}
+// Bucket creation and drops are read by scripts/storage-buckets.ts, which the
+// browser tests import too; re-exported so existing imports keep working.
+export { createdBuckets, droppedBuckets, migrationBuckets } from "./storage-buckets";
 
 /**
  * A route path and a state id are present in a test title only when neither is
@@ -1484,11 +1474,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   const declaredBuckets = new Set(register.storagePrefixes.map((prefix) => prefix.bucket));
   const migrationDirectory = path.join(repositoryRoot, MIGRATIONS);
   const migrationFiles = readdirSync(migrationDirectory).filter((name) => name.endsWith(".sql"));
-  const createdBucketNames = new Set(
-    migrationFiles.flatMap((name) =>
-      createdBuckets(readFileSync(path.join(migrationDirectory, name), "utf8")),
-    ),
-  );
+  const createdBucketNames = migrationBuckets(migrationDirectory);
   const bucketDivergence = [
     ...[...declaredBuckets]
       .filter((bucket) => !createdBucketNames.has(bucket))

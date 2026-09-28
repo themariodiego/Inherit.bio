@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { createdBuckets, exportedMethods, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
+import { createdBuckets, droppedBuckets, exportedMethods, migrationBuckets, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
 
 /**
  * The gate is only worth having if a planted defect fails it, so every check
@@ -418,6 +418,24 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  /**
+   * 28 Sep 2026: a migration can now drop a bucket, and the gate must see it
+   * gone. The drop of genomes-staging closed its created-not-declared row, so
+   * restoring the row is exactly the stale entry the ledger must refuse.
+   */
+  it("reads a dropped bucket as gone, so its old ledger row is stale", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "genomes-staging",
+          direction: "created-not-declared", createdBy: "supabase/migrations/20260831224054_storage_and_download_sessions.sql" });
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "storage bucket: recorded in docs/route-divergence.json but no longer present: created-not-declared genomes-staging",
+    );
+  });
+
   it("fails when the register requires a state no browser test proves", async () => {
     const root = plant({
       register: (register) => {
@@ -517,6 +535,33 @@ describe("the detectors the gate is built from", () => {
       ),
     ).toEqual(["one", "two"]);
     expect(createdBuckets("select id from storage.buckets;")).toEqual([]);
+  });
+
+  it("reads every bucket a migration drops, and refuses a delete it cannot read", () => {
+    expect(droppedBuckets("delete from storage.buckets where id = 'one';")).toEqual(["one"]);
+    expect(droppedBuckets("DELETE FROM storage.buckets WHERE id IN ('one', 'two');")).toEqual(["one", "two"]);
+    expect(droppedBuckets("delete from storage.objects where bucket_id = 'one';")).toEqual([]);
+    // A delete the reader cannot resolve must not read as nothing dropped.
+    expect(() => droppedBuckets("delete from storage.buckets where name like 'gen%';")).toThrow(/unreadable bucket delete/);
+  });
+
+  it("applies creates and drops in migration order", () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "route-gate-buckets-"));
+    temporaryRoots.push(directory);
+    writeFileSync(path.join(directory, "1_create.sql"),
+      "insert into storage.buckets (id, name, public) values ('kept', 'kept', false), ('dropped', 'dropped', false);");
+    writeFileSync(path.join(directory, "2_drop.sql"), "delete from storage.buckets where id = 'dropped';");
+    writeFileSync(path.join(directory, "3_again.sql"),
+      "delete from storage.buckets where id = 'kept';\ninsert into storage.buckets (id, name, public) values ('kept', 'kept', false);");
+    // Within one file, statement order decides: created then dropped is gone.
+    writeFileSync(path.join(directory, "4_same_file.sql"),
+      "insert into storage.buckets (id, name, public) values ('brief', 'brief', false);\n"
+      + "delete from storage.buckets where id = 'brief';");
+    expect([...migrationBuckets(directory)].sort()).toEqual(["kept"]);
+    // The real migrations: genomes-staging is created, then dropped.
+    const real = migrationBuckets(path.join(REPOSITORY_ROOT, "supabase/migrations"));
+    expect(real.has("genomes-staging")).toBe(false);
+    expect(real.has("genomes")).toBe(true);
   });
 
   it("reads where a spec takes test from", () => {

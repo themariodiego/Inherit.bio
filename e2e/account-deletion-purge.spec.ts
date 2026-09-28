@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { localE2eProject } from "../scripts/local-e2e-project";
+import { migrationBuckets } from "../scripts/storage-buckets";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import {
   adminClient,
@@ -210,9 +211,9 @@ test("due account deletion reaches a zero-residual terminal state", async ({
   expect(missingObject.data).toBeNull();
   expect(missingObject.error).toBeTruthy();
   // source.revocation-7d: zero residue in every private bucket the migrations
-  // create, for the exact object name and for the account's own prefix, as the
-  // service role sees them.
-  for (const bucket of ["genomes", "genomes-staging", "generated-artifacts"] as const) {
+  // leave in place, for the exact object name and for the account's own prefix,
+  // as the service role sees them.
+  for (const bucket of [...migrationBuckets("supabase/migrations")].sort()) {
     const exact = await admin.storage.from(bucket).list("", { search: storageObject!.object_name });
     expect(exact.error).toBeNull();
     expect((exact.data ?? []).filter((entry) => entry.name === storageObject!.object_name), bucket).toEqual([]);
