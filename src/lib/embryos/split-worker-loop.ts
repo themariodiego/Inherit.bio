@@ -1,6 +1,7 @@
 import "server-only";
 import { isTestJurisdictionEnabled } from "../legal/jurisdictions";
-import { runNextEmbryoSplit, type EmbryoFragmentReader, type EmbryoSplitResult } from "./split-worker";
+import { runNextEmbryoSplit, type EmbryoCanonicalPartWriter, type EmbryoFragmentReader,
+  type EmbryoSplitResult } from "./split-worker";
 
 export type EmbryoSplitWorkerEvent = "split_published" | "split_failure_pending" | "split_requeued"
   | "split_idle" | "split_failed" | "worker_stopped";
@@ -29,13 +30,15 @@ const EVENTS: Record<EmbryoSplitResult["status"], EmbryoSplitWorkerEvent> = {
  * the test jurisdiction; the database independently refuses every claim while
  * `private.embryo_split_config` is off. Events are closed words only: no
  * identifier, count, object name, genotype or error text reaches `emit`.
- * The fragment store is injected: `pnpm worker:embryo-split` passes the R2
- * reader (`split-fragment-reader.ts`).
+ * The fragment store and the canonical-source store are injected:
+ * `pnpm worker:embryo-split` passes the R2 reader and writer
+ * (`split-fragment-reader.ts`).
  */
 export async function runEmbryoSplitWorkerLoop(options: {
   signal: AbortSignal;
   emit: (event: EmbryoSplitWorkerEvent) => void;
   readFragment: EmbryoFragmentReader;
+  writeCanonicalPart: EmbryoCanonicalPartWriter;
   maximumIterations?: number;
   runNext?: typeof runNextEmbryoSplit;
 }): Promise<{ status: "stopped" | "limit"; hadFailure: boolean }> {
@@ -48,7 +51,8 @@ export async function runEmbryoSplitWorkerLoop(options: {
     if (!isTestJurisdictionEnabled()) throw new EmbryoSplitWorkerLoopError("worker_disabled");
     let worked = false;
     try {
-      const result = await runNext({ signal: options.signal, readFragment: options.readFragment });
+      const result = await runNext({ signal: options.signal, readFragment: options.readFragment,
+        writeCanonicalPart: options.writeCanonicalPart });
       if (options.signal.aborted) break;
       options.emit(EVENTS[result.status]);
       worked = result.status !== "idle";

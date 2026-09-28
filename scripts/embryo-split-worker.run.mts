@@ -8,9 +8,10 @@ try {
   const options = preparedWorkerOptions(process.argv.slice(2));
   if (options.metrics) throw new Error("invalid_options");
   const { runEmbryoSplitWorkerLoop } = await import("../src/lib/embryos/split-worker-loop");
-  const { r2EmbryoFragmentReader } = await import("../src/lib/embryos/split-fragment-reader");
+  const { r2EmbryoCanonicalPartWriter, r2EmbryoFragmentReader } = await import("../src/lib/embryos/split-fragment-reader");
   const result = await runEmbryoSplitWorkerLoop({ signal: controller.signal,
     maximumIterations: options.maximumIterations, readFragment: r2EmbryoFragmentReader(),
+    writeCanonicalPart: r2EmbryoCanonicalPartWriter(),
     emit: event => { process.stdout.write(`${event}\n`); },
   });
   if (result.hadFailure) process.exitCode = 1;

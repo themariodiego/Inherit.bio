@@ -278,10 +278,13 @@ create function pg_temp.stage(p_ordinal integer,p_batch integer,p_rows jsonb,p t
 returns jsonb language sql as $$
   select public.stage_embryo_split_variants_v1((select id from job),p_attempt,pg_temp.token(p),p_ordinal,p_batch,p_rows);
 $$;
+-- A pass lands its canonical parts first, as the worker does; a failure none.
 create function pg_temp.finish(p_ordinal integer,p_result jsonb,p text default 'a',p_attempt integer default 1)
-returns jsonb language sql as $$
-  select public.finish_embryo_split_ordinal_v1((select id from job),p_attempt,pg_temp.token(p),p_ordinal,p_result);
-$$;
+returns jsonb language plpgsql as $$
+begin
+  if p_result->>'outcome'='passed' then perform pg_temp.land_parts(p_ordinal,pg_temp.token(p),p_attempt); end if;
+  return public.finish_embryo_split_ordinal_v1((select id from job),p_attempt,pg_temp.token(p),p_ordinal,p_result);
+end $$;
 select throws_ok($$select pg_temp.stage(0,0,'[[1,5,"A","G","A/."]]')$$,'22023','invalid split batch',
   'a partial call is never stored');
 select throws_ok($$select pg_temp.stage(0,0,'[[1,5,"A","G","./."]]')$$,'22023','invalid split batch',

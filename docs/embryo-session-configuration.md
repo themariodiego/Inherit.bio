@@ -160,6 +160,49 @@ The next source-accepting work must supply all of the following:
    - deleting fragments and handles after publication;
    - the chunk and completion routes and browser journeys.
 
+   **Canonical sources exist, 2026-09-28.**
+   `20260930123000_embryo_canonical_sources.sql` gives each embryo that passes
+   QC its own canonical source. After the worker analyses a passing embryo, it
+   reads each of its fragments again, checks it against the manifest, and
+   copies it byte for byte into a new R2 object under a fresh `embryo/<uuid>`
+   key. Each copy is reserved first (`reserve_embryo_canonical_part_v1`), then
+   written create-only through the fragment gateway, read back and landed
+   (`ack_embryo_canonical_part_v1`), all under the live claim. A pass is
+   recorded only when every fragment has exactly one landed part. A QC failure
+   is recorded only with no part, so no object is ever written for it.
+   The publication transaction then gives each pass, and only each pass:
+   - one immutable source that binds its exact landed parts;
+   - one `genome_files` row owned by the cohort owner, on that embryo's
+     subject. The row carries that embryo's own composed digest and a neutral
+     name, and is `normalization_complete` at the publication commit;
+   - its genotypes, pointing at that row through `source_file_id`.
+
+   The owner's generic file read (Files list, downloads) no longer returns
+   an embryo or cohort row. Still missing: parts in the unwind inventory,
+   disposal of parts that no source binds (from a retried or failed
+   attempt), and source deletion at the retention deadline, at restriction
+   and in the terminal purge.
+
+   **Authoritative dates and addenda exist, 2026-09-28.** The same publication
+   transaction now gives every ordinal its `embryo.stored-or-unknown-24mo`
+   deadline: 24 months from the commit
+   (`20260930124000_embryo_publication_dates.sql`). A source is anchored at
+   its actual upload. A `qc_fail` is anchored at its own publication, cannot
+   be renewed, and borrows no sibling's time. Each card date becomes
+   `definitive_stored_or_unknown` with `date_revision` + 1. Each embryo
+   subject gets a retention row, its three registered phases and a frozen
+   purge manifest. Every current Record Key recipient gets a no-key
+   `record-key-addendum`: `date-changed` for a source only when its printed
+   date moved, and always one `no-source` notice for a `qc_fail`, which now
+   carries the date its record is deleted. If a required addendum cannot be
+   queued, the whole publication rolls back. A later transfer, donation or
+   discard supersedes the row and cancels its open phases. Embryo sources no
+   longer count against the parent's own upload allowance
+   (`20260930125000_own_upload_allowance_excludes_embryo.sql`, owner decision
+   of 28 September). Still missing: the upload-time rights notice, which waits
+   on a redeemable `embryo-parent-withdrawal` credential; renewal of a source
+   deadline; and the executor for these phases.
+
 ADR 0034 (27 September) allows X and Y calls to be read only to work out a
 registered serious sex-linked condition, and none is registered. This
 configuration work supplies no threshold or display conclusion. No acceptance

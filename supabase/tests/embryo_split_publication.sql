@@ -27,9 +27,12 @@ $$;
 create function pg_temp.stage(p_ordinal integer,p_batch integer,p_rows jsonb) returns jsonb language sql as $$
   select public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.token(),p_ordinal,p_batch,p_rows);
 $$;
-create function pg_temp.finish(p_ordinal integer,p_result jsonb) returns jsonb language sql as $$
-  select public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),p_ordinal,p_result);
-$$;
+-- A pass lands its canonical parts first, as the worker does; a failure none.
+create function pg_temp.finish(p_ordinal integer,p_result jsonb) returns jsonb language plpgsql as $$
+begin
+  if p_result->>'outcome'='passed' then perform pg_temp.land_parts(p_ordinal,pg_temp.token()); end if;
+  return public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),p_ordinal,p_result);
+end $$;
 create function pg_temp.publish(p_token text default null) returns jsonb language sql as $$
   select public.publish_embryo_split_v1((select id from job),1,coalesce(p_token,pg_temp.token()));
 $$;
@@ -193,9 +196,14 @@ select is((select array_agg(format('%s:%s:%s:%s:%s:%s',e.sample_ordinal,v.chromo
 select is((select count(*) from public.embryo_variants v join public.embryos e on e.id=v.embryo_id
   where e.cohort_id=(select cohort_id from live) and e.sample_ordinal=1),0::bigint,
   'the embryo that failed QC holds no genotype, and none is borrowed from a sibling');
-select ok((select bool_and(v.source_binding_fingerprint=s.source_sha256 and v.source_file_id is null)
+select ok((select bool_and(v.source_binding_fingerprint=s.source_sha256 and g.subject_id=e.subject_id
+    and g.source_sha256=s.source_sha256)
   from public.embryo_variants v join public.embryos e on e.id=v.embryo_id join sources s on s.sample_ordinal=e.sample_ordinal
-  where e.cohort_id=(select cohort_id from live)),'every genotype is bound to its own embryo''s fragment digest');
+  join public.genome_files g on g.id=v.source_file_id
+  where e.cohort_id=(select cohort_id from live))
+  and not exists (select 1 from public.embryo_variants v join public.embryos e on e.id=v.embryo_id
+    where e.cohort_id=(select cohort_id from live) and v.source_file_id is null),
+  'every genotype is bound to its own embryo''s fragment digest and its own canonical file');
 select ok((select bool_and(v.chromosome between 1 and 22) from public.embryo_variants v join public.embryos e
   on e.id=v.embryo_id where e.cohort_id=(select cohort_id from live)),'only autosomal calls are published');
 
@@ -236,11 +244,16 @@ select is((select count(*) from public.legal_audit_log where event_code='embryo.
 select ok((select not (coded_context ?| array['sex','karyotype','label','genotype','variant']) and route_id is null
   from public.legal_audit_log where event_code='embryo.cohort.published' order by seq desc limit 1),
   'the audit event carries only coded counts');
-select is((select count(*) from public.mail_outbox),(select n from before_mail),
-  'no notice is queued (rights notices and card addenda are not part of this change)');
+-- The only mail is the no-source addendum for the embryo that failed QC, one
+-- per Record Key recipient; the dates of the two sources did not move today.
+select is((select count(*) from public.mail_outbox),(select n+2 from before_mail),
+  'the only notices queued are the two no-source addenda (rights notices are not part of this change)');
+select is((select array_agg(distinct template_id||':'||(template_payload->>'kind')||':'||(template_payload->>'displayLabel'))
+  from public.mail_outbox where target_id in (select id from public.embryos where cohort_id=(select cohort_id from live))),
+  array['record-key-addendum:no-source:Embryo 2'],'they name only the embryo that failed QC, and carry no key');
 select is((select array_agg(distinct closing_date_state||'/'||date_revision) from public.embryos
-  where cohort_id=(select cohort_id from live)),array['provisional_until_terminal_ordinal_resolution/1'],
-  'the provisional card date is left exactly as issued, never made authoritative here');
+  where cohort_id=(select cohort_id from live)),array['definitive_stored_or_unknown/2'],
+  'every card date is now authoritative, one date revision later');
 select ok((select count(*)=6 from public.embryo_ingest_fragments where session_id=(select id from live))
   and (select count(*)=3 from public.embryo_fragment_handle_maps where session_id=(select id from live)),
   'fragments and handles wait for the post-publication cleanup');
