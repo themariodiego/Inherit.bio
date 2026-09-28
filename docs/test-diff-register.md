@@ -1,5 +1,30 @@
 # Test diff register
 
+## Exact embryo storage disposal · 29 September 2026
+
+`supabase/tests/embryo_ingest_unwind_storage.sql` is new, with 112 assertions
+for `20260929101000_embryo_ingest_unwind_storage.sql`. It covers:
+
+- grants, including the service role's lost direct write grants;
+- D-130;
+- R2 markers for landed and uncertain keys, and every evidence refusal;
+- rows that even the owner cannot mark disposed;
+- confirmation and idempotent replay;
+- re-claiming a lapsed R2 claim;
+- Supabase exact-version deletion;
+- uncertain, vanished and lapsed-acknowledgement objects staying unresolved.
+
+`src/lib/embryos/unwind-storage.test.ts` (8 tests) is new. It runs the disposal
+executor against the real gateway and a synthetic Storage endpoint.
+
+Existing files, with no assertion removed:
+
+- `supabase/tests/v2_contracts.sql` counts 128 purge stores instead of 127,
+  for `private.embryo_ingest_object_disposals`.
+- In `supabase/tests/embryo_ingest_write_fence.sql`, the store-order assertion
+  now compares the fence's two stores with every pre-fence store. Those were
+  all public, and a later private store follows the fence's two.
+
 ## Embryo fragments on R2 · 29 September 2026
 
 `supabase/tests/embryo_ingest_r2_fragments.sql` is new, with 88 assertions for

@@ -133,6 +133,22 @@ Storage deletion acknowledgement or terminal notice producer is added.
    the chunk route and the worker is `docs/embryo-fragment-storage.md`. The
    markers at uncertain keys, and the deletion acknowledgement, are the next
    change.
+
+   **Exact disposal built, 29 September**
+   (`20260929101000_embryo_ingest_unwind_storage.sql`,
+   `supabase/tests/embryo_ingest_unwind_storage.sql`,
+   `src/lib/embryos/unwind-storage.ts`).
+   - Nothing is claimed before the drain has settled.
+   - Every R2 key, landed or uncertain, gets a permanent empty marker that the
+     gateway reads back.
+   - A landed Supabase object is deleted by exact id and version.
+   - Each disposal is recorded only with that exact evidence.
+   - `storage_confirmed` needs every inventory row proved. A trigger enforces
+     this for any writer.
+   - An uncertain Supabase write, a vanished object and a lapsed
+     acknowledgement stay unresolved, so the unwind stays `storage_pending`.
+   - D-130 is fixed for this builder.
+   - The terminal graph purge is still missing (item 3).
 2. Exact selectors and deletion verification for every supported pending,
    evidence, derived and working-state store. Unsupported graph cases cannot
    silently fall through to a partial purge.
