@@ -5,7 +5,8 @@ import {
   EMBRYO_FIXTURE_SUPABASE_URL,
 } from "../../../scripts/ci-browser/embryo-fragment-fixture";
 import {
-  EmbryoFragmentStorageError, parseEmbryoWriteTargets, readEmbryoFragment, writeEmbryoFragment,
+  EmbryoFragmentStorageError, embryoFragmentStorageConfigured, parseEmbryoWriteTargets, readEmbryoFragment,
+  writeEmbryoFragment,
   type EmbryoFragmentRpc, type EmbryoR2WriteTarget, type EmbryoStoredFragment,
 } from "./fragment-storage";
 
@@ -152,6 +153,31 @@ describe("readEmbryoFragment", () => {
     const stored = { receipt: target(), providerVersion: "not-a-version", etag: "0".repeat(32) } as EmbryoStoredFragment;
     expect(await code(readEmbryoFragment({ stored, signal: new AbortController().signal }))).toBe("invalid_request");
     expect(requests).toHaveLength(0);
+  });
+});
+
+/** An origin carrying user info, built at run time so no credential-shaped
+ * URL is written into the source. */
+function withUserInfo(origin: string): string {
+  const url = new URL(origin);
+  url.username = "synthetic"; url.password = "synthetic";
+  return url.href;
+}
+
+describe("embryoFragmentStorageConfigured", () => {
+  it("is true only for an https origin with no path and an embryo bucket", () => {
+    expect(embryoFragmentStorageConfigured()).toBe(true);
+    for (const [name, value] of [
+      ["INHERIT_EMBRYO_R2_ORIGIN", ""], ["INHERIT_EMBRYO_R2_ORIGIN", "http://embryo.fragments.test"],
+      ["INHERIT_EMBRYO_R2_ORIGIN", "https://embryo.fragments.test/fragment"],
+      ["INHERIT_EMBRYO_R2_ORIGIN", withUserInfo(EMBRYO_FIXTURE_ORIGIN)],
+      ["INHERIT_EMBRYO_R2_BUCKET", ""], ["INHERIT_EMBRYO_R2_BUCKET", "inherit-prepared-production"],
+    ]) {
+      vi.stubEnv("INHERIT_EMBRYO_R2_ORIGIN", EMBRYO_FIXTURE_ORIGIN);
+      vi.stubEnv("INHERIT_EMBRYO_R2_BUCKET", EMBRYO_FIXTURE_BUCKET);
+      vi.stubEnv(name, value);
+      expect(embryoFragmentStorageConfigured(), `${name}=${value}`).toBe(false);
+    }
   });
 });
 

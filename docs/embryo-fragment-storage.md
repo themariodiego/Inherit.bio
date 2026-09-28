@@ -70,6 +70,7 @@ type EmbryoStoredFragment = { receipt: EmbryoWriteTarget & { backend: "r2" }; pr
 type EmbryoFragmentRpc = (name: string, args: Record<string, unknown>) =>
   { abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
 
+embryoFragmentStorageConfigured(): boolean;   // routes read neither variable themselves
 parseEmbryoWriteTargets(data: unknown): EmbryoWriteTargets;
 writeEmbryoFragment(input: { rpc; target; bytes: Uint8Array; signal: AbortSignal }): Promise<EmbryoStoredFragment>;
 readEmbryoFragment(input: { stored: EmbryoStoredFragment; signal: AbortSignal }): Promise<Uint8Array>;
@@ -96,7 +97,10 @@ door built with the worker. The landed identity is the `stored` field of a
 target, or the ACK's answer.
 
 Configuration: `INHERIT_EMBRYO_R2_ORIGIN` (the gateway's `https://` origin) and
-`INHERIT_EMBRYO_R2_BUCKET` (must equal the receipt's bucket). Capabilities are
+`INHERIT_EMBRYO_R2_BUCKET` (must equal the receipt's bucket). Routes ask
+`embryoFragmentStorageConfigured()` instead of reading either variable. True
+means both are well formed. It does not mean the gateway answers, or that SQL
+has selected the R2 backend. Capabilities are
 signed with the existing upload signer (`INHERIT_UPLOAD_SIGNING_JWK`), under
 audience `inherit-embryo-fragment-v1`, by `mintEmbryoFragmentCapability` in
 `src/lib/uploads/storage-upload-token.ts`.
