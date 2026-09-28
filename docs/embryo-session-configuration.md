@@ -142,6 +142,23 @@ The next source-accepting work must supply all of the following:
    The current fragment trigger requires a resolved build, while the register
    describes retaining sanitized unknown-build fragments pending a decision.
    That ordering requires its own explicit implementation and verification.
+   **Publication exists, 2026-09-28; cleanup and journeys do not.**
+   `private.publish_embryo_split_v1` (`20260930122000_embryo_split_publication.sql`)
+   is the one terminal transaction. It publishes every embryo at once:
+   - a pass gets its QC row and exactly its own staged genotypes;
+   - a `qc_fail` gets its QC row with the closed reason and no genotype.
+
+   In the same transaction it lifts quarantine from every embryo subject
+   together, sets publication revision 1, cancels the exact
+   `embryo.ingest-session-24h` due phase and deletes the pending rows. Before it
+   commits nothing about any embryo is visible. With an empty condition
+   registry, no score job is queued. Still missing:
+   - per-embryo canonical sources and `genome_files` rows;
+   - the authoritative retention date, Record Key card date changes and
+     addenda (the provisional card date is left as issued);
+   - rights notices;
+   - deleting fragments and handles after publication;
+   - the chunk and completion routes and browser journeys.
 
 ADR 0034 (27 September) allows X and Y calls to be read only to work out a
 registered serious sex-linked condition, and none is registered. This

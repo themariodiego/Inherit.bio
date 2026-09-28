@@ -16,7 +16,7 @@ describe("embryo split worker loop", () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
     const events: EmbryoSplitWorkerEvent[] = [];
     const results = [
-      { status: "staged", jobId: "private-job", passed: 2, failed: 1 },
+      { status: "published", jobId: "private-job", passed: 2, failed: 1 },
       { status: "failure_pending", jobId: "private-job", code: "stale-binding" },
       { status: "requeued", jobId: "private-job" },
     ];
@@ -27,14 +27,14 @@ describe("embryo split worker loop", () => {
     });
     const result = await runEmbryoSplitWorkerLoop({ signal: new AbortController().signal,
       emit: (event) => { events.push(event); }, readFragment: async () => new Uint8Array(), runNext, maximumIterations: 4 });
-    expect(events).toEqual(["split_staged", "split_failure_pending", "split_requeued", "split_failed"]);
+    expect(events).toEqual(["split_published", "split_failure_pending", "split_requeued", "split_failed"]);
     expect(result).toEqual({ status: "limit", hadFailure: true });
     expect(JSON.stringify(events)).not.toMatch(/private/);
   });
 
   it("stops between runs when the test jurisdiction is withdrawn", async () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
-    const runNext = vi.fn(async () => { vi.stubEnv("INHERIT_TEST_JURISDICTION", ""); return { status: "staged" } as never; });
+    const runNext = vi.fn(async () => { vi.stubEnv("INHERIT_TEST_JURISDICTION", ""); return { status: "published" } as never; });
     await expect(runEmbryoSplitWorkerLoop({ signal: new AbortController().signal, emit: () => {}, readFragment: async () => new Uint8Array(), runNext,
       maximumIterations: 3 })).rejects.toMatchObject({ code: "worker_disabled" });
     expect(runNext).toHaveBeenCalledOnce();
