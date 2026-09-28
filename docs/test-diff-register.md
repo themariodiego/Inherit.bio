@@ -104,6 +104,76 @@ Planted regressions, each caught and then restored:
   without the Family graph; group names not read as persons by the input gate.
   6 of 6 fail their test.
 
+## Exact embryo storage disposal · 29 September 2026
+
+`supabase/tests/embryo_ingest_unwind_storage.sql` is new, with 115 assertions
+for `20260929101000_embryo_ingest_unwind_storage.sql` and
+`20260929102000_worker_claim_excludes_embryo_split.sql`. It covers:
+
+- grants, including the service role's lost direct write grants;
+- D-130;
+- R2 markers for landed and uncertain keys, and every evidence refusal;
+- rows that even the owner cannot mark disposed;
+- confirmation and idempotent replay;
+- re-claiming a lapsed R2 claim;
+- Supabase exact-version deletion;
+- uncertain, vanished and lapsed-acknowledgement objects staying unresolved;
+- the generic worker claim passing over a queued split job.
+
+`src/lib/embryos/unwind-storage.test.ts` (8 tests) is new. It runs the disposal
+executor against the real gateway and a synthetic Storage endpoint.
+
+Existing files, with no assertion removed:
+
+- `supabase/tests/v2_contracts.sql` counts 128 purge stores instead of 127,
+  for `private.embryo_ingest_object_disposals`.
+- In `supabase/tests/embryo_ingest_write_fence.sql`, the store-order assertion
+  now compares the fence's two stores with every pre-fence store. Those were
+  all public, and a later private store follows the fence's two.
+
+## Embryo fragments on R2 · 29 September 2026
+
+`supabase/tests/embryo_ingest_r2_fragments.sql` is new, with 88 assertions for
+`20260929100000_embryo_ingest_r2_fragments.sql`:
+
+- grants and an empty backend configuration that refuses reservations;
+- R2 intents bound to an opaque key, and the fenced Supabase name refused;
+- every ACK refusal, and an exact replay;
+- the commit gate, and a stale receipt after renewal;
+- revocation, the fence and the drain;
+- the R2 door refusing a Supabase intent.
+
+`src/lib/embryos/fragment-gateway.test.ts` (27 tests) and
+`src/lib/embryos/fragment-storage.test.ts` (15 tests) are new. They run the
+undeployed gateway and the writer over an in-memory binding,
+`scripts/ci-browser/embryo-fragment-fixture.ts`. It lives outside `src/`, so
+`scripts/mock-token-allowlist.test.ts` needs no new entry.
+
+The two new variables, `INHERIT_EMBRYO_R2_ORIGIN` and
+`INHERIT_EMBRYO_R2_BUCKET`, move the pinned counts in `scripts/env-gate.test.ts`:
+
+- direct reads from 18 to 20;
+- read keys from 34 to 36;
+- template keys and keys named in the guide from 27 to 29;
+- guide names from 37 to 39.
+
+`scripts/self-host-local.test.ts` now also asserts that a generated local
+environment file holds neither of the two variables.
+
+Existing files, with no assertion removed:
+
+- `supabase/tests/fixtures/embryo_ingest_attempt.inc` and
+  `supabase/tests/embryo_ingest_unwind.sql` select the Supabase backend,
+  because fragment reservation now needs one.
+- `supabase/tests/embryo_ingest_write_fence.sql` changes three assertions:
+  - The targets assertion expects the new receipt shape.
+  - The static lock-order assertion reads the admission check that the guard
+    now calls.
+  - The upsert refusal uses `ON CONFLICT DO NOTHING`, which needs no conflict
+    target. Hosted Storage dropped the `(bucket_id, name)` unique index, and the
+    guard refuses before any conflict handling. That one change is its own
+    commit, so it can move to the unit-1 pull request.
+
 ## Comprehension live harness · 28 September 2026
 
 No existing test changes. The 100 tests in the nine existing comprehension

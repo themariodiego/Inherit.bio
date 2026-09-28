@@ -48,6 +48,14 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.embryo_ingest_object_config": {
+      "disposition": "reference",
+      "reason": "The operator's embryo fragment storage backend selection: provider, bucket and gateway audience. It holds no person's data."
+    },
+    "private.embryo_ingest_object_disposals": {
+      "disposition": "excluded-internal",
+      "reason": "Claim tokens and provider disposal evidence for an unwound embryo upload's storage objects. It is machinery, not the person's record."
+    },
     "private.embryo_ingest_write_fences": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write fences and their drain state. It is machinery, not the person's record."
@@ -99,6 +107,10 @@ create temporary table export_member_plan as select $plan$
     "private.health_picture_grant_snapshots": {
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for the health picture. It is machinery, not the person's record."
+    },
+    "private.hmac_key_versions": {
+      "disposition": "excluded-credential",
+      "reason": "Revision states of the HMAC keys behind contact and rate-limit lookups. It holds no key material, but it is key-management state, so it stays with the credentials it describes."
     },
     "private.invitation_terminal_notices": {
       "disposition": "excluded-protected",
