@@ -1,5 +1,5 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { hmacSecret } from "@/lib/crypto";
+import { contactDigestSet } from "@/lib/hmac-keyring";
 import { notFound } from "@/lib/embryos/api";
 import { EMBRYO_ARTIFACT_STATEMENT_KEYS, typedNameIsValid } from "@/lib/embryos/basis";
 import {
@@ -134,7 +134,10 @@ export async function POST(request: Request) {
   const { data: draftId, error } = await admin.rpc("accept_embryo_co_parent_invitation_v1", {
     p_session_hash: sessionHash,
     p_account_id: context.user.id,
-    p_account_email_hmac: hmacSecret(normalizeContact(context.user.email), "contact-email-v1"),
+    // Keyed under every held contact revision; the RPC compares the one the
+    // invitation was written under, so rotation strands no open session.
+    p_account_email_hmac: null,
+    p_account_email_hmac_set: contactDigestSet(normalizeContact(context.user.email)),
     p_signing_name_ciphertext: encryptedLiteral(body.coParentArtifacts.uploadEmbryo.typedName),
     p_jurisdiction_code: jurisdictionCode,
     p_upload_statement_keys: [...body.coParentArtifacts.uploadEmbryo.statementKeys],

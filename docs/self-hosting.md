@@ -342,6 +342,12 @@ does not declare. Copy the template, then work through these.
 | `EMAIL_FROM` | The sender for application mail. In a production build the mailer throws `EMAIL_FROM must use a verified sender in production` when it is unset; outside production it falls back to `Inherit <onboarding@resend.dev>`. |
 | `DATABASE_URL` | The direct Postgres connection string. Under `src/` only the direct-completion path below opens it; the Tier-3 worker reads its own copy from `worker/.env`. Local: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. |
 
+### Keyed-digest rotation
+
+| Variable | What to set, and what a missing or wrong value does |
+| --- | --- |
+| `INHERIT_HMAC_KEYRING` | Leave empty until you rotate. Revision 1 of the contact and rate-limit digest keys is derived from `BYOK_ENCRYPTION_KEY`; each later revision is its own secret, written `2:<base64>,3:<base64>`, each from `openssl rand -base64 32`. Add the new revision here and deploy before running the database rotation in `docs/rights-invitation-flow.md`; after the database rotates, a deployment missing a usable revision answers 503 to every invitation rather than matching with less. A malformed value throws on the first invitation request. Remove a revision only after the database has retired it. |
+
 ### Mail delivery and scheduled jobs
 
 | Variable | What to set, and what a missing or wrong value does |

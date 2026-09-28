@@ -70,6 +70,9 @@ async function reserveInvitation(contactEmail = recipient.email) {
     p_account_id: ownerId, p_session_id: authSessionId, p_draft_id: draftId,
     p_contact_hmac: contactHash(contactEmail), p_idempotency_key: crypto.randomBytes(32).toString("hex"),
     p_token_nonce: nonce(), p_test_jurisdiction: true,
+    // A fixture reservation, not a route call: fresh quota buckets so it never
+    // shares a count with another run on the same local database.
+    p_quota_keys: { "1": { "authenticated-principal": crypto.randomBytes(32).toString("hex") } },
   });
   expect(inviteError).toBeNull();
   expect(invitations[0].invitation_id).toBeTruthy();

@@ -1,5 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { hmacSecret } from "@/lib/crypto";
+import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
+import { invitationQuotaKeys } from "@/lib/invitation-quota";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
 import {
   closedResponse,
@@ -23,6 +25,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * with no write, so the response never says which addresses a draft names.
  * The RPC is idempotent on the outbox key derived below, so a repeat of the
  * same request re-sends nothing.
+ *
+ * The address travels as a digest under every held contact key revision
+ * (global-contact-refusal-bar-v1.barKeyring) with the account quota bucket
+ * key; the RPC counts the attempt before it matches anything and an exhausted
+ * quota is the same receipt as a barred address.
  */
 export async function POST(request: Request) {
   const context = await getSensitiveAccountContext();
@@ -44,16 +51,21 @@ export async function POST(request: Request) {
   });
   if (!claims) return requestForbidden();
 
-  const contactHmac = hmacSecret(parsed.data.contactEmail, "contact-email-v1");
+  // The revision-1 digest keeps the idempotency key stable across a rotation.
   const idempotencyKey = hmacSecret(
-    JSON.stringify(["co-parent-invitation-v1", context.user.id, parsed.data.targetCohortDraftId, contactHmac]),
+    JSON.stringify([
+      "co-parent-invitation-v1", context.user.id, parsed.data.targetCohortDraftId,
+      legacyContactDigest(parsed.data.contactEmail),
+    ]),
     "mail-idempotency-v1",
   );
   const { error } = await createAdminClient().rpc("create_embryo_draft_invitation_v1", {
     p_account_id: context.user.id,
     p_session_id: context.sessionId,
     p_draft_id: parsed.data.targetCohortDraftId,
-    p_contact_hmac: contactHmac,
+    p_contact_hmac: null,
+    p_contact_hmac_set: contactDigestSet(parsed.data.contactEmail),
+    p_quota_keys: invitationQuotaKeys(context.user.id),
     p_idempotency_key: idempotencyKey,
     p_token_nonce: claims.nonce,
     p_test_jurisdiction: true,
