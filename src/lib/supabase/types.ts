@@ -7770,6 +7770,46 @@ export type Database = {
         Args: { p_session_hash: string }
         Returns: boolean
       }
+      claim_session_status_v1: {
+        Args: { p_session_hash: string }
+        Returns: Json
+      }
+      complete_future_person_claim_v1: {
+        Args: {
+          p_birth_record_document_id: string
+          p_mode: string
+          p_nonce_hash: string
+          p_photo_document_id: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
+      read_claim_review_case_v1: {
+        Args: { p_review_id: string }
+        Returns: Json
+      }
+      open_claim_review_download_v1: {
+        Args: { p_cookie_hash: string; p_document_id: string }
+        Returns: Json
+      }
+      authorize_claim_review_chunk_v1: {
+        Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string }
+        Returns: Json
+      }
+      decide_claim_review_v1: {
+        Args: {
+          p_decision: string
+          p_nonce_hash: string
+          p_reason_ciphertext: string
+          p_review_id: string
+          p_review_revision: number
+        }
+        Returns: Json
+      }
+      close_due_claim_reviews_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       open_claim_document_session_v1: {
         Args: {
           p_claim_session_hash: string

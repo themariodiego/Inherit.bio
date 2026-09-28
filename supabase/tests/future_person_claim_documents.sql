@@ -169,7 +169,8 @@ select is((pg_temp.doc((select (job->>'documentId')::uuid from scan1))).state, '
 select is(public.record_claim_document_scan_v1((select (job->>'documentId')::uuid from scan1), pg_temp.h('lease:1'),
   'OK', (select job->>'sha256' from scan1), 'ClamAV 1.4.1', 27400, now() - interval '2 hours'), 'clean',
   'a fresh OK bound to the bytes marks it clean');
-select ok(pg_temp.readable((select (job->>'documentId')::uuid from scan1)), 'only now can the review read it');
+select ok(not pg_temp.readable((select (job->>'documentId')::uuid from scan1)),
+  'a clean document is still unreadable until a completed claim binds it to an open review');
 select throws_ok($$update private.claim_documents set state = 'refused', refusal_code = 'infected'
   where id = (select (job->>'documentId')::uuid from scan1)$$, '42501', null, 'a clean verdict is final');
 select is(pg_temp.begin('a3', 2)->>'status', 'review_pending', 'the claimant sees review_pending');

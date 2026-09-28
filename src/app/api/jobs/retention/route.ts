@@ -131,6 +131,11 @@ export async function POST(request: Request) {
   // session-24h): delete the objects the database lists as due (fragments,
   // refused documents, everything of an ended claim) and confirm each batch,
   // so the claim below can go with no object left behind it.
+  // future-person.claim-review: a review still open at its 30-day deadline
+  // closes without release, and its documents become due below.
+  const { data: closedReviews, error: reviewCloseError } = await admin.rpc("close_due_claim_reviews_v1");
+  if (reviewCloseError) failed++;
+  else if (typeof closedReviews === "number") processed += closedReviews;
   try {
     const objects = supabaseClaimObjectStore(admin);
     for (let batch = 0; batch < 10; batch++) {

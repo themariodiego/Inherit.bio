@@ -9,6 +9,10 @@ import {
   DOCUMENT_FILE_HINT,
   DOCUMENT_LABELS,
   DOCUMENT_STATUS,
+  FINISH_AFFIRM_LABEL,
+  FINISH_BUTTON,
+  FINISH_HEADING,
+  FINISH_STATUS,
   SEND_FILE_BUTTON,
 } from "@/copy/rights/future-person-claim";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
@@ -36,10 +40,21 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * Each session spends the page's nonce, so the page is refreshed after one
  * opens and the next file uses the new nonce.
+ *
+ * Once both files are received, the claimant affirms and finishes the claim
+ * (api.future-person-claim-complete) with the stored mode and the two
+ * received document ids; the page then shows that the claim was received.
  */
-export function ClaimDocuments({ nonce }: { nonce: string }) {
+export function ClaimDocuments({ nonce, completeNonce, mode }: {
+  nonce: string;
+  completeNonce: string;
+  mode: "record-key" | "claimant-recovery-key" | "keyless";
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<Partial<Record<Kind, Status>>>({});
+  const [received, setReceived] = useState<Partial<Record<Kind, string>>>({});
+  const [affirmed, setAffirmed] = useState(false);
+  const [finish, setFinish] = useState<keyof typeof FINISH_STATUS | null>(null);
   const [busy, setBusy] = useState(false);
   const inputs = useRef<Partial<Record<Kind, HTMLInputElement | null>>>({});
 
@@ -86,7 +101,12 @@ export function ClaimDocuments({ nonce }: { nonce: string }) {
           headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
           body: JSON.stringify({ chunkCount, nonce: completeNonce }),
         });
-        if (done.status === 201) return say(kind, "received");
+        if (done.status === 201) {
+          const documentId = ((await done.json().catch(() => null)) as { documentId?: unknown } | null)?.documentId;
+          if (typeof documentId !== "string") return say(kind, "failed");
+          setReceived((current) => ({ ...current, [kind]: documentId }));
+          return say(kind, "received");
+        }
         if (done.status === 422) {
           const reason = ((await done.json().catch(() => null)) as { reason?: string } | null)?.reason;
           return say(kind, reason && reason in DOCUMENT_STATUS ? (reason as Status) : "failed");
@@ -97,6 +117,33 @@ export function ClaimDocuments({ nonce }: { nonce: string }) {
       }
     } catch {
       say(kind, "failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ready = KINDS.every((kind) => received[kind]);
+
+  async function complete() {
+    if (!ready || !affirmed) return setFinish("waiting");
+    setBusy(true);
+    try {
+      const sent = await fetch("/api/future-person/claim/session/complete", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          photoIdentityDocumentId: received["future-photo-identity"],
+          birthRecordDocumentId: received["future-birth-record"],
+          affirmed: true,
+          nonce: completeNonce,
+        }),
+      });
+      if (sent.status === 202) return router.refresh();
+      setFinish(sent.status === 404 ? "expired" : "failed");
+    } catch {
+      setFinish("failed");
     } finally {
       setBusy(false);
     }
@@ -128,6 +175,23 @@ export function ClaimDocuments({ nonce }: { nonce: string }) {
           ) : null}
         </div>
       ))}
+      <div className="space-y-3 border-t border-line pt-5">
+        <h3 className="font-medium">{FINISH_HEADING}</h3>
+        <label className="flex min-h-11 items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={affirmed}
+            onChange={(event) => setAffirmed(event.target.checked)}
+            className="mt-1 h-5 w-5"
+          />
+          <span>{FINISH_AFFIRM_LABEL}</span>
+        </label>
+        <Button type="button" disabled={busy || !ready || !affirmed} onClick={() => void complete()}>
+          {FINISH_BUTTON}
+        </Button>
+        {!ready ? <p className="text-sm text-ink-muted">{FINISH_STATUS.waiting}</p> : null}
+        {finish && finish !== "waiting" ? <p role="status" className="text-sm">{FINISH_STATUS[finish]}</p> : null}
+      </div>
     </section>
   );
 }

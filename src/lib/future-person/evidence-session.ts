@@ -66,6 +66,18 @@ export function readClaimDocumentNonce(token: unknown, claimHash: string, now = 
   return readPublicFormToken(token, "future-person-claim-document", now, claimHash)?.nonce ?? null;
 }
 
+/** A completion nonce for the claim page, bound to this claim-session cookie value. */
+export function mintClaimCompleteNonce(claimSessionSecret: string, now = Date.now()): string | null {
+  if (!SECRET_SHAPE.test(claimSessionSecret)) return null;
+  return mintPublicFormToken("future-person-claim-complete", now, sha256Hex(claimSessionSecret));
+}
+
+/** The nonce inside a completion token bound to this claim session, or null. */
+export function readClaimCompleteNonce(token: unknown, claimHash: string, now = Date.now()): string | null {
+  if (typeof token !== "string" || token.length > 2048) return null;
+  return readPublicFormToken(token, "future-person-claim-complete", now, claimHash)?.nonce ?? null;
+}
+
 /** A new evidence cookie secret and its hash. */
 export function newEvidenceSecret(): { secret: string; hash: string } {
   const secret = crypto.randomBytes(32).toString("base64url");

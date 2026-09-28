@@ -10,9 +10,11 @@ import {
   CONTACT_LINE,
   FUTURE_PERSON_CLAIM_COPY,
   KEEP_LINE,
+  SUBMITTED_BODY,
+  SUBMITTED_HEADING,
 } from "@/copy/rights/future-person-claim";
 import { CLAIM_FORM_TOKEN_HEADER, CLAIM_SESSION_COOKIE, sha256Hex } from "@/lib/future-person/claim-session";
-import { mintClaimDocumentNonce } from "@/lib/future-person/evidence-session";
+import { mintClaimCompleteNonce, mintClaimDocumentNonce } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 
@@ -32,22 +34,35 @@ export const metadata: Metadata = { title: "Claim a future-person record" };
  * are not open and offers no form at all, so it collects nothing.
  *
  * A browser that already holds a live claim sees the documents step instead
- * of the start form, with a one-time nonce bound to its claim cookie. The
- * only thing read is whether that claim is live.
+ * of the start form, with one-time nonces bound to its claim cookie and the
+ * stored mode its completion must name. One whose claim is complete sees
+ * that it was received. The only thing read is that status.
  */
-async function liveClaimNonce(): Promise<string | null> {
+type ClaimStatus =
+  | { status: "live"; mode: "record-key" | "claimant-recovery-key" | "keyless"; documentNonce: string; completeNonce: string }
+  | { status: "completed" }
+  | null;
+
+async function claimStatus(): Promise<ClaimStatus> {
   const secret = (await cookies()).get(CLAIM_SESSION_COOKIE)?.value;
   if (!secret) return null;
-  const nonce = mintClaimDocumentNonce(secret);
-  if (!nonce) return null;
-  const { data, error } = await createAdminClient().rpc("claim_session_live_v1", { p_session_hash: sha256Hex(secret) });
-  return !error && data === true ? nonce : null;
+  const documentNonce = mintClaimDocumentNonce(secret);
+  const completeNonce = mintClaimCompleteNonce(secret);
+  if (!documentNonce || !completeNonce) return null;
+  const { data, error } = await createAdminClient().rpc("claim_session_status_v1", { p_session_hash: sha256Hex(secret) });
+  const value = data as { status?: unknown; mode?: unknown } | null;
+  if (error || !value) return null;
+  if (value.status === "completed") return { status: "completed" };
+  if (value.status === "live" && (value.mode === "record-key" || value.mode === "claimant-recovery-key" || value.mode === "keyless")) {
+    return { status: "live", mode: value.mode, documentNonce, completeNonce };
+  }
+  return null;
 }
 
 export default async function FuturePersonClaimPage() {
   const open = futurePersonClaimsOpen();
-  const documentNonce = open ? await liveClaimNonce() : null;
-  const formToken = open && !documentNonce ? (await headers()).get(CLAIM_FORM_TOKEN_HEADER) : null;
+  const claim = open ? await claimStatus() : null;
+  const formToken = open && !claim ? (await headers()).get(CLAIM_FORM_TOKEN_HEADER) : null;
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
       <p className="eyebrow">{CLAIM_EYEBROW}</p>
@@ -66,10 +81,15 @@ export default async function FuturePersonClaimPage() {
           {FUTURE_PERSON_CLAIM_COPY["future-person.claim.no-profile-no-guess"]}
         </p>
       </section>
-      {documentNonce ? (
+      {claim?.status === "completed" ? (
+        <section role="status" className="mt-8 space-y-4 rounded-2xl border border-line bg-card p-6">
+          <h2 className="font-medium">{SUBMITTED_HEADING}</h2>
+          <p className="text-sm leading-relaxed text-ink-muted">{SUBMITTED_BODY}</p>
+        </section>
+      ) : claim?.status === "live" ? (
         <div className="mt-8 space-y-4">
           <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
-          <ClaimDocuments nonce={documentNonce} />
+          <ClaimDocuments nonce={claim.documentNonce} completeNonce={claim.completeNonce} mode={claim.mode} />
         </div>
       ) : open && formToken ? (
         <div className="mt-8 space-y-4">

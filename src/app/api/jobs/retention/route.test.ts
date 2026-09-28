@@ -226,10 +226,11 @@ describe("Future Person claim document objects", () => {
     expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
     expect(mocks.remove.mock.calls).toEqual([["future-person-identity", [KEY]]]);
     const order = mocks.rpc.mock.calls.map((call) => call[0]).filter((name) =>
-      ["claim_document_objects_due_v1", "confirm_claim_document_objects_deleted_v1", "purge_future_person_claim_intakes_v1"]
-        .includes(name as string));
-    expect(order).toEqual(["claim_document_objects_due_v1", "confirm_claim_document_objects_deleted_v1",
-      "purge_future_person_claim_intakes_v1"]);
+      ["close_due_claim_reviews_v1", "claim_document_objects_due_v1", "confirm_claim_document_objects_deleted_v1",
+        "purge_future_person_claim_intakes_v1"].includes(name as string));
+    // Reviews past their deadline close first, so their documents are due in the same run.
+    expect(order).toEqual(["close_due_claim_reviews_v1", "claim_document_objects_due_v1",
+      "confirm_claim_document_objects_deleted_v1", "purge_future_person_claim_intakes_v1"]);
     expect(mocks.rpc).toHaveBeenCalledWith("confirm_claim_document_objects_deleted_v1",
       { p_object_keys: [KEY], p_route_id: "jobs.retention" });
   });
