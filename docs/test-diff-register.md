@@ -1,5 +1,15 @@
 # Test diff register
 
+## genomes-staging drop test after D-130's embryo fix · 28 September 2026
+
+`supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two
+function bodies may still name `genomes-staging`: the account-deletion and
+embryo-unwind manifest builders (D-130). #255 (`20260929101000`) rewrote
+`prepare_embryo_ingest_unwind_v1` to inventory objects under their recorded
+bucket, so it no longer names the dropped bucket, and the test failed on the
+merged tree. The expected set is now the one remaining builder. That is
+stricter: one fewer function may carry the literal.
+
 ## Two register divergences closed on the owner's answers · 28 September 2026
 
 **`generated-artifacts` dropped.**

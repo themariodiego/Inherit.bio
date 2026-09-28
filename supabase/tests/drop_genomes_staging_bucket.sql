@@ -13,14 +13,15 @@ select is((select column_default from information_schema.columns where table_sch
  and column_name='storage_bucket'),'''genomes''::text','a session that omits its bucket names genomes, which exists');
 select ok((select allowed_mime_types is null and not public from storage.buckets where id='genomes'),'genomes is unchanged');
 
--- No policy, and no live function body outside the two recorded manifest
--- builders, still names the dropped bucket.
+-- No policy, and no live function body outside the one recorded manifest
+-- builder, still names the dropped bucket. The embryo unwind planner stopped
+-- naming it when #255 (20260929101000) fixed D-130's embryo leg.
 select is_empty($$select policyname from pg_policies where schemaname='storage'
  and (coalesce(qual,'')||coalesce(with_check,'')) like '%genomes-staging%'$$,'no storage policy names the dropped bucket');
 select set_eq($$select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%genomes-staging%'$$,
- array['claim_due_account_deletion_v1(text,integer)','prepare_embryo_ingest_unwind_v1(uuid,bigint)'],
- 'only the two D-130 manifest builders still carry the literal');
+ array['claim_due_account_deletion_v1(text,integer)'],
+ 'only the account-deletion manifest builder still carries the literal');
 
 -- The one surviving upload path cannot reach it: every token-bearing
 -- session must name genomes.
