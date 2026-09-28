@@ -24,7 +24,7 @@ const content = z.object({ role: z.literal("assistant"), content: z.string().max
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
 }).strict();
 const completion = z.object({ chatId: z.uuid(), message: content }).strict();
-const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.enum(["self", "family"]),
+const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.enum(["self", "family", "cohort"]),
   displayLabel: z.string().max(200) }).strict(), messages: z.array(z.object({
   id: z.uuid(), role: z.enum(["user", "assistant"]), content: z.string().max(100_000),
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
@@ -44,7 +44,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
   placeholder = "Ask about your genome…" }: {
   contextToken: string; info: ChatProviderInfo; displayLabel: string;
   chats: { id: string; createdAt: string }[];
-  scopeKind?: "self" | "family"; threadHint?: string; placeholder?: string;
+  scopeKind?: "self" | "family" | "cohort"; threadHint?: string; placeholder?: string;
 }) {
   const router = useRouter();
   const [input, setInput] = useState("");

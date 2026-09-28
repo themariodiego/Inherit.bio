@@ -699,8 +699,10 @@ test("/embryos/{id} for an unknown, malformed or foreign embryo answers 404 with
  * ambiguous pairs wait: the hub is showing everything it has and everything it
  * is permitted to. Both cohorts are listed with every chip, status word,
  * retention line and link they carry; the compare tile resolves to the newest
- * readable cohort; and the Copilot tile states its blocking reason rather than
- * shipping a dead link.
+ * readable cohort; and the Copilot tile opens that same cohort's Copilot scope
+ * (built under TEST-LOCAL since 2026-09-28; on this app variant, which attests
+ * no local model, that page is the registered unavailable page and answers
+ * 200, which `expectEveryLinkAnswers` checks).
  *
  * THE SECOND COHORT'S JURISDICTION LINE DOES NOT MAKE THIS INCOMPLETE, and the
  * distinction is worth stating because it is easy to get backwards. That line
@@ -753,7 +755,9 @@ test("/embryos complete: both cohorts listed with every chip, status, link and r
 
   // The compare tile opens the newest cohort the viewer may read.
   await expect(page.locator('[data-tile="compare"] a')).toHaveAttribute("href", `/embryos/compare?cohort=${cohort1}`);
-  await expect(page.locator('[data-tile="copilot"] [data-slot="tile-blocked"]')).toHaveText(COPILOT_BLOCKED);
+  // The Copilot tile opens the same cohort's scope (TEST-LOCAL, 2026-09-28).
+  await expect(page.locator('[data-tile="copilot"] a')).toHaveAttribute("href", `/copilot/c-${cohort1}`);
+  await expect(page.locator('[data-tile="copilot"] [data-slot="tile-blocked"]')).toHaveCount(0);
   await expectNoResults(page);
   await expectNoSexOrRank(page);
   await expectEveryLinkAnswers(page);

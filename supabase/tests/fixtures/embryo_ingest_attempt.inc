@@ -7,6 +7,10 @@
 -- below deterministic wherever the suite runs; the rollback puts them back.
 update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
 
+-- Fragment objects need a configured backend (20260929100000). These suites
+-- exercise the Supabase metadata path; the R2 suite selects its own.
+update private.embryo_ingest_object_config set provider='supabase',r2_bucket=null where singleton;
+
 -- Each primitive fixture now traverses the real signed two-parent authority
 -- flow. Distinct accounts avoid bypassing the per-account outstanding-attempt
 -- cap. The outer transaction rolls everything back.

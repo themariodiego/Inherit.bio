@@ -114,10 +114,14 @@ describe("the route gate holds the register to the code", () => {
     // `product-result` because the Family group scope now renders the
     // register's jurisdiction refusal (awaiting-choice waived with its
     // reason), and the same change proves it (e2e/copilot-family.spec.ts), so
-    // the unproven count does not move.
+    // the unproven count does not move. 154 -> 155 on 2026-09-28 (later):
+    // `/copilot/[scope]`'s not-covered waiver is withdrawn, because the group
+    // scopes render the register's closed unavailable page with state
+    // `not-covered` (copilot-transport-availability-v1), and
+    // e2e/copilot-group-scopes.spec.ts proves it in the same change.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(154);
+    expect(result.requiredStateCount).toBe(155);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7

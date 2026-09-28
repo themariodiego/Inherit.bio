@@ -1,5 +1,84 @@
 # Test diff register
 
+## Embryo (cohort) Copilot scope under TEST-LOCAL · 28 September 2026
+
+New tests, none loosened.
+
+- `supabase/tests/cohort_copilot_scope.sql` runs rollback-only, over a cohort
+  published through the real worker functions. The new fixture
+  `supabase/tests/fixtures/embryo_cohort_published.inc` runs
+  `embryo_ingest_completed.inc` through claim, stage, finish and publish.
+  The file covers:
+  - who may call;
+  - every parent's analysis grant, including a grant for another purpose and
+    a non-current direction row;
+  - non-members;
+  - an unpublished cohort and an open attestation contradiction;
+  - local-only commits, a stale authority, foreign citations and
+    single-use context;
+  - provenance: embryos, purpose, grants and nine dependency rows;
+  - stale-state deletion;
+  - deletion in the same transaction when a grant is withdrawn;
+  - the citation validator.
+- New unit files, all in `src/lib/copilot/`:
+  - `cohort-chat.test.ts`: the page's order, the turn recheck and history;
+  - `cohort-chat-route.test.ts`: the route's order, refusals, authority
+    binding and fail-closed rechecks;
+  - `cohort-chat-content.test.ts`: the closed context, forbidden keys and
+    provenance;
+  - `cohort-chat-token.test.ts`.
+- Browser:
+  - `e2e/copilot-cohort.spec.ts` is the journey, in the `copilot-local`
+    project.
+  - `e2e/copilot-group-scopes.spec.ts` gains one test: a readable cohort's
+    box and tile open its scope, which is the unavailable page on the main
+    variant.
+  - `e2e/cohort-copilot-seed.ts` seeds a published cohort with the service
+    role. It signs each parent's analysis grant through
+    `grant_cohort_purpose_v1`, because no page offers that grant yet.
+- `scripts/ci-browser-playwright-config.test.ts` gains two assertions:
+  `copilot-cohort` runs only in `copilot-local`.
+
+Expectations changed by this feature, each with a dated comment:
+
+- `src/lib/copilot/group-scopes.test.ts`: `cohort` is now true under
+  TEST-LOCAL (exactly `"1"`) and false elsewhere. It was false everywhere.
+- `src/lib/overview-entry-boxes.test.ts`: the default-scopes test stubs the
+  flag explicitly. It expects the Embryos box to open `/copilot/c-{cohort}`
+  under TEST-LOCAL for an account with a cohort, and `/embryos` otherwise.
+- `e2e/embryos.spec.ts` (`/embryos complete`) pinned the Copilot tile as
+  blocked. It now pins its href to the same cohort's scope. The no-cohort
+  test still pins the blocked line.
+- `e2e/fixtures/canonical-copilot-provider.ts` and
+  `canonical-copilot-daemon.ts`: a plan's `tool` is optional, and a plan with
+  no tool answers directly. The cohort scope has no tools. Every existing
+  plan behaves as before.
+- `supabase/tests/v2_contracts.sql`: the purge-store count is 130, from the
+  merge of main (the legal audit link) with worker-3 (two split stores).
+- `scripts/route-gate.test.ts`: required states move 154 -> 155. The waiver
+  of `not-covered` on `/copilot/[scope]` is withdrawn: the group scopes'
+  closed unavailable page is that state in the register
+  (`copilot-transport-availability-v1`). The existing test in
+  `e2e/copilot-group-scopes.spec.ts` that follows the Family box to it now
+  carries the title `/copilot/[scope] not-covered: …`. The gate reads 144 of
+  155 proven, so the unproven count stays 11.
+
+Planted regressions, each caught and then restored:
+
+- TypeScript, 7 of 7:
+  - no per-turn authority recheck;
+  - a missing parent grant ignored by the route;
+  - the page's authority not compared on the first turn;
+  - another account's context token accepted;
+  - the page serving a cohort the account cannot read;
+  - forbidden sex and score keys let through;
+  - the transport decided after the authority read.
+- SQL, recorded in the PR body:
+  - a revoked grant still counted;
+  - a grant for another purpose counted;
+  - the reader relation skipped;
+  - revocation leaving the stored conversation.
+
 ## Family Copilot scope turned on everywhere · 28 September 2026
 
 The owner chose to turn the Family Copilot scope on in production (PR #260).
@@ -92,6 +171,48 @@ Planted regressions, each caught and then restored:
   passed through; another account's context token accepted; a member admitted
   without the Family graph; group names not read as persons by the input gate.
   6 of 6 fail their test.
+## Embryo fragments on R2 · 29 September 2026
+
+`supabase/tests/embryo_ingest_r2_fragments.sql` is new, with 88 assertions for
+`20260929100000_embryo_ingest_r2_fragments.sql`:
+
+- grants and an empty backend configuration that refuses reservations;
+- R2 intents bound to an opaque key, and the fenced Supabase name refused;
+- every ACK refusal, and an exact replay;
+- the commit gate, and a stale receipt after renewal;
+- revocation, the fence and the drain;
+- the R2 door refusing a Supabase intent.
+
+`src/lib/embryos/fragment-gateway.test.ts` (27 tests) and
+`src/lib/embryos/fragment-storage.test.ts` (15 tests) are new. They run the
+undeployed gateway and the writer over an in-memory binding,
+`scripts/ci-browser/embryo-fragment-fixture.ts`. It lives outside `src/`, so
+`scripts/mock-token-allowlist.test.ts` needs no new entry.
+
+The two new variables, `INHERIT_EMBRYO_R2_ORIGIN` and
+`INHERIT_EMBRYO_R2_BUCKET`, move the pinned counts in `scripts/env-gate.test.ts`:
+
+- direct reads from 18 to 20;
+- read keys from 34 to 36;
+- template keys and keys named in the guide from 27 to 29;
+- guide names from 37 to 39.
+
+`scripts/self-host-local.test.ts` now also asserts that a generated local
+environment file holds neither of the two variables.
+
+Existing files, with no assertion removed:
+
+- `supabase/tests/fixtures/embryo_ingest_attempt.inc` and
+  `supabase/tests/embryo_ingest_unwind.sql` select the Supabase backend,
+  because fragment reservation now needs one.
+- `supabase/tests/embryo_ingest_write_fence.sql` changes three assertions:
+  - The targets assertion expects the new receipt shape.
+  - The static lock-order assertion reads the admission check that the guard
+    now calls.
+  - The upsert refusal uses `ON CONFLICT DO NOTHING`, which needs no conflict
+    target. Hosted Storage dropped the `(bucket_id, name)` unique index, and the
+    guard refuses before any conflict handling. That one change is its own
+    commit, so it can move to the unit-1 pull request.
 
 ## Comprehension live harness · 28 September 2026
 

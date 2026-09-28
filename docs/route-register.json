@@ -15471,7 +15471,6 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
-        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own \u2014 read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
         "awaiting-choice": "A conversation answers questions about results that already exist; no scope renders an invitation to choose an analysis. Carried over unchanged from the own-product-result profile this route left on 2026-09-28."
       },
