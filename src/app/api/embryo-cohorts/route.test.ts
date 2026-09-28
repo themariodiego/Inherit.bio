@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ACCOUNT = "12345678-1234-4234-8234-000000000001";
@@ -7,6 +8,7 @@ const INGEST_SESSION = "12345678-1234-4234-8234-0000000000c1";
 const SECRET = "A".repeat(43);
 const CHALLENGE = "kZ9Qd3yQ8wq7fF2bN5hT1xV4cR6sJ0mL2pY8uW3aE7g";
 const ORIGIN = "https://inherit.bio";
+const EXPIRES_AT = new Date(Date.now() + 24 * 60 * 60 * 1000 - 1000).toISOString();
 
 const mocks = vi.hoisted(() => ({
   account: null as { user: { id: string }; sessionId: string } | null,
@@ -49,6 +51,8 @@ vi.mock("@/lib/supabase/admin", () => ({
 vi.stubEnv("NEXT_PUBLIC_APP_URL", ORIGIN);
 // The route guards on `embryo_analysis`, which only resolves under TEST-LOCAL.
 vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+// The first ingest nonce (ADR 0035) is sealed with the deployment key.
+vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 
 const { POST } = await import("./route");
 
@@ -60,7 +64,8 @@ function mint(overrides: Record<string, unknown> = {}) {
     challenge: CHALLENGE,
     revision: 1,
     sampleHandles: [{ ordinal: 0, handle: "handle-zero" }],
-    expiresAt: "2026-09-22T12:00:00.000Z",
+    // The mint sets a fixed deadline 24 hours ahead; the nonce is bound to it.
+    expiresAt: EXPIRES_AT,
     ...overrides,
   };
 }
@@ -185,6 +190,31 @@ describe("POST /api/embryo-cohorts", () => {
     expect(body.embryo_count).toBe(1);
     expect(body.upload_session.transport).toBe("embryo-chunks");
     expect(body.upload_session.session).toBe(INGEST_SESSION);
+  });
+
+  /**
+   * ADR 0035: the embryo branch of `upload-session-v1` carries the first
+   * ingest nonce and the configure route. The nonce must be bound to this
+   * account, this auth session and this upload session, for the one
+   * operation that opens it, and must not outlive the session.
+   */
+  it("hands over the first ingest nonce, bound to this upload session, and the configure route", async () => {
+    const { readEmbryoOperation } = await import("@/lib/embryos/operation-token");
+    const response = await POST(post(BODY));
+    const { upload_session: upload } = await response.json();
+    expect(upload.configureRoute).toBe(`/api/embryo-ingest/${INGEST_SESSION}/configure`);
+    expect(upload.expiresAt).toBe(EXPIRES_AT);
+    const claims = readEmbryoOperation(upload.operationNonce);
+    expect(claims).toMatchObject({
+      accountId: ACCOUNT,
+      sessionId: SESSION,
+      operation: "ingest_session_open",
+      targetKind: "ingest_session",
+      targetId: INGEST_SESSION,
+      expiresAt: Date.parse(EXPIRES_AT),
+    });
+    // The token is sealed; its inner nonce never appears on its own.
+    expect(JSON.stringify(upload)).not.toContain(`"${claims!.nonce}"`);
   });
 
   /**

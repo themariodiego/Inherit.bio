@@ -53,6 +53,7 @@ const ROUTE_PATTERNS = {
   "api.file-upload-session": "/api/files/upload-session",
   "api.file-finalize": "/api/files/[id]/finalize",
   "api.file-process": "/api/files/[id]/process",
+  "api.embryo-ingest-configure": "/api/embryo-ingest/[session]/configure",
   "marketing.providers": "/providers",
   "science.index": "/science",
   "legal.index": "/legal",
