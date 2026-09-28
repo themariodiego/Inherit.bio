@@ -14,9 +14,10 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- Incremental VCF preparation adds the genetic own_normalization_positions index.
 -- The inactive object backend registers jobs, artifacts and published identity;
 -- checkpoints, cleanup plans/entries and original retirement add four stores.
--- The embryo-ingest write fence adds its write intents and session fences.
-select is((select count(*) from public.purge_target_stores), 127::bigint,
-  'all 127 purge stores, including private prepared-object and embryo write-fence working state, are classified');
+-- The embryo-ingest write fence adds its write intents and session fences,
+-- and the unwind's exact storage disposals add one more.
+select is((select count(*) from public.purge_target_stores), 128::bigint,
+  'all 128 purge stores, including private prepared-object and embryo write-fence working state, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');
