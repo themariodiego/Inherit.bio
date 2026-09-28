@@ -236,12 +236,12 @@ create trigger carrier_conditions_reviewed before insert or update on public.car
 -- ---------------------------------------------------------------------------
 
 create function private.carrier_assertion_rule_v1()
-returns table(assertion_id bigint,release_id text,variation_id bigint,condition_id text,condition_name text,
+returns table(assertion_id bigint,release_id text,gene_validity_read_on date,variation_id bigint,condition_id text,condition_name text,
  gene_symbol text,inheritance_mode text,penetrance_class text,penetrance_citation text,variant_name text,
  classification text,review_status text,review_stars smallint,last_evaluated date,
  chrom smallint,pos integer,ref text,alt text,equivalents jsonb)
 language sql stable security definer set search_path=pg_catalog as $$
- select a.assertion_id,a.release_id,a.variation_id,c.condition_id,c.condition_name,c.gene_symbol,c.inheritance_mode,
+ select a.assertion_id,a.release_id,r.gene_validity_created_on,a.variation_id,c.condition_id,c.condition_name,c.gene_symbol,c.inheritance_mode,
   c.penetrance_class,c.penetrance_citation,a.variant_name,a.classification,a.review_status,a.review_stars,a.last_evaluated,
   a.grch38_chrom,a.grch38_pos,a.grch38_ref,a.grch38_alt,a.grch38_equivalents
  from public.clinical_assertions a

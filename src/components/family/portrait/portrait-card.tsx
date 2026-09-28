@@ -57,9 +57,11 @@ import {
   oneSidedWhatWouldChangeFor,
   outputHeading,
   personVariantLineFor,
+  reviewedVariantLineFor,
   type PersonRef,
 } from "@/copy/family/portrait";
-import type { CarrierMatch, CarrierReason } from "@/lib/family/carrier-pair";
+import type { CarrierMatch, CarrierReason, CarrierVariantReading } from "@/lib/family/carrier-pair";
+import { AssertionNotes } from "../assertion-notes";
 import { distribute } from "@/lib/family/distribution";
 import { crossShares, type MendelOutcome } from "@/lib/family/mendel";
 import type { GeneCoverage, OneSidedReading } from "@/lib/family/portrait";
@@ -145,6 +147,22 @@ function Chips({
   );
 }
 
+/**
+ * The name a sentence gives a person's change: ClinVar's name for a reviewed
+ * assertion, whose key is an assertion id and never an rsID; the rsID for the
+ * synthetic rule fixtures that key by one.
+ */
+function variantLabel(readings: readonly CarrierVariantReading[], key: number): string {
+  return readings.find((reading) => reading.rsid === key)?.evidence?.variantName ?? `rs${key}`;
+}
+
+/** One person's variant line: the reviewed assertion's own words where there is one. */
+function variantLineFor(person: PersonRef, reading: CarrierVariantReading, gene: string): string {
+  return reading.evidence
+    ? reviewedVariantLineFor(person, reading.evidence, gene, reading.classification)
+    : personVariantLineFor(person, reading.rsid, gene, reading.classification);
+}
+
 function Title({ gene }: { gene: string }) {
   return (
     <p data-slot="portrait-output-title" className="font-medium text-ink">
@@ -193,16 +211,13 @@ export function CarrierPairCard({
     <ul data-slot="carrier-variants" className="space-y-1 text-sm leading-relaxed text-ink-muted">
       {[match.a, match.b].map((person) => (
         <li key={person.dataSubjectId} data-slot="carrier-variant">
-          {personVariantLineFor(
-            refOf(person.dataSubjectId),
-            person.variant.rsid,
-            match.gene,
-            person.variant.classification,
-          )}
+          {variantLineFor(refOf(person.dataSubjectId), person.variant, match.gene)}
         </li>
       ))}
     </ul>
   );
+  const notes = <AssertionNotes evidence={[match.a.variant.evidence, match.b.variant.evidence]} />;
+  const labelOf = (key: number) => variantLabel([match.a.variant, match.b.variant], key);
 
   if (match.kind === "probability") {
     // The rule chose the cross (D-031): an X-linked pair whose two people have
@@ -228,6 +243,7 @@ export function CarrierPairCard({
             <Title gene={match.gene} />
             <Chips people={people} viewerAccountId={viewerAccountId} nodes={nodes.slice(0, 2)} />
             {variantLines}
+            {notes}
             <p data-slot="portrait-derivation" data-finding="true" className="text-base font-medium text-ink tabular-nums">
               {derivationLine(cross.outcomes)}
             </p>
@@ -268,7 +284,7 @@ export function CarrierPairCard({
   // A position one file does not report is named, never imputed (line 1349).
   const uncovered = match.reason === "not-covered" && match.uncovered ? match.uncovered : null;
   const uncoveredSentence = uncovered
-    ? cannotCalculateFor(refOf(uncovered.dataSubjectId), `rs${uncovered.rsid}`)
+    ? cannotCalculateFor(refOf(uncovered.dataSubjectId), labelOf(uncovered.rsid))
     : null;
   const sentence = runsAbove
     ? RUNS_REFUSAL
@@ -279,7 +295,7 @@ export function CarrierPairCard({
     : (uncoveredSentence ??
       cannotCalculateFor(
         refOf(match.a.variant.rsid !== match.b.variant.rsid ? match.b.dataSubjectId : match.a.dataSubjectId),
-        `rs${match.a.variant.rsid}`,
+        labelOf(match.a.variant.rsid),
       ));
   return (
     <ClaimBlock
@@ -298,6 +314,7 @@ export function CarrierPairCard({
           <Title gene={match.gene} />
           <Chips people={people} viewerAccountId={viewerAccountId} nodes={nodes} />
           {variantLines}
+          {notes}
           <p data-slot="carrier-sentence" data-finding="true" className="text-base leading-relaxed text-ink">
             {sentence}
           </p>
@@ -340,7 +357,7 @@ export function OneSidedCard({ reading, people, viewerAccountId }: OneSidedCardP
   const sentence =
     reading.kind === "no-second-copy"
       ? noSecondCopyFor(other)
-      : cannotCalculateFor(other, `rs${reading.uncoveredRsid}`);
+      : cannotCalculateFor(other, variantLabel([reading.carrier.variant], reading.uncoveredRsid ?? reading.carrier.variant.rsid));
 
   return (
     <ClaimBlock
@@ -360,14 +377,10 @@ export function OneSidedCard({ reading, people, viewerAccountId }: OneSidedCardP
           <Chips people={people} viewerAccountId={viewerAccountId} nodes={nodes} />
           <ul data-slot="carrier-variants" className="space-y-1 text-sm leading-relaxed text-ink-muted">
             <li data-slot="carrier-variant">
-              {personVariantLineFor(
-                carrier,
-                reading.carrier.variant.rsid,
-                reading.gene,
-                reading.carrier.variant.classification,
-              )}
+              {variantLineFor(carrier, reading.carrier.variant, reading.gene)}
             </li>
           </ul>
+          <AssertionNotes evidence={[reading.carrier.variant.evidence]} />
           <p data-slot="carrier-sentence" className="text-base leading-relaxed text-ink">
             {sentence}
           </p>
