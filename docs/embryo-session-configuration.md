@@ -71,6 +71,24 @@ The next source-accepting work must supply all of the following:
    CSRF token. The first nonce arrives as `operationNonce` in the embryo branch
    of `upload-session-v1`. Nothing is built yet, and tables still need their
    own token presentation.
+   **Built for VCF on 28 September, TEST-LOCAL only.** The route is
+   `src/app/api/embryo-ingest/[session]/configure/route.ts`. Its one
+   transaction is `configure_embryo_vcf_ingest_v1`, in migration
+   `20260929110000_embryo_vcf_configure_route.sql`:
+   - It records format and build through
+     `private.configure_embryo_ingest_session_v1`.
+   - It stores the challenge, the completion nonce and the CSRF token as
+     SHA-256 digests only, and clears the raw challenge minted with the
+     session. A trigger makes all of them write-once.
+   - It draws the random revision.
+   - `authorize_embryo_ingest_request_v1` now returns `challengeHash`, never a
+     raw challenge. A chunk route compares the digest of the challenge its
+     header carries.
+   - The three tokens are sealed embryo operation tokens bound to the account,
+     the auth session and the upload session. They expire at the session's
+     fixed deadline (`mintIngestSessionOperation`).
+   - `POST /api/embryo-cohorts` now returns `operationNonce`, `configureRoute`
+     and `expiresAt`. `chunkRoute` and `completeRoute` wait for their routes.
 2. The bounded mapping endpoint and client orchestration, including independent
    parser/header validation before these private writes. The handler must also
    validate the offered candidates in memory: persisted canonical index pairs
