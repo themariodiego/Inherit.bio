@@ -7730,6 +7730,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      purge_future_person_claim_intakes_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      start_future_person_claim_v1: {
+        Args: {
+          p_form_nonce_hash: string
+          p_identifier_digests: Json
+          p_identity_ciphertext: string
+          p_key_hash: string | null
+          p_mode: string
+          p_network_digests: Json
+          p_session_hash: string
+          p_wrapped_data_key: string
+        }
+        Returns: string
+      }
       authorize_mail_submission_v1: {
         Args: { p_outbox_id: string; p_attempt_ordinal: number }
         Returns: boolean
