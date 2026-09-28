@@ -262,6 +262,29 @@ data. Public benchmark genotypes are also excluded from current test inputs.
 - Repository SHA-256:
   `953c0c8f51a161b32dcf6a4a2c5279b3e793b51b0c29b42e761a8fd4d03e0445`.
 
+## embryo-pair-grch38.vcf
+
+- Classification: synthetic two-sample GRCh38 VCF, participant-c's embryo file
+  in the comprehension protocol (owner decision, 28 September 2026). It
+  describes two invented embryos and no real person. Embryo ingest refuses a
+  cohort upload that resolves to exactly one sample, so both embryos travel in
+  one file, as separate samples `SAMPLE1` and `SAMPLE2`.
+- Generator: `scripts/generate-embryo-pair-fixture.ts`. Its 1,200 positions
+  are evenly spaced real GRCh38 autosomal coordinates on eleven autosomes,
+  read from the public `data/ref/build-discriminating-sites.json` together
+  with their rsIDs. Every REF and ALT letter and every genotype is drawn from
+  a fixed seed; none was read from a person, a sample or a reference sequence,
+  so the REF letters are parser inputs, not claims about the GRCh38 base.
+- The first embryo is called at all 1,200 sites and the second at 1,188: every
+  hundredth site is `./.`. Both are above the embryo quality policy's
+  no-figure call-rate floor. The two genotypes differ at 783 sites.
+- `scripts/embryo-pair-fixture.test.ts` checks the committed bytes against the
+  generator, the product's sniffer (two samples), the header build (GRCh38),
+  autosomes only, contig lengths against the other committed fixtures, every
+  position against the reference, and both call rates.
+- Repository SHA-256:
+  `111d6a009a686a5847c3c0645e6727ab634e6970bfabd32ecca95224add15cbb`.
+
 ## carrier-pair-grch38.vcf
 
 - Classification: synthetic single-sample GRCh38 VCF written by hand for the

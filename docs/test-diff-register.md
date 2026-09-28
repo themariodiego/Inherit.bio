@@ -1,5 +1,22 @@
 # Test diff register
 
+## Two-embryo fixture for participant-c · 28 September 2026
+
+`e2e/fixtures/embryo-pair-grch38.vcf` is new, written by the new
+`scripts/generate-embryo-pair-fixture.ts` from a fixed seed. It carries two
+synthetic embryos as separate samples at 1,200 real GRCh38 autosomal positions
+read from `data/ref/build-discriminating-sites.json`, with invented alleles and
+genotypes. `scripts/embryo-pair-fixture.test.ts` (7 tests) checks it against
+the generator, the product's sniffer, the header build, autosomes only,
+contig lengths from the other fixtures, every position against the reference,
+and both call rates against the embryo quality policy.
+
+T6, T7 and `participant-c` in `scripts/comprehension/bindings.json` now name
+this file instead of the two single-sample files, which embryo ingest would
+refuse. `bindings.test.ts` gains one test: every embryo task's files must read
+as multi-sample. It failed when T6 was pointed back at the old files. No other
+test changes, and the two old fixtures stay for the tests that use them.
+
 ## T9 measured, and the public rights links built · 28 September 2026
 
 `e2e/task-depth.spec.ts` gains the T9 measurement, on the real path the owner
