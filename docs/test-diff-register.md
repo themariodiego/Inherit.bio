@@ -1,5 +1,46 @@
 # Test diff register
 
+## Comprehension live harness · 28 September 2026
+
+No existing test changes. The 100 tests in the nine existing comprehension
+suites pass unchanged against the refactored conductor. Five suites are new:
+
+- `scripts/comprehension/inference-isolation.test.ts` (7) spawns real child
+  processes. A stub reply is schema-valid and bounded. The isolation probe
+  sees an empty directory outside the checkout and only `LANG` and `PATH`
+  (plus the one credential and proxy variables for a real provider, never an
+  unrelated secret). A grading request sent to a loopback fake provider holds
+  only the rubric slice and the verbatim answer, and its digest omits the
+  model. A reply without usage fails, keeping the reservation. A process
+  takes one call. Prompts fit the pinned byte bound.
+- `scripts/comprehension/live-browser.test.ts` (3) launches Chromium against a
+  local synthetic site. It checks the text view and control ids, hidden text
+  left out, the synthetic-email guard, a stale control reported rather than
+  fatal, typed-URL and mailed-link entries recorded and not counted, real
+  click and submit events counted (Enter in a form counts two, as under
+  `e2e/task-depth.spec.ts`), an outside origin never reached, and a fresh
+  context per session.
+- `scripts/comprehension/completion.test.ts` (6) holds completion to the bound
+  routes and slugs, T8 to a scheduled deletion, and T9 and T10 to no account.
+- `scripts/comprehension/live-run.test.ts` (6) runs `runLive` end to end with
+  isolated stub processes and the record writer; refuses a stub record under
+  `docs/comprehension-runs`, a real one anywhere else, and any line carrying
+  the model identity; and applies the stopping rule: two clean runs on one
+  revision and settings, never across a settings change or an intervening
+  failure, never with skipped tasks, and the withheld path after three failed
+  revisions. A tampered record fails the deterministic re-check.
+- `scripts/comprehension/human-round.test.ts` (5) holds the facilitator sheet
+  to the protocol's scripts and the bound prompts verbatim, and the tally to
+  twelve eligible, consented, unassisted sessions, the thresholds, the T9
+  ceiling, both prohibited-answer paths and the adjustment rule.
+
+`playwright.config.ts` keeps `e2e/comprehension-run.spec.ts` out of every
+default project; it has its own project only when `pnpm comprehension:run`
+sets `INHERIT_COMPREHENSION_RUN=1`. The default listing is unchanged at 547
+tests in 84 files. `prohibited.ts`, `personas.ts` and `conductor-inputs.ts`
+find the repository from the working directory instead of `import.meta`,
+because Playwright loads the runner's imports as CommonJS.
+
 ## Two-embryo fixture for participant-c · 28 September 2026
 
 `e2e/fixtures/embryo-pair-grch38.vcf` is new, written by the new

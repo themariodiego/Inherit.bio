@@ -4210,3 +4210,31 @@ owner chose the recommended option on all four.
 - **Carrier importer: design first.** Engineering proposes the sources, the
   review-status threshold and the conditions in scope, for approval before
   anything is imported. Carrier results stay withheld until then.
+
+## 2026-09-28 (later) — Comprehension harness: engineering choices for owner review
+
+The 22 September entry asked engineering to choose the host and endpoint.
+These are the choices the live harness makes. None of them has spent money.
+
+- **Endpoint:** any OpenAI-compatible chat-completions endpoint over HTTPS,
+  named only in the operator's local run file. The preferred instance is the
+  existing edge provider's AI gateway, as the owner preferred. No credential
+  exists yet, so no paid call has been made.
+- **Credential:** read from one named variable in the operator's own shell and
+  handed only to each isolated inference process. It is never deployment
+  configuration, never in `.env.example` and never under `src/`, so the
+  commitment that LLM keys are never deployment-level stands unchanged.
+- **Model identity:** stricter than the 25 September decision. A committed run
+  record carries a non-identifying label and a salted commitment; the exact
+  identifier stays in a private file outside Git. The reason is the standing
+  rule against model identifiers in anything pushed. Every record carries the
+  blocker `pinned-identifier-held-locally-not-in-record` until the owner either
+  accepts the commitment as meeting G3.1 or allows the identifier in the run
+  records.
+- **Spend:** one journal for the whole effort reserves each call's maximum
+  before it is sent. A paid full run refuses to start without a calibration on
+  the same settings whose measured cost, plus 25%, fits what is left of US$50.
+- **Isolation:** a browser context and a freshly seeded account per
+  simulation; a separate operating-system process per inference call.
+- **T9's fixture:** the reserved-record invitation the owner chose today, with
+  the mail shown beside the page. Opening it is an entry, never an action.
