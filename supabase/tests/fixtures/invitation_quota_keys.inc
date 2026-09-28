@@ -6,5 +6,6 @@
 create or replace function pg_temp.invitation_quota_keys()
 returns jsonb language sql volatile as $$
   select jsonb_build_object('1', jsonb_build_object(
-    'authenticated-principal', encode(extensions.gen_random_bytes(32), 'hex')));
+    'authenticated-principal', encode(extensions.gen_random_bytes(32), 'hex'),
+    'source-network', encode(extensions.gen_random_bytes(32), 'hex')));
 $$;

@@ -60,10 +60,10 @@ thing, and the blockage is not partial:
 
 **G5.3** — source-object purge belongs to the withdrawal slice.
 **G5.4** — future-person routes and the broader rights-purpose matrix are
-unfinished; the per-network invitation quota and real-jurisdiction acceptance
-await owner decisions. Active-key rotation and the per-account quota are
-built locally (2026-09-28, not yet merged); the adult URL-token migration
-closed as D-081.
+unfinished. Active-key rotation and the account and network invitation quotas
+are built (2026-09-28, draft PR #248); the adult URL-token migration closed as
+D-081. By owner decision the row is judged under TEST-LOCAL; real countries
+wait on G5.5 reviews.
 
 ## D. Blocked on an environment this work does not have (4)
 

@@ -348,6 +348,12 @@ does not declare. Copy the template, then work through these.
 | --- | --- |
 | `INHERIT_HMAC_KEYRING` | Leave empty until you rotate. Revision 1 of the contact and rate-limit digest keys is derived from `BYOK_ENCRYPTION_KEY`; each later revision is its own secret, written `2:<base64>,3:<base64>`, each from `openssl rand -base64 32`. Add the new revision here and deploy before running the database rotation in `docs/rights-invitation-flow.md`; after the database rotates, a deployment missing a usable revision answers 503 to every invitation rather than matching with less. A malformed value throws on the first invitation request. Remove a revision only after the database has retired it. |
 
+Invitation attempts are also limited per client network, 30 an hour. The
+network comes from the client-address headers your hosting platform or
+reverse proxy sets, and it is stored only as a keyed digest for at most 24
+hours. Behind a proxy that does not set them, every request counts as one
+network and the whole site shares that limit.
+
 ### Mail delivery and scheduled jobs
 
 | Variable | What to set, and what a missing or wrong value does |

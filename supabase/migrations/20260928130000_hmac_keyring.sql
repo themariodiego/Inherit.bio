@@ -547,18 +547,18 @@ $$;
 revoke all on function private.consume_rate_limit_buckets_v1(text, jsonb, jsonb)
   from public, anon, authenticated, service_role;
 
--- global-contact-refusal-bar-v1.quotaAuthority.perActingAccount: invitation
--- attempts per acting account, 10 an hour and 30 a UTC day. The register's
--- perSourceNetworkHmac bucket (30 an hour) needs the client address, which
--- the application may not read outside the one sanctions check (G5.1a,
--- scripts/jurisdiction-inference.test.ts); it waits on an owner decision and
--- is one more entry in this list once decided.
+-- global-contact-refusal-bar-v1.quotaAuthority: invitation attempts per
+-- acting account (10 an hour, 30 a UTC day) and per source network (30 an
+-- hour). The network digest is the one client-address read the owner allowed
+-- on 28 September 2026 beside the sanctions check; it is never a
+-- jurisdiction signal (scripts/jurisdiction-inference.test.ts).
 create function private.consume_invitation_attempt_quota_v1(p_keys jsonb)
 returns boolean language sql volatile security invoker set search_path = '' as $$
   select private.consume_rate_limit_buckets_v1(
     'global-contact-refusal-bar-v1.invitation-attempt',
     '[{"dimension":"authenticated-principal","windowSeconds":3600,"limit":10},
-      {"dimension":"authenticated-principal","windowSeconds":86400,"limit":30}]'::jsonb,
+      {"dimension":"authenticated-principal","windowSeconds":86400,"limit":30},
+      {"dimension":"source-network","windowSeconds":3600,"limit":30}]'::jsonb,
     p_keys);
 $$;
 revoke all on function private.consume_invitation_attempt_quota_v1(jsonb)

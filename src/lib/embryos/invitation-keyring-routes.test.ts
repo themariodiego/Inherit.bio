@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * The invitation routes hand the database a keyed digest set and the quota
  * bucket keys, never a bare address digest, a raw address, an account id as a
- * bucket key (global-contact-refusal-bar-v1.barKeyring
+ * bucket key or a network address (global-contact-refusal-bar-v1.barKeyring
  * and .quotaAuthority). The database enforces both; these cases pin what the
  * routes send and how they answer each database outcome.
  */
@@ -45,6 +45,7 @@ const { legacyContactDigest } = await import("@/lib/hmac-keyring");
 const ACCOUNT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const DRAFT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const INVITED = "invited-person@example.invalid";
+const NETWORK = "192.0.2.44";
 const KEY_2 = crypto.randomBytes(32).toString("base64");
 
 beforeEach(() => {
@@ -59,7 +60,7 @@ afterEach(() => vi.unstubAllEnvs());
 
 const post = (path: string, body: unknown) => new Request(`https://inherit.bio${path}`, {
   method: "POST",
-  headers: { origin: "https://inherit.bio", "content-type": "application/json" },
+  headers: { origin: "https://inherit.bio", "content-type": "application/json", "x-real-ip": NETWORK },
   body: JSON.stringify(body),
 });
 const coParent = () => post("/api/invitations", { targetCohortDraftId: DRAFT, contactEmail: INVITED });
@@ -82,15 +83,15 @@ function expectKeyedCall(args: Record<string, unknown>) {
   const quota = args.p_quota_keys as Record<string, Record<string, string>>;
   expect(Object.keys(quota)).toEqual(["1", "2"]);
   for (const revision of Object.values(quota)) {
-    expect(Object.keys(revision)).toEqual(["authenticated-principal"]);
-    expect(revision["authenticated-principal"]).toMatch(/^[0-9a-f]{64}$/);
+    expect(Object.keys(revision).sort()).toEqual(["authenticated-principal", "source-network"]);
+    for (const digest of Object.values(revision)) expect(digest).toMatch(/^[0-9a-f]{64}$/);
   }
   const serialized = JSON.stringify(args);
-  for (const plain of [INVITED, `|${ACCOUNT}`]) expect(serialized).not.toContain(plain);
+  for (const plain of [INVITED, NETWORK, `|${ACCOUNT}`]) expect(serialized).not.toContain(plain);
 }
 
 describe("POST /api/invitations (co-parent)", () => {
-  it("sends the address under every held revision with the account quota key", async () => {
+  it("sends the address under every held revision with both quota keys", async () => {
     mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID(), expires_at: "x" }], error: null });
     const response = await inviteCoParent(coParent());
     expect(response.status).toBe(202);
@@ -125,7 +126,7 @@ describe("POST /api/invitations (co-parent)", () => {
 });
 
 describe("POST /api/subject-drafts (adult invitation)", () => {
-  it("sends the address under every held revision with the account quota key", async () => {
+  it("sends the address under every held revision with both quota keys", async () => {
     mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
     const response = await inviteAdult(adult());
     expect(response.status).toBe(202);

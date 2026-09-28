@@ -1,8 +1,9 @@
 begin;
-select plan(49);
--- global-contact-refusal-bar-v1.quotaAuthority.perActingAccount under
--- securityRateLimitContract, enforced inside the invitation RPCs rather than
--- by the route alone. Only synthetic accounts and digests; everything rolls back.
+select plan(58);
+-- global-contact-refusal-bar-v1.quotaAuthority (per acting account and per
+-- source network) under securityRateLimitContract, enforced inside the
+-- invitation RPCs rather than by the route alone. Only synthetic accounts and
+-- digests; everything rolls back.
 update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
 
 insert into auth.users (id, email)
@@ -12,12 +13,13 @@ from generate_series(1, 9) n;
 create function pg_temp.a(p integer) returns uuid language sql immutable as
  $$ select ('7f000000-0000-0000-0000-0000000000'||lpad(p::text, 2, '0'))::uuid $$;
 
--- Bucket digests are what the application derives from the account under the
--- rate-limit key; the database only ever sees these.
+-- Bucket digests are what the application derives from the account and the
+-- source network under the rate-limit key; the database only ever sees these.
 create function pg_temp.k(p text) returns text language sql stable as
  $$ select encode(extensions.digest('invitation-quota:'||p,'sha256'),'hex') $$;
-create function pg_temp.keys(p_account text) returns jsonb language sql stable as
- $$ select jsonb_build_object('1', jsonb_build_object('authenticated-principal', pg_temp.k(p_account))) $$;
+create function pg_temp.keys(p_account text, p_network text) returns jsonb language sql stable as
+ $$ select jsonb_build_object('1', jsonb_build_object(
+   'authenticated-principal', pg_temp.k(p_account), 'source-network', pg_temp.k(p_network))) $$;
 
 -- One adult invitation attempt to a fresh address; the invitation id or null.
 create function pg_temp.attempt(p_account uuid, p_keys jsonb) returns uuid
@@ -37,11 +39,11 @@ begin
  return v_issued;
 end;
 $$;
-create function pg_temp.bucket(p_key text, p_window integer)
+create function pg_temp.bucket(p_key text, p_window integer, p_dimension text default 'authenticated-principal')
 returns public.rate_limit_hmac_buckets language sql stable as $$
  select b.* from public.rate_limit_hmac_buckets b
  where b.action_id='global-contact-refusal-bar-v1.invitation-attempt'
-  and b.bucket_key_hmac=p_key and b.dimension='authenticated-principal' and b.window_seconds=p_window
+  and b.bucket_key_hmac=p_key and b.dimension=p_dimension and b.window_seconds=p_window
  order by b.window_started_at desc limit 1
 $$;
 
@@ -56,8 +58,13 @@ select throws_ok($$select * from public.create_adult_subject_invitation_v1(
  '55000', 'rate limit keys required', 'a key set without the account dimension is refused');
 select throws_ok($$select * from public.create_adult_subject_invitation_v1(
  pg_temp.a(1), decode('00112233445566778899aabbccddeeff','hex'), repeat('a',64), repeat('b',64), true,
- p_quota_keys => jsonb_build_object('1', jsonb_build_object('authenticated-principal', pg_temp.a(1)::text)))$$,
- '55000', 'rate limit keys required', 'a raw account id is not a bucket key');
+ p_quota_keys => jsonb_build_object('1', jsonb_build_object('authenticated-principal', pg_temp.k('a1'))))$$,
+ '55000', 'rate limit keys required', 'a key set without the network dimension is refused');
+select throws_ok($$select * from public.create_adult_subject_invitation_v1(
+ pg_temp.a(1), decode('00112233445566778899aabbccddeeff','hex'), repeat('a',64), repeat('b',64), true,
+ p_quota_keys => jsonb_build_object('1', jsonb_build_object(
+  'authenticated-principal', pg_temp.a(1)::text, 'source-network', '192.0.2.1')))$$,
+ '55000', 'rate limit keys required', 'a raw account id or address is not a bucket key');
 select throws_ok($$select * from public.create_embryo_draft_invitation_v1(
  pg_temp.a(1), gen_random_uuid(), gen_random_uuid(), repeat('a',64), repeat('b',64),
  'quota-no-keys-nonce-aaaaaaaa', true)$$,
@@ -68,11 +75,11 @@ select is((select count(*) from public.subjects
 
 -- ---------------------------------------------------------------------------
 -- Per acting account: 10 an hour.
-select is(pg_temp.attempts(pg_temp.a(1), pg_temp.keys('a1'), 1), 1, 'a first attempt is issued');
+select is(pg_temp.attempts(pg_temp.a(1), pg_temp.keys('a1','n1'), 1), 1, 'a first attempt is issued');
 create temporary table first_bucket as select * from pg_temp.bucket(pg_temp.k('a1'), 3600);
-select is(pg_temp.attempts(pg_temp.a(1), pg_temp.keys('a1'), 9), 9,
+select is(pg_temp.attempts(pg_temp.a(1), pg_temp.keys('a1','n1'), 9), 9,
  'ten attempts in an hour are all issued');
-select is(pg_temp.attempt(pg_temp.a(1), pg_temp.keys('a1')), null::uuid,
+select is(pg_temp.attempt(pg_temp.a(1), pg_temp.keys('a1','n1')), null::uuid,
  'the eleventh attempt in the hour is not issued');
 select is((select count(*) from public.subjects
  where owner_account_id=pg_temp.a(1) and subject_class='other_adult'), 10::bigint,
@@ -95,23 +102,46 @@ select ok((select expires_at <= first_attempt_at + interval '24 hours'
   and expires_at = date_trunc('day', window_started_at at time zone 'UTC') at time zone 'UTC' + interval '1 day'
  from pg_temp.bucket(pg_temp.k('a1'), 86400)),
  'a daily bucket is the UTC day and purges at its end');
-select ok(pg_temp.attempt(pg_temp.a(2), pg_temp.keys('a2')) is not null,
+select ok(pg_temp.attempt(pg_temp.a(2), pg_temp.keys('a2','n2')) is not null,
  'another account keeps its own quota');
+select is(pg_temp.attempt(pg_temp.a(1), pg_temp.keys('a1','n9')), null::uuid,
+ 'moving to another network does not reset the account quota');
 select is((select invitation_id from public.create_embryo_draft_invitation_v1(
  pg_temp.a(1), gen_random_uuid(), gen_random_uuid(), repeat('a',64), repeat('b',64),
- 'quota-exhausted-nonce-aaaaaaa', true, p_quota_keys => pg_temp.keys('a1'))), null::uuid,
+ 'quota-exhausted-nonce-aaaaaaa', true, p_quota_keys => pg_temp.keys('a1','n1'))), null::uuid,
  'the co-parent path shares the same quota and stops before any draft is read');
 select is((select count(*) from public.embryo_operation_nonces
  where nonce_hash=encode(extensions.digest('quota-exhausted-nonce-aaaaaaa','sha256'),'hex')), 0::bigint,
  'an exhausted attempt consumes no operation nonce');
 select is((select invitation_id from public.create_adult_subject_invitation_v1(
  pg_temp.a(1), decode('00112233445566778899aabbccddeeff','hex'), pg_temp.k('exhausted-contact'),
- repeat('d',64), true, p_quota_keys => pg_temp.keys('a1'))), null::uuid,
+ repeat('d',64), true, p_quota_keys => pg_temp.keys('a1','n1'))), null::uuid,
  'an exhausted account cannot invite a named address either');
 select is((select count(*) from public.subject_invitations where email_hmac=pg_temp.k('exhausted-contact'))
  + (select count(*) from public.contact_refusal_bars where contact_hmac=pg_temp.k('exhausted-contact'))
  + (select count(*) from public.invitation_refusal_hmacs where email_hmac=pg_temp.k('exhausted-contact')),
  0::bigint, 'the exhausted attempt writes no invitation and no bar for that address');
+
+-- ---------------------------------------------------------------------------
+-- Per source network: 30 an hour, across accounts.
+select is(pg_temp.attempts(pg_temp.a(3), pg_temp.keys('a3','n3'), 10)
+ + pg_temp.attempts(pg_temp.a(4), pg_temp.keys('a4','n3'), 10)
+ + pg_temp.attempts(pg_temp.a(5), pg_temp.keys('a5','n3'), 9), 29,
+ 'twenty-nine attempts from one network are issued across three accounts');
+-- a2 made one attempt from n2 above; the thirtieth from n3 comes from a2 too.
+select ok(pg_temp.attempt(pg_temp.a(2), pg_temp.keys('a2','n3')) is not null,
+ 'the thirtieth attempt from that network is issued');
+select is(pg_temp.attempt(pg_temp.a(9), pg_temp.keys('a9','n3')), null::uuid,
+ 'a thirty-first attempt from that network is not issued, even from a fresh account');
+select is((select request_count||':'||outcome_code from pg_temp.bucket(pg_temp.k('n3'), 3600, 'source-network')),
+ '31:exhausted', 'the network refusal is counted in the network bucket');
+select is((select request_count||':'||outcome_code from pg_temp.bucket(pg_temp.k('a9'), 3600)),
+ '1:allowed', 'while the fresh account''s own bucket would have allowed it');
+select ok(pg_temp.attempt(pg_temp.a(9), pg_temp.keys('a9','n4')) is not null,
+ 'the same fresh account is issued from another network');
+select ok((select expires_at = window_started_at + interval '1 hour'
+ from pg_temp.bucket(pg_temp.k('n3'), 3600, 'source-network')),
+ 'a network bucket purges at the end of its hour');
 
 -- ---------------------------------------------------------------------------
 -- Per acting account: 30 a UTC day.
@@ -120,7 +150,7 @@ insert into public.rate_limit_hmac_buckets (bucket_key_hmac, hmac_key_revision, 
 select pg_temp.k('a6'), 1, 'global-contact-refusal-bar-v1.invitation-attempt', 'authenticated-principal',
  w, 86400, 30, 30, greatest(w, clock_timestamp() - interval '1 minute'), w + interval '1 day', 'allowed'
 from (select to_timestamp(floor(extract(epoch from clock_timestamp()) / 86400) * 86400) w) x;
-select is(pg_temp.attempt(pg_temp.a(6), pg_temp.keys('a6')), null::uuid,
+select is(pg_temp.attempt(pg_temp.a(6), pg_temp.keys('a6','n6')), null::uuid,
  'an account with thirty attempts today is not issued a thirty-first');
 select is((select request_count||':'||outcome_code from pg_temp.bucket(pg_temp.k('a6'), 86400)),
  '31:exhausted', 'the daily refusal is counted');
@@ -146,23 +176,23 @@ select ok((select bool_and(bucket_key_hmac ~ '^[0-9a-f]{64}$') from public.rate_
 
 -- ---------------------------------------------------------------------------
 -- Rate-limit key rotation keeps counting and never restarts a window.
-select is(pg_temp.attempts(pg_temp.a(7), pg_temp.keys('a7'), 10), 10,
+select is(pg_temp.attempts(pg_temp.a(7), pg_temp.keys('a7','n7'), 10), 10,
  'a seventh account uses its hourly quota under revision 1');
 select lives_ok($$select private.begin_hmac_key_rotation_v1('rate-limit', 2)$$,
  'the operator rotates the rate-limit key');
-select throws_ok($$select pg_temp.attempt(pg_temp.a(8), pg_temp.keys('a8'))$$,
+select throws_ok($$select pg_temp.attempt(pg_temp.a(8), pg_temp.keys('a8','n8'))$$,
  '55000', 'rate limit keys required', 'after rotation every usable revision must be presented');
-create function pg_temp.keys2(p_account text) returns jsonb language sql stable as
- $$ select pg_temp.keys(p_account) || jsonb_build_object('2', jsonb_build_object(
-   'authenticated-principal', pg_temp.k(p_account||'@2'))) $$;
-select is(pg_temp.attempt(pg_temp.a(7), pg_temp.keys2('a7')), null::uuid,
+create function pg_temp.keys2(p_account text, p_network text) returns jsonb language sql stable as
+ $$ select pg_temp.keys(p_account, p_network) || jsonb_build_object('2', jsonb_build_object(
+   'authenticated-principal', pg_temp.k(p_account||'@2'), 'source-network', pg_temp.k(p_network||'@2'))) $$;
+select is(pg_temp.attempt(pg_temp.a(7), pg_temp.keys2('a7','n7')), null::uuid,
  'rotation does not give an exhausted account a fresh window');
 select is((select request_count from pg_temp.bucket(pg_temp.k('a7'), 3600)), 11,
  'the revision-1 bucket keeps counting until its fixed purge');
-select ok(pg_temp.attempt(pg_temp.a(8), pg_temp.keys2('a8')) is not null,
+select ok(pg_temp.attempt(pg_temp.a(8), pg_temp.keys2('a8','n8')) is not null,
  'a new account is issued after rotation');
 select is((select array_agg(distinct hmac_key_revision) from public.rate_limit_hmac_buckets
- where bucket_key_hmac in (pg_temp.k('a8'), pg_temp.k('a8@2'))),
+ where bucket_key_hmac in (pg_temp.k('a8'), pg_temp.k('a8@2'), pg_temp.k('n8'), pg_temp.k('n8@2'))),
  array[2::bigint], 'new buckets are created under the active revision only');
 select throws_ok($$select private.retire_hmac_key_version_v1('rate-limit', 1)$$,
  '55000', 'key revision still protects live rows',

@@ -27,9 +27,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * same request re-sends nothing.
  *
  * The address travels as a digest under every held contact key revision
- * (global-contact-refusal-bar-v1.barKeyring) with the account quota bucket
- * key; the RPC counts the attempt before it matches anything and an exhausted
- * quota is the same receipt as a barred address.
+ * (global-contact-refusal-bar-v1.barKeyring) with the account and network
+ * quota bucket keys; the RPC counts the attempt before it matches anything and
+ * an exhausted quota is the same receipt as a barred address.
  */
 export async function POST(request: Request) {
   const context = await getSensitiveAccountContext();
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     p_draft_id: parsed.data.targetCohortDraftId,
     p_contact_hmac: null,
     p_contact_hmac_set: contactDigestSet(parsed.data.contactEmail),
-    p_quota_keys: invitationQuotaKeys(context.user.id),
+    p_quota_keys: invitationQuotaKeys(context.user.id, request.headers),
     p_idempotency_key: idempotencyKey,
     p_token_nonce: claims.nonce,
     p_test_jurisdiction: true,

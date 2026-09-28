@@ -36,12 +36,13 @@ number of `retiring` ones and `retired` ones.
   contact, subject-control authority or quota bucket depends on it. After
   that its digests are dropped from every presented set.
 
-**Quotas** (`quotaAuthority.perActingAccount`). Migration
+**Quotas** (`quotaAuthority`). Migration
 `20260928130100_invitation_keyring_quota_doors.sql` moves the six RPCs that
 receive a contact digest behind keyed doors. Both invitation RPCs reserve and
-count the account's buckets first, inside the same transaction, before any
-identity, draft, token or address match: 10 attempts an hour and 30 a UTC day
-per acting account. A call without the bucket key is refused. An exhausted
+count the buckets first, inside the same transaction, before any identity,
+draft, token or address match: 10 attempts an hour and 30 a UTC day per
+acting account, and 30 an hour per source network. A call without both
+bucket keys is refused. An exhausted
 quota writes nothing else and returns the same empty receipt a barred address
 gets. Buckets hold only the operation, dimension, window, key revision,
 digest, counters, first-attempt time, fixed purge time and a coded outcome;
@@ -49,16 +50,20 @@ digest, counters, first-attempt time, fixed purge time and a coded outcome;
 (`security.rate-limit-hmac-24h`). No API role can write, reset or erase a
 bucket; the service role keeps read access only.
 
+**The source network** (owner decision, 28 September 2026). The platform's
+client address is read once, in `sourceNetwork` in
+`src/lib/source-network.ts`: IPv4 whole, IPv6 by /64, anything unreadable as
+one shared `unknown`. Only `src/lib/invitation-quota.ts` may import it, and it
+passes the value straight into a keyed digest; the bucket is purged within 24
+hours and never decides a jurisdiction. `scripts/jurisdiction-inference.test.ts`
+allows exactly that one call, as it allows the sanctions check, and fails a
+second read in the same file, a read anywhere else, a new importer, and any
+use outside the digest. A self-hosted deployment must sit behind a proxy
+that sets the client address; without one, every request shares one
+network and the limit is 30 invitations an hour for the whole site.
+
 Not built, and why:
 
-- **The per-source-network bucket** (`perSourceNetworkHmac`, 30 an hour).
-  Keying it means reading the client address header, and
-  `scripts/jurisdiction-inference.test.ts` (G5.1a) forbids any such read
-  outside the one sanctions check the owner allowed on 26 September. A
-  second exception is an owner decision, not an engineering one. The
-  database side needs only one more entry in
-  `private.consume_invitation_attempt_quota_v1`; the application side is
-  written and held back.
 - **The blocked-attempt protective notice**
   (`api.invitations.policy.blockedAttemptNotice` says "may"). Its two quotas,
   `perContactHmacProtectiveNotice` and `globalProtectiveOutbox`, govern a
@@ -66,11 +71,14 @@ Not built, and why:
 
 Verification: three new database suites, `hmac_keyring_rotation.sql` (54),
 `hmac_keyring_cohort_rotation.sql` (14) and `invitation_attempt_quotas.sql`
-(49). Ten planted regressions each fail at least one of them: no declared
+(58). Eleven planted regressions each fail at least one of them: no declared
 aliases, no bar fan-out, a bare digest after rotation, retired revisions still
 matched, sessions compared under the active revision, no retirement guard, a
 quota that never refuses, optional quota keys, a rotation that restarts a
-window, and a service role that can reset a bucket. The existing database suites fail exactly as before on the shared
+window, a service role that can reset a bucket, and no network bucket. Four
+more, planted in the application, each fail a unit test: a second address
+read in the reader, a new importer of it, the address sent outside a digest,
+and a route that omits the network key. The existing database suites fail exactly as before on the shared
 local database, and the 31 independent-session lock checks pass with both
 migrations applied inside each probe's transaction.
 
