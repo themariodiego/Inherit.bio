@@ -93,6 +93,17 @@ function gatewayOrigin(bucket: string): string {
   return fail("unavailable");
 }
 
+/** Whether this deployment names a fragment gateway and bucket this module
+ * would use. The one place routes learn that; they read neither variable
+ * themselves. True does not mean the gateway is reachable, or that SQL has
+ * selected the R2 backend: reservations still refuse until it has. */
+export function embryoFragmentStorageConfigured(): boolean {
+  try {
+    gatewayOrigin(process.env.INHERIT_EMBRYO_R2_BUCKET ?? "");
+    return true;
+  } catch { return false; }
+}
+
 async function gatewayRequest(target: EmbryoR2WriteTarget, operation: "put" | "get" | "tombstone",
   init: { signal: AbortSignal; expiresAt: string; bytes?: Uint8Array; stored?: EmbryoStoredFragment }): Promise<Response> {
   const origin = gatewayOrigin(target.bucket);
