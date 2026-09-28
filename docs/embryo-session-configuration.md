@@ -109,10 +109,56 @@ The next source-accepting work must supply all of the following:
    `finalize_embryo_cohort_ingest_v1` creates the initial cohort/session; it does
    not complete uploaded fragments. No existing transaction enters
    `sanitization_pending` or enqueues that job from an ingest manifest.
+   **Completion exists, 2026-09-28; the consumer does not yet.**
+   `private.complete_embryo_ingest_v1` (door `public.complete_embryo_ingest_v1`,
+   `20260930120000_embryo_ingest_completion.sql`) reruns the shared door and
+   `private.embryo_ingest_binding_failure_v1`, requires the completion nonce the
+   configure step issued (`issued_completion_nonce_hash`), every chunk `stored`,
+   the exact ordinal set and every fragment's write intent `landed` under the
+   fence (the landing record for either backend), then locks the manifest digest on the
+   session, enqueues exactly one
+   `split_cohort_vcf` job bound to it and marks `sanitization_pending`, in one
+   transaction. A refusal uses `private.mark_embryo_ingest_failure_v1` and keeps
+   everything for the unwind. The unwind planner now admits that one job and
+   still refuses any other job on the cohort. No route calls it;
+   `supabase/tests/embryo_ingest_completion.sql` covers it.
+   **The consumer's first half exists, 2026-09-28.**
+   `20260930121000_embryo_split_worker.sql` adds claim, check, renew, fragment
+   read authority, stage, finish and fail for `split_cohort_vcf` only, behind
+   `private.embryo_split_config` (off by default). Each call reruns the binding
+   check and recomputes the manifest digest. `src/lib/embryos/split-worker.ts`
+   names each fragment by (session, sequence, ordinal). It gets its landed
+   identity from `read_embryo_split_fragment_v1` under the live claim, and
+   reads it through a reader seam. The R2 implementation,
+   `split-fragment-reader.ts`, sits over `readEmbryoFragment`
+   (`docs/embryo-fragment-storage.md`). The worker re-verifies size and
+   SHA-256, revalidates and parses each fragment with the product VCF parser,
+   stages that embryo's own called genotypes and records its QC outcome from
+   `qc-policy.ts`. The results are worker-only pending rows
+   (`private.embryo_split_ordinals`, `private.embryo_split_variants`). Nothing is
+   published. `pnpm worker:embryo-split` is operator-started and TEST-LOCAL.
+   Laboratory tables end with the closed `format` code.
 5. Whole-cohort publication, cleanup and real browser journeys before activation.
    The current fragment trigger requires a resolved build, while the register
    describes retaining sanitized unknown-build fragments pending a decision.
    That ordering requires its own explicit implementation and verification.
+   **Publication exists, 2026-09-28; cleanup and journeys do not.**
+   `private.publish_embryo_split_v1` (`20260930122000_embryo_split_publication.sql`)
+   is the one terminal transaction. It publishes every embryo at once:
+   - a pass gets its QC row and exactly its own staged genotypes;
+   - a `qc_fail` gets its QC row with the closed reason and no genotype.
+
+   In the same transaction it lifts quarantine from every embryo subject
+   together, sets publication revision 1, cancels the exact
+   `embryo.ingest-session-24h` due phase and deletes the pending rows. Before it
+   commits nothing about any embryo is visible. With an empty condition
+   registry, no score job is queued. Still missing:
+   - per-embryo canonical sources and `genome_files` rows;
+   - the authoritative retention date, Record Key card date changes and
+     addenda (the provisional card date is left as issued);
+   - rights notices;
+   - deleting fragments and handles after publication;
+   - the chunk and completion routes and browser journeys.
 
 ADR 0034 (27 September) allows X and Y calls to be read only to work out a
 registered serious sex-linked condition, and none is registered. This

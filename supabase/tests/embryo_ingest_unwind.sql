@@ -21,6 +21,8 @@ select throws_ok($$insert into public.embryo_ingest_fragments(session_id,sequenc
   select id,0,0,gen_random_uuid(),repeat('b',64),100,1 from live$$,'55000','ingest object binding unavailable',
   'unresolved source format/build cannot reserve a physical fragment key');
 update public.embryo_ingest_sessions set source_format='vcf',reference_build='GRCh38' where id=(select id from live);
+-- A fragment's write intent needs a configured backend (20260929100000).
+update private.embryo_ingest_object_config set provider='supabase',r2_bucket=null where singleton;
 insert into public.embryo_ingest_fragments(session_id,sequence,sample_ordinal,object_id,content_sha256,byte_count,line_count)
   select id,0,0,gen_random_uuid(),repeat('b',64),100,1 from live;
 select ok((select f.bucket_id='genomes' and f.object_name=s.account_id::text||'/'||s.cohort_id::text||'/'||s.upload_id::text||'/'||f.object_id::text||'.vcf'
