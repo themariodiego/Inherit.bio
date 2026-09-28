@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { adminClient, createConfirmedUser, findUserByEmail, signIn } from "./helpers";
-import { uploadOwnFilePrepared } from "./own-report-helpers";
+import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 
 /**
  * G5.6, the subject-scoping half, executed rather than read.
@@ -33,7 +33,7 @@ test.beforeAll(async () => {
 });
 
 test("every exported file names the subject the database resolved for it", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
   await signIn(page, USER.email, USER.password);
   const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), TINY_FIXTURE), { fileType: "vcf" });
 
@@ -87,6 +87,10 @@ test("every exported file names the subject the database resolved for it", async
   expect(record.subjects.length, "the person's own subject is in their own record").toBeGreaterThan(0);
   for (const subject of record.subjects) {
     expect(subject.subject_account_id, "every exported subject IS this account").toBe(accountId);
+    // The export member plan withholds these (28 Sep 2026): for an adult held
+    // by another uploader, owner_account_id names that other person's account.
+    expect(subject, "a subject never names the account that holds it").not.toHaveProperty("owner_account_id");
+    expect(subject, "or a cohort").not.toHaveProperty("cohort_id");
   }
   for (const table of ["subject_principals", "subject_account_bindings", "subject_consents",
     "provider_recipient_grants"] as const) {
@@ -141,4 +145,33 @@ test("every exported file names the subject the database resolved for it", async
   expect(listed.count).toBe(
     Object.values(record).reduce<number>((total, rows) => total + (rows as unknown[]).length, 0),
   );
+
+  // L-34, owner decision of 28 Sep 2026: legal-audit.json carries the events
+  // this person caused themselves. Choosing a report is one; it consumes a
+  // one-time permission nonce, which is how the ledger learns who acted.
+  await generateOwnFileWithChosenReports(page, fileId, ["reports.polygenic"]);
+  const after = await page.request.get("/api/export");
+  expect(after.status()).toBe(200);
+  const afterZip = new AdmZip(Buffer.from(await after.body()));
+  const audit = JSON.parse(afterZip.readFile("legal-audit.json")!.toString("utf8"));
+  expect(audit.schema_version).toBe("legal-audit-v1");
+  expect(Number.isNaN(Date.parse(audit.attribution_started_at)), "the file says when attribution began").toBe(false);
+  const granted = audit.events.filter((event: { event_code: string; route_id: string }) =>
+    event.event_code === "purpose.granted" && event.route_id === "api.consents");
+  expect(granted.length, "choosing a report is recorded as this person's own act").toBeGreaterThan(0);
+  for (const event of audit.events) {
+    expect(Object.keys(event).sort(), "never the pseudonym or a chain hash")
+      .toEqual(["coded_context", "event_code", "occurred_at", "outcome_code", "route_id", "seq"]);
+  }
+  // Against the ledger itself: every exported event carries one actor, and
+  // the file holds every event that actor caused, none missing and none extra.
+  const seqs = audit.events.map((event: { seq: number }) => event.seq);
+  const rows = await adminClient().from("legal_audit_log").select("seq,audit_principal_id").in("seq", seqs);
+  expect(rows.error).toBeNull();
+  const actors = new Set((rows.data ?? []).map(row => row.audit_principal_id));
+  expect(actors.size, "one actor").toBe(1);
+  expect([...actors][0], "and it is recorded").toBeTruthy();
+  const caused = await adminClient().from("legal_audit_log").select("seq").eq("audit_principal_id", [...actors][0]!);
+  expect(caused.error).toBeNull();
+  expect(new Set((caused.data ?? []).map(row => row.seq))).toEqual(new Set(seqs));
 });
