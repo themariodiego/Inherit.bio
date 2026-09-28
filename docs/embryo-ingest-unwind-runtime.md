@@ -160,6 +160,21 @@ Storage deletion acknowledgement or terminal notice producer is added.
    and remove every live target reference from retained outcomes. No rotated
    contact may be revived. Non-identifying legally authorized review/hash
    outcomes are retained separately; no source or identity graph remains.
+
+   **Added 29 September 2026, from the completion and split-worker changes.**
+   It must also:
+   - run only on an unwind already `storage_confirmed`;
+   - clear `embryo_ingest_sessions.worker_job_id`, then delete the attempt's
+     own `split_cohort_vcf` job, the only job
+     `assert_embryo_unwind_plannable_stores_v1` admits;
+   - delete the split worker's pending rows in `private.embryo_split_ordinals`
+     (`embryo-qc`) and `private.embryo_split_variants` (`variant-rows`). Both
+     hold `on delete restrict` references to the session and the job, so they
+     go first.
+   - delete the write intents and fences, the disposal records, and only then
+     the inventory rows.
+   The storage-disposal migration leaves the plannable-store check untouched,
+   so the job admission added with completion stays in force.
 4. Final transaction and queue-production regressions, due-phase scheduling,
    zero-residual checks, provider retention verification and a reviewed rollout.
 
