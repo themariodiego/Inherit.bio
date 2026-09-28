@@ -17,7 +17,9 @@ import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
  * embryo's fragments, prove its size and SHA-256 against the locked manifest,
  * revalidate and parse it with the product parser, stage its validated rows,
  * then record its QC outcome in its own transaction. An embryo that fails QC
- * keeps only a closed reason and the job continues. Nothing is published here.
+ * keeps only a closed reason and the job continues. When every embryo has an
+ * outcome, one terminal transaction (`publish_embryo_split_v1`) publishes the
+ * whole cohort at once; nothing is visible before it commits.
  *
  * Fragment bytes come through `EmbryoFragmentReader`, keyed only by
  * (session, sequence, ordinal). The fragment store behind it (R2 under ADR
@@ -52,6 +54,8 @@ const stagedSchema = z.object({ status: z.literal("staged"), batch: z.number().i
 const recordedSchema = z.object({ status: z.literal("recorded"), ordinal: z.number().int().min(0),
   outcome: z.enum(["passed", "qc_fail_no_source"]), remaining: z.number().int().min(0) }).strict();
 const failReportSchema = z.union([z.object({ status: z.literal("queued") }).strict(), failureSchema]);
+const publishedSchema = z.object({ status: z.literal("published"), publicationRevision: z.literal(1),
+  published: z.number().int().min(0).max(64), qcFailed: z.number().int().min(0).max(64) }).strict();
 
 export type EmbryoSplitClaim = z.infer<typeof claimSchema>;
 export type EmbryoSplitFragment = z.infer<typeof fragmentSchema>;
@@ -86,7 +90,7 @@ export type EmbryoFragmentReader = (fragment: EmbryoFragmentRef, signal: AbortSi
 
 export type EmbryoSplitResult =
   | { status: "idle" }
-  | { status: "staged"; jobId: string; passed: number; failed: number }
+  | { status: "published"; jobId: string; passed: number; failed: number }
   | { status: "failure_pending"; jobId: string; code: string }
   | { status: "requeued"; jobId: string };
 
@@ -236,11 +240,13 @@ export async function runNextEmbryoSplit(options: {
         || recorded.remaining !== claim.embryoCount - ordinal - 1) fail("integrity_mismatch");
       if (outcome.outcome === "passed") passed++; else failed++;
     }
+    // Settle renewal before the terminal transaction: no background renewal
+    // may read the legitimate end of the claim as a lost one.
     stopped = true; if (renewTimer) clearTimeout(renewTimer);
     if (renewal) await renewal;
-    // Whole-cohort publication is the next transaction (unit 3); until it
-    // exists the attempt stays pending and nothing is visible.
-    return { status: "staged", jobId: claim.jobId, passed, failed };
+    const published = publishedSchema.parse(stopIfFailed(await call("publish_embryo_split_v1", args)));
+    if (published.published !== passed || published.qcFailed !== failed) fail("integrity_mismatch");
+    return { status: "published", jobId: claim.jobId, passed, failed };
   } catch (error) {
     if (error instanceof Stop) return error.result;
     if (signal.aborted) fail("aborted");

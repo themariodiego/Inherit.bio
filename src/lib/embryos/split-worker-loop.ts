@@ -2,7 +2,7 @@ import "server-only";
 import { isTestJurisdictionEnabled } from "../legal/jurisdictions";
 import { runNextEmbryoSplit, type EmbryoFragmentReader, type EmbryoSplitResult } from "./split-worker";
 
-export type EmbryoSplitWorkerEvent = "split_staged" | "split_failure_pending" | "split_requeued"
+export type EmbryoSplitWorkerEvent = "split_published" | "split_failure_pending" | "split_requeued"
   | "split_idle" | "split_failed" | "worker_stopped";
 export class EmbryoSplitWorkerLoopError extends Error {
   constructor(readonly code: "worker_disabled" | "invalid_options") { super(code); this.name = "EmbryoSplitWorkerLoopError"; }
@@ -20,7 +20,7 @@ function idle(signal: AbortSignal): Promise<void> {
 }
 
 const EVENTS: Record<EmbryoSplitResult["status"], EmbryoSplitWorkerEvent> = {
-  idle: "split_idle", staged: "split_staged", failure_pending: "split_failure_pending", requeued: "split_requeued",
+  idle: "split_idle", published: "split_published", failure_pending: "split_failure_pending", requeued: "split_requeued",
 };
 
 /**
