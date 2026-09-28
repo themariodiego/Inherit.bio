@@ -122,6 +122,22 @@ The next source-accepting work must supply all of the following:
    everything for the unwind. The unwind planner now admits that one job and
    still refuses any other job on the cohort. No route calls it;
    `supabase/tests/embryo_ingest_completion.sql` covers it.
+   **The consumer's first half exists, 2026-09-28.**
+   `20260930121000_embryo_split_worker.sql` adds claim, check, renew, fragment
+   read authority, stage, finish and fail for `split_cohort_vcf` only, behind
+   `private.embryo_split_config` (off by default). Each call reruns the binding
+   check and recomputes the manifest digest. `src/lib/embryos/split-worker.ts`
+   names each fragment by (session, sequence, ordinal). It gets its landed
+   identity from `read_embryo_split_fragment_v1` under the live claim, and
+   reads it through a reader seam. The R2 implementation,
+   `split-fragment-reader.ts`, sits over `readEmbryoFragment`
+   (`docs/embryo-fragment-storage.md`). The worker re-verifies size and
+   SHA-256, revalidates and parses each fragment with the product VCF parser,
+   stages that embryo's own called genotypes and records its QC outcome from
+   `qc-policy.ts`. The results are worker-only pending rows
+   (`private.embryo_split_ordinals`, `private.embryo_split_variants`). Nothing is
+   published. `pnpm worker:embryo-split` is operator-started and TEST-LOCAL.
+   Laboratory tables end with the closed `format` code.
 5. Whole-cohort publication, cleanup and real browser journeys before activation.
    The current fragment trigger requires a resolved build, while the register
    describes retaining sanitized unknown-build fragments pending a decision.
