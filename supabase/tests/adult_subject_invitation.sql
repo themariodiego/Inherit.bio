@@ -1,5 +1,6 @@
 begin;
 select plan(16);
+\ir fixtures/invitation_quota_keys.inc
 -- `claim_mail_outbox` takes the oldest deliverable row, so a developer
 -- database holding other queued mail would hand this suite someone else's
 -- token. Retiring those rows inside the test transaction makes every claim
@@ -23,7 +24,7 @@ create temporary table created_invitation as
 select * from public.create_adult_subject_invitation_v1(
   '74000000-0000-0000-0000-000000000001',
   decode('00112233445566778899aabbccddeeff', 'hex'),
-  repeat('a', 64), repeat('b', 64), true
+  repeat('a', 64), repeat('b', 64), true, p_quota_keys => pg_temp.invitation_quota_keys()
 );
 
 select is((select count(*) from created_invitation), 1::bigint,
@@ -93,7 +94,7 @@ create temporary table refused_invitation as
 select * from public.create_adult_subject_invitation_v1(
   '74000000-0000-0000-0000-000000000001',
   decode('ffeeddccbbaa99887766554433221100', 'hex'),
-  repeat('c', 64), repeat('d', 64), true
+  repeat('c', 64), repeat('d', 64), true, p_quota_keys => pg_temp.invitation_quota_keys()
 );
 create temporary table refused_mail as select * from public.claim_mail_outbox();
 create temporary table refused_token as
