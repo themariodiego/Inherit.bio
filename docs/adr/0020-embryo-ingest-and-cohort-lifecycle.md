@@ -240,6 +240,31 @@ both backends. The interface is `docs/embryo-fragment-storage.md`. The markers
 at uncertain keys and the deletion acknowledgement come next. The terminal
 purge follows them. This paragraph changes no threshold or acceptance mark.
 
+**Exact storage disposal, 29 September 2026.** The second safeguard is test-local
+code in `20260929101000_embryo_ingest_unwind_storage.sql`. After the drain
+settles, every R2 key gets a verified empty marker, and a landed Supabase
+object is deleted by exact id and version. Each disposal is recorded only with
+that exact evidence. `storage_confirmed` needs every inventory row proved; a
+trigger enforces this. An uncertain Supabase write, a vanished object or a
+lost acknowledgement keeps the unwind at `storage_pending`. The same migration
+fixes D-130 for the unwind builder. The terminal graph purge is the last
+safeguard, and ingest stays unavailable. This paragraph changes no threshold or
+acceptance mark.
+
+**Terminal purge and published cleanup, 30 September 2026.** The third
+safeguard is test-local code in
+`20260930130000_embryo_ingest_terminal_purge.sql`. It runs only on a
+`storage_confirmed` unwind. In one transaction it queues one terminal notice
+slot per frozen Record Key recipient. It then deletes the attempt graph, the
+split job and pending rows, every key hash and print right, and the
+cohort-only authority. It terminalizes the exact due phase, and proves that no
+store still names a deleted row. Any failure rolls it all back. Publication
+now plans the removal of its own fragment objects, through the same exact
+disposal doors. The fragment and handle-map rows go only after
+`storage_confirmed`, and no published row is touched. No route or scheduler
+calls either yet, and ingest stays unavailable. This paragraph changes no
+threshold or acceptance mark.
+
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
    its `sample_ordinal`. Source sample labels, column headers and file
    names are used only transiently in bounded memory to associate rows;

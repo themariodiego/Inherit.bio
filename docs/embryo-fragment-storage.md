@@ -74,6 +74,7 @@ embryoFragmentStorageConfigured(): boolean;   // routes read neither variable th
 parseEmbryoWriteTargets(data: unknown): EmbryoWriteTargets;
 writeEmbryoFragment(input: { rpc; target; bytes: Uint8Array; signal: AbortSignal }): Promise<EmbryoStoredFragment>;
 readEmbryoFragment(input: { stored: EmbryoStoredFragment; signal: AbortSignal }): Promise<Uint8Array>;
+tombstoneEmbryoFragment(input: { locator; expiresAt: string; signal }): Promise<EmbryoFragmentTombstone>; // cleanup only
 class EmbryoFragmentStorageError { code: "invalid_request" | "unavailable" | "conflict" | "integrity_mismatch" | "aborted" }
 ```
 
@@ -128,16 +129,60 @@ intent FOR UPDATE, so the write fence's concurrency argument holds for both.
 After the fence no ACK can land. The ACK records what the transport observed;
 it is not independent proof from the provider.
 
-## Cleanup (next change)
+## Cleanup after an unwind
 
-The drain is unchanged: after `fence_at` every intent is `landed` or
-`uncertain`. On R2, every key of an unwound session will get an empty marker
-after `fence_at`, read back and verified before `storage_confirmed`. The marker
-is permanent: a late create-only write can never restore the payload. It proves
-the current payload is gone and the key is fenced, not physical erasure. The
-gateway has no listing. It checks the marker by reading the exact key back to
-EOF. On Supabase, a landed object needs an exact-version deletion ACK, and an
-uncertain one keeps its unwind at `storage_pending`.
+Added on 29 September (`20260929101000_embryo_ingest_unwind_storage.sql`,
+`src/lib/embryos/unwind-storage.ts`). No route or scheduler calls it yet.
+
+`prepare_embryo_ingest_unwind_v1` inventories each fragment where its intent
+says it lives: the R2 bucket and key, or the Supabase name. It inventories an
+upload-staging object under its recorded bucket, which fixes D-130. Then:
+
+1. `claim_embryo_ingest_object_disposals_v1(unwind, claimTokenHash)` settles
+   the drain first. Before `fence_at` it answers `draining` and claims nothing.
+   After that it claims up to 25 objects, each with a receipt
+   (`embryo-ingest-object-disposal-v1`) that expires after 60 seconds:
+   - every R2 key, landed or uncertain, for an empty marker;
+   - a landed Supabase object, for deletion of its exact id and version, only
+     while that metadata row is live.
+2. For each receipt, `drainEmbryoUnwindStorage` either has the gateway write
+   the marker and read it back to EOF, or deletes the exact Supabase object
+   through the Storage API and checks the single row it returns.
+3. `finish_embryo_ingest_object_disposal_v1(unwind, ordinal, token, receipt,
+   evidence)` records one disposal only with exact evidence:
+   - R2: the empty marker at that key, as a version other than the landed
+     payload.
+   - Supabase: the deleted row's exact id and version, and no metadata row
+     left under the id or the name.
+4. `confirm_embryo_ingest_unwind_storage_v1(unwind)` moves the unwind to
+   `storage_confirmed` only when nothing is unresolved. Otherwise it reports
+   what is. A trigger enforces the same rule for any writer.
+5. `complete_embryo_ingest_unwind_v1(unwind)` (`completeEmbryoUnwind`, added
+   30 September in `20260930130000_embryo_ingest_terminal_purge.sql`) runs
+   only after that. For an abandoned attempt it is the terminal graph purge.
+   For a published attempt it deletes the fragment, write intent and
+   handle-map rows. Before `storage_confirmed` it answers with the unwind's
+   state and changes nothing.
+
+Publication plans its own cleanup: a `purpose = 'published'` unwind whose
+inventory lists every fragment object, and never a published source. Its
+objects go through steps 1 to 5 like any other.
+`embryo_ingest_unwind_work_v1(limit)` (`listEmbryoUnwindWork`) lists the
+unwinds still waiting on storage or on completion.
+
+What stays unresolved, and keeps the unwind at `storage_pending`:
+
+- an uncertain Supabase write, because no evidence can prove it absent;
+- a landed Supabase object whose metadata vanished outside this path;
+- a claim that lapsed after the provider acted but before `finish`;
+- any inventory row with no exact contract yet: upload-staging, canonical or
+  legacy source rows.
+
+A marker is permanent: a late create-only write can never restore the
+payload. It proves the current payload is gone and the key is fenced. It does
+not prove key absence or physical erasure. The gateway has no listing; it
+checks the marker by reading the exact key back to EOF. R2 keeps no earlier
+versions to list.
 
 ## Gateway
 
