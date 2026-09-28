@@ -4,6 +4,93 @@ PR71 merged as `e9778f8d5e5847deeb5b3d057f7c25ba67b418da` and is live
 on both public domains. Full main-branch integration run `34019023140` passed.
 Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
+## Contact-key rotation and invitation quotas (2026-09-28, local, not released)
+
+Two G5.4 blockers are built under TEST-LOCAL, exactly as
+`lifecycleDispositionContracts.global-contact-refusal-bar-v1` and
+`securityRateLimitContract` in `docs/route-register.json` describe them.
+
+**Keyring** (`barKeyring`, `secretRotation`). Migration
+`20260928130000_hmac_keyring.sql` adds `private.hmac_key_versions`: two
+keyrings, `contact` and `rate-limit`, each with one `active` revision, any
+number of `retiring` ones and `retired` ones.
+
+- The application keys an address under every revision it holds
+  (`src/lib/hmac-keyring.ts`). Revision 1 is the digest already stored, from
+  `BYOK_ENCRYPTION_KEY`, so no stored value changes. Later revisions are
+  dedicated secrets in `INHERIT_HMAC_KEYRING`.
+- The database keeps only the usable revisions of a presented set. A request
+  missing one is refused, never matched with less: that is the invitation gap
+  rotation must not open. A bare digest is accepted only while revision 1 is
+  the one usable revision.
+- A match under any usable revision is the same contact. The set is declared
+  for the one transaction, so the existing bar checks see every revision;
+  new contacts are written under the active revision and indexed under all.
+- A refusal bars the contact under every other keyring revision it is linked
+  to, with the refusal's own deadline (`private.fan_out_refusal_bar_aliases_v1`).
+  Only cross-revision aliases are copied; nothing is renewed or shortened.
+- A live invitation keeps the revision it was written under. Acceptance
+  compares the presented digest under that revision, so a session opened
+  before a rotation still works after it.
+- A revision retires only when no unexpired bar, pending invitation, pending
+  contact, subject-control authority or quota bucket depends on it. After
+  that its digests are dropped from every presented set.
+
+**Quotas** (`quotaAuthority.perActingAccount`). Migration
+`20260928130100_invitation_keyring_quota_doors.sql` moves the six RPCs that
+receive a contact digest behind keyed doors. Both invitation RPCs reserve and
+count the account's buckets first, inside the same transaction, before any
+identity, draft, token or address match: 10 attempts an hour and 30 a UTC day
+per acting account. A call without the bucket key is refused. An exhausted
+quota writes nothing else and returns the same empty receipt a barred address
+gets. Buckets hold only the operation, dimension, window, key revision,
+digest, counters, first-attempt time, fixed purge time and a coded outcome;
+`/api/jobs/retention` deletes them at their purge time
+(`security.rate-limit-hmac-24h`). No API role can write, reset or erase a
+bucket; the service role keeps read access only.
+
+Not built, and why:
+
+- **The per-source-network bucket** (`perSourceNetworkHmac`, 30 an hour).
+  Keying it means reading the client address header, and
+  `scripts/jurisdiction-inference.test.ts` (G5.1a) forbids any such read
+  outside the one sanctions check the owner allowed on 26 September. A
+  second exception is an owner decision, not an engineering one. The
+  database side needs only one more entry in
+  `private.consume_invitation_attempt_quota_v1`; the application side is
+  written and held back.
+- **The blocked-attempt protective notice**
+  (`api.invitations.policy.blockedAttemptNotice` says "may"). Its two quotas,
+  `perContactHmacProtectiveNotice` and `globalProtectiveOutbox`, govern a
+  message that is never sent, so they have nothing to count yet.
+
+Verification: three new database suites, `hmac_keyring_rotation.sql` (54),
+`hmac_keyring_cohort_rotation.sql` (14) and `invitation_attempt_quotas.sql`
+(49). Ten planted regressions each fail at least one of them: no declared
+aliases, no bar fan-out, a bare digest after rotation, retired revisions still
+matched, sessions compared under the active revision, no retirement guard, a
+quota that never refuses, optional quota keys, a rotation that restarts a
+window, and a service role that can reset a bucket. The existing database suites fail exactly as before on the shared
+local database, and the 31 independent-session lock checks pass with both
+migrations applied inside each probe's transaction.
+
+### Rotation runbook
+
+1. Generate the new secret (`openssl rand -base64 32`) and add it as the next
+   revision to `INHERIT_HMAC_KEYRING`, for example `2:<secret>`. Deploy. The
+   database ignores a revision it has not rotated to.
+2. Rotate the database, as the database owner:
+   `select private.begin_hmac_key_rotation_v1('contact', 2);` (or
+   `'rate-limit'`). From this commit on, every invitation must present both
+   revisions.
+3. Retire the old revision when nothing depends on it:
+   `select private.retire_hmac_key_version_v1('contact', 1);`. It refuses
+   while any dependency is live. For the contact keyring that is up to 365
+   days (the refusal bar); for the rate-limit keyring at most 24 hours.
+4. Remove a retired revision's secret from `INHERIT_HMAC_KEYRING`. Revision 1
+   has no separate secret: it is derived from `BYOK_ENCRYPTION_KEY`, and
+   retiring it only stops the database from matching it.
+
 ## Release receipt (2026-09-06)
 
 Exact reviewed head `98ee24bd938b0a9475b529c1cea544008a7170a0` passed full CI
@@ -398,8 +485,9 @@ production action or real genome deletion was taken.
    cover concurrency in addition to the local exact-binding regression suite.
 3. Finish the review's participant/basis information for every invitation class,
    broader browser states, both themes, narrow viewports and accessibility.
-4. Complete the adult URL-token migration and the other registered rights
-   purposes (including future-person access), retention and purge flows.
+4. Complete the other registered rights purposes (including future-person
+   access), retention and purge flows. (The adult URL-token migration listed
+   here closed as D-081 on 2026-09-13.)
 5. Full branch CI, independent review and hosted release verification remain.
 
 No hosted schema, real file, credential, account consent or email was changed

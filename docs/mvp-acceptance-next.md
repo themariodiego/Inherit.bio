@@ -59,8 +59,11 @@ thing, and the blockage is not partial:
 ## C. Blocked on unbuilt rights and withdrawal slices (2)
 
 **G5.3** — source-object purge belongs to the withdrawal slice.
-**G5.4** — active-key rotation, quotas, the adult URL-token migration (D-081),
-future-person routes and the broader rights-purpose matrix are unfinished.
+**G5.4** — future-person routes and the broader rights-purpose matrix are
+unfinished; the per-network invitation quota and real-jurisdiction acceptance
+await owner decisions. Active-key rotation and the per-account quota are
+built locally (2026-09-28, not yet merged); the adult URL-token migration
+closed as D-081.
 
 ## D. Blocked on an environment this work does not have (4)
 
