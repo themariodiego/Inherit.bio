@@ -23,7 +23,8 @@ import { BACK_TO_EMBRYOS_LINK } from "./request-data";
 
 /**
  * Whether this deployment can take an embryo file (design §10, the
- * `COPILOT_GROUP_SCOPES_AVAILABLE` precedent). False until the ingest
+ * `COPILOT_GROUP_SCOPES_AVAILABLE` precedent, now
+ * `copilotGroupScopes()` in src/lib/copilot/group-scopes.ts). False until the ingest
  * session routes, the browser sanitiser and the worker (E0/E2) exist: the
  * flow renders its first two steps and then states the truth instead of
  * offering a control that goes nowhere. `src/lib/embryos/upload-flow.test.ts`

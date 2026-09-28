@@ -140,6 +140,7 @@
     "/copilot/[scope] complete",
     "/copilot/[scope] consent-required",
     "/copilot/[scope] empty",
+    "/copilot/[scope] jurisdiction-unavailable",
     "/copilot/[scope] processing",
     "/embryo-analysis jurisdiction-unavailable",
     "/embryos complete",
