@@ -434,7 +434,7 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
- 'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, public.activate_rights_session_v1, public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the lifecycle functions');
+ 'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.subject_held_files_v1, public.activate_rights_session_v1, public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the lifecycle functions');
 select is((select jsonb_agg(distinct k order by k) from jsonb_array_elements(
  public.other_adult_upload_targets_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',true)) t,
  jsonb_object_keys(t) k),
