@@ -1,5 +1,5 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { hmacSecret } from "@/lib/crypto";
+import { contactDigestSet } from "@/lib/hmac-keyring";
 import { invalidRequest, rpcErrorResponse, unavailable } from "@/lib/embryos/api";
 import { basisCaseFor, uploadSituationValue } from "@/lib/embryos/basis";
 import {
@@ -65,9 +65,13 @@ export async function POST(request: Request) {
     p_basis_case: basisCaseFor(parsed.data.basis),
     p_embryo_count: parsed.data.embryoCount,
     p_owner_contact_ciphertext: encryptedLiteral(owner),
-    p_owner_contact_hmac: hmacSecret(owner, "contact-email-v1"),
+    // Every address is keyed under each held contact revision; the database
+    // stores the active one and indexes the rest (barKeyring).
+    p_owner_contact_hmac: null,
+    p_owner_contact_hmac_set: contactDigestSet(owner),
     p_contact_ciphertexts: contacts.map(encryptedHex),
-    p_contact_hmacs: contacts.map((contact) => hmacSecret(contact, "contact-email-v1")),
+    p_contact_hmacs: null,
+    p_contact_hmac_sets: contacts.map((contact) => contactDigestSet(contact)),
     p_token_nonce: claims.nonce,
     p_test_jurisdiction: true,
   });

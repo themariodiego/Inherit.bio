@@ -712,7 +712,8 @@ select ok(
   (select invitation_id from public.create_embryo_draft_invitation_v1(
     '7a000000-0000-0000-0000-000000000001',
     '7a000000-0000-4000-8000-0000000000a1', (select draft_id from draft2),
-    repeat('f', 64), repeat('3', 64), 'nonce-invite-0003-aaaaaaaaaaa', true)) is not null,
+    repeat('f', 64), repeat('3', 64), 'nonce-invite-0003-aaaaaaaaaaa', true,
+    p_quota_keys => pg_temp.invitation_quota_keys())) is not null,
   'the second draft invites its co-parent');
 
 update public.embryo_cohort_drafts
@@ -731,7 +732,8 @@ select throws_ok(
   $$select * from public.create_embryo_draft_invitation_v1(
       '7a000000-0000-0000-0000-000000000001',
       '7a000000-0000-4000-8000-0000000000a1', (select draft_id from draft2),
-      repeat('f', 64), repeat('4', 64), 'nonce-invite-0004-aaaaaaaaaaa', true)$$,
+      repeat('f', 64), repeat('4', 64), 'nonce-invite-0004-aaaaaaaaaaa', true,
+      p_quota_keys => pg_temp.invitation_quota_keys())$$,
   '42501', 'draft unavailable', 'an expired draft takes no invitation');
 update public.retention_due_phases
 set phase_deadline = clock_timestamp() - interval '1 second'
@@ -803,7 +805,7 @@ select is(
 -- ---------------------------------------------------------------------------
 select is(
   has_function_privilege('authenticated',
-    'public.create_embryo_cohort_draft_v1(uuid, uuid, text, text, integer, bytea, text, text[], text[], text, boolean)',
+    'public.create_embryo_cohort_draft_v1(uuid, uuid, text, text, integer, bytea, text, text[], text[], text, boolean, jsonb, jsonb)',
     'execute'),
   false, 'authenticated cannot create drafts directly');
 select is(
