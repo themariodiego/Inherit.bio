@@ -9013,7 +9013,8 @@
       "copilot.provider-policy",
       "copilot.transport-availability",
       "embryo.closed-schema-serialization",
-      "jurisdiction.capability-gate"
+      "jurisdiction.capability-gate",
+      "embryo.ingest-unwind-dispatch"
     ],
     "featureBlockedReasonIds": [
       "prohibited-intent",
@@ -9022,7 +9023,8 @@
       "transport-unavailable",
       "unsafe-embryo-response-shape",
       "jurisdiction-denied",
-      "missing-required-capability"
+      "missing-required-capability",
+      "unwind-dispatch-unavailable"
     ]
   },
   "observabilityEventTemplates": {

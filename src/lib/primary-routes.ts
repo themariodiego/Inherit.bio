@@ -54,6 +54,8 @@ const ROUTE_PATTERNS = {
   "api.file-finalize": "/api/files/[id]/finalize",
   "api.file-process": "/api/files/[id]/process",
   "api.embryo-ingest-configure": "/api/embryo-ingest/[session]/configure",
+  "api.embryo-ingest-chunk": "/api/embryo-ingest/[session]/chunks/[sequence]",
+  "api.embryo-ingest-complete": "/api/embryo-ingest/[session]/complete",
   "marketing.providers": "/providers",
   "science.index": "/science",
   "legal.index": "/legal",
