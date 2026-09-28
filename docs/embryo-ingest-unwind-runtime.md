@@ -119,6 +119,20 @@ Storage deletion acknowledgement or terminal notice producer is added.
    - **C.** Accept B's evidence, but send cohorts with any `uncertain` intent a
      different notice: the upload stopped mid-write and an unreachable partial
      copy may remain with the storage provider. This needs new approved copy.
+
+   **Answered 28 September 2026: A** (`docs/protocol/decisions.md`). **R2
+   backend built, 29 September** (`20260929100000_embryo_ingest_r2_fragments.sql`,
+   `supabase/tests/embryo_ingest_r2_fragments.sql`). Each write intent now
+   records its backend. An R2 fragment is written create-only to
+   `embryo/<object id>` in an `inherit-embryo-*` bucket behind
+   `workers/embryo-fragments`. It lands only through
+   `ack_embryo_ingest_r2_write_v1`, which shares the Supabase guard's
+   admission check, so the fence and drain above hold unchanged. The Supabase
+   guard stays as a fence on the `genomes` namespace. No backend is selected
+   until an operator sets one. The gateway is not deployed. The interface for
+   the chunk route and the worker is `docs/embryo-fragment-storage.md`. The
+   markers at uncertain keys, and the deletion acknowledgement, are the next
+   change.
 2. Exact selectors and deletion verification for every supported pending,
    evidence, derived and working-state store. Unsupported graph cases cannot
    silently fall through to a partial purge.
