@@ -831,6 +831,13 @@ select is((select coalesce(string_agg(p.oid::regprocedure::text,', '),'') from p
  'no browser or upload role can execute any Path B function');
 select is((select count(*) from public.purge_target_stores where store_name='public.other_adult_held_uploads'
  and target_id='upload-and-ingest-working-state'),1::bigint,'the held table is a registered purge store');
+select ok((select h.store_order>u.store_order
+  and h.store_order<all(select store_order from public.purge_target_stores
+   where target_id='upload-and-ingest-working-state' and store_name like 'private.embryo_ingest_write_%')
+ from public.purge_target_stores h,public.purge_target_stores u
+ where h.target_id='upload-and-ingest-working-state' and h.store_name='public.other_adult_held_uploads'
+  and u.target_id=h.target_id and u.store_name='public.upload_staging_objects'),
+ 'it sits after the upload stores and leaves the embryo write fence''s stores last');
 
 select * from finish();
 rollback;

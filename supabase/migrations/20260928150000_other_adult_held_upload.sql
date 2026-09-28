@@ -125,11 +125,16 @@ grant select on table public.other_adult_held_uploads to service_role;
 
 -- A held source is upload working state; its Storage objects stay in the
 -- upload-working manifest of its session, which the executor deletes.
--- The next free position, as the embryo write fence registers its stores:
--- a fixed number would collide with whichever migration took it first.
+-- It takes the lowest free position after the upload stores it belongs with.
+-- A fixed number would collide with whichever migration took it first (33
+-- is the embryo write fence's), and appending at the end would put it after
+-- the write fence's stores, which that fence's own suite holds last.
 insert into public.purge_target_stores(target_id,store_name,store_order)
- select 'upload-and-ingest-working-state','public.other_adult_held_uploads',coalesce(max(store_order),0)+1
- from public.purge_target_stores where target_id='upload-and-ingest-working-state';
+ select 'upload-and-ingest-working-state','public.other_adult_held_uploads',min(n)
+ from generate_series((select store_order+1 from public.purge_target_stores
+   where target_id='upload-and-ingest-working-state' and store_name='public.upload_staging_objects'),100000) n
+ where not exists(select 1 from public.purge_target_stores s
+  where s.target_id='upload-and-ingest-working-state' and s.store_order=n);
 
 alter table public.account_operation_nonces drop constraint account_operation_nonces_operation_check;
 alter table public.account_operation_nonces add constraint account_operation_nonces_operation_check
