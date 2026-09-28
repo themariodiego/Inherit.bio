@@ -8356,22 +8356,6 @@ export type Database = {
         }
         Returns: Json
       }
-      issue_own_upload_nonce_v1: {
-        Args: {
-          p_account_binding_revision: number
-          p_account_id: string
-          p_account_revision: number
-          p_auth_session_revision: number
-          p_expires_at: string
-          p_jurisdiction_revision: number
-          p_nonce_hash: string
-          p_operation: string
-          p_session_id: string
-          p_subject_binding_revision: number
-          p_subject_id: string
-        }
-        Returns: undefined
-      }
       complete_own_upload_account_v1: {
         Args: {
           p_account_binding_revision: number
@@ -8380,6 +8364,22 @@ export type Database = {
           p_auth_session_revision: number
           p_date_of_birth: string
           p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      complete_own_upload_account_v2: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_auth_session_revision: number
+          p_date_of_birth: string
+          p_jurisdiction_revision: number
+          p_nonce_expires_at: string
           p_nonce_hash: string
           p_session_id: string
           p_subject_binding_revision: number
@@ -8397,6 +8397,25 @@ export type Database = {
           p_artifact_version: number
           p_auth_session_revision: number
           p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_statement_keys: string[]
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      sign_own_upload_artifact_v2: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_artifact_body_sha256: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_auth_session_revision: number
+          p_jurisdiction_revision: number
+          p_nonce_expires_at: string
           p_nonce_hash: string
           p_session_id: string
           p_statement_keys: string[]

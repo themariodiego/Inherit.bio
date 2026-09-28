@@ -733,16 +733,30 @@ describe("every form posts somewhere the register describes", () => {
  * compared, in both directions, with `nonceStoredBeforeUse` in
  * `docs/register-contract-divergence.json`.
  */
-describe("no request stores an operation nonce before the request that spends it", () => {
-  const sites = codeFiles().flatMap(file => {
-    const source = readFileSync(file, "utf8");
-    const found = [...source.matchAll(/\.rpc\(\s*["'`](issue_[a-z0-9_]*nonce[a-z0-9_]*)["'`]/gu)].map(match => `${match[1]} ${file}`);
-    if (/from\(\s*["'`]account_operation_nonces["'`]\s*\)\s*\.(?:insert|upsert)\(/u.test(source)) found.push(`account_operation_nonces ${file}`);
-    return found;
-  });
+/** Every trace, in one file's source, of a nonce stored ahead of use. */
+function nonceStoreSites(source: string, file: string): string[] {
+  const found = [...source.matchAll(/\.rpc\(\s*["'`](issue_[a-z0-9_]*nonce[a-z0-9_]*)["'`]/gu)].map(match => `${match[1]} ${file}`);
+  if (/from\(\s*["'`]account_operation_nonces["'`]\s*\)\s*\.(?:insert|upsert)\(/u.test(source)) found.push(`account_operation_nonces ${file}`);
+  return found;
+}
 
-  it("finds the one recorded site, so a passing run is not an empty scan", () => {
-    expect(sites).toContain("issue_own_upload_nonce_v1 src/lib/uploads/prepare-own-upload.ts");
+describe("no request stores an operation nonce before the request that spends it", () => {
+  const files = codeFiles();
+  const sites = files.flatMap(file => nonceStoreSites(readFileSync(file, "utf8"), file));
+
+  /**
+   * The ledger is empty since 2026-09-28, so a passing run could also be a
+   * scan that sees nothing. It is not: it reads the shipped code, and its
+   * pattern finds both shapes of the two sites X1.5 removed.
+   */
+  it("reads shipped code and would find a stored nonce, so an empty result means none", () => {
+    expect(files.length).toBeGreaterThan(500);
+    expect(files).toContain("src/lib/uploads/prepare-own-upload.ts");
+    expect(nonceStoreSites('await admin.rpc("issue_own_upload_nonce_v1", {', "a.ts")).toEqual(["issue_own_upload_nonce_v1 a.ts"]);
+    expect(nonceStoreSites("createAdminClient().rpc(\n  'issue_account_operation_nonce_v1', {", "b.ts"))
+      .toEqual(["issue_account_operation_nonce_v1 b.ts"]);
+    expect(nonceStoreSites('admin.from("account_operation_nonces").insert({})', "c.ts")).toEqual(["account_operation_nonces c.ts"]);
+    expect(nonceStoreSites('admin.from("account_operation_nonces").select("*")', "d.ts")).toEqual([]);
   });
 
   it("stores no nonce ahead of use except where the ledger records it", () => {
