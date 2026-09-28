@@ -4281,3 +4281,19 @@ questions at the end of `docs/carrier-importer-design.md`.
   Outside it, the routes answer "not available here" until a signed
   jurisdiction review exists for that country and capability (G5.5).
   Holding G5.4 until a real country is reviewed was declined.
+- **Another adult's DNA: the register's two paths, not the brief's single
+  flow.** Inviting someone to upload their own file (Path A) stays separate:
+  the inviter never touches that file. Uploading a file the uploader already
+  holds (Path B) is its own flow. The upload is held in quarantine, the
+  person is notified when it arrives, and they confirm each revision before
+  anything is readable. The brief's order, where the inviter uploads right
+  after inviting, was declined; the register and the `/family/invite` copy
+  stand as written.
+- **`consent.upload-other-adult` v1 is approved as written.** Its seven
+  statements are: the person is alive and 18 or older; the uploader has their
+  permission; the file was obtained lawfully and they know of it; the email is
+  theirs; no excluded relationship; the file is held and deleted after 30 days
+  without confirmation; the uploader gets no access to their results.
+  Approval of the text does not open any real jurisdiction. Each country still
+  needs its signed jurisdiction review (G5.5) before the path is offered
+  there. Keeping the text test-only until counsel reviewed it was declined.
