@@ -14,7 +14,20 @@
 
 `src/lib/embryos/fragment-gateway.test.ts` (27 tests) and
 `src/lib/embryos/fragment-storage.test.ts` (15 tests) are new. They run the
-undeployed gateway and the writer over an in-memory binding.
+undeployed gateway and the writer over an in-memory binding,
+`scripts/ci-browser/embryo-fragment-fixture.ts`. It lives outside `src/`, so
+`scripts/mock-token-allowlist.test.ts` needs no new entry.
+
+The two new variables, `INHERIT_EMBRYO_R2_ORIGIN` and
+`INHERIT_EMBRYO_R2_BUCKET`, move the pinned counts in `scripts/env-gate.test.ts`:
+
+- direct reads from 18 to 20;
+- read keys from 34 to 36;
+- template keys and keys named in the guide from 27 to 29;
+- guide names from 37 to 39.
+
+`scripts/self-host-local.test.ts` now also asserts that a generated local
+environment file holds neither of the two variables.
 
 Existing files, with no assertion removed:
 

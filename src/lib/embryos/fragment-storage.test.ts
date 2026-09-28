@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createEmbryoFixtureSigner, createEmbryoFragmentGateway, EMBRYO_FIXTURE_BUCKET, EMBRYO_FIXTURE_ORIGIN,
   EMBRYO_FIXTURE_SUPABASE_URL,
-} from "./fragment-gateway.fixtures";
+} from "../../../scripts/ci-browser/embryo-fragment-fixture";
 import {
   EmbryoFragmentStorageError, parseEmbryoWriteTargets, readEmbryoFragment, writeEmbryoFragment,
   type EmbryoFragmentRpc, type EmbryoR2WriteTarget, type EmbryoStoredFragment,

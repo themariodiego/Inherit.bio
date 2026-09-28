@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import prepared from "../../../workers/prepared-artifacts/worker.mjs";
 import {
   createEmbryoFixtureSigner, createEmbryoFragmentGateway, EMBRYO_FIXTURE_BUCKET, EMBRYO_FIXTURE_ISSUER,
-} from "./fragment-gateway.fixtures";
+} from "../../../scripts/ci-browser/embryo-fragment-fixture";
 
 const sha = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
 

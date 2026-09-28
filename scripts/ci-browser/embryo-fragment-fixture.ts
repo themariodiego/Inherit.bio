@@ -3,7 +3,7 @@
  * hosted R2 is involved, and nothing here proves anything about them. Tests
  * only; production code must never import this module. */
 import { createHash, generateKeyPairSync, randomUUID, type KeyObject } from "node:crypto";
-import gateway from "../../../workers/embryo-fragments/worker.mjs";
+import gateway from "../../workers/embryo-fragments/worker.mjs";
 
 export const EMBRYO_FIXTURE_ORIGIN = "https://embryo.fragments.test";
 export const EMBRYO_FIXTURE_BUCKET = "inherit-embryo-test";

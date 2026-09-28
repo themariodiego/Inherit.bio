@@ -178,7 +178,7 @@ describe("configure with synthetic command adapters", () => {
     expect(fs.statSync(path.join(f.root, ".env.local")).mode & 0o777).toBe(0o600);
     expect(environment).toContain("NEXT_PUBLIC_APP_URL='http://localhost:3000'");
     expect(environment).toContain("INHERIT_PREPARED_WGS_ENABLED='false'");
-    expect(environment).not.toMatch(/^(RESEND_|INHERIT_PREPARED_R2_)/m);
+    expect(environment).not.toMatch(/^(RESEND_|INHERIT_PREPARED_R2_|INHERIT_EMBRYO_R2_)/m);
     const writes = f.calls.filter(call => call.args[0] === "exec"); expect(writes).toHaveLength(1);
     expect(writes[0].args[2]).toBe("1".repeat(64)); expect(writes[0].input).toContain("local_setup_committed");
     expect(JSON.stringify(writes[0].args)).not.toContain("INSERT");

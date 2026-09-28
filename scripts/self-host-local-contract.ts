@@ -107,7 +107,8 @@ export function checkedContainer(value: unknown, service: string, preparedAt: st
 
 /** Preserve the template's comments, but emit only the reviewed local values. */
 export function localEnvironmentFile(template: string, values: Record<string, string>): string {
-  const omitted = new Set(["RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "INHERIT_PREPARED_R2_ORIGIN", "INHERIT_PREPARED_R2_BUCKET"]);
+  const omitted = new Set(["RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "INHERIT_PREPARED_R2_ORIGIN", "INHERIT_PREPARED_R2_BUCKET",
+    "INHERIT_EMBRYO_R2_ORIGIN", "INHERIT_EMBRYO_R2_BUCKET"]);
   const seen = new Set<string>();
   const lines = template.split("\n").flatMap(line => {
     if (!line.trim() || line.trim().startsWith("#")) return [line];

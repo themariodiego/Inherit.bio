@@ -73,5 +73,5 @@ a production change, so none is done by the repository or by CI.
 
 A local HTTPS stand-in for browser journeys, like
 `scripts/ci-browser/prepared-artifact-fixture.ts`, is still needed once an
-embryo chunk route exists. `src/lib/embryos/fragment-gateway.fixtures.ts` is the
+embryo chunk route exists. `scripts/ci-browser/embryo-fragment-fixture.ts` is the
 in-memory binding it would wrap.
