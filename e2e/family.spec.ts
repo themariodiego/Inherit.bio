@@ -425,7 +425,10 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   // SCREEN became separate choices. Pinned exactly, not as a floor: a row
   // appearing or vanishing on the page a person uses to control what someone
   // else sees about them should never pass unremarked.
-  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(7);
+  // Eight since 2026-09-28, when `copilot.local` got its own row ("Copilot"):
+  // letting this relative's local-model Copilot read what you already share
+  // with them is a separate choice from sharing it (docs/copilot-group-scopes.md).
+  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(8);
   await expect(yours.locator('[data-permission-state="on"]')).toHaveCount(0);
 
   const estimates = yours

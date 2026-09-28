@@ -117,10 +117,13 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // capability, which reads the flag through `isTestJurisdictionEnabled`.
     // The seventh binding is the same shape in `declarableCode`
     // (`src/lib/legal/jurisdiction-declaration.ts`), which admits the
-    // block-only row's stored code only while that flag is on.
+    // block-only row's stored code only while that flag is on. The eighth
+    // (2026-09-28) is `copilotGroupScopes` (`src/lib/copilot/group-scopes.ts`),
+    // which builds the Family Copilot scope only while that same flag is on;
+    // it adds a binding and no new key.
     expect(result.directReadKeyCount).toBe(18);
     expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(7);
+    expect(result.boundBindingCount).toBe(8);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(34);
     expect(result.templateKeyCount).toBe(27);

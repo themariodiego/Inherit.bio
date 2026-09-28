@@ -1,5 +1,55 @@
 # Test diff register
 
+## Family group Copilot scope · 28 September 2026
+
+New tests, none loosened.
+
+- `supabase/tests/family_copilot_scope.sql` (52 rollback-only assertions)
+  holds `20260929140000_family_copilot_scope.sql`: who may execute the new
+  functions, the member check's purpose isolation (a layer grant alone, or
+  Copilot without Health picture, admits nobody), non-members, pause (hidden,
+  not deleted, restored on resume), revocation mid-conversation (the turn and
+  every later turn deleted, history `null`), a layer revoked, the adult's own
+  report purpose withdrawn, a different provider refused, a cloud provider
+  refused, single-use context nonces, and the widened citation constraint.
+- Unit: `src/lib/copilot/family-chat.test.ts`, `family-chat-route.test.ts`,
+  `family-chat-content.test.ts`, `family-chat-token.test.ts`,
+  `group-scopes.test.ts` and `guard-people.test.ts` are new.
+  `src/lib/overview-entry-boxes.test.ts` gains two tests (the Family box opens
+  `/copilot/family` only where the scope is built; the Embryo box keeps its
+  hub and names a cohort as `c-{id}`), and its blocking-state test now passes
+  the unbuilt scopes explicitly, because the default follows the TEST-LOCAL
+  flag the suite runs under. `scripts/ci-browser-playwright-config.test.ts`
+  gains two assertions: `copilot-family` runs in the `copilot-local` project
+  and is ignored by `chromium`.
+- Browser: `e2e/copilot-group-scopes.spec.ts` (main variant, 4 tests) and
+  `e2e/copilot-family.spec.ts` (`copilot-local` project: the journey, and the
+  title `/copilot/[scope] jurisdiction-unavailable`). `playwright.config.ts`
+  adds `copilot-family.spec.ts` to the local-model project's match.
+
+Pins moved for things this change adds, each with a dated comment beside it:
+
+- Permission rows 7 -> 8 (the new `copilot.local` "Copilot" row) in
+  `src/copy/family/family.test.ts`, `src/components/family/family.test.ts`
+  (and the locked-row test's settable count 6 -> 7) and `e2e/family.spec.ts`.
+- `scripts/route-gate.test.ts` required states 153 -> 154: `/copilot/[scope]`
+  moves back to `product-result` and proves `jurisdiction-unavailable` in the
+  same change (`docs/route-divergence.json`), so unproven stays 11.
+- `scripts/env-gate.test.ts` bound bindings 7 -> 8: `copilotGroupScopes`
+  reads the TEST-LOCAL flag through `isTestJurisdictionEnabled`. No new key.
+
+Planted regressions, each caught and then restored:
+
+- SQL, against the pgTAP file: a revoked grant still readable (the member
+  check stops requiring an unrevoked, current grant), a grant for one purpose
+  used for another (the purpose predicate dropped), and a non-member in the
+  group (the commit's per-member recheck skipped). 3 of 3 fail the file.
+- TypeScript, against the unit files: no per-turn database recheck; the group
+  cached across turns instead of resolved again; rows from an ungranted layer
+  passed through; another account's context token accepted; a member admitted
+  without the Family graph; group names not read as persons by the input gate.
+  6 of 6 fail their test.
+
 ## Two-embryo fixture for participant-c · 28 September 2026
 
 `e2e/fixtures/embryo-pair-grch38.vcf` is new, written by the new

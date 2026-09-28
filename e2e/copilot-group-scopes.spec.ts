@@ -29,10 +29,12 @@ test.beforeAll(async () => {
 test("the Family Copilot box opens the Family group scope, which says plainly why it cannot run here and reads nothing", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/overview");
-  const box = page.locator('a[aria-labelledby="family.copilot-label"]');
+  // Overview gives each box's label the DOM id `box-{id with dots as dashes}-label`.
+  const box = page.locator('[data-overview-box] a[aria-labelledby="box-family-copilot-label"]');
   await expect(box).toHaveAttribute("href", "/copilot/family");
   // The embryo cohort scope is not built: its box keeps landing on the hub.
-  await expect(page.locator('a[aria-labelledby="embryos.copilot-label"]')).toHaveAttribute("href", "/embryos");
+  await expect(page.locator('[data-overview-box] a[aria-labelledby="box-embryos-copilot-label"]'))
+    .toHaveAttribute("href", "/embryos");
 
   const context = page.waitForResponse(response => new URL(response.url()).pathname === "/copilot/family");
   await box.click();

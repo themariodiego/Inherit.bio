@@ -60,6 +60,8 @@ const LIST_ANSWER = "Invited adult shares estimate reports with you, and nothing
 const NOT_DIAGNOSTIC_SLOT = '[data-slot="chat-not-diagnostic"]';
 const TEST_DENY_SENTENCE = "This capability is blocked for the TEST-DENY acceptance fixture.";
 
+test.use({ trace: "off" }); // Upload, invitation and permission bearers stay out of traces.
+
 test.describe("the Family group scope's jurisdiction refusal", () => {
   test("/copilot/[scope] jurisdiction-unavailable: the Family scope states the register's refusal and reads neither the model settings nor the group", async ({ page }) => {
     const denied = { email: `copilot-family-xx-${randomUUID()}@e2e.local`, password: journeyPassword };
@@ -79,7 +81,6 @@ test.describe("the Family group scope's jurisdiction refusal", () => {
 
 test.describe("the Family group scope, end to end on the local model", () => {
   test.describe.configure({ mode: "serial" });
-  test.use({ trace: "off" }); // Upload, invitation and permission bearers stay out of traces.
 
   let fixture: CopilotFixture;
   let resendMock: http.Server;
