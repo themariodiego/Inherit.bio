@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { embryoFragmentStore, r2FragmentStore } from "./fragment-store";
 import { EmbryoFragmentStorageError } from "./fragment-storage";
 
@@ -80,9 +80,29 @@ describe("landing a fragment", () => {
 });
 
 describe("the configured store", () => {
-  it("is absent until this deployment names the fragment gateway and bucket", () => {
-    expect(embryoFragmentStore({})).toBeNull();
-    expect(embryoFragmentStore({ INHERIT_EMBRYO_R2_ORIGIN: "https://embryo.fragments.test" })).toBeNull();
-    expect(embryoFragmentStore({ INHERIT_EMBRYO_R2_BUCKET: "inherit-embryo-test" })).toBeNull();
+  afterEach(() => vi.unstubAllEnvs());
+
+  /** `embryoFragmentStorageConfigured()` decides; this module reads no variable itself. */
+  it.each([
+    ["no gateway at all", undefined, undefined],
+    ["no bucket", "https://embryo.fragments.test", undefined],
+    ["no origin", undefined, "inherit-embryo-test"],
+    ["a plain-http origin", "http://embryo.fragments.test", "inherit-embryo-test"],
+    ["an origin with a path", "https://embryo.fragments.test/fragments", "inherit-embryo-test"],
+    // Assembled, so the secret gate does not read a synthetic credential URL as a real one.
+    ["an origin with credentials", ["https://", "synthetic", ":", "placeholder", "@embryo.fragments.test"].join(""), "inherit-embryo-test"],
+    ["a bucket outside the embryo namespace", "https://embryo.fragments.test", "genomes"],
+  ])("is absent with %s", (_label, origin, bucket) => {
+    vi.stubEnv("INHERIT_EMBRYO_R2_ORIGIN", origin);
+    vi.stubEnv("INHERIT_EMBRYO_R2_BUCKET", bucket);
+    expect(embryoFragmentStore()).toBeNull();
+  });
+
+  it("is present for an https gateway origin and an embryo bucket", () => {
+    vi.stubEnv("INHERIT_EMBRYO_R2_ORIGIN", "https://embryo.fragments.test");
+    vi.stubEnv("INHERIT_EMBRYO_R2_BUCKET", "inherit-embryo-test");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://synthetic.invalid");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-service-role-placeholder");
+    expect(embryoFragmentStore()).not.toBeNull();
   });
 });

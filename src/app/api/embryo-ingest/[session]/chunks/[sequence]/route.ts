@@ -25,10 +25,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 /**
  * `PUT /api/embryo-ingest/[session]/chunks/[sequence]` (register
  * `api.embryo-ingest-chunk`). TEST-LOCAL only; `EMBRYO_INGEST_AVAILABLE`
- * stays false. Until this deployment names the R2 fragment gateway
- * (`INHERIT_EMBRYO_R2_ORIGIN`, `INHERIT_EMBRYO_R2_BUCKET`) the route refuses
- * before it authorizes, reads or reserves anything, and until an operator
- * selects a backend in SQL the reservation itself refuses.
+ * stays false. Until `embryoFragmentStorageConfigured()` accepts this
+ * deployment's R2 fragment gateway, `embryoFragmentStore()` is null and the
+ * route answers the closed 503 before it authorizes, reads or reserves
+ * anything; until an operator selects a backend in SQL the reservation
+ * itself refuses.
  *
  * `policy.requestAuthority`: the live account and originating auth session,
  * the `embryo_analysis` guard, exact Origin with same-origin fetch metadata

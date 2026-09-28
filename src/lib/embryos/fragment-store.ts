@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   EmbryoFragmentStorageError,
+  embryoFragmentStorageConfigured,
   parseEmbryoWriteTargets,
   writeEmbryoFragment,
   type EmbryoFragmentRpc,
@@ -83,13 +84,17 @@ export function r2FragmentStore(rpc: Rpc, write: typeof writeEmbryoFragment = wr
 }
 
 /**
- * The configured store, or null when this deployment names no fragment
- * gateway. Presence is all this checks; `writeEmbryoFragment` validates the
- * origin and bucket exactly on every write, and `reserve_embryo_ingest_chunk_v1`
- * refuses until an operator selects a backend in SQL.
+ * The configured store, or null unless `embryoFragmentStorageConfigured()`
+ * says this deployment names a usable fragment gateway: an https origin with
+ * no path or credentials and an `inherit-embryo-*` bucket, checked exactly as
+ * the writer checks them. The chunk route calls this before it authorizes,
+ * reads or reserves anything, so an unconfigured deployment never reserves a
+ * fragment it cannot write. Nothing here reads the environment itself, and it
+ * claims nothing about the gateway being reachable or a backend being
+ * selected in SQL; `reserve_embryo_ingest_chunk_v1` refuses until one is.
  */
-export function embryoFragmentStore(env: Readonly<Record<string, string | undefined>> = process.env): EmbryoFragmentStore | null {
-  if (!env.INHERIT_EMBRYO_R2_ORIGIN || !env.INHERIT_EMBRYO_R2_BUCKET) return null;
+export function embryoFragmentStore(): EmbryoFragmentStore | null {
+  if (!embryoFragmentStorageConfigured()) return null;
   const admin = createAdminClient();
   return r2FragmentStore(admin.rpc.bind(admin) as unknown as Rpc);
 }

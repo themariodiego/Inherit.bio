@@ -5,7 +5,8 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * The chunk route through the real R2 fragment writer (`writeEmbryoFragment`)
  * and the real `workers/embryo-fragments` gateway over the in-memory R2
- * binding from `fragment-gateway.fixtures.ts`. Only the database is simulated:
+ * binding from `scripts/ci-browser/embryo-fragment-fixture.ts`. Only the
+ * database is simulated:
  * a small in-memory model of the reservation, the write targets (with window
  * renewal), the landing ACK and the commit gate, as
  * docs/embryo-fragment-storage.md describes them. No provider, network or
@@ -128,7 +129,7 @@ function sql(name: string, args: Record<string, unknown>): { data: unknown; erro
 const {
   createEmbryoFixtureSigner, createEmbryoFragmentGateway, EMBRYO_FIXTURE_BUCKET, EMBRYO_FIXTURE_ORIGIN,
   EMBRYO_FIXTURE_SUPABASE_URL,
-} = await import("@/lib/embryos/fragment-gateway.fixtures");
+} = await import("../../../../../../../scripts/ci-browser/embryo-fragment-fixture");
 const signer = createEmbryoFixtureSigner();
 vi.stubEnv("NEXT_PUBLIC_APP_URL", ORIGIN);
 vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
@@ -266,5 +267,30 @@ describe("the chunk route on R2", () => {
     expect(response.status).toBe(503);
     expect(provider).toEqual([]);
     expect(names()).not.toContain("commit_embryo_ingest_chunk_v1");
+  });
+
+  /**
+   * `embryoFragmentStorageConfigured()` gates the route before it authorizes,
+   * reads or reserves anything, so an unconfigured deployment never reserves
+   * a fragment it cannot write. Planted regression: without that gate the
+   * route reserves first and only then fails to write.
+   */
+  it.each([
+    ["no gateway origin", { INHERIT_EMBRYO_R2_ORIGIN: undefined }],
+    ["a plain-http origin", { INHERIT_EMBRYO_R2_ORIGIN: "http://embryo.fragments.test" }],
+    ["an origin with a path", { INHERIT_EMBRYO_R2_ORIGIN: `${EMBRYO_FIXTURE_ORIGIN}/fragments` }],
+    ["a bucket outside the embryo namespace", { INHERIT_EMBRYO_R2_BUCKET: "genomes" }],
+  ])("refuses with the closed 503 and reserves nothing with %s", async (_label, env) => {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    try {
+      const response = await put(await browserChunk());
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "unavailable" });
+      expect(db.calls).toEqual([]);
+      expect(provider).toEqual([]);
+    } finally {
+      vi.stubEnv("INHERIT_EMBRYO_R2_ORIGIN", EMBRYO_FIXTURE_ORIGIN);
+      vi.stubEnv("INHERIT_EMBRYO_R2_BUCKET", EMBRYO_FIXTURE_BUCKET);
+    }
   });
 });
