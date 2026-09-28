@@ -342,6 +342,18 @@ does not declare. Copy the template, then work through these.
 | `EMAIL_FROM` | The sender for application mail. In a production build the mailer throws `EMAIL_FROM must use a verified sender in production` when it is unset; outside production it falls back to `Inherit <onboarding@resend.dev>`. |
 | `DATABASE_URL` | The direct Postgres connection string. Under `src/` only the direct-completion path below opens it; the Tier-3 worker reads its own copy from `worker/.env`. Local: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. |
 
+### Keyed-digest rotation
+
+| Variable | What to set, and what a missing or wrong value does |
+| --- | --- |
+| `INHERIT_HMAC_KEYRING` | Leave empty until you rotate. Revision 1 of the contact and rate-limit digest keys is derived from `BYOK_ENCRYPTION_KEY`; each later revision is its own secret, written `2:<base64>,3:<base64>`, each from `openssl rand -base64 32`. Add the new revision here and deploy before running the database rotation in `docs/rights-invitation-flow.md`; after the database rotates, a deployment missing a usable revision answers 503 to every invitation rather than matching with less. A malformed value throws on the first invitation request. Remove a revision only after the database has retired it. |
+
+Invitation attempts are also limited per client network, 30 an hour. The
+network comes from the client-address headers your hosting platform or
+reverse proxy sets, and it is stored only as a keyed digest for at most 24
+hours. Behind a proxy that does not set them, every request counts as one
+network and the whole site shares that limit.
+
 ### Mail delivery and scheduled jobs
 
 | Variable | What to set, and what a missing or wrong value does |
@@ -361,6 +373,8 @@ does not declare. Copy the template, then work through these.
 | `INHERIT_PREPARED_WGS_ENABLED` | `false` for an ordinary self-host. The prepared-object path needs this flag *and* the database's own `own_preparation_config.enabled` gate; the operator-started preparation worker (`pnpm worker:prepared`, see `worker/README.md`) refuses to run without the flag. Setting it alone enables nothing. |
 | `INHERIT_PREPARED_R2_ORIGIN` | Empty unless the flag above is on. Then: the HTTPS origin of the signed artifact gateway — scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes the transport unavailable. |
 | `INHERIT_PREPARED_R2_BUCKET` | Empty unless the flag above is on. Then: the exact private bucket bound to that gateway and selected in the database configuration. A bucket that does not match this value is refused. |
+| `INHERIT_EMBRYO_R2_ORIGIN` | Empty. Embryo upload is not available on any deployment yet. When it is, this is the HTTPS origin of the signed embryo fragment gateway (`workers/embryo-fragments/`): scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes fragment storage unavailable. |
+| `INHERIT_EMBRYO_R2_BUCKET` | Empty, for the same reason. Then: the exact `inherit-embryo-*` bucket bound to that gateway and selected in `private.embryo_ingest_object_config`. A fragment receipt naming any other bucket is refused. |
 
 #### Hosted preparation on Cloudflare
 
