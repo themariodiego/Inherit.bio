@@ -1,7 +1,8 @@
 import "server-only";
 import { z } from "zod";
-import { EmbryoFragmentStorageError, embryoStoredFragmentSchema, readEmbryoFragment } from "./fragment-storage";
-import { EmbryoSplitFragmentMismatch, type EmbryoFragmentReader } from "./split-worker";
+import { EmbryoFragmentStorageError, embryoStoredFragmentSchema, readEmbryoFragment,
+  writeEmbryoFragment } from "./fragment-storage";
+import { EmbryoSplitFragmentMismatch, type EmbryoCanonicalPartWriter, type EmbryoFragmentReader } from "./split-worker";
 
 /** The R2 landed identity `read_embryo_split_fragment_v1` issues. */
 const r2LandedSchema = z.object({ backend: z.literal("r2"), stored: embryoStoredFragmentSchema }).strict();
@@ -32,4 +33,15 @@ export function r2EmbryoFragmentReader(read: typeof readEmbryoFragment = readEmb
       throw error;
     }
   };
+}
+
+/**
+ * The worker's canonical-part seam over the same transport: a create-only
+ * write of the verified fragment bytes to the exact receipt
+ * `reserve_embryo_canonical_part_v1` issued, read back to EOF at its version
+ * and hashed, then landed through the worker's ACK carrier. The key, size and
+ * digest come only from SQL; nothing here retries or renews a window.
+ */
+export function r2EmbryoCanonicalPartWriter(write: typeof writeEmbryoFragment = writeEmbryoFragment): EmbryoCanonicalPartWriter {
+  return (part, signal) => write({ rpc: part.acknowledge, target: part.target, bytes: part.bytes, signal });
 }
