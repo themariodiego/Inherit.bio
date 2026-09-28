@@ -21,8 +21,10 @@ const signatureResponse = z.object({
 
 /**
  * `POST /api/consents`, the Tier-2 uploader body with a `subjectDraftId`
- * (register api.consents, signer case `other-adult-uploader-artifact`).
- * TEST-LOCAL only. The signer, reservation, artifact version and hash come
+ * (register api.consents, signer case `other-adult-uploader-artifact`): the
+ * approved `consent.upload-other-adult` for the uploader's own Path B draft
+ * or the Path B subject it became. TEST-LOCAL only, because the flow is.
+ * The signer, person, artifact version and hash come
  * from the sealed presentation the upload page minted; the body must agree
  * with it or the answer is an unknown resource with no write. The typed name
  * is stored only as ciphertext.
@@ -58,7 +60,7 @@ export async function otherAdultUploadConsent(request: Request, payload: unknown
     if (error.code === "42501" || error.code === "23505") return ownUploadJson({ error: "not_found" }, 404);
     if (error.code === "22023") return ownUploadJson({ error: "invalid_request" }, 422);
     if (error.code === "55000") {
-      const known = ["adult_account_required", "consent_artifact_changed", "recipient_reviewing"];
+      const known = ["adult_account_required", "consent_artifact_changed"];
       return ownUploadJson({ error: error.message && known.includes(error.message) ? error.message : "state_conflict" }, 409);
     }
     return ownUploadJson({ error: "unavailable" }, 503);

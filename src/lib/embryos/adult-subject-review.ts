@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { looseAdmin } from "@/lib/uploads/other-adult-upload-server";
 import { mintPublicFormToken, readPublicFormToken } from "./operation-token";
 import { readRightsSessionHash, RIGHTS_COOKIE_NAME } from "./rights-session";
 import { normalizeContact } from "./routes";
@@ -115,6 +116,13 @@ export async function loadAdultSubjectReview(
       .eq("artifact_key", "consent.subject-adult").is("superseded_at", null).maybeSingle(),
   ]);
   if (draftError || principalError || artifactError || !draft || !principal || !artifact) return null;
+  // A Path B request ("I have their file") is answered on its own screen
+  // (`src/lib/uploads/path-b-review.ts`), never by account acceptance. Only a
+  // flow that reads back as Path B is turned away, so this page keeps working
+  // on a database that predates the flow column.
+  const { data: flow, error: flowError } = await looseAdmin(admin).from("adult_subject_drafts")
+    .select("adult_flow").eq("id", draft.id).maybeSingle();
+  if (!flowError && flow && flow.adult_flow !== "path-a-own-account") return null;
 
   // Signing in is offered, never required: the two controls that need no
   // account are the ones a person without one came here to use.

@@ -2,36 +2,62 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), codes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), codes: vi.fn(), attestation: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 vi.mock("@/lib/legal/jurisdictions", async (original) => {
   const actual = await original<typeof import("@/lib/legal/jurisdictions")>();
   return { ...actual, accountCapability: (id: string, capability: string) => mocks.codes(id, capability) };
 });
+vi.mock("@/lib/legal/jurisdiction-declaration", async (original) => {
+  const actual = await original<typeof import("@/lib/legal/jurisdiction-declaration")>();
+  return { ...actual, currentJurisdictionAttestation: () => mocks.attestation() };
+});
 
 import { hmacSecret } from "@/lib/crypto";
+import { mintPublicFormToken } from "@/lib/embryos/operation-token";
+import { newRightsSessionSecret, RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { parseArtifactFile } from "@/lib/legal/artifact-file";
 import {
   OTHER_ADULT_UPLOAD_STATEMENT_KEYS,
+  SUBJECT_ESIGNATURE_STATEMENT_KEYS,
+  adultUploadRevisionBody,
   artifactStatements,
   artifactWarning,
   heldFinalizationReceipt,
+  isAdultOn,
   isOtherAdultConsentPayload,
   isOtherAdultStatementSet,
+  isPathBDraftPayload,
+  isPathBInvitationPayload,
   otherAdultConsentBody,
   otherAdultTypedNameIsValid,
+  pathBDraftBody,
+  pathBInvitationBody,
+  pathBSubjectConfirmBody,
 } from "./other-adult-upload";
-import { mintOtherAdultPresentation, otherAdultUploadAvailable, readOtherAdultPresentation } from "./other-adult-upload-server";
+import {
+  mintOtherAdultPresentation,
+  mintPathBOperation,
+  otherAdultUploadAvailable,
+  readOtherAdultPresentation,
+  verifyPathBOperation,
+} from "./other-adult-upload-server";
 import { otherAdultUploadConsent } from "./other-adult-consent-route";
+import { createPathBDraft, createPathBInvitation } from "./path-b-routes";
+import { answerAdultUploadRevision, confirmPathBSubject } from "./path-b-respond";
+import { mintSubjectPresentation, readAdultUploadRevisionResponse } from "./path-b-review";
+import { POST as withdrawSession } from "@/app/api/withdraw/session/route";
 
 const NOW = 1_800_000_000_000;
 const accountId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const sessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const subjectId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const recordId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const requestId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const input = { accountId, sessionId, subjectId, artifactVersion: 1, artifactBodySha256: "a".repeat(64) };
 const KEYS = [...OTHER_ADULT_UPLOAD_STATEMENT_KEYS];
+const SUBJECT_KEYS = [...SUBJECT_ESIGNATURE_STATEMENT_KEYS];
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -40,12 +66,18 @@ beforeEach(() => {
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
   mocks.getClaims.mockResolvedValue({ data: { claims: { sub: accountId, session_id: sessionId } } });
   mocks.codes.mockResolvedValue({ status: "permitted" });
+  mocks.attestation.mockResolvedValue({ version: 2, sha256: "f".repeat(64), summary: "S", body: "B" });
   mocks.rpc.mockResolvedValue({ data: { recordKind: "artifact_signature", recordId,
     artifactKey: "consent.upload-other-adult", artifactVersion: 1, signedAt: "2026-09-28T12:00:00+00:00" }, error: null });
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 
-describe("the draft artifact's statements", () => {
+function sameOrigin(url: string, body: unknown, headers: Record<string, string> = {}) {
+  return new Request(url, { method: "POST", body: JSON.stringify(body),
+    headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json", ...headers } });
+}
+
+describe("the approved uploader artifact's statements", () => {
   const file = parseArtifactFile(fs.readFileSync("content/legal/consent.upload-other-adult/v1.md", "utf8"))!;
   it("reads one statement per published key and the warning from the signed body itself", () => {
     expect(artifactStatements(file.body)).toHaveLength(KEYS.length);
@@ -76,15 +108,72 @@ describe("the draft artifact's statements", () => {
     expect(_draft).toBe(subjectId);
     expect(isOtherAdultConsentPayload({ ...withoutDraft, subjectId })).toBe(false);
   });
-  it("keeps the held receipt free of any file identity", () => {
-    expect(heldFinalizationReceipt.safeParse({ uploadId: subjectId, status: "stored_quarantined", analysisState: "quarantined" }).success).toBe(true);
-    expect(heldFinalizationReceipt.safeParse({ uploadId: subjectId, status: "stored_quarantined", analysisState: "quarantined",
-      fileId: subjectId }).success).toBe(false);
+});
+
+describe("the register's file-finalize-v1 other-adult receipt", () => {
+  it("is exactly an opaque fileId, the quarantined states and the queued notice", () => {
+    const receipt = { fileId: subjectId, status: "stored_quarantined", analysisState: "quarantined", noticeState: "queued" };
+    expect(heldFinalizationReceipt.safeParse(receipt).success).toBe(true);
+    const { noticeState: _notice, ...withoutNotice } = receipt;
+    expect(_notice).toBe("queued");
+    expect(heldFinalizationReceipt.safeParse(withoutNotice).success).toBe(false);
+    for (const patch of [{ uploadId: subjectId }, { noticeState: "sent" }, { analysisState: "ready_for_processing" },
+      { next: { routeId: "api.file-process" } }]) {
+      expect(heldFinalizationReceipt.safeParse({ ...receipt, ...patch }).success).toBe(false);
+    }
+  });
+});
+
+describe("the Path B draft and request bodies", () => {
+  const draft = { kind: "adult", adultFlow: "path-b-subject-esignature", displayName: "Synthetic Relative",
+    dateOfBirth: "1980-05-05", contactEmail: "Relative@E2E.local", requestId };
+  it("accepts the register's closed body and normalizes the address", () => {
+    const parsed = pathBDraftBody.safeParse(draft);
+    expect(parsed.success && parsed.data.contactEmail).toBe("relative@e2e.local");
+    expect(isPathBDraftPayload(draft)).toBe(true);
+    expect(isPathBDraftPayload({ ...draft, adultFlow: "path-a-own-account" })).toBe(false);
+    for (const patch of [{ kind: "other_adult" }, { adultFlow: "path-b-reviewed-document" }, { displayName: "A" },
+      { displayName: "Bad\u0007Name" }, { dateOfBirth: "05/05/1980" }, { contactEmail: "not-an-address" },
+      { note: "hello" }, { ownerId: accountId }]) {
+      expect(pathBDraftBody.safeParse({ ...draft, ...patch }).success).toBe(false);
+    }
+  });
+  it("checks 18 or older on the UTC calendar", () => {
+    const today = new Date("2026-09-28T12:00:00Z");
+    expect(isAdultOn("2008-09-28", today)).toBe(true);
+    expect(isAdultOn("2008-09-29", today)).toBe(false);
+    expect(isAdultOn("1899-12-31", today)).toBe(false);
+    expect(isAdultOn("2001-02-30", today)).toBe(false);
+    expect(isAdultOn("", today)).toBe(false);
+  });
+  it("sends a request only as the draft and the address, nothing else", () => {
+    const body = { targetSubjectDraftId: subjectId, contactEmail: "relative@e2e.local" };
+    expect(pathBInvitationBody.safeParse(body).success).toBe(true);
+    expect(isPathBInvitationPayload(body)).toBe(true);
+    expect(isPathBInvitationPayload({ targetCohortDraftId: subjectId, contactEmail: "x@e2e.local" })).toBe(false);
+    for (const patch of [{ note: "hi" }, { kind: "adult" }, { targetCohortDraftId: subjectId }]) {
+      expect(pathBInvitationBody.safeParse({ ...body, ...patch }).success).toBe(false);
+    }
+  });
+});
+
+describe("the Path B operation token", () => {
+  it("binds account, session, operation and target for ten minutes", () => {
+    const token = mintPathBOperation(accountId, sessionId, "request-send", subjectId, NOW);
+    const expected = { accountId, sessionId, operation: "request-send" as const, targetId: subjectId };
+    expect(verifyPathBOperation(token, expected, NOW)).toBe(true);
+    expect(verifyPathBOperation(token, expected, NOW + 599_999)).toBe(true);
+    expect(verifyPathBOperation(token, expected, NOW + 600_000)).toBe(false);
+    expect(verifyPathBOperation(token, { ...expected, operation: "draft-create" }, NOW)).toBe(false);
+    expect(verifyPathBOperation(token, { ...expected, targetId: accountId }, NOW)).toBe(false);
+    expect(verifyPathBOperation(token, { ...expected, sessionId: accountId }, NOW)).toBe(false);
+    expect(verifyPathBOperation(null, expected, NOW)).toBe(false);
+    expect(verifyPathBOperation(`${token.split(".")[0]}.${hmacSecret(token.split(".")[0]!, "embryo-operation-v1")}`, expected, NOW)).toBe(false);
   });
 });
 
 describe("the uploader's presentation", () => {
-  it("binds account, session, reservation and exact artifact for nine minutes", () => {
+  it("binds account, session, person and exact artifact for nine minutes", () => {
     const { token, claims, nonceHash } = mintOtherAdultPresentation(input, NOW);
     expect(readOtherAdultPresentation(token, NOW)).toEqual(claims);
     expect(claims).toMatchObject(input);
@@ -97,7 +186,7 @@ describe("the uploader's presentation", () => {
     const { token, claims } = mintOtherAdultPresentation(input, NOW);
     const payload = Buffer.from(JSON.stringify({ ...claims, subjectId: accountId })).toString("base64url");
     expect(readOtherAdultPresentation(`${payload}.${token.split(".")[1]}`, NOW)).toBeNull();
-    expect(readOtherAdultPresentation(`${token.split(".")[0]}.${hmacSecret(token.split(".")[0], "own-upload-artifact-presentation-v1")}`, NOW)).toBeNull();
+    expect(readOtherAdultPresentation(`${token.split(".")[0]}.${hmacSecret(token.split(".")[0]!, "own-upload-artifact-presentation-v1")}`, NOW)).toBeNull();
   });
   it("is available only under TEST-LOCAL and a permitting jurisdiction", async () => {
     expect(await otherAdultUploadAvailable(accountId)).toBe(true);
@@ -115,9 +204,8 @@ describe("POST /api/consents, the uploader's Tier-2 body", () => {
     const { token } = mintOtherAdultPresentation(input, NOW);
     const payload = { action: "sign-artifact", signatureClass: "tier2", subjectDraftId: subjectId, artifactVersion: 1,
       artifactPresentationToken: token, affirmed: true, statementKeys: KEYS, typedName: "Ada Lovelace", ...overrides };
-    const request = new Request("https://inherit.bio/api/consents", { method: "POST", body: JSON.stringify(payload),
-      headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": token, ...headers } });
-    return otherAdultUploadConsent(request, payload);
+    return otherAdultUploadConsent(sameOrigin("https://inherit.bio/api/consents", payload,
+      { "x-inherit-csrf": token, ...headers }), payload);
   }
   it("records the signature with the exact presented artifact, keys and an encrypted name", async () => {
     const response = await signing();
@@ -152,11 +240,148 @@ describe("POST /api/consents, the uploader's Tier-2 body", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it.each([["42501", "not_found", 404, "not_found"], ["22023", "invalid_request", 422, "invalid_request"],
-    ["55000", "recipient_reviewing", 409, "recipient_reviewing"], ["55000", "something_else", 409, "state_conflict"],
+    ["55000", "consent_artifact_changed", 409, "consent_artifact_changed"], ["55000", "something_else", 409, "state_conflict"],
     ["XX000", "boom", 503, "unavailable"]])("maps a database refusal %s/%s to %i", async (code, message, status, error) => {
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { code, message } });
     const response = await signing();
     expect(response.status).toBe(status);
     expect(await response.json()).toEqual({ error });
+  });
+});
+
+describe("POST /api/subject-drafts, the Path B body", () => {
+  const body = { kind: "adult", adultFlow: "path-b-subject-esignature", displayName: "Synthetic Relative",
+    dateOfBirth: "1980-05-05", contactEmail: "relative@e2e.local", requestId };
+  const receipt = { subjectDraftId: subjectId, state: "awaiting_uploader_artifact", next: "sign_uploader_artifact",
+    expiresAt: "2026-10-28T12:00:00+00:00" };
+  function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
+    const token = mintPathBOperation(accountId, sessionId, "draft-create", accountId);
+    const payload = { ...body, ...overrides };
+    return createPathBDraft(sameOrigin("https://inherit.bio/api/subject-drafts", payload,
+      { "x-inherit-csrf": token, ...headers }), payload);
+  }
+  it("reserves a draft with an encrypted address and an HMAC, and answers the register's receipt", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: receipt, error: null });
+    const response = await draft();
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual(receipt);
+    const [name, args] = mocks.rpc.mock.calls[0]!;
+    expect(name).toBe("create_path_b_adult_draft_v1");
+    expect(args).toMatchObject({ p_account_id: accountId, p_session_id: sessionId, p_display_name: "Synthetic Relative",
+      p_date_of_birth: "1980-05-05", p_contact_hmac: hmacSecret("relative@e2e.local", "contact-email-v1"),
+      p_test_jurisdiction: true });
+    expect(args.p_contact_ciphertext).toMatch(/^\\x[0-9a-f]+$/);
+    expect(JSON.stringify(args)).not.toContain("relative@e2e.local");
+    expect(args.p_request_key).toMatch(/^[0-9a-f]{64}$/);
+  });
+  it("refuses a person under 18 before the database", async () => {
+    expect((await draft({ dateOfBirth: `${new Date().getUTCFullYear() - 10}-01-01` })).status).toBe(422);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("refuses without the page's operation token, from another origin, and outside TEST-LOCAL", async () => {
+    expect((await draft({}, { "x-inherit-csrf": "nope" })).status).toBe(403);
+    expect((await draft({}, { origin: "https://foreign.example" })).status).toBe(403);
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+    expect((await draft()).status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/invitations, the Path B request", () => {
+  function send(headers: Record<string, string> = {}) {
+    const token = mintPathBOperation(accountId, sessionId, "request-send", subjectId);
+    const payload = { targetSubjectDraftId: subjectId, contactEmail: "relative@e2e.local" };
+    return createPathBInvitation(sameOrigin("https://inherit.bio/api/invitations", payload,
+      { "x-inherit-csrf": token, ...headers }), payload);
+  }
+  it("sends only to the address the draft holds, keyed, with the same receipt either way", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: { status: "received" }, error: null });
+    const response = await send();
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ status: "received" });
+    const [name, args] = mocks.rpc.mock.calls[0]!;
+    expect(name).toBe("create_path_b_invitation_v1");
+    expect(args).toMatchObject({ p_subject_id: subjectId, p_contact_hmac: hmacSecret("relative@e2e.local", "contact-email-v1"),
+      p_test_jurisdiction: true });
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "not_found" } });
+    expect(await (await send()).json()).toEqual({ status: "received" });
+  });
+  it("refuses a token minted for another target", async () => {
+    const token = mintPathBOperation(accountId, sessionId, "request-send", accountId);
+    expect((await send({ "x-inherit-csrf": token })).status).toBe(403);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/withdraw/session, the person's Path B answers", () => {
+  const secret = newRightsSessionSecret();
+  const hash = rightsSessionHash(secret);
+  function rights(body: unknown) {
+    return sameOrigin("https://inherit.bio/api/withdraw/session", body, { cookie: `${RIGHTS_COOKIE_NAME}=${secret}` });
+  }
+  it("dispatches a revision answer only on a revision form, never on the adult-subject form", async () => {
+    const revisionForm = mintPublicFormToken("adult-upload-respond", Date.now(), hash);
+    const subjectForm = mintPublicFormToken("adult-subject-respond", Date.now(), hash);
+    expect(readAdultUploadRevisionResponse(rights({}), revisionForm)).not.toBeNull();
+    expect(readAdultUploadRevisionResponse(rights({}), subjectForm)).toBeNull();
+    mocks.rpc.mockResolvedValueOnce({ data: "confirmed", error: null });
+    const confirmed = await withdrawSession(rights({ operation: "confirm", uploadRevisionAffirmed: true, nonce: revisionForm }));
+    expect(confirmed.status).toBe(202);
+    expect(await confirmed.json()).toEqual({ status: "accepted", operation: "confirm" });
+    expect(mocks.rpc).toHaveBeenLastCalledWith("respond_adult_upload_revision_v1",
+      { p_session_hash: hash, p_nonce: expect.any(String), p_action: "confirm" });
+    // A revision confirmation without its affirmation is not a body at all.
+    expect((await withdrawSession(rights({ operation: "confirm", nonce: revisionForm }))).status).toBe(404);
+  });
+  it.each([["refuse", "refused"], ["delete", "deleted"]] as const)("answers %s for one revision", async (operation, result) => {
+    mocks.rpc.mockResolvedValueOnce({ data: result, error: null });
+    const response = await answerAdultUploadRevision({ sessionHash: hash, nonce: "n".repeat(32) }, operation);
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ status: "accepted", operation });
+    mocks.rpc.mockResolvedValueOnce({ data: "unavailable", error: null });
+    expect((await answerAdultUploadRevision({ sessionHash: hash, nonce: "n".repeat(32) }, operation)).status).toBe(404);
+  });
+  it("keeps the revision bodies closed", () => {
+    expect(adultUploadRevisionBody.safeParse({ operation: "confirm", uploadRevisionAffirmed: true, nonce: "x" }).success).toBe(true);
+    expect(adultUploadRevisionBody.safeParse({ operation: "refuse", nonce: "x" }).success).toBe(true);
+    for (const body of [{ operation: "confirm", uploadRevisionAffirmed: false, nonce: "x" },
+      { operation: "refuse", nonce: "x", fileId: subjectId }, { operation: "refuse", nonce: "x", uploadRevisionId: subjectId }]) {
+      expect(adultUploadRevisionBody.safeParse(body).success).toBe(false);
+    }
+  });
+  it("signs a Path B request only with the current artifact, the whole set, a name, a country and the current attestation", async () => {
+    vi.useFakeTimers(); vi.setSystemTime(NOW);
+    const presentation = mintSubjectPresentation(hash, 1, "b".repeat(64), NOW);
+    const body = { operation: "confirm" as const, nonce: "n", subjectArtifact: { artifactVersion: 1,
+      artifactPresentationToken: presentation, affirmed: true as const, statementKeys: SUBJECT_KEYS, typedName: "Ada Lovelace" },
+      jurisdictionCode: "GB", jurisdictionAttestationVersion: 2, jurisdictionAttestationHash: "f".repeat(64),
+      jurisdictionAffirmed: true as const };
+    expect(pathBSubjectConfirmBody.safeParse(body).success).toBe(true);
+    const authority = { sessionHash: hash, nonce: "n".repeat(32) };
+    mocks.rpc.mockResolvedValueOnce({ data: "accepted", error: null });
+    const response = await confirmPathBSubject(authority, body);
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ status: "accepted", operation: "confirm" });
+    const [name, args] = mocks.rpc.mock.calls[0]!;
+    expect(name).toBe("confirm_path_b_subject_v1");
+    expect(args).toMatchObject({ p_session_hash: hash, p_artifact_version: 1, p_artifact_body_sha256: "b".repeat(64),
+      p_statement_keys: SUBJECT_KEYS, p_jurisdiction_code: "GB", p_test_jurisdiction: true });
+    expect(args.p_signing_name_ciphertext).toMatch(/^\\x[0-9a-f]+$/);
+    mocks.rpc.mockClear();
+    for (const patch of [
+      { subjectArtifact: { ...body.subjectArtifact, statementKeys: SUBJECT_KEYS.slice(1) } },
+      { subjectArtifact: { ...body.subjectArtifact, typedName: "Ada" } },
+      { subjectArtifact: { ...body.subjectArtifact, artifactVersion: 2 } },
+      { jurisdictionCode: "ZZ" },
+      { jurisdictionAttestationVersion: 1 },
+      { jurisdictionAttestationHash: "e".repeat(64) },
+    ]) {
+      expect((await confirmPathBSubject(authority, { ...body, ...patch })).status).toBe(404);
+    }
+    expect((await confirmPathBSubject({ ...authority, sessionHash: "0".repeat(64) }, body)).status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+    expect((await confirmPathBSubject(authority, body)).status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

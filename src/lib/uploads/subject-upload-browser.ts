@@ -98,8 +98,9 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
   return finishStagedUpload(uploadId);
 }
 
-/** Another adult's file: the same transport, finished as held (TEST-LOCAL).
- * The file is stored and validated, then waits, unreadable, for its subject. */
+/** Another adult's file under Path B: the same transport, finished as held
+ * (TEST-LOCAL). The file is stored and validated, then waits, unreadable, for
+ * its subject to confirm it; the upload-time notice is queued with it. */
 export async function uploadHeldSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
   limits?: OwnUploadLimits | null) {
   const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits);
@@ -227,11 +228,12 @@ export async function finishStagedUpload(uploadId: string) {
   return receipt.data;
 }
 
-/** The held counterpart: the same request, answered stored and quarantined. */
+/** The held counterpart: the same request, answered stored and quarantined
+ * with the notice queued (register file-finalize-v1, the other-adult outcome). */
 export async function finishHeldUpload(uploadId: string) {
   const finalized = await requestFinalization(uploadId);
   const receipt = heldFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
-  if (!receipt.success || receipt.data.uploadId !== uploadId) throw new BrowserUploadError("unavailable");
+  if (!receipt.success) throw new BrowserUploadError("unavailable");
   return receipt.data;
 }
 

@@ -401,9 +401,11 @@ describe("finalization read-ahead", () => {
   });
 });
 
-describe("another adult's held upload", () => {
-  const held = { uploadId, status: "stored_quarantined", analysisState: "quarantined" };
-  it("stops at the held receipt: same validation, no file identity in the answer", async () => {
+describe("another adult's held upload under Path B", () => {
+  // The held revision's own opaque id, never the upload session's.
+  const fileId = "44444444-4444-4444-8444-444444444444";
+  const held = { fileId, status: "stored_quarantined", analysisState: "quarantined", noticeState: "queued" };
+  it("stops at the register's other-adult receipt: same validation, the notice queued", async () => {
     mocks.rpc.mockImplementation(async (name, params) =>
       name === "complete_own_upload_finalization_v1" ? { data: held, error: null } : rpc(name, params));
     const response = await send();
@@ -414,20 +416,22 @@ describe("another adult's held upload", () => {
   });
   it("answers a finished held upload again without copying or reading anything", async () => {
     mocks.rpc.mockImplementation(async (name, params) =>
-      name === "begin_own_upload_finalization_v1" ? { data: { status: "held", uploadId }, error: null } : rpc(name, params));
+      name === "begin_own_upload_finalization_v1" ? { data: { status: "held", fileId }, error: null } : rpc(name, params));
     const response = await send();
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(held);
     expect(mocks.copy).not.toHaveBeenCalled();
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
-  it("refuses a held receipt for any other upload", async () => {
-    const other = "33333333-3333-4333-8333-333333333333";
+  it("refuses a held receipt that is not exactly the register's shape", async () => {
+    for (const data of [{ ...held, uploadId }, { ...held, noticeState: "sent" }, { fileId, status: "stored_quarantined",
+      analysisState: "quarantined" }]) {
+      mocks.rpc.mockImplementation(async (name, params) =>
+        name === "complete_own_upload_finalization_v1" ? { data, error: null } : rpc(name, params));
+      expect((await send()).status).toBe(503);
+    }
     mocks.rpc.mockImplementation(async (name, params) =>
-      name === "complete_own_upload_finalization_v1" ? { data: { ...held, uploadId: other }, error: null } : rpc(name, params));
-    expect((await send()).status).toBe(503);
-    mocks.rpc.mockImplementation(async (name, params) =>
-      name === "begin_own_upload_finalization_v1" ? { data: { status: "held", uploadId: other }, error: null } : rpc(name, params));
+      name === "begin_own_upload_finalization_v1" ? { data: { status: "held", uploadId }, error: null } : rpc(name, params));
     expect((await send()).status).toBe(503);
   });
 });

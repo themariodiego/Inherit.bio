@@ -1,17 +1,20 @@
 import { z } from "zod";
 
 /**
- * Another adult's genome, held apart until that adult answers (brief §2.6,
- * G2.6 adult half, G5.3). TEST-LOCAL only: the artifact below is a draft the
- * owner has not approved, no migration seeds it, and the database refuses
- * both its signature and the upload branch unless the server passes the
- * test-jurisdiction flag.
+ * Another adult's genome under the register's Path B, "I have their file"
+ * (brief §5.2 Path B, G2.6 adult half, G5.3; owner decision of 2026-09-28).
+ * TEST-LOCAL only: the database refuses every step unless the server passes
+ * the test-jurisdiction flag, and the routes also require
+ * `third_party_adult_analysis` to resolve to permitted.
  *
- * The statement keys are the numbered statements of
- * `content/legal/consent.upload-other-adult/v1.md`, in order. The database
- * function `private.sign_other_adult_upload_artifact_v1` hard-codes the same
- * array; `content/legal/consent-upload-other-adult.test.ts` holds all three
- * equal.
+ * Two artifacts are signed on the way:
+ *   - `consent.upload-other-adult` v1, the uploader's Tier-2 consent, approved
+ *     by the owner and seeded by the migration;
+ *   - `consent.subject-adult-esignature` v1, the person's own signature, a
+ *     draft the owner has not approved, installed only under TEST-LOCAL.
+ *
+ * The statement keys are each artifact's numbered statements, in order. The
+ * migration hard-codes the same arrays; the content tests hold them equal.
  */
 export const OTHER_ADULT_UPLOAD_ARTIFACT_KEY = "consent.upload-other-adult";
 
@@ -25,16 +28,78 @@ export const OTHER_ADULT_UPLOAD_STATEMENT_KEYS = [
   "no-uploader-access",
 ] as const;
 
-/** The artifact file's front-matter status while the owner has not approved it. */
-export const OTHER_ADULT_UPLOAD_DRAFT_STATUS = "draft-awaiting-owner-approval";
+export const SUBJECT_ESIGNATURE_ARTIFACT_KEY = "consent.subject-adult-esignature";
+
+export const SUBJECT_ESIGNATURE_STATEMENT_KEYS = [
+  "knows-uploader-has-file",
+  "agrees-to-upload",
+  "shown-what-uploader-sees",
+  "may-withdraw-any-time",
+] as const;
+
+/** The front-matter status of an artifact file the owner has not approved. */
+export const ARTIFACT_DRAFT_STATUS = "draft-awaiting-owner-approval";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
+const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
+/** The register's contact: normalized, a valid address, at most 254 bytes. */
+const contactEmail = z.string().trim().toLowerCase().pipe(z.email().max(254))
+  .refine((value) => new TextEncoder().encode(value).length <= 254, "contact");
+/** A person's name as the uploader types it: plain words, no control characters. */
+const displayName = z.string().trim().min(2).max(80).regex(/^[^\u0000-\u001f\u007f]+$/);
+
+/** 18 or older on this UTC day. The server checks again with its own clock. */
+export function isAdultOn(dateOfBirth: string, today: Date = new Date()): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) return false;
+  const [year, month, day] = dateOfBirth.split("-").map(Number) as [number, number, number];
+  const born = Date.UTC(year, month - 1, day);
+  if (Number.isNaN(born) || new Date(born).toISOString().slice(0, 10) !== dateOfBirth) return false;
+  const adult = Date.UTC(today.getUTCFullYear() - 18, today.getUTCMonth(), today.getUTCDate());
+  return born <= adult && year >= 1900;
+}
+
+/**
+ * `POST /api/subject-drafts`, the register's path-b-subject-esignature body
+ * (closed-subject-draft-create-v1), with the request id this route has
+ * always used so a retried click reserves one draft.
+ */
+export const pathBDraftBody = z.object({
+  kind: z.literal("adult"),
+  adultFlow: z.literal("path-b-subject-esignature"),
+  displayName,
+  dateOfBirth: z.iso.date(),
+  contactEmail,
+  requestId: uuid,
+}).strict();
+export type PathBDraftRequest = z.infer<typeof pathBDraftBody>;
+
+export function isPathBDraftPayload(value: unknown): boolean {
+  return typeof value === "object" && value !== null
+    && "adultFlow" in value && value.adultFlow === "path-b-subject-esignature";
+}
+
+/** subject-draft-created-v1. */
+export const pathBDraftReceipt = z.object({
+  subjectDraftId: uuid,
+  state: z.literal("awaiting_uploader_artifact"),
+  next: z.literal("sign_uploader_artifact"),
+  expiresAt: z.string(),
+}).strict();
+
+/** `POST /api/invitations`, the adult body: the draft and the address it already holds. */
+export const pathBInvitationBody = z.object({
+  targetSubjectDraftId: uuid,
+  contactEmail,
+}).strict();
+
+export function isPathBInvitationPayload(value: unknown): boolean {
+  return typeof value === "object" && value !== null && "targetSubjectDraftId" in value;
+}
 
 /**
  * The Tier-2 signing body the register lists for `api.consents` with a
- * `subjectDraftId`: the reserved subject of the uploader's own pending
- * invitation. Every statement is its own checkbox, so the body carries the
- * exact published key list; the typed name is validated separately.
+ * `subjectDraftId`. Every statement is its own checkbox, so the body carries
+ * the exact published key list; the typed name is validated separately.
  */
 export const otherAdultConsentBody = z.object({
   action: z.literal("sign-artifact"),
@@ -57,8 +122,11 @@ export function isOtherAdultConsentPayload(value: unknown): boolean {
 
 /** Exactly the published keys, in the published order. */
 export function isOtherAdultStatementSet(keys: readonly string[]): boolean {
-  return keys.length === OTHER_ADULT_UPLOAD_STATEMENT_KEYS.length
-    && keys.every((key, index) => key === OTHER_ADULT_UPLOAD_STATEMENT_KEYS[index]);
+  return isExactKeys(keys, OTHER_ADULT_UPLOAD_STATEMENT_KEYS);
+}
+
+export function isExactKeys(keys: readonly string[], expected: readonly string[]): boolean {
+  return keys.length === expected.length && keys.every((key, index) => key === expected[index]);
 }
 
 /** Brief §3: at least two whitespace-separated tokens of at least two characters. */
@@ -75,18 +143,35 @@ export function artifactStatements(body: string): string[] {
   return [...body.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => match[2]!.trim());
 }
 
+/** The artifact's false-statement warning, read from its own body. */
+export function artifactWarning(body: string): string | null {
+  const start = body.indexOf("Signing this when it is not true");
+  if (start < 0) return null;
+  const end = body.indexOf("\n", start);
+  return body.slice(start, end < 0 ? undefined : end).trim();
+}
+
+/** One file revision as both sides see it: a state and dates, nothing else. */
+export const pathBRevisionState = z.object({
+  state: z.enum(["pending", "confirmed", "refused", "deleted", "expired", "withdrawn"]),
+  addedOn: z.string(),
+  deleteBy: z.string().nullable(),
+  confirmedOn: z.string().nullable(),
+}).strict();
+export type PathBRevisionState = z.infer<typeof pathBRevisionState>;
+
 /**
- * One pending reservation as its uploader sees it: a label, dates and one
- * state. No address, file name, hash or object identity ever reaches it.
+ * One Path B person as the uploader sees them: the name the uploader typed,
+ * dates and one state. No address, file name, hash or object identity.
  */
 export const otherAdultTargetState = z.object({
   subjectId: uuid,
   label: z.string().min(1).max(200),
-  invitedAt: z.string(),
-  answerBy: z.string(),
-  state: z.enum(["unsigned", "signed", "held", "reviewing"]),
-  heldAt: z.string().nullable(),
-  deleteBy: z.string().nullable(),
+  requestedAt: z.string(),
+  answerBy: z.string().nullable(),
+  state: z.enum(["awaiting-request", "awaiting-signature", "ready", "pending"]),
+  signed: z.boolean(),
+  latest: pathBRevisionState.nullable(),
 }).strict();
 export type OtherAdultTargetState = z.infer<typeof otherAdultTargetState>;
 
@@ -102,24 +187,63 @@ export interface OtherAdultConsentView {
 }
 
 export type OtherAdultTarget = OtherAdultTargetState & {
-  /** Present only for an unsigned reservation: the artifact to sign now. */
+  /** Present while the uploader still has to sign for this person. */
   consent?: OtherAdultConsentView;
-  /** Set when this reservation cannot be signed yet, and why. */
+  /** Sealed for this account and person: sends the request, or adds a file. */
+  operationToken?: string;
+  /** Set when nothing can be done for this person yet, and why. */
   blockedBy?: "account-completion" | "unavailable";
 };
 
-/** The artifact's false-statement warning, read from its own body. */
-export function artifactWarning(body: string): string | null {
-  const start = body.indexOf("Signing this when it is not true");
-  if (start < 0) return null;
-  const end = body.indexOf("\n", start);
-  return body.slice(start, end < 0 ? undefined : end).trim();
-}
-
-/** The held-upload finalization receipt: stored, unreadable, nothing analysed. */
+/**
+ * The register's `file-finalize-v1` other-adult outcome: stored, quarantined,
+ * the upload-time notice queued. The fileId is the held revision's own
+ * opaque id; no file row exists behind it.
+ */
 export const heldFinalizationReceipt = z.object({
-  uploadId: uuid,
+  fileId: uuid,
   status: z.literal("stored_quarantined"),
   analysisState: z.literal("quarantined"),
+  noticeState: z.literal("queued"),
 }).strict();
 export type HeldFinalizationReceipt = z.infer<typeof heldFinalizationReceipt>;
+
+/**
+ * `POST /api/withdraw/session`, the person's own confirmation of a Path B
+ * request (register api.withdraw, the full confirm body): their artifact,
+ * their country and the attestation they affirm.
+ */
+export const pathBSubjectConfirmBody = z.object({
+  operation: z.literal("confirm"),
+  nonce: z.string().min(1).max(2_048),
+  subjectArtifact: z.object({
+    artifactVersion: z.number().int().positive().safe(),
+    artifactPresentationToken: z.string().min(16).max(4096),
+    affirmed: z.literal(true),
+    statementKeys: z.array(z.string().min(1).max(64)).min(1).max(8),
+    typedName: z.string().min(1).max(200),
+  }).strict(),
+  jurisdictionCode: z.string().regex(/^[A-Z]{2}$/),
+  jurisdictionAttestationVersion: z.number().int().positive().safe(),
+  jurisdictionAttestationHash: sha256,
+  jurisdictionAffirmed: z.literal(true),
+}).strict();
+export type PathBSubjectConfirmRequest = z.infer<typeof pathBSubjectConfirmBody>;
+
+/** The same route, for one file revision: confirm it, refuse it, or delete everything. */
+export const adultUploadRevisionBody = z.union([
+  z.object({ operation: z.literal("confirm"), uploadRevisionAffirmed: z.literal(true), nonce: z.string().min(1).max(2_048) }).strict(),
+  z.object({ operation: z.enum(["refuse", "delete"]), nonce: z.string().min(1).max(2_048) }).strict(),
+]);
+export type AdultUploadRevisionRequest = z.infer<typeof adultUploadRevisionBody>;
+
+/** What the person's read-only view shows: exactly what the uploader can see. */
+export const adultUploadRevisionView = z.object({
+  state: z.enum(["pending", "confirmed"]),
+  label: z.string().min(1).max(200),
+  fileKind: z.enum(["array", "vcf"]),
+  addedOn: z.string(),
+  deleteBy: z.string(),
+  confirmedOn: z.string().nullable(),
+}).strict();
+export type AdultUploadRevisionView = z.infer<typeof adultUploadRevisionView>;

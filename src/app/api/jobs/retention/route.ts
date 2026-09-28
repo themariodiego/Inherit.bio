@@ -100,10 +100,11 @@ export async function POST(request: Request) {
   const preparation = await drainOwnNormalizationCleanup(admin);
   processed += preparation.processed; failed += preparation.failed;
 
-  // adult.unconfirmed-30d: another adult's held file whose deadline passed,
-  // whose invitation or reservation ended, or whose uploader is deleting
-  // their account is rejected here, so the upload cleanup just below deletes
-  // it in this same run. Selected by the database; nothing is read.
+  // adult.unconfirmed-30d (Path B): another adult's held file whose fixed
+  // deadline passed unconfirmed, whose subject is gone, or whose uploader is
+  // deleting their account is rejected here, so the upload cleanup just below
+  // deletes it in this same run; an unsent Path B draft past its own deadline
+  // is closed. Selected by the database; nothing is read.
   const expireHeld = admin.rpc.bind(admin) as unknown as (name: string) => PromiseLike<{ error: unknown }>;
   const { error: heldExpiryError } = await expireHeld("expire_due_other_adult_held_uploads_v1");
   if (heldExpiryError) failed++;

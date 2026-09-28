@@ -1,43 +1,54 @@
 import { OTHER_ADULT_UPLOAD_COPY as COPY } from "@/copy/upload/other-adult";
 import { listOtherAdultTargets, prepareOtherAdultUploads } from "@/lib/uploads/other-adult-upload-server";
 import { readOwnUploadLimits } from "@/lib/uploads/own-upload-limits";
-import { OtherAdultUploadCard } from "./other-adult-upload-card";
+import { day, latestFileLine } from "./other-adult-lines";
+import { OtherAdultNewPersonForm, OtherAdultUploadCard } from "./other-adult-upload-card";
 
 /**
- * The signed-in person's own pending adult invitations, each with the one
- * thing they can do for it. Renders nothing outside TEST-LOCAL, nothing for
- * an account whose jurisdiction does not permit third-party adult analysis,
- * and nothing for an account with no pending invitation.
+ * The register's Path B on the upload page: "Upload with their written
+ * permission". Renders nothing outside TEST-LOCAL and nothing for an account
+ * whose jurisdiction does not permit third-party adult analysis. A Path A
+ * invitation never appears here: its inviter never uploads.
  */
 export async function OtherAdultUploadSection() {
-  const targets = await prepareOtherAdultUploads().catch(() => null);
-  if (!targets || targets.length === 0) return null;
+  const uploads = await prepareOtherAdultUploads().catch(() => null);
+  if (!uploads) return null;
   const limits = await readOwnUploadLimits().catch(() => null);
   return (
     <section aria-labelledby="other-adult-upload-heading" data-slot="other-adult-upload" className="space-y-4">
       <h2 id="other-adult-upload-heading" className="display text-2xl">{COPY.heading}</h2>
       <p className="text-sm leading-relaxed text-ink-muted">{COPY.detail}</p>
-      <p role="note" className="text-sm">{COPY.draftNote}</p>
-      {targets.map(target => (
-        <OtherAdultUploadCard key={target.consent?.token ?? `${target.subjectId}:${target.state}`} target={target} limits={limits} />
+      <p role="note" className="text-sm">{COPY.testNote}</p>
+      {uploads.targets.map(target => (
+        <OtherAdultUploadCard key={`${target.subjectId}:${target.state}:${target.consent?.token ?? ""}`} target={target} limits={limits} />
       ))}
+      <OtherAdultNewPersonForm token={uploads.draftToken} />
     </section>
   );
 }
 
 /**
- * The files list's one line per held file (brief §2.6: invisible in every
- * list except one row). Read-only: it presents no permission and no upload.
+ * The files list's one line per Path B person with a file (brief §5.2: the
+ * uploader sees the state, never the file). Read-only: no permission, no
+ * upload, no file row.
  */
 export async function OtherAdultHeldRows() {
   const targets = await listOtherAdultTargets().catch(() => null);
-  const held = (targets ?? []).filter(target => target.state === "held");
-  if (held.length === 0) return null;
+  const rows = (targets ?? []).flatMap(target => {
+    if (target.state === "pending") {
+      return [{ key: target.subjectId, text: COPY.pendingStatus(target.label),
+        detail: target.latest?.deleteBy ? COPY.pendingDeadline(day(target.latest.deleteBy)) : null }];
+    }
+    const line = latestFileLine(target.label, target.latest);
+    return line ? [{ key: target.subjectId, text: line, detail: null }] : [];
+  });
+  if (rows.length === 0) return null;
   return (
     <ul className="space-y-3" data-slot="other-adult-held-rows">
-      {held.map(target => (
-        <li key={target.subjectId} className="rounded-xl border border-line bg-card p-4">
-          <p role="status" className="text-sm">{COPY.heldStatus(target.label)}</p>
+      {rows.map(row => (
+        <li key={row.key} className="rounded-xl border border-line bg-card p-4">
+          <p role="status" className="text-sm">{row.text}</p>
+          {row.detail ? <p className="text-sm text-ink-muted">{row.detail}</p> : null}
         </li>
       ))}
     </ul>

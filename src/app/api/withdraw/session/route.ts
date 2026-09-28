@@ -6,13 +6,18 @@ import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
 import { normalizeContact } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { adultUploadRevisionBody, pathBSubjectConfirmBody } from "@/lib/uploads/other-adult-upload";
+import { answerAdultUploadRevision, confirmPathBSubject } from "@/lib/uploads/path-b-respond";
+import { readAdultUploadRevisionResponse } from "@/lib/uploads/path-b-review";
 
 /**
  * `POST /api/withdraw/[token]` with the segment pinned to `session`
- * (register api.withdraw). Two rights holders answer here, and which one is
- * answering is decided by the form token the page served, never by a field
- * in the body: an adult-subject form token cannot drive a co-parent refusal
- * and the reverse is equally impossible.
+ * (register api.withdraw). Three rights holders answer here: the invited
+ * adult, the co-parent, and (TEST-LOCAL only) the person a Path B file was
+ * added for, answering that one file. Which one is answering is decided by
+ * the form token the page served, never by a field in the body: an
+ * adult-subject form token cannot drive a co-parent refusal or a file answer,
+ * and no other pairing is possible either.
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
@@ -45,6 +50,20 @@ export async function POST(request: Request) {
   if (!refusalRequestAllowed(request)) return notFound();
   const json = await readBoundedJson(request);
   if (json === null) return notFound();
+
+  // The register's Path B (TEST-LOCAL only): the person's own signature of a
+  // request, and their answer to one held file. The adult-subject form token
+  // decides the first; the upload-revision form token the second.
+  const pathB = pathBSubjectConfirmBody.safeParse(json);
+  if (pathB.success) {
+    const authority = readAdultSubjectResponse(request, pathB.data.nonce);
+    return authority ? confirmPathBSubject(authority, pathB.data) : notFound();
+  }
+  const revision = adultUploadRevisionBody.safeParse(json);
+  if (revision.success) {
+    const authority = readAdultUploadRevisionResponse(request, revision.data.nonce);
+    if (authority) return answerAdultUploadRevision(authority, revision.data.operation);
+  }
 
   const adult = adultSubjectResponseBody.safeParse(json);
   if (adult.success) {

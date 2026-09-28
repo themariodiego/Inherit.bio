@@ -28,9 +28,10 @@ import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own
  *   - the cloud-model provider consent this route has always served;
  *   - `grant-purpose`, one directional purpose grant between two adults
  *     (policyContracts.directional-purpose-grant-v1);
- *   - `sign-artifact` with `subjectDraftId`, the uploader's Tier-2 draft
- *     `consent.upload-other-adult` for another adult's held upload, answered
- *     only under TEST-LOCAL (`src/lib/uploads/other-adult-consent-route.ts`);
+ *   - `sign-artifact` with `subjectDraftId`, the uploader's Tier-2
+ *     `consent.upload-other-adult` for the register's Path B ("I have their
+ *     file"), answered only under TEST-LOCAL
+ *     (`src/lib/uploads/other-adult-consent-route.ts`);
  *   - `sign-artifact` with `cohortDraftId` and `grant-purpose` with
  *     `cohortId`, the embryo bodies of E0 (`src/lib/embryos/consents.ts`).
  *     They are told apart by their target key before any adult body is
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
   const payload: unknown = await request.json().catch(() => null);
 
   if (isOwnConsentPayload(payload)) return ownUploadConsent(request, payload);
-  // The Tier-2 uploader body for another adult's held upload (TEST-LOCAL only).
+  // The Tier-2 uploader body of the register's Path B (TEST-LOCAL only).
   if (isOtherAdultConsentPayload(payload)) return otherAdultUploadConsent(request, payload);
   if (isOwnReportConsentPayload(payload)) return ownReportConsent(request, payload);
   if (isOwnCopilotConsentPayload(payload)) return ownCopilotConsent(request, payload);
