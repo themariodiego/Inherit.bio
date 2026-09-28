@@ -14119,17 +14119,17 @@
     },
     "public-rights-flow": {
       "supported": [
-        "complete"
+        "complete",
+        "processing"
       ],
       "notApplicable": {
         "awaiting-choice": "A rights request is about data already held. It offers no analysis to choose and does not read whether a file is prepared.",
-        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is \u201cClaims are not open yet\u201d, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its \u201cempty\u201d word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
-        "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
+        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim always shows the refusal standard and then either the claim form or, where claims are not open, \u201cClaims are not open yet\u201d, which is what the page is rather than an absence (re-read 2026-09-28). /withdraw/[token] renders an outcome or the invitation; its \u201cempty\u201d word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
         "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked.",
-        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The claim start added 2026-09-28 keeps to it: a stale or foreign form is notFound(), a malformed body marks its fields, and a start over a limit gets the one shared try-again answer; none of the three is a fault. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "redirect": {
@@ -14399,6 +14399,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
+      "notApplicableStates": {
+        "processing": "/legal/appeals performs no request at all: it is a static legal page with no form and no button. Moved here from the public-rights-flow profile on 2026-09-28, when /future-person/claim began performing one. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "mode": "right",
         "jurisdictionBypass": true,
@@ -14582,6 +14585,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
+      "notApplicableStates": {
+        "processing": "PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Moved here from the public-rights-flow profile on 2026-09-28. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "requestMode": "the-browser-holds-the-fragment-only-in-ephemeral-memory-and-the-server-GET-reads-no-target; explicit-activation-posts-it-to-api.rights-activate",
         "sessionMode": "requires-an-active-rights-cookie-then-resolves-the-server-owned-token-purpose-through-withdrawal-target-v1.purposeMatrix-before-any-target-read",

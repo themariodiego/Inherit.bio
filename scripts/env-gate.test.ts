@@ -120,9 +120,13 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // block-only row's stored code only while that flag is on. It is 19 again
     // since G5.4's keyring: `INHERIT_HMAC_KEYRING` is a new documented
     // variable, read directly as the default argument of `keyedDigestSet`.
+    // The eighth binding (G5.4, 2026-09-28) is `futurePersonClaimsOpen`
+    // (`src/lib/future-person/claims-open.ts`), which reads the same
+    // `INHERIT_TEST_JURISDICTION` through a defaulted `env` parameter, so it
+    // adds a binding and no new variable.
     expect(result.directReadKeyCount).toBe(19);
     expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(7);
+    expect(result.boundBindingCount).toBe(8);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(35);
     expect(result.templateKeyCount).toBe(28);
