@@ -64,13 +64,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  *     the birth date and the declared country, with the revision and the
  *     attestation version it was declared under.
  *
- * These four are read in pages that advance by the rows actually returned and
+ * Every table is read in pages that advance by the rows actually returned and
  * stop only on an empty page, because the API caps every response at 1,000
- * rows whatever range is asked for.
+ * rows whatever range is asked for. (The first six were single reads until
+ * 28 Sep 2026, so an account with more than 1,000 subject consents exported
+ * the first 1,000.)
  *
- * Legal audit records are not here and cannot be yet: every legal audit event
- * is written with a null principal, so nothing selects one account's rows
- * (docs/export-member-selection-design.md, the missing "requester resolver").
+ * Legal audit records are not here: the events a person caused themselves are
+ * in `legal-audit.json` (src/lib/export/legal-audit.ts;
+ * docs/export-legal-audit-resolver.md).
  */
 
 export interface SubjectRecord {
@@ -86,6 +88,22 @@ export interface SubjectRecord {
   attestations: unknown[];
 }
 
+// Every table is read with listed columns, so a column added later is not
+// exported by default: it must first be classified in the export member plan
+// (docs/export-member-plan.json), whose unit and pgTAP checks fail until it
+// is. `subjects` leaves without `owner_account_id` and `cohort_id`: for an
+// adult held by another uploader the first names that other person's account,
+// and the asynchronous history reader already withholds both.
+const SUBJECT_COLUMNS = "id,subject_account_id,subject_class,upload_class,display_label,lifecycle,"
+  + "subject_binding_revision,lifecycle_revision,created_at,updated_at,portrait_acknowledged_at,independent_login_at";
+const DEMOGRAPHIC_COLUMNS = "subject_id,date_of_birth,chromosomal_sex,demographics_revision,updated_at";
+const PRINCIPAL_COLUMNS = "id,subject_id,account_id,principal_kind,principal_revision,status,created_at";
+const BINDING_COLUMNS = "id,subject_id,subject_principal_id,account_id,account_principal_id,binding_kind,binding_revision,"
+  + "status,bound_at,ended_at";
+const SUBJECT_CONSENT_COLUMNS = "id,signature_id,subject_id,cohort_id,account_id,consent_type,scope,provider_key,"
+  + "grant_revision,granted_at,expires_at,revoked_at,revocation_reason,copilot_recipient";
+const RECIPIENT_GRANT_COLUMNS = "id,account_id,recipient_principal_id,provider_id,purpose,artifact_key,artifact_version,"
+  + "grant_revision,model_recipient_revision,status,created_at,ended_at";
 const PROFILE_COLUMNS = "id,date_of_birth,jurisdiction_code,jurisdiction_subdivision,jurisdiction_revision,"
   + "jurisdiction_declared_at,jurisdiction_attestation_version,jurisdiction_attestation_sha256";
 const SIGNATURE_COLUMNS = "id,artifact_key,artifact_version,artifact_body_sha256,signer_principal_id,target_kind,"
@@ -136,23 +154,27 @@ export async function subjectRecordOf(
   accountId: string,
 ): Promise<SubjectRecord | null> {
   const [subjects, principals, bindings, consents, grants] = await Promise.all([
-    admin.from("subjects").select("*").eq("subject_account_id", accountId),
-    admin.from("subject_principals").select("*").eq("account_id", accountId),
-    admin.from("subject_account_bindings").select("*").eq("account_id", accountId),
-    admin.from("subject_consents").select("*").eq("account_id", accountId),
-    admin.from("provider_recipient_grants").select("*").eq("account_id", accountId),
+    readAll((from, to) => admin.from("subjects").select(SUBJECT_COLUMNS)
+      .eq("subject_account_id", accountId).order("id").range(from, to)),
+    readAll((from, to) => admin.from("subject_principals").select(PRINCIPAL_COLUMNS)
+      .eq("account_id", accountId).order("id").range(from, to)),
+    readAll((from, to) => admin.from("subject_account_bindings").select(BINDING_COLUMNS)
+      .eq("account_id", accountId).order("id").range(from, to)),
+    readAll((from, to) => admin.from("subject_consents").select(SUBJECT_CONSENT_COLUMNS)
+      .eq("account_id", accountId).order("id").range(from, to)),
+    readAll((from, to) => admin.from("provider_recipient_grants").select(RECIPIENT_GRANT_COLUMNS)
+      .eq("account_id", accountId).order("id").range(from, to)),
   ]);
-  for (const result of [subjects, principals, bindings, consents, grants]) {
-    if (result.error) return null;
-  }
+  if (!subjects || !principals || !bindings || !consents || !grants) return null;
   // A second hop, because the declaration is keyed by subject rather than by
   // account. It runs on the ids the first query already scoped, so it cannot
   // reach a subject the export would not have carried anyway.
-  const subjectIds = (subjects.data ?? []).map((subject) => subject.id);
+  const subjectIds = subjects.map((subject) => subject.id);
   const demographics = subjectIds.length
-    ? await admin.from("subject_demographics").select("*").in("subject_id", subjectIds)
-    : { data: [], error: null };
-  if (demographics.error) return null;
+    ? await readAll((from, to) => admin.from("subject_demographics").select(DEMOGRAPHIC_COLUMNS)
+      .in("subject_id", subjectIds).order("subject_id").range(from, to))
+    : [];
+  if (!demographics) return null;
 
   const [profiles, signatures, byPrincipal, bySignature, purposeGrants] = await Promise.all([
     readAll((from, to) => admin.from("profiles").select(PROFILE_COLUMNS).eq("id", accountId)
@@ -177,12 +199,12 @@ export async function subjectRecordOf(
     attestations.set(row.id, row);
   }
   return {
-    subjects: subjects.data ?? [],
-    subject_demographics: demographics.data ?? [],
-    subject_principals: principals.data ?? [],
-    subject_account_bindings: bindings.data ?? [],
-    subject_consents: consents.data ?? [],
-    provider_recipient_grants: grants.data ?? [],
+    subjects,
+    subject_demographics: demographics,
+    subject_principals: principals,
+    subject_account_bindings: bindings,
+    subject_consents: consents,
+    provider_recipient_grants: grants,
     profiles,
     consent_signatures: signatures,
     purpose_grants: withoutJoin(purposeGrants, "consent_signatures"),

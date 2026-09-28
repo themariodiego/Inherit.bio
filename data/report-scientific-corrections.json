@@ -416,5 +416,158 @@
         "alt": "T"
       }
     ]
+  },
+  {
+    "slug": "caffeine-intake-ahr-rs4410790",
+    "correctedOn": "2026-09-28",
+    "reviewPath": "docs/sources/reviews/caffeine-ahr-correction-20260928.md",
+    "source": {
+      "previousCommit": "c631650ba099ec88b69d54b131156eff8ae8d729",
+      "correctedCommit": "000f4b20045a663ef4365573cc5e04c16722b5cd",
+      "templatePath": "data/templates/addiction.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260928.caffeine-intake-ahr-rs4410790.summary",
+        "field": "summary",
+        "oldText": "AHR controls CYP1A2, a liver enzyme that clears most caffeine. Studies of hundreds of thousands of people link C at rs4410790 to slightly more coffee use. Each C copy adds about one tenth of a cup per day on average. Faster caffeine clearance may lead to more frequent use. The link repeats well but is tiny."
+      },
+      {
+        "id": "scientific-correction.20260928.caffeine-intake-ahr-rs4410790.rs4410790.cc",
+        "field": "interpretation",
+        "rsid": 4410790,
+        "genotype": "CC",
+        "oldText": "Two C alleles. Associated with the highest average habitual coffee and caffeine intake at this locus — still only around a quarter of a cup per day more than TT on average. This describes consumption patterns, not caffeine's health effects."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 4410790,
+        "gene": "AHR",
+        "chrom": 7,
+        "pos38": 17244953,
+        "ref": "T",
+        "alt": "C"
+      }
+    ]
+  },
+  {
+    "slug": "photic-sneeze-reflex-zeb2",
+    "correctedOn": "2026-09-28",
+    "reviewPath": "docs/sources/reviews/photic-sneeze-zeb2-correction-20260928.md",
+    "source": {
+      "previousCommit": "c631650ba099ec88b69d54b131156eff8ae8d729",
+      "correctedCommit": "000f4b20045a663ef4365573cc5e04c16722b5cd",
+      "templatePath": "data/templates/environmental-sensitivity.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260928.photic-sneeze-reflex-zeb2.summary",
+        "field": "summary",
+        "oldText": "Some people sneeze when they step into bright sunlight. This harmless quirk is called the photic sneeze reflex. rs10427255 lies near ZEB2 on chromosome 2. Studies in both European-ancestry and Chinese groups link the C allele to a higher chance of the reflex."
+      },
+      {
+        "id": "scientific-correction.20260928.photic-sneeze-reflex-zeb2.rs10427255.cc",
+        "field": "interpretation",
+        "rsid": 10427255,
+        "genotype": "CC",
+        "oldText": "Two copies of C. Both the original European-ancestry study and a later study in China linked C to a higher chance of sneezing in bright light. The first study found higher odds per copy: a small shift."
+      },
+      {
+        "id": "scientific-correction.20260928.photic-sneeze-reflex-zeb2.rs10427255.tt",
+        "field": "interpretation",
+        "rsid": 10427255,
+        "genotype": "TT",
+        "oldText": "Two copies of T. Both cited studies linked C, rather than T, to a higher chance of the reflex. The effect is modest, and people with any genotype may or may not sneeze in bright light."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 10427255,
+        "gene": "ZEB2 region (2q22 intergenic)",
+        "chrom": 2,
+        "pos38": 145367955,
+        "ref": "C",
+        "alt": "T"
+      }
+    ]
+  },
+  {
+    "slug": "motion-sickness-susceptibility",
+    "correctedOn": "2026-09-28",
+    "reviewPath": "docs/sources/reviews/motion-sickness-correction-20260928.md",
+    "source": {
+      "previousCommit": "c631650ba099ec88b69d54b131156eff8ae8d729",
+      "correctedCommit": "000f4b20045a663ef4365573cc5e04c16722b5cd",
+      "templatePath": "data/templates/environmental-sensitivity.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260928.motion-sickness-susceptibility.rs66800491.aa",
+        "field": "interpretation",
+        "rsid": 66800491,
+        "genotype": "AA",
+        "oldText": "Two copies of the A allele. Associated with somewhat lower reported car sickness than the G allele in the study above, which found effects up to three times stronger in women than in men."
+      },
+      {
+        "id": "scientific-correction.20260928.motion-sickness-susceptibility.rs66800491.gg",
+        "field": "interpretation",
+        "rsid": 66800491,
+        "genotype": "GG",
+        "oldText": "Two copies of G, which the study linked to more reported car sickness. Each copy has a small effect. Habituation, what you look at while travelling and past experience also matter."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 66800491,
+        "gene": "3q13.2 intergenic region",
+        "chrom": 3,
+        "pos38": 109915280,
+        "ref": "G",
+        "alt": "A"
+      },
+      {
+        "rsid": 2153535,
+        "gene": "6p24.3 intergenic region",
+        "chrom": 6,
+        "pos38": 8369446,
+        "ref": "C",
+        "alt": "G"
+      }
+    ]
+  },
+  {
+    "slug": "chronotype-per3-rs228697",
+    "correctedOn": "2026-09-28",
+    "reviewPath": "docs/sources/reviews/per3-chronotype-correction-20260928.md",
+    "source": {
+      "previousCommit": "c631650ba099ec88b69d54b131156eff8ae8d729",
+      "correctedCommit": "000f4b20045a663ef4365573cc5e04c16722b5cd",
+      "templatePath": "data/templates/brain-health.json"
+    },
+    "fields": [
+      {
+        "id": "scientific-correction.20260928.chronotype-per3-rs228697.summary",
+        "field": "summary",
+        "oldText": "PER3 is a circadian clock gene long studied for links to sleep timing. The missense variant rs228697 (Pro415Ala) was associated with evening preference in a Japanese screening study: the minor G allele was more frequent among evening types and in people with delayed sleep-wake phase disorder. Evidence is early-stage and the effect, if real, is small."
+      },
+      {
+        "id": "scientific-correction.20260928.chronotype-per3-rs228697.rs228697.cg",
+        "field": "interpretation",
+        "rsid": 228697,
+        "genotype": "CG",
+        "oldText": "One G copy was found more often among evening types and people with delayed sleep-wake phase in a Japanese study. The study groups were limited, so this is an early result. One DNA change has little effect on sleep timing, if any."
+      }
+    ],
+    "variants": [
+      {
+        "rsid": 228697,
+        "gene": "PER3",
+        "chrom": 1,
+        "pos38": 7827519,
+        "ref": "C",
+        "alt": "G"
+      }
+    ]
   }
 ]

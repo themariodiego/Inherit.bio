@@ -10,14 +10,19 @@ legacySources: [], unavailableSources: [] };
 export const correctionBatches = corrections.map(batch => batch.slug);
 export function correctionReport(slug = "apoe-e4-alzheimers-risk", field: "summary" | "unused-interpretation" | "outcome" = "summary"): OwnChatReport {
   const batch = corrections.find(item => item.slug === slug)!;
-  const entry = batch.fields.find(item => item.field === (field === "summary" ? "summary" : "interpretation"))!;
+  const summaryEntry = batch.fields.find(item => item.field === "summary");
+  const interpEntry = batch.fields.find(item => item.field === "interpretation")!;
+  // A batch that corrected only interpretations (no summary) carries a stale
+  // interpretation in the snapshot for the default "summary" case instead.
+  const carryInterpretation = field === "unused-interpretation" || (field === "summary" && !summaryEntry);
+  const entry = field === "summary" ? (summaryEntry ?? interpEntry) : interpEntry;
   const row: OwnChatReport = { file_id: correctionFileId, purpose: "reports.polygenic", completed_at: "2026-09-15T10:01:00Z",
     report: { slug, covered: false, conflictingRsids: [], variants: [], catalogSnapshot: {
       schemaVersion: 1, templateSha256: "d".repeat(64), template: { slug, category: "neurodegenerative", title: "Synthetic captured title",
-        summary: field === "summary" ? entry.oldText : "Unrelated captured summary", evidence: "emerging", variants: [],
+        summary: (field === "summary" && summaryEntry) ? summaryEntry.oldText : "Unrelated captured summary", evidence: "emerging", variants: [],
         pgs_id: null, citations: [], layer: "estimate", estimate_kind: "single_locus" },
     } } };
-  if (field === "unused-interpretation") row.report.catalogSnapshot!.template.variants = [{
+  if (carryInterpretation) row.report.catalogSnapshot!.template.variants = [{
     rsid: entry.rsid!, gene: "APOE", chrom: 19, pos38: 44908684, ref: "T", alt: "C", interpretations: { [entry.genotype!]: entry.oldText },
   }];
   if (field === "outcome") {

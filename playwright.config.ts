@@ -47,6 +47,13 @@ const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$/;
  */
 const DENSITY = /\.density\.spec\.ts$/;
 const densityCapture = process.env.INHERIT_DENSITY_CAPTURE === "1";
+/**
+ * The comprehension harness's live run (G3.1). Stochastic by construction, so
+ * G8.4 excludes it from "the whole suite": no default project runs it, and it
+ * has its own project only when `pnpm comprehension:run` sets this flag.
+ */
+const COMPREHENSION_RUN = /comprehension-run\.spec\.ts$/;
+const comprehensionRun = process.env.INHERIT_COMPREHENSION_RUN === "1";
 
 const localProject = localE2eProject(process.env);
 const SERVER_ENV = {
@@ -85,7 +92,8 @@ export default defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY] },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN] },
+    ...(comprehensionRun ? [{ name: "comprehension-run", use: { ...devices["Desktop Chrome"] }, testMatch: COMPREHENSION_RUN }] : []),
     {
       name: "jurisdiction-off",
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${OFF_PORT}` },

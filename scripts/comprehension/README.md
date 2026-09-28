@@ -1,14 +1,186 @@
 # Comprehension execution
 
 The rubric, task bindings, persona bank, prohibited-answer patterns, accounting,
-assessment and local conductor scaffold are implemented. **The conductor runs
-only authored synthetic adapters. There are no completed qualifying simulation
-runs, and external process isolation is unproven.** G3.1 and G3.3 remain NO.
+assessment, dry conductor **and the live harness** are implemented. The live
+harness drives the local production build under TEST-LOCAL with a fresh
+browser context and a freshly seeded account per simulation, runs every
+inference call in its own isolated process, and writes the durable run record
+under `docs/comprehension-runs/<date>/`. **It has run end to end only with the
+local deterministic stub. No model credential exists, so no paid call and no
+qualifying run has happened.** G3.1 and G3.3 remain NO.
 
 The owner authorized two full runs (600 task simulations at minimum), their
 grading and an independent 10% re-grade, with **US$50 maximum incremental spend**
 on 22 September 2026. This replaced the earlier US$25 choice. The cap includes
 inference, any CI charges and any required first month of the hosting plan.
+
+## Running the live harness
+
+```sh
+pnpm comprehension:run /absolute/path/run.json --plan   # validate and print the plan
+pnpm comprehension:run /absolute/path/run.json          # run it
+pnpm comprehension:run /absolute/path/run.json --close-revision   # before full runs move to a new revision
+pnpm comprehension:records status                       # the stopping rule over committed runs
+pnpm comprehension:records check docs/comprehension-runs/<date>/<runId>
+```
+
+`comprehension:run` validates the configuration, prints what the run will do
+and the most it can reserve, and then runs `e2e/comprehension-run.spec.ts`
+through the browser suite's own bootstrap (`scripts/run-upload-browser.mts
+--full`): the production build on port 3100 with `INHERIT_TEST_JURISDICTION=1`,
+the local Supabase stack and the real Storage provider proxy. On this
+machine, run it the way every browser run is run:
+
+```sh
+flock "$S/locks/browser.lock" env -u NEXT_PUBLIC_SUPABASE_URL \
+  PLAYWRIGHT_BROWSERS_PATH="$S/pw-browsers" INHERIT_DISPOSABLE_LOCAL_E2E=true \
+  pnpm comprehension:run /absolute/path/run.json
+```
+
+The spec is excluded from every default Playwright project. It has its own
+project only when `comprehension:run` sets `INHERIT_COMPREHENSION_RUN=1`,
+because it is stochastic and G8.4 excludes it from the whole suite. A run
+with no participant-a task uploads nothing, so the bootstrap's final "No
+browser upload crossed the actual provider proxy" check then fails after
+the run itself has passed; include at least one participant-a task.
+
+Before the first session the spec checks three things and stops if any fails:
+
+1. the server on port 3100 serves the production build `.next/BUILD_ID` names;
+2. a declared account sees a capability only TEST-LOCAL permits
+   (the `/family/invite` form, which any real jurisdiction withholds);
+3. an isolation probe spawned exactly like a real call runs outside the
+   checkout and sees only the environment it was given.
+
+### The configuration file
+
+A local JSON file, never committed. It is the only place an endpoint, a
+credential variable name or a model identifier appears.
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "smoke",
+  "effortDirectory": "/absolute/private/directory/outside/any/checkout",
+  "tasks": ["T1", "T8", "T9", "T10"],
+  "personas": 1,
+  "samplingSeed": "<64 hex characters, chosen before the run>",
+  "settings": { "temperature": 0, "maxSteps": 8, "maxAttempts": 1, "timeoutMs": 60000,
+    "sessionSetupTimeoutMs": 600000, "maximumInputTokens": 24000, "maximumOutputTokens": 600,
+    "price": { "inputMicroDollarsPerMillion": 1, "outputMicroDollarsPerMillion": 1 } },
+  "limitMicroDollars": 1000000,
+  "otherCostsMicroDollars": 0,
+  "stubRecordRoot": "/absolute/directory/for/stub/records",
+  "provider": { "kind": "local-deterministic-stub" }
+}
+```
+
+For a real provider, `provider` becomes:
+
+```json
+{ "kind": "openai-compatible-chat", "label": "provider-a/config-1",
+  "endpoint": "https://<gateway>/v1", "modelIdentifier": "<exact identifier>",
+  "apiKeyVariable": "COMPREHENSION_MODEL_API_KEY" }
+```
+
+- `kind` is `smoke`, `calibration` or `live-run`. Only a `live-run` of all
+  30 personas on all ten tasks counts toward G3.3.
+- `effortDirectory` must be `0700`, owned by you and outside any Git
+  checkout. It holds the spend journal and raw traces for the whole
+  authorized effort. A stub run uses the dry ledger there; a real run
+  uses the live one, and neither opens the other.
+- `label` must not contain the identifier or any word of it, because the
+  label travels where the identifier may not: the journal, traces and logs.
+- Keep this file outside the checkout; it names the exact identifier.
+- The credential is read from the named variable in your shell and handed
+  only to each inference child. It is never deployment configuration, never
+  in `.env.example` and never under `src/`, which keeps the commitment that
+  LLM keys are not deployment-level.
+- A paid `live-run` needs `calibration`: the directory of a completed
+  calibration record on the same provider configuration and settings. The
+  spec projects its measured maximum cost per simulation over the planned
+  sessions with a 25% margin and refuses to start if that exceeds what the
+  journal has left.
+
+### What a session is
+
+Each (task, persona) pair gets:
+
+- **its own browser context** (`live-browser.ts`) that can reach only the app
+  and its local Supabase API. The participant sees the page as text, with
+  every visible control as `[id kind] label`, and acts on those ids. Real
+  `click` and `submit` events are counted in the capture phase exactly as
+  `e2e/task-depth.spec.ts` counts them, so pressing Enter in a form with a
+  default button counts two. Mailed-link and typed-URL entries are recorded
+  separately. No confirmation exclusion is applied, which can only raise a
+  count. Only `@e2e.local` or `.invalid` addresses may be typed.
+- **its own account**, seeded from `bindings.json` through the product's own
+  upload path, the same steps `e2e/comprehension-participants.spec.ts` takes,
+  under an address unique to the session. No simulation inherits another's
+  deletions, invitations, consents or history. Seeding participant-a takes
+  about half a minute and happens before counting starts.
+- **T9's fixture**, following the owner's 28 September decision and the
+  measured path in `e2e/task-depth.spec.ts`: another adult reserves a record
+  for the participant's address and invites them from their own context; the
+  participant starts signed out at `/` with that one email shown in an inbox
+  beside the page. Opening it is an entry, never a counted action.
+- **a fresh isolated process per inference call** (`inference-isolation.ts`,
+  `inference-worker.ts`): a new OS process in an empty directory outside the
+  checkout, whose environment holds only PATH, a locale and, for a real
+  provider, the one credential variable and proxy settings. A participant
+  process gets its persona, the task prompt, its own steps and the current
+  page; a grader or re-grader process gets the rubric's shared instructions,
+  the one task section and the verbatim answer. The worker bounds each prompt
+  in bytes to the pinned input limit, so the reservation really is a maximum.
+- **mechanical completion** (`completion.ts`): the bound routes and report
+  slugs in `bindings.json`, plus two database facts read after the session:
+  T8's deletion was scheduled, and T9 and T10's participant created no
+  account.
+
+**T6 and T7 are skipped** until participant-c can be seeded (embryo ingest,
+G2.6). A skipped task is recorded with the binding's reason, counts as a
+failure of its task, and makes the run non-qualifying. It is never an answer.
+
+### Model identity
+
+Under the owner's decision of 25 September 2026, the pinned model identifier
+and temperature appear only in the run records under
+`docs/comprehension-runs/<date>/`. The harness writes the identifier once, as
+`model.identifier` in a real run's `manifest.json`, and refuses it anywhere
+else in the record. The run manifest the journal stores carries only the
+label; the stopping rule sees a changed model through a hash in the settings
+digest. Nothing the runner prints contains it, and
+`identity-containment.test.ts` fails if a recorded identifier appears in any
+other tracked file or any commit message. Commit messages and pull-request
+text about a run name its run id and label, never the model.
+
+### The order of runs
+
+Whenever a key exists in the environment: a stub smoke run first, then a
+calibration with the real provider (one task, about five personas), then a
+review of its measured cost per simulation, then full runs that name the
+calibration. `docs/comprehension-runs/README.md` sets out the order and the
+spend-capped credential setup. Nobody is asked for a key; scored runs wait
+until one exists.
+
+### Cost and the cap
+
+Every attempt reserves its maximum, `maximumInputTokens` at the input price
+plus `maximumOutputTokens` at the output price, before the call, and settles
+to the provider's certain usage after it. A session makes at most `maxSteps`
+participant calls, one grading call and, for a sampled answer or in a partial
+run, one re-grading call. A calibration run re-grades every session so that
+all three roles are priced.
+
+Planning arithmetic, not a measurement: a participant call carries about
+12,000 characters of page (roughly 3,000 tokens) plus the persona and
+instructions, so about 3,500 input tokens; a simulation of about eight steps
+and one grading call is then about 30,000 input and 1,000 output tokens. Two
+full runs of the 240 runnable sessions are about 15 million input tokens.
+At US$1 per million input tokens and US$5 per million output tokens that is
+about US$17 for two runs; at three times those prices two runs alone reach
+the cap, with nothing left to repeat a failed run. The calibration run
+replaces this arithmetic with a measured figure before any full run.
 
 ## Seeding the participant accounts
 
@@ -104,7 +276,12 @@ Run the local checks with:
 corepack pnpm exec vitest run scripts/comprehension/
 ```
 
-## Local conductor boundary
+## Conductor boundary
+
+One session loop (`conductor.ts`) serves the dry instrument and the live
+harness, so the isolation and accounting the dry tests prove are what a live
+run executes. `runInstrument` below is the dry entry; `runLive` is the live
+one, and it accepts only the live environment.
 
 `loadConductorInputs` reads the committed bank, bindings, rubric, pattern file,
 protocol, route register and referenced fixture bytes. `createManifest` freezes
@@ -113,13 +290,10 @@ sampling seed and task variant before any adapter opens. Runtime input changes
 invalidate the manifest. The detector uses that pinned pattern snapshot.
 
 `runInstrument` accepts only `instrument-dry-run` and a
-`synthetic-local-adapter`. It has no network client, endpoint configuration,
-credential loader, application server or real browser adapter. Its injectable
-factories are test doubles. They cannot establish OS sandboxing, network
-isolation, file-system isolation, fixture readiness or provider token limits.
-Fresh IDs and separate objects are checked, but those checks are not proof of
-physical process independence. The returned `qualifyingEvidence` is always
-false, including when the instrument's assessment is clean.
+`synthetic-local-adapter`. Its injectable factories are test doubles, and its
+returned `qualifyingEvidence` is always false, including when the instrument's
+assessment is clean. The live harness supplies the real factories: a browser
+context per session and an isolated OS process per call, as described above.
 
 Every full dry run exercises all thirty personas on all ten tasks, with a fresh
 browser handle for each pair and a fresh inference handle for every call. The
@@ -131,11 +305,11 @@ the source digest and deterministic selection version are pinned. Completion,
 action counts, entries, persona, page content, prior verdicts and run history
 are never added to a grading payload.
 
-The browser adapter must record actual click/submit events and separately record
-mailed-link/typed-URL entry. This scaffold refuses claimed confirmation
-exclusions; it does not invent the real route-register instrumentation. An
-independent adapter and its tests must establish those exclusions before a
-qualifying run. Participant responses cannot supply their own completion flag.
+The browser adapter records actual click/submit events and separately records
+mailed-link/typed-URL entry. The conductor refuses claimed confirmation
+exclusions, and the live adapter applies none, so a count can only be higher
+than the registered instrument would give, never lower. Participant responses
+cannot supply their own completion flag.
 
 ## Durable instrument records
 
@@ -178,13 +352,22 @@ same settings, including intervening failures. Three consecutive failed closed
 revisions stop new instrument runs. This tests the stopping mechanism; actual
 capability withholding still requires real transcripts and the release process.
 
-## Qualifying execution remains blocked
+## What still blocks a qualifying run
 
-`preflightQualifyingRun` always refuses live execution. Current prerequisites
-include a run record that carries the pinned model identifier and temperature,
-which the 25 September decision allows but nothing writes yet; externally enforced participant/grader isolation; the verified
-production build under the test jurisdiction; complete bound T6, T7, T9 and T10
-fixtures; and verified provider token/cost bounds. An authored adapter saying
-that a task is ready cannot clear any of these blockers. No real participant,
-human review, clinical interpretation, expense or release acceptance is inferred
-from these instrument checks.
+`preflightQualifyingRun` still refuses every dry run. A live run computes its
+own blockers and records them in its manifest; `qualifyingEvidence` is true
+only when none remains. What the live harness now provides, and what it
+cannot:
+
+| Former blocker | Now |
+|---|---|
+| Run record with the pinned identity | Built: the identifier and temperatures in the record's `manifest.json` only, per the owner's 25 September decision, held there by `identity-containment.test.ts`. |
+| Externally enforced isolation | Built: a browser context and seeded account per session, an isolated OS process per call, and a probe recorded with every run. |
+| Production build under the test jurisdiction | Checked before every run: build id served, and a TEST-LOCAL-only capability visible. |
+| T9 fixture | Built: the owner's reserved-record invitation path, with the mail in an inbox beside the page. |
+| T10 fixture | None needed: T10 starts signed out on public routes, as bound. The Record Key Card path cannot be exercised until embryo ingest lands. |
+| T6 and T7 fixtures | Still blocked: participant-c cannot be seeded until embryo ingest (G2.6). Both are recorded as skipped, so no run can be clean. |
+| Provider token and cost bounds | Blocked on a credential. A calibration run measures them; a paid full run refuses to start without one. |
+
+No real participant, human review, clinical interpretation, expense or
+release acceptance is inferred from any of this.

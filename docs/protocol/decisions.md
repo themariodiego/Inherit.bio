@@ -4210,3 +4210,120 @@ owner chose the recommended option on all four.
 - **Carrier importer: design first.** Engineering proposes the sources, the
   review-status threshold and the conditions in scope, for approval before
   anything is imported. Carrier results stay withheld until then.
+
+## 2026-09-28 (later) — Carrier importer answers and parallel work streams
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all four. The first three answer the
+questions at the end of `docs/carrier-importer-design.md`.
+
+- **Carrier evidence bar: the brief's rule.** A carrier variant is reported
+  only when ClinVar gives it two stars or more, with no conflicting
+  submissions, as pathogenic or likely pathogenic, and ClinGen rates the
+  gene–disease link Definitive or Strong. The three-star-only alternative was
+  declined.
+- **Starter conditions: a short autosomal recessive list.** Drawn from the
+  ACMG carrier-screening practice resource, each with a Definitive or Strong
+  ClinGen rating, and limited to conditions whose common pathogenic alleles
+  are single-letter or small changes that arrays and VCFs can read.
+  Conditions that need copy-number or repeat testing, such as spinal muscular
+  atrophy and fragile X, are excluded. X-linked conditions come only after
+  ADR 0034's serious-condition review. Engineering proposes the exact list
+  with its sources in the importer's pull request.
+- **The live cystic fibrosis report is reworded now.**
+  `cystic-fibrosis-cftr-f508del-informational` drops "carrier status" and the
+  per-pregnancy 1-in-4 sentence. It keeps the finding, the caveats and the
+  laboratory line. The change reaches production through the guarded
+  catalogue refresh, with a receipt. Asked afterwards: saved reports that
+  already captured the old wording keep it as captured, and no one is
+  contacted, as with the 25 and 27 September refreshes. New runs get the new
+  text. A "wording changed" notice on those saved reports was declined.
+- **One branch per work stream.** Each parallel work stream pushes its own
+  `claude/<stream>` branch and opens its own draft pull request, so CI runs in
+  parallel. One integrator still reviews each pull request, merges them one
+  at a time and applies every production change through the guarded path.
+- **Embryo upload cleanup must be proved, not assumed.** Asked after the
+  Storage write fence was built. A write cut off mid-flight leaves an
+  `uncertain` intent. On Supabase Storage such a cleanup stays
+  `storage_pending`: the metadata fence does not prove the provider kept no
+  bytes. Embryo upload objects move to a store Inherit can list by version,
+  the approach ADR 0025 takes for prepared objects on R2. That means
+  create-only writes, then a placeholder at each uncertain key after the fence
+  time, checked by listing, before any "no data kept" notice. Accepting the
+  fence alone, or a different notice for such cohorts, was declined.
+- **Legal audit in exports: the person's own actions; an empty file first.**
+  The export ships an honest, empty `legal-audit.json` now. Engineering then
+  builds the slice of events the person caused themselves, and records who
+  acted on new events from here on. Past events cannot be attributed, because
+  every audit write so far recorded no person. Showing events others caused,
+  by role, was not chosen; it would need counsel.
+- **Six live reports that contradict their sources are corrected.** The
+  citation review of 28 September retrieved every undated source and found six
+  reports whose cited paper does not support what they say:
+  `nicotine-dependence-chrna5-rs16969968`, `caffeine-intake-ahr-rs4410790`,
+  `photic-sneeze-reflex-2q22`, `photic-sneeze-reflex-zeb2`,
+  `motion-sickness-susceptibility` and `chronotype-per3-rs228697`. Each is
+  corrected to match its source, or cites the right paper, through the
+  scientific-corrections register used for the 23 September ADORA2A fix. That
+  means one review note per report, a correction notice on saved reports, and
+  a guarded catalogue refresh with a receipt. Withholding the six first, or
+  removing only the citations, was declined.
+- **Invitation limits may read the client address, as a keyed digest only.**
+  The register requires a per-network limit on invitation attempts (30 an
+  hour). The client address is read for that bucket as a second exact
+  exception beside the sanctions check. It is stored only as a keyed digest,
+  purged within 24 hours, and never used to infer a jurisdiction. The same
+  bucket may serve the per-network limits the register names for rights
+  activation, reissue, appeals and future-person claims. Keeping per-account
+  limits only was declined.
+- **G5.4 is judged under TEST-LOCAL.** The accountless rights routes, key
+  rotation, quotas and retention are accepted in the test jurisdiction.
+  Outside it, the routes answer "not available here" until a signed
+  jurisdiction review exists for that country and capability (G5.5).
+  Holding G5.4 until a real country is reviewed was declined.
+- **Another adult's DNA: the register's two paths, not the brief's single
+  flow.** Inviting someone to upload their own file (Path A) stays separate:
+  the inviter never touches that file. Uploading a file the uploader already
+  holds (Path B) is its own flow. The upload is held in quarantine, the
+  person is notified when it arrives, and they confirm each revision before
+  anything is readable. The brief's order, where the inviter uploads right
+  after inviting, was declined; the register and the `/family/invite` copy
+  stand as written.
+- **`consent.upload-other-adult` v1 is approved as written.** Its seven
+  statements are: the person is alive and 18 or older; the uploader has their
+  permission; the file was obtained lawfully and they know of it; the email is
+  theirs; no excluded relationship; the file is held and deleted after 30 days
+  without confirmation; the uploader gets no access to their results.
+  Approval of the text does not open any real jurisdiction. Each country still
+  needs its signed jurisdiction review (G5.5) before the path is offered
+  there. Keeping the text test-only until counsel reviewed it was declined.
+
+## 2026-09-28 (later) — Comprehension harness: engineering choices for owner review
+
+The 22 September entry asked engineering to choose the host and endpoint.
+These are the choices the live harness makes. None of them has spent money.
+
+- **Endpoint:** any OpenAI-compatible chat-completions endpoint over HTTPS,
+  named only in the operator's local run file. The preferred instance is the
+  existing edge provider's AI gateway, as the owner preferred. No credential
+  exists yet, so no paid call has been made.
+- **Credential:** read from one named variable in the operator's own shell,
+  documented as `COMPREHENSION_MODEL_API_KEY`, and handed only to each isolated
+  inference process. It is never deployment configuration, never in
+  `.env.example` and never under `src/`, so the commitment that LLM keys are
+  never deployment-level stands unchanged. Nobody is asked for a key; scored
+  runs wait until one exists in the environment.
+- **Model identity:** applies the 25 September decision above. The pinned
+  identifier and temperatures are written into a real run's `manifest.json`
+  under `docs/comprehension-runs/<date>/` and nowhere else. The journal, traces
+  and logs carry only a non-identifying label, and a test fails if a recorded
+  identifier appears in any other tracked file or commit message.
+- **Spend:** one journal for the whole effort reserves each call's maximum
+  before it is sent. The order is fixed: a stub smoke run, then a calibration
+  (one task, about five personas), then full runs. A paid full run refuses to
+  start without a calibration on the same model and settings whose measured
+  cost, plus 25%, fits what is left of US$50.
+- **Isolation:** a browser context and a freshly seeded account per
+  simulation; a separate operating-system process per inference call.
+- **T9's fixture:** the reserved-record invitation the owner chose today, with
+  the mail shown beside the page. Opening it is an entry, never an action.
