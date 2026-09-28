@@ -9,7 +9,7 @@ import { createLiveManifest, loadConductorInputs, repositoryRoot, seedSkips, typ
 import { isolatedProcesses } from "./inference-isolation";
 import { InstrumentJournal } from "./instrument-journal";
 import { checkRecord, gateStatus, type LoadedRecord, type RecordLine } from "./records";
-import { forbiddenInRecord, IDENTITY_BLOCKER, identityCommitment, inferenceOf, labelProblem, runConfigSchema, STUB_LABEL } from "./run-config";
+import { inferenceOf, labelProblem, modelIdentifierOf, modelIdentityOf, runConfigSchema, STUB_LABEL } from "./run-config";
 import { RECORD_ROOT, RunRecord, type RecordHeader } from "./run-record";
 
 // Authored harness checks only. No answer below is a participant's.
@@ -46,12 +46,12 @@ describe("a live run through the shared conductor", () => {
     expect(skips[0].reason).toMatch(/^participant-c cannot be seeded: No embryo file path exists/);
     const manifest = createLiveManifest(inputs, { kind: "calibration", runId: "calibration-a", revision: "a".repeat(40),
       samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T6"], personaIds: inputs.personas.slice(0, 2).map(persona => persona.id),
-      inference: { label: STUB_LABEL, provider: "local-deterministic-stub", identityCommitment: "c".repeat(64) }, build,
-      skipped: skips, blockers: [IDENTITY_BLOCKER] });
+      inference: { label: STUB_LABEL, provider: "local-deterministic-stub" }, modelIdentity: "local-deterministic-stub", build,
+      skipped: skips, blockers: [] });
     expect(manifest.qualifyingEvidence).toBe(false);
-    expect(manifest.blockers).toEqual(["T6-skipped", "calibration-is-not-a-full-run", IDENTITY_BLOCKER, "stub-provider-is-not-evidence"].sort());
-    const record = await RunRecord.create({ root: records, date: "2026-09-28", manifest, inputs, header, forbidden: [] });
-    const result = await runLive({ manifest, inputs, journal, onSession: outcome => record.append(outcome),
+    expect(manifest.blockers).toEqual(["T6-skipped", "calibration-is-not-a-full-run", "stub-provider-is-not-evidence"].sort());
+    const record = await RunRecord.create({ root: records, date: "2026-09-28", manifest, inputs, header, modelIdentifier: null });
+    const result = await runLive({ manifest, inputs, journal, modelIdentity: "local-deterministic-stub", onSession: outcome => record.append(outcome),
       environment: { kind: "live-local-build", openBrowser: fakeBrowsers(), openProcess: isolatedProcesses({ kind: "local-deterministic-stub" }) } });
     const spend = await record.finish({ status: result.status, qualifyingEvidence: false, blockers: manifest.blockers });
     await journal.close();
@@ -68,8 +68,8 @@ describe("a live run through the shared conductor", () => {
     expect(answered.regrade).not.toBeNull();
     expect(spend.simulations).toBe(2);
     const written = JSON.parse(await readFile(path.join(record.directory, "manifest.json"), "utf8"));
-    expect(written).toMatchObject({ status: "completed", temperature: { participant: 0, grader: 0 },
-      identity: { label: STUB_LABEL }, inputs: { rubric: { sha256: inputs.pins.rubric }, worker: { sha256: inputs.pins.inferenceWorker } } });
+    expect(written).toMatchObject({ status: "completed",
+      model: { label: STUB_LABEL, identifier: null, temperature: { participant: 0, grader: 0 } }, inputs: { rubric: { sha256: inputs.pins.rubric }, worker: { sha256: inputs.pins.inferenceWorker } } });
     expect(Object.keys(written.inputs.fixtures)).toContain("data/samples/synthetic_23andme.txt");
     const history = (await readFile(path.join(effort, "dry-history.jsonl"), "utf8")).trimEnd().split("\n").map(line => JSON.parse(line));
     expect(history.filter(event => event.kind === "skipped")).toHaveLength(2);
@@ -77,23 +77,18 @@ describe("a live run through the shared conductor", () => {
     expect(history.filter(event => event.kind === "attempt")).toHaveLength(2 * 4);
   }, 120_000);
 
-  it("keeps stub runs out of docs/comprehension-runs and real runs inside it, and refuses to publish the identity", async () => {
+  it("keeps stub runs out of docs/comprehension-runs and real runs inside it", async () => {
     const manifest = (provider: "local-deterministic-stub" | "openai-compatible-chat") => createLiveManifest(inputs, {
       kind: "smoke", runId: `smoke-${provider}`, revision: "a".repeat(40), samplingSeed: "b".repeat(64), settings, taskIds: ["T1"],
-      personaIds: [inputs.personas[0].id], build, skipped: [], blockers: [],
-      inference: { label: provider === "local-deterministic-stub" ? STUB_LABEL : "provider-a/config-1", provider, identityCommitment: "c".repeat(64) } });
+      personaIds: [inputs.personas[0].id], build, skipped: [], blockers: [], modelIdentity: provider,
+      inference: { label: provider === "local-deterministic-stub" ? STUB_LABEL : "provider-a/config-1", provider } });
     const docs = path.join(repositoryRoot, RECORD_ROOT), elsewhere = await temporary("inherit-comprehension-records-");
-    await expect(RunRecord.create({ root: docs, date: "2026-09-28", manifest: manifest("local-deterministic-stub"), inputs, header, forbidden: [] }))
+    await expect(RunRecord.create({ root: docs, date: "2026-09-28", manifest: manifest("local-deterministic-stub"), inputs, header, modelIdentifier: null }))
       .rejects.toThrow("never records under docs/comprehension-runs");
-    await expect(RunRecord.create({ root: elsewhere, date: "2026-09-28", manifest: manifest("openai-compatible-chat"), inputs, header, forbidden: [] }))
-      .rejects.toThrow("nowhere else");
-    const record = await RunRecord.create({ root: elsewhere, date: "2026-09-28", manifest: manifest("local-deterministic-stub"),
-      inputs, header, forbidden: ["synthetic-secret-identifier"] });
-    const response = { personaId: inputs.personas[0].id, taskId: "T1" as const, sessionId: "s1", completed: true, actions: 1, entries: 0,
-      answer: "It mentioned Synthetic-Secret-Identifier somewhere.", verdict: { passed: false, prohibited: false, noRouteFound: false } };
-    await expect(record.append({ status: "answered", taskId: "T1", personaId: response.personaId, sessionId: "s1", steps: [],
-      record: { completed: true, path: ["/overview"], actions: 1, entries: 0, confirmationExclusions: [] }, response, costMicroDollars: 1 }))
-      .rejects.toThrow("would publish the model identity");
+    await expect(RunRecord.create({ root: elsewhere, date: "2026-09-28", manifest: manifest("openai-compatible-chat"), inputs, header,
+      modelIdentifier: "synthetic-placeholder-identifier" })).rejects.toThrow("nowhere else");
+    await expect(RunRecord.create({ root: elsewhere, date: "2026-09-28", manifest: manifest("local-deterministic-stub"), inputs, header,
+      modelIdentifier: "synthetic-placeholder-identifier" })).rejects.toThrow("the stub has none");
     expect(labelProblem("provider-a/config-1", "vendor-large-2")).toBeUndefined();
     expect(labelProblem("vendor/config-1", "vendor-large-2")).toMatch(/must not contain/);
   });
@@ -104,7 +99,7 @@ describe("the local run configuration", () => {
     samplingSeed: "d".repeat(64), settings: { ...settings, price: { inputMicroDollarsPerMillion: 1_000_000, outputMicroDollarsPerMillion: 5_000_000 } },
     limitMicroDollars: 50_000_000, otherCostsMicroDollars: 0,
     provider: { kind: "openai-compatible-chat", label: "provider-a/config-1", endpoint: "https://gateway.invalid/v1",
-      modelIdentifier: "synthetic-placeholder-identifier", apiKeyVariable: "COMPREHENSION_MODEL_API_KEY", identitySalt: "e".repeat(64) } };
+      modelIdentifier: "synthetic-placeholder-identifier", apiKeyVariable: "COMPREHENSION_MODEL_API_KEY" } };
 
   it("accepts real prices, and refuses an absurd price, an identifying label, or a paid full run with no calibration", () => {
     expect(runConfigSchema.parse(paid).settings.price.outputMicroDollarsPerMillion).toBe(5_000_000);
@@ -116,13 +111,19 @@ describe("the local run configuration", () => {
     expect(runConfigSchema.safeParse({ ...paid, provider: { kind: "local-deterministic-stub" } }).success).toBe(false);
   });
 
-  it("commits to the same identity across runs of one configuration, and to a different one when the model changes", () => {
-    const config = runConfigSchema.parse(paid);
-    expect(identityCommitment(config)).toBe(identityCommitment(runConfigSchema.parse(structuredClone(paid))));
-    expect(identityCommitment(config)).not.toBe(identityCommitment(runConfigSchema.parse({ ...paid,
-      provider: { ...paid.provider, modelIdentifier: "another-synthetic-identifier" } })));
-    expect(JSON.stringify(inferenceOf(config))).not.toContain("synthetic-placeholder-identifier");
-    expect(forbiddenInRecord(config)).toEqual(["synthetic-placeholder-identifier", "e".repeat(64)]);
+  it("keeps one set of settings across runs of one configuration, and starts a new one when the model changes", () => {
+    const digest = (raw: typeof paid) => {
+      const config = runConfigSchema.parse(raw);
+      return createLiveManifest(inputs, { kind: "calibration", runId: "digest", revision: "a".repeat(40), samplingSeed: config.samplingSeed,
+        settings: config.settings, taskIds: ["T1"], personaIds: [inputs.personas[0].id], inference: inferenceOf(config),
+        modelIdentity: modelIdentityOf(config), build, skipped: [], blockers: [] });
+    };
+    const first = digest(paid);
+    expect(first.settingsDigest).toBe(digest(structuredClone(paid)).settingsDigest);
+    expect(first.settingsDigest).not.toBe(digest({ ...paid, provider: { ...paid.provider, modelIdentifier: "another-synthetic-identifier" } }).settingsDigest);
+    // The run manifest, which the journal stores, never carries the identifier.
+    expect(JSON.stringify(first)).not.toContain("synthetic-placeholder-identifier");
+    expect(modelIdentifierOf(runConfigSchema.parse(paid))).toBe("synthetic-placeholder-identifier");
   });
 });
 
@@ -133,7 +134,7 @@ function fullRecord(runId: string, options: { revision?: string; temperature?: n
   const manifest: LiveManifest = createLiveManifest(inputs, { kind: "live-run", runId, revision: options.revision ?? "a".repeat(40),
     samplingSeed: "d".repeat(64), settings: { ...settings, temperature: options.temperature ?? 0 },
     taskIds: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"], personaIds,
-    inference: { label: "provider-a/config-1", provider: "openai-compatible-chat", identityCommitment: "e".repeat(64) }, build,
+    inference: { label: "provider-a/config-1", provider: "openai-compatible-chat" }, modelIdentity: "synthetic-placeholder-identifier", build,
     skipped: options.skipEmbryo ? seedSkips() : [], blockers: [] });
   const sample = regradeSample(personaIds, manifest.samplingSeed);
   const verdict = { passed: true, prohibited: false, noRouteFound: false };

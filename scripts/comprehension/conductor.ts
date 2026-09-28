@@ -4,7 +4,7 @@ import { participantPersonaPrompt, type Persona } from "./personas";
 import { browserRecordSchema, freeze, participantResultSchema, verdictSchema, viewSchema,
   type BrowserAdapter, type BrowserAction, type BrowserRecord, type ConductorEnvironment, type DryEnvironment,
   type LiveEnvironment, type ParticipantPayload, type TaskId, type View } from "./conductor-contract";
-import { createManifest, isFullRun, liveManifestSchema, manifestSchema, qualificationBlockers, sha256, taskRubric,
+import { createManifest, isFullRun, liveManifestSchema, liveSettingsDigest, manifestSchema, qualificationBlockers, taskRubric,
   type AnyManifest, type ConductorInputs, type LiveManifest, type RunManifest } from "./conductor-inputs";
 import { acquire, bounded, ConductorFailure, invokeInstrument, type JournalPort } from "./conductor-call";
 
@@ -155,13 +155,12 @@ export async function runInstrument(input: { mode: "instrument-dry-run"; manifes
  * cannot be (T6 and T7 are skipped until embryo ingest lands). A partial run
  * (calibration or smoke) is recorded and never assessed against G3.3. */
 export async function runLive(input: { manifest: LiveManifest; inputs: ConductorInputs; environment: LiveEnvironment;
-  journal: JournalPort; onSession?: (outcome: SessionOutcome) => Promise<void> }) {
+  journal: JournalPort; modelIdentity: string; onSession?: (outcome: SessionOutcome) => Promise<void> }) {
   if (input.environment.kind !== "live-local-build") throw new Error("Live runs require the live environment");
   const inputs = freeze(structuredClone(input.inputs));
   const manifest = freeze(liveManifestSchema.parse(input.manifest));
   if (manifest.inputDigest !== inputs.inputDigest || JSON.stringify(manifest.pins) !== JSON.stringify(inputs.pins)
-    || manifest.settingsDigest !== sha256(JSON.stringify({ inputs: inputs.inputDigest, settings: manifest.settings,
-      t6Variant: manifest.t6Variant, inference: manifest.inference }))) {
+    || manifest.settingsDigest !== liveSettingsDigest(inputs.inputDigest, manifest, input.modelIdentity)) {
     throw new Error("Manifest no longer matches pinned inputs");
   }
   const tasks = inputs.tasks.filter(task => manifest.taskIds.includes(task.id));

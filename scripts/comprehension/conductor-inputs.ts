@@ -63,8 +63,9 @@ export type RunManifest = z.infer<typeof manifestSchema>;
  * slice before any full run, and `smoke` proves the harness end to end. */
 export const liveRunKinds = ["live-run", "calibration", "smoke"] as const;
 export const providerKinds = ["local-deterministic-stub", "openai-compatible-chat"] as const;
-/** A non-identifying label such as `provider-a/config-1`. The exact model
- * identifier never enters a committed record (see run-record.ts). */
+/** A non-identifying label such as `provider-a/config-1`. It travels with the
+ * run manifest into the journal and logs; the exact identifier appears only in
+ * the committed run record's `model` block (run-config.ts, run-record.ts). */
 export const inferenceLabel = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*$/).max(64);
 const sha40 = z.string().regex(/^[0-9a-f]{40}$/);
 export const liveManifestSchema = z.object({ schemaVersion: z.literal(1), kind: z.enum(liveRunKinds),
@@ -72,7 +73,7 @@ export const liveManifestSchema = z.object({ schemaVersion: z.literal(1), kind: 
   settingsDigest: digest, settings: settingsSchema, t6Variant: z.enum(["standard", "withheld"]),
   personaIds: z.array(opaque).min(1).max(30), taskIds: z.array(z.enum(taskIds)).min(1).max(10),
   pins: z.record(z.string(), digest),
-  inference: z.object({ label: inferenceLabel, provider: z.enum(providerKinds), identityCommitment: digest }).strict(),
+  inference: z.object({ label: inferenceLabel, provider: z.enum(providerKinds) }).strict(),
   build: z.object({ baseUrl: z.string().regex(/^http:\/\/(?:localhost|127\.0\.0\.1):\d{2,5}$/),
     buildId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/), jurisdiction: z.literal("TEST-LOCAL") }).strict(),
   skipped: z.array(z.object({ taskId: z.enum(taskIds), reason: z.string().min(1).max(1000) }).strict()),
@@ -110,18 +111,25 @@ export function seedSkips(repository = root): { taskId: (typeof taskIds)[number]
   });
 }
 
+/** Model configuration is part of "the same settings" for the stopping rule:
+ * a changed label, provider, endpoint or model starts a new sequence. The
+ * model identity enters only as a hash, so the manifest never carries it. */
+export function liveSettingsDigest(inputDigest: string, manifest: Pick<LiveManifest, "settings" | "t6Variant" | "inference">,
+  modelIdentity: string): string {
+  return sha256(JSON.stringify({ inputs: inputDigest, settings: manifest.settings, t6Variant: manifest.t6Variant,
+    inference: manifest.inference, model: sha256(modelIdentity) }));
+}
+
 export function createLiveManifest(inputs: ConductorInputs, input: { kind: (typeof liveRunKinds)[number]; runId: string;
   revision: string; samplingSeed: string; settings: Settings; t6Variant?: "standard" | "withheld";
   taskIds: readonly (typeof taskIds)[number][]; personaIds: readonly string[];
-  inference: LiveManifest["inference"]; build: LiveManifest["build"];
+  inference: LiveManifest["inference"]; modelIdentity: string; build: LiveManifest["build"];
   skipped: LiveManifest["skipped"]; blockers: readonly string[] }): Readonly<LiveManifest> {
   if (computeInputDigest(inputs) !== inputs.inputDigest) throw new Error("Instrument input digest mismatch");
   const settings = settingsSchema.parse(input.settings), t6Variant = input.t6Variant ?? "standard";
   const known = new Set(inputs.personas.map(persona => persona.id));
   if (input.personaIds.some(id => !known.has(id))) throw new Error("Unknown persona");
-  // Model configuration is part of "the same settings" for the stopping rule:
-  // a changed provider label or identity commitment starts a new sequence.
-  const settingsDigest = sha256(JSON.stringify({ inputs: inputs.inputDigest, settings, t6Variant, inference: input.inference }));
+  const settingsDigest = liveSettingsDigest(inputs.inputDigest, { settings, t6Variant, inference: input.inference }, input.modelIdentity);
   const blockers = [...new Set([...input.blockers, ...(input.kind === "live-run" ? [] : [`${input.kind}-is-not-a-full-run`]),
     ...(input.inference.provider === "local-deterministic-stub" ? ["stub-provider-is-not-evidence"] : []),
     ...input.skipped.map(skip => `${skip.taskId}-skipped`)])].sort();

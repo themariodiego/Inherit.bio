@@ -4,11 +4,11 @@
  *
  *  - `manifest.json` pins what the run was: kind, product revision, the local
  *    build it drove under TEST-LOCAL, rubric and pattern digests and the
- *    rubric slice version, per-file fixture digests, sampling seed, both
- *    temperatures and every limit, the non-identifying inference label and
- *    the identity commitment, the isolation probe's report, skipped tasks and
- *    remaining blockers. It is rewritten once at the end with the outcome and
- *    the measured spend.
+ *    rubric slice version, per-file fixture digests, sampling seed, every
+ *    limit, the isolation probe's report, skipped tasks and remaining
+ *    blockers, and a `model` block with the inference label, the pinned model
+ *    identifier and both temperatures. It is rewritten once at the end with
+ *    the outcome and the measured spend.
  *  - `responses.jsonl` holds one line per simulation, appended and flushed as
  *    it completes: completed yes/no, path, counted actions, entries, the steps
  *    taken, the verbatim answer, the blind verdict and any re-grade, the
@@ -17,8 +17,10 @@
  *    a full one.
  *
  * A stub run is never written under `docs/comprehension-runs`, and a real one
- * is never written anywhere else. No line may contain the model identifier or
- * its salt; a write that would is refused and stops the run.
+ * is never written anywhere else. Under the owner's decision of 25 September
+ * 2026 the pinned identifier appears in the run records and nowhere else, so
+ * it is written once, as `model.identifier` in `manifest.json`. Any other
+ * field or line that would carry it is refused, and the run stops.
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -42,6 +44,7 @@ export interface RecordHeader {
   calibration?: { runId: string; perSimulationMaxMicroDollars: number } | null;
 }
 export type SessionExtras = { entryChannels: string[]; failedActions: number; refusedValues: number };
+type ModelBlock = { label: string; provider: string; identifier: string | null; temperature: { participant: number; grader: number } };
 
 const sha256 = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
 
@@ -61,17 +64,20 @@ export function fixtureDigests(inputs: ConductorInputs, repository = repositoryR
 export class RunRecord {
   private costs: number[] = [];
   private constructor(readonly directory: string, private readonly responses: FileHandle,
-    private readonly forbidden: readonly string[], private readonly base: Record<string, unknown>,
+    private readonly identifier: string | null, private readonly base: Record<string, unknown> & { model: ModelBlock },
     private readonly inputs: ConductorInputs) {}
 
   static async create(input: { root: string; date: string; manifest: LiveManifest; inputs: ConductorInputs;
-    header: RecordHeader; forbidden: readonly string[]; repository?: string }): Promise<RunRecord> {
-    const repository = input.repository ?? repositoryRoot;
+    header: RecordHeader; modelIdentifier: string | null; docsRepository?: string }): Promise<RunRecord> {
+    // Where docs/comprehension-runs lives; tests point it at a scratch
+    // repository. Fixtures are always read from this checkout.
+    const repository = input.docsRepository ?? repositoryRoot;
     const docs = path.resolve(repository, RECORD_ROOT), root = path.resolve(input.root);
     const inDocs = root === docs;
     const stub = input.manifest.inference.provider === "local-deterministic-stub";
     if (stub && (root === docs || root.startsWith(docs + path.sep))) throw new Error("A stub run is not comprehension evidence and never records under docs/comprehension-runs");
     if (!stub && !inDocs) throw new Error("A real provider's run records under docs/comprehension-runs and nowhere else");
+    if (stub !== (input.modelIdentifier === null)) throw new Error("A real provider's run records its pinned model identifier; the stub has none");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error("Record date must be YYYY-MM-DD");
     const directory = path.join(root, input.date, input.manifest.runId);
     await mkdir(directory, { recursive: true });
@@ -87,28 +93,33 @@ export class RunRecord {
         personas: { path: "scripts/comprehension/personas.json", sha256: input.inputs.pins.personas },
         // Renders every prompt, so a record's grading requests can be re-rendered from it.
         worker: { path: "scripts/comprehension/inference-worker.ts", sha256: input.inputs.pins.inferenceWorker },
-        fixtures: fixtureDigests(input.inputs, repository),
+        fixtures: fixtureDigests(input.inputs),
       },
-      temperature: { participant: input.manifest.settings.temperature,
-        grader: input.manifest.settings.graderTemperature ?? input.manifest.settings.temperature },
-      identity: { label: input.manifest.inference.label, commitment: input.manifest.inference.identityCommitment,
-        exactIdentifier: "held only in the operator's private identity file for this run; see docs/comprehension-runs/README.md" },
+      // G3.1's "the run artifact records the pinned model identifier and
+      // temperature": here, and only here.
+      model: { label: input.manifest.inference.label, provider: input.manifest.inference.provider,
+        identifier: input.modelIdentifier, temperature: { participant: input.manifest.settings.temperature,
+          grader: input.manifest.settings.graderTemperature ?? input.manifest.settings.temperature } },
       ...input.header,
     };
     const record = new RunRecord(directory, await open(path.join(directory, "responses.jsonl"), "wx", 0o644),
-      input.forbidden.filter(Boolean), base, input.inputs);
+      input.modelIdentifier, base, input.inputs);
     await record.writeJson("manifest.json", { ...base, status: "running" });
     return record;
   }
 
+  /** Refuses the identifier anywhere but `model.identifier` in manifest.json. */
   private check(text: string) {
-    const lower = text.toLowerCase();
-    if (this.forbidden.some(value => lower.includes(value.toLowerCase()))) throw new Error("Record write refused: it would publish the model identity");
+    if (this.identifier && text.toLowerCase().includes(this.identifier.toLowerCase())) {
+      throw new Error("Record write refused: the model identifier belongs only in manifest.json's model block");
+    }
   }
 
   private async writeJson(name: string, value: unknown) {
     const text = JSON.stringify(value, null, 2) + "\n";
-    this.check(text);
+    const model = (value as { model?: ModelBlock }).model;
+    // Check everything except the one field allowed to carry the identifier.
+    this.check(model ? JSON.stringify({ ...(value as object), model: { ...model, identifier: null } }) : text);
     const temporary = path.join(this.directory, `.${name}.tmp`);
     await writeFile(temporary, text, "utf8");
     await rename(temporary, path.join(this.directory, name));
@@ -151,8 +162,16 @@ export class RunRecord {
   }
 }
 
+/** What the runner prints when a run ends. Never the model identifier. */
+export function runSummary(input: { directory: string; status: string; manifest: LiveManifest;
+  spend: Awaited<ReturnType<RunRecord["finish"]>>; assessment?: RunAssessment }) {
+  return { record: path.relative(repositoryRoot, input.directory), status: input.status, inference: input.manifest.inference.label,
+    qualifyingEvidence: input.manifest.qualifyingEvidence, blockers: input.manifest.blockers, spend: input.spend,
+    assessment: input.assessment ? { clean: input.assessment.clean, failures: input.assessment.failures } : null };
+}
+
 export async function readRecordManifest(directory: string) {
   return JSON.parse(await readFile(path.join(directory, "manifest.json"), "utf8")) as Record<string, unknown> & {
-    status: string; manifest: LiveManifest; startedAt: string; finishedAt?: string;
+    status: string; manifest: LiveManifest; startedAt: string; finishedAt?: string; model?: { identifier: string | null };
     spend?: { perSimulationMaxMicroDollars: number; simulations: number; settledMicroDollars: number } };
 }

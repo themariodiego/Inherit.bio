@@ -12,8 +12,8 @@ import { createLiveManifest, loadConductorInputs, repositoryRoot, seedSkips } fr
 import { isolatedProcesses, probeIsolation } from "../scripts/comprehension/inference-isolation";
 import { InstrumentJournal } from "../scripts/comprehension/instrument-journal";
 import { openLiveSession, type InboxMessage, type LiveSession } from "../scripts/comprehension/live-browser";
-import { forbiddenInRecord, IDENTITY_BLOCKER, inferenceOf, runConfigSchema, workerProvider, writeIdentityFile } from "../scripts/comprehension/run-config";
-import { RECORD_ROOT, readRecordManifest, RunRecord } from "../scripts/comprehension/run-record";
+import { inferenceOf, modelIdentifierOf, modelIdentityOf, runConfigSchema, workerProvider } from "../scripts/comprehension/run-config";
+import { RECORD_ROOT, readRecordManifest, RunRecord, runSummary } from "../scripts/comprehension/run-record";
 import { OWN_REPORT_PURPOSES, type OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { EMAIL_LABEL } from "../src/copy/family/invite";
 import { adminClient, adultInvitationToken, adultInvitationUrl, createConfirmedUser, drainMailUntil, findUserByEmail, signIn, SUPABASE_URL } from "./helpers";
@@ -45,6 +45,10 @@ import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-r
  * inbox beside the browser. Opening it is an entry, never a counted action.
  * T6 and T7 are recorded as skipped with the binding's reason until
  * participant-c can be seeded; they are never recorded as answered.
+ *
+ * The pinned model identifier is written only into the run record's
+ * `manifest.json` (owner decision, 25 September 2026). Nothing here logs it,
+ * and no assertion compares it in a way that would print it on failure.
  */
 const CONFIG = process.env.INHERIT_COMPREHENSION_CONFIG;
 const ENABLED = process.env.INHERIT_COMPREHENSION_RUN === "1";
@@ -136,8 +140,8 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
   const inference = inferenceOf(config);
   const draft = (blockers: string[]) => createLiveManifest(inputs, { kind: config.kind, runId, revision, samplingSeed: config.samplingSeed,
     settings: config.settings, t6Variant: config.t6Variant, taskIds: selected, personaIds: personas.map(persona => persona.id), inference,
-    build: { baseUrl: BASE_URL, buildId, jurisdiction: "TEST-LOCAL" }, skipped, blockers });
-  const blockers = [IDENTITY_BLOCKER, ...(dirty ? ["working-tree-differs-from-revision"] : [])];
+    modelIdentity: modelIdentityOf(config), build: { baseUrl: BASE_URL, buildId, jurisdiction: "TEST-LOCAL" }, skipped, blockers });
+  const blockers = dirty ? ["working-tree-differs-from-revision"] : [];
   let calibration: { runId: string; perSimulationMaxMicroDollars: number } | null = null;
   if (real && config.kind === "live-run") {
     // A paid full run must be bounded by a measured calibration on the same
@@ -147,6 +151,8 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
     expect(measured.status).toBe("completed");
     expect(measured.manifest.kind).toBe("calibration");
     expect(measured.manifest.inference).toEqual(inference);
+    // A boolean, so a mismatch never prints either identifier into a report.
+    expect(measured.model?.identifier === modelIdentifierOf(config), "calibrated on the same model").toBe(true);
     expect(measured.manifest.settingsDigest, "calibrated on the same settings").toBe(planned.settingsDigest);
     expect(measured.spend?.simulations ?? 0).toBeGreaterThan(0);
     const sessions = (selected.length - skipped.length) * personas.length;
@@ -155,10 +161,8 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
     calibration = { runId: measured.manifest.runId, perSimulationMaxMicroDollars: measured.spend!.perSimulationMaxMicroDollars };
   } else if (real) blockers.push("provider-token-and-cost-bounds-unverified");
   const manifest = draft(blockers);
-  await writeIdentityFile(config, runId, { participant: config.settings.temperature,
-    grader: config.settings.graderTemperature ?? config.settings.temperature });
   const record = await RunRecord.create({ root: real ? path.join(repositoryRoot, RECORD_ROOT) : config.stubRecordRoot!,
-    date: new Date().toISOString().slice(0, 10), manifest, inputs, forbidden: forbiddenInRecord(config),
+    date: new Date().toISOString().slice(0, 10), manifest, inputs, modelIdentifier: modelIdentifierOf(config),
     header: { startedAt: new Date().toISOString(), isolation,
       build: { mode: "next start (production build)", buildIdVerified: true, testJurisdictionVerified: true },
       budget: { limitMicroDollars: config.limitMicroDollars, otherCostsMicroDollars: config.otherCostsMicroDollars,
@@ -217,7 +221,7 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
   }
 
   try {
-    const result = await runLive({ manifest, inputs, journal,
+    const result = await runLive({ manifest, inputs, journal, modelIdentity: modelIdentityOf(config),
       environment: { kind: "live-local-build", openBrowser, openProcess: isolatedProcesses(workerProvider(config)) },
       onSession: async outcome => {
         const session = sessions.get(outcome.sessionId);
@@ -228,9 +232,8 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
       } });
     const spend = await record.finish({ status: result.status, failure: "failure" in result ? result.failure : undefined,
       assessment: result.assessment, qualifyingEvidence: manifest.qualifyingEvidence, blockers: manifest.blockers });
-    console.log(JSON.stringify({ record: path.relative(repositoryRoot, record.directory), status: result.status,
-      qualifyingEvidence: manifest.qualifyingEvidence, blockers: manifest.blockers, spend,
-      assessment: result.assessment ? { clean: result.assessment.clean, failures: result.assessment.failures } : null }, null, 2));
+    console.log(JSON.stringify(runSummary({ directory: record.directory, status: result.status, manifest, spend,
+      assessment: result.assessment }), null, 2));
     expect(result.status, "the run completed; a stopped run is recorded with its reason").toBe("completed");
   } finally {
     await journal.close();

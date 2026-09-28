@@ -2,7 +2,7 @@
 
 This directory holds the committed record of every simulated comprehension
 run made with a real model provider (G3.1). **As of 28 September 2026 it holds
-no run.** No model credential exists for the harness, so no paid call has
+no run.** No model credential exists in the environment, so no paid call has
 been made. Nothing here is a human result; human results belong in
 `docs/comprehension-results-<date>.md`, written only by a facilitator who ran
 a round.
@@ -29,13 +29,15 @@ One directory per run: `docs/comprehension-runs/<date>/<runId>/`.
 - the build it drove: `next start` of this checkout's production build on
   port 3100 under TEST-LOCAL, with the build id checked against the server
   and TEST-LOCAL checked by a capability only it permits;
-- SHA-256 digests of the rubric, the pattern file, the bindings and the
-  persona bank, the rubric slice version, and each bound fixture file;
+- SHA-256 digests of the rubric, the pattern file, the bindings, the persona
+  bank and the inference worker, the rubric slice version, and each bound
+  fixture file;
 - the sampling seed for the 10% re-grade;
-- the participant and grader temperatures, step, token and time limits, and
-  the token prices the spend journal reserved against;
-- the inference label, the identity commitment and the isolation probe's
-  report (see below);
+- step, token and time limits, and the token prices the spend journal
+  reserved against;
+- a `model` block: the inference label, the provider kind, **the pinned model
+  identifier**, and the participant and grader temperatures;
+- the isolation probe's report;
 - skipped tasks with the binding's reason, and every remaining blocker;
 - at the end: status, failure reason and measured spend per simulation.
 
@@ -47,28 +49,71 @@ independent re-grade; the deterministic prohibited-pattern result; digests of
 the exact grading requests; and the session's cost. A skipped task is a line
 with its reason and no answer. It is never a pass.
 
-## Model identity: a stated tension
+## Model identity
 
-The brief (G3.1) says the run artifact records the pinned model identifier.
-The owner decided on 25 September 2026 that the identifier may appear in the
-run records in this directory. The standing rule for this work forbids model
-identifiers in anything committed or pushed.
+G3.1 requires the run artifact to record the pinned model identifier and
+temperature. The owner decided on 25 September 2026 (`docs/protocol/decisions.md`,
+"Model identity in comprehension evidence") that they appear only in the run
+records in this directory, and stay out of commit messages, pull-request
+text, comments and code. So:
 
-The harness follows the stricter rule until the owner chooses otherwise:
+- the identifier is written once per run, as `model.identifier` in that run's
+  `manifest.json`, beside the temperatures;
+- `responses.jsonl`, `assessment.json` and every other field of the manifest
+  may not contain it; the writer refuses such a write and the run stops;
+- outside this directory the harness uses only a non-identifying label such
+  as `provider-a/config-1`, which may not contain the identifier or any word
+  of it. The spend journal and raw traces carry the label, the runner prints
+  the label, and the stopping rule sees a changed model only through a hash
+  in the settings digest;
+- `scripts/comprehension/identity-containment.test.ts` holds this: every
+  identifier recorded here must appear in no other tracked file and no commit
+  message, and a run with a real provider shape writes it into its
+  `manifest.json` and nowhere else.
 
-- `manifest.json` carries a non-identifying label such as
-  `provider-a/config-1`, and a salted SHA-256 commitment to the exact
-  identifier and endpoint.
-- The exact identifier, the endpoint and the salt are written only to
-  `<effortDirectory>/identity/<runId>.json`, a private `0600` file outside
-  any Git checkout. With it, anyone can recompute the commitment and prove
-  which model ran.
-- Every record carries the blocker `pinned-identifier-held-locally-not-in-record`,
-  so no run can qualify for G3.3 until the owner either accepts the
-  commitment as meeting G3.1 or allows the identifier here.
+Keep the local run configuration, which names the identifier, outside the
+checkout. Commit messages and pull-request text about a run name its run id
+and label, never the model.
 
-No line may contain the identifier or its salt. The writer refuses such a
-line and the run stops.
+## Credential and spending
+
+The harness reads one credential from a variable in the operator's own shell,
+named by `apiKeyVariable` in the local run configuration. The documented name
+is `COMPREHENSION_MODEL_API_KEY`. It is handed only to each isolated inference
+process. It is never deployment configuration: never in `.env.example`, a
+`.env` file, the hosting provider's environment or anything under `src/`, so
+the commitment that LLM keys are never deployment-level stands.
+
+Nobody is asked for it. Scored runs wait until a key exists in the
+environment. The spend-capped setup that fits the owner's approval:
+
+- one key on an OpenAI-compatible gateway, preferably the existing edge
+  provider's, with a hard spending limit of US$50 or less set at the
+  provider, so the cap holds even if the harness's own journal were wrong;
+- `limitMicroDollars` of at most `50000000` in the run configuration, and
+  `otherCostsMicroDollars` covering any CI or plan charge already spent;
+- one `effortDirectory` for the whole approved effort, so every calibration,
+  run, grader and retry draws on the same journal and balance.
+
+## The order of runs
+
+Whenever a key appears, the order is fixed:
+
+1. **Smoke** with the local stub (`provider.kind: local-deterministic-stub`),
+   to prove the build, the seeds and the isolation on this machine. It
+   spends nothing and is recorded outside this directory.
+2. **Calibration** with the real provider: one task, about five personas,
+   `kind: calibration`. It re-grades every session, so all three roles are
+   priced. Its record here gives the measured cost per simulation.
+3. **Review the measured cost** against what is left of the US$50 before any
+   full run. `pnpm comprehension:run <config> --plan` prints the ceiling.
+4. **Full runs**, `kind: live-run`, naming the calibration in `calibration`.
+   The runner refuses to start one without a calibration on the same model
+   and settings, or if the measured cost per simulation, times the planned
+   sessions, plus 25%, exceeds what the journal has left.
+
+Until embryo ingest lands (G2.6), T6 and T7 are skipped and no full run can
+be clean, so step 4 spends budget the two qualifying runs will need.
 
 ## Checking a record without a model
 
@@ -90,8 +135,8 @@ G3.3 is met when the last two full runs, in the order they were run, share one
 product revision and one set of settings and both meet every threshold. A
 full run that is not clean breaks the sequence, including one with skipped
 tasks: until participant-c can be seeded (embryo ingest, G2.6), T6 and T7 are
-skipped and no run can be clean. A changed provider label, identity
-commitment, temperature or limit is a different set of settings.
+skipped and no run can be clean. A changed model, endpoint, label,
+temperature, limit or inference worker is a different set of settings.
 
 If three successive product revisions close without two clean runs, the
 affected capability enters the withheld path, with these records as its

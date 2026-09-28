@@ -80,16 +80,18 @@ For a real provider, `provider` becomes:
 ```json
 { "kind": "openai-compatible-chat", "label": "provider-a/config-1",
   "endpoint": "https://<gateway>/v1", "modelIdentifier": "<exact identifier>",
-  "apiKeyVariable": "COMPREHENSION_MODEL_API_KEY", "identitySalt": "<64 hex, generated once>" }
+  "apiKeyVariable": "COMPREHENSION_MODEL_API_KEY" }
 ```
 
 - `kind` is `smoke`, `calibration` or `live-run`. Only a `live-run` of all
   30 personas on all ten tasks counts toward G3.3.
 - `effortDirectory` must be `0700`, owned by you and outside any Git
-  checkout. It holds the spend journal, raw traces and identity files for the
-  whole authorized effort. A stub run uses the dry ledger there; a real run
+  checkout. It holds the spend journal and raw traces for the whole
+  authorized effort. A stub run uses the dry ledger there; a real run
   uses the live one, and neither opens the other.
-- `label` must not contain the identifier or any word of it.
+- `label` must not contain the identifier or any word of it, because the
+  label travels where the identifier may not: the journal, traces and logs.
+- Keep this file outside the checkout; it names the exact identifier.
 - The credential is read from the named variable in your shell and handed
   only to each inference child. It is never deployment configuration, never
   in `.env.example` and never under `src/`, which keeps the commitment that
@@ -141,11 +143,25 @@ failure of its task, and makes the run non-qualifying. It is never an answer.
 
 ### Model identity
 
-The committed record carries a non-identifying label and a salted
-commitment; the exact identifier goes only to a private identity file in the
-effort directory. `docs/comprehension-runs/README.md` states why, and every
-record carries the blocker `pinned-identifier-held-locally-not-in-record`
-until the owner decides how G3.1's wording is met.
+Under the owner's decision of 25 September 2026, the pinned model identifier
+and temperature appear only in the run records under
+`docs/comprehension-runs/<date>/`. The harness writes the identifier once, as
+`model.identifier` in a real run's `manifest.json`, and refuses it anywhere
+else in the record. The run manifest the journal stores carries only the
+label; the stopping rule sees a changed model through a hash in the settings
+digest. Nothing the runner prints contains it, and
+`identity-containment.test.ts` fails if a recorded identifier appears in any
+other tracked file or any commit message. Commit messages and pull-request
+text about a run name its run id and label, never the model.
+
+### The order of runs
+
+Whenever a key exists in the environment: a stub smoke run first, then a
+calibration with the real provider (one task, about five personas), then a
+review of its measured cost per simulation, then full runs that name the
+calibration. `docs/comprehension-runs/README.md` sets out the order and the
+spend-capped credential setup. Nobody is asked for a key; scored runs wait
+until one exists.
 
 ### Cost and the cap
 
@@ -345,7 +361,7 @@ cannot:
 
 | Former blocker | Now |
 |---|---|
-| Run record with the pinned identity | Built: label and salted commitment committed, exact identifier in a private file. Blocked on the owner's choice (`pinned-identifier-held-locally-not-in-record`). |
+| Run record with the pinned identity | Built: the identifier and temperatures in the record's `manifest.json` only, per the owner's 25 September decision, held there by `identity-containment.test.ts`. |
 | Externally enforced isolation | Built: a browser context and seeded account per session, an isolated OS process per call, and a probe recorded with every run. |
 | Production build under the test jurisdiction | Checked before every run: build id served, and a TEST-LOCAL-only capability visible. |
 | T9 fixture | Built: the owner's reserved-record invitation path, with the mail in an inbox beside the page. |

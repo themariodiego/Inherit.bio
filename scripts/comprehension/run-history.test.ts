@@ -96,7 +96,7 @@ describe("chronological instrument history", () => {
   it("keeps calibration and smoke runs out of revision tracking and records only declared skips", () => {
     const partial = (runId: string, revision: string) => createLiveManifest(inputs, { kind: "calibration", runId, revision,
       samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T6"], personaIds: [inputs.personas[0].id],
-      inference: { label: "local/deterministic-stub", provider: "local-deterministic-stub", identityCommitment: "c".repeat(64) },
+      inference: { label: "local/deterministic-stub", provider: "local-deterministic-stub" }, modelIdentity: "local-deterministic-stub",
       build: { baseUrl: "http://localhost:3100", buildId: "synthetic-build", jurisdiction: "TEST-LOCAL" },
       skipped: [{ taskId: "T6", reason: "blocked" }], blockers: [] });
     const history = new RunHistory();

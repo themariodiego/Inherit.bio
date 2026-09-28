@@ -15,7 +15,9 @@
  *
  * Run it with `pnpm comprehension:records status` or `... check <dir>`.
  */
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { readFileSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -31,7 +33,7 @@ export type RecordLine =
     regrade: ComprehensionResponse["verdict"] | null; deterministic: { class: string | null; hit: string | null } };
 export interface LoadedRecord {
   directory: string; status: string; startedAt: string; manifest: LiveManifest; lines: RecordLine[];
-  recordedAssessment?: RunAssessment;
+  recordedAssessment?: RunAssessment; modelIdentifier?: string | null;
 }
 
 export async function loadRecord(directory: string): Promise<LoadedRecord> {
@@ -40,7 +42,8 @@ export async function loadRecord(directory: string): Promise<LoadedRecord> {
   if (text && !text.endsWith("\n")) throw new Error(`${directory}: responses.jsonl ends mid-line`);
   const assessment = JSON.parse(await readFile(path.join(directory, "assessment.json"), "utf8").catch(() => "{}"));
   return { directory, status: header.status, startedAt: header.startedAt, manifest: header.manifest,
-    lines: text.trimEnd().split("\n").filter(Boolean).map(line => JSON.parse(line)), recordedAssessment: assessment.assessment };
+    lines: text.trimEnd().split("\n").filter(Boolean).map(line => JSON.parse(line)), recordedAssessment: assessment.assessment,
+    modelIdentifier: header.model?.identifier ?? null };
 }
 
 /** Every record directory under the root, oldest first. */
@@ -124,6 +127,33 @@ export function gateStatus(records: readonly LoadedRecord[], human?: HumanSucces
   return { met, fullRuns, otherRuns: records.filter(record => !isFullRun(record.manifest))
     .map(record => ({ runId: record.manifest.runId, kind: record.manifest.kind, status: record.status })),
   failedRevisions, withheldPathRequired, explanation };
+}
+
+/**
+ * Where a pinned identifier from a committed run record appears outside
+ * `docs/comprehension-runs/`. The owner's decision of 25 September 2026 allows
+ * it in the run records and nowhere else: not in code, other docs or commit
+ * messages. Each hit names only its source, never the identifier, so a
+ * failure cannot print it into a log.
+ */
+export function identityLeaks(identifiers: readonly (string | null | undefined)[], sources: readonly { name: string; text: string }[]): string[] {
+  const wanted = [...new Set(identifiers.filter((value): value is string => Boolean(value)).map(value => value.toLowerCase()))];
+  return sources.filter(source => { const text = source.text.toLowerCase(); return wanted.some(value => text.includes(value)); })
+    .map(source => source.name);
+}
+
+/** Every tracked file outside the run records, and every commit message. */
+export function repositorySources(repository = repositoryRoot): { name: string; text: string }[] {
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: repository, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  const files = git("ls-files", "-z").split("\0").filter(file => file && !file.startsWith(`${RECORD_ROOT}/`));
+  const sources = files.flatMap(file => {
+    const full = path.join(repository, file);
+    try { return statSync(full).size <= 16 * 1024 * 1024 ? [{ name: file, text: readFileSync(full, "utf8") }] : []; }
+    catch { return []; }
+  });
+  const messages = git("log", "--format=%H%x00%B%x1e").split("\x1e").map(entry => entry.trim()).filter(Boolean)
+    .map(entry => { const [hash, body] = entry.split("\0"); return { name: `commit ${hash}`, text: body ?? "" }; });
+  return [...sources, ...messages];
 }
 
 async function main() {
