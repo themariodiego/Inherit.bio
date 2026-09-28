@@ -222,13 +222,15 @@ describe("record key addendum email", () => {
     expectSafeBody(html);
   });
 
-  it("no-source says no genetic file was kept for the embryo", async () => {
+  it("no-source says no genetic file was kept for the embryo, and when its record goes", async () => {
     const html = await renderHtml(
-      createElement(RecordKeyAddendumEmail, { kind: "no-source", displayLabel: "Embryo 4" }),
+      createElement(RecordKeyAddendumEmail, { kind: "no-source", displayLabel: "Embryo 4",
+        closingDateIso: "2028-09-05", closingDateWords: "5 September 2028" }),
     );
     expect(html).toContain("One embryo has no genetic file");
     expect(html).toContain("No genetic file was kept for Embryo 4.");
     expect(html).toContain("cannot be used to claim anything");
+    expect(html).toContain("Inherit keeps the record of its quality check until 5 September 2028 (2028-09-05), and then deletes it.");
     expect(html).not.toContain("href=");
     expectSafeBody(html);
   });
@@ -351,7 +353,8 @@ const embryoMails: ReadonlyArray<{ mail: MailTemplate; subject: string; heading:
     heading: "The claim period on your Record Key changed",
   },
   {
-    mail: { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1" } },
+    mail: { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1",
+      closingDateIso: "2028-09-05", closingDateWords: "5 September 2028" } },
     subject: "No genetic file was kept for one embryo",
     heading: "One embryo has no genetic file",
   },

@@ -69,7 +69,14 @@ const recordKeyAddendumPayload = z.discriminatedUnion("kind", [
       closingDateWords: z.string().trim().min(1).max(40),
     })
     .strict(),
-  z.object({ kind: z.literal("no-source"), displayLabel }).strict(),
+  z
+    .object({
+      kind: z.literal("no-source"),
+      displayLabel,
+      closingDateIso: z.iso.date(),
+      closingDateWords: z.string().trim().min(1).max(40),
+    })
+    .strict(),
   z.object({ kind: z.literal("card-invalidated"), embryoCount }).strict(),
 ]);
 
