@@ -47,6 +47,78 @@ Storage deletion acknowledgement or terminal notice producer is added.
    does not prove that backing source bytes are absent. Unknown outcomes remain
    `failure_pending`/`storage_pending`; no deadline is renewed and no no-source
    claim is made.
+
+   **Metadata fence and drain built, 2026-09-28**
+   (`20260928100000_embryo_ingest_write_fence.sql`, tested by
+   `supabase/tests/embryo_ingest_write_fence.sql`). Test-local only; no route
+   or writer uses it yet. What it proves:
+
+   - Every reserved fragment gets one write intent in
+     `private.embryo_ingest_write_intents`: its exact object name, byte count
+     and a write window of at most 60 seconds, clamped to the session deadline.
+   - `guard_embryo_ingest_object` on `storage.objects` owns the namespace:
+     bucket `genomes`, four UUID segments and `.vcf` or `.tsv`, matched
+     case-insensitively. An INSERT there needs a service-role JWT, an exact
+     open and unexpired intent, an open, unfenced, unexpired session that still
+     passes `private.embryo_ingest_binding_failure_v1`, a still-reserved chunk,
+     a name absent from `public.embryo_ingest_delete_objects`, and the exact
+     byte count. Only Storage's rollback-only probe (`version = '1'`,
+     `contentLength`) and the real write (UUID-v4 version, `size`) are
+     admitted. A deferred constraint refuses to commit the probe shape. Every
+     UPDATE touching the namespace is refused. The real write marks the intent
+     `landed` with the object id and version in the same transaction.
+   - `commit_embryo_ingest_chunk_v1` can no longer store a chunk until every
+     fragment's intent is landed and its metadata row still exists with the
+     same id, bucket, name, version and size. A chunk with no fragments still
+     commits.
+   - When a session leaves `open`/`mapping_required`, a row in
+     `private.embryo_ingest_write_fences` is stamped. `fence_at` is the later
+     of the stamp and the last open write window. A fenced session never
+     reopens.
+   - `public.settle_embryo_ingest_writes_v1` reports `writable`, `draining`
+     (before `fence_at`) or `settled`. Settling classifies every intent
+     `landed` or `uncertain` once, and repeats the same receipt after that.
+   - `public.embryo_ingest_write_targets_v1` lists each fragment's name, state
+     and window. It renews an expired open window, at most three windows, only
+     while the session is open, unfenced and authorized, so a crashed chunk
+     request can resume. An exhausted window fails the attempt with
+     `retry-exhaustion`.
+
+   Why the time bound holds: the guard holds the session row FOR SHARE and the
+   intent FOR UPDATE until the Storage transaction ends. A status change needs
+   the session row lock, so it either commits first (the guard then refuses) or
+   waits and computes the fence after that landing. After `fenced_at` no
+   admitted metadata write can still commit. After `fence_at` every window a
+   writer was given has closed.
+
+   What it does not prove: physical absence. An `uncertain` intent means no
+   metadata row committed inside its windows. The provider may still hold
+   bytes at a version no row names, from an upload whose metadata INSERT was
+   refused or never ran. A refused retry at a `landed` name can leave the same
+   kind of orphan. `uncertain` intents therefore keep the unwind in
+   `storage_pending`. At most one chunk's fragments can be uncertain, because
+   only one chunk is reserved at a time.
+
+   `private.assert_embryo_unwind_plannable_stores_v1` scans only `public`. The
+   two new private tables are covered anyway: intents cascade from
+   `public.embryo_ingest_fragments` and fences from
+   `public.embryo_ingest_sessions`, both already inventoried by the unwind.
+   Both are registered in `public.purge_target_stores`.
+
+   **Owner decision needed:** what evidence is enough to treat an `uncertain`
+   write as leaving no provider bytes?
+   - **A (recommended).** Prove it. Keep `uncertain` unwinds in
+     `storage_pending` on Supabase Storage, and move embryo transport objects
+     to a store Inherit can list by version, as ADR 0025 does for prepared
+     objects on R2: create-only writes, then a zero-byte tombstone at each
+     uncertain key after `fence_at`, verified by listing.
+   - **B.** Accept the metadata fence and drain as enough. After `fence_at`, an
+     exact Storage API delete and an empty metadata listing count as absence,
+     and the no-source notice is sent. Orphan bytes may persist until the
+     provider cleans them up, on a schedule Inherit cannot state.
+   - **C.** Accept B's evidence, but send cohorts with any `uncertain` intent a
+     different notice: the upload stopped mid-write and an unreachable partial
+     copy may remain with the storage provider. This needs new approved copy.
 2. Exact selectors and deletion verification for every supported pending,
    evidence, derived and working-state store. Unsupported graph cases cannot
    silently fall through to a partial purge.
