@@ -7770,6 +7770,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      claim_embryo_ingest_object_disposals_v1: {
+        Args: { p_claim_token_hash: string; p_unwind_id: string }
+        Returns: Json
+      }
       claim_embryo_terminal_mail_v1: {
         Args: never
         Returns: {
@@ -7845,6 +7849,10 @@ export type Database = {
           p_upload_session_id: string
         }
         Returns: string
+      }
+      confirm_embryo_ingest_unwind_storage_v1: {
+        Args: { p_unwind_id: string }
+        Returns: Json
       }
       create_adult_subject_invitation_v1: {
         Args: {
@@ -8003,6 +8011,16 @@ export type Database = {
           key_revision: number
           recipient_set_revision: number
         }[]
+      }
+      finish_embryo_ingest_object_disposal_v1: {
+        Args: {
+          p_claim_token_hash: string
+          p_evidence: Json
+          p_expected: Json
+          p_ordinal: number
+          p_unwind_id: string
+        }
+        Returns: Json
       }
       grant_cloud_model_consent: {
         Args: {
