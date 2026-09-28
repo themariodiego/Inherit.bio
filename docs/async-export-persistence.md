@@ -320,3 +320,79 @@ confirmed both chat choices first. The statement pinned:
 - no export job existing.
 
 The deployed application does not call any of these functions.
+
+## Member plan
+
+`docs/export-member-plan.json` (`export-member-plan-v1`, 28 September 2026)
+is the step 2 member plan. It names every table in the public and private
+schemas, 186 today, and gives each one a disposition and a reason:
+
+| Disposition | Tables | Meaning |
+| --- | --- | --- |
+| `exported` | 19 | The requester's own rows leave. Every column is listed as exported or withheld. |
+| `excluded-credential` | 28 | A key, token, nonce or session, or its hash. Exporting it would be a security defect. |
+| `excluded-protected` | 20 | Contact values, identity HMACs, evidence documents and other ciphertext the contracts always exclude. |
+| `excluded-internal` | 57 | Processing, delivery, retention and security machinery. |
+| `out-of-scope` | 10 | About a person, but not the requester's own record: drafts about someone else, staff workflow. |
+| `deferred` | 28 | Belongs in a complete export, but no reader exists yet. |
+| `reference` | 24 | Catalogs, registries and configuration. No person's data. |
+
+The 28 `deferred` entries are the open gaps: the legal audit ledger, the
+non-self and family projections, embryo cohorts and Future Person claims.
+Each names what blocks it.
+
+**Checked against the catalog.** `supabase/tests/export_member_plan.sql`
+(38 assertions) holds these, and fails on any of them:
+
+- set equality between the plan and the tables in public and private, so a
+  new table fails CI until it has an entry;
+- for an exported table, set equality between its columns and the plan's
+  exported plus withheld columns, so a new column fails until it is
+  classified;
+- no person-scoped table classified as reference data. A table is
+  person-scoped when it has an account column or a foreign-key path to
+  `auth.users` or `public.audit_principals`, so a table keyed only by a
+  subject or a file counts;
+- every key, token, nonce and session table an excluded credential, including
+  `llm_keys`, `llm_settings` and `copilot_context_tokens` by name;
+- no exported column that looks like a secret, a contact or a network trace;
+- the named redactions: the encrypted signing name, the account that holds a
+  subject, and a file's object key.
+
+The same file plants each failure against a copy of the plan or a scratch
+table and asserts the check reports it: a table dropped from the plan, a new
+account-keyed table, a new subject-keyed table, a subject-keyed table called
+reference data, a credential marked exported, the signing-name redaction
+removed and a new column on an exported table.
+
+**Checked against the code.** `src/lib/export/member-plan.test.ts` holds the
+pgTAP copy equal to the JSON, and parses the live asynchronous readers: their
+history classes are exactly the plan's, and each reads only exported columns
+under their own names. `src/app/api/export/route.test.ts` answers every read
+of the synchronous route with the whole database row, a sentinel in every
+withheld column, and asserts no sentinel reaches the archive and the
+archive's members are exactly the plan's. `src/lib/export/subject-record.test.ts`
+holds each subject-record read to exactly the plan's columns.
+
+**What moved in the synchronous export.** `subject-record.json` read six
+tables with `select("*")` and without pages. It now reads every table with
+listed columns in pages. `subjects` no longer carries `owner_account_id` or
+`cohort_id`, which the history reader already withheld: for an adult held by
+another uploader, the first named that other person's account. A person with
+more than 1,000 subject consents now receives all of them.
+
+**Adding a table.** Add its entry to the JSON, then run
+`pnpm exec tsx scripts/export-member-plan.ts` to copy the plan into the pgTAP
+file. There is no migration: the plan is checked in CI, not stored in the
+database. When the producer is connected, the plan's version and digest
+belong in the job receipt.
+
+**Not yet:** this is the static half of step 2. Binding the plan into the job
+receipt, and comparing the members an attempt actually wrote against it
+before ready, need the archive producer, which is not connected. The
+publication hold stays.
+
+**Legal audit.** No legal audit event can be attributed to anyone today:
+all 65 writers pass a null principal and the pseudonym tables are empty. What
+a person's slice may show is an owner and counsel question, set out with
+options in `docs/export-legal-audit-resolver.md`.
