@@ -21,6 +21,13 @@ select is(private.configure_embryo_vcf_ingest_v1(
   'configured','the attempt records a VCF format, a header-derived build and one issued completion nonce');
 -- Storage's final object write runs as the service role.
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
+-- Where a write intent sends its bytes is chosen by the fragment store's
+-- configuration once that exists; these metadata-only tests use Supabase.
+do $$ begin
+  if to_regclass('private.embryo_ingest_object_config') is not null then
+    execute 'update private.embryo_ingest_object_config set provider=''supabase''';
+  end if;
+end $$;
 
 create function pg_temp.fragments(p_sequence integer) returns jsonb language sql as $$
   select jsonb_agg(jsonb_build_object('ordinal',o,
@@ -200,29 +207,22 @@ select is(pg_temp.probe(
   'delete from public.embryo_ingest_fragments where session_id=(select id from live) and sample_ordinal=2 and sequence=1',
   'select pg_temp.complete()->>''failureCode'''),
   'format','a VCF chunk that lost one embryo''s fragment is terminal even when the ordinal set looks whole');
--- The fence's own evidence is rechecked at completion. Each probe tampers
--- after commit, which no admitted writer can do, so the recheck must see it.
+-- The fence's own evidence (every fragment's write intent `landed`, whatever
+-- the backend) is rechecked at completion. Each probe tampers after commit,
+-- which no admitted writer can do, so the recheck must see it.
 select is(pg_temp.probe(
-  $$set local storage.allow_delete_query = 'true';
-    delete from storage.objects where name=(select object_name from public.embryo_ingest_fragments
-      where session_id=(select id from live) and sequence=1 and sample_ordinal=0)$$,
+  $$delete from private.embryo_ingest_write_intents
+    where session_id=(select id from live) and sequence=1 and sample_ordinal=0$$,
   'select pg_temp.complete()->>''failureCode''','select pg_temp.residue()'),
   'chunk / chunk:failure_pending:0:6:3:2:pending:0',
-  'a landed object whose metadata row is gone blocks completion');
+  'a fragment with no write intent blocks completion');
 select is(pg_temp.probe(
   $$alter table private.embryo_ingest_write_intents disable trigger embryo_ingest_write_intent_identity;
     update private.embryo_ingest_write_intents set byte_count=byte_count+1
       where session_id=(select id from live) and sequence=0 and sample_ordinal=1;
     alter table private.embryo_ingest_write_intents enable trigger embryo_ingest_write_intent_identity$$,
   'select pg_temp.complete()->>''failureCode'''),
-  'chunk','a landed object whose size is not the reserved size blocks completion');
-select is(pg_temp.probe(
-  $$alter table private.embryo_ingest_write_intents disable trigger embryo_ingest_write_intent_identity;
-    update private.embryo_ingest_write_intents set storage_version=gen_random_uuid()::text
-      where session_id=(select id from live) and sequence=0 and sample_ordinal=2;
-    alter table private.embryo_ingest_write_intents enable trigger embryo_ingest_write_intent_identity$$,
-  'select pg_temp.complete()->>''failureCode'''),
-  'chunk','an object row that is not the landed version blocks completion');
+  'chunk','a landed intent whose size is not the reserved size blocks completion');
 select is(pg_temp.probe(
   $$alter table private.embryo_ingest_write_intents disable trigger embryo_ingest_write_intent_identity;
     update private.embryo_ingest_write_intents set state='open',storage_object_id=null,storage_version=null,

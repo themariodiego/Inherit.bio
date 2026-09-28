@@ -14,10 +14,12 @@
 -- commit already requires every fragment's write intent to be `landed`, and
 -- leaving `open` stamps the fence. This transaction is the one that leaves
 -- `open`, only when every chunk is `stored`, and it rechecks the fence's own
--- evidence: every fragment's intent is `landed` and its metadata row still
--- exists with the same id, bucket, name, version and size. It never renews the
--- fixed 24-hour deadline, never cancels the `embryo.ingest-session-24h` due
--- phase and never deletes a fragment or handle.
+-- evidence: every fragment has its write intent, and every intent is
+-- `landed`. That is the landing record whichever backend holds the bytes
+-- (a Supabase metadata row or an acknowledged R2 version), so nothing here
+-- reads a provider-specific store. It never renews the fixed 24-hour
+-- deadline, never cancels the `embryo.ingest-session-24h` due phase and never
+-- deletes a fragment or handle.
 --
 -- The completion nonce is the one the configure transaction issued
 -- (20260929110000_embryo_vcf_configure_route.sql stores its digest as
@@ -339,22 +341,15 @@ begin
     return private.embryo_ingest_completion_failure_v1(s.id, 'format');
   end if;
 
-  -- The fence's evidence, rechecked: every fragment's write intent is
-  -- `landed`, and the metadata row it landed as still exists with the same
-  -- id, bucket, name, version and size. Locked until commit, in the fence's
-  -- order (intents, then object rows), so no DELETE slips between.
+  -- The fence's evidence, rechecked: every fragment has its write intent
+  -- and every intent is `landed`, whatever the backend. Locked until commit
+  -- in the fence's order (session held, then intents).
   perform 1 from private.embryo_ingest_write_intents i where i.session_id = s.id
     order by i.sequence, i.sample_ordinal for share;
-  perform 1 from storage.objects o join private.embryo_ingest_write_intents i on i.storage_object_id = o.id
-    where i.session_id = s.id order by o.id for share of o;
   if exists(select 1 from public.embryo_ingest_fragments f
       left join private.embryo_ingest_write_intents i on i.session_id = f.session_id
         and i.sequence = f.sequence and i.sample_ordinal = f.sample_ordinal
-      left join storage.objects o on o.id = i.storage_object_id and o.bucket_id = 'genomes'
-        and o.bucket_id = f.bucket_id and o.name = i.object_name and o.name = f.object_name
-        and o.version = i.storage_version and o.metadata->'size' = to_jsonb(i.byte_count)
-        and i.byte_count = f.byte_count
-      where f.session_id = s.id and (i.state is distinct from 'landed' or o.id is null)) then
+      where f.session_id = s.id and (i.state is distinct from 'landed' or i.byte_count <> f.byte_count)) then
     return private.embryo_ingest_completion_failure_v1(s.id, 'chunk');
   end if;
 
