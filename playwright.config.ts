@@ -15,7 +15,7 @@ import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV 
 // The independent pause server uses TEST-LOCAL with issuance paused. The
 // fourth server, on LOCAL_MODEL_PORT, is the one app that attests the
 // local-model path (G4.8): the `copilot-local` project runs the red-team suite
-// and the Family group Copilot journey against it, and nothing else runs there.
+// and the Family and cohort Copilot journeys against it, and nothing else runs there.
 // Isolated CI adds a prepared-source server on PREPARED_APP_PORT. Its SQL
 // gate is enabled only inside that guarded journey; other variants keep it off.
 // Playwright starts servers in order; every later server reuses the same build.
@@ -39,10 +39,11 @@ const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
 const PREPARED_JOURNEY = /own-prepared-genome-journey\.spec\.ts$/;
 /**
  * The suites that need the local-model variant: the G4.8 red-team set, and
- * the Family group Copilot scope, a true non-self scope that runs only on a
- * server-attested same-host model (copilot-transport-availability-v1).
+ * the Family and Embryo (cohort) group Copilot scopes, true non-self scopes
+ * that run only on a server-attested same-host model
+ * (copilot-transport-availability-v1).
  */
-const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$/;
+const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
  * looks like — so it is excluded from every default project and runs only when

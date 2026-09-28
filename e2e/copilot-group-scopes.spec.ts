@@ -3,6 +3,7 @@ import { expect, test } from "./audited-test";
 import { createConfirmedUser, signIn } from "./helpers";
 import { COPY_IDS, FAMILY_SCOPE_LABEL } from "../src/copy/copilot/group-scopes";
 import { HUB_TILES } from "../src/copy/family/index";
+import { grantAnalysis, seedPublishedCohort } from "./cohort-copilot-seed";
 
 /**
  * The Copilot group scopes on a deployment that cannot run a local model:
@@ -91,4 +92,30 @@ test("the cohort and report scopes answer 404 for a cohort or report this accoun
     expect(response?.status(), segment).toBe(404);
     await expect(page.locator('[data-slot="copilot-local-unavailable"]')).toHaveCount(0);
   }
+});
+
+/**
+ * The cohort scope is built under TEST-LOCAL (2026-09-28). An account with a
+ * readable cohort gets the Embryos box and hub tile opening that cohort's
+ * scope, and on this variant, which attests no same-host model, that page is
+ * the registered unavailable page: nothing else about the cohort is read.
+ */
+test("with a readable cohort, the Embryos Copilot box and tile open its scope, which says plainly why it cannot run here", async ({ page }) => {
+  const parent = { email: `copilot-groups-cohort-${randomUUID()}@e2e.local`, password: "e2e-copilot-groups-pw" };
+  const accountId = await createConfirmedUser(parent.email, parent.password);
+  const { cohortId } = await seedPublishedCohort({ owner: accountId, parents: [accountId],
+    embryos: [{ ordinal: 0, status: "qc_pass", callRate: 0.98 }] });
+  await grantAnalysis(accountId, cohortId);
+  await signIn(page, parent.email, parent.password);
+  await page.goto("/overview");
+  const box = page.locator('[data-overview-box] a[aria-labelledby="box-embryos-copilot-label"]');
+  await expect(box).toHaveAttribute("href", `/copilot/c-${cohortId}`);
+  await page.goto("/embryos");
+  await expect(page.locator('[data-tile="copilot"] a')).toHaveAttribute("href", `/copilot/c-${cohortId}`);
+  await page.locator('[data-tile="copilot"] a').click();
+  await expect(page).toHaveURL(new RegExp(`/copilot/c-${cohortId}$`));
+  await expect(page.locator('[data-slot="copilot-local-unavailable"]')).toBeVisible();
+  await expect(page.getByLabel("Message the copilot")).toHaveCount(0);
+  const html = await page.content();
+  expect(html).not.toMatch(/contextToken|0\.98|Embryo 1/);
 });
