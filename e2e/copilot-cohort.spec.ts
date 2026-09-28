@@ -100,7 +100,7 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
     await expect(blocked.getByRole("status")).toContainText(waitingForResultsBody(ROLE_OTHER_PARENT));
     await expect(pageA.getByLabel("Message the copilot")).toHaveCount(0);
     await expect(pageA.locator('[data-slot="copilot-cohort-embryos"]')).toHaveCount(0);
-    expect(await pageA.content()).not.toMatch(/0\.98|contextToken/);
+    expect(await pageA.content()).not.toMatch(/call_rate|contextToken|copilot-cohort-embryos/);
     expect((await fixture.snapshot()).calls).toBe(before);
   });
 

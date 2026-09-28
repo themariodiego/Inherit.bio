@@ -116,6 +116,8 @@ test("with a readable cohort, the Embryos Copilot box and tile open its scope, w
   await expect(page).toHaveURL(new RegExp(`/copilot/c-${cohortId}$`));
   await expect(page.locator('[data-slot="copilot-local-unavailable"]')).toBeVisible();
   await expect(page.getByLabel("Message the copilot")).toHaveCount(0);
-  const html = await page.content();
-  expect(html).not.toMatch(/contextToken|0\.98|Embryo 1/);
+  // The page's own document, fetched fresh: the hub it was reached from
+  // leaves its own payload in the client-side navigated document.
+  const html = await (await page.request.get(`/copilot/c-${cohortId}`)).text();
+  expect(html).not.toMatch(/contextToken|call_rate|Embryo 1/);
 });
