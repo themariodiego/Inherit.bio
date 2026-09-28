@@ -1,5 +1,68 @@
 # Test diff register
 
+## Embryo canonical part disposal and source deletion · 30 September 2026
+
+Two new files:
+
+- `supabase/tests/embryo_canonical_part_disposal.sql` has 96 assertions,
+  fixture included, for `20260930140000_embryo_canonical_part_disposal.sql`.
+  An attempt copies one embryo, leaves one copy open and fails. A second
+  attempt then publishes. The file covers:
+  - the published cleanup listing exactly the three unbound parts, landed or
+    open, and never a bound one;
+  - the R2 marker path for each;
+  - the removal of the unbound part rows;
+  - every published row, file, source and bound part left unchanged;
+  - the source-deletion planner's refusals, including a dependant row
+    anywhere else;
+  - the planner's deletions in one transaction, and a clear residual check;
+  - the parts kept until their markers are proved, then removed;
+  - a second source planned at its retention deadline.
+- `supabase/tests/embryo_ingest_purge_retained_review.sql` has 16
+  assertions, for `20260930131000_embryo_purge_retained_review.sql`. A
+  parent-deceased attempt plans and purges to completion, and its approved
+  review and evidence hash survive unchanged. A denied review and another
+  table's `target_id` still stop the purge. After the purge, the residual
+  check still counts a denied review, an approved review of another kind and
+  another table's `target_id`.
+
+Existing files:
+
+- `supabase/tests/embryo_ingest_terminal_purge.sql` goes from 140 to 147
+  assertions. Its attempt now copies embryo 1 into canonical parts before
+  the pass, as the pass gate from `20260930123000` requires, and leaves a copy
+  for embryo 2 open. The three expected object counts move from 6 to 9: the
+  disposal count, the completion result and the audit context. New assertions
+  cover:
+  - the parts in the inventory;
+  - the open part left unclaimed while its window is open, then claimed;
+  - part rows in the absence proof.
+  No assertion was removed or loosened.
+- `supabase/tests/embryo_ingest_published_cleanup.sql` goes from 86 to 87.
+  - The test lands the published embryos' parts before their passes.
+  - The completion result and the audit context gain `"parts":0`.
+  - The published-rows digest now also covers file rows, canonical sources
+    and bound parts.
+  No assertion was removed or loosened.
+- `src/lib/embryos/unwind-storage.test.ts` accepts the `source` purpose and
+  refuses an unknown one.
+- `supabase/tests/v2_contracts.sql` pins 133 purge stores, from the merge: 130
+  here plus the three canonical-source stores. This unit adds no table.
+
+Planted regressions, each caught:
+
+- a published plan that lists bound parts;
+- a claim that ignores an open write window;
+- a plan that omits parts, combined with a blind uninventoried count;
+- the file row deleted before its genotypes;
+- parts deleted before their markers;
+- no dependant check;
+- a source finish before `storage_confirmed`;
+- a purge that keeps part rows;
+- a published cleanup that unbinds a published source;
+- the review skip widened three ways: to the whole `legal_reviews` table, to
+  every `target_id`, and to every review.
+
 ## Embryo terminal purge and published cleanup · 30 September 2026
 
 Two new files test `20260930130000_embryo_ingest_terminal_purge.sql`. Both

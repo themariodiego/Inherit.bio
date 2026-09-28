@@ -4210,3 +4210,20 @@ owner chose the recommended option on all four.
 - **Carrier importer: design first.** Engineering proposes the sources, the
   review-status threshold and the conditions in scope, for approval before
   anything is imported. Carrier results stay withheld until then.
+
+## 2026-09-28 — Embryo terminal purge: three owner answers
+
+Asked in chat with options after safeguards unit 3. The owner chose the
+recommended option on all three.
+
+- **Retention control rows are kept.** The purge terminalizes the exact
+  `ingest-abandoned-no-source` phase and its retention row, and does not
+  delete them, as the register's zero-residual rule says.
+- **An approved single-parent review is kept.** The purge keeps an approved
+  `single_parent_basis` review unchanged as a retained human review decision.
+  The residual check and the unwind planner skip exactly that one named
+  reference, `legal_reviews.target_id` for an approved review of that kind
+  (`20260930131000_embryo_purge_retained_review.sql`). Any other review, or
+  any other column, that names a deleted row still stops the purge.
+- **Two current contacts give no notice address.** A recipient with more
+  than one current contact gets a `delivery_unavailable` slot, as built.
