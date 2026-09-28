@@ -7637,6 +7637,19 @@ export type Database = {
         }
         Returns: string
       }
+      ack_embryo_ingest_r2_write_v1: {
+        Args: {
+          p_etag: string
+          p_expected: Json
+          p_observed_byte_count: number
+          p_observed_sha256: string
+          p_ordinal: number
+          p_provider_version: string
+          p_sequence: number
+          p_session_id: string
+        }
+        Returns: Json
+      }
       acknowledge_portrait_v1: {
         Args: { p_account_id: string; p_subject_id: string }
         Returns: string
@@ -7807,6 +7820,48 @@ export type Database = {
       }
       commit_embryo_ingest_chunk_v1: {
         Args: { p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
+      }
+      complete_embryo_ingest_v1: {
+        Args: {
+          p_account: string
+          p_auth: string
+          p_session: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort: string
+          p_ingest_revision: number
+          p_chunk_count: number
+          p_nonce: string
+          p_test?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_issued_tokens_match_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_completion_nonce_hash: string
+          p_csrf_hash: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: boolean
+      }
+      fail_embryo_ingest_attempt_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_code: string
+          p_test_jurisdiction?: boolean
+        }
         Returns: Json
       }
       complete_account_deletion_storage_batch_v1: {
