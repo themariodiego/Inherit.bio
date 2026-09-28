@@ -948,8 +948,8 @@ function builtRoutes(repositoryRoot: string): BuiltRoute[] {
 
 /**
  * A registered path, plus every concrete path its `parameterContract` pins.
- * `/withdraw/[token]` with token in {request, session} is also, and only,
- * `/withdraw/request` and `/withdraw/session`.
+ * `/withdraw/[token]` with token in {session} is also, and only,
+ * `/withdraw/session`; a two-literal enum expands to both.
  */
 function concretePaths(entry: RegisterEntry): string[] {
   const contract = entry.parameterContract;

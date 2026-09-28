@@ -1,5 +1,54 @@
 # Test diff register
 
+## Two register divergences closed on the owner's answers · 28 September 2026
+
+**`generated-artifacts` dropped.**
+- `supabase/tests/drop_generated_artifacts_bucket.sql` is new, with 13
+  assertions:
+  - the bucket is gone, and genomes and exports are unchanged;
+  - no storage policy names it;
+  - the literal survives only in the two own-report purge functions, as a
+    retention target id, and that target keeps its five stores;
+  - no recorded object can name the bucket or be an export archive;
+  - no export can name a single archive object;
+  - a genome source and a segmented export row are still accepted.
+- Without the migration, 5 of the 13 fail. Seven refusal cases were planted
+  and each was refused: an object, a multipart upload, a recorded object in
+  the bucket, a recorded export archive, an export `object_id`, a pending
+  deletion entry and a pending unwind entry. A completed entry is not
+  refused.
+- `supabase/tests/drop_genomes_staging_bucket.sql` now expects the bucket set
+  `{genomes, exports}`, because generated-artifacts is gone too.
+- `scripts/route-register-correspondence.test.ts` no longer asserts "more
+  than two" created buckets. It asserts that `genomes` and `exports` are among
+  them, which is an equally non-empty check with named contents.
+- In `scripts/route-gate.test.ts`, the storage-evidence test used to plant on
+  the generated-artifacts row, which is now removed. It now makes `exports`
+  undeclared and adds its own row. It expects the wrong `createdBy` to fail,
+  and adds a control where the right one passes. The dropped-bucket test now
+  restores both dropped rows and expects both to fail as stale.
+
+**`/withdraw/request` registered as an endpoint.**
+- `src/lib/embryos/rights-entry.test.ts` gains "answers with exactly the
+  headers its registered response contract names".
+- `scripts/route-register-correspondence.test.ts`:
+  - gains "resolves every routeFrom to a registered route and every pinned
+    param to a literal it allows";
+  - "expands a pinned parameter" now expects `rights.withdraw` without
+    `/withdraw/request`, and the new entry at that path.
+- `scripts/route-gate.test.ts`: "fails when a registered page literal is
+  served by an endpoint" now plants `request` back onto the page entry,
+  instead of deleting a ledger row that no longer exists.
+- `e2e/a11y.spec.ts` derives its endpoint-rendered pages from the register.
+  It audits the same URL, under the same test titles.
+- Each new check was planted and failed:
+  - the robots header reverted;
+  - the token-page binding removed;
+  - a contract still naming the page literal;
+  - `request` pinned back onto the page.
+
+No existing assertion was removed or loosened.
+
 ## Buckets read from the migrations, and dated divergences · 28 September 2026
 
 `e2e/rls.spec.ts`, `e2e/file-deletion.spec.ts` and

@@ -361,12 +361,17 @@ describe("the route gate holds the register to the code", () => {
     expect(failures.join("\n")).not.toContain("legacy.login");
   });
 
+  /**
+   * Until 2026-09-28 this was the live /withdraw/request row. That literal is
+   * now its own endpoint entry, so the plant is the undo: pin `request` back
+   * onto the page entry, which makes the page literal an endpoint again.
+   */
   it("fails when a registered page literal is served by an endpoint", async () => {
     const root = plant({
-      ledger: (ledger) => {
-        ledger.kindDivergence = (ledger.kindDivergence as { path: string }[]).filter(
-          (known) => known.path !== "/withdraw/request",
-        );
+      register: (register) => {
+        const page = (register.routes as { id: string; parameterContract?: { token?: { enum?: string[] } } }[])
+          .find((entry) => entry.id === "rights.withdraw")!;
+        page.parameterContract!.token!.enum!.unshift("request");
       },
     });
     const { failures } = await runRouteGate(root);
