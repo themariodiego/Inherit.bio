@@ -117,19 +117,21 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // capability, which reads the flag through `isTestJurisdictionEnabled`.
     // The seventh binding is the same shape in `declarableCode`
     // (`src/lib/legal/jurisdiction-declaration.ts`), which admits the
-    // block-only row's stored code only while that flag is on.
-    expect(result.directReadKeyCount).toBe(18);
+    // block-only row's stored code only while that flag is on. It is 19 again
+    // since G5.4's keyring: `INHERIT_HMAC_KEYRING` is a new documented
+    // variable, read directly as the default argument of `keyedDigestSet`.
+    expect(result.directReadKeyCount).toBe(19);
     expect(result.boundReadKeyCount).toBe(16);
     expect(result.boundBindingCount).toBe(7);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(34);
-    expect(result.templateKeyCount).toBe(27);
+    expect(result.readKeyCount).toBe(35);
+    expect(result.templateKeyCount).toBe(28);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(27);
-    expect(result.guideNamedCount).toBe(37);
+    expect(result.guideDocumentedKeyCount).toBe(28);
+    expect(result.guideNamedCount).toBe(38);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(7);
   });

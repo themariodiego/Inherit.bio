@@ -14,7 +14,7 @@ from public.invitation_candidates where invitation_id=(select invitation_id from
 -- Same contact, another active HMAC version and another inviting account.
 create temporary table adult as select * from public.create_adult_subject_invitation_v1(
  '9a000000-0000-0000-0000-000000000003',decode('ffeeddccbbaa99887766554433221100','hex'),
- repeat('e',64),repeat('4',64),true);
+ repeat('e',64),repeat('4',64),true,p_quota_keys => pg_temp.invitation_quota_keys());
 create temporary table donor_draft as select * from public.create_embryo_cohort_draft_v1(
  '9a000000-0000-0000-0000-000000000003','9a000000-0000-4000-8000-0000000000a3',
  'own_embryos','anonymous_donor',2,decode('00112233445566778899aabbccddeeff','hex'),
@@ -59,10 +59,12 @@ select public.sign_embryo_artifact_v1(
  'GB','third-sign-nonce-aaaaaaaaaaaa');
 create temporary table third_parent_a as select * from public.create_embryo_draft_invitation_v1(
  '9a000000-0000-0000-0000-000000000003','9a000000-0000-4000-8000-0000000000a3',
- (select draft_id from third_party),repeat('b',64),repeat('6',64),'third-invite-a-aaaaaaaaaaaa',true);
+ (select draft_id from third_party),repeat('b',64),repeat('6',64),'third-invite-a-aaaaaaaaaaaa',true,
+ p_quota_keys => pg_temp.invitation_quota_keys());
 create temporary table third_parent_b as select * from public.create_embryo_draft_invitation_v1(
  '9a000000-0000-0000-0000-000000000003','9a000000-0000-4000-8000-0000000000a3',
- (select draft_id from third_party),repeat('d',64),repeat('7',64),'third-invite-b-aaaaaaaaaaaa',true);
+ (select draft_id from third_party),repeat('d',64),repeat('7',64),'third-invite-b-aaaaaaaaaaaa',true,
+ p_quota_keys => pg_temp.invitation_quota_keys());
 select is((select count(*) from public.activate_rights_session_v1(
  (select hash from tok),repeat('c',64),'refusal-kind-form-aaaaaaaaaaaa')),1::bigint,
  'root co-parent invitation activates');

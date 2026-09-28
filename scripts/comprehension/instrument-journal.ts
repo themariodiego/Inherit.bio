@@ -5,7 +5,9 @@ import path from "node:path";
 import { SpendJournal } from "./budget";
 import { RunHistory, type HistoryEvent } from "./run-history";
 
-async function privateDirectory(directory: string) {
+/** An absolute `0700` directory owned by this user, with no Git checkout at or
+ * above it. Raw traces, spend and the local model identity live only here. */
+export async function privateDirectory(directory: string) {
   if (!path.isAbsolute(directory)) throw new Error("Absolute instrument directory required");
   const stat = await lstat(directory);
   if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o777) !== 0o700
@@ -17,8 +19,17 @@ async function privateDirectory(directory: string) {
   }
 }
 
-/** Dry accounting only, separate from the owner's real expense journal.
- * History and spending share one fixed directory across every dry run/retry. */
+const ledgers = {
+  dry: { history: "dry-history.jsonl", spend: "dry-spend.jsonl", lock: "dry-history.lock", header: "instrument-only-history" },
+  // The owner's real expense journal for the whole authorized effort: every
+  // calibration, run, grader and retry shares this one balance.
+  live: { history: "live-history.jsonl", spend: "spend.jsonl", lock: "live-history.lock", header: "live-history" },
+} as const;
+export type Ledger = keyof typeof ledgers;
+
+/** History and spending share one fixed directory across every run and retry.
+ * The dry ledger is synthetic accounting, separate from the owner's real
+ * expense journal; the live ledger is that journal. Neither opens the other. */
 export class InstrumentJournal {
   readonly history = new RunHistory();
   private poisoned = false;
@@ -27,10 +38,11 @@ export class InstrumentJournal {
   private tail: Promise<unknown> = Promise.resolve();
   private constructor(private file: FileHandle, private lock: string, readonly budget: SpendJournal) {}
 
-  static async open(directory: string, limit: number, otherCosts: number) {
+  static async open(directory: string, limit: number, otherCosts: number, ledger: Ledger = "dry") {
     await privateDirectory(directory);
     if (limit > 50_000_000) throw new Error("Instrument cap exceeds approved maximum");
-    const lock = path.join(directory, "dry-history.lock"), filename = path.join(directory, "dry-history.jsonl");
+    const names = ledgers[ledger];
+    const lock = path.join(directory, names.lock), filename = path.join(directory, names.history);
     await mkdir(lock, { mode: 0o700 });
     let file: FileHandle | undefined, budget: SpendJournal | undefined;
     try {
@@ -42,14 +54,14 @@ export class InstrumentJournal {
         if (!existing.endsWith("\n")) throw new Error("Incomplete history; manual reconciliation required");
       } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
       file = await open(filename, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
-      const spendFile = path.join(directory, "dry-spend.jsonl");
+      const spendFile = path.join(directory, names.spend);
       try {
         const stat = await lstat(spendFile);
         if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o777) !== 0o600 || stat.uid !== process.getuid?.()) throw new Error("Invalid instrument spend file");
       } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
       budget = await SpendJournal.open(spendFile, limit, otherCosts);
       const journal = new InstrumentJournal(file, lock, budget);
-      const header = JSON.stringify({ kind: "instrument-only-history", version: 1 });
+      const header = JSON.stringify({ kind: names.header, version: 1 });
       if (existing) {
         const [first, ...lines] = existing.trimEnd().split("\n");
         if (first !== header) throw new Error("History is not an instrument journal");
