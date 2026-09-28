@@ -29,8 +29,13 @@ select ok(has_function_privilege('service_role',
   'only the server role can authorize a request');
 select is(pg_temp.authorize_ingest()->>'status','authorized','matching live credential authorizes');
 select is((select array_agg(k order by k) from jsonb_object_keys(pg_temp.authorize_ingest()) k),
-  array['build','challenge','cohortId','expiresAt','format','handles','ingestRevision','sampleCount','session','status','transportRevision','uploadId'],
+  array['build','challengeHash','cohortId','expiresAt','format','handles','ingestRevision','sampleCount','session','status','transportRevision','uploadId'],
   'metadata has an exact closed internal shape');
+-- ADR 0035: only a digest of an issued transport challenge is ever returned,
+-- and none exists until the configure route issues one.
+select is(pg_temp.authorize_ingest()->'challengeHash','null'::jsonb,'no transport challenge digest exists before configuration');
+select ok(position((select body->'ingest'->>'challenge' from minted) in pg_temp.authorize_ingest()::text)=0,
+  'authorization never returns the raw minted challenge');
 select is(pg_temp.authorize_ingest()->>'sampleCount','3','all expected sample ordinals are bound');
 select is(jsonb_array_length(pg_temp.authorize_ingest()->'handles'),3,'only current handle digests are returned');
 select is(pg_temp.authorize_ingest()->'build','null'::jsonb,'unresolved build is never defaulted');

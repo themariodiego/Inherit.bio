@@ -61,6 +61,7 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "api.file-upload-session",
   "api.file-finalize",
   "api.file-process",
+  "api.embryo-ingest-configure",
   "marketing.providers",
   "science.index",
   "legal.index",

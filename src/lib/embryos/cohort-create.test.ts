@@ -10,6 +10,8 @@ import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "./coho
 const ORIGIN = "https://inherit.bio";
 const SECRET = "A".repeat(43);
 const CHALLENGE = "kZ9Qd3yQ8wq7fF2bN5hT1xV4cR6sJ0mL2pY8uW3aE7g";
+/** The sealed first ingest nonce; its minting is the route's job and is tested there. */
+const NONCE = "eyJzeW50aGV0aWMiOnRydWV9.0000000000000000000000000000000000000000000000000000000000000000";
 
 function mint(overrides: Record<string, unknown> = {}) {
   return {
@@ -55,7 +57,7 @@ function cohort(overrides: Record<string, unknown> = {}) {
 
 describe("the cohort-created body", () => {
   it("builds the register's shape from the one finalize transaction", () => {
-    const body = cohortCreatedBody({ cohort: cohort(), ingest: mint() }, ORIGIN);
+    const body = cohortCreatedBody({ cohort: cohort(), ingest: mint() }, NONCE, ORIGIN);
     expect(body.cohort_id).toBe("33333333-3333-4333-8333-333333333333");
     expect(body.status).toBe("upload_ready");
     expect(body.embryo_count).toBe(2);
@@ -78,7 +80,7 @@ describe("the cohort-created body", () => {
    * to anything that can read the response.
    */
   it("carries neither the upload-session secret nor the mapping challenge", () => {
-    const serialized = JSON.stringify(cohortCreatedBody({ cohort: cohort(), ingest: mint() }, ORIGIN));
+    const serialized = JSON.stringify(cohortCreatedBody({ cohort: cohort(), ingest: mint() }, NONCE, ORIGIN));
     expect(serialized).not.toContain(SECRET);
     expect(serialized).not.toContain(CHALLENGE);
     expect(serialized).not.toContain("cookieValue");
@@ -90,28 +92,48 @@ describe("the cohort-created body", () => {
     const body = cohortCreatedBody({
       cohort: cohort({ caller_state: "not_a_card_recipient" }),
       ingest: mint(),
-    });
+    }, NONCE);
     expect(body.record_key_cards).toEqual([]);
     expect(body.record_key_delivery.caller_state).toBe("not_a_card_recipient");
   });
 
   /** The transport bounds are the deployment's, never the session's. */
   it("reads the three limits from ingest-limits rather than the mint", () => {
-    const body = cohortCreatedBody({ cohort: cohort(), ingest: mint() }, ORIGIN);
+    const body = cohortCreatedBody({ cohort: cohort(), ingest: mint() }, NONCE, ORIGIN);
     expect(body.upload_session.chunkBytes).toBe(INGEST_CHUNK_MAXIMUM_BYTES);
     expect(body.upload_session.maximumChunks).toBe(LIMITS.maximumChunks);
     expect(body.upload_session.maximumInputBytes).toBe(LIMITS.maximumUncompressedInputBytes);
   });
 
+  /**
+   * ADR 0035: the embryo branch of `upload-session-v1` gains the first ingest
+   * nonce, the configure route and the session's fixed deadline, and the
+   * whole branch stays closed: no other key appears.
+   */
+  it("carries the exact embryo branch of upload-session-v1 built so far", () => {
+    const body = cohortCreatedBody({ cohort: cohort(), ingest: mint({ expiresAt: "2026-09-22T12:00:00.123456+00:00" }) }, NONCE, ORIGIN);
+    expect(Object.keys(body.upload_session).sort()).toEqual([
+      "chunkBytes", "configureRoute", "expiresAt", "maximumChunks", "maximumInputBytes",
+      "operationNonce", "sampleHandles", "session", "transport", "uploadId",
+    ]);
+    expect(body.upload_session.operationNonce).toBe(NONCE);
+    expect(body.upload_session.configureRoute).toBe("/api/embryo-ingest/11111111-1111-4111-8111-111111111111/configure");
+    expect(body.upload_session.expiresAt).toBe("2026-09-22T12:00:00.123Z");
+  });
+
+  it("refuses to build a body without the first ingest nonce", () => {
+    expect(() => cohortCreatedBody({ cohort: cohort(), ingest: mint() }, "", ORIGIN)).toThrow();
+  });
+
   it("refuses a mint that is missing its cookie value", () => {
     const broken = mint();
     delete (broken as Record<string, unknown>).cookieValue;
-    expect(() => cohortCreatedBody({ cohort: cohort(), ingest: broken }, ORIGIN)).toThrow();
+    expect(() => cohortCreatedBody({ cohort: cohort(), ingest: broken }, NONCE, ORIGIN)).toThrow();
   });
 
   it("refuses a card array the database should never have produced", () => {
     expect(() =>
-      cohortCreatedBody({ cohort: cohort({ cards: [{ ...card("66666666-6666-4666-8666-666666666666", "Embryo 1"), leaked: "x" }] }), ingest: mint() }, ORIGIN),
+      cohortCreatedBody({ cohort: cohort({ cards: [{ ...card("66666666-6666-4666-8666-666666666666", "Embryo 1"), leaked: "x" }] }), ingest: mint() }, NONCE, ORIGIN),
     ).toThrow();
   });
 });
