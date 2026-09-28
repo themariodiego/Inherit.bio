@@ -826,6 +826,10 @@
       "disposition": "excluded-internal",
       "reason": "Model context fingerprints. It is machinery, not the person's record."
     },
+    "public.other_adult_held_uploads": {
+      "disposition": "deferred",
+      "reason": "A DNA file one adult added for another, held until that person answers: the kind, dates and state both of them see. It belongs in the person's own export once an other-adult export reader exists; the object name, hashes and storage id never leave."
+    },
     "public.pending_source_rows": {
       "disposition": "excluded-internal",
       "reason": "Pending source rows of a worker job. It is machinery, not the person's record."
