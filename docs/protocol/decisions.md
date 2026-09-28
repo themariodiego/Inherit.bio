@@ -4297,3 +4297,60 @@ questions at the end of `docs/carrier-importer-design.md`.
   Approval of the text does not open any real jurisdiction. Each country still
   needs its signed jurisdiction review (G5.5) before the path is offered
   there. Keeping the text test-only until counsel reviewed it was declined.
+
+## 2026-09-28 (evening) — Carrier review, Path B text, Family Copilot, nonces and two register rows
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all but one question: the carrier
+reviewer.
+
+- **The first carrier import holds all eight conditions.** They are CFTR,
+  HEXA, PAH, ACADM, ASPA, ATP7B, DHCR7 and GAA: 2,850 ClinVar assertions, each
+  two stars or more. Each gene is autosomal recessive, in the ACMG
+  carrier-screening practice resource, and Definitive in ClinGen. The import
+  writes every condition inactive. A first list of four, or no import yet,
+  was declined.
+- **The owner is the named carrier reviewer.** Each condition becomes active
+  only when the owner records a review through
+  `review_carrier_condition_v1`: their name, their role and a reference to
+  their written review of that condition. Engineering prepares one review
+  note per condition; activation waits for the owner's sign-off on each. A
+  clinical geneticist or genetic counsellor named by the owner was the
+  recommended option and was not chosen.
+- **Path B gets its own consent text, `consent.upload-other-adult` v2.** v1,
+  approved earlier today, still describes the declined account-based flow
+  ("accept in their own account", "moves to their account"). v2 keeps the
+  seven statements close to v1, with statement 6 reading "until they say yes
+  to the file". The flow is TEST-LOCAL, so nobody has signed v1. Keeping v1
+  and building an account branch to match it was declined.
+- **The person's own consent, `consent.subject-adult-esignature` v1, is
+  approved as written.** Four statements. It keeps its own key, so it never
+  replaces Path A's `consent.subject-adult` v1. Keeping it test-only was
+  declined. As with every approved text, each country still needs its signed
+  jurisdiction review (G5.5) before the path is offered there.
+- **After a Path B confirmation, the account branch comes next.** A person
+  with an account confirms and reads the file there. The subject-level
+  reading and purpose-grant layer follows. Leaving confirmed files unreadable
+  was declined.
+- **The Path B link on `/family/invite` stays hidden** until a real
+  jurisdiction opens. The TEST-LOCAL entry point stays on `/files/upload`.
+- **The Family Copilot scope is on in production.** On the hosted site,
+  Overview's Family Copilot box opens `/copilot/family`. That page renders the
+  registered "not open here" page, because the scope needs a same-host local
+  model, and it reads nothing. `copilotGroupScopes()` stops tracking only the
+  TEST-LOCAL flag. Keeping the box on `/family` was declined.
+- **One nonce rule (brief X1.5).** A page renders a stateless operation
+  nonce, only the POST consumes it, and no GET stores one. This matches the
+  25 September export rule. The live mint on `GET /api/account/delete` is
+  rebuilt to match. Describing that GET as the mint, or keeping the ledger
+  row, was declined.
+- **`/withdraw/request` is registered as the HTML endpoint it is.** Its
+  one-script security policy is what makes the URL-fragment rule provable.
+  Rebuilding it as a page was declined.
+- **The `generated-artifacts` bucket is dropped**, with the same guards as
+  `genomes-staging`. The single-object export archive form it held is
+  retired with it. Declaring a prefix for it was declined.
+- **The D-081 withdrawal shims keep their hard stop.** Both ledger rows carry
+  `deleteAfter: 2026-10-14`. After that date the correspondence test fails
+  for every pull request until `/api/withdraw`, `/withdraw/[token]`, their
+  browser test and both rows are deleted. A warning only was declined.
