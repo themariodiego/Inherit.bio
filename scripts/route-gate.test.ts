@@ -436,6 +436,33 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  it("fails when a storage row's evidence no longer says what the row says", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
+          if (known.bucket === "generated-artifacts") known.createdBy = "supabase/migrations/20260923123240_export_archive_persistence.sql";
+          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
+        }
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain("storage bucket: generated-artifacts names createdBy "
+      + "supabase/migrations/20260923123240_export_archive_persistence.sql, which does not create it");
+    expect(failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+  });
+
+  it("fails when a method row names a file the route is not built in", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        for (const known of ledger.methodDivergence as Record<string, unknown>[]) {
+          if (known.routeId === "api.export") known.file = "src/app/api/export/moved/route.ts";
+        }
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain("declared methods: api.export names src/app/api/export/moved/route.ts, built at src/app/api/export/route.ts");
+  });
+
   it("fails when the register requires a state no browser test proves", async () => {
     const root = plant({
       register: (register) => {
