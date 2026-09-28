@@ -10,13 +10,18 @@
 -- quarantined and embryos stay `pending` until the worker's terminal
 -- publication transaction, which is a separate migration.
 --
--- Storage write fence. A separate change stamps a write fence when a session
--- leaves `open`/`mapping_required` and makes chunk commit require landed
--- objects. This transaction is the one that leaves `open`, and it runs only
--- when every chunk is already `stored`. It also checks, independently, that
--- every fragment object has landed at its reserved bucket and name with its
--- reserved size. It never renews the fixed 24-hour deadline, never cancels the
--- `embryo.ingest-session-24h` due phase and never deletes a fragment or handle.
+-- Storage write fence (20260928100000_embryo_ingest_write_fence.sql). Chunk
+-- commit already requires every fragment's write intent to be `landed`, and
+-- leaving `open` stamps the fence. This transaction is the one that leaves
+-- `open`, only when every chunk is `stored`, and it rechecks the fence's own
+-- evidence: every fragment's intent is `landed` and its metadata row still
+-- exists with the same id, bucket, name, version and size. It never renews the
+-- fixed 24-hour deadline, never cancels the `embryo.ingest-session-24h` due
+-- phase and never deletes a fragment or handle.
+--
+-- The completion nonce is the one the configure transaction issued
+-- (20260929110000_embryo_vcf_configure_route.sql stores its digest as
+-- `issued_completion_nonce_hash`). Any other nonce is a credential mismatch.
 
 -- ---------------------------------------------------------------------------
 -- 1. The locked manifest lives on the session row it snapshots.
@@ -209,7 +214,8 @@ revoke all on function private.embryo_ingest_completion_failure_v1(uuid, text)
 --                             nonterminal, nothing written, nonce unspent
 --   failure_pending           terminal; the attempt is marked for the one
 --                             cohort-wide unwind and `failureCode` is closed
--- 42501 for any credential, cohort or revision mismatch (no state revealed),
+-- 42501 for any credential, cohort, revision or unissued-nonce mismatch (no
+-- state revealed and nothing written),
 -- 22023 for a malformed request (retryable, nothing written), 23505 for a
 -- nonce already spent elsewhere, 55P03 for contention (retry the same nonce).
 create function private.complete_embryo_ingest_v1(
@@ -249,6 +255,11 @@ begin
       and ingest_revision = p_ingest_revision and upload_id is not null
     for update nowait;
   if not found then raise exception using errcode = '42501', message = 'ingest unavailable'; end if;
+  -- Only the nonce configuration issued can complete this attempt. Checked
+  -- before the shared door, so a request without it causes no side effect.
+  if s.issued_completion_nonce_hash is null or s.issued_completion_nonce_hash <> h then
+    raise exception using errcode = '42501', message = 'ingest unavailable';
+  end if;
 
   if s.completion_nonce_hash is not null then
     -- An exact replay of the committed completion. It enqueues nothing and
@@ -328,16 +339,22 @@ begin
     return private.embryo_ingest_completion_failure_v1(s.id, 'format');
   end if;
 
-  -- Every fragment object has landed at its reserved bucket and name with its
-  -- reserved size. An absent or different object is not a completed upload.
-  perform 1 from storage.objects o join public.embryo_ingest_fragments f
-      on o.bucket_id = f.bucket_id and o.name = f.object_name
-    where f.session_id = s.id order by o.bucket_id, o.name for share of o;
-  if exists(select 1 from public.embryo_ingest_fragments f where f.session_id = s.id
-    and not exists(select 1 from storage.objects o
-      where o.bucket_id = f.bucket_id and o.name = f.object_name
-        and jsonb_typeof(o.metadata->'size') = 'number'
-        and (o.metadata->>'size')::numeric = f.byte_count)) then
+  -- The fence's evidence, rechecked: every fragment's write intent is
+  -- `landed`, and the metadata row it landed as still exists with the same
+  -- id, bucket, name, version and size. Locked until commit, in the fence's
+  -- order (intents, then object rows), so no DELETE slips between.
+  perform 1 from private.embryo_ingest_write_intents i where i.session_id = s.id
+    order by i.sequence, i.sample_ordinal for share;
+  perform 1 from storage.objects o join private.embryo_ingest_write_intents i on i.storage_object_id = o.id
+    where i.session_id = s.id order by o.id for share of o;
+  if exists(select 1 from public.embryo_ingest_fragments f
+      left join private.embryo_ingest_write_intents i on i.session_id = f.session_id
+        and i.sequence = f.sequence and i.sample_ordinal = f.sample_ordinal
+      left join storage.objects o on o.id = i.storage_object_id and o.bucket_id = 'genomes'
+        and o.bucket_id = f.bucket_id and o.name = i.object_name and o.name = f.object_name
+        and o.version = i.storage_version and o.metadata->'size' = to_jsonb(i.byte_count)
+        and i.byte_count = f.byte_count
+      where f.session_id = s.id and (i.state is distinct from 'landed' or o.id is null)) then
     return private.embryo_ingest_completion_failure_v1(s.id, 'chunk');
   end if;
 

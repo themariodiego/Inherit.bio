@@ -112,9 +112,11 @@ The next source-accepting work must supply all of the following:
    **Completion exists, 2026-09-28; the consumer does not yet.**
    `private.complete_embryo_ingest_v1` (door `public.complete_embryo_ingest_v1`,
    `20260930120000_embryo_ingest_completion.sql`) reruns the shared door and
-   `private.embryo_ingest_binding_failure_v1`, requires every chunk `stored`, the
-   exact ordinal set and every fragment object landed at its reserved name and
-   size, then locks the manifest digest on the session, enqueues exactly one
+   `private.embryo_ingest_binding_failure_v1`, requires the completion nonce the
+   configure step issued (`issued_completion_nonce_hash`), every chunk `stored`,
+   the exact ordinal set and every fragment's write intent `landed` under the
+   fence with its metadata row unchanged, then locks the manifest digest on the
+   session, enqueues exactly one
    `split_cohort_vcf` job bound to it and marks `sanitization_pending`, in one
    transaction. A refusal uses `private.mark_embryo_ingest_failure_v1` and keeps
    everything for the unwind. The unwind planner now admits that one job and

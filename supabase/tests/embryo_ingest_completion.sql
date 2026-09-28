@@ -3,20 +3,24 @@ select no_plan();
 \ir fixtures/embryo_cohort_pre_finalize.inc
 
 -- A real signed two-parent cohort of three embryos, its minted attempt, and a
--- VCF configuration with a header-derived build. Synthetic throughout: the
--- fragment digests below are digests of fixed strings, not of any genome.
+-- VCF configuration through the configure transaction, which issues the one
+-- completion nonce. Synthetic throughout: the fragment digests below are
+-- digests of fixed strings, not of any genome. Object rows are metadata
+-- written the way Storage writes them, through the write fence.
 create temporary table minted as select private.finalize_embryo_cohort_ingest_v1(
   '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
   (select draft_id from draft),(select insurance from acks),(select charter from acks),
   'nonce-completion-finalize','http://localhost:3000',true) as body;
 create temporary table live as select s.* from public.embryo_ingest_sessions s
   where s.id=(select (body->'ingest'->>'session')::uuid from minted);
-select is(private.configure_embryo_ingest_session_v1(
+select is(private.configure_embryo_vcf_ingest_v1(
   '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
   (select id from live),(select cookie_hash from live),'http://localhost:3000',
-  (select cohort_id from live),(select ingest_revision from live),
-  'vcf','GRCh38','explicit-header','nonce-completion-configure',true)->>'status',
-  'configured','the attempt records a VCF format and a header-derived build');
+  (select cohort_id from live),(select ingest_revision from live),'GRCh38',3,
+  'nonce-completion-configure',repeat('Q',43),'nonce-completion-0001','nonce-completion-csrf-01',true)->>'status',
+  'configured','the attempt records a VCF format, a header-derived build and one issued completion nonce');
+-- Storage's final object write runs as the service role.
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
 
 create function pg_temp.fragments(p_sequence integer) returns jsonb language sql as $$
   select jsonb_agg(jsonb_build_object('ordinal',o,
@@ -27,7 +31,8 @@ $$;
 create function pg_temp.chunk_sha(p_sequence integer) returns text language sql as $$
   select encode(extensions.digest('synthetic-chunk:'||p_sequence,'sha256'),'hex');
 $$;
--- Reserve, land every fragment object at its reserved name and size, commit.
+-- Reserve, land every fragment object through the fence (Storage's final
+-- write shape: a UUID-v4 version and metadata.size), commit.
 create function pg_temp.store_chunk(p_sequence integer, p_commit boolean default true)
 returns text language plpgsql as $$
 declare r jsonb;
@@ -35,8 +40,8 @@ begin
   r:=private.reserve_embryo_ingest_chunk_v1((select id from live),p_sequence,pg_temp.chunk_sha(p_sequence),
     400,12,120,pg_temp.fragments(p_sequence));
   if r->>'status'<>'reserved' then return r->>'status'; end if;
-  insert into storage.objects(bucket_id,name,metadata)
-    select f.bucket_id,f.object_name,jsonb_build_object('size',f.byte_count)
+  insert into storage.objects(bucket_id,name,version,metadata)
+    select f.bucket_id,f.object_name,gen_random_uuid()::text,jsonb_build_object('size',f.byte_count)
     from public.embryo_ingest_fragments f
     where f.session_id=(select id from live) and f.sequence=p_sequence;
   if not p_commit then return 'reserved'; end if;
@@ -97,6 +102,10 @@ $$;
 
 select is(pg_temp.store_chunk(0),'stored','chunk 0 lands every fragment and commits');
 select is(pg_temp.store_chunk(1),'stored','chunk 1 lands every fragment and commits');
+select is((select count(*) from private.embryo_ingest_write_intents where session_id=(select id from live)
+  and state='landed'),6::bigint,'the fence records every fragment write as landed');
+create temporary table stored_attempt as select s.* from public.embryo_ingest_sessions s
+  where s.id=(select id from live);
 
 -- ---------------------------------------------------------------------------
 -- Privileges and shape
@@ -143,13 +152,15 @@ select throws_ok($$select pg_temp.complete(0)$$,
   '22023','invalid ingest completion','a zero chunk count is invalid');
 select throws_ok($$select pg_temp.complete(51)$$,
   '22023','invalid ingest completion','a chunk count above the session cap is invalid');
-select is((select to_jsonb(s)-'status'-'expected_next_sequence'-'accepted_bytes'-'accepted_chunks'
-    -'accepted_records'-'source_format'-'reference_build'-'configured_build'-'build_evidence'
-    -'configuration_nonce_hash' from public.embryo_ingest_sessions s where id=(select id from live)),
-  (select to_jsonb(s)-'status'-'expected_next_sequence'-'accepted_bytes'-'accepted_chunks'
-    -'accepted_records'-'source_format'-'reference_build'-'configured_build'-'build_evidence'
-    -'configuration_nonce_hash' from live s),
-  'every denial preserves the attempt''s identity, deadline and binding');
+select throws_ok($$select pg_temp.complete(p_nonce:='nonce-completion-never-issued')$$,
+  '42501','ingest unavailable','a completion nonce the configure step never issued is refused');
+select throws_ok($$select pg_temp.complete(p_nonce:='nonce-completion-csrf-01')$$,
+  '42501','ingest unavailable','the issued CSRF token is not a completion nonce');
+select throws_ok($$select pg_temp.complete(p_nonce:='nonce-completion-configure')$$,
+  '42501','ingest unavailable','the spent configure nonce is not a completion nonce');
+select is((select to_jsonb(s) from public.embryo_ingest_sessions s where id=(select id from live)),
+  (select to_jsonb(s) from stored_attempt s),
+  'every denial leaves the complete attempt row exactly as it was');
 select is(pg_temp.residue(),':open:0:6:3:2:pending:0',
   'every denial leaves the attempt open with no job and no spent completion nonce');
 
@@ -189,17 +200,36 @@ select is(pg_temp.probe(
   'delete from public.embryo_ingest_fragments where session_id=(select id from live) and sample_ordinal=2 and sequence=1',
   'select pg_temp.complete()->>''failureCode'''),
   'format','a VCF chunk that lost one embryo''s fragment is terminal even when the ordinal set looks whole');
+-- The fence's own evidence is rechecked at completion. Each probe tampers
+-- after commit, which no admitted writer can do, so the recheck must see it.
 select is(pg_temp.probe(
-  $$update storage.objects set name=name||'.moved' where name=(select object_name from public.embryo_ingest_fragments
-    where session_id=(select id from live) and sequence=1 and sample_ordinal=0)$$,
+  $$set local storage.allow_delete_query = 'true';
+    delete from storage.objects where name=(select object_name from public.embryo_ingest_fragments
+      where session_id=(select id from live) and sequence=1 and sample_ordinal=0)$$,
   'select pg_temp.complete()->>''failureCode''','select pg_temp.residue()'),
   'chunk / chunk:failure_pending:0:6:3:2:pending:0',
-  'a fragment object that has not landed at its reserved name blocks completion');
+  'a landed object whose metadata row is gone blocks completion');
 select is(pg_temp.probe(
-  $$update storage.objects set metadata=jsonb_build_object('size',1) where name=(select object_name
-    from public.embryo_ingest_fragments where session_id=(select id from live) and sequence=0 and sample_ordinal=1)$$,
+  $$alter table private.embryo_ingest_write_intents disable trigger embryo_ingest_write_intent_identity;
+    update private.embryo_ingest_write_intents set byte_count=byte_count+1
+      where session_id=(select id from live) and sequence=0 and sample_ordinal=1;
+    alter table private.embryo_ingest_write_intents enable trigger embryo_ingest_write_intent_identity$$,
   'select pg_temp.complete()->>''failureCode'''),
-  'chunk','a landed object of the wrong size blocks completion');
+  'chunk','a landed object whose size is not the reserved size blocks completion');
+select is(pg_temp.probe(
+  $$alter table private.embryo_ingest_write_intents disable trigger embryo_ingest_write_intent_identity;
+    update private.embryo_ingest_write_intents set storage_version=gen_random_uuid()::text
+      where session_id=(select id from live) and sequence=0 and sample_ordinal=2;
+    alter table private.embryo_ingest_write_intents enable trigger embryo_ingest_write_intent_identity$$,
+  'select pg_temp.complete()->>''failureCode'''),
+  'chunk','an object row that is not the landed version blocks completion');
+select is(pg_temp.probe(
+  $$alter table private.embryo_ingest_write_intents disable trigger embryo_ingest_write_intent_identity;
+    update private.embryo_ingest_write_intents set state='open',storage_object_id=null,storage_version=null,
+      landed_at=null where session_id=(select id from live) and sequence=1 and sample_ordinal=1;
+    alter table private.embryo_ingest_write_intents enable trigger embryo_ingest_write_intent_identity$$,
+  'select pg_temp.complete()->>''failureCode'''),
+  'chunk','a fragment whose write intent never landed blocks completion');
 select is(pg_temp.probe(
   $$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     update public.embryo_ingest_sessions set reference_build=null where id=(select id from live);
@@ -282,6 +312,8 @@ select ok((select s.status='sanitization_pending' and s.completed_at is not null
   'the attempt locks its manifest without renewing its fixed deadline');
 select is((select status from public.embryo_cohorts where id=(select cohort_id from live)),'ingesting',
   'the cohort reads as ingesting');
+select ok((select fenced_at is not null and fence_at>=fenced_at from private.embryo_ingest_write_fences
+  where session_id=(select id from live)),'leaving open stamps the write fence');
 select is((select count(*) from public.embryo_operation_nonces where operation='ingest_complete'
   and target_kind='ingest_session' and target_id=(select id from live)),1::bigint,
   'the completion nonce is spent with the transition');
