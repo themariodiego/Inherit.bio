@@ -4,7 +4,7 @@ import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "@/lib/
 import { accountJurisdictionDenied, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
 import { ingestRequestOrigin } from "@/lib/embryos/ingest-http";
 import { ingestCookie } from "@/lib/embryos/ingest-session";
-import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
+import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -92,9 +92,18 @@ export async function POST(request: Request) {
   if (error) return rpcErrorResponse(error);
 
   // Built before the cookie, so a result this route cannot represent fails
-  // before anything is set in the caller's browser.
-  const body = cohortCreatedBody(data);
+  // before anything is set in the caller's browser. The first ingest nonce
+  // (ADR 0035) is minted only now that the session exists, bound to this
+  // account, this auth session and this upload session, and it lives no
+  // longer than the session's own fixed deadline.
   const cookie = ingestCookieParts(data);
+  const operationNonce = mintIngestSessionOperation({
+    accountId: account.user.id,
+    sessionId: account.sessionId,
+    operation: "ingest_session_open",
+    targetId: cookie.session,
+  }, cookie.expiresAt).token;
+  const body = cohortCreatedBody(data, operationNonce);
   return sensitiveJson(body, 201, {
     "set-cookie": ingestCookie(cookie.session, cookie.secret, cookie.expiresAt),
   });

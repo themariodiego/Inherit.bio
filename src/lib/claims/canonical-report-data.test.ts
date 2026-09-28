@@ -18,14 +18,18 @@ import { readStudyContext } from "../genome/study-context";
 
 // This is an independent seed-text binding fixture, NOT a rendered corpus.
 // No complete-channel or G1.11/G4.7 acceptance is claimed by this test.
+// The or2m7 and 2q22 hashes were updated on 2026-09-28: the only change to those
+// two templates was dating an already-verified citation (Markt 2016 and Wang 2019
+// respectively) — no report-body prose changed, so the registered claims still
+// match. The reviewed-content freeze is re-anchored to the dated citations.
 const reviewed = {
   "stress-anxiety-comt-rs4680": "1cc7d055d21a9e9520e9892f133d8f9c19fbe0cd3f20e03e17e11c12efe3490a",
   "mood-stress-resilience-bdnf-rs6265": "f005cd05fb0f576f35b3cbd1858db24cc185befef3ad5d62b8d979e7f3ad5638",
   "problem-substance-use-faah-rs324420": "debc18bc119dfc8a2a10ac6046f61250ca24bc540556d0aeb1b1d858e5b56abf",
   "skin-uv-sensitivity-slc45a2": "b16d453f7e716a188e107ee1b865c662de570e5d9be507b079afd805f717c6ba",
   "cilantro-soapy-taste-or6a2": "b268966b7d5977bdc9dc1aefa80cef51da5bee23e892a530f469f154d3cb3578",
-  "asparagus-odor-detection-or2m7": "25a187d6da880233af5f10917cb847c9354b1cb1f9bdc8ca145e6a6725781206",
-  "photic-sneeze-reflex-2q22": "64e5889a8e5cd32baa20534aa30f856c07f50644a78ca06162e75aef85e9c4d5",
+  "asparagus-odor-detection-or2m7": "08e3d561d5f3c4251ef4e988d1ef3115bf99cfd03318df865330e56db59f0abc",
+  "photic-sneeze-reflex-2q22": "2d3797e38fcfdcd74d459922abe5677451599eb83be62c1a733521c701b00bea",
   "earwax-type-abcc11": "387b6f8c0adbe89f60cc4effe56cb03f9501838b70920abb4e7dea5a2e661a36",
 };
 const everyday = new Set(["cilantro-soapy-taste-or6a2", "asparagus-odor-detection-or2m7", "photic-sneeze-reflex-2q22", "earwax-type-abcc11"]);

@@ -8,7 +8,12 @@
     "dated": 170,
     "undatedTotal": 7,
     "undatedContentDefects": 6,
-    "undatedHashFreeze": 1
+    "undatedHashFreeze": 1,
+    "correctedOrDatedSince": {
+      "contentDefectsCorrected": 6,
+      "hashFreezeDated": 1,
+      "undatedRemaining": 0
+    }
   },
   "rateLimits": "NCBI E-utilities and Europe PMC/GWAS Catalog/Ensembl were queried one record at a time with >=0.35 s between requests (<=3 req/s, no API key), per NCBI guidance.",
   "entries": [
@@ -6168,5 +6173,193 @@
       "contentNote": null,
       "undatedReason": null
     }
-  ]
+  ],
+  "corrections20260928": {
+    "purpose": "Follow-up on the six content defects and the one hash-freeze hold from the 28 September review. Each was retrieved again and resolved through the scientific-corrections register (docs/protocol/decisions.md, PR #241). Two cited the wrong paper and now cite the retrieved right one; four had a wording or allele direction fixed to match the source; two are citation-only datings with no prose change.",
+    "entries": [
+      {
+        "slug": "nicotine-dependence-chrna5-rs16969968",
+        "templateFile": "data/templates/addiction.json",
+        "action": "citation-corrected",
+        "reviewPath": "docs/sources/reviews/nicotine-chrna5-correction-20260928.md",
+        "oldCitation": "17158188 (labelled Saccone; is Bierut NRXN1 GWAS)",
+        "newCitation": "17135278 (Saccone et al., Hum Mol Genet 2007)",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": false,
+        "retrievals": [
+          {
+            "source": "pubmed-efetch",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=17135278&retmode=xml",
+            "retrievedAt": "2026-09-28T09:32:39Z",
+            "status": 200,
+            "sha256": "550a044ab497c6b9b34e850705adc7b5ee951ef83b3567cfc3f180d55d50ed1c"
+          },
+          {
+            "source": "pmc-fulltext",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC2270437&retmode=xml",
+            "retrievedAt": "2026-09-28T09:32:40Z",
+            "status": 200,
+            "sha256": "0242517faea08cf87e2c5a8bca6ae41b5791d909542ea706036f60b35837eaff"
+          },
+          {
+            "source": "pubmed-efetch",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=20700436&retmode=xml",
+            "retrievedAt": "2026-09-28T09:33:18Z",
+            "status": 200,
+            "sha256": "3ef5359b9ca479dcef2e9a787c8a84ef87968eff6803f5ca88c12a9cb49a689e"
+          },
+          {
+            "source": "pmc-fulltext",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC2916847&retmode=xml",
+            "retrievedAt": "2026-09-28T09:33:19Z",
+            "status": 200,
+            "sha256": "3ab37ab6e82d3eb006123868a18382117d72a3e61baeadaa56584d05c8b18b93"
+          },
+          {
+            "source": "pubmed-efetch",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=18519524&retmode=xml",
+            "retrievedAt": "2026-09-28T09:34:11Z",
+            "status": 200,
+            "sha256": "a32f2f6b9745e6be661dbf63eca0b4eaf031d539270b514dc7dbaa00a782794d"
+          },
+          {
+            "source": "pmc-fulltext",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC2574742&retmode=xml",
+            "retrievedAt": "2026-09-28T09:34:12Z",
+            "status": 200,
+            "sha256": "ffc90d2fb816f046d422a7f46c8650fcf2691953cb3b9e9f5a68a41dbbae60d2"
+          }
+        ],
+        "note": "Wrong paper replaced with the CHRNA5 paper the label names; report prose was already correct and unchanged."
+      },
+      {
+        "slug": "caffeine-intake-ahr-rs4410790",
+        "templateFile": "data/templates/addiction.json",
+        "action": "citation-corrected+prose-reduced",
+        "reviewPath": "docs/sources/reviews/caffeine-ahr-correction-20260928.md",
+        "oldCitation": "21357676 (Sulem 2011; reports rs6968865, ~11k)",
+        "newCitation": "21490707 (Cornelis et al., PLoS Genet 2011; names rs4410790, 47,341)",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": true,
+        "changedFields": [
+          "summary",
+          "interpretation.CC"
+        ],
+        "retrievals": [
+          {
+            "source": "pubmed-efetch",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=21490707&retmode=xml",
+            "retrievedAt": "2026-09-28T09:32:41Z",
+            "status": 200,
+            "sha256": "cd5c36eda63fb8f3fbbaee0d9fc61628d0873615410a40895dfc60c0d4e75105"
+          },
+          {
+            "source": "pmc-fulltext",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC3071630&retmode=xml",
+            "retrievedAt": "2026-09-28T09:32:41Z",
+            "status": 200,
+            "sha256": "b5257bb1aed2b66dc9a6fc28289ff03da87300329b959436859239f1a2f8a24b"
+          },
+          {
+            "source": "pubmed-efetch",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=25288136&retmode=xml",
+            "retrievedAt": "2026-09-28T09:32:42Z",
+            "status": 200,
+            "sha256": "e2a1ec4a1c3958dde033324eab2075c2361438c05188f00bb9e0c0de484cd8d1"
+          },
+          {
+            "source": "pmc-fulltext",
+            "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC4388784&retmode=xml",
+            "retrievedAt": "2026-09-28T09:32:43Z",
+            "status": 200,
+            "sha256": "15fcb50a8874c6bd8b9a0597e7d282df5e7094034aa726eb809514465942936f"
+          }
+        ],
+        "note": "Right paper cited; \"hundreds of thousands\" reduced to \"tens of thousands\"; homozygote magnitude aligned to the 44 mg/day figure."
+      },
+      {
+        "slug": "photic-sneeze-reflex-zeb2",
+        "templateFile": "data/templates/environmental-sensitivity.json",
+        "action": "prose-corrected",
+        "reviewPath": "docs/sources/reviews/photic-sneeze-zeb2-correction-20260928.md",
+        "citation": "30899065 (Wang 2019) dated",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": true,
+        "changedFields": [
+          "summary",
+          "interpretation.CC",
+          "interpretation.TT"
+        ],
+        "retrievals": [],
+        "note": "Report claimed both studies linked C; the Chinese study (Wang) links T. Now states the two groups point to opposite alleles."
+      },
+      {
+        "slug": "motion-sickness-susceptibility",
+        "templateFile": "data/templates/environmental-sensitivity.json",
+        "action": "allele-direction-corrected",
+        "reviewPath": "docs/sources/reviews/motion-sickness-correction-20260928.md",
+        "citation": "25628336 (Hromatka 2015) dated",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": true,
+        "changedFields": [
+          "interpretation.rs66800491.AA",
+          "interpretation.rs66800491.GG"
+        ],
+        "retrievals": [],
+        "note": "rs66800491 direction was reversed; Table 2 gives A as the higher-susceptibility allele, G lower."
+      },
+      {
+        "slug": "chronotype-per3-rs228697",
+        "templateFile": "data/templates/brain-health.json",
+        "action": "prose-corrected",
+        "reviewPath": "docs/sources/reviews/per3-chronotype-correction-20260928.md",
+        "citation": "25201053 (Hida 2014) dated",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": true,
+        "changedFields": [
+          "summary",
+          "interpretation.CG"
+        ],
+        "retrievals": [
+          {
+            "source": "ensembl-variation",
+            "url": "https://rest.ensembl.org/variation/human/rs228697?content-type=application/json;pops=1",
+            "retrievedAt": "2026-09-28T09:39:32Z",
+            "status": 200,
+            "sha256": "c239a329ae7f540fb3da4fdc22d90d73351272c4f6b3ef64a551d45a57e59f4f"
+          },
+          {
+            "source": "ensembl-vep",
+            "url": "https://rest.ensembl.org/vep/human/id/rs228697?content-type=application/json",
+            "retrievedAt": "2026-09-28T09:39:45Z",
+            "status": 200,
+            "sha256": "b953572a028281211f867bdc8f0ce0174c0147a140c5665015b87eed2c9cf7e9"
+          }
+        ],
+        "note": "G enrichment is in free-running type, not delayed sleep-phase type; residue corrected Pro415Ala to Pro864Ala (Ensembl VEP position 864)."
+      },
+      {
+        "slug": "photic-sneeze-reflex-2q22",
+        "templateFile": "data/templates/basic-traits.json",
+        "action": "citation-dated (no prose change)",
+        "reviewPath": "docs/sources/reviews/photic-sneeze-2q22-correction-20260928.md",
+        "citation": "30899065 (Wang 2019) dated",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": false,
+        "retrievals": [],
+        "note": "Report prose is Eriksson-scoped and correct. Wang retained as locus replication (opposite allele in a Chinese cohort) and dated. Reviewed-content freeze re-anchored."
+      },
+      {
+        "slug": "asparagus-odor-detection-or2m7",
+        "templateFile": "data/templates/basic-traits.json",
+        "action": "citation-dated (hash freeze updated)",
+        "reviewPath": null,
+        "citation": "27965198 (Markt 2016) dated",
+        "accessedOn": "2026-09-28",
+        "bodyChanged": false,
+        "retrievals": [],
+        "note": "Markt 2016 was verified in the 28 September review; dated now with the reviewed-content freeze in canonical-report-data.test.ts updated in the same commit."
+      }
+    ]
+  }
 }
