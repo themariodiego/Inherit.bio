@@ -1,5 +1,109 @@
 # Test diff register
 
+## genomes-staging drop test after D-130's embryo fix · 28 September 2026
+
+`supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two
+function bodies may still name `genomes-staging`: the account-deletion and
+embryo-unwind manifest builders (D-130). #255 (`20260929101000`) rewrote
+`prepare_embryo_ingest_unwind_v1` to inventory objects under their recorded
+bucket, so it no longer names the dropped bucket, and the test failed on the
+merged tree. The expected set is now the one remaining builder. That is
+stricter: one fewer function may carry the literal.
+
+## Two register divergences closed on the owner's answers · 28 September 2026
+
+**`generated-artifacts` dropped.**
+- `supabase/tests/drop_generated_artifacts_bucket.sql` is new, with 13
+  assertions:
+  - the bucket is gone, and genomes and exports are unchanged;
+  - no storage policy names it;
+  - the literal survives only in the two own-report purge functions, as a
+    retention target id, and that target keeps its five stores;
+  - no recorded object can name the bucket or be an export archive;
+  - no export can name a single archive object;
+  - a genome source and a segmented export row are still accepted.
+- Without the migration, 5 of the 13 fail. Seven refusal cases were planted
+  and each was refused: an object, a multipart upload, a recorded object in
+  the bucket, a recorded export archive, an export `object_id`, a pending
+  deletion entry and a pending unwind entry. A completed entry is not
+  refused.
+- `supabase/tests/drop_genomes_staging_bucket.sql` now expects the bucket set
+  `{genomes, exports}`, because generated-artifacts is gone too.
+- `scripts/route-register-correspondence.test.ts` no longer asserts "more
+  than two" created buckets. It asserts that `genomes` and `exports` are among
+  them, which is an equally non-empty check with named contents.
+- In `scripts/route-gate.test.ts`, the storage-evidence test used to plant on
+  the generated-artifacts row, which is now removed. It now makes `exports`
+  undeclared and adds its own row. It expects the wrong `createdBy` to fail,
+  and adds a control where the right one passes. The dropped-bucket test now
+  restores both dropped rows and expects both to fail as stale.
+
+**`/withdraw/request` registered as an endpoint.**
+- `src/lib/embryos/rights-entry.test.ts` gains "answers with exactly the
+  headers its registered response contract names".
+- `scripts/route-register-correspondence.test.ts`:
+  - gains "resolves every routeFrom to a registered route and every pinned
+    param to a literal it allows";
+  - "expands a pinned parameter" now expects `rights.withdraw` without
+    `/withdraw/request`, and the new entry at that path.
+- `scripts/route-gate.test.ts`: "fails when a registered page literal is
+  served by an endpoint" now plants `request` back onto the page entry,
+  instead of deleting a ledger row that no longer exists.
+- `e2e/a11y.spec.ts` derives its endpoint-rendered pages from the register.
+  It audits the same URL, under the same test titles.
+- Each new check was planted and failed:
+  - the robots header reverted;
+  - the token-page binding removed;
+  - a contract still naming the page literal;
+  - `request` pinned back onto the page.
+
+No existing assertion was removed or loosened.
+
+## Buckets read from the migrations, and dated divergences · 28 September 2026
+
+`e2e/rls.spec.ts`, `e2e/file-deletion.spec.ts` and
+`e2e/account-deletion-purge.spec.ts` no longer keep their own list of
+buckets. They read it from `scripts/storage-buckets.ts`, which applies bucket
+creates and drops in migration order, the same way `pnpm gate:routes` does.
+The set changes in two ways:
+
+- It gains `exports`, created on 23 September. The old hand-kept list never
+  included it, so the RLS suite had not attacked it.
+- It loses `genomes-staging`, which `20260930140000` drops.
+
+`e2e/rls.spec.ts` now asserts that the set includes `genomes` and `exports`
+and excludes `genomes-staging`, so the list can be neither empty nor stale.
+Its planted and attacking objects are `application/octet-stream`, because
+`exports` admits nothing else. Every assertion is otherwise unchanged.
+
+`scripts/run-upload-browser.mts --full` on all three specs passed 12 of 12,
+with no skips and no retries. Two earlier runs each had failures on the shared
+local stack, and each failure happened before any bucket code ran:
+
+- the first run: two UI uploads stuck at "Uploading to private storage…
+  100%";
+- the second run: `createUser: Database error creating new user`.
+
+Every test also passed in at least one of those runs.
+
+`scripts/route-gate.test.ts` gains five tests:
+
+- a dropped bucket's old ledger row fails as stale;
+- a storage row whose `createdBy` or `declaredBy` no longer says what the row
+  says fails;
+- a method row that names the wrong file fails;
+- the drop parser reads both delete shapes, and throws on any other;
+- creates and drops apply in file order and in statement order.
+
+`scripts/route-register-correspondence.test.ts` gains "deletes a dated
+divergence by its date", which fails after a row's `deleteAfter`. The
+allowlist test now also accepts rows in `allowlistedBucketNotCreated`, but
+only when the named migration really drops the bucket. The new pgTAP file
+`supabase/tests/drop_genomes_staging_bucket.sql` has 7 assertions. Each new
+check was planted and failed; the details are in
+`docs/register-divergence-proposals.md` section 8. No existing assertion was
+removed or loosened.
+
 ## Prepared sources carry their runs of homozygosity · 28 September 2026
 
 `e2e/family-health-picture.spec.ts` ("both adults prepare their real source

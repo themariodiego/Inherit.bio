@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createdBuckets, migrationBuckets } from "./storage-buckets";
 
 /**
  * `docs/route-register.json` is the binding authority for 160 routes, and
@@ -965,8 +966,8 @@ function builtRoutes(repositoryRoot: string): BuiltRoute[] {
 
 /**
  * A registered path, plus every concrete path its `parameterContract` pins.
- * `/withdraw/[token]` with token in {request, session} is also, and only,
- * `/withdraw/request` and `/withdraw/session`.
+ * `/withdraw/[token]` with token in {session} is also, and only,
+ * `/withdraw/session`; a two-literal enum expands to both.
  */
 function concretePaths(entry: RegisterEntry): string[] {
   const contract = entry.parameterContract;
@@ -1045,20 +1046,9 @@ async function configuredRedirects(repositoryRoot: string): Promise<ConfigRedire
   return typeof redirects === "function" ? await redirects.call(loaded.default) : [];
 }
 
-/**
- * Bucket names created by a migration. Only the one shape appears in this
- * repository, and a second shape appearing later trips the floor guard below
- * rather than passing unnoticed.
- */
-export function createdBuckets(sql: string): string[] {
-  const found: string[] = [];
-  for (const statement of sql.matchAll(
-    /insert\s+into\s+storage\.buckets\s*\([^)]*\)\s*values\s*([\s\S]*?);/gi,
-  )) {
-    for (const row of statement[1].matchAll(/\(\s*'([^']+)'/g)) found.push(row[1]);
-  }
-  return found;
-}
+// Bucket creation and drops are read by scripts/storage-buckets.ts, which the
+// browser tests import too; re-exported so existing imports keep working.
+export { createdBuckets, droppedBuckets, migrationBuckets } from "./storage-buckets";
 
 /**
  * A route path and a state id are present in a test title only when neither is
@@ -1394,10 +1384,10 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     );
   }
   const ledger = JSON.parse(read(LEDGER)) as {
-    methodDivergence?: { routeId: string; declared: string[]; exported: string[] }[];
+    methodDivergence?: { routeId: string; file?: string; declared: string[]; exported: string[] }[];
     redirectStatusDivergence?: { routeId: string; expectedStatus: number; emitsStatus: number }[];
     kindDivergence?: { routeId: string; path: string; declaredKind: string; builtKind: string }[];
-    storageBucketDivergence?: { bucket: string; direction: string }[];
+    storageBucketDivergence?: { bucket: string; direction: string; createdBy?: string; declaredBy?: string }[];
     unhashableAttestationFields?: { routeId: string; fields: string[] }[];
     unreadRequiredHeaders?: { routeId: string; header: string }[];
     provenRouteStates?: string[];
@@ -1409,6 +1399,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
 
   // 1. Declared methods against exported methods.
   const methodDivergence: string[] = [];
+  const methodDivergenceFiles = new Map<string, string>();
   let matchedEndpointCount = 0;
   for (const entry of register.routes) {
     if (entry.kind !== "endpoint") continue;
@@ -1423,6 +1414,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
       methodDivergence.push(
         `${entry.id} declared=${declared.join("+") || "none"} exported=${exported.join("+") || "none"}`,
       );
+      methodDivergenceFiles.set(entry.id, implementation.file);
     }
   }
   compareLedger(
@@ -1435,6 +1427,11 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     ),
     failures,
   );
+  // The row names the handler too, so it cannot survive the route moving.
+  for (const known of ledger.methodDivergence ?? []) {
+    const file = methodDivergenceFiles.get(known.routeId);
+    if (file && known.file !== file) failures.push(`declared methods: ${known.routeId} names ${known.file ?? "(none)"}, built at ${file}`);
+  }
 
   // 2. Registered redirects against the status they emit. `next.config.ts`
   // redirects run before the App Router, so a configured entry wins over a
@@ -1502,11 +1499,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   const declaredBuckets = new Set(register.storagePrefixes.map((prefix) => prefix.bucket));
   const migrationDirectory = path.join(repositoryRoot, MIGRATIONS);
   const migrationFiles = readdirSync(migrationDirectory).filter((name) => name.endsWith(".sql"));
-  const createdBucketNames = new Set(
-    migrationFiles.flatMap((name) =>
-      createdBuckets(readFileSync(path.join(migrationDirectory, name), "utf8")),
-    ),
-  );
+  const createdBucketNames = migrationBuckets(migrationDirectory);
   const bucketDivergence = [
     ...[...declaredBuckets]
       .filter((bucket) => !createdBucketNames.has(bucket))
@@ -1547,6 +1540,23 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     (ledger.storageBucketDivergence ?? []).map((known) => `${known.direction} ${known.bucket}`),
     failures,
   );
+  // Each row names its evidence, and the evidence must still say so: a
+  // created-not-declared row names a migration that creates the bucket, and a
+  // declared-not-created row names a register prefix over it. A row that
+  // outlives its evidence is as stale as one whose divergence closed.
+  for (const known of ledger.storageBucketDivergence ?? []) {
+    if (known.direction === "created-not-declared") {
+      const file = known.createdBy ? path.join(repositoryRoot, known.createdBy) : "";
+      let creates = false;
+      try { creates = createdBuckets(readFileSync(file, "utf8")).includes(known.bucket); } catch { creates = false; }
+      if (!creates) failures.push(`storage bucket: ${known.bucket} names createdBy ${known.createdBy ?? "(none)"}, which does not create it`);
+    } else if (known.direction === "declared-not-created") {
+      const prefix = register.storagePrefixes.find((candidate) => candidate.id === known.declaredBy);
+      if (prefix?.bucket !== known.bucket) {
+        failures.push(`storage bucket: ${known.bucket} names declaredBy ${known.declaredBy ?? "(none)"}, which is not a prefix over it`);
+      }
+    }
+  }
 
   // 4c. Every state id says what it means, and nothing says what an absent id
   // means. Corrections item 11: eight ids were defined nowhere, so precedent
