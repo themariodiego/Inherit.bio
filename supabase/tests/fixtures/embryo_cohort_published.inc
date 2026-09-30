@@ -16,7 +16,7 @@ create function pg_temp.split_token() returns text language sql as $$
 $$;
 create function pg_temp.split_outcome(p_outcome text,p_verdict text,p_reasons text[],p_called integer,p_rows integer,
   p_reason text default null) returns jsonb language sql as $$
-  select jsonb_build_object('outcome',p_outcome,'qc',jsonb_build_object('sites_expected',10,'sites_called',p_called,
+  select jsonb_build_object('outcome',p_outcome,'qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.4,12.5),'sites_expected',10,'sites_called',p_called,
     'call_rate',p_called::double precision/10,'autosomal_het_rate',0.4,'mean_depth',12.5,
     'qc_verdict',p_verdict,'qc_reasons',to_jsonb(p_reasons)),'failureReason',p_reason,'variantCount',p_rows);
 $$;

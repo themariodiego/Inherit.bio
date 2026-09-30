@@ -2793,6 +2793,7 @@ export type Database = {
       }
       embryo_qc: {
         Row: {
+          figure_basis: Json | null
           allelic_dropout_estimate: number | null
           allelic_dropout_interval_high: number | null
           allelic_dropout_interval_low: number | null
@@ -2816,6 +2817,7 @@ export type Database = {
           source_laboratory: string | null
         }
         Insert: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -2839,6 +2841,7 @@ export type Database = {
           source_laboratory?: string | null
         }
         Update: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null

@@ -17,12 +17,14 @@ import { AncestryMap } from "./ancestry-map";
 import { useAncestryRegionPanel } from "./use-ancestry-region-panel";
 
 const PROVENANCE = { kind: "computed", module: "src/lib/genome/regional-admixture.ts" } as const;
-function shareSpec(share: number): AncestryShareSpec {
-  return { kind: "ancestry-share", class: "ancestry", basis: "modelled", provenance: PROVENANCE,
+function shareSpec(share: number, basis: "modelled"): AncestryShareSpec {
+  return { kind: "ancestry-share", class: "ancestry", basis, provenance: PROVENANCE,
     share, range: { unavailable: true } };
 }
 
 export interface RegionalAncestryRegionsProps {
+  basis: "modelled";
+  coverageBasis?: "observed";
   subjectId: string;
   result: RegionalAdmixtureResult | null;
   minMarkers: number;
@@ -45,20 +47,20 @@ export function RegionalAncestryRegions(props: RegionalAncestryRegionsProps) {
       <p className="text-sm text-ink-muted">{regionalPanelLine(panel, reference)}</p>
       <p className="text-sm text-ink-muted">{MARKER_GLOSS}</p>
       <p className="text-sm text-ink-muted">{IDENTITY}</p>
-      {result?.proportions && result.markersUsed > 0 ? <RawRegionalRows subjectId={props.subjectId} result={result} minMarkers={minMarkers} /> : null}
+      {result?.proportions && result.markersUsed > 0 ? <RawRegionalRows subjectId={props.subjectId} result={result} minMarkers={minMarkers} basis={props.basis} /> : null}
     </div>
   );
   return <ShownRegionalRegions {...props} result={result} />;
 }
 
 /** Retain derived rows (G5.3a) without presenting an insufficient-panel fit as a supported result. */
-function RawRegionalRows({ subjectId, result, minMarkers }: {
-  subjectId: string; result: RegionalAdmixtureResult; minMarkers: number;
+function RawRegionalRows({ subjectId, result, minMarkers, basis }: {
+  subjectId: string; result: RegionalAdmixtureResult; minMarkers: number; basis: "modelled";
 }) {
   const { rows, split } = presentRegionalShares(result);
   return <details data-slot="raw-numbers">
     <summary className="min-h-11 cursor-pointer py-3 text-sm text-ink-muted underline decoration-dotted underline-offset-2">{RAW_NUMBERS_SUMMARY}</summary>
-    <ClaimBlock subject={{ subjectId }} figures={[...rows, ...split].map(row => shareSpec(row.share))}
+    <ClaimBlock subject={{ subjectId }} figures={[...rows, ...split].map(row => shareSpec(row.share, basis))}
       renderFigures={nodes => <div className="space-y-3 text-sm text-ink-muted">
         {/* inherit-figure-exempt: coverage explains why these raw estimates are unreliable */}
         <p className="text-ink">Only {result.markersUsed} of the required {minMarkers} usable markers were read. These raw estimates are unreliable. They may change greatly with the missing markers.</p>
@@ -76,7 +78,7 @@ function RawRegionalRows({ subjectId, result, minMarkers }: {
   </details>;
 }
 
-function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, minMarkers,
+function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, minMarkers, basis, coverageBasis,
   initialWellSupportedOnly = true }: RegionalAncestryRegionsProps & { result: RegionalAdmixtureResult }) {
   const { rows, split } = presentRegionalShares(result);
   const reportingShapes = regionalReportingShapes(shapes, result.reporting.merged);
@@ -88,13 +90,13 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
   const splitIndex = rows.length;
   const chipIndex = splitIndex + split.length;
   const coverageIndex = chipIndex + 2;
-  const selectedIndex = coverageIndex + 1;
+  const selectedIndex = coverageIndex + (coverageBasis === undefined ? 0 : 1);
   const figures: StandaloneFigureSpec[] = [
-    ...rows.map(row => shareSpec(row.share)), ...split.map(row => shareSpec(row.share)),
-    shareSpec(chips.unassignable), shareSpec(chips.hidden),
-    { kind: "coverage", class: "quality", basis: "observed", provenance: PROVENANCE,
-      read: result.markersUsed, needed: panel.markers },
-    ...(selectedRow ? [shareSpec(selectedRow.share)] : []),
+    ...rows.map(row => shareSpec(row.share, basis)), ...split.map(row => shareSpec(row.share, basis)),
+    shareSpec(chips.unassignable, basis), shareSpec(chips.hidden, basis),
+    ...(coverageBasis === undefined ? [] : [{ kind: "coverage", class: "quality", basis: coverageBasis, provenance: PROVENANCE,
+      read: result.markersUsed, needed: panel.markers } as const]),
+    ...(selectedRow ? [shareSpec(selectedRow.share, basis)] : []),
   ];
   function renderFigures(nodes: ReactNode[]) {
     const selectedCodes: readonly string[] = selectedRow?.code === REGIONAL_COMBINED_CODE
@@ -170,7 +172,7 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
           {/* inherit-figure-exempt: versioned reference metadata, not a subject result */}
           <p>{regionalPanelLine(panel, reference)}</p>
           {/* inherit-figure-exempt: admission threshold metadata, paired with the attributed coverage figure */}
-          <p className="flex flex-wrap items-baseline gap-x-2"><span>This result needs at least {minMarkers} usable ancestry markers.</span>{nodes[coverageIndex]}</p>
+          <p className="flex flex-wrap items-baseline gap-x-2"><span>This result needs at least {minMarkers} usable ancestry markers.</span>{coverageBasis === undefined ? null : nodes[coverageIndex]}</p>
           <p>{MARKER_GLOSS}</p><p>{REGIONAL_MAP_LIMIT}</p><p className="text-ink">{IDENTITY}</p>
         </div>
       </div>

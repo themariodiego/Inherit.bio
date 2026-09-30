@@ -1,11 +1,5 @@
-/**
- * The figure specs a QC row yields (design §3): the positions read as a
- * `coverage` figure, every rate as a `natural-frequency`, the dropout
- * estimate as an `interval`. Class `quality`, basis `observed` — these are
- * read from the file or reported by the laboratory, never modelled. Pure,
- * so the specs are unit-testable without React; every value passes
- * `displayedFigure` unchanged.
- */
+import { qcFieldBasis } from "@/lib/embryos/qc-basis";
+/** QC figures consume saved producer receipts; absent historical labels stay absent. */
 import { displayedFigure, type QcDto } from "@/lib/embryos/policy";
 import type { CoverageSpec, IntervalSpec, MeasureSpec, NaturalFrequencySpec } from "@/lib/figures/spec";
 
@@ -16,63 +10,38 @@ import type { CoverageSpec, IntervalSpec, MeasureSpec, NaturalFrequencySpec } fr
  * qc-policy.ts holds the thresholds, bands and reason ids that decide what
  * a figure *means*; it never produces one of these numbers.
  */
-const QC_PROVENANCE = { kind: "computed", module: "embryos/policy" } as const;
+const QC_PROVENANCE = { kind: "computed", module: "embryos/split-analysis" } as const;
 
-export function coverageSpec(qc: Pick<QcDto, "sites_called" | "sites_expected">): CoverageSpec {
+export function coverageSpec(qc: Pick<QcDto, "sites_called" | "sites_expected" | "figure_basis">): CoverageSpec | null {
+  const receipt = qcFieldBasis(qc, "coverage");
+  if (!receipt) return null;
   return {
     kind: "coverage",
     class: "quality",
-    basis: "observed",
+    basis: receipt.basis,
     provenance: QC_PROVENANCE,
     read: displayedFigure(qc.sites_called),
     needed: displayedFigure(qc.sites_expected),
   };
 }
 
-export function rateSpec(value: number): NaturalFrequencySpec {
-  return {
-    kind: "natural-frequency",
-    class: "quality",
-    basis: "observed",
-    provenance: QC_PROVENANCE,
-    value: displayedFigure(value),
-  };
+export function rateSpec(qc: QcDto, field: "call_rate" | "autosomal_het_rate" | "parent_a_concordance" | "parent_b_concordance" | "contamination_estimate"): NaturalFrequencySpec | null {
+  const receipt = qcFieldBasis(qc, field), value = qc[field];
+  if (!receipt || value === null) return null;
+  return { kind: "natural-frequency", class: "quality", basis: receipt.basis, provenance: QC_PROVENANCE, value: displayedFigure(value) };
 }
 
-/** The mean read depth as a quality measure with its unit, one decimal (R7). */
-export function depthSpec(meanDepth: number): MeasureSpec {
-  return {
-    kind: "measure",
-    class: "quality",
-    basis: "observed",
-    provenance: QC_PROVENANCE,
-    value: displayedFigure(meanDepth),
-    unit: "reads per position",
-    decimals: 1,
-  };
+export function depthSpec(qc: QcDto): MeasureSpec | null {
+  const receipt = qcFieldBasis(qc, "mean_depth");
+  if (!receipt || qc.mean_depth === null) return null;
+  return { kind: "measure", class: "quality", basis: receipt.basis, provenance: QC_PROVENANCE,
+    value: displayedFigure(qc.mean_depth), unit: "reads per position", decimals: 1 };
 }
 
-/** The laboratory-reported dropout estimate with its interval; null when the source reported none. */
-export function dropoutSpec(
-  qc: Pick<QcDto, "allelic_dropout_estimate" | "allelic_dropout_interval_low" | "allelic_dropout_interval_high">,
-  embryoId: string,
-): IntervalSpec | null {
-  if (
-    qc.allelic_dropout_estimate === null ||
-    qc.allelic_dropout_interval_low === null ||
-    qc.allelic_dropout_interval_high === null
-  ) {
-    return null;
-  }
-  return {
-    kind: "interval",
-    class: "quality",
-    basis: "observed",
-    provenance: { kind: "seed", table: "embryo_qc", id: embryoId },
-    point: displayedFigure(qc.allelic_dropout_estimate),
-    low: displayedFigure(qc.allelic_dropout_interval_low),
-    high: displayedFigure(qc.allelic_dropout_interval_high),
-  };
+/** No admitted producer reports a dropout estimate; historical numbers stay unclassified. */
+export function dropoutSpec(qc: QcDto, embryoId: string): IntervalSpec | null {
+  void qc; void embryoId;
+  return null;
 }
 
 /**

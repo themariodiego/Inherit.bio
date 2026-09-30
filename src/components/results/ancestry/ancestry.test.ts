@@ -72,7 +72,7 @@ const SUPPORT_NOTE = "Low confidence: proportions are unreliable.";
 
 function result(proportions: Record<Pop, number>, markersUsed: number): AncestryResultView {
   return {
-    markersUsed,
+    markersUsed, basis: "modelled", coverageBasis: "observed",
     supportNote: SUPPORT_NOTE,
     shown: tierQualifies("continental", markersUsed),
     view: regionsView(presentShares({ proportions })),

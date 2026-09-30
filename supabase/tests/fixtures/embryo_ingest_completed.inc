@@ -7,6 +7,17 @@
 -- any genome; object rows are metadata only, written as Storage writes them.
 \ir embryo_cohort_pre_finalize.inc
 
+-- Synthetic receipt is explicit and closed; no historical label is guessed.
+create or replace function pg_temp.qc_receipt(p_het double precision,p_depth double precision)
+returns jsonb language sql as $$
+ select jsonb_build_object('version',1,'producer','embryo-split-calls-v1',
+  'coverage','{"version":1,"basis":"observed"}'::jsonb,
+  'call_rate','{"version":1,"basis":"observed"}'::jsonb,
+  'autosomal_het_rate',case when p_het is null then 'null'::jsonb else '{"version":1,"basis":"observed"}'::jsonb end,
+  'mean_depth',case when p_depth is null then 'null'::jsonb else '{"version":1,"basis":"observed"}'::jsonb end);
+$$;
+
+
 create temporary table minted as select private.finalize_embryo_cohort_ingest_v1(
   '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
   (select draft_id from draft),(select insurance from acks),(select charter from acks),

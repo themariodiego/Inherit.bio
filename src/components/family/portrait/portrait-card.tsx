@@ -63,7 +63,7 @@ import {
 import type { CarrierMatch, CarrierReason, CarrierVariantReading } from "@/lib/family/carrier-pair";
 import { AssertionNotes } from "../assertion-notes";
 import { distribute } from "@/lib/family/distribution";
-import { crossShares, type MendelOutcome } from "@/lib/family/mendel";
+import { crossShares, readMendelBasis, type MendelOutcome } from "@/lib/family/mendel";
 import type { GeneCoverage, OneSidedReading } from "@/lib/family/portrait";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 import { SubjectChip, type HealthPictureColumn } from "../health-picture-table";
@@ -82,11 +82,11 @@ function statusSpec(status: string): StandaloneFigureSpec {
   };
 }
 
-function frequencySpec(value: number): StandaloneFigureSpec {
+function frequencySpec(value: number, basis: "exact"): StandaloneFigureSpec {
   return {
     kind: "natural-frequency",
     class: "variant-call",
-    basis: "exact",
+    basis,
     provenance: PORTRAIT_PROVENANCE,
     value,
   };
@@ -229,7 +229,7 @@ export function CarrierPairCard({
     const distribution = distribute<MendelOutcome>(crossShares(cross), OUTCOME_PHRASES);
     const figures = [
       ...statuses,
-      ...distribution.categories.map((category) => frequencySpec(category.share)),
+      ...distribution.categories.map((category) => frequencySpec(category.share, readMendelBasis(cross))),
     ];
     return (
       <ClaimBlock
