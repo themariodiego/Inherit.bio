@@ -699,6 +699,34 @@ $$;
 
 -- Retain the structural guard. Only user_id may change, and only along the
 -- positive canonical claimant transition. Every other file field is identical.
+-- The invoker trigger keeps the caller-role test. A narrow read-only definer
+-- inspects sealed custody records without granting the API role table access.
+create function private.file_claimant_transition_matches_v1(
+  p_old public.genome_files,p_new public.genome_files
+) returns boolean language sql volatile security definer set search_path=pg_catalog as $$
+  select exists(select 1 from public.subjects s
+        join public.embryos e on e.subject_id=s.id and e.status=s.lifecycle and e.cohort_id is null
+        join private.future_person_custody_slices x on x.subject_id=s.id and x.source_file_id=(p_new).id
+          and x.claimant_principal_id=s.claimant_principal_id
+        join private.embryo_canonical_sources cs on cs.file_id=x.source_file_id and cs.subject_id=s.id and cs.embryo_id=e.id
+          and cs.source_sha256=x.source_sha256 and cs.membership_sha256=x.source_membership_sha256
+        join public.future_person_claimant_principals cp on cp.id=x.claimant_principal_id and cp.status='current'
+        join public.subject_principals sp on sp.id=cp.principal_id and sp.subject_id=s.id
+          and sp.status='active' and sp.principal_kind='future_person'
+        join public.future_person_claims c on c.id=cp.claim_id and c.status='approved' and c.embryo_id=e.id
+          and c.claimant_principal_id=sp.id
+        where s.id=(p_new).subject_id and s.cohort_id is null and (p_new).cohort_id is null and not (p_new).is_cohort_file
+          and ((s.lifecycle='claimed_unbound' and (p_new).user_id is null and (p_old).user_id is not null
+            and s.owner_account_id is null and s.subject_account_id is null and sp.account_id is null
+            and exists(select 1 from public.embryo_cohorts h where h.id=x.historical_cohort_id and h.owner_account_id=(p_old).user_id))
+          or (s.lifecycle='claimed_bound' and (p_old).user_id is null and (p_new).user_id=s.subject_account_id
+            and s.owner_account_id=(p_new).user_id and sp.account_id=(p_new).user_id)));
+$$;
+revoke all on function private.file_claimant_transition_matches_v1(public.genome_files,public.genome_files)
+  from public,anon,authenticated,service_role,inherit_upload_only;
+grant execute on function private.file_claimant_transition_matches_v1(public.genome_files,public.genome_files)
+  to service_role;
+
 create or replace function private.guard_structural_file_identity_v1()
 returns trigger language plpgsql security invoker set search_path=pg_catalog as $$
 begin
@@ -711,24 +739,10 @@ begin
     is distinct from (old.user_id,old.subject_id,old.bucket_path,old.storage_object_id,old.size_bytes,old.sha256,
       old.source_sha256,old.structural_validator_version,old.single_logical_sample_verified_at) then
     if current_user not in('postgres','service_role','supabase_admin')
-      or (to_jsonb(new)-'user_id') is distinct from (to_jsonb(old)-'user_id')
-      or not exists(select 1 from public.subjects s
-        join public.embryos e on e.subject_id=s.id and e.status=s.lifecycle and e.cohort_id is null
-        join private.future_person_custody_slices x on x.subject_id=s.id and x.source_file_id=new.id
-          and x.claimant_principal_id=s.claimant_principal_id
-        join private.embryo_canonical_sources cs on cs.file_id=x.source_file_id and cs.subject_id=s.id and cs.embryo_id=e.id
-          and cs.source_sha256=x.source_sha256 and cs.membership_sha256=x.source_membership_sha256
-        join public.future_person_claimant_principals cp on cp.id=x.claimant_principal_id and cp.status='current'
-        join public.subject_principals sp on sp.id=cp.principal_id and sp.subject_id=s.id
-          and sp.status='active' and sp.principal_kind='future_person'
-        join public.future_person_claims c on c.id=cp.claim_id and c.status='approved' and c.embryo_id=e.id
-          and c.claimant_principal_id=sp.id
-        where s.id=new.subject_id and s.cohort_id is null and new.cohort_id is null and not new.is_cohort_file
-          and ((s.lifecycle='claimed_unbound' and new.user_id is null and old.user_id is not null
-            and s.owner_account_id is null and s.subject_account_id is null and sp.account_id is null
-            and exists(select 1 from public.embryo_cohorts h where h.id=x.historical_cohort_id and h.owner_account_id=old.user_id))
-          or (s.lifecycle='claimed_bound' and old.user_id is null and new.user_id=s.subject_account_id
-            and s.owner_account_id=new.user_id and sp.account_id=new.user_id))) then
+      or (to_jsonb(new)-'user_id') is distinct from (to_jsonb(old)-'user_id') then
+      raise exception using errcode='55000',message='immutable_file_identity';
+    end if;
+    if not private.file_claimant_transition_matches_v1(old,new) then
       raise exception using errcode='55000',message='immutable_file_identity';
     end if;
   end if;
