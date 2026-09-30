@@ -1,5 +1,20 @@
 # Test diff register
 
+## Path B file selection waits for its handler · 30 September 2026
+
+The ready-card markup now keeps the file input and Choose button disabled
+until hydration attaches their handlers. The static-render test asserts both
+controls are disabled in the server preview, where selecting a file cannot
+start an upload. The browser journey opens the Path B section and selects its
+synthetic file through the actual Choose button and native file chooser.
+Every exact finalize status/body, queued notice, UI state, quarantine, byte
+comparison and database assertion remains. No timeout or retry was increased.
+
+The earlier account-branch CI stalled before any finalize response was
+observed; it did not retain a request trace. This change closes the measured
+server-preview interaction gap. The complete CI journey still must establish
+whether it was the cause of that failure.
+
 ## Path B merged purge and export inventory · 30 September 2026
 
 Merging current main into the held-upload branch combines main's 129 classified
