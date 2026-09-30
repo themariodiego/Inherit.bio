@@ -1,5 +1,9 @@
 # Test diff register
 
+## Embryo tamper probes execute real deferred integrity checks · 30 September 2026
+
+The canonical write-deadline and completion/split format probes now execute all valid pending constraints before their owner-only fixture DDL, inside the same rollback subtransaction. Keeping constraints immediate prevents newly queued integrity events from masking the intended API refusal when the fixture re-enables its original immutable trigger. The exact 42501 expired-write refusal, missing-ordinal and subset rules, stale-manifest refusal, build/configuration refusals and every existing assertion remain unchanged. No production trigger is disabled or relaxed; these are the pre-existing synthetic owner-tamper setups.
+
 ## PostgreSQL nonce boundaries retain the full registered maximum · 30 September 2026
 
 The registered operation nonce remains 16–256 characters from the closed ASCII alphabet. PostgreSQL's regular-expression repetition limit is lower than 256, so the executor now checks character and byte length explicitly and retains an unbounded closed-alphabet pattern. Eight strict rollback probes under a genuinely activated claimant session cover 15, 16, 256, 257, null, forbidden punctuation, trailing newline and non-ASCII characters. Both exact accepted boundaries must record one consumed hash; all refusals remain 42501. The purpose seed and exact single-claimant insertion use the existing literal formatting read by the matrix unit parser. Its target-kind literal reader now recognizes the registered hyphen in claimed-subject, while the exact issuer-set equality and every-insertion literal assertion remain unchanged. No nonce bound or browser ratchet changes.
