@@ -2636,6 +2636,7 @@ export type Database = {
           id: string
           ingest_revision: number
           matrix_fingerprint: string | null
+          purpose: string
           recipients: Json | null
           session_id: string | null
           state: string
@@ -2649,6 +2650,7 @@ export type Database = {
           id?: string
           ingest_revision: number
           matrix_fingerprint?: string | null
+          purpose?: string
           recipients?: Json | null
           session_id?: string | null
           state?: string
@@ -2662,6 +2664,7 @@ export type Database = {
           id?: string
           ingest_revision?: number
           matrix_fingerprint?: string | null
+          purpose?: string
           recipients?: Json | null
           session_id?: string | null
           state?: string
@@ -7738,6 +7741,10 @@ export type Database = {
           status: string
         }[]
       }
+      account_embryo_unwinds_v1: {
+        Args: { p_deletion_id: string; p_claim_token_hash: string }
+        Returns: Json
+      }
       claim_due_account_deletion_v1: {
         Args: { p_claim_token_hash: string; p_lease_seconds?: number }
         Returns: {
@@ -7773,6 +7780,158 @@ export type Database = {
       }
       purge_expired_rate_limit_buckets_v1: {
         Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      purge_future_person_claim_intakes_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      start_future_person_claim_v1: {
+        Args: {
+          p_form_nonce_hash: string
+          p_identifier_digests: Json
+          p_identity_ciphertext: string
+          p_key_hash: string | null
+          p_mode: string
+          p_network_digests: Json
+          p_session_hash: string
+          p_wrapped_data_key: string
+        }
+        Returns: string
+      }
+      claim_session_live_v1: {
+        Args: { p_session_hash: string }
+        Returns: boolean
+      }
+      claim_session_status_v1: {
+        Args: { p_session_hash: string }
+        Returns: Json
+      }
+      open_claim_review_receipt_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_nonce_hash: string }
+        Returns: Json
+      }
+      prepare_claim_review_chunk_receipt_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_sequence: number; p_expected_proof: string }
+        Returns: undefined
+      }
+      acknowledge_claim_review_chunk_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_sequence: number; p_proof: string; p_nonce_hash: string }
+        Returns: undefined
+      }
+      complete_future_person_claim_rotated_v1: {
+        Args: { p_birth_record_document_id: string; p_mode: string; p_nonce_hash: string;
+          p_photo_document_id: string; p_session_hash: string; p_successor_session_hash: string }
+        Returns: Json
+      }
+      open_claim_document_session_rotated_v1: {
+        Args: { p_claim_session_hash: string; p_successor_claim_session_hash: string; p_cookie_hash: string;
+          p_create_nonce_hash: string; p_document_kind: string; p_media_type: string;
+          p_sha256: string; p_size_bytes: number }
+        Returns: Json
+      }
+      complete_future_person_claim_v1: {
+        Args: {
+          p_birth_record_document_id: string
+          p_mode: string
+          p_nonce_hash: string
+          p_photo_document_id: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
+      read_claim_review_case_v1: {
+        Args: { p_review_id: string }
+        Returns: Json
+      }
+      open_claim_review_download_v1: {
+        Args: { p_cookie_hash: string; p_document_id: string }
+        Returns: Json
+      }
+      authorize_claim_review_chunk_v1: {
+        Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string }
+        Returns: Json
+      }
+      future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
+      issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
+      stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
+      purge_due_future_person_contacts_v1:{Args:Record<PropertyKey,never>;Returns:number}
+      decide_claim_review_attested_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
+          p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;p_parent_link_confirmed:boolean;
+          p_contact_reference_id:string;p_contact_ciphertext:string;p_contact_hmac_set:Json}
+        Returns:Json
+      }
+      decide_claim_review_v1: {
+        Args: {
+          p_decision: string
+          p_nonce_hash: string
+          p_reason_ciphertext: string
+          p_review_id: string
+          p_review_revision: number
+        }
+        Returns: Json
+      }
+      close_due_claim_reviews_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      open_claim_document_session_v1: {
+        Args: {
+          p_claim_session_hash: string
+          p_cookie_hash: string
+          p_create_nonce_hash: string
+          p_document_kind: string
+          p_media_type: string
+          p_sha256: string
+          p_size_bytes: number
+        }
+        Returns: Json
+      }
+      reserve_claim_document_chunk_v1: {
+        Args: { p_byte_count: number; p_cookie_hash: string; p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
+      }
+      settle_claim_document_chunk_v1: {
+        Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string; p_written: boolean }
+        Returns: string
+      }
+      begin_claim_document_completion_v1: {
+        Args: { p_chunk_count: number; p_complete_nonce_hash: string; p_cookie_hash: string; p_session_id: string }
+        Returns: Json
+      }
+      finish_claim_document_completion_v1: {
+        Args: {
+          p_complete_nonce_hash: string
+          p_cookie_hash: string
+          p_object_key: string | null
+          p_outcome: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      claim_next_claim_document_scan_v1: {
+        Args: { p_lease_hash: string }
+        Returns: Json
+      }
+      record_claim_document_scan_v1: {
+        Args: {
+          p_document_id: string
+          p_lease_hash: string
+          p_outcome: string
+          p_scan_engine: string | null
+          p_scanned_sha256: string | null
+          p_signature_at: string | null
+          p_signature_version: number | null
+        }
+        Returns: string
+      }
+      claim_document_objects_due_v1: {
+        Args: { p_limit: number }
+        Returns: { object_key: string }[]
+      }
+      confirm_claim_document_objects_deleted_v1: {
+        Args: { p_object_keys: string[]; p_route_id: string }
         Returns: number
       }
       authorize_mail_submission_v1: {
@@ -7870,6 +8029,10 @@ export type Database = {
       complete_account_deletion_storage_v1: {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: undefined
+      }
+      complete_embryo_ingest_unwind_v1: {
+        Args: { p_unwind_id: string }
+        Returns: Json
       }
       complete_embryo_terminal_mail_v1: {
         Args: {
@@ -8006,8 +8169,16 @@ export type Database = {
         }
         Returns: Json
       }
+      embryo_ingest_unwind_work_v1: {
+        Args: { p_limit: number }
+        Returns: Json
+      }
       embryo_ingest_write_targets_v1: {
         Args: { p_sequence: number; p_session_id: string }
+        Returns: Json
+      }
+      embryo_parent_withdrawal_view_v1: {
+        Args: { p_session_hash: string }
         Returns: Json
       }
       enqueue_account_mail: {
@@ -8238,6 +8409,10 @@ export type Database = {
           p_action: string
           p_token_hash: string
         }
+        Returns: string
+      }
+      respond_embryo_parent_withdrawal_v1: {
+        Args: { p_action: string; p_nonce: string; p_session_hash: string }
         Returns: string
       }
       restrict_embryo_cohort_v1: {

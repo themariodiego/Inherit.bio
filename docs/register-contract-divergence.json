@@ -122,6 +122,10 @@
       "why": "The annotation worker reads the object by genome_files.bucket_path."
     },
     {
+      "site": "future-person-identity src/lib/future-person/claim-objects.ts",
+      "why": "The service transport of Future Person claim documents: create-only upload, read and remove, all under keys private.claim_document_* makes (legal-evidence-ingest-v1). Called by the evidence chunk and completion routes, the claim document scan worker and jobs.retention. No client ever receives a key or a URL for this bucket."
+    },
+    {
       "site": "legal-evidence src/lib/embryos/refused-invitation-cleanup.ts",
       "why": "Removes evidence objects for a refused adult invitation. See liveCallSiteOnUncreatedBucket: this bucket does not exist."
     },
@@ -150,14 +154,6 @@
       ],
       "why": "The static scanner finds no literal exports bucket call. archive-segment-storage.ts now uses the closed imported ARCHIVE_BUCKET constant, which the scanner records separately as database-selected. That byte adapter has no product route or worker caller yet. The declared manifest namespace, authorization and export.generated-artifact-24h cleanup remain integration requirements; the existing POST /api/export is still unbuilt. This scanner category is not evidence that the byte adapter has no Storage call.",
       "closing": "Addressed when largeExportDeliveryContract is built."
-    },
-    {
-      "bucket": "future-person-identity",
-      "prefixIds": [
-        "storage.future-person-identity-v1"
-      ],
-      "why": "Declared with named-human-reviewer-assignment access, envelope encryption and four retention ids for future-person claim review, which is unbuilt. No live call site names it.",
-      "closing": "Addressed when future-person claim review is built."
     }
   ],
   "liveCallSiteOnUncreatedBucket": [

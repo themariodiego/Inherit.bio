@@ -1,7 +1,10 @@
 begin;
-select plan(48);
+select plan(57);
 
 \ir fixtures/rights_invitation_pending.inc
+
+\ir fixtures/mail_attempt_retry.inc
+select * from pg_temp.assert_mail_retry((select outbox_id from delivery),(select idempotency_key from delivery),(select delivery_token from delivery));
 
 -- Each probe rolls back both its mutation and the attempted operation, even
 -- when the operation succeeds. The result is retained in the PL/pgSQL variable.

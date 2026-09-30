@@ -109,10 +109,99 @@ The next source-accepting work must supply all of the following:
    `finalize_embryo_cohort_ingest_v1` creates the initial cohort/session; it does
    not complete uploaded fragments. No existing transaction enters
    `sanitization_pending` or enqueues that job from an ingest manifest.
+   **Completion exists, 2026-09-28; the consumer does not yet.**
+   `private.complete_embryo_ingest_v1` (door `public.complete_embryo_ingest_v1`,
+   `20260930120000_embryo_ingest_completion.sql`) reruns the shared door and
+   `private.embryo_ingest_binding_failure_v1`, requires the completion nonce the
+   configure step issued (`issued_completion_nonce_hash`), every chunk `stored`,
+   the exact ordinal set and every fragment's write intent `landed` under the
+   fence (the landing record for either backend), then locks the manifest digest on the
+   session, enqueues exactly one
+   `split_cohort_vcf` job bound to it and marks `sanitization_pending`, in one
+   transaction. A refusal uses `private.mark_embryo_ingest_failure_v1` and keeps
+   everything for the unwind. The unwind planner now admits that one job and
+   still refuses any other job on the cohort. No route calls it;
+   `supabase/tests/embryo_ingest_completion.sql` covers it.
+   **The consumer's first half exists, 2026-09-28.**
+   `20260930121000_embryo_split_worker.sql` adds claim, check, renew, fragment
+   read authority, stage, finish and fail for `split_cohort_vcf` only, behind
+   `private.embryo_split_config` (off by default). Each call reruns the binding
+   check and recomputes the manifest digest. `src/lib/embryos/split-worker.ts`
+   names each fragment by (session, sequence, ordinal). It gets its landed
+   identity from `read_embryo_split_fragment_v1` under the live claim, and
+   reads it through a reader seam. The R2 implementation,
+   `split-fragment-reader.ts`, sits over `readEmbryoFragment`
+   (`docs/embryo-fragment-storage.md`). The worker re-verifies size and
+   SHA-256, revalidates and parses each fragment with the product VCF parser,
+   stages that embryo's own called genotypes and records its QC outcome from
+   `qc-policy.ts`. The results are worker-only pending rows
+   (`private.embryo_split_ordinals`, `private.embryo_split_variants`). Nothing is
+   published. `pnpm worker:embryo-split` is operator-started and TEST-LOCAL.
+   Laboratory tables end with the closed `format` code.
 5. Whole-cohort publication, cleanup and real browser journeys before activation.
    The current fragment trigger requires a resolved build, while the register
    describes retaining sanitized unknown-build fragments pending a decision.
    That ordering requires its own explicit implementation and verification.
+   **Publication exists, 2026-09-28; cleanup and journeys do not.**
+   `private.publish_embryo_split_v1` (`20260930122000_embryo_split_publication.sql`)
+   is the one terminal transaction. It publishes every embryo at once:
+   - a pass gets its QC row and exactly its own staged genotypes;
+   - a `qc_fail` gets its QC row with the closed reason and no genotype.
+
+   In the same transaction it lifts quarantine from every embryo subject
+   together, sets publication revision 1, cancels the exact
+   `embryo.ingest-session-24h` due phase and deletes the pending rows. Before it
+   commits nothing about any embryo is visible. With an empty condition
+   registry, no score job is queued. Still missing:
+   - per-embryo canonical sources and `genome_files` rows;
+   - the authoritative retention date, Record Key card date changes and
+     addenda (the provisional card date is left as issued);
+   - rights notices;
+   - deleting fragments and handles after publication;
+   - the chunk and completion routes and browser journeys.
+
+   **Canonical sources exist, 2026-09-28.**
+   `20260930123000_embryo_canonical_sources.sql` gives each embryo that passes
+   QC its own canonical source. After the worker analyses a passing embryo, it
+   reads each of its fragments again, checks it against the manifest, and
+   copies it byte for byte into a new R2 object under a fresh `embryo/<uuid>`
+   key. Each copy is reserved first (`reserve_embryo_canonical_part_v1`), then
+   written create-only through the fragment gateway, read back and landed
+   (`ack_embryo_canonical_part_v1`), all under the live claim. A pass is
+   recorded only when every fragment has exactly one landed part. A QC failure
+   is recorded only with no part, so no object is ever written for it.
+   The publication transaction then gives each pass, and only each pass:
+   - one immutable source that binds its exact landed parts;
+   - one `genome_files` row owned by the cohort owner, on that embryo's
+     subject. The row carries that embryo's own composed digest and a neutral
+     name, and is `normalization_complete` at the publication commit;
+   - its genotypes, pointing at that row through `source_file_id`.
+
+   The owner's generic file read (Files list, downloads) no longer returns
+   an embryo or cohort row. Still missing: parts in the unwind inventory,
+   disposal of parts that no source binds (from a retried or failed
+   attempt), and source deletion at the retention deadline, at restriction
+   and in the terminal purge.
+
+   **Authoritative dates and addenda exist, 2026-09-28.** The same publication
+   transaction now gives every ordinal its `embryo.stored-or-unknown-24mo`
+   deadline: 24 months from the commit
+   (`20260930124000_embryo_publication_dates.sql`). A source is anchored at
+   its actual upload. A `qc_fail` is anchored at its own publication, cannot
+   be renewed, and borrows no sibling's time. Each card date becomes
+   `definitive_stored_or_unknown` with `date_revision` + 1. Each embryo
+   subject gets a retention row, its three registered phases and a frozen
+   purge manifest. Every current Record Key recipient gets a no-key
+   `record-key-addendum`: `date-changed` for a source only when its printed
+   date moved, and always one `no-source` notice for a `qc_fail`, which now
+   carries the date its record is deleted. If a required addendum cannot be
+   queued, the whole publication rolls back. A later transfer, donation or
+   discard supersedes the row and cancels its open phases. Embryo sources no
+   longer count against the parent's own upload allowance
+   (`20260930125000_own_upload_allowance_excludes_embryo.sql`, owner decision
+   of 28 September). Still missing: the upload-time rights notice, which waits
+   on a redeemable `embryo-parent-withdrawal` credential; renewal of a source
+   deadline; and the executor for these phases.
 
 ADR 0034 (27 September) allows X and Y calls to be read only to work out a
 registered serious sex-linked condition, and none is registered. This

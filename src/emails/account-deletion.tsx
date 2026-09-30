@@ -81,7 +81,7 @@ export function AccountDeletionCancelledEmail({
           color: brand.inkMuted,
         }}
       >
-        Your deletion request was cancelled. No data had been destroyed yet.
+        Your deletion request was cancelled. The account deletion did not start.
         Data you had already revoked, moved, restricted or let expire is not
         restored.
       </Text>

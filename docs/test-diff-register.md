@@ -1,5 +1,404 @@
 # Test diff register
 
+## 2026-09-30 — Preserve the immutable-file refusal under the real service role
+
+The complete hosted run found the existing `immutable_file_identity` assertion receiving a protected custody-table permission error. The trigger remains an invoker and raises unchanged identity/role refusals before calling a narrow service-only read-only definer for the unchanged positive claimant transition. No direct custody table access is granted. Fresh pgTAP now checks invoker semantics, current transaction visibility, exact grants and the actual service-role identity refusal; all original positive and negative custody tests and browser assertions remain.
+
+## Account cancellation browser proof requires the registered fresh sign-in · 30 September 2026
+
+The first full hosted account/cohort run reached the real Welcome back page after cancellation because the transaction correctly revokes every pre-cancellation Auth session. The old browser expectation attempted to render the Delete account control without the registered normal reauthorization. The journey now requires the actual native cancellation POST to return 200 with no-store, the exact sign-in handoff back to data settings, the genuine Welcome back screen and an unauthenticated export refusal before signing in through the real password form. It then retains every original Delete account, cancelled request/timestamp, cleared hold and overview assertion. No session, confirmation or successful authority is inserted into a fixture; no application/migration bytes, assertions, time limits, retries or skips are relaxed. This source correction is not a hosted pass receipt.
+
+## Exact cohort invitations and unambiguous cleanup identifiers · 30 September 2026
+
+The supported account graph now admits invitation principal FKs only when their actual target is an exact current cohort or draft owned by the deleting account, matching the worker's existing deletion selector. Any invitation using a selected principal for another target still refuses. A new counterpart-account assertion pins this separate invitation boundary without changing the original missing, stale, ambiguous-contact or outbox rollback assertions. The cleanup executor names all seven selected ID arrays distinctly from table names, so PostgreSQL's implicit embryo/subject row names cannot shadow the intended array. Every existing runtime/cohort/draft/session/job removal, claimed byte-equality, minimal-receipt and missing-receipt refusal assertion remains unchanged. No grant, deadline, supported documentary graph or provider acceptance changes.
+
+## Fresh account rehearsal reaches the exact notice and R2 receipt boundaries · 30 September 2026
+
+Request and cancellation now qualify the current-contact status column so their returned status cannot shadow it. The supported FK census admits an embryo subject only through an exact same-owner live cohort/subject/embryo tuple; a new counterpart-account refusal pins that boundary. Every missing, stale, ambiguous-contact and mandatory-outbox rollback assertion remains unchanged. The account worker proof uses a dedicated completed R2 reserve/ACK publication fixture and the real disposal receipt/evidence verifier; it never deletes Storage rows or changes Storage guards. Six exact landed R2 fragment receipts, crossed planned-object and false tombstone-digest refusals, and zero disposed rows after refusal extend the proof. Every existing cleanup success, claimed byte equality, immutable receipt, expired claim, incomplete disposal and missing provenance assertion remains. Provider identities are synthetic SQL evidence; hosted deletion is not claimed. The retired staging-bucket check now requires zero live function bodies instead of preserving a manifest-builder exception whose literal is gone. No production or browser acceptance is introduced.
+
+## Embryo tamper probes execute real deferred integrity checks · 30 September 2026
+
+The canonical write-deadline and completion/split format probes now execute all valid pending constraints before their owner-only fixture DDL, inside the same rollback subtransaction. Keeping constraints immediate prevents newly queued integrity events from masking the intended API refusal when the fixture re-enables its original immutable trigger. The exact 42501 expired-write refusal, missing-ordinal and subset rules, stale-manifest refusal, build/configuration refusals and every existing assertion remain unchanged. No production trigger is disabled or relaxed; these are the pre-existing synthetic owner-tamper setups.
+
+## PostgreSQL nonce boundaries retain the full registered maximum · 30 September 2026
+
+The registered operation nonce remains 16–256 characters from the closed ASCII alphabet. PostgreSQL's regular-expression repetition limit is lower than 256, so the executor now checks character and byte length explicitly and retains an unbounded closed-alphabet pattern. Eight strict rollback probes under a genuinely activated claimant session cover 15, 16, 256, 257, null, forbidden punctuation, trailing newline and non-ASCII characters. Both exact accepted boundaries must record one consumed hash; all refusals remain 42501. The purpose seed and exact single-claimant insertion use the existing literal formatting read by the matrix unit parser. Its target-kind literal reader now recognizes the registered hyphen in claimed-subject, while the exact issuer-set equality and every-insertion literal assertion remain unchanged. No nonce bound or browser ratchet changes.
+
+## Shared rights sessions use the actual issued candidate expiry · 30 September 2026
+
+The strict Future Person session trigger now reads expiry from the issued token candidate; token hashes have no expiry column. It requires the exact issued purpose, target and revision, the current unended hash, the current matching claimant credential and the original source and 60-minute session bindings. Two added ordinary adult/co-parent identity-update assertions prove that their genuine issued sessions pass this shared trigger. Five added Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. The genuine one-time claimant activation remains the positive proof. The existing exact plans increase by one each to 39 and 33; every earlier assertion and refusal remains. This account package retains its committed contact/delivery retention dependency and its exact 15-column claim-intake census.
+
+## Atomic owned-cohort notices and cancellation · 30 September 2026
+
+The supported owned-cohort request now commits every exact current affected-principal notice with its original seven-day account phase or rolls back the nonce, hold and all mail. A saved original recipient/cohort binding blocks legacy unnotified or newly crossed deadline claims. Contacts must be unique, current and authority-matched; stale, absent, ambiguous and failed outbox cases remain strict refusals. Cancellation invalidates every unsent or claimed obsolete affected deletion notice and sends one separate token-free notice per applicable principal, cancels the original unstarted phase without changing its deadline, revokes old sessions and preserves independently revoked/restricted records and consents. Unsupported documentary, draft-only, unfinished-ingest and unresolved-claim graphs remain refused. The old blanket owned-cohort request refusal is replaced with an actual missing-contact rollback refusal; every worker provenance, disposal and missing-receipt assertion remains. No browser or hosted-provider acceptance is claimed.
+
+Two real affected-recipient renderers and fixtures deliberately raise the independent inventory from 14 to 16 exports and 31 to 33 fixtures, with exactly 66 body/subject observations. They accept only one event timestamp and never receive a holder cancellation/export link, contact, identifier or genetic field. New strict mail-route and renderer cases refuse those extra fields and stale submission authority. The holder cancellation prose now states that account deletion did not start, avoiding a claim that separately withdrawn data was never deleted. The rendered-nonce regression adds an exact zero-old-session assertion and represents the later ordinary sign-in with a new synthetic session; every original spent-hash, cross-operation and pruning refusal remains unchanged under that live authority. No existing negative test, cap or timeout is relaxed.
+
+## Owned-cohort deletion worker preserves exact claimed provenance · 30 September 2026
+
+Three narrowly classified private stores increase the exact purge inventory from 147 to 150: two immutable minimum provenance receipts for an already-detached claimed source and one temporary account-deletion cohort work plan. No source, membership, canonical part or claimant genotype is rewritten. New database refusal tests pin receipt mutation, missing or crossed provenance, expired deletion claims and incomplete provider cleanup; bounded runtime tests require exact deletion/claim selection and an empty durable reread before account Storage completion. Existing assertions are retained. Public requests for an owned cohort remain closed pending the registered affected-recipient notice and cancellation envelope; the worker prerequisite does not complete the full account/cohort journey. Documentary bases, unfinished ingest/draft-only graphs and unresolved claims remain refused. No browser or hosted-provider acceptance is claimed.
+## Fresh rehearsal pins release authority and existing refusals · 30 September 2026
+
+The release worker now qualifies its candidate column against the table, and final refusal keeps a keyless intake's required null key hash while erasing encrypted working fields; its new strict refusal assertion raises the review plan from 95 to 96. Claimant activation uses one explicit creation clock for its exact 60-minute bound. The session constraint refuses a co-parent token presented as an approved claimant credential and freezes claimant authority bindings. The exact issuer assertion now includes the real fourth issuer; the original unissued-purpose refusal uses the still-unissued objection purpose, and the exact plan is 32 including that additional negative case. Every old route isolation assertion remains.
+
+The ordinary embryo refusal fixture now carries its actual cohort owner's account; the new custody shape is unchanged. The forbidden sex-column test first executes all real deferred constraints so a pending-event error cannot mask its unchanged 42501 refusal. The three new subject columns are explicitly withheld in both the export source and generated catalog until their typed claimant projection exists. No negative condition, timeout, database guard or acceptance criterion is loosened.
+
+## Temporary claimant contact expires without losing custody · 30 September 2026
+
+The reserved contact migration fixes one immutable 24-month deadline only for a claimant/contact/release generation. A selector-free service drain freezes the exact registered primary keys, deletes only contact/mail/release/token/session/nonce working rows and requires zero residuals before completion. The two existing release-credential and release-notice stores move into the delivery target without changing the exact 147-store total or rewriting any frozen historical manifest. Strict deadline/selector refusal and replay cases preserve the entire subject, canonical bytes and memberships, agreement slice, random claimant, verified HMAC and Recovery Key byte for byte. A private clock argument, inaccessible to every API role, tests the deadline without editing frozen fields; the public drain accepts neither a clock nor an identifier. An independent-worker failure test proves other queues still progress. No custody clock, source deletion or G5.4 completion is introduced.
+
+## Attested claimant release and separate contact lifetime · 30 September 2026
+
+The old five-argument reviewer door keeps rejection and more-information behavior but refuses every approval. Its original nominal-approval test now pins refusal, unchanged pending state and zero approval audit writes; the positive approval moves to the new real canonical-source/attestation/receipt journey. All original stale revision, competing-case, role, scan, deadline and document-read assertions remain. The private unattested executor loses authenticated grants. Custody provenance is immutable and exact-source purge start/cursor refusal gains strict assertions.
+
+A new strict database journey uses the real scan, receipt acknowledgement, documentary decision, release mail, activation, Recovery Key and analysis-stop doors. Refused transitions create no claimant or mail; approval detaches exactly one source, queues the purpose-bound seven-day release token and immediately shreds its review working key and fields. The claimant page exposes exactly four safe fields and genetic data only belongs in its separate export door. Recovery hashes and verified identity HMACs remain until binding or deletion, independently of the temporary contact. The email inventory grows from 13 to 14 renderers and 30 to 31 fixtures; both envelope forms grow from 60 to 62 observations. Existing notice assertions now allow exactly one fixed public privacy@inherit.bio contact while continuing to refuse every other address or unmatched @; the notice branch already requires that public contact of last resort. No timeout, retry limit, failure state or G5.4 acceptance row is relaxed. Export, correction, binding, exact deletion and later recovery/notice release remain under implementation and full CI is still required.
+
+## Exact provider attempt keys for regenerated rights links · 30 September 2026
+
+The real adult invitation, co-parent invitation and embryo withdrawal mail doors each gain nine strict assertions: one attempt retains its provider key; a regenerated attempt changes its token and provider key, revokes the previous hash, keeps only one live hash, refuses stale and canceled submissions, and stores no raw token or provider payload. The canonical outbox event key and all existing journey assertions remain unchanged.
+
+## Exact claimant custody preserves parent-independent source provenance · 30 September 2026
+
+The custody migration adds one narrow historical agreement/source slice to the registered variant/source inventory, making the exact combined count 147. New database assertions require explicit named-human documentary attestation, complete delivery receipts under the same assignment, the verified adult birthday, the still-current Record Key/disposition and one exact claimant. Parent restriction must remove every unclaimed source while preserving the claimed source, genotypes, immutable memberships and provider identities byte for byte. No assertion is relaxed; G5.4 remains NO while release delivery, claimant rights and complete browser evidence are unfinished.
+
+## Custody preserves both storage cleanup dependencies · 30 September 2026
+
+The exact purge inventory includes all current embryo withdrawal stores and all Future Person receipt stores: 146. This retains the complete union of the parents’ stores and assertions.
+
+## Claimant custody dependency retains all embryo stores · 30 September 2026
+
+The receipt and reviewer branch now includes the canonical-source and terminal/restriction safeguard dependency. The exact purge inventory is 145: current main’s 129, five embryo split/canonical stores and eleven Future Person intake/document/review/receipt stores. Both worker commands, both parents’ dated assertions and every export exclusion are retained.
+## Retired buckets with the private claim identity store · 30 September 2026
+
+The two retired-bucket tests now require exactly three surviving buckets:
+genomes, exports and the document branch's future-person-identity store.
+The former two-element assertion rejected that deliberate private store.
+Set equality remains strict; both retired buckets remain forbidden, all
+original function, policy and object-form assertions are retained, and a
+new assertion pins the identity bucket's private flag, sealed-byte size
+limit and exact allowed media type.
+
+## Claim rotation and complete reviewer byte receipts · 30 September 2026
+
+Claim document creation and completion now require a distinct cookie-bound CSRF value and atomically rotate the claimant credential without extending its original deadline. New refusal cases cover old cookies, crossed operations and reused page material. Reviewer Storage authorization no longer counts as document delivery. The registered receipt POST issues challenges and distinct chunk nonces; only service-verified exact bytes can prepare an expected proof. Every accepted acknowledgement rechecks current reviewer authority and consumes its nonce once. Partial, canceled, corrupt, crossed or unacknowledged delivery cannot satisfy the decision gate. Full document size and SHA-256 remain pinned, and raw chunk GET bodies and headers remain unchanged. The two ephemeral receipt stores have explicit export exclusions and increase the exact purge inventory from 138 to 140.
+
+## Named claim review reconciled and its authority strengthened · 30 September 2026
+
+The review working packages add exactly five purge stores, so the contract
+pins 138: main’s 129 plus the intake, document and review stores. All six
+new private review tables receive explicit export dispositions; download
+credentials remain excluded. The original 88 review assertions remain and
+seven strict database cases are added for wrong issuer, expired JWT, banned
+or deleted account, deletion hold and stale account/session revisions. The
+reviewer gate invokes the shared positive authenticated-session check before
+MFA, case reads or writes. Download sessions pin its two revisions and every
+chunk rechecks them. New serializer tests pin the closed case body and
+refuse unreadable encryption, malformed dates and extra fields; an unreadable
+case receives the registered opaque 404. Existing refusal tests are retained.
+
+## Claim browser responses observed before client consumption · 30 September 2026
+
+The failed document CI run reached the real success and scanning UI, then
+stalled reading response bodies through Playwright. The claim browser tests
+now observe a bounded clone of each actual native fetch response before the
+client consumes it, following the existing Copilot observer. The original
+request and response reach the application unchanged; no POST is repeated.
+All three claim modes still require identical exact received bytes, status,
+cookie names and panel text. The document response still has exactly the
+eight registered keys, the chunk still returns 204, and completion now pins
+both status 202 and the exact scanning bytes. The quarantine UI and HttpOnly
+cookie assertions remain. A loopback-browser fixture proves original
+response identity, unchanged request headers/body, one request per action,
+bounded-body rejection and observer cleanup. No timeout is increased.
+
+## Claim documents inventory after main reconciliation · 30 September 2026
+
+The environment gate pins all 21 current direct reads, 17 bound keys and
+exactly nine bindings, including the documented scanner address. The
+database contract pins 133 purge stores: main’s 129, one intake store and
+three document stores. Both parent and main export entries remain present
+and their database copy is regenerated. No inventory assertion is loosened.
+## Both embryo restriction doors share canonical source deletion · 30 September 2026
+
+The withdrawal migration is now `20260930232000_embryo_parent_withdrawal.sql`,
+after the source-deletion safeguard. This avoids a fresh database's later
+restriction migration overwriting the thin account door. Source deletion runs
+once in the private restriction core, with its reason derived from the closed
+route identifier; the account door only authenticates and calls that core.
+
+`embryo_parent_withdrawal.sql` retains every prior assertion and adds functional
+proofs that refusal and deletion use the withdrawal reason, both passing
+embryos' complete canonical source graphs disappear atomically, the residual
+check is clear, and provider identities stay registered pending exact disposal.
+The existing account restriction suite continues to prove the other route and
+is not loosened. Export and purge inventories retain the current parent stores
+plus the Future Person intake and credential stores, for exactly 136 targets.
+
+## Publication fixture capacity and combined purge inventory · 30 September 2026
+
+`supabase/tests/embryo_publication_dates.sql` now configures the four own-upload
+capacity row and its four limits before reading the synthetic parent's allowance.
+The embryo fixture configures a different capacity and left this row absent, so the
+reader correctly raised `upload_unavailable` before publication assertions
+could run. The setup is transaction-local; every existing assertion remains.
+
+Merging main adds the unwind disposal store and legal-audit account link to
+the branch's five split and canonical-source stores. The exact assertion in
+`supabase/tests/v2_contracts.sql` is therefore 134: main's 129 plus those five.
+The comparison stays exact, and all existing contract assertions remain.
+
+The generated plan in `supabase/tests/export_member_plan.sql` now includes
+the six tables introduced by the split-worker and canonical-source migrations.
+The operator-only split configuration is reference data; pending variants,
+ordinal progress and canonical object inventories are internal machinery.
+The existing catalog equality, person-scope, credential and archive checks
+remain unchanged. This also preserves the separate deferred export classes
+for durable embryo records.
+
+## Future Person intake inventory after main reconciliation · 30 September 2026
+
+The route gate pins 155 required state pairs: main’s Family Copilot refusal
+and this branch’s Future Person intake processing state both remain proved.
+The environment gate keeps main’s 21 direct reads and exactly eight bound
+read sites, including the claim gate’s existing TEST-LOCAL flag. The database
+contract pins 130 purge stores, main’s 129 plus the single Future Person
+intake store. Every expected count is exact; no refusal or coverage check is
+relaxed. The export plan retains both current main entries and the two rights
+tables, and its generated database copy is regenerated from that plan.
+## Canonical-part disposal retains both parents' stricter cleanup proofs · 30 September 2026
+
+The terminal fixture first proves that an unlanded pass is refused atomically,
+then lands its canonical parts and exercises deletion of both landed and
+uncertain writes through the disposal migration. The published fixture retains
+separate exact two-part assertions, the expanded digest and all survival counts.
+The inventory requires exactly 134 stores, including current main's legal audit
+link. Both parents' dated entries and every earlier cleanup assertion remain.
+
+## Terminal cleanup fixtures traverse the canonical-source fence · 30 September 2026
+
+After merging canonical-source publication, a passing split ordinal requires
+all its provider parts to be reserved and acknowledged. The abandoned-attempt
+fixture now strictly expects `canonical source unlanded` before any provider
+write and verifies no ordinal or part was written. Its staged genotype, graph
+purge, residue refusals, exact disposal receipts and terminal notice assertions
+remain. Disposal of abandoned canonical writes is exercised by the subsequent
+canonical-part-disposal migration's dedicated suite.
+
+The published-cleanup fixture lands both parts of each passing embryo through
+the real reservation and acknowledgement doors before recording its outcome.
+Every original cleanup assertion remains. The unchanged-publication digest now
+also covers canonical sources, exact memberships, provider identities, genome
+file descriptors and canonical genotypes; three added counts pin their survival.
+No application or database fence is relaxed.
+
+## Terminal-purge inventory after merging its current parents · 30 September 2026
+
+`supabase/tests/v2_contracts.sql` now requires exactly 134 stores, matching
+current main, the split worker and canonical sources. The former branch's
+130 omitted the legal audit account link and canonical-source stores.
+Terminal purge adds no store and removes no inventory assertion. Both
+parents' dated evidence is retained.
+## Embryo publication dates, addenda and the own-upload allowance · 28 September 2026
+
+`supabase/tests/embryo_publication_dates.sql` is new, with 75 assertions
+(fixture included) for `20260930124000_embryo_publication_dates.sql` and
+`20260930125000_own_upload_allowance_excludes_embryo.sql`. They cover:
+
+- provisional dates before publication;
+- a missing recipient contact rolling the whole publication back;
+- each ordinal's deadline, card date and date revision;
+- the retention rows, phases, envelopes and purge manifests;
+- the exact addenda and their recipients;
+- no rights notice;
+- the owner's own upload allowance before and after publication;
+- the published source the source-facts read relies on;
+- supersession by a later disposition.
+
+Existing tests changed, with nothing loosened:
+
+- `supabase/tests/embryo_split_publication.sql` had two assertions that
+  pinned the absence of this feature: "no notice is queued" and "the
+  provisional card date is left exactly as issued". They now pin its exact
+  presence. The mail count is now exactly two more, and a new assertion
+  requires both notices to be the no-source addendum for the embryo that
+  failed QC. Every card date is now `definitive_stored_or_unknown`, one
+  revision later.
+- `src/emails/emails.test.ts`: the no-source addendum test also requires the
+  sentence with the date the record is deleted. The subject table's
+  no-source payload carries the date. `src/lib/claims/email-fixtures.ts` does
+  the same.
+- `src/app/api/jobs/mail/route.test.ts` adds two cases: a no-source addendum
+  shaped exactly as the SQL builds it is delivered, and one without its date
+  is refused and never sent.
+- `src/lib/embryos/input-facts-load.test.ts` required a `cohort_id` filter on
+  `genome_files` beside `subject_id`. No row can match both
+  (`genome_files_subject_or_cohort`), so the loader always answered unknown.
+  The test now requires the cohort to be checked on the embryo's own
+  subject, and forbids a `cohort_id` filter on file rows. Its four metadata
+  cases and the empty case keep their expectations. New cases cover:
+  - a subject outside the cohort, which reads no file;
+  - a published GRCh38 canonical source, which gives `not-needed`;
+  - a GRCh37 canonical source, which gives `not-recorded`;
+  - a canonical source beside another kind of row, which gives
+    `not-recorded`.
+
+## Restriction deletes embryo canonical sources · 30 September 2026
+
+`supabase/tests/embryo_restriction_source_deletion.sql` is new, with 88
+assertions (fixture included) for
+`20260930150000_embryo_restriction_deletes_sources.sql`. A synthetic cohort
+publishes two sources. A second cohort holds a synthetic source of its own,
+and the owner has a file of their own. The file covers:
+
+- the helper's grants and refusals;
+- a no-op on a cohort with no source;
+- a rolled-back direct call for a withdrawal;
+- the door's unchanged signature and grants;
+- a dependant row refusing the whole restriction;
+- restriction deleting every source, file row, genotype and QC row of its
+  cohort, with a clear residual check over the file ids;
+- the other cohort and the owner's file unchanged;
+- the parts inventoried under one source unwind, kept until their markers are
+  proved and then deleted, with a clear residual check over the files and
+  parts.
+
+No existing assertion changed. `embryo_cohort_runtime.sql` (151) and
+`embryo_nonce_capabilities.sql` (95), which call the restriction door, pass
+unchanged.
+
+Planted regressions, each caught:
+
+- a restriction that leaves a source;
+- a helper that takes every cohort's sources;
+- a planner that also deletes another cohort's source membership;
+- parts deleted before their markers.
+
+## Embryo canonical part disposal and source deletion · 30 September 2026
+
+Two new files:
+
+- `supabase/tests/embryo_canonical_part_disposal.sql` has 96 assertions,
+  fixture included, for `20260930132000_embryo_canonical_part_disposal.sql`.
+  An attempt copies one embryo, leaves one copy open and fails. A second
+  attempt then publishes. The file covers:
+  - the published cleanup listing exactly the three unbound parts, landed or
+    open, and never a bound one;
+  - the R2 marker path for each;
+  - the removal of the unbound part rows;
+  - every published row, file, source and bound part left unchanged;
+  - the source-deletion planner's refusals, including a dependant row
+    anywhere else;
+  - the planner's deletions in one transaction, and a clear residual check;
+  - the parts kept until their markers are proved, then removed;
+  - a second source planned at its retention deadline.
+- `supabase/tests/embryo_ingest_purge_retained_review.sql` has 16
+  assertions, for `20260930131000_embryo_purge_retained_review.sql`. A
+  parent-deceased attempt plans and purges to completion, and its approved
+  review and evidence hash survive unchanged. A denied review and another
+  table's `target_id` still stop the purge. After the purge, the residual
+  check still counts a denied review, an approved review of another kind and
+  another table's `target_id`.
+
+Existing files:
+
+- `supabase/tests/embryo_ingest_terminal_purge.sql` goes from 140 to 147
+  assertions. Its attempt now copies embryo 1 into canonical parts before
+  the pass, as the pass gate from `20260930123000` requires, and leaves a copy
+  for embryo 2 open. The three expected object counts move from 6 to 9: the
+  disposal count, the completion result and the audit context. New assertions
+  cover:
+  - the parts in the inventory;
+  - the open part left unclaimed while its window is open, then claimed;
+  - part rows in the absence proof.
+  No assertion was removed or loosened.
+- `supabase/tests/embryo_ingest_published_cleanup.sql` goes from 86 to 87.
+  - The test lands the published embryos' parts before their passes.
+  - The completion result and the audit context gain `"parts":0`.
+  - The published-rows digest now also covers file rows, canonical sources
+    and bound parts.
+  No assertion was removed or loosened.
+- `src/lib/embryos/unwind-storage.test.ts` accepts the `source` purpose and
+  refuses an unknown one.
+- `supabase/tests/v2_contracts.sql` pins 133 purge stores, from the merge: 130
+  here plus the three canonical-source stores. This unit adds no table.
+
+Planted regressions, each caught:
+
+- a published plan that lists bound parts;
+- a claim that ignores an open write window;
+- a plan that omits parts, combined with a blind uninventoried count;
+- the file row deleted before its genotypes;
+- parts deleted before their markers;
+- no dependant check;
+- a source finish before `storage_confirmed`;
+- a purge that keeps part rows;
+- a published cleanup that unbinds a published source;
+- the review skip widened three ways: to the whole `legal_reviews` table, to
+  every `target_id`, and to every review.
+
+## Embryo terminal purge and published cleanup · 30 September 2026
+
+Two new files test `20260930130000_embryo_ingest_terminal_purge.sql`. Both
+counts include their fixture's own assertions.
+
+`supabase/tests/embryo_ingest_terminal_purge.sql` has 140 assertions. It covers:
+
+- grants;
+- the unwind's frozen identity, and inventory that cannot be inserted
+  disposed or added after planning;
+- no purge before `storage_confirmed`;
+- the residual check seeing Storage metadata at a fragment key, and refusing
+  a row in an unregistered table, a row in a registered store and a store it
+  cannot examine;
+- a completed attempt with staged split rows purged, with absence proved in
+  every store;
+- the kept uploader principal and accounts;
+- the terminalized due tuple, the notice slots and the counts-only audit event;
+- replays;
+- an R2 attempt with an uncertain key and a rotated contact that gets a
+  delivery-unavailable slot.
+
+`supabase/tests/embryo_ingest_published_cleanup.sql` has 86 assertions. It
+covers:
+
+- the plan made by publication;
+- refusals before exact evidence;
+- removal of the fragment, handle-map and inventory rows;
+- a digest of every published row, unchanged across the cleanup.
+
+`src/lib/embryos/unwind-storage.test.ts` grows from 8 to 14 tests, for the
+completion and work-list helpers.
+
+Planted regressions, each caught:
+
+- a purge of an unconfirmed unwind;
+- a residual nonce row left behind;
+- a residual check that skips unregistered tables;
+- a published cleanup that runs before `storage_confirmed`;
+- inventory inserted already tombstoned;
+- a cleanup that deletes a published QC row;
+- a dropped delivery-unavailable slot.
+
+No existing assertion changed. `supabase/tests/v2_contracts.sql` still counts
+130 purge stores, because no table was added.
+## Canonical-source inventory after merging current main · 30 September 2026
+
+`supabase/tests/v2_contracts.sql` now pins exactly 134 purge stores: current
+main's 129, the split worker's two pending stores and the canonical-source
+migration's three stores. The old branch total of 132 omitted main's two
+later stores. All other purge assertions remain. The export plan adds all
+three canonical-source tables with their existing internal-processing
+disposition and regenerates the exact catalog check.
+
+## Split-worker inventory after merging current main · 30 September 2026
+
+`supabase/tests/v2_contracts.sql` now requires exactly 131 purge stores: the
+129 stores already on `main` plus the split worker's two attempt-owned
+private pending stores. Its previous total of 129 omitted the current
+main's legal audit account link and exact unwind storage disposals. No
+store assertion is removed. The export plan classifies all three new
+private split-worker tables; its generated database inventory continues
+to require exact equality with the catalog.
 ## Browser setup timing input survives native cleanup · 30 September 2026
 
 The first hosted run executed all 565 cases successfully across six fresh jobs
@@ -389,6 +788,45 @@ Existing files, with no assertion removed:
 - In `supabase/tests/embryo_ingest_write_fence.sql`, the store-order assertion
   now compares the fence's two stores with every pre-fence store. Those were
   all public, and a later private store follows the fence's two.
+
+## Embryo canonical sources · 28 September 2026
+
+`supabase/tests/embryo_canonical_sources.sql` is new, with 123 assertions
+(fixture included) for `20260930123000_embryo_canonical_sources.sql`: store
+and door grants, purge registration, reservation and ACK refusals, the pass
+gate, a retry that reserves new keys, publication refusals, the published
+file rows, sources and memberships, genotype binding, immutability, and the
+owner file read under `authenticated`, another account and `anon`.
+
+Existing suites changed, with no assertion removed or loosened:
+
+- `supabase/tests/fixtures/embryo_ingest_completed.inc` configures a synthetic
+  R2 bucket name for canonical parts and adds `pg_temp.land_parts`.
+- In `embryo_split_worker.sql` and `embryo_split_publication.sql`, the
+  `pg_temp.finish` helper lands the embryo's canonical parts before it records
+  a pass, as the worker now does. Every assertion is unchanged, except one.
+  The publication check that each genotype was bound to its own digest also
+  required `source_file_id is null`. It now requires the genotype to point at
+  its own embryo's file, which carries that same digest.
+- `supabase/tests/v2_contracts.sql`: the pinned purge-store count moves from
+  129 to 132 for the three new registered stores.
+- `src/lib/embryos/split-worker.test.ts`: every run passes the canonical-part
+  writer double. A passing embryo is now read twice, once to analyse it and
+  once to copy it. So the read-authority count goes from 4 to 8, and the
+  expected read order lists each passing embryo twice. The stale-binding case
+  still fails the read authority that follows embryo 1's recorded outcome;
+  that is now the fifth call, not the third, and four reads precede it. The
+  "never publishes" case still fails in the middle of embryo 2; that is now
+  after five calls, not three. Seven new cases cover the copies: byte-for-byte
+  copies of each embryo's own fragments landed before its outcome, none for a
+  QC failure, a failed write, a stale ACK, a receipt for another fragment, a
+  landed identity for another receipt, and a fragment changed between the two
+  reads.
+- `src/lib/embryos/split-worker-loop.test.ts` passes a writer and adds one
+  case: each run gets exactly the injected reader and writer.
+- `src/lib/embryos/split-fragment-reader.test.ts` adds two cases for the R2
+  canonical-part writer over the in-memory gateway binding
+  (`scripts/ci-browser/embryo-fragment-fixture.ts`).
 
 ## Embryo fragments on R2 · 29 September 2026
 

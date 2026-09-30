@@ -50,10 +50,16 @@ import {
   EmbryoIngestAbandonedEmail,
   type EmbryoIngestAbandonedProps,
 } from "@/emails/embryo-ingest-abandoned";
+import { FuturePersonReleaseEmail,type FuturePersonReleaseProps } from "@/emails/future-person-release";
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
+import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
+  type AccountDeletionAffectedProps, type AccountDeletionAffectedCancelledProps } from "@/emails/account-deletion-affected";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
+  "account-deletion-affected": AccountDeletionAffectedProps;
+  "account-deletion-affected-cancelled": AccountDeletionAffectedCancelledProps;
+  "future-person-release":FuturePersonReleaseProps;
   "report-ready": ReportReadyProps;
   "research-digest": ResearchDigestProps;
   "account-deletion-notice": AccountDeletionNoticeProps;
@@ -81,6 +87,9 @@ export type MailTemplate = {
 const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
+  "account-deletion-affected": (payload) => createElement(AccountDeletionAffectedEmail, payload),
+  "account-deletion-affected-cancelled": (payload) => createElement(AccountDeletionAffectedCancelledEmail, payload),
+  "future-person-release":(payload)=>createElement(FuturePersonReleaseEmail,payload),
   "report-ready": (payload) => createElement(ReportReadyEmail, payload),
   "research-digest": (payload) => createElement(ResearchDigestEmail, payload),
   "account-deletion-notice": (payload) =>
@@ -108,6 +117,9 @@ const renderers: {
 // Subjects are fixed per template. The Record Key addendum is the one
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
+  "account-deletion-affected": "Records held on Inherit will be deleted",
+  "account-deletion-affected-cancelled": "A record deletion request on Inherit was cancelled",
+  "future-person-release":"Your Inherit request is ready",
   "report-ready": "Your Inherit reports are ready",
   "research-digest": "New reports in the Inherit research library",
   "account-deletion-notice": "Your Inherit account deletion is scheduled",
