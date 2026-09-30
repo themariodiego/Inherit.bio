@@ -51,10 +51,12 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   add("with-note", { id: "adult-subject-invitation", payload: { invitationUrl: url, note: "Synthetic invitation note." } });
   add("invitation", { id: "co-parent-invitation", payload: { invitationUrl: url } });
   for (const count of [1, 3]) for (const link of [false, true]) add(`count-${count}-${link ? "link" : "no-link"}`, {
-    id: "embryo-upload-notice", payload: { embryoCount: count, ...(link ? { withdrawUrl: url } : {}) },
+    id: "embryo-upload-notice", payload: { embryoCount: count, uploaderName: count === 1 ? "Alex Synthetic" : null,
+      uploadedBy: count === 1 ? "genetic-parent" : "someone-else", uploadDateIso: "2026-09-06",
+      uploadDateWords: "6 September 2026", retentionDays: 730, ...(link ? { withdrawUrl: url } : {}) },
   });
   add("date-changed", { id: "record-key-addendum", payload: { kind: "date-changed", displayLabel: "Embryo 1", closingDateIso: "2028-09-06", closingDateWords: "6 September 2028" } });
-  add("no-source", { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1" } });
+  add("no-source", { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1", closingDateIso: "2028-09-06", closingDateWords: "6 September 2028" } });
   for (const count of [1, 3]) add(`card-invalidated-${count}`, { id: "record-key-addendum", payload: { kind: "card-invalidated", embryoCount: count } });
   for (const disposition of ["stored", "transferred", "donated", "discarded"] as const) add(disposition, {
     id: "embryo-disposition-notice", payload: { displayLabel: "Embryo 1", disposition, effectiveAt: "2026-09-06T12:00:00Z", retentionExpiresAt: "2028-09-06T12:00:00Z" },

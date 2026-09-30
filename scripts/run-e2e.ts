@@ -2,11 +2,12 @@
  * Invoked inside run-upload-browser.mts so every run has a real local provider.
  */
 import assert from "node:assert/strict";
+import { assertEmbryoCiShard } from "./ci-browser-embryo-partitions";
 import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { verifyE2EReport } from "./e2e-report-contract";
-import { browserShardReceipt, ciBrowserShard } from "./ci-browser-shards";
+import { browserReportCases, browserShardReceipt, ciBrowserShard } from "./ci-browser-shards";
 import { ciBrowserSourceIdentity, discoverBrowserCases, trackedBrowserSpecs } from "./ci-browser-shards-io";
 
 assert(process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY && process.env.INHERIT_UPLOAD_SIGNING_JWK,
@@ -15,6 +16,7 @@ const reportPath = path.resolve("test-results/results.json");
 const args = process.argv.slice(2);
 const browserStarted = performance.now();
 const shard = ciBrowserShard(args[1], process.env);
+assertEmbryoCiShard(shard, process.env);
 if (process.env.CI) assert(args[0] === "--config=playwright.config.ts"
   && (shard === null ? args.length === 1 : args.length === 2),
 "CI execution accepts only the full standard suite or its registered native shard, without selectors");
@@ -26,6 +28,8 @@ if (shard !== null) {
   rmSync("test-results/ci-browser-shard.json", { force: true });
   rmSync("test-results/ci-browser-shard-pending.json", { force: true });
   fullDiscovery = discoverBrowserCases(); assignedDiscovery = discoverBrowserCases(shard);
+  browserReportCases(fullDiscovery, null, false);
+  browserReportCases(assignedDiscovery, shard, false);
   args[1] = `--shard=${shard}/6`;
 }
 // A crashed run must not reuse an earlier successful report.

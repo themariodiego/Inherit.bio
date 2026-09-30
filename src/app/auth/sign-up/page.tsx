@@ -1,5 +1,6 @@
 "use client";
 
+import { route } from "@/lib/primary-routes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -85,7 +86,7 @@ export default function SignUpPage() {
       </p>
       <p className="text-center text-sm text-ink-muted">
         Already have an account?{" "}
-        <Link href="/auth/sign-in" className="text-forest underline underline-offset-2">
+        <Link href={route("auth.sign-in")} className="text-forest underline underline-offset-2">
           Sign in
         </Link>
       </p>

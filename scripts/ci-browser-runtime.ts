@@ -69,6 +69,7 @@ export async function startCiBrowserRuntime(): Promise<{ env: Record<string, str
       "--network", gateway.network,
       "--add-host", "model.copilot.test:203.0.114.10",
       "--add-host", "prepared.artifacts.test:203.0.114.11",
+      "--add-host", "embryo.fragments.test:203.0.114.12",
       "--dns", "127.0.0.1", "--dns-option", "attempts:1", "--dns-option", "timeout:1", "--dns-search", ".",
       "--read-only", "--cap-drop=ALL", "--cap-add=NET_ADMIN", "--security-opt=no-new-privileges",
       "--tmpfs", "/tmp:rw,nosuid,nodev,size=128m,mode=1777",

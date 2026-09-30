@@ -54,6 +54,7 @@ export type FigureBasis = (typeof FIGURE_BASES)[number];
  */
 export const COMPUTED_MODULES = [
   "embryos/policy",
+  "embryos/split-analysis",
   "family/carrier-pair",
   "family/distribution",
   "family/mendel",

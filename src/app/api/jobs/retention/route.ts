@@ -126,6 +126,15 @@ export async function POST(request: Request) {
   if (rateLimitPurgeError) failed++;
   else if (typeof purgedBuckets === "number") processed += purgedBuckets;
 
+  // future-person.claim-intake-session-24h: an unfinished claim start is
+  // deleted, with its sealed fields and their key, once its day or its idle
+  // half hour is over.
+  const { data: purgedIntakes, error: claimIntakePurgeError } = await admin.rpc(
+    "purge_future_person_claim_intakes_v1",
+  );
+  if (claimIntakePurgeError) failed++;
+  else if (typeof purgedIntakes === "number") processed += purgedIntakes;
+
   // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
   // not prevent this already-due work from making progress.
   try {

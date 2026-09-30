@@ -59,11 +59,13 @@ thing, and the blockage is not partial:
 ## C. Blocked on unbuilt rights and withdrawal slices (2)
 
 **G5.3** — source-object purge belongs to the withdrawal slice.
-**G5.4** — future-person routes and the broader rights-purpose matrix are
-unfinished. Active-key rotation and the account and network invitation quotas
-are built (2026-09-28, draft PR #248); the adult URL-token migration closed as
-D-081. By owner decision the row is judged under TEST-LOCAL; real countries
-wait on G5.5 reviews.
+**G5.4** — most future-person routes are unfinished. Active-key rotation and
+the account and network invitation quotas are built (2026-09-28, draft PR
+#248); the adult URL-token migration closed as D-081. The rights-purpose
+matrix and the public claim start are built under TEST-LOCAL (2026-09-28, not
+yet merged). The documents step, the named-human review and the release and
+claimant rights routes are not. By owner decision the row is judged under
+TEST-LOCAL; real countries wait on G5.5 reviews.
 
 ## D. Blocked on an environment this work does not have (4)
 

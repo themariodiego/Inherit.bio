@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 vi.stubEnv("INHERIT_HMAC_KEYRING", "");
 
-const { INVITATION_ATTEMPT_OPERATION, invitationQuotaKeys } = await import("./invitation-quota");
+const { INVITATION_ATTEMPT_OPERATION, invitationQuotaKeys } = await import("./rate-limit-keys");
 const { keyedDigestSet } = await import("./hmac-keyring");
 
 afterAll(() => {

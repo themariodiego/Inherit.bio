@@ -130,7 +130,8 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // the guide.
     expect(result.directReadKeyCount).toBe(21);
     expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(7);
+    // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
+    expect(result.boundBindingCount).toBe(8);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(37);
     expect(result.templateKeyCount).toBe(30);

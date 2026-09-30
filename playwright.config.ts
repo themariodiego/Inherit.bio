@@ -1,7 +1,7 @@
 import { localE2eProject } from "./scripts/local-e2e-project";
 import { defineConfig, devices } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
-import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV } from "./scripts/ci-browser-config";
+import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV, EMBRYO_APP_PORT, EMBRYO_APP_ENV } from "./scripts/ci-browser-config";
 import { assertStandardCiBrowserProjects } from "./scripts/ci-browser-project-registry";
 
 // E2E runs against a production build served locally, backed by the local
@@ -16,7 +16,7 @@ import { assertStandardCiBrowserProjects } from "./scripts/ci-browser-project-re
 // The independent pause server uses TEST-LOCAL with issuance paused. The
 // fourth server, on LOCAL_MODEL_PORT, is the one app that attests the
 // local-model path (G4.8): the `copilot-local` project runs the red-team suite
-// and the Family group Copilot journey against it, and nothing else runs there.
+// and the Family and cohort Copilot journeys against it, and nothing else runs there.
 // Isolated CI adds a prepared-source server on PREPARED_APP_PORT. Its SQL
 // gate is enabled only inside that guarded journey; other variants keep it off.
 // Playwright starts servers in order; every later server reuses the same build.
@@ -40,10 +40,13 @@ const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
 const PREPARED_JOURNEY = /own-prepared-genome-journey\.spec\.ts$/;
 /**
  * The suites that need the local-model variant: the G4.8 red-team set, and
- * the Family group Copilot scope, a true non-self scope that runs only on a
- * server-attested same-host model (copilot-transport-availability-v1).
+ * the Family and Embryo (cohort) group Copilot scopes, true non-self scopes
+ * that run only on a server-attested same-host model
+ * (copilot-transport-availability-v1).
  */
-const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$/;
+const MIXED_QC_JOURNEY = /embryo-mixed-qc-journey\.spec\.ts$/;
+const EMBRYO_JOURNEY = /embryo-ingest-journey\.spec\.ts$/;
+const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
  * looks like — so it is excluded from every default project and runs only when
@@ -97,7 +100,8 @@ const config = defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN] },
+    ...(includePreparedJourney ? [{ name: "embryo-mixed-qc", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${EMBRYO_APP_PORT}` }, testMatch: MIXED_QC_JOURNEY }] : []),
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY, MIXED_QC_JOURNEY] },
     ...(comprehensionRun ? [{ name: "comprehension-run", use: { ...devices["Desktop Chrome"] }, testMatch: COMPREHENSION_RUN }] : []),
     {
       name: "jurisdiction-off",
@@ -109,6 +113,7 @@ const config = defineConfig({
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${LOCAL_MODEL_PORT}` },
       testMatch: COPILOT_LOCAL,
     },
+    ...(includePreparedJourney ? [{ name: "embryo-ingest", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${EMBRYO_APP_PORT}` }, testMatch: EMBRYO_JOURNEY }] : []),
     ...(includePreparedJourney ? [{
       name: "prepared-source",
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${PREPARED_APP_PORT}` },
@@ -210,6 +215,12 @@ const config = defineConfig({
         INHERIT_TEST_JURISDICTION: "1",
         ...PREPARED_APP_ENV,
       },
+    }] : []),
+    ...(isolatedCi ? [{
+      command: ciServer(EMBRYO_APP_PORT), url: `http://localhost:${EMBRYO_APP_PORT}/auth/sign-in`,
+      reuseExistingServer: false, timeout: 120_000,
+      env: { ...SERVER_ENV, ...EMBRYO_APP_ENV, NEXT_PUBLIC_SITE_URL: `http://localhost:${EMBRYO_APP_PORT}`,
+        NEXT_PUBLIC_APP_URL: `http://localhost:${EMBRYO_APP_PORT}`, INHERIT_TEST_JURISDICTION: "1" },
     }] : []),
   ],
 });

@@ -53,7 +53,7 @@ bucket; the service role keeps read access only.
 **The source network** (owner decision, 28 September 2026). The platform's
 client address is read once, in `sourceNetwork` in
 `src/lib/source-network.ts`: IPv4 whole, IPv6 by /64, anything unreadable as
-one shared `unknown`. Only `src/lib/invitation-quota.ts` may import it, and it
+one shared `unknown`. Only `src/lib/rate-limit-keys.ts` may import it, and it
 passes the value straight into a keyed digest; the bucket is purged within 24
 hours and never decides a jurisdiction. `scripts/jurisdiction-inference.test.ts`
 allows exactly that one call, as it allows the sanctions check, and fails a
@@ -98,6 +98,63 @@ migrations applied inside each probe's transaction.
 4. Remove a retired revision's secret from `INHERIT_HMAC_KEYRING`. Revision 1
    has no separate secret: it is derived from `BYOK_ENCRYPTION_KEY`, and
    retiring it only stops the database from matching it.
+
+## Rights-purpose matrix and the Future Person claim start (2026-09-28, local, not released)
+
+**The matrix** (`policyResolvers.withdrawal-target-v1.purposeMatrix`).
+Migration `20260929150000_rights_purpose_matrix.sql` stores the register's ten
+purposes, their actions and the route each action reaches, in
+`private.rights_purpose_matrix`. `scripts/rights-purpose-matrix.test.ts` fails
+if the seed and the register differ in either direction.
+
+- `private.rights_session_purposes` lists the purposes a credential is
+  actually stored under, with the one target kind each binds. Today that is
+  the two invitation kinds. A matrix purpose with no row there has no issuer,
+  so no session of it can exist.
+- A trigger on `public.rights_sessions` refuses an insert, or a change of
+  purpose or target kind, that is not one registered pair
+  (`databaseConstraint`).
+- `private.rights_action_permitted_v1(purpose, action, route)` is the one
+  gate a new rights route asks. No future-person purpose reaches
+  `api.withdraw` or token-target export.
+
+**The claim start** (`api.future-person-claim`, `rights.future-person-claim`).
+
+- The page is public, reads no account and is never jurisdiction-blocked. It
+  shows the refusal standard and the no-guess rule before its first control.
+  It offers the form only where a record can exist, which today is TEST-LOCAL
+  (`src/lib/future-person/claims-open.ts`); everywhere else it says claims are
+  not open and collects nothing.
+- `src/proxy.ts` gives each page view a ten-minute form cookie and a sealed
+  token bound to it. The POST must send both, from the exact origin. A
+  browser that already holds the cookie keeps it, because Next.js prefetches
+  the page it is showing; a new cookie there would strand the served token.
+- A Record Key, a Recovery Key and a keyless start all get the same 202 and
+  the same kind of claim-session cookie. Nothing on the path looks for a
+  record, so the answer cannot depend on one.
+- The identity and contact fields are sealed in the application under a key
+  made for the one claim, and that key is sealed with the deployment key. The
+  database holds both as ciphertext and cannot open either. A key is kept only
+  as its SHA-256. The claim session is kept only as the SHA-256 of its cookie.
+- `private.start_future_person_claim_v1` counts every limit before it writes:
+  per network 10 in 15 minutes, 40 a UTC day and three live; per key or
+  contact one live and three a day; 500 live in all. A refused start is the
+  shared 429 with no cookie and no row but its counters. A replayed form is
+  the opaque 404.
+- An intake lives 24 hours from its start, ends after 30 idle minutes, and is
+  never extended. The retention job deletes it
+  (`purge_future_person_claim_intakes_v1`), and the deleted row takes its
+  sealed key with it.
+- A rate-limit key revision cannot retire while an intake written under it is
+  unexpired, so a rotation cannot lift the one-live limit early.
+
+**Not built.** The documents step needs `legal-evidence-ingest-v1`, which
+needs a malware-scanning service and the `future-person-identity` bucket
+(G8.5). After it come the named-human review with MFA, the release, the
+claimant rights routes and keyless notice release. The received page says the
+next step is not open yet. The older `public.future_person_claim_sessions`
+table is left alone: it requires an embryo id, which a public start must never
+learn.
 
 ## Release receipt (2026-09-06)
 

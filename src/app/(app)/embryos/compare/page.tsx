@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { CohortPermission } from "@/components/embryo/cohort-permission";
+import { loadCohortPermission } from "@/lib/embryos/cohort-permission";
 import { loadEmbryoInputFacts } from "@/lib/embryos/input-facts-load";
 import { notFound, redirect } from "next/navigation";
 import { CompareTable } from "@/components/embryo/compare/compare-table";
@@ -172,12 +174,14 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
       return frame(<BlockingState state="empty">{FILES_NOT_ADDED_SENTENCE}</BlockingState>);
     case "processing":
       return frame(<BlockingState state="processing">{STILL_CHECKING_STATUS}</BlockingState>);
-    case "consent-required":
+    case "consent-required": {
+      const permission = await loadCohortPermission(user.id, cohort);
       return frame(
-        <BlockingState state="consent-required">
+        <><BlockingState state="consent-required">
           {waitingForResultsBody(waitingRole(analysisConsent(cohort)) ?? ROLE_OTHER_PARENT)}
-        </BlockingState>,
+        </BlockingState>{permission ? <CohortPermission cohortId={cohort.id} artifact={permission} /> : null}</>,
       );
+    }
     case "gated":
       return frame(<EmbryoResultGate action={acknowledgeEmbryoGate} />);
     case "complete":
@@ -213,6 +217,8 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
 
   const subjectIds = new Map(cohort.embryos.map((embryo) => [embryo.id, embryo.subjectId]));
   const layers = layerOf();
+  const riskRangeEmbryoIds = new Set(comparison.embryos.filter((embryo) => comparison.result_rows.some((row) =>
+    row.findings.some((finding) => finding.embryo_label === embryo.display_label && finding.finding?.kind === "absolute_risk"))).map((embryo) => embryo.id));
   const rowsFor = (layer: FindingLayer): ComparisonResultRow[] =>
     comparison.result_rows.filter((row) => layers.get(row.findings[0].condition_id) === layer);
   const conditionNames = new Map(
@@ -242,7 +248,7 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
         <h2 id="quality-check-heading" className="text-lg font-semibold text-ink">
           {QUALITY_CHECK_HEADING}
         </h2>
-        <QcTable embryos={comparison.embryos} subjectIds={subjectIds} />
+        <QcTable embryos={comparison.embryos} subjectIds={subjectIds} riskRangeEmbryoIds={riskRangeEmbryoIds} />
       </section>
 
       <section aria-labelledby="how-sure-heading" data-density-top-level-section className="space-y-3">
