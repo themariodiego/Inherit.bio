@@ -11,6 +11,9 @@ returns boolean language sql immutable set search_path = '' as $basis$
     'mean_depth', case when p_depth is null then 'null'::jsonb else '{"version":1,"basis":"observed"}'::jsonb end), false)
 $basis$;
 revoke all on function private.valid_embryo_vcf_qc_basis_v1(jsonb, double precision, double precision) from public, anon, authenticated, service_role;
+-- CHECK expressions execute as the actual table writer. This pure immutable
+-- validator reads only its arguments; it grants no classification mutation.
+grant execute on function private.valid_embryo_vcf_qc_basis_v1(jsonb, double precision, double precision) to service_role;
 
 alter table public.embryo_qc add constraint embryo_qc_figure_basis_closed check (figure_basis is null or
   (private.valid_embryo_vcf_qc_basis_v1(figure_basis, autosomal_het_rate, mean_depth)
