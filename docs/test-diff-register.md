@@ -1,5 +1,26 @@
 # Test diff register
 
+## 2026-10-01 — Compare genuine QC receipts before their consumed attempt rows disappear
+
+The full fresh database run showed that successful split publication removes
+its attempt-owned ordinal rows. The Future Person fixture now captures those
+exact already-saved current receipts in a temporary test table before calling
+publication, then requires all three published rows to match them and the
+closed current producer shape. It also requires zero surviving attempt
+ordinals. No saved receipt, producer, historical NULL classification or existing
+refusal changes; the genuine publication's cleanup remains intact.
+
+The exact seven-field historical figure assertion now explicitly uses C
+collation. Its original complete expected array and bound finding assertion
+remain unchanged, so an extra, missing or renamed field still fails while
+server locale cannot change the comparison's ordering. Both corrections await
+the coordinator's genuine fresh SQL rehearsal.
+
+## 2026-10-01 — Give the review decision control its exact visible label
+
+The full hosted reviewer journey reached its genuine assigned case and passed the accessibility audit, then found no control with the exact label `Choice`: the implicit wrapping label included the option text in the accessible name. The visible label now explicitly references its separate native select. The original exact two-option browser assertion, every document/read/decision/refusal assertion, and all time limits remain unchanged. This corrects the product's accessible name rather than changing the expected choices. Full hosted execution on the final version remains required.
+
+
 ## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
 
 The combined checkpoint has 158 required route/state pairs: the prior 156
@@ -23,6 +44,7 @@ refused before completion. This is a newly staged synthetic split; no historic
 receipt is inferred or backfilled. Original historical-NULL, immutable-receipt,
 source, release, privacy and refusal assertions remain unchanged. Full fresh
 SQL and hosted execution for this combined correction remain pending.
+
 
 
 ## Complete genuinely attributable claimant ledger members · 1 October 2026
