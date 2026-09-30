@@ -104,8 +104,8 @@ function register(): Entry[] {
 
 /**
  * A registered path, plus every concrete path its `parameterContract` pins.
- * `/withdraw/[token]` with token in {request, session} is also, and only,
- * `/withdraw/request` and `/withdraw/session`.
+ * `/withdraw/[token]` with token in {session} is also, and only,
+ * `/withdraw/session`; a two-literal enum expands to both.
  */
 function concretePaths(entry: Entry): string[] {
   const contract = entry.parameterContract;
@@ -160,8 +160,10 @@ describe("the route register and the App Router describe the same surface", () =
 
   it("expands a pinned parameter into the literals it allows", () => {
     const rights = entries.find(entry => entry.id === "rights.withdraw")!;
-    expect(concretePaths(rights)).toEqual(
-      expect.arrayContaining(["/withdraw/[token]", "/withdraw/request", "/withdraw/session"]));
+    expect(concretePaths(rights)).toEqual(expect.arrayContaining(["/withdraw/[token]", "/withdraw/session"]));
+    // Since 2026-09-28 the request literal is its own endpoint entry.
+    expect(concretePaths(rights)).not.toContain("/withdraw/request");
+    expect(entries.find(entry => entry.path === "/withdraw/request")?.id).toBe("rights.withdraw-request");
     const withdraw = entries.find(entry => entry.id === "api.withdraw")!;
     expect(concretePaths(withdraw)).toContain("/api/withdraw/session");
   });
@@ -490,6 +492,48 @@ describe("the register's endpoint contracts and the endpoints that exist agree",
     expect(files.filter(file => exportedMethods(readFileSync(file, "utf8")).length === 0)).toEqual([]);
     expect(files.length).toBeGreaterThan(35);
   });
+
+  /**
+   * A contract that says where a link, redirect or credential lands names a
+   * route by `routeFrom` and pins its parameters by `params`. Both must still
+   * be true of the route: an id that no longer exists, a parameter the route
+   * does not have, or a literal its `parameterContract` no longer allows is a
+   * contract pointing at nothing. Added 2026-09-28, when `/withdraw/request`
+   * moved to its own entry and five such references moved with it.
+   */
+  it("resolves every routeFrom to a registered route and every pinned param to a literal it allows", () => {
+    const byId = new Map(document.routes.map(entry => [entry.id, entry]));
+    const references: { where: string; routeFrom: string; params?: Record<string, unknown> }[] = [];
+    const walk = (node: unknown, where: string) => {
+      if (Array.isArray(node)) node.forEach((value, index) => walk(value, `${where}/${index}`));
+      else if (node && typeof node === "object") {
+        const record = node as Record<string, unknown>;
+        if (typeof record.routeFrom === "string") {
+          references.push({ where, routeFrom: record.routeFrom, params: record.params as Record<string, unknown> | undefined });
+        }
+        for (const [key, value] of Object.entries(record)) walk(value, `${where}/${key}`);
+      }
+    };
+    walk(document, "");
+    expect(references.length).toBeGreaterThan(8);
+    const broken: string[] = [];
+    for (const reference of references) {
+      const target = byId.get(reference.routeFrom);
+      if (!target) { broken.push(`${reference.where}: no route ${reference.routeFrom}`); continue; }
+      const contract = (target.parameterContract ?? {}) as Record<string, { enum?: unknown[]; const?: unknown }>;
+      for (const [param, pinned] of Object.entries(reference.params ?? {})) {
+        const segment = contract[param];
+        if (!target.path.includes(`[${param}]`)) { broken.push(`${reference.where}: ${reference.routeFrom} has no [${param}]`); continue; }
+        const literal = pinned && typeof pinned === "object" ? (pinned as { const?: unknown }).const : undefined;
+        if (literal === undefined || !segment) continue;
+        const allowed = Array.isArray(segment.enum) ? segment.enum : segment.const !== undefined ? [segment.const] : undefined;
+        if (allowed && !allowed.includes(literal)) {
+          broken.push(`${reference.where}: ${reference.routeFrom} ${param}=${String(literal)} is not in ${JSON.stringify(allowed)}`);
+        }
+      }
+    }
+    expect(broken).toEqual([]);
+  });
 });
 
 describe("the register's storage prefixes and the buckets the code addresses agree", () => {
@@ -543,7 +587,8 @@ describe("the register's storage prefixes and the buckets the code addresses agr
 
   it("addresses no bucket that no migration creates, except the ones recorded", () => {
     const created = migrationBuckets(MIGRATIONS);
-    expect(created.size).toBeGreaterThan(2);
+    // Not an empty scan: the two buckets the migrations leave in place.
+    expect([...created]).toEqual(expect.arrayContaining(["exports", "genomes"]));
     const live = sites.filter(site => {
       const bucket = site.slice(0, site.indexOf(" "));
       return bucket !== DATABASE_SELECTED && !created.has(bucket);

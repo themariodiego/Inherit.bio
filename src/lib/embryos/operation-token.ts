@@ -33,9 +33,29 @@ export type EmbryoOperation =
   | "record_key_print"
   | "cohort_restrict"
   | "embryo_disposition"
-  | "cohort_purpose_grant";
+  | "cohort_purpose_grant"
+  | IngestSessionOperation;
 
-export type EmbryoOperationTargetKind = "account" | "cohort_draft" | "cohort" | "embryo" | "rights_session";
+/**
+ * The three tokens an embryo upload session carries past its first response
+ * (ADR 0035). Distinct operations keep the CSRF token and the completion
+ * nonce apart (`mutationSecurityBindings.csrfTransport.operationNonceIsNotCsrf`):
+ *
+ * - `ingest_session_open`: the upload session's `operationNonce`, good for
+ *   exactly one configure request (VCF) or one mapping inspection (table).
+ * - `ingest_complete`: the `completionNonce` the configure response issues.
+ * - `ingest_complete_csrf`: the `X-Inherit-CSRF` value the configure response
+ *   issues for the completion request.
+ */
+export type IngestSessionOperation = "ingest_session_open" | "ingest_complete" | "ingest_complete_csrf";
+
+export type EmbryoOperationTargetKind =
+  | "account"
+  | "cohort_draft"
+  | "cohort"
+  | "embryo"
+  | "rights_session"
+  | "ingest_session";
 
 export interface EmbryoOperationClaims {
   accountId: string;
@@ -64,6 +84,9 @@ const EMBRYO_OPERATIONS: ReadonlySet<string> = new Set<EmbryoOperation>([
   "cohort_restrict",
   "embryo_disposition",
   "cohort_purpose_grant",
+  "ingest_session_open",
+  "ingest_complete",
+  "ingest_complete_csrf",
 ]);
 
 const TARGET_KINDS: ReadonlySet<string> = new Set<EmbryoOperationTargetKind>([
@@ -72,10 +95,14 @@ const TARGET_KINDS: ReadonlySet<string> = new Set<EmbryoOperationTargetKind>([
   "cohort",
   "embryo",
   "rights_session",
+  "ingest_session",
 ]);
 
 /** Ten minutes: long enough to read the page, short enough to be recent. */
 const OPERATION_LIFETIME_MS = 10 * 60 * 1000;
+
+/** `embryo.ingest-session-24h`: no upload-session token may outlive its session. */
+const INGEST_SESSION_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
 const OPERATION_DIGEST_CONTEXT = "embryo-operation-v1";
 const PUBLIC_FORM_DIGEST_CONTEXT = "public-form-v1";
@@ -142,6 +169,41 @@ export function mintEmbryoOperation(
     expiresAt: now + OPERATION_LIFETIME_MS,
   };
   return seal(operation, OPERATION_DIGEST_CONTEXT);
+}
+
+/**
+ * A token bound to one embryo upload session: the acting account, its auth
+ * session, one of the three ingest operations and the ingest session id.
+ *
+ * Its expiry is the session's own fixed deadline, not the ten-minute page
+ * lifetime above. An upload of up to 200 MB can take longer than ten minutes,
+ * and the session deadline is never renewed, so the token cannot outlive the
+ * one thing it authorizes. A deadline already past, or further away than the
+ * 24-hour session lifetime, is refused rather than clamped.
+ *
+ * The inner nonce is returned beside the sealed token only so the caller can
+ * hand it to the database in the same transaction that issues the token. The
+ * database stores `sha256(nonce)` and never the nonce or the token.
+ */
+export function mintIngestSessionOperation(
+  claims: { accountId: string; sessionId: string; operation: IngestSessionOperation; targetId: string },
+  sessionExpiresAt: Date,
+  now = Date.now(),
+): { token: string; nonce: string } {
+  const expiresAt = sessionExpiresAt.getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= now || expiresAt > now + INGEST_SESSION_LIFETIME_MS) {
+    throw new Error("invalid ingest session expiry");
+  }
+  const operation: EmbryoOperationClaims = {
+    accountId: claims.accountId,
+    sessionId: claims.sessionId,
+    operation: claims.operation,
+    targetKind: "ingest_session",
+    targetId: claims.targetId,
+    nonce: newNonce(),
+    expiresAt,
+  };
+  return { token: seal(operation, OPERATION_DIGEST_CONTEXT), nonce: operation.nonce };
 }
 
 /** The claims of a token that is well-formed, unexpired and ours; null otherwise. */

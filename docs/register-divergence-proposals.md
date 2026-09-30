@@ -4,11 +4,27 @@
 surface/endpoint/prefix matches its register") and G2.1 item (2). It closes
 what could be closed without an owner decision. For the rest, it writes out the
 exact change to the brief or the register that each option would make.
-**It does not edit `docs/inherit-v2-brief.md` or `docs/route-register.json`.**
+**It does not edit `docs/inherit-v2-brief.md`;** the register edit in section 3 came after the owner answered.
 Any brief edit also means repinning `briefSha256`, which `pnpm gate:routes`
 checks. The brief diffs below are generated, not hand-typed. They have zero
 lines of context, and `git apply --unidiff-zero` applies either one cleanly
 to the brief as it stands. Both rows stay NO.
+
+**The owner answered on 2026-09-28 (evening)** (`docs/protocol/decisions.md`,
+the "2026-09-28 (evening)" entry). Each answer is the recommended option:
+
+1. **Nonces (section 2): B.** This becomes brief X1.5. It is built on
+   `claude/register-divergences-2`, not in this pull request.
+2. **`/withdraw/request` (section 3): A.** Registered as
+   `rights.withdraw-request`, an HTML endpoint. This edits
+   `docs/route-register.json` but not the brief; see "What was built" in
+   section 3.
+3. **`generated-artifacts` (section 4): A.** Dropped, and the single-object
+   export archive form is retired; see "What was built" in section 4.
+4. **D-081 (section 5):** the hard stop stays. Nothing changes.
+
+The sections below keep the questions as they were asked. The table in
+section 1 shows the state after this pull request.
 
 ## 1. Where every recorded divergence stands
 
@@ -21,10 +37,10 @@ The ledgers are `docs/route-divergence.json` (checked by
 | `storageBucketDivergence` `genomes-staging` | **Closed.** `20260930140000_drop_genomes_staging_bucket.sql` drops the bucket, and the row is removed. The lead applies the migration with the guarded process. | Nothing further. The two D-130 literals are kept in `allowlistedBucketNotCreated` (see section 7). |
 | `builtButNotRegistered` `/api/withdraw` (D-081) | **Dated.** `deleteAfter: 2026-10-14`. After that date the correspondence test fails while the row exists. | Delete the route, the `[token]` directory, the one e2e test on that path, and both rows (section 5). |
 | `permissiveDynamicSegment` `/withdraw/[token]` (D-081) | **Dated**, the same way. | Same change as the row above. |
-| `methodDivergence` `api.account-delete` | **Owner question**, section 2. Row text refreshed. | The brief must say how an operation nonce is issued. |
+| `methodDivergence` `api.account-delete` | **Decided: B** (2026-09-28, evening). Built on `claude/register-divergences-2`. The row stays here until that lands. | Brief X1.5, then the GET is deleted and the row goes stale. |
 | `methodDivergence` `api.export` | **Build work; no decision outstanding.** Row text refreshed: the layers underneath have landed, and the route itself has not changed. | The POST, the polling GET, the producer and delivery, with the synchronous GET deleted in the same change. |
-| `kindDivergence` `/withdraw/request` | **Owner question**, section 3. Row text refreshed: the accessibility sweep already covers this page. | Decide whether the register or the route is the authority. |
-| `storageBucketDivergence` `generated-artifacts` | **Owner question**, section 4. Row text refreshed. | Drop the bucket (recommended), or declare a prefix. |
+| `kindDivergence` `/withdraw/request` | **Closed.** The owner chose A on 2026-09-28 (evening). The register now names `/withdraw/request` as `rights.withdraw-request`, an HTML endpoint, and the row is removed. `kindDivergence` is empty and still checked in both directions. | Nothing further. |
+| `storageBucketDivergence` `generated-artifacts` | **Closed.** The owner chose A on 2026-09-28 (evening). `20260930140100_drop_generated_artifacts_bucket.sql` drops the bucket and retires the single-object export archive form, and the row is removed. The lead applies the migration with the guarded process. | Nothing further. The three column CHECK literals are kept in `allowlistedBucketNotCreated` (section 4). |
 | `storageBucketDivergence` `legal-evidence` | **Unbuilt.** It stays declared but not created. | Evidence ingest is built. |
 | `storageBucketDivergence` `future-person-identity` | **Unbuilt.** It stays declared but not created. | Future-person claim review is built. |
 | `unregisteredServerActions` `acknowledgeEmbryoGate` | **Deliberate; not a defect.** | Nothing. |
@@ -205,7 +221,10 @@ needed for it.
 
 ## 3. `/withdraw/request`: a registered page built as a `route.ts`
 
-**What is true today.**
+**Decided 2026-09-28 (evening): option A.** What was built is at the end
+of this section.
+
+**What was true when the question was asked.**
 
 - The register pins `/withdraw/[token]` to the literals `request` and
   `session`, with kind `page`.
@@ -298,9 +317,58 @@ rather than something the CSP guarantees.
 
 ### Option C: keep the row
 
+### What was built
+
+`docs/route-register.json` changes as follows. It still round-trips exactly,
+and the brief and `briefSha256` are unchanged.
+
+- **New entry.** `rights.withdraw-request` at `/withdraw/request`: kind
+  `endpoint`, auth `public`, method `GET`. HEAD is implied by GET, as the gate
+  reads it. Its stateProfile is `endpoint`. The page entry's `requestMode`
+  sentence moves to it, and it names
+  `tokenSecurityContract.urlCredentialInterstitial` as its interstitial
+  contract.
+- **New response contract.** `rights-interstitial-v1`, bound to the route. It
+  gives:
+  - the exact headers the route sends, with the CSP's per-response nonce as a
+    template;
+  - the one-script rule;
+  - the candidate cookie on GET only;
+  - HEAD with no body and no cookie.
+- **Page entry.** `rights.withdraw` pins its segment to `session` alone.
+- **Resource authorization.** The `request` branch of `rights.withdraw` moves
+  unchanged to the new entry.
+- **References.** Five references to `rights.withdraw` with
+  `token: const request` now name `rights.withdraw-request`:
+  - the `mail-token-delivery-v1` link;
+  - the interstitial's `requestTarget` and `historyReplacement`;
+  - `platformLogging.requestTarget`;
+  - `token-candidate-api-v1`'s `issuedBy`.
+- **Headers.** `sensitiveResponseHeaderBindings.tokenPageOrEndpoint` keeps
+  covering the literal. The route now sends
+  `X-Robots-Tag: noindex, nofollow, noarchive`, which is what that binding
+  asks for. Before, it sent `noindex, nofollow`. This is the one code change.
+
+New checks, each planted and seen to fail:
+
+- `src/lib/embryos/rights-entry.test.ts` holds GET and HEAD to every header
+  the registered contract names, and to the token-page binding. It fails when
+  the robots header is reverted or the binding is removed.
+- `scripts/route-register-correspondence.test.ts` now resolves every
+  `routeFrom` in the register to a route, and every pinned `params` literal
+  to one its `parameterContract` allows. It fails when a contract still names
+  the page literal.
+- `scripts/route-gate.test.ts` plants `request` back onto the page entry and
+  expects the kind divergence again.
+- `e2e/a11y.spec.ts` reads its endpoint-rendered pages from the register:
+  every endpoint whose success contract is `text/html`.
+
 ## 4. The `generated-artifacts` bucket
 
-**What is true today.**
+**Decided 2026-09-28 (evening): option A.** What was built is at the end
+of this section. The rest of the section is kept as it was asked.
+
+**What was true when the question was asked.**
 
 - The bucket was created on 2026-08-31 for single-object export archives.
   Those were to be recorded as `public.genome_storage_objects` rows with
@@ -351,6 +419,64 @@ writes. It is the mistake the 2026-09-21 G8.5 note warned against for
 
 ### Option C: keep the row
 
+### What was built
+
+`supabase/migrations/20260930140100_drop_generated_artifacts_bucket.sql`
+refuses, and rolls back, in seven cases. Each one was planted and refused:
+
+- the bucket holds an object;
+- it holds an unfinished multipart upload;
+- a `genome_storage_objects` row names the bucket;
+- a `genome_storage_objects` row has `generated_export_id` set;
+- a `generated_exports` row has `object_id` set, whatever its status;
+- a pending `account_deletion_storage_entries` row names the bucket;
+- a pending `embryo_ingest_delete_objects` row names the bucket.
+
+A completed deletion entry does not block it. The retirement is two additive
+constraints rather than a rewrite of `generated_exports_ready_representation`:
+
+- `generated_exports_single_object_retired`, `check (object_id is null)`. A
+  ready row with no `archive_version` still needs `object_id`, so no legacy
+  row can become ready. Queued legacy rows stay valid, which the existing
+  `export_archive_persistence.sql` assertions rely on.
+- `genome_storage_objects_genomes_only`,
+  `check (bucket_id = 'genomes' and generated_export_id is null)`. The
+  account-deletion builder copies its bucket from these rows, so it can no
+  longer produce `generated-artifacts`.
+
+Nothing live reads or writes the bucket. That was checked before the drop:
+
+- `src/`: no reference to the literal. The retention job and the file-deletion
+  backstop take their bucket from database rows, and those rows now cannot
+  name it.
+- Export reader and writer (`src/lib/exports/`): segments in `exports` only.
+- Retention: the literal survives only as the retention target id over
+  database rows (`purge_target_stores`, five stores, used by the two own-report
+  purge functions). That is a different name, and it stays.
+- Deletion manifests: the account-deletion and embryo-unwind builders carry no
+  `generated-artifacts` literal.
+
+The register is unchanged. Its `lifecycleDispositionContracts` selectors
+still say "legacy archive handle if present". That is now never present, so
+the wording is true, just unreachable.
+
+Read-only prechecks for production. Each must return 0:
+
+```sql
+select count(*) from storage.objects where bucket_id = 'generated-artifacts';
+select count(*) from storage.s3_multipart_uploads where bucket_id = 'generated-artifacts';
+select count(*) from public.genome_storage_objects where bucket_id = 'generated-artifacts' or generated_export_id is not null;
+select count(*) from public.generated_exports where object_id is not null;
+select count(*) from public.account_deletion_storage_entries where bucket_id = 'generated-artifacts' and status = 'pending';
+select count(*) from public.embryo_ingest_delete_objects where bucket_id = 'generated-artifacts' and state = 'pending';
+```
+
+The shared local development database fails the first check. It holds one
+leftover `e2e/rls.spec.ts` victim object,
+`<account>/rls-generated-artifacts/victim.txt`, from a run before the bucket
+list came from the migrations. The drop refuses there, as it should, until
+that object is removed.
+
 ## 5. The D-081 date
 
 - #118 merged on 2026-09-13 at 13:10 UTC (`e06b0a9c`). From then on the adult
@@ -390,7 +516,7 @@ and the row's own 2026-09-21 note supersedes it.
 | `genomes` | yes | `storage.subject-v2`, `storage.cohort-v2`, `storage.raw-legacy` | Matches. |
 | `exports` | yes (`20260923123240`) | `storage.export-v1` | Matches. Closed before this change; there is no row for it. |
 | `genomes-staging` | **dropped** (`20260930140000`) | no | Closed here (section 1). |
-| `generated-artifacts` | yes | no | Owner question, section 4. |
+| `generated-artifacts` | **dropped** (`20260930140100`) | no | Closed (section 4). |
 | `legal-evidence` | no | `storage.legal-evidence-v1` | Unbuilt. |
 | `future-person-identity` | no | `storage.future-person-identity-v1` | Unbuilt. |
 
@@ -399,11 +525,14 @@ Notes on the rows above:
 - **`legal-evidence`** already has a live call site:
   `drainRefusedInvitationCleanup` calls `remove()` on it. That is recorded in
   `docs/register-contract-divergence.json#liveCallSiteOnUncreatedBucket`, whose
-  text now names the right three created buckets.
+  text now names the two buckets that remain.
 - **`genomes-staging`** is still admitted by the CHECK constraints on the two
   manifest tables, because the D-130 builders still carry the literal. The
   ledger row `allowlistedBucketNotCreated` records this. The test fails if the
   bucket is created again, or if the named migration stops dropping it.
+- **`generated-artifacts`** is still listed by three column CHECKs written
+  before the drop. The added `genome_storage_objects_genomes_only` makes all
+  three unreachable. It has its own `allowlistedBucketNotCreated` row.
 
 ## 8. What the gates enforce now
 

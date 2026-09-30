@@ -590,6 +590,24 @@ const TASK_BINDINGS = "scripts/comprehension/bindings.json";
  *               not on either page. Product work, then a proof; no register
  *               correction and no waiver.
  *
+ *    11 -> 9    TWO PROOFS on 2026-09-28, of results the page could not
+ *               produce before. `/family/portrait/[pairId] complete` and
+ *               `/family/portrait/[pairId] partial-coverage` need a carrier
+ *               result, and until the reviewed assertion rule existed
+ *               (migration 20260929130000_carrier_assertions.sql) no row
+ *               could activate one. `e2e/portrait-reviewed-carrier.spec.ts`
+ *               drives the real journey over two prepared sources, whose runs
+ *               measures are now stored at preparation, and a synthetic
+ *               release imported and reviewed through the rule's own doors.
+ *               `complete` is the "permitted-and-able" reading: every grant
+ *               signed, both sources read, both measures taken, and both
+ *               files covering every known change of the one reviewed
+ *               condition. `partial-coverage` is the "coverage" reading: a
+ *               second reviewed change sits at a position the other file does
+ *               not report, and the page names that calculation and why. The
+ *               spec needs the unmerged migration, so the shared local stack
+ *               could not run it; CI's fresh stack is its first run.
+ *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
  * The route has no jurisdiction guard; the page returned the refusal component
@@ -599,7 +617,7 @@ const TASK_BINDINGS = "scripts/comprehension/bindings.json";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 11;
+const UNPROVEN_ROUTE_STATE_PAIRS = 9;
 
 /**
  * The register's task-depth ceilings, unmeasured. This is a ratchet in the
@@ -948,8 +966,8 @@ function builtRoutes(repositoryRoot: string): BuiltRoute[] {
 
 /**
  * A registered path, plus every concrete path its `parameterContract` pins.
- * `/withdraw/[token]` with token in {request, session} is also, and only,
- * `/withdraw/request` and `/withdraw/session`.
+ * `/withdraw/[token]` with token in {session} is also, and only,
+ * `/withdraw/session`; a two-literal enum expands to both.
  */
 function concretePaths(entry: RegisterEntry): string[] {
   const contract = entry.parameterContract;

@@ -15,7 +15,10 @@ export const ingestAuthorization = z.discriminatedUnion("status", [
   z.object({ status: z.literal("failure_pending"), cohortId: uuid, ingestRevision: revision }).strict(),
   z.object({
     status: z.literal("authorized"), session: uuid, cohortId: uuid, uploadId: uuid, ingestRevision: revision,
-    expiresAt: z.iso.datetime({ offset: true }), challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+    // The digest of the transport challenge the configure route issued, never
+    // the challenge itself; null until one is issued (ADR 0035). A chunk
+    // route must refuse a null digest rather than fall back to anything.
+    expiresAt: z.iso.datetime({ offset: true }), challengeHash: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
     transportRevision: revision, build: z.enum(["GRCh37", "GRCh38"]).nullable(),
     format: z.enum(["vcf", "gvcf", "pgt_table"]).nullable(),
     sampleCount: z.number().int().min(1).max(LIMITS.maximumSampleColumns),

@@ -44,7 +44,9 @@ import {
   resolveCarrierPair,
   type CarrierCondition,
   type CarrierPairSummary,
+  type CarrierRefVariant,
 } from "@/lib/family/carrier-pair";
+import { resolveCanonicalCarrierPair } from "@/lib/family/carrier-canonical";
 import { listFamilyPeople } from "@/lib/family/graph";
 import { markIndependentLogin } from "@/lib/family/independent-login";
 import {
@@ -180,6 +182,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   let output: OutputRead | null = null;
   let sourceSnapshot: Awaited<ReturnType<typeof loadPortraitSourceReadiness>> | null = null;
   let canonicalSources = false;
+  let legacyOutput = false;
   if (ready) {
     const admin = createAdminClient();
     sourceSnapshot = await loadPortraitSourceReadiness(admin, {
@@ -202,9 +205,20 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
       inFlight[index] ? [filePreparingFor({ name: labelOf(side.row), isViewer: side.row.id === mine.id })] : []);
     noFile = sides.flatMap((side, index) =>
       !side.hasSource && !inFlight[index] ? [noFileYetFor({ name: labelOf(side.row), isViewer: side.row.id === mine.id })] : []);
-    if (noFile.length === 0 && preparing.length === 0 && carrierAllowed && legacyPair) {
+    // Both people's current prepared uploads are read when both have one;
+    // otherwise the files the pair captured before prepared uploads existed.
+    const preparedPair = sourceSnapshot.state.kind === "canonical" && !!sourceSnapshot.receipt
+      && sourceSnapshot.state.a.hasPreparedSource && sourceSnapshot.state.b.hasPreparedSource;
+    let read: { summary: CarrierPairSummary; refVariants: CarrierRefVariant[]; conditions: CarrierCondition[] } | null = null;
+    if (noFile.length === 0 && preparing.length === 0 && carrierAllowed && preparedPair) {
+      read = await resolveCanonicalCarrierPair(admin,
+        { pairId: rows.pair.id, counterpartAccountId: other.subjectAccountId!, receipt: sourceSnapshot.receipt! },
+        { dataSubjectId: rows.a.id, displayLabel: labelOf(rows.a) },
+        { dataSubjectId: rows.b.id, displayLabel: labelOf(rows.b) },
+        (ids) => readDeclaredChromosomalSex(admin, ids));
+    } else if (noFile.length === 0 && preparing.length === 0 && carrierAllowed && legacyPair) {
       const refVariants = await readClassifiedVariants(admin);
-      const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+      const conditions = refVariants.length > 0 ? await readCarrierConditions(admin, refVariants) : [];
       // Each person's own declaration, read under the pair authority this
       // branch already established, and only where a classified position could
       // produce a cross. It chooses the cross an X-linked pair follows and is
@@ -220,6 +234,11 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
         conditions,
         { a: sourceSnapshot.state.a.legacyFileIds, b: sourceSnapshot.state.b.legacyFileIds },
       );
+      read = { summary, refVariants, conditions };
+      legacyOutput = true;
+    }
+    if (read) {
+      const { summary, refVariants, conditions } = read;
       // The one-sided readings are decided whether or not any classified
       // position is shared: a carrier whose partner's file covers none of
       // the gene's positions is exactly the line-2238 case.
@@ -387,7 +406,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
               </ul>
             ) : null}
 
-            {canonicalSources && output ? (
+            {canonicalSources && legacyOutput && output ? (
               <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
                 This view uses your previously supported files. Clinical results from newer files are not available yet.
               </p>

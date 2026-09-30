@@ -24,10 +24,9 @@
       "file": "src/app/(marketing)/withdraw/[token]/page.tsx",
       "segment": "token",
       "pinnedTo": [
-        "request",
         "session"
       ],
-      "why": "The register pins this segment to two literals and marks raw-bearer forbidden. Both literals are built (withdraw/request/route.ts, withdraw/session/page.tsx), and the [token] directory is built too, so /withdraw/<any raw token> still resolves. That is defect D-081. RE-SCOPED 2026-09-13: the adult invitation mail no longer links here. It links at /withdraw/request#<token> like every other mailed token, the adult purpose activates a rights session through api.rights-activate, and /withdraw/session answers confirm, refuse and delete off the cookie. What this directory still serves is the tokens that were mailed BEFORE that change, which live up to 30 days; deleting it today would take away the rights of the people holding them.",
+      "why": "The register pins this segment to the literal session and marks raw-bearer forbidden; since 2026-09-28 /withdraw/request is its own entry, rights.withdraw-request. Both paths are built (withdraw/session/page.tsx, withdraw/request/route.ts), and the [token] directory is built too, so /withdraw/<any raw token> still resolves. That is defect D-081. RE-SCOPED 2026-09-13: the adult invitation mail no longer links here. It links at /withdraw/request#<token> like every other mailed token, the adult purpose activates a rights session through api.rights-activate, and /withdraw/session answers confirm, refuse and delete off the cookie. What this directory still serves is the tokens that were mailed BEFORE that change, which live up to 30 days; deleting it today would take away the rights of the people holding them.",
       "priority": "defect D-081",
       "deleteAfter": "2026-10-14",
       "deleteAfterBasis": "#118 merged on 2026-09-13 and moved the adult invitation mail to /withdraw/request#<token>; a token mailed before it lives 30 days (invitation.pending-30d), so the last one expires by 2026-10-13. One day of margin. scripts/route-register-correspondence.test.ts fails after this date while the row exists, so the deletion cannot be forgotten. If production received #118 later than 2026-09-13, move this date by the same amount.",
@@ -62,27 +61,9 @@
   ],
   "redirectStatusDivergence": [],
   "redirectStatusDivergenceNote": "Empty on purpose, and checked in both directions so it cannot stay empty through a regression. The register pins all ten legacy aliases to expectedStatus 308. Eight are pages calling permanentRedirect. /signup and /login were next.config.ts entries with permanent: false, which emits 307 \u2014 a 307 asks the browser back to the dead path every time, so the alias never retires. Both now read permanent: true.",
-  "kindDivergence": [
-    {
-      "routeId": "rights.withdraw",
-      "path": "/withdraw/request",
-      "file": "src/app/(marketing)/withdraw/request/route.ts",
-      "declaredKind": "page",
-      "builtKind": "endpoint",
-      "why": "The register pins /withdraw/[token] to the literals request and session and calls the route a page. /withdraw/session is a page; /withdraw/request is a route.ts that builds an HTML document as a template string and returns it with its own Content-Security-Policy, nonce and Set-Cookie. It reads as a page to a person, and to the codebase it is not one: it is outside the app layout and navigation and outside pageAuthContract, and its markup is hand-written. The accessibility half of that cost is paid, re-read 2026-09-28: e2e/a11y.spec.ts audits it by URL in both themes through ENDPOINT_RENDERED_PAGES (since 2026-09-11), at the same axe and third-party bar as every registered page. What remains is the kind itself. The register's own tokenSecurityContract.urlCredentialInterstitial requires this GET to set a short-lived CSRF candidate cookie and to run one minimal inline script that reads the fragment before any other work, and the route.ts meets both with a CSP of default-src 'none' and a single nonce'd script. A Next.js page cannot set a cookie while rendering, and it ships the framework runtime beside that script.",
-      "priority": "defect D-081 \u2014 adjacent",
-      "closing": "An owner decision between making the register say what the route is and making the route what the register says; it is not closable by either file alone without choosing which one is authority. docs/register-divergence-proposals.md section 3 gives the register diff for each: register the request literal as an HTML endpoint with the interstitial contract written down (A, recommended, because the one-script CSP is what makes the fragment rule provable), or move the cookie mint into src/proxy.ts and render the interstitial as a page (B)."
-    }
-  ],
+  "kindDivergence": [],
+  "kindDivergenceNote": "Empty since 2026-09-28, and still checked in both directions. /withdraw/request was the one registered page literal served by a route.ts. The owner decided that evening that the register describes it as what it is: rights.withdraw-request, an HTML endpoint with its own response contract (rights-interstitial-v1), and rights.withdraw now pins its segment to session alone. Its one-script Content-Security-Policy is what makes the URL-fragment rule provable, which a React page cannot keep.",
   "storageBucketDivergence": [
-    {
-      "bucket": "generated-artifacts",
-      "direction": "created-not-declared",
-      "createdBy": "supabase/migrations/20260831224054_storage_and_download_sessions.sql",
-      "why": "Created as a Storage bucket, and nothing in src writes an object to it. The same literal is used elsewhere as a retention disposition target class over database rows (public.report_artifacts, public.generated_exports, public.download_sessions, public.model_contexts), so the name carries two meanings and only the row meaning is exercised. An empty private bucket is not a leak, but an undeclared one is a place for a later write to land unnoticed. Re-read 2026-09-28: the bucket was made on 2026-08-31 for single-object export archives, recorded as public.genome_storage_objects rows with generated_export_id set, and that table's bucket CHECK still admits it. The register has since moved every archive object to exports (storage.export-v1; lifecycleDispositionContracts objectClass exports.generated-archive, whose selector names the single-object form the legacy archive handle, in bucket exports). So the schema and the register disagree about where that handle lives, and dropping the bucket is a choice about that handle, not only about an empty bucket.",
-      "priority": "Priority 2 \u2014 saved results",
-      "closing": "An owner decision, set out with its migration in docs/register-divergence-proposals.md section 4: drop the bucket and narrow public.genome_storage_objects.bucket_id to the buckets the register names, with the same refuse-if-anything-is-there guard as 20260930140000_drop_genomes_staging_bucket.sql (A, recommended), or declare a prefix for objects nothing writes (B). Either removes this row; scripts/route-gate.ts now reads bucket drops from the migrations, so the row goes stale the moment the drop lands."
-    },
     {
       "bucket": "legal-evidence",
       "direction": "declared-not-created",
@@ -114,6 +95,7 @@
     "/copilot/[scope] complete",
     "/copilot/[scope] consent-required",
     "/copilot/[scope] empty",
+    "/copilot/[scope] jurisdiction-unavailable",
     "/copilot/[scope] processing",
     "/embryo-analysis jurisdiction-unavailable",
     "/embryos complete",
@@ -155,10 +137,12 @@
     "/family/invite complete",
     "/family/invite jurisdiction-unavailable",
     "/family/invite processing",
+    "/family/portrait/[pairId] complete",
     "/family/portrait/[pairId] consent-required",
     "/family/portrait/[pairId] empty",
     "/family/portrait/[pairId] jurisdiction-unavailable",
     "/family/portrait/[pairId] not-covered",
+    "/family/portrait/[pairId] partial-coverage",
     "/family/portrait/[pairId] processing",
     "/files complete",
     "/files consent-required",

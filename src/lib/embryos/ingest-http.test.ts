@@ -23,7 +23,7 @@ function request(headers: Record<string, string> = {}, body?: ReadableStream<Uin
   ...(body ? { body, duplex: "half" } : {}) });
 }
 const metadata = { status: "authorized", session: SESSION, cohortId: SESSION, uploadId: SESSION, ingestRevision: 1,
-  expiresAt: "2026-09-06T12:00:00+00:00", challenge: "a".repeat(43), transportRevision: 1,
+  expiresAt: "2026-09-06T12:00:00+00:00", challengeHash: null, transportRevision: 1,
   build: null, format: null, sampleCount: 2, handles: [{ ordinal: 0, hash: "a".repeat(64) }, { ordinal: 1, hash: "b".repeat(64) }] };
 
 describe("ingest HTTP boundary", () => {
@@ -96,7 +96,11 @@ describe("ingest HTTP boundary", () => {
       { ...metadata, handles: metadata.handles.toReversed() },
       { ...metadata, handles: [metadata.handles[0], { ordinal: 1, hash: "a".repeat(64) }] },
       { ...metadata, build: "unknown" }, { ...metadata, transportRevision: 0 },
+      // ADR 0035: only a digest of the issued challenge, never the challenge.
+      { ...metadata, challenge: "a".repeat(43) }, { ...metadata, challengeHash: "a".repeat(43) },
+      { ...metadata, challengeHash: "A".repeat(64) },
     ]) expect(ingestAuthorization.safeParse(value).success).toBe(false);
+    expect(ingestAuthorization.safeParse({ ...metadata, challengeHash: "a".repeat(64), build: "GRCh38", format: "vcf" }).success).toBe(true);
     expect(ingestAuthorization.safeParse({ status: "failure_pending", cohortId: SESSION, ingestRevision: 1 }).success).toBe(true);
   });
 });
