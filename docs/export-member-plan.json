@@ -172,6 +172,10 @@
       "disposition": "excluded-credential",
       "reason": "Exact claimed-source relocation locators, worker claim token hash and transient source-version authority; excluded from person archives."
     },
+    "private.future_person_relocation_attempts": {
+      "disposition": "excluded-credential",
+      "reason": "Exact relocation attempt claims, current and retired private object locators, provider acknowledgements and cleanup credentials. This is internal authority machinery, never export content."
+    },
     "private.genome_file_deletions": {
       "disposition": "excluded-credential",
       "reason": "Deletion work items carrying a claim token and its hash. Exporting it would be a security defect, not completeness."

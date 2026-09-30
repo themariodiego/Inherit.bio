@@ -1,5 +1,14 @@
 # Test diff register
 
+## Claimant relocation requires exact committed swap and acknowledged retry cleanup · 1 October 2026
+
+The registered TEST-LOCAL relocation continuation adds a separate signed audience over the existing private embryo R2 binding. It copies only the immutable old version, ETag, size and SHA-256, and independently consumes the copied version to EOF before the service worker may atomically commit a physical-location swap. Terminal cleanup writes and independently verifies the existing permanent empty-marker disposition: current payload removal and a late-create-only-write fence, never key absence or media erasure. Historical source/dispatch descriptors and the original fragment audience, assertions, size ceilings and provider contracts remain unchanged.
+
+Each bounded attempt owns a fresh server-derived account/attempt key. Failed or expired copies require a 35-second capability drain plus an exact persisted temporary-marker acknowledgement before a fresh-key retry; three acknowledged failures close the logical row. An uncertain committed-swap response cannot authorize deleting its new current key. Old-key disposal requires the committed copy and current claimant/account/source fences. Transport regressions use real gateway and signing code with a synthetic R2 binding. Operator regressions use the RPC seam and require complete bytes, exact checkpoint order, temporary-only failure disposition and separate persisted cleanup claims.
+
+The SQL tests move the complete existing binding predecessor and every original assertion byte-for-byte into a shared fixture; both binding and relocation suites run it. New strict lifecycle cases cover actual service-role execution without private-table grants, expiry/foreign/revision/config refusal, complete receipt schemas, size/hash equality, committed-only old cleanup, fixed drain, fresh-key retry ceilings, immutable receipts and complete historical source/sibling inventory equality. Fixture accounts and provider replies are explicit synthetic database boundaries, not browser Auth or hosted R2 evidence. The authored migration/lifecycle fixtures still need fresh database rehearsal; the actual bound reader, exact claimant/account erasure inventory and genuine browser flow remain required. The private gate and G5.4 acceptance remain CLOSED.
+
+
 ## 2026-10-01: Claimed source disposal uses settled publication evidence
 
 The private claimant-erasure prerequisite now uses the existing

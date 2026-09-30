@@ -43,6 +43,21 @@ what stops an already admitted or replayed create-only upload from recreating a
 fragment. It proves the current payload is gone and the key is fenced. It does
 not prove key absence or physical-media erasure.
 
+The closed claimant-account binding continuation adds `/relocation` with the
+distinct `inherit-subject-relocation-v1` audience. An exact service-worker SQL
+receipt pins the old part and a fresh `claimant/<account UUID>/<attempt UUID>`
+destination in this same private bucket. The gateway copies create-only,
+requires full source hash equality, and exposes a separate exact-version full
+readback. The sequential TEST-LOCAL operator commits the physical swap only
+after complete independent byte verification. It may retire the old payload
+only from the committed current binding; failed attempts dispose only their
+own temporary destination after capability drain. Both dispositions use the
+permanent-marker policy above. Neither fragment tokens nor relocation tokens
+can enter the other's path. No public deployment or private configuration is
+enabled by this continuation, and its synthetic gateway tests do not prove a
+hosted provider acknowledgement. See `docs/future-person-account-binding.md`
+for the outstanding fresh SQL, bound-reader, erasure and browser proof.
+
 ## Owner and lead actions before any embryo upload
 
 Nothing below has been done. Each step needs the owner's Cloudflare access or

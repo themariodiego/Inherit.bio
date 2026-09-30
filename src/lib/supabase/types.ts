@@ -7635,8 +7635,12 @@ export type Database = {
       }
       claim_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: Json }
       check_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: boolean }
-      swap_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string; p_bytes: number; p_sha256: string; p_version: string; p_etag: string }; Returns: boolean }
-      finish_future_person_relocation_v1: { Args: { p_id: string; p_old_version: string; p_old_etag: string }; Returns: boolean }
+      swap_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string; p_target: Json; p_identity: Json; p_bytes: number; p_sha256: string }; Returns: boolean }
+      fence_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string | null }; Returns: boolean }
+      claim_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string }; Returns: Json }
+      check_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json }; Returns: boolean }
+      finish_future_person_relocation_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json; p_evidence: Json }; Returns: boolean }
+      future_person_relocation_work_v1: { Args: Record<PropertyKey, never>; Returns: Json }
       future_person_binding_context_v1: { Args: { p_rights_session_hash: string }; Returns: Json }
       bind_future_person_account_v1: { Args: { p_rights_session_hash: string; p_nonce: string; p_expected: Json }; Returns: boolean }
 
