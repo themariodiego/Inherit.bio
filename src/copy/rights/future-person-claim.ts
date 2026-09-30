@@ -76,12 +76,12 @@ export const DOCUMENT_LABELS = {
 } as const;
 export const DOCUMENT_FILE_HINT = "A PDF, JPEG or PNG file, up to 20 MB.";
 export const SEND_FILE_BUTTON = "Send this file";
-export const FINISH_HEADING = "Finish your claim";
+export const FINISH_HEADING = "Send your claim";
 export const FINISH_AFFIRM_LABEL =
-  "These are my own papers, and what I sent is true.";
+  "These are my own files, and what I sent is right.";
 export const FINISH_BUTTON = "Send my claim";
 export const FINISH_STATUS = {
-  waiting: "Send both files first. We check each one before you can finish.",
+  waiting: "Send both files first. We check each one before you can send your claim.",
   failed: "Your claim could not be sent. Please try again.",
   expired: "This claim has ended. We deleted what you sent.",
 } as const;
