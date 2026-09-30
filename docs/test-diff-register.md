@@ -1,5 +1,24 @@
 # Test diff register
 
+## Path B lifecycle inventory and authenticated RLS helper · 30 September 2026
+
+The held-source exact function inventory now includes the reviewed normalization
+enqueue, authority, worker and current-source reading gates. The measured browser
+function inventory permits exactly `private.is_path_b_file_v1(uuid)`, a boolean
+RLS helper scoped to the authenticated caller's own billing files. Every other
+Path B function remains denied to browsers and upload credentials. Separate
+privilege assertions deny the helper to anonymous and upload roles. The new
+database cases prove that foreign self files, foreign Path B files and absent
+files all return the same false value, and verify positive self-file reads,
+negative foreign reads and anonymous empty reads. The two ownership policies
+now apply explicitly to authenticated callers, so anonymous reads do not need
+permission to execute that helper.
+
+Additional cases prove that a normalization job cannot replace its exact
+authority snapshot, billing owner or file descriptor while preserving its
+dispatch tuple. All prior row-denial, reader-probe and privilege assertions
+remain; only the two measured inventories change for these reviewed functions.
+
 ## Path B queued normalization and read boundaries · 30 September 2026
 
 The separate normalization continuation adds synthetic rollback-only database

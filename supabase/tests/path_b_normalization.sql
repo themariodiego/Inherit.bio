@@ -189,6 +189,13 @@ select is((select count(*) from public.worker_jobs where subject_id=pg_temp.sid(
  'confirmation queues only the registered source-revision normalization identity');
 select is((select count(*) from public.purpose_grants where target_id=pg_temp.sid('main')),0::bigint,
  'confirmation and queue admission do not create an analytic purpose');
+select throws_ok($$update public.worker_jobs set payload=jsonb_set(payload,'{authority,uploaderAccountId}',to_jsonb(pg_temp.a('9')::text))
+ where subject_id=pg_temp.sid('main')$$,'23514','Path B normalization authority is immutable',
+ 'a queued source cannot replace its authority snapshot while preserving the dispatch tuple');
+select throws_ok($$update public.worker_jobs set user_id=pg_temp.a('9') where subject_id=pg_temp.sid('main')$$,
+ '23514','Path B normalization authority is immutable','a queued source cannot replace its billing owner');
+select throws_ok($$update public.worker_jobs set file_id=null where subject_id=pg_temp.sid('main')$$,
+ '23514','Path B normalization authority is immutable','a queued source cannot detach its exact file descriptor');
 select ok((private.claim_worker_job_v2('synthetic-generic',repeat('7',64),60)).id is distinct from
  (select id from public.worker_jobs where subject_id=pg_temp.sid('main')),
  'the generic worker never receives the dedicated Path B job');
@@ -263,13 +270,49 @@ select is(private.path_b_result_read_v1(pg_temp.a('2'),pg_temp.sid('main'),'repo
  'analysis-not-generated','the exact granted layer sees completed source and the separate execution gate');
 select is(private.path_b_result_read_v1(pg_temp.a('1'),pg_temp.sid('main'),'reports.monogenic')->>'gate',
  'directional-purpose-grant-v1','the subject''s own result grant does not share it with the uploader');
+insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,sha256,status)
+ select '0b5e0000-0000-4000-8000-000000000040',pg_temp.a('1'),id,
+ '0b5e0000-0000-4000-8000-000000000041','synthetic-self.vcf','vcf',1,8,repeat('a',64),'stored'
+ from public.subjects where subject_account_id=pg_temp.a('1') and subject_class='self';
+insert into public.user_variants(user_id,file_id,subject_id,rsid,chrom,pos,ref,alt,genotype)
+ select user_id,id,subject_id,125,1,100002,'A','G','A/G' from public.genome_files
+ where id='0b5e0000-0000-4000-8000-000000000040';
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"0b5e0000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(private.is_path_b_file_v1('0b5e0000-0000-4000-8000-000000000040'),false,
+ 'the policy helper keeps a self source readable');
+select is((select count(*) from public.genome_files where id='0b5e0000-0000-4000-8000-000000000040'),1::bigint,
+ 'the uploader can still read their own self-file positive control');
+select is((select count(*) from public.user_variants where file_id='0b5e0000-0000-4000-8000-000000000040'),1::bigint,
+ 'the uploader can still read their own self-variant positive control');
+select is(private.is_path_b_file_v1((select (c->>'fileId')::uuid from norm_manifest)),true,
+ 'the policy helper denies the uploader''s actual other-adult descriptor');
 select is((select count(*) from public.genome_files where id=(select (c->>'fileId')::uuid from norm_manifest)),0::bigint,
  'legacy file ownership exposes no Path B descriptor to its uploader');
 select is((select count(*) from public.user_variants where file_id=(select (c->>'fileId')::uuid from norm_manifest)),0::bigint,
  'legacy variant ownership exposes no Path B genetic data to its uploader');
+select set_config('request.jwt.claims','{"sub":"0b5e0000-0000-4000-8000-000000000009","role":"authenticated"}',true);
+select is(private.is_path_b_file_v1((select (c->>'fileId')::uuid from norm_manifest)),false,
+ 'the policy helper discloses no foreign-account Path B presence');
+select is(private.is_path_b_file_v1('0b5e0000-0000-4000-8000-000000000040'),false,
+ 'the policy helper discloses no foreign-account self-file presence');
+select is(private.is_path_b_file_v1('0b5e0000-0000-4000-8000-000000000099'),false,
+ 'an absent file and either foreign file produce the identical boolean');
+select is((select count(*) from public.genome_files where id in
+ ('0b5e0000-0000-4000-8000-000000000040'::uuid,(select (c->>'fileId')::uuid from norm_manifest))),0::bigint,
+ 'an outsider reads neither another account''s self file nor its Path B descriptor');
+select is((select count(*) from public.user_variants where file_id in
+ ('0b5e0000-0000-4000-8000-000000000040'::uuid,(select (c->>'fileId')::uuid from norm_manifest))),0::bigint,
+ 'an outsider reads neither another account''s self variants nor its Path B variants');
 reset role;
+set local role anon;
+select set_config('request.jwt.claims','{"role":"anon"}',true);
+select is((select count(*) from public.genome_files),0::bigint,
+ 'anonymous file reads return no rows without evaluating the authenticated-only helper');
+select is((select count(*) from public.user_variants),0::bigint,
+ 'anonymous variant reads return no rows without evaluating the authenticated-only helper');
+reset role;
+select set_config('request.jwt.claims','{"sub":"0b5e0000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select ok(not has_function_privilege('authenticated','public.path_b_normalization_v1(text,uuid,text,uuid,jsonb,boolean)','EXECUTE'),
  'an authenticated browser cannot claim or publish normalization');
 select ok(not has_function_privilege('inherit_upload_only','public.path_b_normalization_v1(text,uuid,text,uuid,jsonb,boolean)','EXECUTE'),

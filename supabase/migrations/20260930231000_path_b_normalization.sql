@@ -14,13 +14,32 @@ as $$ select exists(select 1 from public.genome_files f join public.subjects s o
  where f.id=p_file_id and f.user_id=(select auth.uid()) and s.subject_class='other_adult'); $$;
 revoke all on function private.is_path_b_file_v1(uuid) from public,anon,inherit_upload_only;
 grant execute on function private.is_path_b_file_v1(uuid) to authenticated;
-alter policy genome_files_select_own on public.genome_files
+alter policy genome_files_select_own on public.genome_files to authenticated
  using(user_id=(select auth.uid()) and not private.is_path_b_file_v1(id));
-alter policy user_variants_select_own on public.user_variants
+alter policy user_variants_select_own on public.user_variants to authenticated
  using(user_id=(select auth.uid()) and not private.is_path_b_file_v1(file_id));
 alter policy report_observed_calls_select_owner on public.report_observed_calls
  using(user_id=(select auth.uid()) and not private.is_path_b_file_v1(file_id)
   and private.report_observed_call_readable_v1(file_id,source_sha256,extraction_version));
+
+-- The generic dispatch guard already freezes the source/target tuple. A Path B
+-- claim also depends on its exact current-authority snapshot, billing owner and
+-- descriptor; none may be replaced while preserving that dispatch identity.
+create function private.guard_path_b_normalization_job_update_v1()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+ if old.computation_revision='path-b-normalization-v1'
+  and row(new.payload,new.user_id,new.file_id) is distinct from row(old.payload,old.user_id,old.file_id) then
+  raise exception using errcode='23514',message='Path B normalization authority is immutable';
+ end if;
+ return new;
+end;
+$$;
+revoke all on function private.guard_path_b_normalization_job_update_v1() from public,anon,authenticated,inherit_upload_only,service_role;
+create trigger worker_jobs_path_b_normalization_authority_immutable
+ before update on public.worker_jobs for each row
+ execute function private.guard_path_b_normalization_job_update_v1();
 
 -- A machine checkpoint snapshots actual current evidence, not an uploader
 -- session selected arbitrarily after the person signs in to confirm.

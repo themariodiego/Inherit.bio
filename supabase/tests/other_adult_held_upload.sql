@@ -430,11 +430,13 @@ select is(pg_temp.no_file_rows('main'),0::bigint,
 select is((select count(*) from public.worker_jobs where subject_id=pg_temp.sid('main')),0::bigint,'no job exists for it');
 select is((select count(*) from public.purpose_grants where target_id=pg_temp.sid('main')),0::bigint,
  'no analytic purpose exists for it');
--- Only the lifecycle functions name the held table, and none of them is a reader.
+-- Only these reviewed lifecycle functions name the held table. The Path B
+-- normalization/read gates inspect current source evidence without granting
+-- browser access to the held table or returning its raw descriptor.
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
- 'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.subject_held_files_v1, public.activate_rights_session_v1, public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the lifecycle functions');
+ 'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, private.subject_held_files_v1, public.activate_rights_session_v1, public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
 select is((select jsonb_agg(distinct k order by k) from jsonb_array_elements(
  public.other_adult_upload_targets_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',true)) t,
  jsonb_object_keys(t) k),
@@ -827,8 +829,12 @@ select is((select coalesce(string_agg(p.oid::regprocedure::text,', '),'') from p
   or p.proname like '%adult_upload%' or p.proname like '%subject_esignature%'
   or p.proname in ('subject_upload_store_authority_v1','current_hashed_artifact_v1','freeze_adult_subject_flow_v1'))
   and (has_function_privilege('anon',p.oid,'execute') or has_function_privilege('authenticated',p.oid,'execute')
-   or has_function_privilege('inherit_upload_only',p.oid,'execute'))),'',
- 'no browser or upload role can execute any Path B function');
+   or has_function_privilege('inherit_upload_only',p.oid,'execute'))),'private.is_path_b_file_v1(uuid)',
+ 'only the exact owner-scoped boolean RLS helper is browser-executable among Path B functions');
+select ok(has_function_privilege('authenticated','private.is_path_b_file_v1(uuid)','execute')
+ and not has_function_privilege('anon','private.is_path_b_file_v1(uuid)','execute')
+ and not has_function_privilege('inherit_upload_only','private.is_path_b_file_v1(uuid)','execute'),
+ 'the policy helper is available only to authenticated policy evaluation, never anonymous or upload credentials');
 select is((select count(*) from public.purge_target_stores where store_name='public.other_adult_held_uploads'
  and target_id='upload-and-ingest-working-state'),1::bigint,'the held table is a registered purge store');
 select ok((select h.store_order>u.store_order
