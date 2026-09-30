@@ -1,5 +1,21 @@
 # Test diff register
 
+## Isolated artifact gateway startup ownership · 30 September 2026
+
+The completed hosted Embryo run failed before any case because both app3104
+and app3105 evaluated the exclusive prepared proof-writer factory. App3104
+had already created its fixed directory, so app3105 threw EEXIST even though
+the Embryo gateway never uses the prepared callback. The shared launcher now
+uses separate concrete starter calls; only app3104 creates that writer.
+
+New sequential-start assertions require both gateways to start with exactly
+one prepared proof writer and no prepared callback passed to Embryo. Repeated
+prepared startup still refuses its existing exclusive writer, other ports
+refuse, and proof failure never falls back to another gateway. Every prior
+proof, runtime, provider and browser assertion remains; timeouts, retries,
+project inventory, case assignments, namespace and production capability
+remain unchanged. Full actual hosted execution is still required.
+
 ## Mixed embryo QC uses a separate fresh native job · 30 September 2026
 
 The unchanged two-pass browser journey remains intact. A second real journey plants alternate no-calls only in the second sample of the committed synthetic pair, then goes through both parents, the actual sanitiser, configuration, chunks, completion and production split worker. The real parser measures 1,200 of 1,200 calls for the unchanged sample and 588 of 1,200 for the failed sample. Strict publication evidence requires one current canonical source/part, no source/part for the failed ordinal, both terminal QC records, an empty pending journal and zero unsupported scores. The browser must keep both complete comparison columns and every QC row, show the failed reason and observed measurement, and render no invented risk, carrier or dropout outputs.

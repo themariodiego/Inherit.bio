@@ -8,9 +8,7 @@ import http from "node:http";
 import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
-import { startPreparedArtifactFixture } from "./prepared-artifact-fixture";
-import { startEmbryoBrowserFragmentFixture } from "./embryo-browser-fragment-fixture";
-import { createPreparedArtifactProofWriter } from "./prepared-artifact-proof";
+import { startCiArtifactGateway } from "./artifact-gateway-start";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
@@ -133,11 +131,9 @@ try {
           assert(signingKey.kty === "EC" && signingKey.crv === "P-256" && typeof signingKey.kid === "string",
             "Synthetic upload signer required");
           const publicKey = createPublicKey(createPrivateKey({ key: signingKey, format: "jwk" })).export({ format: "jwk" });
-          const startGateway = port === 3104 ? startPreparedArtifactFixture : startEmbryoBrowserFragmentFixture;
-          const artifacts = await startGateway({
+          const artifacts = await startCiArtifactGateway(port, {
             publicJwk: { kty: publicKey.kty, crv: publicKey.crv, x: publicKey.x, y: publicKey.y, kid: signingKey.kid },
             key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt"),
-            onChange: createPreparedArtifactProofWriter(),
           });
           closers.push(() => { void artifacts.close(); });
         }
