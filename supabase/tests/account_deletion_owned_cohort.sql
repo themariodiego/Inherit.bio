@@ -31,13 +31,22 @@ create temporary table deletion(id uuid);
 with r as (insert into public.account_deletion_requests(account_id,request_account_revision,request_auth_session_revision,
  principal_graph_revision,deletion_hold_revision,state,requested_at,notice_ends_at,delete_started_at,
  claim_token_hash,claim_expires_at,storage_manifest_frozen_at)
- values('7a000000-0000-0000-0000-000000000001',1,1,1,1,'delete_started',clock_timestamp()-interval '8 days',
- clock_timestamp()-interval '1 day',clock_timestamp(),repeat('d',64),clock_timestamp()+interval '5 minutes',clock_timestamp())
+ select '7a000000-0000-0000-0000-000000000001',1,1,1,1,'delete_started',t.n-interval '8 days',
+ t.n-interval '1 day',t.n,repeat('d',64),t.n+interval '5 minutes',t.n from(select clock_timestamp() n)t
  returning id) insert into deletion select id from r;
 select throws_ok($$select private.capture_claimed_embryo_provenance_v1(gen_random_uuid(),(select cohort_id from live))$$,
  '42501','account cohort purge unavailable','a caller without a due deletion cannot create provenance receipts');
 select throws_ok($$select public.account_embryo_unwinds_v1((select id from deletion),repeat('e',64))$$,
  '42501','account cohort purge unavailable','a crossed deletion claim cannot select any provider work');
+create function pg_temp.expired_read() returns jsonb language plpgsql as $$
+begin
+ update public.account_deletion_requests set claim_expires_at=clock_timestamp()-interval '1 second' where id=(select id from deletion);
+ return public.account_embryo_unwinds_v1((select id from deletion),repeat('d',64));
+end $$;
+select throws_ok($$select pg_temp.expired_read()$$,'42501','account cohort purge unavailable',
+ 'an expired worker claim cannot select provider work');
+select ok((select claim_expires_at>clock_timestamp() from public.account_deletion_requests where id=(select id from deletion)),
+ 'the refused expiry probe leaves the original exact lease unchanged');
 select lives_ok($$select private.assert_account_owned_cohorts_v1('7a000000-0000-0000-0000-000000000001')$$,
  'the owned published two-parent graph is recognized without granting parent power over the claim');
 select lives_ok($$select private.prepare_account_owned_cohorts_v1((select id from deletion))$$,
