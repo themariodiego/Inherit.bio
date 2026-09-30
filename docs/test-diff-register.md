@@ -1,5 +1,32 @@
 # Test diff register
 
+
+## Permanent isolated browser CI sharding · 30 September 2026
+
+The unchanged complete browser suite now uses six fresh hosted jobs, each with
+its own database and the existing real-provider/isolated-runtime preflight.
+New strict regression cases reject missing, duplicated, foreign-commit,
+prior-run and stale-attempt receipts, omitted or repeated cases, zero/multiple
+executions, retries, skips, non-passing results, global errors, changed projects,
+parallel workers, negative provider counts and silently ignored ordinary specs.
+The existing full-suite/no-skip/no-retry and transport assertions remain.
+
+Actual native discovery places no upload fixture in shard 1. The original
+whole-suite assertion that at least one real browser upload crosses the
+installed provider therefore moves to mandatory aggregation, which requires
+nonnegative actual per-shard counts and a positive complete-suite sum. Tests
+prove that one upload-free shard can pass when other shards observed actual
+uploads, while zero across the whole suite and every negative count fail.
+Ordinary full/local and Lighthouse runs retain their direct positive assertion.
+No sentinel upload, narrowed selector, fixture bypass or execution skip is added.
+
+The required checks job still rejects failed, cancelled or skipped job families.
+Every tracked ordinary spec must be discovered; only the exact existing density
+capture and paid comprehension-run spec remain opt-in. A central project
+registry refuses empty or unregistered projects. Raw configuration/report JSON
+is excluded from uploaded artifacts; sanitized coverage and timing receipts
+provide the exact SHA/run/case evidence and file-group imbalance instead.
+
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
 `supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two
