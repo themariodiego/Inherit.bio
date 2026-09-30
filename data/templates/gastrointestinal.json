@@ -123,7 +123,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17718394", "label": "Edenberg, Alcohol Res Health 2007" }
+      { "pmid": "17718394", "label": "Edenberg, Alcohol Res Health 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -149,8 +149,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8696333", "label": "Feder et al., Nat Genet 1996" },
-      { "pmid": "18199861", "label": "Allen et al., N Engl J Med 2008" }
+      { "pmid": "8696333", "label": "Feder et al., Nat Genet 1996", "accessedOn": "2026-09-28" },
+      { "pmid": "18199861", "label": "Allen et al., N Engl J Med 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -176,8 +176,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8696333", "label": "Feder et al., Nat Genet 1996" },
-      { "pmid": "18199861", "label": "Allen et al., N Engl J Med 2008" }
+      { "pmid": "8696333", "label": "Feder et al., Nat Genet 1996", "accessedOn": "2026-09-28" },
+      { "pmid": "18199861", "label": "Allen et al., N Engl J Med 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -203,8 +203,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "7565971", "label": "Bosma et al., N Engl J Med 1995" },
-      { "pmid": "19414484", "label": "Johnson et al., Hum Mol Genet 2009" }
+      { "pmid": "7565971", "label": "Bosma et al., N Engl J Med 1995", "accessedOn": "2026-09-28" },
+      { "pmid": "19414484", "label": "Johnson et al., Hum Mol Genet 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -230,7 +230,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12595690", "label": "Kim et al., Science 2003" }
+      { "pmid": "12595690", "label": "Kim et al., Science 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -256,7 +256,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18509540", "label": "Monsuur et al., PLoS One 2008" }
+      { "pmid": "18509540", "label": "Monsuur et al., PLoS One 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -282,7 +282,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12692541", "label": "Lindesmith et al., Nat Med 2003" }
+      { "pmid": "12692541", "label": "Lindesmith et al., Nat Med 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -308,7 +308,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18820647", "label": "Romeo et al., Nat Genet 2008" }
+      { "pmid": "18820647", "label": "Romeo et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   }
 ]

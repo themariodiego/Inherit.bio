@@ -93,7 +93,8 @@ select lives_ok($$select public.sign_embryo_artifact_v1(
  'nonce-capability-new-sign')$$,'the service signing RPC retains nonce access');
 create temporary table extra_inv as select * from public.create_embryo_draft_invitation_v1(
  '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
- (select draft_id from extra_draft),repeat('d',64),repeat('4',64),'nonce-capability-new-invite',true);
+ (select draft_id from extra_draft),repeat('d',64),repeat('4',64),'nonce-capability-new-invite',true,
+ p_quota_keys => pg_temp.invitation_quota_keys());
 select ok((select invitation_id from extra_inv) is not null,'the service invitation RPC retains nonce access');
 create temporary table extra_delivery as select * from public.claim_mail_outbox();
 select is((select target_id from public.token_candidates where id=(select candidate_id
@@ -150,7 +151,7 @@ select ok(not exists(select 1 from public.embryo_operation_nonces where
 
 create temporary table adult_inv as select * from public.create_adult_subject_invitation_v1(
  '7a000000-0000-0000-0000-000000000001',decode('ffeeddccbbaa99887766554433221100','hex'),
- repeat('e',64),repeat('5',64),true);
+ repeat('e',64),repeat('5',64),true,p_quota_keys => pg_temp.invitation_quota_keys());
 create temporary table adult_delivery as select * from public.claim_mail_outbox();
 select is((select target_id from public.token_candidates where id=(select candidate_id
  from public.token_hashes where token_hash=encode(extensions.digest(

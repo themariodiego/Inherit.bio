@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { encryptSecret, hmacSecret } from "@/lib/crypto";
+import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
+import { invitationQuotaKeys } from "@/lib/invitation-quota";
 import { accountCapability } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -49,21 +51,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
 
-  const contactHmac = hmacSecret(email, "contact-email-v1");
+  // The revision-1 digest keeps the idempotency key stable across a rotation.
   const idempotencyKey = hmacSecret(
     JSON.stringify([
       "adult-subject-invitation-v1",
       user.id,
-      contactHmac,
+      legacyContactDigest(email),
       parsed.data.requestId,
     ]),
     "mail-idempotency-v1",
   );
   const admin = createAdminClient();
+  // The address is keyed under every held contact revision, and the RPC
+  // counts this attempt against the account and network quotas before it
+  // matches anything (global-contact-refusal-bar-v1). An exhausted quota
+  // returns no invitation, exactly as a barred address does.
   const { data, error } = await admin.rpc("create_adult_subject_invitation_v1", {
     p_account_id: user.id,
     p_contact_ciphertext: `\\x${encryptSecret(email).toString("hex")}`,
-    p_contact_hmac: contactHmac,
+    p_contact_hmac: null,
+    p_contact_hmac_set: contactDigestSet(email),
+    p_quota_keys: invitationQuotaKeys(user.id, request.headers),
     p_idempotency_key: idempotencyKey,
     p_test_jurisdiction: true,
   });

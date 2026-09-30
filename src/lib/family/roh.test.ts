@@ -10,11 +10,13 @@ import {
   ROH_MIN_RUN_CALLS,
   ROH_TOTAL_THRESHOLD_BASES,
   belowRohThreshold,
+  createRohAccumulator,
   isReferenceHomozygous,
   measureRunsOfHomozygosity,
   readsTheSameOnBothCopies,
   rohCallsFromParse,
   rohColumns,
+  rohRecordPayload,
   storedRohMeasure,
   subjectRunsBelowThreshold,
   type RohCall,
@@ -272,6 +274,26 @@ describe("the calls a parse gives the measure", () => {
     if (measure.status !== "measured") return;
     expect(measure.runCount).toBe(0);
     expect(measure.coveredSpanBases).toBe(2_000);
+  });
+
+  it("gives the same answer one call at a time as over the whole array, in any arrival order", () => {
+    const calls = [
+      ...stretch(1, 5_000_000, 60_000, 30, "A/A"),
+      ...stretch(1, 1_000_000, 9_000_000, 2, "A/G"),
+      ...stretch(2, 2_000_000, 50_000, 40, "C/C"),
+      ...background(3),
+    ];
+    const fed = createRohAccumulator();
+    for (const call of [...calls].reverse()) fed.add(call);
+    expect(fed.measure()).toEqual(measureRunsOfHomozygosity(calls));
+    expect(fed.measure()).toMatchObject({ status: "measured", runCount: 2 });
+    // The stored payload the prepared path sends is the same measure.
+    const measure = measureRunsOfHomozygosity(calls);
+    if (measure.status !== "measured") throw new Error("unreachable");
+    expect(rohRecordPayload(measure)).toEqual({ status: "measured", totalBases: measure.totalRunBases,
+      coveredBases: measure.coveredSpanBases, fraction: measure.fRoh });
+    expect(rohRecordPayload({ status: "not_measurable", reason: "no-reference-calls" }))
+      .toEqual({ status: "not_measurable", reason: "no-reference-calls" });
   });
 
   it("reads a parse's variant records and reference calls together, with the reference allele each carries", () => {
