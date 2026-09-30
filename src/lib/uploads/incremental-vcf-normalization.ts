@@ -2,6 +2,7 @@ import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { streamVcf } from "../genome/parsers/vcf";
 import type { ObservedCall } from "../genome/observed-calls";
 import type { Build, VariantRecord } from "../genome/types";
+import type { RohAccumulator } from "../family/roh";
 import { liftSingleBaseVariant } from "../genome/liftover";
 
 export type PositionEntry = { source_chrom: number; source_pos: number;
@@ -20,6 +21,8 @@ type Options = {
   maximumUnmappedFraction: number;
   register: (sequence: number, entries: PositionEntry[]) => Promise<PositionReceipt>;
   stage: (kind: "variants" | "observed", sequence: number, rows: unknown[]) => Promise<void>;
+  /** The runs-of-homozygosity measure, fed the source-build calls the legacy route reads (D-030). */
+  runs?: RohAccumulator;
 };
 
 const BATCH_TARGET_BYTES = 1_000_000;
@@ -154,11 +157,11 @@ export async function prepareIncrementalVcf(lines: AsyncIterable<string>, option
       summarySeen = true;
       continue;
     }
-    if (event.type === "reference") continue;
+    if (event.type === "reference") { options.runs?.add(event.call); continue; }
     const source = event.type === "variant" ? event.record : event.call;
     if (current && current.line !== event.line) await finishLine();
     current ??= { line: event.line, chrom: source.chrom, pos: source.pos };
-    if (event.type === "variant") current.variant = event.record;
+    if (event.type === "variant") { current.variant = event.record; options.runs?.add(event.record); }
     else current.observed = event.call;
   }
   if (!summarySeen) throw new IncrementalVcfError("unavailable");

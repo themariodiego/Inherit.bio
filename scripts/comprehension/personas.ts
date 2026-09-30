@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { z } from "zod";
+import { findRepositoryRoot } from "./repository";
 
 // Closed choices leave no free-text field in which task answers, instructions
 // or private participant details can be smuggled into the participant prompt.
@@ -60,7 +62,7 @@ const bankSchema = z.object({
 }).strict();
 
 /** Read committed synthetic profiles; never generate or select them by results. */
-export function loadPersonas(filename: string | URL = new URL("./personas.json", import.meta.url)): readonly Persona[] {
+export function loadPersonas(filename: string | URL = path.join(findRepositoryRoot(), "scripts/comprehension/personas.json")): readonly Persona[] {
   return bankSchema.parse(JSON.parse(readFileSync(filename, "utf8"))).personas;
 }
 

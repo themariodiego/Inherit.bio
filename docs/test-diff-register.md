@@ -1,5 +1,254 @@
 # Test diff register
 
+## genomes-staging drop test after D-130's embryo fix · 28 September 2026
+
+`supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two
+function bodies may still name `genomes-staging`: the account-deletion and
+embryo-unwind manifest builders (D-130). #255 (`20260929101000`) rewrote
+`prepare_embryo_ingest_unwind_v1` to inventory objects under their recorded
+bucket, so it no longer names the dropped bucket, and the test failed on the
+merged tree. The expected set is now the one remaining builder. That is
+stricter: one fewer function may carry the literal.
+
+## Two register divergences closed on the owner's answers · 28 September 2026
+
+**`generated-artifacts` dropped.**
+- `supabase/tests/drop_generated_artifacts_bucket.sql` is new, with 13
+  assertions:
+  - the bucket is gone, and genomes and exports are unchanged;
+  - no storage policy names it;
+  - the literal survives only in the two own-report purge functions, as a
+    retention target id, and that target keeps its five stores;
+  - no recorded object can name the bucket or be an export archive;
+  - no export can name a single archive object;
+  - a genome source and a segmented export row are still accepted.
+- Without the migration, 5 of the 13 fail. Seven refusal cases were planted
+  and each was refused: an object, a multipart upload, a recorded object in
+  the bucket, a recorded export archive, an export `object_id`, a pending
+  deletion entry and a pending unwind entry. A completed entry is not
+  refused.
+- `supabase/tests/drop_genomes_staging_bucket.sql` now expects the bucket set
+  `{genomes, exports}`, because generated-artifacts is gone too.
+- `scripts/route-register-correspondence.test.ts` no longer asserts "more
+  than two" created buckets. It asserts that `genomes` and `exports` are among
+  them, which is an equally non-empty check with named contents.
+- In `scripts/route-gate.test.ts`, the storage-evidence test used to plant on
+  the generated-artifacts row, which is now removed. It now makes `exports`
+  undeclared and adds its own row. It expects the wrong `createdBy` to fail,
+  and adds a control where the right one passes. The dropped-bucket test now
+  restores both dropped rows and expects both to fail as stale.
+
+**`/withdraw/request` registered as an endpoint.**
+- `src/lib/embryos/rights-entry.test.ts` gains "answers with exactly the
+  headers its registered response contract names".
+- `scripts/route-register-correspondence.test.ts`:
+  - gains "resolves every routeFrom to a registered route and every pinned
+    param to a literal it allows";
+  - "expands a pinned parameter" now expects `rights.withdraw` without
+    `/withdraw/request`, and the new entry at that path.
+- `scripts/route-gate.test.ts`: "fails when a registered page literal is
+  served by an endpoint" now plants `request` back onto the page entry,
+  instead of deleting a ledger row that no longer exists.
+- `e2e/a11y.spec.ts` derives its endpoint-rendered pages from the register.
+  It audits the same URL, under the same test titles.
+- Each new check was planted and failed:
+  - the robots header reverted;
+  - the token-page binding removed;
+  - a contract still naming the page literal;
+  - `request` pinned back onto the page.
+
+No existing assertion was removed or loosened.
+
+## Buckets read from the migrations, and dated divergences · 28 September 2026
+
+`e2e/rls.spec.ts`, `e2e/file-deletion.spec.ts` and
+`e2e/account-deletion-purge.spec.ts` no longer keep their own list of
+buckets. They read it from `scripts/storage-buckets.ts`, which applies bucket
+creates and drops in migration order, the same way `pnpm gate:routes` does.
+The set changes in two ways:
+
+- It gains `exports`, created on 23 September. The old hand-kept list never
+  included it, so the RLS suite had not attacked it.
+- It loses `genomes-staging`, which `20260930140000` drops.
+
+`e2e/rls.spec.ts` now asserts that the set includes `genomes` and `exports`
+and excludes `genomes-staging`, so the list can be neither empty nor stale.
+Its planted and attacking objects are `application/octet-stream`, because
+`exports` admits nothing else. Every assertion is otherwise unchanged.
+
+`scripts/run-upload-browser.mts --full` on all three specs passed 12 of 12,
+with no skips and no retries. Two earlier runs each had failures on the shared
+local stack, and each failure happened before any bucket code ran:
+
+- the first run: two UI uploads stuck at "Uploading to private storage…
+  100%";
+- the second run: `createUser: Database error creating new user`.
+
+Every test also passed in at least one of those runs.
+
+`scripts/route-gate.test.ts` gains five tests:
+
+- a dropped bucket's old ledger row fails as stale;
+- a storage row whose `createdBy` or `declaredBy` no longer says what the row
+  says fails;
+- a method row that names the wrong file fails;
+- the drop parser reads both delete shapes, and throws on any other;
+- creates and drops apply in file order and in statement order.
+
+`scripts/route-register-correspondence.test.ts` gains "deletes a dated
+divergence by its date", which fails after a row's `deleteAfter`. The
+allowlist test now also accepts rows in `allowlistedBucketNotCreated`, but
+only when the named migration really drops the bucket. The new pgTAP file
+`supabase/tests/drop_genomes_staging_bucket.sql` has 7 assertions. Each new
+check was planted and failed; the details are in
+`docs/register-divergence-proposals.md` section 8. No existing assertion was
+removed or loosened.
+
+## Prepared sources carry their runs of homozygosity · 28 September 2026
+
+`e2e/family-health-picture.spec.ts` ("both adults prepare their real source
+and generate chosen reports before sharing") asserted that every `roh_*`
+column of a prepared source stayed null, because canonical preparation did not
+measure runs of homozygosity. This branch now measures them from the verified
+bytes as they stream past and stores them once
+(`record_own_normalization_runs_v1`). The assertion is replaced by a stricter
+one: each source is `measured`, with no reason, and its total run bases,
+covered span bases and fraction equal exactly what the real calculator gives
+the committed fixture (`measureRunsOfHomozygosity`, which `roh.test.ts`
+already holds equal to the streaming accumulator). Nothing is loosened: a
+stamped, guessed or missing measure fails it.
+
+## Family Copilot citation link matched exactly · 28 September 2026
+
+`e2e/copilot-family.spec.ts` looked up the person citation by the link name
+"Shared by <name>". The report citation's label, "<title> (shared by
+<name>)", also contains that phrase, and Playwright's default name match is a
+case-insensitive substring, so the locator found two links and failed in CI.
+It now matches the name exactly. That is stricter: it still requires the
+person link and its href, and it no longer accepts any link that merely
+contains the phrase. The report citation stays asserted through the stored
+message's `citations[1]`.
+
+## Family Copilot scope turned on everywhere · 28 September 2026
+
+The owner chose to turn the Family Copilot scope on in production (PR #260).
+`copilotGroupScopes()` now answers `family: true` on every deployment and
+reads no environment. The transport, jurisdiction and grant gates are
+unchanged, and they are what keep another adult's data unread outside
+TEST-LOCAL.
+
+- `e2e/copilot-group-scopes.nojurisdiction.spec.ts` is new, with 3 tests on
+  the `jurisdiction-off` variant, the hosted stand-in (TEST-LOCAL flag unset,
+  no attested model, a GB account).
+  - The Overview box links `/copilot/family` and one click reaches the
+    registered unavailable page.
+  - Nothing past the transport decision renders, and no context token or
+    chat row is created for the account.
+  - The chat and history endpoints serve nothing.
+  - The Family hub's Copilot tile still states the jurisdiction refusal and
+    links nowhere.
+- `src/lib/copilot/group-scopes.test.ts`: the availability test now asserts
+  `family: true` under four environments, hosted production included.
+  Before, it asserted `family: false` outside TEST-LOCAL. The owner's
+  decision reverses that expectation; the test is not loosened, and it still
+  pins `cohort: false` everywhere.
+- `src/lib/overview-entry-boxes.test.ts` gains one test: with no scopes
+  passed, which is how Overview calls it, the Family box resolves to
+  `/copilot/family` and the Embryo box to `/embryos` for every account shape,
+  in three environments. The explicit built and unbuilt cases stay. The
+  assertions that the default followed the TEST-LOCAL flag are gone, because
+  the flag no longer governs it.
+- The Family hub's Copilot tile now links `/copilot/family` wherever the hub
+  itself is permitted, as the Overview box does. Before, it linked only once
+  someone granted `copilot.local`.
+  - `e2e/family.spec.ts` (`/family complete`) pinned the tile as unlinked.
+    It now pins its href and the absence of a blocked line.
+  - `e2e/copilot-group-scopes.spec.ts` asserted the blocked line. It now
+    follows the link to the unavailable page.
+  - `e2e/copilot-family.spec.ts`'s last assertion after revocation expected
+    the tile unlinked. It now expects the link. The same test still asserts
+    what revocation changes: the scope's empty state, zero surviving turns,
+    history 404 and no model call.
+- `scripts/env-gate.test.ts`: process.env bindings 8 -> 7. The binding this
+  branch added earlier the same day is gone, and no key is lost.
+
+## Family group Copilot scope · 28 September 2026
+
+New tests, none loosened.
+
+- `supabase/tests/family_copilot_scope.sql` (52 rollback-only assertions)
+  holds `20260929140000_family_copilot_scope.sql`: who may execute the new
+  functions, the member check's purpose isolation (a layer grant alone, or
+  Copilot without Health picture, admits nobody), non-members, pause (hidden,
+  not deleted, restored on resume), revocation mid-conversation (the turn and
+  every later turn deleted, history `null`), a layer revoked, the adult's own
+  report purpose withdrawn, a different provider refused, a cloud provider
+  refused, single-use context nonces, and the widened citation constraint.
+- Unit: `src/lib/copilot/family-chat.test.ts`, `family-chat-route.test.ts`,
+  `family-chat-content.test.ts`, `family-chat-token.test.ts`,
+  `group-scopes.test.ts` and `guard-people.test.ts` are new.
+  `src/lib/overview-entry-boxes.test.ts` gains two tests (the Family box opens
+  `/copilot/family` only where the scope is built; the Embryo box keeps its
+  hub and names a cohort as `c-{id}`), and its blocking-state test now passes
+  the unbuilt scopes explicitly, because the default follows the TEST-LOCAL
+  flag the suite runs under. `scripts/ci-browser-playwright-config.test.ts`
+  gains two assertions: `copilot-family` runs in the `copilot-local` project
+  and is ignored by `chromium`.
+- Browser: `e2e/copilot-group-scopes.spec.ts` (main variant, 4 tests) and
+  `e2e/copilot-family.spec.ts` (`copilot-local` project: the journey, and the
+  title `/copilot/[scope] jurisdiction-unavailable`). `playwright.config.ts`
+  adds `copilot-family.spec.ts` to the local-model project's match.
+
+Pins moved for things this change adds, each with a dated comment beside it:
+
+- Permission rows 7 -> 8 (the new `copilot.local` "Copilot" row) in
+  `src/copy/family/family.test.ts`, `src/components/family/family.test.ts`
+  (and the locked-row test's settable count 6 -> 7) and `e2e/family.spec.ts`.
+- `scripts/route-gate.test.ts` required states 153 -> 154: `/copilot/[scope]`
+  moves back to `product-result` and proves `jurisdiction-unavailable` in the
+  same change (`docs/route-divergence.json`), so unproven stays 11.
+- `scripts/env-gate.test.ts` bound bindings 7 -> 8: `copilotGroupScopes`
+  reads the TEST-LOCAL flag through `isTestJurisdictionEnabled`. No new key.
+
+Planted regressions, each caught and then restored:
+
+- SQL, against the pgTAP file: a revoked grant still readable (the member
+  check stops requiring an unrevoked, current grant), a grant for one purpose
+  used for another (the purpose predicate dropped), and a non-member in the
+  group (the commit's per-member recheck skipped). 3 of 3 fail the file.
+- TypeScript, against the unit files: no per-turn database recheck; the group
+  cached across turns instead of resolved again; rows from an ungranted layer
+  passed through; another account's context token accepted; a member admitted
+  without the Family graph; group names not read as persons by the input gate.
+  6 of 6 fail their test.
+
+## Exact embryo storage disposal · 29 September 2026
+
+`supabase/tests/embryo_ingest_unwind_storage.sql` is new, with 115 assertions
+for `20260929101000_embryo_ingest_unwind_storage.sql` and
+`20260929102000_worker_claim_excludes_embryo_split.sql`. It covers:
+
+- grants, including the service role's lost direct write grants;
+- D-130;
+- R2 markers for landed and uncertain keys, and every evidence refusal;
+- rows that even the owner cannot mark disposed;
+- confirmation and idempotent replay;
+- re-claiming a lapsed R2 claim;
+- Supabase exact-version deletion;
+- uncertain, vanished and lapsed-acknowledgement objects staying unresolved;
+- the generic worker claim passing over a queued split job.
+
+`src/lib/embryos/unwind-storage.test.ts` (8 tests) is new. It runs the disposal
+executor against the real gateway and a synthetic Storage endpoint.
+
+Existing files, with no assertion removed:
+
+- `supabase/tests/v2_contracts.sql` counts 128 purge stores instead of 127,
+  for `private.embryo_ingest_object_disposals`.
+- In `supabase/tests/embryo_ingest_write_fence.sql`, the store-order assertion
+  now compares the fence's two stores with every pre-fence store. Those were
+  all public, and a later private store follows the fence's two.
+
 ## Embryo fragments on R2 · 29 September 2026
 
 `supabase/tests/embryo_ingest_r2_fragments.sql` is new, with 88 assertions for
@@ -42,6 +291,75 @@ Existing files, with no assertion removed:
     target. Hosted Storage dropped the `(bucket_id, name)` unique index, and the
     guard refuses before any conflict handling. That one change is its own
     commit, so it can move to the unit-1 pull request.
+
+## Comprehension live harness · 28 September 2026
+
+No existing test changes. The 100 tests in the nine existing comprehension
+suites pass unchanged against the refactored conductor. Six suites are new:
+
+- `scripts/comprehension/inference-isolation.test.ts` (7) spawns real child
+  processes. A stub reply is schema-valid and bounded. The isolation probe
+  sees an empty directory outside the checkout and only `LANG` and `PATH`
+  (plus the one credential and proxy variables for a real provider, never an
+  unrelated secret). A grading request sent to a loopback fake provider holds
+  only the rubric slice and the verbatim answer, and its digest omits the
+  model. A reply without usage fails, keeping the reservation. A process
+  takes one call. Prompts fit the pinned byte bound.
+- `scripts/comprehension/live-browser.test.ts` (3) launches Chromium against a
+  local synthetic site. It checks the text view and control ids, hidden text
+  left out, the synthetic-email guard, a stale control reported rather than
+  fatal, typed-URL and mailed-link entries recorded and not counted, real
+  click and submit events counted (Enter in a form counts two, as under
+  `e2e/task-depth.spec.ts`), an outside origin never reached, and a fresh
+  context per session.
+- `scripts/comprehension/completion.test.ts` (6) holds completion to the bound
+  routes and slugs, T8 to a scheduled deletion, and T9 and T10 to no account.
+- `scripts/comprehension/live-run.test.ts` (8) runs `runLive` end to end with
+  isolated stub processes and the record writer; refuses a stub record under
+  `docs/comprehension-runs`, a real one anywhere else, and a stub record
+  claiming a model; holds the settings digest stable for one model and
+  changed for another; and applies the stopping rule: two clean runs on one
+  revision and settings, never across a settings change or an intervening
+  failure, never with skipped tasks, and the withheld path after three failed
+  revisions. A tampered record fails the deterministic re-check.
+- `scripts/comprehension/identity-containment.test.ts` (5) holds the owner's
+  25 September decision: every identifier recorded under
+  `docs/comprehension-runs` must appear in no other tracked file and no commit
+  message (the scan reads over 1,000 files and every message); a leak is
+  reported by its location, never by repeating the identifier; a run with a
+  real provider shape against a loopback fake writes the identifier into its
+  record's `manifest.json` and into no other record file, journal or summary;
+  the writer refuses it in a response line and refuses a real run without it;
+  and the plan command never prints it. Two planted regressions failed it: the
+  record check disabled, and the plan printing the identifier.
+- `scripts/comprehension/human-round.test.ts` (5) holds the facilitator sheet
+  to the protocol's scripts and the bound prompts verbatim, and the tally to
+  twelve eligible, consented, unassisted sessions, the thresholds, the T9
+  ceiling, both prohibited-answer paths and the adjustment rule.
+
+`scripts/comprehension/run-history.test.ts` gains one test: a calibration or
+smoke run neither needs the previous revision closed nor holds the next one
+open, while a full run still cannot change revision before closure, and only
+a task the manifest declares skipped may be skipped. It failed with the
+exemption reverted. No existing test in the file changes.
+
+One validation range widens, in the safe direction. The settings schema
+bounded token prices with the token-count bound, so no price could exceed
+US$1 per million tokens. That is below real output prices, and the only way
+to enter one was to understate it, which makes every reservation too small.
+Prices now have their own bound of US$100 per million tokens. A higher price
+only raises reservations; the US$50 cap and the journal are unchanged. Two
+new tests in `live-run.test.ts` accept a realistic paid configuration, refuse
+an absurd price, an identifying label, a paid full run with no calibration
+and a stub with no record root, and hold the settings digest stable across
+runs of one configuration and changed when the model changes.
+
+`playwright.config.ts` keeps `e2e/comprehension-run.spec.ts` out of every
+default project; it has its own project only when `pnpm comprehension:run`
+sets `INHERIT_COMPREHENSION_RUN=1`. The default listing is unchanged at 547
+tests in 84 files. `prohibited.ts`, `personas.ts` and `conductor-inputs.ts`
+find the repository from the working directory instead of `import.meta`,
+because Playwright loads the runner's imports as CommonJS.
 
 ## Embryo Storage write fence · 28 September 2026
 

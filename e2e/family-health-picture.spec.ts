@@ -352,12 +352,21 @@ test("both adults prepare their real source and generate chosen reports before s
   }
   sourceBefore = await sourceReceipt();
   ownGrantsBefore = await ownGrantReceipt();
-  // Canonical preparation does not compute persisted ROH. Preserve this gap
-  // explicitly alongside the real calculator proof; never stamp measured rows.
+  // Canonical preparation measures runs of homozygosity from the verified
+  // bytes as they stream past (record_own_normalization_runs_v1, #256), so
+  // each prepared source holds exactly the measure the real calculator gives
+  // this fixture: never a stamped or guessed row.
   const roh = await adminClient().from("genome_files")
     .select("roh_status,roh_reason,roh_total_bases,roh_covered_bases,roh_fraction,roh_measured_at").in("id", sourceFileIds);
   expect(roh.error).toBeNull(); expect(roh.data).toHaveLength(2);
-  for (const row of roh.data!) expect(Object.values(row).every(value => value === null)).toBe(true);
+  for (const row of roh.data!) {
+    expect(row.roh_status).toBe("measured");
+    expect(row.roh_reason).toBeNull();
+    expect(Number(row.roh_total_bases)).toBe(measure.totalRunBases);
+    expect(Number(row.roh_covered_bases)).toBe(measure.coveredSpanBases);
+    expect(Number(row.roh_fraction)).toBeCloseTo(measure.fRoh, 6);
+    expect(row.roh_measured_at).not.toBeNull();
+  }
   // Acceptance links real accounts; it does not share their existing own reports.
   await signIn(page, A.email, A.password);
   await page.goto("/family/invite");

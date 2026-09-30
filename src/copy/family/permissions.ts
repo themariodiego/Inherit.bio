@@ -47,6 +47,7 @@ export type PermissionRowId =
   | "reports.monogenic"
   | "reports.polygenic"
   | "ancestry"
+  | "copilot.local"
   | "raw.export"
   | "raw.browse"
   | "family.portrait"
@@ -75,6 +76,14 @@ export const PERMISSION_ROWS: readonly PermissionRowCopy[] = [
     id: "ancestry",
     label: "Ancestry",
     consequence: "They can see the broad world regions your file is close to.",
+  },
+  {
+    // The register's `copilot.local` directional purpose: separate from every
+    // result row, so sharing a report is never permission to feed it to a
+    // model. It takes effect only with Health picture and a report row on.
+    id: "copilot.local",
+    label: "Copilot",
+    consequence: "They can ask Copilot about the reports you share, on a model that runs on their own computer.",
   },
   {
     id: "raw.export",
