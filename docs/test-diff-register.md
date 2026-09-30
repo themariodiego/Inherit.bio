@@ -1,5 +1,20 @@
 # Test diff register
 
+## Actual embryo worker in the disposable browser journey · 30 September 2026
+
+New orchestration tests require the production split worker to publish once
+from the exact fresh synthetic cohort. Idle, failed, partial, retried,
+timed-out and uncertain outcomes fail. The fixture checks its current
+namespace and checkout ownership before every command, changes only the
+existing local split and fragment configuration, and restores both rows.
+No grants, results or worker states are inserted or advanced by the fixture.
+
+The runtime tests retain the exact firewall, DNS, read-only mount and owner
+assertions and add the third fixed synthetic TLS destination on loopback.
+The exact hostname, loopback address and certificate name are required;
+the outbound firewall rules are unchanged. This is synthetic gateway and
+worker evidence, never hosted R2 or physical-erasure evidence.
+
 ## Embryo upload stage uses a current account and auth session · 30 September 2026
 
 New rollback-only database tests, none loosened. The server-only read door
