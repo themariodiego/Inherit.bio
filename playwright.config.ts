@@ -1,7 +1,7 @@
 import { localE2eProject } from "./scripts/local-e2e-project";
 import { defineConfig, devices } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
-import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV } from "./scripts/ci-browser-config";
+import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV, EMBRYO_APP_PORT, EMBRYO_APP_ENV } from "./scripts/ci-browser-config";
 
 // E2E runs against a production build served locally, backed by the local
 // Supabase stack (pnpm supabase start) — real PostgREST, real storage, real
@@ -43,6 +43,7 @@ const PREPARED_JOURNEY = /own-prepared-genome-journey\.spec\.ts$/;
  * that run only on a server-attested same-host model
  * (copilot-transport-availability-v1).
  */
+const EMBRYO_JOURNEY = /embryo-ingest-journey\.spec\.ts$/;
 const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
@@ -97,7 +98,7 @@ export default defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN] },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY] },
     ...(comprehensionRun ? [{ name: "comprehension-run", use: { ...devices["Desktop Chrome"] }, testMatch: COMPREHENSION_RUN }] : []),
     {
       name: "jurisdiction-off",
@@ -109,6 +110,7 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${LOCAL_MODEL_PORT}` },
       testMatch: COPILOT_LOCAL,
     },
+    ...(includePreparedJourney ? [{ name: "embryo-ingest", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${EMBRYO_APP_PORT}` }, testMatch: EMBRYO_JOURNEY }] : []),
     ...(includePreparedJourney ? [{
       name: "prepared-source",
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${PREPARED_APP_PORT}` },
@@ -210,6 +212,12 @@ export default defineConfig({
         INHERIT_TEST_JURISDICTION: "1",
         ...PREPARED_APP_ENV,
       },
+    }] : []),
+    ...(includePreparedJourney ? [{
+      command: ciServer(EMBRYO_APP_PORT), url: `http://localhost:${EMBRYO_APP_PORT}/auth/sign-in`,
+      reuseExistingServer: false, timeout: 120_000,
+      env: { ...SERVER_ENV, ...EMBRYO_APP_ENV, NEXT_PUBLIC_SITE_URL: `http://localhost:${EMBRYO_APP_PORT}`,
+        NEXT_PUBLIC_APP_URL: `http://localhost:${EMBRYO_APP_PORT}`, INHERIT_TEST_JURISDICTION: "1" },
     }] : []),
   ],
 });

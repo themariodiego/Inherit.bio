@@ -1,5 +1,28 @@
 # Test diff register
 
+## Five-step embryo upload in TEST-LOCAL · 30 September 2026
+
+The existing browser proof now ends step 2 on the registered draft form,
+not the former unavailable terminal. It still proves no request, storage,
+file or draft before submission, both refusals, focus and the same screen
+budget. Production's false switch and refusal tests stay strict.
+
+New proofs refuse stale artifact version/hash, changed jurisdiction or statement
+sets, inactive signers, missing paired attestations, duplicate parent slots,
+cross-session routes, duplicate handles, malformed configure credentials,
+foreign completion receipts and invalid card/date/limit shapes. The receipt
+round trip uses the actual cohort response producer. The route-builder census
+adds exactly two existing API routes and sign-in; all corresponding literal
+links now use those builders. Ordinary new form words are registered;
+three checkbox sentences are split without changing their assertions.
+
+The fixed app variant admits only its exact embryo gateway and bucket and
+refuses them on every other variant. The new isolated browser journey uses
+real page mutations and the actual worker. It has not run here: no matrix row,
+participant seed blocker, route-state proof or unreachable pair is removed.
+The synthetic TLS gateway exercises the signed protocol, not hosted R2.
+
+
 ## Actual embryo worker in the disposable browser journey · 30 September 2026
 
 New orchestration tests require the production split worker to publish once

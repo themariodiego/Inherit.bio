@@ -197,13 +197,13 @@ export const EMBRYO_COUNT_LABEL = "Number of embryos in the file";
 
 /** One address per parent who is not you (the basis decides how many). */
 export function parentEmailLabel(index: number, count: number): string {
-  if (count === 1) return "Other genetic parent’s email";
-  return index === 0 ? "First genetic parent’s email" : "Second genetic parent’s email";
+  if (count === 1) return "Other parent’s email";
+  return index === 0 ? "First parent’s email" : "Second parent’s email";
 }
 
 /** What the record is, stated before it is made. */
 export const DRAFT_NOTE =
-  "This record holds no genetic data. It ends after 30 days if the people who must sign have not.";
+  "This record holds no file. It ends after 30 days if the people who must sign have not.";
 
 export const SAVE_DRAFT_BUTTON = "Save and continue";
 
@@ -213,7 +213,7 @@ export const OWNER_SIGN_HEADING = "Sign your statements";
 export const OWNER_SIGN_LEDE =
   "Read each one in full. Your typed name signs them. This does not start any analysis.";
 
-export const INVITE_HEADING = "Invite the other genetic parent";
+export const INVITE_HEADING = "Invite the other parent";
 
 export const INVITE_LEDE =
   "They sign in their own account. Type the address you gave when you made the record.";
@@ -222,9 +222,9 @@ export const SEND_INVITATION_BUTTON = "Send the invitation";
 
 export const INVITATION_SENT_STATUS = "If that address matches the record, the invitation is on its way.";
 
-export const WAITING_HEADING = "Waiting for the other genetic parent";
+export const WAITING_HEADING = "Waiting for the other parent";
 
-export const WAITING_SENTENCE = "Waiting for the other genetic parent to sign in their own account.";
+export const WAITING_SENTENCE = "Waiting for the other parent to sign in their own account.";
 
 /** The draft's fixed deadline in words (`embryo.cohort-draft-30d`). */
 export function draftDeadlineNote(date: string): string {
@@ -262,12 +262,14 @@ export function cardDateNote(words: string, provisional: boolean): string {
 }
 
 /** Step 5 — the file. */
-export const FILE_QUESTION_HEADING = "Choose the laboratory’s file";
+export const FILE_QUESTION_HEADING = "Choose the file";
 
 export const FILE_NOTE =
-  "This browser reads the file first. Sample names, and anything outside chromosomes 1 to 22, never leave this device.";
+  "This browser reads the file first. Names in the file never leave this device.";
 
-export const FILE_INPUT_LABEL = "Laboratory file";
+export const FILE_RULES_BODY = "Anything outside chromosomes 1 to 22 stays on this device.";
+
+export const FILE_INPUT_LABEL = "File";
 
 export const SEND_FILE_BUTTON = "Send the file";
 
@@ -311,3 +313,16 @@ export const FILE_NOT_SENT_NOTE = "Nothing was sent. You can choose another file
 
 /** The co-parent's way from the accepted invitation to the one statement left. */
 export const SIGN_LAST_STATEMENT_LINK = "Sign the last statement";
+
+export const STAGE_READ_FAILED_STATUS = "Inherit could not read this upload. Reload this page to try again.";
+
+export const UPLOAD_STOPPED_SENTENCE = "The upload stopped. No results are shown. Inherit will clear this attempt.";
+
+export const FILE_FORMAT_BODY = "For now, choose one VCF file with at least two embryos. Other file types cannot be added here yet.";
+
+export const ANALYSIS_PERMISSION_HEADING = "Agree to see results";
+export const ANALYSIS_PERMISSION_BUTTON = "Agree";
+export const ANALYSIS_PERMISSION_LEDE = "Adding the file did not allow analysis. Each parent decides this in their own account. Results show only when everyone agrees.";
+
+export const SIGN_IN_AGAIN_BUTTON = "Sign in again";
+export const SIGN_IN_AGAIN_STATUS = "Sign in again to continue. Your account may need an extra check before you can go on.";

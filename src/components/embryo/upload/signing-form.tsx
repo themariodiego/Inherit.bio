@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,17 +33,20 @@ import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
  */
 export function ArtifactSigningForm({
   draftId,
+  cohortId,
   artifacts,
   submitLabel,
   onSigned,
   children,
 }: {
-  draftId: string;
+  draftId?: string;
+  cohortId?: string;
   artifacts: SignableArtifact[];
   submitLabel: string;
   onSigned: (ids: Partial<Record<SignableArtifact["key"], string>>) => Promise<void> | void;
   children?: React.ReactNode;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState<"ready" | "pending" | "failed">("ready");
   const [nameError, setNameError] = useState(false);
   const submitting = useRef(false);
@@ -68,7 +72,8 @@ export function ArtifactSigningForm({
           method: "POST", credentials: "same-origin", cache: "no-store",
           headers: { "Content-Type": "application/json", [UPLOAD_CSRF_HEADER]: artifact.csrfToken },
           body: JSON.stringify({
-            action: "sign-artifact", signatureClass: "tier2", cohortDraftId: draftId,
+            ...(cohortId ? { action: "grant-purpose", cohortId, purposeKey: "embryo.analysis" }
+              : { action: "sign-artifact", signatureClass: "tier2", cohortDraftId: draftId }),
             artifactVersion: artifact.version, artifactPresentationToken: artifact.presentationToken,
             affirmed: true, statementKeys: artifact.statementKeys, typedName,
           }),
@@ -82,6 +87,7 @@ export function ArtifactSigningForm({
       setStatus("ready");
     } catch {
       setStatus("failed");
+      router.refresh();
     } finally {
       submitting.current = false;
     }

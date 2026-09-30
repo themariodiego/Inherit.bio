@@ -28,6 +28,7 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
   let configuredBuild: "GRCh37" | "GRCh38" | null = null;
   let completed: { chunkCount: number; nonce: string } | null = null;
   const session = {
+    session: SESSION, uploadId: SESSION,
     sampleHandles: handles.map((handle, ordinal) => ({ ordinal, handle })).reverse(),
     operationNonce: "synthetic-operation-nonce",
     configureRoute: `/api/embryo-ingest/${SESSION}/configure`,
@@ -82,6 +83,31 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
 }
 
 describe("sendEmbryoFile", () => {
+  it("refuses cross-session routes and repeated handles before any request", async () => {
+    for (const changed of [ { completeRoute: `/api/embryo-ingest/foreign/complete` }, { configureRoute: "https://foreign.example/configure" },
+      { sampleHandles: [{ ordinal: 0, handle: "a".repeat(43) }, { ordinal: 1, handle: "a".repeat(43) }] },
+      { sampleHandles: [{ ordinal: 1, handle: "a".repeat(43) }, { ordinal: 2, handle: "b".repeat(43) }] } ]) {
+      const fake = server();
+      await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: { ...fake.session, ...changed }, fetch: fake.fetch }))
+        .rejects.toMatchObject({ failure: "refused", spent: false });
+      expect(fake.log).toEqual([]);
+    }
+  });
+  it("refuses malformed configure credentials before any bytes, and an unrelated completion receipt", async () => {
+    const fake = server();
+    const changed = async (url: string | URL | Request, init?: RequestInit) => {
+      const response = await fake.fetch(url, init);
+      if (String(url).endsWith("configure")) return Response.json({ ...(await response.json()), revision: 0 });
+      return response;
+    };
+    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, fetch: changed as typeof fetch })).rejects.toMatchObject({ spent: true, failure: "refused" });
+    expect(fake.stored).toEqual([]);
+    const other = server();
+    const unrelated = async (url: string | URL | Request, init?: RequestInit) => String(url).endsWith("complete")
+      ? Response.json({ status: "sanitization_pending", uploadId: "99999999-9999-4999-8999-999999999999", jobId: SESSION, analysisState: "queued" }, { status: 202 })
+      : other.fetch(url, init);
+    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: other.session, fetch: unrelated as typeof fetch })).rejects.toMatchObject({ spent: true, failure: "refused" });
+  });
   it("sends participant-c's file: configure, one chunk per part bound to the issued challenge, then complete", async () => {
     const fake = server();
     const progress: UploadProgress[] = [];

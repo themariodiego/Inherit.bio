@@ -27,8 +27,9 @@ import {
   BACK_BUTTON,
   BASIS_OPTIONS,
   CONTINUE_BUTTON,
-  INGEST_NEXT_STEPS,
-  INGEST_UNAVAILABLE_SENTENCE,
+  DRAFT_QUESTION_HEADING,
+  EMBRYO_COUNT_LABEL,
+  SAVE_DRAFT_BUTTON,
   NO_TESTING_END,
   SENT_OPTIONS,
   SENT_QUESTION_HEADING,
@@ -511,7 +512,7 @@ async function expectScreenBudget(page: Page, screen: string, primaries: 0 | 1) 
   await expect(page.locator('main [data-variant="default"]'), screen).toHaveCount(primaries);
 }
 
-test("/embryos/upload: the flow's first two steps screen by screen, the two endings, the honest terminal, nothing kept and nothing sent", async ({
+test("/embryos/upload: the flow's first two steps screen by screen, the two endings, the bounded draft form, nothing kept or sent before submitting", async ({
   page,
 }) => {
   const TYPED_NAME = "Synthetic clinic typed by the test";
@@ -528,8 +529,8 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
   await expect(page).toHaveTitle(`${UPLOAD_H1} · Embryos · Inherit`);
   await expect(page.getByRole("heading", { level: 1, name: UPLOAD_H1 })).toBeVisible();
   await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Embryos / ${UPLOAD_H1}`);
-  // The truth, above step 1: this deployment cannot take a file yet.
-  await expect(page.locator('[data-slot="ingest-availability"]')).toContainText(INGEST_UNAVAILABLE_SENTENCE);
+  // TEST-LOCAL alone offers the later steps; production keeps its separate unavailable route proof.
+  await expect(page.locator('[data-slot="ingest-availability"]')).toHaveCount(0);
   const headings = page.locator("main :is(h1, h2, h3, h4, h5, h6)");
   expect(await headings.count()).toBeLessThanOrEqual(6);
 
@@ -645,18 +646,16 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
   await expectScreenBudget(page, "basis-named", 1);
   await continueButton.click();
 
-  // The honest terminal: the sentence, what comes later, the letter; no control that goes nowhere.
-  const terminal = flow.locator('[data-slot="ingest-unavailable"]');
-  await expect(terminal).toContainText(INGEST_UNAVAILABLE_SENTENCE);
-  await expect(terminal.locator("p").first()).toBeFocused();
-  await expect(terminal.locator(":is(h1, h2, h3, h4, h5, h6)")).toHaveCount(0);
-  await expect(terminal).toContainText(INGEST_NEXT_STEPS);
-  await expect(terminal.getByRole("link", { name: REQUEST_DATA_BUTTON })).toHaveAttribute("href", "/embryos/request-data");
-  await expect(terminal.getByRole("link", { name: BACK_TO_EMBRYOS_LINK })).toHaveAttribute("href", "/embryos");
-  await expect(flow.locator('[data-slot="step-status"]')).toHaveCount(0);
-  await expect(page.locator("main input, main select, main textarea, main form, main input[type='file']")).toHaveCount(0);
-  await expectScreenBudget(page, "unavailable", 1);
-  await expectEveryLinkAnswers(page);
+  // The current TEST-LOCAL journey offers the registered draft form; choosing answers has sent nothing.
+  await expect(flow).toHaveAttribute("data-screen", "draft");
+  await expect(page.getByRole("heading", { name: DRAFT_QUESTION_HEADING })).toBeFocused();
+  await expect(page.getByLabel(EMBRYO_COUNT_LABEL)).toHaveAttribute("min", "2");
+  await expect(page.getByLabel("Other parent’s email")).toBeVisible();
+  await expect(page.getByRole("button", { name: SAVE_DRAFT_BUTTON })).toBeEnabled();
+  await expect(flow.locator('[data-slot="ingest-unavailable"]')).toHaveCount(0);
+  await expect(flow.locator('[data-slot="step-status"]')).toHaveText(stepStatus(2));
+  await expectScreenBudget(page, "draft", 1);
+
   // Back returns with the answers kept in the page.
   await backButton.click();
   await expect(flow).toHaveAttribute("data-screen", "basis-named");

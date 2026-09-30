@@ -1,10 +1,11 @@
 import "server-only";
 
 import { mintArtifactPresentation } from "@/lib/family/grant-token";
-import { getCurrentArtifact } from "@/lib/legal/artifacts";
+import type { ArtifactDocument } from "@/components/legal/artifact-document";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { EMBRYO_ARTIFACT_STATEMENT_KEYS, EMBRYO_UPLOAD_UPLOADER_STATEMENT_KEYS } from "./basis";
+import { EMBRYO_ARTIFACT_KEYS, EMBRYO_ARTIFACT_STATEMENT_KEYS, EMBRYO_UPLOAD_UPLOADER_STATEMENT_KEYS } from "./basis";
+import { currentStageSignature, type StageAttestation, type StageSignature } from "./upload-signature";
 import { mintEmbryoOperation } from "./operation-token";
 import {
   resolveUploadStage,
@@ -46,6 +47,7 @@ export interface SignableArtifact {
 }
 
 export type UploadStageView =
+  | { kind: "reauthenticate" }
   | { kind: "start"; notice: UploadNotice; draftCsrfToken: string }
   | { kind: "owner-sign" | "co-parent-sign"; draftId: string; artifacts: SignableArtifact[] }
   | { kind: "invite"; draftId: string; expiresAt: string; csrfTokens: string[] }
@@ -75,20 +77,33 @@ interface DraftRow {
   basis_case: DraftFacts["basisCase"]; fixed_expires_at: string; created_at: string;
 }
 
-async function draftFacts(admin: Admin, draft: DraftRow): Promise<DraftFacts> {
-  const [slots, signatures, invitations] = await Promise.all([
+async function draftFacts(admin: Admin, draft: DraftRow, documents: ArtifactDocument[]): Promise<DraftFacts> {
+  const [slots, signatures, invitations, attestations] = await Promise.all([
     admin.from("draft_participant_slots").select("slot_kind, principal_id, state").eq("embryo_draft_id", draft.id),
-    admin.from("consent_signatures").select("id, artifact_key, signer_principal_id, purpose, signed_at")
+    admin.from("consent_signatures").select("id, artifact_key, artifact_version, artifact_body_sha256, signer_principal_id, signer_account_id, purpose, signed_at, statement_keys, jurisdiction_code, jurisdiction_revision")
       .eq("target_kind", "cohort_draft").eq("target_id", draft.id),
     admin.from("subject_invitations").select("invitee_principal_id, status")
       .eq("target_kind", "cohort_draft").eq("target_id", draft.id),
+    admin.from("attestations").select("signature_id, principal_id, kind, statement_keys, affirmed")
+      .eq("target_kind", "cohort_draft").eq("target_id", draft.id),
   ]);
   const slotRows = rows(slots) as { slot_kind: string; principal_id: string | null; state: string }[];
-  const principalIds = slotRows.map((slot) => slot.principal_id).filter((id): id is string => id !== null);
+  const principalIds = [...new Set([draft.uploader_principal_id, ...slotRows.map((slot) => slot.principal_id).filter((id): id is string => id !== null)])];
   const principals = principalIds.length === 0 ? [] : rows(await admin.from("subject_principals")
     .select("id, account_id, status, principal_kind").in("id", principalIds)) as
     { id: string; account_id: string | null; status: string; principal_kind: string }[];
   const principal = new Map(principals.map((row) => [row.id, row]));
+  const accountIds = [...new Set(principals.flatMap(row => row.account_id ? [row.account_id] : []))];
+  const profiles = accountIds.length ? rows(await admin.from("profiles").select("id, jurisdiction_code, jurisdiction_revision").in("id", accountIds)) as
+    { id: string; jurisdiction_code: string | null; jurisdiction_revision: number }[] : [];
+  const profile = new Map(profiles.map(row => [row.id, row]));
+  const currentSignatures = (rows(signatures) as StageSignature[]).filter(signature => {
+    const signer = principal.get(signature.signer_principal_id);
+    return currentStageSignature({ signature, principal: signer,
+      profile: signer?.account_id ? profile.get(signer.account_id) : undefined,
+      artifact: documents.find(document => document.artifact_key === signature.artifact_key),
+      attestations: rows(attestations) as StageAttestation[] });
+  });
   return {
     id: draft.id,
     ownerAccountId: draft.owner_account_id,
@@ -105,7 +120,7 @@ async function draftFacts(admin: Admin, draft: DraftRow): Promise<DraftFacts> {
         principalKind: row?.principal_kind ?? null,
       };
     }),
-    signatures: (rows(signatures) as { id: string; artifact_key: string; signer_principal_id: string; purpose: string | null; signed_at: string }[])
+    signatures: currentSignatures
       .map((row) => ({ id: row.id, artifactKey: row.artifact_key, signerPrincipalId: row.signer_principal_id,
         purpose: row.purpose, signedAt: new Date(row.signed_at).toISOString() })),
     invitations: (rows(invitations) as { invitee_principal_id: string | null; status: string }[])
@@ -114,7 +129,7 @@ async function draftFacts(admin: Admin, draft: DraftRow): Promise<DraftFacts> {
 }
 
 /** The rows the decider reads, for this account only. */
-async function stageFacts(admin: Admin, accountId: string, now: Date) {
+async function stageFacts(admin: Admin, accountId: string, sessionId: string, now: Date, documents: ArtifactDocument[]) {
   const live = now.toISOString();
   const [owned, principals, cohorts] = await Promise.all([
     admin.from("embryo_cohort_drafts").select(DRAFT_COLUMNS).eq("owner_account_id", accountId)
@@ -140,14 +155,14 @@ async function stageFacts(admin: Admin, accountId: string, now: Date) {
   const cohortRow = (rows(cohorts) as { id: string; status: string; created_at: string }[])[0] ?? null;
   let latestCohort: CohortFacts | null = null;
   if (cohortRow) {
-    const sessions = rows(await admin.from("embryo_ingest_sessions").select("status").eq("cohort_id", cohortRow.id)
+    const sessions = rows(await admin.from("embryo_ingest_sessions").select("status").eq("cohort_id", cohortRow.id).eq("account_id", accountId).eq("originating_session_id", sessionId)
       .order("created_at", { ascending: false }).limit(1)) as { status: string }[];
     latestCohort = { id: cohortRow.id, createdAt: new Date(cohortRow.created_at).toISOString(), status: cohortRow.status,
       sessionStatus: sessions[0]?.status ?? null };
   }
   return {
-    ownedDraft: ownedRow ? await draftFacts(admin, ownedRow) : null,
-    coParentDrafts: await Promise.all(coParentRows.map((row) => draftFacts(admin, row))),
+    ownedDraft: ownedRow ? await draftFacts(admin, ownedRow, documents) : null,
+    coParentDrafts: await Promise.all(coParentRows.map((row) => draftFacts(admin, row, documents))),
     latestCohort,
   };
 }
@@ -162,10 +177,11 @@ async function signable(
   claims: { accountId: string; sessionId: string; draftId: string },
   artifacts: ArtifactToSign[],
   now: number,
+  documents: ArtifactDocument[],
 ): Promise<SignableArtifact[] | null> {
   const out: SignableArtifact[] = [];
   for (const artifact of artifacts) {
-    const document = await getCurrentArtifact(artifact.key);
+    const document = documents.find(document => document.artifact_key === artifact.key);
     if (!document) return null;
     const statementKeys = statementKeysFor(artifact);
     out.push({
@@ -200,8 +216,15 @@ export async function loadUploadStage(
 ): Promise<UploadStageView | null> {
   const admin = createAdminClient();
   let facts: Awaited<ReturnType<typeof stageFacts>>;
+  let documents: ArtifactDocument[];
   try {
-    facts = await stageFacts(admin, account.accountId, new Date(now));
+    const live = await admin.rpc("embryo_upload_account_live_v1", { p_account_id: account.accountId, p_auth_session_id: account.sessionId });
+    if (live.error) return null;
+    if (live.data !== true) return { kind: "reauthenticate" };
+    documents = rows(await admin.from("consent_artifacts")
+      .select("artifact_key, version, body_sha256, body_markdown, summary_markdown, effective_on, summary_of_changes")
+      .in("artifact_key", [...EMBRYO_ARTIFACT_KEYS]).is("superseded_at", null).lte("published_at", new Date(now).toISOString())) as ArtifactDocument[];
+    facts = await stageFacts(admin, account.accountId, account.sessionId, new Date(now), documents);
   } catch (error) {
     if (error instanceof StageReadError) return null;
     throw error;
@@ -221,7 +244,7 @@ export async function loadUploadStage(
       };
     case "owner-sign":
     case "co-parent-sign": {
-      const artifacts = await signable({ ...account, draftId: stage.draftId }, stage.artifacts, now);
+      const artifacts = await signable({ ...account, draftId: stage.draftId }, stage.artifacts, now, documents);
       return artifacts ? { kind: stage.kind, draftId: stage.draftId, artifacts } : null;
     }
     case "invite":
@@ -232,7 +255,7 @@ export async function loadUploadStage(
     case "evidence-review-unavailable":
       return { kind: "evidence-review-unavailable", draftId: stage.draftId };
     case "acknowledge": {
-      const artifacts = await signable({ ...account, draftId: stage.draftId }, stage.artifacts, now);
+      const artifacts = await signable({ ...account, draftId: stage.draftId }, stage.artifacts, now, documents);
       return artifacts ? { kind: "acknowledge", draftId: stage.draftId, artifacts, signed: stage.signed,
         finalizeNonce: mint("cohort_finalize", stage.draftId) } : null;
     }

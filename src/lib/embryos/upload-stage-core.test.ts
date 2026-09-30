@@ -55,6 +55,11 @@ const accepted = (d: DraftFacts): DraftFacts => ({
 });
 
 describe("the owner's stages on a two-parent draft", () => {
+  it("does not accept one principal occupying both required parent slots", () => {
+    const d = draft({ signatures: ownerSigned });
+    const duplicated = { ...d, slots: [d.slots[0], { ...d.slots[0], kind: "parent_b" }] };
+    expect(ownerStage(duplicated)).toMatchObject({ kind: "waiting" });
+  });
   it("signs three statements, then invites, then waits, then acknowledges", () => {
     expect(ownerStage(draft())).toMatchObject({ kind: "owner-sign", artifacts: [
       { key: "consent.upload-embryo", role: "parent" }, { key: "attestation.embryo-parentage", role: "parent" },
@@ -154,6 +159,7 @@ describe("after finalizing", () => {
     expect(cohortOutcome(cohort("upload_pending", "failure_pending"))).toBe("upload-failed");
     expect(cohortOutcome(cohort("restricted", "failed"))).toBe("upload-failed");
     expect(cohortOutcome(cohort("active", "published"))).toBeNull();
+    expect(cohortOutcome(cohort("active", "complete"))).toBeNull();
   });
 
   it("shows the checking panel while the latest record is processing, and a notice above a new start otherwise", () => {

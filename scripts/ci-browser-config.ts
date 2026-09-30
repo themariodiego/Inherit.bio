@@ -38,7 +38,12 @@ export const APP_ENV_NAMES = ["INHERIT_UPLOAD_SIGNING_JWK", "INHERIT_CANONICAL_U
   "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "BYOK_ENCRYPTION_KEY", "JOBS_SECRET", "CRON_SECRET",
   "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION"] as const;
 /** Fixed app variants: main, jurisdiction-off, paused, local-model, and prepared-source. */
-export const APP_PORTS = [3100, 3101, 3102, 3103, 3104] as const;
+export const APP_PORTS = [3100, 3101, 3102, 3103, 3104, 3105] as const;
+export const EMBRYO_APP_PORT = 3105;
+export const EMBRYO_APP_ENV = Object.freeze({
+  INHERIT_EMBRYO_R2_ORIGIN: "https://embryo.fragments.test:8141",
+  INHERIT_EMBRYO_R2_BUCKET: "inherit-embryo-ci",
+});
 export const PREPARED_APP_PORT = 3104;
 export const PREPARED_APP_ENV = Object.freeze({
   INHERIT_PREPARED_WGS_ENABLED: "true",
@@ -67,6 +72,7 @@ export const LOCAL_MODEL_ENV_NAMES = Object.keys(LOCAL_MODEL_ENV) as ReadonlyArr
 /** Extra fields belong only to their fixed local-model or prepared variant. */
 export function admittedAppEnvironmentNames(port: number): readonly string[] {
   return port === LOCAL_MODEL_PORT ? [...APP_ENV_NAMES, ...LOCAL_MODEL_ENV_NAMES]
+    : port === EMBRYO_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(EMBRYO_APP_ENV)]
     : port === PREPARED_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(PREPARED_APP_ENV)] : APP_ENV_NAMES;
 }
 export function checkedAppEnvironment(value: unknown, port: number): Record<string, string> {
@@ -84,6 +90,10 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
     && env.INHERIT_CANONICAL_UPLOADS_PAUSED === (port === 3102 ? "true" : "false"), "App scope differs from its fixed CI variant");
   if (port === LOCAL_MODEL_PORT) {
     for (const name of LOCAL_MODEL_ENV_NAMES) assert(env[name] === LOCAL_MODEL_ENV[name], "Local-model variant differs from its fixed attestation");
+  }
+  if (port === EMBRYO_APP_PORT) {
+    for (const [name, value] of Object.entries(EMBRYO_APP_ENV))
+      assert(env[name] === value, "Embryo variant differs from its fixed fragment scope");
   }
   if (port === PREPARED_APP_PORT) {
     for (const [name, value] of Object.entries(PREPARED_APP_ENV))

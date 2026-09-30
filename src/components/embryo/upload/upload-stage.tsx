@@ -19,6 +19,8 @@ import {
   FILE_FINISHING_STATUS,
   FILE_INPUT_LABEL,
   FILE_NOTE,
+  FILE_RULES_BODY,
+  FILE_FORMAT_BODY,
   FILE_NOT_SENT_NOTE,
   FILE_QUESTION_HEADING,
   FILE_READING_STATUS,
@@ -37,7 +39,7 @@ import {
   SEND_FILE_BUTTON,
   SEND_INVITATION_BUTTON,
   STILL_TO_COME_STATUS,
-  UPLOAD_FAILED_SENTENCE,
+  UPLOAD_STOPPED_SENTENCE,
   WAITING_HEADING,
   WAITING_SENTENCE,
   cardDateNote,
@@ -50,6 +52,7 @@ import type { CohortCard } from "@/lib/embryos/record-key-cards";
 import type { UploadStageView } from "@/lib/embryos/upload-stage";
 import { EMBRYO_INGEST_SESSION_LIMITS } from "@/lib/genome/ingest-limits";
 import { UPLOAD_CSRF_HEADER, UploadTransportError, sendEmbryoFile, type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
+import { readUploadReceipt } from "@/lib/embryos/upload-receipt";
 import { route } from "@/lib/primary-routes";
 import { ArtifactSigningForm } from "./signing-form";
 
@@ -70,7 +73,7 @@ import { ArtifactSigningForm } from "./signing-form";
  * Nothing here ranks, orders or describes an embryo beyond its ordinal
  * label; the cards carry the key, the claim address and the date only.
  */
-export function UploadStage({ view }: { view: Exclude<UploadStageView, { kind: "start" }> }) {
+export function UploadStage({ view }: { view: Exclude<UploadStageView, { kind: "start" | "reauthenticate" }> }) {
   const router = useRouter();
   const headingId = useId();
   const refresh = () => router.refresh();
@@ -165,6 +168,7 @@ function InviteForm({ draftId, csrfTokens, onSent }: { draftId: string; csrfToke
       onSent();
     } catch {
       setStatus("failed");
+      onSent();
     }
   }
   return (
@@ -211,15 +215,15 @@ function FinalizeAndSend({ view }: { view: Extract<UploadStageView, { kind: "ack
     const insurance = ids["disclosure.insurance-and-discrimination"] ?? view.signed["disclosure.insurance-and-discrimination"];
     const charter = ids["charter.future-person"] ?? view.signed["charter.future-person"];
     setFailed(false);
-    const response = await fetch(route("api.embryo-cohorts"), {
+    const response = await fetch(route("api.embryo-cohorts", {}), {
       method: "POST", credentials: "same-origin", cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cohortDraftId: view.draftId, insuranceAcknowledgementId: insurance,
         futurePersonCharterAcknowledgementId: charter, nonce: view.finalizeNonce }),
     });
     if (response.status !== 201) { setFailed(true); return; }
-    const body = (await response.json()) as { upload_session: UploadSession; record_key_cards: CohortCard[] };
-    setFinalized({ cards: body.record_key_cards, session: body.upload_session });
+    try { setFinalized(readUploadReceipt(await response.json())); }
+    catch { setFailed(true); }
   }
 
   if (finalized) return <FileStep finalized={finalized} />;
@@ -259,7 +263,7 @@ function FileStep({ finalized }: { finalized: Finalized }) {
   if (state.phase === "failed") {
     return (
       <section data-slot="upload-stage" data-stage="upload-failed" className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-5">
-        <p role="alert" className="font-medium text-ink">{UPLOAD_FAILED_SENTENCE}</p>
+        <p role="alert" className="font-medium text-ink">{UPLOAD_STOPPED_SENTENCE}</p>
         <p className="text-sm text-ink">{state.reason}</p>
         <BackToEmbryos />
       </section>
@@ -295,6 +299,8 @@ function FileStep({ finalized }: { finalized: Finalized }) {
           <input id={inputId} ref={file} type="file" name="file" required aria-describedby={noteId}
             disabled={state.phase === "sending"} className="block min-h-11 max-w-md text-sm text-ink" />
           <p id={noteId} className="max-w-prose text-sm text-ink-muted">{FILE_NOTE}</p>
+          <p className="max-w-prose text-sm text-ink-muted">{FILE_RULES_BODY}</p>
+          <p className="max-w-prose text-sm text-ink-muted">{FILE_FORMAT_BODY}</p>
         </div>
         <Button type="submit" size="lg" disabled={state.phase === "sending"}>{SEND_FILE_BUTTON}</Button>
         {status ? <p role="status" data-slot="file-status" className="text-sm text-ink">{status}</p> : null}

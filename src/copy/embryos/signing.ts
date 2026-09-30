@@ -16,7 +16,7 @@ export const STATEMENT_SENTENCES: Readonly<Record<string, string>> = {
   "genetic-parent-or-authority":
     "I am a genetic parent of these embryos, or I alone hold the legal right to decide what happens to them.",
   "no-outcome-data":
-    "I understand that there is no outcome data, and that every number Inherit shows about an embryo is a simulation.",
+    "There is no outcome data. I understand that every number Inherit shows about an embryo is a simulation.",
   "future-person-charter":
     "I have read the Future Person Charter in full, and I accept that it is part of this consent.",
   "withdraw-any-time":
@@ -28,9 +28,9 @@ export const STATEMENT_SENTENCES: Readonly<Record<string, string>> = {
   // attestation.embryo-parentage.
   "genetic-parent-of-these-embryos": "I am a genetic parent of these embryos.",
   "other-parent-named-truthfully":
-    "The other genetic parent is named truthfully on this record, or the reason no other parent can sign is stated truthfully.",
+    "I named the other genetic parent truthfully. If no other parent can sign, I gave the true reason.",
   "false-statement-warning-read":
-    "I have read the warning about false statements at the end of this attestation, and I understand it.",
+    "I have read the warning about false statements. I understand it.",
   // attestation.embryo-disposition-rights.
   "right-to-decide-disposition": "I have the right to decide what happens to these embryos.",
   "no-dispute-or-proceeding": "No dispute or court case about these embryos is under way that I know of.",
@@ -54,7 +54,7 @@ export const STATEMENT_SENTENCES: Readonly<Record<string, string>> = {
 /** Each artifact's heading on a signing screen. */
 export const ARTIFACT_HEADINGS: Readonly<Record<string, string>> = {
   "consent.upload-embryo": "Consent to the embryo upload",
-  "attestation.embryo-parentage": "Your statement of parentage",
+  "attestation.embryo-parentage": "Your statement as a parent",
   "attestation.embryo-disposition-rights": "Your right to decide for these embryos",
   "attestation.embryo-single-parent-basis": "Why only one parent can sign",
   "charter.future-person": "The Future Person Charter",

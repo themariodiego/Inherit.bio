@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { CohortPermission } from "@/components/embryo/cohort-permission";
+import { loadCohortPermission } from "@/lib/embryos/cohort-permission";
 import { loadEmbryoInputFacts } from "@/lib/embryos/input-facts-load";
 import { notFound, redirect } from "next/navigation";
 import { CompareTable } from "@/components/embryo/compare/compare-table";
@@ -172,12 +174,14 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
       return frame(<BlockingState state="empty">{FILES_NOT_ADDED_SENTENCE}</BlockingState>);
     case "processing":
       return frame(<BlockingState state="processing">{STILL_CHECKING_STATUS}</BlockingState>);
-    case "consent-required":
+    case "consent-required": {
+      const permission = await loadCohortPermission(user.id, cohort);
       return frame(
-        <BlockingState state="consent-required">
+        <><BlockingState state="consent-required">
           {waitingForResultsBody(waitingRole(analysisConsent(cohort)) ?? ROLE_OTHER_PARENT)}
-        </BlockingState>,
+        </BlockingState>{permission ? <CohortPermission cohortId={cohort.id} artifact={permission} /> : null}</>,
       );
+    }
     case "gated":
       return frame(<EmbryoResultGate action={acknowledgeEmbryoGate} />);
     case "complete":

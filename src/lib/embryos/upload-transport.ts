@@ -1,6 +1,8 @@
 import { EmbryoTransportError } from "./ingest-lines";
 import { embryoVcfBuildEvidence } from "./vcf-build-evidence";
 import { embryoVcfChunks } from "./vcf-transport";
+import { z } from "zod";
+import { route, routePattern } from "@/lib/primary-routes";
 
 /**
  * The browser's half of an embryo upload after the cohort is finalized
@@ -30,11 +32,30 @@ import { embryoVcfChunks } from "./vcf-transport";
 export const UPLOAD_CSRF_HEADER = "x-inherit-csrf";
 
 export interface UploadSession {
+  session: string;
+  uploadId: string;
   sampleHandles: { ordinal: number; handle: string }[];
   operationNonce: string;
   configureRoute: string;
   chunkRoute: string;
   completeRoute: string;
+}
+
+const sessionFields = z.object({
+  session: z.uuid(), uploadId: z.uuid(), sampleHandles: z.array(z.object({ ordinal: z.number().int().nonnegative(), handle: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }).strict()).min(2).max(64),
+  operationNonce: z.string().min(1), configureRoute: z.string(), chunkRoute: z.string(), completeRoute: z.string(),
+}).strict().refine(value => {
+  const chunkRoute = routePattern("api.embryo-ingest-chunk").replace("[session]", value.session);
+  const handles = [...value.sampleHandles].sort((a, b) => a.ordinal - b.ordinal);
+  return value.configureRoute === route("api.embryo-ingest-configure", { session: value.session }) && value.chunkRoute === chunkRoute
+    && value.completeRoute === route("api.embryo-ingest-complete", { session: value.session }) && handles.every((item, index) => item.ordinal === index)
+    && new Set(handles.map(item => item.handle)).size === handles.length;
+});
+
+/** Refuse a cross-session route, foreign origin, duplicate handle or missing ordinal before reading the file. */
+export function readUploadSession(value: UploadSession): UploadSession {
+  return sessionFields.parse({ session: value.session, uploadId: value.uploadId, sampleHandles: value.sampleHandles, operationNonce: value.operationNonce,
+    configureRoute: value.configureRoute, chunkRoute: value.chunkRoute, completeRoute: value.completeRoute });
 }
 
 export type UploadFailure =
@@ -60,15 +81,10 @@ export class UploadTransportError extends Error {
 
 export type UploadProgress = { phase: "reading" } | { phase: "sending"; part: number } | { phase: "finishing" };
 
-const configured = (value: unknown): value is {
-  build: "GRCh37" | "GRCh38"; challenge: string; revision: number; completionNonce: string; csrfToken: string;
-} => {
-  if (!value || typeof value !== "object") return false;
-  const record = value as Record<string, unknown>;
-  return (record.build === "GRCh37" || record.build === "GRCh38") && typeof record.challenge === "string"
-    && typeof record.revision === "number" && typeof record.completionNonce === "string"
-    && typeof record.csrfToken === "string";
-};
+const configured = z.object({
+  build: z.enum(["GRCh37", "GRCh38"]), challenge: z.string().regex(/^[A-Za-z0-9_-]{22,}$/),
+  revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), completionNonce: z.string().min(1), csrfToken: z.string().min(1),
+}).strict();
 
 function transportFailure(error: unknown): UploadFailure {
   if (error instanceof UploadTransportError) return error.failure;
@@ -112,26 +128,29 @@ export async function sendEmbryoFile(input: {
   });
   let spent = false;
   try {
+    let session: UploadSession;
+    try { session = readUploadSession(input.session); } catch { throw new UploadTransportError("refused"); }
     input.onProgress?.({ phase: "reading" });
     const evidence = await embryoVcfBuildEvidence(input.file);
-    if (evidence.sampleCount !== input.session.sampleHandles.length) throw new UploadTransportError("sample-count");
+    if (evidence.sampleCount !== session.sampleHandles.length) throw new UploadTransportError("sample-count");
 
     spent = true;
-    const configure = await send(input.session.configureRoute,
+    const configure = await send(session.configureRoute,
       json({ format: "vcf", buildEvidence: evidence.buildEvidence, sampleCount: evidence.sampleCount,
-        nonce: input.session.operationNonce }));
+        nonce: session.operationNonce }));
     if (configure.status !== 200) throw new UploadTransportError(await terminalOf(configure));
-    const transport: unknown = await configure.json();
-    if (!configured(transport)) throw new UploadTransportError("refused");
+    const parsedTransport = configured.safeParse(await configure.json());
+    if (!parsedTransport.success) throw new UploadTransportError("refused");
+    const transport = parsedTransport.data;
 
-    const handles = [...input.session.sampleHandles].sort((a, b) => a.ordinal - b.ordinal).map((item) => item.handle);
+    const handles = [...session.sampleHandles].sort((a, b) => a.ordinal - b.ordinal).map((item) => item.handle);
     let sequence = 0;
     for await (const chunk of embryoVcfChunks(input.file, {
       challenge: transport.challenge, revision: transport.revision, build: transport.build,
       sampleCount: evidence.sampleCount, handles,
     })) {
       input.onProgress?.({ phase: "sending", part: sequence + 1 });
-      const stored = await send(input.session.chunkRoute.replace("[sequence]", String(sequence)), {
+      const stored = await send(session.chunkRoute.replace("[sequence]", String(sequence)), {
         method: "PUT", credentials: "same-origin", cache: "no-store", redirect: "error",
         headers: { "Content-Type": "application/octet-stream" }, body: chunk as BodyInit,
       });
@@ -140,9 +159,14 @@ export async function sendEmbryoFile(input: {
     }
 
     input.onProgress?.({ phase: "finishing" });
-    const complete = await send(input.session.completeRoute,
+    const complete = await send(session.completeRoute,
       json({ chunkCount: sequence, nonce: transport.completionNonce }, { [UPLOAD_CSRF_HEADER]: transport.csrfToken }));
     if (complete.status !== 200 && complete.status !== 202) throw new UploadTransportError(await terminalOf(complete));
+    const accepted = z.object({ status: z.enum(["sanitization_pending", "sanitization_in_progress"]), uploadId: z.uuid(),
+      jobId: z.uuid(), analysisState: z.enum(["queued", "running"]) }).strict().safeParse(await complete.json());
+    if (!accepted.success || accepted.data.uploadId !== session.uploadId
+      || (complete.status === 202 && (accepted.data.status !== "sanitization_pending" || accepted.data.analysisState !== "queued"))
+      || (complete.status === 200 && accepted.data.status !== "sanitization_in_progress")) throw new UploadTransportError("refused");
   } catch (error) {
     throw new UploadTransportError(transportFailure(error), spent);
   }

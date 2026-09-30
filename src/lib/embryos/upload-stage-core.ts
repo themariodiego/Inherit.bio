@@ -152,7 +152,7 @@ export function coParentArtifactsLeft(draft: DraftFacts, accountId: string): Art
 function parentsComplete(draft: DraftFacts): boolean {
   const parents = requiredParents(draft);
   const expected = draft.basisCase === "true_two_parent" ? 2 : 1;
-  if (parents.length !== expected) return false;
+  if (parents.length !== expected || new Set(parents).size !== expected) return false;
   return parents.every((principal) => parentArtifacts(draft.basisCase).every((artifact) => signed(draft, principal, artifact)));
 }
 
@@ -201,7 +201,7 @@ export function ownerStage(draft: DraftFacts): UploadStage {
 /** The upload's latest record, once finalized: still checking, failed, left, or done. */
 export function cohortOutcome(cohort: CohortFacts | null): "processing" | "upload-failed" | "upload-left" | null {
   if (!cohort) return null;
-  if (cohort.status === "ingesting" || (cohort.sessionStatus !== null && PROCESSING_SESSIONS.has(cohort.sessionStatus))) {
+  if (cohort.status === "ingesting" || (cohort.status === "upload_pending" && cohort.sessionStatus !== null && PROCESSING_SESSIONS.has(cohort.sessionStatus))) {
     return "processing";
   }
   if (cohort.sessionStatus !== null && FAILED_SESSIONS.has(cohort.sessionStatus)) return "upload-failed";

@@ -21,6 +21,7 @@
 
 /** Register-style patterns (`[param]` segments), keyed by the register's route id. */
 const ROUTE_PATTERNS = {
+  "auth.sign-in": "/auth/sign-in",
   "app.overview": "/overview",
   "genome.subject": "/genome/[subject]",
   "genome.reports": "/genome/[subject]/reports",
@@ -53,6 +54,8 @@ const ROUTE_PATTERNS = {
   "api.file-upload-session": "/api/files/upload-session",
   "api.file-finalize": "/api/files/[id]/finalize",
   "api.file-process": "/api/files/[id]/process",
+  "api.embryo-cohort-drafts": "/api/embryo-cohort-drafts",
+  "api.embryo-cohorts": "/api/embryo-cohorts",
   "api.embryo-ingest-configure": "/api/embryo-ingest/[session]/configure",
   "api.embryo-ingest-chunk": "/api/embryo-ingest/[session]/chunks/[sequence]",
   "api.embryo-ingest-complete": "/api/embryo-ingest/[session]/complete",
