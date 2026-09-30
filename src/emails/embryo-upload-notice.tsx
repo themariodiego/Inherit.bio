@@ -11,7 +11,7 @@
 import { Button, Text } from "@react-email/components";
 import { EmailLayout, brand } from "./base";
 
-export const EMBRYO_NOTICE_CONTACT = "privacy@inherit.bio";
+const EMBRYO_NOTICE_CONTACT = "privacy@inherit.bio";
 
 export interface EmbryoUploadNoticeProps {
   embryoCount: number;

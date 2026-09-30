@@ -1,5 +1,11 @@
 # Test diff register
 
+## Attested claimant release and separate contact lifetime · 30 September 2026
+
+The old five-argument reviewer door keeps rejection and more-information behavior but refuses every approval. Its original nominal-approval test now pins refusal, unchanged pending state and zero approval audit writes; the positive approval moves to the new real canonical-source/attestation/receipt journey. All original stale revision, competing-case, role, scan, deadline and document-read assertions remain. The private unattested executor loses authenticated grants. Custody provenance is immutable and exact-source purge start/cursor refusal gains strict assertions.
+
+A new strict database journey uses the real scan, receipt acknowledgement, documentary decision, release mail, activation, Recovery Key and analysis-stop doors. Refused transitions create no claimant or mail; approval detaches exactly one source, queues the purpose-bound seven-day release token and immediately shreds its review working key and fields. The claimant page exposes exactly four safe fields and genetic data only belongs in its separate export door. Recovery hashes and verified identity HMACs remain until binding or deletion, independently of the temporary contact. The email inventory grows from 13 to 14 renderers and 30 to 31 fixtures; both envelope forms grow from 60 to 62 observations. Existing notice assertions now allow exactly one fixed public privacy@inherit.bio contact while continuing to refuse every other address or unmatched @; the notice branch already requires that public contact of last resort. No timeout, retry limit, failure state or G5.4 acceptance row is relaxed. Export, correction, binding, exact deletion and later recovery/notice release remain under implementation and full CI is still required.
+
 ## Exact provider attempt keys for regenerated rights links · 30 September 2026
 
 The real adult invitation, co-parent invitation and embryo withdrawal mail doors each gain nine strict assertions: one attempt retains its provider key; a regenerated attempt changes its token and provider key, revokes the previous hash, keeps only one live hash, refuses stale and canceled submissions, and stores no raw token or provider payload. The canonical outbox event key and all existing journey assertions remain unchanged.

@@ -3,9 +3,10 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 const { encryptSecret, decryptSecret } = await import("@/lib/crypto");
+const { claimDataKey,openDocumentBytes } = await import("./document-envelope");
 const { sealClaimIntake } = await import("./claim-intake");
 const { reviewCsrf, reviewCsrfMatches, mintReviewNonce, readReviewNonce,
-  reviewDecisionBody, reviewCaseBody, sealReason, downloadCookieHash, DOWNLOAD_COOKIE } = await import("./review");
+  reviewDecisionBody, reviewCaseBody, sealReason,verifiedDocumentIdentity,verifiedIdentityDigestSet, downloadCookieHash, DOWNLOAD_COOKIE } = await import("./review");
 afterAll(() => vi.unstubAllEnvs());
 
 const ID = "7e000000-0000-4000-8000-000000000001";
@@ -40,8 +41,15 @@ describe("review decision authority binds the case, reviewer and session", () =>
     for (const bad of [{ ...good, matched: true }, { ...good, decision: "release" },
       { ...good, reviewRevision: 0 }, { ...good, reason: "short" }, { ...good, reason: `${good.reason}\u0000` }])
       expect(reviewDecisionBody.safeParse(bad).success).toBe(false);
-    const sealed = sealReason(good.reason);
-    expect(decryptSecret(Buffer.from(sealed.slice(2), "hex"))).toBe(good.reason);
+    const intake=sealClaimIntake({mode:"record-key",recordKey:"0123456789ABCDEFGHJK",claimantName:"Synthetic Claimant",
+      claimantDateOfBirth:"2000-01-31",contactEmail:"claimant@e2e.local",affirmed:true});
+    const nonceHash="a".repeat(64);const wrapped=intake.wrappedDataKey.toString("hex");
+    const sealed=sealReason(good.reason,wrapped,ID,nonceHash);const key=claimDataKey(wrapped);
+    try {
+      expect(openDocumentBytes(key,`claim-review-v1|${ID}|${nonceHash}|reason`,Buffer.from(sealed.slice(2),"hex"))?.toString("utf8")).toBe(good.reason);
+      expect(openDocumentBytes(key,`claim-review-v1|${ID}|${nonceHash}|attestation`,Buffer.from(sealed.slice(2),"hex"))).toBeNull();
+      expect(()=>decryptSecret(Buffer.from(sealed.slice(2),"hex"))).toThrow();
+    } finally {key.fill(0);}
     expect(sealed).not.toContain(good.reason);
   });
 });
@@ -79,4 +87,38 @@ it("download cookies identify exactly one well-formed secret", () => {
   expect(downloadCookieHash(new Request("http://localhost", { headers: { cookie } }))).toBe(hash);
   for (const bad of ["", `${DOWNLOAD_COOKIE}=short`, `${cookie}; ${cookie}`])
     expect(downloadCookieHash(new Request("http://localhost", { headers: { cookie: bad } }))).toBeNull();
+});
+
+describe("verified document identity requires an adult named-human attestation",()=>{
+  const identity={fullName:"Synthetic Claimant",dateOfBirth:"2000-01-31",photoIdentityReviewed:true as const,birthRecordReviewed:true as const,adultAgeConfirmed:true as const};
+  it("refuses missing or false attestations and unknown fields on every approval",()=>{
+    for(const decision of ["approve-record-key","approve-recovery-key","approve-claimed-unbound-no-key-recovery","keyless-document-match"]){
+      const linked=decision==="approve-record-key"||decision==="keyless-document-match";
+      const attestation={...identity,...(linked?{recordedParentLinkConfirmed:true}:{})};
+      const body={decision,reviewRevision:1,reason:"I reviewed both complete synthetic documents and their required link.",nonce:"synthetic",documentaryAttestation:attestation};
+      expect(reviewDecisionBody.safeParse(body).success).toBe(true);
+      for(const bad of [{...body,documentaryAttestation:undefined},{...body,documentaryAttestation:{...attestation,photoIdentityReviewed:false}},
+        {...body,documentaryAttestation:{...attestation,guessedSubject:"forbidden"}}])expect(reviewDecisionBody.safeParse(bad).success).toBe(false);
+    }
+  });
+  it("uses calendar majority including the non-leap eighteenth birthday",()=>{
+    vi.useFakeTimers();try {
+      vi.setSystemTime(new Date("2026-02-27T23:59:59Z"));expect(verifiedDocumentIdentity.safeParse({...identity,dateOfBirth:"2008-02-29"}).success).toBe(false);
+      vi.setSystemTime(new Date("2026-02-28T00:00:00Z"));expect(verifiedDocumentIdentity.safeParse({...identity,dateOfBirth:"2008-02-29"}).success).toBe(true);
+      expect(verifiedDocumentIdentity.safeParse({...identity,dateOfBirth:"2008-03-01"}).success).toBe(false);
+      for(const dateOfBirth of ["2000-02-30","1899-01-01","2020-01-01"])expect(verifiedDocumentIdentity.safeParse({...identity,dateOfBirth}).success).toBe(false);
+    } finally{vi.useRealTimers();}
+  });
+  it("keeps purpose and held revisions distinct and keys the normalized exact tuple",()=>{
+    const originalKey=process.env.BYOK_ENCRYPTION_KEY;
+    vi.stubEnv("INHERIT_HMAC_KEYRING",`2:${crypto.randomBytes(32).toString("base64")}`);
+    try {
+      const digests=verifiedIdentityDigestSet(identity);
+      expect(Object.keys(digests)).toEqual(["1","2"]);expect(digests["1"]).not.toBe(digests["2"]);
+      expect(verifiedIdentityDigestSet({...identity,fullName:" Synthetic   CLAIMANT "})).toEqual(digests);
+      expect(verifiedIdentityDigestSet({...identity,dateOfBirth:"2000-02-01"})["1"]).not.toBe(digests["1"]);
+      const contact=crypto.createHash("sha256").update("synthetic claimant").digest("hex");
+      expect(contact).not.toBe(digests["1"]);
+    } finally{vi.unstubAllEnvs();vi.stubEnv("BYOK_ENCRYPTION_KEY",originalKey);}
+  });
 });

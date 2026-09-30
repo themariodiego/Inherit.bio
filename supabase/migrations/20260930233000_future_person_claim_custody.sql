@@ -118,6 +118,17 @@ create table private.future_person_custody_slices (
 );
 alter table private.future_person_custody_slices enable row level security;
 revoke all on private.future_person_custody_slices from public,anon,authenticated,service_role;
+create function private.guard_future_person_custody_slice_v1()
+returns trigger language plpgsql security invoker set search_path='' as $$
+begin
+ if to_jsonb(new) is distinct from to_jsonb(old) then
+   raise exception using errcode='23514',message='claimant custody provenance is immutable';
+ end if;
+ return new;
+end $$;
+revoke all on function private.guard_future_person_custody_slice_v1() from public,anon,authenticated,service_role;
+create trigger future_person_custody_slice_immutable before update on private.future_person_custody_slices
+ for each row execute function private.guard_future_person_custody_slice_v1();
 insert into public.purge_target_stores(target_id,store_name,store_order)
 select 'variant-rows','private.future_person_custody_slices',coalesce(max(store_order),0)+1
   from public.purge_target_stores where target_id='variant-rows';
@@ -246,6 +257,10 @@ begin
   perform 1 from public.subjects where id=s.id for update;
   perform 1 from public.future_person_claims c join public.embryos e on e.id=c.embryo_id
     where e.subject_id=s.id order by c.id for update of c;
+  perform 1 from public.attestation_contradictions where (subject_id=s.id or cohort_id=s.cohort_id)
+    and resolved_at is null order by id for update;
+  if exists(select 1 from public.attestation_contradictions where (subject_id=s.id or cohort_id=s.cohort_id)
+    and resolved_at is null) then raise exception using errcode='42501',message='claim review unavailable'; end if;
   perform 1 from public.purge_manifests m join public.retention_rows t on t.id=m.retention_row_id
     where (t.target_kind='subject' and t.target_id=s.id)
     or (t.target_kind='file' and t.target_id in(select id from public.genome_files where subject_id=s.id))
@@ -423,6 +438,12 @@ begin
     where subject_id=s.id and revoked_at is null;
   update public.download_sessions set status='revoked',ended_at=v_now,session_revision=session_revision+1
     where target_kind='subject' and target_id=s.id and status='active';
+  -- A parent cohort job's immutable source set contained this member. Its
+  -- entire old capability is stale; only a freshly resolved remaining set
+  -- can authorize a later job. This deletes no sibling source or result.
+  update public.worker_jobs set status='cancelled',finished_at=v_now,claim_token_hash=null,
+    claim_expires_at=null,claimed_by=null where status in('queued','running')
+    and (file_id=x.file_id or (source_binding_kind='cohort-source-set' and source_binding_id=s.cohort_id));
   update public.subject_principals set status='detached',principal_revision=principal_revision+1
     where subject_id=s.id and id<>sp.id and status in ('pending','active');
   update public.subjects set lifecycle='claimed_unbound',claimant_principal_id=cp.id,
@@ -540,6 +561,11 @@ begin
     and not exists (select 1 from public.token_candidates tc
       where tc.outbox_id=m.id and private.embryo_withdrawal_current_v1(tc.id));
 
+  update public.mail_outbox m set state='invalidated',claimed_at=null,last_outcome_code='claimant_authority_stale'
+  where m.state in('queued','claimed') and m.token_purpose='approved-future-person-release'
+    and not exists(select 1 from public.token_candidates tc where tc.outbox_id=m.id
+      and private.future_person_release_current_v1(tc.id));
+
   select m.* into v_outbox
   from public.mail_outbox m
   where m.invitation_terminal_notice_id is null and (
@@ -642,6 +668,21 @@ begin
     where id = v_candidate.id;
   end if;
 
+  if v_outbox.token_purpose='approved-future-person-release' then
+    select * into v_candidate from public.token_candidates where outbox_id=v_outbox.id for update;
+    if v_candidate.id is null or not private.future_person_release_current_v1(v_candidate.id) then return; end if;
+    v_raw_token:=rtrim(translate(encode(extensions.gen_random_bytes(32),'base64'),'+/','-_'),'=');
+    v_token_hash:=encode(extensions.digest(convert_to(v_raw_token,'UTF8'),'sha256'),'hex');
+    update public.token_hashes set status='revoked',ended_at=clock_timestamp()
+      where candidate_id=v_candidate.id and status='current';
+    insert into public.token_hashes(candidate_id,token_hash,token_revision,status)
+      values(v_candidate.id,v_token_hash,v_candidate.token_revision,'current');
+    update public.future_person_claim_release_credentials set credential_hash=v_token_hash
+      where candidate_id=v_candidate.id and status='current';
+    if not found then raise exception using errcode='42501',message='claim review unavailable'; end if;
+    update public.token_candidates set state='issued' where id=v_candidate.id;
+  end if;
+
   return query
   select
     v_outbox.id,
@@ -693,3 +734,523 @@ begin
   end if;
   return new;
 end $$;
+
+-- Contact/authentication expiry does not delete the claimant's identity.
+alter table public.future_person_claimant_principals
+  add column contact_expires_at timestamptz,
+  add column release_revision bigint not null default 1 check(release_revision>0);
+alter table public.future_person_claim_release_credentials
+  add column candidate_id uuid unique references public.token_candidates(id) on delete restrict,
+  add column subject_id uuid references public.subjects(id) on delete restrict,
+  add column subject_lifecycle_revision bigint,
+  add column subject_binding_revision bigint,
+  add column contact_reference_id uuid references public.encrypted_contact_references(id) on delete restrict,
+  add constraint future_person_release_binding_shape check(
+    num_nonnulls(candidate_id,subject_id,subject_lifecycle_revision,subject_binding_revision,contact_reference_id) in(0,5)
+    and (subject_lifecycle_revision is null or (subject_lifecycle_revision>0 and subject_binding_revision>0)));
+
+-- Reuse the existing externally rotated root revision catalogue, with a
+-- distinct cryptographic purpose. A root still needed for a durable unbound
+-- claimant cannot be retired after temporary contact expiry.
+alter function private.hmac_key_revision_in_use_v1(text,bigint) rename to hmac_key_revision_in_use_before_claimant_v1;
+create function private.hmac_key_revision_in_use_v1(p_keyring text,p_revision bigint)
+returns boolean language sql stable security invoker set search_path='' as $$
+ select private.hmac_key_revision_in_use_before_claimant_v1(p_keyring,p_revision)
+   or (p_keyring='contact' and exists(select 1 from public.future_person_claimant_identity_hmacs h
+     join public.future_person_claimant_principals c on c.id=h.claimant_principal_id and c.status='current'
+     join public.subjects s on s.claimant_principal_id=c.id and s.lifecycle='claimed_unbound'
+     where h.hmac_key_revision=p_revision));
+$$;
+revoke all on function private.hmac_key_revision_in_use_v1(text,bigint),
+ private.hmac_key_revision_in_use_before_claimant_v1(text,bigint) from public,anon,authenticated,service_role;
+
+create function private.future_person_release_current_v1(p_candidate uuid)
+returns boolean language sql stable security definer set search_path='' as $$
+ select exists(select 1 from public.future_person_claim_release_credentials r
+   join public.token_candidates tc on tc.id=r.candidate_id and tc.purpose='approved-future-person-release'
+     and tc.target_kind='claimed-subject' and tc.target_id=r.subject_id and tc.token_revision=r.credential_revision
+     and tc.expires_at=r.expires_at and tc.state in('pending','issued')
+   join public.mail_outbox m on m.id=tc.outbox_id and m.token_purpose=tc.purpose and m.purpose=tc.purpose
+     and m.target_kind=tc.target_kind and m.target_id=tc.target_id and m.token_target_id=tc.target_id
+     and m.contact_reference_id=r.contact_reference_id and m.semantic_revision=r.credential_revision
+     and m.expires_at=r.expires_at and m.state in('queued','claimed','submitted','delivered')
+   join public.future_person_claimant_principals cp on cp.id=r.claimant_principal_id and cp.status='current'
+     and cp.release_revision=r.credential_revision and cp.contact_expires_at>clock_timestamp()
+   join public.subject_principals sp on sp.id=cp.principal_id and sp.status='active' and sp.principal_kind='future_person'
+     and sp.account_id is null and sp.subject_id=r.subject_id and sp.id=m.recipient_principal_id
+     and sp.principal_revision=m.recipient_authority_revision
+   join public.future_person_claims c on c.id=r.claim_id and c.id=cp.claim_id and c.status='approved'
+     and c.claimant_principal_id=sp.id and c.claimant_account_id is null
+   join public.subjects s on s.id=r.subject_id and s.claimant_principal_id=cp.id and s.lifecycle='claimed_unbound'
+     and s.owner_account_id is null and s.subject_account_id is null and s.cohort_id is null
+     and s.lifecycle_revision=r.subject_lifecycle_revision and s.subject_binding_revision=r.subject_binding_revision
+   join public.encrypted_contact_references contact on contact.id=r.contact_reference_id and contact.principal_id=sp.id
+     and contact.status='current' and contact.contact_ciphertext is not null and contact.authority_revision=sp.principal_revision
+   join private.future_person_custody_slices x on x.subject_id=s.id and x.claimant_principal_id=cp.id
+   join private.embryo_canonical_sources cs on cs.file_id=x.source_file_id and cs.subject_id=s.id
+     and cs.source_sha256=x.source_sha256 and cs.membership_sha256=x.source_membership_sha256
+   where r.candidate_id=p_candidate and r.status='current' and r.expires_at>clock_timestamp());
+$$;
+revoke all on function private.future_person_release_current_v1(uuid) from public,anon,authenticated,service_role;
+
+create function private.queue_future_person_release_v1(p_claim uuid,p_contact uuid,p_cipher bytea,p_contact_set jsonb)
+returns void language plpgsql security definer set search_path='' as $$
+declare cp public.future_person_claimant_principals;sp public.subject_principals;s public.subjects;
+  contact_set jsonb;active_revision bigint;outbox uuid;candidate uuid;expiry timestamptz;contact_expiry timestamptz;v_now timestamptz;
+begin
+ select * into cp from public.future_person_claimant_principals where claim_id=p_claim and status='current' for update;
+ select * into sp from public.subject_principals where id=cp.principal_id for update;
+ select * into s from public.subjects where id=sp.subject_id for update;
+ if cp.id is null or s.lifecycle<>'claimed_unbound' or s.claimant_principal_id is distinct from cp.id
+   or p_contact is null or p_cipher is null or octet_length(p_cipher) not between 29 and 16384 then
+   raise exception using errcode='42501',message='claim review unavailable'; end if;
+ contact_set:=private.resolve_hmac_set_v1('contact',null,p_contact_set);
+ active_revision:=private.hmac_active_revision_v1('contact');v_now:=clock_timestamp();
+ contact_expiry:=v_now+interval '24 months';expiry:=least(v_now+interval '7 days',contact_expiry);
+ insert into public.encrypted_contact_references(id,principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision)
+ values(p_contact,sp.id,p_cipher,contact_set->>active_revision::text,active_revision,sp.principal_revision);
+ insert into public.contact_hmac_indexes(contact_reference_id,contact_hmac,hmac_key_revision,expires_at)
+ select p_contact,value,key::bigint,contact_expiry from jsonb_each_text(contact_set);
+ update public.future_person_claimant_principals set contact_expires_at=contact_expiry where id=cp.id;
+ insert into public.mail_outbox(template_id,purpose,target_kind,target_id,recipient_principal_id,contact_reference_id,
+   recipient_authority_revision,semantic_revision,idempotency_key,token_purpose,token_target_id,template_payload,expires_at)
+ values('future-person-release','approved-future-person-release','claimed-subject',s.id,sp.id,p_contact,
+   sp.principal_revision,cp.release_revision,encode(extensions.digest(convert_to('future-person-release-v1|'||cp.id||'|'||cp.release_revision,'UTF8'),'sha256'),'hex'),
+   'approved-future-person-release',s.id,'{}',expiry) returning id into outbox;
+ insert into public.token_candidates(outbox_id,purpose,target_kind,target_id,token_revision,expires_at)
+ values(outbox,'approved-future-person-release','claimed-subject',s.id,cp.release_revision,expiry) returning id into candidate;
+ insert into public.future_person_claim_release_credentials(claim_id,claimant_principal_id,credential_hash,credential_revision,
+   expires_at,candidate_id,subject_id,subject_lifecycle_revision,subject_binding_revision,contact_reference_id)
+ values(p_claim,cp.id,encode(extensions.gen_random_bytes(32),'hex'),cp.release_revision,expiry,candidate,s.id,
+   s.lifecycle_revision,s.subject_binding_revision,p_contact);
+ insert into public.future_person_claim_notices(claim_id,outbox_id,notice_kind,notice_revision)
+ values(p_claim,outbox,'release',cp.release_revision);
+ if not private.future_person_release_current_v1(candidate) then
+   raise exception using errcode='42501',message='claim review unavailable'; end if;
+end $$;
+revoke all on function private.queue_future_person_release_v1(uuid,uuid,bytea,jsonb) from public,anon,authenticated,service_role;
+
+-- The obsolete nominal decision door cannot be called through an API role.
+-- Its internal receipt/reviewer checks remain the common attested prerequisite.
+revoke all on function public.decide_claim_review_v1(uuid,bigint,text,text,bytea),
+ private.decide_claim_review_v1(uuid,bigint,text,text,bytea) from public,anon,authenticated,service_role;
+
+create function private.shred_resolved_future_person_review_v1(p_review uuid)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not exists(select 1 from private.claim_reviews where id=p_review and state in('refused','closed')
+   and resolved_at is not null) then raise exception using errcode='42501',message='claim review unavailable';end if;
+ update private.future_person_claim_intakes set identity_ciphertext=extensions.gen_random_bytes(29),
+   wrapped_data_key=extensions.gen_random_bytes(29),key_hash=encode(extensions.gen_random_bytes(32),'hex'),
+   identifier_hmac=encode(extensions.gen_random_bytes(32),'hex'),network_hmac=encode(extensions.gen_random_bytes(32),'hex')
+ where id=p_review;
+ update private.claim_review_decisions set reason_ciphertext=extensions.gen_random_bytes(29),
+   documentary_attestation_ciphertext=null,verified_identity_hmac=null,identity_hmac_revision=null,
+   verified_date_of_birth=null,recorded_parent_link_confirmed=false where review_id=p_review;
+ update private.claim_review_assignments set status='ended',ended_at=clock_timestamp() where review_id=p_review and status='current';
+ update private.claim_review_downloads set expires_at=created_at where review_id=p_review;
+end $$;
+revoke all on function private.shred_resolved_future_person_review_v1(uuid) from public,anon,authenticated,service_role;
+
+create function public.decide_claim_review_attested_v1(
+ p_review_id uuid,p_review_revision bigint,p_decision text,p_nonce_hash text,p_reason_ciphertext bytea,
+ p_attestation_ciphertext bytea,p_identity_hmac_set jsonb,p_verified_date_of_birth date,p_parent_link_confirmed boolean,
+ p_contact_reference_id uuid,p_contact_ciphertext bytea,p_contact_hmac_set jsonb
+) returns jsonb language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
+declare r private.claim_reviews;e public.embryos;v_result jsonb;v_identity_set jsonb;v_revision bigint;
+ sp uuid;cp uuid;intake uuid;v_now timestamptz;
+begin
+ select * into r from private.claim_reviews where id=p_review_id;
+ if p_decision='approve-record-key' then
+   select * into e from public.embryos where id=r.matched_embryo_id;
+   perform 1 from public.subjects where id=e.subject_id for update;
+   perform private.cancel_unstarted_claim_subject_purge_v1(e.subject_id);
+ end if;
+ if p_decision not in('reject','needs-more-information') then
+   if p_decision<>'approve-record-key' or p_attestation_ciphertext is null
+     or octet_length(p_attestation_ciphertext) not between 29 and 16384
+     or p_verified_date_of_birth is null or p_verified_date_of_birth<date '1900-01-01'
+     or (p_verified_date_of_birth+interval '18 years')::date>(clock_timestamp() at time zone 'UTC')::date
+     or p_parent_link_confirmed is distinct from true then
+     raise exception using errcode='42501',message='claim review unavailable'; end if;
+   v_identity_set:=private.resolve_hmac_set_v1('contact',null,p_identity_hmac_set);
+   v_revision:=private.hmac_active_revision_v1('contact');
+ elsif num_nonnulls(p_attestation_ciphertext,p_identity_hmac_set,p_verified_date_of_birth)<>0
+   or p_parent_link_confirmed is distinct from false then
+   raise exception using errcode='42501',message='claim review unavailable';
+ end if;
+ v_result:=private.decide_claim_review_v1(p_review_id,p_review_revision,p_decision,p_nonce_hash,p_reason_ciphertext);
+ if p_decision<>'approve-record-key' then
+   if p_decision='reject' then perform private.shred_resolved_future_person_review_v1(p_review_id);end if;
+   return v_result;
+ end if;
+ update private.claim_review_decisions set documentary_attestation_ciphertext=p_attestation_ciphertext,
+   verified_identity_hmac=v_identity_set->>v_revision::text,identity_hmac_revision=v_revision,
+   verified_date_of_birth=p_verified_date_of_birth,recorded_parent_link_confirmed=true
+ where review_id=p_review_id and review_revision=p_review_revision;
+ v_now:=clock_timestamp();
+ insert into public.subject_principals(subject_id,principal_kind,status) values(e.subject_id,'future_person','active') returning id into sp;
+ insert into public.future_person_claim_sessions(embryo_id,candidate_principal_id,intake_revision,state,expires_at)
+ values(e.id,sp,1,'submitted',v_now+interval '1 hour') returning id into intake;
+ insert into public.future_person_claims(id,intake_session_id,embryo_id,claimant_principal_id,claim_method,claim_revision,
+   claimant_revision,status,decided_at) values(p_review_id,intake,e.id,sp,'record_key',1,1,'approved',v_now);
+ insert into public.future_person_claimant_principals(claim_id,principal_id,claimant_revision,status)
+ values(p_review_id,sp,1,'current') returning id into cp;
+ perform private.detach_future_person_subject_v1(p_review_id);
+ perform private.queue_future_person_release_v1(p_review_id,p_contact_reference_id,p_contact_ciphertext,p_contact_hmac_set);
+ -- Shred every claim working value at final resolution. Object keys remain
+ -- only until the already-registered Storage deletion worker confirms removal.
+ update private.claim_reviews set state='closed',resolved_at=v_now where id=p_review_id;
+ perform private.shred_resolved_future_person_review_v1(p_review_id);
+ perform private.append_legal_audit_event('claim.resolved',null,'api.future-person-claim-review','accepted',jsonb_build_object('outcome','approved'));
+ return v_result;
+end $$;
+revoke all on function public.decide_claim_review_attested_v1(uuid,bigint,text,text,bytea,bytea,jsonb,date,boolean,uuid,bytea,jsonb)
+ from public,anon,authenticated,service_role;
+grant execute on function public.decide_claim_review_attested_v1(uuid,bigint,text,text,bytea,bytea,jsonb,date,boolean,uuid,bytea,jsonb) to authenticated;
+
+-- Preserve the old rejection/more-information interface for existing callers;
+-- it cannot record a nominal approval without documentary attestation.
+create or replace function public.decide_claim_review_v1(
+ p_review_id uuid,p_review_revision bigint,p_decision text,p_nonce_hash text,p_reason_ciphertext bytea
+) returns jsonb language plpgsql security definer set search_path='' as $$
+begin
+ if p_decision is null or p_decision not in('reject','needs-more-information') then
+   raise exception using errcode='42501',message='claim review unavailable';end if;
+ return public.decide_claim_review_attested_v1(p_review_id,p_review_revision,p_decision,p_nonce_hash,
+   p_reason_ciphertext,null,null,null,false,null,null,null);
+end $$;
+revoke all on function public.decide_claim_review_v1(uuid,bigint,text,text,bytea) from public,anon,authenticated,service_role;
+grant execute on function public.decide_claim_review_v1(uuid,bigint,text,text,bytea) to authenticated;
+
+-- Preserve every existing pre-submit branch, adding the exact claimant source.
+create or replace function private.authorize_mail_submission_v1(p_outbox uuid,p_attempt smallint)
+returns boolean language plpgsql security definer set search_path='' as $$
+declare m public.mail_outbox%rowtype;
+begin
+ perform private.lock_invitation_transitions_v1();
+ select * into m from public.mail_outbox where id=p_outbox for update;
+ if m.id is null or m.state<>'claimed' or m.attempt_count is distinct from p_attempt
+  or m.expires_at<=clock_timestamp() or m.invitation_terminal_notice_id is not null then return false; end if;
+ if not exists(select 1 from public.encrypted_contact_references e
+  join public.subject_principals sp on sp.id=e.principal_id
+  where e.id=m.contact_reference_id and sp.id=m.recipient_principal_id
+   and e.status='current' and e.contact_ciphertext is not null
+   and e.authority_revision=m.recipient_authority_revision and sp.principal_revision=m.recipient_authority_revision
+   and (sp.status='active' or (sp.status='pending' and m.token_purpose in('adult-subject-invitation','co-parent-invitation')))
+ ) then return false; end if;
+ if m.token_purpose in('adult-subject-invitation','co-parent-invitation') then
+  if not private.invitation_mail_current_v1(m) or not exists(
+   select 1 from public.token_candidates tc join public.token_hashes th on th.candidate_id=tc.id
+   join public.subject_invitations i on i.id=tc.target_id and i.token_hash=th.token_hash
+   where tc.outbox_id=m.id and tc.state='issued' and th.status='current'
+  ) then return false; end if;
+ end if;
+ if m.token_purpose='embryo-parent-withdrawal' and not exists(
+   select 1 from public.token_candidates tc join public.token_hashes th on th.candidate_id=tc.id
+   where tc.outbox_id=m.id and tc.state='issued' and th.status='current'
+    and private.embryo_withdrawal_current_v1(tc.id)
+  ) then return false; end if;
+ if m.token_purpose='approved-future-person-release' and not exists(
+   select 1 from public.token_candidates tc join public.token_hashes th on th.candidate_id=tc.id
+   join public.future_person_claim_release_credentials r on r.candidate_id=tc.id and r.credential_hash=th.token_hash
+   where tc.outbox_id=m.id and tc.state='issued' and th.status='current'
+     and private.future_person_release_current_v1(tc.id)
+ ) then return false; end if;
+ if m.template_id='report-ready' and private.file_ready_mail_current_v1(m) is not true then return false; end if;
+ return true;
+end;
+$$;
+
+
+insert into private.rights_session_purposes(session_purpose,matrix_purpose,invitation_kind,target_kind)
+values('approved-future-person-release','approved-future-person-release',null,'claimed-subject');
+
+-- Existing invitation and withdrawal activation branches remain exact.
+create or replace function public.activate_rights_session_v1(
+  p_token_hash text,
+  p_session_hash text,
+  p_form_nonce text
+)
+returns table (
+  purpose text,
+  target_kind text,
+  target_id uuid,
+  expires_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_now timestamptz := clock_timestamp();
+  v_token public.token_hashes%rowtype;
+  v_purpose text;
+  v_invitation public.subject_invitations%rowtype;
+  v_draft public.embryo_cohort_drafts%rowtype;
+  v_adult_draft public.adult_subject_drafts%rowtype;
+  v_expires_at timestamptz;
+  v_credential private.embryo_withdrawal_credentials%rowtype;
+  v_release public.future_person_claim_release_credentials%rowtype;
+  v_claimed_subject uuid;
+begin
+  -- Positive claimant lookup is read-only until the subject starts the common
+  -- retention lock order. No token/purpose/target selector comes from the client.
+  select r.subject_id into v_claimed_subject from public.future_person_claim_release_credentials r
+    join public.token_hashes th on th.candidate_id=r.candidate_id and th.token_hash=r.credential_hash
+    where th.token_hash=p_token_hash and th.status='current';
+  if v_claimed_subject is not null then perform 1 from public.subjects where id=v_claimed_subject for update; end if;
+  perform private.lock_invitation_transitions_v1();
+  v_now := clock_timestamp();
+  if p_token_hash is null or p_session_hash is null or p_token_hash !~ '^[0-9a-f]{64}$' or p_session_hash !~ '^[0-9a-f]{64}$' then
+    return;
+  end if;
+
+  -- The activation form's one-time nonce is recorded before any read, so a
+  -- replayed form fails closed even when its token is still current.
+  perform private.consume_embryo_operation_nonce_v1(
+    p_form_nonce, null, null, 'rights_activate', 'form', null
+  );
+
+  select th.* into v_token
+  from public.token_hashes th
+  where th.token_hash = p_token_hash and th.status = 'current'
+  for update;
+  if v_token.id is null then return; end if;
+
+  select tc.purpose into v_purpose
+  from public.token_candidates tc
+  where tc.id = v_token.candidate_id;
+
+  if v_purpose='approved-future-person-release' then
+    if not private.future_person_release_current_v1(v_token.candidate_id) then return; end if;
+    select * into v_release from public.future_person_claim_release_credentials
+      where candidate_id=v_token.candidate_id and credential_hash=v_token.token_hash and status='current' for update;
+    if v_release.id is null then return; end if;
+    v_expires_at:=least(v_now+interval '60 minutes',v_release.expires_at);
+    insert into public.rights_sessions(token_hash_id,principal_id,purpose,target_kind,target_id,
+      authority_revision,session_hash,status,expires_at)
+    select v_token.id,c.principal_id,'approved-future-person-release','claimed-subject',v_release.subject_id,
+      c.release_revision,p_session_hash,'active',v_expires_at
+    from public.future_person_claimant_principals c where c.id=v_release.claimant_principal_id;
+    update public.token_hashes set status='consumed',ended_at=v_now where id=v_token.id;
+    update public.future_person_claim_release_credentials set status='consumed' where id=v_release.id;
+    perform private.append_legal_audit_event('rights.session.activated',null,'api.rights-activate','accepted',
+      jsonb_build_object('purpose','approved-future-person-release'));
+    return query select 'approved-future-person-release'::text,'claimed-subject'::text,v_release.subject_id,v_expires_at;
+    return;
+  end if;
+
+  if v_purpose = 'adult-subject-invitation' then
+    v_invitation := private.current_adult_subject_invitation_v1(v_token.id);
+    if v_invitation.id is null or private.invitation_contact_barred_v1(v_invitation.email_hmac) then return; end if;
+
+    select d.* into v_adult_draft
+    from public.adult_subject_drafts d
+    where d.subject_id = v_invitation.target_id
+      and d.state = 'invited'
+      and d.fixed_expires_at > v_now
+    for update;
+    if v_adult_draft.id is null then return; end if;
+
+    v_expires_at := least(v_now + interval '24 hours', v_invitation.expires_at);
+
+    insert into public.rights_sessions (
+      token_hash_id, principal_id, purpose, target_kind, target_id,
+      authority_revision, session_hash, status, expires_at
+    ) values (
+      v_token.id, v_invitation.invitee_principal_id, 'adult-subject-invitation',
+      'subject', v_invitation.target_id, v_invitation.invitation_revision,
+      p_session_hash, 'active', v_expires_at
+    );
+
+    update public.token_hashes
+    set status = 'consumed', ended_at = v_now
+    where id = v_token.id;
+
+    perform private.append_legal_audit_event(
+      'rights.session.activated', null, 'api.rights-activate', 'accepted',
+      jsonb_build_object('purpose', 'adult-subject-invitation')
+    );
+
+    return query select
+      'adult-subject-invitation'::text, 'subject'::text,
+      v_invitation.target_id, v_expires_at;
+    return;
+  end if;
+
+  -- An upload-time rights notice's withdrawal link: the exact credential the
+  -- notice bound, still current, opens a session on its whole cohort.
+  if v_purpose = 'embryo-parent-withdrawal' then
+    if not private.embryo_withdrawal_current_v1(v_token.candidate_id) then return; end if;
+    select b.* into strict v_credential from private.embryo_withdrawal_credentials b
+      where b.candidate_id = v_token.candidate_id;
+    select least(v_now + interval '24 hours', tc.expires_at) into strict v_expires_at
+      from public.token_candidates tc where tc.id = v_token.candidate_id;
+
+    insert into public.rights_sessions (
+      token_hash_id, principal_id, purpose, target_kind, target_id,
+      authority_revision, session_hash, status, expires_at
+    ) values (
+      v_token.id, v_credential.principal_id, 'embryo-parent-withdrawal',
+      'cohort', v_credential.cohort_id, v_credential.participant_set_revision,
+      p_session_hash, 'active', v_expires_at
+    );
+
+    update public.token_hashes
+    set status = 'consumed', ended_at = v_now
+    where id = v_token.id;
+
+    perform private.append_legal_audit_event(
+      'rights.session.activated', null, 'api.rights-activate', 'accepted',
+      jsonb_build_object('purpose', 'embryo-parent-withdrawal')
+    );
+
+    return query select
+      'embryo-parent-withdrawal'::text, 'cohort'::text, v_credential.cohort_id, v_expires_at;
+    return;
+  end if;
+
+  if v_purpose is distinct from 'co-parent-invitation' then return; end if;
+
+  v_invitation := private.current_co_parent_invitation_v1(v_token.id);
+  if v_invitation.id is null or private.invitation_contact_barred_v1(v_invitation.email_hmac) then return; end if;
+
+  select d.* into v_draft
+  from public.embryo_cohort_drafts d
+  where d.id = v_invitation.target_id
+    and d.state in ('draft', 'evidence_pending', 'ready')
+    and d.fixed_expires_at > v_now
+  for update;
+  if v_draft.id is null then return; end if;
+
+  v_expires_at := least(v_now + interval '24 hours', v_invitation.expires_at);
+
+  insert into public.rights_sessions (
+    token_hash_id, principal_id, purpose, target_kind, target_id,
+    authority_revision, session_hash, status, expires_at
+  ) values (
+    v_token.id, v_invitation.invitee_principal_id, 'co-parent-invitation',
+    'cohort_draft', v_draft.id, v_invitation.invitation_revision,
+    p_session_hash, 'active', v_expires_at
+  );
+
+  update public.token_hashes
+  set status = 'consumed', ended_at = v_now
+  where id = v_token.id;
+
+  perform private.append_legal_audit_event(
+    'rights.session.activated', null, 'api.rights-activate', 'accepted',
+    jsonb_build_object('purpose', 'co-parent-invitation')
+  );
+
+  return query select
+    'co-parent-invitation'::text, 'cohort_draft'::text, v_draft.id, v_expires_at;
+end;
+$$;
+revoke all on function public.activate_rights_session_v1(text, text, text)
+  from public, anon, authenticated;
+grant execute on function public.activate_rights_session_v1(text, text, text)
+  to service_role;
+
+create function private.future_person_rights_session_v1(p_hash text,p_lock boolean)
+returns public.rights_sessions language plpgsql security definer set search_path='' as $$
+declare rs public.rights_sessions;
+begin
+ if p_hash is null or p_hash!~'^[0-9a-f]{64}$' then return null; end if;
+ select * into rs from public.rights_sessions where session_hash=p_hash;
+ if p_lock and rs.id is not null then
+   perform 1 from public.subjects where id=rs.target_id for update;
+   select * into rs from public.rights_sessions where id=rs.id for update;
+ end if;
+ if rs.id is null or rs.status<>'active' or rs.purpose<>'approved-future-person-release'
+   or rs.target_kind<>'claimed-subject' or rs.expires_at<=clock_timestamp()
+   or rs.expires_at>rs.created_at+interval '60 minutes' then return null; end if;
+ if not exists(select 1 from public.token_hashes h
+   join public.future_person_claim_release_credentials r on r.candidate_id=h.candidate_id
+     and r.credential_hash=h.token_hash and r.status='consumed' and r.expires_at>clock_timestamp()
+   join public.future_person_claimant_principals cp on cp.id=r.claimant_principal_id and cp.status='current'
+     and cp.release_revision=rs.authority_revision and cp.release_revision=r.credential_revision
+     and cp.contact_expires_at>clock_timestamp() and cp.principal_id=rs.principal_id
+   join public.subject_principals sp on sp.id=cp.principal_id and sp.subject_id=rs.target_id
+     and sp.status='active' and sp.principal_kind='future_person' and sp.account_id is null
+   join public.subjects s on s.id=rs.target_id and s.id=r.subject_id and s.claimant_principal_id=cp.id
+     and s.lifecycle='claimed_unbound' and s.owner_account_id is null and s.subject_account_id is null and s.cohort_id is null
+     and s.lifecycle_revision=r.subject_lifecycle_revision and s.subject_binding_revision=r.subject_binding_revision
+   join public.encrypted_contact_references e on e.id=r.contact_reference_id and e.principal_id=sp.id
+     and e.status='current' and e.contact_ciphertext is not null and e.authority_revision=sp.principal_revision
+   join private.future_person_custody_slices x on x.subject_id=s.id and x.claimant_principal_id=cp.id
+   join private.embryo_canonical_sources cs on cs.file_id=x.source_file_id and cs.subject_id=s.id
+     and cs.source_sha256=x.source_sha256 and cs.membership_sha256=x.source_membership_sha256
+   where h.id=rs.token_hash_id and h.status='consumed') then return null; end if;
+ return rs;
+end $$;
+revoke all on function private.future_person_rights_session_v1(text,boolean) from public,anon,authenticated,service_role;
+
+create function public.future_person_rights_view_v1(p_session_hash text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare rs public.rights_sessions;
+begin
+ rs:=private.future_person_rights_session_v1(p_session_hash,false);
+ if rs.id is null then return null; end if;
+ return jsonb_build_object('safeClaimedSubjectLabel','Your claimed record','lifecycleState','claimed_unbound',
+   'retentionMaximumDays',null,'allowedActionIds',jsonb_build_array('export','delete','correct','analysis-stop','bind-account','create-recovery-key'));
+end $$;
+revoke all on function public.future_person_rights_view_v1(text) from public,anon,authenticated,service_role;
+grant execute on function public.future_person_rights_view_v1(text) to service_role;
+
+-- The page derives its signed operation controls statelessly. Only each
+-- authorized mutation records a hash and consumes it once under the session.
+create function private.consume_future_person_rights_nonce_v1(rs public.rights_sessions,p_nonce text)
+returns void language plpgsql security definer set search_path='' as $$
+declare v_nonce_hash text;revision bigint;
+begin
+ if p_nonce is null or p_nonce!~'^[A-Za-z0-9_-]{16,256}$' then
+   raise exception using errcode='42501',message='claimant rights unavailable'; end if;
+ v_nonce_hash:=encode(extensions.digest(convert_to(p_nonce,'UTF8'),'sha256'),'hex');
+ if exists(select 1 from public.rights_nonces where rights_session_id=rs.id and rights_nonces.nonce_hash=v_nonce_hash) then
+   raise exception using errcode='42501',message='claimant rights unavailable'; end if;
+ select coalesce(max(nonce_revision),0)+1 into revision from public.rights_nonces where rights_session_id=rs.id;
+ insert into public.rights_nonces(rights_session_id,nonce_hash,nonce_revision,expires_at,consumed_at)
+ values(rs.id,v_nonce_hash,revision,least(rs.expires_at,clock_timestamp()+interval '10 minutes'),clock_timestamp());
+end $$;
+revoke all on function private.consume_future_person_rights_nonce_v1(public.rights_sessions,text) from public,anon,authenticated,service_role;
+
+create function public.issue_future_person_recovery_key_v1(p_session_hash text,p_nonce text,p_key_hash text)
+returns date language plpgsql security definer set search_path='' as $$
+declare rs public.rights_sessions;cp public.future_person_claimant_principals;
+begin
+ rs:=private.future_person_rights_session_v1(p_session_hash,true);
+ if rs.id is null or p_key_hash is null or p_key_hash!~'^[0-9a-f]{64}$'
+   or not private.rights_action_permitted_v1(rs.purpose,'create-recovery-key','api.future-person-recovery-key') then
+   raise exception using errcode='42501',message='claimant rights unavailable'; end if;
+ select * into cp from public.future_person_claimant_principals where principal_id=rs.principal_id and status='current' for update;
+ if exists(select 1 from public.future_person_recovery_key_hashes where claimant_principal_id=cp.id)
+   or not exists(select 1 from public.future_person_claimant_identity_hmacs where claimant_principal_id=cp.id and expires_at is null) then
+   raise exception using errcode='42501',message='claimant rights unavailable'; end if;
+ perform private.consume_future_person_rights_nonce_v1(rs,p_nonce);
+ insert into public.future_person_recovery_key_hashes(claimant_principal_id,recovery_key_hash,key_revision,status)
+ values(cp.id,p_key_hash,cp.claimant_revision,'current');
+ return (cp.contact_expires_at at time zone 'UTC')::date;
+end $$;
+revoke all on function public.issue_future_person_recovery_key_v1(text,text,text) from public,anon,authenticated,service_role;
+grant execute on function public.issue_future_person_recovery_key_v1(text,text,text) to service_role;
+
+create function public.stop_future_person_analysis_v1(p_session_hash text,p_nonce text)
+returns timestamptz language plpgsql security definer set search_path='' as $$
+declare rs public.rights_sessions;stopped timestamptz;
+begin
+ rs:=private.future_person_rights_session_v1(p_session_hash,true);
+ if rs.id is null or not private.rights_action_permitted_v1(rs.purpose,'analysis-stop','api.future-person-analysis-stop') then
+   raise exception using errcode='42501',message='claimant rights unavailable'; end if;
+ perform private.consume_future_person_rights_nonce_v1(rs,p_nonce);
+ update public.subjects set analysis_stopped_at=coalesce(analysis_stopped_at,clock_timestamp())
+   where id=rs.target_id returning analysis_stopped_at into stopped;
+ update public.worker_jobs set status='cancelled',finished_at=clock_timestamp(),claim_token_hash=null,
+   claim_expires_at=null,claimed_by=null where status in('queued','running')
+   and file_id in(select id from public.genome_files where subject_id=rs.target_id)
+   and kind not in('revoke_purge','retention_purge');
+ return stopped;
+end $$;
+revoke all on function public.stop_future_person_analysis_v1(text,text) from public,anon,authenticated,service_role;
+grant execute on function public.stop_future_person_analysis_v1(text,text) to service_role;

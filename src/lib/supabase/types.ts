@@ -7848,6 +7848,15 @@ export type Database = {
         Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string }
         Returns: Json
       }
+      future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
+      issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
+      stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
+      decide_claim_review_attested_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
+          p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;p_parent_link_confirmed:boolean;
+          p_contact_reference_id:string;p_contact_ciphertext:string;p_contact_hmac_set:Json}
+        Returns:Json
+      }
       decide_claim_review_v1: {
         Args: {
           p_decision: string

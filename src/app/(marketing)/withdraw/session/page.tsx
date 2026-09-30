@@ -1,3 +1,5 @@
+import {loadClaimantRights} from "@/lib/future-person/rights";
+import {ClaimantRights} from "@/components/future-person/claimant-rights";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -23,6 +25,8 @@ export default async function RightsSessionPage() {
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
   // cookie can never reach the adult or embryo screen, and so on.
+  const claimant=await loadClaimantRights(request);
+  if(claimant)return <ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/>;
   const adult = await loadAdultSubjectReview(request);
   if (adult) return <AdultSubjectReviewForm review={adult} />;
   const embryo = await loadEmbryoParentWithdrawal(request);

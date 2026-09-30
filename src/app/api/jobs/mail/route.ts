@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { applicationOrigin } from "@/lib/app-origin";
-import { decryptSecret, hmacSecret } from "@/lib/crypto";
+import { hmacSecret } from "@/lib/crypto";
+import { openMailContact } from "@/lib/future-person/claimant-contact";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
@@ -125,6 +126,10 @@ function parseMail(
   payload: unknown,
   deliveryToken?: string | null,
 ): MailTemplate {
+  if(templateId==="future-person-release") {
+    z.object({}).strict().parse(payload);
+    return {id:templateId,payload:{releaseUrl:fragmentUrl(deliveryToken)}};
+  }
   if (templateId === "report-ready") {
     return { id: templateId, payload: reportReadyPayload.parse(payload) };
   }
@@ -282,7 +287,7 @@ async function drainMail() {
     let accepted = false;
     try {
       const ciphertextHex = row.contact_ciphertext.replace(/^\\x/, "");
-      recipient = decryptSecret(Buffer.from(ciphertextHex, "hex"));
+      recipient = openMailContact(Buffer.from(ciphertextHex, "hex"));
       const mail = parseMail(
         row.template_id,
         row.template_payload,

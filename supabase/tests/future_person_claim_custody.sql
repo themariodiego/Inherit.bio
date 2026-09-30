@@ -51,6 +51,15 @@ select throws_ok($$select pg_temp.probe('update public.future_person_record_key_
   '42501','claim review unavailable','a key revoked after documentary review refuses custody');
 select throws_ok($$select pg_temp.probe('update public.embryos set status=''stored'' where id=(select embryo from custody_ids)',
   'select pg_temp.detach()::text')$$,'42501','claim review unavailable','a changed disposition refuses custody');
+select ok(exists(select 1 from public.purge_manifests m join public.retention_rows t on t.id=m.retention_row_id
+  where t.target_kind='subject' and t.target_id=(select subject from custody_ids)),
+  'the published source has a real exact-subject purge manifest');
+select throws_ok($$select pg_temp.probe('update public.purge_manifests m set physical_purge_started_at=clock_timestamp()
+  from public.retention_rows t where t.id=m.retention_row_id and t.target_kind=''subject'' and t.target_id=(select subject from custody_ids)',
+  'select pg_temp.detach()::text')$$,'42501','claim review unavailable','a physically started exact-source purge cannot be canceled for custody');
+select throws_ok($$select pg_temp.probe('update public.purge_manifests m set batch_cursor=1
+  from public.retention_rows t where t.id=m.retention_row_id and t.target_kind=''subject'' and t.target_id=(select subject from custody_ids)',
+  'select pg_temp.detach()::text')$$,'42501','claim review unavailable','a positive purge cursor refuses approval even without a start timestamp');
 select is(pg_temp.source_snapshot(),(select body from original_source),'every refused transition preserves the full source and provider identities');
 select is(pg_temp.detach(),(select claimant from custody_ids),'one positively attested approval detaches one exact claimant');
 set constraints all immediate;
@@ -77,6 +86,12 @@ select throws_ok($$select pg_temp.probe('delete from private.future_person_custo
 select throws_ok($$select pg_temp.probe('update public.embryos set status=''claimed_bound'' where id=(select embryo from custody_ids)',
   'select ''unexpected''::text')$$,'23514',null,'changing the live embryo state cannot desynchronize claimed custody');
 select is(pg_temp.source_snapshot(),(select body from original_source),'detachment preserves original source, memberships, provider receipts and genotypes byte for byte');
+select throws_ok($$update private.future_person_custody_slices set agreement_slice='[]'::jsonb
+ where subject_id=(select subject from custody_ids)$$,'23514','claimant custody provenance is immutable',
+ 'historical agreements cannot be rewritten after detachment');
+select throws_ok($$update private.future_person_custody_slices set historical_cohort_id=gen_random_uuid()
+ where subject_id=(select subject from custody_ids)$$,'23514','claimant custody provenance is immutable',
+ 'the detached source historical cohort cannot be relabelled');
 select ok((select expires_at is null and identity_hmac=pg_temp.h('identity') and hmac_key_revision=1
   from public.future_person_claimant_identity_hmacs where claimant_principal_id=(select claimant from custody_ids)),
   'the verified keyed identity survives contact expiry without a new custody clock');

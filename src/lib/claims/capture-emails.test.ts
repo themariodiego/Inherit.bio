@@ -17,8 +17,8 @@ const resolvers = { registry: noCanonicalRegistry, resolveSeed: () => false, res
 describe("independent production email fixture inventory", () => {
   it("covers all actual named exports and both account-deletion entrypoints", () => {
     const discovered = readEmailInventory(projectRoot), fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(discovered).toHaveLength(13);
-    expect(new Set(discovered.map((e) => e.path)).size).toBe(12);
+    expect(discovered).toHaveLength(14);
+    expect(new Set(discovered.map((e) => e.path)).size).toBe(13);
     expect(discovered.filter((e) => e.path.endsWith("account-deletion.tsx")).map((e) => e.exportName)).toEqual([
       "AccountDeletionCancelledEmail", "AccountDeletionNoticeEmail",
     ]);
@@ -48,7 +48,7 @@ describe("independent production email fixture inventory", () => {
   });
   it("expands all current conditional branches and explicitly distinguishes empty digest scope", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(fixtures).toHaveLength(30);
+    expect(fixtures).toHaveLength(31);
     expect(fixtures.filter((f) => f.mail.id === "embryo-disposition-notice").map((f) => f.mail.payload)).toEqual(expect.arrayContaining([
       expect.objectContaining({ disposition: "stored" }), expect.objectContaining({ disposition: "transferred" }),
       expect.objectContaining({ disposition: "donated" }), expect.objectContaining({ disposition: "discarded" }),
@@ -75,9 +75,9 @@ describe("actual production email HTML and envelope capture", () => {
   }, 60_000);
 
   it("retains every expected fixture before reporting actual annotation failures", () => {
-    expect(result.receipts).toHaveLength(30);
-    expect(result.observations).toHaveLength(60);
-    expect(result.requiredSurfaces).toHaveLength(60);
+    expect(result.receipts).toHaveLength(31);
+    expect(result.observations).toHaveLength(62);
+    expect(result.requiredSurfaces).toHaveLength(62);
     expect(result.observations.every((o) => o.channel === "email" && o.contentCommitSha === result.contentCommitSha)).toBe(true);
     expect(result.audit.ok).toBe(false);
     expect(result.audit.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["missing-channel", "missing-region", "empty-corpus"]));

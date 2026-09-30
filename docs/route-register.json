@@ -3076,7 +3076,8 @@
       "contracts": [
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
-      ]
+      ],
+      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC"
     },
     "claim-review-receipt-v1": {
       "purpose": "prove-complete-client-receipt-of-each-exact-clean-document-chunk-before-a-named-human-review-decision; receipt-is-not-the-human-documentary-attestation",
@@ -4354,7 +4355,11 @@
             "retentionMaximumDays",
             "allowedActionIds"
           ],
-          "geneticData": "not-read-on-the-page-and-available-only-through-the-exact-operation-specific-export-route"
+          "geneticData": "not-read-on-the-page-and-available-only-through-the-exact-operation-specific-export-route",
+          "retentionMaximumDays": {
+            "const": null,
+            "meaning": "no-source-retention-deadline-for-a-claimed-record-kept-until-claimant-deletion; temporary-contact-expiry-is-separate"
+          }
         }
       },
       "pageProjectionRule": "select-exactly-one-server-purpose-case-before-any-target-read-fetch-only-that-closed-projection-and-serialize-no-unlisted-nested-field; raw-data-bytes-are-never-a-page-projection-and-require-the-explicit-export-create-and-chunk-contracts",
@@ -20002,7 +20007,23 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                },
+                "recordedParentLinkConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -20010,7 +20031,20 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -20018,7 +20052,20 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -20026,7 +20073,23 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                },
+                "recordedParentLinkConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
