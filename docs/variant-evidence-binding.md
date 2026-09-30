@@ -62,6 +62,15 @@ liftover are still missing. Older processed files and saved worker outputs need
 explicit reconciliation; no hosted data was changed here. Incremental refresh
 is not proof that every historical reference row was cleared.
 
+**Carrier importer, 28 September 2026:** the reviewed importer now exists
+(`docs/carrier-importer-design.md`, "As built"). It holds exact allele
+identity, the MONDO condition, the ClinVar variation id, the classification,
+review stars, the conflict flag, and the release and evaluation dates. The
+carrier-pair production reader reads only its rule
+(`private.carrier_assertion_rule_v1`); legacy labels are still never read for
+a carrier result. Complex alleles are still not normalized: the rule leaves
+them out rather than keying them.
+
 ## Verification scope
 
 Focused regressions cover exact and different ALT, multiallelic GT indexing,
