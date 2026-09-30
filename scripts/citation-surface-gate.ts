@@ -23,7 +23,8 @@ import { extractCopyRegistryBlocksFromSource, extractTsxBlocksFromSource } from 
  *     pinned by `scripts/citation-surface-gate.test.ts`) is a candidate.
  *  3. A candidate passes when a canonical claim in `data/claims.json`
  *     contains it word for word, and every piece of that claim's evidence
- *     names a citation in `data/citations.json` that carries an access date.
+ *     names a citation in `data/citations.json` with a valid, non-future access
+ *     date matching the claim's `accessed_on`.
  *  4. Any other candidate must be listed in `docs/claim-surface-backlog.json`,
  *     the human reviewer's worklist, grouped by surface and file. Each entry
  *     holds the sentence, its hash and one verdict: `null` (not yet reviewed),
@@ -45,8 +46,9 @@ import { extractCopyRegistryBlocksFromSource, extractTsxBlocksFromSource } from 
  * path — `data-provenance` on claim and figure elements, template report
  * bodies in `data/claims.json`, and whether the designated surfaces' pages
  * reach the shared claim component. It never reads sentences on these files.
- * This gate reads only the sentences, never markup or templates, so no
- * finding is reported by both.
+ * This gate reads the selected source sentences rather than template prose.
+ * Registration and rendering provenance are separate obligations: a sourced
+ * sentence can still be rendered without its required provenance.
  */
 
 export const OPEN_BACKLOG = 59;
@@ -169,13 +171,15 @@ export function candidates(files: SurfaceFile[]): Candidate[] {
 }
 
 /** Registered sentences: every sentence of a claim whose evidence all resolves with an access date. */
-export function registeredSentences(claims: Claim[], citations: Citation[]): { sourced: Set<string>; unresolved: Set<string> } {
-  const dated = new Set(citations.filter((c) => typeof c.access_date === "string" && c.access_date).map((c) => c.id));
+export function registeredSentences(claims: Claim[], citations: Citation[], today = new Date().toISOString().slice(0, 10)):
+{ sourced: Set<string>; unresolved: Set<string> } {
+  const dated = new Map(citations.filter((c) => isCalendarDate(c.access_date) && c.access_date <= today)
+    .map((c) => [c.id, c.access_date]));
   const sourced = new Set<string>();
   const unresolved = new Set<string>();
   for (const claim of claims) {
     const ok = claim.evidence.length > 0
-      && claim.evidence.every((e) => dated.has(e.citation) && typeof e.accessed_on === "string" && e.accessed_on !== "");
+      && claim.evidence.every((e) => dated.has(e.citation) && e.accessed_on === dated.get(e.citation));
     for (const sentence of splitSentences(claim.text_verbatim)) {
       (ok ? sourced : unresolved).add(sentenceHash(sentence));
     }
@@ -205,7 +209,7 @@ export function runCitationSurfaceGate(input: {
 }): { failures: string[]; candidates: Candidate[]; sourced: number; open: number; classified: number } {
   const failures: string[] = [];
   const found = candidates(input.files);
-  const { sourced, unresolved } = registeredSentences(input.claims, input.citations);
+  const { sourced, unresolved } = registeredSentences(input.claims, input.citations, input.today);
 
   if (input.backlog.version !== 1) failures.push(`${BACKLOG}: version must be 1`);
   const listed = new Map<string, BacklogEntry>();

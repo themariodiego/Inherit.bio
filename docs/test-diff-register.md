@@ -1,5 +1,21 @@
 # Test diff register
 
+## Non-template citation measurement and strict access dates · 30 September 2026
+
+`scripts/citation-surface-gate.test.ts` adds planted regression checks for
+each of the five source-surface types, the closed marker vocabulary, both
+directions of the open-count ratchet, exact backlog membership, text hashes,
+duplicate entries, review metadata and canonical sentence matching. A
+registered claim now requires every evidence date to equal its resolving
+citation's valid, non-future calendar date. Missing, impossible, future and
+mismatching dates each fail; no existing assertion is weakened.
+
+The WIP count remains **59**. Main's Family Copilot adds two context modules
+to the scan (103 files total) and neither adds a candidate. No backlog entry,
+source quotation, citation date or human review verdict changes. The exact
+baseline and CI command are pinned in the new suite. G4.7 remains NO on
+the unresolved reviewer worklist and Part C source registration.
+
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
 `supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two

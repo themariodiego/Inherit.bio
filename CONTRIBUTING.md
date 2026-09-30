@@ -30,13 +30,17 @@ Full details, including the self-host path, are in
 pnpm typecheck
 pnpm lint
 pnpm test                  # unit tests
+pnpm gate:citations        # claim-marked copy outside report templates
 pnpm e2e                   # Playwright: RLS proof, network audit, upload/report flows
 ```
 
 `pnpm e2e` runs against a production build and the local Supabase stack. CI runs
 all of the above plus the repository's gates — the legal placeholder gate, the
 no-comparator name gate, and the template integrity gate. A pull request that
-trips a gate will not merge, so it is cheaper to run them locally first.
+trips a gate will not merge, so it is cheaper to run them locally first. The
+[citation surface gate](docs/citation-surface-gate.md) complements
+`pnpm gate:claims`; passing either does not certify that the existing human
+source-review backlog is complete.
 
 ## What we are looking for
 

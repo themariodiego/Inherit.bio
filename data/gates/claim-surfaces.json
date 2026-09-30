@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "purpose": "The non-template surfaces that can state a scientific fact (G4.7). scripts/citation-surface-gate.ts reads every non-test .ts and .tsx file under these paths. Report prose in data/templates is gated by gate:templates and gate:claims instead. Glossary definitions (src/copy/glossary) are gated by their own citation register, data/glossary-citations.json. Neither is repeated here.",
+  "purpose": "The non-template surfaces that can state a scientific fact (G4.7). scripts/citation-surface-gate.ts reads every non-test .ts and .tsx file under these paths. Report prose in data/templates is gated by gate:templates and gate:claims instead. Glossary definitions (src/copy/glossary) follow the owner's 18 September 2026 decision that a definition is not a claim. Neither is repeated here.",
   "surfaces": [
     {
       "type": "report-copy",
@@ -22,7 +22,9 @@
         "src/lib/copilot/own-chat-route.ts",
         "src/lib/copilot/own-chat-content.ts",
         "src/lib/copilot/own-chat-report-context.ts",
-        "src/lib/copilot/own-chat-ancestry-content.ts"
+        "src/lib/copilot/own-chat-ancestry-content.ts",
+        "src/lib/copilot/family-chat-route.ts",
+        "src/lib/copilot/family-chat-content.ts"
       ]
     },
     {
