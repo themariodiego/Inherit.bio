@@ -19,9 +19,10 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- The embryo-ingest write fence adds its write intents and session fences,
 -- and the unwind's exact storage disposals add one more.
 -- Future Person intake adds one claim-review working-package store; its
--- documents step adds sessions, fragments and quarantined documents.
-select is((select count(*) from public.purge_target_stores), 133::bigint,
-  'all 133 purge stores, including private prepared-object and embryo write-fence working state, the unwind storage disposals, legal audit account link and Future Person intake/document stores, are classified');
+-- documents step adds sessions, fragments and quarantined documents; the
+-- named review adds its five temporary review working-package stores.
+select is((select count(*) from public.purge_target_stores), 138::bigint,
+  'all 138 purge stores, including private prepared-object and embryo write-fence working state, the unwind storage disposals, legal audit account link and Future Person intake/document stores, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

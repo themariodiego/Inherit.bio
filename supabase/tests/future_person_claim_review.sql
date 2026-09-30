@@ -1,5 +1,5 @@
 begin;
-select plan(88);
+select plan(95);
 -- The Future Person claim review, up to the release decision: completion,
 -- the case the server resolves, the named reviewer's step-up MFA and
 -- assignment, audited reads, decisions bound to the exact documents'
@@ -56,9 +56,16 @@ create function pg_temp.review_of(p_claim text) returns uuid language sql stable
 create function pg_temp.jwt(p_account uuid, p_session uuid, p_aal text default 'aal2', p_mfa_age integer default 60)
 returns void language sql volatile as $$
  select set_config('request.jwt.claims', jsonb_build_object('sub', p_account, 'role', 'authenticated',
-   'aal', p_aal, 'session_id', p_session, 'amr', jsonb_build_array(jsonb_build_object('method', 'totp',
+   'aal', p_aal, 'session_id', p_session,
+   'iss', (select auth_issuer from private.upload_authorization_config where singleton),
+   'aud', 'authenticated', 'exp', floor(extract(epoch from clock_timestamp())) + 3600, 'amr', jsonb_build_array(jsonb_build_object('method', 'totp',
    'timestamp', floor(extract(epoch from clock_timestamp())) - p_mfa_age)))::text, true)
 $$;
+
+-- The local synthetic issuer required by the shared authenticated-session gate.
+insert into private.upload_authorization_config (singleton, auth_issuer)
+values (true, 'http://127.0.0.1:54321/auth/v1')
+on conflict (singleton) do update set auth_issuer = excluded.auth_issuer;
 
 -- Two reviewer accounts and an ordinary account, each with a live session.
 insert into auth.users (id, email) values
@@ -141,6 +148,43 @@ select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$
   'a reviewer without the assignment reads nothing');
 reset role;
 select private.assign_claim_review_v1((select id from rv), '7e000000-0000-4000-8000-000000000001');
+-- MFA and assignment cannot bypass the shared live-account gate.
+select set_config('request.jwt.claims', (current_setting('request.jwt.claims')::jsonb ||
+  '{"iss":"http://wrong.e2e.local/auth/v1"}'::jsonb)::text, true);
+set local role authenticated;
+select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$$, '42501', null,
+  'a wrong issuer cannot read a review despite MFA and assignment');
+reset role;
+select pg_temp.jwt('7e000000-0000-4000-8000-000000000001', '5e000000-0000-4000-8000-000000000001');
+select set_config('request.jwt.claims', (current_setting('request.jwt.claims')::jsonb ||
+  jsonb_build_object('exp', floor(extract(epoch from clock_timestamp())) - 1))::text, true);
+set local role authenticated;
+select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$$, '42501', null,
+  'an expired JWT cannot read a review despite a live session');
+reset role;
+select pg_temp.jwt('7e000000-0000-4000-8000-000000000001', '5e000000-0000-4000-8000-000000000001');
+update auth.users set banned_until = clock_timestamp() + interval '1 day'
+where id = '7e000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$$, '42501', null,
+  'a suspended reviewer reads no case');
+reset role;
+update auth.users set banned_until = null, deleted_at = clock_timestamp()
+where id = '7e000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$$, '42501', null,
+  'a deleted reviewer reads no case');
+reset role;
+update auth.users set deleted_at = null where id = '7e000000-0000-4000-8000-000000000001';
+update public.profiles set deletion_requested_at = clock_timestamp()
+where id = '7e000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$$, '42501', null,
+  'a reviewer on account deletion hold reads no case');
+reset role;
+update public.profiles set deletion_requested_at = null
+where id = '7e000000-0000-4000-8000-000000000001';
+
 select pg_temp.jwt('7e000000-0000-4000-8000-000000000001', '5e000000-0000-4000-8000-000000000001', 'aal1');
 set local role authenticated;
 select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$$, '42501', null,
@@ -233,6 +277,24 @@ select ok(public.authorize_claim_review_chunk_v1((select (birth->>'session')::uu
 reset role;
 select is((select count(*) from private.claim_review_reads where review_id = (select id from rv)
   and document_id is not null), 3::bigint, 'each chunk read is recorded');
+
+-- A stored download cannot survive an account or originating-session revision change.
+update public.profiles set auth_session_revision = auth_session_revision + 1
+where id = '7e000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select throws_ok($$select public.authorize_claim_review_chunk_v1((select (photo->>'session')::uuid from dl),
+  (select photo_cookie from ids), 0)$$, '42501', null, 'a stale account revision revokes the download');
+reset role;
+update public.profiles set auth_session_revision = auth_session_revision - 1
+where id = '7e000000-0000-4000-8000-000000000001';
+update auth.sessions set refresh_token_counter = coalesce(refresh_token_counter, 0) + 1
+where id = '5e000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select throws_ok($$select public.authorize_claim_review_chunk_v1((select (photo->>'session')::uuid from dl),
+  (select photo_cookie from ids), 0)$$, '42501', null, 'a stale originating session revision revokes the download');
+reset role;
+update auth.sessions set refresh_token_counter = refresh_token_counter - 1
+where id = '5e000000-0000-4000-8000-000000000001';
 
 -- An idle download ends.
 update private.claim_review_downloads set last_used_at = clock_timestamp() - interval '301 seconds'

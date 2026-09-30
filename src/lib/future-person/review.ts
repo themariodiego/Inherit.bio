@@ -78,7 +78,7 @@ const caseRow = z.object({
   mode: z.enum(["record-key", "claimant-recovery-key", "keyless"]),
   state: z.enum(["document_review_pending", "more_information_required", "approved_pending_owner_notice"]),
   reviewRevision: z.number().int().min(1),
-  deadline: z.string(),
+  deadline: z.iso.datetime({ offset: true }),
   caseKind: z.enum([
     "record_key", "record_key_unmatched_or_ineligible", "claimant_recovery_key",
     "recovery_key_unmatched_or_ineligible", "claimed_unbound_no_key_recovery", "unclaimed_keyless",
@@ -112,8 +112,9 @@ const parentIdentity = z.object({
 }).passthrough();
 
 function openIdentity(identityHex: string, wrappedHex: string): z.infer<typeof claimantIdentity> | null {
-  const key = claimDataKey(wrappedHex);
+  let key: Buffer | undefined;
   try {
+    key = claimDataKey(wrappedHex);
     const blob = Buffer.from(identityHex, "hex");
     const decipher = crypto.createDecipheriv("aes-256-gcm", key, blob.subarray(0, 12));
     decipher.setAuthTag(blob.subarray(12, 28));
@@ -123,7 +124,7 @@ function openIdentity(identityHex: string, wrappedHex: string): z.infer<typeof c
   } catch {
     return null;
   } finally {
-    key.fill(0);
+    key?.fill(0);
   }
 }
 

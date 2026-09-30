@@ -60,6 +60,30 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-protected",
       "reason": "A claimant's sealed identity documents and their scan verdicts. The export contracts always exclude identity documents and evidence bytes, and no account holds one."
     },
+    "private.claim_review_assignments": {
+      "disposition": "out-of-scope",
+      "reason": "Named staff assignments for a temporary claim review. This is review workflow, not the requester\u2019s genomics record."
+    },
+    "private.claim_review_decisions": {
+      "disposition": "excluded-protected",
+      "reason": "Temporary claimant document digests and the sealed professional basis of a review decision. Claim evidence and private reviewer notes never leave in member exports."
+    },
+    "private.claim_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "Reviewer download cookie hashes, originating authenticated session and revision bindings. Exporting this credential machinery would be a security defect."
+    },
+    "private.claim_review_reads": {
+      "disposition": "excluded-internal",
+      "reason": "Temporary staff read receipts used to authorize a claim decision. This is authorization and review machinery, not a member export class."
+    },
+    "private.claim_reviewers": {
+      "disposition": "out-of-scope",
+      "reason": "Operator-appointed reviewers and their revocation state. This is staff authorization, not the requester\u2019s genomics record."
+    },
+    "private.claim_reviews": {
+      "disposition": "excluded-protected",
+      "reason": "Temporary claimant identity case bindings and document digests. Claim-review working packages and identity evidence are always withheld from member exports."
+    },
     "private.embryo_ingest_object_config": {
       "disposition": "reference",
       "reason": "The operator's embryo fragment storage backend selection: provider, bucket and gateway audience. It holds no person's data."

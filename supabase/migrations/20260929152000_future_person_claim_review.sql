@@ -142,6 +142,8 @@ create table private.claim_review_downloads (
   document_id uuid not null,
   reviewer_account_id uuid not null,
   auth_session_id uuid not null,
+  account_auth_session_revision bigint not null check (account_auth_session_revision > 0),
+  originating_session_revision bigint not null check (originating_session_revision > 0),
   sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$'),
   byte_count integer not null check (byte_count between 1 and 20000000),
   chunk_count integer not null check (chunk_count between 1 and 5),
@@ -173,12 +175,13 @@ revoke all on function private.claim_review_open_v1(private.claim_reviews) from 
 -- factor verified in the last 15 minutes. Returns the reviewer and session,
 -- or nothing.
 create function private.claim_reviewer_step_up_v1()
-returns table (account_id uuid, auth_session_id uuid)
-language plpgsql stable security definer set search_path = '' as $$
+returns table (account_id uuid, auth_session_id uuid, account_auth_session_revision bigint, session_revision bigint)
+language plpgsql volatile security definer set search_path = '' as $$
 declare
   v_claims jsonb;
   v_account uuid;
   v_session uuid;
+  v_live jsonb;
 begin
   begin
     v_claims := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
@@ -195,6 +198,11 @@ begin
   end if;
   v_account := (v_claims->>'sub')::uuid;
   v_session := (v_claims->>'session_id')::uuid;
+  -- The shared positive-session gate checks the issuer, audience, JWT expiry,
+  -- live nondeleted/unbanned user, session and account deletion hold, and locks
+  -- their current revisions. MFA and assignment never substitute for it.
+  v_live := private.assert_live_authenticated_session();
+  if v_live->>'authorized' is distinct from 'true' then return; end if;
   if not exists (
     select 1 from jsonb_array_elements(v_claims->'amr') a
     where a->>'method' in ('totp', 'webauthn', 'phone')
@@ -213,6 +221,8 @@ begin
   end if;
   account_id := v_account;
   auth_session_id := v_session;
+  account_auth_session_revision := (v_live->>'account_auth_session_revision')::bigint;
+  session_revision := (v_live->>'session_revision')::bigint;
   return next;
 end;
 $$;
@@ -506,8 +516,10 @@ begin
     raise exception using errcode = '42501', message = 'claim review unavailable';
   end if;
   insert into private.claim_review_downloads (cookie_hash, review_id, document_id, reviewer_account_id,
-    auth_session_id, sha256, byte_count, chunk_count, created_at, last_used_at, expires_at)
+    auth_session_id, account_auth_session_revision, originating_session_revision,
+    sha256, byte_count, chunk_count, created_at, last_used_at, expires_at)
   select p_cookie_hash, v_review.id, v_document.id, v_reviewer.account_id, v_reviewer.auth_session_id,
+    v_reviewer.account_auth_session_revision, v_reviewer.session_revision,
     v_document.sha256, v_document.byte_count, ceil(v_document.byte_count / 4000000.0)::integer,
     t.now_at, t.now_at, t.now_at + interval '1 hour'
   from (select clock_timestamp() as now_at) t
@@ -541,6 +553,8 @@ begin
   where d.id = p_session_id and d.cookie_hash = p_cookie_hash for update;
   if v_download.id is null or v_download.reviewer_account_id <> v_reviewer.account_id
     or v_download.auth_session_id <> v_reviewer.auth_session_id
+    or v_download.account_auth_session_revision <> v_reviewer.account_auth_session_revision
+    or v_download.originating_session_revision <> v_reviewer.session_revision
     or v_download.expires_at <= clock_timestamp()
     or v_download.last_used_at <= clock_timestamp() - interval '300 seconds'
     or p_sequence is null or p_sequence < 0 or p_sequence >= v_download.chunk_count then

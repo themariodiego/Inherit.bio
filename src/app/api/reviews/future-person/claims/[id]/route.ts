@@ -64,7 +64,7 @@ async function read(request: Request, id: string): Promise<Response> {
   const { data, error } = await supabase.rpc("read_claim_review_case_v1", { p_review_id: id });
   if (error) return error.code === "42501" ? notFound() : unavailable();
   const body = reviewCaseBody(data);
-  if (!body) return unavailable();
+  if (!body) return notFound();
   return sensitiveJson(body, 200, {
     [REVIEW_CSRF_HEADER]: reviewCsrf(id, account.user.id, account.sessionId),
     [REVIEW_NONCE_HEADER]: mintReviewNonce(id, account.user.id, account.sessionId),

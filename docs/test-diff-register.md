@@ -1,5 +1,19 @@
 # Test diff register
 
+## Named claim review reconciled and its authority strengthened · 30 September 2026
+
+The review working packages add exactly five purge stores, so the contract
+pins 138: main’s 129 plus the intake, document and review stores. All six
+new private review tables receive explicit export dispositions; download
+credentials remain excluded. The original 88 review assertions remain and
+seven strict database cases are added for wrong issuer, expired JWT, banned
+or deleted account, deletion hold and stale account/session revisions. The
+reviewer gate invokes the shared positive authenticated-session check before
+MFA, case reads or writes. Download sessions pin its two revisions and every
+chunk rechecks them. New serializer tests pin the closed case body and
+refuse unreadable encryption, malformed dates and extra fields; an unreadable
+case receives the registered opaque 404. Existing refusal tests are retained.
+
 ## Claim browser responses observed before client consumption · 30 September 2026
 
 The failed document CI run reached the real success and scanning UI, then
