@@ -62,6 +62,11 @@ select ok((select r.retention_id='future-person.claimant-reverification-until-re
  'the registered inline claimant trigger retains distinct original seven-day source and thirty-day completion deadlines');
 select is(public.future_person_rights_view_v1(pg_temp.h('deletion-rights')),null::jsonb,
  'request revokes every read through the genuine old claimant session');
+select is((select count(*) from public.future_person_claim_release_credentials where subject_id=(select subject from custody_ids)
+ and status in('current','consumed')),0::bigint,'request invalidates every previously issued claimant release credential immediately');
+select is((select count(*) from public.token_candidates tc join public.mail_outbox o on o.id=tc.outbox_id
+ where o.target_id=(select subject from custody_ids) and tc.state in('pending','issued')),0::bigint,
+ 'an old release mail candidate cannot mint another claimant session after request');
 select is((select count(*) from public.future_person_recovery_key_hashes where claimant_principal_id=(select claimant_principal_id
  from public.subjects where id=(select subject from custody_ids))),0::bigint,'the optional Recovery Key is destroyed immediately');
 select is((select count(*) from public.future_person_claimant_identity_hmacs where claimant_principal_id=(select claimant_principal_id
@@ -107,5 +112,105 @@ select ok(not exists(select 1 from sibling_before b join public.subjects s on s.
 select is((select count(*) from private.future_person_custody_slices where subject_id=(select subject from custody_ids)
  and audit_principal_id=private.future_person_audit_selector_v1(subject_id)),1::bigint,
  'new approved custody has one exact immutable random audit selector');
+-- Whole-graph proof remains separate from the source marker protocol.
+select is((select count(*) from public.purge_target_stores),153::bigint,
+ 'all six existing private archive children join the exact physical purge census');
+select is((select count(*) from public.purge_target_stores where target_id='generated-artifacts'
+ and store_name in('private.export_archive_jobs','private.export_archive_attempts','private.export_archive_downloads',
+ 'private.export_archive_manifest_pages','private.export_archive_segments','private.export_archive_nonce_uses')),6::bigint,
+ 'every durable archive child is classified without creating or omitting a store');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
+ where has_function_privilege(role,'private.finish_future_person_deletion_v1(uuid,text)','execute')
+ or has_function_privilege(role,'private.future_person_deletion_graph_rows_v1(uuid,uuid,uuid,uuid,uuid)','execute')
+ or has_function_privilege(role,'private.future_person_deletion_row_v1(text,jsonb,boolean)','execute')),0::bigint,
+ 'no API role can select a graph table or invoke the closed final transaction');
+select throws_ok($$select private.future_person_deletion_row_v1('public.profiles','{}',true)$$,
+ '42501','claimant deletion unavailable','a parent/account table is outside the claimant row executor');
+select throws_ok($$select private.future_person_deletion_row_v1('public.subjects',jsonb_build_object('id',
+ (select subject from custody_ids),'subject_id',(select subject from custody_ids)),true)$$,
+ '42501','claimant deletion unavailable','a widened key shape is refused before any DELETE');
+select throws_ok($$select private.future_person_deletion_graph_rows_v1((select subject from custody_ids),
+ (select claimant_principal_id from public.subjects where id=(select subject from custody_ids)),gen_random_uuid(),
+ (select embryo from custody_ids),private.future_person_audit_selector_v1((select subject from custody_ids)))$$,
+ '42501','claimant deletion unavailable','a crossed source cannot select even a metadata graph');
+select ok(exists(select 1 from public.purge_manifest_entries where manifest_id=(select id from deletion_plan)
+ and entry_revision>50 and store_name='public.subjects' and row_key=jsonb_build_object('id',(select subject from custody_ids)))
+ and exists(select 1 from public.purge_manifest_entries where manifest_id=(select id from deletion_plan)
+ and entry_revision>50 and store_name='private.claim_reviews'),
+ 'the whole subject and review graph is sealed before the part gateway is claimed');
+select throws_ok($$delete from private.future_person_claim_intakes where id=(select review from custody_ids)$$,
+ '42501','claimant deletion unavailable','generic cascading cleanup cannot erase a pending sealed review graph');
+select throws_ok($$select private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))$$,
+ '42501','claimant deletion unavailable','source markers alone cannot stand in for claim-document disposal ACKs');
+select ok(exists(select 1 from private.claim_documents where intake_id=(select review from custody_ids))
+ and exists(select 1 from public.subjects where id=(select subject from custody_ids)),
+ 'missing document disposal evidence atomically preserves the complete claimed source graph');
+create temporary table sealed_graph_keys as select store_name,row_key from public.purge_manifest_entries
+ where manifest_id=(select id from deletion_plan) and entry_revision>50;
+create temporary table prior_audit_chain as select to_jsonb(l) value from public.legal_audit_log l;
+create temporary table original_deletion_clocks as select r.created_at,r.fixed_deadline,p.phase_deadline,
+ p.immutable_envelope->'completionDeadline' completion from public.purge_manifests m
+ join public.retention_rows r on r.id=m.retention_row_id join public.retention_due_phases p on p.retention_row_id=r.id
+ and p.phase_id=m.phase_id where m.id=(select id from deletion_plan);
+-- Synthetic ACK after metadata absence exercises the actual existing callback;
+-- it is a SQL protocol fixture, not a physical provider or hosted receipt.
+select public.confirm_claim_document_objects_deleted_v1((select array_agg(d.object_key) from private.claim_documents d
+ where d.intake_id=(select review from custody_ids)),'jobs.retention');
+select is((select count(*) from private.claim_documents where intake_id=(select review from custody_ids)),0::bigint,
+ 'the real document disposal callback clears the exact ended claim documents');
+select throws_ok($$select private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))$$,
+ '42501','claimant deletion unavailable','the original published ingest copies must also receive real disposal ACKs');
+-- Drain the genuine published cleanup through its existing bounded R2 marker
+-- RPCs. No Storage guard is disabled and no row or worker status is forged.
+create temporary table original_upload_cleanup as select id from public.embryo_ingest_unwinds
+ where purpose='published' and session_id=(select id from live);
+do $$ declare claim jsonb;d private.embryo_ingest_object_disposals;begin
+ claim:=public.claim_embryo_ingest_object_disposals_v1((select id from original_upload_cleanup),pg_temp.h('original-copy-disposal'));
+ for d in select * from private.embryo_ingest_object_disposals where unwind_id=(select id from original_upload_cleanup) and state='claimed' loop
+  if d.backend<>'r2' then raise exception 'this synthetic source requires its real R2 receipt';end if;
+  perform public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
+   private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-tombstone-evidence-v1','provider','r2',
+    'disposition','payload-tombstoned','bucket',d.bucket_id,'objectKey',d.object_name,'providerVersion',lpad(d.ordinal::text,32,'9'),
+    'etag','d41d8cd98f00b204e9800998ecf8427e','byteCount',0,'sha256','e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'));
+ end loop;
+end $$;
+select is(public.confirm_embryo_ingest_unwind_storage_v1((select id from original_upload_cleanup))->>'status','storage_confirmed',
+ 'original upload copies have exact marker evidence before metadata cleanup');
+select is(public.complete_embryo_ingest_unwind_v1((select id from original_upload_cleanup))->>'status','complete',
+ 'the actual published cleanup finishes without touching any sibling canonical part');
+select is(private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))->>'status',
+ 'deleted','the exact ACK-backed private transaction deletes the genuine approved unbound claimant graph');
+select is((select coalesce(sum(private.future_person_deletion_row_v1(store_name,row_key,false)),0) from sealed_graph_keys),0::numeric,
+ 'every original frozen physical key is absent after the final transaction');
+select ok(not exists(select 1 from public.subjects where id=(select subject from custody_ids))
+ and not exists(select 1 from private.future_person_custody_slices where subject_id=(select subject from custody_ids))
+ and not exists(select 1 from public.genome_files where id=(select file from custody_ids)),
+ 'subject, identity custody and source are removed only together after complete proof');
+select ok(not exists(select 1 from sibling_before b join public.subjects s on s.id=(b.subject->>'id')::uuid
+ join public.embryos e on e.id=(b.embryo->>'id')::uuid join private.embryo_canonical_sources x on x.file_id=(b.source->>'file_id')::uuid
+ where (to_jsonb(s),to_jsonb(e),to_jsonb(x)) is distinct from (b.subject,b.embryo,b.source)),
+ 'full deletion leaves the sibling subject, embryo and immutable canonical source byte-identical');
+select ok(not exists(select 1 from prior_audit_chain a where not exists(select 1 from public.legal_audit_log l where to_jsonb(l)=a.value)),
+ 'all prior append-only audit events and chain fields remain byte-identical');
+select ok((select m.state='complete' and m.batch_cursor=(select count(*) from public.purge_manifest_entries where manifest_id=m.id)
+ and p.status='succeeded' and p.terminal_outcome_code='purged' and r.state='complete'
+ and p.target_id=r.target_id and r.target_id<>(select subject from custody_ids)
+ and p.immutable_envelope->>'version'='future-person-deletion-receipt-v1'
+ and r.created_at=c.created_at and r.fixed_deadline=c.fixed_deadline and p.phase_deadline=c.phase_deadline
+ and p.immutable_envelope->'completionDeadline'=c.completion
+ from deletion_plan d join public.purge_manifests m on m.id=d.id join public.retention_rows r on r.id=m.retention_row_id
+ join public.retention_due_phases p on p.retention_row_id=r.id and p.phase_id=m.phase_id cross join original_deletion_clocks c),
+ 'coded terminal controls retain original deadlines and counts without the subject association');
+select ok(not exists(select 1 from public.purge_manifest_entries e where e.manifest_id=(select id from deletion_plan)
+ and (e.status<>'deleted' or e.row_key is distinct from jsonb_build_object('version','future-person-deletion-entry-receipt-v1',
+ 'ordinal',e.entry_revision,'disposition','deleted'))),
+ 'terminal entry receipts contain no DNA, provider keys, names, contacts or original physical row identifiers');
+select throws_ok($$update public.retention_due_phases set immutable_envelope=jsonb_build_object('subjectId',
+ (select subject from custody_ids)) where retention_row_id=(select retention_row_id from public.purge_manifests
+ where id=(select id from deletion_plan))$$,'23514','claimant deletion plan immutable',
+ 'a completed anonymous receipt cannot be rewritten to restore an identity link');
+select throws_ok($$select private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))$$,
+ '42501','claimant deletion unavailable','a completed plan cannot be replayed as new deletion authority');
+set constraints all immediate;
 select * from finish();
 rollback;

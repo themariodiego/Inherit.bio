@@ -1,5 +1,38 @@
 # Test diff register
 
+## 2026-10-01: Sealed claimant graph and exact terminal cleanup
+
+The actual schema-only 147-store catalog omitted six already-existing private
+archive children: jobs, attempts, downloads, manifest pages, segments and nonce
+uses. The physical registry now contains exactly153 stores; source/member and
+v2 census assertions rise to153 and independently pin all six existing tables.
+No table or export class is created, and no prior positive or negative assertion
+is removed. Archive attempts and uncertain provider reservations remain closed.
+
+The claimed-subject plan now freezes applicable closed, source-authored primary
+keys and exact object handles before part disposal. Ordinals1–50 still belong
+only to the current canonical part gateway; graph rows start at51. Both live
+rows missing from the sealed inventory and unACKed vanished rows refuse. Every issued claimant release, queued export, download and model context is
+revoked in the request transaction, with the actual release revision advanced. A
+pending sealed row cannot be deleted by generic cascading cleanup. The final
+private transaction keeps every original provider/lease refusal, requires all
+part markers, claim-document provider callbacks and actual published-upload
+cleanup, deletes every frozen graph
+key, and checks zero remaining rows. The SQL fixture adds exact crossed-source,
+widened-key, missing-document-ACK, sibling preservation and rollback evidence.
+Synthetic SQL ACKs prove the protocol, not hosted provider disposal.
+
+One subject-to-claimant FK uses validated NO ACTION, deferrable but initially
+immediate, so the genuine subject/principal/claimant cycle can be deleted in one
+closed transaction. Canonical source/membership/call guards permit only that
+exact sealed source after every permanent part ACK; no parent path is widened.
+The existing document callback still uses the real provider API: SQL never
+deletes Storage metadata. Working identity/body links are removed; original
+clocks, coded counts, chain hashes and terminal controls remain, with a fresh
+anonymous target and minimal immutable terminal receipts. The public API/UI and
+acceptance rows remain closed pending full database and real provider proof.
+
+
 ## 2026-10-01: Claimed source disposal uses settled publication evidence
 
 The private claimant-erasure prerequisite now uses the existing
