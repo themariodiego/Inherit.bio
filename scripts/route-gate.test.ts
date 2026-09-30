@@ -110,9 +110,14 @@ describe("the route gate holds the register to the code", () => {
     // because the page now renders that state - "Ancestry is off", named and
     // linked to where it is turned on - and the same change proves it
     // (e2e/ancestry-revocation.spec.ts), so the unproven count does not move.
+    // 153 -> 154 on 2026-09-28: `/copilot/[scope]` moved back to
+    // `product-result` because the Family group scope now renders the
+    // register's jurisdiction refusal (awaiting-choice waived with its
+    // reason), and the same change proves it (e2e/copilot-family.spec.ts), so
+    // the unproven count does not move.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(153);
+    expect(result.requiredStateCount).toBe(154);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -361,12 +366,17 @@ describe("the route gate holds the register to the code", () => {
     expect(failures.join("\n")).not.toContain("legacy.login");
   });
 
+  /**
+   * Until 2026-09-28 this was the live /withdraw/request row. That literal is
+   * now its own endpoint entry, so the plant is the undo: pin `request` back
+   * onto the page entry, which makes the page literal an endpoint again.
+   */
   it("fails when a registered page literal is served by an endpoint", async () => {
     const root = plant({
-      ledger: (ledger) => {
-        ledger.kindDivergence = (ledger.kindDivergence as { path: string }[]).filter(
-          (known) => known.path !== "/withdraw/request",
-        );
+      register: (register) => {
+        const page = (register.routes as { id: string; parameterContract?: { token?: { enum?: string[] } } }[])
+          .find((entry) => entry.id === "rights.withdraw")!;
+        page.parameterContract!.token!.enum!.unshift("request");
       },
     });
     const { failures } = await runRouteGate(root);
@@ -426,29 +436,45 @@ describe("the route gate holds the register to the code", () => {
   it("reads a dropped bucket as gone, so its old ledger row is stale", async () => {
     const root = plant({
       ledger: (ledger) => {
-        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "genomes-staging",
-          direction: "created-not-declared", createdBy: "supabase/migrations/20260831224054_storage_and_download_sessions.sql" });
-      },
-    });
-    const { failures } = await runRouteGate(root);
-    expect(failures).toContain(
-      "storage bucket: recorded in docs/route-divergence.json but no longer present: created-not-declared genomes-staging",
-    );
-  });
-
-  it("fails when a storage row's evidence no longer says what the row says", async () => {
-    const root = plant({
-      ledger: (ledger) => {
-        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
-          if (known.bucket === "generated-artifacts") known.createdBy = "supabase/migrations/20260923123240_export_archive_persistence.sql";
-          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
+        for (const bucket of ["genomes-staging", "generated-artifacts"]) {
+          (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket,
+            direction: "created-not-declared", createdBy: "supabase/migrations/20260831224054_storage_and_download_sessions.sql" });
         }
       },
     });
     const { failures } = await runRouteGate(root);
-    expect(failures).toContain("storage bucket: generated-artifacts names createdBy "
-      + "supabase/migrations/20260923123240_export_archive_persistence.sql, which does not create it");
-    expect(failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    for (const bucket of ["genomes-staging", "generated-artifacts"]) {
+      expect(failures).toContain(
+        `storage bucket: recorded in docs/route-divergence.json but no longer present: created-not-declared ${bucket}`,
+      );
+    }
+  });
+
+  /**
+   * No created-not-declared row is left once generated-artifacts is dropped,
+   * so the planted one is made real: exports loses its prefix, and its row
+   * names first the wrong migration, then the right one as the control.
+   */
+  it("fails when a storage row's evidence no longer says what the row says", async () => {
+    const plantExportsRow = (createdBy: string) => plant({
+      register: (register) => {
+        register.storagePrefixes = (register.storagePrefixes as { bucket: string }[])
+          .filter((prefix) => prefix.bucket !== "exports");
+      },
+      ledger: (ledger) => {
+        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
+          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
+        }
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "exports",
+          direction: "created-not-declared", createdBy });
+      },
+    });
+    const wrong = await runRouteGate(plantExportsRow("supabase/migrations/20260831224054_storage_and_download_sessions.sql"));
+    expect(wrong.failures).toContain("storage bucket: exports names createdBy "
+      + "supabase/migrations/20260831224054_storage_and_download_sessions.sql, which does not create it");
+    expect(wrong.failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    const right = await runRouteGate(plantExportsRow("supabase/migrations/20260923123240_export_archive_persistence.sql"));
+    expect(right.failures.filter((failure) => failure.startsWith("storage bucket: exports names createdBy"))).toEqual([]);
   });
 
   it("fails when a method row names a file the route is not built in", async () => {

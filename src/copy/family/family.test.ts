@@ -217,11 +217,15 @@ describe("family copy", () => {
   // letting a relative DOWNLOAD your file and letting them READ IT ON SCREEN
   // are two separate choices (operator decision). Pinned as an exact list, not
   // a count, so a row cannot be added or renamed without saying so here.
-  it("names the seven permission rows, one purpose each, all default off", () => {
+  // Eight since 2026-09-28: `copilot.local`, the register's directional
+  // Copilot purpose, which the Family group Copilot scope requires from each
+  // person in addition to Health picture and a report row.
+  it("names the eight permission rows, one purpose each, all default off", () => {
     expect(permissions.PERMISSION_ROWS.map((row) => row.id)).toEqual([
       "reports.monogenic",
       "reports.polygenic",
       "ancestry",
+      "copilot.local",
       "raw.export",
       "raw.browse",
       "family.portrait",
@@ -231,6 +235,7 @@ describe("family copy", () => {
       "Specific variants",
       "Statistical estimates",
       "Ancestry",
+      "Copilot",
       "Raw genetic data",
       // Not "Raw genetic data ..." like the row above: that one is exempt only
       // because the brief names it verbatim. This row is new, so it has to

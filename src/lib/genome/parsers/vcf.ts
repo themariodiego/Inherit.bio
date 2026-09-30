@@ -32,6 +32,31 @@ export function buildFromHeader(line: string): Build | null {
   return null;
 }
 
+/**
+ * The header rule's verdict over every claim a file's meta lines made: one
+ * build when every claim agrees, and `unknown` when there is no claim, a
+ * conflict, or a claim this rule cannot name. `streamVcf` applies it as the
+ * lines arrive; `buildFromHeaderLines` applies it to a bounded copy.
+ */
+export function resolveBuildClaims(claims: ReadonlySet<Build>): Build {
+  return claims.size === 1 ? [...claims][0] : "unknown";
+}
+
+/**
+ * The same header rule over a bounded set of meta lines (ADR 0035). The embryo
+ * configure route calls this with the source's `##fileformat`, `##reference`
+ * and `##contig` lines only, so the build it derives is the one `streamVcf`
+ * derives from the same lines.
+ */
+export function buildFromHeaderLines(lines: Iterable<string>): Build {
+  const claims = new Set<Build>();
+  for (const line of lines) {
+    const claim = buildFromHeader(line);
+    if (claim) claims.add(claim);
+  }
+  return resolveBuildClaims(claims);
+}
+
 export type VcfParseEvent =
   | { type: "variant"; line: number; record: VariantRecord }
   | { type: "reference"; line: number; call: ReferenceCall }
@@ -85,7 +110,7 @@ export async function* streamVcf(
     if (line.startsWith("##")) {
       const claim = buildFromHeader(line);
       if (claim) buildClaims.add(claim);
-      build = buildClaims.size === 1 ? [...buildClaims][0] : "unknown";
+      build = resolveBuildClaims(buildClaims);
       continue;
     }
     if (line.startsWith("#")) {

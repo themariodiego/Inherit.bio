@@ -6,7 +6,7 @@ import {
   DATA_EXPORT_BODY,
   DATA_EXPORT_BUTTON,
   DATA_EXPORT_HEADING,
-  DATA_EXPORT_NOT_YET_INCLUDED,
+  DATA_EXPORT_LEGAL_AUDIT,
 } from "@/copy/settings/data-export";
 import { deletionControlState } from "@/lib/account-deletion-state";
 import { route } from "@/lib/primary-routes";
@@ -22,7 +22,7 @@ export default async function DataSettingsPage() {
       <section className="rounded-2xl border border-line bg-card p-5">
         <h2 className="font-medium">{DATA_EXPORT_HEADING}</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_BODY}</p>
-        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_NOT_YET_INCLUDED}</p>
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_LEGAL_AUDIT}</p>
         <Button asChild variant="outline" className="mt-4"><a href="/api/export">{DATA_EXPORT_BUTTON}</a></Button>
       </section>
       <DangerZone deletion={deletion} />

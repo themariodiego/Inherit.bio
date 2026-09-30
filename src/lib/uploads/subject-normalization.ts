@@ -20,6 +20,7 @@ import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt } from "./subject-upload-contract";
 import { normalizationDatabaseCompletion } from "./normalization-database";
 import { IncrementalVcfError, prepareIncrementalVcf, type PositionEntry } from "./incremental-vcf-normalization";
+import { createRohAccumulator, rohRecordPayload, type RohAccumulator } from "../family/roh";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
@@ -36,6 +37,8 @@ type Operation = "begin" | "check" | "stage" | "complete" | "fail" | "reject-bui
 type Rpc = (name: "own_upload_normalization_v1", args: { p_operation: Operation; p_account_id: string;
   p_session_id: string; p_file_id: string; p_claim: string | null; p_payload: unknown | null }) =>
   PromiseLike<{ data: unknown; error: { code?: string } | null }>;
+type RunsRpc = (name: "record_own_normalization_runs_v1", args: { p_account_id: string; p_session_id: string;
+  p_file_id: string; p_runs: ReturnType<typeof rohRecordPayload> }) => PromiseLike<{ data: unknown; error: { code?: string } | null }>;
 type RegistrationRpc = (name: "register_own_normalization_positions_v1", args: {
   p_account_id: string; p_session_id: string; p_file_id: string; p_claim: string;
   p_sequence: number; p_source_build: "GRCh37" | "GRCh38"; p_entries: PositionEntry[];
@@ -102,6 +105,20 @@ export async function normalizeSubjectFile(
     if (!parsedManifest.success || parsedManifest.data.fileId !== fileId) refuse();
     manifest = parsedManifest.data;
     const source = manifest;
+    /**
+     * Stores the measure once the source is published. It is written after,
+     * not inside, the publication: a failure leaves the file published with
+     * no measure, which every carrier reader treats as not checked, never as
+     * below the threshold. The upload itself does not depend on it.
+     */
+    async function recordRuns(accumulator: RohAccumulator) {
+      try {
+        const recorded = await (admin.rpc.bind(admin) as unknown as RunsRpc)("record_own_normalization_runs_v1", {
+          ...args, p_runs: rohRecordPayload(accumulator.measure()) });
+        // A closed event name only: no provider text, no measure, no identifier.
+        if (recorded.error) console.warn("own_normalization_runs_unrecorded");
+      } catch { console.warn("own_normalization_runs_unrecorded"); }
+    }
     async function recheck() {
       const response = await call("check");
       const checked = manifestSchema.safeParse(response.data);
@@ -150,6 +167,10 @@ export async function normalizeSubjectFile(
     await recheck();
     const counts = emptyReadCounts();
     const lines = countInputLines(verifiedLines(ranges(), source), source.fileType, counts);
+    // The runs-of-homozygosity measure of this one file, taken from the
+    // source-build calls as the verified bytes stream past (D-030), the same
+    // calls the legacy processing route measures.
+    const runs = createRohAccumulator();
     async function completePrepared(variantCount: number, observedCallCount: number,
       attempted: number, unmapped: number, chainSha256: string | null) {
       const completed = await call("complete", { sourceBuild: build, rawSha256: source.rawSha256,
@@ -160,6 +181,7 @@ export async function normalizeSubjectFile(
       });
       const receipt = subjectNormalizationReceipt.safeParse(completed.data);
       if (completed.error || !receipt.success || receipt.data.fileId !== fileId) refuse();
+      await recordRuns(runs);
       return ownUploadJson(receipt.data);
     }
     if (isVcf) {
@@ -171,7 +193,7 @@ export async function normalizeSubjectFile(
         lift = buildLiftover(chain);
       }
       const registerPositions = admin.rpc.bind(admin) as unknown as RegistrationRpc;
-      const prepared = await prepareIncrementalVcf(lines, { build, lift,
+      const prepared = await prepareIncrementalVcf(lines, { build, lift, runs,
         maximumUnmappedFraction: register.policyContracts["genome-liftover-v1"].maximumUnmappedFraction,
         register: async (sequence, entries) => {
           const response = await registerPositions("register_own_normalization_positions_v1", {
@@ -190,6 +212,7 @@ export async function normalizeSubjectFile(
         prepared.attempted, prepared.unmapped, chainSha256);
     }
     const parsed = await parseArray(lines, source.fileType as ArrayKind);
+    for (const record of parsed.records) runs.add(record);
     if (parsed.build !== build) refuse("upload_integrity_mismatch");
     // Deduplicate literal positions; conflicting duplicate calls are not silently
     // turned into one genotype. Keep observed no-call evidence separate.

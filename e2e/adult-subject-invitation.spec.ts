@@ -10,7 +10,11 @@ import {
   signIn,
 } from "./helpers";
 
-const INVITER = { email: "adult-inviter@e2e.local", password: "invite-test-pw" };
+// A fresh inviter per run: the database counts invitation attempts per acting
+// account (global-contact-refusal-bar-v1.quotaAuthority, 10 an hour and 30 a
+// day), and this suite invites four times, so a reused account would run out
+// after a few local reruns against one database.
+const INVITER = { email: `adult-inviter-${crypto.randomUUID()}@e2e.local`, password: "invite-test-pw" };
 /** Brief §5 §5.2: both invitation paths render this above the form, verbatim. */
 const PRE_CONSENT_STATEMENT =
   "Comparing two people’s DNA can show that they are related, or not related, in ways neither expected. Inherit cannot un-see this.";

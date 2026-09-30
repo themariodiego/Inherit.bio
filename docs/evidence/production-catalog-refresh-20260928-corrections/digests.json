@@ -1,0 +1,135 @@
+{
+  "asparagus-odor-detection-or2m7": {
+    "predecessorMd5": {
+      "t": "90c915fb53391b279cebedce8aab32d3",
+      "s": "1c646387e2c11e1e902dbd4e5a3b17ef",
+      "v": "01791700cfebb84e6337917a4bb101a8",
+      "c": "3eb4444ec45dd9af76a50bb6dbe043f4"
+    },
+    "successorMd5": {
+      "t": "90c915fb53391b279cebedce8aab32d3",
+      "s": "1c646387e2c11e1e902dbd4e5a3b17ef",
+      "v": "01791700cfebb84e6337917a4bb101a8",
+      "c": "8dd9c734802cb42845fc3ca31e720d35"
+    },
+    "reviewPath": null,
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "caffeine-intake-ahr-rs4410790": {
+    "predecessorMd5": {
+      "t": "451217894d8317352cdeee59943dda3f",
+      "s": "47e06fb7c11e9bc949a6defd17dac80f",
+      "v": "bd0210d3b7513d4e0c7ca60c1cccd7bc",
+      "c": "e714122b173733b2af24966ad02aba01"
+    },
+    "successorMd5": {
+      "t": "451217894d8317352cdeee59943dda3f",
+      "s": "05fc8370a1e72ee311bf0f3da8a107bf",
+      "v": "1bff3d211813967f7d28a0f40a1a19c0",
+      "c": "164b3bf92e25a3482729b1966f9e8363"
+    },
+    "reviewPath": "docs/sources/reviews/caffeine-ahr-correction-20260928.md",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "chronotype-per3-rs228697": {
+    "predecessorMd5": {
+      "t": "174e8ffd393d129cff4a6dcaebeb584a",
+      "s": "93f6790a0e68dab110151bbd29bc24bd",
+      "v": "9ae9c9f85dab4a13325229f22a0c8d34",
+      "c": "80171d0ba7379e4a4e03f64bd56acb42"
+    },
+    "successorMd5": {
+      "t": "174e8ffd393d129cff4a6dcaebeb584a",
+      "s": "ba72be6e763d58804b59112e45844719",
+      "v": "93865b664de5640415507172a2a0420f",
+      "c": "7f591649cca82e1adc741070b7914142"
+    },
+    "reviewPath": "docs/sources/reviews/per3-chronotype-correction-20260928.md",
+    "templatePath": "data/templates/brain-health.json"
+  },
+  "motion-sickness-susceptibility": {
+    "predecessorMd5": {
+      "t": "449b0dc0f59636034a9eadea2b4c6dcb",
+      "s": "007eb0542dbc46a2729bf6c6d205e2e7",
+      "v": "f2ca688f8ce51954d6243ffec849622f",
+      "c": "e975c8081cdcc62caffa1699cd6c8d53"
+    },
+    "successorMd5": {
+      "t": "449b0dc0f59636034a9eadea2b4c6dcb",
+      "s": "007eb0542dbc46a2729bf6c6d205e2e7",
+      "v": "195fa77fc453e559165646c1f298e7f8",
+      "c": "79ba035b3e0f4c2aa6ca26ccd2ed8b54"
+    },
+    "reviewPath": "docs/sources/reviews/motion-sickness-correction-20260928.md",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "nicotine-dependence-chrna5-rs16969968": {
+    "predecessorMd5": {
+      "t": "e062d57f8c506fa24addaf3cfd345531",
+      "s": "9c0f265fbebc2988e35dd56bd46d4a3b",
+      "v": "ac082dfa3d7ce59d580a3ff6d4d84a2c",
+      "c": "260bcdbc8927d1068d54203d4b8741db"
+    },
+    "successorMd5": {
+      "t": "e062d57f8c506fa24addaf3cfd345531",
+      "s": "9c0f265fbebc2988e35dd56bd46d4a3b",
+      "v": "ac082dfa3d7ce59d580a3ff6d4d84a2c",
+      "c": "7931639c190e2f899d5c054b672f8290"
+    },
+    "reviewPath": "docs/sources/reviews/nicotine-chrna5-correction-20260928.md",
+    "templatePath": "data/templates/addiction.json"
+  },
+  "photic-sneeze-reflex-2q22": {
+    "predecessorMd5": {
+      "t": "51325bcb089ec505a2e7ccb4918144a6",
+      "s": "cb1166e8f35ee8f252719fed4bdfb482",
+      "v": "12b5cd418374cc27f650423588e742e4",
+      "c": "f9becb90ebb3e25cf33e1cd3270ab605"
+    },
+    "successorMd5": {
+      "t": "51325bcb089ec505a2e7ccb4918144a6",
+      "s": "cb1166e8f35ee8f252719fed4bdfb482",
+      "v": "12b5cd418374cc27f650423588e742e4",
+      "c": "6bb72363fb8fee378a152819b3975191"
+    },
+    "reviewPath": "docs/sources/reviews/photic-sneeze-2q22-correction-20260928.md",
+    "templatePath": "data/templates/basic-traits.json"
+  },
+  "photic-sneeze-reflex-zeb2": {
+    "predecessorMd5": {
+      "t": "2c2b086ec428bfb14511a443b6a21a15",
+      "s": "cd38f2e8e0cda80183dad0f14f5b1a2d",
+      "v": "65dfd3b989619f0b303fa3433fc9e6c6",
+      "c": "f3731bf0792912fa8ec79985a5fdca31"
+    },
+    "successorMd5": {
+      "t": "2c2b086ec428bfb14511a443b6a21a15",
+      "s": "f34f3b51aaa104be44ac3dcebf883817",
+      "v": "3853cfa6a9ccc3898b8e5f8026981b2c",
+      "c": "8be36a98241a39131c7ac13c6a566ff9"
+    },
+    "reviewPath": "docs/sources/reviews/photic-sneeze-zeb2-correction-20260928.md",
+    "templatePath": "data/templates/environmental-sensitivity.json"
+  },
+  "_catalog": {
+    "predecessor": {
+      "commit": "1291052fa9bd19dc095c5c7273b20fae32bd9b85",
+      "catalogMd5": "e024bd182f979efb6852617f59b8ee9e",
+      "published": 162
+    },
+    "successor": {
+      "commit": "162c2a301ffb01ec9cbffa9089bf687ddc89c8ff",
+      "catalogMd5": "bc30e004a1d6f6680349e52ce345180b",
+      "published": 162
+    },
+    "changedRows": [
+      "asparagus-odor-detection-or2m7",
+      "caffeine-intake-ahr-rs4410790",
+      "chronotype-per3-rs228697",
+      "motion-sickness-susceptibility",
+      "nicotine-dependence-chrna5-rs16969968",
+      "photic-sneeze-reflex-2q22",
+      "photic-sneeze-reflex-zeb2"
+    ]
+  }
+}

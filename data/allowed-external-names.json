@@ -441,6 +441,20 @@
       ]
     },
     {
+      "name": "ClinGen",
+      "category": "public-reference-dataset",
+      "aliases": [
+        "clingen",
+        "clinicalgenome.org",
+        "search.clinicalgenome.org"
+      ],
+      "reason": "Public gene-disease validity curations (CC0 1.0) the carrier importer reads, cited with URL, file date and access date.",
+      "evidence": [
+        "data/ref/carrier/PROVENANCE.md",
+        "docs/dataset-licenses.md"
+      ]
+    },
+    {
       "name": "dbSNP",
       "category": "public-reference-dataset",
       "aliases": [

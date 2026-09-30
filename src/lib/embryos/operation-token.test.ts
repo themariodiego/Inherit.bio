@@ -7,6 +7,7 @@ const {
   CSRF_HEADER,
   OPERATION_HEADER,
   mintEmbryoOperation,
+  mintIngestSessionOperation,
   mintPublicFormToken,
   readEmbryoOperation,
   readPublicFormToken,
@@ -192,6 +193,39 @@ describe("public form token", () => {
       readPublicFormToken(sealAs({ form: "rights-activate", nonce: 12, expiresAt: NOW + 1000 }, context), "rights-activate", NOW),
     ).toBeNull();
     expect(readPublicFormToken(sealAs(null, context), "rights-activate", NOW)).toBeNull();
+  });
+
+  /**
+   * ADR 0035: the three upload-session tokens live until the session's own
+   * fixed deadline and are bound to it; none can stand in for another.
+   */
+  it("mints upload-session tokens bound to the session and its fixed deadline", () => {
+    const deadline = new Date(NOW + 23 * 60 * 60 * 1000);
+    const session = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const bound = { accountId: EXPECTED.accountId, sessionId: EXPECTED.sessionId, targetId: session };
+    const opened = mintIngestSessionOperation({ ...bound, operation: "ingest_session_open" }, deadline, NOW);
+    const completion = mintIngestSessionOperation({ ...bound, operation: "ingest_complete" }, deadline, NOW);
+    const csrf = mintIngestSessionOperation({ ...bound, operation: "ingest_complete_csrf" }, deadline, NOW);
+    const expected = { ...bound, targetKind: "ingest_session" as const };
+    expect(verifyEmbryoOperation(opened.token, { ...expected, operation: "ingest_session_open" }, NOW)?.nonce).toBe(opened.nonce);
+    expect(verifyEmbryoOperation(completion.token, { ...expected, operation: "ingest_complete" }, NOW)?.nonce).toBe(completion.nonce);
+    expect(verifyEmbryoOperation(csrf.token, { ...expected, operation: "ingest_complete_csrf" }, NOW)?.nonce).toBe(csrf.nonce);
+    // Hours after the ten-minute page lifetime, still good; at the deadline, not.
+    expect(verifyEmbryoOperation(completion.token, { ...expected, operation: "ingest_complete" }, NOW + 22 * 60 * 60 * 1000)).not.toBeNull();
+    expect(verifyEmbryoOperation(completion.token, { ...expected, operation: "ingest_complete" }, deadline.getTime())).toBeNull();
+    // The CSRF token is not the completion nonce, and neither opens a session.
+    expect(verifyEmbryoOperation(csrf.token, { ...expected, operation: "ingest_complete" }, NOW)).toBeNull();
+    expect(verifyEmbryoOperation(completion.token, { ...expected, operation: "ingest_session_open" }, NOW)).toBeNull();
+    expect(verifyEmbryoOperation(opened.token, { ...expected, targetId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", operation: "ingest_session_open" }, NOW)).toBeNull();
+    expect(new Set([opened.nonce, completion.nonce, csrf.nonce]).size).toBe(3);
+  });
+
+  it("refuses to mint past a deadline that has gone or lies beyond one session lifetime", () => {
+    const claims = { accountId: EXPECTED.accountId, sessionId: EXPECTED.sessionId, targetId: EXPECTED.targetId,
+      operation: "ingest_complete" as const };
+    for (const deadline of [new Date(NOW), new Date(NOW - 1), new Date(NOW + 24 * 60 * 60 * 1000 + 1), new Date(Number.NaN)]) {
+      expect(() => mintIngestSessionOperation(claims, deadline, NOW)).toThrow();
+    }
   });
 
   it("keeps the two envelopes apart: neither token reads as the other", () => {

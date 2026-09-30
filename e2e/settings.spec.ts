@@ -524,9 +524,11 @@ test("/settings/data complete: both exit rights render, and the export names wha
     await expect(exportSection, `the export names ${claimed}`).toContainText(claimed);
   }
   // F4, 26 Sep 2026: the page promised legal audit records and a production
-  // export had none, because nothing yet selects one account's audit rows. The
-  // gap is stated, not implied.
-  await expect(exportSection).toContainText("Legal audit records are not in it yet.");
+  // export had none, because nothing selected one account's audit rows. Since
+  // 28 Sep 2026 the archive carries legal-audit.json with only what the person
+  // did, and the page says records that don't name who acted are left out.
+  await expect(exportSection).toContainText(
+    "It has a legal audit file of what you did yourself. Records that don't say who acted are left out.");
 
   // The second right. Held here rather than driven: e2e/settings.spec.ts
   // already schedules one real deletion above, and once is enough.

@@ -20,7 +20,11 @@ const response = z.object({
   answer: z.string().max(65_536),
   verdict,
   regrade: verdict.optional(),
-}).strict();
+  // A task whose bound account cannot be seeded. It is never an answer and
+  // never a pass: a run holding one cannot be clean.
+  skipped: z.string().min(1).max(1000).optional(),
+}).strict().refine(item => !item.skipped || (!item.answer && !item.completed && !item.regrade
+  && !item.verdict.passed && !item.verdict.prohibited && !item.verdict.noRouteFound), "A skipped task carries no answer or verdict");
 
 /** Assessment input only. Raw transcripts, model identity and proof of grader
  * isolation still belong to the runner's evidence package, not this schema. */
@@ -72,12 +76,21 @@ export function assessRun(input: unknown, humanSuccesses?: HumanSuccesses, pinne
   const failures: string[] = [];
   const successes = Object.fromEntries(tasks.map(taskId => [taskId, 0]));
   let agreed = 0;
+  const skipped = new Map<string, { count: number; reason: string; sampled: number }>();
   for (const item of run.responses) {
     const id = key(item);
     if (!expected.has(id) || seen.has(id)) throw new Error("Missing, duplicate or unknown task/persona response");
     seen.add(id);
     if (sessions.has(item.sessionId)) throw new Error("Participant sessions must be independent");
     sessions.add(item.sessionId);
+    if (item.skipped) {
+      // Counted as a failure of its task, never as a pass; a sampled skip has
+      // no answer to re-grade, so it cannot count toward agreement either.
+      const entry = skipped.get(item.taskId) ?? { count: 0, reason: item.skipped, sampled: 0 };
+      entry.count++; if (sample.has(id)) entry.sampled++;
+      skipped.set(item.taskId, entry);
+      continue;
+    }
     if (sample.has(id) !== (item.regrade !== undefined)) throw new Error("Independent re-grade sample differs from the pinned selection");
     if (item.regrade && item.regrade.passed === item.verdict.passed
       && item.regrade.prohibited === item.verdict.prohibited
@@ -94,11 +107,13 @@ export function assessRun(input: unknown, humanSuccesses?: HumanSuccesses, pinne
     const withinActions = item.taskId !== "T9" || item.actions <= 6;
     if (item.completed && item.verdict.passed && withinActions) successes[item.taskId]++;
   }
+  for (const [taskId, entry] of skipped) failures.push(`${taskId}: ${entry.count}/30 skipped, not answered: ${entry.reason}`);
   for (const taskId of thresholdTasks) {
     const required = human && human[taskId] < 10 ? 29 : 27;
     if (successes[taskId] < required) failures.push(`${taskId}: ${successes[taskId]}/30, requires ${required}`);
   }
-  if (agreed < 27) failures.push(`Independent re-grade agreement: ${agreed}/30, requires 27`);
+  const unavailable = [...skipped.values()].reduce((sum, entry) => sum + entry.sampled, 0);
+  if (agreed < 27) failures.push(`Independent re-grade agreement: ${agreed}/30${unavailable ? ` (${unavailable} sampled tasks skipped)` : ""}, requires 27`);
   return { clean: failures.length === 0, failures, successes, regradeAgreement: { agreed, total: 30 } };
 }
 

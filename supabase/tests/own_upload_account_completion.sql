@@ -1,5 +1,6 @@
 begin;
 select no_plan();
+\ir fixtures/invitation_quota_keys.inc
 -- Synthetic accounts; every write and invitation fixture rolls back.
 insert into auth.users(id,email,raw_user_meta_data) values
  ('76100000-0000-4000-8000-000000000001','own-completion@e2e.local','{"display_name":"Completion"}'),
@@ -132,7 +133,7 @@ reset role;
 -- delivery fixture, not a mail-worker test; no unrelated outbox row is claimed.
 create temporary table completion_invitation as select * from public.create_adult_subject_invitation_v1(
  '76100000-0000-4000-8000-000000000002',decode('00112233445566778899aabbccddeeff','hex'),
- repeat('c',64),repeat('d',64),true);
+ repeat('c',64),repeat('d',64),true,p_quota_keys => pg_temp.invitation_quota_keys());
 update public.token_candidates set state='issued'
  where target_id=(select invitation_id from completion_invitation);
 insert into public.token_hashes(candidate_id,token_hash,token_revision,status)

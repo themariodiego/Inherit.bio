@@ -8,6 +8,7 @@ import addiction from "../../../data/templates/addiction.json";
 import heart from "../../../data/templates/heart-cardiovascular.json";
 import metabolic from "../../../data/templates/metabolic-obesity.json";
 import neurodegenerative from "../../../data/templates/neurodegenerative.json";
+import environmental from "../../../data/templates/environmental-sensitivity.json";
 import {
   REPORT_SCIENTIFIC_CORRECTION_NOTICE,
   reportOutcomeScientificCorrections,
@@ -17,13 +18,16 @@ import {
 } from "./report-scientific-corrections";
 import { resolveVariant, type ReportTemplate } from "./reports";
 
-const current = [...brain, ...cancer, ...addiction, ...neurodegenerative, ...metabolic, ...heart] as ReportTemplate[];
+const current = [...brain, ...cancer, ...addiction, ...neurodegenerative, ...metabolic, ...heart, ...environmental] as ReportTemplate[];
 const expectedCounts = [
   ["caffeine-sleep-adora2a-rs5751876", 4], ["colorectal-apc-i1307k", 4],
   ["breast-cancer-fgfr2-rs2981582", 4], ["alcohol-dependence-aldh2-rs671", 5],
   ["trem2-r47h-alzheimers", 4], ["apoe-e4-alzheimers-risk", 7],
   ["type-2-diabetes-tcf7l2-rs7903146", 4],
   ["factor-v-leiden-rs6025", 4],
+  // 28 September batch: four reports corrected against their retrieved sources.
+  ["caffeine-intake-ahr-rs4410790", 2], ["photic-sneeze-reflex-zeb2", 3],
+  ["motion-sickness-susceptibility", 2], ["chronotype-per3-rs228697", 2],
 ] as const;
 
 function historical(slug: string) {
@@ -51,19 +55,19 @@ function freeze<T>(value: T): T {
 }
 
 describe("known scientific correction registry", () => {
-  it("preserves the prior 32 fields and appends four exact F5 fields from reachable Git changes", () => {
+  it("preserves the prior 36 fields and appends nine exact 28 September fields from reachable Git changes", () => {
     expect(registry.map((batch) => [batch.slug, batch.fields.length])).toEqual(expectedCounts);
     const fields = registry.flatMap((batch) => batch.fields.map((entry) =>
       [batch.slug, entry.field, entry.rsid ?? null, entry.genotype ?? null, entry.oldText]));
-    expect(fields).toHaveLength(36);
+    expect(fields).toHaveLength(45);
     expect(createHash("sha256").update(JSON.stringify(fields)).digest("hex"))
-      .toBe("17625054d23c77d99f6c8e40c07adc9cc70e7e4ad284c9d4a45a8a356dcce71f");
+      .toBe("7338a40d7f923053d51b2e931e0102347582a0260442677208e7be19aa6b719b");
     expect(fields.slice(0, 32)).toHaveLength(32);
     expect(createHash("sha256").update(JSON.stringify(fields.slice(0, 32))).digest("hex"))
       .toBe("75d4e0e17a558adf3c97b641b84f4b0fcd004eb386748a14e9f50c3b4d9d1269");
-    expect(new Set(registry.flatMap((batch) => batch.fields.map((entry) => entry.id))).size).toBe(36);
+    expect(new Set(registry.flatMap((batch) => batch.fields.map((entry) => entry.id))).size).toBe(45);
     for (const batch of registry) {
-      expect(batch.correctedOn).toBe("2026-09-23");
+      expect(["2026-09-23", "2026-09-28"]).toContain(batch.correctedOn);
       expect(existsSync(batch.reviewPath)).toBe(true);
       expect(batch.source.previousCommit).toMatch(/^[a-f0-9]{40}$/u);
       expect(batch.source.correctedCommit).toMatch(/^[a-f0-9]{40}$/u);
@@ -133,7 +137,7 @@ describe("known scientific correction registry", () => {
 });
 
 describe("known no-catalog outcome corrections", () => {
-  it("matches each of the 27 actual old genotype explanations and no current explanation", () => {
+  it("matches each of the 33 actual old genotype explanations and no current explanation", () => {
     let matched = 0;
     for (const batch of registry) {
       const present = current.find((item) => item.slug === batch.slug)!;
@@ -146,7 +150,7 @@ describe("known no-catalog outcome corrections", () => {
         matched++;
       }
     }
-    expect(matched).toBe(27);
+    expect(matched).toBe(33);
   });
 
   it("recognizes saved F5 calls in both valid orientations without inferring missing or other alleles", () => {
