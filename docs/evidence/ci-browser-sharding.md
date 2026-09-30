@@ -32,6 +32,11 @@ The repository job independently discovers the complete standard case set.
 Each shard independently repeats full discovery and native assigned discovery,
 then requires exactly one passed, retry-zero execution for each assigned case.
 Aggregation proves expected = assigned = executed, with exactly-once coverage.
+Native listing reports expected=0 and skipped=the listed case count; the
+validator requires those exact discovery statistics, every declared expectation
+to be passed, and zero results. Actual execution instead requires the exact
+passed-case count, skipped=0 and one retry-zero passed result per case. Listing
+statistics cannot be accepted as evidence of an executed or skipped test.
 A separate tracked-source census requires every ordinary `e2e/**/*.spec.ts`
 file to appear. Only the exact documented opt-in files
 `e2e/density-post-change.density.spec.ts` and `e2e/comprehension-run.spec.ts` are

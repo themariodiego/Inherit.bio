@@ -1,5 +1,19 @@
 # Test diff register
 
+## Native browser discovery and execution statistics · 30 September 2026
+
+The coverage verifier now checks each phase against real Playwright 1.62.1 JSON.
+Native `--list` reports expected=0 and skipped=the discovered case count, while
+every test declares expectedStatus=passed and has zero results. The former
+handcrafted discovery fixture incorrectly used skipped=0; a real-tool check
+caught that before hosted execution. Discovery now requires the exact native
+counts and still refuses declared skips, results, errors and project drift.
+Actual execution retains every existing strict pass-once/retry-zero boundary
+and now also requires expected=the executed case count and skipped=0. Two new
+regressions reject false listing counts, declared skips, discovery executions,
+false passed counts and any skipped execution. No actual execution assertion,
+timeout, retry, case or gate is relaxed or removed.
+
 
 ## CI readability scan reuse · 30 September 2026
 

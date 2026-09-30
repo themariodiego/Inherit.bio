@@ -13,7 +13,8 @@ function report(cases: number[], shard: number | null = null, executed = false) 
     projects: projects.map(name => ({ name, retries: 0, repeatEach: 1 })), webServer: { env: { PRIVATE_FIXTURE: "must not be copied" } } },
   suites: [{ suites: [{ specs: cases.map(n => ({ id: id(n), file: `synthetic-${n}.spec.ts`, tests: [{ projectName: projects[(n-1)%4], expectedStatus: "passed",
     results: executed ? [{ status: "passed", retry: 0, duration: 10, stdout: ["private fixture"], attachments: ["private fixture"] }] : [] }] })) }] }],
-  errors: [], stats: { unexpected: 0, flaky: 0, skipped: 0 } };
+  errors: [], stats: { expected: executed ? cases.length : 0,
+    unexpected: 0, flaky: 0, skipped: executed ? 0 : cases.length } };
 }
 function evidence() {
   const full = report([1, 2, 3, 4, 5, 6]);
@@ -21,6 +22,27 @@ function evidence() {
     browserShardReceipt(full, report([index], index), report([index], index, true), source, index, index, timings, tracked)) };
 }
 describe("mandatory browser coverage across isolated jobs", () => {
+  it("requires the real native listing statistics and refuses declared skips or discovery executions", () => {
+    const cases = [1, 2, 3, 4, 5, 6];
+    expect(browserReportCases(report(cases), null, false)).toHaveLength(6);
+    for (const stats of [{ expected: 0, skipped: 0 }, { expected: 0, skipped: 5 },
+      { expected: 1, skipped: 6 }]) {
+      const value = report(cases); Object.assign(value.stats, stats);
+      expect(() => browserReportCases(value, null, false)).toThrow();
+    }
+    const skipped = report(cases);
+    Object.assign(skipped.suites[0].suites[0].specs[0].tests[0], { expectedStatus: "skipped" });
+    expect(() => browserReportCases(skipped, null, false)).toThrow();
+    expect(() => browserReportCases(report(cases, null, true), null, false)).toThrow();
+  });
+  it("requires exact native passed-result counts and zero skipped executions", () => {
+    expect(browserReportCases(report([1], 1, true), 1, true)).toHaveLength(1);
+    for (const stats of [{ expected: 0, skipped: 0 }, { expected: 2, skipped: 0 },
+      { expected: 1, skipped: 1 }]) {
+      const value = report([1], 1, true); Object.assign(value.stats, stats);
+      expect(() => browserReportCases(value, 1, true)).toThrow();
+    }
+  });
   it("accepts exactly-once complete discovery/execution and copies no raw configuration or private evidence", () => {
     const { manifest, receipts } = evidence();
     expect(verifyBrowserShards(manifest, receipts, source)).toBe(6);

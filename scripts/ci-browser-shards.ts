@@ -47,7 +47,8 @@ const reportSchema = z.object({
     projects: z.array(z.object({ name: z.string(), retries: z.literal(0), repeatEach: z.literal(1) })),
   }),
   suites: z.array(z.unknown()), errors: z.array(z.unknown()).max(0),
-  stats: z.object({ unexpected: z.literal(0), flaky: z.literal(0), skipped: z.literal(0) }),
+  stats: z.object({ expected: z.number().int().nonnegative(),
+    unexpected: z.literal(0), flaky: z.literal(0), skipped: z.number().int().nonnegative() }),
 });
 const testSchema = z.object({ projectName: z.string(), expectedStatus: z.literal("passed"),
   results: z.array(z.object({ status: z.literal("passed"), retry: z.literal(0), duration: milliseconds })),
@@ -79,6 +80,11 @@ export function browserReportCases(value: unknown, index: number | null, execute
     }
   };
   visit(report.suites);
+  // Native --list counts every unexecuted case in stats.skipped. It must
+  // still declare each case passed and contain no result. Actual execution
+  // instead requires every discovered case to pass once and zero skips.
+  assert.equal(report.stats.expected, executed ? cases.length : 0, "Browser expected-result count differs");
+  assert.equal(report.stats.skipped, executed ? 0 : cases.length, "Browser skipped-result count differs");
   if (index === null) assertStandardCiBrowserProjects([...new Set(cases.map(id => id.split(":")[1]))]);
   return sortedUnique(cases);
 }
