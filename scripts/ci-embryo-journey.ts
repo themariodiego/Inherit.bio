@@ -218,6 +218,12 @@ function embryoProof(cohort: string): string {
     'allPartsCurrent',coalesce((select bool_and(p.state='landed' and p.observed_sha256=p.sha256
       and p.provider_bucket='inherit-embryo-ci' and p.provider_version ~ '^[0-9a-f]{32}$' and p.provider_etag ~ '^[0-9a-f]{32}$')
       from private.embryo_canonical_parts p join public.embryo_ingest_sessions s on s.id=p.session_id where s.cohort_id=${cohort}),false),
+    'scores',(select count(*) from public.embryo_scores x join public.embryos e on e.id=x.embryo_id where e.cohort_id=${cohort}),
+    'ordinals',(select jsonb_agg(jsonb_build_object('ordinal',e.sample_ordinal,'status',e.status,
+      'sources',(select count(*) from private.embryo_canonical_sources x where x.embryo_id=e.id and x.cohort_id=e.cohort_id),
+      'parts',(select count(*) from private.embryo_canonical_parts p join public.embryo_ingest_sessions s on s.id=p.session_id
+        where s.cohort_id=e.cohort_id and p.sample_ordinal=e.sample_ordinal)) order by e.sample_ordinal)
+      from public.embryos e where e.cohort_id=${cohort}),
     'pendingOrdinals',(select count(*) from private.embryo_split_ordinals o join public.embryo_ingest_sessions s on s.id=o.session_id where s.cohort_id=${cohort}),
     'pendingVariants',(select count(*) from private.embryo_split_variants v join public.embryo_ingest_sessions s on s.id=v.session_id where s.cohort_id=${cohort}));`;
 }

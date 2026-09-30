@@ -44,6 +44,7 @@ const PREPARED_JOURNEY = /own-prepared-genome-journey\.spec\.ts$/;
  * that run only on a server-attested same-host model
  * (copilot-transport-availability-v1).
  */
+const MIXED_QC_JOURNEY = /embryo-mixed-qc-journey\.spec\.ts$/;
 const EMBRYO_JOURNEY = /embryo-ingest-journey\.spec\.ts$/;
 const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
 /**
@@ -99,7 +100,8 @@ const config = defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY] },
+    ...(includePreparedJourney ? [{ name: "embryo-mixed-qc", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${EMBRYO_APP_PORT}` }, testMatch: MIXED_QC_JOURNEY }] : []),
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY, MIXED_QC_JOURNEY] },
     ...(comprehensionRun ? [{ name: "comprehension-run", use: { ...devices["Desktop Chrome"] }, testMatch: COMPREHENSION_RUN }] : []),
     {
       name: "jurisdiction-off",

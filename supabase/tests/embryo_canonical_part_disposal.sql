@@ -18,7 +18,7 @@ create function pg_temp.token(p text) returns text language sql as $$
   select encode(extensions.digest('synthetic-part-claim:'||p,'sha256'),'hex');
 $$;
 create function pg_temp.outcome(p_outcome text,p_verdict text,p_rows integer) returns jsonb language sql as $$
-  select jsonb_build_object('outcome',p_outcome,'qc',jsonb_build_object('sites_expected',10,
+  select jsonb_build_object('outcome',p_outcome,'qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.4,12.5),'sites_expected',10,
     'sites_called',case p_outcome when 'passed' then 10 else 6 end,
     'call_rate',case p_outcome when 'passed' then 1 else 0.6 end,'autosomal_het_rate',0.4,'mean_depth',12.5,
     'qc_verdict',p_verdict,'qc_reasons',case p_outcome when 'passed' then '[]'::jsonb else '["embryo_call_rate"]'::jsonb end),

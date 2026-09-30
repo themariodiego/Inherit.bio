@@ -24,6 +24,8 @@
  * Pure functions over plain values; no I/O, no React, no database.
  */
 
+import { readResultBasis, resultBasis, type ResultBasis } from "../figures/result-basis";
+
 export const MENDEL_PATTERNS = ["autosomal_recessive", "autosomal_dominant", "x_linked"] as const;
 export type MendelPattern = (typeof MENDEL_PATTERNS)[number];
 
@@ -93,6 +95,7 @@ export interface MendelCross {
   parents: CrossParents;
   /** Always exact: the figure contract's basis for arithmetic with no model in between. */
   basis: "exact";
+  figureBasis: ResultBasis<"exact">;
   /** The outcomes that occur, each with a non-zero fraction; they sum to 1. */
   outcomes: readonly CrossOutcome[];
   /** Outcomes the pattern can name that this cross cannot produce. Rendered as words, never as 0%. */
@@ -197,6 +200,7 @@ export function autosomalCross(
     pattern,
     parents: { kind: "autosomal", a, b },
     basis: "exact",
+    figureBasis: resultBasis("exact"),
     outcomes,
     absentOutcomes,
     assumptions: AUTOSOMAL_ASSUMPTIONS,
@@ -231,6 +235,7 @@ export function xLinkedCross(mother: MotherCopies, father: FatherCopies): Mendel
     pattern: "x_linked",
     parents: { kind: "x_linked", mother, father },
     basis: "exact",
+    figureBasis: resultBasis("exact"),
     outcomes,
     absentOutcomes,
     assumptions: X_LINKED_ASSUMPTIONS,
@@ -263,11 +268,18 @@ export function canonicalCross(id: CanonicalCross): MendelCross {
  * can turn an absent outcome into "0 in 100" (line 2238).
  */
 export function crossShares(cross: MendelCross): Partial<Record<MendelOutcome, number>> {
+  readMendelBasis(cross);
   const shares: Partial<Record<MendelOutcome, number>> = {};
   for (const { outcome, fraction } of cross.outcomes) {
     shares[outcome] = fraction.numerator / fraction.denominator;
   }
   return shares;
+}
+
+/** Read the computation's classification before using a captured or in-memory cross. */
+export function readMendelBasis(cross: MendelCross): "exact" {
+  if (cross.basis !== "exact") throw new Error("invalid_result_basis");
+  return readResultBasis(cross.figureBasis, cross.basis);
 }
 
 /** The outcome's share of the cross, in [0, 1]. */

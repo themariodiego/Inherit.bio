@@ -27,7 +27,7 @@ describe("standard Playwright server readiness", () => {
       expect(localBrowserTarget(server!.url!).href).toBe(server?.url);
     }
     expect(value.workers).toBe(1); expect(value.retries).toBe(0);
-    expect(value.projects).toHaveLength(5); expect(value.use?.trace).toBe("off");
+    expect(value.projects).toHaveLength(6); expect(value.use?.trace).toBe("off");
     // The local-model variant carries the fixed attestation and the others do not.
     const environments = servers.map(server => (server as { env?: Record<string, string> }).env ?? {});
     expect(environments[3].ALLOW_LOCAL_MODEL_ENDPOINTS).toBe("1");
@@ -47,20 +47,20 @@ describe("standard Playwright server readiness", () => {
     const embryo = value.projects?.find(project => project.name === "embryo-ingest");
     expect(embryo?.use?.baseURL).toBe("http://localhost:3105");
     expect(String(embryo?.testMatch)).toContain("embryo-ingest-journey");
-    expect(String(value.projects?.[0]?.testIgnore)).toContain("embryo-ingest-journey");
+    expect(String(value.projects?.find(project => project.name === "chromium")?.testIgnore)).toContain("embryo-ingest-journey");
     const prepared = value.projects?.find(project => project.name === "prepared-source");
     expect(prepared?.use?.baseURL).toBe("http://localhost:3104");
     expect(String(prepared?.testMatch)).toContain("own-prepared-genome-journey");
-    expect(String(value.projects?.[0]?.testIgnore)).toContain("own-prepared-genome-journey");
+    expect(String(value.projects?.find(project => project.name === "chromium")?.testIgnore)).toContain("own-prepared-genome-journey");
     const local = value.projects?.find(project => project.name === "copilot-local");
     expect(local?.use?.baseURL).toBe("http://localhost:3103");
     expect(String(local?.testMatch)).toContain("copilot-redteam");
-    expect(String(value.projects?.[0]?.testIgnore)).toContain("copilot-redteam");
+    expect(String(value.projects?.find(project => project.name === "chromium")?.testIgnore)).toContain("copilot-redteam");
     // The Family group Copilot journey needs the same attested local model.
     expect(String(local?.testMatch)).toContain("copilot-family");
-    expect(String(value.projects?.[0]?.testIgnore)).toContain("copilot-family");
+    expect(String(value.projects?.find(project => project.name === "chromium")?.testIgnore)).toContain("copilot-family");
     expect(String(local?.testMatch)).toContain("copilot-cohort");
-    expect(String(value.projects?.[0]?.testIgnore)).toContain("copilot-cohort");
+    expect(String(value.projects?.find(project => project.name === "chromium")?.testIgnore)).toContain("copilot-cohort");
     for (const project of value.projects ?? []) {
       const origin = project.use?.baseURL ?? value.use?.baseURL;
       const signIn = new URL("/auth/sign-in", origin).href;
@@ -82,7 +82,7 @@ describe("standard Playwright server readiness", () => {
     try {
       process.argv = [...argv, "--list"];
       const listed = await config(false);
-      expect(listed.projects?.map(project => project.name)).toEqual(["chromium", "jurisdiction-off", "copilot-local", "embryo-ingest", "prepared-source"]);
+      expect(listed.projects?.map(project => project.name)).toEqual(["embryo-mixed-qc", "chromium", "jurisdiction-off", "copilot-local", "embryo-ingest", "prepared-source"]);
       expect([listed.webServer].flat()).toHaveLength(4);
       process.argv = argv.filter(arg => arg !== "--list");
       for (const value of [undefined, "", "READY", "unqualified"]) {
