@@ -158,6 +158,36 @@ Migration 20260930242000 preserves the Charter's recorded signing name ciphertex
 The source prerequisite is service-only and read-only, accepts no subject/account/file selectors, binds the current genuine claimant/session/credential/source tuple, uses exact autosomal fields and lossless bigint keyset cursors, and checks live authority before and after each page. Twenty-two focused units cover genuine AES decoding, wrong keys and bodies, forged/current identity fields, missing roles, duplicate/truncated/mismatched pages, revocation before yielding bytes, cancellation and the bounded non-cooperative RPC. The real SQL fixture uses the existing attested decision, provider issue/completion and one-use activation sequence, then adds closed projection, sibling/stale receipt/selector denial, zero row-count mutation, exact 147-store count and independent analysis-stop/source checks. An optional synthetic signing envelope affects only this metadata fixture; every older fixture's default bytes and negative cases remain unchanged.
 
 This is an export source checkpoint. No public export route, complete member plan, queued worker, READY exception or successful archive delivery is claimed. Every existing account publication/late-write hold and excluded credential/document disposition remains. SQL and full hosted browser execution are pending independent verification; G5.4 remains NO.
+## Claimed-source erasure prerequisite · 30 September 2026
+
+New protocol tests pin the exact sealed inventory, permanent verified empty
+marker, unchanged receipt and one lease binding. Crossed manifests, duplicate
+objects, extra selectors, expired leases, lost ACKs and contradictory completion
+receipts refuse. New SQL probes preserve the service-only drain and private
+plan creation boundaries; missing authority/plan/evidence never means deletion.
+No existing expectation or assertion changed. Genuine positive approval-to-plan
+SQL, complete subject graph cleanup, registered DELETE/UI and hosted evidence
+remain pending; source disposal alone is not deletion acceptance. G8 remains NO.
+
+## Case-read auditing and verified document delivery · 30 September 2026
+
+The reviewer browser journeys originally required zero total rows in
+`private.claim_review_reads` before document acknowledgements. The real case
+reader already writes ordinary audit rows when the SSR page and browser GET
+read the assigned case, so that total-zero expectation conflated legitimate
+case auditing with actual document delivery.
+
+The corrected check requires zero rows carrying any document id, chunk
+sequence or delivery-verification timestamp, including a partial or failed
+receipt. A separate positive assertion requires genuine ordinary case-read
+rows, all under the exact claim, reviewer, actual SDK-verified browser Auth
+session and current review revision, with every document/receipt field null.
+It does not pin a fragile SSR/client metadata-read count or insert confirmation.
+The canceled second-chunk path repeats the same zero-receipt proof after error.
+All zero-ACK, disabled processing controls, exact three completed receipts,
+complete-byte/SHA, human checkbox, refusal and unchanged-revision assertions
+remain. No product, database, timeout, retry or acceptance gate changes.
+Actual execution of these corrected journeys remains required in full CI.
 
 ## Inert full-page review precedes human confirmation · 30 September 2026
 
@@ -173,6 +203,10 @@ The shared response observer now handles the native null body of 204/205 as exac
 
 The new page authorization test is named .test.ts to match the shared unit runner's existing include. The original .test.tsx name was not collected by that runner; all nine authority/refusal assertions now execute without widening the shared test configuration.
 
+## Embryo tamper probes execute real deferred integrity checks · 30 September 2026
+
+The canonical write-deadline and completion/split format probes now execute all valid pending constraints before their owner-only fixture DDL, inside the same rollback subtransaction. Keeping constraints immediate prevents newly queued integrity events from masking the intended API refusal when the fixture re-enables its original immutable trigger. The exact 42501 expired-write refusal, missing-ordinal and subset rules, stale-manifest refusal, build/configuration refusals and every existing assertion remain unchanged. No production trigger is disabled or relaxed; these are the pre-existing synthetic owner-tamper setups.
+
 ## PostgreSQL nonce boundaries retain the full registered maximum · 30 September 2026
 
 The registered operation nonce remains 16–256 characters from the closed ASCII alphabet. PostgreSQL's regular-expression repetition limit is lower than 256, so the executor now checks character and byte length explicitly and retains an unbounded closed-alphabet pattern. Eight strict rollback probes under a genuinely activated claimant session cover 15, 16, 256, 257, null, forbidden punctuation, trailing newline and non-ASCII characters. Both exact accepted boundaries must record one consumed hash; all refusals remain 42501. The purpose seed and exact single-claimant insertion use the existing literal formatting read by the matrix unit parser. Its target-kind literal reader now recognizes the registered hyphen in claimed-subject, while the exact issuer-set equality and every-insertion literal assertion remain unchanged. No nonce bound or browser ratchet changes.
@@ -183,12 +217,23 @@ The strict Future Person session trigger now joins the actual issued token candi
 
 The intake's exact private column census includes the independently erasable identity-key timestamp alongside its ciphertext and digests. The list remains exact and excludes plaintext. The reviewer browser ratchet remains unchanged and still refuses the unproven page states.
 
-## Named reviewer UI and irreversible claimant stop · 30 September 2026
+## Inert full-page review precedes human confirmation · 30 September 2026
 
-A separately registered reviewer page rechecks the exact own-JWT named assignment and recent MFA before any viewer render. Its fresh browser GET supplies bounded operation material; two serialized full-byte/SHA-256 receipt reads and distinct explicit human confirmations precede a decision. Verified approval identity is typed from the papers rather than prefilled from the unverified claim. Closed page-contract and authorization units cover anonymous, malformed, unavailable and unsupported branches. New page states remain unproven by the full browser suite; the route-state ratchet is unchanged and must fail until those genuine browser proofs exist.
+The two authored browser journeys now use their exact registered complete and processing titles. The static gate extracts those titles, and its exact ledger records both; their actual end-to-end execution remains pending full CI. Its required-pair assertion grows from 155 to 157 for the new page, while the ratchet stays unchanged. This corrects the earlier deliberately unbound draft titles without changing any existing negative assertion or an acceptance row. The positive case now uploads a valid synthetic two-page PDF through the real encryption, Storage and scanner path. Page one must leave its human confirmation absent; both pages must actually render before that confirmation appears, and exact nonblank page-two pixels are checked. The existing exact chunk status/body, digest, assignment, human attestation, unassigned reviewer refusal, decision, erasure and canceled delivery assertions remain.
 
-The reserved stop migration freezes the original timestamp, refuses a second operation even with a fresh nonce, appends exactly one fresh random pseudonymized event with empty coded context, and preserves the source. Live typed old and new subject bindings are rechecked on actual worker-job creation/claim/progress/result completion and nine derived-store writes. Cancellation, physical deletion and purge work remain possible. No generic claimant computation or raw-source reader is opened: the current own-preparation/report executors already require self subjects, and a future claimant executor must call the same current fence before every source/model read. Full export, account binding, correction, recovery/keyless notice transfer and G5.4 remain unfinished and closed.
+PDF review uses pinned local PDF.js canvas rendering with a dedicated bounded worker. There is no annotation HTML, active link, scripting manager or remote document URL. Only exact filenames and sizes from the packaged local asset manifest may be requested, without credentials or a referrer; unregistered document-selected names fail before a request. Six focused units cover exact complete-page sets, proportional canvas bounds, unknown/traversed names, exact local bytes, invalid size metadata and a stalled request's timed refusal/abort. Images still support PNG and JPG and now need a successful native decode before confirmation. PDFs expose each complete page with navigation and zoom; every page must render, with an explicit whole-document refusal above 200 pages or a 16-million-pixel page canvas. A real loopback Chromium check proves both pages' exact pixels, inert planted actions/links, no external request or document diagnostics, complete-page zoom, invalid-byte refusal and worker termination on close/canceled startup. The same check drives the application's actual image viewer: both native PNG and JPG decode to their exact dimensions before confirmation, while invalid images expose none. This renderer proof is separate from full app/database browser evidence. No existing timeout, retry or negative boundary is relaxed.
 
+## Actual reviewer browser fixture remains a draft until execution · 30 September 2026
+
+Two new browser journeys build their cases through actual claimant UI start, rotation, encrypted upload, composition, the bounded real Storage-reading worker with its registered non-production TEST-LOCAL scanner, and claim completion. Auth itself enrolls and verifies TOTP; its SSR SDK emits the session cookies. Only named reviewer grant and exact assignment use owner-only local fixture operations. The draft checks a real two-chunk image receipt, native image decoding, separate human read confirmations, current digests/assignment, another actual stepped-up reviewer's opaque refusal, a real rejection and immediate key erasure. A canceled second chunk must leave zero acknowledgements, no full read, no decision and unchanged review revision. No queue, JWT claim or document guard is edited. At this earlier checkpoint the titles were deliberately unbound; the newer entry above corrects that workflow while retaining execution as pending.
+
+The shared response observer now handles the native null body of 204/205 as exactly zero bytes. Its independent real loopback/Chromium proof grows from six to eight unchanged requests and still proves original response identity, exact headers/body, bounded-body refusal, duplicate refusal after the first body settled and cleanup. Image documents use an in-memory native image rather than a nested document. This checkpoint's sandboxed PDF frame was subsequently found blank in Chromium and is replaced by the renderer documented above. No timeout, retry, existing assertion or acceptance row is relaxed.
+
+The new page authorization test is named .test.ts to match the shared unit runner's existing include. The original .test.tsx name was not collected by that runner; all nine authority/refusal assertions now execute without widening the shared test configuration.
+
+## Embryo tamper probes execute real deferred integrity checks · 30 September 2026
+
+The canonical write-deadline and completion/split format probes now execute all valid pending constraints before their owner-only fixture DDL, inside the same rollback subtransaction. Keeping constraints immediate prevents newly queued integrity events from masking the intended API refusal when the fixture re-enables its original immutable trigger. The exact 42501 expired-write refusal, missing-ordinal and subset rules, stale-manifest refusal, build/configuration refusals and every existing assertion remain unchanged. No production trigger is disabled or relaxed; these are the pre-existing synthetic owner-tamper setups.
 ## Identity and each document have independently erasable keys · 30 September 2026
 
 The registered field-protection boundary now uses a runtime-random 32-byte key for each document, independently wrapped by the existing deployment key; it never derives the document key from the identity key. SQL chunk, composition, scanner and reviewer grants retain their exact authority/byte checks and project only that document's key. Legacy no-key signatures lose every API grant. Existing metadata-only database fixtures now pass independent synthetic 72-byte envelopes explicitly; real encryption tests reject the identity key and sibling document key for the same object's bytes. All old integrity, type, malware, role, freshness, receipt, deadline and fixed-header assertions remain. The document plan grows from 81 to 93 and the review plan from 96 to 100 through additional key-source, irreversible-erasure and deadline assertions.
@@ -557,6 +602,98 @@ main's legal audit account link and exact unwind storage disposals. No
 store assertion is removed. The export plan classifies all three new
 private split-worker tables; its generated database inventory continues
 to require exact equality with the catalog.
+
+## Browser setup timing input survives native cleanup · 30 September 2026
+
+The first hosted run executed all 565 cases successfully across six fresh jobs
+(98/100/108/74/94/91), with zero skips or retries, then every browser job failed
+because Playwright had removed its pre-run timing input from `test-results`.
+The correction stores that input in the job-owned `RUNNER_TEMP`, outside the
+output directory, with exact commit/run/attempt/shard identity, bounded integer
+timings, exclusive private-file creation and strict ownership checks. Missing,
+foreign, malformed or permissive inputs still fail; no fallback is introduced.
+
+A new regression invokes the installed native Playwright with an actual passing
+case and proves its output-directory cleanup deletes the old internal input
+while preserving the external timing record. Further regressions refuse stale
+or foreign identities, invalid clocks, altered schema, links and duplicate
+writes. Existing browser cases, assertions, timeouts, retries, transport checks
+and complete same-attempt aggregation are unchanged. A complete hosted rerun
+on the corrected version is required before accepting the release gate.
+
+## Browser evidence artifact selection across reruns · 30 September 2026
+
+Coverage artifact names now begin `browser-case-<attempt>-`, and the download
+pattern requires that complete prefix. The previous suffix wildcard could
+accidentally select attempt 1/shard 2 while downloading attempt 2, causing a
+valid full rerun to fail its exact-directory check. A new regression applies
+the actual workflow pattern through the existing installed glob matcher to
+retained attempts 1, 2 and 12 and requires exactly seven artifacts for each.
+The exact receipt count, same-attempt/source/run checks and stale-evidence
+refusals remain unchanged; no evidence from another attempt becomes accepted.
+
+An intermediate fresh database run stopped at the existing signed-invitation
+fixture; its full assertions passed in a diagnostic reproduction. The fixture
+now retains the same immediate refusal and ten-claim bound while reporting only
+synthetic queue/authority state flags on refusal. It reveals no contact, token
+or identifier. No deadline, wait, retry, quota, assertion or producer is changed.
+The original failure's cause remains unestablished, so no speculative runtime
+change or green result is claimed from that diagnostic alone.
+
+## Native browser discovery and execution statistics · 30 September 2026
+
+The coverage verifier now checks each phase against real Playwright 1.62.1 JSON.
+Native `--list` reports expected=0 and skipped=the discovered case count, while
+every test declares expectedStatus=passed and has zero results. The former
+handcrafted discovery fixture incorrectly used skipped=0; a real-tool check
+caught that before hosted execution. Discovery now requires the exact native
+counts and still refuses declared skips, results, errors and project drift.
+Actual execution retains every existing strict pass-once/retry-zero boundary
+and now also requires expected=the executed case count and skipped=0. Two new
+regressions reject false listing counts, declared skips, discovery executions,
+false passed counts and any skipped execution. No actual execution assertion,
+timeout, retry, case or gate is relaxed or removed.
+
+
+## CI readability scan reuse · 30 September 2026
+
+The 27 repository readability assertions now share one actual gate scan of the
+same immutable checkout in `beforeAll`. Each existing provider, template and
+page filter and its exact empty-failure assertion remain unchanged. Extraction
+assertions and planted-copy regressions retain their independent input and
+fixture scans. This removes repeated whole-repository parsing that caused a
+5-second case timeout in two complete local Linux runs; no test, threshold,
+timeout, retry or gate is removed or relaxed. Full-suite verification on the
+new committed head remains required.
+
+## Permanent isolated browser CI sharding · 30 September 2026
+
+The unchanged complete browser suite now uses six fresh hosted jobs, each with
+its own database and the existing real-provider/isolated-runtime preflight.
+New strict regression cases reject missing, duplicated, foreign-commit,
+prior-run and stale-attempt receipts, omitted or repeated cases, zero/multiple
+executions, retries, skips, non-passing results, global errors, changed projects,
+parallel workers, negative provider counts and silently ignored ordinary specs.
+The existing full-suite/no-skip/no-retry and transport assertions remain.
+
+Actual native discovery places no upload fixture in shard 1. The original
+whole-suite assertion that at least one real browser upload crosses the
+installed provider therefore moves to mandatory aggregation, which requires
+nonnegative actual per-shard counts and a positive complete-suite sum. Tests
+prove that one upload-free shard can pass when other shards observed actual
+uploads, while zero across the whole suite and every negative count fail.
+Ordinary full/local and Lighthouse runs retain their direct positive assertion.
+No sentinel upload, narrowed selector, fixture bypass or execution skip is added.
+
+The required checks job still rejects failed, cancelled or skipped job families.
+The parsed concurrency contract requires a unique run ID for non-PR groups;
+turning off active cancellation alone would still let a pending main run replace
+an older pending main run. PR groups retain their stable PR number.
+Every tracked ordinary spec must be discovered; only the exact existing density
+capture and paid comprehension-run spec remain opt-in. A central project
+registry refuses empty or unregistered projects. Raw configuration/report JSON
+is excluded from uploaded artifacts; sanitized coverage and timing receipts
+provide the exact SHA/run/case evidence and file-group imbalance instead.
 
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
