@@ -169,8 +169,21 @@ select ok((select bool_and(a->>'signingNameCiphertext'=repeat('ab',64)
  and a->>'bodySha256'=a->>'recomputedBodySha256' and (jsonb_array_length(a->'attestations')>0 or a->>'artifactKey' in ('consent.upload-embryo','disclosure.insurance-and-discrimination'))
  and a#>>'{review,outcome}'='approved') from exported_agreements,jsonb_array_elements(body) a),
  'immutable custody preserves genuine recorded ciphertext, verified signed body, affirmed roles and named decision');
-select ok((select not body::text~'signer_account|signer_principal|document|contact|genotype|e2e.local' from exported_agreements),
- 'historical signing evidence includes no parent contacts, document bytes, active identities or genomes');
+select ok((select bool_and((select array_agg(k order by k) from jsonb_object_keys(a) k)=
+ array['artifactKey','artifactVersion','attestations','bodyMarkdown','bodySha256','jurisdictionCode','jurisdictionRevision',
+ 'recomputedBodySha256','recordedRole','review','signaturePrincipalPseudonym','signaturePurpose','signedAt','signingNameCiphertext','statementKeys','version']
+ and (select array_agg(k order by k) from jsonb_object_keys(a->'review') k)=
+ array['decidedAt','kind','outcome','reviewerPrincipalPseudonym']
+ and not exists(select 1 from jsonb_array_elements(a->'attestations') t where
+  (select array_agg(k order by k) from jsonb_object_keys(t) k) is distinct from array['affirmed','affirmedAt','kind','revision','statementKeys'])
+ and not (a-'bodyMarkdown')::text~'signer_account|signer_principal|document|contact|genotype|e2e.local'
+ and not (a-'bodyMarkdown')::text like '%'||(select account_id::text from public.embryo_ingest_sessions where id=(select id from live))||'%')
+ from exported_agreements,jsonb_array_elements(body) a),
+ 'historical evidence has exact closed fields and excludes parent contacts, document bytes, active identities and genomes');
+select ok((select bool_and(a->>'bodyMarkdown'=(select body_markdown from public.consent_artifacts
+ where artifact_key=a->>'artifactKey' and version=(a->>'artifactVersion')::integer))
+ from exported_agreements,jsonb_array_elements(body) a),
+ 'every legal body is the exact original signed artifact, not document or genotype bytes');
 select ok((select (b.exports,b.jobs,b.nonces,b.downloads,b.rights,b.rights_nonces) is not distinct from
  ((select count(*) from public.generated_exports),(select count(*) from private.export_archive_jobs),
  (select count(*) from private.export_archive_nonce_uses),(select count(*) from private.export_archive_downloads),

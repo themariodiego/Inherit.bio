@@ -136,6 +136,13 @@ select is((select array_agg(k order by k) from jsonb_object_keys(public.future_p
 select ok(not public.future_person_rights_view_v1(pg_temp.h('rights'))::text~'subjectId|claimant|cipher|source|genotype|e2e.local',
  'the page exposes no genetic data, internal identifiers or contact fields');
 
+-- The documentary approval explicitly flushed all deferred invariants above.
+-- Restore their declared initial mode before this new atomic export workflow.
+set constraints all deferred;
+select ok(private.embryo_call_value_hash_v1(1,1000,'A',null,'A/A') is not null,
+ 'a genuine reference-only call receives an indexed null-aware value hash');
+select isnt(private.embryo_call_value_hash_v1(1,1000,'A',null,'A/A'),
+ private.embryo_call_value_hash_v1(1,1000,'A','','A/A'),'null and empty alternate values cannot collide');
 create temporary table member_authority as select public.future_person_export_request_v1('capture',pg_temp.h('rights')) body;
 create function pg_temp.claimant_export(p_nonce text) returns jsonb language sql as $$
  select public.future_person_export_request_v1('create',pg_temp.h('rights'),jsonb_build_object(

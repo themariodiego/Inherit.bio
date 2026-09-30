@@ -11,8 +11,13 @@ begin
  if not exists(select 1 from public.worker_jobs w join public.embryo_ingest_sessions sess on sess.id=new.session_id
   where w.id=new.worker_job_id and w.kind='split_cohort_vcf' and w.status='running'
    and w.attempts=new.attempt and w.claim_expires_at>clock_timestamp() and sess.status='processing'
-   and sess.cohort_id=new.cohort_id) then
-  raise exception using errcode='42501',message='embryo_source_unavailable';end if;
+   and sess.cohort_id=new.cohort_id and w.source_binding_kind='embryo-ingest-fragment-set'
+   and w.source_binding_id=new.session_id) then
+  -- An existing-style source can remain unproven. A copied or caller-supplied
+  -- v1 proof cannot be adopted outside the genuine running producer tuple.
+  if new.call_immutability_proof is not null then
+   raise exception using errcode='42501',message='embryo_source_unavailable';end if;
+  return new;end if;
  new.call_immutability_proof:='exact-staged-calls-v1';return new;
 end $$;
 create trigger zz_canonical_call_proof before insert on private.embryo_canonical_sources
@@ -20,9 +25,11 @@ create trigger zz_canonical_call_proof before insert on private.embryo_canonical
 revoke all on function private.stamp_canonical_call_proof_v1() from public,anon,authenticated,service_role,inherit_upload_only;
 
 create function private.embryo_call_value_hash_v1(p_chr integer,p_position bigint,p_ref text,p_alt text,p_genotype text)
-returns text language sql immutable strict security definer set search_path='' as $$
+returns text language sql immutable security definer set search_path='' as $$
  select encode(extensions.digest(private.length_prefix_utf8(p_chr::text)||private.length_prefix_utf8(p_position::text)
-  ||private.length_prefix_utf8(p_ref)||private.length_prefix_utf8(p_alt)||private.length_prefix_utf8(p_genotype),'sha256'),'hex');
+  ||private.length_prefix_utf8(p_ref)
+  ||case when p_alt is null then decode('00','hex') else decode('01','hex')||private.length_prefix_utf8(p_alt) end
+  ||private.length_prefix_utf8(p_genotype),'sha256'),'hex');
 $$;
 revoke all on function private.embryo_call_value_hash_v1(integer,bigint,text,text,text) from public,anon,authenticated,service_role,inherit_upload_only;
 create index embryo_split_exact_call_lookup on private.embryo_split_variants(session_id,sample_ordinal,worker_job_id,attempt,

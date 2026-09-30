@@ -87,7 +87,7 @@ insert into private.embryo_canonical_sources
   select (jsonb_populate_record(null::private.embryo_canonical_sources, to_jsonb(x)||jsonb_build_object(
     'file_id',(select file from sibling),'embryo_id',(select embryo from sibling),'subject_id',(select subject from sibling),
     'cohort_id',(select cohort from sibling),'session_id',(select session from sibling),'sample_ordinal',0,
-    'part_count',1))).*
+    'part_count',1,'call_immutability_proof',null))).*
   from private.embryo_canonical_sources x where x.file_id=(select min(file_id::text)::uuid from sources);
 insert into private.embryo_canonical_source_parts(file_id,part_id,sequence)
   select file,part,0 from sibling;

@@ -1,5 +1,37 @@
 # Test diff register
 
+## Null-aware canonical call proof and genuine export fixture · 30 September 2026
+
+The full fresh database rehearsal of 770ff89 reached 6789 assertions and found
+four genuine publications refused by a STRICT exact-call hash: an alternate
+allele may legitimately be NULL. The helper now encodes NULL and present values
+with distinct tagged bytes, preserving every staged tuple comparison and full
+source fence. Two additional exact SQL probes require a non-NULL digest and no
+NULL/empty collision. Existing canonical source/publication/withdrawal cases
+retain their original source counts, values and failure assertions.
+
+A synthetic unrelated restriction fixture previously copied every column of a
+published source. It now explicitly keeps NULL proof because its mirrored row
+was not created by the genuine running producer. The stamp admits only the
+exact current job/session/cohort/binding tuple; a supplied/copied non-NULL proof
+outside that tuple still refuses. Legacy NULL rows receive no inferred proof.
+The claimant capture remains fail-closed on absent proof. No legacy DNA is read
+or backfilled, and no immutable source guard is dropped or disabled at runtime.
+
+The new export fixture restores the constraints' declared initial deferred mode
+after its explicit documentary approval flush, then explicitly flushes the
+new export's complete job/nonce/origin tuple. This preserves both atomic checks;
+it does not change the production constraint or any old negative assertion.
+
+The signing privacy proof now requires exact agreement/review/attestation field
+sets, the original signed body from its real artifact, and zero parent contact,
+document/genotype fields or active parent identity outside that body. Required
+legal prose naturally contains words such as document and genotype; it is not
+mistaken for biological/document bytes. The earlier omission assertion remains
+and gains strict semantic field/body checks. Root's corrected fresh SQL
+rehearsal remains pending; no green SQL result is inferred from these changes.
+
+
 ## Actual claimant archive members and immutable calls · 30 September 2026
 
 New tests independently open the actual worker-generated ZIP64 archive and
