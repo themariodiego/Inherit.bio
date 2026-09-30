@@ -258,6 +258,7 @@ for (const theme of ["light", "dark"] as const) {
  * lands here loudly, and a page that gains a visit has to leave.
  */
 const CHECKED_ELSEWHERE: Record<string, string> = {
+  "/reviews/future-person/claims/[id]": "e2e/future-person-review.spec.ts, the genuine assigned case in both themes",
   "/family": "e2e/family.spec.ts, the signed-in hub",
   "/withdraw/[token]": "e2e/family.spec.ts, the invitation it actually issued",
   "/family/[person]": "e2e/family.spec.ts, past the Tier-2 gate with a shared layer showing",
