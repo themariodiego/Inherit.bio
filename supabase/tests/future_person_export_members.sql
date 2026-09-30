@@ -135,67 +135,62 @@ select is((select array_agg(k order by k) from jsonb_object_keys(public.future_p
  array['allowedActionIds','lifecycleState','retentionMaximumDays','safeClaimedSubjectLabel'],'the claimant page returns exactly its four registered safe fields');
 select ok(not public.future_person_rights_view_v1(pg_temp.h('rights'))::text~'subjectId|claimant|cipher|source|genotype|e2e.local',
  'the page exposes no genetic data, internal identifiers or contact fields');
-select ok(has_function_privilege('service_role','public.future_person_export_source_v1(text,text,text,bigint)','execute')
- and not has_function_privilege('authenticated','public.future_person_export_source_v1(text,text,text,bigint)','execute')
- and not has_function_privilege('anon','public.future_person_export_source_v1(text,text,text,bigint)','execute')
- and not has_function_privilege('service_role','private.future_person_export_capture_v1(text)','execute'),
- 'only the exact public service reader is granted, without a private authority bypass');
-create temporary table export_capture as select public.future_person_export_source_v1('capture',pg_temp.h('rights')) body;
-select is((select body#>>'{authority,subjectId}' from export_capture),(select subject::text from custody_ids),
- 'capture derives the one approved claimed subject from the genuine live session');
-select is((select body#>>'{source,fileId}' from export_capture),(select file::text from custody_ids),
- 'capture derives the unchanged detached canonical source');
-select is((select (body#>>'{source,variantCount}')::integer from export_capture),2,'capture declares every canonical variant');
-select is((select (body#>>'{membership,qualityReports}')::integer from export_capture),1,'capture declares its complete QC membership');
-select is((select count(*) from public.purge_target_stores),147::bigint,'no new store or purge omission accompanies the source reader');
-create temporary table read_before as select
- (select count(*) from public.generated_exports) exports,(select count(*) from private.export_archive_jobs) jobs,
- (select count(*) from private.export_archive_nonce_uses) nonces,(select count(*) from private.export_archive_downloads) downloads,
- (select count(*) from public.rights_sessions) rights,(select count(*) from public.rights_nonces) rights_nonces;
-create temporary table source_page as select public.future_person_export_source_v1('variants',pg_temp.h('rights'),
- (select body#>>'{authority,authorityReceipt}' from export_capture)) body;
-select is((select (body->>'count')::integer from source_page),2,'the page reads all own calls without sibling rows');
-select is((select array_agg((v->>'chromosome')::integer order by (v->>'id')::bigint)
- from source_page,jsonb_array_elements(body->'rows') v),array[1,7],'only the exact autosomal source rows return');
-select is((select array_agg(k order by k) from source_page,jsonb_object_keys(body->'rows'->0) k),
- array['alternateAllele','chromosome','genotype','id','position','referenceAllele'],'variant fields are an exact closed projection');
-select is(public.future_person_export_source_v1('variants',pg_temp.h('rights'),
- (select body#>>'{authority,authorityReceipt}' from export_capture),(select (body->>'nextAfterId')::bigint from source_page)),
- '{"rows":[],"count":0,"nextAfterId":null}'::jsonb,'the exact keyset ends without an offset omission');
-create temporary table exported_agreements as select public.future_person_export_source_v1('agreements',pg_temp.h('rights'),
- (select body#>>'{authority,authorityReceipt}' from export_capture)) body;
-select ok((select bool_and(a->>'signingNameCiphertext'=repeat('ab',64)
- and a->>'bodySha256'=encode(extensions.digest(convert_to(a->>'bodyMarkdown','UTF8'),'sha256'),'hex')
- and a->>'bodySha256'=a->>'recomputedBodySha256' and (jsonb_array_length(a->'attestations')>0 or a->>'artifactKey' in ('consent.upload-embryo','disclosure.insurance-and-discrimination'))
- and a#>>'{review,outcome}'='approved') from exported_agreements,jsonb_array_elements(body) a),
- 'immutable custody preserves genuine recorded ciphertext, verified signed body, affirmed roles and named decision');
-select ok((select not body::text~'signer_account|signer_principal|document|contact|genotype|e2e.local' from exported_agreements),
- 'historical signing evidence includes no parent contacts, document bytes, active identities or genomes');
-select ok((select (b.exports,b.jobs,b.nonces,b.downloads,b.rights,b.rights_nonces) is not distinct from
- ((select count(*) from public.generated_exports),(select count(*) from private.export_archive_jobs),
- (select count(*) from private.export_archive_nonce_uses),(select count(*) from private.export_archive_downloads),
- (select count(*) from public.rights_sessions),(select count(*) from public.rights_nonces)) from read_before b),
- 'all source reads leave every export, nonce, download and rights row count unchanged');
-select throws_ok($$select public.future_person_export_source_v1('capture',pg_temp.h('different-session'))$$,
- '42501','not_found','a sibling or fabricated session has no claimant source');
-select throws_ok($$select public.future_person_export_source_v1('variants',pg_temp.h('rights'),pg_temp.h('different-receipt'))$$,
- '42501','not_found','a foreign or stale source receipt returns no rows');
-select throws_ok($$select public.future_person_export_source_v1('capture',pg_temp.h('rights'),pg_temp.h('extra-receipt'))$$,
- '22023','invalid_request','capture refuses a caller-supplied authority substitute');
-select throws_ok($$select public.future_person_export_source_v1('agreements',pg_temp.h('rights'),
- (select body#>>'{authority,authorityReceipt}' from export_capture),1)$$,
- '22023','invalid_request','agreement reads refuse every variant selector');
+
+create temporary table member_authority as select public.future_person_export_request_v1('capture',pg_temp.h('rights')) body;
+create function pg_temp.claimant_export(p_nonce text) returns jsonb language sql as $$
+ select public.future_person_export_request_v1('create',pg_temp.h('rights'),jsonb_build_object(
+  'exportCookieHash',pg_temp.h('export-cookie'),'envelope',jsonb_build_object(
+   'routeId','api.future-person-export','origin','independent-rights','principalId',body->>'principalId',
+   'targetKind','subject','targetId',(select subject from custody_ids)::text,'exportContract','approved-future-person-export-v1',
+   'originBinding',body->>'originBinding','authorityReceipt',body->>'authorityReceipt','csrfBinding',pg_temp.h('csrf'),
+   'operation','create','nonceHash',pg_temp.h(p_nonce),'issuedAt',n,'expiresAt',n+300000)),pg_temp.h('csrf'))
+ from member_authority cross join lateral (select floor(extract(epoch from clock_timestamp())*1000)::bigint n) clock;
+$$;
+create temporary table member_export as select pg_temp.claimant_export('create-export') body;
+select is((select count(*) from public.generated_exports where id=(select (body->>'exportId')::uuid from member_export)
+ and origin_kind='independent-rights' and account_id is null and target_id=(select subject from custody_ids)),1::bigint,
+ 'the actual claimant job has exactly one accountless subject origin without a fabricated account');
+set constraints all immediate;
+set constraints all deferred;
+select throws_ok($$select pg_temp.claimant_export('duplicate-export')$$,'55000','export_already_pending',
+ 'a current exact subject export cannot be duplicated with a second operation nonce');
+create temporary table member_attempt as select extensions.gen_random_uuid() id;
+select lives_ok($$select public.export_archive_worker_v1('preflight',(select (body->>'exportId')::uuid from member_export),
+ (select id from member_attempt),(select body->>'authorityReceipt' from member_authority))$$,'the existing durable worker preflight resolves the live claimant origin');
+select lives_ok($$select public.export_archive_worker_v1('begin',(select (body->>'exportId')::uuid from member_export),
+ (select id from member_attempt),(select body->>'authorityReceipt' from member_authority))$$,'the real worker starts exactly this registered claimant attempt');
+create temporary table member_page as select public.future_person_export_members_v1('variants',
+ (select (body->>'exportId')::uuid from member_export),(select id from member_attempt),
+ (select body->>'authorityReceipt' from member_authority)) body;
+select is((select (body->>'count')::integer from member_page),2,'the leased worker reads every actual own canonical call');
+select is((select array_agg(k order by k) from member_page,jsonb_object_keys(body->'rows'->0) k),
+ array['alternateAllele','chromosome','genotype','id','position','referenceAllele'],'worker variants have exactly the registered own fields');
+select lives_ok($$select public.future_person_export_members_v1('quality',(select (body->>'exportId')::uuid from member_export),
+ (select id from member_attempt),(select body->>'authorityReceipt' from member_authority))$$,'own quality is read under the same genuine durable attempt');
+select throws_ok($$update public.embryo_variants set genotype='G/G' where source_file_id=(select file from custody_ids)$$,
+ '55000','canonical_calls_immutable','published canonical calls cannot change while the archive is reading');
+select throws_ok($$delete from public.embryo_variants where source_file_id=(select file from custody_ids)$$,
+ '42501','embryo_source_unavailable','the claimed source cannot disappear between content passes');
+select throws_ok($$select public.future_person_export_members_v1('variants',(select (body->>'exportId')::uuid from member_export),
+ extensions.gen_random_uuid(),(select body->>'authorityReceipt' from member_authority))$$,'42501','not_found',
+ 'a receipt cannot replace the exact registered writing attempt');
 select throws_ok($$select pg_temp.probe('update public.rights_sessions set status=''revoked'',ended_at=clock_timestamp()
- where session_hash=pg_temp.h(''rights'')','select public.future_person_export_source_v1(''capture'',pg_temp.h(''rights''))::text')$$,
- '42501','not_found','a revoked current claimant session cannot recapture or read a source');
-select is(public.stop_future_person_analysis_v1(pg_temp.h('rights'),'export-stop-independent-aaaaaaaa') is not null,true,
- 'the genuine claimant can stop analysis separately');
-select lives_ok($$select public.future_person_export_source_v1('capture',pg_temp.h('rights'))$$,
- 'analysis stop preserves the independent source/export authority');
-select throws_ok($$select pg_temp.probe('delete from public.embryo_variants where source_file_id=(select file from custody_ids)',
+ where session_hash=pg_temp.h(''rights'')','select public.future_person_export_members_v1(''context'',
+ (select (body->>''exportId'')::uuid from member_export),(select id from member_attempt),
+ (select body->>''authorityReceipt'' from member_authority))::text')$$,'42501','not_found',
+ 'revoked claimant authority stops the actual durable worker before another member is returned');
+select ok(not has_function_privilege('authenticated','public.future_person_export_members_v1(text,uuid,uuid,text,text)','execute')
+ and not has_function_privilege('anon','public.future_person_export_request_v1(text,text,jsonb,text)','execute'),
+ 'browser JWTs cannot invoke the service member/request doors directly');
+select is((select call_immutability_proof from private.embryo_canonical_sources where file_id=(select file from custody_ids)),
+ 'exact-staged-calls-v1','the genuine new producer has exact immutable staged-copy proof');
+select throws_ok($$select pg_temp.probe('alter table private.embryo_canonical_sources disable trigger user;
+ update private.embryo_canonical_sources set call_immutability_proof=null where file_id=(select file from custody_ids);
+ alter table private.embryo_canonical_sources enable trigger user',
  'select public.future_person_export_source_v1(''capture'',pg_temp.h(''rights''))::text')$$,
- '42501','embryo_source_unavailable','claimed immutable source calls cannot be deleted before a partial export');
+ '55000','export_source_immutability_unproven','a legacy source remains fail-closed without an invented historical proof');
+select is((select count(*) from public.purge_target_stores),147::bigint,'all existing stores retain exact purge and credential dispositions');
 select ok(position('export_publication_not_integrated' in pg_get_functiondef('private.guard_segmented_export_publication_v1()'::regprocedure))>0,
- 'the original whole-archive publication hold remains in force');
+ 'the whole-account and incomplete claim archive READY hold remains exact');
 select * from finish();
 rollback;

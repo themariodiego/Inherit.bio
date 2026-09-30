@@ -1,5 +1,28 @@
 # Test diff register
 
+## Actual claimant archive members and immutable calls · 30 September 2026
+
+New tests independently open the actual worker-generated ZIP64 archive and
+require all 23 members, every manifest member length/hash, exact own autosomal
+calls, genuine historical signature/name/body, unchanged scientific metadata,
+retired-condition retention and explicit parent/cohort withholding. Truncated,
+foreign, unknown-member and revoked sources refuse whole byte completion;
+revocation during provider write retains cleanup duties and cannot acknowledge.
+The real SQL fixture authors the genuine review/release/activation and complete
+create-envelope/durable attempt rather than fabricating claimant authority.
+It remains unexecuted until shared fresh-DB rehearsal. Existing READY holds,
+147 store dispositions and API-private privilege assertions remain exact.
+
+The old source deletion negative now expects the stronger earlier immutable
+claimed-source refusal (42501/embryo_source_unavailable). It cannot delete the
+calls first and then observe an incomplete archive. Every earlier boundary is
+retained; no timeout, retry, gate, acceptance or browser assertion is weakened.
+The additive canonical immutability column remains NULL for legacy sources;
+claimant export refuses absent proof without reading or backfilling legacy DNA.
+Only the exact new producer path receives an immutable staged-copy proof. Unknown figure/artifact classes
+remain whole-export refusals until their full byte members are implemented.
+
+
 ## Claimant export uses the actual subject binding column · 30 September 2026
 
 The source capture now binds public.subjects.subject_binding_revision in both its origin receipt and closed metadata. The shorter binding_revision field belongs to account bindings, and did not exist on the subject row. Both projections keep their exact registered bindingRevision key and every current credential/source/subject check; no shape, authority or refusal assertion changes. The SQL rehearsal remains pending.

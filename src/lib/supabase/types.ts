@@ -3965,7 +3965,8 @@ export type Database = {
       }
       generated_exports: {
         Row: {
-          account_id: string
+          account_id: string | null
+          origin_kind: string
           archive_sha256: string | null
           byte_count: number | null
           completed_at: string | null
@@ -3989,7 +3990,8 @@ export type Database = {
           target_kind: string
         }
         Insert: {
-          account_id: string
+          account_id: string | null
+          origin_kind?: string
           archive_sha256?: string | null
           byte_count?: number | null
           completed_at?: string | null
@@ -4013,7 +4015,8 @@ export type Database = {
           target_kind: string
         }
         Update: {
-          account_id?: string
+          account_id?: string | null
+          origin_kind?: string
           archive_sha256?: string | null
           byte_count?: number | null
           completed_at?: string | null
@@ -7618,6 +7621,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      future_person_export_request_v1: {
+        Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
+        Returns: Json
+      }
+      future_person_export_members_v1: {
+        Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_after_id?: string }
+        Returns: Json
+      }
       future_person_export_source_v1: {
         Args: { p_operation: string; p_session_hash: string; p_authority_receipt?: string; p_after_variant_id?: number }
         Returns: Json
