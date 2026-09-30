@@ -63,16 +63,31 @@ try {
     });
     for (const key of ["first", "second"]) assert.deepEqual(await two.read(key), { status: 202, text: expected });
   } finally { await two.dispose(); }
+  const duplicate = await observeNativeResponses(page, { duplicate: "^/api/synthetic/duplicate$" });
+  try {
+    const action = () => page.evaluate(async () => {
+      const response = await fetch("/api/synthetic/duplicate", { method: "POST",
+        headers: { "content-type": "application/json" }, body: JSON.stringify({ synthetic: "duplicate" }) });
+      return { status: response.status, text: await response.text(),
+        sameResponse: response === (window as Window & { originalReply?: Response }).originalReply };
+    });
+    assert.deepEqual(await action(), { status: 202, text: expected, sameResponse: true });
+    assert.deepEqual(await duplicate.read("duplicate"), { status: 202, text: expected });
+    // The duplicate arrives AFTER the first response promise settled and was
+    // read: rejecting that settled promise alone cannot catch this order.
+    assert.deepEqual(await action(), { status: 202, text: expected, sameResponse: true });
+    await assert.rejects(duplicate.read("duplicate"), /Duplicate native response observation/);
+  } finally { await duplicate.dispose(); }
   const unused = await observeNativeResponses(page, { unused: "^/api/synthetic/unused$" });
   const unusedRead = unused.read("unused"); void unusedRead.catch(() => {});
   await unused.dispose(); await assert.rejects(unusedRead, /observer disposed/);
-  assert.deepEqual(received, ["normal", "oversized", "first", "second"].map(mode => ({
+  assert.deepEqual(received, ["normal", "oversized", "first", "second", "duplicate", "duplicate"].map(mode => ({
     path: `/api/synthetic/${["normal", "oversized"].includes(mode) ? "complete" : mode}`,
     method: "POST", body: JSON.stringify({ synthetic: mode }), origin, site: "same-origin",
   })));
-  assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 4);
+  assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 6);
   assert.equal(await page.evaluate(() => "__inheritNativeResponseObserver" in window), false);
-  console.log("PASS native response observer: exact 202 bytes, original response identity, one native request per action, unchanged browser headers/body, bounded rejection, multiple observations and unused cleanup.");
+  console.log("PASS native response observer: exact 202 bytes, original response identity, unchanged browser headers/body, bounded rejection, multiple observations, duplicate rejection after first body settled and unused cleanup.");
 } finally {
   await browser.close(); server.closeAllConnections();
   await new Promise<void>(resolve => server.close(() => resolve()));
