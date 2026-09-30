@@ -5,22 +5,31 @@ on:
     branches: [main]
   pull_request:
 
+# Superseded PR runs may stop; main/release runs are never cancelled.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+  SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+  NEXT_PUBLIC_SITE_URL: http://localhost:3100
+  NEXT_PUBLIC_APP_URL: http://localhost:3100
+  INHERIT_TEST_JURISDICTION: "1"
+  BYOK_ENCRYPTION_KEY: 5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=
+  JOBS_SECRET: e2e-jobs-secret
+  CRON_SECRET: e2e-cron-secret
+  EMAIL_FROM: Inherit <inherit@e2e.local>
+  RESEND_API_KEY: re_e2e_mock
+  RESEND_BASE_URL: http://127.0.0.1:8124
+
 jobs:
-  checks:
+  repository-checks:
     runs-on: ubuntu-24.04
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-      NEXT_PUBLIC_SITE_URL: http://localhost:3100
-      NEXT_PUBLIC_APP_URL: http://localhost:3100
-      INHERIT_TEST_JURISDICTION: "1"
-      BYOK_ENCRYPTION_KEY: 5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=
-      JOBS_SECRET: e2e-jobs-secret
-      CRON_SECRET: e2e-cron-secret
-      EMAIL_FROM: Inherit <inherit@e2e.local>
-      RESEND_API_KEY: re_e2e_mock
-      RESEND_BASE_URL: http://127.0.0.1:8124
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,8 +58,17 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
-      - name: Browser test discovery
-        run: pnpm exec playwright test --list --reporter=list
+      - name: Independently inventory the complete browser case set
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+        run: pnpm exec tsx scripts/ci-browser-shards.run.mts manifest
+      - name: Save credential-free full browser inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-case-${{ github.run_attempt }}-manifest
+          path: test-results/ci-browser-manifest.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Unit tests
         run: pnpm test
       - name: Legal placeholder gate
@@ -121,14 +139,10 @@ jobs:
             exit 1
           fi
           SERVER_URL=http://127.0.0.1:3199 pnpm gate:legal
-      - name: Full browser suite with the real local Storage provider
-        env:
-          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
-        run: pnpm e2e
       # G1.16: the G1.14 Lighthouse contract (three exact routes, three cold
       # runs each, median performance >= 90, accessibility 100 on every run,
       # exact URLs, Document 200 and signed-in content) executed on the same
-      # served build, seeded database and Storage proxy the suite just used.
+      # served build, independently seeded database and real Storage proxy.
       # Its one fixture upload crosses the real local provider like the rest.
       - name: Lighthouse gate on the isolated runtime
         env:
@@ -145,10 +159,10 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-failure-evidence
+          name: browser-failure-evidence-${{ github.run_attempt }}-repository
           path: |
-            test-results/
-            playwright-report/
+            test-results/**/error-context.md
+            test-results/**/*.png
           retention-days: 14
           if-no-files-found: ignore
       - name: Clean up only the owned browser runtime
@@ -159,3 +173,105 @@ jobs:
       - name: Stop local Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
+
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    env:
+      INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+    steps:
+      - name: Start setup wall-time measurement
+        run: node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP+"/inherit-ci-setup-start-"+process.env.GITHUB_RUN_ID+"-"+process.env.GITHUB_RUN_ATTEMPT+"-"+process.argv[1],String(Date.now()),{mode:0o600,flag:"wx"})' "${{ matrix.shard }}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Start this job's fresh local Supabase
+        run: pnpm exec supabase start
+      - name: Export this job's local Supabase keys
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Seed this job's independent database
+        run: pnpm seed
+      - name: Prepare the unchanged credential-free isolated runtime image
+        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+      - name: Build and bind the exact checkout and local public configuration
+        run: |
+          build_start=$(node -e 'process.stdout.write(String(Date.now()))')
+          pnpm build
+          pnpm exec tsx scripts/ci-browser-runtime.run.mts record-build
+          pnpm exec tsx scripts/ci-browser-setup-timings.run.mts "$build_start" "${{ matrix.shard }}"
+      - name: Execute the assigned part of the unchanged full suite
+        run: pnpm exec tsx scripts/run-upload-browser.mts --ci-shard=${{ matrix.shard }}/6
+      - name: Save only sanitized exact case coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-case-${{ github.run_attempt }}-shard-${{ matrix.shard }}
+          path: test-results/ci-browser-shard.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Keep safe failing browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-evidence-${{ github.run_attempt }}-${{ matrix.shard }}
+          path: |
+            test-results/**/error-context.md
+            test-results/**/*.png
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Clean up only this job's owned runtime
+        if: always()
+        run: pnpm exec tsx scripts/ci-browser-runtime.run.mts cleanup
+      - name: Stop only this job's fresh Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
+
+  # Keep the existing required check name. A failed, skipped or cancelled job
+  # family cannot turn this release gate green, even with stale artifacts.
+  checks:
+    if: always()
+    needs: [repository-checks, browser]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+      REPOSITORY_RESULT: ${{ needs.repository-checks.result }}
+      BROWSER_RESULT: ${{ needs.browser.result }}
+    steps:
+      - name: Require every prerequisite job to succeed
+        run: |
+          test "$REPOSITORY_RESULT" = success
+          test "$BROWSER_RESULT" = success
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: browser-case-${{ github.run_attempt }}-*
+          path: ci-browser-coverage
+      - name: Require exact expected, assigned and executed case equality
+        run: pnpm exec tsx scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage
