@@ -7785,7 +7785,20 @@
         "mail-token-delivery-v1",
         "retention-purge-v1",
         "sensitive-purge-target-registry-v1"
-      ]
+      ],
+      "affectedRecipientMail": {
+        "requestTemplate": "account-deletion-affected",
+        "requestPayload": {
+          "noticeEndsAt": "original-fixed-account-notice-deadline-ISO-datetime"
+        },
+        "cancellationTemplate": "account-deletion-affected-cancelled",
+        "cancellationPayload": {
+          "cancelledAt": "committed-cancellation-ISO-datetime"
+        },
+        "binding": "one-row-per-exact-current-principal-with-exactly-one-current-contact-and-matching-principal-authority-revision-no-newest-contact-fallback; original-cohort-and-recipient-bindings-are-saved-in-the-existing-account-retention-phase; a-due-owned-cohort-claim-requires-the-original-notice-outbox-envelope",
+        "privacy": "token-free-no-account-holder-cancel-or-export-link-no-name-contact-genetic-data-or-record-identifier",
+        "delivery": "jobs.mail-through-existing-claim-and-immediately-before-submit-current-principal-contact-authority-and-attempt-checks"
+      }
     },
     "family-sharing-state-v1": {
       "scope": "the-server-resolved-exact-adult-subject-and-every-grant-or-pair-output-visible-between-that-subject-and-the-acting-account",

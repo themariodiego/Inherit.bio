@@ -17,10 +17,16 @@ create function pg_temp.snapshot() returns jsonb language sql as $$
   'agreement',(select to_jsonb(x) from private.future_person_custody_slices x where subject_id=(select subject from custody_ids)));
 $$;
 create temporary table before_source as select pg_temp.snapshot() body;
-select throws_ok($$select * from public.request_account_deletion_v2(
+create function pg_temp.request_without_contact() returns uuid language plpgsql as $$
+begin
+ update public.encrypted_contact_references set status='rotated',ended_at=clock_timestamp()
+ where principal_id=any(private.embryo_cohort_set_v1((select cohort_id from live),'notice_recipients')) and status='current';
+ return (select deletion_id from public.request_account_deletion_v2(
  '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
- repeat('1',64),clock_timestamp()+interval '10 minutes',decode('0011223344556677','hex'),repeat('2',64),repeat('3',64))$$,
- '55000','unsupported_account_graph','new owned-cohort requests stay closed until exact affected-recipient notices exist');
+ repeat('1',64),clock_timestamp()+interval '9 minutes',decode('0011223344556677','hex'),repeat('2',64),repeat('3',64)));
+end $$;
+select throws_ok($$select pg_temp.request_without_contact()$$,
+ '55000','account_notice_binding_unavailable','an owned-cohort request refuses missing exact affected-recipient contacts');
 select is((select count(*) from public.account_deletion_requests where account_id='7a000000-0000-0000-0000-000000000001'),
  0::bigint,'a refused request creates no hold or deletion row');
 select ok((select deletion_requested_at is null from public.profiles where id='7a000000-0000-0000-0000-000000000001'),
