@@ -16,13 +16,22 @@ create function pg_temp.completion_context() returns jsonb language sql as $$
  select public.own_upload_context_v1('76100000-0000-4000-8000-000000000001',
  '76100000-0000-4000-8000-000000000010',(select id from completion_target));
 $$;
-create function pg_temp.issue_completion(p_nonce text,p_operation text default 'own_account_completion',
- p_expiry timestamptz default clock_timestamp()+interval '9 minutes',p_revision bigint default 1)
+-- Brief X1.5: nothing issues a nonce ahead of use any more. The v1 body
+-- assertions below still need a stored row, so the fixture writes one
+-- directly, as the other own-upload tests do; the route's v2 path records its
+-- own and is exercised through pg_temp.complete_v2.
+create function pg_temp.store_nonce(p_nonce text,p_operation text default 'own_account_completion')
  returns void language sql as $$
- select public.issue_own_upload_nonce_v1('76100000-0000-4000-8000-000000000001',
+ insert into public.account_operation_nonces(nonce_hash,account_id,session_id,operation,expires_at)
+ values(p_nonce,'76100000-0000-4000-8000-000000000001','76100000-0000-4000-8000-000000000010',
+ p_operation,clock_timestamp()+interval '9 minutes');
+$$;
+create function pg_temp.complete_v2(p_date date,p_nonce text,p_revision bigint default 1,
+ p_expiry timestamptz default clock_timestamp()+interval '9 minutes')
+ returns jsonb language sql as $$
+ select public.complete_own_upload_account_v2('76100000-0000-4000-8000-000000000001',
  '76100000-0000-4000-8000-000000000010',(select id from completion_target),p_revision,1,1,
- (select subject_revision from completion_target),(select binding_revision from completion_target),
- p_operation,p_nonce,p_expiry);
+ (select subject_revision from completion_target),(select binding_revision from completion_target),p_date,p_nonce,p_expiry);
 $$;
 create function pg_temp.complete_account(p_date date,p_nonce text,p_revision bigint default 1)
  returns jsonb language sql as $$
@@ -33,22 +42,25 @@ $$;
 select is(pg_temp.completion_context(),jsonb_build_object('accountRevision',1,'authSessionRevision',1,
  'jurisdictionRevision',1,'subjectBindingRevision',1,'accountBindingRevision',1,'birthDateState','missing'),
  'the presentation context is closed and contains no birth date or identity fields');
-select throws_ok($$select pg_temp.issue_completion(repeat('a',64),'account_delete')$$,
- '22023','invalid_request','a completion screen cannot issue a deletion nonce');
-select throws_ok($$select pg_temp.issue_completion('short')$$,
- '22023','invalid_request','nonce digests must have the exact shape');
-select throws_ok($$select pg_temp.issue_completion(repeat('a',64),'own_account_completion',clock_timestamp()+interval '11 minutes')$$,
- '22023','invalid_request','presentation issuance cannot extend the ten-minute lifetime');
-select throws_ok($$select pg_temp.issue_completion(repeat('a',64),'own_account_completion',clock_timestamp()-interval '1 second')$$,
- '22023','invalid_request','already expired presentations are not issued');
-select throws_ok($$select pg_temp.issue_completion(repeat('a',64),'own_upload_artifact_sign')$$,
- '55000','account_completion_required','missing adult details do not issue a signing presentation');
-select throws_ok($$select pg_temp.issue_completion(repeat('a',64),'own_account_completion',clock_timestamp()+interval '9 minutes',2)$$,
- '42501','not_found','issuance rechecks the account revision');
 set local role service_role;
-select lives_ok($$select pg_temp.issue_completion(repeat('a',64))$$,
- 'a verified service route can issue the initial completion presentation');
+select throws_ok($$select pg_temp.complete_v2(date '1990-01-01','short')$$,
+ '42501','not_found','nonce digests must have the exact shape');
+select throws_ok($$select pg_temp.complete_v2(date '1990-01-01',repeat('a',64),1,clock_timestamp()+interval '11 minutes')$$,
+ '42501','not_found','a presentation cannot extend the ten-minute lifetime');
+select throws_ok($$select pg_temp.complete_v2(date '1990-01-01',repeat('a',64),1,clock_timestamp()-interval '1 second')$$,
+ '42501','not_found','an already expired presentation is refused');
+select throws_ok($$select public.sign_own_upload_artifact_v2('76100000-0000-4000-8000-000000000001',
+ '76100000-0000-4000-8000-000000000010',(select id from completion_target),'disclosure.insurance-and-discrimination',1,
+ (select body_sha256 from public.consent_artifacts where artifact_key='disclosure.insurance-and-discrimination' and version=1),
+ array['understood'],1,1,1,1,1,repeat('a',64),clock_timestamp()+interval '9 minutes')$$,
+ '55000','adult_account_required','missing adult details cannot sign a consent');
+select throws_ok($$select pg_temp.complete_v2(date '1990-01-01',repeat('a',64),2)$$,
+ '42501','not_found','the completion POST rechecks the account revision');
 reset role;
+select is((select count(*) from public.account_operation_nonces
+ where account_id='76100000-0000-4000-8000-000000000001'),0::bigint,
+ 'nothing stores a presentation nonce ahead of use, and every refusal above recorded none');
+select pg_temp.store_nonce(repeat('a',64));
 select throws_ok($$select pg_temp.complete_account((timezone('UTC',clock_timestamp())::date-interval '18 years')::date+1,repeat('a',64))$$,
  '22023','adult_account_required','a person who turns eighteen tomorrow cannot complete yet');
 select throws_ok($$select pg_temp.complete_account(null,repeat('a',64))$$,
@@ -86,16 +98,18 @@ update public.account_operation_nonces set session_id='76100000-0000-4000-8000-0
  issued_at=clock_timestamp()-interval '20 minutes',expires_at=clock_timestamp()-interval '10 minutes' where nonce_hash=repeat('a',64);
 select throws_ok($$select pg_temp.complete_account(date '1990-01-01',repeat('a',64))$$,
  '42501','not_found','expiry is enforced at the database mutation');
-update public.account_operation_nonces set issued_at=clock_timestamp(),expires_at=clock_timestamp()+interval '9 minutes'
- where nonce_hash=repeat('a',64);
+-- The route's path: nothing stored beforehand, v2 records and spends it.
+delete from public.account_operation_nonces where nonce_hash=repeat('a',64);
 set local role service_role;
-select is(pg_temp.complete_account((timezone('UTC',clock_timestamp())::date-interval '18 years')::date,repeat('a',64)),
+select is(pg_temp.complete_v2((timezone('UTC',clock_timestamp())::date-interval '18 years')::date,repeat('a',64)),
  '{"status":"completed"}'::jsonb,'the exact eighteenth birthday completes with a closed receipt');
 reset role;
 select is((select account_revision from public.profiles where id='76100000-0000-4000-8000-000000000001'),2::bigint,
  'saving the date increments the account revision exactly once');
 select ok((select consumed_at is not null from public.account_operation_nonces where nonce_hash=repeat('a',64)),
  'the successful presentation is consumed atomically');
+select is((select operation from public.account_operation_nonces where nonce_hash=repeat('a',64)),'own_account_completion',
+ 'the completion route records its nonce as a completion, never as another operation such as account deletion');
 select is(pg_temp.completion_context()->>'birthDateState','adult','the next screen sees an adult account without receiving the date');
 select throws_ok($$select pg_temp.complete_account(date '1990-01-01',repeat('a',64))$$,
  '42501','not_found','the old account snapshot cannot replay');
@@ -107,8 +121,13 @@ select is((select count(*) from public.purpose_grants where target_id=(select id
  0::bigint,'account completion authorizes no analysis');
 select is((select count(*) from public.genome_files where subject_id=(select id from completion_target)),
  0::bigint,'account completion creates no genetic file');
-select lives_ok($$select pg_temp.issue_completion(repeat('b',64),'own_upload_artifact_sign',clock_timestamp()+interval '9 minutes',2)$$,
+set local role service_role;
+select lives_ok($$select public.sign_own_upload_artifact_v2('76100000-0000-4000-8000-000000000001',
+ '76100000-0000-4000-8000-000000000010',(select id from completion_target),'disclosure.insurance-and-discrimination',1,
+ (select body_sha256 from public.consent_artifacts where artifact_key='disclosure.insurance-and-discrimination' and version=1),
+ array['understood'],2,1,1,1,1,repeat('b',64),clock_timestamp()+interval '9 minutes')$$,
  'the completed account can proceed to its separately presented consent decision');
+reset role;
 
 -- Exercise the real acceptance transition. Token issuance is a scoped synthetic
 -- delivery fixture, not a mail-worker test; no unrelated outbox row is claimed.
@@ -132,8 +151,8 @@ update completion_target set id=(select subject_id from completion_invitation),s
 select is(pg_temp.completion_context(),jsonb_build_object('accountRevision',2,'authSessionRevision',1,
  'jurisdictionRevision',1,'subjectBindingRevision',2,'accountBindingRevision',1,'birthDateState','adult'),
  'accepted adult context preserves distinct subject and account-binding revisions');
-select lives_ok($$select pg_temp.issue_completion(repeat('f',64),'own_upload_artifact_sign',clock_timestamp()+interval '9 minutes',2)$$,
- 'an accepted adult can obtain its own-account consent presentation');
+select lives_ok($$select pg_temp.store_nonce(repeat('f',64),'own_upload_artifact_sign')$$,
+ 'the accepted adult fixture holds a stored presentation for the v1 signer below');
 select lives_ok($$select public.sign_own_upload_artifact_v1(
  '76100000-0000-4000-8000-000000000001','76100000-0000-4000-8000-000000000010',
  (select id from completion_target),'disclosure.insurance-and-discrimination',1,
@@ -147,7 +166,7 @@ select ok(not has_function_privilege(role_name,signature,'execute'),
  role_name||' cannot call '||signature) from
  unnest(array['anon','authenticated']) role_name cross join unnest(array[
  'public.own_upload_context_v1(uuid,uuid,uuid)',
- 'public.issue_own_upload_nonce_v1(uuid,uuid,uuid,bigint,bigint,bigint,bigint,bigint,text,text,timestamptz)',
- 'public.complete_own_upload_account_v1(uuid,uuid,uuid,bigint,bigint,bigint,bigint,bigint,date,text)']) signature;
+ 'public.complete_own_upload_account_v1(uuid,uuid,uuid,bigint,bigint,bigint,bigint,bigint,date,text)',
+ 'public.complete_own_upload_account_v2(uuid,uuid,uuid,bigint,bigint,bigint,bigint,bigint,date,text,timestamptz)']) signature;
 select * from finish();
 rollback;
