@@ -9,6 +9,7 @@ import {localE2eProject} from "../../scripts/local-e2e-project";
 import {expect} from "../audited-test";
 import {ANON_KEY,SUPABASE_URL,anonClient,createConfirmedUser} from "../helpers";
 import {observeNativeResponses} from "./native-response-observer";
+import {reviewPdf} from "../fixtures/review-documents";
 
 const run=promisify(execFile);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
@@ -116,8 +117,8 @@ export async function createReviewCase(page:Page,context:BrowserContext):Promise
   const started=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/future-person/claim"&&response.request().method()==="POST");
   await form.getByRole("button",{name:"Start my claim",exact:true}).click();expect((await started).status()).toBe(202);
   const documents=page.getByRole("region",{name:"Send your files"});await expect(documents).toBeVisible();
-  for(const [ordinal,label,picture] of [[0,"Picture ID",reviewPicture(3,2,true)],[1,"Birth record",reviewPicture(2,3)]] as const) {
-    await documents.getByLabel(label,{exact:true}).setInputFiles({name:`synthetic-${ordinal}.png`,mimeType:"image/png",buffer:picture});
+  for(const [ordinal,label,picture,extension,mimeType] of [[0,"Picture ID",reviewPicture(3,2,true),"png","image/png"],[1,"Birth record",reviewPdf(),"pdf","application/pdf"]] as const) {
+    await documents.getByLabel(label,{exact:true}).setInputFiles({name:`synthetic-${ordinal}.${extension}`,mimeType,buffer:picture});
     const observer=await observeNativeResponses(page,{session:"^/api/future-person/claim/session/documents$"});
     try {
       const quarantined=page.waitForResponse(response=>/^\/api\/evidence\/[^/]+\/complete$/u.test(new URL(response.url()).pathname)&&response.status()===202);

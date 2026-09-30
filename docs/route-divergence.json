@@ -207,6 +207,8 @@
     "/overview processing",
     "/privacy complete",
     "/providers complete",
+    "/reviews/future-person/claims/[id] complete",
+    "/reviews/future-person/claims/[id] processing",
     "/science complete",
     "/science/limits complete",
     "/science/positions complete",

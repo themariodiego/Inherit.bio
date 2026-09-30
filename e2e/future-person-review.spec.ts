@@ -2,12 +2,12 @@ import {expect,test} from "./audited-test";
 import {observeNativeResponses} from "./helpers/native-response-observer";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
 
-// These draft journeys deliberately do not claim the route's complete or
-// processing state in their titles until a real browser execution passes.
+// Titles bind the real assertions to the new route's required states. Static
+// discovery is distinct from execution; full CI must still run these journeys.
 // Their fixture is actual Auth + upload/Storage/scan/claim completion; only
 // naming a reviewer and assigning the exact case are owner-only operations.
 
-test("named reviewer draft journey: full bytes, separate human reads and a real refusal",async({page,context,browser,baseURL})=>{
+test("/reviews/future-person/claims/[id] complete: full bytes, separate human reads and a real refusal",async({page,context,browser,baseURL})=>{
   if(!baseURL)throw new Error("Local app origin unavailable");
   const claim=await createReviewCase(page,context);
   const reviewer=await signInReviewer(context,baseURL);
@@ -44,9 +44,16 @@ test("named reviewer draft journey: full bytes, separate human reads and a real 
   await photo.getByRole("checkbox").check();
   await expect(save).toBeDisabled();
   await birth.getByRole("button",{name:"Open Birth record",exact:true}).click();
-  await expect(birth.getByRole("img",{name:"Birth record",exact:true})).toBeVisible();
-  await expect.poll(()=>birth.getByRole("img").evaluate(image=>({width:(image as HTMLImageElement).naturalWidth,height:(image as HTMLImageElement).naturalHeight})))
-    .toEqual({width:2,height:3});
+  await expect(birth.getByRole("img",{name:"Birth record, page 1",exact:true})).toBeVisible();
+  await expect(birth.getByRole("status")).toHaveText("Page 1 of 2");
+  await expect(birth.getByRole("checkbox")).toHaveCount(0);
+  await expect(save).toBeDisabled();
+  await birth.getByRole("button",{name:"Go on",exact:true}).click();
+  await expect(birth.getByRole("status")).toHaveText("Page 2 of 2");
+  await expect(birth.getByRole("img",{name:"Birth record, page 2",exact:true})).toBeVisible();
+  await expect.poll(()=>birth.getByRole("img").evaluate(element=>{
+    const canvas=element as HTMLCanvasElement;return Array.from(canvas.getContext("2d")!.getImageData(200,600,1,1).data);
+  })).toEqual([0,0,255,255]);
   expect(acknowledgements.length).toBe(3);
   expect(await reviewFixtureSql(`select count(*)||'/'||bool_and(r.document_sha256=d.sha256 and r.delivery_verified_at is not null
     and r.assignment_revision=a.assignment_revision) from private.claim_review_reads r
@@ -81,7 +88,7 @@ test("named reviewer draft journey: full bytes, separate human reads and a real 
     from private.claim_reviews r join private.future_person_claim_intakes i on i.id=r.id where r.id='${claim}'::uuid`)).toBe("refused/true/true");
 });
 
-test("named reviewer draft journey: a canceled second chunk cannot become a read",async({page,context,baseURL})=>{
+test("/reviews/future-person/claims/[id] processing: a canceled second chunk cannot become a read",async({page,context,baseURL})=>{
   if(!baseURL)throw new Error("Local app origin unavailable");
   const claim=await createReviewCase(page,context);const reviewer=await signInReviewer(context,baseURL);
   await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewer}'::uuid);
