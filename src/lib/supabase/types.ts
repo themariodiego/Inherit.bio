@@ -8163,6 +8163,10 @@ export type Database = {
         Args: { p_sequence: number; p_session_id: string }
         Returns: Json
       }
+      embryo_parent_withdrawal_view_v1: {
+        Args: { p_session_hash: string }
+        Returns: Json
+      }
       enqueue_account_mail: {
         Args: {
           p_account_id: string
@@ -8391,6 +8395,10 @@ export type Database = {
           p_action: string
           p_token_hash: string
         }
+        Returns: string
+      }
+      respond_embryo_parent_withdrawal_v1: {
+        Args: { p_action: string; p_nonce: string; p_session_hash: string }
         Returns: string
       }
       restrict_embryo_cohort_v1: {

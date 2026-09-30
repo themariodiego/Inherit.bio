@@ -182,23 +182,35 @@ describe("co-parent invitation email", () => {
 });
 
 describe("embryo upload notice email", () => {
-  it("states what was stored and what was not, with a withdraw link when given", async () => {
+  const notice = { uploaderName: "Alex Synthetic", uploadedBy: "genetic-parent" as const,
+    uploadDateIso: "2026-09-06", uploadDateWords: "6 September 2026", retentionDays: 730 };
+
+  it("states who, when, what was stored and not, what may be derived, how long, and where to write", async () => {
     const html = await renderHtml(
-      createElement(EmbryoUploadNoticeEmail, { embryoCount: 3, withdrawUrl: invitationUrl }),
+      createElement(EmbryoUploadNoticeEmail, { ...notice, embryoCount: 3, withdrawUrl: invitationUrl }),
     );
     expect(html).toContain("Embryos were added to Inherit");
-    expect(html).toContain("3 embryo records were added on Inherit");
-    expect(html).toContain("What was stored: 3 embryo records, added today.");
+    expect(html).toContain("On 6 September 2026 (2026-09-06), 3 embryo records were added on Inherit");
+    expect(html).toContain("Who added them: Alex Synthetic, as a genetic parent.");
+    expect(html).toContain("What was stored: 3 embryo records, added on 6 September 2026 (2026-09-06).");
     expect(html).toContain("What was not stored: no results, and no laboratory labels.");
+    expect(html).toContain("What Inherit may work out from them: a quality check of each embryo");
+    expect(html).toContain("Nothing else is worked out today.");
+    expect(html).toContain("Inherit deletes them at most 730 days after they were added, unless they are renewed.");
+    expect(html).toContain("shows you what the person who added them can see, and nothing more");
     expect(html).toContain(`href="${invitationUrl}"`);
     expect(html).toContain("Review your options");
+    expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
     expectSafeBody(html);
   });
 
-  it("renders one record in the singular and no link without a withdraw URL", async () => {
-    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail, { embryoCount: 1 }));
+  it("renders one record in the singular, a neutral uploader and no link without a withdraw URL", async () => {
+    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail,
+      { ...notice, embryoCount: 1, uploaderName: null, uploadedBy: "someone-else" }));
     expect(html).toContain("1 embryo record was added on Inherit");
-    expect(html).toContain("What was stored: 1 embryo record, added today.");
+    expect(html).toContain("Who added them: Someone with an Inherit account, without being a genetic parent, under the agreement on record.");
+    expect(html).toContain("What was stored: 1 embryo record, added on 6 September 2026 (2026-09-06).");
+    expect(html).toContain("If you did not expect this, write to privacy@inherit.bio.");
     expect(html).not.toContain("Review your options");
     expect(html).not.toContain("href=");
     expectSafeBody(html);
@@ -222,13 +234,15 @@ describe("record key addendum email", () => {
     expectSafeBody(html);
   });
 
-  it("no-source says no genetic file was kept for the embryo", async () => {
+  it("no-source says no genetic file was kept for the embryo, and when its record goes", async () => {
     const html = await renderHtml(
-      createElement(RecordKeyAddendumEmail, { kind: "no-source", displayLabel: "Embryo 4" }),
+      createElement(RecordKeyAddendumEmail, { kind: "no-source", displayLabel: "Embryo 4",
+        closingDateIso: "2028-09-05", closingDateWords: "5 September 2028" }),
     );
     expect(html).toContain("One embryo has no genetic file");
     expect(html).toContain("No genetic file was kept for Embryo 4.");
     expect(html).toContain("cannot be used to claim anything");
+    expect(html).toContain("Inherit keeps the record of its quality check until 5 September 2028 (2028-09-05), and then deletes it.");
     expect(html).not.toContain("href=");
     expectSafeBody(html);
   });
@@ -333,7 +347,8 @@ const embryoMails: ReadonlyArray<{ mail: MailTemplate; subject: string; heading:
     heading: "You were named as a genetic parent",
   },
   {
-    mail: { id: "embryo-upload-notice", payload: { embryoCount: 2 } },
+    mail: { id: "embryo-upload-notice", payload: { embryoCount: 2, uploaderName: null, uploadedBy: "genetic-parent",
+      uploadDateIso: "2026-09-06", uploadDateWords: "6 September 2026", retentionDays: 730 } },
     subject: "Embryo records were added on Inherit",
     heading: "Embryos were added to Inherit",
   },
@@ -351,7 +366,8 @@ const embryoMails: ReadonlyArray<{ mail: MailTemplate; subject: string; heading:
     heading: "The claim period on your Record Key changed",
   },
   {
-    mail: { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1" } },
+    mail: { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1",
+      closingDateIso: "2028-09-05", closingDateWords: "5 September 2028" } },
     subject: "No genetic file was kept for one embryo",
     heading: "One embryo has no genetic file",
   },

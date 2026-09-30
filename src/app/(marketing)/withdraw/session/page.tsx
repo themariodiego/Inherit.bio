@@ -6,6 +6,8 @@ import { loadAdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 import { AdultSubjectReviewForm } from "@/components/embryo/adult-subject-review-form";
 import { loadCoParentReview } from "@/lib/embryos/co-parent-review";
 import { CoParentReviewForm } from "@/components/embryo/co-parent-review-form";
+import { EmbryoWithdrawalForm } from "@/components/embryo/embryo-withdrawal-form";
+import { loadEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdrawal";
 import { InvitationRefusalForm, InvitationRefusalReceipt } from "@/components/embryo/invitation-refusal-form";
 import { loadInvitationRefusal } from "@/lib/embryos/invitation-refusal";
 import { jurisdictionChoices } from "@/lib/legal/jurisdiction-declaration";
@@ -20,9 +22,11 @@ export default async function RightsSessionPage() {
   });
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
-  // cookie can never reach the adult screen or the reverse.
+  // cookie can never reach the adult or embryo screen, and so on.
   const adult = await loadAdultSubjectReview(request);
   if (adult) return <AdultSubjectReviewForm review={adult} />;
+  const embryo = await loadEmbryoParentWithdrawal(request);
+  if (embryo) return <EmbryoWithdrawalForm view={embryo.view} nonce={embryo.nonce} />;
   const refusal = await loadInvitationRefusal(request);
   if (!refusal) notFound();
   if (refusal.kind === "done") return <InvitationRefusalReceipt />;

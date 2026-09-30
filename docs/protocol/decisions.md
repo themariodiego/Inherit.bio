@@ -4231,6 +4231,7 @@ recommended option on all three.
   recommended option). Restricting or withdrawing a cohort deletes its
   canonical sources in the same transaction. Their parts follow once their
   disposal is proved.
+
 ## 2026-09-28 (later) — Carrier importer answers and parallel work streams
 
 Asked in chat as selectable choices, with the recommended option first. The

@@ -1,5 +1,9 @@
 # Test diff register
 
+## Custody preserves both storage cleanup dependencies · 30 September 2026
+
+The exact purge inventory includes all current embryo withdrawal stores and all Future Person receipt stores: 146. This retains the complete union of the parents’ stores and assertions.
+
 ## Claimant custody dependency retains all embryo stores · 30 September 2026
 
 The receipt and reviewer branch now includes the canonical-source and terminal/restriction safeguard dependency. The exact purge inventory is 145: current main’s 129, five embryo split/canonical stores and eleven Future Person intake/document/review/receipt stores. Both worker commands, both parents’ dated assertions and every export exclusion are retained.
@@ -44,6 +48,42 @@ exactly nine bindings, including the documented scanner address. The
 database contract pins 133 purge stores: main’s 129, one intake store and
 three document stores. Both parent and main export entries remain present
 and their database copy is regenerated. No inventory assertion is loosened.
+## Both embryo restriction doors share canonical source deletion · 30 September 2026
+
+The withdrawal migration is now `20260930232000_embryo_parent_withdrawal.sql`,
+after the source-deletion safeguard. This avoids a fresh database's later
+restriction migration overwriting the thin account door. Source deletion runs
+once in the private restriction core, with its reason derived from the closed
+route identifier; the account door only authenticates and calls that core.
+
+`embryo_parent_withdrawal.sql` retains every prior assertion and adds functional
+proofs that refusal and deletion use the withdrawal reason, both passing
+embryos' complete canonical source graphs disappear atomically, the residual
+check is clear, and provider identities stay registered pending exact disposal.
+The existing account restriction suite continues to prove the other route and
+is not loosened. Export and purge inventories retain the current parent stores
+plus the Future Person intake and credential stores, for exactly 136 targets.
+
+## Publication fixture capacity and combined purge inventory · 30 September 2026
+
+`supabase/tests/embryo_publication_dates.sql` now configures the four own-upload
+capacity row and its four limits before reading the synthetic parent's allowance.
+The embryo fixture configures a different capacity and left this row absent, so the
+reader correctly raised `upload_unavailable` before publication assertions
+could run. The setup is transaction-local; every existing assertion remains.
+
+Merging main adds the unwind disposal store and legal-audit account link to
+the branch's five split and canonical-source stores. The exact assertion in
+`supabase/tests/v2_contracts.sql` is therefore 134: main's 129 plus those five.
+The comparison stays exact, and all existing contract assertions remain.
+
+The generated plan in `supabase/tests/export_member_plan.sql` now includes
+the six tables introduced by the split-worker and canonical-source migrations.
+The operator-only split configuration is reference data; pending variants,
+ordinal progress and canonical object inventories are internal machinery.
+The existing catalog equality, person-scope, credential and archive checks
+remain unchanged. This also preserves the separate deferred export classes
+for durable embryo records.
 
 ## Future Person intake inventory after main reconciliation · 30 September 2026
 
@@ -88,6 +128,50 @@ current main, the split worker and canonical sources. The former branch's
 130 omitted the legal audit account link and canonical-source stores.
 Terminal purge adds no store and removes no inventory assertion. Both
 parents' dated evidence is retained.
+## Embryo publication dates, addenda and the own-upload allowance · 28 September 2026
+
+`supabase/tests/embryo_publication_dates.sql` is new, with 75 assertions
+(fixture included) for `20260930124000_embryo_publication_dates.sql` and
+`20260930125000_own_upload_allowance_excludes_embryo.sql`. They cover:
+
+- provisional dates before publication;
+- a missing recipient contact rolling the whole publication back;
+- each ordinal's deadline, card date and date revision;
+- the retention rows, phases, envelopes and purge manifests;
+- the exact addenda and their recipients;
+- no rights notice;
+- the owner's own upload allowance before and after publication;
+- the published source the source-facts read relies on;
+- supersession by a later disposition.
+
+Existing tests changed, with nothing loosened:
+
+- `supabase/tests/embryo_split_publication.sql` had two assertions that
+  pinned the absence of this feature: "no notice is queued" and "the
+  provisional card date is left exactly as issued". They now pin its exact
+  presence. The mail count is now exactly two more, and a new assertion
+  requires both notices to be the no-source addendum for the embryo that
+  failed QC. Every card date is now `definitive_stored_or_unknown`, one
+  revision later.
+- `src/emails/emails.test.ts`: the no-source addendum test also requires the
+  sentence with the date the record is deleted. The subject table's
+  no-source payload carries the date. `src/lib/claims/email-fixtures.ts` does
+  the same.
+- `src/app/api/jobs/mail/route.test.ts` adds two cases: a no-source addendum
+  shaped exactly as the SQL builds it is delivered, and one without its date
+  is refused and never sent.
+- `src/lib/embryos/input-facts-load.test.ts` required a `cohort_id` filter on
+  `genome_files` beside `subject_id`. No row can match both
+  (`genome_files_subject_or_cohort`), so the loader always answered unknown.
+  The test now requires the cohort to be checked on the embryo's own
+  subject, and forbids a `cohort_id` filter on file rows. Its four metadata
+  cases and the empty case keep their expectations. New cases cover:
+  - a subject outside the cohort, which reads no file;
+  - a published GRCh38 canonical source, which gives `not-needed`;
+  - a GRCh37 canonical source, which gives `not-recorded`;
+  - a canonical source beside another kind of row, which gives
+    `not-recorded`.
+
 ## Restriction deletes embryo canonical sources · 30 September 2026
 
 `supabase/tests/embryo_restriction_source_deletion.sql` is new, with 88

@@ -132,6 +132,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Attempt-owned pending embryo variants, removed at terminal publication or failure. Published embryo variants have their own deferred export class."
     },
+    "private.embryo_withdrawal_credentials": {
+      "disposition": "excluded-credential",
+      "reason": "The binding of each upload-time notice's withdrawal credential. Exporting it would be a security defect, not completeness."
+    },
     "private.export_archive_attempts": {
       "disposition": "excluded-internal",
       "reason": "Export attempt leases and byte counts. It is machinery, not the person's record."

@@ -183,6 +183,26 @@ The next source-accepting work must supply all of the following:
    attempt), and source deletion at the retention deadline, at restriction
    and in the terminal purge.
 
+   **Authoritative dates and addenda exist, 2026-09-28.** The same publication
+   transaction now gives every ordinal its `embryo.stored-or-unknown-24mo`
+   deadline: 24 months from the commit
+   (`20260930124000_embryo_publication_dates.sql`). A source is anchored at
+   its actual upload. A `qc_fail` is anchored at its own publication, cannot
+   be renewed, and borrows no sibling's time. Each card date becomes
+   `definitive_stored_or_unknown` with `date_revision` + 1. Each embryo
+   subject gets a retention row, its three registered phases and a frozen
+   purge manifest. Every current Record Key recipient gets a no-key
+   `record-key-addendum`: `date-changed` for a source only when its printed
+   date moved, and always one `no-source` notice for a `qc_fail`, which now
+   carries the date its record is deleted. If a required addendum cannot be
+   queued, the whole publication rolls back. A later transfer, donation or
+   discard supersedes the row and cancels its open phases. Embryo sources no
+   longer count against the parent's own upload allowance
+   (`20260930125000_own_upload_allowance_excludes_embryo.sql`, owner decision
+   of 28 September). Still missing: the upload-time rights notice, which waits
+   on a redeemable `embryo-parent-withdrawal` credential; renewal of a source
+   deadline; and the executor for these phases.
+
 ADR 0034 (27 September) allows X and Y calls to be read only to work out a
 registered serious sex-linked condition, and none is registered. This
 configuration work supplies no threshold or display conclusion. No acceptance

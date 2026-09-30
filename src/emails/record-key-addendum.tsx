@@ -1,5 +1,6 @@
 // A note that changes what a printed Record Key Card means. Three kinds:
-// the closing date moved, no genetic file was kept for one embryo, or the
+// the closing date moved, no genetic file was kept for one embryo (with the
+// date its remaining record is deleted, as docs/retention.md requires), or the
 // cards were cancelled. Each kind renders its own sentence. The mail never
 // carries a Record Key, an address or a laboratory label, and the cancelled
 // kind carries no date at all, so it cannot be read as a new deadline.
@@ -16,6 +17,8 @@ export interface RecordKeyDateChangedProps {
 export interface RecordKeyNoSourceProps {
   kind: "no-source";
   displayLabel: string;
+  closingDateIso: string;
+  closingDateWords: string;
 }
 
 export interface RecordKeyCardInvalidatedProps {
@@ -58,6 +61,10 @@ export function RecordKeyAddendumEmail(props: RecordKeyAddendumProps) {
           No genetic file was kept for {props.displayLabel}. Its Record Key
           Card cannot be used to claim anything, because nothing was stored
           for it.
+        </Text>
+        <Text style={paragraph}>
+          Inherit keeps the record of its quality check until{" "}
+          {props.closingDateWords} ({props.closingDateIso}), and then deletes it.
         </Text>
       </EmailLayout>
     );

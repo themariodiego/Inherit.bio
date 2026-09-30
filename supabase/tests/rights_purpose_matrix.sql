@@ -9,8 +9,10 @@ select is((select count(distinct purpose) from private.rights_purpose_matrix), 1
 select is((select count(*) from private.rights_purpose_matrix), 34::bigint,
   'with every registered action and route');
 select is((select array_agg(session_purpose order by session_purpose) from private.rights_session_purposes),
-  array['adult-subject-invitation', 'co-parent-invitation'],
-  'only the two purposes with an issuer can be stored on a session');
+  array['adult-subject-invitation', 'co-parent-invitation', 'embryo-parent-withdrawal'],
+  'only the three purposes with an issuer can be stored on a session');
+select is((select target_kind from private.rights_session_purposes where session_purpose = 'embryo-parent-withdrawal'),
+  'cohort', 'an embryo withdrawal session binds the whole cohort, never one embryo');
 
 -- The one gate.
 select ok(private.rights_action_permitted_v1('adult-subject-invitation', 'confirm', 'api.withdraw'),
@@ -31,6 +33,12 @@ select ok(not private.rights_action_permitted_v1('adult-subject-invitation', 'ex
   'an invitation credential can never reach a future-person route');
 select ok(not private.rights_action_permitted_v1('approved-future-person-release', 'delete', 'api.withdraw'),
   'a purpose with no issuer permits nothing');
+select ok(private.rights_action_permitted_v1('embryo-parent-withdrawal', 'refuse', 'api.withdraw')
+  and private.rights_action_permitted_v1('embryo-parent-withdrawal', 'delete', 'api.withdraw'),
+  'an embryo withdrawal session may refuse or delete through api.withdraw');
+select ok(not private.rights_action_permitted_v1('embryo-parent-withdrawal', 'confirm', 'api.withdraw')
+  and not private.rights_action_permitted_v1('embryo-parent-withdrawal', 'export', 'api.withdraw'),
+  'and nothing else there');
 select is((select count(*) from private.rights_purpose_matrix
   where purpose in ('approved-future-person-release', 'future-person-claim-objection')
     and route_id in ('api.withdraw', 'api.third-party-subject-export')), 0::bigint,

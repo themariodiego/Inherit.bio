@@ -58,7 +58,15 @@ const embryoCount = z.number().int().min(1).max(64);
 
 const coParentInvitationPayload = z.object({}).strict();
 
-const embryoUploadNoticePayload = z.object({ embryoCount }).strict();
+// The safe display name the database lets through, or null.
+const embryoUploadNoticePayload = z.object({
+  embryoCount,
+  uploaderName: z.string().regex(/^\p{L}[\p{L} .'-]{0,59}$/u).nullable(),
+  uploadedBy: z.enum(["genetic-parent", "someone-else"]),
+  uploadDateIso: z.iso.date(),
+  uploadDateWords: z.string().trim().min(1).max(40),
+  retentionDays: z.number().int().min(1).max(3660),
+}).strict();
 
 const recordKeyAddendumPayload = z.discriminatedUnion("kind", [
   z
@@ -69,7 +77,14 @@ const recordKeyAddendumPayload = z.discriminatedUnion("kind", [
       closingDateWords: z.string().trim().min(1).max(40),
     })
     .strict(),
-  z.object({ kind: z.literal("no-source"), displayLabel }).strict(),
+  z
+    .object({
+      kind: z.literal("no-source"),
+      displayLabel,
+      closingDateIso: z.iso.date(),
+      closingDateWords: z.string().trim().min(1).max(40),
+    })
+    .strict(),
   z.object({ kind: z.literal("card-invalidated"), embryoCount }).strict(),
 ]);
 
@@ -163,7 +178,7 @@ function parseMail(
     return {
       id: templateId,
       payload: {
-        embryoCount: parsed.embryoCount,
+        ...parsed,
         withdrawUrl: deliveryToken ? fragmentUrl(deliveryToken) : undefined,
       },
     };
