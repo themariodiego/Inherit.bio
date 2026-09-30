@@ -173,10 +173,8 @@ select is(pg_temp.read_publication(),(select value from pub_receipts where label
 -- Account path uses its real request and start contract inside a savepoint;
 -- rollback restores this exact published fixture for independent file deletion.
 savepoint account_path;
-select public.issue_account_operation_nonce_v1('89800000-0000-4000-8000-000000000001',
- '89800000-0000-4000-8000-000000000010','account_delete',repeat('9',64),clock_timestamp()+interval '9 minutes');
-create temporary table account_request as select * from public.request_account_deletion_v1(
- '89800000-0000-4000-8000-000000000001','89800000-0000-4000-8000-000000000010',repeat('9',64),decode(repeat('ab',40),'hex'),repeat('8',64),repeat('7',64));
+create temporary table account_request as select * from public.request_account_deletion_v2(
+ '89800000-0000-4000-8000-000000000001','89800000-0000-4000-8000-000000000010',repeat('9',64),clock_timestamp()+interval '9 minutes',decode(repeat('ab',40),'hex'),repeat('8',64),repeat('7',64));
 -- Existing account-deletion fixture technique: shift both fixed notice clocks
 -- together, retaining the exact seven-day relationship and real worker claim.
 reset role;
