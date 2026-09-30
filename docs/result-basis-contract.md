@@ -35,3 +35,33 @@ Residual requirements are concrete: the approved condition registry remains empt
 
 
 The null-dropout copy now distinguishes actual displayed risk ranges from a QC-only record. The exact §6.6 widening sentence remains when risk ranges exist; the closed neutral `embryo.qc.dropout-no-range` sentence is used otherwise. Current approved-registry readers determine this from actual returned absolute-risk findings, so an empty registry or withheld historical figure cannot claim nonexistent wider ranges. No interval or estimate is added to justify the copy.
+
+## Genuine historical claimant export · 1 October 2026
+
+The approved claimant archive must retain every genuine own historical report,
+including a record that predates saved classification receipts. Its server-only
+historical reader dispatches the original strict finding body with neither new
+metadata field to the frozen original closed validator. That output records
+`figureBasis: null` and `classificationDisposition: unrecorded`. It preserves the
+recorded scientific values and model/version context without claiming a basis
+or presenting a newly classified figure. A body carrying either new field must
+pass the current version-2 contract; missing, wrong, partial or extra receipts
+cannot fall back to the old shape. Current RSC, API, chat and producer validators
+remain unchanged and continue refusing obsolete or malformed classifications.
+
+Quality records retain their exact absent, NULL or genuine immutable called-VCF
+receipt. A mixed historical detail validates each finding and QC version before
+validating the same closed outer record and exact subject binding. Only a
+validation view removes already validated new metadata for the frozen outer
+validator; the saved records and exported classifications stay unchanged.
+Every stored figure payload must still equal the corresponding component of
+its original bound finding. The actual ZIP64 worker's JSON and text report
+members consume these readers and preserve their explicit parent/cohort
+withholding lists. No source, table, receipt, field disposition, retained datum,
+classification backfill, READY gate or Storage backend is added here.
+
+Focused archive tests open the generated ZIP, require both genuine historical
+and current versions, retain actual QC receipts, and verify every manifest
+length/hash. Malformed versions and forbidden fields still refuse the whole
+archive. This integration awaits the root's full database and hosted-browser
+verification; G4.2 and G5.4 remain NO.

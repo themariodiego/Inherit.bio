@@ -84,6 +84,35 @@ describe("actual claimant member to ZIP64 attempt",()=>{
       finding:{absoluteRisk:0.071},withholdingReason:"outside-claimed-subject"});
     expect(reports.rows[1].withheldComponents).toHaveLength(8);expect(reports.rows[1].finding).not.toHaveProperty("matched_baseline");
   });
+  it("preserves mixed genuine classification versions inside the actual archive without retroclassifying legacy records",async()=>{
+    const f=fixture();f.snapshot.membership.qualityReports=1;f.snapshot.membership.scores=2;f.snapshot.membership.figures=2;f.snapshot.membership.reports=2;
+    const quality=syntheticQc();f.quality.push(quality);
+    const current=syntheticAbsoluteFinding("Embryo 1","recorded-new-condition",0.03);
+    const original=syntheticAbsoluteFinding("Embryo 1","retired-original-condition",0.071);
+    const {schema_version:_v,figure_basis:_b,...oldBody}=original.finding!;void _v;void _b;
+    const legacy={...original,finding:oldBody};
+    [legacy,current].forEach((record,index)=>{
+      const {embryo_label,...fields}=record;void embryo_label;
+      const findingRecord={id:index===0?ID:SUBJECT,...fields,model_id:"genuine-recorded-model",model_version:"original",
+        source_binding_fingerprint:RECEIPT,computation_revision:1,computed_at:DATE};f.scores.push(findingRecord);
+      f.figures.push({id:`48000000-0000-4000-8000-00000000000${index+1}`,finding_id:findingRecord.id,figure_kind:"absolute_risk",
+        payload:structuredClone(record.finding),figure_revision:1,created_at:DATE,findingRecord:structuredClone(findingRecord)});
+      f.reports.push({id:`58000000-0000-4000-8000-00000000000${index+1}`,report_kind:"saved-own-finding",report_revision:1,
+        source_binding_fingerprint:RECEIPT,artifact:structuredClone(record),created_at:DATE,embryoId:ID});
+    });
+    await buildClaimantArchive(f.options);const zip=new AdmZip(Buffer.concat(f.writes));
+    const json=JSON.parse(zip.readAsText(`subjects/${SUBJECT}/reports.json`)),text=zip.readAsText(`subjects/${SUBJECT}/reports.txt`);
+    expect(json.rows).toHaveLength(7);expect(json.rows[0].quality.figure_basis).toEqual(quality.figure_basis);
+    const oldRows=[json.rows[1],json.rows[3],json.rows[5].component],newRows=[json.rows[2],json.rows[4],json.rows[6].component];
+    for(const row of oldRows){expect(row.classification).toEqual({sourceShape:"legacy-v1",figureBasis:null,classificationDisposition:"unrecorded"});
+      expect(row.finding??row.component).toHaveProperty("absoluteRisk",0.071);expect(text).toContain(JSON.stringify(row.classification));}
+    for(const row of newRows){expect(row.classification).toEqual({sourceShape:"finding-v2",schemaVersion:2,figureBasis:{version:1,basis:"modelled"}});
+      expect(row.finding??row.component).toHaveProperty("absoluteRisk",0.03);expect(text).toContain(JSON.stringify(row.classification));}
+    expect(legacy.finding).not.toHaveProperty("schema_version");expect(legacy.finding).not.toHaveProperty("figure_basis");
+    for(const member of JSON.parse(zip.readAsText("manifest.json")).members){const body=zip.readFile(member.name)!;
+      expect(body.length).toBe(member.sizeBytes);expect(createHash("sha256").update(body).digest("hex")).toBe(member.sha256);}
+    expect(f.calls.at(-1)?.p_operation).toBe("bytes-complete");
+  });
   it.each(["unknown-report","truncated","foreign-field","lost-authority"])("refuses the whole %s attempt before byte completion",async(kind)=>{
     const f=fixture();if(kind==="unknown-report")f.snapshot.membership.reports=1;
     if(kind==="truncated")f.rows.pop();

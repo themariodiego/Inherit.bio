@@ -1,7 +1,7 @@
 import "server-only";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
-import { assertEmbryoDto, type EmbryoFinding, type QcDto, type RscEmbryoDetail } from "@/lib/embryos/policy";
+import { assertHistoricalJson as plain, readHistoricalFinding, readHistoricalQc, readHistoricalDetail, historicalFindingBasis, type HistoricalFinding } from "./historical-embryo-dto";
 import { projectFuturePersonFinding } from "./future-person-report-projection";
 
 const unavailable = (): never => { throw new Error("export unavailable"); };
@@ -17,34 +17,10 @@ export const historicalClaimantFigure = z.object({ id: uuid, finding_id: uuid,
 export const historicalClaimantReport = z.object({ id: uuid, report_kind: z.string().regex(/^[a-z][a-z0-9._-]{0,100}$/u),
   report_revision: revision, source_binding_fingerprint: hash, artifact: z.unknown(), created_at: timestamp, embryoId: uuid }).strict();
 
-/** JSON from the private member door, without executable/accessor properties.
- * Refuse the entire candidate before a policy walker can invoke an accessor. */
-function plain(value: unknown, seen = new Set<object>(), depth = 0): void {
-  if (depth > 16) return unavailable();
-  if (value === null || typeof value === "string" || typeof value === "boolean") return;
-  if (typeof value === "number" && Number.isFinite(value)) return;
-  if (!value || typeof value !== "object" || seen.has(value)) return unavailable();
-  seen.add(value);
-  if (Array.isArray(value)) {
-    if (Object.getPrototypeOf(value) !== Array.prototype || value.length > 10000
-      || Reflect.ownKeys(value).length !== value.length + 1) return unavailable();
-    for (let index = 0; index < value.length; index++) {
-      const field = Object.getOwnPropertyDescriptor(value, String(index));
-      if (!field || !field.enumerable || !("value" in field)) return unavailable(); plain(field.value, seen, depth + 1);
-    }
-  } else {
-    if (![Object.prototype, null].includes(Object.getPrototypeOf(value))) return unavailable();
-    for (const key of Reflect.ownKeys(value)) {
-      const field = Object.getOwnPropertyDescriptor(value, key)!;
-      if (typeof key !== "string" || !field.enumerable || !("value" in field)) return unavailable(); plain(field.value, seen, depth + 1);
-    }
-  }
-  seen.delete(value);
-}
-function finding(value: z.infer<typeof historicalClaimantScore>): EmbryoFinding {
-  return assertEmbryoDto("EmbryoFinding", { embryo_label: "Your claimed record", condition_id: value.condition_id,
+function finding(value: z.infer<typeof historicalClaimantScore>): HistoricalFinding {
+  return readHistoricalFinding({ embryo_label: "Your claimed record", condition_id: value.condition_id,
     condition_name: value.condition_name, finding: value.finding, evidence_label: value.evidence_label,
-    coverage_state: value.coverage_state, citation_ids: value.citation_ids, not_covered_reason: value.not_covered_reason } as EmbryoFinding);
+    coverage_state: value.coverage_state, citation_ids: value.citation_ids, not_covered_reason: value.not_covered_reason });
 }
 export function projectHistoricalClaimantFigure(value: unknown) {
   plain(value); const row = historicalClaimantFigure.parse(value), bound = finding(row.findingRecord);
@@ -65,13 +41,13 @@ export function projectHistoricalClaimantFigure(value: unknown) {
   if (!isDeepStrictEqual(row.payload, expected)) return unavailable();
   return { id: row.id, findingId: row.finding_id, figureKind: row.figure_kind, revision: row.figure_revision, recordedAt: row.created_at,
     findingRevision: row.findingRecord.computation_revision, sourceBindingFingerprint: row.findingRecord.source_binding_fingerprint,
-    modelId: row.findingRecord.model_id, modelVersion: row.findingRecord.model_version, component: structuredClone(component),
+    modelId: row.findingRecord.model_id, modelVersion: row.findingRecord.model_version, classification: historicalFindingBasis(bound.finding), component: structuredClone(component),
     withheldComponents, ...(withheldComponents.length ? { withholdingReason: "outside-claimed-subject" as const } : {}) };
 }
 export function projectHistoricalClaimantQc(value: unknown) {
-  plain(value); const source = assertEmbryoDto("qc", value as QcDto);
+  plain(value); const source = readHistoricalQc(value);
   const { parent_a_concordance: _a, parent_b_concordance: _b, ...own } = source; void _a; void _b;
-  return { ...structuredClone(own), parentConcordanceDisposition: "outside-claimed-subject" as const };
+  return { ...structuredClone(own), classificationDisposition: "figure_basis" in source && source.figure_basis !== null ? "recorded" : "unrecorded", parentConcordanceDisposition: "outside-claimed-subject" as const };
 }
 export function projectHistoricalClaimantReport(value: unknown) {
   plain(value); const row = historicalClaimantReport.parse(value);
@@ -79,10 +55,10 @@ export function projectHistoricalClaimantReport(value: unknown) {
   const artifact = row.artifact as Record<string, unknown>;
   let component: unknown, shape: string, withheldComponents: string[];
   if (Object.hasOwn(artifact, "condition_id")) {
-    component = projectFuturePersonFinding(assertEmbryoDto("EmbryoFinding", artifact as unknown as EmbryoFinding));
+    component = projectFuturePersonFinding(readHistoricalFinding(artifact));
     shape = "EmbryoFinding"; withheldComponents = ["embryo_label"];
   } else if (Object.hasOwn(artifact, "findings")) {
-    const detail = assertEmbryoDto("rscEmbryoDetail", artifact as unknown as RscEmbryoDetail);
+    const detail = readHistoricalDetail(artifact);
     if (detail.id !== row.embryoId || detail.findings.some(item => item.embryo_label !== detail.display_label)) return unavailable();
     component = { status: detail.status, quality: detail.qc === null ? null : projectHistoricalClaimantQc(detail.qc),
       findings: detail.findings.map(projectFuturePersonFinding) };

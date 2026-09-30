@@ -1,5 +1,24 @@
 # Test diff register
 
+## Exact historical classification versions in claimant members · 1 October 2026
+
+The additive embryo basis checkpoint makes current finding bodies version 2
+and quality receipts nullable. The claimant archive now dispatches genuine
+original v1 bodies to an exact frozen closed validator, preserving original
+values with explicit unrecorded classification. Actual version-2 bodies and
+called-VCF QC retain their saved metadata. A candidate containing either new
+finding field never falls back when malformed. Current producer/RSC/API/chat
+validators and all original negative assertions remain unchanged.
+
+New tests preserve mixed historical versions without mutation, refuse missing,
+wrong, partial, extra or unknown receipts and planted forbidden fields, and
+open the actual generated archive to verify each saved classification, genuine
+numeric value, complete member set and manifest length/hash. The nullable QC
+fixture explicitly requests NULL because the genuine current synthetic QC
+producer now emits its actual called-VCF receipt by default. This changes no
+expectation about real NULL records. Full database and browser evidence for the
+combined graph remains pending; no acceptance mark or ratchet is relaxed.
+
 ## Genuine historical component source bindings · 1 October 2026
 
 The full fresh historical-export rehearsal stopped after 88 passing assertions

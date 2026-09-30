@@ -2094,7 +2094,8 @@
           },
           "approved-future-person-export-v1": {
             "root": "exportEmbryo",
-            "cardinality": "exactly-one-for-the-approved-embryo-subject"
+            "cardinality": "exactly-one-for-the-approved-embryo-subject",
+            "historicalEvidenceReader": "exportContracts.approved-future-person-export-v1.historicalEvidenceReader"
           }
         },
         "chat": {
@@ -5428,6 +5429,15 @@
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "price": "free",
       "credential": "approved-rights-session-bound-to-one-exact-transferred-embryo-subject-after-human-review-and-any-required-owner-notice",
+      "historicalEvidenceReader": {
+        "scope": "only-immutable-own-records-bound-to-the-exact-captured-approved-claimant-source-and-current-authority-receipt",
+        "findingVersions": "the-original-closed-v1-body-has-neither-schema_version-nor-figure_basis-and-exports-with-figureBasis-null-and-classificationDisposition-unrecorded; a-body-containing-either-field-must-pass-the-current-closed-v2-contract-with-its-genuine-saved-classification-and-never-falls-back",
+        "qualityVersions": "the-original-closed-quality-shape-has-no-figure_basis; the-current-shape-preserves-its-actual-null-or-closed-embryo-split-calls-v1-receipt; absent-or-null-classification-remains-unrecorded",
+        "detailVersions": "each-child-must-pass-its-own-version-before-the-unchanged-closed-outer-detail-is-validated-and-bound-to-the-exact-embryo; mixed-genuine-historical-versions-are-permitted-with-no-rewrite",
+        "figureIdentity": "every-stored-figure-payload-must-equal-the-exact-historical-component-of-its-recorded-own-finding-version-before-any-member-bytes-are-written",
+        "currentProducerBoundary": "the-legacy-reader-is-server-only-and-export-only; current-RSC-API-chat-and-producer-contracts-still-require-current-saved-classifications-and-do-not-use-this-reader",
+        "validation": "src/lib/exports/historical-embryo-dto.ts; frozen-v1-closed-validator-src/lib/embryos/historical-policy-v1.ts"
+      },
       "layout": "subject-partitioned-archive-v1",
       "deliveryContract": "largeExportDeliveryContract",
       "subjectScope": "the-one-claimed-embryo-subject-only-with-no-sibling-parent-or-cohort-row-except-the-agreement-projection-below",
