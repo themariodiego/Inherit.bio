@@ -37,17 +37,18 @@ beforeEach(() => {
 });
 describe("initial account completion route", () => {
   it("writes through the atomic RPC with separate subject and account-binding revisions", async () => {
-    const { body, headers, nonceHash } = requestCase();
+    const { body, headers, nonceHash, claims } = requestCase();
     const res = await send(body, headers);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "completed" });
     expect(res.headers.get("cache-control")).toBe("private, no-store");
     expect(res.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("complete_own_upload_account_v1", {
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("complete_own_upload_account_v2", {
       p_account_id: input.accountId, p_session_id: input.sessionId, p_subject_id: input.subjectId,
       p_account_revision: 2, p_auth_session_revision: 3, p_jurisdiction_revision: 4,
       p_subject_binding_revision: 5, p_account_binding_revision: 1,
       p_date_of_birth: body.dateOfBirth, p_nonce_hash: nonceHash,
+      p_nonce_expires_at: new Date(claims.expiresAt).toISOString(),
     });
   });
   it.each(["origin", "sec-fetch-site", "x-inherit-csrf"])("requires %s", async key => {
