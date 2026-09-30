@@ -134,3 +134,9 @@ repeated setup cost still bound the improvement. Future changes must keep every
 ordinary spec in the default census and every case exactly once; sanitized
 file-group timing receipts show when a different complete group becomes the
 bottleneck.
+
+## Prevent long-check concentration
+
+Six independent accessibility sweeps live in six semantic spec files. Each complete G1.13b measurement owns its own UUID account and setup closure, so sharing a serial worker cannot share its accumulated upload fixture. Their original bodies, assertions and limits are retained.
+
+The mandatory inventory discovers the actual complete suite and all six native partitions before publishing its manifest. It requires exact case equality and whole serial project/file groups, then requires all six complete Chromium accessibility sweeps across at least three jobs with no more than two sweeps per job. The required final aggregate repeats the sweep-placement guard after validating exact-source, same-run, same-attempt execution. Missing, duplicated, subdivided or concentrated sweeps fail the check even if ordinary coverage would still be complete. Scheduling changes must preserve this guard and be measured with actual full-suite timing receipts.
