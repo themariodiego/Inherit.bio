@@ -42,6 +42,19 @@ release credential, rights session, operation envelope and durable attempt,
 then probe exact own content, immutability, cross-attempt and revocation refusal.
 Those SQL tests await the shared fresh-database rehearsal.
 
+The whole-object read adapter uses the installed Supabase SDK's exact metadata
+endpoint before and after one raw conditional GET. It requires the durable
+object ID, bucket, key, size, provider version and ETag to remain identical,
+refuses redirects, ranges and compression, and supplies only the existing
+bounded reader. That reader buffers at most 4,000,000 bytes and releases them
+only after EOF, exact length/SHA-256 and a final current-authority check. No
+signed URL or browser provider credential is created. New tests cover stale
+versions, changed identity, short/canceled bytes, revocation at EOF and a stalled
+final metadata read. Native local HTTP tests exercise both complete and
+truncated framing with synthetic bytes; they are not proof of a deployed
+Supabase provider or claimant browser journey. The provider/backend, retention
+rules, current READY hold and production settings stay unchanged.
+
 Unknown nonempty figure/report-artifact classes deliberately refuse the entire
 archive; their complete byte projection is still required. The public claimant
 route, scheduler/discovery, immutable provider delivery proof, final READY CAS,
