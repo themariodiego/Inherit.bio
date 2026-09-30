@@ -10,6 +10,18 @@ The browser proxy admits the new exact localhost:3105 origin, refuses the
 next port, and adds strict HTTPS, IP-alias and deceptive-host refusals for
 3105. All existing credential, external-host and namespace refusals remain.
 
+## Embryo upload copy review · 30 September 2026
+
+The new headings, controls and status prose now use the existing plain
+vocabulary. The earlier 39-word addition is reduced to exactly two words:
+`cards`, for the Record Key Cards named in design §2.2 step 4
+(`docs/design/w10-embryo-surfaces.md:105`), and `characters`, for the closed
+Tier-2 typed-name length rule in the closed `api.consents` request
+(`docs/route-register.json:17731`). The latter explains the actual validator
+without claiming that it accepts only alphabetic letters. No readability
+threshold, jargon exemption or test expectation is loosened. Full artifact
+bodies and the brief's mandated wording are unchanged.
+
 ## Five-step embryo upload in TEST-LOCAL · 30 September 2026
 
 The existing browser proof now ends step 2 on the registered draft form,
@@ -23,8 +35,8 @@ cross-session routes, duplicate handles, malformed configure credentials,
 foreign completion receipts and invalid card/date/limit shapes. The receipt
 round trip uses the actual cohort response producer. The route-builder census
 adds exactly two existing API routes and sign-in; all corresponding literal
-links now use those builders. Ordinary new form words are registered;
-three checkbox sentences are split without changing their assertions.
+links now use those builders. Three checkbox sentences are split without
+changing their assertions.
 
 The fixed app variant admits only its exact embryo gateway and bucket and
 refuses them on every other variant. The new isolated browser journey uses

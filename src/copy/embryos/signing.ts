@@ -54,7 +54,7 @@ export const STATEMENT_SENTENCES: Readonly<Record<string, string>> = {
 /** Each artifact's heading on a signing screen. */
 export const ARTIFACT_HEADINGS: Readonly<Record<string, string>> = {
   "consent.upload-embryo": "Consent to the embryo upload",
-  "attestation.embryo-parentage": "Your statement as a parent",
+  "attestation.embryo-parentage": "You are a parent",
   "attestation.embryo-disposition-rights": "Your right to decide for these embryos",
   "attestation.embryo-single-parent-basis": "Why only one parent can sign",
   "charter.future-person": "The Future Person Charter",
@@ -65,20 +65,20 @@ export const ARTIFACT_HEADINGS: Readonly<Record<string, string>> = {
 export const TYPED_NAME_LABEL = "Full legal name";
 
 /** What typing the name does, stated under the field. */
-export const TYPED_NAME_NOTE = "Typing your name signs every statement above.";
+export const TYPED_NAME_NOTE = "Your full name signs what you read here.";
 
 /** A typed name that is too short. */
-export const TYPED_NAME_ERROR_STATUS = "Use at least two name parts with two or more characters each.";
+export const TYPED_NAME_ERROR_STATUS = "Use two or more name words with two or more characters each.";
 
 /** The signing form's one primary action, and while it is working. */
 export const SIGN_BUTTON = "Sign";
-export const SIGNING_STATUS = "Saving your signature…";
+export const SIGNING_STATUS = "Saving…";
 
 /** A signing, sending or checking request that did not go through. */
 export const REQUEST_FAILED_STATUS =
-  "This did not go through. The page may have expired, or something changed. Load the page again to see where things stand.";
+  "This did not go through. The page may have expired, or something changed. Load the page again to see where you stand.";
 
 /** Where a person can read the artifact's own version details. */
 export function artifactVersionNote(version: number, effectiveOn: string): string {
-  return `Version ${version} · in force from ${effectiveOn}`;
+  return `Version ${version} · from ${effectiveOn}`;
 }
