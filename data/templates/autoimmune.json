@@ -22,7 +22,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18509540", "label": "Monsuur et al., PLoS ONE 2008" }
+      { "pmid": "18509540", "label": "Monsuur et al., PLoS ONE 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -61,8 +61,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18252895", "label": "Erlich et al., Diabetes 2008" },
-      { "pmid": "18509540", "label": "Monsuur et al., PLoS ONE 2008" }
+      { "pmid": "18252895", "label": "Erlich et al., Diabetes 2008", "accessedOn": "2026-09-28" },
+      { "pmid": "18509540", "label": "Monsuur et al., PLoS ONE 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -88,7 +88,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "15208781", "label": "Begovich et al., Am J Hum Genet 2004" }
+      { "pmid": "15208781", "label": "Begovich et al., Am J Hum Genet 2004", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -114,7 +114,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17660530", "label": "Hafler et al. (IMSGC), N Engl J Med 2007" }
+      { "pmid": "17660530", "label": "Hafler et al. (IMSGC), N Engl J Med 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -153,8 +153,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "11385576", "label": "Hugot et al., Nature 2001" },
-      { "pmid": "11385577", "label": "Ogura et al., Nature 2001" }
+      { "pmid": "11385576", "label": "Hugot et al., Nature 2001", "accessedOn": "2026-09-28" },
+      { "pmid": "11385577", "label": "Ogura et al., Nature 2001", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -180,8 +180,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "16642438", "label": "Nair et al., Am J Hum Genet 2006" },
-      { "pmid": "20953190", "label": "Strange et al., Nat Genet 2010" }
+      { "pmid": "16642438", "label": "Nair et al., Am J Hum Genet 2006", "accessedOn": "2026-09-28" },
+      { "pmid": "20953190", "label": "Strange et al., Nat Genet 2010", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -207,7 +207,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17804842", "label": "Remmers et al., N Engl J Med 2007" }
+      { "pmid": "17804842", "label": "Remmers et al., N Engl J Med 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -233,8 +233,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "21743469", "label": "Evans et al., Nat Genet 2011" },
-      { "pmid": "31902620", "label": "McGucken et al., Pathology 2020" }
+      { "pmid": "21743469", "label": "Evans et al., Nat Genet 2011", "accessedOn": "2026-09-28" },
+      { "pmid": "31902620", "label": "McGucken et al., Pathology 2020", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -260,7 +260,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12724780", "label": "Ueda et al., Nature 2003" }
+      { "pmid": "12724780", "label": "Ueda et al., Nature 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -286,7 +286,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17068223", "label": "Duerr et al., Science 2006" }
+      { "pmid": "17068223", "label": "Duerr et al., Science 2006", "accessedOn": "2026-09-28" }
     ]
   }
 ]

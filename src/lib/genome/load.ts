@@ -182,6 +182,50 @@ export async function getSubjectGenotypesByRsid(
   return { genotypes, conflicts, fileCount: files.length, inputFileIds: [...inputFileIds].sort(), checkedFileIds: files.map((file) => file.id), inputFilesByRsid };
 }
 
+/**
+ * A subject's calls at exact loci, newest file first, with each call's file:
+ * the reader for reviewed carrier assertions, which match by chromosome,
+ * position and both spellings and never by rsID. The legacy-file selection
+ * rule is `getSubjectProcessedFiles`'s, unchanged.
+ */
+export async function getSubjectCallsAtLoci(
+  supabase: Db,
+  subjectId: string,
+  loci: readonly { chrom: number; pos: number }[],
+  legacyFileIds?: readonly string[],
+): Promise<{
+  calls: { chrom: number; pos: number; ref: string | null; alt: string | null; genotype: string; fileId: string }[];
+  inputFileIds: string[];
+  checkedFileIds: string[];
+}> {
+  const files = await getSubjectProcessedFiles(supabase, subjectId, legacyFileIds);
+  if (files.length === 0 || loci.length === 0) return { calls: [], inputFileIds: [], checkedFileIds: files.map((file) => file.id) };
+  const wanted = new Set(loci.map((locus) => `${locus.chrom}:${locus.pos}`));
+  const chroms = [...new Set(loci.map((locus) => locus.chrom))];
+  const positions = [...new Set(loci.map((locus) => locus.pos))].sort((left, right) => left - right);
+  const calls: { chrom: number; pos: number; ref: string | null; alt: string | null; genotype: string; fileId: string }[] = [];
+  const CHUNK = 200;
+  for (let i = 0; i < positions.length; i += CHUNK) {
+    const { data } = await supabase
+      .from("user_variants")
+      .select("chrom, pos, ref, alt, genotype, file_id")
+      .eq("subject_id", subjectId)
+      .in("file_id", files.map((file) => file.id))
+      .in("chrom", chroms)
+      .in("pos", positions.slice(i, i + CHUNK));
+    for (const row of data ?? []) {
+      if (wanted.has(`${row.chrom}:${row.pos}`)) {
+        calls.push({ chrom: row.chrom, pos: row.pos, ref: row.ref, alt: row.alt, genotype: row.genotype, fileId: row.file_id });
+      }
+    }
+  }
+  return {
+    calls,
+    inputFileIds: [...new Set(calls.map((call) => call.fileId))].sort(),
+    checkedFileIds: files.map((file) => file.id),
+  };
+}
+
 export function templateRsids(templates: ReportTemplate[]): number[] {
   const set = new Set<number>();
   for (const t of templates) {

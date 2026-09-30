@@ -5,7 +5,8 @@ import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { ownSubjectIds, subjectRecordOf, subjectRecordRowCount } from "@/lib/export/subject-record";
 import { ownChatsForExport } from "@/lib/export/own-chats";
-import { EXPORT_CHATS_EMPTY } from "@/copy/settings/data-export";
+import { EXPORT_CHATS_EMPTY, EXPORT_LEGAL_AUDIT_DESCRIPTION, exportLegalAuditNote } from "@/copy/settings/data-export";
+import { LEGAL_AUDIT_SCHEMA_VERSION, ownLegalAuditEvents } from "@/lib/export/legal-audit";
 import { originalDownloadName, originalFileExtension } from "@/lib/uploads/original-download-name";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
@@ -375,7 +376,7 @@ export async function GET() {
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
   const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents },
-    subjectRecord] =
+    subjectRecord, legalAudit] =
     await Promise.all([
       fetchAllRows((from, to) => admin.from("genome_files").select("*").eq("user_id", user.id)
         .is("single_logical_sample_verified_at", null).order("id").range(from, to)),
@@ -385,9 +386,11 @@ export async function GET() {
         .select("provider_key, data_classes, granted_at, revoked_at")
         .eq("user_id", user.id),
       subjectRecordOf(admin, user.id),
+      ownLegalAuditEvents(admin.rpc.bind(admin) as unknown as Parameters<typeof ownLegalAuditEvents>[0], exportActor),
     ]);
   if (ancestryError) return new Response("Export unavailable", { status: 503 });
   if (subjectRecord === null) return new Response("Export unavailable", { status: 503 });
+  if (legalAudit === null) return new Response("Export unavailable", { status: 503 });
 
   const files = [...legacyFiles, ...canonical.map(snapshot => snapshot.file)];
   const legacyIds = new Set(legacyFiles.map(file => file.id));
@@ -447,7 +450,7 @@ export async function GET() {
           + "consent history, the consents and disclosures you signed (never the name you signed "
           + "with), the permissions on your own subjects that rest on them, the affirmations you "
           + "made, your birth date and declared country, and the provider grants recorded against "
-          + "this account. Legal audit records are not yet included. Rows about other people are "
+          + "this account. Legal audit records are in legal-audit.json. Rows about other people are "
           + "not here, by construction.",
         count: subjectRecordRowCount(subjectRecord),
       });
@@ -704,6 +707,18 @@ export async function GET() {
         count: chats.length,
       });
 
+      // L-34 and the owner's decision of 28 Sep 2026: the legal audit events
+      // this person caused themselves, as the database selects them
+      // (src/lib/export/legal-audit.ts). Events written before attribution
+      // began name no one and never appear, so the file is often empty; its
+      // note says why rather than implying nothing happened.
+      const since = new Date(legalAudit.attributionStartedAt);
+      if (Number.isNaN(since.getTime())) throw new Error("export unavailable");
+      archive.append(JSON.stringify({ schema_version: LEGAL_AUDIT_SCHEMA_VERSION,
+        note: exportLegalAuditNote(since.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })),
+        attribution_started_at: legalAudit.attributionStartedAt, events: legalAudit.events }, null, 2), { name: "legal-audit.json" });
+      contents.push({ path: "legal-audit.json", description: EXPORT_LEGAL_AUDIT_DESCRIPTION, count: legalAudit.events.length });
+
       // Per genome file: normalized variants as CSV (streamed page by page
       // to bound memory) and the original upload byte-for-byte.
       for (const f of legacyFiles) {
@@ -765,7 +780,7 @@ export async function GET() {
         ...(warnings.length > 0 ? { warnings } : {}),
         note: "Export is free and always will be. This archive contains "
           + (expiredOriginals ? "your available original uploaded files (expired originals are identified in warnings)" : "your original uploaded files")
-          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, your consent and permission records, and your birth date and declared country. Legal audit records are not yet included. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte, each named with the extension of its file type; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
+          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, your consent and permission records, your birth date and declared country, and the legal audit records of what you did yourself (records that do not say who acted are left out). Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte, each named with the extension of its file type; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
       };
       archive.append(JSON.stringify(manifest, null, 2), {
         name: "manifest.json",
