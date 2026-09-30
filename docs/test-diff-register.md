@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-09-30 — Preserve the immutable-file refusal under the real service role
+
+The complete hosted run found the existing `immutable_file_identity` assertion receiving a protected custody-table permission error. The trigger remains an invoker and raises unchanged identity/role refusals before calling a narrow service-only read-only definer for the unchanged positive claimant transition. No direct custody table access is granted. Fresh pgTAP now checks invoker semantics, current transaction visibility, exact grants and the actual service-role identity refusal; all original positive and negative custody tests and browser assertions remain.
+
 ## Account cancellation browser proof requires the registered fresh sign-in · 30 September 2026
 
 The first full hosted account/cohort run reached the real Welcome back page after cancellation because the transaction correctly revokes every pre-cancellation Auth session. The old browser expectation attempted to render the Delete account control without the registered normal reauthorization. The journey now requires the actual native cancellation POST to return 200 with no-store, the exact sign-in handoff back to data settings, the genuine Welcome back screen and an unauthenticated export refusal before signing in through the real password form. It then retains every original Delete account, cancelled request/timestamp, cleared hold and overview assertion. No session, confirmation or successful authority is inserted into a fixture; no application/migration bytes, assertions, time limits, retries or skips are relaxed. This source correction is not a hosted pass receipt.
