@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { assertCiRuntime } from "./ci-browser-config";
+import { CI_BROWSER_SHARDS, type CiBrowserIdentity } from "./ci-browser-shards";
+
+export function trackedBrowserSpecs(): string[] {
+  return execFileSync("git", ["ls-files", "-z", "--", "e2e"], { encoding: "utf8" })
+    .split("\0").filter(file => file.endsWith(".spec.ts")).sort();
+}
+
+export function ciBrowserSourceIdentity(): CiBrowserIdentity {
+  assertCiRuntime(process.env);
+  assert(!process.env.INHERIT_DENSITY_CAPTURE && !process.env.INHERIT_COMPREHENSION_RUN, "Only the standard suite may be inventoried");
+  const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  assert(/^[0-9a-f]{40}$/.test(head) && head === process.env.GITHUB_SHA, "Exact GitHub checkout revision required");
+  assert(execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8" }).trim() === "",
+    "Browser coverage must use unchanged tracked source");
+  const runId = process.env.GITHUB_RUN_ID ?? "", runAttempt = process.env.GITHUB_RUN_ATTEMPT ?? "";
+  assert(/^[1-9][0-9]*$/.test(runId) && /^[1-9][0-9]*$/.test(runAttempt), "Actual GitHub run identity required");
+  return { head, runId, runAttempt };
+}
+export function discoverBrowserCases(index: number | null = null): unknown {
+  const command = process.platform === "win32" ? "playwright.cmd" : "playwright";
+  const discovery = spawnSync(command, ["test", "--config=playwright.config.ts", "--list", "--reporter=json",
+    ...(index === null ? [] : [`--shard=${index}/${CI_BROWSER_SHARDS}`])], {
+    env: process.env, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", maxBuffer: 32_000_000,
+  });
+  assert(!discovery.error && discovery.status === 0, "Full browser discovery failed; sensitive diagnostics suppressed");
+  try { return JSON.parse(discovery.stdout); } catch { throw new Error("Browser discovery returned no valid JSON report"); }
+}

@@ -4480,3 +4480,37 @@ Reason: the isolated browser runner requires the actual GitHub-hosted
 disposable environment. The local checks now run successfully, including the
 strict inference isolation assertions in Linux. The owner chose the existing
 fresh CI proof rather than additional local browser infrastructure.
+
+
+## 2026-09-30 — Permanent complete hosted browser verification
+
+Asked in chat with the recommended choice first. The owner chose
+"Use hosted CI permanently (Recommended)" for the CI redesign and all
+remaining and future project branches. This replaces the handoff's full local
+browser requirement before a draft push.
+
+- Local type checking, lint, full units, all ten quality gates and fresh-database
+  pgTAP must still pass before a draft push.
+- The complete hosted browser suite is mandatory before any merge or guarded
+  production change on the final reviewed version. A partial selection,
+  skipped case, retry or discovery-only receipt cannot substitute for execution.
+- The six isolated browser jobs retain the existing suite's assertions and
+  fixture lifecycles; the mandatory aggregate requires every job and exact
+  expected, assigned and executed coverage from the same commit, run and attempt.
+- Ordinary local `pnpm e2e` remains the complete local command. Hosted execution
+  replaces its pre-push requirement; it does not weaken its tests.
+- The earlier exception limited to account-deletion and embryo branches is now
+  superseded by this permanent policy. Two-phase migrations and exact-head
+  guarded production checks remain required.
+
+## 2026-09-30 — Import the reviewed carrier snapshot as inactive
+
+Asked in chat with the recommended choice first. The owner chose
+"Import as inactive (Recommended)" for the prepared 2,850 assertions across
+CFTR, HEXA, PAH, ACADM, ASPA, ATP7B, DHCR7 and GAA.
+
+Recheck production and run the guarded rollback dry run before applying the
+prepared import. Every condition remains inactive. This approval does not
+activate a condition: each still requires the owner's signed condition review
+and separate activation approval. No carrier result becomes visible through
+this import alone.

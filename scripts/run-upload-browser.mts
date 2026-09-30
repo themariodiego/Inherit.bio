@@ -24,14 +24,27 @@ import { chromium } from "@playwright/test";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
 import { assertLocalProviderEnvironment, localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 import { appServerEnvironment } from "./ci-browser-app-environment";
+import { ciBrowserShard } from "./ci-browser-shards";
+import { readCiBrowserSetupTimings } from "./ci-browser-setup-timings";
+import { assertCiRuntime } from "./ci-browser-config";
+import { ciBrowserSourceIdentity } from "./ci-browser-shards-io";
+import { writeFileSync } from "node:fs";
 
 const arguments_ = process.argv.slice(2);
-const fullSuite = arguments_[0] === "--full";
+const bootstrapStarted = performance.now();
+const shard = ciBrowserShard(arguments_[0], process.env);
+const shardSource = shard === null ? null : ciBrowserSourceIdentity();
+if (shard !== null) {
+  assertCiRuntime(process.env);
+  readCiBrowserSetupTimings(process.env, shardSource!, shard);
+}
+const fullSuite = arguments_[0] === "--full" || shard !== null;
 const bootstrapOnly = arguments_[0] === "--bootstrap-only";
 const lighthouseGate = arguments_[0] === "--lighthouse";
 if (fullSuite || bootstrapOnly || lighthouseGate) arguments_.shift();
 assert(arguments_.length === 0 || arguments_[0] === "--", "Pass local Playwright selectors after --");
 const selectors = arguments_.slice(1);
+assert(shard === null || arguments_.length === 0, "CI shards have no selectors");
 assertLocalProviderEnvironment(process.env, fullSuite, selectors, lighthouseGate);
 const configuredProject = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
@@ -347,18 +360,28 @@ try {
     // The Lighthouse gate audits the same served build, seeded database and
     // Storage proxy the suite uses, in the suite's own Chromium unless
     // SEQ_LH_CHROME names another. Its fixture upload must cross the proxy too.
+    const bootstrapMs = Math.round(performance.now() - bootstrapStarted);
     tests = lighthouseGate
       ? spawn(process.execPath, ["--experimental-strip-types", "scripts/lighthouse-check.ts"], {
         detached: process.platform !== "win32", stdio: "inherit",
         env: { ...runtimeEnvironment, SEQ_LH_CHROME: process.env.SEQ_LH_CHROME ?? chromium.executablePath() } })
       : spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
-        `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
+        `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`,
+        ...(shard === null ? selectors : [`--ci-shard=${shard}/6`])], {
         detached: process.platform !== "win32", stdio: "inherit", env: runtimeEnvironment });
     const code = await new Promise<number>(resolve => {
       tests!.once("error", () => resolve(1)); tests!.once("exit", code => resolve(code ?? 1));
     });
     assert.equal(code, 0, lighthouseGate ? "Lighthouse gate failed" : "Browser suite or no-skip/no-retry gate failed");
-    assert(forwardedUploads > 0, "No browser upload crossed the actual provider proxy");
+    if (shard === null) assert(forwardedUploads > 0, "No browser upload crossed the actual provider proxy");
+    if (shard !== null) {
+      // Publish coverage only after the unchanged actual-provider invariant.
+      const receipt = JSON.parse(readFileSync("test-results/ci-browser-shard-pending.json", "utf8"));
+      const setup = readCiBrowserSetupTimings(process.env, shardSource!, shard);
+      writeFileSync("test-results/ci-browser-shard.json", JSON.stringify({ ...receipt, providerUploads: forwardedUploads,
+        timings: { ...receipt.timings, ...setup, bootstrapMs } }) + "\n",
+        { mode: 0o600, flag: "wx" });
+    }
     console.log(`PASS ${forwardedUploads} browser upload(s) reached the installed provider through the loopback proxy.`);
   }
 } finally {
