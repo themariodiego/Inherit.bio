@@ -244,11 +244,16 @@ select is((select count(*) from public.legal_audit_log where event_code='embryo.
 select ok((select not (coded_context ?| array['sex','karyotype','label','genotype','variant']) and route_id is null
   from public.legal_audit_log where event_code='embryo.cohort.published' order by seq desc limit 1),
   'the audit event carries only coded counts');
-select is((select count(*) from public.mail_outbox),(select n from before_mail),
-  'no notice is queued (rights notices and card addenda are not part of this change)');
+-- The only mail is the no-source addendum for the embryo that failed QC, one
+-- per Record Key recipient; the dates of the two sources did not move today.
+select is((select count(*) from public.mail_outbox),(select n+2 from before_mail),
+  'the only notices queued are the two no-source addenda (rights notices are not part of this change)');
+select is((select array_agg(distinct template_id||':'||(template_payload->>'kind')||':'||(template_payload->>'displayLabel'))
+  from public.mail_outbox where target_id in (select id from public.embryos where cohort_id=(select cohort_id from live))),
+  array['record-key-addendum:no-source:Embryo 2'],'they name only the embryo that failed QC, and carry no key');
 select is((select array_agg(distinct closing_date_state||'/'||date_revision) from public.embryos
-  where cohort_id=(select cohort_id from live)),array['provisional_until_terminal_ordinal_resolution/1'],
-  'the provisional card date is left exactly as issued, never made authoritative here');
+  where cohort_id=(select cohort_id from live)),array['definitive_stored_or_unknown/2'],
+  'every card date is now authoritative, one date revision later');
 select ok((select count(*)=6 from public.embryo_ingest_fragments where session_id=(select id from live))
   and (select count(*)=3 from public.embryo_fragment_handle_maps where session_id=(select id from live)),
   'fragments and handles wait for the post-publication cleanup');

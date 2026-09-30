@@ -35,8 +35,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "7581459", "label": "Valverde et al., Nature Genetics 1995" },
-      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" }
+      { "pmid": "7581459", "label": "Valverde et al., Nature Genetics 1995", "accessedOn": "2026-09-28" },
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -62,8 +62,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008" },
-      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" }
+      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008", "accessedOn": "2026-09-28" },
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -128,7 +128,7 @@
     "slug": "photic-sneeze-reflex-zeb2",
     "category": "environmental-sensitivity",
     "title": "Photic sneeze reflex · rs10427255",
-    "summary": "Some people sneeze when they step into bright sunlight. This harmless quirk is called the photic sneeze reflex. rs10427255 lies near ZEB2 on chromosome 2. Studies in both European-ancestry and Chinese groups link the C allele to a higher chance of the reflex.",
+    "summary": "Some people sneeze when they step into bright sunlight. This harmless quirk is called the photic sneeze reflex. rs10427255 lies near ZEB2 on chromosome 2. A European-ancestry study linked the C allele to a higher chance of the reflex. A later Chinese study linked the reflex to the other allele, T, so the two groups point to opposite alleles.",
     "evidence": "emerging",
     "variants": [
       {
@@ -139,16 +139,16 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of C. Both the original European-ancestry study and a later study in China linked C to a higher chance of sneezing in bright light. The first study found higher odds per copy: a small shift.",
+          "CC": "Two copies of C. The European-ancestry study linked C to a higher chance of sneezing in bright light, with higher odds per copy: a small shift. The later Chinese study linked the T allele, not C, so the two groups disagree on direction.",
           "CT": "One copy of each allele, an intermediate result. Reported effect sizes at this variant are modest, and plenty of people with any genotype here do or do not sneeze in sunlight.",
-          "TT": "Two copies of T. Both cited studies linked C, rather than T, to a higher chance of the reflex. The effect is modest, and people with any genotype may or may not sneeze in bright light."
+          "TT": "Two copies of T. The European study linked C, not T, to a higher chance of the reflex, while the Chinese study linked T. The effect is modest, and people with any genotype may or may not sneeze in bright light."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genetics 2010" },
-      { "pmid": "30899065", "label": "Wang et al., Scientific Reports 2019" }
+      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genetics 2010", "accessedOn": "2026-09-28" },
+      { "pmid": "30899065", "label": "Wang et al., Scientific Reports 2019", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -174,7 +174,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "24465030", "label": "MacIntyre et al., Environmental Health Perspectives 2014" }
+      { "pmid": "24465030", "label": "MacIntyre et al., Environmental Health Perspectives 2014", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -200,7 +200,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8896566", "label": "Davies et al., Nature Genetics 1996" }
+      { "pmid": "8896566", "label": "Davies et al., Nature Genetics 1996", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -226,9 +226,9 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "29723195", "label": "Key et al., PLoS Genetics 2018" },
-      { "pmid": "31873179", "label": "Gavva et al., Scientific Reports 2019" },
-      { "pmid": "21666692", "label": "Chasman et al., Nature Genetics 2011" }
+      { "pmid": "29723195", "label": "Key et al., PLoS Genetics 2018", "accessedOn": "2026-09-28" },
+      { "pmid": "31873179", "label": "Gavva et al., Scientific Reports 2019", "accessedOn": "2026-09-28" },
+      { "pmid": "21666692", "label": "Chasman et al., Nature Genetics 2011", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -246,9 +246,9 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "AA": "Two copies of the A allele. Associated with somewhat lower reported car sickness than the G allele in the study above, which found effects up to three times stronger in women than in men.",
+          "AA": "Two copies of the A allele. Associated with somewhat higher reported car sickness than the G allele in the study above, which found effects up to three times stronger in women than in men.",
           "AG": "One copy of each allele, an intermediate result at this locus. Each variant found in this study shifted susceptibility only slightly; the trait reflects the sum of many such small contributions.",
-          "GG": "Two copies of G, which the study linked to more reported car sickness. Each copy has a small effect. Habituation, what you look at while travelling and past experience also matter."
+          "GG": "Two copies of G, which the study linked to less reported car sickness. Each copy has a small effect. Habituation, what you look at while travelling and past experience also matter."
         }
       },
       {
@@ -267,7 +267,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "25628336", "label": "Hromatka et al., Human Molecular Genetics 2015" }
+      { "pmid": "25628336", "label": "Hromatka et al., Human Molecular Genetics 2015", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -293,8 +293,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19047183", "label": "Friedman et al., Human Molecular Genetics 2009" },
-      { "pmid": "24146964", "label": "Luo et al., PLoS One 2013" }
+      { "pmid": "19047183", "label": "Friedman et al., Human Molecular Genetics 2009", "accessedOn": "2026-09-28" },
+      { "pmid": "24146964", "label": "Luo et al., PLoS One 2013", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -320,7 +320,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20541252", "label": "Wang et al., The Lancet 2010" }
+      { "pmid": "20541252", "label": "Wang et al., The Lancet 2010", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -346,7 +346,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "23817569", "label": "Hinds et al., Nature Genetics 2013" }
+      { "pmid": "23817569", "label": "Hinds et al., Nature Genetics 2013", "accessedOn": "2026-09-28" }
     ]
   }
 ]

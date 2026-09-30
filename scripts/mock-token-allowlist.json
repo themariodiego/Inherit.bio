@@ -48,10 +48,6 @@
       "reason": "Synthetic embryo fixtures for the unit suite, describing no one (C7). Imported by tests only."
     },
     {
-      "path": "src/lib/family/carrier-pair.ts",
-      "reason": "Comment only: explains that verified fixtures exist while the production reader stays withheld pending review."
-    },
-    {
       "path": "src/lib/family/roh.ts",
       "reason": "Comment only: explains that the browser-fixture generator checks a fixture with the real measure rather than a copy."
     },

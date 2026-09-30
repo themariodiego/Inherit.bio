@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { NextRequest } from "next/server";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
@@ -64,6 +65,50 @@ describe("mailed rights entry", () => {
     expect(html).not.toMatch(/<script[^>]+src=|<link[^>]+href=/u);
     expect(mocks.admin).not.toHaveBeenCalled();
     expect(HEAD().headers.get("set-cookie")).toBeNull();
+  });
+
+  /**
+   * The route is registered as `rights.withdraw-request`, an HTML endpoint, so
+   * its registered response contract is the authority for what it sends. The
+   * token-page header binding still covers it, and the interstitial's own CSP
+   * is the stricter one the contract names.
+   */
+  it("answers with exactly the headers its registered response contract names", async () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      routes: { id: string; path: string; kind: string; successResponseContract?: string }[];
+      responseContracts: Record<string, { contentType: string; headers: Record<string, string>; head: { status: number } }>;
+      sensitiveResponseHeaders: { tokenPageOrEndpoint: Record<string, string> };
+      sensitiveResponseHeaderBindings: { tokenPageOrEndpoint: string[] };
+    };
+    const entry = register.routes.find(route => route.path === "/withdraw/request");
+    expect(entry).toMatchObject({ id: "rights.withdraw-request", kind: "endpoint", successResponseContract: "rights-interstitial-v1" });
+    const contract = register.responseContracts["rights-interstitial-v1"];
+    expect(register.sensitiveResponseHeaderBindings.tokenPageOrEndpoint).toContain("rights.withdraw-request");
+
+    const response = GET();
+    const html = await response.text();
+    const nonce = html.match(/<script nonce="([^"]+)"/u)?.[1] ?? "";
+    expect(nonce).not.toBe("");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe(contract.contentType);
+    for (const [name, value] of Object.entries(contract.headers)) {
+      expect(response.headers.get(name), name).toBe(value.replaceAll("{per-response-random-nonce}", nonce));
+    }
+    // Every token-page header the binding names, except the two the contract
+    // makes stricter: Cache-Control adds private, and the CSP is default-src 'none'.
+    for (const [name, value] of Object.entries(register.sensitiveResponseHeaders.tokenPageOrEndpoint)) {
+      if (name === "Content-Security-Policy") continue;
+      if (name === "Cache-Control") expect(response.headers.get(name), name).toContain("no-store");
+      else expect(response.headers.get(name), name).toBe(value);
+    }
+
+    const head = HEAD();
+    expect(head.status).toBe(contract.head.status);
+    expect(await head.text()).toBe("");
+    expect(head.headers.get("set-cookie")).toBeNull();
+    for (const [name, value] of Object.entries(contract.headers)) {
+      if (name !== "Content-Security-Policy") expect(head.headers.get(name), `HEAD ${name}`).toBe(value);
+    }
   });
 
   it("does not run account lookups in the proxy for entry, activation or refusal", async () => {
