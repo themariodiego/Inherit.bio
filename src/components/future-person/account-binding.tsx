@@ -20,7 +20,7 @@ export function ClaimantAccountBinding({nonce,csrf}:{nonce:string|null;csrf:stri
   <p className="mt-4 max-w-prose text-ink-muted">You can keep using your claim without an account. Linking it closes this claim link and your Recovery Key. It does not turn on new reports or sharing.</p>
   {nonce?<fieldset disabled={busy} className="mt-4"><legend className="sr-only">Link your record</legend>
    <label className="flex items-start gap-3"><input type="checkbox" checked={confirmed} onChange={event=>setConfirmed(event.target.checked)}/>
-    <span>I want to keep this record in the account I have signed in to.</span></label>
+    <span>I want to keep this record in my account.</span></label>
    <button disabled={!confirmed} onClick={bind} className="mt-4 rounded-full border px-6 py-3 disabled:opacity-50">Link to my account</button>
    <p role="status" className="mt-4">{message}</p></fieldset>:
    <p className="mt-4">Account linking is not open in this session. <Link href="/auth/sign-in?next=%2Fwithdraw%2Fsession" className="underline">Sign in again</Link> to check your account.</p>}
