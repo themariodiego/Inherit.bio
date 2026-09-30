@@ -40,7 +40,9 @@ These proofs use synthetic RPC replies and immutable in-memory objects; they
 are not a real database/provider/browser pass. Real SQL tests create the claim,
 release credential, rights session, operation envelope and durable attempt,
 then probe exact own content, immutability, cross-attempt and revocation refusal.
-Those SQL tests await the shared fresh-database rehearsal.
+The corrected source/member prerequisite passed a full fresh database rehearsal
+of 133 files and 6992 assertions. The next historical component envelope in
+246 still awaits its own complete database rehearsal.
 
 The whole-object read adapter uses the installed Supabase SDK's exact metadata
 endpoint before and after one raw conditional GET. It requires the durable
@@ -55,8 +57,13 @@ truncated framing with synthetic bytes; they are not proof of a deployed
 Supabase provider or claimant browser journey. The provider/backend, retention
 rules, current READY hold and production settings stay unchanged.
 
-Unknown nonempty figure/report-artifact classes deliberately refuse the entire
-archive; their complete byte projection is still required. The public claimant
+All four known figure kinds now require an exact match to their recorded own
+finding. Full stored report artifacts use the existing closed finding, detail
+or quality shape, with an exact derived embryo binding for a detail. Both
+report members retain every actual ID, revision, time and scientific field.
+Parent/cohort components are explicitly withheld. Unknown or malformed classes
+still refuse the entire archive, and actual scientific basis receipts from the
+separate embryo graph still need their exact versioned integration. The public claimant
 route, scheduler/discovery, immutable provider delivery proof, final READY CAS,
 revocable bounded download/receipt flow and cleanup/late-write closure remain
 unfinished. The original whole-account publication hold is preserved. No

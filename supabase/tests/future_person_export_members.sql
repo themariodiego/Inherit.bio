@@ -143,6 +143,23 @@ select ok(private.embryo_call_value_hash_v1(1,1000,'A',null,'A/A') is not null,
  'a genuine reference-only call receives an indexed null-aware value hash');
 select isnt(private.embryo_call_value_hash_v1(1,1000,'A',null,'A/A'),
  private.embryo_call_value_hash_v1(1,1000,'A','','A/A'),'null and empty alternate values cannot collide');
+-- Recorded historical components are written before the authority capture,
+-- then frozen by that exact capture. No current-catalog substitution occurs.
+create temporary table recorded_finding as select $synthetic${"embryo_label":"Embryo 1","condition_id":"retired-synthetic-condition","condition_name":"Synthetic condition retired-synthetic-condition","finding":{"kind":"absolute_risk","risk_model":{"model_id":"synthetic-model-retired-synthetic-condition","model_version":"1","age_band":"lifetime","prevalence_basis":"lifetime_risk","birth_cohort":"synthetic 1990s","calibration_cohort":"synthetic cohort","calibration_n":1000},"score_coverage":0.9,"absolute_risk":0.071,"interval_low":0.056799999999999996,"interval_high":0.08875,"matched_baseline":{"absolute_risk":0.05,"interval_low":0.04,"interval_high":0.06,"citation_ids":["synthetic:1"]},"difference_pp":2.1,"natural_frequency":{"subject_numerator":5,"comparator_numerator":5,"denominator":100,"fallback_copy_id":null},"number_needed_to_select":null,"comparators":[{"comparator":"vs_average_embryo","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":false},{"comparator":"vs_randomly_selected_embryo","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":true},{"comparator":"vs_highest_risk_embryo","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":false},{"comparator":"vs_population_baseline","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":false}],"within_family":{"status":"not_measured","point_estimate":null,"interval_low":null,"interval_high":null,"family_count":null,"citation_ids":[],"display_copy_id":"embryo.within-family.not-tested","enabled_by_default":false}},"evidence_label":"emerging","coverage_state":"covered","citation_ids":["synthetic:1"],"not_covered_reason":null}$synthetic$::jsonb body;
+insert into public.embryo_scores(id,embryo_id,condition_id,condition_name,finding,evidence_label,coverage_state,citation_ids,
+ not_covered_reason,model_id,model_version,source_binding_fingerprint,computation_revision,computed_at)
+select '7a100000-0000-4000-8000-000000000001'::uuid,(select embryo from custody_ids),body->>'condition_id',body->>'condition_name',
+ body->'finding',body->>'evidence_label',body->>'coverage_state',array['synthetic:1'],null,
+ 'retired-synthetic-model','original',pg_temp.h('recorded-own-finding'),2,clock_timestamp() from recorded_finding;
+insert into public.embryo_figures(id,finding_id,figure_kind,payload,figure_revision,created_at)
+select ('7a200000-0000-4000-8000-00000000000'||ordinal)::uuid,'7a100000-0000-4000-8000-000000000001'::uuid,kind,
+ case kind when 'absolute_risk' then body->'finding'
+ when 'interval' then jsonb_build_object('interval_low',body#>'{finding,interval_low}','interval_high',body#>'{finding,interval_high}')
+ when 'natural_frequency' then body#>'{finding,natural_frequency}' else body#>'{finding,within_family}' end,
+ 3,clock_timestamp() from recorded_finding cross join (values(1,'absolute_risk'),(2,'interval'),(3,'natural_frequency'),(4,'within_family')) kinds(ordinal,kind);
+insert into public.report_artifacts(id,subject_id,report_kind,report_revision,source_binding_fingerprint,artifact,created_at)
+select '7a300000-0000-4000-8000-000000000001'::uuid,(select subject from custody_ids),'historical-own-finding',4,
+ pg_temp.h('recorded-own-report'),body,clock_timestamp() from recorded_finding;
 create temporary table member_authority as select public.future_person_export_request_v1('capture',pg_temp.h('rights')) body;
 create function pg_temp.claimant_export(p_nonce text) returns jsonb language sql as $$
  select public.future_person_export_request_v1('create',pg_temp.h('rights'),jsonb_build_object(
@@ -174,6 +191,38 @@ select is((select array_agg(k order by k) from member_page,jsonb_object_keys(bod
  array['alternateAllele','chromosome','genotype','id','position','referenceAllele'],'worker variants have exactly the registered own fields');
 select lives_ok($$select public.future_person_export_members_v1('quality',(select (body->>'exportId')::uuid from member_export),
  (select id from member_attempt),(select body->>'authorityReceipt' from member_authority))$$,'own quality is read under the same genuine durable attempt');
+create temporary table historical_figure_page as select public.future_person_export_members_v1('figures',
+ (select (body->>'exportId')::uuid from member_export),(select id from member_attempt),(select body->>'authorityReceipt' from member_authority)) body;
+select is((select (body->>'count')::integer from historical_figure_page),4,'all four genuine historical figure rows are included before projection');
+select is((select array_agg(k order by k) from historical_figure_page,jsonb_object_keys(body->'rows'->0) k),
+ array['created_at','figure_kind','figure_revision','findingRecord','finding_id','id','payload'],'the figure envelope has exactly the recorded fields and bound finding');
+select ok((select bool_and(row->>'finding_id'=row#>>'{findingRecord,id}' and row#>>'{findingRecord,model_id}'='retired-synthetic-model'
+ and row#>>'{findingRecord,model_version}'='original' and row#>>'{findingRecord,computation_revision}'='2'
+ and row#>>'{findingRecord,source_binding_fingerprint}'=pg_temp.h('recorded-own-finding')
+ and not(row->'findingRecord'?'embryo_id')) from historical_figure_page,jsonb_array_elements(body->'rows') row),
+ 'every figure binds the real historical own finding and preserves its original scientific version without a parent selector');
+select is((select body->'rows'->0->'payload' from historical_figure_page),(select body->'finding' from recorded_finding),
+ 'the stored absolute-risk payload is returned exactly, never recreated from a current model');
+create temporary table historical_report_page as select public.future_person_export_members_v1('reports',
+ (select (body->>'exportId')::uuid from member_export),(select id from member_attempt),(select body->>'authorityReceipt' from member_authority)) body;
+select is((select (body->>'count')::integer from historical_report_page),1,'the actual stored subject report is included');
+select is((select array_agg(k order by k) from historical_report_page,jsonb_object_keys(body->'rows'->0) k),
+ array['artifact','created_at','embryoId','id','report_kind','report_revision','source_binding_fingerprint'],
+ 'the report envelope is closed to exact stored evidence and the authority-derived embryo binding');
+select is((select (body#>>'{rows,0,embryoId}')::uuid from historical_report_page),(select embryo from custody_ids),
+ 'a caller cannot supply a different embryo for the historical report');
+select is((select body#>'{rows,0,artifact}' from historical_report_page),(select body from recorded_finding),
+ 'all actual recorded report bytes precede the runtime closed DTO projection');
+select throws_ok($$select pg_temp.probe('update public.embryo_figures set payload=jsonb_build_object(''changed'',true)
+ where id=''7a200000-0000-4000-8000-000000000001''','select public.future_person_export_members_v1(''figures'',
+ (select (body->>''exportId'')::uuid from member_export),(select id from member_attempt),
+ (select body->>''authorityReceipt'' from member_authority))::text')$$,'42501','not_found',
+ 'a changed stored figure invalidates the originating receipt before another byte is returned');
+select throws_ok($$select pg_temp.probe('update public.report_artifacts set artifact=jsonb_build_object(''changed'',true)
+ where id=''7a300000-0000-4000-8000-000000000001''','select public.future_person_export_members_v1(''reports'',
+ (select (body->>''exportId'')::uuid from member_export),(select id from member_attempt),
+ (select body->>''authorityReceipt'' from member_authority))::text')$$,'42501','not_found',
+ 'a changed stored report invalidates the originating receipt before another byte is returned');
 select throws_ok($$update public.embryo_variants set genotype='G/G' where source_file_id=(select file from custody_ids)$$,
  '55000','canonical_calls_immutable','published canonical calls cannot change while the archive is reading');
 select throws_ok($$delete from public.embryo_variants where source_file_id=(select file from custody_ids)$$,

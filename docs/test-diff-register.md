@@ -1,5 +1,27 @@
 # Test diff register
 
+## Complete known historical components in the actual archive · 1 October 2026
+
+The claimant worker now consumes every captured figure/report row rather than
+refusing all nonempty classes. Four figure kinds require exact stored payload
+equality with their own bound historical finding and recorded scientific
+version. Reports accept only the already registered closed finding, detail and
+quality shapes; a detail must name the exact authority-derived embryo. Unknown,
+missing, changed, accessor-bearing, foreign or unsupported material still
+refuses the whole archive before bytes-complete. The original unknown-report,
+truncation, field, revocation and immutable-source assertions remain unchanged.
+
+New independent ZIP assertions require every actual component in both report
+members and verify all manifest lengths/hashes. Privacy assertions recursively
+check field names, while exact withholding path lists remain present: a path
+such as matched_baseline names an explicit omission, not a leaked value. The
+SQL fixture writes genuine synthetic historical rows before authority capture,
+requires exact bound-envelope fields and original payloads, and refuses changed
+figure/report membership under the original captured receipt. This 246 stage
+awaits its own full database rehearsal and hosted browser proof. New scientific
+basis receipts from the separate embryo graph still need their exact versioned
+integration; no historical classification is inferred by this checkpoint.
+
 ## Actual custody invoker and sealed read helper · 30 September 2026
 
 The root's independently verified custody correction is included unchanged in
