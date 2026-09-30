@@ -248,6 +248,13 @@ select is(pg_temp.probe('select 1',$$select pg_temp.respond('refuse','withdrawal
     from public.embryo_cohorts where id=(select cohort_id from live)$$),
   'refused / restricted:consumed','refusing restricts the cohort and spends the session');
 
+select is(pg_temp.probe('select 1',$$select pg_temp.respond('refuse','withdrawal-op-nonce-0000000000s')$$,
+  $$select coded_context->>'reason' from public.legal_audit_log
+    where event_code='embryo.source.deletion-planned' order by seq desc limit 1$$),
+  'refused / withdrawal','a rights refusal plans canonical deletion with the withdrawal reason');
+create temporary table withdrawing_sources as
+  select file_id from private.embryo_canonical_sources where cohort_id=(select cohort_id from live);
+select is((select count(*) from withdrawing_sources),2::bigint,'both passing embryos have sources before withdrawal');
 create temporary table before_mail as select count(*) n from public.mail_outbox where template_id='cohort-restriction-notice';
 select is(pg_temp.respond('delete','withdrawal-op-nonce-00000000006'),'deleted','deleting takes effect');
 select is((select status||':'||lifecycle_revision from public.embryo_cohorts where id=(select cohort_id from live)),
@@ -263,6 +270,17 @@ select is((select count(*) from public.mail_outbox where template_id='cohort-res
   2::bigint,'every notice recipient is told');
 select is((select route_id from public.legal_audit_log where event_code='embryo.cohort.restricted' order by seq desc limit 1),
   'api.withdraw','the audit event names the rights route');
+select is((select count(*) from private.embryo_canonical_sources where file_id in (select file_id from withdrawing_sources))
+  +(select count(*) from private.embryo_canonical_source_parts where file_id in (select file_id from withdrawing_sources))
+  +(select count(*) from public.genome_files where id in (select file_id from withdrawing_sources))
+  +(select count(*) from public.user_variants where file_id in (select file_id from withdrawing_sources)),0::bigint,
+  'withdrawal deletes every canonical source, membership, descriptor and genotype atomically');
+select is(private.embryo_ingest_attempt_residue_v1(array(select file_id from withdrawing_sources),'{}'),
+  '{"registered":{},"unregistered":{},"unverifiable":0}'::jsonb,'no store still names either withdrawn file');
+select is((select count(*) from private.embryo_canonical_parts where session_id=(select id from live)),4::bigint,
+  'provider identities stay registered until exact disposal is acknowledged');
+select is((select coded_context->>'reason' from public.legal_audit_log where event_code='embryo.source.deletion-planned'
+    order by seq desc limit 1),'withdrawal','the actual delete records withdrawal rather than account restriction');
 select is((select status from public.rights_sessions where session_hash=pg_temp.hash('synthetic-session-secret-0001')),
   'consumed','the session is spent');
 select is(pg_temp.respond('delete','withdrawal-op-nonce-00000000007'),'unavailable','a spent session does nothing more');

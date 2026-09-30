@@ -98,8 +98,8 @@ revoke all on function private.embryo_withdrawal_current_v1(uuid)
 -- body from the status check on, unchanged except that the audit route is the
 -- caller's. The actor must still be a current disposition authority of the
 -- cohort. No role may execute it; only the two definer doors below call it.
--- [SOURCE DELETION] The safeguards stream's private.delete_embryo_cohort_sources_v1
--- call belongs here, once, so both doors delete the cohort's sources.
+-- Source deletion is called here once, after derived rows are removed, so
+-- both the account and withdrawal doors share the same atomic deletion.
 create function private.restrict_embryo_cohort_core_v1(
   p_cohort_id uuid,
   p_actor_principal uuid,
@@ -155,6 +155,11 @@ begin
   delete from public.embryo_variants v
   using public.embryos e
   where v.embryo_id = e.id and e.cohort_id = v_cohort.id;
+
+  -- Both doors delete only this cohort's canonical source graph. The route
+  -- has already been checked against the closed two-route list above.
+  perform private.delete_embryo_cohort_sources_v1(v_cohort.id,
+    case p_route_id when 'api.withdraw' then 'withdrawal' else 'restriction' end);
 
   update public.future_person_record_key_hashes h
   set status = 'revoked', ended_at = v_now
