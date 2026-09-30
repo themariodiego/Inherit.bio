@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { route } from "@/lib/primary-routes";
 import { Button } from "@/components/ui/button";
 import { PATH_B_CHOICES_COPY as COPY } from "@/copy/upload/other-adult";
 import { PATH_B_STATEMENTS, type PathBChoice, type PathBChoicesView } from "@/lib/uploads/path-b-purpose";
@@ -10,8 +12,8 @@ import { PATH_B_STATEMENTS, type PathBChoice, type PathBChoicesView } from "@/li
  * Path B's reading layer for the person a file was added for (TEST-LOCAL
  * only). One row per kind of result and direction: for them, or for the
  * person who added the file. Turning a row on signs its own approved text;
- * turning it off uses the ordinary revocation. Nothing is made either way yet,
- * and the section says so.
+ * turning it off uses the ordinary revocation. A ready link names only the
+ * person's explicitly granted and actually completed saved report layer.
  */
 function ChoiceRow({ subjectId, choice, open, onSaved }: {
   subjectId: string; choice: PathBChoice; open: boolean; onSaved: () => void;
@@ -84,6 +86,9 @@ export function PathBChoices({ people }: { people: PathBChoicesView[] }) {
           {(Object.keys(COPY.layers) as PathBChoice["purpose"][]).map(purpose => (
             <div key={purpose} className="space-y-2">
               <h3 className="font-medium">{COPY.layers[purpose]}</h3>
+              {purpose !== "ancestry" && person.readGate?.[purpose] === "ready" ?
+                <Link className="inline-flex min-h-11 items-center underline" href={route("genome.reports", { subject: `s-${person.subjectId}` },
+                  { query: { layer: purpose === "reports.monogenic" ? "variant_call" : "estimate" } })}>{COPY.readResults(COPY.layers[purpose])}</Link> : null}
               <div className="grid gap-3 sm:grid-cols-2">
                 {person.choices.filter(choice => choice.purpose === purpose).map(choice => (
                   <ChoiceRow key={`${choice.direction}:${choice.grantId ?? choice.offer?.token ?? ""}`}

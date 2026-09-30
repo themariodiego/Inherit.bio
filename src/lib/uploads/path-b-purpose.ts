@@ -79,4 +79,5 @@ export interface PathBChoicesView {
   label: string;
   shareOpen: boolean;
   choices: PathBChoice[];
+  readGate?: PathBPersonChoices[number]["readGate"];
 }

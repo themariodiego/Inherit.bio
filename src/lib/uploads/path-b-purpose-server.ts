@@ -159,7 +159,7 @@ export async function preparePathBChoices(now = Date.now()): Promise<PathBChoice
           } : null });
       }
     }
-    return { subjectId: person.subjectId, label: person.label, shareOpen, choices };
+    return { subjectId: person.subjectId, label: person.label, shareOpen, choices, readGate: person.readGate };
   });
 }
 

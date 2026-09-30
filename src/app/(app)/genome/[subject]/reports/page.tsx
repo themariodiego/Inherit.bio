@@ -50,6 +50,9 @@ import { loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access"
 import { OwnReportChoicesEntry } from "@/components/reports/own-report-choices-entry";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { loadSharedReportSnapshot } from "@/lib/family/shared-report-results";
+import { loadPathBReportSnapshot } from "@/lib/uploads/path-b-report-reader";
+import { acknowledged } from "@/lib/family/tier2";
+import { ResultGate } from "@/components/family/result-gate";
 import { resolveStoredSharedReport } from "@/lib/family/shared-report-display";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -113,13 +116,18 @@ export default async function ReportsPage(
     );
   }
   const { user, subject, dataSubjectId, person, domain } = context;
+  if (context.pathB?.direction === "uploader" && !await acknowledged(user)) {
+    return <section className="page-stack mx-auto max-w-prose space-y-4"><h1 className="display text-3xl">{REPORTS_TITLE}</h1><ResultGate /></section>;
+  }
   // A layer another adult has not shared is not listed at all; with no layer
   // granted the record answers like an unknown one.
-  const allowedLayers = person ? grantedLayers(person) : LAYERS;
+  const allowedLayers: readonly FindingLayer[] = context.pathB
+    ? context.pathB.purposes.map(purpose => purpose === "reports.monogenic" ? "variant_call" : "estimate")
+    : person ? grantedLayers(person) : LAYERS;
   if (allowedLayers.length === 0) notFound();
 
   const admin = createAdminClient();
-  const shared = person ? await loadSharedReportSnapshot(admin, {
+  const shared = context.pathB ? await loadPathBReportSnapshot(dataSubjectId) : person ? await loadSharedReportSnapshot(admin, {
     subjectId: dataSubjectId, counterpartAccountId: person.counterpartAccountId,
     purposes: allowedLayers.map(layer => layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"),
   }) : null;
@@ -127,14 +135,14 @@ export default async function ReportsPage(
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
   const [files, legacyOrOwnFileCount, allTemplates, preparing] = await Promise.all([
-    loadOwnAnalysisCandidateFiles(admin, dataSubjectId, { legacyOnly: person !== null }),
-    person ? admin.from("genome_files").select("id", { count: "exact", head: true })
+    context.pathB ? [] : loadOwnAnalysisCandidateFiles(admin, dataSubjectId, { legacyOnly: person !== null }),
+    context.pathB ? 0 : person ? admin.from("genome_files").select("id", { count: "exact", head: true })
       .eq("subject_id", dataSubjectId).is("single_logical_sample_verified_at", null).then(result => result.count ?? 0)
       : getSubjectFileCount(admin, dataSubjectId),
-    getPublishedTemplates(admin),
+    context.pathB ? [] : getPublishedTemplates(admin),
     // A narrower question than the count above: a rejected or retired file is
     // counted and is no reason to tell a reader that coverage is coming.
-    hasFileInPreparation(admin, dataSubjectId),
+    context.pathB ? false : hasFileInPreparation(admin, dataSubjectId),
   ]);
   // Test fixtures never reach the user-facing library.
   const stored = new Map<string, NonNullable<ReturnType<typeof resolveStoredSharedReport>>>();
@@ -154,14 +162,14 @@ export default async function ReportsPage(
     // OWN record. On a relative's record the authority is their Family
     // permission, already checked above, and this reader holds no own-subject
     // grant there — asking for one would remove legacy sharing, not gate it.
-    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer),
+    context.pathB ? { genotypes: new Map<number, string>(), conflicts: new Set<number>(), fileCount: 0 } : await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer),
       { gateLegacy: person === null }),
   ] as const)));
   const resolved = templates.map((t) =>
     stored.get(t.slug) ?? resolveTemplate(t, (rsid) => layerCalls.get(t.layer ?? "estimate")?.genotypes.get(rsid)),
   );
   const previewContributors = new Map<string, string[]>();
-  const previews = await loadPersonalPreviews(admin, {
+  const previews = context.pathB ? new Map() : await loadPersonalPreviews(admin, {
     viewerAccountId: user.id,
     ownerAccountId: subject.ownerAccountId,
     subjectClass: subject.subjectClass,
@@ -169,7 +177,7 @@ export default async function ReportsPage(
     isFamily: person !== null,
   }, templates.filter(t => (t.layer ?? "estimate") === "estimate"), files,
   layerCalls.get("estimate")?.conflicts ?? new Set(), previewContributors);
-  const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat(),
+  const previewInputs = context.pathB ? shared?.sources ?? [] : await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat(),
     { kind: "report", purpose: "reports.polygenic" });
 
   if (shared && !(await shared.confirm()).authorized) notFound();
@@ -309,7 +317,7 @@ export default async function ReportsPage(
           </p>
         ) : null}
       </header>
-      {!person ? <OwnReportChoicesEntry subject={subject.routeSegment} /> : null}
+      {!person && !context.pathB ? <OwnReportChoicesEntry subject={subject.routeSegment} /> : null}
 
       {nonEmptyLayers.length > 1 ? (
         <nav aria-label="Report groups" className="flex gap-1 border-b border-line">

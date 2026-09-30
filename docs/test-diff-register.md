@@ -1,5 +1,40 @@
 # Test diff register
 
+## Path B saved reading and stale queue admission · 30 September 2026
+
+The existing registered report routes now consume only completed captured Path B
+results under their exact recipient, current purpose and direction. The uploader
+passes the existing session Tier-2 gate before genetic capture. The new three
+service-only doors project non-genetic ready metadata, capture saved results,
+and confirm the exact current session/source/grant/catalog/result digest as the
+last awaited operation before rendering. Browser/upload credentials remain
+refused. Raw and ancestry routes cannot fall through to ordinary own readers,
+and an explicit unavailable source cannot select another file or legacy data.
+Strict application and database cases cover foreign subjects, sources and
+sessions, cross-layer reads, duplicate captures, catalog replacement, modified
+digests and revocation between capture and serialization. Original report and
+purpose assertions remain.
+
+The browser continuation uploads a new synthetic VCF through the real chooser,
+signed lease and installed Storage transport. It signs actual insurance and
+purpose artifacts and executes the registered loopback TEST-LOCAL normalization
+and report operators. It requires exact normalized letters, three exact done
+dispatch rows, both personal layers, only the selected shared layer, the real
+session gate, immediate revocation, an unaffected self grant, and a newly
+computed result after regrant. No genetic or saved-result fixture row is
+invented. The existing held-before-worker zero-row assertions remain. Ready
+links and state copy replace the former unconditional claim that nothing can
+be generated; ancestry and all unimplemented mitigation cases stay closed.
+
+Normalization admission previously stopped forever behind a stale oldest
+snapshot. Its bounded claim now terminalizes only that exact queued admission
+before genetic reads and proceeds to a current source. A strict stale-first,
+current-next regression preserves source, purpose and claim authority checks.
+The finalize helper reads the exact native browser response clone with the
+existing bounded observer; its status, closed body schema, notice state,
+stored hash and UI assertions are unchanged. No retry, skip, timeout increase
+or response replay is added to an existing test.
+
 ## Queued-report insurance and source signing use distinct nonces · 30 September 2026
 
 The subject's insurance signature fixture uses its own single-use nonce,

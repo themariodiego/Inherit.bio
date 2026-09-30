@@ -49,7 +49,7 @@ export const OTHER_ADULT_UPLOAD_COPY = {
   pendingStatus: (label: string) => `Waiting for ${label} to confirm the file. Nothing has been made from it.`,
   pendingDeadline: (date: string) => `If they do not confirm it by ${date}, it is deleted.`,
   confirmedStatus: (label: string, date: string) =>
-    `${label} accepted the file added on ${date}. Nothing is made from it yet.`,
+    `${label} accepted the file added on ${date}.`,
   refusedStatus: (label: string, date: string) => `${label} declined the file added on ${date}. It will be deleted.`,
   endedStatus: (date: string) => `The file added on ${date} was deleted.`,
   accountFirstStatus: "Add your date of birth in your own upload first.",
@@ -107,7 +107,7 @@ export const ADULT_UPLOAD_REVISION_COPY = {
     `The name they wrote for you (${label}), the day the file was added, and whether you said yes. They see no result.`,
   nothingYet: "Nothing is made from this file until you say yes.",
   deadline: (date: string) => `If you do nothing, it is deleted on ${date}.`,
-  confirmedOn: (date: string) => `You said yes to this file on ${date}. Nothing is made from it yet.`,
+  confirmedOn: (date: string) => `You said yes to this file on ${date}.`,
   confirmButton: "Yes, this is my file",
   refuseButton: "No, delete this file",
   deleteButton: "Delete everything about me",
@@ -141,7 +141,7 @@ export const HELD_FOR_YOU_COPY = {
   pending: (added: string, kind: "array" | "vcf", deleteBy: string) =>
     `${kind === "array" ? "A raw data file" : "A VCF file"} added on ${added} is waiting for your answer. Use the link in our email to say yes or no. If you do nothing, it is deleted on ${deleteBy}.`,
   confirmed: (added: string, kind: "array" | "vcf") =>
-    `You said yes to the ${kind === "array" ? "raw data file" : "VCF file"} added on ${added}. Nothing is made from it yet.`,
+    `You said yes to the ${kind === "array" ? "raw data file" : "VCF file"} added on ${added}.`,
 } as const;
 
 /**
@@ -152,7 +152,7 @@ export const HELD_FOR_YOU_COPY = {
  */
 export const PATH_B_CHOICES_COPY = {
   heading: "What can be made from your file",
-  detail: "Each kind of result is its own choice, for you and for the person who added your file. Nothing is made yet. Inherit cannot make results from a file added this way yet.",
+  detail: "Each kind of result is its own choice, for you and for the person who added your file. Results appear here when they are ready. This is for tests only.",
   layers: {
     "reports.monogenic": "Observed genetic variants",
     "reports.polygenic": "Trait reports and estimates",
@@ -170,5 +170,8 @@ export const PATH_B_CHOICES_COPY = {
   shareClosed: "Sharing with the person who added your file is not open yet.",
   details: (version: number) => `Permission details · version ${version}`,
   failed: "We could not confirm your choice. Refresh the page to check its current state before trying again.",
-  uploaderShared: (label: string, layers: string) => `${label} shared: ${layers}. Nothing is made from it yet.`,
+  uploaderShared: (label: string, layers: string) => `${label} shared: ${layers}.`,
+  readyShared: (label: string) => `${label} has shared reports ready to read.`,
+  readResults: (layer: string) => `Read your ${layer.toLowerCase()}`,
+  openShared: "Read shared reports",
 } as const;

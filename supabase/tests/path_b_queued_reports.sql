@@ -48,7 +48,18 @@ select is(public.respond_adult_upload_revision_v1(repeat('1',64),'queue-confirm-
  'confirmed','the exact source revision is confirmed for normalization');
 select is((select count(*) from private.path_b_report_bindings),0::bigint,'queueing normalization creates no analytic binding');
 create temporary table source_claim(c jsonb);
+create temporary table stale_normalization(id uuid);
+with stale as(insert into public.worker_jobs(user_id,file_id,subject_id,kind,output_kind,computation_revision,
+ source_binding_kind,source_binding_id,source_binding_revision,file_sha256,idempotency_key,payload,created_at)
+ select user_id,file_id,subject_id,kind,output_kind,computation_revision,source_binding_kind,source_binding_id,
+ source_binding_revision,file_sha256,encode(extensions.digest('synthetic-stale-normalization','sha256'),'hex'),
+ '{"authority":{}}',clock_timestamp()-interval '1 day' from public.worker_jobs where computation_revision='path-b-normalization-v1'
+ returning id) insert into stale_normalization select id from stale;
 insert into source_claim select public.path_b_normalization_v1('claim',null,repeat('7',64),null,null,true);
+select is((select status from public.worker_jobs where id=(select id from stale_normalization)),'cancelled',
+ 'an oldest stale normalization snapshot is terminalized without source reads or generated rows');
+select isnt((select(c->>'jobId')::uuid from source_claim),(select id from stale_normalization),
+ 'the same bounded claim reaches the next actually current source rather than starving behind stale admission');
 select is(public.path_b_normalization_v1('stage',(c->>'jobId')::uuid,repeat('7',64),(c->>'claim')::uuid,
  '{"kind":"variants","sequence":0,"rows":[{"rsid":123,"chrom":1,"pos":100000,"ref":"A","alt":"G","genotype":"A/G"}]}',true),
  'true'::jsonb,'the source is normalized through its separate claim') from source_claim;
@@ -161,6 +172,50 @@ select is(private.path_b_result_read_v1(pg_temp.a('2'),pg_temp.sid('main'),'repo
  '{"allowed":true,"gate":"ready"}'::jsonb,'the existing read decision opens only for an exact completed recipient grant');
 select is(private.path_b_result_read_v1(pg_temp.a('1'),pg_temp.sid('main'),'reports.monogenic')->>'gate',
  'directional-purpose-grant-v1','the existing uploader decision remains closed without its own grant');
+-- Reading metadata is non-genetic, but still names only completed outputs
+-- whose actual current recipient and session can pass the existing reader.
+create temporary table reading_capture(c jsonb);
+insert into reading_capture select public.capture_path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),true);
+select is(jsonb_array_length(public.path_b_report_metadata_v1(pg_temp.a('2'),pg_temp.s('2'),null,true)),1,
+ 'the subject sees exactly one currently readable Path B report record');
+select is((select c->'metadata'->'purposes' from reading_capture),'["reports.monogenic"]'::jsonb,
+ 'the saved reader metadata contains only the actually completed granted layer');
+select is((select c->'metadata'->>'direction' from reading_capture),'self','the subject read is their own explicit direction');
+select is((select jsonb_agg(k order by k) from reading_capture,jsonb_object_keys(c->'metadata') k),
+ '["direction","label","purposes","receipt","subjectId"]'::jsonb,'metadata has no genetic, raw object or signing-session fields');
+select is((select jsonb_agg(k order by k) from reading_capture,jsonb_object_keys(c->'sources'->0) k),
+ '["completedAt","fileId","purpose","receipt","reports","source","subjectId"]'::jsonb,
+ 'capture serializes only the saved result and its display provenance');
+select ok(public.confirm_path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),
+ (select c->>'receipt' from reading_capture),true),'the exact current session confirms its complete saved projection');
+select ok(not public.confirm_path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),repeat('f',64),true),
+ 'a foreign or modified projection receipt cannot confirm');
+create temporary table reading_session(id uuid primary key);
+insert into reading_session values(gen_random_uuid());
+insert into auth.sessions(id,user_id,not_after) select id,pg_temp.a('2'),clock_timestamp()+interval '9 minutes' from reading_session;
+select ok(not public.confirm_path_b_report_results_v1(pg_temp.a('2'),(select id from reading_session),pg_temp.sid('main'),
+ (select c->>'receipt' from reading_capture),true),'even a second valid session cannot replay the first session saved projection receipt');
+create temporary table second_reading_capture as select public.capture_path_b_report_results_v1(pg_temp.a('2'),
+ (select id from reading_session),pg_temp.sid('main'),true) c;
+update auth.sessions set not_after=clock_timestamp()-interval '1 second' where id=(select id from reading_session);
+select ok(not public.confirm_path_b_report_results_v1(pg_temp.a('2'),(select id from reading_session),pg_temp.sid('main'),
+ (select c->>'receipt' from second_reading_capture),true),'actual reader expiry between capture and serialization invalidates the saved projection');
+select is(public.path_b_report_metadata_v1(pg_temp.a('1'),pg_temp.s('1'),pg_temp.sid('main'),true),'[]'::jsonb,
+ 'billing ownership exposes no route or layer metadata before an actual completed share');
+select is(public.path_b_report_metadata_v1(pg_temp.a('9'),pg_temp.s('9'),pg_temp.sid('main'),true),'[]'::jsonb,
+ 'a foreign account sees the same empty metadata as an unknown record');
+select throws_ok($$select public.capture_path_b_report_results_v1(pg_temp.a('1'),pg_temp.s('1'),pg_temp.sid('main'),true)$$,
+ '42501','not_found','the uploader cannot borrow the subject completed result through capture');
+select throws_ok($$select public.capture_path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('1'),pg_temp.sid('main'),true)$$,
+ '42501','not_found','a foreign current session cannot capture even the right subject');
+select throws_ok($$select public.capture_path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),null,true)$$,
+ '42501','not_found','capture cannot expand a missing subject selector');
+select throws_ok($$select public.path_b_report_metadata_v1(pg_temp.a('2'),pg_temp.s('2'),null,false)$$,
+ '42501','not_found','production cannot expose local saved reading metadata');
+select ok(not has_function_privilege('authenticated','public.capture_path_b_report_results_v1(uuid,uuid,uuid,boolean)','execute')
+ and not has_function_privilege('anon','public.path_b_report_metadata_v1(uuid,uuid,uuid,boolean)','execute')
+ and not has_function_privilege('inherit_upload_only','public.confirm_path_b_report_results_v1(uuid,uuid,uuid,text,boolean)','execute'),
+ 'all three saved-reading doors refuse browser and upload credentials');
 select throws_ok($$select pg_temp.report('fail')$$,'42501','not_found','late cleanup cannot erase completed output');
 -- Same bytes, different purpose/direction: distinct jobs and no cross-read.
 insert into report_grants select 'self-estimate',public.grant_path_b_purpose_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),
@@ -187,6 +242,8 @@ select is((select status from public.worker_jobs where id=(select(c->>'jobId')::
  'revocation terminalizes the exact old job');
 select is(public.path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),'reports.monogenic',true),'[]'::jsonb,
  'revocation denies reading with the still-live session');
+select ok(not public.confirm_path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),
+ (select c->>'receipt' from reading_capture),true),'revocation between capture and serialization invalidates the exact saved projection');
 insert into report_grants select 'self-variant-new',public.grant_path_b_purpose_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),
  'reports.monogenic','self',a.version,a.body_sha256,repeat('2',64),clock_timestamp()+interval '5 minutes',true)
  from public.consent_artifacts a where a.artifact_key='consent.own-monogenic' and a.superseded_at is null;

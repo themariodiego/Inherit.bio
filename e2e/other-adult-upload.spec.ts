@@ -1,5 +1,7 @@
 import { expect, test } from "./audited-test";
 import { createHash, randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -15,7 +17,11 @@ import {
   jobRan,
   JOBS_SECRET,
   signIn,
+  SUPABASE_URL,
+  SERVICE_KEY,
 } from "./helpers";
+import { route } from "../src/lib/primary-routes";
+import { GATE_BUTTON, GATE_CHECKBOX_LABEL } from "../src/copy/family/person";
 import { EMAIL_LABEL, REQUESTED_HEADING, SEND_BUTTON } from "../src/copy/family/invite";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import {
@@ -51,7 +57,6 @@ import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/
 
 const FIXTURE = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
 const BYTES = fs.readFileSync(FIXTURE);
-const SHA256 = createHash("sha256").update(BYTES).digest("hex");
 const UPLOADER_ARTIFACT = parseArtifactFile(fs.readFileSync(path.join(process.cwd(),
   "content/legal/consent.upload-other-adult/v2.md"), "utf8"))!;
 const PERSON_ARTIFACT = parseArtifactFile(fs.readFileSync(path.join(process.cwd(),
@@ -211,19 +216,19 @@ async function pathBPerson(page: Page, request: APIRequestContext,
 }
 
 /** Add the fixture for one person as the signed-in uploader; returns the held revision. */
-async function addFile(page: Page, person: { name: string }) {
+async function addFile(page: Page, person: { name: string }, fixture = FIXTURE) {
   const section = await openPathB(page);
   const card = section.locator('[data-slot="other-adult-ready"]').filter({ hasText: person.name });
   await expect(card.getByRole("button", { name: COPY.chooseButton, exact: true })).toBeEnabled();
-  const finalized = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/finalize$/.test(response.url())
-    && response.request().method() === "POST");
+  const observation = await observeNativeResponses(page, { finalize: "^/api/files/[0-9a-f-]{36}/finalize$" });
   const choosing = page.waitForEvent("filechooser");
   await card.getByRole("button", { name: COPY.chooseButton, exact: true }).click();
-  await (await choosing).setFiles(FIXTURE);
-  const response = await finalized;
-  expect(response.status()).toBe(200);
+  await (await choosing).setFiles(fixture);
+  const response = await observation.read("finalize");
+  expect(response.status).toBe(200);
   // The register's file-finalize-v1 other-adult outcome, exactly.
-  const receipt = heldFinalizationReceipt.parse(await response.json());
+  const receipt = heldFinalizationReceipt.parse(JSON.parse(response.text));
+  await observation.dispose();
   expect(receipt.noticeState).toBe("queued");
   const held = page.locator('[data-slot="other-adult-held"]').filter({ hasText: person.name });
   await expect(held.getByRole("status")).toHaveText(COPY.pendingStatus(person.name));
@@ -231,7 +236,7 @@ async function addFile(page: Page, person: { name: string }) {
     .select("id, upload_session_id, subject_id, state, object_name, raw_sha256, notice_outbox_id")
     .eq("id", receipt.fileId).single();
   expect(row.error).toBeNull();
-  expect(row.data).toMatchObject({ state: "pending", raw_sha256: SHA256 });
+  expect(row.data).toMatchObject({ state: "pending", raw_sha256: createHash("sha256").update(fs.readFileSync(fixture)).digest("hex") });
   return row.data as { id: string; upload_session_id: string; subject_id: string; object_name: string; notice_outbox_id: string };
 }
 
@@ -482,4 +487,137 @@ test("another adult's file under Path B: confirmed into the person's own account
     expect(direction.error).toBeNull();
     expect(direction.data?.status).toBe("revoked");
   }
+});
+
+/** Use the registered operator doors, with real loopback storage/RPC reads.
+ * No invented genotype/result row, generic worker or synchronous exception. */
+async function runPathBOperator(kind: "normalization" | "report") {
+  const script = kind === "normalization" ? "scripts/path-b-normalization-worker.run.mts" : "scripts/path-b-report-worker.run.mts";
+  // The same selected loopback fixture environment the real admin re-queries
+  // use. Only the operator process receives its service role; no browser does.
+  const env = { apiOrigin: SUPABASE_URL, serviceRoleKey: SERVICE_KEY };
+  let stdout: string;
+  try {
+    ({ stdout } = await promisify(execFile)(process.execPath, ["--conditions=react-server",
+      "--import", "./scripts/server-only-shim.mjs", "--import", "tsx", script], {
+      cwd: process.cwd(), timeout: 300_000, maxBuffer: 4096,
+      env: { ...process.env, INHERIT_TEST_JURISDICTION: "1", NEXT_PUBLIC_SUPABASE_URL: env.apiOrigin,
+        SUPABASE_SERVICE_ROLE_KEY: env.serviceRoleKey },
+    }));
+  } catch { throw new Error("The registered local Path B operator did not complete."); }
+  expect(stdout).toBe(kind === "normalization" ? "path_b_normalization_normalized\n" : "path_b_report_complete\n");
+}
+
+async function choosePathBReport(page: Page, subjectId: string, purpose: "reports.monogenic" | "reports.polygenic", direction: "self" | "uploader") {
+  await page.goto(route("files.index"));
+  const row = page.locator(`[data-slot="path-b-choice"][data-purpose="${purpose}"][data-direction="${direction}"]`);
+  const who = direction === "self" ? CHOICES.forYou : CHOICES.forThem;
+  await row.getByRole("checkbox").check();
+  const observation = await observeNativeResponses(page, { grant: "^/api/consents$" });
+  await row.getByRole("button", { name: `${CHOICES.turnOn}: ${CHOICES.layers[purpose]}, ${who.toLowerCase()}`, exact: true }).click();
+  const response = await observation.read("grant");
+  expect(response.status).toBe(201);
+  const receipt = JSON.parse(response.text) as { recordId: string; purposeKey: string };
+  expect(Object.keys(receipt).sort()).toEqual(["artifactKey", "artifactVersion", "purposeKey", "recordId", "recordKind", "signedAt"]);
+  expect(receipt.purposeKey).toBe(purpose);
+  const grant = await adminClient().from("purpose_grants").select("target_id").eq("grant_id", receipt.recordId).single();
+  expect(grant.error).toBeNull(); expect(grant.data?.target_id).toBe(subjectId);
+  await expect(row.getByRole("button", { name: `${CHOICES.turnOff}: ${CHOICES.layers[purpose]}, ${who.toLowerCase()}`, exact: true })).toBeVisible();
+  await observation.dispose();
+  return receipt.recordId;
+}
+
+test("Path B queued reports: real confirmed source and operators, separate self/share readers, session gate and immediate revocation", async ({ page, browser, request }) => {
+  test.setTimeout(600_000);
+  const person = { email: `path-b-reader-${randomUUID()}@e2e.local`, name: "Synthetic Reportreader", password: PASSWORD };
+  const personId = await createConfirmedUser(person.email, person.password);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  const subjectId = await pathBPerson(page, request, person);
+  await signOut(page);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  const held = await addFile(page, person, path.join(process.cwd(), "e2e/fixtures/path-b-reports-grch38.vcf"));
+  const personContext = await browser.newContext({ baseURL: ORIGIN });
+  const reader = await personContext.newPage();
+  try {
+    await signIn(reader, person.email, person.password);
+    // Real current insurance acknowledgement; no personal DNA file is added.
+    await completeOwnUploadConsent(reader);
+    const mail = await drainMailUntil(request, mailTo(person.email, "A DNA file was added for you on Inherit"), "the real report-source confirmation notice");
+    await openRightsLink(reader, mail.html);
+    await reader.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
+    await expect(reader.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+    const admin = adminClient();
+    const sourceBefore = await admin.from("genome_files").select("normalization_completed_at").eq("id", held.id).single();
+    expect(sourceBefore.error).toBeNull(); expect(sourceBefore.data?.normalization_completed_at).toBeNull();
+    const selfVariant = await choosePathBReport(reader, subjectId, "reports.monogenic", "self");
+    await choosePathBReport(reader, subjectId, "reports.polygenic", "self");
+    const sharedVariant = await choosePathBReport(reader, subjectId, "reports.monogenic", "uploader");
+    // Neither choice manufactures a result before complete byte normalization.
+    const variantsBefore = await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("subject_id", subjectId);
+    expect(variantsBefore.error).toBeNull(); expect(variantsBefore.count).toBe(0);
+    await runPathBOperator("normalization");
+    const calls = await admin.from("user_variants").select("rsid,genotype,file_id,subject_id").eq("subject_id", subjectId).order("rsid");
+    expect(calls.error).toBeNull();
+    expect(calls.data).toEqual([{ rsid: 762551, genotype: "A/C", file_id: held.id, subject_id: subjectId },
+      { rsid: 9923231, genotype: "C/T", file_id: held.id, subject_id: subjectId }]);
+    const reportList = route("genome.reports", { subject: `s-${subjectId}` });
+    expect((await reader.request.get(reportList)).status()).toBe(404);
+    for (let job = 0; job < 3; job++) await runPathBOperator("report");
+    const jobs = await admin.from("worker_jobs").select("kind,output_kind,status").eq("subject_id", subjectId)
+      .like("computation_revision", "path-b-reports-v1:%").order("kind");
+    expect(jobs.error).toBeNull();
+    expect(jobs.data).toEqual([
+      { kind: "compute_monogenic_report", output_kind: "report.monogenic", status: "done" },
+      { kind: "compute_monogenic_report", output_kind: "report.monogenic", status: "done" },
+      { kind: "compute_polygenic_report", output_kind: "report.polygenic", status: "done" },
+    ]);
+    await reader.goto(route("files.index"));
+    await reader.getByRole("link", { name: CHOICES.readResults(CHOICES.layers["reports.monogenic"]), exact: true }).click();
+    await expect(reader).toHaveURL(/\/reports\?layer=variant_call$/);
+    const variantUrl = route("genome.report", { subject: `s-${subjectId}`, slug: "vkorc1-rs9923231-one-position" }, { query: { source: held.id } });
+    const estimateUrl = route("genome.report", { subject: `s-${subjectId}`, slug: "caffeine-metabolism-cyp1a2-rs762551" }, { query: { source: held.id } });
+    await reader.goto(variantUrl);
+    await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    await expect(reader.getByText("Your file shows C on one copy and T on the other. CPIC calls T the variant form of VKORC1. This says nothing about how any medicine works in you, and it is not a dose.", { exact: true })).toBeVisible();
+    await reader.goto(estimateUrl);
+    await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
+    await page.goto(route("files.index"));
+    await page.getByRole("link", { name: CHOICES.openShared, exact: true }).click();
+    const gate = page.locator('[data-slot="result-gate"]');
+    await expect(gate).toBeVisible();
+    expect(await page.content()).not.toContain('data-figure-kind="genotype"');
+    await gate.getByRole("checkbox", { name: GATE_CHECKBOX_LABEL, exact: true }).check();
+    await gate.getByRole("button", { name: GATE_BUTTON, exact: true }).click();
+    await expect(gate).toHaveCount(0);
+    await page.goto(variantUrl);
+    await expect(page.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    // A completed personal estimate is not implicitly a shared estimate.
+    expect((await page.request.get(estimateUrl)).status()).toBe(404);
+    for (const viewer of [page, reader]) {
+      expect((await viewer.request.get(route("genome.browser", { subject: `s-${subjectId}` }))).status()).toBe(404);
+      expect((await viewer.request.get(route("genome.ancestry", { subject: `s-${subjectId}` }))).status()).toBe(404);
+    }
+    const otherSource = route("genome.report", { subject: `s-${subjectId}`, slug: "vkorc1-rs9923231-one-position" }, { query: { source: randomUUID() } });
+    expect((await reader.request.get(otherSource)).status()).toBe(404);
+    await reader.goto(route("files.index"));
+    const row = reader.locator('[data-slot="path-b-choice"][data-purpose="reports.monogenic"][data-direction="uploader"]');
+    const observation = await observeNativeResponses(reader, { revoke: `^/api/consents/${sharedVariant}/revoke$` });
+    await row.getByRole("button", { name: `${CHOICES.turnOff}: ${CHOICES.layers["reports.monogenic"]}, ${CHOICES.forThem.toLowerCase()}`, exact: true }).click();
+    const response = await observation.read("revoke"); expect(response.status).toBe(200);
+    expect(JSON.parse(response.text)).toMatchObject({ revoked: true }); await observation.dispose();
+    expect((await page.request.get(variantUrl)).status()).toBe(404);
+    await reader.goto(variantUrl);
+    await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    const unchanged = await admin.from("purpose_grants").select("revoked_at").eq("grant_id", selfVariant).single();
+    expect(unchanged.error).toBeNull(); expect(unchanged.data?.revoked_at).toBeNull();
+    // A new share must queue and compute its own result; it cannot revive one.
+    await choosePathBReport(reader, subjectId, "reports.monogenic", "uploader");
+    expect((await page.request.get(variantUrl)).status()).toBe(404);
+    await runPathBOperator("report");
+    await page.goto(variantUrl);
+    await expect(page.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    expect((await admin.from("genome_files").select("user_id").eq("id", held.id).single()).data?.user_id)
+      .toBe((await findUserByEmail(admin, UPLOADER.email))!.id);
+    expect(personId).not.toBe((await findUserByEmail(admin, UPLOADER.email))!.id);
+  } finally { await personContext.close(); }
 });

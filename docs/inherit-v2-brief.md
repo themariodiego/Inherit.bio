@@ -2239,6 +2239,15 @@ This continuation runs only in isolated `TEST-LOCAL`; no-account 24-month,
 new-account 72-hour and 30-day re-notice cases remain closed until their required
 evidence exists. It adds no ancestry, family, embryo, outside-model or implicit
 purpose permission.
+The TEST-LOCAL reading continuation uses the existing subject report list and
+detail routes. It shows only completed saved results under the reader's exact
+current purpose and direction. The uploader passes the existing session Tier-2
+gate before any genetic fetch. Metadata carries no genetic result, and a final
+locked confirmation of the complete current session/source/grant/catalog/result
+projection precedes serialization. Confirmed Path B sources never fall through
+to ordinary own or legacy readers; raw data and ancestry remain closed here.
+Stale oldest normalization admissions are terminalized without reading a
+genetic source, so they cannot indefinitely starve later eligible queued work.
 - **Retries.** `attempts + 1`; if under `max_attempts`, back to `queued` with `not_before = now() + interval '30 seconds' * power(2, attempts)`; else `failed`.
 - **Partial failure.** `split_cohort_vcf` and `score_embryo` are per-embryo transactional: a failing embryo sets `embryos.status = 'qc_fail'` with a named reason and the job continues, finishing `partial = true`. The UI shows, per embryo, either a result or a named reason — never a blank cell.
 - **Progress** written at most every 2 seconds; `progress_note` may contain only stage names, never sample-level data.
