@@ -1,5 +1,14 @@
 # Test diff register
 
+## Embryo upload stage uses a current account and auth session · 30 September 2026
+
+New rollback-only database tests, none loosened. The server-only read door
+accepts only the exact current account and recent auth session, including
+the account's MFA requirement. Removed, expired, foreign and stale sessions,
+banned or deleted accounts, missing profiles and deletion holds are refused.
+All browser roles are denied direct execution. The test proves that this
+read creates no operation nonce or audit event.
+
 ## Cohort Copilot's current-main inventory · 30 September 2026
 
 Main's HMAC keyring makes the exact direct environment-read count 21; the

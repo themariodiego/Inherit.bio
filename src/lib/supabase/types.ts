@@ -7618,6 +7618,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      embryo_upload_account_live_v1: {
+        Args: { p_account_id: string; p_auth_session_id: string }
+        Returns: boolean
+      }
       finish_genome_file_deletion_v1: {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
         Returns: undefined
