@@ -1,5 +1,5 @@
 begin;
-select plan(32);
+select plan(33);
 \ir fixtures/rights_invitation_pending.inc
 -- policyResolvers.withdrawal-target-v1.purposeMatrix in the database. The
 -- fixture above issues one real co-parent invitation; everything rolls back.
@@ -57,6 +57,9 @@ select is((select count(*) from public.activate_rights_session_v1(
   'the fixture invitation opens a real session under a registered purpose');
 insert into held select id, token_hash_id, principal_id, target_id from public.rights_sessions
 where session_hash = repeat('7',64);
+select lives_ok($$update public.rights_sessions set token_hash_id=token_hash_id,
+ principal_id=principal_id,authority_revision=authority_revision where session_hash=repeat('7',64)$$,
+ 'an ordinary co-parent session still passes the shared identity trigger without claimant credentials');
 select throws_ok($$insert into public.rights_sessions
   (token_hash_id, principal_id, purpose, target_kind, target_id, authority_revision, session_hash, expires_at)
   select token_hash_id, principal_id, 'approved-future-person-release', 'claimed-subject', target_id, 1,

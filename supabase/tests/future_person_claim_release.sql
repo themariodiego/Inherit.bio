@@ -86,6 +86,35 @@ select is(pg_temp.probe('update public.future_person_claimant_principals set rel
  'select private.authorize_mail_submission_v1((select outbox_id from delivered),(select attempt from delivered))::text'),
  'false','a replaced release authority cancels the old provider attempt');
 select public.complete_mail_attempt((select outbox_id from delivered),(select attempt from delivered),true,pg_temp.h('provider'),'accepted');
+-- The owner fixture probes the real shared session trigger before the genuine
+-- one-time activation consumes this exact issued hash. Each setup rolls back.
+create function pg_temp.forge_release_session() returns uuid language sql as $$
+ insert into public.rights_sessions(token_hash_id,principal_id,purpose,target_kind,target_id,
+   authority_revision,session_hash,status,expires_at,created_at)
+ select h.id,cp.principal_id,'approved-future-person-release','claimed-subject',r.subject_id,
+   r.credential_revision,pg_temp.h('forged-future-session'),'active',
+   least(clock_timestamp()+interval '30 minutes',r.expires_at),clock_timestamp()
+ from public.future_person_claim_release_credentials r
+ join public.token_hashes h on h.candidate_id=r.candidate_id and h.token_hash=r.credential_hash
+ join public.future_person_claimant_principals cp on cp.id=r.claimant_principal_id
+ where r.claim_id=(select review from custody_ids) returning id;
+$$;
+select throws_ok($$select pg_temp.probe('update public.token_candidates set state=''pending''
+ where outbox_id=(select id from release_mail)','select pg_temp.forge_release_session()::text')$$,
+ '42501','rights purpose unavailable','a current Future hash still cannot authorize a candidate that was never issued');
+select throws_ok($$select pg_temp.probe('update public.token_candidates set expires_at=clock_timestamp()-interval ''1 second''
+ where outbox_id=(select id from release_mail)','select pg_temp.forge_release_session()::text')$$,
+ '42501','rights purpose unavailable','an expired Future candidate cannot create a session despite a current credential');
+select throws_ok($$select pg_temp.probe('update public.token_hashes set token_revision=token_revision+1
+ where candidate_id=(select id from public.token_candidates where outbox_id=(select id from release_mail))',
+ 'select pg_temp.forge_release_session()::text')$$,
+ '42501','rights purpose unavailable','the exact issued hash revision must equal the candidate and claimant credential revisions');
+select throws_ok($$select pg_temp.probe('update public.token_hashes set status=''revoked'',ended_at=clock_timestamp()
+ where candidate_id=(select id from public.token_candidates where outbox_id=(select id from release_mail))',
+ 'select pg_temp.forge_release_session()::text')$$,
+ '42501','rights purpose unavailable','a revoked Future hash cannot create a session');
+select is((select count(*) from public.rights_sessions where session_hash=pg_temp.h('forged-future-session')),0::bigint,
+ 'all forged Future session attempts leave no rights row');
 create temporary table activated as select * from public.activate_rights_session_v1(
  encode(extensions.digest(convert_to((select token from delivered),'UTF8'),'sha256'),'hex'),pg_temp.h('rights'),
  'future-person-activation-nonce-aaaaaaaa');
