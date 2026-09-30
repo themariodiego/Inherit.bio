@@ -750,7 +750,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "required": [
             "sites_expected",
@@ -773,7 +774,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "children": {
             "source_facts": {
@@ -781,7 +783,7 @@
               "cardinality": "exactly-one"
             }
           },
-          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels",
+          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels; figure_basis-is-null-only-for-unclassified-historical-QC-or-the-closed-version-1-embryo-split-calls-v1-receipt-with-observed-coverage-call_rate-and-null-or-observed-autosomal_het_rate-mean_depth-matching-present-fields-and-no-parent-dropout-contamination-input",
           "unknownFields": "reject"
         },
         "inputFacts": {
@@ -874,6 +876,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "metric",
             "measured_value",
             "required_minimum",
@@ -881,12 +885,18 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "metric",
             "measured_value",
             "required_minimum",
             "display_copy_id"
           ],
-          "children": {},
+          "children": {
+            "figure_basis": {
+              "shape": "resultBasis"
+            }
+          },
           "scalarConstraints": {
             "kind": {
               "const": "coverage_failure"
@@ -900,7 +910,11 @@
             },
             "display_copy_id": {
               "const": "embryo.result.insufficient-coverage"
-            }
+            },
+            "schema_version": {
+              "const": 2
+            },
+            "figure_basis": "version-1-result-basis-exactly-observed"
           },
           "semanticRule": "this-is-a-measured-eligibility-metric-and-never-a-risk-figure-score-rank-or-reportable-result",
           "unknownFields": "reject"
@@ -909,6 +923,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "risk_model",
             "score_coverage",
             "absolute_risk",
@@ -923,6 +939,8 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "risk_model",
             "score_coverage",
             "absolute_risk",
@@ -955,9 +973,12 @@
             "within_family": {
               "shape": "withinFamilyValidation",
               "cardinality": "exactly-one"
+            },
+            "figure_basis": {
+              "shape": "resultBasis"
             }
           },
-          "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero",
+          "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero; schema_version-exactly-2; figure_basis-version-1-exactly-modelled",
           "unknownFields": "reject"
         },
         "embryoRiskModelBinding": {
@@ -1104,6 +1125,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "carrier_state",
             "inheritance_mode",
             "confirmation_required",
@@ -1111,12 +1134,18 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "carrier_state",
             "inheritance_mode",
             "confirmation_required",
             "display_copy_id"
           ],
-          "children": {},
+          "children": {
+            "figure_basis": {
+              "shape": "resultBasis"
+            }
+          },
           "scalarConstraints": {
             "kind": {
               "const": "carrier_status"
@@ -1130,7 +1159,11 @@
             },
             "confirmation_required": {
               "const": true
-            }
+            },
+            "schema_version": {
+              "const": 2
+            },
+            "figure_basis": "version-1-result-basis-exactly-observed"
           },
           "categoryRule": "permitted-only-for-Having-children-and-never-converted-into-a-disease-risk-rank-or-transfer-recommendation",
           "notReportableRule": "a-not-reportable-carrier-result-is-never-a-carrierFinding; the-parent-EmbryoFinding-must-have-finding-null-and-one-exact-not_covered_reason",
@@ -1862,6 +1895,31 @@
             }
           },
           "unknownFields": "reject"
+        },
+        "resultBasis": {
+          "kind": "object",
+          "keys": [
+            "version",
+            "basis"
+          ],
+          "required": [
+            "version",
+            "basis"
+          ],
+          "children": {},
+          "scalarConstraints": {
+            "version": {
+              "const": 1
+            },
+            "basis": {
+              "enum": [
+                "observed",
+                "modelled",
+                "exact"
+              ]
+            }
+          },
+          "unknownFields": "reject"
         }
       },
       "qcProjection": {
@@ -1935,6 +1993,9 @@
         },
         "computedMetricNullCopyId": {
           "const": "embryo.qc.not-measurable-from-file"
+        },
+        "dropoutNoRangeCopyId": {
+          "const": "embryo.qc.dropout-no-range"
         },
         "dropoutNotMeasuredCopyId": {
           "const": "embryo.qc.dropout-not-measured"
@@ -2033,7 +2094,8 @@
           },
           "approved-future-person-export-v1": {
             "root": "exportEmbryo",
-            "cardinality": "exactly-one-for-the-approved-embryo-subject"
+            "cardinality": "exactly-one-for-the-approved-embryo-subject",
+            "historicalEvidenceReader": "exportContracts.approved-future-person-export-v1.historicalEvidenceReader"
           }
         },
         "chat": {
@@ -5382,6 +5444,49 @@
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "price": "free",
       "credential": "approved-rights-session-bound-to-one-exact-transferred-embryo-subject-after-human-review-and-any-required-owner-notice",
+      "ledgerProjection": {
+        "authority": "only-the-exact-non-NULL-newly-issued-custody-audit-selector-proved-by-the-current-unbound-claimant-subject-tuple; legacy-NULL-and-previously-unlinked-actors-remain-unassigned-with-no-backfill",
+        "source": "the-existing-public.legal_audit_log; no-second-audit-store; exact-six-coded-event-fields-seq-occurred_at-event_code-route_id-outcome_code-coded_context; actor-UUID-chain-hashes-and-envelopes-never-leave",
+        "eventContracts": [
+          {
+            "eventCode": "claimant.analysis_stopped",
+            "routeId": "api.future-person-analysis-stop",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deletion_requested",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deleted",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "purged",
+            "codedContext": {}
+          }
+        ],
+        "unsupported": "unknown-or-mismatched-event-route-outcome-context-or-unsafe-sequence-refuses-the-whole-export-with-no-silent-field-or-event-omission",
+        "capture": "legalAudit-metadata-has-exact-attribution-assigned-or-unrecorded-and-attributionStartedAt-the-existing-non-personal-private.legal_audit_attribution_config-reference-clock-or-null-for-unrecorded; membership.legalAuditEvents-is-the-exact-count; the-current-authority-receipt-binds-full-own-ledger-membership-order-content-and-metadata",
+        "members": [
+          "legal-audit.json",
+          "subjects/{subject_id}/audit-log.json",
+          "subjects/{subject_id}/reports.txt"
+        ],
+        "reader": "service-only-future_person_export_members_v1-operation-legal-audit; at-most-500-exact-sequence-keyset-rows-per-page; unchanged-current-receipt-writing-attempt-and-lease-checks-before-and-after-every-page",
+        "legacy": "zero-assigned-events-with-a-count-free-explanation-does-not-claim-that-nothing-happened; old-NULL-actors-are-never-retroattributed",
+        "release": "public-export-READY-provider-cleanup-and-all-account-publication-holds-remain-closed-until-complete-proof"
+      },
+      "historicalEvidenceReader": {
+        "scope": "only-immutable-own-records-bound-to-the-exact-captured-approved-claimant-source-and-current-authority-receipt",
+        "findingVersions": "the-original-closed-v1-body-has-neither-schema_version-nor-figure_basis-and-exports-with-figureBasis-null-and-classificationDisposition-unrecorded; a-body-containing-either-field-must-pass-the-current-closed-v2-contract-with-its-genuine-saved-classification-and-never-falls-back",
+        "qualityVersions": "the-original-closed-quality-shape-has-no-figure_basis; the-current-shape-preserves-its-actual-null-or-closed-embryo-split-calls-v1-receipt; absent-or-null-classification-remains-unrecorded",
+        "detailVersions": "each-child-must-pass-its-own-version-before-the-unchanged-closed-outer-detail-is-validated-and-bound-to-the-exact-embryo; mixed-genuine-historical-versions-are-permitted-with-no-rewrite",
+        "figureIdentity": "every-stored-figure-payload-must-equal-the-exact-historical-component-of-its-recorded-own-finding-version-before-any-member-bytes-are-written",
+        "currentProducerBoundary": "the-legacy-reader-is-server-only-and-export-only; current-RSC-API-chat-and-producer-contracts-still-require-current-saved-classifications-and-do-not-use-this-reader",
+        "validation": "src/lib/exports/historical-embryo-dto.ts; frozen-v1-closed-validator-src/lib/embryos/historical-policy-v1.ts"
+      },
       "layout": "subject-partitioned-archive-v1",
       "deliveryContract": "largeExportDeliveryContract",
       "subjectScope": "the-one-claimed-embryo-subject-only-with-no-sibling-parent-or-cohort-row-except-the-agreement-projection-below",
@@ -9039,7 +9144,8 @@
       "copilot.provider-policy",
       "copilot.transport-availability",
       "embryo.closed-schema-serialization",
-      "jurisdiction.capability-gate"
+      "jurisdiction.capability-gate",
+      "embryo.ingest-unwind-dispatch"
     ],
     "featureBlockedReasonIds": [
       "prohibited-intent",
@@ -9048,7 +9154,8 @@
       "transport-unavailable",
       "unsafe-embryo-response-shape",
       "jurisdiction-denied",
-      "missing-required-capability"
+      "missing-required-capability",
+      "unwind-dispatch-unavailable"
     ]
   },
   "observabilityEventTemplates": {
@@ -15593,7 +15700,6 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
-        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own \u2014 read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
         "awaiting-choice": "A conversation answers questions about results that already exist; no scope renders an invitation to choose an analysis. Carried over unchanged from the own-product-result profile this route left on 2026-09-28."
       },

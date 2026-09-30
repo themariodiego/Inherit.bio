@@ -64,7 +64,7 @@ export async function SiteHeader() {
           ) : (
             <>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/auth/sign-in">Sign in</Link>
+                <Link href={route("auth.sign-in")}>Sign in</Link>
               </Button>
               <Button asChild size="sm">
                 <Link href="/auth/sign-up">Get started</Link>

@@ -58,6 +58,23 @@ describe("secret gate detector", () => {
     expect(scanText(text, ".env.example")).toEqual([]);
   });
 
+  it("distinguishes comparisons from assignments without hiding literal credentials", () => {
+    const secretName = ["SUPABASE", "_SERVICE_ROLE_KEY"].join("");
+    for (const operator of ["==", "==="]) {
+      expect(scanText(`typeof env.${secretName} ${operator} "string"`, "checks.ts")).toEqual([]);
+      expect(scanText(`env.${secretName} ${operator} candidate`, "checks.ts")).toEqual([]);
+    }
+    for (const operator of ["=", ":"]) {
+      expect(scanText(`${secretName} ${operator} "unsafe-value"`, "checks.ts")).toEqual([
+        { rule: "secret-assignment", path: "checks.ts", line: 1, value: "unsafe-value" },
+      ]);
+    }
+    const literal = `sb_${"secret"}_${"A".repeat(24)}`;
+    expect(scanText(`env.${secretName} === "${literal}"`, "checks.ts")).toEqual([
+      { rule: "supabase-platform-key", path: "checks.ts", line: 1, value: literal },
+    ]);
+  });
+
   it("reports the exact line and value for review", () => {
     const assignment = ["JOBS", "_SECRET=", "unsafe-value"].join("");
     const findings = scanText(`safe=true\n${assignment}\n`, "config.env");

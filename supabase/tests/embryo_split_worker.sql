@@ -26,7 +26,7 @@ create function pg_temp.token(p text) returns text language sql as $$
 $$;
 create function pg_temp.qc(p_expected integer,p_called integer,p_verdict text,p_reasons text[])
 returns jsonb language sql as $$
-  select jsonb_build_object('sites_expected',p_expected,'sites_called',p_called,
+  select jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.25,null),'sites_expected',p_expected,'sites_called',p_called,
     'call_rate',p_called::double precision/p_expected,'autosomal_het_rate',0.25,'mean_depth',null,
     'qc_verdict',p_verdict,'qc_reasons',to_jsonb(p_reasons));
 $$;
@@ -319,6 +319,17 @@ select throws_ok($$select pg_temp.finish(0,jsonb_set(pg_temp.passed(4),'{qc,qc_r
   'invalid split outcome','only registered QC reasons are recorded');
 select throws_ok($$select pg_temp.finish(0,jsonb_set(pg_temp.passed(4),'{qc,imputation_performed}','true'))$$,'22023',
   'invalid split outcome','no imputation field can be smuggled into an outcome');
+select throws_ok($$select pg_temp.finish(0,pg_temp.passed(4)#-'{qc,figure_basis}')$$,'22023','invalid split outcome',
+ 'missing computation receipt is refused before a terminal ordinal writes');
+select throws_ok($$select pg_temp.finish(0,jsonb_set(pg_temp.passed(4),'{qc,figure_basis,coverage,basis}','"modelled"'))$$,'22023','invalid split outcome',
+ 'modelled coverage cannot be relabelled as an observed VCF measurement');
+select throws_ok($$select pg_temp.finish(0,jsonb_set(pg_temp.passed(4),'{qc,figure_basis,version}','2'))$$,'22023','invalid split outcome',
+ 'unknown QC receipt revisions are refused');
+select throws_ok($$select pg_temp.finish(0,jsonb_set(pg_temp.passed(4),'{qc,figure_basis,dropout}','0.02'))$$,'22023','invalid split outcome',
+ 'a dropout estimate cannot be invented in the called VCF receipt');
+select is((select count(*) from private.embryo_split_ordinals where session_id=(select id from live)),0::bigint,
+ 'all four receipt refusals leave the terminal ordinal journal empty');
+
 create temporary table first_done as select pg_temp.finish(0,pg_temp.passed(4)) as body;
 select is((select body->>'remaining' from first_done),'2','embryo 1 is recorded as passed, two remain');
 select is((select source_sha256 from private.embryo_split_ordinals where session_id=(select id from live) and sample_ordinal=0),
