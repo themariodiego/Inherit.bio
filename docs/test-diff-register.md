@@ -79,6 +79,466 @@ Planted regressions, each caught and then restored:
   - the reader relation skipped;
   - revocation leaving the stored conversation.
 
+## Both embryo restriction doors share canonical source deletion · 30 September 2026
+
+The withdrawal migration is now `20260930232000_embryo_parent_withdrawal.sql`,
+after the source-deletion safeguard. This avoids a fresh database's later
+restriction migration overwriting the thin account door. Source deletion runs
+once in the private restriction core, with its reason derived from the closed
+route identifier; the account door only authenticates and calls that core.
+
+`embryo_parent_withdrawal.sql` retains every prior assertion and adds functional
+proofs that refusal and deletion use the withdrawal reason, both passing
+embryos' complete canonical source graphs disappear atomically, the residual
+check is clear, and provider identities stay registered pending exact disposal.
+The existing account restriction suite continues to prove the other route and
+is not loosened. Export and purge inventories retain the current parent stores
+plus the Future Person intake and credential stores, for exactly 136 targets.
+
+## Publication fixture capacity and combined purge inventory · 30 September 2026
+
+`supabase/tests/embryo_publication_dates.sql` now configures the four own-upload
+capacity row and its four limits before reading the synthetic parent's allowance.
+The embryo fixture configures a different capacity and left this row absent, so the
+reader correctly raised `upload_unavailable` before publication assertions
+could run. The setup is transaction-local; every existing assertion remains.
+
+Merging main adds the unwind disposal store and legal-audit account link to
+the branch's five split and canonical-source stores. The exact assertion in
+`supabase/tests/v2_contracts.sql` is therefore 134: main's 129 plus those five.
+The comparison stays exact, and all existing contract assertions remain.
+
+The generated plan in `supabase/tests/export_member_plan.sql` now includes
+the six tables introduced by the split-worker and canonical-source migrations.
+The operator-only split configuration is reference data; pending variants,
+ordinal progress and canonical object inventories are internal machinery.
+The existing catalog equality, person-scope, credential and archive checks
+remain unchanged. This also preserves the separate deferred export classes
+for durable embryo records.
+
+## Future Person intake inventory after main reconciliation · 30 September 2026
+
+The route gate pins 155 required state pairs: main’s Family Copilot refusal
+and this branch’s Future Person intake processing state both remain proved.
+The environment gate keeps main’s 21 direct reads and exactly eight bound
+read sites, including the claim gate’s existing TEST-LOCAL flag. The database
+contract pins 130 purge stores, main’s 129 plus the single Future Person
+intake store. Every expected count is exact; no refusal or coverage check is
+relaxed. The export plan retains both current main entries and the two rights
+tables, and its generated database copy is regenerated from that plan.
+## Canonical-part disposal retains both parents' stricter cleanup proofs · 30 September 2026
+
+The terminal fixture first proves that an unlanded pass is refused atomically,
+then lands its canonical parts and exercises deletion of both landed and
+uncertain writes through the disposal migration. The published fixture retains
+separate exact two-part assertions, the expanded digest and all survival counts.
+The inventory requires exactly 134 stores, including current main's legal audit
+link. Both parents' dated entries and every earlier cleanup assertion remain.
+
+## Terminal cleanup fixtures traverse the canonical-source fence · 30 September 2026
+
+After merging canonical-source publication, a passing split ordinal requires
+all its provider parts to be reserved and acknowledged. The abandoned-attempt
+fixture now strictly expects `canonical source unlanded` before any provider
+write and verifies no ordinal or part was written. Its staged genotype, graph
+purge, residue refusals, exact disposal receipts and terminal notice assertions
+remain. Disposal of abandoned canonical writes is exercised by the subsequent
+canonical-part-disposal migration's dedicated suite.
+
+The published-cleanup fixture lands both parts of each passing embryo through
+the real reservation and acknowledgement doors before recording its outcome.
+Every original cleanup assertion remains. The unchanged-publication digest now
+also covers canonical sources, exact memberships, provider identities, genome
+file descriptors and canonical genotypes; three added counts pin their survival.
+No application or database fence is relaxed.
+
+## Terminal-purge inventory after merging its current parents · 30 September 2026
+
+`supabase/tests/v2_contracts.sql` now requires exactly 134 stores, matching
+current main, the split worker and canonical sources. The former branch's
+130 omitted the legal audit account link and canonical-source stores.
+Terminal purge adds no store and removes no inventory assertion. Both
+parents' dated evidence is retained.
+## Embryo publication dates, addenda and the own-upload allowance · 28 September 2026
+
+`supabase/tests/embryo_publication_dates.sql` is new, with 75 assertions
+(fixture included) for `20260930124000_embryo_publication_dates.sql` and
+`20260930125000_own_upload_allowance_excludes_embryo.sql`. They cover:
+
+- provisional dates before publication;
+- a missing recipient contact rolling the whole publication back;
+- each ordinal's deadline, card date and date revision;
+- the retention rows, phases, envelopes and purge manifests;
+- the exact addenda and their recipients;
+- no rights notice;
+- the owner's own upload allowance before and after publication;
+- the published source the source-facts read relies on;
+- supersession by a later disposition.
+
+Existing tests changed, with nothing loosened:
+
+- `supabase/tests/embryo_split_publication.sql` had two assertions that
+  pinned the absence of this feature: "no notice is queued" and "the
+  provisional card date is left exactly as issued". They now pin its exact
+  presence. The mail count is now exactly two more, and a new assertion
+  requires both notices to be the no-source addendum for the embryo that
+  failed QC. Every card date is now `definitive_stored_or_unknown`, one
+  revision later.
+- `src/emails/emails.test.ts`: the no-source addendum test also requires the
+  sentence with the date the record is deleted. The subject table's
+  no-source payload carries the date. `src/lib/claims/email-fixtures.ts` does
+  the same.
+- `src/app/api/jobs/mail/route.test.ts` adds two cases: a no-source addendum
+  shaped exactly as the SQL builds it is delivered, and one without its date
+  is refused and never sent.
+- `src/lib/embryos/input-facts-load.test.ts` required a `cohort_id` filter on
+  `genome_files` beside `subject_id`. No row can match both
+  (`genome_files_subject_or_cohort`), so the loader always answered unknown.
+  The test now requires the cohort to be checked on the embryo's own
+  subject, and forbids a `cohort_id` filter on file rows. Its four metadata
+  cases and the empty case keep their expectations. New cases cover:
+  - a subject outside the cohort, which reads no file;
+  - a published GRCh38 canonical source, which gives `not-needed`;
+  - a GRCh37 canonical source, which gives `not-recorded`;
+  - a canonical source beside another kind of row, which gives
+    `not-recorded`.
+
+## Restriction deletes embryo canonical sources · 30 September 2026
+
+`supabase/tests/embryo_restriction_source_deletion.sql` is new, with 88
+assertions (fixture included) for
+`20260930150000_embryo_restriction_deletes_sources.sql`. A synthetic cohort
+publishes two sources. A second cohort holds a synthetic source of its own,
+and the owner has a file of their own. The file covers:
+
+- the helper's grants and refusals;
+- a no-op on a cohort with no source;
+- a rolled-back direct call for a withdrawal;
+- the door's unchanged signature and grants;
+- a dependant row refusing the whole restriction;
+- restriction deleting every source, file row, genotype and QC row of its
+  cohort, with a clear residual check over the file ids;
+- the other cohort and the owner's file unchanged;
+- the parts inventoried under one source unwind, kept until their markers are
+  proved and then deleted, with a clear residual check over the files and
+  parts.
+
+No existing assertion changed. `embryo_cohort_runtime.sql` (151) and
+`embryo_nonce_capabilities.sql` (95), which call the restriction door, pass
+unchanged.
+
+Planted regressions, each caught:
+
+- a restriction that leaves a source;
+- a helper that takes every cohort's sources;
+- a planner that also deletes another cohort's source membership;
+- parts deleted before their markers.
+
+## Embryo canonical part disposal and source deletion · 30 September 2026
+
+Two new files:
+
+- `supabase/tests/embryo_canonical_part_disposal.sql` has 96 assertions,
+  fixture included, for `20260930132000_embryo_canonical_part_disposal.sql`.
+  An attempt copies one embryo, leaves one copy open and fails. A second
+  attempt then publishes. The file covers:
+  - the published cleanup listing exactly the three unbound parts, landed or
+    open, and never a bound one;
+  - the R2 marker path for each;
+  - the removal of the unbound part rows;
+  - every published row, file, source and bound part left unchanged;
+  - the source-deletion planner's refusals, including a dependant row
+    anywhere else;
+  - the planner's deletions in one transaction, and a clear residual check;
+  - the parts kept until their markers are proved, then removed;
+  - a second source planned at its retention deadline.
+- `supabase/tests/embryo_ingest_purge_retained_review.sql` has 16
+  assertions, for `20260930131000_embryo_purge_retained_review.sql`. A
+  parent-deceased attempt plans and purges to completion, and its approved
+  review and evidence hash survive unchanged. A denied review and another
+  table's `target_id` still stop the purge. After the purge, the residual
+  check still counts a denied review, an approved review of another kind and
+  another table's `target_id`.
+
+Existing files:
+
+- `supabase/tests/embryo_ingest_terminal_purge.sql` goes from 140 to 147
+  assertions. Its attempt now copies embryo 1 into canonical parts before
+  the pass, as the pass gate from `20260930123000` requires, and leaves a copy
+  for embryo 2 open. The three expected object counts move from 6 to 9: the
+  disposal count, the completion result and the audit context. New assertions
+  cover:
+  - the parts in the inventory;
+  - the open part left unclaimed while its window is open, then claimed;
+  - part rows in the absence proof.
+  No assertion was removed or loosened.
+- `supabase/tests/embryo_ingest_published_cleanup.sql` goes from 86 to 87.
+  - The test lands the published embryos' parts before their passes.
+  - The completion result and the audit context gain `"parts":0`.
+  - The published-rows digest now also covers file rows, canonical sources
+    and bound parts.
+  No assertion was removed or loosened.
+- `src/lib/embryos/unwind-storage.test.ts` accepts the `source` purpose and
+  refuses an unknown one.
+- `supabase/tests/v2_contracts.sql` pins 133 purge stores, from the merge: 130
+  here plus the three canonical-source stores. This unit adds no table.
+
+Planted regressions, each caught:
+
+- a published plan that lists bound parts;
+- a claim that ignores an open write window;
+- a plan that omits parts, combined with a blind uninventoried count;
+- the file row deleted before its genotypes;
+- parts deleted before their markers;
+- no dependant check;
+- a source finish before `storage_confirmed`;
+- a purge that keeps part rows;
+- a published cleanup that unbinds a published source;
+- the review skip widened three ways: to the whole `legal_reviews` table, to
+  every `target_id`, and to every review.
+
+## Embryo terminal purge and published cleanup · 30 September 2026
+
+Two new files test `20260930130000_embryo_ingest_terminal_purge.sql`. Both
+counts include their fixture's own assertions.
+
+`supabase/tests/embryo_ingest_terminal_purge.sql` has 140 assertions. It covers:
+
+- grants;
+- the unwind's frozen identity, and inventory that cannot be inserted
+  disposed or added after planning;
+- no purge before `storage_confirmed`;
+- the residual check seeing Storage metadata at a fragment key, and refusing
+  a row in an unregistered table, a row in a registered store and a store it
+  cannot examine;
+- a completed attempt with staged split rows purged, with absence proved in
+  every store;
+- the kept uploader principal and accounts;
+- the terminalized due tuple, the notice slots and the counts-only audit event;
+- replays;
+- an R2 attempt with an uncertain key and a rotated contact that gets a
+  delivery-unavailable slot.
+
+`supabase/tests/embryo_ingest_published_cleanup.sql` has 86 assertions. It
+covers:
+
+- the plan made by publication;
+- refusals before exact evidence;
+- removal of the fragment, handle-map and inventory rows;
+- a digest of every published row, unchanged across the cleanup.
+
+`src/lib/embryos/unwind-storage.test.ts` grows from 8 to 14 tests, for the
+completion and work-list helpers.
+
+Planted regressions, each caught:
+
+- a purge of an unconfirmed unwind;
+- a residual nonce row left behind;
+- a residual check that skips unregistered tables;
+- a published cleanup that runs before `storage_confirmed`;
+- inventory inserted already tombstoned;
+- a cleanup that deletes a published QC row;
+- a dropped delivery-unavailable slot.
+
+No existing assertion changed. `supabase/tests/v2_contracts.sql` still counts
+130 purge stores, because no table was added.
+## Canonical-source inventory after merging current main · 30 September 2026
+
+`supabase/tests/v2_contracts.sql` now pins exactly 134 purge stores: current
+main's 129, the split worker's two pending stores and the canonical-source
+migration's three stores. The old branch total of 132 omitted main's two
+later stores. All other purge assertions remain. The export plan adds all
+three canonical-source tables with their existing internal-processing
+disposition and regenerates the exact catalog check.
+
+## Split-worker inventory after merging current main · 30 September 2026
+
+`supabase/tests/v2_contracts.sql` now requires exactly 131 purge stores: the
+129 stores already on `main` plus the split worker's two attempt-owned
+private pending stores. Its previous total of 129 omitted the current
+main's legal audit account link and exact unwind storage disposals. No
+store assertion is removed. The export plan classifies all three new
+private split-worker tables; its generated database inventory continues
+to require exact equality with the catalog.
+
+## genomes-staging drop test after D-130's embryo fix · 28 September 2026
+
+`supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two
+function bodies may still name `genomes-staging`: the account-deletion and
+embryo-unwind manifest builders (D-130). #255 (`20260929101000`) rewrote
+`prepare_embryo_ingest_unwind_v1` to inventory objects under their recorded
+bucket, so it no longer names the dropped bucket, and the test failed on the
+merged tree. The expected set is now the one remaining builder. That is
+stricter: one fewer function may carry the literal.
+
+## Two register divergences closed on the owner's answers · 28 September 2026
+
+**`generated-artifacts` dropped.**
+- `supabase/tests/drop_generated_artifacts_bucket.sql` is new, with 13
+  assertions:
+  - the bucket is gone, and genomes and exports are unchanged;
+  - no storage policy names it;
+  - the literal survives only in the two own-report purge functions, as a
+    retention target id, and that target keeps its five stores;
+  - no recorded object can name the bucket or be an export archive;
+  - no export can name a single archive object;
+  - a genome source and a segmented export row are still accepted.
+- Without the migration, 5 of the 13 fail. Seven refusal cases were planted
+  and each was refused: an object, a multipart upload, a recorded object in
+  the bucket, a recorded export archive, an export `object_id`, a pending
+  deletion entry and a pending unwind entry. A completed entry is not
+  refused.
+- `supabase/tests/drop_genomes_staging_bucket.sql` now expects the bucket set
+  `{genomes, exports}`, because generated-artifacts is gone too.
+- `scripts/route-register-correspondence.test.ts` no longer asserts "more
+  than two" created buckets. It asserts that `genomes` and `exports` are among
+  them, which is an equally non-empty check with named contents.
+- In `scripts/route-gate.test.ts`, the storage-evidence test used to plant on
+  the generated-artifacts row, which is now removed. It now makes `exports`
+  undeclared and adds its own row. It expects the wrong `createdBy` to fail,
+  and adds a control where the right one passes. The dropped-bucket test now
+  restores both dropped rows and expects both to fail as stale.
+
+**`/withdraw/request` registered as an endpoint.**
+- `src/lib/embryos/rights-entry.test.ts` gains "answers with exactly the
+  headers its registered response contract names".
+- `scripts/route-register-correspondence.test.ts`:
+  - gains "resolves every routeFrom to a registered route and every pinned
+    param to a literal it allows";
+  - "expands a pinned parameter" now expects `rights.withdraw` without
+    `/withdraw/request`, and the new entry at that path.
+- `scripts/route-gate.test.ts`: "fails when a registered page literal is
+  served by an endpoint" now plants `request` back onto the page entry,
+  instead of deleting a ledger row that no longer exists.
+- `e2e/a11y.spec.ts` derives its endpoint-rendered pages from the register.
+  It audits the same URL, under the same test titles.
+- Each new check was planted and failed:
+  - the robots header reverted;
+  - the token-page binding removed;
+  - a contract still naming the page literal;
+  - `request` pinned back onto the page.
+
+No existing assertion was removed or loosened.
+
+## Buckets read from the migrations, and dated divergences · 28 September 2026
+
+`e2e/rls.spec.ts`, `e2e/file-deletion.spec.ts` and
+`e2e/account-deletion-purge.spec.ts` no longer keep their own list of
+buckets. They read it from `scripts/storage-buckets.ts`, which applies bucket
+creates and drops in migration order, the same way `pnpm gate:routes` does.
+The set changes in two ways:
+
+- It gains `exports`, created on 23 September. The old hand-kept list never
+  included it, so the RLS suite had not attacked it.
+- It loses `genomes-staging`, which `20260930140000` drops.
+
+`e2e/rls.spec.ts` now asserts that the set includes `genomes` and `exports`
+and excludes `genomes-staging`, so the list can be neither empty nor stale.
+Its planted and attacking objects are `application/octet-stream`, because
+`exports` admits nothing else. Every assertion is otherwise unchanged.
+
+`scripts/run-upload-browser.mts --full` on all three specs passed 12 of 12,
+with no skips and no retries. Two earlier runs each had failures on the shared
+local stack, and each failure happened before any bucket code ran:
+
+- the first run: two UI uploads stuck at "Uploading to private storage…
+  100%";
+- the second run: `createUser: Database error creating new user`.
+
+Every test also passed in at least one of those runs.
+
+`scripts/route-gate.test.ts` gains five tests:
+
+- a dropped bucket's old ledger row fails as stale;
+- a storage row whose `createdBy` or `declaredBy` no longer says what the row
+  says fails;
+- a method row that names the wrong file fails;
+- the drop parser reads both delete shapes, and throws on any other;
+- creates and drops apply in file order and in statement order.
+
+`scripts/route-register-correspondence.test.ts` gains "deletes a dated
+divergence by its date", which fails after a row's `deleteAfter`. The
+allowlist test now also accepts rows in `allowlistedBucketNotCreated`, but
+only when the named migration really drops the bucket. The new pgTAP file
+`supabase/tests/drop_genomes_staging_bucket.sql` has 7 assertions. Each new
+check was planted and failed; the details are in
+`docs/register-divergence-proposals.md` section 8. No existing assertion was
+removed or loosened.
+
+## Brief X1.5: the account-deletion nonce is rendered, not fetched · 28 September 2026
+
+**Four pgTAP files move from the stored nonce to the rendered one.** They are
+`account_deletion.sql`, `account_deletion_purge.sql`,
+`account_deletion_own_grant_nonces.sql` and `own_prepared_cleanup.sql`.
+
+- Each issued a nonce through `issue_account_operation_nonce_v1` and then
+  spent it through the v1 request or cancel. That function is dropped, and
+  the service role can no longer reach v1. Each now calls v2 with the same
+  hash and an expiry, in one step.
+- Every other assertion is unchanged.
+- One assertion changes: `account_deletion.sql`'s first one said "a recent
+  verified session can obtain a one-time operation nonce", which is the
+  behaviour X1.5 removes. It now says that nothing stores a nonce for the
+  account before the request that spends it. The plan stays at 18.
+- `account_deletion.sql` (18) and `account_deletion_purge.sql` (19) passed
+  with the same counts as their originals, with the shared database's
+  leftover deletion rows emptied inside the rolled-back transaction.
+
+**New tests.**
+- `supabase/tests/account_operation_nonce_rendered.sql`, 23 assertions:
+  - the issuing function is gone, v1 is out of the service role's reach, and
+    the recorder is reachable only through v2;
+  - v2 is a public invoker door over a private definer body, and neither is
+    open to a signed-in user;
+  - nothing is stored before the operation;
+  - the expiry bound holds, and a stale session cannot spend a nonce;
+  - v2 records one spent hash, and a failed operation records none;
+  - a spent nonce cannot be replayed, on either operation;
+  - an expired spent hash is pruned by the next operation.
+- `src/lib/account-operation-nonce.test.ts` (6),
+  `src/lib/account-deletion-state.test.ts` (3) and
+  `src/app/api/account/delete/route.test.ts` (5).
+- `scripts/route-register-correspondence.test.ts` gains three tests: every
+  place that stores a nonce before use is compared with
+  `nonceStoredBeforeUse`, and the two deletion routes export POST alone.
+- `e2e/settings.spec.ts` gains "brief X1.5: /settings/data renders its
+  deletion nonce and stores none before the POST spends it". The comment on
+  the processing test no longer describes the removed GET.
+
+**Planted, each seen to fail.**
+- A GET on `/api/account/delete` that stores a nonce: 6 unit tests fail, and
+  `pnpm gate:routes` fails with an undeclared GET.
+- The page render writing a nonce: 3 tests fail.
+- In the database, each fails the new pgTAP file:
+  - the issuing function surviving;
+  - v1 left callable by the service role;
+  - a spent hash accepted again;
+  - no expiry bound.
+## Prepared sources carry their runs of homozygosity · 28 September 2026
+
+`e2e/family-health-picture.spec.ts` ("both adults prepare their real source
+and generate chosen reports before sharing") asserted that every `roh_*`
+column of a prepared source stayed null, because canonical preparation did not
+measure runs of homozygosity. This branch now measures them from the verified
+bytes as they stream past and stores them once
+(`record_own_normalization_runs_v1`). The assertion is replaced by a stricter
+one: each source is `measured`, with no reason, and its total run bases,
+covered span bases and fraction equal exactly what the real calculator gives
+the committed fixture (`measureRunsOfHomozygosity`, which `roh.test.ts`
+already holds equal to the streaming accumulator). Nothing is loosened: a
+stamped, guessed or missing measure fails it.
+
+## Family Copilot citation link matched exactly · 28 September 2026
+
+`e2e/copilot-family.spec.ts` looked up the person citation by the link name
+"Shared by <name>". The report citation's label, "<title> (shared by
+<name>)", also contains that phrase, and Playwright's default name match is a
+case-insensitive substring, so the locator found two links and failed in CI.
+It now matches the name exactly. That is stricter: it still requires the
+person link and its href, and it no longer accepts any link that merely
+contains the phrase. The report citation stays asserted through the stored
+message's `citations[1]`.
+
 ## Family Copilot scope turned on everywhere · 28 September 2026
 
 The owner chose to turn the Family Copilot scope on in production (PR #260).
@@ -171,49 +631,33 @@ Planted regressions, each caught and then restored:
   passed through; another account's context token accepted; a member admitted
   without the Family graph; group names not read as persons by the input gate.
   6 of 6 fail their test.
-## Embryo publication dates, addenda and the own-upload allowance · 28 September 2026
 
-`supabase/tests/embryo_publication_dates.sql` is new, with 75 assertions
-(fixture included) for `20260930124000_embryo_publication_dates.sql` and
-`20260930125000_own_upload_allowance_excludes_embryo.sql`. They cover:
+## Exact embryo storage disposal · 29 September 2026
 
-- provisional dates before publication;
-- a missing recipient contact rolling the whole publication back;
-- each ordinal's deadline, card date and date revision;
-- the retention rows, phases, envelopes and purge manifests;
-- the exact addenda and their recipients;
-- no rights notice;
-- the owner's own upload allowance before and after publication;
-- the published source the source-facts read relies on;
-- supersession by a later disposition.
+`supabase/tests/embryo_ingest_unwind_storage.sql` is new, with 115 assertions
+for `20260929101000_embryo_ingest_unwind_storage.sql` and
+`20260929102000_worker_claim_excludes_embryo_split.sql`. It covers:
 
-Existing tests changed, with nothing loosened:
+- grants, including the service role's lost direct write grants;
+- D-130;
+- R2 markers for landed and uncertain keys, and every evidence refusal;
+- rows that even the owner cannot mark disposed;
+- confirmation and idempotent replay;
+- re-claiming a lapsed R2 claim;
+- Supabase exact-version deletion;
+- uncertain, vanished and lapsed-acknowledgement objects staying unresolved;
+- the generic worker claim passing over a queued split job.
 
-- `supabase/tests/embryo_split_publication.sql` had two assertions that
-  pinned the absence of this feature: "no notice is queued" and "the
-  provisional card date is left exactly as issued". They now pin its exact
-  presence. The mail count is now exactly two more, and a new assertion
-  requires both notices to be the no-source addendum for the embryo that
-  failed QC. Every card date is now `definitive_stored_or_unknown`, one
-  revision later.
-- `src/emails/emails.test.ts`: the no-source addendum test also requires the
-  sentence with the date the record is deleted. The subject table's
-  no-source payload carries the date. `src/lib/claims/email-fixtures.ts` does
-  the same.
-- `src/app/api/jobs/mail/route.test.ts` adds two cases: a no-source addendum
-  shaped exactly as the SQL builds it is delivered, and one without its date
-  is refused and never sent.
-- `src/lib/embryos/input-facts-load.test.ts` required a `cohort_id` filter on
-  `genome_files` beside `subject_id`. No row can match both
-  (`genome_files_subject_or_cohort`), so the loader always answered unknown.
-  The test now requires the cohort to be checked on the embryo's own
-  subject, and forbids a `cohort_id` filter on file rows. Its four metadata
-  cases and the empty case keep their expectations. New cases cover:
-  - a subject outside the cohort, which reads no file;
-  - a published GRCh38 canonical source, which gives `not-needed`;
-  - a GRCh37 canonical source, which gives `not-recorded`;
-  - a canonical source beside another kind of row, which gives
-    `not-recorded`.
+`src/lib/embryos/unwind-storage.test.ts` (8 tests) is new. It runs the disposal
+executor against the real gateway and a synthetic Storage endpoint.
+
+Existing files, with no assertion removed:
+
+- `supabase/tests/v2_contracts.sql` counts 128 purge stores instead of 127,
+  for `private.embryo_ingest_object_disposals`.
+- In `supabase/tests/embryo_ingest_write_fence.sql`, the store-order assertion
+  now compares the fence's two stores with every pre-fence store. Those were
+  all public, and a later private store follows the fence's two.
 
 ## Embryo canonical sources · 28 September 2026
 

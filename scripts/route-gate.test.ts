@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { createdBuckets, exportedMethods, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
+import { createdBuckets, droppedBuckets, exportedMethods, migrationBuckets, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
 
 /**
  * The gate is only worth having if a planted defect fails it, so every check
@@ -114,11 +114,9 @@ describe("the route gate holds the register to the code", () => {
     // `product-result` because the Family group scope now renders the
     // register's jurisdiction refusal (awaiting-choice waived with its
     // reason), and the same change proves it (e2e/copilot-family.spec.ts), so
-    // the unproven count does not move. 154 -> 155 on 2026-09-28 (later):
-    // `/copilot/[scope]`'s not-covered waiver is withdrawn, because the group
-    // scopes render the register's closed unavailable page with state
-    // `not-covered` (copilot-transport-availability-v1), and
-    // e2e/copilot-group-scopes.spec.ts proves it in the same change.
+    // the unproven count does not move.
+    // 154 -> 155: Future Person intake adds its processing state on the
+    // public-rights-flow profile and proves it in future-person-claim.spec.ts.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
     expect(result.requiredStateCount).toBe(155);
@@ -370,12 +368,17 @@ describe("the route gate holds the register to the code", () => {
     expect(failures.join("\n")).not.toContain("legacy.login");
   });
 
+  /**
+   * Until 2026-09-28 this was the live /withdraw/request row. That literal is
+   * now its own endpoint entry, so the plant is the undo: pin `request` back
+   * onto the page entry, which makes the page literal an endpoint again.
+   */
   it("fails when a registered page literal is served by an endpoint", async () => {
     const root = plant({
-      ledger: (ledger) => {
-        ledger.kindDivergence = (ledger.kindDivergence as { path: string }[]).filter(
-          (known) => known.path !== "/withdraw/request",
-        );
+      register: (register) => {
+        const page = (register.routes as { id: string; parameterContract?: { token?: { enum?: string[] } } }[])
+          .find((entry) => entry.id === "rights.withdraw")!;
+        page.parameterContract!.token!.enum!.unshift("request");
       },
     });
     const { failures } = await runRouteGate(root);
@@ -425,6 +428,67 @@ describe("the route gate holds the register to the code", () => {
     expect(failures).toContain(
       "storage bucket: not recorded in docs/route-divergence.json: declared-not-created legal-evidence",
     );
+  });
+
+  /**
+   * 28 Sep 2026: a migration can now drop a bucket, and the gate must see it
+   * gone. The drop of genomes-staging closed its created-not-declared row, so
+   * restoring the row is exactly the stale entry the ledger must refuse.
+   */
+  it("reads a dropped bucket as gone, so its old ledger row is stale", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        for (const bucket of ["genomes-staging", "generated-artifacts"]) {
+          (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket,
+            direction: "created-not-declared", createdBy: "supabase/migrations/20260831224054_storage_and_download_sessions.sql" });
+        }
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    for (const bucket of ["genomes-staging", "generated-artifacts"]) {
+      expect(failures).toContain(
+        `storage bucket: recorded in docs/route-divergence.json but no longer present: created-not-declared ${bucket}`,
+      );
+    }
+  });
+
+  /**
+   * No created-not-declared row is left once generated-artifacts is dropped,
+   * so the planted one is made real: exports loses its prefix, and its row
+   * names first the wrong migration, then the right one as the control.
+   */
+  it("fails when a storage row's evidence no longer says what the row says", async () => {
+    const plantExportsRow = (createdBy: string) => plant({
+      register: (register) => {
+        register.storagePrefixes = (register.storagePrefixes as { bucket: string }[])
+          .filter((prefix) => prefix.bucket !== "exports");
+      },
+      ledger: (ledger) => {
+        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
+          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
+        }
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "exports",
+          direction: "created-not-declared", createdBy });
+      },
+    });
+    const wrong = await runRouteGate(plantExportsRow("supabase/migrations/20260831224054_storage_and_download_sessions.sql"));
+    expect(wrong.failures).toContain("storage bucket: exports names createdBy "
+      + "supabase/migrations/20260831224054_storage_and_download_sessions.sql, which does not create it");
+    expect(wrong.failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    const right = await runRouteGate(plantExportsRow("supabase/migrations/20260923123240_export_archive_persistence.sql"));
+    expect(right.failures.filter((failure) => failure.startsWith("storage bucket: exports names createdBy"))).toEqual([]);
+  });
+
+  it("fails when a method row names a file the route is not built in", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        for (const known of ledger.methodDivergence as Record<string, unknown>[]) {
+          if (known.routeId === "api.export") known.file = "src/app/api/export/moved/route.ts";
+        }
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain("declared methods: api.export names src/app/api/export/moved/route.ts, built at src/app/api/export/route.ts");
   });
 
   it("fails when the register requires a state no browser test proves", async () => {
@@ -526,6 +590,33 @@ describe("the detectors the gate is built from", () => {
       ),
     ).toEqual(["one", "two"]);
     expect(createdBuckets("select id from storage.buckets;")).toEqual([]);
+  });
+
+  it("reads every bucket a migration drops, and refuses a delete it cannot read", () => {
+    expect(droppedBuckets("delete from storage.buckets where id = 'one';")).toEqual(["one"]);
+    expect(droppedBuckets("DELETE FROM storage.buckets WHERE id IN ('one', 'two');")).toEqual(["one", "two"]);
+    expect(droppedBuckets("delete from storage.objects where bucket_id = 'one';")).toEqual([]);
+    // A delete the reader cannot resolve must not read as nothing dropped.
+    expect(() => droppedBuckets("delete from storage.buckets where name like 'gen%';")).toThrow(/unreadable bucket delete/);
+  });
+
+  it("applies creates and drops in migration order", () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "route-gate-buckets-"));
+    temporaryRoots.push(directory);
+    writeFileSync(path.join(directory, "1_create.sql"),
+      "insert into storage.buckets (id, name, public) values ('kept', 'kept', false), ('dropped', 'dropped', false);");
+    writeFileSync(path.join(directory, "2_drop.sql"), "delete from storage.buckets where id = 'dropped';");
+    writeFileSync(path.join(directory, "3_again.sql"),
+      "delete from storage.buckets where id = 'kept';\ninsert into storage.buckets (id, name, public) values ('kept', 'kept', false);");
+    // Within one file, statement order decides: created then dropped is gone.
+    writeFileSync(path.join(directory, "4_same_file.sql"),
+      "insert into storage.buckets (id, name, public) values ('brief', 'brief', false);\n"
+      + "delete from storage.buckets where id = 'brief';");
+    expect([...migrationBuckets(directory)].sort()).toEqual(["kept"]);
+    // The real migrations: genomes-staging is created, then dropped.
+    const real = migrationBuckets(path.join(REPOSITORY_ROOT, "supabase/migrations"));
+    expect(real.has("genomes-staging")).toBe(false);
+    expect(real.has("genomes")).toBe(true);
   });
 
   it("reads where a spec takes test from", () => {

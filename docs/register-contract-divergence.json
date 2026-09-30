@@ -14,7 +14,8 @@
         "auth.forgot-password-submit",
         "auth.sign-up-submit",
         "public.security",
-        "public.upload-jwks"
+        "public.upload-jwks",
+        "rights.withdraw-request"
       ],
       "why": "Every other endpoint auth mode resolves through contractDefaults[\"endpoint:<mode>\"] to an authContracts entry. \"public\" deliberately has no such default: the mode means no authentication, so there is no auth contract to point at. It is listed here rather than special-cased in the test so that the day a public endpoint does acquire a contract, or the day this stops being the only unauthenticated mode, the list has to be revisited.",
       "closing": "Nothing to close. This entry exists so the exemption is written down and counted."
@@ -40,6 +41,16 @@
       "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
   ],
+  "nonceStoredBeforeUseNote": "Brief X1.5 (owner decision 2026-09-28): an operation nonce is rendered by the page that offers the operation, only the state-changing request consumes it, and no GET creates, rotates or stores one. scripts/route-register-correspondence.test.ts finds every call in shipped code to a database function named issue_*nonce*, and every write to account_operation_nonces, and compares them with this list in both directions. The account-deletion GET that stored a nonce on every visit to /settings/data was removed on 2026-09-28, and its issuing function dropped, so it is not here; a GET that stores a nonce again fails the test until it is recorded.",
+  "nonceStoredBeforeUse": [
+    {
+      "rpc": "issue_own_upload_nonce_v1",
+      "file": "src/lib/uploads/prepare-own-upload.ts",
+      "reachedFrom": "src/components/uploads/own-upload-entry.tsx, rendered by /files and /files/upload",
+      "why": "prepareOwnUpload runs while the upload page renders. When the page needs the own-upload consent signature or the account-completion step, it mints a signed presentation token (own-consent-token.ts) and stores the hash of that token's nonce through issue_own_upload_nonce_v1 before anyone acts, so each render of the page writes a row. X1.5 now forbids that. The token itself is already stateless and signed; only its advance record remains.",
+      "closing": "Rebuild it the way account deletion was rebuilt: the POST that consumes the token records its nonce hash once, in the same transaction as the signature or completion, and issue_own_upload_nonce_v1 is dropped. No owner decision is outstanding; X1.5 already covers it. This is build work."
+    }
+  ],
   "endpointSuccessContractUnbound": [
     {
       "routeId": "webhooks.resend",
@@ -61,6 +72,10 @@
     {
       "site": "genomes src/app/api/files/[id]/process/route.ts",
       "why": "Reads the uploaded object by genome_files.bucket_path before parsing."
+    },
+    {
+      "site": "genomes src/lib/embryos/unwind-storage.ts",
+      "why": "Deletes one landed Supabase-backed embryo fragment by its exact object id and version, as claimed by claim_embryo_ingest_object_disposals_v1 after an unwind's drain settled. The Storage DELETE result is the evidence finish_embryo_ingest_object_disposal_v1 checks."
     },
     {
       "site": "genomes src/lib/genome/prepared-source/original-retention.ts",
@@ -151,7 +166,7 @@
       "file": "src/lib/embryos/refused-invitation-cleanup.ts",
       "reachedFrom": "src/app/api/jobs/retention/route.ts",
       "routeId": "jobs.retention",
-      "why": "docs/route-divergence.json records legal-evidence as declared-not-created and gives the reason \"Nothing creates it because the claim and appeal surfaces it serves are unbuilt\". One live surface disagrees: drainRefusedInvitationCleanup, called by the registered POST /api/jobs/retention, issues admin.storage.from(\"legal-evidence\").remove(...) for every refused adult invitation draft whose purge manifest names evidence objects. No migration inserts that bucket - the three created are genomes, genomes-staging and generated-artifacts - so that call addresses a bucket that does not exist. A SQL fence for it does exist (20260906064136_refused_evidence_write_fence.sql asserts every named object lives in bucket_id='legal-evidence'), which is what makes this a gap between two records rather than dead code. It cannot leak, because nothing is there to leak. It also does not fail silently: remove() on a missing bucket returns an error, the caller throws refusal_storage_delete_failed and the drain marks the draft failed - checked by reading the handler rather than assumed, because the first draft of this entry claimed the opposite. What is actually unfalsifiable is narrower and is the only case that occurs today: a manifest naming zero objects never enters the loop, so the storage step is a no-op that records success - and every manifest names zero objects, because nothing writes evidence while embryo ingest is unbuilt.",
+      "why": "docs/route-divergence.json records legal-evidence as declared-not-created and gives the reason \"Nothing creates it because the claim and appeal surfaces it serves are unbuilt\". One live surface disagrees: drainRefusedInvitationCleanup, called by the registered POST /api/jobs/retention, issues admin.storage.from(\"legal-evidence\").remove(...) for every refused adult invitation draft whose purge manifest names evidence objects. No migration inserts that bucket - the two the migrations leave in place are genomes and exports - so that call addresses a bucket that does not exist. A SQL fence for it does exist (20260906064136_refused_evidence_write_fence.sql asserts every named object lives in bucket_id='legal-evidence'), which is what makes this a gap between two records rather than dead code. It cannot leak, because nothing is there to leak. It also does not fail silently: remove() on a missing bucket returns an error, the caller throws refusal_storage_delete_failed and the drain marks the draft failed - checked by reading the handler rather than assumed, because the first draft of this entry claimed the opposite. What is actually unfalsifiable is narrower and is the only case that occurs today: a manifest naming zero objects never enters the loop, so the storage step is a no-op that records success - and every manifest names zero objects, because nothing writes evidence while embryo ingest is unbuilt.",
       "closing": "Either create the bucket with its declared policies, or drop the declaration and the fence together. The register's own storagePrefixes entry already describes what the bucket should be. Whichever way it goes, the two records must stop disagreeing: today the register declares it, a migration fences writes to it, live code removes from it, and nothing creates it."
     }
   ],
@@ -221,6 +236,30 @@
       "why": "Prepared canonical artifacts are written into the same genomes bucket under a two-segment key whose first segment is the literal \"prepared\" \u2014 outside every declared prefix, and outside the account partition all three of them describe. preparedObjectKeySchema pins the shape and createPreparedArtifactWriter POSTs to /storage/v1/object/genomes/<that key>, so these are real objects holding derived genome data. The register knows the artifacts exist \u2014 policyContracts.own-prepared-object-v1 governs their lifecycle and preparation.scratch-2h their retention \u2014 and storagePrefixes, the file that says where bytes live and under what filename and retention contract, does not mention them. The same artifacts have a second home the register describes even less: the v2 receipt path writes them to Cloudflare R2 under a bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding), and no storagePrefixes entry names any R2 bucket at all \u2014 the register's six prefixes cover four Supabase buckets and no second provider.",
       "closing": "A storagePrefixes entry for prepared/{artifact_id} in genomes with its filename contract and the preparation.scratch-2h and publication retention ids, and a second entry \u2014 or a declared provider field on the first \u2014 for the R2 bucket family, so the two homes of the same artifact are both written down. The R2 half is the larger gap: a whole storage provider holding derived genome data is absent from the file that is supposed to enumerate them.",
       "blocker": "none known \u2014 the lifecycle is decided and described in policyContracts; only the storage location is undeclared."
+    }
+  ],
+  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The two database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
+  "allowlistedBucketNotCreated": [
+    {
+      "bucket": "genomes-staging",
+      "droppedBy": "supabase/migrations/20260930140000_drop_genomes_staging_bucket.sql",
+      "constraints": [
+        "public.account_deletion_storage_entries",
+        "public.embryo_ingest_delete_objects"
+      ],
+      "why": "The bucket is dropped: nothing had written it since 20260906133807_cutover_subject_upload_transport.sql, and the drop refuses to run while it holds anything. Two manifest builders still carry the literal (D-130), public.claim_due_account_deletion_v1 and public.prepare_embryo_ingest_unwind_v1, so the CHECK constraints on the two tables they fill still admit it. The account-deletion leg joins storage.objects on the bucket and so matches nothing. The embryo-ingest leg does not join; ingest is unbuilt (G2.6), so nothing runs it.",
+      "closing": "Fix D-130 in both builders (read upload_sessions.storage_bucket instead of the literal), then drop 'genomes-staging' from both CHECK constraints and remove this row. The embryo half belongs to the embryo-ingest work."
+    },
+    {
+      "bucket": "generated-artifacts",
+      "droppedBy": "supabase/migrations/20260930140100_drop_generated_artifacts_bucket.sql",
+      "constraints": [
+        "public.genome_storage_objects",
+        "public.account_deletion_storage_entries",
+        "public.embryo_ingest_delete_objects"
+      ],
+      "why": "Owner decision 2026-09-28 (evening): the bucket is dropped and the single-object export archive form it was made for is retired. Nothing in src ever wrote it, and the drop refuses to run while it holds anything or any row still records an object in it. The three column CHECKs written on 2026-08-31 and 2026-09-05 still list the literal, and this list is read from them. None can be reached: the migration adds genome_storage_objects_genomes_only, so a recorded object is a genome source in genomes and never an export archive, and account-deletion manifests copy their bucket from those rows. No function carries the literal as a bucket; the two own-report purge functions carry it as the retention target id over database rows, which is a different name and stays.",
+      "closing": "Drop 'generated-artifacts' from the three column CHECKs, which also removes this row. It needs no other change; the embryo table's CHECK belongs to the embryo-ingest work, so the three go together when that work next touches it."
     }
   ]
 }

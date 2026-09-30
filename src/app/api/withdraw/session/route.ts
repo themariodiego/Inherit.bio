@@ -1,6 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { hmacSecret } from "@/lib/crypto";
+import { contactDigestSet, type DigestSet } from "@/lib/hmac-keyring";
 import { adultSubjectResponseBody, readAdultSubjectResponse } from "@/lib/embryos/adult-subject-review";
+import { embryoParentWithdrawalBody, readEmbryoParentWithdrawal, respondEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdrawal";
 import { notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
@@ -9,10 +10,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * `POST /api/withdraw/[token]` with the segment pinned to `session`
- * (register api.withdraw). Two rights holders answer here, and which one is
+ * (register api.withdraw). Three rights holders answer here, and which one is
  * answering is decided by the form token the page served, never by a field
  * in the body: an adult-subject form token cannot drive a co-parent refusal
- * and the reverse is equally impossible.
+ * or an embryo withdrawal, and no other pairing is possible either. The
+ * embryo-parent-withdrawal session refuses or deletes the whole cohort; the
+ * database rechecks its credential and the purpose matrix.
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
@@ -52,6 +55,16 @@ export async function POST(request: Request) {
     if (authority) return answerAdultSubject(authority, adult.data.operation);
   }
 
+  const embryo = embryoParentWithdrawalBody.safeParse(json);
+  if (embryo.success) {
+    const authority = readEmbryoParentWithdrawal(request, embryo.data.nonce);
+    if (authority) {
+      if (!(await respondEmbryoParentWithdrawal(authority, embryo.data.operation))) return notFound();
+      return closedResponse("api.withdraw", RECEIPT_KEYS,
+        { status: "accepted", operation: embryo.data.operation }, 202);
+    }
+  }
+
   const body = invitationRefusalBody.safeParse(json);
   if (!body.success) return notFound();
   const authority = readInvitationRefusal(request, body.data.nonce);
@@ -67,7 +80,8 @@ export async function POST(request: Request) {
 /**
  * Refusing and deleting need no account. Accepting binds the reserved
  * subject to one, so the account is read here and its address is passed as
- * an HMAC; the RPC compares it with the invited address again and refuses
+ * digests under every held contact key revision; the RPC compares the one the
+ * invitation was written under with the invited address again and refuses
  * every mismatch itself.
  */
 async function answerAdultSubject(
@@ -75,13 +89,13 @@ async function answerAdultSubject(
   operation: "confirm" | "refuse" | "delete",
 ) {
   let accountId: string | null = null;
-  let accountEmailHmac: string | null = null;
+  let accountEmailHmacs: DigestSet | null = null;
   if (operation === "confirm") {
     const context = await getSensitiveAccountContext();
     const email = context?.user.email;
     if (!context || !email || !context.user.email_confirmed_at) return notFound();
     accountId = context.user.id;
-    accountEmailHmac = hmacSecret(normalizeContact(email), "contact-email-v1");
+    accountEmailHmacs = contactDigestSet(normalizeContact(email));
   }
 
   const { data, error } = await createAdminClient().rpc(
@@ -90,8 +104,8 @@ async function answerAdultSubject(
       p_session_hash: authority.sessionHash,
       p_action: operation,
       p_nonce: authority.nonce,
-      ...(accountId && accountEmailHmac
-        ? { p_account_id: accountId, p_account_email_hmac: accountEmailHmac }
+      ...(accountId && accountEmailHmacs
+        ? { p_account_id: accountId, p_account_email_hmac_set: accountEmailHmacs }
         : {}),
     },
   );

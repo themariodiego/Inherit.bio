@@ -118,6 +118,23 @@ export async function POST(request: Request) {
   const { error: refusalReceiptExpiryError } = await admin.rpc("expire_invitation_refusal_receipts_v1");
   if (refusalReceiptExpiryError) failed++;
 
+  // security.rate-limit-hmac-24h: each quota bucket is deleted at the fixed
+  // purge time its first attempt set. Independent of every other queue.
+  const { data: purgedBuckets, error: rateLimitPurgeError } = await admin.rpc(
+    "purge_expired_rate_limit_buckets_v1",
+  );
+  if (rateLimitPurgeError) failed++;
+  else if (typeof purgedBuckets === "number") processed += purgedBuckets;
+
+  // future-person.claim-intake-session-24h: an unfinished claim start is
+  // deleted, with its sealed fields and their key, once its day or its idle
+  // half hour is over.
+  const { data: purgedIntakes, error: claimIntakePurgeError } = await admin.rpc(
+    "purge_future_person_claim_intakes_v1",
+  );
+  if (claimIntakePurgeError) failed++;
+  else if (typeof purgedIntakes === "number") processed += purgedIntakes;
+
   // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
   // not prevent this already-due work from making progress.
   try {

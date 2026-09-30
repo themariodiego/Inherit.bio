@@ -244,10 +244,11 @@ select is((select count(*) from public.legal_audit_log where event_code='embryo.
 select ok((select not (coded_context ?| array['sex','karyotype','label','genotype','variant']) and route_id is null
   from public.legal_audit_log where event_code='embryo.cohort.published' order by seq desc limit 1),
   'the audit event carries only coded counts');
--- The only mail is the no-source addendum for the embryo that failed QC, one
--- per Record Key recipient; the dates of the two sources did not move today.
-select is((select count(*) from public.mail_outbox),(select n+2 from before_mail),
-  'the only notices queued are the two no-source addenda (rights notices are not part of this change)');
+-- The mail is the no-source addendum for the embryo that failed QC, one per
+-- Record Key recipient (the two sources' dates did not move today), and one
+-- upload-time rights notice to the co-parent (embryo_parent_withdrawal.sql).
+select is((select count(*) from public.mail_outbox),(select n+3 from before_mail),
+  'the notices queued are the two no-source addenda and one upload-time rights notice');
 select is((select array_agg(distinct template_id||':'||(template_payload->>'kind')||':'||(template_payload->>'displayLabel'))
   from public.mail_outbox where target_id in (select id from public.embryos where cohort_id=(select cohort_id from live))),
   array['record-key-addendum:no-source:Embryo 2'],'they name only the embryo that failed QC, and carry no key');
