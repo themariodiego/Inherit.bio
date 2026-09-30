@@ -1,5 +1,5 @@
 begin;
-select plan(28);
+select plan(31);
 \ir fixtures/rights_invitation_pending.inc
 -- policyResolvers.withdrawal-target-v1.purposeMatrix in the database. The
 -- fixture above issues one real co-parent invitation; everything rolls back.

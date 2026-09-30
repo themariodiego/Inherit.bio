@@ -1,5 +1,17 @@
 # Test diff register
 
+## Cohort fixture reaches strict canonical publication and rights census · 30 September 2026
+
+The Copilot cohort fixture now reserves and acknowledges each passing embryo's
+two canonical parts through the existing worker doors before ordinal completion.
+Two new exact part-count assertions accompany the same old outcomes, genotypes
+and whole-cohort publication. The production unlanded-source refusal remains;
+these are synthetic database provider receipts, not physical-storage evidence.
+
+The rights-purpose matrix plan is exactly 31, accounting for the three existing
+embryo-purpose assertions added by the integrated notice branch. All 31 original
+assertions still run; none is removed, skipped or converted to a range.
+
 ## Integrated notice privacy and route-state census · 30 September 2026
 
 The upload notice's mandated `privacy@inherit.bio` contact remains present.

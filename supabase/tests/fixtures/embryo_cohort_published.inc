@@ -26,6 +26,8 @@ select public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.spli
   '[[1,1000,"A","G","A/G"],[7,3000,"T","C","C/C"]]');
 select public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.split_token(),2,0,
   '[[13,4000,"A","G","G/G"]]');
+select is(pg_temp.land_parts(0,pg_temp.split_token()),2,'fixture: both first-embryo canonical parts are acknowledged before passing');
+select is(pg_temp.land_parts(2,pg_temp.split_token()),2,'fixture: both third-embryo canonical parts are acknowledged before passing');
 select public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.split_token(),0,
   pg_temp.split_outcome('passed','pass','{}',10,2));
 select public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.split_token(),1,
