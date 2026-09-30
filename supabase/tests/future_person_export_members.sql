@@ -200,7 +200,7 @@ select lives_ok($$select public.future_person_export_members_v1('quality',(selec
 create temporary table historical_figure_page as select public.future_person_export_members_v1('figures',
  (select (body->>'exportId')::uuid from member_export),(select id from member_attempt),(select body->>'authorityReceipt' from member_authority)) body;
 select is((select (body->>'count')::integer from historical_figure_page),4,'all four genuine historical figure rows are included before projection');
-select is((select array_agg(k order by k) from historical_figure_page,jsonb_object_keys(body->'rows'->0) k),
+select is((select array_agg(k order by k collate "C") from historical_figure_page,jsonb_object_keys(body->'rows'->0) k),
  array['created_at','figure_kind','figure_revision','findingRecord','finding_id','id','payload'],'the figure envelope has exactly the recorded fields and bound finding');
 select ok((select bool_and(row->>'finding_id'=row#>>'{findingRecord,id}' and row#>>'{findingRecord,model_id}'='retired-synthetic-model'
  and row#>>'{findingRecord,model_version}'='original' and row#>>'{findingRecord,computation_revision}'='2'
