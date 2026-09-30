@@ -2,6 +2,7 @@ import { localE2eProject } from "./scripts/local-e2e-project";
 import { defineConfig, devices } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
 import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV, EMBRYO_APP_PORT, EMBRYO_APP_ENV } from "./scripts/ci-browser-config";
+import { assertStandardCiBrowserProjects } from "./scripts/ci-browser-project-registry";
 
 // E2E runs against a production build served locally, backed by the local
 // Supabase stack (pnpm supabase start) — real PostgREST, real storage, real
@@ -83,7 +84,7 @@ const SERVER_ENV = {
   RESEND_BASE_URL: "http://127.0.0.1:8124",
 };
 
-export default defineConfig({
+const config = defineConfig({
   testDir: "./e2e",
   fullyParallel: false, // suites share one DB; specs manage their own users
   workers: 1,
@@ -221,3 +222,6 @@ export default defineConfig({
     }] : []),
   ],
 });
+if (includePreparedJourney && !densityCapture && !comprehensionRun)
+  assertStandardCiBrowserProjects((config.projects ?? []).map(project => project.name ?? ""));
+export default config;

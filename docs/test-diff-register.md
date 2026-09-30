@@ -1,5 +1,88 @@
 # Test diff register
 
+## Embryo joins complete isolated browser coverage · 30 September 2026
+
+The integrated runtime has five standard projects, including the real embryo
+upload journey. Its project joins the closed CI registry; synthetic coverage
+fixtures now require all five projects. Omitted, unregistered, skipped, repeated,
+failed and foreign-run cases remain refused. Six exact isolated servers and the
+ordinary local command are preserved. Native discovery proves assignment only;
+no route-state acceptance row changes before complete hosted execution.
+
+## Browser evidence artifact selection across reruns · 30 September 2026
+
+Coverage artifact names now begin `browser-case-<attempt>-`, and the download
+pattern requires that complete prefix. The previous suffix wildcard could
+accidentally select attempt 1/shard 2 while downloading attempt 2, causing a
+valid full rerun to fail its exact-directory check. A new regression applies
+the actual workflow pattern through the existing installed glob matcher to
+retained attempts 1, 2 and 12 and requires exactly seven artifacts for each.
+The exact receipt count, same-attempt/source/run checks and stale-evidence
+refusals remain unchanged; no evidence from another attempt becomes accepted.
+
+An intermediate fresh database run stopped at the existing signed-invitation
+fixture; its full assertions passed in a diagnostic reproduction. The fixture
+now retains the same immediate refusal and ten-claim bound while reporting only
+synthetic queue/authority state flags on refusal. It reveals no contact, token
+or identifier. No deadline, wait, retry, quota, assertion or producer is changed.
+The original failure's cause remains unestablished, so no speculative runtime
+change or green result is claimed from that diagnostic alone.
+
+## Native browser discovery and execution statistics · 30 September 2026
+
+The coverage verifier now checks each phase against real Playwright 1.62.1 JSON.
+Native `--list` reports expected=0 and skipped=the discovered case count, while
+every test declares expectedStatus=passed and has zero results. The former
+handcrafted discovery fixture incorrectly used skipped=0; a real-tool check
+caught that before hosted execution. Discovery now requires the exact native
+counts and still refuses declared skips, results, errors and project drift.
+Actual execution retains every existing strict pass-once/retry-zero boundary
+and now also requires expected=the executed case count and skipped=0. Two new
+regressions reject false listing counts, declared skips, discovery executions,
+false passed counts and any skipped execution. No actual execution assertion,
+timeout, retry, case or gate is relaxed or removed.
+
+
+## CI readability scan reuse · 30 September 2026
+
+The 27 repository readability assertions now share one actual gate scan of the
+same immutable checkout in `beforeAll`. Each existing provider, template and
+page filter and its exact empty-failure assertion remain unchanged. Extraction
+assertions and planted-copy regressions retain their independent input and
+fixture scans. This removes repeated whole-repository parsing that caused a
+5-second case timeout in two complete local Linux runs; no test, threshold,
+timeout, retry or gate is removed or relaxed. Full-suite verification on the
+new committed head remains required.
+
+## Permanent isolated browser CI sharding · 30 September 2026
+
+The unchanged complete browser suite now uses six fresh hosted jobs, each with
+its own database and the existing real-provider/isolated-runtime preflight.
+New strict regression cases reject missing, duplicated, foreign-commit,
+prior-run and stale-attempt receipts, omitted or repeated cases, zero/multiple
+executions, retries, skips, non-passing results, global errors, changed projects,
+parallel workers, negative provider counts and silently ignored ordinary specs.
+The existing full-suite/no-skip/no-retry and transport assertions remain.
+
+Actual native discovery places no upload fixture in shard 1. The original
+whole-suite assertion that at least one real browser upload crosses the
+installed provider therefore moves to mandatory aggregation, which requires
+nonnegative actual per-shard counts and a positive complete-suite sum. Tests
+prove that one upload-free shard can pass when other shards observed actual
+uploads, while zero across the whole suite and every negative count fail.
+Ordinary full/local and Lighthouse runs retain their direct positive assertion.
+No sentinel upload, narrowed selector, fixture bypass or execution skip is added.
+
+The required checks job still rejects failed, cancelled or skipped job families.
+The parsed concurrency contract requires a unique run ID for non-PR groups;
+turning off active cancellation alone would still let a pending main run replace
+an older pending main run. PR groups retain their stable PR number.
+Every tracked ordinary spec must be discovered; only the exact existing density
+capture and paid comprehension-run spec remain opt-in. A central project
+registry refuses empty or unregistered projects. Raw configuration/report JSON
+is excluded from uploaded artifacts; sanitized coverage and timing receipts
+provide the exact SHA/run/case evidence and file-group imbalance instead.
+
 ## Mail queue creation uses one captured instant · 30 September 2026
 
 The embryo principal mail producer now supplies one captured database wall-clock instant for both creation and initial availability. Caller-provided expiry, existing idempotency and the strict thirty-day cap remain unchanged. A new rollback-only database regression runs the actual co-parent invitation journey after a delayed transaction start, pins its unchanged draft deadline and replay, and proves exact thirty-day acceptance, one-microsecond-over-cap refusal and expired/equal-creation refusal. It also rehearses the producer under transaction-time column defaults without changing the production defaults. Existing ordinary-mail clock, explicit-expiry, replay and refusal assertions are retained. The failing run’s earlier row timestamp does not establish a now() default: current catalog/source already use clock_timestamp(), so host clock/order uncertainty is reported rather than hidden with retention slack.

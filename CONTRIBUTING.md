@@ -29,14 +29,28 @@ Full details, including the self-host path, are in
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm test                  # unit tests
-pnpm e2e                   # Playwright: RLS proof, network audit, upload/report flows
+pnpm test                  # full unit suite
+pnpm gate:legal && pnpm gate:first-glance && pnpm gate:names && pnpm gate:templates
+pnpm gate:readability && pnpm gate:secrets && pnpm gate:routes && pnpm gate:claims
+pnpm gate:env && pnpm gate:jurisdictions
+pnpm exec supabase db reset && pnpm exec supabase test db   # fresh local database
 ```
 
-`pnpm e2e` runs against a production build and the local Supabase stack. CI runs
-all of the above plus the repository's gates — the legal placeholder gate, the
-no-comparator name gate, and the template integrity gate. A pull request that
-trips a gate will not merge, so it is cheaper to run them locally first.
+Run these local checks before pushing a draft pull request. Configure
+`NAME_DENYLIST_FILE` for the name gate and stage changes before the repository
+and history secret scan. Database reset is only for the disposable local stack.
+
+The complete hosted browser suite is required before merging or any guarded
+production change. Six fresh, isolated browser jobs preserve whole fixture
+groups; the required `checks` gate rejects failed, skipped, cancelled, missing,
+duplicate or stale evidence. Use **Re-run all jobs** after a CI failure so every
+job provides evidence from the same attempt.
+
+`pnpm e2e` remains the optional complete local browser command against a
+production build and local Supabase stack. The owner approved hosted full-suite
+verification as the permanent pre-merge policy on 30 September 2026. The workflow
+and its coverage safeguards are described in
+[`docs/evidence/ci-browser-sharding.md`](docs/evidence/ci-browser-sharding.md).
 
 ## What we are looking for
 
