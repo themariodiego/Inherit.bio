@@ -1,5 +1,13 @@
 # Test diff register
 
+## Result-basis computation fixture is a complete SQL statement · 30 September 2026
+
+The classified empty-result fixture now includes its full insert statement.
+PostgreSQL's include command executes a separate input buffer, so an expression
+included in a partial surrounding insert failed to parse. The exact computation
+payload and every existing receipt, publication and refusal assertion remain
+unchanged; the fresh database suite must reach and execute those assertions.
+
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
 `supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two

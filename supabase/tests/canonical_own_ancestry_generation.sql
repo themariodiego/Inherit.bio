@@ -340,9 +340,7 @@ create temporary table array_output as select jsonb_set(payload,'{ancestry,sourc
 -- New revision receipts originate in the real computation fixture. Bind it to
 -- the independently prepared array source; old file 040 retains revision 1.
 create temporary table classified_content(c jsonb);
-insert into classified_content values (
 \ir fixtures/own_ancestry_classified_empty_content.inc
-);
 create temporary table classified_output as select jsonb_build_object('ancestry',
  jsonb_set(c,'{source}',(select payload#>'{ancestry,source}' from array_output))) payload from classified_content;
 select throws_ok($$select pg_temp.array_generate('complete',jsonb_set((select payload from classified_output),
