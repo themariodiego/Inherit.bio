@@ -450,3 +450,208 @@ do $$ declare f text; begin
     'private.claim_decision_document_received_v1(private.claim_reviews,private.claim_review_decisions,private.claim_documents)'
   ] loop execute format('revoke all on function %s from public,anon,authenticated,inherit_upload_only,service_role',f); end loop;
 end $$;
+
+-- A regenerated bearer link is a new provider submission payload. Semantic
+-- event dedupe still uses the unchanged outbox key; the provider key binds
+-- to its exact attempt. A repeat of that attempt retains the same key.
+create function private.mail_provider_attempt_key_v1(m public.mail_outbox)
+returns text language sql immutable security invoker set search_path='' as $$
+  select case when m.token_purpose is null then m.idempotency_key else
+    encode(extensions.digest(convert_to('mail-token-attempt-v1|'||m.idempotency_key||'|'||m.attempt_count,'UTF8'),'sha256'),'hex') end;
+$$;
+revoke all on function private.mail_provider_attempt_key_v1(public.mail_outbox)
+  from public,anon,authenticated,inherit_upload_only,service_role;
+
+-- Preserve every branch of the notice predecessor; only provider attempt
+-- key derivation changes here. Claimant token issuance is added below.
+create or replace function public.claim_mail_outbox()
+returns table (
+  outbox_id uuid,
+  template_id text,
+  template_payload jsonb,
+  idempotency_key text,
+  attempt_ordinal smallint,
+  contact_ciphertext bytea,
+  delivery_token text
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outbox public.mail_outbox%rowtype;
+  v_candidate public.token_candidates%rowtype;
+  v_raw_token text;
+  v_token_hash text;
+begin
+  perform private.lock_invitation_transitions_v1();
+  update public.mail_outbox m
+  set state = 'expired', claimed_at = null, last_outcome_code = 'expired'
+  where m.state in ('queued', 'claimed')
+    and m.expires_at <= clock_timestamp();
+
+  update public.mail_outbox m
+  set state = 'invalidated', claimed_at = null,
+      last_outcome_code = 'recipient_authority_stale'
+  where m.invitation_terminal_notice_id is null
+    and m.state in ('queued', 'claimed')
+    and not exists (
+      select 1
+      from public.subject_principals sp
+      join public.encrypted_contact_references ecr
+        on ecr.id = m.contact_reference_id
+       and ecr.principal_id = sp.id
+      where sp.id = m.recipient_principal_id
+        and (
+          sp.status = 'active'
+          or (
+            m.purpose in ('adult-subject-invitation', 'co-parent-invitation')
+            and sp.status = 'pending'
+          )
+        )
+        and sp.principal_revision = m.recipient_authority_revision
+        and ecr.status = 'current'
+        and ecr.authority_revision = m.recipient_authority_revision
+        and ecr.contact_ciphertext is not null
+    );
+
+  -- A live contact is not enough: readiness belongs to this exact source.
+  -- Invalidated rows retain their ordinary history/retention rules.
+  update public.mail_outbox m
+  set state = 'invalidated', claimed_at = null,
+      last_outcome_code = 'file_target_unavailable'
+  where m.template_id = 'report-ready' and m.state in ('queued', 'claimed')
+    and private.file_ready_mail_current_v1(m) is not true;
+
+  -- Recheck the exact invitation and all stored contact-key aliases before
+  -- token creation, under the same transition lock as refusal/acceptance.
+  update public.mail_outbox m set state='invalidated',claimed_at=null,
+    last_outcome_code='invitation_authority_stale'
+  where m.state in('queued','claimed')
+    and m.token_purpose in('adult-subject-invitation','co-parent-invitation')
+    and not private.invitation_mail_current_v1(m);
+
+  -- An embryo withdrawal credential's row lives only while the cohort, its
+  -- basis, its sets and the recipient are exactly those it was bound to.
+  update public.mail_outbox m set state='invalidated',claimed_at=null,
+    last_outcome_code='embryo_withdrawal_authority_stale'
+  where m.state in('queued','claimed')
+    and m.token_purpose='embryo-parent-withdrawal'
+    and not exists (select 1 from public.token_candidates tc
+      where tc.outbox_id=m.id and private.embryo_withdrawal_current_v1(tc.id));
+
+  select m.* into v_outbox
+  from public.mail_outbox m
+  where m.invitation_terminal_notice_id is null and (
+      (m.state = 'queued' and m.not_before <= clock_timestamp())
+      or (
+        m.state = 'claimed'
+        and m.claimed_at < clock_timestamp() - interval '10 minutes'
+      )
+    )
+    and m.expires_at > clock_timestamp()
+    and m.attempt_count < 10
+    and (m.template_id <> 'report-ready' or private.file_ready_mail_current_v1(m) is true)
+  order by m.not_before, m.created_at
+  for update skip locked
+  limit 1;
+
+  if v_outbox.id is null then return; end if;
+
+  update public.mail_outbox m
+  set state = 'claimed',
+      claimed_at = clock_timestamp(),
+      attempt_count = (m.attempt_count + 1)::smallint,
+      last_outcome_code = null
+  where m.id = v_outbox.id
+  returning m.* into v_outbox;
+
+  if v_outbox.token_purpose in ('adult-subject-invitation', 'co-parent-invitation') then
+    if not private.invitation_mail_current_v1(v_outbox) then return; end if;
+    select tc.* into strict v_candidate
+    from public.token_candidates tc
+    where tc.outbox_id = v_outbox.id
+      and tc.target_kind = 'subject_invitation'
+      and tc.target_id = v_outbox.target_id
+      and tc.expires_at > clock_timestamp()
+    for update;
+
+    v_raw_token := rtrim(translate(
+      encode(extensions.gen_random_bytes(32), 'base64'), '+/', '-_'
+    ), '=');
+    v_token_hash := encode(extensions.digest(
+      convert_to(v_raw_token, 'UTF8'), 'sha256'
+    ), 'hex');
+
+    update public.token_hashes
+    set status = 'revoked', ended_at = clock_timestamp()
+    where candidate_id = v_candidate.id and status = 'current';
+
+    insert into public.token_hashes (
+      candidate_id, token_hash, token_revision, status
+    ) values (
+      v_candidate.id, v_token_hash, v_candidate.token_revision, 'current'
+    );
+
+    update public.token_candidates
+    set state = 'issued'
+    where id = v_candidate.id;
+
+    update public.subject_invitations
+    set token_hash = v_token_hash
+    where id = v_candidate.target_id
+      and status = 'pending'
+      and expires_at > clock_timestamp();
+    if not found then
+      raise exception using errcode = '55000', message = 'invitation is not current';
+    end if;
+  end if;
+
+  -- The withdrawal link of an upload-time rights notice: a new raw token for
+  -- the exact bound credential, rechecked here, replacing any earlier hash.
+  if v_outbox.token_purpose = 'embryo-parent-withdrawal' then
+    select tc.* into v_candidate
+    from public.token_candidates tc
+    where tc.outbox_id = v_outbox.id
+      and tc.purpose = 'embryo-parent-withdrawal'
+      and tc.target_kind = 'cohort'
+      and tc.target_id = v_outbox.target_id
+      and tc.expires_at > clock_timestamp()
+    for update;
+    if v_candidate.id is null or not private.embryo_withdrawal_current_v1(v_candidate.id) then return; end if;
+
+    v_raw_token := rtrim(translate(
+      encode(extensions.gen_random_bytes(32), 'base64'), '+/', '-_'
+    ), '=');
+    v_token_hash := encode(extensions.digest(
+      convert_to(v_raw_token, 'UTF8'), 'sha256'
+    ), 'hex');
+
+    update public.token_hashes
+    set status = 'revoked', ended_at = clock_timestamp()
+    where candidate_id = v_candidate.id and status = 'current';
+
+    insert into public.token_hashes (
+      candidate_id, token_hash, token_revision, status
+    ) values (
+      v_candidate.id, v_token_hash, v_candidate.token_revision, 'current'
+    );
+
+    update public.token_candidates
+    set state = 'issued'
+    where id = v_candidate.id;
+  end if;
+
+  return query
+  select
+    v_outbox.id,
+    v_outbox.template_id,
+    v_outbox.template_payload,
+    private.mail_provider_attempt_key_v1(v_outbox),
+    v_outbox.attempt_count,
+    ecr.contact_ciphertext,
+    v_raw_token
+  from public.encrypted_contact_references ecr
+  where ecr.id = v_outbox.contact_reference_id;
+end;
+$$;

@@ -165,6 +165,8 @@ select is(pg_temp.probe($$update public.embryo_cohorts set participant_set_revis
   $$select state||':'||last_outcome_code from public.mail_outbox where id=(select id from notice)$$),
   'none / invalidated:embryo_withdrawal_authority_stale','a stale credential''s notice is invalidated, and no token is made');
 create temporary table sent as select * from pg_temp.claim_notice();
+\ir fixtures/mail_attempt_retry.inc
+select * from pg_temp.assert_mail_retry((select outbox_id from sent),(select private.mail_provider_attempt_key_v1(m) from public.mail_outbox m where id=(select outbox_id from sent)),(select token from sent));
 select is((select outbox_id from sent),(select id from notice),'the worker claims the notice');
 select ok((select token ~ '^[A-Za-z0-9_-]{43}$' from sent),'with a fresh raw token for the link');
 select is((select th.status||':'||tc.state from public.token_hashes th join public.token_candidates tc on tc.id=th.candidate_id
