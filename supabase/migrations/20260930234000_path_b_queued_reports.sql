@@ -178,7 +178,7 @@ begin
   if d.relationship_id is not null or rp.id<>sp.id or d.recipient_account_id<>sp.account_id
    or d.self_principal_revision<>sp.principal_revision
    or d.relationship_or_pair_revision<>s.subject_binding_revision
-   or g.artifact_key<>case g.purpose when 'reports.monogenic' then 'consent.own-monogenic' else 'consent.own-polygenic' end then
+   or g.artifact_key<>(case g.purpose when 'reports.monogenic' then 'consent.own-monogenic' else 'consent.own-polygenic' end) then
    raise exception using errcode='42501',message='not_found'; end if;
  elsif d.direction='subject_to_recipient' then
   select * into rel from public.subject_relationships where id=d.relationship_id for share;
@@ -481,8 +481,8 @@ begin
   or j.source_binding_kind<>'genome-file' or j.source_binding_id<>b.file_id or j.source_binding_revision<>b.binding_revision
   or j.computation_revision<>b.computation_revision or j.file_sha256<>b.authority->'source'->>'rawSha256'
   or j.payload is distinct from jsonb_build_object('bindingId',b.id)
-  or j.kind<>case b.purpose when 'reports.monogenic' then 'compute_monogenic_report' else 'compute_polygenic_report' end
-  or j.output_kind<>case b.purpose when 'reports.monogenic' then 'report.monogenic' else 'report.polygenic' end then
+  or j.kind<>(case b.purpose when 'reports.monogenic' then 'compute_monogenic_report' else 'compute_polygenic_report' end)
+  or j.output_kind<>(case b.purpose when 'reports.monogenic' then 'report.monogenic' else 'report.polygenic' end) then
   raise exception using errcode='42501',message='not_found'; end if;
  if p_operation='fail' then
   if p_payload is not null then raise exception using errcode='22023',message='invalid_request'; end if;
