@@ -964,7 +964,7 @@ end;
 $$;
 
 
-insert into private.rights_session_purposes(session_purpose,matrix_purpose,invitation_kind,target_kind)
+insert into private.rights_session_purposes (session_purpose,matrix_purpose,invitation_kind,target_kind)
 values('approved-future-person-release','approved-future-person-release',null,'claimed-subject');
 
 -- A newly registered purpose does not turn another issuer's hash into claimant
@@ -1037,6 +1037,7 @@ declare
   v_expires_at timestamptz;
   v_credential private.embryo_withdrawal_credentials%rowtype;
   v_release public.future_person_claim_release_credentials%rowtype;
+  v_claimant public.future_person_claimant_principals%rowtype;
   v_claimed_subject uuid;
 begin
   -- Positive claimant lookup is read-only until the subject starts the common
@@ -1072,12 +1073,17 @@ begin
     select * into v_release from public.future_person_claim_release_credentials
       where candidate_id=v_token.candidate_id and credential_hash=v_token.token_hash and status='current' for update;
     if v_release.id is null then return; end if;
+    select * into v_claimant from public.future_person_claimant_principals
+      where id=v_release.claimant_principal_id;
+    if v_claimant.id is null then return; end if;
     v_expires_at:=least(v_now+interval '60 minutes',v_release.expires_at);
-    insert into public.rights_sessions(token_hash_id,principal_id,purpose,target_kind,target_id,
-      authority_revision,session_hash,status,expires_at,created_at)
-    select v_token.id,c.principal_id,'approved-future-person-release','claimed-subject',v_release.subject_id,
-      c.release_revision,p_session_hash,'active',v_expires_at,v_now
-    from public.future_person_claimant_principals c where c.id=v_release.claimant_principal_id;
+    insert into public.rights_sessions (
+      token_hash_id, principal_id, purpose, target_kind, target_id,
+      authority_revision, session_hash, status, expires_at, created_at
+    ) values (
+      v_token.id, v_claimant.principal_id, 'approved-future-person-release', 'claimed-subject', v_release.subject_id,
+      v_claimant.release_revision, p_session_hash, 'active', v_expires_at, v_now
+    );
     update public.token_hashes set status='consumed',ended_at=v_now where id=v_token.id;
     update public.future_person_claim_release_credentials set status='consumed' where id=v_release.id;
     perform private.append_legal_audit_event('rights.session.activated',null,'api.rights-activate','accepted',
@@ -1250,7 +1256,8 @@ create function private.consume_future_person_rights_nonce_v1(rs public.rights_s
 returns void language plpgsql security definer set search_path='' as $$
 declare v_nonce_hash text;revision bigint;
 begin
- if p_nonce is null or p_nonce!~'^[A-Za-z0-9_-]{16,256}$' then
+ if p_nonce is null or length(p_nonce) not between 16 and 256
+   or octet_length(p_nonce) not between 16 and 256 or p_nonce!~'^[A-Za-z0-9_-]+$' then
    raise exception using errcode='42501',message='claimant rights unavailable'; end if;
  v_nonce_hash:=encode(extensions.digest(convert_to(p_nonce,'UTF8'),'sha256'),'hex');
  if exists(select 1 from public.rights_nonces where rights_session_id=rs.id and rights_nonces.nonce_hash=v_nonce_hash) then

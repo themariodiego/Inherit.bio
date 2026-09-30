@@ -132,6 +132,31 @@ select is((select array_agg(k order by k) from jsonb_object_keys(public.future_p
  array['allowedActionIds','lifecycleState','retentionMaximumDays','safeClaimedSubjectLabel'],'the claimant page returns exactly its four registered safe fields');
 select ok(not public.future_person_rights_view_v1(pg_temp.h('rights'))::text~'subjectId|claimant|cipher|source|genotype|e2e.local',
  'the page exposes no genetic data, internal identifiers or contact fields');
+create function pg_temp.nonce_probe(p_value text) returns bigint language plpgsql as $$
+declare rs public.rights_sessions;result bigint;
+begin
+ begin
+   select * into strict rs from public.rights_sessions where session_hash=pg_temp.h('rights');
+   perform private.consume_future_person_rights_nonce_v1(rs,p_value);
+   select count(*) into result from public.rights_nonces where rights_session_id=rs.id
+     and nonce_hash=encode(extensions.digest(convert_to(p_value,'UTF8'),'sha256'),'hex') and consumed_at is not null;
+   raise exception using errcode='ZY001',message='restore synthetic nonce probe';
+ exception when sqlstate 'ZY001' then null;end;
+ return result;
+end $$;
+select throws_ok($$select pg_temp.nonce_probe(repeat('a',15))$$,'42501','claimant rights unavailable',
+ 'fifteen ASCII characters cannot satisfy the operation nonce minimum');
+select is(pg_temp.nonce_probe(repeat('a',16)),1::bigint,'the exact sixteen-character nonce minimum is accepted and consumed');
+select is(pg_temp.nonce_probe(repeat('a',256)),1::bigint,'the registered 256-character nonce maximum remains accepted and consumed');
+select throws_ok($$select pg_temp.nonce_probe(repeat('a',257))$$,'42501','claimant rights unavailable',
+ '257 ASCII characters exceed the registered nonce maximum');
+select throws_ok($$select pg_temp.nonce_probe(null)$$,'42501','claimant rights unavailable','a null operation nonce is unavailable');
+select throws_ok($$select pg_temp.nonce_probe(repeat('a',15)||':')$$,'42501','claimant rights unavailable',
+ 'an otherwise long enough nonce still refuses punctuation outside the closed ASCII alphabet');
+select throws_ok($$select pg_temp.nonce_probe(repeat('a',15)||chr(10))$$,'42501','claimant rights unavailable',
+ 'a trailing newline cannot evade the nonce alphabet');
+select throws_ok($$select pg_temp.nonce_probe(repeat('a',15)||chr(233))$$,'42501','claimant rights unavailable',
+ 'a non-ASCII nonce character is refused independently of character and byte lengths');
 select is(public.issue_future_person_recovery_key_v1(pg_temp.h('rights'),'future-person-key-nonce-aaaaaaaa',pg_temp.h('recovery')),
  (select (contact_expires_at at time zone 'UTC')::date from public.future_person_claimant_principals where claim_id=(select review from custody_ids)),
  'one-time Recovery Key stores only the hash and reports the separate contact deadline');
