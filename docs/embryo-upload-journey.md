@@ -46,3 +46,5 @@ hosted deletion, real genomes, human comprehension or legal review.
 The full database/browser journey is pending coordinator verification. All
 nine existing unreachable route pairs, participant-c's seed blocker and the
 acceptance matrix stay unchanged until actual evidence justifies a change.
+
+A second browser case derives a mixed-quality synthetic pair by turning alternate calls of only the second sample into explicit no-calls. It retains the real two-parent and worker path and requires the failed ordinal to retain its full comparison/QC column while having neither a canonical source nor a canonical part. The approved condition registry remains empty; no risk or laboratory estimate is introduced. Each embryo journey must occupy a different fresh native CI partition, verified before execution and again in exact complete coverage. The original two-pass case and empty-queue fence remain unchanged. This new case is authored, not yet accepted as hosted execution evidence.

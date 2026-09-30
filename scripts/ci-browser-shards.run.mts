@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ciBrowserSourceIdentity, discoverBrowserCases, trackedBrowserSpecs } from "./ci-browser-shards-io";
-import { browserManifest, CI_BROWSER_SHARDS, verifyBrowserShards, type CiBrowserShardReceipt } from "./ci-browser-shards";
+import { browserManifest, browserReportCases, CI_BROWSER_SHARDS, verifyBrowserShards, type CiBrowserShardReceipt } from "./ci-browser-shards";
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === path.resolve("scripts/ci-browser-shards.run.mts");
 if (invoked) {
@@ -11,6 +11,7 @@ if (invoked) {
   if (mode === "manifest") {
     assert(process.argv.length === 3, "Manifest has no selectors");
     const manifest = browserManifest(discoverBrowserCases(), source, trackedBrowserSpecs());
+    for (let index = 1; index <= CI_BROWSER_SHARDS; index++) browserReportCases(discoverBrowserCases(index), index, false);
     mkdirSync("test-results", { recursive: true });
     writeFileSync("test-results/ci-browser-manifest.json", JSON.stringify(manifest) + "\n", { mode: 0o600, flag: "wx" });
     console.log(`Browser manifest: ${manifest.cases.length} cases on ${source.head}.`);
