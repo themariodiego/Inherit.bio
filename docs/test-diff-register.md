@@ -1,5 +1,29 @@
 # Test diff register
 
+## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
+
+The combined checkpoint has 158 required route/state pairs: the prior 156
+includes cohort Copilot's real not-covered state, and the named reviewer page
+adds complete and processing. The exact census is corrected from 157 to 158;
+no state waiver, execution assertion, acceptance mark or ratchet changes.
+Hosted CI still has to execute the authored reviewer journeys.
+
+The storage inventory now names the actual bounded archive reader. The source
+scanner consumes a REST metadata operation before parsing its bucket, so a
+dynamic bucket cannot make regex backtracking invent an `info` bucket. New
+regressions require exact SDK/REST metadata buckets, all existing REST operation
+prefixes, dynamic buckets, genuinely unregistered buckets and a genuine SDK
+bucket named `info`. All bidirectional inventory and undeclared-bucket checks
+remain unchanged.
+
+The shared Future Person custody fixture now sends the real current called-VCF
+QC receipt through the existing producer, then proves exact preservation in
+all three published QC rows. Missing receipts and invented classifications are
+refused before completion. This is a newly staged synthetic split; no historic
+receipt is inferred or backfilled. Original historical-NULL, immutable-receipt,
+source, release, privacy and refusal assertions remain unchanged. Full fresh
+SQL and hosted execution for this combined correction remain pending.
+
 ## 2026-09-30 — Execute the pure QC constraint under its actual service writer
 
 The full hosted Embryo run reached real app cases and found the normal service-role QC writer denied EXECUTE on the new CHECK validator. The validator is immutable, reads only its own JSON/scalar arguments and grants no data access or classification mutation. Only service_role gains EXECUTE; anon/authenticated remain denied. Fresh pgTAP runs a real service-role update against a genuinely published saved receipt and requires the unchanged exact CHECK failure for a crossed call rate. Existing immutable-classification, producer, publication and browser assertions remain, with unchanged time limits and retries.
