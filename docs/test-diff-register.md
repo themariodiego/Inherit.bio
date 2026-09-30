@@ -566,6 +566,22 @@ main's legal audit account link and exact unwind storage disposals. No
 store assertion is removed. The export plan classifies all three new
 private split-worker tables; its generated database inventory continues
 to require exact equality with the catalog.
+## Independent ancestry deletion proof uses its actual published revision · 30 September 2026
+
+The second array source now publishes the real revision-4 computation fixture.
+The later source-deletion assertion compares its surviving full content with
+that exact published payload, rather than the unused historical revision-1
+preparation. Exact byte equality, the unrelated source and Storage counts,
+all original deletion refusals and the separate old-source no-backfill check
+remain strict.
+
+## Result-basis computation fixture is a complete SQL statement · 30 September 2026
+
+The classified empty-result fixture now includes its full insert statement.
+PostgreSQL's include command executes a separate input buffer, so an expression
+included in a partial surrounding insert failed to parse. The exact computation
+payload and every existing receipt, publication and refusal assertion remain
+unchanged; the fresh database suite must reach and execute those assertions.
 
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
@@ -4404,3 +4420,41 @@ unresolved policy for publishing the model identity. The owner decided it on 25
 September (`docs/protocol/decisions.md`), so on landing, 27 September, the
 blocker was renamed to the run record that must carry the identifier; no test
 changed with it.
+
+
+## Saved figure bases and historical refusal · 30 September 2026
+
+G4.2's data-layer gap cannot be closed by assigning new display literals to
+old JSON. New canonical ancestry captures are revision 4 and preserve both
+the existing modelled share classification and observed source-count receipt;
+historical revisions 1–3 keep their saved modelled label and stay unchanged.
+New strict tests use the actual producer, serialized payload, checked page/chat
+readers, figure builders and the real independent-array journal/reader in pgTAP.
+They reject missing or unknown receipts, wrong classification versions, extra
+keys and modelled-as-observed instead of restoring a value for greenness.
+
+The two own-report generation expectations now require revision 4 and both
+exact receipts. The ancestry component fixtures explicitly declare their
+producer-supplied labels. An old capture with no coverage receipt retains its
+recorded marker context but gains no attributed coverage figure. A legacy row
+with no saved share basis keeps its provenance/model context and displays an
+honest explanation while its numeric share figures are withheld. A new page
+regression requires this state and refuses substitution of the ordinary
+no-result state; historical content is not backfilled.
+
+Embryo finding bodies deliberately gain schema_version=2 and a required
+closed figure_basis receipt. The eight-key outer leaf, forbidden fields,
+non-ranking rules, numeric constraints and uncertainty assertions are unchanged.
+Absolute risk remains modelled; source-variant carrier words and measured
+coverage failure remain observed. The actual closed projection rejects old
+bodies and mismatches; rendered modelled risk relabelled observed or exact
+throws. No embryo score writer is introduced, and synthetic fixture builders
+are the only modified embryo producers. Existing once-per-block marker and
+input-quality assertions remain, with additional strict failure cases.
+
+Mendelian producers now carry an exact receipt beside their unchanged basis,
+fractions and assumptions. Crossing/Portrait consumers read it; serialization
+and planted observed/modelled/unknown-version cases prove that exact is not
+silently renamed. QC dropout/contamination classification remains unchanged
+pending the source inconsistency documented in docs/result-basis-contract.md.
+This is a bounded contract improvement and does not mark G4.2 YES.

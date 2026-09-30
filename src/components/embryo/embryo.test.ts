@@ -141,6 +141,11 @@ describe("CompareTable", () => {
 });
 
 describe("CompareCell", () => {
+  it.each(["observed", "exact"])("refuses a serialized modelled risk relabelled %s", basis => {
+    const finding = JSON.parse(JSON.stringify(syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02)));
+    finding.finding.figure_basis.basis = basis;
+    expect(() => renderToStaticMarkup(h(CompareCell, { finding, subjectId: S(1) }))).toThrow("invalid_result_basis");
+  });
   it("renders an absolute-risk finding as one block with the modelled marker once and the untested sentence", () => {
     const html = renderToStaticMarkup(h(CompareCell, { finding: syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02), subjectId: S(1) }));
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(1);
