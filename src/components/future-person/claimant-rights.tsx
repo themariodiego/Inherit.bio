@@ -33,12 +33,12 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce}:{csrf:string;r
     <fieldset className="mt-8" disabled={busy||recoveryKey!==null}>
       <legend className="font-semibold">Keep access without an account</legend>
       <label className="mt-4 flex items-start gap-3"><input type="checkbox" checked={acknowledged} onChange={event=>setAcknowledged(event.target.checked)}/>
-        <span>I will save my Recovery Key offline before leaving this page.</span></label>
-      <button className="mt-4 rounded-full bg-forest px-6 py-3 text-on-forest disabled:opacity-50" disabled={!acknowledged} onClick={recover}>Show my Recovery Key once</button>
+        <span>I will save my Recovery Key on paper before I close this page.</span></label>
+      <button className="mt-4 rounded-full bg-forest px-6 py-3 text-on-forest disabled:opacity-50" disabled={!acknowledged} onClick={recover}>Show my Recovery Key</button>
     </fieldset>
     {recoveryKey&&<div className="mt-6"><p className="font-mono text-xl tracking-wider">{recoveryKey}</p>
       <button className="mt-4 rounded-full border px-6 py-3" onClick={()=>window.print()}>Print this page</button></div>}
-    <button className="mt-8 rounded-full border px-6 py-3 disabled:opacity-50" disabled={busy} onClick={stop}>Stop future analysis</button>
+    <button className="mt-8 rounded-full border px-6 py-3 disabled:opacity-50" disabled={busy} onClick={stop}>Stop future work</button>
     <p className="mt-4" role="status" aria-live="polite">{message}</p>
   </section>;
 }
