@@ -73,8 +73,15 @@ select is((select count(*) from public.consent_signatures where target_id=(selec
 select is((select count(*) from public.account_operation_nonces
  where account_id='76000000-0000-4000-8000-000000000001' and consumed_at is not null),0::bigint,
  'refused attempts leave valid presentations usable');
+-- Brief X1.5: the service route reaches the signer only through v2, which
+-- records the nonce itself, so this presentation's nonce is not stored first.
+delete from public.account_operation_nonces where nonce_hash=repeat('a',64);
 set local role service_role;
-select lives_ok($$select pg_temp.sign_own('disclosure.insurance-and-discrimination','a')$$,
+select lives_ok($$select public.sign_own_upload_artifact_v2(
+ '76000000-0000-4000-8000-000000000001','76000000-0000-4000-8000-000000000010',
+ (select id from own_consent_target),'disclosure.insurance-and-discrimination',1,
+ (select body_sha256 from public.consent_artifacts where artifact_key='disclosure.insurance-and-discrimination' and version=1),
+ array['understood'],1,1,1,1,1,repeat('a',64),clock_timestamp()+interval '9 minutes')$$,
  'a live hour-old session can record the explicit disclosure without forced re-login');
 reset role;
 select lives_ok($$select pg_temp.sign_own('consent.upload-self','b')$$,'the own-DNA confirmation records after disclosure');
