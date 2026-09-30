@@ -7728,6 +7728,19 @@ export type Database = {
           status: string
         }[]
       }
+      cancel_account_deletion_v2: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_notice_idempotency_key: string
+          p_session_id: string
+        }
+        Returns: {
+          cancelled_at: string
+          status: string
+        }[]
+      }
       claim_due_account_deletion_v1: {
         Args: { p_claim_token_hash: string; p_lease_seconds?: number }
         Returns: {
@@ -8133,16 +8146,6 @@ export type Database = {
         }
         Returns: string
       }
-      issue_account_operation_nonce_v1: {
-        Args: {
-          p_account_id: string
-          p_expires_at: string
-          p_nonce_hash: string
-          p_operation: string
-          p_session_id: string
-        }
-        Returns: undefined
-      }
       job_time_stats: {
         Args: { p_kind: string }
         Returns: {
@@ -8215,6 +8218,22 @@ export type Database = {
           p_account_id: string
           p_contact_ciphertext: string
           p_contact_hmac: string
+          p_nonce_hash: string
+          p_notice_idempotency_key: string
+          p_session_id: string
+        }
+        Returns: {
+          deletion_id: string
+          notice_ends_at: string
+          status: string
+        }[]
+      }
+      request_account_deletion_v2: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string
+          p_nonce_expires_at: string
           p_nonce_hash: string
           p_notice_idempotency_key: string
           p_session_id: string

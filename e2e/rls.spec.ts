@@ -6,24 +6,32 @@ import {
   anonClient,
   createConfirmedUser,
 } from "./helpers";
+import { migrationBuckets } from "../scripts/storage-buckets";
 
 // A12 / G1.6 — RLS proof against the REAL PostgREST and Storage APIs: user A
 // tries to read user B's data directly (no app in the way); anonymous is denied
 // everywhere private. Victim data is planted with the service role.
 //
-// Storage is attacked in every bucket the migrations create, not only
-// `genomes`: `genomes-staging` and `generated-artifacts` carry their own
-// per-account prefixes, and a policy added to one bucket says nothing about the
-// others. Every attack is paired with a service-role control that proves the
+// Storage is attacked in every bucket the migrations leave in place, not only
+// `genomes`: each other bucket carries its own per-account prefix here, and a
+// policy added to one bucket says nothing about the others. The set is read
+// from the migrations the way `pnpm gate:routes` reads it (creates and drops in
+// order), so a new bucket is attacked the day it exists: `exports`, created on
+// 23 September, was missing from the old hand-kept list, and `genomes-staging`,
+// dropped by 20260930140000, would otherwise fail as unreachable.
+//
+// Every attack is paired with a service-role control that proves the
 // victim object exists, keeps its bytes and gains no neighbour, so "denied" is
 // never confused with "absent" and a write that silently succeeded cannot pass.
 
 const A = { email: "rls-a@e2e.local", password: "e2e-password-a" };
 const B = { email: "rls-b@e2e.local", password: "e2e-password-b" };
 
-/** Every private bucket the migrations create, with a victim object in B's prefix. */
-const BUCKETS = ["genomes", "genomes-staging", "generated-artifacts"] as const;
-type Bucket = (typeof BUCKETS)[number];
+/** Every private bucket the migrations leave in place, with a victim object in B's prefix. */
+const BUCKETS = [...migrationBuckets("supabase/migrations")].sort();
+type Bucket = string;
+/** `exports` admits only octet-stream, so every planted or attacking write uses it. */
+const OBJECT = { contentType: "application/octet-stream" } as const;
 const victimContent = (bucket: Bucket) => `victim data in ${bucket}`;
 
 let aId: string;
@@ -110,6 +118,9 @@ test.beforeAll(async () => {
     provider_key: "anthropic",
     data_classes: ["x"],
   });
+  // Not vacuous, and not stale: the attacked set is the live one.
+  expect(BUCKETS).toEqual(expect.arrayContaining(["genomes", "exports"]));
+  expect(BUCKETS).not.toContain("genomes-staging");
   for (const bucket of BUCKETS) {
     // A leftover attack artefact from an earlier local run must not pass as
     // "nothing was created": clear both prefixes before planting.
@@ -119,7 +130,7 @@ test.beforeAll(async () => {
     }
     const { error: plantError } = await admin.storage
       .from(bucket)
-      .upload(victimPath(bucket), new Blob([victimContent(bucket)]), { upsert: true });
+      .upload(victimPath(bucket), new Blob([victimContent(bucket)]), { ...OBJECT, upsert: true });
     if (plantError) throw new Error(`plant ${bucket} object: ${plantError.message}`);
     // Anti-vacuity: the victim is really there before anyone attacks it.
     expect(await victimBytes(bucket), `${bucket} victim must exist before the attack`).toBe(victimContent(bucket));
@@ -257,10 +268,10 @@ test("a signed-in stranger is denied every storage operation on another account'
     expect((await store.list(bId)).data ?? [], why("listing the account prefix")).toHaveLength(0);
     expect((await store.list(victimFolder(bucket))).data ?? [], why("listing the object folder")).toHaveLength(0);
 
-    const { error: createError } = await store.upload(`${victimFolder(bucket)}/stranger.txt`, new Blob(["planted by A"]));
+    const { error: createError } = await store.upload(`${victimFolder(bucket)}/stranger.txt`, new Blob(["planted by A"]), OBJECT);
     expect(createError, why("creating an object")).not.toBeNull();
 
-    const { error: overwriteError } = await store.upload(victim, new Blob(["overwritten by A"]), { upsert: true });
+    const { error: overwriteError } = await store.upload(victim, new Blob(["overwritten by A"]), { ...OBJECT, upsert: true });
     expect(overwriteError, why("overwriting the object")).not.toBeNull();
 
     // Storage answers a delete that RLS filtered out with an empty list rather
