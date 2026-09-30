@@ -22,7 +22,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17478681", "label": "McPherson et al., Science 2007" }
+      { "pmid": "17478681", "label": "McPherson et al., Science 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -48,7 +48,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20032323", "label": "Clarke et al., N Engl J Med 2009" }
+      { "pmid": "20032323", "label": "Clarke et al., N Engl J Med 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -74,8 +74,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20686566", "label": "Musunuru et al., Nature 2010" },
-      { "pmid": "18193043", "label": "Willer et al., Nat Genet 2008" }
+      { "pmid": "20686566", "label": "Musunuru et al., Nature 2010", "accessedOn": "2026-09-28" },
+      { "pmid": "18193043", "label": "Willer et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -101,7 +101,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18193043", "label": "Willer et al., Nat Genet 2008" }
+      { "pmid": "18193043", "label": "Willer et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -127,7 +127,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "1394429", "label": "Jeunemaitre et al., Cell 1992" }
+      { "pmid": "1394429", "label": "Jeunemaitre et al., Cell 1992", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -190,7 +190,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8916933", "label": "Poort et al., Blood 1996" }
+      { "pmid": "8916933", "label": "Poort et al., Blood 1996", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -216,7 +216,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "7647779", "label": "Frosst et al., Nat Genet 1995" }
+      { "pmid": "7647779", "label": "Frosst et al., Nat Genet 1995", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -242,7 +242,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17603472", "label": "Gudbjartsson et al., Nature 2007" }
+      { "pmid": "17603472", "label": "Gudbjartsson et al., Nature 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -268,7 +268,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18560005", "label": "Thompson et al., JAMA 2008" }
+      { "pmid": "18560005", "label": "Thompson et al., JAMA 2008", "accessedOn": "2026-09-28" }
     ]
   }
 ]

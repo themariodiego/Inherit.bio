@@ -4,8 +4,10 @@ import {
   DATA_EXPORT_BODY,
   DATA_EXPORT_BUTTON,
   DATA_EXPORT_HEADING,
-  DATA_EXPORT_NOT_YET_INCLUDED,
+  DATA_EXPORT_LEGAL_AUDIT,
   EXPORT_CHATS_EMPTY,
+  EXPORT_LEGAL_AUDIT_DESCRIPTION,
+  exportLegalAuditNote,
 } from "./data-export";
 
 /**
@@ -34,15 +36,31 @@ describe("the export's own description of what it holds", () => {
     }
   });
 
-  it("says plainly that legal audit records are not included, and never claims them", () => {
+  /**
+   * 28 Sep 2026: the archive gained `legal-audit.json`, so the sentence that
+   * said legal audit records were missing went in the same change, as this
+   * test required. What replaces it promises only the person's own actions and
+   * says that records not naming who acted are left out - which today is
+   * every record, so the file is empty and must say why.
+   */
+  it("says the legal audit file holds only what the person did, and that the archive writes it", () => {
     expect(DATA_EXPORT_BODY.toLowerCase()).not.toContain("audit");
-    expect(DATA_EXPORT_NOT_YET_INCLUDED).toBe("Legal audit records are not in it yet.");
-    // If the archive gains them, this sentence has to go in the same change.
-    expect(route).not.toMatch(/legal[-_]audit/);
+    expect(DATA_EXPORT_LEGAL_AUDIT)
+      .toBe("It has a legal audit file of what you did yourself. Records that don't say who acted are left out.");
+    expect(route).toContain('"legal-audit.json"');
+    expect(EXPORT_LEGAL_AUDIT_DESCRIPTION).toContain("what you did yourself");
+    expect(EXPORT_LEGAL_AUDIT_DESCRIPTION).toContain("do not say who acted are left out");
+    // The file's own note names the day attribution began, says what is left
+    // out, and says an empty list is not "nothing happened".
+    const note = exportLegalAuditNote("28 September 2026");
+    expect(note).toContain("since 28 September 2026");
+    expect(note).toContain("Records from before then do not say who acted");
+    expect(note).toContain("Records of what other people or the service did are left out");
+    expect(note).toContain("not because nothing happened");
   });
 
   it("is the copy the page renders, with nothing written inline beside it", () => {
-    for (const name of ["DATA_EXPORT_HEADING", "DATA_EXPORT_BODY", "DATA_EXPORT_NOT_YET_INCLUDED", "DATA_EXPORT_BUTTON"]) {
+    for (const name of ["DATA_EXPORT_HEADING", "DATA_EXPORT_BODY", "DATA_EXPORT_LEGAL_AUDIT", "DATA_EXPORT_BUTTON"]) {
       expect(page, name).toContain(`{${name}}`);
     }
     expect(page).not.toContain("legal audit records, and saved chats");

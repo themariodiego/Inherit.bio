@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChatPanel, type ChatProviderInfo } from "@/components/chat/chat-panel";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";
+import { CohortCopilotPage, FamilyCopilotPage } from "@/components/chat/group-scope-pages";
+import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
 import { resolveSubjectForAccount } from "@/lib/subjects";
@@ -26,6 +28,12 @@ export default async function ChatPage(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) notFound();
+  // copilot-route-scope-v1: the fixed literals first, then one prefix per
+  // kind; anything else is the same non-enumerating 404.
+  const routeScope = parseCopilotRouteScope(scope);
+  if (!routeScope || routeScope.kind === "report") notFound();
+  if (routeScope.kind === "family") return <FamilyCopilotPage />;
+  if (routeScope.kind === "cohort") return <CohortCopilotPage accountId={user.id} cohortId={routeScope.id} />;
   const subject = await resolveSubjectForAccount(user.id, scope);
   if (!subject) notFound();
   const ownChat = subject.subjectClass === "self" ? await prepareOwnCopilotChat(subject.id) : null;

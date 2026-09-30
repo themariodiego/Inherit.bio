@@ -22,8 +22,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17158188", "label": "Saccone et al., Hum Mol Genet 2007" },
-      { "pmid": "18385739", "label": "Thorgeirsson et al., Nature 2008" }
+      { "pmid": "17135278", "label": "Saccone et al., Hum Mol Genet 2007", "accessedOn": "2026-09-28" },
+      { "pmid": "18385739", "label": "Thorgeirsson et al., Nature 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -94,7 +94,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "21497796", "label": "Li et al., Biol Psychiatry 2011" }
+      { "pmid": "21497796", "label": "Li et al., Biol Psychiatry 2011", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -120,8 +120,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "9689128", "label": "Bond et al., PNAS 1998" },
-      { "pmid": "26392368", "label": "Schwantes-An et al., Behav Genet 2016" }
+      { "pmid": "9689128", "label": "Bond et al., PNAS 1998", "accessedOn": "2026-09-28" },
+      { "pmid": "26392368", "label": "Schwantes-An et al., Behav Genet 2016", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -147,7 +147,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17453061", "label": "Munafò et al., Mol Psychiatry 2007" }
+      { "pmid": "17453061", "label": "Munafò et al., Mol Psychiatry 2007", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -173,14 +173,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18705688", "label": "Haughey et al., Addiction 2008" }
+      { "pmid": "18705688", "label": "Haughey et al., Addiction 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
     "slug": "caffeine-intake-ahr-rs4410790",
     "category": "addiction",
     "title": "Habitual caffeine intake · AHR",
-    "summary": "AHR controls CYP1A2, a liver enzyme that clears most caffeine. Studies of hundreds of thousands of people link C at rs4410790 to slightly more coffee use. Each C copy adds about one tenth of a cup per day on average. Faster caffeine clearance may lead to more frequent use. The link repeats well but is tiny.",
+    "summary": "AHR controls CYP1A2, a liver enzyme that clears most caffeine. A study of tens of thousands of people links C at rs4410790 to slightly more caffeine use. The two homozygous groups differed by about a third of a cup of coffee a day on average. Faster caffeine clearance may lead to more frequent use. The link repeats well but is tiny.",
     "evidence": "emerging",
     "variants": [
       {
@@ -193,13 +193,13 @@
         "interpretations": {
           "TT": "Two copies of the T allele. Associated on average with slightly lower habitual coffee and caffeine consumption than C carriers — a difference of a fraction of a cup a day at the population level. Personal preference, sleep habits, and culture matter far more.",
           "CT": "One C copy gives a middle result at this site. On average, CT is linked to slightly more daily caffeine than TT. A small rise in caffeine clearance may explain the link. The effect appears in large groups but is tiny for one person.",
-          "CC": "Two C alleles. Associated with the highest average habitual coffee and caffeine intake at this locus — still only around a quarter of a cup per day more than TT on average. This describes consumption patterns, not caffeine's health effects."
+          "CC": "Two C alleles. Associated with the highest average habitual coffee and caffeine intake at this locus — still only around a third of a cup of coffee per day more than TT on average. This describes consumption patterns, not caffeine's health effects."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "21357676", "label": "Sulem et al., Hum Mol Genet 2011" }
+      { "pmid": "21490707", "label": "Cornelis et al., PLoS Genet 2011", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -225,7 +225,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "27911795", "label": "Schumann et al., PNAS 2016" }
+      { "pmid": "27911795", "label": "Schumann et al., PNAS 2016", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -287,7 +287,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20418890", "label": "Tobacco and Genetics Consortium, Nat Genet 2010" }
+      { "pmid": "20418890", "label": "Tobacco and Genetics Consortium, Nat Genet 2010", "accessedOn": "2026-09-28" }
     ]
   }
 ]

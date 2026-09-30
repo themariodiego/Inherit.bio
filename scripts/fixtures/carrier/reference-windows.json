@@ -1,0 +1,18 @@
+{
+  "source": {
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.14&rettype=fasta&retmode=text&seq_start=117479081&seq_stop=117668092",
+    "retrievedAt": "2026-09-28T09:03:54.883Z",
+    "sha256": "202aa4c558ae41cd9685b93cb397a6bae5642a4557ff2c7a20169ea9c6a339e5",
+    "note": "Two 101-base stretches cut from this GRCh38 window (NC_000007.14), around CFTR c.1521_1523del and c.1021_1022dup."
+  },
+  "windows": [
+    {
+      "start": 117559540,
+      "sequence": "TCTGTTCTCAGTTTTCCTGGATTATGCCTGGCACCATTAAAGAAAATATCATCTTTGGTGTTTCCTATGATGAATATAGATACAGAAGCGTCATCAAAGCA"
+    },
+    {
+      "start": 117540200,
+      "sequence": "CCCTATGCACTAATCAAAGGAATCATCCTCCGGAAAATATTCACCACCATCTCATTCTGCATTGTTCTGCGCATGGCGGTCACTCGGCAATTTCCCTGGGC"
+    }
+  ]
+}

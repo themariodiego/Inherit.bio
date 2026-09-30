@@ -1339,6 +1339,7 @@ export type Database = {
           contact_hmac: string
           created_at: string
           expires_at: string
+          hmac_key_revision: number
           id: string
           refusal_revision: number
           target_id: string
@@ -1348,6 +1349,7 @@ export type Database = {
           contact_hmac: string
           created_at?: string
           expires_at: string
+          hmac_key_revision?: number
           id?: string
           refusal_revision: number
           target_id: string
@@ -1357,6 +1359,7 @@ export type Database = {
           contact_hmac?: string
           created_at?: string
           expires_at?: string
+          hmac_key_revision?: number
           id?: string
           refusal_revision?: number
           target_id?: string
@@ -4328,18 +4331,21 @@ export type Database = {
           created_at: string
           email_hmac: string
           expires_at: string
+          hmac_key_revision: number
           refusal_revision: number
         }
         Insert: {
           created_at?: string
           email_hmac: string
           expires_at: string
+          hmac_key_revision?: number
           refusal_revision: number
         }
         Update: {
           created_at?: string
           email_hmac?: string
           expires_at?: string
+          hmac_key_revision?: number
           refusal_revision?: number
         }
         Relationships: []
@@ -5729,33 +5735,39 @@ export type Database = {
       rate_limit_hmac_buckets: {
         Row: {
           action_id: string
-          blocked_until: string | null
           bucket_key_hmac: string
+          dimension: string
           expires_at: string
+          first_attempt_at: string
           hmac_key_revision: number
           limit_count: number
+          outcome_code: string
           request_count: number
           window_seconds: number
           window_started_at: string
         }
         Insert: {
           action_id: string
-          blocked_until?: string | null
           bucket_key_hmac: string
+          dimension: string
           expires_at: string
+          first_attempt_at: string
           hmac_key_revision: number
           limit_count: number
+          outcome_code: string
           request_count?: number
           window_seconds: number
           window_started_at: string
         }
         Update: {
           action_id?: string
-          blocked_until?: string | null
           bucket_key_hmac?: string
+          dimension?: string
           expires_at?: string
+          first_attempt_at?: string
           hmac_key_revision?: number
           limit_count?: number
+          outcome_code?: string
           request_count?: number
           window_seconds?: number
           window_started_at?: string
@@ -6741,6 +6753,7 @@ export type Database = {
           created_at: string
           email_encrypted: string | null
           email_hmac: string
+          email_hmac_key_revision: number
           expires_at: string
           id: string
           invitation_kind: string
@@ -6759,6 +6772,7 @@ export type Database = {
           created_at?: string
           email_encrypted?: string | null
           email_hmac: string
+          email_hmac_key_revision?: number
           expires_at: string
           id?: string
           invitation_kind: string
@@ -6777,6 +6791,7 @@ export type Database = {
           created_at?: string
           email_encrypted?: string | null
           email_hmac?: string
+          email_hmac_key_revision?: number
           expires_at?: string
           id?: string
           invitation_kind?: string
@@ -7629,7 +7644,8 @@ export type Database = {
       }
       accept_embryo_co_parent_invitation_v1: {
         Args: {
-          p_account_email_hmac: string
+          p_account_email_hmac: string | null
+          p_account_email_hmac_set?: Json
           p_account_id: string
           p_jurisdiction_code: string
           p_parentage_statement_keys: string[]
@@ -7712,6 +7728,19 @@ export type Database = {
           status: string
         }[]
       }
+      cancel_account_deletion_v2: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_notice_idempotency_key: string
+          p_session_id: string
+        }
+        Returns: {
+          cancelled_at: string
+          status: string
+        }[]
+      }
       claim_due_account_deletion_v1: {
         Args: { p_claim_token_hash: string; p_lease_seconds?: number }
         Returns: {
@@ -7742,6 +7771,10 @@ export type Database = {
         Returns: Json
       }
       expire_invitation_refusal_receipts_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      purge_expired_rate_limit_buckets_v1: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
@@ -7884,8 +7917,10 @@ export type Database = {
         Args: {
           p_account_id: string
           p_contact_ciphertext: string
-          p_contact_hmac: string
+          p_contact_hmac: string | null
+          p_contact_hmac_set?: Json
           p_idempotency_key: string
+          p_quota_keys?: Json
           p_test_jurisdiction: boolean
         }
         Returns: {
@@ -7899,10 +7934,12 @@ export type Database = {
           p_account_id: string
           p_basis_case: string
           p_contact_ciphertexts: string[]
-          p_contact_hmacs: string[]
+          p_contact_hmac_sets?: Json
+          p_contact_hmacs: string[] | null
           p_embryo_count: number
           p_owner_contact_ciphertext: string
-          p_owner_contact_hmac: string
+          p_owner_contact_hmac: string | null
+          p_owner_contact_hmac_set?: Json
           p_session_id: string
           p_test_jurisdiction: boolean
           p_token_nonce: string
@@ -7917,9 +7954,11 @@ export type Database = {
       create_embryo_draft_invitation_v1: {
         Args: {
           p_account_id: string
-          p_contact_hmac: string
+          p_contact_hmac: string | null
+          p_contact_hmac_set?: Json
           p_draft_id: string
           p_idempotency_key: string
+          p_quota_keys?: Json
           p_session_id: string
           p_test_jurisdiction: boolean
           p_token_nonce: string
@@ -8086,16 +8125,6 @@ export type Database = {
         }
         Returns: string
       }
-      issue_account_operation_nonce_v1: {
-        Args: {
-          p_account_id: string
-          p_expires_at: string
-          p_nonce_hash: string
-          p_operation: string
-          p_session_id: string
-        }
-        Returns: undefined
-      }
       job_time_stats: {
         Args: { p_kind: string }
         Returns: {
@@ -8178,6 +8207,22 @@ export type Database = {
           status: string
         }[]
       }
+      request_account_deletion_v2: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_notice_idempotency_key: string
+          p_session_id: string
+        }
+        Returns: {
+          deletion_id: string
+          notice_ends_at: string
+          status: string
+        }[]
+      }
       resolve_adult_subject_invitation_v1: {
         Args: { p_token_hash: string }
         Returns: {
@@ -8188,6 +8233,7 @@ export type Database = {
       respond_adult_subject_invitation_session_v1: {
         Args: {
           p_account_email_hmac?: string
+          p_account_email_hmac_set?: Json
           p_account_id?: string
           p_action: string
           p_nonce: string
@@ -8198,6 +8244,7 @@ export type Database = {
       respond_adult_subject_invitation_v1: {
         Args: {
           p_account_email_hmac?: string
+          p_account_email_hmac_set?: Json
           p_account_id?: string
           p_action: string
           p_token_hash: string
