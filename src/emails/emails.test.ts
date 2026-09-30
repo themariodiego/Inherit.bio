@@ -153,10 +153,15 @@ const recordKeyShape = /[0-9A-HJKMNP-TV-Z]{20}/;
 const fragment = `${"a".repeat(21)}-${"b".repeat(21)}`;
 const invitationUrl = `https://example.test/withdraw/request#${fragment}`;
 
-function expectSafeBody(html: string) {
+function expectSafeBody(html: string, privacyContact = false) {
   expect(html).toContain(ATTRIBUTION);
   expect(html).toContain(DISCLAIMER);
-  expect(html).not.toContain("@");
+  if (privacyContact) {
+    expect(html.match(/privacy@inherit\.bio/g)).toHaveLength(1);
+    expect(html.replace("privacy@inherit.bio", "")).not.toContain("@");
+  } else {
+    expect(html).not.toContain("@");
+  }
   expect(html).not.toMatch(recordKeyShape);
 }
 
@@ -201,7 +206,16 @@ describe("embryo upload notice email", () => {
     expect(html).toContain(`href="${invitationUrl}"`);
     expect(html).toContain("Review your options");
     expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
-    expectSafeBody(html);
+    expectSafeBody(html, true);
+  });
+
+  it("permits only the exact required privacy contact and still detects every additional address", async () => {
+    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail,
+      { ...notice, embryoCount: 1, uploaderName: null, uploadedBy: "someone-else" }));
+    expectSafeBody(html, true);
+    for (const addition of ["participant@e2e.local", "privacy@inherit.bio", "privacy@inherit.bio.attacker@example.test"]) {
+      expect(() => expectSafeBody(html + addition, true)).toThrow();
+    }
   });
 
   it("renders one record in the singular, a neutral uploader and no link without a withdraw URL", async () => {
@@ -213,7 +227,7 @@ describe("embryo upload notice email", () => {
     expect(html).toContain("If you did not expect this, write to privacy@inherit.bio.");
     expect(html).not.toContain("Review your options");
     expect(html).not.toContain("href=");
-    expectSafeBody(html);
+    expectSafeBody(html, true);
   });
 });
 
@@ -410,7 +424,7 @@ describe("embryo mail subjects and render map", () => {
   it.each(embryoMails)("$mail.id renders through the template map", async ({ mail, heading }) => {
     const html = stripMarkers(await renderMail(mail));
     expect(html).toContain(heading);
-    expectSafeBody(html);
+    expectSafeBody(html, mail.id === "embryo-upload-notice");
   });
 
   it("keeps the existing subjects unchanged", () => {

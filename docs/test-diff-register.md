@@ -1,5 +1,20 @@
 # Test diff register
 
+## Integrated notice privacy and route-state census · 30 September 2026
+
+The upload notice's mandated `privacy@inherit.bio` contact remains present.
+Only that exact address, exactly once and only in that template, is allowed
+by the email fixture's privacy check. Every other template still requires
+zero addresses; extra participant, duplicate contact and deceptive suffix
+addresses are planted and refused. Record Key and all notice-text checks remain.
+The address constant is private so the independent production-renderer export
+census stays exact, without classifying prose as a renderer or adding an exception.
+
+The required route-state count is exactly 156: Future Person's processing state
+and cohort Copilot's newly rendered not-covered state are both retained. The
+old count of 155 omitted the withdrawn Copilot waiver. No state, proof or
+unreachable-case requirement is removed.
+
 ## Secret detector distinguishes assignments from equality · 30 September 2026
 
 The contextual assignment detector now requires a single equals sign or a

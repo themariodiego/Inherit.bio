@@ -7,11 +7,11 @@
 // delivery token: only a parent who may decide what happens to the embryos
 // gets one, and it opens a read-only view of what the uploader can see with
 // the withdrawal actions, no account needed. The mail never carries an
-// address, a Record Key, an embryo's result or a laboratory label.
+// another person's address, a Record Key, an embryo's result or a laboratory label.
 import { Button, Text } from "@react-email/components";
 import { EmailLayout, brand } from "./base";
 
-export const EMBRYO_NOTICE_CONTACT = "privacy@inherit.bio";
+const EMBRYO_NOTICE_CONTACT = "privacy@inherit.bio";
 
 export interface EmbryoUploadNoticeProps {
   embryoCount: number;
