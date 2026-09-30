@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "a467400083cc44f7de0d24aedba3f5e6060a3e7fb98d2b2bd56e3fdd2f928ddd",
+  "briefSha256": "7ef458e2576481a7be1f448a5cd803459191763cce8e90a862b3065fad1701d1",
   "canonicalOrigin": "https://inherit.bio",
   "originAliases": [
     {
@@ -9826,6 +9826,7 @@
       "operationNonceIsNotCsrf": true
     },
     "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce; only-api.embryo-ingest-chunk-omits-the-CSRF-and-operation-nonce-headers-under-its-policy.requestAuthority",
+    "operationNonceIssuance": "brief-X1.5; rendered-by-the-authorized-page-that-offers-the-operation-after-a-read-only-authority-check-as-a-stateless-HMAC-bound-to-principal-originating-session-operation-and-target-expiring-within-10-minutes; consumed-once-by-the-state-changing-request-which-records-its-hash-in-the-operation-transaction; no-GET-issues-rotates-or-stores-a-nonce; except-where-a-registered-session-response-issues-the-next-nonce",
     "destructiveBindings": [
       {
         "routeId": "api.account-delete",
