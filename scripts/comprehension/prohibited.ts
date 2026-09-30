@@ -13,9 +13,8 @@
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
+import { findRepositoryRoot } from "./repository";
 
 export interface ProhibitedClass {
   id: string;
@@ -34,7 +33,7 @@ export interface PatternFile {
   classes: ProhibitedClass[];
 }
 
-export function loadPatterns(root = path.join(HERE, "..", "..")): PatternFile {
+export function loadPatterns(root = findRepositoryRoot()): PatternFile {
   return JSON.parse(
     readFileSync(path.join(root, "scripts/comprehension/prohibited-patterns.json"), "utf8"),
   ) as PatternFile;

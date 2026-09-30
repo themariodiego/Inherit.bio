@@ -100,9 +100,11 @@ select is((select array_agg(store_name order by store_order) from public.purge_t
   where target_id='upload-and-ingest-working-state' and store_name like 'private.embryo_ingest_write_%'),
   array['private.embryo_ingest_write_intents','private.embryo_ingest_write_fences'],
   'intents and fences are registered with the ingest working-state purge target');
+-- Every ingest store that predates the fence is public; later private
+-- stores (20260929101000's disposals) may follow these two.
 select ok((select min(store_order) from public.purge_target_stores where store_name like 'private.embryo_ingest_write_%')
   > (select max(store_order) from public.purge_target_stores where target_id='upload-and-ingest-working-state'
-    and store_name not like 'private.embryo_ingest_write_%'),
+    and store_name not like 'private.%'),
   'the new stores take the next store orders after every existing ingest store');
 select ok(exists(select 1 from pg_trigger where tgrelid='storage.objects'::regclass
   and tgname='guard_embryo_ingest_object' and tgtype&2=2 and tgtype&4=4 and tgtype&16=16),
@@ -110,9 +112,13 @@ select ok(exists(select 1 from pg_trigger where tgrelid='storage.objects'::regcl
 select ok((select condeferrable and condeferred from pg_constraint
   where conrelid='storage.objects'::regclass and conname='refuse_committed_embryo_ingest_probe'),
   'the probe constraint is deferred so the provider rollback admission can run');
+-- Since 20260929100000 the guard admits a write through the landing check it
+-- shares with the R2 ACK, so the order is held there.
 select ok((select position('for share' in prosrc)>0
   and position('for share' in prosrc)<position('embryo_ingest_binding_failure_v1' in prosrc)
   and position('embryo_ingest_binding_failure_v1' in prosrc)<position('for update' in prosrc)
+  from pg_proc where oid='private.lock_embryo_ingest_landing_v1(uuid,integer,integer,boolean)'::regprocedure)
+  and (select position('lock_embryo_ingest_landing_v1' in prosrc)>0
   from pg_proc where oid='private.guard_embryo_ingest_object_v1()'::regprocedure),
   'guard locks the session, then checks authority, then locks the intent (static order, not a race test)');
 select ok(private.embryo_ingest_object_name_v1('genomes',
@@ -154,8 +160,10 @@ select is((select count(*) from private.embryo_ingest_write_intents i join first
   where i.session_id=pg_temp.sid('a') and i.write_expires_at=w.write_expires_at and i.write_attempts=1),2::bigint,
   'a reservation retry issues no intent and renews no window');
 select is((public.embryo_ingest_write_targets_v1(pg_temp.sid('a'),0)->'targets'),
-  (select jsonb_agg(jsonb_build_object('ordinal',sample_ordinal,'objectName',object_name,'state','open',
-    'writeExpiresAt',write_expires_at) order by sample_ordinal)
+  (select jsonb_agg(jsonb_build_object('receipt',jsonb_build_object('version','embryo-ingest-write-target-v1',
+    'sessionId',session_id,'sequence',sequence,'ordinal',sample_ordinal,'backend','supabase','bucket','genomes',
+    'objectKey',object_name,'byteCount',byte_count,'sha256',sha256,'writeExpiresAt',write_expires_at),
+    'state','open','stored',null) order by sample_ordinal)
    from private.embryo_ingest_write_intents where session_id=pg_temp.sid('a')),
   'targets name each ordinal''s object, state and window');
 select is(public.embryo_ingest_write_targets_v1(pg_temp.sid('a'),0)->>'status','reserved',
@@ -251,10 +259,12 @@ select throws_ok($$select pg_temp.commit('a')$$,'55000','embryo_chunk_objects_un
 set local role service_role;
 select throws_ok($$select pg_temp.put(pg_temp.name_of('a',0))$$,'42501','embryo_object_unavailable',
   'a landed name cannot be written again');
+-- No conflict target: hosted Storage replaced the (bucket_id, name) unique
+-- index with version-aware ones, and the guard refuses before any of them.
 select throws_ok($$insert into storage.objects(bucket_id,name,version,metadata)
   values('genomes',pg_temp.name_of('a',0),gen_random_uuid()::text,'{"size":80}')
-  on conflict(bucket_id,name) do update set metadata=excluded.metadata$$,
-  '42501','embryo_object_unavailable','an upsert cannot replace a landed object');
+  on conflict do nothing$$,
+  '42501','embryo_object_unavailable','an insert that tolerates conflicts still cannot touch a landed name');
 select throws_ok($$update storage.objects set metadata='{"size":80}'
   where bucket_id='genomes' and name=pg_temp.name_of('a',0)$$,'42501','embryo_object_unavailable',
   'even an identical UPDATE of an embryo object is refused');

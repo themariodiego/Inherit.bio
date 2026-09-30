@@ -24,7 +24,7 @@ const content = z.object({ role: z.literal("assistant"), content: z.string().max
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
 }).strict();
 const completion = z.object({ chatId: z.uuid(), message: content }).strict();
-const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.literal("self"),
+const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.enum(["self", "family"]),
   displayLabel: z.string().max(200) }).strict(), messages: z.array(z.object({
   id: z.uuid(), role: z.enum(["user", "assistant"]), content: z.string().max(100_000),
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
@@ -33,10 +33,18 @@ const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema
 type DisplayMessage = { id: string; role: "user" | "assistant"; content: string;
   citations: z.infer<typeof citation>[] };
 
-/** Only the newest plain-text question crosses this boundary. The server owns history. */
-export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
+const OWN_THREAD_HINT = "Ask about your own file or a report you chose. Answers explain what was found, its sources, and what remains unknown.";
+
+/**
+ * Only the newest plain-text question crosses this boundary. The server owns
+ * history. The Family group scope reuses this panel with its own hint and
+ * placeholder; its history must come back as a `family` scope.
+ */
+export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKind = "self", threadHint = OWN_THREAD_HINT,
+  placeholder = "Ask about your genome…" }: {
   contextToken: string; info: ChatProviderInfo; displayLabel: string;
   chats: { id: string; createdAt: string }[];
+  scopeKind?: "self" | "family"; threadHint?: string; placeholder?: string;
 }) {
   const router = useRouter();
   const [input, setInput] = useState("");
@@ -122,7 +130,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
       });
       if (!response.ok) { await response.body?.cancel(); throw new Error("history_unavailable"); }
       const result = history.parse(await response.json());
-      if (result.chatId !== id || result.scope.displayLabel !== displayLabel) throw new Error("unexpected_chat");
+      if (result.chatId !== id || result.scope.kind !== scopeKind || result.scope.displayLabel !== displayLabel) throw new Error("unexpected_chat");
       if (controller.signal.aborted) return;
       setChatId(id); setMessages(result.messages); setInput(""); setCorrection(Boolean(result.correction));
     } catch {
@@ -161,7 +169,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
       </p> : null}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-live="polite" aria-busy={busy}>
         {messages.length === 0 ? <p className="rounded-xl border border-line bg-card p-5 text-sm text-ink-muted">
-          Ask about your own file or a report you chose. Answers explain what was found, its sources, and what remains unknown.
+          {threadHint}
         </p> : null}
         {messages.map(message => <div key={message.id} className={message.role === "user"
           ? "ml-auto max-w-[85%] rounded-2xl bg-forest px-4 py-3 text-sm text-on-forest"
@@ -179,7 +187,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
         <Textarea value={input} onChange={event => setInput(event.target.value)} maxLength={8000} disabled={busy || correction || awaitingContext}
           onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault(); void submit();
-          } }} placeholder="Ask about your genome…" aria-label="Message the copilot" rows={2} className="min-h-0 resize-none" />
+          } }} placeholder={placeholder} aria-label="Message the copilot" rows={2} className="min-h-0 resize-none" />
         <Button type="submit" disabled={busy || correction || awaitingContext || !input.trim()}>Send</Button>
       </form>
     </div>

@@ -425,7 +425,10 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   // SCREEN became separate choices. Pinned exactly, not as a floor: a row
   // appearing or vanishing on the page a person uses to control what someone
   // else sees about them should never pass unremarked.
-  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(7);
+  // Eight since 2026-09-28, when `copilot.local` got its own row ("Copilot"):
+  // letting this relative's local-model Copilot read what you already share
+  // with them is a separate choice from sharing it (docs/copilot-group-scopes.md).
+  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(8);
   await expect(yours.locator('[data-permission-state="on"]')).toHaveCount(0);
 
   const estimates = yours
@@ -642,9 +645,9 @@ test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer 
  * destination or stating why it is not. THAT IS NOT A WEAKER CLAIM. A tile
  * that cannot resolve yet and says so is what this page has; a tile that
  * shipped a link answering 404 would be worse and would pass a laxer test.
- * The Copilot tile is the live example: its group scopes do not resolve, so
- * it carries its blocking sentence instead of a href, and the assertion below
- * pins that rather than skipping it.
+ * The Copilot tile was the live example until 2026-09-28, when the owner
+ * turned the Family group scope on everywhere: it now resolves to
+ * `/copilot/family`, and the assertion below pins that href.
  *
  * Placed here deliberately. Sharing is live at this point in the file; the
  * pause/resume/stop test below ends it, and after that the hub is a different
@@ -674,10 +677,12 @@ test("/family complete: the person list populated, and every tile either resolve
     .getAttribute("href");
   expect(portraitHref, "Portrait opens the pair, not the hub").toMatch(/^\/family\/portrait\/[0-9a-f-]{36}$/);
 
-  // The third states its reason instead of shipping a link that would 404.
+  // The third opens the Family Copilot scope, built on every deployment since
+  // the owner's 2026-09-28 decision (PR #260). That page answers 200 and says
+  // what it can do here; `/family empty` above requests every hub link.
   const copilot = page.locator('[data-tile="copilot"]');
-  await expect(copilot.getByRole("link")).toHaveCount(0);
-  await expect(copilot.locator('[data-slot="tile-blocked"]')).not.toHaveText("");
+  await expect(copilot.getByRole("link")).toHaveAttribute("href", "/copilot/family");
+  await expect(copilot.locator('[data-slot="tile-blocked"]')).toHaveCount(0);
 
   // And the hub's own primary action, which is how the list grows.
   await expect(page.getByRole("link", { name: "Add another adult" })).toBeVisible();
