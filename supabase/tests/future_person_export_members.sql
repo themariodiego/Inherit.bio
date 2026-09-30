@@ -150,7 +150,7 @@ insert into public.embryo_scores(id,embryo_id,condition_id,condition_name,findin
  not_covered_reason,model_id,model_version,source_binding_fingerprint,computation_revision,computed_at)
 select '7a100000-0000-4000-8000-000000000001'::uuid,(select embryo from custody_ids),body->>'condition_id',body->>'condition_name',
  body->'finding',body->>'evidence_label',body->>'coverage_state',array['synthetic:1'],null,
- 'retired-synthetic-model','original',pg_temp.h('recorded-own-finding'),2,clock_timestamp() from recorded_finding;
+ 'retired-synthetic-model','original',(select source_sha256 from private.embryo_canonical_sources where file_id=(select file from custody_ids)),2,clock_timestamp() from recorded_finding;
 insert into public.embryo_figures(id,finding_id,figure_kind,payload,figure_revision,created_at)
 select ('7a200000-0000-4000-8000-00000000000'||ordinal)::uuid,'7a100000-0000-4000-8000-000000000001'::uuid,kind,
  case kind when 'absolute_risk' then body->'finding'
@@ -159,7 +159,13 @@ select ('7a200000-0000-4000-8000-00000000000'||ordinal)::uuid,'7a100000-0000-400
  3,clock_timestamp() from recorded_finding cross join (values(1,'absolute_risk'),(2,'interval'),(3,'natural_frequency'),(4,'within_family')) kinds(ordinal,kind);
 insert into public.report_artifacts(id,subject_id,report_kind,report_revision,source_binding_fingerprint,artifact,created_at)
 select '7a300000-0000-4000-8000-000000000001'::uuid,(select subject from custody_ids),'historical-own-finding',4,
- pg_temp.h('recorded-own-report'),body,clock_timestamp() from recorded_finding;
+ (select source_sha256 from private.embryo_canonical_sources where file_id=(select file from custody_ids)),body,clock_timestamp() from recorded_finding;
+select throws_ok($$select pg_temp.probe('update public.embryo_scores set source_binding_fingerprint=pg_temp.h(''foreign-historical-finding'')
+ where id=''7a100000-0000-4000-8000-000000000001''','select public.future_person_export_request_v1(''capture'',pg_temp.h(''rights''))::text')$$,
+ '55000','export_source_unavailable','a historical finding with a different actual source refuses authority capture');
+select throws_ok($$select pg_temp.probe('update public.report_artifacts set source_binding_fingerprint=pg_temp.h(''foreign-historical-report'')
+ where id=''7a300000-0000-4000-8000-000000000001''','select public.future_person_export_request_v1(''capture'',pg_temp.h(''rights''))::text')$$,
+ '55000','export_source_unavailable','a historical report with a different actual source refuses authority capture');
 create temporary table member_authority as select public.future_person_export_request_v1('capture',pg_temp.h('rights')) body;
 create function pg_temp.claimant_export(p_nonce text) returns jsonb language sql as $$
  select public.future_person_export_request_v1('create',pg_temp.h('rights'),jsonb_build_object(
@@ -198,7 +204,7 @@ select is((select array_agg(k order by k) from historical_figure_page,jsonb_obje
  array['created_at','figure_kind','figure_revision','findingRecord','finding_id','id','payload'],'the figure envelope has exactly the recorded fields and bound finding');
 select ok((select bool_and(row->>'finding_id'=row#>>'{findingRecord,id}' and row#>>'{findingRecord,model_id}'='retired-synthetic-model'
  and row#>>'{findingRecord,model_version}'='original' and row#>>'{findingRecord,computation_revision}'='2'
- and row#>>'{findingRecord,source_binding_fingerprint}'=pg_temp.h('recorded-own-finding')
+ and row#>>'{findingRecord,source_binding_fingerprint}'=(select source_sha256 from private.embryo_canonical_sources where file_id=(select file from custody_ids))
  and not(row->'findingRecord'?'embryo_id')) from historical_figure_page,jsonb_array_elements(body->'rows') row),
  'every figure binds the real historical own finding and preserves its original scientific version without a parent selector');
 select is((select body->'rows'->0->'payload' from historical_figure_page),(select body->'finding' from recorded_finding),

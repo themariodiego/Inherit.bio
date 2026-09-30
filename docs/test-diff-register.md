@@ -1,5 +1,17 @@
 # Test diff register
 
+## Genuine historical component source bindings · 1 October 2026
+
+The full fresh historical-export rehearsal stopped after 88 passing assertions
+because the new synthetic finding and report used unrelated placeholder hashes.
+Their source bindings now come from the genuine canonical source created by the
+running fixture. The existing capture's exact source equality is unchanged.
+Two additional rollback probes require capture to refuse a foreign finding or
+report fingerprint with the original export_source_unavailable error. Original
+historical payload, version, privacy, immutable-source and revocation assertions
+remain intact. This fixture correction awaits the root's focused SQL rehearsal;
+no database or hosted-browser success is claimed.
+
 ## Complete known historical components in the actual archive · 1 October 2026
 
 The claimant worker now consumes every captured figure/report row rather than
