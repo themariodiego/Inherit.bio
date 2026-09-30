@@ -1,5 +1,22 @@
 # Test diff register
 
+## Path B distinct queued report kinds · 30 September 2026
+
+The brief's compute placement and the closed worker register now name exactly
+`compute_monogenic_report` / `report.monogenic` and
+`compute_polygenic_report` / `report.polygenic`. This implements the existing
+other-adult analytic output permissions through their required queued path.
+The explicit own-account synchronous exception still excludes other adults.
+The new closed contract requires the exact current purpose and direction,
+subject/source/normalization revisions, signing session, mitigation, insurance
+and jurisdiction evidence at enqueue, claim, each read, stage, publication,
+replay and derived read. Isolated TEST-LOCAL execution remains required;
+missing no-account, 72-hour and re-notice evidence still denies every operation.
+It creates no new product permission or implicit grant. The subsequent strict
+tests must preserve every existing source and reading assertion and add exact
+kind/output refusal, authority-revision idempotency, claim expiry, revocation,
+recipient isolation and rollback controls.
+
 ## Path B lifecycle inventory and authenticated RLS helper · 30 September 2026
 
 The held-source exact function inventory now includes the reviewed normalization

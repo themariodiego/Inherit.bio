@@ -2214,12 +2214,31 @@ Every rejection is recoverable. **No rejection is silent, and no result is produ
 
 #### A.7 Compute
 
-**Placement.** Serverless (`maxDuration = 300`): sniffing the first 64 KiB, row creation, job enqueue, progress polling, query-time report resolution, carrier arithmetic, and the existing single-subject Tier-1 processing. Self-hosted worker (`worker/`): `split_cohort_vcf`, `score_embryo`, `compute_portrait`, `compute_ancestry_regional`, `revoke_purge`, `retention_purge`, plus the existing `annotate_vcf`.
+**Placement.** Serverless (`maxDuration = 300`): sniffing the first 64 KiB, row creation, job enqueue, progress polling, query-time report resolution, carrier arithmetic, and the existing single-subject Tier-1 processing. Self-hosted worker (`worker/`): `split_cohort_vcf`, `score_embryo`, `compute_portrait`, `compute_ancestry_regional`, `compute_monogenic_report`, `compute_polygenic_report`, `revoke_purge`, `retention_purge`, plus the existing `annotate_vcf`.
 
-**`worker_jobs` v2** adds `subject_id`, `cohort_id`, `idempotency_key text unique`, `attempts smallint not null default 0`, `max_attempts smallint not null default 3`, `not_before timestamptz not null default now()`, `progress smallint not null default 0 check (progress between 0 and 100)`, `progress_note text`, `partial boolean not null default false`; the `kind` check gains the six new kinds; index `worker_jobs_ready_idx (status, not_before, created_at)`.
+**`worker_jobs` v2** adds `subject_id`, `cohort_id`, `idempotency_key text unique`, `attempts smallint not null default 0`, `max_attempts smallint not null default 3`, `not_before timestamptz not null default now()`, `progress smallint not null default 0 check (progress between 0 and 100)`, `progress_note text`, `partial boolean not null default false`; the `kind` check gains the eight new kinds; index `worker_jobs_ready_idx (status, not_before, created_at)`.
 
 - **Idempotency.** `idempotency_key = sha256(kind || ':' || coalesce(subject_id::text, cohort_id::text) || ':' || file_sha256)`; enqueue uses `on conflict do nothing` and returns the existing job id with HTTP 200.
 - **Claiming** keeps `for update skip locked` plus `and not_before <= now()`.
+
+**Queued Path B reports (implementation clarification, 30 September 2026).**
+The already-authorized `other_adult` outputs `report.monogenic` and
+`report.polygenic` use exactly `compute_monogenic_report` and
+`compute_polygenic_report`, respectively. Each is a single-file queued operation
+under `analysis-eligibility-v1`, never the self-only synchronous-report
+exception. The immutable source-binding revision snapshots the exact confirmed
+upload, completed normalization, subject/principal/lifecycle membership, current
+purpose grant and directional recipient, signing session, current artifacts,
+insurance and jurisdiction evidence, and mitigation deadline. Identical full
+bindings replay one job; revoke/regrant, direction, recipient or authority
+revision changes select a new binding even when the genetic bytes are identical.
+Claim, every bounded genetic read, private result staging, atomic publication
+and every derived read recheck the identical current evidence and finite claim.
+A stale or revoked binding exposes no result and discards partial output.
+This continuation runs only in isolated `TEST-LOCAL`; no-account 24-month,
+new-account 72-hour and 30-day re-notice cases remain closed until their required
+evidence exists. It adds no ancestry, family, embryo, outside-model or implicit
+purpose permission.
 - **Retries.** `attempts + 1`; if under `max_attempts`, back to `queued` with `not_before = now() + interval '30 seconds' * power(2, attempts)`; else `failed`.
 - **Partial failure.** `split_cohort_vcf` and `score_embryo` are per-embryo transactional: a failing embryo sets `embryos.status = 'qc_fail'` with a named reason and the job continues, finishing `partial = true`. The UI shows, per embryo, either a result or a named reason — never a blank cell.
 - **Progress** written at most every 2 seconds; `progress_note` may contain only stage names, never sample-level data.
