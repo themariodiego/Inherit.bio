@@ -14,6 +14,20 @@ of the six shards on the same checkout SHA, GitHub run ID and run attempt. A
 failed, cancelled, skipped, missing, stale or duplicate receipt cannot pass.
 Ordinary `pnpm e2e` continues running the complete local suite.
 
+GitHub increments the run attempt on a rerun. Use **Re-run all jobs** so the
+independent manifest and every shard produce fresh evidence on that attempt.
+**Re-run failed jobs** cannot provide the complete same-attempt evidence and
+therefore fails aggregation with an explicit rerun instruction. Evidence from
+earlier attempts is never reused to make a later attempt appear complete.
+
+Main branch protection now independently requires the `checks` status from the
+GitHub Actions app (ID 15368), on an up-to-date pull request, including for
+administrators. Force pushes and branch deletion are disabled. Merge commits
+remain allowed and no human-review requirement is added. The live rule was
+applied and reread on 30 September 2026; its exact readback is in the integrator
+review directory. The six-job workflow still needs hosted execution and merge
+before it becomes the default workflow.
+
 The repository job independently discovers the complete standard case set.
 Each shard independently repeats full discovery and native assigned discovery,
 then requires exactly one passed, retry-zero execution for each assigned case.

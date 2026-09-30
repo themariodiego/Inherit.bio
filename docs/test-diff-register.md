@@ -1,6 +1,17 @@
 # Test diff register
 
 
+## CI readability scan reuse · 30 September 2026
+
+The 27 repository readability assertions now share one actual gate scan of the
+same immutable checkout in `beforeAll`. Each existing provider, template and
+page filter and its exact empty-failure assertion remain unchanged. Extraction
+assertions and planted-copy regressions retain their independent input and
+fixture scans. This removes repeated whole-repository parsing that caused a
+5-second case timeout in two complete local Linux runs; no test, threshold,
+timeout, retry or gate is removed or relaxed. Full-suite verification on the
+new committed head remains required.
+
 ## Permanent isolated browser CI sharding · 30 September 2026
 
 The unchanged complete browser suite now uses six fresh hosted jobs, each with
