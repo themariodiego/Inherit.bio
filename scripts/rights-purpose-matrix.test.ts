@@ -167,7 +167,7 @@ describe("the stored session purposes", () => {
     const issued = new Set<string>();
     let inserts = 0;
     for (const file of readMigrations()) {
-      for (const match of file.matchAll(/insert into public\.rights_sessions \(\s*token_hash_id, principal_id, purpose, target_kind,[^)]*\) values \(\s*[^,]+,\s*[^,]+,\s*'([a-z-]+)',\s*'([a-z_]+)'/gu)) {
+      for (const match of file.matchAll(/insert into public\.rights_sessions \(\s*token_hash_id, principal_id, purpose, target_kind,[^)]*\) values \(\s*[^,]+,\s*[^,]+,\s*'([a-z-]+)',\s*'([a-z_-]+)'/gu)) {
         inserts += 1;
         issued.add(`${match[1]}|${match[2]}`);
       }
@@ -179,7 +179,7 @@ describe("the stored session purposes", () => {
   it("every insert into rights_sessions writes literal, checkable values", () => {
     for (const file of readMigrations()) {
       const all = file.match(/insert into public\.rights_sessions\b/gu)?.length ?? 0;
-      const literal = file.match(/insert into public\.rights_sessions \(\s*token_hash_id, principal_id, purpose, target_kind,[^)]*\) values \(\s*[^,]+,\s*[^,]+,\s*'[a-z-]+',\s*'[a-z_]+'/gu)?.length ?? 0;
+      const literal = file.match(/insert into public\.rights_sessions \(\s*token_hash_id, principal_id, purpose, target_kind,[^)]*\) values \(\s*[^,]+,\s*[^,]+,\s*'[a-z-]+',\s*'[a-z_-]+'/gu)?.length ?? 0;
       expect(literal).toBe(all);
     }
   });
