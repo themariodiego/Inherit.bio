@@ -1,5 +1,14 @@
 # Test diff register
 
+## Secret detector distinguishes assignments from equality · 30 September 2026
+
+The contextual assignment detector now requires a single equals sign or a
+colon. Comparisons against a type or code reference no longer become false
+credential assignments. New tests require both equality forms to stay clear,
+both real assignment forms to report their exact value, and a literal provider
+credential inside a comparison to remain detected. All existing value detectors,
+full-history scans and exact occurrence allowlist checks remain unchanged.
+
 ## Embryo browser variant joins the exact runner boundaries · 30 September 2026
 
 The runner now starts the synthetic fragment gateway with the fixed embryo
