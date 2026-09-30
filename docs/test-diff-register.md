@@ -1,5 +1,20 @@
 # Test diff register
 
+## Claim browser responses observed before client consumption · 30 September 2026
+
+The failed document CI run reached the real success and scanning UI, then
+stalled reading response bodies through Playwright. The claim browser tests
+now observe a bounded clone of each actual native fetch response before the
+client consumes it, following the existing Copilot observer. The original
+request and response reach the application unchanged; no POST is repeated.
+All three claim modes still require identical exact received bytes, status,
+cookie names and panel text. The document response still has exactly the
+eight registered keys, the chunk still returns 204, and completion now pins
+both status 202 and the exact scanning bytes. The quarantine UI and HttpOnly
+cookie assertions remain. A loopback-browser fixture proves original
+response identity, unchanged request headers/body, one request per action,
+bounded-body rejection and observer cleanup. No timeout is increased.
+
 ## Claim documents inventory after main reconciliation · 30 September 2026
 
 The environment gate pins all 21 current direct reads, 17 bound keys and
