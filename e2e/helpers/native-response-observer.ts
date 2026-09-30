@@ -5,6 +5,7 @@ type ObserverWindow = Window & { __inheritNativeResponseObserver?: {
   nativeFetch: typeof fetch;
   observedFetch: typeof fetch;
   responses: Record<string, Promise<Observation>>;
+  matchCounts: Record<string, number>;
   cancel: () => void;
 } };
 
@@ -23,8 +24,9 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       let resolve!: (value: Observation) => void, reject!: (error: Error) => void;
       const body = new Promise<Observation>((yes, no) => { resolve = yes; reject = no; });
       void body.catch(() => {});
-      return [key, { pattern: new RegExp(source), body, resolve, reject, seen: false }];
+      return [key, { key, pattern: new RegExp(source), body, resolve, reject }];
     }));
+    const matchCounts = Object.fromEntries(Object.keys(paths).map(key => [key, 0]));
     let disposed = false;
     const observedFetch: typeof fetch = async (...args) => {
       const [input, init] = args;
@@ -35,9 +37,8 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       if (matches.length > 1) throw new Error("Ambiguous native response observation");
       const entry = matches[0];
       if (!entry) return nativeFetch.apply(window, args);
-      if (entry.seen) entry.reject(new Error("Duplicate native response observation"));
-      const first = !entry.seen;
-      entry.seen = true;
+      const first = ++matchCounts[entry.key] === 1;
+      if (!first) entry.reject(new Error("Duplicate native response observation"));
       try {
         const response = await nativeFetch.apply(window, args);
         if (disposed || !first) return response;
@@ -74,7 +75,7 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       } catch (error) { entry.reject(new Error("Native request failed")); throw error; }
     };
     target.__inheritNativeResponseObserver = {
-      nativeFetch, observedFetch,
+      nativeFetch, observedFetch, matchCounts,
       responses: Object.fromEntries(Object.entries(pending).map(([key, entry]) => [key, entry.body])),
       cancel: () => {
         disposed = true;
@@ -85,10 +86,13 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
     window.fetch = observedFetch;
   }, paths);
   return {
-    read: (key: string) => page.evaluate(key => {
+    read: (key: string) => page.evaluate(async key => {
       const observer = (window as ObserverWindow).__inheritNativeResponseObserver;
       if (!observer?.responses[key]) throw new Error("Unknown native response observation");
-      return observer.responses[key];
+      if (observer.matchCounts[key] > 1) throw new Error("Duplicate native response observation");
+      const response = await observer.responses[key];
+      if (observer.matchCounts[key] !== 1) throw new Error("Duplicate native response observation");
+      return response;
     }, key),
     dispose: () => page.evaluate(() => {
       const target = window as ObserverWindow, observer = target.__inheritNativeResponseObserver;
