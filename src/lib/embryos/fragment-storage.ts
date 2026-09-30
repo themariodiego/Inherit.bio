@@ -104,7 +104,8 @@ export function embryoFragmentStorageConfigured(): boolean {
   } catch { return false; }
 }
 
-async function gatewayRequest(target: EmbryoR2WriteTarget, operation: "put" | "get" | "tombstone",
+type EmbryoR2Locator = Pick<EmbryoR2WriteTarget, "bucket" | "objectKey" | "byteCount" | "sha256">;
+async function gatewayRequest(target: EmbryoR2Locator, operation: "put" | "get" | "tombstone",
   init: { signal: AbortSignal; expiresAt: string; bytes?: Uint8Array; stored?: EmbryoStoredFragment }): Promise<Response> {
   const origin = gatewayOrigin(target.bucket);
   const token = mintEmbryoFragmentCapability({ operation, bucket: target.bucket, objectKey: target.objectKey,
@@ -213,6 +214,44 @@ export async function readEmbryoFragment(input: { stored: EmbryoStoredFragment; 
   const signal = AbortSignal.any([input.signal, AbortSignal.timeout(30_000)]);
   try {
     return await readExact(stored, signal, new Date(Date.now() + 30_000).toISOString());
+  } catch (error) {
+    if (error instanceof EmbryoFragmentStorageError) throw error;
+    if (signal.aborted) fail("aborted");
+    return fail("unavailable");
+  }
+}
+
+const EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+const EMPTY_MD5 = "d41d8cd98f00b204e9800998ecf8427e";
+const tombstoneResponse = z.object({ disposition: z.literal("payload-tombstoned"), providerVersion: providerId,
+  etag: z.literal(EMPTY_MD5), byteCount: z.literal(0), sha256: z.literal(EMPTY_SHA256) }).strict();
+/** The gateway's verified empty marker at one exact key. */
+export type EmbryoFragmentTombstone = z.infer<typeof tombstoneResponse>;
+
+/**
+ * Replace whatever is at one registered R2 key with a permanent empty marker.
+ * The gateway writes it and reads it back to EOF before answering. Call only
+ * with a disposal receipt SQL issued after the drain settled; the marker can
+ * never be undone, and it fences the key against any later create-only write.
+ */
+export async function tombstoneEmbryoFragment(input: {
+  locator: EmbryoR2Locator; expiresAt: string; signal: AbortSignal;
+}): Promise<EmbryoFragmentTombstone> {
+  let locator: EmbryoR2Locator;
+  try {
+    locator = z.object({ bucket: z.string().regex(EMBRYO_R2_BUCKET), objectKey: z.string().regex(EMBRYO_R2_KEY),
+      byteCount: z.number().int().min(1).max(EMBRYO_FRAGMENT_MAX_BYTES), sha256: hash }).parse(input.locator);
+    if (!(Date.parse(input.expiresAt) > Date.now())) throw new Error();
+  } catch { return fail("invalid_request"); }
+  const signal = AbortSignal.any([input.signal, AbortSignal.timeout(30_000)]);
+  try {
+    const response = await gatewayRequest(locator, "tombstone", { signal, expiresAt: input.expiresAt });
+    if (response.status !== 200) {
+      void response.body?.cancel().catch(() => {});
+      fail(response.status === 500 ? "integrity_mismatch" : "unavailable");
+    }
+    const parsed = tombstoneResponse.safeParse(await boundedJson(response, signal));
+    return parsed.success ? parsed.data : fail("integrity_mismatch");
   } catch (error) {
     if (error instanceof EmbryoFragmentStorageError) throw error;
     if (signal.aborted) fail("aborted");

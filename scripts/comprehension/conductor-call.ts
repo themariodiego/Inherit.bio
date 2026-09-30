@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { maximumTokenCost, type SpendJournal } from "./budget";
-import { freeze, inferenceResultSchema, settingsSchema, type DryEnvironment, type Payload, type ProcessAdapter, type Role, type Settings } from "./conductor-contract";
+import { freeze, inferenceResultSchema, settingsSchema, type ConductorEnvironment, type Payload, type ProcessAdapter, type Role, type Settings } from "./conductor-contract";
 import type { HistoryEvent, RunHistory } from "./run-history";
 
 export interface JournalPort {
@@ -39,7 +39,7 @@ export function acquire<T extends { close(): Promise<void> }>(factory: (signal: 
 
 const usedProcesses = new WeakSet<object>();
 export async function invokeInstrument(input: { runId: string; slot: string; role: Role; payload: Payload;
-  settings: Settings; environment: DryEnvironment; journal: JournalPort }) {
+  settings: Settings; environment: ConductorEnvironment; journal: JournalPort }) {
   const { journal } = input;
   const settings = freeze(settingsSchema.parse(input.settings));
   if (JSON.stringify(settings) !== JSON.stringify(journal.history.settingsFor(input.runId))) {
@@ -87,7 +87,7 @@ export async function invokeInstrument(input: { runId: string; slot: string; rol
     const actual = maximumTokenCost(parsed.data.usage.inputTokens, parsed.data.usage.outputTokens, settings.price);
     await journal.budget.settle(id, actual);
     await journal.append({ kind: "usage", runId: input.runId, id, certain: true, actual });
-    return { value: parsed.data.value, processId };
+    return { value: parsed.data.value, processId, actual, requestDigest: parsed.data.requestDigest };
   }
   throw new ConductorFailure("adapter-failed");
 }

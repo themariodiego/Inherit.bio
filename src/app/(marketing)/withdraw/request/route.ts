@@ -34,7 +34,7 @@ button:disabled{opacity:.65;cursor:default}:focus-visible{outline:3px solid var(
     ...SENSITIVE_HEADERS,
     "Content-Type": "text/html; charset=utf-8",
     "Referrer-Policy": "no-referrer",
-    "X-Robots-Tag": "noindex, nofollow",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
     "Set-Cookie": candidate.setCookie,
     "Content-Security-Policy": `default-src 'none'; script-src 'nonce-${scriptNonce}'; style-src 'nonce-${scriptNonce}'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
   } });
@@ -45,7 +45,7 @@ export function HEAD() {
   return new Response(null, { headers: {
     ...SENSITIVE_HEADERS,
     "Referrer-Policy": "no-referrer",
-    "X-Robots-Tag": "noindex, nofollow",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
     "Content-Type": "text/html; charset=utf-8",
   } });
 }

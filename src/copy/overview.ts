@@ -30,15 +30,6 @@ export const OVERVIEW_H1 = NAV_LABELS.overview;
  */
 export const EXAMPLE_ROUTES_AVAILABLE = false;
 
-/**
- * `/copilot/[scope]` today resolves only `me` and `s-{uuid}` subject scopes
- * (src/app/(app)/copilot/[scope]/page.tsx → resolveSubjectForAccount); the
- * `family` and `{cohort}` scopes the register names return 404. Until the
- * Copilot page serves them, the Family and Embryos Copilot boxes link to
- * their domain landing (the blocking state) instead of a dead route.
- */
-export const COPILOT_GROUP_SCOPES_AVAILABLE = false;
-
 export const STATE_A_LEDE =
   "Inherit is free to use and sells nothing. Sequencing, if you need it, is bought from a provider directly.";
 

@@ -234,7 +234,7 @@ export default async function OverviewPage() {
     // not leak it in either direction.
     if (!allowed) carrierRefusal = decisions.find((decision) => !permits(decision))!.userFacingCopy;
     const refVariants = allowed ? await readClassifiedVariants(admin) : [];
-    const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+    const conditions = refVariants.length > 0 ? await readCarrierConditions(admin, refVariants) : [];
     // Only the count of matches reaches this page, but the count depends on
     // which cross each pair earns, so the same declarations the panels read
     // are read here too (D-031). Nothing about them is rendered.

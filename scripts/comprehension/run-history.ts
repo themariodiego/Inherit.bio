@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { freeze, opaque, type Settings } from "./conductor-contract";
-import { manifestSchema, type RunManifest } from "./conductor-inputs";
+import { expectedSessions, isFullRun, liveManifestSchema, manifestSchema, type AnyManifest } from "./conductor-inputs";
 
 const finishSchema = z.object({ kind: z.literal("finish"), runId: opaque,
   status: z.enum(["completed", "stopped"]), instrumentClean: z.boolean(),
   failure: z.enum(["none", "adapter-failed", "invalid-result", "budget-refused", "persistence-failed", "step-bound", "resource-unresolved"]).default("none") }).strict();
 export const historyEventSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("start"), manifest: manifestSchema }).strict(),
+  z.object({ kind: z.literal("start"), manifest: z.union([manifestSchema, liveManifestSchema]) }).strict(),
   z.object({ kind: z.literal("attempt"), runId: opaque, id: opaque, slot: opaque, processId: opaque,
     role: z.enum(["participant", "grader", "regrader"]), attempt: z.number().int().min(1).max(3), maximum: z.number().int().positive().safe() }).strict(),
   z.object({ kind: z.literal("usage"), runId: opaque, id: opaque, certain: z.boolean(), actual: z.number().int().nonnegative().safe().nullable() }).strict(),
@@ -19,11 +19,14 @@ export const historyEventSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("session"), runId: opaque, sessionId: opaque, personaId: opaque,
     taskId: z.enum(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"]),
     evidence: z.unknown() }).strict(),
+  // A task whose bound account no seed can build: recorded, never answered.
+  z.object({ kind: z.literal("skipped"), runId: opaque, personaId: opaque,
+    taskId: z.enum(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"]), reason: z.string().min(1).max(1000) }).strict(),
   finishSchema,
   z.object({ kind: z.literal("close-revision"), revision: z.string().regex(/^[0-9a-f]{40}$/) }).strict(),
 ]);
 export type HistoryEvent = z.infer<typeof historyEventSchema>;
-type Run = { manifest: RunManifest; keys: Set<string>; finish?: z.infer<typeof finishSchema> };
+type Run = { manifest: AnyManifest; keys: Set<string>; finish?: z.infer<typeof finishSchema> };
 
 /** Replay validates chronology. No caller may choose only favorable runs,
  * silently replay a request slot, reuse identities, or skip an unfinished run. */
@@ -40,6 +43,8 @@ export class RunHistory {
   private currentRevision?: string;
   private unresolvedResources = new Set<string>();
   get unfinished(): boolean { return [...this.runs.values()].some(run => !run.finish); }
+  /** The revision full runs are currently accumulating on, if any. */
+  get revision(): string | undefined { return this.currentRevision; }
   get revisionStopRequired(): boolean { return this.failedRevisions >= 3; }
   get resourceStopRequired(): boolean { return this.unresolvedResources.size > 0; }
   settingsFor(runId: string): Readonly<Settings> {
@@ -51,14 +56,23 @@ export class RunHistory {
   apply(input: unknown): HistoryEvent {
     const event = historyEventSchema.parse(input);
     if (event.kind === "start") {
-      if (this.unfinished || this.revisionStopRequired || this.resourceStopRequired || this.runs.has(event.manifest.runId)
-        || this.closedRevisions.has(event.manifest.revision)) throw new Error("Run history refuses start");
-      if (this.currentRevision && this.currentRevision !== event.manifest.revision
-        && !this.closedRevisions.has(this.currentRevision)) throw new Error("Close the previous revision before changing it");
+      if (this.unfinished || this.revisionStopRequired || this.resourceStopRequired || this.runs.has(event.manifest.runId)) {
+        throw new Error("Run history refuses start");
+      }
+      // Only full runs take part in revision tracking. A calibration or smoke
+      // run never counts toward the stopping rule, so it neither needs the
+      // previous revision closed nor holds the next one open.
+      if (isFullRun(event.manifest)) {
+        if (this.closedRevisions.has(event.manifest.revision)) throw new Error("Run history refuses start");
+        if (this.currentRevision && this.currentRevision !== event.manifest.revision
+          && !this.closedRevisions.has(this.currentRevision)) throw new Error("Close the previous revision before changing it");
+        this.currentRevision = event.manifest.revision;
+      }
       this.runs.set(event.manifest.runId, { manifest: event.manifest, keys: new Set() });
-      this.currentRevision = event.manifest.revision;
     } else if (event.kind === "close-revision") {
-      const runs = [...this.runs.values()].filter(run => run.manifest.revision === event.revision);
+      // Calibration and smoke runs are recorded but never count toward the
+      // two-consecutive-clean-runs rule.
+      const runs = [...this.runs.values()].filter(run => run.manifest.revision === event.revision && isFullRun(run.manifest));
       if (this.unfinished || this.resourceStopRequired || !runs.length || this.closedRevisions.has(event.revision)
         || event.revision !== this.currentRevision) throw new Error("Revision closure refused");
       const last = runs.slice(-2);
@@ -103,6 +117,13 @@ export class RunHistory {
         const session = this.sessions.get(event.sessionId);
         if (!session || session.runId !== event.runId || session.ended) throw new Error("No open session for trace");
         if (event.phase === "ended") session.ended = true;
+      } else if (event.kind === "skipped") {
+        const key = `${event.taskId}/${event.personaId}`;
+        if (!run.manifest.personaIds.includes(event.personaId) || run.keys.has(key)
+          || run.manifest.kind === "instrument-dry-run" || !run.manifest.skipped.some(skip => skip.taskId === event.taskId)) {
+          throw new Error("Only a task the manifest declares skipped may be skipped");
+        }
+        run.keys.add(key);
       } else if (event.kind === "session") {
         const key = `${event.taskId}/${event.personaId}`;
         const session = this.sessions.get(event.sessionId);
@@ -112,7 +133,7 @@ export class RunHistory {
         }
         run.keys.add(key);
       } else {
-        if (event.status === "completed" && (this.resourceStopRequired || run.keys.size !== 300
+        if (event.status === "completed" && (this.resourceStopRequired || run.keys.size !== expectedSessions(run.manifest)
           || [...this.calls.values()].some(call => call.runId === event.runId && !call.done)
           || [...this.sessions.values()].some(session => session.runId === event.runId && !session.ended))) throw new Error("Incomplete run");
         if (event.status !== "completed" && event.instrumentClean) throw new Error("Stopped run cannot pass");

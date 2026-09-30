@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adultInvitationTokenHash } from "@/lib/adult-invitations";
-import { hmacSecret } from "@/lib/crypto";
+import { contactDigestSet, type DigestSet } from "@/lib/hmac-keyring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   }
 
   let accountId: string | null = null;
-  let accountEmailHmac: string | null = null;
+  let accountEmailHmacs: DigestSet | null = null;
   if (parsed.data.action === "confirm") {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,16 +37,16 @@ export async function POST(request: Request) {
       );
     }
     accountId = user.id;
-    accountEmailHmac = hmacSecret(user.email.trim().toLowerCase(), "contact-email-v1");
+    accountEmailHmacs = contactDigestSet(user.email.trim().toLowerCase());
   }
 
   const responseArgs = {
     p_token_hash: tokenHash,
     p_action: parsed.data.action,
-    ...(accountId && accountEmailHmac
+    ...(accountId && accountEmailHmacs
       ? {
           p_account_id: accountId,
-          p_account_email_hmac: accountEmailHmac,
+          p_account_email_hmac_set: accountEmailHmacs,
         }
       : {}),
   };
