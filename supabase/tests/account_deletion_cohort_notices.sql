@@ -8,6 +8,11 @@ select throws_ok($$select private.assert_supported_account_fk_shape_v1(
  '7a000000-0000-0000-0000-000000000002',
  array(select subject_id from public.embryos where cohort_id=(select cohort_id from live)),'{}'::uuid[])$$,
  '55000','unsupported_account_graph','a counterpart cannot admit the owner embryo subject tuple as its own graph');
+select throws_ok($$select private.assert_supported_account_fk_shape_v1(
+ '7a000000-0000-0000-0000-000000000002','{}'::uuid[],
+ array(select p.id from public.subject_principals p join public.subjects s on s.id=p.subject_id
+  where s.subject_class='self' and p.account_id='7a000000-0000-0000-0000-000000000001'))$$,
+ '55000','unsupported_account_graph','a counterpart cannot admit another owner cohort invitation through its inviter principal');
 create function pg_temp.request(p_key text) returns uuid language sql as $$
  select deletion_id from public.request_account_deletion_v2(
  '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',

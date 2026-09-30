@@ -290,8 +290,8 @@ revoke all on function private.assert_account_owned_cohorts_v1(uuid) from public
 create function private.purge_account_owned_cohorts_v1(p_deletion uuid)
 returns void language plpgsql security definer set search_path='' as $$
 declare d public.account_deletion_requests; t private.account_owned_cohort_purges;
-  c public.embryo_cohorts; principals uuid[]; subjects uuid[]; embryos uuid[]; sessions uuid[]; jobs uuid[];
-  outboxes uuid[]; invitations uuid[]; deleted_ids uuid[]; r record; n bigint;
+  c public.embryo_cohorts; v_principal_ids uuid[]; v_subject_ids uuid[]; v_embryo_ids uuid[]; v_session_ids uuid[]; v_job_ids uuid[];
+  v_outbox_ids uuid[]; v_invitation_ids uuid[]; deleted_ids uuid[]; r record; n bigint;
 begin
   select * into d from public.account_deletion_requests where id=p_deletion and state='delete_started'
     and storage_completed_at is not null and claim_expires_at>clock_timestamp() for update;
@@ -313,91 +313,91 @@ begin
       or c.lifecycle_revision<>t.lifecycle_revision or c.draft_id<>t.draft_id then
       raise exception using errcode='55000',message='account cohort purge unavailable'; end if;
     perform private.assert_account_owned_cohorts_v1(d.account_id);
-    subjects:=array(select id from public.subjects where cohort_id=c.id order by id);
-    embryos:=array(select id from public.embryos where cohort_id=c.id order by id);
-    sessions:=array(select id from public.embryo_ingest_sessions where cohort_id=c.id order by id);
-    jobs:=array(select id from public.worker_jobs where cohort_id=c.id order by id);
-    principals:=array(select distinct p.id from public.subject_principals p
+    v_subject_ids:=array(select id from public.subjects where cohort_id=c.id order by id);
+    v_embryo_ids:=array(select id from public.embryos where cohort_id=c.id order by id);
+    v_session_ids:=array(select id from public.embryo_ingest_sessions where cohort_id=c.id order by id);
+    v_job_ids:=array(select id from public.worker_jobs where cohort_id=c.id order by id);
+    v_principal_ids:=array(select distinct p.id from public.subject_principals p
       join public.embryo_draft_participants s on s.principal_id=p.id and s.draft_id=c.draft_id
       where p.principal_kind in('genetic_parent','identified_donor') order by p.id);
-    if exists(select 1 from private.embryo_canonical_parts p where p.session_id=any(sessions)
+    if exists(select 1 from private.embryo_canonical_parts p where p.session_id=any(v_session_ids)
       and not exists(select 1 from private.embryo_canonical_source_parts m join private.future_person_custody_slices x
         on x.source_file_id=m.file_id where m.part_id=p.id))
-      or exists(select 1 from public.embryo_ingest_unwinds where session_id=any(sessions) and state<>'complete')
-      or exists(select 1 from public.embryo_ingest_fragments where session_id=any(sessions)) then
+      or exists(select 1 from public.embryo_ingest_unwinds where session_id=any(v_session_ids) and state<>'complete')
+      or exists(select 1 from public.embryo_ingest_fragments where session_id=any(v_session_ids)) then
       raise exception using errcode='55000',message='storage_purge_incomplete'; end if;
     -- Force the replacement tuple check while both live and archived paths
     -- exist. After runtime deletion it runs again against the archive alone.
-    for r in select id from private.embryo_canonical_parts where session_id=any(sessions) loop
+    for r in select id from private.embryo_canonical_parts where session_id=any(v_session_ids) loop
       perform private.assert_embryo_part_provenance_v1(r.id); end loop;
-    invitations:=array(select id from public.subject_invitations where
+    v_invitation_ids:=array(select id from public.subject_invitations where
       (target_kind='cohort_draft' and target_id=c.draft_id) or (target_kind='cohort' and target_id=c.id));
-    outboxes:=array(select id from public.mail_outbox where target_id=c.id or target_id=c.draft_id
-      or target_id=any(invitations) or recipient_principal_id=any(principals));
+    v_outbox_ids:=array(select id from public.mail_outbox where target_id=c.id or target_id=c.draft_id
+      or target_id=any(v_invitation_ids) or recipient_principal_id=any(v_principal_ids));
     delete from public.download_ranges where session_id in(select id from public.download_sessions
-      where (target_kind='cohort' and target_id=c.id) or principal_id=any(principals));
-    delete from public.download_sessions where (target_kind='cohort' and target_id=c.id) or principal_id=any(principals);
+      where (target_kind='cohort' and target_id=c.id) or principal_id=any(v_principal_ids));
+    delete from public.download_sessions where (target_kind='cohort' and target_id=c.id) or principal_id=any(v_principal_ids);
     delete from public.rights_nonces where rights_session_id in(select id from public.rights_sessions
-      where target_id=c.id or target_id=c.draft_id or target_id=any(invitations) or principal_id=any(principals)
+      where target_id=c.id or target_id=c.draft_id or target_id=any(v_invitation_ids) or principal_id=any(v_principal_ids)
         or token_hash_id in(select th.id from public.token_hashes th join public.token_candidates tc on tc.id=th.candidate_id
-          where tc.outbox_id=any(outboxes)));
-    delete from public.rights_sessions where target_id=c.id or target_id=c.draft_id or target_id=any(invitations)
-      or principal_id=any(principals) or token_hash_id in(select th.id from public.token_hashes th
-        join public.token_candidates tc on tc.id=th.candidate_id where tc.outbox_id=any(outboxes));
-    delete from public.future_person_claim_notices where outbox_id=any(outboxes);
-    delete from public.invitation_reminders where invitation_id=any(invitations) or outbox_id=any(outboxes);
-    delete from public.mail_deliveries where outbox_id=any(outboxes);
-    delete from public.mail_provider_attempts where outbox_id=any(outboxes);
-    delete from public.mail_outbox where id=any(outboxes);
-    delete from public.subject_invitations where id=any(invitations);
-    delete from public.future_person_record_key_print_rights where embryo_id=any(embryos) or recipient_principal_id=any(principals);
-    delete from public.future_person_record_key_hashes where embryo_id=any(embryos) or recipient_principal_id=any(principals);
+          where tc.outbox_id=any(v_outbox_ids)));
+    delete from public.rights_sessions where target_id=c.id or target_id=c.draft_id or target_id=any(v_invitation_ids)
+      or principal_id=any(v_principal_ids) or token_hash_id in(select th.id from public.token_hashes th
+        join public.token_candidates tc on tc.id=th.candidate_id where tc.outbox_id=any(v_outbox_ids));
+    delete from public.future_person_claim_notices where outbox_id=any(v_outbox_ids);
+    delete from public.invitation_reminders where invitation_id=any(v_invitation_ids) or outbox_id=any(v_outbox_ids);
+    delete from public.mail_deliveries where outbox_id=any(v_outbox_ids);
+    delete from public.mail_provider_attempts where outbox_id=any(v_outbox_ids);
+    delete from public.mail_outbox where id=any(v_outbox_ids);
+    delete from public.subject_invitations where id=any(v_invitation_ids);
+    delete from public.future_person_record_key_print_rights where embryo_id=any(v_embryo_ids) or recipient_principal_id=any(v_principal_ids);
+    delete from public.future_person_record_key_hashes where embryo_id=any(v_embryo_ids) or recipient_principal_id=any(v_principal_ids);
     delete from public.future_person_record_key_recipients where cohort_id=c.id;
-    delete from public.embryo_disposition_proposals where embryo_id=any(embryos) or proposer_principal_id=any(principals);
+    delete from public.embryo_disposition_proposals where embryo_id=any(v_embryo_ids) or proposer_principal_id=any(v_principal_ids);
     delete from public.purpose_grant_nonces where grant_id in(select grant_id from public.purpose_grants where target_kind='cohort' and target_id=c.id);
     delete from public.directional_grants where grant_id in(select grant_id from public.purpose_grants where target_kind='cohort' and target_id=c.id);
     delete from public.purpose_grants where target_kind='cohort' and target_id=c.id;
-    delete from public.attestation_contradictions where cohort_id=c.id or subject_id=any(subjects) or attestation_id in(
+    delete from public.attestation_contradictions where cohort_id=c.id or subject_id=any(v_subject_ids) or attestation_id in(
       select id from public.attestations where target_id=c.id or target_id=c.draft_id);
     delete from public.attestations where target_id=c.id or target_id=c.draft_id;
     delete from public.embryo_basis_bindings where cohort_id=c.id;
     delete from public.embryo_donor_attributions where cohort_id=c.id;
     delete from public.consent_signatures where (target_kind='cohort_draft' and target_id=c.draft_id) or(target_kind='cohort' and target_id=c.id);
     delete from public.embryo_participant_sets where cohort_id=c.id;
-    delete from private.embryo_split_variants where session_id=any(sessions);
-    delete from private.embryo_split_ordinals where session_id=any(sessions);
+    delete from private.embryo_split_variants where session_id=any(v_session_ids);
+    delete from private.embryo_split_ordinals where session_id=any(v_session_ids);
     -- These live rows carry parent accounts, credentials and authority; their
     -- minimum frozen receipts, rather than mutable rows, serve retained parts.
-    delete from public.embryo_ingest_sessions where id=any(sessions);
-    delete from public.worker_job_batches where worker_job_id=any(jobs);
-    delete from public.analysis_jobs where worker_job_id=any(jobs);
-    delete from public.worker_jobs where id=any(jobs);
-    delete from public.subject_consents where subject_id=any(subjects);
-    delete from public.subject_demographics where subject_id=any(subjects);
-    delete from public.suppressions where subject_id=any(subjects);
-    delete from public.embryos where id=any(embryos);
-    delete from public.subjects where id=any(subjects);
+    delete from public.embryo_ingest_sessions where id=any(v_session_ids);
+    delete from public.worker_job_batches where worker_job_id=any(v_job_ids);
+    delete from public.analysis_jobs where worker_job_id=any(v_job_ids);
+    delete from public.worker_jobs where id=any(v_job_ids);
+    delete from public.subject_consents where subject_id=any(v_subject_ids);
+    delete from public.subject_demographics where subject_id=any(v_subject_ids);
+    delete from public.suppressions where subject_id=any(v_subject_ids);
+    delete from public.embryos where id=any(v_embryo_ids);
+    delete from public.subjects where id=any(v_subject_ids);
     -- End only the exact parent graph's existing clocks. Detached claimant
     -- retention rows are selected by neither current subject nor cohort.
     update public.retention_due_phases set status='succeeded',terminal_outcome_code='account_owned_cohort_purged',
       completed_at=clock_timestamp(),claim_token_hash=null,claim_expires_at=null
-      where retention_row_id in(select id from public.retention_rows where target_id=any(array[c.id,c.draft_id]||subjects||embryos||sessions))
+      where retention_row_id in(select id from public.retention_rows where target_id=any(array[c.id,c.draft_id]||v_subject_ids||v_embryo_ids||v_session_ids))
         and status in('pending','retry','claimed');
     update public.purge_manifests set state='complete' where retention_row_id in(
-      select id from public.retention_rows where target_id=any(array[c.id,c.draft_id]||subjects||embryos||sessions))
+      select id from public.retention_rows where target_id=any(array[c.id,c.draft_id]||v_subject_ids||v_embryo_ids||v_session_ids))
       and state in('frozen','executing');
     update public.retention_rows set state='complete',ended_at=clock_timestamp()
-      where target_id=any(array[c.id,c.draft_id]||subjects||embryos||sessions) and state in('scheduled','active');
-    delete from public.embryo_operation_nonces where target_id=c.id or target_id=c.draft_id or target_id=any(sessions);
+      where target_id=any(array[c.id,c.draft_id]||v_subject_ids||v_embryo_ids||v_session_ids) and state in('scheduled','active');
+    delete from public.embryo_operation_nonces where target_id=c.id or target_id=c.draft_id or target_id=any(v_session_ids);
     delete from public.embryo_cohorts where id=c.id;
     delete from public.embryo_cohort_drafts where id=c.draft_id;
-    delete from public.encrypted_contact_references where principal_id=any(principals);
-    delete from public.subject_principals where id=any(principals);
+    delete from public.encrypted_contact_references where principal_id=any(v_principal_ids);
+    delete from public.subject_principals where id=any(v_principal_ids);
     delete from private.account_owned_cohort_purges where deletion_id=d.id and cohort_id=c.id;
-    perform private.assert_no_public_fk_residual_v1(null,subjects,principals);
+    perform private.assert_no_public_fk_residual_v1(null,v_subject_ids,v_principal_ids);
     -- Claimed receipts deliberately retain historical UUIDs. No live FK may
     -- name the deleted parent cohort/draft/session/job or unclaimed subject.
-    deleted_ids:=array[c.id,c.draft_id]||sessions||jobs||subjects||embryos||principals;
+    deleted_ids:=array[c.id,c.draft_id]||v_session_ids||v_job_ids||v_subject_ids||v_embryo_ids||v_principal_ids;
     for r in select con.conrelid::regclass relation,a.attname from pg_constraint con
       join pg_attribute a on a.attrelid=con.conrelid and a.attnum=con.conkey[1]
       where con.contype='f' and array_length(con.conkey,1)=1 and con.confrelid in(
@@ -482,7 +482,8 @@ declare
     'future_person_record_key_recipients.recipient_principal_id',
     'future_person_record_key_hashes.recipient_principal_id',
     'future_person_record_key_print_rights.recipient_principal_id',
-    'embryo_disposition_proposals.proposer_principal_id','embryo_operation_nonces.account_id'
+    'embryo_disposition_proposals.proposer_principal_id','embryo_operation_nonces.account_id',
+    'subject_invitations.inviter_principal_id','subject_invitations.invitee_principal_id'
   ];
 begin
   -- This newly supported FK is only the exact live owner-cohort tuple.
@@ -493,6 +494,14 @@ begin
       or s.cohort_id is distinct from e.cohort_id
       or not exists(select 1 from public.embryo_cohorts c where c.id=e.cohort_id
         and c.owner_account_id=p_account_id and s.owner_account_id=p_account_id))) then
+    raise exception using errcode='55000',message='unsupported_account_graph'; end if;
+  -- The cohort worker deletes invitations only for its exact parent-owned
+  -- cohort/draft targets. A principal FK in any other invitation still blocks.
+  if exists(select 1 from public.subject_invitations i
+    where (i.inviter_principal_id=any(p_principal_ids) or i.invitee_principal_id=any(p_principal_ids))
+      and not exists(select 1 from public.embryo_cohorts c where c.owner_account_id=p_account_id
+        and ((i.target_kind='cohort_draft' and i.target_id=c.draft_id)
+          or (i.target_kind='cohort' and i.target_id=c.id)))) then
     raise exception using errcode='55000',message='unsupported_account_graph'; end if;
   -- These hash-only replay receipts are now also written by canonical own
   -- choices. Admit only an exact owned historical self-grant tuple. Current
