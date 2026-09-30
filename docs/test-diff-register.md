@@ -1,5 +1,24 @@
 # Test diff register
 
+## Browser evidence artifact selection across reruns · 30 September 2026
+
+Coverage artifact names now begin `browser-case-<attempt>-`, and the download
+pattern requires that complete prefix. The previous suffix wildcard could
+accidentally select attempt 1/shard 2 while downloading attempt 2, causing a
+valid full rerun to fail its exact-directory check. A new regression applies
+the actual workflow pattern through the existing installed glob matcher to
+retained attempts 1, 2 and 12 and requires exactly seven artifacts for each.
+The exact receipt count, same-attempt/source/run checks and stale-evidence
+refusals remain unchanged; no evidence from another attempt becomes accepted.
+
+An intermediate fresh database run stopped at the existing signed-invitation
+fixture; its full assertions passed in a diagnostic reproduction. The fixture
+now retains the same immediate refusal and ten-claim bound while reporting only
+synthetic queue/authority state flags on refusal. It reveals no contact, token
+or identifier. No deadline, wait, retry, quota, assertion or producer is changed.
+The original failure's cause remains unestablished, so no speculative runtime
+change or green result is claimed from that diagnostic alone.
+
 ## Native browser discovery and execution statistics · 30 September 2026
 
 The coverage verifier now checks each phase against real Playwright 1.62.1 JSON.

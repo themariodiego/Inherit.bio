@@ -153,6 +153,8 @@ describe("mandatory browser coverage across isolated jobs", () => {
     expect(doc.jobs.checks.needs).toEqual(["repository-checks", "browser"]); expect(doc.jobs.checks.if).toBe("always()");
     expect(doc.jobs.browser.strategy).toEqual({ "fail-fast": false, "max-parallel": 6, matrix: { shard: [1, 2, 3, 4, 5, 6] } });
     expect(doc.jobs.browser.if).toBeUndefined(); expect(doc.jobs["repository-checks"].if).toBeUndefined();
+    expect(doc.jobs.checks.steps.find(step => step.uses === "actions/download-artifact@v4")?.with?.pattern)
+      .toBe("browser-case-${{ github.run_attempt }}-*");
     expect(doc.concurrency["cancel-in-progress"]).toBe("${{ github.event_name == 'pull_request' }}");
     expect(doc.concurrency.group).toBe("ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}");
     for (const job of Object.values(doc.jobs)) {
@@ -166,5 +168,24 @@ describe("mandatory browser coverage across isolated jobs", () => {
       expect(foundation).toContain(command);
     for (const gate of ["legal", "first-glance", "names", "templates", "readability", "secrets", "routes", "claims", "env", "jurisdictions"])
       expect(foundation).toContain(`pnpm gate:${gate}`);
+  });
+  it("selects only the exact rerun attempt even when an old shard number matches it", () => {
+    const require = createRequire(import.meta.url);
+    const localRequire = createRequire(require.resolve("eslint"));
+    const yaml = localRequire("js-yaml") as { load(value: string): unknown };
+    const minimatch = localRequire("minimatch") as {
+      Minimatch: new (pattern: string) => { match(name: string): boolean };
+    };
+    const workflow = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
+      jobs: { checks: { steps: { uses?: string; with?: { pattern?: string } }[] } };
+    };
+    const pattern = workflow.jobs.checks.steps.find(step => step.uses === "actions/download-artifact@v4")!.with!.pattern!;
+    const names = (attempt: number) => [`browser-case-${attempt}-manifest`,
+      ...Array.from({ length: 6 }, (_, i) => `browser-case-${attempt}-shard-${i + 1}`)];
+    const retained = [...names(1), ...names(2), ...names(12), "browser-failure-evidence-2-1"];
+    for (const attempt of [1, 2, 12]) {
+      const matcher = new minimatch.Minimatch(pattern.replace("${{ github.run_attempt }}", String(attempt)));
+      expect(retained.filter(name => matcher.match(name))).toEqual(names(attempt));
+    }
   });
 });

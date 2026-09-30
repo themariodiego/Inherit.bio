@@ -17,15 +17,15 @@ if (invoked) {
   } else {
     assert(mode === "aggregate" && process.argv.length === 4, "Only manifest or aggregate is allowed");
     const directory = process.argv[3];
-    const names = [`browser-case-manifest-${source.runAttempt}`,
-      ...Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser-case-shard-${source.runAttempt}-${i + 1}`)];
+    const names = [`browser-case-${source.runAttempt}-manifest`,
+      ...Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser-case-${source.runAttempt}-shard-${i + 1}`)];
     assert.deepEqual(readdirSync(directory).sort(), names.sort(),
       "Missing or unregistered browser coverage artifact for this run attempt. Use Re-run all jobs; "
       + "Re-run failed jobs cannot supply the independent manifest and six fresh same-attempt shard receipts.");
     const read = (name: string, file: string) => JSON.parse(readFileSync(path.join(directory, name, file), "utf8"));
-    const manifest = read(`browser-case-manifest-${source.runAttempt}`, "ci-browser-manifest.json");
+    const manifest = read(`browser-case-${source.runAttempt}-manifest`, "ci-browser-manifest.json");
     const receipts = Array.from({ length: CI_BROWSER_SHARDS }, (_, i) =>
-      read(`browser-case-shard-${source.runAttempt}-${i + 1}`, "ci-browser-shard.json"));
+      read(`browser-case-${source.runAttempt}-shard-${i + 1}`, "ci-browser-shard.json"));
     const count = verifyBrowserShards(manifest, receipts, source);
     console.log(`Full browser coverage: ${count} cases, exactly once, zero skips or retries, six isolated jobs, source ${source.head}.`);
     const clean = receipts as CiBrowserShardReceipt[];

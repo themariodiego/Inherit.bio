@@ -65,7 +65,7 @@ jobs:
       - name: Save credential-free full browser inventory
         uses: actions/upload-artifact@v4
         with:
-          name: browser-case-manifest-${{ github.run_attempt }}
+          name: browser-case-${{ github.run_attempt }}-manifest
           path: test-results/ci-browser-manifest.json
           retention-days: 14
           if-no-files-found: error
@@ -223,7 +223,7 @@ jobs:
       - name: Save only sanitized exact case coverage
         uses: actions/upload-artifact@v4
         with:
-          name: browser-case-shard-${{ github.run_attempt }}-${{ matrix.shard }}
+          name: browser-case-${{ github.run_attempt }}-shard-${{ matrix.shard }}
           path: test-results/ci-browser-shard.json
           retention-days: 14
           if-no-files-found: error
@@ -272,7 +272,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
-          pattern: browser-case-*-${{ github.run_attempt }}*
+          pattern: browser-case-${{ github.run_attempt }}-*
           path: ci-browser-coverage
       - name: Require exact expected, assigned and executed case equality
         run: pnpm exec tsx scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage
