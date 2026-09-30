@@ -226,6 +226,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Upload finalization checkpoints. It is machinery, not the person's record."
     },
+    "private.path_b_report_bindings": {
+      "disposition": "deferred",
+      "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
+    },
     "private.upload_authorization_config": {
       "disposition": "reference",
       "reason": "Service configuration. It holds no person's data."
@@ -871,8 +875,8 @@ create temporary table export_member_plan as select $plan$
       "reason": "Model context fingerprints. It is machinery, not the person's record."
     },
     "public.other_adult_held_uploads": {
-      "disposition": "deferred",
-      "reason": "A DNA file one adult added for another, held until that person answers: the kind, dates and state both of them see. It belongs in the person's own export once an other-adult export reader exists; the object name, hashes and storage id never leave."
+      "disposition": "out-of-scope",
+      "reason": "The uploader's quarantined original belongs to another adult. It is not the uploader's own record; no genetic result or held source can leave in the uploader's export."
     },
     "public.pending_source_rows": {
       "disposition": "excluded-internal",
@@ -1003,7 +1007,8 @@ create temporary table export_member_plan as select $plan$
         "revocation_reason"
       ],
       "withheld": [
-        "copilot_recipient_revision"
+        "copilot_recipient_revision",
+        "path_b_originating_session_id"
       ]
     },
     "public.rate_limit_hmac_buckets": {
@@ -1318,10 +1323,6 @@ create temporary table export_member_plan as select $plan$
     "public.worker_jobs": {
       "disposition": "excluded-internal",
       "reason": "Worker queue rows with claim token hashes. It is machinery, not the person's record."
-    },
-    "public.other_adult_held_uploads": {
-      "disposition": "out-of-scope",
-      "reason": "The uploader's quarantined original belongs to another adult. It is not the uploader's own record; no genetic result or held source can leave in the uploader's export."
     }
   }
 }

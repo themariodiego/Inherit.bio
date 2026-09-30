@@ -12,10 +12,24 @@ subject/source/normalization revisions, signing session, mitigation, insurance
 and jurisdiction evidence at enqueue, claim, each read, stage, publication,
 replay and derived read. Isolated TEST-LOCAL execution remains required;
 missing no-account, 72-hour and re-notice evidence still denies every operation.
-It creates no new product permission or implicit grant. The subsequent strict
-tests must preserve every existing source and reading assertion and add exact
-kind/output refusal, authority-revision idempotency, claim expiry, revocation,
-recipient isolation and rollback controls.
+It creates no new product permission or implicit grant. The strict tests preserve
+every existing source and reading assertion and add exact kind/output refusal,
+authority-revision idempotency, claim expiry, revocation, recipient isolation and
+rollback controls. The new queued worker uses the existing pure report arithmetic
+against actual synthetic calls; it never calls the own-report execution exception.
+Synthetic triggers expire the claim inside both private staging and final
+publication, proving complete statement rollback. Actual public grant and
+revocation calls prove new keys for revoke/regrant over identical source bytes,
+and immediate deletion of the exact completed result. The normalization fixture
+helpers move verbatim into a shared include; every original normalization
+assertion remains.
+
+The exact purge inventory increases from 130 to 131 for the one private
+purpose/source binding and result store. Catalog set equality remains exact.
+The signing-session scalar is explicitly withheld from purpose exports. Saved
+Path B results are classified as deferred for the subject-partitioned export
+projection; a private execution journal containing completed personal results
+is not mislabeled as internal machinery or exported before a reader exists.
 
 ## Path B lifecycle inventory and authenticated RLS helper · 30 September 2026
 

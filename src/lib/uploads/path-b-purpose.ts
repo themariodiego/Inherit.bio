@@ -41,7 +41,7 @@ export const pathBPurposeBody = z.object({
 export type PathBPurposeRequest = z.infer<typeof pathBPurposeBody>;
 
 /** The database's gates, as the read decision names them. */
-export const PATH_B_GATES = ["subject-bound-source", "analysis-not-generated", "directional-purpose-grant-v1", "adult.non-account-holder-24mo",
+export const PATH_B_GATES = ["subject-bound-source", "analysis-not-generated", "ready", "directional-purpose-grant-v1", "adult.non-account-holder-24mo",
   "adult.acceptance-hold-72h", "adult.re-notice-30d", "not-found", "purpose"] as const;
 export type PathBGate = (typeof PATH_B_GATES)[number];
 
