@@ -1,5 +1,9 @@
 # Test diff register
 
+## Claimant export uses the actual subject binding column · 30 September 2026
+
+The source capture now binds public.subjects.subject_binding_revision in both its origin receipt and closed metadata. The shorter binding_revision field belongs to account bindings, and did not exist on the subject row. Both projections keep their exact registered bindingRevision key and every current credential/source/subject check; no shape, authority or refusal assertion changes. The SQL rehearsal remains pending.
+
 ## Browser setup timing input survives native cleanup · 30 September 2026
 
 The first hosted run executed all 565 cases successfully across six fresh jobs

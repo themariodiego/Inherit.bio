@@ -190,7 +190,7 @@ begin
  origin_hash:=encode(extensions.digest(jsonb_build_object('version','future-person-export-origin-v1',
    'session',rs.id,'principal',rs.principal_id,'purpose',rs.purpose,'target',rs.target_id,
    'authorityRevision',rs.authority_revision,'expiresAt',rs.expires_at,'tokenHashId',rs.token_hash_id,
-   'lifecycleRevision',s.lifecycle_revision,'bindingRevision',s.binding_revision)::text,'sha256'),'hex');
+   'lifecycleRevision',s.lifecycle_revision,'bindingRevision',s.subject_binding_revision)::text,'sha256'),'hex');
  state_hash:=extensions.digest(jsonb_build_object('origin',origin_hash,'custody',to_jsonb(custody),
    'source',to_jsonb(x),'file',to_jsonb(f))::text,'sha256');
  for item in select * from public.embryo_variants where embryo_id=x.embryo_id or source_file_id=x.file_id order by id loop
@@ -218,7 +218,7 @@ begin
  receipt:=encode(state_hash,'hex');
  return jsonb_build_object('authority',jsonb_build_object('principalId',rs.principal_id,'subjectId',s.id,
    'originBinding',origin_hash,'authorityReceipt',receipt,'lifecycleRevision',s.lifecycle_revision,
-   'bindingRevision',s.binding_revision,'credentialRevision',rs.authority_revision,'expiresAt',rs.expires_at),
+   'bindingRevision',s.subject_binding_revision,'credentialRevision',rs.authority_revision,'expiresAt',rs.expires_at),
   'source',jsonb_build_object('fileId',x.file_id,'subjectId',s.id,'referenceBuild',x.reference_build,
     'sourceSha256',x.source_sha256,'membershipSha256',x.membership_sha256,'publicationRevision',x.publication_revision,
     'variantCount',count_variants,'publishedAt',x.published_at),
