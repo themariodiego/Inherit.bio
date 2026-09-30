@@ -66,6 +66,11 @@ export function rpcErrorResponse(error: { code?: string; message?: string; detai
     case "22023":
       return invalidRequest(["request"]);
     case "55000":
+      // A deployment missing a usable key revision or quota key is a server
+      // fault, never the caller's conflict (hmac_keyring migration).
+      if (/^(keyed digest set|rate limit keys|contact key revision)/.test(error.message ?? "")) {
+        return unavailable();
+      }
       if (error.message === "consent_required") {
         const missing = (error.details ?? "")
           .split(",")

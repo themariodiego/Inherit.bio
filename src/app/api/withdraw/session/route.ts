@@ -1,5 +1,5 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { hmacSecret } from "@/lib/crypto";
+import { contactDigestSet, type DigestSet } from "@/lib/hmac-keyring";
 import { adultSubjectResponseBody, readAdultSubjectResponse } from "@/lib/embryos/adult-subject-review";
 import { notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
@@ -67,7 +67,8 @@ export async function POST(request: Request) {
 /**
  * Refusing and deleting need no account. Accepting binds the reserved
  * subject to one, so the account is read here and its address is passed as
- * an HMAC; the RPC compares it with the invited address again and refuses
+ * digests under every held contact key revision; the RPC compares the one the
+ * invitation was written under with the invited address again and refuses
  * every mismatch itself.
  */
 async function answerAdultSubject(
@@ -75,13 +76,13 @@ async function answerAdultSubject(
   operation: "confirm" | "refuse" | "delete",
 ) {
   let accountId: string | null = null;
-  let accountEmailHmac: string | null = null;
+  let accountEmailHmacs: DigestSet | null = null;
   if (operation === "confirm") {
     const context = await getSensitiveAccountContext();
     const email = context?.user.email;
     if (!context || !email || !context.user.email_confirmed_at) return notFound();
     accountId = context.user.id;
-    accountEmailHmac = hmacSecret(normalizeContact(email), "contact-email-v1");
+    accountEmailHmacs = contactDigestSet(normalizeContact(email));
   }
 
   const { data, error } = await createAdminClient().rpc(
@@ -90,8 +91,8 @@ async function answerAdultSubject(
       p_session_hash: authority.sessionHash,
       p_action: operation,
       p_nonce: authority.nonce,
-      ...(accountId && accountEmailHmac
-        ? { p_account_id: accountId, p_account_email_hmac: accountEmailHmac }
+      ...(accountId && accountEmailHmacs
+        ? { p_account_id: accountId, p_account_email_hmac_set: accountEmailHmacs }
         : {}),
     },
   );

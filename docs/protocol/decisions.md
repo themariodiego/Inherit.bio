@@ -4297,3 +4297,166 @@ questions at the end of `docs/carrier-importer-design.md`.
   Approval of the text does not open any real jurisdiction. Each country still
   needs its signed jurisdiction review (G5.5) before the path is offered
   there. Keeping the text test-only until counsel reviewed it was declined.
+
+## 2026-09-28 (later) — Comprehension harness: engineering choices for owner review
+
+The 22 September entry asked engineering to choose the host and endpoint.
+These are the choices the live harness makes. None of them has spent money.
+
+- **Endpoint:** any OpenAI-compatible chat-completions endpoint over HTTPS,
+  named only in the operator's local run file. The preferred instance is the
+  existing edge provider's AI gateway, as the owner preferred. No credential
+  exists yet, so no paid call has been made.
+- **Credential:** read from one named variable in the operator's own shell,
+  documented as `COMPREHENSION_MODEL_API_KEY`, and handed only to each isolated
+  inference process. It is never deployment configuration, never in
+  `.env.example` and never under `src/`, so the commitment that LLM keys are
+  never deployment-level stands unchanged. Nobody is asked for a key; scored
+  runs wait until one exists in the environment.
+- **Model identity:** applies the 25 September decision above. The pinned
+  identifier and temperatures are written into a real run's `manifest.json`
+  under `docs/comprehension-runs/<date>/` and nowhere else. The journal, traces
+  and logs carry only a non-identifying label, and a test fails if a recorded
+  identifier appears in any other tracked file or commit message.
+- **Spend:** one journal for the whole effort reserves each call's maximum
+  before it is sent. The order is fixed: a stub smoke run, then a calibration
+  (one task, about five personas), then full runs. A paid full run refuses to
+  start without a calibration on the same model and settings whose measured
+  cost, plus 25%, fits what is left of US$50.
+- **Isolation:** a browser context and a freshly seeded account per
+  simulation; a separate operating-system process per inference call.
+- **T9's fixture:** the reserved-record invitation the owner chose today, with
+  the mail shown beside the page. Opening it is an entry, never an action.
+
+## 2026-09-28 (evening) — Carrier review, Path B text, Family Copilot, nonces and two register rows
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all but one question: the carrier
+reviewer.
+
+- **The first carrier import holds all eight conditions.** They are CFTR,
+  HEXA, PAH, ACADM, ASPA, ATP7B, DHCR7 and GAA: 2,850 ClinVar assertions, each
+  two stars or more. Each gene is autosomal recessive, in the ACMG
+  carrier-screening practice resource, and Definitive in ClinGen. The import
+  writes every condition inactive. A first list of four, or no import yet,
+  was declined.
+- **The owner is the named carrier reviewer.** Each condition becomes active
+  only when the owner records a review through
+  `review_carrier_condition_v1`: their name, their role and a reference to
+  their written review of that condition. Engineering prepares one review
+  note per condition; activation waits for the owner's sign-off on each. A
+  clinical geneticist or genetic counsellor named by the owner was the
+  recommended option and was not chosen.
+- **Path B gets its own consent text, `consent.upload-other-adult` v2.** v1,
+  approved earlier today, still describes the declined account-based flow
+  ("accept in their own account", "moves to their account"). v2 keeps the
+  seven statements close to v1, with statement 6 reading "until they say yes
+  to the file". The flow is TEST-LOCAL, so nobody has signed v1. Keeping v1
+  and building an account branch to match it was declined.
+- **The person's own consent, `consent.subject-adult-esignature` v1, is
+  approved as written.** Four statements. It keeps its own key, so it never
+  replaces Path A's `consent.subject-adult` v1. Keeping it test-only was
+  declined. As with every approved text, each country still needs its signed
+  jurisdiction review (G5.5) before the path is offered there.
+- **After a Path B confirmation, the account branch comes next.** A person
+  with an account confirms and reads the file there. The subject-level
+  reading and purpose-grant layer follows. Leaving confirmed files unreadable
+  was declined.
+- **The Path B link on `/family/invite` stays hidden** until a real
+  jurisdiction opens. The TEST-LOCAL entry point stays on `/files/upload`.
+- **The Family Copilot scope is on in production.** On the hosted site,
+  Overview's Family Copilot box opens `/copilot/family`. That page renders the
+  registered "not open here" page, because the scope needs a same-host local
+  model, and it reads nothing. `copilotGroupScopes()` stops tracking only the
+  TEST-LOCAL flag. Keeping the box on `/family` was declined.
+- **One nonce rule (brief X1.5).** A page renders a stateless operation
+  nonce, only the POST consumes it, and no GET stores one. This matches the
+  25 September export rule. The live mint on `GET /api/account/delete` is
+  rebuilt to match. Describing that GET as the mint, or keeping the ledger
+  row, was declined.
+- **`/withdraw/request` is registered as the HTML endpoint it is.** Its
+  one-script security policy is what makes the URL-fragment rule provable.
+  Rebuilding it as a page was declined.
+- **The `generated-artifacts` bucket is dropped**, with the same guards as
+  `genomes-staging`. The single-object export archive form it held is
+  retired with it. Declaring a prefix for it was declined.
+- **The D-081 withdrawal shims keep their hard stop.** Both ledger rows carry
+  `deleteAfter: 2026-10-14`. After that date the correspondence test fails
+  for every pull request until `/api/withdraw`, `/withdraw/[token]`, their
+  browser test and both rows are deleted. A warning only was declined.
+
+## 2026-09-28 (afternoon) — Embryo purge and canonical-source questions
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all four. They come from ADR 0020
+safeguard 3 (the terminal purge, #262) and worker unit 4a (canonical
+sources, #263). Both are TEST-LOCAL, and production embryo ingest stays off.
+
+- **An approved single-parent legal review outlives a purged attempt.** When
+  an abandoned embryo upload is purged, the `legal_reviews` row that approved
+  its single-parent draft is kept as a retained outcome. The zero-residual
+  check gets one closed, named skip for `legal_reviews.target_id` and no
+  wider one. Deleting it with the draft, or never purging such an attempt
+  until the register decides, was declined.
+- **Retention control rows are terminalized, not deleted.** After a purge the
+  due phase and its retention row are marked `succeeded` /
+  `ingest_abandoned_no_source` and kept for crash recovery and replay
+  defence, as the register's zero-residual rule says. They hold only random
+  identifiers. Deleting them, which would first need a housekeeping retention
+  ID, was declined.
+- **An ambiguous contact is never guessed at.** A Record Key recipient with
+  more than one current contact gets a coded `delivery_unavailable` terminal
+  notice slot. Using the newest contact was declined.
+- **Embryo sources do not use the parent's own upload allowance.** A published
+  embryo's canonical source is a `genome_files` row on the embryo's subject,
+  invisible in My files. Own-upload accounting excludes embryo-subject and
+  cohort rows; embryo ingest keeps its own payload limits. Counting them was
+  declined.
+- **Future Person identity documents are scanned by self-hosted ClamAV.**
+  The documents step of a Future Person claim (G5.4) takes identity papers
+  from the public, and the register requires a malware scan before any file is
+  stored. The scan runs as ClamAV in Inherit's own worker, so there is no new
+  processor and the documents never leave Inherit's infrastructure. A file is
+  readable only after a clean verdict bound to its exact bytes; stale
+  signatures or an unreachable scanner fail closed. A hosted scanning API, and
+  deferring the documents step, were declined.
+
+## 2026-09-28 (late afternoon) — Embryo notice and restriction, Path B account branch, claim documents
+
+Asked in chat as selectable choices, with the recommended option first. The
+owner chose the recommended option on all eight. All of it is TEST-LOCAL;
+nothing opens in production.
+
+- **The embryo upload-time rights notice is held until it can carry its
+  withdrawal.** Each notice recipient who is a disposition authority must get
+  an `embryo-parent-withdrawal` credential and a one-click withdrawal link.
+  Neither is usable yet, so the notice joins the publication transaction in
+  one change once the credential, the withdrawal page and the template's
+  required content exist. Embryo ingest stays off in production meanwhile.
+  Sending it without the link, or with a link that would 404, was declined.
+- **Restriction and withdrawal delete an embryo cohort's canonical sources.**
+  The restriction or withdrawal transaction calls the source-deletion planner
+  for every source file in the cohort, so nothing derived from a withdrawn
+  embryo survives it. Waiting for the 24-month retention deadline was
+  declined.
+- **An account holder confirming a Path B file signs the Path B text.**
+  `consent.subject-adult-esignature` v1, with the account's own declared
+  country in place of the country field. Path A's `consent.subject-adult` was
+  declined for this path.
+- **A Path B person's account deletion deletes the files held for them.** The
+  retention sweep deletes their Path B subject with the account. Keeping the
+  files held until the 30-day deadline was declined.
+- **Path B file answers stay on the email link** until the reading layer
+  lands; the account view of held files stays read-only. Answer buttons in the
+  account were declined for now.
+- **After the reading layer, `api.adult-subject-bind` comes next**, so a
+  person who confirmed without an account can later attach the subject to
+  one. The reviewed-document branch follows.
+- **Future Person claim chunks use a one-time database reservation, not a
+  chunk-nonce header.** Each chunk sequence is reserved once under a key the
+  database makes, the pattern accepted for embryo chunks on 22 September.
+  `X-Inherit-Chunk-Nonce` leaves the `api.evidence-chunk` contract. A per-chunk
+  minted token was declined.
+- **A claim document being scanned answers `202 {"status":"scanning"}`.**
+  `evidence-complete-v1` gains that interim answer beside `201
+  review_pending`. Holding the request open until the verdict was declined.

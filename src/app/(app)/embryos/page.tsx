@@ -16,7 +16,7 @@ import {
   WHERE_THIS_WORKS_LINK,
   YOUR_EMBRYOS_HEADING,
 } from "@/copy/embryos/index";
-import { COPILOT_GROUP_SCOPES_AVAILABLE } from "@/copy/overview";
+import { cohortScopeSegment, copilotGroupScopes } from "@/lib/copilot/group-scopes";
 import { EMBRYO_ANALYSIS, cohortCapability, permits } from "@/lib/embryos/access";
 import { route } from "@/lib/primary-routes";
 import { loadCohorts, loadViewer } from "./context";
@@ -53,11 +53,12 @@ export default async function EmbryosPage() {
   const tileHref: Record<(typeof HUB_TILES)[number]["id"], string | null> = {
     upload: allowed ? route("embryos.upload") : null,
     compare: allowed && newest ? route("embryos.compare", { query: { cohort: newest.id } }) : null,
-    // The cohort scope does not resolve yet (src/copy/overview.ts), so the
-    // tile states its blocking reason rather than shipping a dead link.
+    // The cohort scope is designed but not built until embryo publication
+    // exists (src/lib/copilot/group-scopes.ts), so the tile states its
+    // blocking reason rather than linking to a refused scope.
     copilot:
-      allowed && newest && COPILOT_GROUP_SCOPES_AVAILABLE
-        ? route("copilot.scope", { scope: `c-${newest.id}` })
+      allowed && newest && copilotGroupScopes().cohort
+        ? route("copilot.scope", { scope: cohortScopeSegment(newest.id) })
         : null,
   };
 

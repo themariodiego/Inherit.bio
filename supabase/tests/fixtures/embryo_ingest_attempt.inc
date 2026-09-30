@@ -1,11 +1,16 @@
 -- Shared by embryo_ingest_chunks.sql and embryo_ingest_write_fence.sql.
 -- Include it inside the test transaction; everything it creates rolls back.
+\ir invitation_quota_keys.inc
 
 -- `claim_mail_outbox` takes the oldest deliverable row, so a developer
 -- database holding other queued mail would hand this suite someone else's
 -- token. Retiring those rows inside the test transaction makes every claim
 -- below deterministic wherever the suite runs; the rollback puts them back.
 update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
+
+-- Fragment objects need a configured backend (20260929100000). These suites
+-- exercise the Supabase metadata path; the R2 suite selects its own.
+update private.embryo_ingest_object_config set provider='supabase',r2_bucket=null where singleton;
 
 -- Each primitive fixture now traverses the real signed two-parent authority
 -- flow. Distinct accounts avoid bypassing the per-account outstanding-attempt
@@ -46,7 +51,8 @@ begin
       private.embryo_statement_keys_v1(v_key,'parent'),decode('deadbeef','hex'),'GB',gen_random_uuid()::text);
   end loop;
   select invitation_id into v_invitation from public.create_embryo_draft_invitation_v1(
-    v_owner,v_auth,v_draft,v_parent_hash,v_rights_hash,gen_random_uuid()::text,true);
+    v_owner,v_auth,v_draft,v_parent_hash,v_rights_hash,gen_random_uuid()::text,true,
+    p_quota_keys => pg_temp.invitation_quota_keys());
   -- Prior fixture notices may precede this invitation. Claim only bounded
   -- fixture work and verify the exact invitation before using its token.
   loop

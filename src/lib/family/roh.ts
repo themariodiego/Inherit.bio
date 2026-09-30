@@ -30,10 +30,13 @@ import type { ParseResult } from "@/lib/genome/types";
  * its panel covers: applied to a sparse file it can only make F_ROH larger,
  * so it can only refuse more, never less. No genome length is assumed.
  *
- * The measure is taken once, at ingest, from the parsed calls the
- * processing route already holds, and stored on `genome_files` (migration
- * `20260903200000_genome_files_runs_of_homozygosity.sql`). Readers never
- * re-derive it from `user_variants` (D-030). What cannot be measured is
+ * The measure is taken once, at ingest, and stored on `genome_files`
+ * (migration `20260903200000_genome_files_runs_of_homozygosity.sql`): by the
+ * legacy processing route from the parsed calls it already holds, and by the
+ * prepared upload path from the verified source as it streams past
+ * (`createRohAccumulator`; stored through
+ * `public.record_own_normalization_runs_v1`). Readers never re-derive it
+ * from `user_variants` (D-030). What cannot be measured is
  * said, never guessed: a file that reports no call homozygous for the
  * reference lists only its differences, and the positions between its rows
  * are unrecorded, not identical, so it is stored as `not_measurable` and
@@ -189,8 +192,7 @@ export function rohCallsFromParse(parsed: ParseResult): RohCall[] {
  * can share the calls on either side of one tolerated call) are merged, so
  * no base is counted twice.
  */
-function runsOfOneAutosome(sorted: readonly RohCall[]): { start: number; end: number }[] {
-  const same = sorted.map((call) => readsTheSameOnBothCopies(call.genotype));
+function runsOfOneAutosome(positions: readonly number[], same: readonly boolean[]): { start: number; end: number }[] {
   const qualified: { start: number; end: number }[] = [];
   const consider = (from: number, to: number) => {
     let start = from;
@@ -199,9 +201,9 @@ function runsOfOneAutosome(sorted: readonly RohCall[]): { start: number; end: nu
     while (end >= start && !same[end]) end--;
     if (end < start) return;
     const calls = end - start + 1;
-    const span = sorted[end].pos - sorted[start].pos;
+    const span = positions[end] - positions[start];
     if (calls >= ROH_MIN_RUN_CALLS && span >= ROH_MIN_RUN_BASES) {
-      qualified.push({ start: sorted[start].pos, end: sorted[end].pos });
+      qualified.push({ start: positions[start], end: positions[end] });
     }
   };
 
@@ -210,7 +212,7 @@ function runsOfOneAutosome(sorted: readonly RohCall[]): { start: number; end: nu
   // candidate, and the next window begins after the earliest tolerated one.
   let windowStart = 0;
   const tolerated: number[] = [];
-  for (let index = 0; index < sorted.length; index++) {
+  for (let index = 0; index < positions.length; index++) {
     if (same[index]) continue;
     tolerated.push(index);
     if (tolerated.length > ROH_MAX_HETEROZYGOUS_IN_RUN) {
@@ -219,7 +221,7 @@ function runsOfOneAutosome(sorted: readonly RohCall[]): { start: number; end: nu
       tolerated.shift();
     }
   }
-  consider(windowStart, sorted.length - 1);
+  consider(windowStart, positions.length - 1);
 
   // Candidates arrive in order of their start; merge any that overlap.
   const merged: { start: number; end: number }[] = [];
@@ -232,53 +234,81 @@ function runsOfOneAutosome(sorted: readonly RohCall[]): { start: number; end: nu
 }
 
 /**
- * The measure. Calls arrive in any order; autosomes are grouped and sorted
- * here so the answer does not depend on the order rows came back in. A
- * measurable file with no run is measured at zero: that is an answer, and
- * it is below both thresholds.
+ * The measure, taken one call at a time. A stream of calls (the prepared
+ * upload path reads its file line by line) and an array of them (the legacy
+ * processing route) give the same answer: each autosome keeps only a
+ * position and one bit per call, and calls are ordered by position with
+ * their arrival order kept for equal positions, exactly as the array
+ * measure always sorted them. Nothing else about a genotype is retained.
+ */
+export interface RohAccumulator {
+  add(call: RohCall): void;
+  measure(): RohMeasure;
+}
+
+export function createRohAccumulator(): RohAccumulator {
+  const byChrom = new Map<number, { positions: number[]; same: boolean[] }>();
+  let referenceCalls = 0;
+  return {
+    add(call) {
+      if (!isAutosome(call.chrom) || !Number.isFinite(call.pos)) return;
+      if (isReferenceHomozygous(call)) referenceCalls++;
+      let bucket = byChrom.get(call.chrom);
+      if (!bucket) byChrom.set(call.chrom, bucket = { positions: [], same: [] });
+      bucket.positions.push(call.pos);
+      bucket.same.push(readsTheSameOnBothCopies(call.genotype));
+    },
+    measure() {
+      if (byChrom.size === 0) return { status: "not_measurable", reason: "no-autosomal-calls" };
+      // A file that reports no position as identical to the reference lists
+      // only its differences: between its rows the genome is unrecorded, not
+      // identical, so no run in it could be read as one.
+      if (referenceCalls === 0) return { status: "not_measurable", reason: "no-reference-calls" };
+
+      let runCount = 0;
+      let totalRunBases = 0;
+      let coveredSpanBases = 0;
+      for (const bucket of byChrom.values()) {
+        // A stable sort of indices keeps equal positions in arrival order.
+        const order = bucket.positions.map((_, index) => index)
+          .sort((left, right) => bucket.positions[left] - bucket.positions[right]);
+        const positions = order.map((index) => bucket.positions[index]);
+        const same = order.map((index) => bucket.same[index]);
+        coveredSpanBases += positions[positions.length - 1] - positions[0];
+        for (const run of runsOfOneAutosome(positions, same)) {
+          runCount++;
+          totalRunBases += run.end - run.start;
+        }
+      }
+      // No autosomal stretch at all: nothing a run could lie in, and no
+      // denominator (the stored shape requires a positive covered span).
+      if (coveredSpanBases === 0) return { status: "not_measurable", reason: "no-runs-reported" };
+
+      // A run lies inside its autosome's span, so the fraction is in [0, 1]:
+      // the shape `genome_files_roh_shape` requires.
+      const fRoh = totalRunBases / coveredSpanBases;
+      return {
+        status: "measured",
+        runCount,
+        totalRunBases,
+        coveredSpanBases,
+        fRoh,
+        aboveThreshold: exceedsRohThreshold(totalRunBases, fRoh),
+      };
+    },
+  };
+}
+
+/**
+ * The measure over calls in any order; autosomes are grouped and sorted so
+ * the answer does not depend on the order rows came back in. A measurable
+ * file with no run is measured at zero: that is an answer, and it is below
+ * both thresholds.
  */
 export function measureRunsOfHomozygosity(calls: readonly RohCall[]): RohMeasure {
-  const byChrom = new Map<number, RohCall[]>();
-  let referenceCalls = 0;
-  for (const call of calls) {
-    if (!isAutosome(call.chrom) || !Number.isFinite(call.pos)) continue;
-    if (isReferenceHomozygous(call)) referenceCalls++;
-    const bucket = byChrom.get(call.chrom);
-    if (bucket) bucket.push(call);
-    else byChrom.set(call.chrom, [call]);
-  }
-  if (byChrom.size === 0) return { status: "not_measurable", reason: "no-autosomal-calls" };
-  // A file that reports no position as identical to the reference lists
-  // only its differences: between its rows the genome is unrecorded, not
-  // identical, so no run in it could be read as one.
-  if (referenceCalls === 0) return { status: "not_measurable", reason: "no-reference-calls" };
-
-  let runCount = 0;
-  let totalRunBases = 0;
-  let coveredSpanBases = 0;
-  for (const bucket of byChrom.values()) {
-    const sorted = [...bucket].sort((left, right) => left.pos - right.pos);
-    coveredSpanBases += sorted[sorted.length - 1].pos - sorted[0].pos;
-    for (const run of runsOfOneAutosome(sorted)) {
-      runCount++;
-      totalRunBases += run.end - run.start;
-    }
-  }
-  // No autosomal stretch at all: nothing a run could lie in, and no
-  // denominator (the stored shape requires a positive covered span).
-  if (coveredSpanBases === 0) return { status: "not_measurable", reason: "no-runs-reported" };
-
-  // A run lies inside its autosome's span, so the fraction is in [0, 1]:
-  // the shape `genome_files_roh_shape` requires.
-  const fRoh = totalRunBases / coveredSpanBases;
-  return {
-    status: "measured",
-    runCount,
-    totalRunBases,
-    coveredSpanBases,
-    fRoh,
-    aboveThreshold: exceedsRohThreshold(totalRunBases, fRoh),
-  };
+  const accumulator = createRohAccumulator();
+  for (const call of calls) accumulator.add(call);
+  return accumulator.measure();
 }
 
 // ---------------------------------------------------------------------------
@@ -294,6 +324,19 @@ export interface RohColumns {
   roh_covered_bases: number | null;
   roh_fraction: number | null;
   roh_measured_at: string;
+}
+
+/**
+ * The measure in the closed shape `public.record_own_normalization_runs_v1`
+ * takes for a prepared source; the database stamps the time and rounds the
+ * fraction to the column's six places.
+ */
+export function rohRecordPayload(measure: RohMeasure):
+  | { status: "measured"; totalBases: number; coveredBases: number; fraction: number }
+  | { status: "not_measurable"; reason: RohUnmeasurableReason } {
+  return measure.status === "measured"
+    ? { status: "measured", totalBases: measure.totalRunBases, coveredBases: measure.coveredSpanBases, fraction: measure.fRoh }
+    : { status: "not_measurable", reason: measure.reason };
 }
 
 /** The six columns as a row reads them back: every one nullable until processed. */
