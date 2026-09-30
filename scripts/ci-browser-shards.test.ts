@@ -153,6 +153,10 @@ describe("mandatory browser coverage across isolated jobs", () => {
     expect(doc.jobs.checks.needs).toEqual(["repository-checks", "browser"]); expect(doc.jobs.checks.if).toBe("always()");
     expect(doc.jobs.browser.strategy).toEqual({ "fail-fast": false, "max-parallel": 6, matrix: { shard: [1, 2, 3, 4, 5, 6] } });
     expect(doc.jobs.browser.if).toBeUndefined(); expect(doc.jobs["repository-checks"].if).toBeUndefined();
+    const browserCommands = doc.jobs.browser.steps.flatMap(step => step.run ?? []).join("\n");
+    expect(browserCommands).toContain('scripts/ci-browser-setup-timings.run.mts "$build_start" "${{ matrix.shard }}"');
+    expect(browserCommands).toContain('process.env.RUNNER_TEMP+"/inherit-ci-setup-start-"');
+    expect(browserCommands).not.toContain("test-results/ci-browser-setup-timings.json");
     expect(doc.jobs.checks.steps.find(step => step.uses === "actions/download-artifact@v4")?.with?.pattern)
       .toBe("browser-case-${{ github.run_attempt }}-*");
     expect(doc.concurrency["cancel-in-progress"]).toBe("${{ github.event_name == 'pull_request' }}");

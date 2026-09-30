@@ -1,5 +1,23 @@
 # Test diff register
 
+## Browser setup timing input survives native cleanup · 30 September 2026
+
+The first hosted run executed all 565 cases successfully across six fresh jobs
+(98/100/108/74/94/91), with zero skips or retries, then every browser job failed
+because Playwright had removed its pre-run timing input from `test-results`.
+The correction stores that input in the job-owned `RUNNER_TEMP`, outside the
+output directory, with exact commit/run/attempt/shard identity, bounded integer
+timings, exclusive private-file creation and strict ownership checks. Missing,
+foreign, malformed or permissive inputs still fail; no fallback is introduced.
+
+A new regression invokes the installed native Playwright with an actual passing
+case and proves its output-directory cleanup deletes the old internal input
+while preserving the external timing record. Further regressions refuse stale
+or foreign identities, invalid clocks, altered schema, links and duplicate
+writes. Existing browser cases, assertions, timeouts, retries, transport checks
+and complete same-attempt aggregation are unchanged. A complete hosted rerun
+on the corrected version is required before accepting the release gate.
+
 ## Embryo joins complete isolated browser coverage · 30 September 2026
 
 The integrated runtime has five standard projects, including the real embryo

@@ -186,7 +186,7 @@ jobs:
       INHERIT_DISPOSABLE_LOCAL_E2E: "true"
     steps:
       - name: Start setup wall-time measurement
-        run: node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP+"/inherit-ci-setup-start",String(Date.now()))'
+        run: node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP+"/inherit-ci-setup-start-"+process.env.GITHUB_RUN_ID+"-"+process.env.GITHUB_RUN_ATTEMPT+"-"+process.argv[1],String(Date.now()),{mode:0o600,flag:"wx"})' "${{ matrix.shard }}"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -216,8 +216,7 @@ jobs:
           build_start=$(node -e 'process.stdout.write(String(Date.now()))')
           pnpm build
           pnpm exec tsx scripts/ci-browser-runtime.run.mts record-build
-          mkdir -p test-results
-          node -e 'const fs=require("node:fs"),start=Number(fs.readFileSync(process.env.RUNNER_TEMP+"/inherit-ci-setup-start","utf8")),build=Number(process.argv[1]);fs.writeFileSync("test-results/ci-browser-setup-timings.json",JSON.stringify({setupMs:build-start,buildMs:Date.now()-build}))' "$build_start"
+          pnpm exec tsx scripts/ci-browser-setup-timings.run.mts "$build_start" "${{ matrix.shard }}"
       - name: Execute the assigned part of the unchanged full suite
         run: pnpm exec tsx scripts/run-upload-browser.mts --ci-shard=${{ matrix.shard }}/6
       - name: Save only sanitized exact case coverage
