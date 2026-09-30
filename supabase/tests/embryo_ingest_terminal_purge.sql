@@ -146,10 +146,15 @@ select is((public.claim_embryo_split_job_v1(repeat('c',64),'synthetic-worker')->
   'the split worker claims attempt A''s job');
 select is(public.stage_embryo_split_variants_v1((select id from job),1,repeat('c',64),0,0,
   '[[1,1000,"A","G","A/G"]]')->>'status','staged','it stages one synthetic genotype for embryo 1');
-select is(public.finish_embryo_split_ordinal_v1((select id from job),1,repeat('c',64),0,
+select throws_ok($$select public.finish_embryo_split_ordinal_v1((select id from job),1,repeat('c',64),0,
   jsonb_build_object('outcome','passed','qc',jsonb_build_object('sites_expected',10,'sites_called',10,
     'call_rate',1,'autosomal_het_rate',0.3,'mean_depth',null,'qc_verdict','pass','qc_reasons','[]'::jsonb),
-    'failureReason',null,'variantCount',1))->>'outcome','passed','and records a pending outcome for it');
+    'failureReason',null,'variantCount',1))$$,'55000','canonical source unlanded',
+  'a staged result without landed canonical parts cannot record a passing outcome');
+select is((select count(*) from private.embryo_split_ordinals where session_id=pg_temp.sid('a')),0::bigint,
+  'the refused pass writes no ordinal before the attempt fails');
+select is((select count(*) from private.embryo_canonical_parts where session_id=pg_temp.sid('a')),0::bigint,
+  'the attempt failed before any canonical provider write was reserved');
 select is(private.fail_embryo_split_v1(pg_temp.sid('a'),(select id from job),'stale-binding','cancelled')->>'status',
   'failure_pending','the attempt then fails');
 select is(pg_temp.plan('a'),'storage_pending','the unwind is planned');

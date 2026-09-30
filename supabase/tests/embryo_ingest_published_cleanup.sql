@@ -35,6 +35,16 @@ create function pg_temp.published() returns text language sql as $$
       join public.embryos e on e.id=q.embryo_id where e.cohort_id=(select cohort_id from live)),
     (select string_agg(to_jsonb(v)::text,',' order by v.embryo_id,v.chromosome,v.position) from public.embryo_variants v
       join public.embryos e on e.id=v.embryo_id where e.cohort_id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(s)::text,',' order by s.file_id) from private.embryo_canonical_sources s
+      where s.cohort_id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(m)::text,',' order by m.file_id,m.sequence) from private.embryo_canonical_source_parts m
+      join private.embryo_canonical_sources s on s.file_id=m.file_id where s.cohort_id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(p)::text,',' order by p.sample_ordinal,p.sequence) from private.embryo_canonical_parts p
+      where p.session_id=(select id from live)),
+    (select string_agg(to_jsonb(g)::text,',' order by g.id) from public.genome_files g
+      join private.embryo_canonical_sources s on s.file_id=g.id where s.cohort_id=(select cohort_id from live)),
+    (select string_agg(to_jsonb(v)::text,',' order by v.file_id,v.chrom,v.pos,v.id) from public.user_variants v
+      join private.embryo_canonical_sources s on s.file_id=v.file_id where s.cohort_id=(select cohort_id from live)),
     (select to_jsonb(c)::text from public.embryo_cohorts c where c.id=(select cohort_id from live)),
     (select to_jsonb(w)::text from public.worker_jobs w where w.id=(select id from job))));
 $$;
@@ -48,6 +58,8 @@ select is(public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.t
   '[[1,1000,"A","G","A/G"],[7,3000,"T","C","C/C"]]')->>'rows','2','embryo 1 stages its calls');
 select is(public.stage_embryo_split_variants_v1((select id from job),1,pg_temp.token(),2,0,
   '[[22,9000,"C","T","C/T"]]')->>'rows','1','embryo 3 stages its call');
+select is(pg_temp.land_parts(0,pg_temp.token()),2,'embryo 1 lands both canonical parts before passing');
+select is(pg_temp.land_parts(2,pg_temp.token()),2,'embryo 3 lands both canonical parts before passing');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),0,
   pg_temp.outcome('passed','pass','{}',10,2))->>'outcome','passed','embryo 1 passes');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),1,
@@ -150,6 +162,13 @@ select is(pg_temp.published(),(select digest from before_cleanup),
   'every published embryo, subject, QC row, genotype, the cohort and the job are exactly as published');
 select is((select count(*) from public.embryo_variants v join public.embryos e on e.id=v.embryo_id
     where e.cohort_id=(select cohort_id from live)),3::bigint,'the three published genotypes remain');
+select is((select count(*) from private.embryo_canonical_sources where cohort_id=(select cohort_id from live)),2::bigint,
+  'both passing embryos retain their canonical sources');
+select is((select count(*) from private.embryo_canonical_source_parts m join private.embryo_canonical_sources s
+    on s.file_id=m.file_id where s.cohort_id=(select cohort_id from live)),4::bigint,
+  'all four exact canonical membership rows remain after fragment cleanup');
+select is((select count(*) from private.embryo_canonical_parts where session_id=(select id from live) and state='landed'),4::bigint,
+  'all four landed canonical provider identities remain unchanged');
 select is((select count(*) from public.embryo_qc q join public.embryos e on e.id=q.embryo_id
     where e.cohort_id=(select cohort_id from live)),3::bigint,'the three QC rows remain');
 select is((select status from public.embryo_ingest_sessions where id=(select id from live)),'published',
