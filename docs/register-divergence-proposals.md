@@ -48,6 +48,9 @@ The ledgers are `docs/route-divergence.json` (checked by
 | `unreadRequiredHeaders` `api.evidence-chunk` | **Unbuilt route.** Unchanged. | The legal-evidence ingest design. |
 | `redirectStatusDivergence`, `taskDepthCeilingDivergence` | Empty. Both are still checked in both directions. | None. |
 
+**Update, 2026-09-28 (evening):** the `api.account-delete` row is closed. The
+owner chose B, and brief X1.5 is built; see the end of section 2.
+
 ## 2. Who issues an operation nonce: the `GET /api/account/delete` question
 
 **What runs today.** `src/app/api/account/delete/route.ts` exports a GET that
@@ -170,6 +173,51 @@ The code work that closes the row:
 
 The divergence stays recorded and checked in both directions. This is the
 right interim state under B until the code work lands.
+
+### Decided 2026-09-28 (evening): B. What was built
+
+The brief now carries X1.5 exactly as the diff above, dated 2026-09-28.
+`briefSha256` is repinned. `mutationSecurityBindings.operationNonceIssuance`
+states the rule in the register. `api.account-delete` stays POST-only, as it
+was always registered, and its `methodDivergence` row is removed.
+
+- **The nonce.** `src/lib/account-operation-nonce.ts` has the form
+  `<expiresAt>.<random>.<mac>`. The MAC binds it to the account, the auth
+  session, the operation and the expiry. The nonce carries none of them: the
+  POST recomputes the MAC from its own live context, so a nonce for another
+  account, session or operation fails. It lives ten minutes.
+- **The page.** `/settings/data` calls `deletionControlState()` in
+  `src/lib/account-deletion-state.ts`. That function reads the live account
+  and the current deletion request, then mints the nonce for the one
+  operation the page offers. It writes nothing. `danger-zone.tsx` takes this
+  as a prop, fetches nothing, and calls `router.refresh()` after each POST to
+  get the new state and a fresh nonce. The deletion status no longer depends
+  on the 15-minute re-authentication window. Re-authentication is checked by
+  the POST.
+- **The POSTs.** `POST /api/account/delete` and `/cancel` verify the nonce,
+  then call `request_account_deletion_v2` or `cancel_account_deletion_v2`.
+  These are public invoker doors over private definer bodies, in the house
+  style. Each body records the nonce hash once and runs the unchanged v1 body
+  in the same transaction. A replay inside the lifetime fails as `invalid_operation_nonce`,
+  and a failed operation spends nothing. The GET is deleted, so a GET on the
+  path is not served.
+- **Two migrations, in deploy order.**
+  - `20260930140200_account_operation_nonce_rendered.sql` only adds the
+    recorder and the v2 functions. Apply it **before** the code deploys.
+  - `20260930140300_retire_stored_account_operation_nonce.sql` drops
+    `issue_account_operation_nonce_v1` and revokes v1 from the service role.
+    Apply it **after** the code deploys.
+
+  In either other order, account deletion would briefly call a function that
+  is missing or refused.
+
+**One more site the rule now covers.** The upload page renders an own-upload
+consent or account-completion token. It stores that token's nonce hash
+through `issue_own_upload_nonce_v1` on every render (`prepareOwnUpload`). X1.5
+forbids this too. It is recorded in
+`docs/register-contract-divergence.json#nonceStoredBeforeUse` and compared in
+both directions, with the same rebuild as its closing. No owner decision is
+needed for it.
 
 ## 3. `/withdraw/request`: a registered page built as a `route.ts`
 

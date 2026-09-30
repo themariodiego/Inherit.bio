@@ -113,6 +113,55 @@ check was planted and failed; the details are in
 `docs/register-divergence-proposals.md` section 8. No existing assertion was
 removed or loosened.
 
+## Brief X1.5: the account-deletion nonce is rendered, not fetched · 28 September 2026
+
+**Four pgTAP files move from the stored nonce to the rendered one.** They are
+`account_deletion.sql`, `account_deletion_purge.sql`,
+`account_deletion_own_grant_nonces.sql` and `own_prepared_cleanup.sql`.
+
+- Each issued a nonce through `issue_account_operation_nonce_v1` and then
+  spent it through the v1 request or cancel. That function is dropped, and
+  the service role can no longer reach v1. Each now calls v2 with the same
+  hash and an expiry, in one step.
+- Every other assertion is unchanged.
+- One assertion changes: `account_deletion.sql`'s first one said "a recent
+  verified session can obtain a one-time operation nonce", which is the
+  behaviour X1.5 removes. It now says that nothing stores a nonce for the
+  account before the request that spends it. The plan stays at 18.
+- `account_deletion.sql` (18) and `account_deletion_purge.sql` (19) passed
+  with the same counts as their originals, with the shared database's
+  leftover deletion rows emptied inside the rolled-back transaction.
+
+**New tests.**
+- `supabase/tests/account_operation_nonce_rendered.sql`, 23 assertions:
+  - the issuing function is gone, v1 is out of the service role's reach, and
+    the recorder is reachable only through v2;
+  - v2 is a public invoker door over a private definer body, and neither is
+    open to a signed-in user;
+  - nothing is stored before the operation;
+  - the expiry bound holds, and a stale session cannot spend a nonce;
+  - v2 records one spent hash, and a failed operation records none;
+  - a spent nonce cannot be replayed, on either operation;
+  - an expired spent hash is pruned by the next operation.
+- `src/lib/account-operation-nonce.test.ts` (6),
+  `src/lib/account-deletion-state.test.ts` (3) and
+  `src/app/api/account/delete/route.test.ts` (5).
+- `scripts/route-register-correspondence.test.ts` gains three tests: every
+  place that stores a nonce before use is compared with
+  `nonceStoredBeforeUse`, and the two deletion routes export POST alone.
+- `e2e/settings.spec.ts` gains "brief X1.5: /settings/data renders its
+  deletion nonce and stores none before the POST spends it". The comment on
+  the processing test no longer describes the removed GET.
+
+**Planted, each seen to fail.**
+- A GET on `/api/account/delete` that stores a nonce: 6 unit tests fail, and
+  `pnpm gate:routes` fails with an undeclared GET.
+- The page render writing a nonce: 3 tests fail.
+- In the database, each fails the new pgTAP file:
+  - the issuing function surviving;
+  - v1 left callable by the service role;
+  - a spent hash accepted again;
+  - no expiry bound.
 ## Prepared sources carry their runs of homozygosity · 28 September 2026
 
 `e2e/family-health-picture.spec.ts` ("both adults prepare their real source
