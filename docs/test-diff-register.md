@@ -1,5 +1,9 @@
 # Test diff register
 
+## Exact claimant custody preserves parent-independent source provenance · 30 September 2026
+
+The custody migration adds one narrow historical agreement/source slice to the registered variant/source inventory, making the exact combined count 147. New database assertions require explicit named-human documentary attestation, complete delivery receipts under the same assignment, the verified adult birthday, the still-current Record Key/disposition and one exact claimant. Parent restriction must remove every unclaimed source while preserving the claimed source, genotypes, immutable memberships and provider identities byte for byte. No assertion is relaxed; G5.4 remains NO while release delivery, claimant rights and complete browser evidence are unfinished.
+
 ## Custody preserves both storage cleanup dependencies · 30 September 2026
 
 The exact purge inventory includes all current embryo withdrawal stores and all Future Person receipt stores: 146. This retains the complete union of the parents’ stores and assertions.

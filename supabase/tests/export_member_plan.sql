@@ -176,6 +176,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-protected",
       "reason": "Unfinished Future Person claim starts: sealed identity and contact ciphertext, a key hash and keyed digests, deleted within 24 hours. The export contracts always exclude contact values and identity. No account holds one."
     },
+    "private.future_person_custody_slices": {
+      "disposition": "deferred",
+      "reason": "The exact claimed subject’s immutable autosomal source provenance and minimum historical agreement slice, preserved against parent restriction; approved-future-person-export-v1 requires its own claimant reader."
+    },
     "private.genome_file_deletions": {
       "disposition": "excluded-credential",
       "reason": "Deletion work items carrying a claim token and its hash. Exporting it would be a security defect, not completeness."
