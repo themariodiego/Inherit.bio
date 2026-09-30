@@ -986,15 +986,21 @@ begin
  if new.purpose='approved-future-person-release' and
    (tg_op='INSERT' or old.purpose is distinct from new.purpose) and not exists(
      select 1 from public.token_hashes h
+     join public.token_candidates tc on tc.id=h.candidate_id and tc.state='issued'
+       and tc.purpose='approved-future-person-release' and tc.target_kind='claimed-subject'
+       and tc.target_id=new.target_id and tc.token_revision=h.token_revision
+       and tc.token_revision=new.authority_revision and tc.expires_at>clock_timestamp()
      join public.future_person_claim_release_credentials r on r.candidate_id=h.candidate_id
        and r.credential_hash=h.token_hash and r.status='current' and r.expires_at>clock_timestamp()
+       and r.credential_revision=tc.token_revision and r.expires_at=tc.expires_at
      join public.future_person_claimant_principals cp on cp.id=r.claimant_principal_id
        and cp.principal_id=new.principal_id and cp.release_revision=new.authority_revision
        and cp.release_revision=r.credential_revision
-     where h.id=new.token_hash_id and h.status='current' and h.expires_at>clock_timestamp()
+     where h.id=new.token_hash_id and h.status='current' and h.ended_at is null
        and r.subject_id=new.target_id and new.status='active'
        and new.expires_at>clock_timestamp() and new.expires_at<=r.expires_at
-       and new.expires_at<=h.expires_at and new.expires_at<=new.created_at+interval '60 minutes'
+       and new.expires_at<=tc.expires_at and new.expires_at<=new.created_at+interval '60 minutes'
+       and new.created_at<=clock_timestamp()
        and private.future_person_release_current_v1(h.candidate_id)
    ) then raise exception using errcode='42501',message='rights purpose unavailable';end if;
  return new;

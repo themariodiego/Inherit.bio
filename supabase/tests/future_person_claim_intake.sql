@@ -51,7 +51,7 @@ select ok((select expires_at = created_at + interval '24 hours' and last_active_
 select is((select array_agg(column_name::text order by column_name) from information_schema.columns
   where table_schema = 'private' and table_name = 'future_person_claim_intakes'),
   array['completed_at','created_at','expires_at','form_nonce_hash','id','identifier_hmac','identifier_key_revision',
-    'identity_ciphertext','key_hash','last_active_at','mode','network_hmac','network_key_revision',
+    'identity_ciphertext','identity_key_shredded_at','key_hash','last_active_at','mode','network_hmac','network_key_revision',
     'session_hash','wrapped_data_key'],
   'an intake holds hashes, digests, ciphertext and times, and no plaintext column');
 select is(pg_temp.audit_count() - (select n from audit_before), 3::bigint,

@@ -1,5 +1,11 @@
 # Test diff register
 
+## Real candidate expiry preserves all rights-session issuers · 30 September 2026
+
+The strict Future Person session trigger now joins the actual issued token candidate for its expiry, exact purpose, target and revision; token hashes have no expiry column. Current, unended hash and current credential checks remain, with the original exact claimant, source and 60-minute bindings. Two new ordinary adult/co-parent identity-update assertions prove that their real issued sessions continue through the shared trigger. Five additional Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. Genuine one-time claimant activation remains the positive proof. The existing exact plans grow by one each to 39 and 33; no old assertion or refusal changes.
+
+The intake's exact private column census includes the independently erasable identity-key timestamp alongside its ciphertext and digests. The list remains exact and excludes plaintext. The reviewer browser ratchet remains unchanged and still refuses the unproven page states.
+
 ## Identity and each document have independently erasable keys · 30 September 2026
 
 The registered field-protection boundary now uses a runtime-random 32-byte key for each document, independently wrapped by the existing deployment key; it never derives the document key from the identity key. SQL chunk, composition, scanner and reviewer grants retain their exact authority/byte checks and project only that document's key. Legacy no-key signatures lose every API grant. Existing metadata-only database fixtures now pass independent synthetic 72-byte envelopes explicitly; real encryption tests reject the identity key and sibling document key for the same object's bytes. All old integrity, type, malware, role, freshness, receipt, deadline and fixed-header assertions remain. The document plan grows from 81 to 93 and the review plan from 96 to 100 through additional key-source, irreversible-erasure and deadline assertions.
