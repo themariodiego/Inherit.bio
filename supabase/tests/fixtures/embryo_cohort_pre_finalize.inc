@@ -1,3 +1,8 @@
+-- Optional bounded synthetic ciphertext for the export-history proof. Default
+-- metadata fixtures retain their exact original bytes; no real name or key.
+create function pg_temp.embryo_fixture_signing_name() returns bytea language sql as $$
+ select coalesce(decode(nullif(current_setting('inherit.synthetic_signing_ciphertext',true),''),'hex'),decode('deadbeef','hex'));
+$$;
 -- `claim_mail_outbox` takes the oldest deliverable row, so a developer
 -- database holding other queued mail would hand this suite someone else's
 -- token. Retiring those rows inside the test transaction makes every claim
@@ -135,7 +140,7 @@ select public.sign_embryo_artifact_v1(
   'cohort_draft', (select draft_id from draft),
   'consent.upload-embryo', 1,
   private.embryo_statement_keys_v1('consent.upload-embryo', 'parent'),
-  decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0001-aaaaaaaaaaaa'
+  pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0001-aaaaaaaaaaaa'
 ) as id;
 
 select is((select count(*) from public.consent_signatures
@@ -147,7 +152,7 @@ select throws_ok(
       '7a000000-0000-4000-8000-0000000000a1',
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-parentage', 1, array['something-else'],
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0002-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0002-aaaaaaaaaaaa')$$,
   '22023', 'statement keys differ from the published set',
   'a signature must carry exactly the published statement keys');
 select throws_ok(
@@ -157,7 +162,7 @@ select throws_ok(
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-parentage', 1,
       private.embryo_statement_keys_v1('attestation.embryo-parentage'),
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0003-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0003-aaaaaaaaaaaa')$$,
   '42501', 'not a current parent',
   'a stranger cannot attest parentage on someone else''s draft');
 select throws_ok(
@@ -167,7 +172,7 @@ select throws_ok(
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-parentage', 2,
       private.embryo_statement_keys_v1('attestation.embryo-parentage'),
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0004-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0004-aaaaaaaaaaaa')$$,
   '55000', 'artifact superseded',
   'only the current artifact version can be signed');
 select is(
@@ -177,7 +182,7 @@ select is(
     'cohort_draft', (select draft_id from draft),
     'consent.upload-embryo', 1,
     private.embryo_statement_keys_v1('consent.upload-embryo', 'parent'),
-    decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0005-aaaaaaaaaaaa'),
+    pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0005-aaaaaaaaaaaa'),
   (select id from sig_upload),
   'signing the same artifact again returns the existing record');
 select lives_ok(
@@ -187,7 +192,7 @@ select lives_ok(
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-parentage', 1,
       private.embryo_statement_keys_v1('attestation.embryo-parentage'),
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0006-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0006-aaaaaaaaaaaa')$$,
   'the owner-parent attests parentage');
 select lives_ok(
   $$select public.sign_embryo_artifact_v1(
@@ -196,7 +201,7 @@ select lives_ok(
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-disposition-rights', 1,
       private.embryo_statement_keys_v1('attestation.embryo-disposition-rights'),
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0007-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0007-aaaaaaaaaaaa')$$,
   'the owner-parent attests disposition rights');
 select throws_ok(
   $$select public.sign_embryo_artifact_v1(
@@ -205,7 +210,7 @@ select throws_ok(
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-single-parent-basis', 1,
       private.embryo_statement_keys_v1('attestation.embryo-single-parent-basis'),
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0008-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0008-aaaaaaaaaaaa')$$,
   '22023', 'basis does not take this artifact',
   'a two-parent draft refuses the single-parent basis artifact');
 select is(
@@ -273,7 +278,7 @@ select is(
 select throws_ok(
   $$select public.accept_embryo_co_parent_invitation_v1(
       repeat('c', 64), '7a000000-0000-0000-0000-000000000002', repeat('f', 64),
-      decode('deadbeef', 'hex'), 'GB',
+      pg_temp.embryo_fixture_signing_name(), 'GB',
       private.embryo_statement_keys_v1('consent.upload-embryo', 'parent'),
       private.embryo_statement_keys_v1('attestation.embryo-parentage'),
       'nonce-accept-0001-aaaaaaaaaaa')$$,
@@ -282,7 +287,7 @@ select throws_ok(
 select throws_ok(
   $$select public.accept_embryo_co_parent_invitation_v1(
       repeat('c', 64), '7a000000-0000-0000-0000-000000000001', repeat('a', 64),
-      decode('deadbeef', 'hex'), 'GB',
+      pg_temp.embryo_fixture_signing_name(), 'GB',
       private.embryo_statement_keys_v1('consent.upload-embryo', 'parent'),
       private.embryo_statement_keys_v1('attestation.embryo-parentage'),
       'nonce-accept-0004-aaaaaaaaaaa')$$,
@@ -291,7 +296,7 @@ select throws_ok(
 select is(
   public.accept_embryo_co_parent_invitation_v1(
     repeat('c', 64), '7a000000-0000-0000-0000-000000000002', repeat('b', 64),
-    decode('deadbeef', 'hex'), 'GB',
+    pg_temp.embryo_fixture_signing_name(), 'GB',
     private.embryo_statement_keys_v1('consent.upload-embryo', 'parent'),
     private.embryo_statement_keys_v1('attestation.embryo-parentage'),
     'nonce-accept-0002-aaaaaaaaaaa'),
@@ -317,7 +322,7 @@ select is(
 select throws_ok(
   $$select public.accept_embryo_co_parent_invitation_v1(
       repeat('c', 64), '7a000000-0000-0000-0000-000000000002', repeat('b', 64),
-      decode('deadbeef', 'hex'), 'GB',
+      pg_temp.embryo_fixture_signing_name(), 'GB',
       private.embryo_statement_keys_v1('consent.upload-embryo', 'parent'),
       private.embryo_statement_keys_v1('attestation.embryo-parentage'),
       'nonce-accept-0003-aaaaaaaaaaa')$$,
@@ -345,7 +350,7 @@ select lives_ok(
       'cohort_draft', (select draft_id from draft),
       'attestation.embryo-disposition-rights', 1,
       private.embryo_statement_keys_v1('attestation.embryo-disposition-rights'),
-      decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0009-aaaaaaaaaaaa')$$,
+      pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0009-aaaaaaaaaaaa')$$,
   'the co-parent attests disposition rights in their own account');
 
 create temporary table acks as
@@ -356,11 +361,11 @@ select
     'cohort_draft', (select draft_id from draft),
     'disclosure.insurance-and-discrimination', 1,
     private.embryo_statement_keys_v1('disclosure.insurance-and-discrimination'),
-    decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0010-aaaaaaaaaaaa') as insurance,
+    pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0010-aaaaaaaaaaaa') as insurance,
   public.sign_embryo_artifact_v1(
     '7a000000-0000-0000-0000-000000000001',
     '7a000000-0000-4000-8000-0000000000a1',
     'cohort_draft', (select draft_id from draft),
     'charter.future-person', 1,
     private.embryo_statement_keys_v1('charter.future-person'),
-    decode('deadbeef', 'hex'), 'GB', 'nonce-sign-0011-aaaaaaaaaaaa') as charter;
+    pg_temp.embryo_fixture_signing_name(), 'GB', 'nonce-sign-0011-aaaaaaaaaaaa') as charter;

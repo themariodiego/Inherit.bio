@@ -1,5 +1,202 @@
 # Test diff register
 
+## 2026-10-01: Claimed source disposal uses settled publication evidence
+
+The private claimant-erasure prerequisite now uses the existing
+`future-person.claimant-reverification-until-request` claimed-subject-deletion
+trigger. It does not add a scheduled `source.revocation-7d` worker phase against
+D-126. The original request still fixes seven-day source and thirty-day Charter
+completion clocks. The subject lock precedes the retention and worker locks,
+and the purge-start fingerprint commits before provider work.
+
+Published parts no longer wait for their original write lease to expire.
+They must instead prove a completed publication or the exact immutable235
+receipt and current custody tuple. The new gateway regression proves a
+permanent marker refuses a late create-only write while the original capability
+is still live, without calling SQL ACK. Unsettled publication still refuses.
+
+The SQL suite retains all nine original refusals and adds a genuine synthetic
+approval, verified document delivery, provider-submit receipt and one-time
+release activation before the real request and exact part-ACK paths. It pins
+nonce rollback, fixed deadlines, purge start, source/sibling byte identity,
+lease crossing and missing-marker refusal. Synthetic SQL ACKs establish the
+DB protocol only; full provider/browser proof remains pending.
+
+A new closed issuer gives future approved custody one random immutable audit
+selector in the existing private slice. Existing slices remain NULL; no
+historical identity is guessed or backfilled. The export authority fingerprint
+already covers the complete immutable slice. No new store is added. Whole
+147-store graph completion and the public deletion action remain closed.
+
+
+## Null-aware canonical call proof and genuine export fixture · 30 September 2026
+
+The full fresh database rehearsal of 770ff89 reached 6789 assertions and found
+four genuine publications refused by a STRICT exact-call hash: an alternate
+allele may legitimately be NULL. The helper now encodes NULL and present values
+with distinct tagged bytes, preserving every staged tuple comparison and full
+source fence. Two additional exact SQL probes require a non-NULL digest and no
+NULL/empty collision. Existing canonical source/publication/withdrawal cases
+retain their original source counts, values and failure assertions.
+
+A synthetic unrelated restriction fixture previously copied every column of a
+published source. It now explicitly keeps NULL proof because its mirrored row
+was not created by the genuine running producer. The stamp admits only the
+exact current job/session/cohort/binding tuple; a supplied/copied non-NULL proof
+outside that tuple still refuses. Legacy NULL rows receive no inferred proof.
+The claimant capture remains fail-closed on absent proof. No legacy DNA is read
+or backfilled, and no immutable source guard is dropped or disabled at runtime.
+
+The new export fixture restores the constraints' declared initial deferred mode
+after its explicit documentary approval flush, then explicitly flushes the
+new export's complete job/nonce/origin tuple. This preserves both atomic checks;
+it does not change the production constraint or any old negative assertion.
+
+The signing privacy proof now requires exact agreement/review/attestation field
+sets, the original signed body from its real artifact, and zero parent contact,
+document/genotype fields or active parent identity outside that body. Required
+legal prose naturally contains words such as document and genotype; it is not
+mistaken for biological/document bytes. The earlier omission assertion remains
+and gains strict semantic field/body checks. Root's corrected fresh SQL
+rehearsal remains pending; no green SQL result is inferred from these changes.
+
+
+## Actual claimant archive members and immutable calls · 30 September 2026
+
+New tests independently open the actual worker-generated ZIP64 archive and
+require all 23 members, every manifest member length/hash, exact own autosomal
+calls, genuine historical signature/name/body, unchanged scientific metadata,
+retired-condition retention and explicit parent/cohort withholding. Truncated,
+foreign, unknown-member and revoked sources refuse whole byte completion;
+revocation during provider write retains cleanup duties and cannot acknowledge.
+The real SQL fixture authors the genuine review/release/activation and complete
+create-envelope/durable attempt rather than fabricating claimant authority.
+It remains unexecuted until shared fresh-DB rehearsal. Existing READY holds,
+147 store dispositions and API-private privilege assertions remain exact.
+
+The old source deletion negative now expects the stronger earlier immutable
+claimed-source refusal (42501/embryo_source_unavailable). It cannot delete the
+calls first and then observe an incomplete archive. Every earlier boundary is
+retained; no timeout, retry, gate, acceptance or browser assertion is weakened.
+The additive canonical immutability column remains NULL for legacy sources;
+claimant export refuses absent proof without reading or backfilling legacy DNA.
+Only the exact new producer path receives an immutable staged-copy proof. Unknown figure/artifact classes
+remain whole-export refusals until their full byte members are implemented.
+
+
+## Claimant export uses the actual subject binding column · 30 September 2026
+
+The source capture now binds public.subjects.subject_binding_revision in both its origin receipt and closed metadata. The shorter binding_revision field belongs to account bindings, and did not exist on the subject row. Both projections keep their exact registered bindingRevision key and every current credential/source/subject check; no shape, authority or refusal assertion changes. The SQL rehearsal remains pending.
+
+## Browser setup timing input survives native cleanup · 30 September 2026
+
+The first hosted run executed all 565 cases successfully across six fresh jobs
+(98/100/108/74/94/91), with zero skips or retries, then every browser job failed
+because Playwright had removed its pre-run timing input from `test-results`.
+The correction stores that input in the job-owned `RUNNER_TEMP`, outside the
+output directory, with exact commit/run/attempt/shard identity, bounded integer
+timings, exclusive private-file creation and strict ownership checks. Missing,
+foreign, malformed or permissive inputs still fail; no fallback is introduced.
+
+A new regression invokes the installed native Playwright with an actual passing
+case and proves its output-directory cleanup deletes the old internal input
+while preserving the external timing record. Further regressions refuse stale
+or foreign identities, invalid clocks, altered schema, links and duplicate
+writes. Existing browser cases, assertions, timeouts, retries, transport checks
+and complete same-attempt aggregation are unchanged. A complete hosted rerun
+on the corrected version is required before accepting the release gate.
+
+## Browser evidence artifact selection across reruns · 30 September 2026
+
+Coverage artifact names now begin `browser-case-<attempt>-`, and the download
+pattern requires that complete prefix. The previous suffix wildcard could
+accidentally select attempt 1/shard 2 while downloading attempt 2, causing a
+valid full rerun to fail its exact-directory check. A new regression applies
+the actual workflow pattern through the existing installed glob matcher to
+retained attempts 1, 2 and 12 and requires exactly seven artifacts for each.
+The exact receipt count, same-attempt/source/run checks and stale-evidence
+refusals remain unchanged; no evidence from another attempt becomes accepted.
+
+An intermediate fresh database run stopped at the existing signed-invitation
+fixture; its full assertions passed in a diagnostic reproduction. The fixture
+now retains the same immediate refusal and ten-claim bound while reporting only
+synthetic queue/authority state flags on refusal. It reveals no contact, token
+or identifier. No deadline, wait, retry, quota, assertion or producer is changed.
+The original failure's cause remains unestablished, so no speculative runtime
+change or green result is claimed from that diagnostic alone.
+
+## Native browser discovery and execution statistics · 30 September 2026
+
+The coverage verifier now checks each phase against real Playwright 1.62.1 JSON.
+Native `--list` reports expected=0 and skipped=the discovered case count, while
+every test declares expectedStatus=passed and has zero results. The former
+handcrafted discovery fixture incorrectly used skipped=0; a real-tool check
+caught that before hosted execution. Discovery now requires the exact native
+counts and still refuses declared skips, results, errors and project drift.
+Actual execution retains every existing strict pass-once/retry-zero boundary
+and now also requires expected=the executed case count and skipped=0. Two new
+regressions reject false listing counts, declared skips, discovery executions,
+false passed counts and any skipped execution. No actual execution assertion,
+timeout, retry, case or gate is relaxed or removed.
+
+
+## CI readability scan reuse · 30 September 2026
+
+The 27 repository readability assertions now share one actual gate scan of the
+same immutable checkout in `beforeAll`. Each existing provider, template and
+page filter and its exact empty-failure assertion remain unchanged. Extraction
+assertions and planted-copy regressions retain their independent input and
+fixture scans. This removes repeated whole-repository parsing that caused a
+5-second case timeout in two complete local Linux runs; no test, threshold,
+timeout, retry or gate is removed or relaxed. Full-suite verification on the
+new committed head remains required.
+
+## Permanent isolated browser CI sharding · 30 September 2026
+
+The unchanged complete browser suite now uses six fresh hosted jobs, each with
+its own database and the existing real-provider/isolated-runtime preflight.
+New strict regression cases reject missing, duplicated, foreign-commit,
+prior-run and stale-attempt receipts, omitted or repeated cases, zero/multiple
+executions, retries, skips, non-passing results, global errors, changed projects,
+parallel workers, negative provider counts and silently ignored ordinary specs.
+The existing full-suite/no-skip/no-retry and transport assertions remain.
+
+Actual native discovery places no upload fixture in shard 1. The original
+whole-suite assertion that at least one real browser upload crosses the
+installed provider therefore moves to mandatory aggregation, which requires
+nonnegative actual per-shard counts and a positive complete-suite sum. Tests
+prove that one upload-free shard can pass when other shards observed actual
+uploads, while zero across the whole suite and every negative count fail.
+Ordinary full/local and Lighthouse runs retain their direct positive assertion.
+No sentinel upload, narrowed selector, fixture bypass or execution skip is added.
+
+The required checks job still rejects failed, cancelled or skipped job families.
+The parsed concurrency contract requires a unique run ID for non-PR groups;
+turning off active cancellation alone would still let a pending main run replace
+an older pending main run. PR groups retain their stable PR number.
+Every tracked ordinary spec must be discovered; only the exact existing density
+capture and paid comprehension-run spec remain opt-in. A central project
+registry refuses empty or unregistered projects. Raw configuration/report JSON
+is excluded from uploaded artifacts; sanitized coverage and timing receipts
+provide the exact SHA/run/case evidence and file-group imbalance instead.
+
+## Exact claimant source and historical signed evidence · 30 September 2026
+
+Migration 20260930242000 preserves the Charter's recorded signing name ciphertext, signed body/version/digest, individually affirmed statements, jurisdiction snapshot, random-principal pseudonym and named review decision in the immutable custody slice. These values come from the genuine prior signature, artifact and attestation records before parent cleanup. The former privacy assertion still excludes active parent account/principal identifiers, contacts and genetic data; a new assertion checks the exact earlier ciphertext and recomputed original body. No current profile, claimant identity or identity-document image reconstructs a historical name. The ciphertext is decrypted only in the private archive projection with the existing deployment key. Abbreviated legacy snapshots and unverifiable bodies refuse the whole export source.
+
+The source prerequisite is service-only and read-only, accepts no subject/account/file selectors, binds the current genuine claimant/session/credential/source tuple, uses exact autosomal fields and lossless bigint keyset cursors, and checks live authority before and after each page. Twenty-two focused units cover genuine AES decoding, wrong keys and bodies, forged/current identity fields, missing roles, duplicate/truncated/mismatched pages, revocation before yielding bytes, cancellation and the bounded non-cooperative RPC. The real SQL fixture uses the existing attested decision, provider issue/completion and one-use activation sequence, then adds closed projection, sibling/stale receipt/selector denial, zero row-count mutation, exact 147-store count and independent analysis-stop/source checks. An optional synthetic signing envelope affects only this metadata fixture; every older fixture's default bytes and negative cases remain unchanged.
+
+This is an export source checkpoint. No public export route, complete member plan, queued worker, READY exception or successful archive delivery is claimed. Every existing account publication/late-write hold and excluded credential/document disposition remains. SQL and full hosted browser execution are pending independent verification; G5.4 remains NO.
+## Claimed-source erasure prerequisite · 30 September 2026
+
+New protocol tests pin the exact sealed inventory, permanent verified empty
+marker, unchanged receipt and one lease binding. Crossed manifests, duplicate
+objects, extra selectors, expired leases, lost ACKs and contradictory completion
+receipts refuse. New SQL probes preserve the service-only drain and private
+plan creation boundaries; missing authority/plan/evidence never means deletion.
+No existing expectation or assertion changed. Genuine positive approval-to-plan
+SQL, complete subject graph cleanup, registered DELETE/UI and hosted evidence
+remain pending; source disposal alone is not deletion acceptance. G8 remains NO.
 ## 2026-09-30 — Preserve custody identity checks under the real API role and audit real reviewer pages
 
 The first complete hosted custody run found the service-role immutable-file refusal returning a sealed-table permission error before its existing `immutable_file_identity` assertion. The invoker trigger retains its real caller-role test and all original identity fields. A service-only read-only definer evaluates the unchanged exact approved claimant tuple without granting table reads. Fresh pgTAP checks the real service-role refusal, invoker semantics, current-transaction visibility and restricted helper grants; all old refusal and positive detachment assertions remain.

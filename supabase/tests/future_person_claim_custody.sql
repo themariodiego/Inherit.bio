@@ -115,7 +115,15 @@ select ok((select expires_at is null and identity_hmac=pg_temp.h('identity') and
 select ok((select jsonb_array_length(agreement_slice)>0
   and not agreement_slice::text~'signing_name|signer_account|signer_principal|contact|genotype'
   from private.future_person_custody_slices where subject_id=(select subject from custody_ids)),
-  'the minimum agreement slice excludes parent identity, contact and genetic fields');
+  'the historical agreement slice excludes active parent identifiers, contact and genetic fields');
+select ok((select bool_and(a->>'version'='future-person-agreement-v2'
+ and a->>'bodySha256'=a->>'recomputedBodySha256'
+ and a->>'bodySha256'=encode(extensions.digest(convert_to(a->>'bodyMarkdown','UTF8'),'sha256'),'hex')
+ and a->>'signingNameCiphertext'='deadbeef'
+ and (jsonb_array_length(a->'attestations')>0 or a->>'artifactKey' in ('consent.upload-embryo','disclosure.insurance-and-discrimination')) and a#>>'{review,outcome}'='approved')
+ from private.future_person_custody_slices c,jsonb_array_elements(c.agreement_slice) a
+ where c.subject_id=(select subject from custody_ids)),
+ 'custody freezes the genuine signed body, exact earlier signing ciphertext, affirmed statements and named decision');
 select is((select count(*) from public.genome_files where user_id='7a000000-0000-0000-0000-000000000001'
   and id=(select file from custody_ids)),0::bigint,'the parent account file selector excludes this canonical source');
 select throws_ok($$delete from private.embryo_canonical_source_parts where file_id=(select file from custody_ids)$$,
