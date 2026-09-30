@@ -1,5 +1,9 @@
 # Test diff register
 
+## PostgreSQL nonce boundaries retain the full registered maximum · 30 September 2026
+
+The registered operation nonce remains 16–256 characters from the closed ASCII alphabet. PostgreSQL's regular-expression repetition limit is lower than 256, so the executor now checks character and byte length explicitly and retains an unbounded closed-alphabet pattern. Eight strict rollback probes under a genuinely activated claimant session cover 15, 16, 256, 257, null, forbidden punctuation, trailing newline and non-ASCII characters. Both exact accepted boundaries must record one consumed hash; all refusals remain 42501. The purpose seed and exact single-claimant insertion use the existing literal formatting read by the matrix unit parser. Its target-kind literal reader now recognizes the registered hyphen in claimed-subject, while the exact issuer-set equality and every-insertion literal assertion remain unchanged. No nonce bound or browser ratchet changes.
+
 ## Shared rights sessions use the actual issued candidate expiry · 30 September 2026
 
 The strict Future Person session trigger now reads expiry from the issued token candidate; token hashes have no expiry column. It requires the exact issued purpose, target and revision, the current unended hash, the current matching claimant credential and the original source and 60-minute session bindings. Two added ordinary adult/co-parent identity-update assertions prove that their genuine issued sessions pass this shared trigger. Five added Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. The genuine one-time claimant activation remains the positive proof. The existing exact plans increase by one each to 39 and 33; every earlier assertion and refusal remains. This account package retains its committed contact/delivery retention dependency and its exact 15-column claim-intake census.
