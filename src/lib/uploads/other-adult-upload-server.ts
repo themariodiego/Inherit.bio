@@ -247,7 +247,9 @@ export async function isHeldUploadTarget(accountId: string, subjectId: string): 
     const { data, error } = await createAdminClient().from("subjects")
       .select("subject_class, lifecycle, owner_account_id, subject_account_id").eq("id", subjectId).maybeSingle();
     return !error && data?.subject_class === "other_adult" && data.lifecycle === "active"
-      && data.owner_account_id === accountId && data.subject_account_id === null;
+      && data.owner_account_id === accountId
+      && (data.subject_account_id === null
+        || (uuid.safeParse(data.subject_account_id).success && data.subject_account_id !== accountId));
   } catch {
     // An unreadable subject is not a Path B subject; the own issuer then refuses it.
     return false;

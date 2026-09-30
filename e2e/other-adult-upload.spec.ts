@@ -35,6 +35,7 @@ import { observeNativeResponses } from "./helpers/native-response-observer";
 import { PATH_B_CHOICES_COPY as CHOICES } from "../src/copy/upload/other-adult";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
+import { directUploadReceipt } from "../src/lib/uploads/subject-upload-contract";
 
 /**
  * Another adult's DNA under the register's Path B, "I have their file"
@@ -222,15 +223,36 @@ async function addFile(page: Page, person: { name: string }, fixture = FIXTURE) 
   const section = await openPathB(page);
   const card = section.locator('[data-slot="other-adult-ready"]').filter({ hasText: person.name });
   await expect(card.getByRole("button", { name: COPY.chooseButton, exact: true })).toBeEnabled();
-  const observation = await observeNativeResponses(page, { finalize: "^/api/files/[0-9a-f-]{36}/finalize$" });
-  const choosing = page.waitForEvent("filechooser");
-  await card.getByRole("button", { name: COPY.chooseButton, exact: true }).click();
-  await (await choosing).setFiles(fixture);
-  const response = await observation.read("finalize");
-  expect(response.status).toBe(200);
-  // The register's file-finalize-v1 other-adult outcome, exactly.
-  const receipt = heldFinalizationReceipt.parse(JSON.parse(response.text));
-  await observation.dispose();
+  const observation = await observeNativeResponses(page, { issued: "^/api/files/upload-session$",
+    finalize: "^/api/files/[0-9a-f-]{36}/finalize$" });
+  const issuedHeaders = page.waitForResponse(response => response.url() === `${ORIGIN}/api/files/upload-session`
+    && response.request().method() === "POST");
+  const storedResponse = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.origin === SUPABASE_URL && /^\/storage\/v1\/object\/genomes\/[0-9a-f-]{36}$/.test(url.pathname)
+      && !url.search && response.request().method() === "POST";
+  });
+  // Keep unused observations handled if an earlier stage refuses the upload.
+  void issuedHeaders.catch(() => {}); void storedResponse.catch(() => {});
+  let receipt: ReturnType<typeof heldFinalizationReceipt.parse>;
+  let issued: ReturnType<typeof directUploadReceipt.parse>;
+  try {
+    const choosing = page.waitForEvent("filechooser");
+    await card.getByRole("button", { name: COPY.chooseButton, exact: true }).click();
+    await (await choosing).setFiles(fixture);
+    const issuance = await observation.read("issued");
+    expect(issuance.status, "the real browser must obtain a held-upload lease before finalization").toBe(201);
+    issued = directUploadReceipt.parse(JSON.parse(issuance.text));
+    expect(issued.maximumBytes).toBe(fs.statSync(fixture).size);
+    expect((await issuedHeaders).headers()["cache-control"]).toBe("private, no-store");
+    const stored = await storedResponse;
+    expect(stored.url()).toBe(`${SUPABASE_URL}/storage/v1/object/genomes/${issued.stagingKey}`);
+    expect(stored.status()).toBe(200);
+    const response = await observation.read("finalize");
+    expect(response.status).toBe(200);
+    // The register's file-finalize-v1 other-adult outcome, exactly.
+    receipt = heldFinalizationReceipt.parse(JSON.parse(response.text));
+  } finally { await observation.dispose(); }
   expect(receipt.noticeState).toBe("queued");
   const held = page.locator('[data-slot="other-adult-held"]').filter({ hasText: person.name });
   await expect(held.getByRole("status")).toHaveText(COPY.pendingStatus(person.name));
@@ -238,7 +260,8 @@ async function addFile(page: Page, person: { name: string }, fixture = FIXTURE) 
     .select("id, upload_session_id, subject_id, state, object_name, raw_sha256, upload_revision, notice_outbox_id")
     .eq("id", receipt.fileId).single();
   expect(row.error).toBeNull();
-  expect(row.data).toMatchObject({ state: "pending", raw_sha256: createHash("sha256").update(fs.readFileSync(fixture)).digest("hex") });
+  expect(row.data).toMatchObject({ state: "pending", upload_session_id: issued.uploadId,
+    raw_sha256: createHash("sha256").update(fs.readFileSync(fixture)).digest("hex") });
   return row.data as { id: string; upload_session_id: string; subject_id: string; object_name: string;
     raw_sha256: string; upload_revision: number; notice_outbox_id: string };
 }

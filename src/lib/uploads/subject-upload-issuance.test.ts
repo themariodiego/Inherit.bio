@@ -294,7 +294,7 @@ describe("naming the limit that actually refused an upload", () => {
 
 describe("another adult's held upload under Path B (TEST-LOCAL)", () => {
   const person = "99999999-9999-4999-8999-999999999999";
-  // A confirmed Path B subject: active, owned by the uploader, with no account of its own.
+  // A confirmed Path B subject stays uploader-owned with either confirmation principal.
   const pathB = { subject_class: "other_adult", lifecycle: "active", owner_account_id: accountId, subject_account_id: null };
   const declared = { ...body, subjectId: person, sha256: "a".repeat(64) };
   beforeEach(() => {
@@ -307,16 +307,28 @@ describe("another adult's held upload under Path B (TEST-LOCAL)", () => {
     expect(mocks.subject).not.toHaveBeenCalled();
     expect(mocks.rpc.mock.calls[0][0]).toBe("issue_own_storage_upload_v1");
   });
-  it("sends the uploader's own confirmed Path B subject to the held issuer, with the flag", async () => {
+  it.each([null, sessionId])("sends the uploader's confirmed Path B subject to the held issuer with recipient account %s", async recipient => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
-    expect((await issueSubjectUpload(request(declared))).status).toBe(201);
+    mocks.subject.mockResolvedValue({ data: { ...pathB, subject_account_id: recipient }, error: null });
+    const response = await issueSubjectUpload(request(declared));
+    expect(response.status).toBe(201);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    const receipt = directUploadReceipt.parse(await response.json());
+    const [header, payload, signature] = receipt.uploadToken.split(".");
+    expect(crypto.verify("sha256", Buffer.from(header + "." + payload),
+      { key: publicKey, dsaEncoding: "ieee-p1363" }, Buffer.from(signature!, "base64url"))).toBe(true);
+    expect(JSON.parse(Buffer.from(payload!, "base64url").toString())).toMatchObject({
+      role: "inherit_upload_only", sub: accountId, session_id: sessionId,
+      upload_session_id: uploadId, staging_key: stagingKey, maximum_bytes: 123, aud: "inherit-storage-upload",
+    });
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("issue_other_adult_held_upload_v1", {
       p_account_id: accountId, p_session_id: sessionId, p_subject_id: person,
       p_declared_format: "VCF", p_size_bytes: 123, p_sha256: "a".repeat(64), p_test_jurisdiction: true,
     });
   });
-  it("answers such a subject as unknown when the jurisdiction does not permit it", async () => {
+  it.each([null, sessionId])("answers recipient account %s as unknown when the jurisdiction does not permit it", async recipient => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    mocks.subject.mockResolvedValue({ data: { ...pathB, subject_account_id: recipient }, error: null });
     mocks.capability.mockResolvedValue({ status: "unreviewed" });
     const response = await issueSubjectUpload(request(declared));
     expect(response.status).toBe(404);
@@ -325,18 +337,40 @@ describe("another adult's held upload under Path B (TEST-LOCAL)", () => {
   });
   // A draft (a pending Path A or Path B reservation) is never sent to the held
   // issuer; the database refuses every such target in any case.
-  it.each([{ owner_account_id: sessionId }, { lifecycle: "draft" }, { subject_class: "self" }, { subject_account_id: sessionId }])(
+  it.each([{ owner_account_id: sessionId }, { owner_account_id: sessionId, subject_account_id: accountId },
+    { lifecycle: "draft" }, { lifecycle: "purged" }, { subject_class: "self" }, { subject_class: "embryo" },
+    { subject_account_id: accountId }, { subject_account_id: "malformed" }, { subject_account_id: undefined }])(
     "keeps any other subject on the own issuer (%j)", async patch => {
       vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
       mocks.subject.mockResolvedValue({ data: { ...pathB, ...patch }, error: null });
       await issueSubjectUpload(request(declared));
       expect(mocks.rpc.mock.calls[0][0]).toBe("issue_own_storage_upload_v1");
     });
-  it("maps the held issuer's missing consent to the same conflict as the own issuer's", async () => {
+  it.each([null, sessionId])("maps recipient account %s missing held consent to the same conflict as the own issuer's", async recipient => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    mocks.subject.mockResolvedValue({ data: { ...pathB, subject_account_id: recipient }, error: null });
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "55000", message: "upload_consent_required" } });
     const response = await issueSubjectUpload(request(declared));
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ error: "upload_unavailable" });
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+    expect(mocks.rpc.mock.calls[0][0]).toBe("issue_other_adult_held_upload_v1");
+  });
+  it.each(["42501", "55000"])("never falls through to the own issuer after an account-bound held authority refusal (%s)", async code => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    mocks.subject.mockResolvedValue({ data: { ...pathB, subject_account_id: sessionId }, error: null });
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { code, message: "private authority detail" } });
+    const response = await issueSubjectUpload(request(declared));
+    expect(response.status).toBe(code === "42501" ? 404 : 409);
+    expect(await response.json()).toEqual({ error: code === "42501" ? "not_found" : "upload_unavailable" });
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+    expect(mocks.rpc.mock.calls[0][0]).toBe("issue_other_adult_held_upload_v1");
+  });
+  it.each([{ data: null, error: null }, { data: pathB, error: { code: "XX000" } }])("cannot dispatch an absent or unreadable subject (%j)", async result => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    mocks.subject.mockResolvedValue(result);
+    await issueSubjectUpload(request(declared));
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+    expect(mocks.rpc.mock.calls[0][0]).toBe("issue_own_storage_upload_v1");
   });
 });

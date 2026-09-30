@@ -1,5 +1,30 @@
 # Test diff register
 
+## Path B account-bound upload dispatch and exact stage proof · 1 October 2026
+
+The actual hosted account-confirmation journey stopped before finalization:
+the server dispatcher still classified only accountless Path B subjects as
+held-upload targets. After the person's real account signature, the subject
+correctly named that account and was incorrectly sent to the own-file issuer.
+The dispatcher now recognizes both registered confirmation principals for an
+active uploader-owned other-adult subject. The recipient account must differ
+from the uploader. TEST-LOCAL, capability, consent, session, signed lease and
+the database's atomic authority remain required; no migration or permission
+changes. A held-issuer refusal cannot fall through to own-file issuance.
+
+The old unit expectation that any recipient account selects the own issuer
+is replaced by exact held-issuer arguments, a cryptographically verified
+upload bearer bound to the uploader's actual account/session, and closed
+no-store issuance. Foreign ownership, uploader-as-recipient, drafts, purged
+subjects, other classes, malformed or unreadable rows, jurisdiction refusal
+and missing consent retain strict refusals. The browser helper now proves
+native 201 issuance and the exact real Storage staging-key 200 before reading
+finalization, and binds the held row to that issued session. Every existing
+finalize status/body, notice, stored hash, UI and database assertion remains;
+the observer is disposed on failure. No timeout, retry or skip changes.
+Focused tests and discovery are local evidence; full hosted execution remains
+required before any acceptance credit.
+
 ## Path B permanent CI and shared native observer proof · 30 September 2026
 
 The Path B continuation now incorporates the permanent six-job full browser
