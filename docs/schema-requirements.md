@@ -196,6 +196,32 @@ corrections, suppressions, and notices listed in the purge registry.
   HGNC-style symbols, checked by `private.valid_gene_symbols`) joins classified
   `ref_variants` to a condition's inheritance mode for the carrier-pair
   trigger (X16.3); an empty array means no gene is registered, never "any".
+  Since `20260929130000_carrier_assertions.sql` no carrier result reads
+  `ref_variants` or `condition_registry`; they remain for their other readers.
+- Reviewed carrier assertions (`20260929130000_carrier_assertions.sql`,
+  `docs/carrier-importer-design.md`):
+  - `clinical_assertion_releases`: one pinned release per row, with the source
+    file's and ClinGen snapshot's SHA-256; at most one current release per
+    source, and importing a new one retires it.
+  - `carrier_conditions`: one condition per gene, MONDO-keyed, with
+    `inheritance_mode text not null` checked against the five X16.3 values, the
+    ClinGen classification, a penetrance class (`unestablished` needs no
+    citation, any other class needs one) and a severity class. Written
+    inactive; active only through a recorded review of its current revision
+    (trigger `carrier_conditions_reviewed`).
+  - `carrier_condition_reviews`: append-only; a named reviewer, a role, a
+    reference, the decision and, for an activation, the severity judgement.
+  - `clinical_assertions`: one row per allele and condition, keyed by the
+    exact GRCh38 allele (checked simple and left-aligned by
+    `private.carrier_allele_key_valid_v1`), with ClinVar's GRCh37 placement,
+    the other GRCh38 spellings of an indel, the classification, review status,
+    stars (checked against the status), conflict flag and last-evaluated date.
+  - Browser roles have no privilege on any of them; the service reads them and
+    writes only through `import_clinical_assertion_release_v1` and
+    `review_carrier_condition_v1`. The one reader rule is
+    `private.carrier_assertion_rule_v1`, served by `carrier_assertions_v1` and
+    `family_portrait_carrier_calls_v1`.
+  - No person's data is stored in them, so they are not purge targets.
 - Stored result documents validate recursively against the exact eight-key
   `EmbryoFinding` leaf and its registered child graph before insert/update.
 - QC thresholds, coverage failures, within-family validation, natural-frequency

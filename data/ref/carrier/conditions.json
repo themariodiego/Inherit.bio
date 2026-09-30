@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed",
+  "statusNote": "The starter list the owner asked engineering to propose on 28 September 2026. Every row is imported inactive; a named reviewer activates each condition, and the owner gives the final nod on the list itself.",
+  "selection": {
+    "practiceResource": {
+      "citation": "Gregg AR et al. Screening for autosomal recessive and X-linked conditions during pregnancy and preconception: a practice resource of the American College of Medical Genetics and Genomics (ACMG). Genet Med 2021;23(10):1793-1806",
+      "pmid": "34285390",
+      "pmcid": "PMC8488021",
+      "doi": "10.1038/s41436-021-01203-z",
+      "accessedOn": "2026-09-28"
+    },
+    "rules": [
+      "Autosomal recessive, listed in Tables 1 to 5 of the practice resource.",
+      "ClinGen rates the gene-disease link Definitive or Strong, for autosomal recessive inheritance, in the pinned ClinGen snapshot.",
+      "The common disease-causing changes are single-letter changes or small insertions or deletions that arrays and VCFs can read. No condition that needs copy-number or repeat testing.",
+      "ClinVar names the ClinGen disease (by its MONDO identifier) on the gene's classified changes, so each assertion binds to this condition and no other.",
+      "No X-linked condition (ADR 0034: only after a serious-condition review)."
+    ]
+  },
+  "conditions": [
+    {
+      "conditionId": "MONDO:0009061",
+      "displayName": "Cystic fibrosis",
+      "gene": "CFTR",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "cystic fibrosis",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2022-06-01",
+        "gcep": "General Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_eb5b2eb1-e354-4e5a-ad5a-d0ee02805590-2022-06-01T040000.000Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0010100",
+      "displayName": "Tay-Sachs disease",
+      "gene": "HEXA",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "Tay-Sachs disease",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2020-05-27",
+        "gcep": "General Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_1f7530b5-af31-40f9-ac18-a1b4d404285a-2020-05-27T160000.000Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0009861",
+      "displayName": "Phenylketonuria (PKU)",
+      "gene": "PAH",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "phenylketonuria",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2020-04-24",
+        "gcep": "Aminoacidopathy Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_5a617cb4-94ec-4f34-b97e-10d9808a1581-2020-04-24T160000.000Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0008721",
+      "displayName": "MCAD deficiency",
+      "gene": "ACADM",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "medium chain acyl-CoA dehydrogenase deficiency",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2018-01-23",
+        "gcep": "Fatty Acid Oxidation Disorders Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_fb987774-0e5b-4466-924f-6f19fccc6599-2018-01-23T170000.000Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0010079",
+      "displayName": "Canavan disease",
+      "gene": "ASPA",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "Canavan disease",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2020-10-08",
+        "gcep": "Aminoacidopathy Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_66306eff-659f-4508-a41b-1820e47e0e1d-2020-10-08T161701.633Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0010200",
+      "displayName": "Wilson disease",
+      "gene": "ATP7B",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "Wilson disease",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2019-03-27",
+        "gcep": "General Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_f0ac0a41-d7d5-4377-a622-1ee9bc4ed9f3-2019-03-27T160000.000Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0010035",
+      "displayName": "Smith-Lemli-Opitz syndrome",
+      "gene": "DHCR7",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 1",
+      "clingen": {
+        "diseaseLabel": "Smith-Lemli-Opitz syndrome",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2023-08-15",
+        "gcep": "Intellectual Disability and Autism Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_d5ed71c9-a76b-44c0-b5c0-44d604f2e0e9-2023-08-15T060000.000Z"
+      }
+    },
+    {
+      "conditionId": "MONDO:0009290",
+      "displayName": "Pompe disease",
+      "gene": "GAA",
+      "inheritanceMode": "autosomal_recessive",
+      "acmgTable": "Table 2",
+      "clingen": {
+        "diseaseLabel": "glycogen storage disease II",
+        "classification": "Definitive",
+        "moi": "AR",
+        "classifiedOn": "2019-01-23",
+        "gcep": "General Gene Curation Expert Panel",
+        "url": "https://search.clinicalgenome.org/kb/gene-validity/CGGV:assertion_0554320e-6a8f-4c39-be7f-99959a8341ee-2019-01-23T170000.000Z"
+      }
+    }
+  ]
+}

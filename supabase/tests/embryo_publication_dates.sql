@@ -2,6 +2,14 @@ begin;
 select no_plan();
 \ir fixtures/embryo_ingest_completed.inc
 
+-- The completed-embryo fixture configures embryo capacity only. The own-file
+-- allowance reader also needs an explicit, complete deployment capacity.
+-- These synthetic limits exist only inside this rollback-only transaction.
+update private.upload_authorization_config
+  set maximum_array_bytes=52428800, maximum_vcf_bytes=25165824,
+    maximum_account_bytes=134217728, maximum_active_uploads=2
+  where singleton;
+
 -- Retire every other split job inside this transaction so the claim is ours.
 update public.worker_jobs set status='cancelled',finished_at=clock_timestamp(),claim_token_hash=null,
   claim_expires_at=null,claimed_by=null

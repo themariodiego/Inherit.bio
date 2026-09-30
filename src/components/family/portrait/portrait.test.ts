@@ -529,3 +529,59 @@ describe("the delete control", () => {
     expect(html).not.toContain(copy.DELETE_CONFIRM_BUTTON);
   });
 });
+
+describe("a reviewed assertion's evidence on every carrier output (brief lines 1329-1335)", () => {
+  const evidence = (variationId: number, variantName: string) => ({
+    variantName, reviewStatus: "practice guideline", reviewStars: 4, lastEvaluated: "2004-03-03",
+    penetranceClass: "unestablished" as const, releaseId: "clinvar-2026-09", geneValidityReadOn: "2026-09-28", variationId,
+  });
+  const F508 = evidence(7105, "NM_000492.3(CFTR):c.1521_1523del (p.Phe508del)");
+  const G542X = evidence(7115, "NM_000492.4(CFTR):c.1624G>T (p.Gly542Ter)");
+  const reviewed = match({
+    gene: "CFTR",
+    a: { dataSubjectId: SELF_A, displayLabel: "You",
+      variant: { rsid: 1, classification: "Pathogenic", genotype: "A/ATCT", copies: "one copy", evidence: F508 } },
+    b: { dataSubjectId: SELF_B, displayLabel: "Bo",
+      variant: { rsid: 2, classification: "Pathogenic", genotype: "G/T", copies: "one copy", evidence: G542X } },
+  });
+
+  it("names both variants with ClinVar's review status and date, the laboratory line, the penetrance label and the sources", () => {
+    const text = textOf(renderCard(reviewed));
+    expect(text).toContain("You: NM_000492.3(CFTR):c.1521_1523del (p.Phe508del) in CFTR. ClinVar classifies it as pathogenic (review status: practice guideline; last evaluated 3 March 2004).");
+    expect(text).toContain("Bo: NM_000492.4(CFTR):c.1624G&gt;T (p.Gly542Ter) in CFTR.");
+    expect(text).toContain("Before anyone acts on this, it needs confirming in an accredited laboratory. Consumer files are not a clinical test.");
+    expect(text).toContain("Penetrance for this variant has not been established.");
+    expect(text).toContain("Classifications from ClinVar (NCBI), release 2026-09. Gene links from ClinGen, read 28 September 2026.");
+    expect(text).toContain(copy.CHANCE_NOT_PREDICTION);
+    // The key is an assertion id, never printed as an rsID.
+    expect(text).not.toMatch(/\brs1\b|\brs2\b/);
+  });
+
+  it("names the uncovered change by ClinVar's name when a refusal points at it", () => {
+    const refused = { ...reviewed, kind: "no-probability", reason: "not-covered", positionsBothCovered: false,
+      uncovered: { dataSubjectId: SELF_B, rsid: 1 } } as unknown as CarrierMatch;
+    const text = textOf(renderCard(refused));
+    expect(text).toContain("NM_000492.3(CFTR):c.1521_1523del (p.Phe508del)");
+    expect(text).not.toMatch(/\brs1\b/);
+    expect(text).toContain("Before anyone acts on this, it needs confirming in an accredited laboratory.");
+  });
+
+  it("carries the same evidence on a one-sided reading", () => {
+    const reading: OneSidedReading = {
+      kind: "not-covered", gene: "CFTR", conditionId: "MONDO:0009061", conditionName: "Cystic fibrosis",
+      carrier: { dataSubjectId: SELF_A, displayLabel: "You",
+        variant: { rsid: 1, classification: "Pathogenic", genotype: "A/ATCT", copies: "one copy", evidence: F508 } },
+      other: { dataSubjectId: SELF_B, displayLabel: "Bo" }, uncoveredRsid: 1, coverage: { known: 2, covered: 0 },
+    };
+    const text = textOf(renderToStaticMarkup(h(OneSidedCard, { reading, people: PEOPLE, viewerAccountId: VIEWER })));
+    expect(text).toContain("(review status: practice guideline; last evaluated 3 March 2004)");
+    expect(text).toContain("Penetrance for this variant has not been established.");
+    expect(text).toContain("NM_000492.3(CFTR):c.1521_1523del (p.Phe508del).");
+    expect(text).not.toMatch(/\brs1\b/);
+  });
+
+  it("adds nothing to a synthetic rule fixture that carries no reviewed evidence", () => {
+    const html = renderCard(match());
+    expect(html).not.toContain('data-slot="assertion-notes"');
+  });
+});

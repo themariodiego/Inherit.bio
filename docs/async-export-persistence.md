@@ -320,3 +320,115 @@ confirmed both chat choices first. The statement pinned:
 - no export job existing.
 
 The deployed application does not call any of these functions.
+
+## Member plan
+
+`docs/export-member-plan.json` (`export-member-plan-v1`, 28 September 2026)
+is the step 2 member plan. It names every table in the public and private
+schemas, 188 with the legal audit migration, and gives each one a disposition
+and a reason:
+
+| Disposition | Tables | Meaning |
+| --- | --- | --- |
+| `exported` | 20 | The requester's own rows leave. Every column is listed as exported or withheld. |
+| `excluded-credential` | 28 | A key, token, nonce or session, or its hash. Exporting it would be a security defect. |
+| `excluded-protected` | 20 | Contact values, identity HMACs, evidence documents and other ciphertext the contracts always exclude. |
+| `excluded-internal` | 58 | Processing, delivery, retention and security machinery. |
+| `out-of-scope` | 10 | About a person, but not the requester's own record: drafts about someone else, staff workflow. |
+| `deferred` | 27 | Belongs in a complete export, but no reader exists yet. |
+| `reference` | 25 | Catalogs, registries and configuration. No person's data. |
+
+The 27 `deferred` entries are the open gaps: the non-self and family
+projections, embryo cohorts and Future Person claims.
+Each names what blocks it.
+
+**Checked against the catalog.** `supabase/tests/export_member_plan.sql`
+(38 assertions) holds these, and fails on any of them:
+
+- set equality between the plan and the tables in public and private, so a
+  new table fails CI until it has an entry;
+- for an exported table, set equality between its columns and the plan's
+  exported plus withheld columns, so a new column fails until it is
+  classified;
+- no person-scoped table classified as reference data. A table is
+  person-scoped when it has an account column or a foreign-key path to
+  `auth.users` or `public.audit_principals`, so a table keyed only by a
+  subject or a file counts;
+- every key, token, nonce and session table an excluded credential, including
+  `llm_keys`, `llm_settings` and `copilot_context_tokens` by name;
+- no exported column that looks like a secret, a contact or a network trace;
+- the named redactions: the encrypted signing name, the account that holds a
+  subject, and a file's object key.
+
+The same file plants each failure against a copy of the plan or a scratch
+table and asserts the check reports it: a table dropped from the plan, a new
+account-keyed table, a new subject-keyed table, a subject-keyed table called
+reference data, a credential marked exported, the signing-name redaction
+removed and a new column on an exported table.
+
+**Checked against the code.** `src/lib/export/member-plan.test.ts` holds the
+pgTAP copy equal to the JSON, and parses the live asynchronous readers: their
+history classes are exactly the plan's, and each reads only exported columns
+under their own names. `src/app/api/export/route.test.ts` answers every read
+of the synchronous route with the whole database row, a sentinel in every
+withheld column, and asserts no sentinel reaches the archive and the
+archive's members are exactly the plan's. `src/lib/export/subject-record.test.ts`
+holds each subject-record read to exactly the plan's columns.
+
+**What moved in the synchronous export.** `subject-record.json` read six
+tables with `select("*")` and without pages. It now reads every table with
+listed columns in pages. `subjects` no longer carries `owner_account_id` or
+`cohort_id`, which the history reader already withheld: for an adult held by
+another uploader, the first named that other person's account. A person with
+more than 1,000 subject consents now receives all of them.
+
+**Adding a table.** Add its entry to the JSON, then run
+`pnpm exec tsx scripts/export-member-plan.ts` to copy the plan into the pgTAP
+file. There is no migration: the plan is checked in CI, not stored in the
+database. When the producer is connected, the plan's version and digest
+belong in the job receipt.
+
+**Not yet:** this is the static half of step 2. Binding the plan into the job
+receipt, and comparing the members an attempt actually wrote against it
+before ready, need the archive producer, which is not connected. The
+publication hold stays.
+
+**Legal audit.** See the next section. The ledger moved from `deferred` to
+`exported` when attribution was built.
+
+## Legal audit
+
+Migration `20260928160000_legal_audit_attribution.sql` builds the owner's
+decision of 28 September 2026: the export carries the legal audit events a
+person caused themselves. Design, the writers that still record no one, and
+the register divergence are in `docs/export-legal-audit-resolver.md`.
+
+- **Who acted.** `private.append_legal_audit_event` records the acting
+  account's pseudonym when the transaction proves who acted: a consumed
+  session-bound nonce, or the person's own JWT. It does so only on a closed
+  list of events a person causes, and never on a job route. Nothing else
+  changes in the 29 writer functions. Events before the migration name no
+  one, for good.
+- **Receipt `export-authority-v4`** adds the requester's own slice for account
+  exports. An event the person causes after capture fails the job. An event
+  that names no one does not.
+- **History class `legal-audit`**, payload `{kind, afterSeq}`, pages of 500 by
+  ledger sequence. It returns `seq`, `occurred_at`, `event_code`, `route_id`,
+  `outcome_code` and `coded_context`, never the pseudonym or the chain hashes.
+  A subject export refuses the class, because an event records no subject.
+- **Synchronous export.** `public.own_legal_audit_events_v1` gives the same
+  rows behind the export's account and session gate. `legal-audit.json`
+  carries them with the day attribution began.
+
+`supabase/tests/legal_audit_attribution.sql` (67 assertions) covers all of
+this. The receipt change leaves the existing reader suites passing unchanged:
+history (60), chats (37), content (44) and persistence (77).
+
+**Production apply.** The migration redefines
+`private.export_archive_authority_v1` and `public.export_archive_content_v1`
+from their live definitions in `20260925220000`, and
+`private.append_legal_audit_event` from `20260831224033`. A guarded apply
+should pin all three predecessors. Deploy the route change only after the
+migration: without `public.own_legal_audit_events_v1` the free export answers
+503.
+

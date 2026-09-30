@@ -22,8 +22,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "15565110", "label": "Binder et al., Nat Genet 2004" },
-      { "pmid": "23201972", "label": "Klengel et al., Nat Neurosci 2013" }
+      { "pmid": "15565110", "label": "Binder et al., Nat Genet 2004", "accessedOn": "2026-09-28" },
+      { "pmid": "23201972", "label": "Klengel et al., Nat Neurosci 2013", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -49,7 +49,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19934046", "label": "Rodrigues et al., PNAS 2009" }
+      { "pmid": "19934046", "label": "Rodrigues et al., PNAS 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -75,7 +75,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17574217", "label": "Munafò et al., Biol Psychiatry 2008" }
+      { "pmid": "17574217", "label": "Munafò et al., Biol Psychiatry 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -148,7 +148,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008" }
+      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -174,7 +174,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008" }
+      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -200,7 +200,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18677311", "label": "O'Donovan et al., Nat Genet 2008" }
+      { "pmid": "18677311", "label": "O'Donovan et al., Nat Genet 2008", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -226,7 +226,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "30718901", "label": "Howard et al., Nat Neurosci 2019" }
+      { "pmid": "30718901", "label": "Howard et al., Nat Neurosci 2019", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -252,7 +252,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "16044172", "label": "Brown et al., Mol Psychiatry 2005" }
+      { "pmid": "16044172", "label": "Brown et al., Mol Psychiatry 2005", "accessedOn": "2026-09-28" }
     ]
   },
   {
