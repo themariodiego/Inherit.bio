@@ -210,12 +210,14 @@ async function pathBPerson(page: Page, request: APIRequestContext,
 
 /** Add the fixture for one person as the signed-in uploader; returns the held revision. */
 async function addFile(page: Page, person: { name: string }) {
-  await page.goto("/files/upload");
-  const card = page.locator('[data-slot="other-adult-ready"]').filter({ hasText: person.name });
+  const section = await openPathB(page);
+  const card = section.locator('[data-slot="other-adult-ready"]').filter({ hasText: person.name });
   await expect(card.getByRole("button", { name: COPY.chooseButton, exact: true })).toBeEnabled();
   const finalized = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/finalize$/.test(response.url())
     && response.request().method() === "POST");
-  await card.locator('[data-slot="other-adult-file"]').setInputFiles(FIXTURE);
+  const choosing = page.waitForEvent("filechooser");
+  await card.getByRole("button", { name: COPY.chooseButton, exact: true }).click();
+  await (await choosing).setFiles(FIXTURE);
   const response = await finalized;
   expect(response.status()).toBe(200);
   // The register's file-finalize-v1 other-adult outcome, exactly.

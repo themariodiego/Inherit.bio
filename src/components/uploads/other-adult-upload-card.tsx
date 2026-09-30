@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,9 @@ import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { day, latestFileLine } from "./other-adult-lines";
 
 const EMPTY_PERSON = { name: "", email: "", birth: "" };
+const subscribeNever = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 /**
  * Step one of the register's Path B: the person's name, address and date of
@@ -121,6 +124,9 @@ function ConsentFields({ consent, checked, setChecked, typedName, setTypedName, 
  */
 export function OtherAdultUploadCard({ target, limits = null }: { target: OtherAdultTarget; limits?: OwnUploadLimits | null }) {
   const router = useRouter();
+  // The server preview has no file-change handler. Keep the picker closed
+  // until hydration attaches it so an early selection cannot be lost.
+  const interactive = useSyncExternalStore(subscribeNever, clientReady, serverReady);
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
@@ -224,9 +230,9 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
     <h4 className="font-medium">{COPY.chooseHeading}</h4>
     <p className="text-sm text-ink-muted">{COPY.chooseDetail}</p>
     <input ref={inputRef} type="file" className="sr-only" aria-hidden tabIndex={-1} aria-label={COPY.chooseLabel}
-      data-slot="other-adult-file" disabled={busy}
+      data-slot="other-adult-file" disabled={!interactive || busy}
       onChange={event => { const file = event.target.files?.[0]; if (file) void handleFile(file); }} />
-    <Button onClick={() => inputRef.current?.click()} disabled={busy}>{COPY.chooseButton}</Button>
+    <Button onClick={() => inputRef.current?.click()} disabled={!interactive || busy}>{COPY.chooseButton}</Button>
     <div aria-live="polite" className="text-sm">
       {progress?.step === "checking" ? <p>{COPY.progress.checking}</p>
         : progress?.step === "hashing" ? <p>{COPY.progress.hashing(progress.pct)}</p>

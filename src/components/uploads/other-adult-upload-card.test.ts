@@ -84,6 +84,8 @@ describe("the uploader's Path B screens", () => {
     expect(html).toContain('data-slot="other-adult-file"');
     expect(html).toContain(`aria-label="${COPY.chooseLabel}"`);
     expect(html).toContain(COPY.chooseButton);
+    expect(html).toMatch(/<input[^>]*data-slot="other-adult-file"[^>]*disabled/);
+    expect(html).toMatch(new RegExp(`<button[^>]*disabled[^>]*>${COPY.chooseButton}</button>`));
     expect(html).not.toContain('type="checkbox"');
   });
   it("shows one line and nothing to act on while a file waits for the person", () => {
