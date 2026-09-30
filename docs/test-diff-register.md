@@ -1,5 +1,14 @@
 # Test diff register
 
+## Independent ancestry deletion proof uses its actual published revision · 30 September 2026
+
+The second array source now publishes the real revision-4 computation fixture.
+The later source-deletion assertion compares its surviving full content with
+that exact published payload, rather than the unused historical revision-1
+preparation. Exact byte equality, the unrelated source and Storage counts,
+all original deletion refusals and the separate old-source no-backfill check
+remain strict.
+
 ## Result-basis computation fixture is a complete SQL statement · 30 September 2026
 
 The classified empty-result fixture now includes its full insert statement.

@@ -377,7 +377,7 @@ select is((select count(*) from private.own_analysis_runs where file_id='7870000
 select is((select count(*) from public.genome_files where id='78700000-0000-4000-8000-000000000041' and sha256=repeat('c',64)),1::bigint,
  'selected deletion preserves unrelated source metadata');
 select is(public.own_ancestry_content_v1('78700000-0000-4000-8000-000000000001',
- '78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000041')->'content',(select payload->'ancestry' from array_output),
+ '78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000041')->'content',(select payload->'ancestry' from classified_output),
  'selected source deletion preserves exact independent completed ancestry');
 select is((select count(*) from storage.objects where id='78700000-0000-4000-8000-000000000021'),1::bigint,
  'selected deletion preserves unrelated Storage object');
