@@ -1,5 +1,19 @@
 # Test diff register
 
+## Path B reading choices and closed source gate · 30 September 2026
+
+The account journey in `e2e/other-adult-upload.spec.ts` now continues through
+the reading-layer choices on Files. It signs an observed-variant grant for
+the person and a separate uploader grant, checks exact response fields and
+both directional rows, then revokes each through its visible control and
+checks both persisted revocations. After each choice, genetic rows and
+subject-bound sources remain absent: a permission cannot open the missing
+normalization gate. All prior confirmation and quarantine assertions remain.
+
+Response bytes are observed from a clone of the real native browser fetch,
+using the same bounded observer as the Future Person stream. No request is
+replayed, mocked, or changed, and the app receives its original response.
+
 ## Path B file selection waits for its handler · 30 September 2026
 
 The ready-card markup now keeps the file input and Choose button disabled

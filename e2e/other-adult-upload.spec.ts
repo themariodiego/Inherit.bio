@@ -25,6 +25,8 @@ import {
   PATH_B_REQUEST_COPY as REQUEST,
 } from "../src/copy/upload/other-adult";
 import { day } from "../src/components/uploads/other-adult-lines";
+import { observeNativeResponses } from "./helpers/native-response-observer";
+import { PATH_B_CHOICES_COPY as CHOICES } from "../src/copy/upload/other-adult";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
 
@@ -422,4 +424,62 @@ test("another adult's file under Path B: confirmed into the person's own account
   expect(await derivedRows(personId)).toEqual(NONE);
   expect((await admin.from("genome_files").select("id", { count: "exact", head: true })
     .eq("subject_id", subjectId)).count).toBe(0);
+
+  // The reading layer records each explicit choice, while the source gate
+  // remains closed for the person and the uploader alike.
+  const choices = page.locator('[data-slot="path-b-choices"]');
+  await expect(choices.getByRole("heading", { name: CHOICES.heading, exact: true })).toBeVisible();
+  await expect(choices.getByText(CHOICES.detail, { exact: true })).toBeVisible();
+  const grants: { id: string; direction: "self" | "uploader" }[] = [];
+  for (const direction of ["self", "uploader"] as const) {
+    const row = choices.locator(`[data-purpose="reports.monogenic"][data-direction="${direction}"]`);
+    const who = direction === "self" ? CHOICES.forYou : CHOICES.forThem;
+    const on = `${CHOICES.turnOn}: ${CHOICES.layers["reports.monogenic"]}, ${who.toLowerCase()}`;
+    const off = `${CHOICES.turnOff}: ${CHOICES.layers["reports.monogenic"]}, ${who.toLowerCase()}`;
+    await expect(row.getByRole("button", { name: on, exact: true })).toBeDisabled();
+    await row.getByRole("checkbox").check();
+    await expect(row.getByRole("button", { name: on, exact: true })).toBeEnabled();
+    const observation = await observeNativeResponses(page, { grant: "^/api/consents$" });
+    await row.getByRole("button", { name: on, exact: true }).click();
+    const response = await observation.read("grant");
+    expect(response.status).toBe(201);
+    const receipt = JSON.parse(response.text) as { recordId: string };
+    expect(Object.keys(receipt).sort()).toEqual(["artifactKey", "artifactVersion", "purposeKey", "recordId", "recordKind", "signedAt"]);
+    expect(receipt).toMatchObject({ recordKind: "purpose_grant", purposeKey: "reports.monogenic",
+      artifactKey: direction === "self" ? "consent.own-monogenic" : "consent.share-with-adult" });
+    await expect(row.getByRole("button", { name: off, exact: true })).toBeVisible();
+    await observation.dispose();
+    const grant = await admin.from("directional_grants").select("direction, recipient_account_id, status")
+      .eq("grant_id", receipt.recordId).single();
+    expect(grant.error).toBeNull();
+    expect(grant.data).toEqual({ direction: direction === "self" ? "self" : "subject_to_recipient",
+      recipient_account_id: direction === "self" ? personId : (await findUserByEmail(admin, UPLOADER.email))!.id,
+      status: "current" });
+    grants.push({ id: receipt.recordId, direction });
+    // Choosing a layer cannot promote a quarantined original or start work.
+    expect(await derivedRows(personId)).toEqual(NONE);
+    const source = await admin.from("genome_files").select("id", { count: "exact", head: true }).eq("subject_id", subjectId);
+    expect(source.error).toBeNull();
+    expect(source.count).toBe(0);
+  }
+  for (const grant of grants) {
+    const row = choices.locator(`[data-purpose="reports.monogenic"][data-direction="${grant.direction}"]`);
+    const who = grant.direction === "self" ? CHOICES.forYou : CHOICES.forThem;
+    const observation = await observeNativeResponses(page, { revoke: `^/api/consents/${grant.id}/revoke$` });
+    await row.getByRole("button", { name: `${CHOICES.turnOff}: ${CHOICES.layers["reports.monogenic"]}, ${who.toLowerCase()}`, exact: true }).click();
+    const response = await observation.read("revoke");
+    expect(response.status).toBe(200);
+    const receipt = JSON.parse(response.text) as { effectiveAt: string };
+    expect(Object.keys(receipt).sort()).toEqual(["effectiveAt", "revoked"]);
+    expect(receipt).toMatchObject({ revoked: true });
+    expect(Number.isFinite(Date.parse(receipt.effectiveAt))).toBe(true);
+    await expect(row.getByRole("button", { name: `${CHOICES.turnOn}: ${CHOICES.layers["reports.monogenic"]}, ${who.toLowerCase()}`, exact: true })).toBeVisible();
+    await observation.dispose();
+    const ended = await admin.from("purpose_grants").select("revoked_at").eq("grant_id", grant.id).single();
+    expect(ended.error).toBeNull();
+    expect(ended.data?.revoked_at).not.toBeNull();
+    const direction = await admin.from("directional_grants").select("status").eq("grant_id", grant.id).single();
+    expect(direction.error).toBeNull();
+    expect(direction.data?.status).toBe("revoked");
+  }
 });
