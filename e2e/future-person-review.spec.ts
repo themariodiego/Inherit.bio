@@ -1,6 +1,42 @@
+import {createServerClient} from "@supabase/ssr";
+import type {BrowserContext} from "@playwright/test";
+import {ANON_KEY,SUPABASE_URL} from "./helpers";
 import {expect,test} from "./audited-test";
 import {observeNativeResponses} from "./helpers/native-response-observer";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
+
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
+/** Read the actual browser cookie through Auth's SDK; never manufacture claims. */
+async function reviewerSession(context:BrowserContext,reviewer:string):Promise<string> {
+  const cookies=await context.cookies();
+  const auth=createServerClient(SUPABASE_URL,ANON_KEY,{cookies:{getAll:()=>cookies,
+    setAll:()=>{throw new Error("Fresh reviewer proof must not rotate browser cookies");}}});
+  const verified=await auth.auth.getClaims();
+  if(verified.error||!verified.data)throw new Error("Actual reviewer session verification failed");
+  const claims=verified.data.claims;
+  expect(claims.sub,"the browser carries the genuine reviewer's Auth session").toBe(reviewer);
+  expect(claims.aal,"the browser retains genuine MFA authority").toBe("aal2");
+  if(typeof claims.session_id!=="string"||!UUID.test(claims.session_id))throw new Error("Actual reviewer session identity unavailable");
+  return claims.session_id;
+}
+
+/** Ordinary case reads are audited; none may masquerade as any document delivery. */
+async function expectCaseAuditWithoutDocumentReceipt(claim:string,reviewer:string,session:string):Promise<void> {
+  if(![claim,reviewer,session].every(value=>UUID.test(value)))throw new Error("Malformed synthetic audit identity");
+  expect(await reviewFixtureSql(`select count(*) from private.claim_review_reads where review_id='${claim}'::uuid
+    and (document_id is not null or chunk_sequence is not null or delivery_verified_at is not null)`)).toBe("0");
+  expect(await reviewFixtureSql(`select (count(*)>0)::text||'/'||coalesce(bool_and(
+    r.reviewer_account_id='${reviewer}'::uuid and r.auth_session_id='${session}'::uuid
+    and r.review_revision=c.review_revision and c.review_revision=1
+    and r.document_id is null and r.chunk_sequence is null and r.delivery_verified_at is null
+    and r.assignment_revision is null and r.document_sha256 is null
+    and r.account_auth_session_revision is null and r.originating_session_revision is null
+    and exists(select 1 from auth.sessions a where a.id=r.auth_session_id and a.user_id=r.reviewer_account_id
+      and (a.not_after is null or a.not_after>clock_timestamp()))),false)::text
+    from private.claim_review_reads r join private.claim_reviews c on c.id=r.review_id
+    where r.review_id='${claim}'::uuid`),"real case reads exist only under this reviewer/session/current revision and have no document receipt fields").toBe("true/true");
+}
 
 // Titles bind the real assertions to the new route's required states. Static
 // discovery is distinct from execution; full CI must still run these journeys.
@@ -11,6 +47,7 @@ test("/reviews/future-person/claims/[id] complete: full bytes, separate human re
   if(!baseURL)throw new Error("Local app origin unavailable");
   const claim=await createReviewCase(page,context);
   const reviewer=await signInReviewer(context,baseURL);
+  const authSession=await reviewerSession(context,reviewer);
   await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewer}'::uuid);
     select private.assign_claim_review_v1('${claim}'::uuid,'${reviewer}'::uuid);`);
   const response=await page.goto(`/reviews/future-person/claims/${claim}`);
@@ -19,7 +56,7 @@ test("/reviews/future-person/claims/[id] complete: full bytes, separate human re
   expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
   await expect(page.getByRole("heading",{name:"Review claim",exact:true})).toBeVisible();
   await expect(page.getByText("Claimant: Synthetic Claimant. Birth date: 2000-01-31.",{exact:true})).toBeVisible();
-  expect(await reviewFixtureSql(`select count(*) from private.claim_review_reads where review_id='${claim}'::uuid`)).toBe("0");
+  await expectCaseAuditWithoutDocumentReceipt(claim,reviewer,authSession);
   const save=page.getByRole("button",{name:"Save choice",exact:true});
   await page.getByLabel("Reason",{exact:true}).fill("The synthetic blank papers do not prove a link to any record.");
   await expect(save).toBeDisabled();
@@ -91,6 +128,7 @@ test("/reviews/future-person/claims/[id] complete: full bytes, separate human re
 test("/reviews/future-person/claims/[id] processing: a canceled second chunk cannot become a read",async({page,context,baseURL})=>{
   if(!baseURL)throw new Error("Local app origin unavailable");
   const claim=await createReviewCase(page,context);const reviewer=await signInReviewer(context,baseURL);
+  const authSession=await reviewerSession(context,reviewer);
   await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewer}'::uuid);
     select private.assign_claim_review_v1('${claim}'::uuid,'${reviewer}'::uuid);`);
   expect((await page.goto(`/reviews/future-person/claims/${claim}`))?.status()).toBe(200);
@@ -112,7 +150,7 @@ test("/reviews/future-person/claims/[id] processing: a canceled second chunk can
     await expect(page.getByRole("button",{name:"Save choice",exact:true})).toBeDisabled();
     await expect.poll(()=>held,{message:"the actual first bytes precede the held second chunk"}).toBe(1);
     expect(acks).toBe(0);
-    expect(await reviewFixtureSql(`select count(*) from private.claim_review_reads where review_id='${claim}'::uuid`)).toBe("0");
+    await expectCaseAuditWithoutDocumentReceipt(claim,reviewer,authSession);
     release();
     await expect(page.getByRole("status")).toHaveText("The full document could not be read. Reload this page before trying again.");
     await expect(page.getByRole("button",{name:"Save choice",exact:true})).toBeDisabled();
@@ -120,6 +158,7 @@ test("/reviews/future-person/claims/[id] processing: a canceled second chunk can
     expect(await reviewFixtureSql(`select private.claim_document_fully_read_v1('${claim}'::uuid,'${reviewer}'::uuid,d)
       from private.claim_documents d join private.claim_reviews r on r.photo_document_id=d.id where r.id='${claim}'::uuid`)).toBe("f");
     expect(acks).toBe(0);
+    await expectCaseAuditWithoutDocumentReceipt(claim,reviewer,authSession);
     expect(await reviewFixtureSql(`select state||'/'||review_revision||'/'||
       (select count(*) from private.claim_review_decisions where review_id=r.id)
       from private.claim_reviews r where r.id='${claim}'::uuid`)).toBe("document_review_pending/1/0");

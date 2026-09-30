@@ -1,5 +1,25 @@
 # Test diff register
 
+## Case-read auditing and verified document delivery · 30 September 2026
+
+The reviewer browser journeys originally required zero total rows in
+`private.claim_review_reads` before document acknowledgements. The real case
+reader already writes ordinary audit rows when the SSR page and browser GET
+read the assigned case, so that total-zero expectation conflated legitimate
+case auditing with actual document delivery.
+
+The corrected check requires zero rows carrying any document id, chunk
+sequence or delivery-verification timestamp, including a partial or failed
+receipt. A separate positive assertion requires genuine ordinary case-read
+rows, all under the exact claim, reviewer, actual SDK-verified browser Auth
+session and current review revision, with every document/receipt field null.
+It does not pin a fragile SSR/client metadata-read count or insert confirmation.
+The canceled second-chunk path repeats the same zero-receipt proof after error.
+All zero-ACK, disabled processing controls, exact three completed receipts,
+complete-byte/SHA, human checkbox, refusal and unchanged-revision assertions
+remain. No product, database, timeout, retry or acceptance gate changes.
+Actual execution of these corrected journeys remains required in full CI.
+
 ## Inert full-page review precedes human confirmation · 30 September 2026
 
 The two authored browser journeys now use their exact registered complete and processing titles. The static gate extracts those titles, and its exact ledger records both; their actual end-to-end execution remains pending full CI. Its required-pair assertion grows from 155 to 157 for the new page, while the ratchet stays unchanged. This corrects the earlier deliberately unbound draft titles without changing any existing negative assertion or an acceptance row. The positive case now uploads a valid synthetic two-page PDF through the real encryption, Storage and scanner path. Page one must leave its human confirmation absent; both pages must actually render before that confirmation appears, and exact nonblank page-two pixels are checked. The existing exact chunk status/body, digest, assignment, human attestation, unassigned reviewer refusal, decision, erasure and canceled delivery assertions remain.
