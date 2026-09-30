@@ -13,6 +13,10 @@ entire browser matrix to succeed. It then requires one exact receipt from each
 of the six shards on the same checkout SHA, GitHub run ID and run attempt. A
 failed, cancelled, skipped, missing, stale or duplicate receipt cannot pass.
 Ordinary `pnpm e2e` continues running the complete local suite.
+The owner approved complete hosted browser verification as the permanent
+policy on 30 September 2026: local units, type checking, lint, all ten gates
+and fresh pgTAP remain required before a draft push; the complete hosted suite
+remains required on the final version before merging or a production change.
 
 GitHub increments the run attempt on a rerun. Use **Re-run all jobs** so the
 independent manifest and every shard produce fresh evidence on that attempt.
