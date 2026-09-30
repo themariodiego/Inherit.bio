@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { createdBuckets, exportedMethods } from "./route-gate";
+import { exportedMethods, migrationBuckets } from "./route-gate";
 
 /**
  * `docs/route-register.json` is the binding response-contract authority: a
@@ -104,8 +104,8 @@ function register(): Entry[] {
 
 /**
  * A registered path, plus every concrete path its `parameterContract` pins.
- * `/withdraw/[token]` with token in {request, session} is also, and only,
- * `/withdraw/request` and `/withdraw/session`.
+ * `/withdraw/[token]` with token in {session} is also, and only,
+ * `/withdraw/session`; a two-literal enum expands to both.
  */
 function concretePaths(entry: Entry): string[] {
   const contract = entry.parameterContract;
@@ -135,8 +135,8 @@ function pinnedSegments(entry: Entry): string[] {
 }
 
 const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as {
-  builtButNotRegistered: { path: string; file: string }[];
-  permissiveDynamicSegment: { routeId: string; path: string; file: string }[];
+  builtButNotRegistered: { path: string; file: string; deleteAfter?: string }[];
+  permissiveDynamicSegment: { routeId: string; path: string; file: string; deleteAfter?: string }[];
   kindDivergence: { routeId: string; path: string; file: string; declaredKind: string; builtKind: string }[];
   storageBucketDivergence: { bucket: string; direction: string }[];
   unregisteredServerActions: { file: string; export: string; why: string; closing: string }[];
@@ -160,8 +160,10 @@ describe("the route register and the App Router describe the same surface", () =
 
   it("expands a pinned parameter into the literals it allows", () => {
     const rights = entries.find(entry => entry.id === "rights.withdraw")!;
-    expect(concretePaths(rights)).toEqual(
-      expect.arrayContaining(["/withdraw/[token]", "/withdraw/request", "/withdraw/session"]));
+    expect(concretePaths(rights)).toEqual(expect.arrayContaining(["/withdraw/[token]", "/withdraw/session"]));
+    // Since 2026-09-28 the request literal is its own endpoint entry.
+    expect(concretePaths(rights)).not.toContain("/withdraw/request");
+    expect(entries.find(entry => entry.path === "/withdraw/request")?.id).toBe("rights.withdraw-request");
     const withdraw = entries.find(entry => entry.id === "api.withdraw")!;
     expect(concretePaths(withdraw)).toContain("/api/withdraw/session");
   });
@@ -183,6 +185,23 @@ describe("the route register and the App Router describe the same surface", () =
       .map(segment => ({ routeId: entry.id, path: entry.path, segment })));
     expect(open.map(found => `${found.routeId} ${found.path}`).sort())
       .toEqual(ledger.permissiveDynamicSegment.map(known => `${known.routeId} ${known.path}`).sort());
+  });
+
+  /** A divergence that exists only to finish a migration carries the date by
+   * which it must be gone. The D-081 legacy withdrawal link lives only as long
+   * as the last token #118 could have issued; after that date this fails until
+   * the route and its row are deleted, so the shim cannot outlive its reason. */
+  it("deletes a dated divergence by its date", () => {
+    const dated = [...ledger.builtButNotRegistered, ...ledger.permissiveDynamicSegment]
+      .filter(known => known.deleteAfter !== undefined);
+    expect(dated.map(known => known.path).sort()).toEqual(["/api/withdraw", "/withdraw/[token]"]);
+    for (const known of dated) {
+      expect(known.deleteAfter, known.path).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const due = Date.parse(`${known.deleteAfter}T23:59:59Z`);
+      expect(Number.isNaN(due), known.path).toBe(false);
+      expect(Date.now() <= due, `${known.path} was due for deletion after ${known.deleteAfter}: delete it and its row`)
+        .toBe(true);
+    }
   });
 
   it("leaves the unbuilt half of the register alone, but still measures it", () => {
@@ -243,9 +262,11 @@ const contractLedger = JSON.parse(readFileSync(CONTRACT_LEDGER, "utf8")) as {
   endpointAuthModeWithoutContract: { mode: string; verdict: string; routeIds: string[] }[];
   endpointSuccessContractUndefined: { routeId: string; contract: string }[];
   endpointSuccessContractUnbound: { routeId: string; contract: string }[];
+  nonceStoredBeforeUse: { rpc: string; file: string }[];
   storageCallSites: { site: string }[];
   declaredPrefixBucketNotAddressed: { bucket: string }[];
   liveCallSiteOnUncreatedBucket: { bucket: string; file: string }[];
+  allowlistedBucketNotCreated: { bucket: string; droppedBy: string; constraints: string[] }[];
   objectKeyShapeNotDescribedByAnyPrefix: {
     id: string;
     bucket: string;
@@ -471,6 +492,48 @@ describe("the register's endpoint contracts and the endpoints that exist agree",
     expect(files.filter(file => exportedMethods(readFileSync(file, "utf8")).length === 0)).toEqual([]);
     expect(files.length).toBeGreaterThan(35);
   });
+
+  /**
+   * A contract that says where a link, redirect or credential lands names a
+   * route by `routeFrom` and pins its parameters by `params`. Both must still
+   * be true of the route: an id that no longer exists, a parameter the route
+   * does not have, or a literal its `parameterContract` no longer allows is a
+   * contract pointing at nothing. Added 2026-09-28, when `/withdraw/request`
+   * moved to its own entry and five such references moved with it.
+   */
+  it("resolves every routeFrom to a registered route and every pinned param to a literal it allows", () => {
+    const byId = new Map(document.routes.map(entry => [entry.id, entry]));
+    const references: { where: string; routeFrom: string; params?: Record<string, unknown> }[] = [];
+    const walk = (node: unknown, where: string) => {
+      if (Array.isArray(node)) node.forEach((value, index) => walk(value, `${where}/${index}`));
+      else if (node && typeof node === "object") {
+        const record = node as Record<string, unknown>;
+        if (typeof record.routeFrom === "string") {
+          references.push({ where, routeFrom: record.routeFrom, params: record.params as Record<string, unknown> | undefined });
+        }
+        for (const [key, value] of Object.entries(record)) walk(value, `${where}/${key}`);
+      }
+    };
+    walk(document, "");
+    expect(references.length).toBeGreaterThan(8);
+    const broken: string[] = [];
+    for (const reference of references) {
+      const target = byId.get(reference.routeFrom);
+      if (!target) { broken.push(`${reference.where}: no route ${reference.routeFrom}`); continue; }
+      const contract = (target.parameterContract ?? {}) as Record<string, { enum?: unknown[]; const?: unknown }>;
+      for (const [param, pinned] of Object.entries(reference.params ?? {})) {
+        const segment = contract[param];
+        if (!target.path.includes(`[${param}]`)) { broken.push(`${reference.where}: ${reference.routeFrom} has no [${param}]`); continue; }
+        const literal = pinned && typeof pinned === "object" ? (pinned as { const?: unknown }).const : undefined;
+        if (literal === undefined || !segment) continue;
+        const allowed = Array.isArray(segment.enum) ? segment.enum : segment.const !== undefined ? [segment.const] : undefined;
+        if (allowed && !allowed.includes(literal)) {
+          broken.push(`${reference.where}: ${reference.routeFrom} ${param}=${String(literal)} is not in ${JSON.stringify(allowed)}`);
+        }
+      }
+    }
+    expect(broken).toEqual([]);
+  });
 });
 
 describe("the register's storage prefixes and the buckets the code addresses agree", () => {
@@ -507,17 +570,25 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     // this allowlist constrains, so it is the only authority a static walk
     // has for them. An undeclared name here is the same defect the route
     // ledger already records against the migrations that create the bucket.
-    compareBothWays(buckets.filter(bucket => !declaredBuckets.has(bucket)),
-      ledger.storageBucketDivergence
+    compareBothWays(buckets.filter(bucket => !declaredBuckets.has(bucket)), [
+      ...ledger.storageBucketDivergence
         .filter(known => known.direction === "created-not-declared")
-        .map(known => known.bucket));
+        .map(known => known.bucket),
+      // A dropped bucket a constraint still admits (D-130), recorded rather
+      // than silently allowed. It must really be dropped, or the row is stale.
+      ...contractLedger.allowlistedBucketNotCreated.map(known => known.bucket),
+    ]);
+    const created = migrationBuckets(MIGRATIONS);
+    for (const known of contractLedger.allowlistedBucketNotCreated) {
+      expect(created.has(known.bucket), `${known.bucket} is recorded as not created`).toBe(false);
+      expect(readFileSync(known.droppedBy, "utf8"), known.droppedBy).toContain(`delete from storage.buckets where id = '${known.bucket}'`);
+    }
   });
 
   it("addresses no bucket that no migration creates, except the ones recorded", () => {
-    const created = new Set(readdirSync(MIGRATIONS)
-      .filter(name => name.endsWith(".sql"))
-      .flatMap(name => createdBuckets(readFileSync(path.join(MIGRATIONS, name), "utf8"))));
-    expect(created.size).toBeGreaterThan(2);
+    const created = migrationBuckets(MIGRATIONS);
+    // Not an empty scan: the two buckets the migrations leave in place.
+    expect([...created]).toEqual(expect.arrayContaining(["exports", "genomes"]));
     const live = sites.filter(site => {
       const bucket = site.slice(0, site.indexOf(" "));
       return bucket !== DATABASE_SELECTED && !created.has(bucket);
@@ -695,5 +766,39 @@ describe("every form posts somewhere the register describes", () => {
 
   it("accepts a computed action only when the register is what resolves it", () => {
     expect(actions.filter((form) => form.resolved === "unresolvable")).toEqual([]);
+  });
+});
+
+/**
+ * Brief X1.5 (owner decision 2026-09-28): an operation nonce is rendered by
+ * the page that offers the operation, only the state-changing request consumes
+ * it, and no GET creates, rotates or stores one. A nonce stored ahead of use
+ * leaves a trace a static walk can find: a call to a database function named
+ * `issue_*nonce*`, or a write to `account_operation_nonces`. Every such site is
+ * compared, in both directions, with `nonceStoredBeforeUse` in
+ * `docs/register-contract-divergence.json`.
+ */
+describe("no request stores an operation nonce before the request that spends it", () => {
+  const sites = codeFiles().flatMap(file => {
+    const source = readFileSync(file, "utf8");
+    const found = [...source.matchAll(/\.rpc\(\s*["'`](issue_[a-z0-9_]*nonce[a-z0-9_]*)["'`]/gu)].map(match => `${match[1]} ${file}`);
+    if (/from\(\s*["'`]account_operation_nonces["'`]\s*\)\s*\.(?:insert|upsert)\(/u.test(source)) found.push(`account_operation_nonces ${file}`);
+    return found;
+  });
+
+  it("finds the one recorded site, so a passing run is not an empty scan", () => {
+    expect(sites).toContain("issue_own_upload_nonce_v1 src/lib/uploads/prepare-own-upload.ts");
+  });
+
+  it("stores no nonce ahead of use except where the ledger records it", () => {
+    compareBothWays([...new Set(sites)], contractLedger.nonceStoredBeforeUse.map(known => `${known.rpc} ${known.file}`));
+  });
+
+  it("renders the account-deletion nonce: no GET on either deletion route, and nothing issues one", () => {
+    for (const file of ["src/app/api/account/delete/route.ts", "src/app/api/account/delete/cancel/route.ts"]) {
+      expect(exportedMethods(readFileSync(file, "utf8")), file).toEqual(["POST"]);
+    }
+    expect(sites.filter(site => site.startsWith("issue_account_operation_nonce") || site.startsWith("account_operation_nonces"))).toEqual([]);
+    expect(readFileSync("src/app/(app)/settings/data/page.tsx", "utf8")).toContain("deletionControlState()");
   });
 });

@@ -1,0 +1,28 @@
+{
+  "cystic-fibrosis-cftr-f508del-informational": {
+    "predecessorMd5": {
+      "t": "b0289336feb2b4210eb27a05a597bca4",
+      "s": "60fcce5c964bda69e91c342dcd91dfe6",
+      "v": "d63a1ddeeb98332d5e24c46ee23db688",
+      "c": "31175e116a7ccbb068b21acf84fd801c"
+    },
+    "successorMd5": {
+      "t": "b0289336feb2b4210eb27a05a597bca4",
+      "s": "60fcce5c964bda69e91c342dcd91dfe6",
+      "v": "9d86287c109cb8bb89e6df17338a488e",
+      "c": "31175e116a7ccbb068b21acf84fd801c"
+    }
+  },
+  "_catalog": {
+    "predecessor": {
+      "commit": "1ca33c6bd75c8db8a44cfc99495a5bc34ad57ab8",
+      "catalogMd5": "49cf36fb4fce2cf46236ef1f9583cde4",
+      "published": 162
+    },
+    "successor": {
+      "commit": "f40e61745433c278c112e0cb4dfd75af1f3431c7",
+      "catalogMd5": "ba371662d06b340c2778ea6945eb684f",
+      "published": 162
+    }
+  }
+}

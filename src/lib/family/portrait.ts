@@ -3,7 +3,7 @@ import "server-only";
 import type { PortraitStep } from "@/copy/family/portrait";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  copiesShown,
+  copiesShownFor,
   isPathogenicClassification,
   type CarrierCondition,
   type CarrierMatch,
@@ -29,8 +29,9 @@ import {
  * The one-sided sentences of brief line 2238 ("we found no second copy in
  * {parent}", "{label}'s file does not cover {rsid}") are decided here too,
  * over the same rows and genotype maps the carrier rule read, with the rule's
- * own exported readers (`copiesShown`, `isPathogenicClassification`) so the
- * two never disagree about what a file shows. Nothing here computes a
+ * own exported readers (`copiesShownFor`, `isPathogenicClassification`) so the
+ * two never disagree about what a file shows: a reviewed row is counted by
+ * its exact allele, and its evidence travels with the reading. Nothing here computes a
  * probability: a one-sided reading renders words, never a number, and never
  * a zero.
  */
@@ -399,7 +400,7 @@ function oneCopyReading(
   for (const variant of variants) {
     const genotype = person.genotypes.get(variant.rsid);
     if (genotype === undefined) continue;
-    const copies = copiesShown(genotype, variant.alt);
+    const copies = copiesShownFor(variant, genotype);
     // Two changed copies in one file is a different sentence, which the
     // brief does not give; nothing is rendered rather than a wrong one.
     if (copies === "two copies") return "two-copies";
@@ -409,6 +410,7 @@ function oneCopyReading(
         classification: (variant.clinvarSignificance ?? "").trim(),
         genotype,
         copies,
+        ...(variant.evidence ? { evidence: variant.evidence } : {}),
       };
     }
   }
@@ -424,7 +426,7 @@ function reportsAny(person: OneSidedPerson, variants: readonly CarrierRefVariant
 function showsAnyChange(person: OneSidedPerson, variants: readonly CarrierRefVariant[]): boolean {
   return variants.some((variant) => {
     const genotype = person.genotypes.get(variant.rsid);
-    return genotype !== undefined && copiesShown(genotype, variant.alt) !== null;
+    return genotype !== undefined && copiesShownFor(variant, genotype) !== null;
   });
 }
 
