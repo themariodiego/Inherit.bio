@@ -1,12 +1,14 @@
 "use client";
 
 import {useEffect,useRef,useState,type FormEvent} from "react";
+import Image from "next/image";
 import {DOCUMENT_LABELS} from "@/copy/rights/future-person-claim";
 import {readReviewDocument} from "@/lib/future-person/read-review-document";
 import {reviewPageCase,reviewPageDecisions,type ReviewPageCase,type ReviewDecision} from "@/lib/future-person/review-page-contract";
 
 type DocumentKind="photo"|"birth";
 type Loaded={record:ReviewPageCase;csrf:string;nonce:string;photoNonce:string;birthNonce:string};
+type View={url:string;type:string};
 const HEX=/^[0-9a-f]{64}$/u;
 const LABEL:Record<ReviewDecision,string>={reject:"Refuse claim","needs-more-information":"Ask for more information","approve-record-key":"Approve claim"};
 const MIME:Record<string,string>={pdf:"application/pdf",jpg:"image/jpeg",png:"image/png"};
@@ -15,7 +17,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
   const [loaded,setLoaded]=useState<Loaded|null>(null);
   const [message,setMessage]=useState("Loading claim…");
   const [busy,setBusy]=useState<string|null>("load");
-  const [views,setViews]=useState<Partial<Record<DocumentKind,string>>>({});
+  const [views,setViews]=useState<Partial<Record<DocumentKind,View>>>({});
   const [checked,setChecked]=useState({photo:false,birth:false,adult:false,parent:false});
   const [decision,setDecision]=useState<ReviewDecision>("reject");
   const [fullName,setFullName]=useState("");const [dateOfBirth,setDateOfBirth]=useState("");const [reason,setReason]=useState("");
@@ -55,7 +57,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
       const type=MIME[result.filename.split(".").at(-1)??""];
       if(!type||controller.signal.aborted)throw new Error("unavailable");
       const url=URL.createObjectURL(new Blob([Uint8Array.from(bytes)],{type}));urls.current.push(url);
-      setViews(previous=>({...previous,[kind]:url}));
+      setViews(previous=>({...previous,[kind]:{url,type}}));
       setChecked(previous=>({...previous,[kind]:false}));
     } catch {if(!controller.signal.aborted)setMessage("The full document could not be read. Reload this page before trying again.");}
     finally {bytes?.fill(0);if(!controller.signal.aborted)setBusy(null);}
@@ -89,7 +91,9 @@ export function ClaimReview({claimId}:{claimId:string}) {
           {busy===kind?"Reading file…":"Open file"}
         </button>
         {views[kind]&&<>
-          <iframe src={views[kind]} title={kind==="photo"?"Photo identity document":"Birth record"} sandbox="allow-same-origin" referrerPolicy="no-referrer" className="h-96 w-full"/>
+          {views[kind].type==="application/pdf"
+            ?<iframe src={views[kind].url} title={kind==="photo"?"Photo identity document":"Birth record"} sandbox="allow-same-origin" referrerPolicy="no-referrer" className="h-96 w-full"/>
+            :<Image src={views[kind].url} alt={kind==="photo"?"Photo identity document":"Birth record"} width={400} height={500} unoptimized referrerPolicy="no-referrer" className="max-h-96 w-full object-contain"/>}
           <label className="block"><input type="checkbox" checked={checked[kind]} disabled={Boolean(busy)}
             onChange={event=>setChecked(previous=>({...previous,[kind]:event.target.checked}))}/>
              I read this file.</label>

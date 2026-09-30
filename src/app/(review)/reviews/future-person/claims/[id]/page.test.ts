@@ -1,4 +1,5 @@
-import {beforeEach,describe,expect,it,vi} from "vitest";
+import {afterEach,beforeEach,describe,expect,it,vi} from "vitest";
+import React from "react";
 const mocks=vi.hoisted(()=>({open:vi.fn(),account:vi.fn(),rpc:vi.fn(),project:vi.fn()}));
 vi.mock("next/navigation",()=>({notFound:()=>{throw new Error("opaque404");}}));
 vi.mock("@/lib/future-person/claims-open",()=>({futurePersonClaimsOpen:mocks.open}));
@@ -8,7 +9,8 @@ vi.mock("@/lib/future-person/review",()=>({isCanonicalId:(id:string)=>/^[0-9a-f]
 import Page from "./page";
 const ID="11111111-1111-4111-8111-111111111111";
 const run=(id=ID,search:Record<string,string>={})=>Page({params:Promise.resolve({id}),searchParams:Promise.resolve(search)});
-beforeEach(()=>{vi.clearAllMocks();mocks.open.mockReturnValue(true);mocks.account.mockResolvedValue({user:{id:ID},sessionId:ID});mocks.rpc.mockResolvedValue({data:{bounded:true},error:null});mocks.project.mockReturnValue({claimId:ID});});
+beforeEach(()=>{vi.stubGlobal("React",React);vi.clearAllMocks();mocks.open.mockReturnValue(true);mocks.account.mockResolvedValue({user:{id:ID},sessionId:ID});mocks.rpc.mockResolvedValue({data:{bounded:true},error:null});mocks.project.mockReturnValue({claimId:ID});});
+afterEach(()=>vi.unstubAllGlobals());
 describe("the reviewer page's own-JWT authority",()=>{
  it("checks the exact current named-reviewer case before returning the viewer",async()=>{
   const rendered=await run();expect(rendered.type).toBe("main");expect(mocks.rpc.mock.calls).toEqual([["read_claim_review_case_v1",{p_review_id:ID}]]);
