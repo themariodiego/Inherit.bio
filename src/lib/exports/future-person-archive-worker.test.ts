@@ -127,7 +127,8 @@ describe("actual claimant member to ZIP64 attempt",()=>{
     }
     for(const event of events)expect(text).toContain(JSON.stringify(event));
     const manifest=JSON.parse(zip.readAsText("manifest.json"));
-    for(const name of ["legal-audit.json",`subjects/${SUBJECT}/audit-log.json`])expect(manifest.members.find((row:{name:string})=>row.name===name).rows).toBe(2);
+    for(const name of ["legal-audit.json",`subjects/${SUBJECT}/audit-log.json`,`subjects/${SUBJECT}/reports.txt`])expect(manifest.members.find((row:{name:string})=>row.name===name).rows).toBe(2);
+    expect(manifest.members.find((row:{name:string})=>row.name===`subjects/${SUBJECT}/reports.json`).rows).toBe(0);
     for(const member of manifest.members){const body=zip.readFile(member.name)!;expect(body.length).toBe(member.sizeBytes);
       expect(createHash("sha256").update(body).digest("hex")).toBe(member.sha256);}
     expect(JSON.stringify(zip.getEntries().map(entry=>zip.readAsText(entry)))).not.toMatch(/audit_principal_id|previous_hash|row_hash|subject_ciphertext/);

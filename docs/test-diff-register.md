@@ -38,7 +38,9 @@ The full source capture's prior source/agreement/scientific body is preserved
 in a private denied base helper. Its current receipt additionally binds every
 actual own ledger row in sequence, complete recorded content and the existing
 non-personal attribution reference metadata. Bounded pages preserve exactly the
-six registered coded fields and refuse unsupported envelopes/contexts. Actor
+six registered coded fields and refuse unsupported envelopes/contexts. The
+readable member's exact manifest count includes its real ledger records; the
+scientific JSON count remains unchanged. Actor
 IDs and chain hashes stay internal. The actual ZIP includes the same complete
 slice in both ledger members and readable text, with exact manifest counts,
 lengths and hashes. A legacy empty slice carries a count-free explanation.

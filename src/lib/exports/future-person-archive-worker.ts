@@ -120,7 +120,7 @@ export async function buildClaimantArchive(options:{job:{exportId:string;princip
       for await(const row of records("reports",historicalClaimantReport,snapshot.membership.reports,current)){
         yield bytes((comma?",":"")+JSON.stringify({kind:"historical-report",...projectHistoricalClaimantReport(row)}));comma=true;
       }yield bytes("]}\n");}});
-    factories.push({name:`${prefix}reports.txt`,rows:reportRows,chunks:async function*(current){
+    factories.push({name:`${prefix}reports.txt`,rows:reportRows+snapshot.membership.legalAuditEvents,chunks:async function*(current){
       yield bytes("Your claimed record\nQuality reports\n"+JSON.stringify(qc)+"\n\n");
       for await(const row of records("scores",score,snapshot.membership.scores,current)){
         const projected=projectFuturePersonFinding({embryo_label:"Your claimed record",condition_id:row.condition_id,condition_name:row.condition_name,
