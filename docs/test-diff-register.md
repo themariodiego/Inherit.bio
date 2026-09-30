@@ -13,6 +13,14 @@ the branch's five split and canonical-source stores. The exact assertion in
 `supabase/tests/v2_contracts.sql` is therefore 134: main's 129 plus those five.
 The comparison stays exact, and all existing contract assertions remain.
 
+The generated plan in `supabase/tests/export_member_plan.sql` now includes
+the six tables introduced by the split-worker and canonical-source migrations.
+The operator-only split configuration is reference data; pending variants,
+ordinal progress and canonical object inventories are internal machinery.
+The existing catalog equality, person-scope, credential and archive checks
+remain unchanged. This also preserves the separate deferred export classes
+for durable embryo records.
+
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
 `supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two

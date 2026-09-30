@@ -48,6 +48,18 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.embryo_canonical_parts": {
+      "disposition": "excluded-internal",
+      "reason": "Reserved object identities and copy receipts used to verify and dispose canonical embryo parts. This is internal storage and cleanup machinery."
+    },
+    "private.embryo_canonical_source_parts": {
+      "disposition": "excluded-internal",
+      "reason": "The canonical source-to-part membership index. It is internal storage machinery, not an additional person-scoped export record."
+    },
+    "private.embryo_canonical_sources": {
+      "disposition": "excluded-internal",
+      "reason": "Canonical source publication identity and membership digests. This indexes the embryo file and variants, whose person-scoped export classes remain deferred."
+    },
     "private.embryo_ingest_object_config": {
       "disposition": "reference",
       "reason": "The operator's embryo fragment storage backend selection: provider, bucket and gateway audience. It holds no person's data."
@@ -63,6 +75,18 @@ create temporary table export_member_plan as select $plan$
     "private.embryo_ingest_write_intents": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write intents: fenced object names, reserved sizes and landing state. It is machinery, not the person's record."
+    },
+    "private.embryo_split_config": {
+      "disposition": "reference",
+      "reason": "The operator's split-worker enablement and capacity settings; they hold no person's data."
+    },
+    "private.embryo_split_ordinals": {
+      "disposition": "excluded-internal",
+      "reason": "Attempt-owned ordinal progress and pending QC; publication writes the durable embryo and QC records. This is worker machinery."
+    },
+    "private.embryo_split_variants": {
+      "disposition": "excluded-internal",
+      "reason": "Attempt-owned pending embryo variants, removed at terminal publication or failure. Published embryo variants have their own deferred export class."
     },
     "private.export_archive_attempts": {
       "disposition": "excluded-internal",
