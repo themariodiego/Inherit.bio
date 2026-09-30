@@ -1,5 +1,11 @@
 # Test diff register
 
+## Real candidate expiry preserves all rights-session issuers · 30 September 2026
+
+The strict Future Person session trigger now joins the actual issued token candidate for its expiry, exact purpose, target and revision; token hashes have no expiry column. Current, unended hash and current credential checks remain, with the original exact claimant, source and 60-minute bindings. Two new ordinary adult/co-parent identity-update assertions prove that their real issued sessions continue through the shared trigger. Five additional Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. Genuine one-time claimant activation remains the positive proof. The existing exact plans grow by one each to 39 and 33; no old assertion or refusal changes.
+
+The intake's exact private column census includes the independently erasable identity-key timestamp alongside its ciphertext and digests. The list remains exact and excludes plaintext. The reviewer browser ratchet remains unchanged and still refuses the unproven page states.
+
 ## Named reviewer UI and irreversible claimant stop · 30 September 2026
 
 A separately registered reviewer page rechecks the exact own-JWT named assignment and recent MFA before any viewer render. Its fresh browser GET supplies bounded operation material; two serialized full-byte/SHA-256 receipt reads and distinct explicit human confirmations precede a decision. Verified approval identity is typed from the papers rather than prefilled from the unverified claim. Closed page-contract and authorization units cover anonymous, malformed, unavailable and unsupported branches. New page states remain unproven by the full browser suite; the route-state ratchet is unchanged and must fail until those genuine browser proofs exist.
