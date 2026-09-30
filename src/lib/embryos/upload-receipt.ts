@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } from "@/lib/genome/ingest-limits";
-import { closingDateWords, RECORD_KEY_PATTERN } from "./record-key-cards";
+import { closingDateWords, RECORD_KEY_PATTERN } from "./record-key-card-values";
 import { readUploadSession } from "./upload-transport";
 
 const card = z.object({ embryo_id: z.uuid(), display_label: z.string().regex(/^Embryo [1-9][0-9]?$/),
