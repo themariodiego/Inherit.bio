@@ -1,5 +1,24 @@
 # Test diff register
 
+## Path B actual service-role confirmation and exact HTTP receipt · 1 October 2026
+
+The current hosted account-bound journey reaches the real revision form but
+renders its refusal alert after confirmation; its original five-second
+`File accepted` assertion fails, so the following serial report journey has
+no execution credit. The normalization regression now makes its existing
+confirmation call under an actual `SET LOCAL ROLE service_role` with service
+JWT claims, and proves both role identities before retaining every exact
+confirmation, source, job and zero-purpose assertion. A SQL exception remains
+visible; the regression does not catch or convert it into a success.
+
+The browser now independently observes that same native confirmation POST
+and requires its exact 202 and closed `{status, operation}` response before
+the unchanged heading assertion. It disposes the observer on either outcome
+without replaying or modifying the request or original response. No timeout,
+retry, skip, authority, permission or application response is changed. These
+changes improve evidence and coverage; they do not identify or repair the
+hosted product refusal. Its cause and fresh full browser proof remain pending.
+
 ## Path B account-bound upload dispatch and exact stage proof · 1 October 2026
 
 The actual hosted account-confirmation journey stopped before finalization:
