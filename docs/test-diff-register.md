@@ -1,5 +1,11 @@
 # Test diff register
 
+## Identity and each document have independently erasable keys · 30 September 2026
+
+The registered field-protection boundary now uses a runtime-random 32-byte key for each document, independently wrapped by the existing deployment key; it never derives the document key from the identity key. SQL chunk, composition, scanner and reviewer grants retain their exact authority/byte checks and project only that document's key. Legacy no-key signatures lose every API grant. Existing metadata-only database fixtures now pass independent synthetic 72-byte envelopes explicitly; real encryption tests reject the identity key and sibling document key for the same object's bytes. All old integrity, type, malware, role, freshness, receipt, deadline and fixed-header assertions remain. The document plan grows from 81 to 93 and the review plan from 96 to 100 through additional key-source, irreversible-erasure and deadline assertions.
+
+Failed upload or scan refusal erases its document key immediately. Final refusal/closure erases identity and both document keys atomically; selector-free retention erases due keys before retryable Storage removal, with independent returned/thrown failure coverage. Keys cannot be restored, moved or replaced. A migration preflight refuses nonempty legacy document sessions rather than relabeling existing ciphertext without re-encryption. Actual keyless positive package transfer remains closed until its bounded transaction is implemented; no deadline, retention exemption or G5.4 completion is invented.
+
 ## Fresh rehearsal pins release authority and existing refusals · 30 September 2026
 
 The release worker now qualifies its candidate column against the table, and final refusal keeps a keyless intake's required null key hash while erasing encrypted working fields; its new strict refusal assertion raises the review plan from 95 to 96. Claimant activation uses one explicit creation clock for its exact 60-minute bound. The session constraint refuses a co-parent token presented as an approved claimant credential and freezes claimant authority bindings. The exact issuer assertion now includes the real fourth issuer; the original unissued-purpose refusal uses the still-unissued objection purpose, and the exact plan is 32 including that additional negative case. Every old route isolation assertion remains.

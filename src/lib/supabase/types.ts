@@ -7823,7 +7823,7 @@ export type Database = {
       open_claim_document_session_rotated_v1: {
         Args: { p_claim_session_hash: string; p_successor_claim_session_hash: string; p_cookie_hash: string;
           p_create_nonce_hash: string; p_document_kind: string; p_media_type: string;
-          p_sha256: string; p_size_bytes: number }
+          p_sha256: string; p_size_bytes: number; p_wrapped_document_key: string }
         Returns: Json
       }
       complete_future_person_claim_v1: {
@@ -7852,6 +7852,7 @@ export type Database = {
       issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
       stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
       purge_due_future_person_contacts_v1:{Args:Record<PropertyKey,never>;Returns:number}
+      shred_due_claim_working_keys_v1:{Args:Record<PropertyKey,never>;Returns:number}
       decide_claim_review_attested_v1: {
         Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
           p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;p_parent_link_confirmed:boolean;
@@ -7876,6 +7877,7 @@ export type Database = {
         Args: {
           p_claim_session_hash: string
           p_cookie_hash: string
+          p_wrapped_document_key: string
           p_create_nonce_hash: string
           p_document_kind: string
           p_media_type: string

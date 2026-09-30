@@ -54,7 +54,7 @@ const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), crypto.randomBytes(100)]);
 
 describe("the document envelope", () => {
-  it("opens only under the same claim key and the same object key", () => {
+  it("opens only under the same independent document key and the same object key", () => {
     const { raw, wrappedHex } = newDataKey();
     const unwrapped = claimDataKey(wrappedHex);
     expect(unwrapped.equals(raw)).toBe(true);
@@ -62,7 +62,12 @@ describe("the document envelope", () => {
     expect(sealed.includes(PDF.subarray(0, 64))).toBe(false);
     expect(openDocumentBytes(unwrapped, key("a"), sealed)?.equals(PDF)).toBe(true);
     expect(openDocumentBytes(unwrapped, key("b"), sealed), "moved to another key").toBeNull();
-    expect(openDocumentBytes(crypto.randomBytes(32), key("a"), sealed), "another claim's key").toBeNull();
+    expect(openDocumentBytes(crypto.randomBytes(32), key("a"), sealed), "another document's key").toBeNull();
+    const identity = newDataKey();
+    const sibling = newDataKey();
+    expect(openDocumentBytes(identity.raw, key("a"), sealed), "intake identity key").toBeNull();
+    expect(openDocumentBytes(sibling.raw, key("a"), sealed), "same claim's other document key").toBeNull();
+    identity.raw.fill(0);sibling.raw.fill(0);
     const tampered = Buffer.from(sealed);
     tampered[40] = tampered[40]! ^ 1;
     expect(openDocumentBytes(unwrapped, key("a"), tampered), "altered").toBeNull();
@@ -216,7 +221,7 @@ describe("the scan worker", () => {
     expect(recorded().map((args) => args.p_outcome)).toEqual(["UNSCANNABLE"]);
   });
 
-  it("refuses an object that will not open under the claim key", async () => {
+  it("refuses an object that will not open under the document key", async () => {
     const job = queue(PDF);
     store.objects.set(FINAL, crypto.randomBytes(PDF.length + 28));
     expect(await scanNextClaimDocument({ rpc: rpcFor(job), store, scanner: testDoubleScanner() })).toBe("refused");

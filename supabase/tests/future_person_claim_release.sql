@@ -57,6 +57,9 @@ select ok((select state='closed' and resolved_at is not null from private.claim_
 select ok((select octet_length(wrapped_data_key)=29 and octet_length(identity_ciphertext)=29
  from private.future_person_claim_intakes where id=(select review from custody_ids)),
  'the original claim-specific key and identity are crypto-shredded immediately');
+select ok((select bool_and(wrapped_document_key is null and document_key_shredded_at is not null)
+ from private.claim_document_sessions where intake_id=(select review from custody_ids)),
+ 'the approved record-key decision erases both independent document keys before Storage deletion');
 select ok((select documentary_attestation_ciphertext is null and verified_identity_hmac is null
    and verified_date_of_birth is null and octet_length(reason_ciphertext)=29
  from private.claim_review_decisions where review_id=(select review from custody_ids)),

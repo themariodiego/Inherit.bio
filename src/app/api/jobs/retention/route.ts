@@ -136,6 +136,13 @@ export async function POST(request: Request) {
   const { data: closedReviews, error: reviewCloseError } = await admin.rpc("close_due_claim_reviews_v1");
   if (reviewCloseError) failed++;
   else if (typeof closedReviews === "number") processed += closedReviews;
+  // Erase due independent envelope keys before attempting Storage removal.
+  // A retryable Storage outage must not preserve decryption authority.
+  try {
+    const { data: shreddedKeys, error: keyShredError } = await admin.rpc("shred_due_claim_working_keys_v1");
+    if (keyShredError) failed++;
+    else if (typeof shreddedKeys === "number") processed += shreddedKeys;
+  } catch { failed++; }
   try {
     const objects = supabaseClaimObjectStore(admin);
     for (let batch = 0; batch < 10; batch++) {

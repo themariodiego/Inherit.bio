@@ -149,3 +149,7 @@ not choose it:
   discovering this only after they trusted it.
 
 None of these announces itself at launch. That is why they are on a checklist.
+
+### Future Person independent document-key preflight · 30 September 2026
+
+The reserved `20260930240000_future_person_document_keys.sql` migration requires the legacy private claim-document session store to be empty. The guarded release must confirm this read-only prerequisite. If legacy encrypted sessions exist, stop this migration and prepare a separately reviewed re-encryption plan that preserves the current bytes, live authority and fixed deadlines. Do not delete valid sessions or substitute independent keys for ciphertext sealed under the old identity key. Fresh TEST-LOCAL fixtures use independent synthetic wrapped envelopes, and the runtime uses the existing deployment key; no new owner secret is required.

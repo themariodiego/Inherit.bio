@@ -46,6 +46,24 @@ const run = () => POST(new Request("http://localhost/api/jobs/retention", {
 describe("independent retention queues", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 
+  it.each(["returned","thrown"])("continues retention after a %s document-key erase failure",async(failure)=>{
+    vi.stubEnv("JOBS_SECRET","test-job-secret");idleExceptStranded([]);
+    const baseline=mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async(name:string,...args:unknown[])=>{
+      if(name==="shred_due_claim_working_keys_v1") {
+        if(failure==="thrown")throw new Error("synthetic transport failure");
+        return {data:null,error:{code:"synthetic"}};
+      }
+      return baseline(name,...args);
+    });
+    const response=await run();
+    expect(await response.json()).toEqual({status:"complete",outcome:"completed_with_failures"});
+    expect(mocks.rpc.mock.calls.filter(call=>call[0]==="shred_due_claim_working_keys_v1")).toEqual([["shred_due_claim_working_keys_v1"]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_document_objects_due_v1",{p_limit:100});
+    expect(mocks.rpc).toHaveBeenCalledWith("purge_due_future_person_contacts_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1",expect.any(Object));
+  });
+
   it.each(["returned","thrown"])("keeps temporary claimant contact cleanup independent when its failure is %s",async(failure)=>{
     vi.stubEnv("JOBS_SECRET","test-job-secret");idleExceptStranded([]);
     const baseline=mocks.rpc.getMockImplementation()!;
@@ -245,10 +263,10 @@ describe("Future Person claim document objects", () => {
     expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
     expect(mocks.remove.mock.calls).toEqual([["future-person-identity", [KEY]]]);
     const order = mocks.rpc.mock.calls.map((call) => call[0]).filter((name) =>
-      ["close_due_claim_reviews_v1", "claim_document_objects_due_v1", "confirm_claim_document_objects_deleted_v1",
+      ["close_due_claim_reviews_v1", "shred_due_claim_working_keys_v1", "claim_document_objects_due_v1", "confirm_claim_document_objects_deleted_v1",
         "purge_future_person_claim_intakes_v1"].includes(name as string));
     // Reviews past their deadline close first, so their documents are due in the same run.
-    expect(order).toEqual(["close_due_claim_reviews_v1", "claim_document_objects_due_v1",
+    expect(order).toEqual(["close_due_claim_reviews_v1", "shred_due_claim_working_keys_v1", "claim_document_objects_due_v1",
       "confirm_claim_document_objects_deleted_v1", "purge_future_person_claim_intakes_v1"]);
     expect(mocks.rpc).toHaveBeenCalledWith("confirm_claim_document_objects_deleted_v1",
       { p_object_keys: [KEY], p_route_id: "jobs.retention" });

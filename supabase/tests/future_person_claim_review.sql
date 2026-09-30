@@ -1,5 +1,5 @@
 begin;
-select plan(96);
+select plan(100);
 -- The Future Person claim review, up to the release decision: completion,
 -- the case the server resolves, the named reviewer's step-up MFA and
 -- assignment, audited reads, decisions bound to the exact documents'
@@ -30,7 +30,7 @@ returns uuid language plpgsql volatile as $$
 declare v_plan jsonb; v_job jsonb; v_session uuid; v_sequence integer := 0; v_left integer := p_bytes;
 begin
   perform public.open_claim_document_session_v1(pg_temp.h('session:'||p_claim), pg_temp.h('create:'||p_tag),
-    p_kind, 'application/pdf', p_bytes, pg_temp.h('document:'||p_tag), pg_temp.h('cookie:'||p_tag));
+    p_kind, 'application/pdf', p_bytes, pg_temp.h('document:'||p_tag), pg_temp.h('cookie:'||p_tag),extensions.gen_random_bytes(72));
   v_session := (select id from private.claim_document_sessions where cookie_hash = pg_temp.h('cookie:'||p_tag));
   while v_left > 0 loop
     perform public.reserve_claim_document_chunk_v1(v_session, pg_temp.h('cookie:'||p_tag), v_sequence,
@@ -109,7 +109,7 @@ select is(public.claim_session_status_v1(pg_temp.h('session:a')), '{"mode": "key
 create temporary table docs_a as select pg_temp.clean_document('a', 'a-photo', 'future-photo-identity', 5000001) photo,
   pg_temp.clean_document('a', 'a-birth', 'future-birth-record', 10) birth;
 select is(public.open_claim_document_session_v1(pg_temp.h('session:a'), pg_temp.h('create:a-open'),
-  'future-birth-record', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('cookie:a-open'))->>'status', 'open',
+  'future-birth-record', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('cookie:a-open'),extensions.gen_random_bytes(72))->>'status', 'open',
   'a third, unfinished session is open');
 select throws_ok($$select public.complete_future_person_claim_v1(pg_temp.h('session:a'), pg_temp.h('finish:a'),
   'keyless', (select photo from docs_a), (select photo from docs_a))$$, '22023', null,
@@ -140,7 +140,7 @@ select throws_ok($$select public.complete_future_person_claim_v1(pg_temp.h('sess
   'keyless', (select photo from docs_a), (select birth from docs_a))$$, '42501', null,
   'a completed claim cannot be completed again');
 select throws_ok($$select public.open_claim_document_session_v1(pg_temp.h('session:a'), pg_temp.h('create:late'),
-  'future-birth-record', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('cookie:late'))$$, '42501', null,
+  'future-birth-record', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('cookie:late'),extensions.gen_random_bytes(72))$$, '42501', null,
   'and takes no more documents');
 select is((select count(*) from public.legal_audit_log where event_code = 'claim.received'
   and coded_context = '{}'::jsonb), 1::bigint, 'the ledger records claim.received with nothing else');
@@ -264,6 +264,15 @@ select ok((select not (photo ? 'objectKey') and not (photo ? 'wrappedDataKey') f
   'the download descriptor carries no key');
 grant select on dl to authenticated;
 
+set local role authenticated;
+create temporary table authorized_document_key as select public.authorize_claim_review_chunk_v1(
+ (select (photo->>'session')::uuid from dl),(select photo_cookie from ids),0) grant_descriptor;
+reset role;
+select is((select grant_descriptor->>'wrappedDataKey' from authorized_document_key),
+ (select encode(s.wrapped_document_key,'hex') from private.claim_document_sessions s where s.document_id=(select photo from ids)),
+ 'the own-JWT reviewer grant unwraps the exact independent document key');
+
+
 -- Decisions need both documents fully read.
 create temporary table reason as select pg_temp.blob(64) r;
 grant select on reason to authenticated;
@@ -368,6 +377,11 @@ reset role;
 select ok((select mode='keyless-start' and key_hash is null and octet_length(wrapped_data_key)=29
   and octet_length(identity_ciphertext)=29 from private.future_person_claim_intakes where id=(select id from rv)),
   'final refusal crypto-shreds working fields while preserving the required keyless null key');
+
+select ok((select bool_and(s.wrapped_document_key is null and s.document_key_shredded_at is not null)
+ from private.claim_document_sessions s where s.intake_id=(select id from rv)),
+ 'final refusal irreversibly erases both independent document keys before their Storage cleanup');
+
 select ok(not exists (select 1 from private.claim_document_review_object_v1((select photo from docs_a))),
   'the read gate returns nothing for a refused case');
 select is((select coded_context from public.legal_audit_log where event_code = 'claim.resolved'
@@ -482,6 +496,14 @@ select is((select case_kind from private.claim_reviews where id = pg_temp.review
 update private.claim_reviews set created_at = created_at - interval '31 days', deadline = deadline - interval '31 days'
 where id in ((select id from rk), pg_temp.review_of('k2'));
 select is(public.close_due_claim_reviews_v1(), 2, 'two cases past their deadline close');
+
+select ok((select bool_and(i.identity_key_shredded_at is not null and octet_length(i.wrapped_data_key)=29)
+ from private.future_person_claim_intakes i join private.claim_reviews r on r.id=i.id where r.state='closed'),
+ 'deadline closure erases every closed case identity key before Storage removal');
+select ok((select bool_and(s.wrapped_document_key is null and s.document_key_shredded_at is not null)
+ from private.claim_document_sessions s join private.claim_reviews r on r.id=s.intake_id where r.state='closed'),
+ 'deadline closure erases both kind-bound document keys without extending their phase');
+
 select is((select state from private.claim_reviews where id = (select id from rk)), 'closed',
   'the approved case closes without release');
 select ok(not exists (select 1 from private.claim_document_review_object_v1((select photo from rk))),

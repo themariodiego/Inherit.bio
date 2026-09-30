@@ -43,7 +43,7 @@ const completion = await import("@/app/api/evidence/[session]/complete/route");
 const { CLAIM_SESSION_COOKIE, sha256Hex, claimMutationCsrf } = await import("./claim-session");
 const { EVIDENCE_COOKIE, evidenceCompleteNonce, evidenceCsrf, mintClaimDocumentNonce } = await import("./evidence-session");
 const { encryptSecret } = await import("@/lib/crypto");
-const { openDocumentBytes } = await import("./document-envelope");
+const { openDocumentBytes, claimDataKey } = await import("./document-envelope");
 
 const ORIGIN = "https://inherit.bio";
 const SESSION = "44444444-4444-4444-8444-444444444444";
@@ -99,6 +99,12 @@ describe("POST /api/future-person/claim/session/documents", () => {
     const args = mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
     expect(mocks.rpc.mock.calls[0]![0]).toBe("open_claim_document_session_rotated_v1");
     expect(args.p_claim_session_hash).toBe(sha256Hex(CLAIM_COOKIE_VALUE));
+    const wrappedDocumentKey = String(args.p_wrapped_document_key);
+    expect(wrappedDocumentKey).toMatch(/^\\x[0-9a-f]{144}$/u);
+    const documentKey = claimDataKey(wrappedDocumentKey.slice(2));
+    expect(documentKey.length).toBe(32);
+    expect(documentKey.equals(RAW_KEY), "independent from the intake/chunk fixture key").toBe(false);
+    documentKey.fill(0);
     expect(response.headers.getSetCookie()).toHaveLength(2);
     const rotated=response.headers.getSetCookie().find(value=>value.startsWith(`${CLAIM_SESSION_COOKIE}=`))!;
     const claimantSecret=rotated.slice(rotated.indexOf("=")+1,rotated.indexOf(";"));
@@ -116,8 +122,29 @@ describe("POST /api/future-person/claim/session/documents", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
+  it("creates a different erasable key for each document and never returns it to the claimant", async () => {
+    mocks.rpc.mockResolvedValue({ data: { status: "open", session: SESSION, documentKind: "future-photo-identity",
+      expiresAt: "2026-09-29T12:00:00+00:00" }, error: null });
+    const first = await post(body(mintClaimDocumentNonce(CLAIM_COOKIE_VALUE)!));
+    const second = await post(body(mintClaimDocumentNonce(CLAIM_COOKIE_VALUE)!));
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const a = String(mocks.rpc.mock.calls[0]![1].p_wrapped_document_key);
+    const b = String(mocks.rpc.mock.calls[1]![1].p_wrapped_document_key);
+    const rawA = claimDataKey(a.slice(2));
+    const rawB = claimDataKey(b.slice(2));
+    expect(rawA.equals(rawB)).toBe(false);
+    const clientMaterial = JSON.stringify([await first.json(), [...first.headers], await second.json(), [...second.headers]]);
+    expect(clientMaterial).not.toContain(a.slice(2));
+    expect(clientMaterial).not.toContain(b.slice(2));
+    expect(clientMaterial).not.toContain(rawA.toString("base64"));
+    expect(clientMaterial).not.toContain(rawB.toString("base64"));
+    rawA.fill(0);rawB.fill(0);
+  });
+
   it.each([
     ["a field the register forbids", { objectPath: "x" }],
+    ["a caller-supplied document key", { wrappedDocumentKey: WRAPPED }],
     ["a claim id", { claimId: INTAKE }],
     ["a kind outside the claim kinds", { documentKind: "appeal-photo-identity" }],
     ["a GIF", { mediaType: "image/gif" }],

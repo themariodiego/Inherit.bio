@@ -14,6 +14,7 @@ import {
   newEvidenceSecret,
   readClaimDocumentNonce,
 } from "@/lib/future-person/evidence-session";
+import { newWrappedDocumentKey } from "@/lib/future-person/document-envelope";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -95,6 +96,7 @@ async function open(request: Request): Promise<Response> {
     p_size_bytes: parsed.data.sizeBytes,
     p_sha256: parsed.data.sha256,
     p_cookie_hash: evidence.hash,
+    p_wrapped_document_key: `\\x${newWrappedDocumentKey().toString("hex")}`,
   });
   if (error) return ["42501", "23505", "22023"].includes(error.code ?? "") ? notFound() : unavailable();
   if ((data as { status?: unknown } | null)?.status === "capacity_limited") {

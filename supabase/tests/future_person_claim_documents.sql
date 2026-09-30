@@ -1,5 +1,5 @@
 begin;
-select plan(81);
+select plan(93);
 -- The Future Person claim documents step (legal-evidence-ingest-v1 for the
 -- claim kinds): evidence sessions bound to a live claim, create-only chunk
 -- reservations, completion into a quarantined document, the scan verdict and
@@ -24,7 +24,7 @@ $$;
 create function pg_temp.open(p_claim text, p_tag text, p_kind text default 'future-photo-identity',
   p_bytes integer default 10) returns jsonb language sql volatile as $$
  select public.open_claim_document_session_v1(pg_temp.h('session:'||p_claim), pg_temp.h('create:'||p_tag),
-  p_kind, 'application/pdf', p_bytes, pg_temp.h('document:'||p_tag), pg_temp.h('cookie:'||p_tag))
+  p_kind, 'application/pdf', p_bytes, pg_temp.h('document:'||p_tag), pg_temp.h('cookie:'||p_tag),extensions.gen_random_bytes(72))
 $$;
 create function pg_temp.sid(p_tag text) returns uuid language sql stable as
  $$ select id from private.claim_document_sessions where cookie_hash = pg_temp.h('cookie:'||p_tag) $$;
@@ -68,17 +68,20 @@ select ok(not exists (select 1 from pg_policies where schemaname = 'storage' and
 -- Opening an evidence session.
 select is(pg_temp.claim('a'), 'received', 'claim a started');
 select throws_ok($$select public.open_claim_document_session_v1(pg_temp.h('session:a'), pg_temp.h('create:x'),
-  'appeal-photo-identity', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('c:x'))$$, '22023', null,
+  'appeal-photo-identity', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('c:x'),extensions.gen_random_bytes(72))$$, '22023', null,
   'a kind outside the claim kinds is refused');
 select throws_ok($$select public.open_claim_document_session_v1(pg_temp.h('session:a'), pg_temp.h('create:x'),
-  'future-photo-identity', 'image/gif', 10, pg_temp.h('d'), pg_temp.h('c:x'))$$, '22023', null,
+  'future-photo-identity', 'image/gif', 10, pg_temp.h('d'), pg_temp.h('c:x'),extensions.gen_random_bytes(72))$$, '22023', null,
   'a media type outside PDF, JPEG and PNG is refused');
 select throws_ok($$select public.open_claim_document_session_v1(pg_temp.h('session:a'), pg_temp.h('create:x'),
-  'future-photo-identity', 'application/pdf', 20000001, pg_temp.h('d'), pg_temp.h('c:x'))$$, '22023', null,
+  'future-photo-identity', 'application/pdf', 20000001, pg_temp.h('d'), pg_temp.h('c:x'),extensions.gen_random_bytes(72))$$, '22023', null,
   'a document over 20,000,000 bytes is refused');
 select throws_ok($$select public.open_claim_document_session_v1(pg_temp.h('session:nobody'), pg_temp.h('create:x'),
-  'future-photo-identity', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('c:x'))$$, '42501', null,
+  'future-photo-identity', 'application/pdf', 10, pg_temp.h('d'), pg_temp.h('c:x'),extensions.gen_random_bytes(72))$$, '42501', null,
   'a claim cookie naming no live claim opens nothing');
+select throws_ok($$select public.open_claim_document_session_v1(pg_temp.h('session:a'),pg_temp.h('create:missing-key'),
+ 'future-photo-identity','application/pdf',10,pg_temp.h('d'),pg_temp.h('c:missing-key'),null)$$,'22023',null,
+ 'a document without its independently wrapped key cannot open');
 select ok(public.claim_session_live_v1(pg_temp.h('session:a')), 'the claim page can tell a live claim');
 select ok(not public.claim_session_live_v1(pg_temp.h('session:nobody')), 'and an unknown one');
 select is(pg_temp.open('a', 'a1')->>'status', 'open', 'a live claim opens a session');
@@ -91,21 +94,39 @@ select is(pg_temp.open('a', 'a3')->>'status', 'open', 'a third session');
 select is(pg_temp.open('a', 'a4')->>'status', 'capacity_limited', 'a fourth open session is limited');
 select is((select count(*) from private.claim_document_sessions where cookie_hash = pg_temp.h('cookie:a4')),
   0::bigint, 'and writes nothing');
+select ok((select count(distinct wrapped_document_key)=3 and bool_and(octet_length(wrapped_document_key)=72)
+ from private.claim_document_sessions where intake_id=(select id from private.future_person_claim_intakes where session_hash=pg_temp.h('session:a'))),
+ 'every document owns a distinct wrapped random key');
+select ok((select bool_and(s.wrapped_document_key is distinct from i.wrapped_data_key)
+ from private.claim_document_sessions s join private.future_person_claim_intakes i on i.id=s.intake_id),
+ 'no document reuses its intake identity envelope key');
+select ok(not has_function_privilege('service_role','public.open_claim_document_session_v1(text,text,text,text,integer,text,text)','execute')
+ and not has_function_privilege('service_role','public.open_claim_document_session_rotated_v1(text,text,text,text,text,integer,text,text)','execute'),
+ 'both legacy API signatures without independent keys are closed');
 
 -- ---------------------------------------------------------------------------
 -- Chunks.
 select throws_ok($$select public.reserve_claim_document_chunk_v1(pg_temp.sid('a1'), pg_temp.h('cookie:a2'), 0, 5,
   pg_temp.h('x'))$$, '42501', null, 'another session''s cookie reserves nothing');
 select throws_ok($$select pg_temp.reserve('a1', 5, 5)$$, '23505', null, 'a sequence past the fifth is refused');
-select ok(pg_temp.reserve('a1', 0, 6)->>'objectKey' ~
+create temporary table reserved_a1 as select pg_temp.reserve('a1',0,6) r;
+select ok((select r->>'objectKey' from reserved_a1) ~
   ('^' || (select intake_id from private.claim_document_sessions where id = pg_temp.sid('a1'))::text || '/'
    || (select document_id from private.claim_document_sessions where id = pg_temp.sid('a1'))::text || '/[0-9a-f-]{36}$'),
   'the database makes the key: claim, document, a random name');
+select is((select r->>'wrappedDataKey' from reserved_a1),
+ (select encode(wrapped_document_key,'hex') from private.claim_document_sessions where id=pg_temp.sid('a1')),
+ 'chunk reservation returns only its independent document key');
 select throws_ok($$select pg_temp.reserve('a1', 0, 6)$$, '23505', null, 'a sequence is written once');
 select is(pg_temp.settle('a1', 0), 'written', 'the write is settled');
 select is(pg_temp.reserve('a1', 1, 5)->>'status', 'invalid', 'bytes past the declared size end the session');
 select is((select state || ':' || failure_code from private.claim_document_sessions where id = pg_temp.sid('a1')),
   'failed:integrity', 'with the closed integrity code');
+select ok((select wrapped_document_key is null and document_key_shredded_at is not null
+ from private.claim_document_sessions where id=pg_temp.sid('a1')),'integrity failure erases the exact document key immediately');
+select throws_ok($$update private.claim_document_sessions set wrapped_document_key=extensions.gen_random_bytes(72),
+ document_key_shredded_at=null where id=pg_temp.sid('a1')$$,'42501','claim document key immutable',
+ 'an erased document key cannot be restored');
 select is((select count(*) from private.claim_document_fragments where session_id = pg_temp.sid('a1')
   and state = 'delete_pending'), 1::bigint, 'and its written fragment awaits deletion');
 select throws_ok($$select pg_temp.reserve('a1', 1, 4)$$, '42501', null, 'a failed session takes nothing more');
@@ -122,6 +143,9 @@ select is(pg_temp.reserve('a3', 1, 4)->>'status', 'reserved', 'a3 chunk 1');
 select is(pg_temp.settle('a3', 1), 'written', 'a3 chunk 1 written');
 create temporary table plan_a3 as select pg_temp.begin('a3', 2) as plan;
 select is((select plan->>'status' from plan_a3), 'compose', 'an exact contiguous manifest composes');
+select is((select plan->>'wrappedDataKey' from plan_a3),
+ (select encode(wrapped_document_key,'hex') from private.claim_document_sessions where id=pg_temp.sid('a3')),
+ 'composition opens only this document key, independently of identity');
 select is((select jsonb_array_length(plan->'fragments') from plan_a3), 2, 'from exactly its two fragments');
 select is(pg_temp.begin('a3', 2)->>'status', 'composing', 'the same nonce asks again and learns only the status');
 select throws_ok($$select pg_temp.begin('a3', 2, 'other')$$, '23505', null, 'another nonce cannot complete it again');
@@ -151,6 +175,9 @@ select is(pg_temp.begin('a5', 1)->>'reason', 'integrity', 'a manifest with a gap
 create temporary table scan1 as select public.claim_next_claim_document_scan_v1(pg_temp.h('lease:1')) as job;
 select is((select (job->>'documentId')::uuid from scan1), (select (plan->>'documentId')::uuid from plan_a3),
   'the worker takes the quarantined document');
+select is((select job->>'wrappedDataKey' from scan1),
+ (select encode(wrapped_document_key,'hex') from private.claim_document_sessions where id=pg_temp.sid('a3')),
+ 'the scanner gets the same document key and no identity key');
 select is(public.claim_next_claim_document_scan_v1(pg_temp.h('lease:2')), null, 'no second worker takes it while leased');
 select throws_ok($$select public.record_claim_document_scan_v1((select (job->>'documentId')::uuid from scan1),
   pg_temp.h('lease:1'), 'OK', pg_temp.h('other-bytes'), 'ClamAV 1.4.1', 27400, now())$$, '22023', null,
@@ -183,6 +210,8 @@ select is(public.record_claim_document_scan_v1((select id from infected), pg_tem
   (select job->>'sha256' from scan2), 'ClamAV 1.4.1', 27400, now()), 'delete', 'an infected document must be deleted');
 select is((select state || ':' || refusal_code from private.claim_documents where id = (select id from infected)),
   'refused:infected', 'it is refused as infected');
+select ok((select wrapped_document_key is null and document_key_shredded_at is not null
+ from private.claim_document_sessions where id=pg_temp.sid('b1')),'scan refusal erases the key before Storage deletion');
 select ok(not pg_temp.readable((select id from infected)), 'and nothing can read it');
 select is(pg_temp.begin('b1', 1)->>'reason', 'infected', 'the claimant gets the coded refusal');
 select ok((select job->>'objectKey' from scan2) in (select * from public.claim_document_objects_due_v1(100)),
@@ -217,6 +246,11 @@ update private.future_person_claim_intakes set created_at = x.t - interval '25 h
 from (select clock_timestamp() t) x where session_hash = pg_temp.h('session:d');
 select is(public.purge_future_person_claim_intakes_v1(), 0,
   'an ended claim whose document object is not yet deleted is kept');
+select ok(public.shred_due_claim_working_keys_v1()>0,'due keys erase independently of physical Storage deletion');
+select ok((select s.wrapped_document_key is null and s.document_key_shredded_at is not null
+ and i.identity_key_shredded_at is not null and octet_length(i.wrapped_data_key)=29
+ from private.claim_document_sessions s join private.future_person_claim_intakes i on i.id=s.intake_id
+ where s.document_id=(select id from kept)), 'a blocked Storage cleanup retains no due identity or document key');
 
 -- ---------------------------------------------------------------------------
 -- Everything goes with the claim.

@@ -25,12 +25,12 @@ insert into private.future_person_claim_intakes(id,session_hash,form_nonce_hash,
     extensions.gen_random_bytes(64),extensions.gen_random_bytes(60),pg_temp.h('identifier'),1,pg_temp.h('network'),1,
     t.n,t.n,t.n+interval '24 hours',t.n from custody_ids c cross join(select clock_timestamp() n)t;
 insert into private.claim_document_sessions(id,intake_id,document_id,document_kind,media_type,declared_bytes,
-  declared_sha256,cookie_hash,create_nonce_hash,complete_nonce_hash,state,expires_at)
+  declared_sha256,cookie_hash,create_nonce_hash,complete_nonce_hash,state,expires_at,wrapped_document_key)
   select c.photo_session,c.review,c.photo,'future-photo-identity','application/pdf',10,pg_temp.h('photo'),
-    pg_temp.h('photo-cookie'),pg_temp.h('photo-create'),pg_temp.h('photo-complete'),'finalized',clock_timestamp()+interval '1 hour'
+    pg_temp.h('photo-cookie'),pg_temp.h('photo-create'),pg_temp.h('photo-complete'),'finalized',clock_timestamp()+interval '1 hour',extensions.gen_random_bytes(72)
   from custody_ids c union all
   select c.birth_session,c.review,c.birth,'future-birth-record','application/pdf',10,pg_temp.h('birth'),
-    pg_temp.h('birth-cookie'),pg_temp.h('birth-create'),pg_temp.h('birth-complete'),'finalized',clock_timestamp()+interval '1 hour'
+    pg_temp.h('birth-cookie'),pg_temp.h('birth-create'),pg_temp.h('birth-complete'),'finalized',clock_timestamp()+interval '1 hour',extensions.gen_random_bytes(72)
   from custody_ids c;
 insert into private.claim_documents(id,session_id,intake_id,document_kind,media_type,byte_count,sha256,object_key)
   select c.photo,c.photo_session,c.review,'future-photo-identity','application/pdf',10,pg_temp.h('photo'),

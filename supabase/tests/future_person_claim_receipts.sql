@@ -24,7 +24,7 @@ returns uuid language plpgsql volatile as $$
 declare v_plan jsonb; v_job jsonb; v_session uuid; v_sequence integer := 0; v_left integer := p_bytes;
 begin
   perform public.open_claim_document_session_v1(pg_temp.h('session:'||p_claim), pg_temp.h('create:'||p_tag),
-    p_kind, 'application/pdf', p_bytes, pg_temp.h('document:'||p_tag), pg_temp.h('cookie:'||p_tag));
+    p_kind, 'application/pdf', p_bytes, pg_temp.h('document:'||p_tag), pg_temp.h('cookie:'||p_tag),extensions.gen_random_bytes(72));
   v_session := (select id from private.claim_document_sessions where cookie_hash = pg_temp.h('cookie:'||p_tag));
   while v_left > 0 loop
     perform public.reserve_claim_document_chunk_v1(v_session, pg_temp.h('cookie:'||p_tag), v_sequence,
@@ -100,14 +100,14 @@ select private.grant_claim_reviewer_v1('7e000000-0000-4000-8000-000000000002');
 select pg_temp.claim('rotation');
 create temporary table rotation as select id,expires_at from private.future_person_claim_intakes where session_hash=pg_temp.h('session:rotation');
 select is(public.open_claim_document_session_rotated_v1(pg_temp.h('session:rotation'),pg_temp.h('session:successor'),
-  pg_temp.h('create:rotation'),'future-photo-identity','application/pdf',10,pg_temp.h('document:rotation'),pg_temp.h('cookie:rotation'))->>'status','open','document open rotates atomically');
+  pg_temp.h('create:rotation'),'future-photo-identity','application/pdf',10,pg_temp.h('document:rotation'),pg_temp.h('cookie:rotation'),extensions.gen_random_bytes(72))->>'status','open','document open rotates atomically');
 select ok(not public.claim_session_live_v1(pg_temp.h('session:rotation')),'old claimant cookie is invalid');
 select ok(public.claim_session_live_v1(pg_temp.h('session:successor')),'successor claimant cookie is live');
 select is((select expires_at from private.future_person_claim_intakes where id=(select id from rotation)),(select expires_at from rotation),'rotation never extends the original absolute deadline');
-select throws_ok($$select public.open_claim_document_session_rotated_v1(pg_temp.h('session:rotation'),pg_temp.h('session:next'),pg_temp.h('create:next'),'future-birth-record','application/pdf',10,pg_temp.h('document:next'),pg_temp.h('cookie:next'))$$,'42501',null,'old cookie opens no second document');
-select throws_ok($$select public.open_claim_document_session_rotated_v1(pg_temp.h('session:successor'),pg_temp.h('session:next'),pg_temp.h('create:rotation'),'future-birth-record','application/pdf',10,pg_temp.h('document:next'),pg_temp.h('cookie:next'))$$,'23505',null,'document nonce remains consumed after rotation');
-select throws_ok($$select public.open_claim_document_session_rotated_v1(pg_temp.h('session:successor'),pg_temp.h('session:successor'),pg_temp.h('create:next'),'future-birth-record','application/pdf',10,pg_temp.h('document:next'),pg_temp.h('cookie:next'))$$,'22023',null,'rotation cannot retain the same credential');
-select ok(not has_function_privilege('authenticated','public.open_claim_document_session_rotated_v1(text,text,text,text,text,integer,text,text)','execute'),'claim rotation door is service-only');
+select throws_ok($$select public.open_claim_document_session_rotated_v1(pg_temp.h('session:rotation'),pg_temp.h('session:next'),pg_temp.h('create:next'),'future-birth-record','application/pdf',10,pg_temp.h('document:next'),pg_temp.h('cookie:next'),extensions.gen_random_bytes(72))$$,'42501',null,'old cookie opens no second document');
+select throws_ok($$select public.open_claim_document_session_rotated_v1(pg_temp.h('session:successor'),pg_temp.h('session:next'),pg_temp.h('create:rotation'),'future-birth-record','application/pdf',10,pg_temp.h('document:next'),pg_temp.h('cookie:next'),extensions.gen_random_bytes(72))$$,'23505',null,'document nonce remains consumed after rotation');
+select throws_ok($$select public.open_claim_document_session_rotated_v1(pg_temp.h('session:successor'),pg_temp.h('session:successor'),pg_temp.h('create:next'),'future-birth-record','application/pdf',10,pg_temp.h('document:next'),pg_temp.h('cookie:next'),extensions.gen_random_bytes(72))$$,'22023',null,'rotation cannot retain the same credential');
+select ok(not has_function_privilege('authenticated','public.open_claim_document_session_rotated_v1(text,text,text,text,text,integer,text,text,bytea)','execute'),'claim rotation door is service-only');
 select pg_temp.claim('finish');
 create temporary table finish_docs as select pg_temp.clean_document('finish','finish-photo','future-photo-identity') photo,pg_temp.clean_document('finish','finish-birth','future-birth-record') birth;
 select is(public.complete_future_person_claim_rotated_v1(pg_temp.h('session:finish'),pg_temp.h('session:finished'),pg_temp.h('finish:nonce'),'keyless',(select photo from finish_docs),(select birth from finish_docs))->>'status','received','completion rotates atomically');
