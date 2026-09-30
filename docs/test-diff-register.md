@@ -1,5 +1,34 @@
 # Test diff register
 
+## 2026-10-01: Claimed source disposal uses settled publication evidence
+
+The private claimant-erasure prerequisite now uses the existing
+`future-person.claimant-reverification-until-request` claimed-subject-deletion
+trigger. It does not add a scheduled `source.revocation-7d` worker phase against
+D-126. The original request still fixes seven-day source and thirty-day Charter
+completion clocks. The subject lock precedes the retention and worker locks,
+and the purge-start fingerprint commits before provider work.
+
+Published parts no longer wait for their original write lease to expire.
+They must instead prove a completed publication or the exact immutable235
+receipt and current custody tuple. The new gateway regression proves a
+permanent marker refuses a late create-only write while the original capability
+is still live, without calling SQL ACK. Unsettled publication still refuses.
+
+The SQL suite retains all nine original refusals and adds a genuine synthetic
+approval, verified document delivery, provider-submit receipt and one-time
+release activation before the real request and exact part-ACK paths. It pins
+nonce rollback, fixed deadlines, purge start, source/sibling byte identity,
+lease crossing and missing-marker refusal. Synthetic SQL ACKs establish the
+DB protocol only; full provider/browser proof remains pending.
+
+A new closed issuer gives future approved custody one random immutable audit
+selector in the existing private slice. Existing slices remain NULL; no
+historical identity is guessed or backfilled. The export authority fingerprint
+already covers the complete immutable slice. No new store is added. Whole
+147-store graph completion and the public deletion action remain closed.
+
+
 ## Null-aware canonical call proof and genuine export fixture · 30 September 2026
 
 The full fresh database rehearsal of 770ff89 reached 6789 assertions and found

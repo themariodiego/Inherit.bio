@@ -4,22 +4,91 @@
 -- This is a private prerequisite. The public deletion-accepted door remains
 -- closed until complete subject/body/export graph cleanup is proved.
 insert into public.retention_phase_registry(retention_id,phase_id,phase_kind)
-values('source.revocation-7d','future-person-claimed-source-disposal','purge');
+values('future-person.claimant-reverification-until-request','future-person-claimed-source-disposal','purge');
+
+-- New supported custody has an exact random audit selector. Existing slices
+-- stay NULL: no historical identity or ciphertext is guessed or backfilled.
+alter table private.future_person_custody_slices add column audit_principal_id uuid
+ references public.audit_principals(id) on delete restrict;
+create unique index future_person_custody_audit_selector on private.future_person_custody_slices(audit_principal_id)
+ where audit_principal_id is not null;
+create function private.issue_future_person_audit_selector_v1()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if new.audit_principal_id is not null then raise exception using errcode='42501',message='claimant audit unavailable';end if;
+ insert into public.audit_principals default values returning id into new.audit_principal_id;
+ return new;
+end $$;
+revoke all on function private.issue_future_person_audit_selector_v1()
+ from public,anon,authenticated,service_role,inherit_upload_only;
+create trigger future_person_custody_audit_issuer before insert on private.future_person_custody_slices
+ for each row execute function private.issue_future_person_audit_selector_v1();
+create function private.future_person_audit_selector_v1(p_subject uuid)
+returns uuid language plpgsql stable security definer set search_path='' as $$
+declare result uuid;
+begin
+ perform private.assert_future_person_subject_custody_v1(p_subject);
+ select c.audit_principal_id into result from private.future_person_custody_slices c
+   join public.subjects s on s.id=c.subject_id and s.claimant_principal_id=c.claimant_principal_id
+   where c.subject_id=p_subject and s.lifecycle='claimed_unbound' and s.subject_account_id is null;
+ if result is null then raise exception using errcode='42501',message='claimant audit unavailable';end if;
+ return result;
+end $$;
+revoke all on function private.future_person_audit_selector_v1(uuid)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+
+-- The original create-only write capability may still be unexpired after
+-- publication. A permanent empty marker fences it; only genuinely completed
+-- publication provenance qualifies. Unsettled writers remain refused.
+create function private.assert_future_person_settled_source_v1(p_file uuid)
+returns void language plpgsql security definer set search_path='' as $$
+declare x private.embryo_canonical_sources; settled boolean:=false;
+begin
+ select * into x from private.embryo_canonical_sources where file_id=p_file;
+ if x.file_id is null then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+ select exists(select 1 from public.embryo_ingest_sessions s join public.worker_jobs w
+   on w.id=s.worker_job_id and w.source_binding_id=s.id and w.cohort_id=s.cohort_id
+   where s.id=x.session_id and s.cohort_id=x.cohort_id and s.status='published'
+     and s.reference_build=x.reference_build and w.id=x.worker_job_id and w.status='done'
+     and w.finished_at is not null and w.kind='split_cohort_vcf' and w.attempts=x.attempt
+     and w.output_kind='ingest.normalize' and w.source_binding_kind='embryo-ingest-fragment-set'
+     and w.source_binding_revision=s.ingest_revision and w.file_sha256=s.manifest_sha256) into settled;
+ if not settled and to_regclass('private.claimed_embryo_ingest_receipts') is not null
+   and to_regclass('private.claimed_embryo_job_receipts') is not null then
+   execute $receipt$select exists(select 1 from private.claimed_embryo_ingest_receipts s
+     join private.claimed_embryo_job_receipts j on j.id=s.worker_job_id and j.session_id=s.id
+       and j.historical_cohort_id=s.historical_cohort_id and j.source_binding_revision=s.ingest_revision
+       and j.file_sha256=s.manifest_sha256
+     join private.embryo_canonical_sources x on x.session_id=s.id and x.worker_job_id=j.id
+       and x.cohort_id=s.historical_cohort_id and x.attempt=j.attempt
+       and x.publication_revision=s.publication_revision and x.reference_build=s.reference_build
+     join private.future_person_custody_slices c on c.subject_id=x.subject_id and c.source_file_id=x.file_id
+       and c.historical_cohort_id=x.cohort_id and c.publication_revision=x.publication_revision
+       and c.source_sha256=x.source_sha256 and c.source_membership_sha256=x.membership_sha256
+     where x.file_id=$1)$receipt$ into settled using p_file;
+ end if;
+ if not settled then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+end $$;
+revoke all on function private.assert_future_person_settled_source_v1(uuid)
+ from public,anon,authenticated,service_role,inherit_upload_only;
 
 create function private.assert_future_person_deletion_plan_v1(p_manifest uuid)
 returns public.retention_due_phases language plpgsql security definer set search_path='' as $$
 declare m public.purge_manifests; p public.retention_due_phases; r public.retention_rows;
  s public.subjects; c private.future_person_custody_slices; x private.embryo_canonical_sources; n bigint;
 begin
- select * into m from public.purge_manifests where id=p_manifest for update;
+ -- Resolve without locks, then take the registered subject-first lock order.
+ select * into m from public.purge_manifests where id=p_manifest;
  select * into r from public.retention_rows where id=m.retention_row_id;
+ select * into s from public.subjects where id=r.target_id for update;
+ select * into r from public.retention_rows where id=m.retention_row_id for update;
+ select * into m from public.purge_manifests where id=p_manifest for update;
  select * into p from public.retention_due_phases where retention_row_id=r.id
    and phase_id=m.phase_id and phase_revision=m.phase_revision for update;
- select * into s from public.subjects where id=r.target_id for update;
  select * into c from private.future_person_custody_slices where subject_id=s.id;
  select * into x from private.embryo_canonical_sources where file_id=c.source_file_id;
  if m.id is null or m.manifest_class<>'complete-retention' or m.state not in('frozen','executing')
-   or r.retention_id<>'source.revocation-7d' or r.target_kind<>'subject' or r.state<>'active'
+   or r.retention_id<>'future-person.claimant-reverification-until-request' or r.target_kind<>'subject' or r.state<>'active'
    or p.phase_id<>'future-person-claimed-source-disposal' or p.status not in('pending','retry','claimed')
    or s.id is null or s.lifecycle<>'claimed_unbound' or s.owner_account_id is not null
    or s.subject_account_id is not null or s.cohort_id is not null or s.analysis_stopped_at is null
@@ -38,6 +107,7 @@ begin
    or m.source_binding_fingerprint is distinct from encode(extensions.digest(convert_to(p.immutable_envelope::text,'UTF8'),'sha256'),'hex')
  then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
  perform private.assert_future_person_subject_custody_v1(s.id);
+ perform private.assert_future_person_settled_source_v1(x.file_id);
  select count(*) into n from public.purge_manifest_entries where manifest_id=m.id;
  if n<>x.part_count or n not between 1 and 50 or exists(
    select 1 from public.purge_manifest_entries e where e.manifest_id=m.id and
@@ -45,7 +115,7 @@ begin
        or e.status not in('pending','deleted') or not exists(
          select 1 from private.embryo_canonical_source_parts b join private.embryo_canonical_parts a on a.id=b.part_id
          where b.file_id=x.file_id and b.sequence=e.entry_revision-1 and a.sequence=b.sequence
-           and a.state='landed' and a.write_expires_at<=r.created_at
+           and a.state='landed'
            and a.session_id=x.session_id and a.worker_job_id=x.worker_job_id and a.attempt=x.attempt
            and a.sample_ordinal=x.sample_ordinal and e.row_key=to_jsonb(a))))
    or exists(select 1 from private.embryo_canonical_source_parts b where b.file_id=x.file_id and not exists(
@@ -66,22 +136,23 @@ begin
  select * into c from private.future_person_custody_slices where subject_id=s.id for update;
  select * into x from private.embryo_canonical_sources where file_id=c.source_file_id for update;
  perform private.assert_future_person_subject_custody_v1(s.id);
+ perform private.assert_future_person_settled_source_v1(x.file_id);
  v_now:=clock_timestamp();
  -- Until the real archive cleanup door can prove every reservation absent,
  -- any archive attempt is a refusal, including unACKed/uncertain writes.
  if x.file_id is null or (select count(*) from public.genome_files where subject_id=s.id)<>1
    or exists(select 1 from private.export_archive_attempts a join public.generated_exports e on e.id=a.export_id
       where e.target_kind='subject' and e.target_id=s.id)
-   or exists(select 1 from public.retention_rows q where q.retention_id='source.revocation-7d'
+   or exists(select 1 from public.retention_rows q where q.retention_id='future-person.claimant-reverification-until-request'
       and q.target_kind='subject' and q.target_id=s.id and q.state in('scheduled','active'))
    or (select count(*) from private.embryo_canonical_source_parts where file_id=x.file_id)<>x.part_count
    or exists(select 1 from private.embryo_canonical_source_parts b join private.embryo_canonical_parts a on a.id=b.part_id
-      where b.file_id=x.file_id and (a.state<>'landed' or a.write_expires_at>v_now))
+      where b.file_id=x.file_id and a.state<>'landed')
  then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
  perform private.consume_future_person_rights_nonce_v1(rs,p_nonce);
  insert into public.retention_rows(retention_id,target_kind,target_id,retention_revision,target_lifecycle_revision,
    disposition_revision,fixed_deadline,state,created_at)
- values('source.revocation-7d','subject',s.id,1,s.lifecycle_revision,s.disposition_revision,v_now+interval '7 days','active',v_now)
+ values('future-person.claimant-reverification-until-request','subject',s.id,1,s.lifecycle_revision,s.disposition_revision,v_now+interval '7 days','active',v_now)
  returning id into r;
  env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,
    'claimantPrincipalId',c.claimant_principal_id,'sourceFileId',x.file_id,'sourceSha256',x.source_sha256,
@@ -90,7 +161,7 @@ begin
    'requestedAt',v_now,'sourceDeadline',v_now+interval '7 days','completionDeadline',v_now+interval '30 days');
  insert into public.retention_due_phases(retention_row_id,retention_id,phase_id,phase_kind,phase_revision,phase_deadline,
    target_kind,target_id,target_lifecycle_revision,disposition_revision,recipient_authority_kind,recipient_authority_revision,immutable_envelope)
- values(r,'source.revocation-7d','future-person-claimed-source-disposal','purge',1,v_now,'subject',s.id,
+ values(r,'future-person.claimant-reverification-until-request','future-person-claimed-source-disposal','purge',1,v_now,'subject',s.id,
    s.lifecycle_revision,s.disposition_revision,'approved-claimant',rs.authority_revision,env);
  insert into public.purge_manifests(retention_row_id,phase_id,phase_revision,manifest_class,manifest_revision,source_binding_fingerprint)
  values(r,'future-person-claimed-source-disposal',1,'complete-retention',1,
@@ -124,7 +195,11 @@ begin
    update public.retention_due_phases set status='claimed',claim_token_hash=p_claim_token_hash,
      claim_expires_at=v_now+interval '60 seconds',attempts=least(attempts+1,20)
      where retention_row_id=p.retention_row_id and phase_id=p.phase_id and phase_revision=p.phase_revision returning * into p;
-   update public.purge_manifests set state='executing' where id=p_manifest;
+   update public.purge_manifests set state='executing',
+     physical_purge_started_at=coalesce(physical_purge_started_at,v_now),
+     frozen_manifest_hash=coalesce(frozen_manifest_hash,(select encode(extensions.digest(convert_to(
+       jsonb_agg(jsonb_build_object('target',target_id,'store',store_name,'key',row_key) order by entry_revision)::text,'UTF8'),'sha256'),'hex')
+       from public.purge_manifest_entries where manifest_id=p_manifest)) where id=p_manifest;
    select coalesce(jsonb_agg(jsonb_build_object('version','future-person-source-disposal-v1','manifestId',p_manifest,
      'ordinal',q.entry_revision,'bucket',q.row_key->>'provider_bucket','objectKey',q.row_key->>'provider_key',
      'byteCount',(q.row_key->>'byte_count')::integer,'sha256',q.row_key->>'sha256','claimExpiresAt',p.claim_expires_at)
@@ -271,3 +346,35 @@ begin
      and p.phase_id='future-person-claimed-source-disposal') then return null;end if;
  return rs;
 end $$;
+
+-- Generic scheduled retention may not claim this private inline continuation.
+create or replace function private.claim_retention_phase_v1(
+  p_claim_token_hash text,
+  p_lease_seconds integer default 60
+)
+returns public.retention_due_phases
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare v_row public.retention_due_phases;
+begin
+  if p_claim_token_hash !~ '^[0-9a-f]{64}$' or p_lease_seconds not between 10 and 300 then
+    raise exception using errcode = '22023', message = 'invalid retention claim';
+  end if;
+  select * into v_row from public.retention_due_phases
+  where status in ('pending', 'retry') and phase_deadline <= clock_timestamp()
+    and phase_id <> 'future-person-claimed-source-disposal'
+  order by phase_deadline, retention_row_id, phase_id
+  for update skip locked limit 1;
+  if v_row.retention_row_id is null then return null; end if;
+  update public.retention_due_phases
+  set status = 'claimed', claim_token_hash = p_claim_token_hash,
+      claim_expires_at = clock_timestamp() + make_interval(secs => p_lease_seconds),
+      attempts = attempts + 1
+  where retention_row_id = v_row.retention_row_id
+    and phase_id = v_row.phase_id and phase_revision = v_row.phase_revision
+  returning * into v_row;
+  return v_row;
+end;
+$$;

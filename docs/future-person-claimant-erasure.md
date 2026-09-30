@@ -6,9 +6,13 @@ no `deletion_accepted` response or new browser control yet. G8 remains NO.
 
 The real approved unbound rights session, its one-time nonce and exact detached
 subject/custody/canonical tuple select one source. Existing retention stores
-hold its immutable part inventory; no new store or parent authority is added.
+hold its immutable part inventory under the registered claimant-reverification
+claimed-subject-deletion trigger; no new store or parent authority is added.
 The original request clock sets source completion at seven days and Charter
-completion at thirty days. Claim retries change only short worker leases.
+completion at thirty days. Claim retries change only short worker leases. Exact completed publication
+(or account235 immutable provenance) proves settled parts. Their original
+create-only write capability may still be live: the permanent marker fences it
+without moving or manufacturing a clock. D-126 source execution stays inline.
 The plan revokes rights, stops new analysis, cancels current subject/file work
 and destroys the claimant HMAC and optional Recovery Key hash. Canonical
 source, memberships, calls, custody and historical session/job identity remain
@@ -27,8 +31,9 @@ Remaining implementation before opening the registered action:
   and atomic rollback evidence through genuine approval and release fixtures.
 - Remove canonical and custody rows only under this exact sealed plan after
   all part ACKs, preserving account235 provenance guards and sibling sources.
-- Destroy every subject linkage/control row after complete cleanup, retaining
-  only the Charter's anonymous, unlinkable deletion event.
+- Destroy every applicable subject identity link after complete cleanup,
+  preserving the registered terminal control receipts and append-only audit
+  chain. The deletion event must remain anonymous and unlinkable.
 - Include actual independent-rights export jobs, downloads and all durable
   attempts/reservations. Any archive attempt currently refuses preparation;
   an uncertain provider write has no proved cleanup-completion door yet.
@@ -41,6 +46,12 @@ named-human release. Claimed keyless recovery must match exactly one current
 claimant HMAC using fresh documents; deletion destroys that binding. Document
 keys and identity keys remain separate under migration240. No claim key,
 Recovery Key, parent owner or historical approval alone authorizes deletion.
+
+New custody receives one random immutable audit selector through a closed
+issuer in the existing slice. Existing NULL selectors stay NULL; no historical
+identity is guessed or backfilled. Historical unindexed subject envelopes
+remain an explicit refusal until an exact supported selector can prove their
+cleanup.
 
 Source contracts: the Future Person Charter in `docs/inherit-v2-brief.md`,
 `api.future-person-delete`, `future-person-claimant-authority-v1`,

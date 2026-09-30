@@ -3077,7 +3077,22 @@
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
       ],
-      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC"
+      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC",
+      "claimantDeletionPrivateExecutor": {
+        "retentionId": "future-person.claimant-reverification-until-request",
+        "trigger": "claimed-subject-deletion",
+        "manifestClass": "complete-retention",
+        "phaseId": "future-person-claimed-source-disposal",
+        "execution": "closed inline request continuation only; this private phase is not a source.revocation-7d scheduled worker phase and does not change D-126",
+        "originalDeadlines": {
+          "source": "request creation plus 7 days",
+          "charterCompletion": "same request creation plus 30 days",
+          "derived": "request creation plus 60 seconds"
+        },
+        "publishedSourceFence": "exact completed publication or exact immutable account235 receipt plus current approved detached custody; original still-live create-only capabilities are permanently fenced by verified empty markers",
+        "auditSelector": "new approved custody receives one random immutable audit principal through the closed issuer; existing NULL selectors remain NULL with no historical backfill; erase only matching current subject linkage and preserve the append-only chain",
+        "availability": "public claimant DELETE and deletion_accepted remain closed until complete registered-store graph cleanup and actual provider ACKs are proved"
+      }
     },
     "claim-review-receipt-v1": {
       "purpose": "prove-complete-client-receipt-of-each-exact-clean-document-chunk-before-a-named-human-review-decision; receipt-is-not-the-human-documentary-attestation",

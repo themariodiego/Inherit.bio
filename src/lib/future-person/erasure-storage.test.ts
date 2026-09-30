@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmbryoFragmentGateway, createEmbryoFixtureSigner, EMBRYO_FIXTURE_BUCKET, EMBRYO_FIXTURE_ORIGIN, EMBRYO_FIXTURE_SUPABASE_URL }
   from "../../../scripts/ci-browser/embryo-fragment-fixture";
+import { writeEmbryoFragment } from "@/lib/embryos/fragment-storage";
 import type { EmbryoFragmentRpc } from "@/lib/embryos/fragment-storage";
 import { drainClaimantSource } from "./erasure-storage";
 
@@ -42,6 +43,16 @@ describe("claimant source disposal prerequisite", () => {
     expect(f.calls[0].p_claim_token_hash).toMatch(/^[0-9a-f]{64}$/u);
     expect(f.calls.every(c => c.p_claim_token_hash === f.calls[0].p_claim_token_hash)).toBe(true);
     expect(gateway.values.get(r.objectKey)?.tombstone).toBe(true);
+  });
+  it("a permanent marker refuses a late create-only write while its original capability is still live", async () => {
+    const r = makeReceipt(); const f = rpcFor([r]); await run(f.rpc);
+    const noAck: EmbryoFragmentRpc = vi.fn(() => { throw new Error("a refused late write cannot reach SQL ACK"); });
+    await expect(writeEmbryoFragment({ rpc: noAck, signal: new AbortController().signal,
+      target: { version: "embryo-ingest-write-target-v1", backend: "r2", sessionId: randomUUID(),
+        sequence: 0, ordinal: 0, byteCount: r.byteCount, sha256: r.sha256, writeExpiresAt: r.claimExpiresAt,
+        bucket: r.bucket, objectKey: r.objectKey }, bytes: new TextEncoder().encode("payload!") })).rejects.toMatchObject({ code: "conflict" });
+    expect(noAck).not.toHaveBeenCalled(); expect(gateway.values.get(r.objectKey)?.tombstone).toBe(true);
+    expect(gateway.values.get(r.objectKey)?.bytes.byteLength).toBe(0);
   });
   it.each(["crossed", "expired", "extra", "duplicate", "invalid-key"])("refuses %s inventory before any provider action", async kind => {
     const r = makeReceipt(); let rows: unknown[] = [r];
