@@ -2389,6 +2389,8 @@ These constraints bind every dimension of this specification. Where an earlier s
 
 **X1.4 `getActiveFile` has five consumers, not three.** `src/lib/genome/load.ts` is consumed by `/reports`, `/reports/[slug]`, `/ancestry`, `/browse` and `src/app/api/chat/route.ts`. All five are migrated to mandatory subject parameters in the same change; the function is then deleted.
 
+**X1.5 Operation nonces are rendered, never fetched.** Every route whose registered request contract requires a one-time operation nonce obtains it the way the large-export action forms in G5.6 do, unless a registered session response issues it (the embryo-ingest and appeal sessions). The authorized page that offers the operation renders a stateless nonce after a read-only authority check, bound to the principal, the originating auth session, the operation and its target, and expiring within 10 minutes. Only the explicit state-changing request consumes it, once, recording its hash in the same transaction as the operation; a replayed, expired or foreign nonce changes nothing. No GET creates, rotates or stores a nonce, and there is no nonce-issuing endpoint. For account deletion, `/settings/data` renders the nonce for `POST /api/account/delete` and, during the notice period, for `POST /api/account/delete/cancel`; re-authentication within 15 minutes (MFA when enrolled) is checked by those POSTs, not by the page. (Owner decision, 2026-09-28.)
+
 #### X2. One subject model
 
 Four incompatible `subjects` tables were specified. The canonical table is:
