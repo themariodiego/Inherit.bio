@@ -32,14 +32,23 @@ insert into private.claim_document_sessions(id,intake_id,document_id,document_ki
   select c.birth_session,c.review,c.birth,'future-birth-record','application/pdf',10,pg_temp.h('birth'),
     pg_temp.h('birth-cookie'),pg_temp.h('birth-create'),pg_temp.h('birth-complete'),'finalized',clock_timestamp()+interval '1 hour'
   from custody_ids c;
-insert into private.claim_documents(id,session_id,intake_id,document_kind,media_type,byte_count,sha256,object_key,
-  state,scan_verdict,scanned_sha256,scan_engine,scan_signature_version,scan_signature_at,scanned_at)
+insert into private.claim_documents(id,session_id,intake_id,document_kind,media_type,byte_count,sha256,object_key)
   select c.photo,c.photo_session,c.review,'future-photo-identity','application/pdf',10,pg_temp.h('photo'),
-    c.review||'/'||c.photo||'/'||gen_random_uuid(),'clean','OK',pg_temp.h('photo'),'ClamAV synthetic',1,now(),now()
-  from custody_ids c union all
+    c.review||'/'||c.photo||'/'||gen_random_uuid() from custody_ids c union all
   select c.birth,c.birth_session,c.review,'future-birth-record','application/pdf',10,pg_temp.h('birth'),
-    c.review||'/'||c.birth||'/'||gen_random_uuid(),'clean','OK',pg_temp.h('birth'),'ClamAV synthetic',1,now(),now()
-  from custody_ids c;
+    c.review||'/'||c.birth||'/'||gen_random_uuid() from custody_ids c;
+-- Enter through quarantine, claim the real worker lease and record a verdict
+-- bound to its exact synthetic document digest. No guard is bypassed.
+do $$ declare job jsonb; n integer; lease text; begin
+  for n in 1..2 loop
+    lease:=pg_temp.h('scan-lease:'||n);
+    job:=public.claim_next_claim_document_scan_v1(lease);
+    if job is null or not exists(select 1 from custody_ids where photo=(job->>'documentId')::uuid
+      or birth=(job->>'documentId')::uuid) then raise exception 'synthetic scan selected another document'; end if;
+    perform public.record_claim_document_scan_v1((job->>'documentId')::uuid,lease,'OK',job->>'sha256',
+      'ClamAV synthetic',1,clock_timestamp());
+  end loop;
+end $$;
 insert into private.claim_reviews(id,mode,case_kind,matched_embryo_id,photo_document_id,photo_sha256,
   birth_record_document_id,birth_record_sha256,completion_nonce_hash,state,review_revision,created_at,deadline)
   select c.review,'record-key','record_key',c.embryo,c.photo,pg_temp.h('photo'),c.birth,pg_temp.h('birth'),

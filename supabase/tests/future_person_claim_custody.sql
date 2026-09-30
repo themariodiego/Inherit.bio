@@ -62,6 +62,20 @@ select ok((select s.lifecycle='claimed_unbound' and s.owner_account_id is null a
 select ok((select e.status='claimed_unbound' and e.cohort_id is null and f.user_id is null
   from custody_ids c join public.embryos e on e.id=c.embryo join public.genome_files f on f.id=c.file),
   'the live embryo and canonical file no longer select the parent');
+-- Deferred coverage must include the old subject after moving a relation,
+-- and every approval/embryo/source edge that can invalidate custody.
+select throws_ok($$select pg_temp.probe('update public.subject_principals set subject_id=(select subject_id from public.embryos
+  where cohort_id=(select cohort_id from live) and sample_ordinal=2) where id=(select principal from custody_ids)',
+  'select ''unexpected''::text')$$,'23514','invalid claimant custody','moving the sole principal rechecks its old claimed subject');
+select throws_ok($$select pg_temp.probe('update public.future_person_claimant_principals set principal_id=(select id
+  from public.subject_principals where principal_kind=''account_subject'' limit 1) where id=(select claimant from custody_ids)',
+  'select ''unexpected''::text')$$,'23514','invalid claimant custody','moving the claimant bridge cannot abandon the old subject');
+select throws_ok($$select pg_temp.probe('update public.future_person_claims set status=''refused'' where id=(select review from custody_ids)',
+  'select ''unexpected''::text')$$,'23514','invalid claimant custody','changing approval state rechecks current custody');
+select throws_ok($$select pg_temp.probe('delete from private.future_person_custody_slices where subject_id=(select subject from custody_ids)',
+  'select ''unexpected''::text')$$,'23514','invalid claimant custody','deleting the durable slice cannot leave a claimed source without provenance');
+select throws_ok($$select pg_temp.probe('update public.embryos set status=''claimed_bound'' where id=(select embryo from custody_ids)',
+  'select ''unexpected''::text')$$,'23514',null,'changing the live embryo state cannot desynchronize claimed custody');
 select is(pg_temp.source_snapshot(),(select body from original_source),'detachment preserves original source, memberships, provider receipts and genotypes byte for byte');
 select ok((select expires_at is null and identity_hmac=pg_temp.h('identity') and hmac_key_revision=1
   from public.future_person_claimant_identity_hmacs where claimant_principal_id=(select claimant from custody_ids)),

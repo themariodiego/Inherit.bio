@@ -143,17 +143,19 @@ begin
   return d=0;
 end $$;
 
--- Cross-table cardinality is checked at commit, not only by a nullable FK.
-create function private.assert_future_person_custody_v1()
-returns trigger language plpgsql security definer set search_path='' as $$
-declare v_subject uuid; s public.subjects; n bigint;
+-- Validate both ends of every relation, including its old end after a move.
+create function private.assert_future_person_subject_custody_v1(p_subject uuid)
+returns void language plpgsql security definer set search_path='' as $$
+declare s public.subjects; n bigint;
 begin
-  if tg_table_name='subjects' then v_subject:=coalesce(new.id,old.id);
-  elsif tg_table_name='subject_principals' then v_subject:=coalesce(new.subject_id,old.subject_id);
-  else select p.subject_id into v_subject from public.subject_principals p
-    where p.id=coalesce(new.principal_id,old.principal_id); end if;
-  select * into s from public.subjects where id=v_subject;
-  if s.id is null or s.lifecycle not in ('claimed_unbound','claimed_bound') then return null; end if;
+  select * into s from public.subjects where id=p_subject;
+  if s.id is null then return; end if;
+  if s.lifecycle not in ('claimed_unbound','claimed_bound') then
+    if exists(select 1 from private.future_person_custody_slices where subject_id=s.id) then
+      raise exception using errcode='23514',message='invalid claimant custody';
+    end if;
+    return;
+  end if;
   select count(*) into n from public.future_person_claimant_principals c
     join public.subject_principals p on p.id=c.principal_id
     join public.future_person_claims f on f.id=c.claim_id
@@ -173,13 +175,57 @@ begin
   if not exists(select 1 from private.future_person_custody_slices x where x.subject_id=s.id
     and x.claimant_principal_id=s.claimant_principal_id) then
     raise exception using errcode='23514',message='invalid claimant custody'; end if;
+  if not exists(select 1 from public.embryos e where e.subject_id=s.id and e.cohort_id is null
+    and e.status=s.lifecycle and exists(select 1 from private.future_person_custody_slices x
+      join private.embryo_canonical_sources cs on cs.file_id=x.source_file_id and cs.subject_id=x.subject_id
+      join public.genome_files f on f.id=cs.file_id and f.subject_id=cs.subject_id
+      where x.subject_id=s.id and cs.embryo_id=e.id and x.source_sha256=cs.source_sha256
+        and x.source_membership_sha256=cs.membership_sha256)) then
+    raise exception using errcode='23514',message='invalid claimant custody';
+  end if;
+end $$;
+
+create function private.assert_future_person_custody_v1()
+returns trigger language plpgsql security definer set search_path='' as $$
+declare before_row jsonb; after_row jsonb; row_value jsonb; affected uuid[]:='{}'; v_subject uuid;
+begin
+  if tg_op<>'INSERT' then before_row:=to_jsonb(old); end if;
+  if tg_op<>'DELETE' then after_row:=to_jsonb(new); end if;
+  foreach row_value in array array[before_row,after_row] loop
+    if row_value is null then continue; end if;
+    if tg_table_name='subjects' then affected:=array_append(affected,(row_value->>'id')::uuid);
+    elsif tg_table_name in('subject_principals','embryos','future_person_custody_slices','genome_files') then
+      affected:=array_append(affected,(row_value->>'subject_id')::uuid);
+    elsif tg_table_name='future_person_claimant_principals' then
+      select array_cat(affected,coalesce(array_agg(id),'{}')) into affected from public.subjects
+        where claimant_principal_id=(row_value->>'id')::uuid;
+      select array_cat(affected,coalesce(array_agg(subject_id),'{}')) into affected from public.subject_principals
+        where id=(row_value->>'principal_id')::uuid;
+    elsif tg_table_name='future_person_claims' then
+      select array_cat(affected,coalesce(array_agg(subject_id),'{}')) into affected from public.embryos
+        where id=(row_value->>'embryo_id')::uuid;
+      select array_cat(affected,coalesce(array_agg(subject_id),'{}')) into affected from public.subject_principals
+        where id=(row_value->>'claimant_principal_id')::uuid;
+    end if;
+  end loop;
+  for v_subject in select distinct id from unnest(affected) id where id is not null loop
+    perform private.assert_future_person_subject_custody_v1(v_subject);
+  end loop;
   return null;
 end $$;
-create constraint trigger subjects_claimant_cardinality after insert or update on public.subjects
+create constraint trigger subjects_claimant_cardinality after insert or update or delete on public.subjects
   deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
 create constraint trigger principals_claimant_cardinality after insert or update or delete on public.subject_principals
   deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
 create constraint trigger claimants_claimant_cardinality after insert or update or delete on public.future_person_claimant_principals
+  deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
+create constraint trigger approvals_claimant_cardinality after insert or update or delete on public.future_person_claims
+  deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
+create constraint trigger embryos_claimant_cardinality after insert or update or delete on public.embryos
+  deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
+create constraint trigger slices_claimant_cardinality after insert or update or delete on private.future_person_custody_slices
+  deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
+create constraint trigger files_claimant_cardinality after insert or update or delete on public.genome_files
   deferrable initially deferred for each row execute function private.assert_future_person_custody_v1();
 
 -- Lock the exact subject, its retention rows, lifecycle, claim/hold, then
@@ -398,7 +444,7 @@ end $$;
 
 do $$ declare f text; begin
   foreach f in array array[
-    'private.assert_claimed_file_owner_v1()', 'private.assert_future_person_custody_v1()',
+    'private.assert_claimed_file_owner_v1()', 'private.assert_future_person_subject_custody_v1(uuid)', 'private.assert_future_person_custody_v1()',
     'private.cancel_unstarted_claim_subject_purge_v1(uuid)', 'private.guard_claimed_canonical_deletion_v1()',
     'private.claim_hash_matches_v1(text,text)', 'private.detach_future_person_subject_v1(uuid)',
     'private.claim_decision_document_received_v1(private.claim_reviews,private.claim_review_decisions,private.claim_documents)'
