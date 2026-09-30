@@ -41,6 +41,16 @@
       "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
   ],
+  "nonceStoredBeforeUseNote": "Brief X1.5 (owner decision 2026-09-28): an operation nonce is rendered by the page that offers the operation, only the state-changing request consumes it, and no GET creates, rotates or stores one. scripts/route-register-correspondence.test.ts finds every call in shipped code to a database function named issue_*nonce*, and every write to account_operation_nonces, and compares them with this list in both directions. The account-deletion GET that stored a nonce on every visit to /settings/data was removed on 2026-09-28, and its issuing function dropped, so it is not here; a GET that stores a nonce again fails the test until it is recorded.",
+  "nonceStoredBeforeUse": [
+    {
+      "rpc": "issue_own_upload_nonce_v1",
+      "file": "src/lib/uploads/prepare-own-upload.ts",
+      "reachedFrom": "src/components/uploads/own-upload-entry.tsx, rendered by /files and /files/upload",
+      "why": "prepareOwnUpload runs while the upload page renders. When the page needs the own-upload consent signature or the account-completion step, it mints a signed presentation token (own-consent-token.ts) and stores the hash of that token's nonce through issue_own_upload_nonce_v1 before anyone acts, so each render of the page writes a row. X1.5 now forbids that. The token itself is already stateless and signed; only its advance record remains.",
+      "closing": "Rebuild it the way account deletion was rebuilt: the POST that consumes the token records its nonce hash once, in the same transaction as the signature or completion, and issue_own_upload_nonce_v1 is dropped. No owner decision is outstanding; X1.5 already covers it. This is build work."
+    }
+  ],
   "endpointSuccessContractUnbound": [
     {
       "routeId": "webhooks.resend",

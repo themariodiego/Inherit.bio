@@ -14,22 +14,6 @@
   ],
   "methodDivergence": [
     {
-      "routeId": "api.account-delete",
-      "path": "/api/account/delete",
-      "file": "src/app/api/account/delete/route.ts",
-      "declared": [
-        "POST"
-      ],
-      "exported": [
-        "GET",
-        "POST"
-      ],
-      "why": "The registered POST body requires \"required-recent-one-time-operation-nonce\", and the register never says where that nonce comes from. The code answers with an undeclared GET on the same path that mints it: it checks same-origin and the authenticated session, then calls issue_account_operation_nonce_v1 through the service role, which requires re-authentication within 15 minutes and MFA when enrolled, stores only the SHA-256 of a 10-minute nonce bound to the account, session and operation (account_delete, or account_delete_cancel during the notice period), and returns it with the current deletion status. src/components/settings/danger-zone.tsx calls it on mount, so every visit to /settings/data writes a nonce row. The mint is real and load-bearing for account deletion and its cancellation, and it is the one verb on this path with no declared auth mode, no rate-limit binding and no response contract. The gap is not local to this route, re-read 2026-09-28: 37 registered request contracts require an operation nonce, and only the embryo-ingest and appeal session responses say how theirs is issued.",
-      "priority": "Priority 1 \u2014 deletion",
-      "closing": "An owner decision on how operation nonces are issued, then the brief sentence and register entry it enables. docs/register-divergence-proposals.md section 2 gives the exact brief diff and register entries for each option: describe this GET as the mint (A), or extend the 2026-09-25 export action-form rule to every operation nonce, so /settings/data renders a stateless nonce and this GET is deleted (B, recommended). Not a transcription either way: the register is derived from the brief and pinned to briefSha256, so the brief has to describe the mint before the register can.",
-      "blocker": "authority \u2014 the brief must describe the operation-nonce mint before the register can declare it"
-    },
-    {
       "routeId": "api.export",
       "path": "/api/export",
       "file": "src/app/api/export/route.ts",
