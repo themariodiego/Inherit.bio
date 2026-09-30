@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { decryptSecret } from "@/lib/crypto";
+import { claimantAuditMetadata } from "./claimant-legal-audit";
 
 const uuid=z.uuid(),hash=z.string().regex(/^[0-9a-f]{64}$/u),revision=z.number().int().positive().safe();
 const date=z.string().datetime({offset:true});
@@ -12,8 +13,10 @@ export const futurePersonExportSnapshot=z.object({
     lifecycleRevision:revision,bindingRevision:revision,credentialRevision:revision,expiresAt:date}).strict(),
   source:z.object({fileId:uuid,subjectId:uuid,referenceBuild:z.enum(["GRCh37","GRCh38"]),sourceSha256:hash,
     membershipSha256:hash,publicationRevision:revision,variantCount:count,publishedAt:date}).strict(),
-  membership:z.object({variants:count,qualityReports:count,scores:count,figures:count,reports:count,agreements:count}).strict(),
-}).strict().refine(value=>value.authority.subjectId===value.source.subjectId&&value.source.variantCount===value.membership.variants);
+  membership:z.object({variants:count,qualityReports:count,scores:count,figures:count,reports:count,agreements:count,legalAuditEvents:count}).strict(),
+  legalAudit:claimantAuditMetadata,
+}).strict().refine(value=>value.authority.subjectId===value.source.subjectId&&value.source.variantCount===value.membership.variants)
+  .refine(value=>value.legalAudit.attribution!=="unrecorded"||value.membership.legalAuditEvents===0);
 export type FuturePersonExportSnapshot=z.infer<typeof futurePersonExportSnapshot>;
 const attestation=z.object({kind:z.enum(["own_embryo","genetic_parent","parents_permission","jurisdiction",
   "single_parent_authority","adult_control","future_person_acknowledgement","disposition_rights"]),statementKeys:z.array(z.string().min(1)).min(1),

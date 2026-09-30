@@ -24,10 +24,10 @@ function fixture(){
   const snapshot={authority:{principalId:ID,subjectId:SUBJECT,originBinding:RECEIPT,authorityReceipt:RECEIPT,lifecycleRevision:3,
     bindingRevision:4,credentialRevision:5,expiresAt:new Date(Date.now()+600_000).toISOString()},
     source:{fileId:ID,subjectId:SUBJECT,referenceBuild:"GRCh38",sourceSha256:RECEIPT,membershipSha256:RECEIPT,publicationRevision:1,
-      variantCount:2,publishedAt:DATE},membership:{variants:2,qualityReports:0,scores:0,figures:0,reports:0,agreements:2}};
+      variantCount:2,publishedAt:DATE},membership:{variants:2,qualityReports:0,scores:0,figures:0,reports:0,agreements:2,legalAuditEvents:0},legalAudit:{attribution:"assigned",attributionStartedAt:DATE}};
   const rows=[{id:"9007199254740992",chromosome:1,position:1000,referenceAllele:"A",alternateAllele:"G",genotype:"A/G"},
     {id:"9007199254740993",chromosome:7,position:2000,referenceAllele:"C",alternateAllele:"T",genotype:"C/T"}];
-  const quality:unknown[]=[],scores:unknown[]=[],figures:unknown[]=[],reports:unknown[]=[];
+  const quality:unknown[]=[],scores:unknown[]=[],figures:unknown[]=[],reports:unknown[]=[],audit:unknown[]=[];
   const job={exportId:ID,principalHash:PRINCIPAL,authorityReceipt:RECEIPT,deadline:new Date(Date.now()+600_000).toISOString()};
   const abort=new AbortController(),calls:Parameters<ArchiveWorkerRpc>[1][]=[],writes:Uint8Array[]=[];
   let revoked=false;
@@ -44,14 +44,14 @@ function fixture(){
         segmentCount:args.p_payload!.segmentCount,pageCount:args.p_payload!.pageCount};break;
     }return {data,error:null};}})};};
   const memberRpc=vi.fn<ClaimantMemberRpc>(async(_name,args)=>{
-    const page=args.p_after_id===null?(args.p_operation==="scores"?scores:args.p_operation==="figures"?figures:args.p_operation==="reports"?reports:rows):[];
+    const page=args.p_after_id===null?(args.p_operation==="scores"?scores:args.p_operation==="figures"?figures:args.p_operation==="reports"?reports:args.p_operation==="legal-audit"?audit:rows):[];
     return {data:args.p_operation==="context"?structuredClone(snapshot):args.p_operation==="agreements"?agreements:
       args.p_operation==="quality"?quality:
       {rows:page,count:page.length,nextAfterId:(page.at(-1) as {id:string}|undefined)?.id??null},error:null};
   });
   const write=vi.fn(async(_attempt:unknown,_segment:unknown,body:Uint8Array)=>{writes.push(body.slice());return {objectId:SUBJECT};});
   const options={job,workerRpc,memberRpc,write,signal:abort.signal};
-  return {options,snapshot,rows,agreements,quality,scores,figures,reports,calls,writes,memberRpc,write,abort,revoke:()=>{revoked=true;}};
+  return {options,snapshot,rows,agreements,quality,scores,figures,reports,audit,calls,writes,memberRpc,write,abort,revoke:()=>{revoked=true;}};
 }
 describe("actual claimant member to ZIP64 attempt",()=>{
   it("writes and independently opens every required member, verifying all manifest sizes and hashes",async()=>{
@@ -112,6 +112,49 @@ describe("actual claimant member to ZIP64 attempt",()=>{
     for(const member of JSON.parse(zip.readAsText("manifest.json")).members){const body=zip.readFile(member.name)!;
       expect(body.length).toBe(member.sizeBytes);expect(createHash("sha256").update(body).digest("hex")).toBe(member.sha256);}
     expect(f.calls.at(-1)?.p_operation).toBe("bytes-complete");
+  });
+  it("includes every genuinely attributed own ledger event in both exact members and readable text",async()=>{
+    const f=fixture();f.snapshot.membership.legalAuditEvents=2;
+    const events=[{seq:1,occurred_at:DATE,event_code:"claimant.analysis_stopped",route_id:"api.future-person-analysis-stop",outcome_code:"accepted",coded_context:{}},
+      {seq:9,occurred_at:DATE,event_code:"claimant.deletion_requested",route_id:"api.future-person-delete",outcome_code:"accepted",coded_context:{}}];
+    f.audit.push(...events.map(event=>({id:String(event.seq),event})));await buildClaimantArchive(f.options);
+    const zip=new AdmZip(Buffer.concat(f.writes)),text=zip.readAsText(`subjects/${SUBJECT}/reports.txt`);
+    for(const path of ["legal-audit.json",`subjects/${SUBJECT}/audit-log.json`]){
+      const ledger=JSON.parse(zip.readAsText(path));expect(ledger.events).toEqual(events);
+      expect(ledger.schema_version).toBe("legal-audit-v1");expect(ledger.attribution_started_at).toBe(DATE);
+      expect(Object.keys(ledger).sort()).toEqual(["attribution_started_at","events","note","schema_version"]);
+      expect(Object.keys(ledger.events[0]).sort()).toEqual(["coded_context","event_code","occurred_at","outcome_code","route_id","seq"]);
+    }
+    for(const event of events)expect(text).toContain(JSON.stringify(event));
+    const manifest=JSON.parse(zip.readAsText("manifest.json"));
+    for(const name of ["legal-audit.json",`subjects/${SUBJECT}/audit-log.json`])expect(manifest.members.find((row:{name:string})=>row.name===name).rows).toBe(2);
+    for(const member of manifest.members){const body=zip.readFile(member.name)!;expect(body.length).toBe(member.sizeBytes);
+      expect(createHash("sha256").update(body).digest("hex")).toBe(member.sha256);}
+    expect(JSON.stringify(zip.getEntries().map(entry=>zip.readAsText(entry)))).not.toMatch(/audit_principal_id|previous_hash|row_hash|subject_ciphertext/);
+  });
+  it("keeps genuine legacy unassigned records empty with a count-free explanation",async()=>{
+    const f=fixture();Object.assign(f.snapshot.legalAudit,{attribution:"unrecorded",attributionStartedAt:null});
+    await buildClaimantArchive(f.options);const zip=new AdmZip(Buffer.concat(f.writes));
+    const ledger=JSON.parse(zip.readAsText("legal-audit.json"));expect(ledger.events).toEqual([]);expect(ledger.attribution_started_at).toBeNull();
+    expect(ledger.note).toContain("do not say who acted");expect(ledger.note).toContain("does not mean that nothing happened");
+  });
+  it.each(["missing-event","wrong-order","wrong-sequence","actor-field","nested-contact","unknown-event","wrong-route","wrong-outcome","unassigned-event"])("refuses %s ledger material before any ZIP object or byte completion",async kind=>{
+    const f=fixture();f.snapshot.membership.legalAuditEvents=2;
+    const first={id:"1",event:{seq:1,occurred_at:DATE,event_code:"claimant.analysis_stopped",route_id:"api.future-person-analysis-stop",outcome_code:"accepted",coded_context:{}}};
+    const second=structuredClone(first);second.id="2";second.event.seq=2;f.audit.push(first,second);
+    if(kind==="missing-event")f.audit.pop();if(kind==="wrong-order")f.audit.reverse();if(kind==="wrong-sequence")first.event.seq=9;
+    if(kind==="actor-field")Object.assign(first.event,{audit_principal_id:SUBJECT});
+    if(kind==="nested-contact")Object.assign(first.event.coded_context,{nested:{email:"synthetic@e2e.local"}});
+    if(kind==="unknown-event")first.event.event_code="unregistered.action";if(kind==="wrong-route")first.event.route_id="api.future-person-delete";
+    if(kind==="wrong-outcome")first.event.outcome_code="purged";
+    if(kind==="unassigned-event")Object.assign(f.snapshot.legalAudit,{attribution:"unrecorded",attributionStartedAt:null});
+    await expect(buildClaimantArchive(f.options)).rejects.toMatchObject({cleanupRequired:true});expect(f.write).not.toHaveBeenCalled();
+    expect(f.calls.some(call=>call.p_operation==="bytes-complete")).toBe(false);
+  });
+  it("refuses an accessor in a ledger wrapper before invoking it",async()=>{
+    const f=fixture();f.snapshot.membership.legalAuditEvents=1;const getter=vi.fn(()=>({seq:1}));
+    const row={id:"1"};Object.defineProperty(row,"event",{enumerable:true,get:getter});f.audit.push(row);
+    await expect(buildClaimantArchive(f.options)).rejects.toMatchObject({cleanupRequired:true});expect(getter).not.toHaveBeenCalled();expect(f.write).not.toHaveBeenCalled();
   });
   it.each(["unknown-report","truncated","foreign-field","lost-authority"])("refuses the whole %s attempt before byte completion",async(kind)=>{
     const f=fixture();if(kind==="unknown-report")f.snapshot.membership.reports=1;

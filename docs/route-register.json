@@ -5444,6 +5444,40 @@
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "price": "free",
       "credential": "approved-rights-session-bound-to-one-exact-transferred-embryo-subject-after-human-review-and-any-required-owner-notice",
+      "ledgerProjection": {
+        "authority": "only-the-exact-non-NULL-newly-issued-custody-audit-selector-proved-by-the-current-unbound-claimant-subject-tuple; legacy-NULL-and-previously-unlinked-actors-remain-unassigned-with-no-backfill",
+        "source": "the-existing-public.legal_audit_log; no-second-audit-store; exact-six-coded-event-fields-seq-occurred_at-event_code-route_id-outcome_code-coded_context; actor-UUID-chain-hashes-and-envelopes-never-leave",
+        "eventContracts": [
+          {
+            "eventCode": "claimant.analysis_stopped",
+            "routeId": "api.future-person-analysis-stop",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deletion_requested",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deleted",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "purged",
+            "codedContext": {}
+          }
+        ],
+        "unsupported": "unknown-or-mismatched-event-route-outcome-context-or-unsafe-sequence-refuses-the-whole-export-with-no-silent-field-or-event-omission",
+        "capture": "legalAudit-metadata-has-exact-attribution-assigned-or-unrecorded-and-attributionStartedAt-the-existing-non-personal-private.legal_audit_attribution_config-reference-clock-or-null-for-unrecorded; membership.legalAuditEvents-is-the-exact-count; the-current-authority-receipt-binds-full-own-ledger-membership-order-content-and-metadata",
+        "members": [
+          "legal-audit.json",
+          "subjects/{subject_id}/audit-log.json",
+          "subjects/{subject_id}/reports.txt"
+        ],
+        "reader": "service-only-future_person_export_members_v1-operation-legal-audit; at-most-500-exact-sequence-keyset-rows-per-page; unchanged-current-receipt-writing-attempt-and-lease-checks-before-and-after-every-page",
+        "legacy": "zero-assigned-events-with-a-count-free-explanation-does-not-claim-that-nothing-happened; old-NULL-actors-are-never-retroattributed",
+        "release": "public-export-READY-provider-cleanup-and-all-account-publication-holds-remain-closed-until-complete-proof"
+      },
       "historicalEvidenceReader": {
         "scope": "only-immutable-own-records-bound-to-the-exact-captured-approved-claimant-source-and-current-authority-receipt",
         "findingVersions": "the-original-closed-v1-body-has-neither-schema_version-nor-figure_basis-and-exports-with-figureBasis-null-and-classificationDisposition-unrecorded; a-body-containing-either-field-must-pass-the-current-closed-v2-contract-with-its-genuine-saved-classification-and-never-falls-back",

@@ -1,5 +1,40 @@
 # Test diff register
 
+## Complete genuinely attributable claimant ledger members · 1 October 2026
+
+The existing analysis-stop transaction created a fresh unlinked audit principal,
+so its accepted claimant action could not be selected as that person's record.
+For newly supported custody, it now uses only the already issued exact selector
+after current subject/custody proof. Legacy NULL custody stays unassigned, creates
+no new principal and preserves the stop, consumed nonce and anonymous ledger
+write. Existing unlinked events are never assigned to a claimant retroactively.
+
+The full source capture's prior source/agreement/scientific body is preserved
+in a private denied base helper. Its current receipt additionally binds every
+actual own ledger row in sequence, complete recorded content and the existing
+non-personal attribution reference metadata. Bounded pages preserve exactly the
+six registered coded fields and refuse unsupported envelopes/contexts. Actor
+IDs and chain hashes stay internal. The actual ZIP includes the same complete
+slice in both ledger members and readable text, with exact manifest counts,
+lengths and hashes. A legacy empty slice carries a count-free explanation.
+
+The exact member-plan test adds only the three real claimant archive/reader
+locations while retaining both original account locations, exact six exported
+columns and every withheld actor/hash column. New scope assertions require the
+closed subject selector and explicit NULL/unlinked omission; the parser's
+original archive/reader namespace remains unchanged.
+
+All original export-authority setup and its assertions move unchanged into a
+shared fixture used by the existing member suite and new ledger integration.
+Additional SQL cases require genuine stop attribution, anonymous legacy stop,
+500-plus-one exact pages, no foreign/NULL actor membership, changed-ledger receipt
+refusal, malformed context/NULL route refusal and denied private helpers. Owner
+synthetic paging rows use the actual single chain writer and do not pretend to
+prove a deletion API decision. New actual-ZIP tests refuse incomplete, reordered,
+foreign-field, nested-contact, mismatched or unassigned material before provider
+writes. Existing account readers, withheld columns, source refusals, READY and
+provider/disposal holds remain unchanged. Full SQL/browser proof is pending.
+
 ## 2026-10-01: Claimed source disposal uses settled publication evidence
 
 The private claimant-erasure prerequisite now uses the existing
