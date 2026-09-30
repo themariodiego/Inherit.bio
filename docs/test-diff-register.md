@@ -1,5 +1,31 @@
 # Test diff register
 
+## D-081 retirement prepared for the end of the invitation overlap · 30 September 2026
+
+This branch is held unless the read-only release check in
+`scripts/tools/d081-retirement-precheck.sql` returns true immediately before
+merge. It must not deploy while older links are usable. The public cutover is
+PR #118's successful production deployment on 13 September. The conservative
+check includes every older adult invitation regardless of status; it returned
+true on 30 September and must be repeated before merging.
+The owner's dated obligation removes the bare `/api/withdraw` endpoint,
+`/withdraw/[token]` page, their two divergence rows and the overlap browser
+case together. The pinned `/withdraw/session` and fragment entry remain.
+
+The correspondence test now requires no dated exceptions, neither retired
+route in the built surface, no form targeting the bare endpoint and no ledger
+exception for it. Its generic deadline validation remains. The two deleted
+files leave the jurisdiction exemption list, whose bidirectional check remains.
+The overlap browser case is replaced with exact 404 assertions for both retired
+paths and a 200 assertion for the fragment entry. The existing canonical adult
+accept/refuse/delete journeys and their assertions remain. The canonical
+session refusal case now titles the register's
+`/withdraw/[token] complete` pattern and explicitly visits only its pinned
+`/withdraw/session` literal. It replaces the retired shim's state proof at the
+same nine-unproven-pair ratchet. The form scan now pins the exact two remaining
+forms, files and resolved targets in both directions, replacing the old minimum
+of five that included the retired page's three forms.
+
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 
 `supabase/tests/drop_genomes_staging_bucket.sql` held that exactly two
