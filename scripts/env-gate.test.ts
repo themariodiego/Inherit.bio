@@ -117,28 +117,31 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // capability, which reads the flag through `isTestJurisdictionEnabled`.
     // The seventh binding is the same shape in `declarableCode`
     // (`src/lib/legal/jurisdiction-declaration.ts`), which admits the
-    // block-only row's stored code only while that flag is on. It is 19 again
-    // since G5.4's keyring: `INHERIT_HMAC_KEYRING` is a new documented
-    // variable, read directly as the default argument of `keyedDigestSet`.
-    // The eighth binding (G5.4, 2026-09-28) is `futurePersonClaimsOpen`
-    // (`src/lib/future-person/claims-open.ts`), which reads the same
-    // `INHERIT_TEST_JURISDICTION` through a defaulted `env` parameter, so it
-    // adds a binding and no new variable. The ninth (G5.4, 2026-09-28) is
-    // `claimScannerFrom` (`src/lib/scan/test-double-scanner.ts`), and it adds
-    // one new documented variable, `INHERIT_CLAMD_ADDRESS`, the scan worker's
-    // clamd socket.
-    expect(result.directReadKeyCount).toBe(19);
+    // block-only row's stored code only while that flag is on. An eighth,
+    // `copilotGroupScopes` (`src/lib/copilot/group-scopes.ts`), read the same
+    // flag for one day and is gone again: on 2026-09-28 the owner turned the
+    // Family Copilot scope on everywhere (PR #260), so it reads no
+    // environment at all, and the count is back to seven with no key lost.
+    // Direct reads are 21 since the embryo fragment transport
+    // (`src/lib/embryos/fragment-storage.ts`) reads INHERIT_EMBRYO_R2_ORIGIN and
+    // INHERIT_EMBRYO_R2_BUCKET directly, and G5.4's keyring reads
+    // `INHERIT_HMAC_KEYRING` directly as the default argument of
+    // `keyedDigestSet`; all three are declared in the template and named in
+    // the guide.
+    expect(result.directReadKeyCount).toBe(21);
     expect(result.boundReadKeyCount).toBe(17);
+    // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
+    // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
     expect(result.boundBindingCount).toBe(9);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(36);
-    expect(result.templateKeyCount).toBe(29);
+    expect(result.readKeyCount).toBe(38);
+    expect(result.templateKeyCount).toBe(31);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(29);
-    expect(result.guideNamedCount).toBe(39);
+    expect(result.guideDocumentedKeyCount).toBe(31);
+    expect(result.guideNamedCount).toBe(41);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(7);
   });

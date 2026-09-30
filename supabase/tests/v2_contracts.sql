@@ -16,13 +16,12 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- checkpoints, cleanup plans/entries and original retirement add four stores.
 -- Legal audit attribution adds private.legal_audit_account_principals, the
 -- account-to-pseudonym link deleted with the account (20260928160000).
--- The embryo-ingest write fence adds its write intents and session fences.
--- The public Future Person claim start adds private.future_person_claim_intakes
--- to claim-review-working-packages (G5.4). Its documents step adds the
--- evidence sessions and fragments (legal-evidence-working-and-private-objects)
--- and the quarantined documents (claim-review-working-packages).
-select is((select count(*) from public.purge_target_stores), 132::bigint,
-  'all 132 purge stores, including private prepared-object and embryo write-fence working state, the legal audit account link and claim intakes and documents, are classified');
+-- The embryo-ingest write fence adds its write intents and session fences,
+-- and the unwind's exact storage disposals add one more.
+-- Future Person intake adds one claim-review working-package store; its
+-- documents step adds sessions, fragments and quarantined documents.
+select is((select count(*) from public.purge_target_stores), 133::bigint,
+  'all 133 purge stores, including private prepared-object and embryo write-fence working state, the unwind storage disposals, legal audit account link and Future Person intake/document stores, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

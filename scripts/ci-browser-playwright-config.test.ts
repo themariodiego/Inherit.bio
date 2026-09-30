@@ -44,6 +44,9 @@ describe("standard Playwright server readiness", () => {
     expect(local?.use?.baseURL).toBe("http://localhost:3103");
     expect(String(local?.testMatch)).toContain("copilot-redteam");
     expect(String(value.projects?.[0]?.testIgnore)).toContain("copilot-redteam");
+    // The Family group Copilot journey needs the same attested local model.
+    expect(String(local?.testMatch)).toContain("copilot-family");
+    expect(String(value.projects?.[0]?.testIgnore)).toContain("copilot-family");
     for (const project of value.projects ?? []) {
       const origin = project.use?.baseURL ?? value.use?.baseURL;
       const signIn = new URL("/auth/sign-in", origin).href;
