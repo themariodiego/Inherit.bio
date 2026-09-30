@@ -213,7 +213,7 @@ export default defineConfig({
         ...PREPARED_APP_ENV,
       },
     }] : []),
-    ...(includePreparedJourney ? [{
+    ...(isolatedCi ? [{
       command: ciServer(EMBRYO_APP_PORT), url: `http://localhost:${EMBRYO_APP_PORT}/auth/sign-in`,
       reuseExistingServer: false, timeout: 120_000,
       env: { ...SERVER_ENV, ...EMBRYO_APP_ENV, NEXT_PUBLIC_SITE_URL: `http://localhost:${EMBRYO_APP_PORT}`,

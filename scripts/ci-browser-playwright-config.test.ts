@@ -16,7 +16,7 @@ describe("standard Playwright server readiness", () => {
   it("requires actual sign-in HTTP readiness for every published container port", async () => {
     const value = await config(true);
     const servers = [value.webServer].flat();
-    expect(servers).toHaveLength(5);
+    expect(servers).toHaveLength(6);
     for (const [index, server] of servers.entries()) {
       expect(server?.url).toBe(`http://localhost:${3100 + index}/auth/sign-in`);
       expect(server?.port).toBeUndefined();
@@ -27,7 +27,7 @@ describe("standard Playwright server readiness", () => {
       expect(localBrowserTarget(server!.url!).href).toBe(server?.url);
     }
     expect(value.workers).toBe(1); expect(value.retries).toBe(0);
-    expect(value.projects).toHaveLength(4); expect(value.use?.trace).toBe("off");
+    expect(value.projects).toHaveLength(5); expect(value.use?.trace).toBe("off");
     // The local-model variant carries the fixed attestation and the others do not.
     const environments = servers.map(server => (server as { env?: Record<string, string> }).env ?? {});
     expect(environments[3].ALLOW_LOCAL_MODEL_ENDPOINTS).toBe("1");
@@ -36,6 +36,18 @@ describe("standard Playwright server readiness", () => {
     expect(environments[4].ALLOW_LOCAL_MODEL_ENDPOINTS).toBeUndefined();
     expect(environments[4].INHERIT_PREPARED_WGS_ENABLED).toBe("true");
     for (const env of environments.slice(0, 4)) expect(env.INHERIT_PREPARED_WGS_ENABLED).toBeUndefined();
+    expect(environments[5].INHERIT_PREPARED_WGS_ENABLED).toBeUndefined();
+    expect(environments[5].ALLOW_LOCAL_MODEL_ENDPOINTS).toBeUndefined();
+    expect(environments[5].INHERIT_EMBRYO_R2_ORIGIN).toBe("https://embryo.fragments.test:8141");
+    expect(environments[5].INHERIT_EMBRYO_R2_BUCKET).toBe("inherit-embryo-ci");
+    for (const env of environments.slice(0, 5)) {
+      expect(env.INHERIT_EMBRYO_R2_ORIGIN).toBeUndefined();
+      expect(env.INHERIT_EMBRYO_R2_BUCKET).toBeUndefined();
+    }
+    const embryo = value.projects?.find(project => project.name === "embryo-ingest");
+    expect(embryo?.use?.baseURL).toBe("http://localhost:3105");
+    expect(String(embryo?.testMatch)).toContain("embryo-ingest-journey");
+    expect(String(value.projects?.[0]?.testIgnore)).toContain("embryo-ingest-journey");
     const prepared = value.projects?.find(project => project.name === "prepared-source");
     expect(prepared?.use?.baseURL).toBe("http://localhost:3104");
     expect(String(prepared?.testMatch)).toContain("own-prepared-genome-journey");
@@ -70,7 +82,7 @@ describe("standard Playwright server readiness", () => {
     try {
       process.argv = [...argv, "--list"];
       const listed = await config(false);
-      expect(listed.projects?.map(project => project.name)).toEqual(["chromium", "jurisdiction-off", "copilot-local", "prepared-source"]);
+      expect(listed.projects?.map(project => project.name)).toEqual(["chromium", "jurisdiction-off", "copilot-local", "embryo-ingest", "prepared-source"]);
       expect([listed.webServer].flat()).toHaveLength(4);
       process.argv = argv.filter(arg => arg !== "--list");
       for (const value of [undefined, "", "READY", "unqualified"]) {

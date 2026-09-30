@@ -1,5 +1,15 @@
 # Test diff register
 
+## Embryo browser variant joins the exact runner boundaries · 30 September 2026
+
+The runner now starts the synthetic fragment gateway with the fixed embryo
+app on port 3105. Readiness tests require all six exact sign-in endpoints,
+all five exact projects, and the embryo gateway fields only on that variant.
+Local discovery retains its four existing servers and starts no CI fixture.
+The browser proxy admits the new exact localhost:3105 origin, refuses the
+next port, and adds strict HTTPS, IP-alias and deceptive-host refusals for
+3105. All existing credential, external-host and namespace refusals remain.
+
 ## Five-step embryo upload in TEST-LOCAL · 30 September 2026
 
 The existing browser proof now ends step 2 on the registered draft form,

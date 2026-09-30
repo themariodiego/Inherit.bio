@@ -9,6 +9,7 @@ import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
 import { startPreparedArtifactFixture } from "./prepared-artifact-fixture";
+import { startEmbryoBrowserFragmentFixture } from "./embryo-browser-fragment-fixture";
 import { createPreparedArtifactProofWriter } from "./prepared-artifact-proof";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
@@ -127,12 +128,13 @@ try {
       input.on("line", line => { void (async () => {
         assert(!initialized && line.length < 65_536, "Single bounded app configuration required"); initialized = true;
         const env = checkedAppEnvironment(JSON.parse(line), port);
-        if (port === 3104) {
+        if (port === 3104 || port === 3105) {
           const signingKey = JSON.parse(env.INHERIT_UPLOAD_SIGNING_JWK);
           assert(signingKey.kty === "EC" && signingKey.crv === "P-256" && typeof signingKey.kid === "string",
             "Synthetic upload signer required");
           const publicKey = createPublicKey(createPrivateKey({ key: signingKey, format: "jwk" })).export({ format: "jwk" });
-          const artifacts = await startPreparedArtifactFixture({
+          const startGateway = port === 3104 ? startPreparedArtifactFixture : startEmbryoBrowserFragmentFixture;
+          const artifacts = await startGateway({
             publicJwk: { kty: publicKey.kty, crv: publicKey.crv, x: publicKey.x, y: publicKey.y, kid: signingKey.kid },
             key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt"),
             onChange: createPreparedArtifactProofWriter(),
