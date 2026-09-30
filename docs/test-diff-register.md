@@ -1,5 +1,44 @@
 # Test diff register
 
+## 2026-10-01: Claimed source disposal uses settled publication evidence
+
+The private claimant-erasure prerequisite now uses the existing
+`future-person.claimant-reverification-until-request` claimed-subject-deletion
+trigger. It does not add a scheduled `source.revocation-7d` worker phase against
+D-126. The original request still fixes seven-day source and thirty-day Charter
+completion clocks. The subject lock precedes the retention and worker locks,
+and the purge-start fingerprint commits before provider work.
+
+Published parts no longer wait for their original write lease to expire.
+They must instead prove a completed publication or the exact immutable235
+receipt and current custody tuple. The new gateway regression proves a
+permanent marker refuses a late create-only write while the original capability
+is still live, without calling SQL ACK. Unsettled publication still refuses.
+
+The SQL suite retains all nine original refusals and adds a genuine synthetic
+approval, verified document delivery, provider-submit receipt and one-time
+release activation before the real request and exact part-ACK paths. It pins
+nonce rollback, fixed deadlines, purge start, source/sibling byte identity,
+lease crossing and missing-marker refusal. Synthetic SQL ACKs establish the
+DB protocol only; full provider/browser proof remains pending.
+
+A new closed issuer gives future approved custody one random immutable audit
+selector in the existing private slice. Existing slices remain NULL; no
+historical identity is guessed or backfilled. The export authority fingerprint
+already covers the complete immutable slice. No new store is added. Whole
+147-store graph completion and the public deletion action remain closed.
+
+
+## Claimed-source erasure prerequisite · 30 September 2026
+
+New protocol tests pin the exact sealed inventory, permanent verified empty
+marker, unchanged receipt and one lease binding. Crossed manifests, duplicate
+objects, extra selectors, expired leases, lost ACKs and contradictory completion
+receipts refuse. New SQL probes preserve the service-only drain and private
+plan creation boundaries; missing authority/plan/evidence never means deletion.
+No existing expectation or assertion changed. Genuine positive approval-to-plan
+SQL, complete subject graph cleanup, registered DELETE/UI and hosted evidence
+remain pending; source disposal alone is not deletion acceptance. G8 remains NO.
 ## 2026-09-30 — Execute the pure QC constraint under its actual service writer
 
 The full hosted Embryo run reached real app cases and found the normal service-role QC writer denied EXECUTE on the new CHECK validator. The validator is immutable, reads only its own JSON/scalar arguments and grants no data access or classification mutation. Only service_role gains EXECUTE; anon/authenticated remain denied. Fresh pgTAP runs a real service-role update against a genuinely published saved receipt and requires the unchanged exact CHECK failure for a crossed call rate. Existing immutable-classification, producer, publication and browser assertions remain, with unchanged time limits and retries.
