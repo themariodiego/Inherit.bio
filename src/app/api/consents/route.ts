@@ -182,6 +182,16 @@ async function grantPurpose(
   if (isHealthPicture && (await familyCapability(accountId, [claims.recipientAccountId], "family_heritability")).status !== "permitted") {
     return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
   }
+  // `copilot.local` to another adult is read only by the Family group
+  // Copilot scope, which needs both Family capabilities for both accounts.
+  // Checked before any signature, as for the other analytic purposes.
+  if (claims.purpose === "copilot.local") {
+    for (const capability of ["third_party_adult_analysis", "family_heritability"] as const) {
+      if ((await familyCapability(accountId, [claims.recipientAccountId], capability)).status !== "permitted") {
+        return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
+      }
+    }
+  }
   const rpc = admin.rpc.bind(admin) as unknown as (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
   const { data: grantId, error } = await rpc(isAncestry ? "grant_family_ancestry_purpose_v1" : isHealthPicture ? "grant_health_picture_purpose_v1" : isPortrait ? "grant_family_portrait_purpose_v1" : isReport ? "grant_family_report_purpose_v1" : "grant_directional_purpose_v1", {
     ...(isAncestry || isReport || isPortrait || isHealthPicture ? { p_session_id: actor!.sessionId, p_recipient_account_id: claims.recipientAccountId,

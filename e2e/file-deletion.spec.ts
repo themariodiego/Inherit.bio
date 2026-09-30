@@ -5,14 +5,16 @@ import path from "node:path";
 import { readFileSync } from "node:fs";
 import { promisify } from "node:util";
 import { localE2eProject } from "../scripts/local-e2e-project";
+import { migrationBuckets } from "../scripts/storage-buckets";
 import { uploadOwnFilePrepared, uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { adminClient, anonClient, createConfirmedUser, JOBS_SECRET, jobRanCleanly, signIn } from "./helpers";
 
-/** Every private bucket the migrations create (the set `e2e/rls.spec.ts`
- * plants in). A source is gone only when the exact object name and the
- * account's own prefix are absent in all three as the service role sees them;
- * the same helper must first see the object, so an absence is never vacuous. */
-const BUCKETS = ["genomes", "genomes-staging", "generated-artifacts"] as const;
+/** Every private bucket the migrations leave in place (the set `e2e/rls.spec.ts`
+ * plants in, read from the migrations as `pnpm gate:routes` reads it). A source
+ * is gone only when the exact object name and the account's own prefix are
+ * absent in every one as the service role sees them; the same helper must first
+ * see the object, so an absence is never vacuous. */
+const BUCKETS = [...migrationBuckets("supabase/migrations")].sort();
 async function storageResidue(objectName: string, accountId: string): Promise<string[]> {
   const admin = adminClient();
   const slash = objectName.lastIndexOf("/");
