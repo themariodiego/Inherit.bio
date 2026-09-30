@@ -115,9 +115,12 @@ export function ClaimReview({claimId}:{claimId:string}) {
         </>}
       </section>)}
       <form onSubmit={submit} className="space-y-4">
-        <label className="block">Choice<select value={decision} disabled={Boolean(busy)} onChange={event=>setDecision(event.target.value as ReviewDecision)}>
-          {reviewPageDecisions(loaded.record).map(value=><option key={value} value={value}>{LABEL[value]}</option>)}
-        </select></label>
+        <div>
+          <label className="block" htmlFor="claim-review-choice">Choice</label>
+          <select id="claim-review-choice" value={decision} disabled={Boolean(busy)} onChange={event=>setDecision(event.target.value as ReviewDecision)}>
+            {reviewPageDecisions(loaded.record).map(value=><option key={value} value={value}>{LABEL[value]}</option>)}
+          </select>
+        </div>
         {approval&&<fieldset disabled={!received||Boolean(busy)} className="space-y-3">
           <legend>Identity checked from the documents</legend>
           <label className="block">Full name<input value={fullName} maxLength={120} onChange={event=>setFullName(event.target.value)} required/></label>

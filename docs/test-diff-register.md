@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Give the review decision control its exact visible label
+
+The full hosted reviewer journey reached its genuine assigned case and passed the accessibility audit, then found no control with the exact label `Choice`: the implicit wrapping label included the option text in the accessible name. The visible label now explicitly references its separate native select. The original exact two-option browser assertion, every document/read/decision/refusal assertion, and all time limits remain unchanged. This corrects the product's accessible name rather than changing the expected choices. Full hosted execution on the final version remains required.
+
 ## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
 
 The combined checkpoint has 158 required route/state pairs: the prior 156
