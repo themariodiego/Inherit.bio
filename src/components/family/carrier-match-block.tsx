@@ -25,6 +25,8 @@ import {
   carrierNoProbabilitySentence,
   personVariantLine,
 } from "@/copy/family/health-picture";
+import { reviewedVariantLine } from "@/copy/family/carrier-evidence";
+import { AssertionNotes } from "./assertion-notes";
 import {
   DOTS_LEGEND_LABEL,
   OUTCOME_LEGEND,
@@ -156,15 +158,18 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
       <ul data-slot="carrier-variants" className="space-y-1 text-sm leading-relaxed text-ink-muted">
         {readings.map((person, index) => (
           <li key={person.dataSubjectId} data-slot="carrier-variant">
-            {personVariantLine(
-              people[index].displayLabel,
-              person.variant.rsid,
-              match.gene,
-              person.variant.classification,
-            )}
+            {person.variant.evidence
+              ? reviewedVariantLine(people[index].displayLabel, person.variant.evidence, match.gene, person.variant.classification)
+              : personVariantLine(
+                  people[index].displayLabel,
+                  person.variant.rsid,
+                  match.gene,
+                  person.variant.classification,
+                )}
           </li>
         ))}
       </ul>
+      <AssertionNotes evidence={readings.map((person) => person.variant.evidence)} />
       <p data-slot="counsellor-route" className="text-sm leading-relaxed text-ink-muted">
         {COUNSELLOR_NO_ROUTE}
       </p>

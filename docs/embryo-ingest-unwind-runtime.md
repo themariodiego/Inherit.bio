@@ -119,6 +119,36 @@ Storage deletion acknowledgement or terminal notice producer is added.
    - **C.** Accept B's evidence, but send cohorts with any `uncertain` intent a
      different notice: the upload stopped mid-write and an unreachable partial
      copy may remain with the storage provider. This needs new approved copy.
+
+   **Answered 28 September 2026: A** (`docs/protocol/decisions.md`). **R2
+   backend built, 29 September** (`20260929100000_embryo_ingest_r2_fragments.sql`,
+   `supabase/tests/embryo_ingest_r2_fragments.sql`). Each write intent now
+   records its backend. An R2 fragment is written create-only to
+   `embryo/<object id>` in an `inherit-embryo-*` bucket behind
+   `workers/embryo-fragments`. It lands only through
+   `ack_embryo_ingest_r2_write_v1`, which shares the Supabase guard's
+   admission check, so the fence and drain above hold unchanged. The Supabase
+   guard stays as a fence on the `genomes` namespace. No backend is selected
+   until an operator sets one. The gateway is not deployed. The interface for
+   the chunk route and the worker is `docs/embryo-fragment-storage.md`. The
+   markers at uncertain keys, and the deletion acknowledgement, are the next
+   change.
+
+   **Exact disposal built, 29 September**
+   (`20260929101000_embryo_ingest_unwind_storage.sql`,
+   `supabase/tests/embryo_ingest_unwind_storage.sql`,
+   `src/lib/embryos/unwind-storage.ts`).
+   - Nothing is claimed before the drain has settled.
+   - Every R2 key, landed or uncertain, gets a permanent empty marker that the
+     gateway reads back.
+   - A landed Supabase object is deleted by exact id and version.
+   - Each disposal is recorded only with that exact evidence.
+   - `storage_confirmed` needs every inventory row proved. A trigger enforces
+     this for any writer.
+   - An uncertain Supabase write, a vanished object and a lapsed
+     acknowledgement stay unresolved, so the unwind stays `storage_pending`.
+   - D-130 is fixed for this builder.
+   - The terminal graph purge is still missing (item 3).
 2. Exact selectors and deletion verification for every supported pending,
    evidence, derived and working-state store. Unsupported graph cases cannot
    silently fall through to a partial purge.
@@ -130,6 +160,21 @@ Storage deletion acknowledgement or terminal notice producer is added.
    and remove every live target reference from retained outcomes. No rotated
    contact may be revived. Non-identifying legally authorized review/hash
    outcomes are retained separately; no source or identity graph remains.
+
+   **Added 29 September 2026, from the completion and split-worker changes.**
+   It must also:
+   - run only on an unwind already `storage_confirmed`;
+   - clear `embryo_ingest_sessions.worker_job_id`, then delete the attempt's
+     own `split_cohort_vcf` job, the only job
+     `assert_embryo_unwind_plannable_stores_v1` admits;
+   - delete the split worker's pending rows in `private.embryo_split_ordinals`
+     (`embryo-qc`) and `private.embryo_split_variants` (`variant-rows`). Both
+     hold `on delete restrict` references to the session and the job, so they
+     go first.
+   - delete the write intents and fences, the disposal records, and only then
+     the inventory rows.
+   The storage-disposal migration leaves the plannable-store check untouched,
+   so the job admission added with completion stays in force.
 4. Final transaction and queue-production regressions, due-phase scheduling,
    zero-residual checks, provider retention verification and a reviewed rollout.
 

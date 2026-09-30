@@ -28,7 +28,10 @@
     "gate:templates": "tsx scripts/validate-templates.ts",
     "density:verify": "node scripts/density-baseline/verify.mjs",
     "seed": "tsx scripts/seed.ts",
-    "seed:participants": "tsx scripts/run-upload-browser.mts --full -- comprehension-participants.spec.ts"
+    "seed:participants": "tsx scripts/run-upload-browser.mts --full -- comprehension-participants.spec.ts",
+    "comprehension:run": "tsx scripts/comprehension/run.mts",
+    "comprehension:records": "tsx scripts/comprehension/records.ts",
+    "comprehension:human": "tsx scripts/comprehension/human-round.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",
