@@ -30,6 +30,7 @@ import {
   noCarrierMatches,
   personVariantLine,
 } from "./health-picture";
+import { reviewedVariantLine } from "./carrier-evidence";
 import { SELF_PLACEHOLDER_LABEL, UNNAMED_PERSON_LABEL } from "./index";
 import { SHARING_ERROR_STATUS } from "./permissions";
 import { GATE_ERROR_STATUS, PAUSED_BODY, filePreparing, noFileYet } from "./person";
@@ -298,6 +299,16 @@ export function personVariantLineFor(
   classification: string,
 ): string {
   return personVariantLine(person.isViewer ? SELF_PLACEHOLDER_LABEL : person.name, rsid, gene, classification);
+}
+
+/** The same line for a reviewed assertion: the ClinVar name, review status and date instead of a key. */
+export function reviewedVariantLineFor(
+  person: PersonRef,
+  evidence: Parameters<typeof reviewedVariantLine>[1],
+  gene: string,
+  classification: string,
+): string {
+  return reviewedVariantLine(person.isViewer ? SELF_PLACEHOLDER_LABEL : person.name, evidence, gene, classification);
 }
 
 /** The viewer's own empty state, in the second person; the other person's is `noFileYet`. */

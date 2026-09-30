@@ -14,10 +14,12 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- Incremental VCF preparation adds the genetic own_normalization_positions index.
 -- The inactive object backend registers jobs, artifacts and published identity;
 -- checkpoints, cleanup plans/entries and original retirement add four stores.
--- The embryo-ingest write fence adds its write intents and session fences.
--- Another adult's held upload adds public.other_adult_held_uploads (20260928150000).
-select is((select count(*) from public.purge_target_stores), 128::bigint,
-  'all 128 purge stores, including private prepared-object, embryo write-fence and held-upload working state, are classified');
+-- Legal audit attribution adds private.legal_audit_account_principals, the
+-- account-to-pseudonym link deleted with the account (20260928160000).
+-- The embryo-ingest write fence adds its write intents and session fences,
+-- and the unwind's exact storage disposals add one more.
+select is((select count(*) from public.purge_target_stores), 130::bigint,
+  'all 130 purge stores, including private prepared-object and embryo write-fence working state, the unwind storage disposals the legal audit account link and Path B held uploads, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

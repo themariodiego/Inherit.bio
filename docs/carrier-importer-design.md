@@ -1,9 +1,15 @@
 # Carrier importer: design for owner approval
 
-Status: proposal, 28 September 2026. The owner chose "design first" that day
-(`docs/protocol/decisions.md`). Nothing is imported until the owner approves
-this design, and carrier results stay withheld until then. Family stays closed
-in production (decision of 27 September).
+Status: built, awaiting the owner's final nod on the starter list, 28
+September 2026. The owner chose "design first" that day and then answered the
+three questions below (`docs/protocol/decisions.md`). The importer, the rule
+and both readers are built ("As built", below). Nothing is imported into
+production until the owner approves the starter list, and no condition counts
+until a named reviewer activates it, so carrier results stay unavailable until
+then. Family stays closed in production (decision of 27 September).
+
+The section "Why an importer is needed" describes the code before this work,
+and its line numbers are that code's.
 
 ## Why an importer is needed
 
@@ -134,6 +140,82 @@ Engineering estimate: five pull requests. They are the schema, the importer,
 the reader, the prepared-source reader, and the browser proofs. The first
 import happens only after question 2 is answered.
 
+## As built, 28 September 2026
+
+The proposal above, point by point, with every difference named.
+
+1. **ClinVar, pinned.** `scripts/build-carrier-assertions.ts` reads ClinVar's
+   `variant_summary` archive for 2026-09 from NCBI's FTP. It has `--fetch`,
+   `--check` and `--emit-sql` modes. `data/ref/carrier/manifest.json` records
+   each source's URL, release, retrieval time, bytes and SHA-256;
+   `data/ref/carrier/PROVENANCE.md` states the licences and counts.
+   `--check` rebuilds every pinned file from the cached sources and fails on
+   any difference.
+2. **ClinGen.** The gene–disease validity download is CC0 1.0
+   (`docs/dataset-licenses.md`). A condition is kept only when ClinGen rates
+   its link Definitive or Strong for autosomal recessive inheritance, and
+   ClinVar names the same MONDO disease on the gene's classified changes.
+3. **Exact keys.** GRCh38 chromosome, position, REF and ALT, for single-letter
+   changes and simple left-aligned insertions or deletions. An insertion or
+   deletion inside a repeat also lists its other spellings, read from NCBI
+   reference windows (`src/lib/family/allele-key.ts`). ClinVar's own GRCh37
+   placement is stored as evidence; no liftover evidence is stored, because
+   ClinVar places the allele on both builds itself. Complex changes are left
+   out, and the manifest counts each exclusion reason.
+4. **Tables.** Migration `20260929130000_carrier_assertions.sql` adds
+   `clinical_assertion_releases`, `carrier_conditions`,
+   `carrier_condition_reviews` (append-only) and `clinical_assertions`. The
+   service role reads them; every write goes through one of three doors.
+5. **Condition rows** are written inactive, each with its MONDO id, a checked
+   not-null inheritance mode, the ClinGen classification, date and URL, a
+   penetrance class and a severity class. Every penetrance class is
+   `unestablished` for now, so each finding carries the brief's exact
+   "not been established" label. Citation ids are not stored yet; the
+   ClinGen URL and date stand in for them.
+6. **The rule.** `private.carrier_assertion_rule_v1` is the only reader of the
+   tables. Legacy rsID-wide labels in `ref_variants` and `condition_registry`
+   are never read for a carrier result.
+7. **Activation.** `review_carrier_condition_v1` records a named reviewer's
+   decision, and a trigger refuses any other way to activate a condition. An
+   X-linked condition needs the reviewer to judge it serious (ADR 0034).
+8. **Readers.**
+   - Legacy files: `readClassifiedVariants` reads `carrier_assertions_v1`, and
+     each file is read by exact allele at the rule's loci
+     (`getSubjectCallsAtLoci`, `exactGenotypes`).
+   - Prepared sources, on Portrait: `family_portrait_carrier_calls_v1` proves
+     the page's readiness receipt again and reads each person's current
+     prepared source at the rule's loci only
+     (`src/lib/family/carrier-canonical.ts`). The health picture and Overview
+     still read legacy files only.
+   - Runs of homozygosity for a prepared source are measured as the verified
+     bytes stream past and stored once through
+     `record_own_normalization_runs_v1`. A file without a measure is "not
+     checked", and the rule refuses the arithmetic for it.
+   - Every reviewed finding names the ClinVar variant, the classification, the
+     review status and the date as text, with the brief's laboratory line and
+     the ClinVar and ClinGen attribution
+     (`src/components/family/assertion-notes.tsx`).
+9. **Verification.**
+   - pgTAP: `supabase/tests/carrier_assertions.sql` (51) and
+     `supabase/tests/carrier_portrait_reader.sql` (23).
+   - Vitest: the importer against a pinned extract of real ClinVar lines, the
+     exact-allele reader, the Portrait reader and the evidence copy.
+   - Browser: `e2e/portrait-reviewed-carrier.spec.ts` proves
+     `/family/portrait/[pairId]` `complete` and `partial-coverage` with a
+     synthetic release imported and reviewed through the same doors. It needs
+     the unmerged migration, so its first run is CI's.
+
+**The production path**, in this order:
+
+1. apply the migration;
+2. the owner approves the starter list;
+3. apply the import through the guarded SQL that `--emit-sql` writes, whose
+   dry run rolls back;
+4. a named reviewer activates each condition.
+
+Until step 4, the rule holds nothing, and every surface still says the check
+is unavailable.
+
 ## A finding for the owner: a live report already names carrier status
 
 `cystic-fibrosis-cftr-f508del-informational`
@@ -167,6 +249,9 @@ any template. Production takes the text through the guarded catalogue refresh.
      gene–disease link.
    - Alternative: expert-panel review (three stars) only. That is fewer
      conditions, each more certain.
+
+   **Answered, 2026-09-28:** the brief's own rule. It is the rule in the
+   migration and in the importer.
 2. **Starter conditions.**
    - Recommended: a short list of autosomal recessive conditions whose common
      pathogenic alleles are single-letter or small changes that arrays and
@@ -176,6 +261,14 @@ any template. Production takes the text through the guarded catalogue refresh.
      spinal muscular atrophy and fragile X. X-linked conditions come only
      after ADR 0034's serious-condition review.
    - Alternative: wait for US counsel before choosing any.
+
+   **Answered, 2026-09-28:** a short autosomal recessive list from the ACMG
+   practice resource, each Definitive or Strong in ClinGen, with no
+   copy-number, repeat or X-linked condition. Engineering proposes eight
+   (`data/ref/carrier/conditions.json`): cystic fibrosis (CFTR), Tay-Sachs
+   disease (HEXA), phenylketonuria (PAH), MCAD deficiency (ACADM), Canavan
+   disease (ASPA), Wilson disease (ATP7B), Smith-Lemli-Opitz syndrome (DHCR7)
+   and Pompe disease (GAA). The list waits for the owner's final nod.
 3. **The live CF report.**
    - Recommended: reword it now. Drop "carrier status" and the per-pregnancy
      sentence. Keep the finding, the caveats and the laboratory line. Apply it

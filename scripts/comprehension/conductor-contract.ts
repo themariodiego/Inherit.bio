@@ -5,12 +5,24 @@ export type TaskId = (typeof taskIds)[number];
 export const opaque = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 export const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const count = z.number().int().nonnegative().max(1_000_000);
+/** Integer millionths of a dollar per million tokens: at most US$100 per million. */
+const price = z.number().int().nonnegative().max(100_000_000);
 const route = z.string().max(2048).regex(/^\/(?!\/)[^\s?#\\]*$/);
 export const settingsSchema = z.object({
-  temperature: z.number().finite().min(0).max(2), maxSteps: z.number().int().min(1).max(100),
+  // One pinned temperature for participants. Graders may pin their own; when
+  // absent they use the same value. Both are recorded with the run.
+  temperature: z.number().finite().min(0).max(2), graderTemperature: z.number().finite().min(0).max(2).optional(),
+  maxSteps: z.number().int().min(1).max(100),
   maxAttempts: z.number().int().min(1).max(3), timeoutMs: z.number().int().min(10).max(60_000),
+  // Opening a live session seeds a fresh account through the product's own
+  // upload path, and its completion check reads the database; both may take
+  // longer than one browser action or inference call.
+  sessionSetupTimeoutMs: z.number().int().min(10).max(900_000).optional(),
   maximumInputTokens: count.min(1), maximumOutputTokens: count.min(1),
-  price: z.object({ inputMicroDollarsPerMillion: count, outputMicroDollarsPerMillion: count }).strict(),
+  // Its own bound, not the token-count one: that capped a price at US$1 per
+  // million tokens, below real output prices, and an understated price would
+  // make every reservation too small. A higher price only raises reservations.
+  price: z.object({ inputMicroDollarsPerMillion: price, outputMicroDollarsPerMillion: price }).strict(),
 }).strict();
 export type Settings = z.infer<typeof settingsSchema>;
 export const verdictSchema = z.object({ passed: z.boolean(), prohibited: z.boolean(), noRouteFound: z.boolean() }).strict();
@@ -56,8 +68,18 @@ export interface DryEnvironment {
   openBrowser(input: Readonly<{ id: string; taskId: TaskId; account: string; fixtures: readonly string[] }>, signal: AbortSignal): Promise<BrowserAdapter>;
   openProcess(input: Readonly<{ id: string; role: Role }>, signal: AbortSignal): Promise<ProcessAdapter>;
 }
+/** The live harness: a fresh browser context and seeded account per session
+ * against the local production build under TEST-LOCAL, and a fresh isolated
+ * child process per inference call (`live-browser.ts`, `inference-isolation.ts`). */
+export interface LiveEnvironment extends Omit<DryEnvironment, "kind"> {
+  kind: "live-local-build";
+}
+export type ConductorEnvironment = DryEnvironment | LiveEnvironment;
 export const inferenceResultSchema = z.object({ value: z.unknown(),
   usage: z.object({ complete: z.literal(true), inputTokens: count, outputTokens: count }).strict(),
+  // SHA-256 of the exact request body the isolated process sent, so a blind
+  // grading request can be re-rendered and audited from the committed record.
+  requestDigest: digest.optional(),
 }).strict();
 
 export function freeze<T>(input: T): Readonly<T> {
