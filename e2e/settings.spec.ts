@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import path from "node:path";
-import { createConfirmedUser, signIn } from "./helpers";
+import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
 import {
   COPILOT_PRESET_GUIDES,
@@ -251,8 +251,9 @@ test("the Copilot provider presets fill the address and leave the model and key 
  * answer is a seven-day notice period with a cancel path, not an immediate
  * purge.
  *
- * Only the POST is held. The page's GET must complete first or `requestDeletion`
- * returns early — it refuses to run while `state` is null.
+ * Only the POST is held. The page renders the deletion state and its one-time
+ * nonce itself (brief X1.5), so nothing else has to arrive before the control
+ * can run.
  */
 test("/settings/data processing: the deletion control says Scheduling while its request is in flight", async ({ page }) => {
   const email = `settings-data-processing-${randomUUID()}@e2e.local`;
@@ -289,6 +290,52 @@ test("/settings/data processing: the deletion control says Scheduling while its 
   // implicit: this test performs a consequential action and should say what
   // the account was left in.
   await expect(page.getByRole("heading", { name: "Account deletion scheduled" })).toBeVisible();
+});
+
+/**
+ * Brief X1.5 in a browser: the deletion nonce arrives in the page itself. The
+ * page makes no request to `/api/account/delete` to get one, rendering it twice
+ * stores nothing, a GET on that path is not served at all, and the POST that
+ * schedules deletion records exactly one nonce, already spent. The account is
+ * a throwaway for the same reason as the test above.
+ */
+test("brief X1.5: /settings/data renders its deletion nonce and stores none before the POST spends it", async ({ page }) => {
+  const email = `settings-data-nonce-${randomUUID()}@e2e.local`;
+  const password = "e2e-settings-data-nonce-pw";
+  const accountId = await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  const calls: string[] = [];
+  page.on("request", (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith("/api/account/delete")) calls.push(`${request.method()} ${pathname}`);
+  });
+  const admin = adminClient();
+  const stored = async () => {
+    const { data, error } = await admin.from("account_operation_nonces")
+      .select("operation,consumed_at").eq("account_id", accountId);
+    expect(error).toBeNull();
+    return data ?? [];
+  };
+
+  await page.goto("/settings/data");
+  await expect(page.getByTestId("delete-account")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("delete-account")).toBeVisible();
+  expect(calls, "the page fetched no nonce").toEqual([]);
+  expect(await stored(), "two renders stored nothing").toEqual([]);
+
+  const get = await page.request.get("/api/account/delete", { maxRedirects: 0, failOnStatusCode: false });
+  expect(get.status(), "there is no GET that could issue one").toBe(405);
+  expect(await stored()).toEqual([]);
+
+  await page.getByLabel(/Type/).fill("delete my genome");
+  await page.getByTestId("delete-account").click();
+  await expect(page.getByRole("heading", { name: "Account deletion scheduled" })).toBeVisible();
+  expect(calls).toEqual(["POST /api/account/delete"]);
+  const spent = await stored();
+  expect(spent).toHaveLength(1);
+  expect(spent[0].operation).toBe("account_delete");
+  expect(spent[0].consumed_at).not.toBeNull();
 });
 
 /**
