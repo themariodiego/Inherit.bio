@@ -7741,6 +7741,10 @@ export type Database = {
           status: string
         }[]
       }
+      account_embryo_unwinds_v1: {
+        Args: { p_deletion_id: string; p_claim_token_hash: string }
+        Returns: Json
+      }
       claim_due_account_deletion_v1: {
         Args: { p_claim_token_hash: string; p_lease_seconds?: number }
         Returns: {

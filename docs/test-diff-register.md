@@ -1,5 +1,9 @@
 # Test diff register
 
+## Owned-cohort deletion worker preserves exact claimed provenance · 30 September 2026
+
+Three narrowly classified private stores increase the exact purge inventory from 147 to 150: two immutable minimum provenance receipts for an already-detached claimed source and one temporary account-deletion cohort work plan. No source, membership, canonical part or claimant genotype is rewritten. New database refusal tests pin receipt mutation, missing or crossed provenance, expired deletion claims and incomplete provider cleanup; bounded runtime tests require exact deletion/claim selection and an empty durable reread before account Storage completion. Existing assertions are retained. Public requests for an owned cohort remain closed pending the registered affected-recipient notice and cancellation envelope; the worker prerequisite does not complete the full account/cohort journey. Documentary bases, unfinished ingest/draft-only graphs and unresolved claims remain refused. No browser or hosted-provider acceptance is claimed.
+
 ## Exact provider attempt keys for regenerated rights links · 30 September 2026
 
 The real adult invitation, co-parent invitation and embryo withdrawal mail doors each gain nine strict assertions: one attempt retains its provider key; a regenerated attempt changes its token and provider key, revokes the previous hash, keeps only one live hash, refuses stale and canceled submissions, and stores no raw token or provider payload. The canonical outbox event key and all existing journey assertions remain unchanged.

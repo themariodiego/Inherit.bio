@@ -1382,6 +1382,18 @@
     "public.worker_jobs": {
       "disposition": "excluded-internal",
       "reason": "Worker queue rows with claim token hashes. It is machinery, not the person's record."
+    },
+    "private.claimed_embryo_ingest_receipts": {
+      "disposition": "deferred",
+      "reason": "Minimum immutable split-session provenance retained for an already-detached claimed source. No account, contact or credential remains; approved-future-person-export-v1 requires its claimant reader."
+    },
+    "private.claimed_embryo_job_receipts": {
+      "disposition": "deferred",
+      "reason": "Minimum immutable completed split-job provenance retained for an already-detached claimed source. No full job payload, authority or credential remains; approved-future-person-export-v1 requires its claimant reader."
+    },
+    "private.account_owned_cohort_purges": {
+      "disposition": "excluded-internal",
+      "reason": "Exact current account-deletion cohort work plan and original deadline. It is worker control state, removed after cleanup, not a person’s record."
     }
   }
 }
