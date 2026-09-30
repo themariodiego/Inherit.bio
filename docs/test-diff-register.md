@@ -1,5 +1,17 @@
 # Test diff register
 
+## Actual custody invoker and sealed read helper · 30 September 2026
+
+The root's independently verified custody correction is included unchanged in
+this export prerequisite: the structural identity trigger retains the actual
+invoker role and its complete immutable-field check. A narrow read-only definer
+evaluates the exact approved claimant/source/custody tuple without granting
+service-role table access. Five additional database assertions require the
+invoker/definer split, exact denied/granted roles, no direct custody SELECT and
+the original immutable identity refusal under a real service-role update.
+The root's original correction passed full fresh database and unit suites;
+this combined export stage still needs its own immutable-head rehearsal.
+
 ## Null-aware canonical call proof and genuine export fixture · 30 September 2026
 
 The full fresh database rehearsal of 770ff89 reached 6789 assertions and found
