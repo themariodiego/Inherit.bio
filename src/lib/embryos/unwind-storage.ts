@@ -112,3 +112,34 @@ export async function drainEmbryoUnwindStorage(input: {
     await call(input.rpc, "confirm_embryo_ingest_unwind_storage_v1", { p_unwind_id: input.unwindId }, signal));
   return { status: confirmation.status, disposed, failed };
 }
+
+const workSchema = z.array(z.object({ unwindId: uuid, purpose: z.enum(["abandoned", "published", "source"]),
+  state: z.enum(["storage_pending", "storage_confirmed"]) }).strict()).max(100);
+export type EmbryoUnwindWork = z.infer<typeof workSchema>[number];
+
+/** Unwinds still waiting on storage or on completion, oldest deadline first. */
+export async function listEmbryoUnwindWork(input: {
+  rpc: EmbryoFragmentRpc; limit?: number; signal: AbortSignal;
+}): Promise<EmbryoUnwindWork[]> {
+  const limit = Math.min(Math.max(Math.trunc(input.limit ?? 25), 1), 100);
+  return workSchema.parse(await call(input.rpc, "embryo_ingest_unwind_work_v1", { p_limit: limit }, input.signal));
+}
+
+const completionSchema = z.object({
+  status: z.enum(["complete", "planned", "storage_pending"]),
+}).passthrough();
+
+/**
+ * The step after `storage_confirmed` (20260930130000): an abandoned attempt's
+ * terminal graph purge, or a published attempt's fragment-row cleanup. SQL
+ * decides which from the unwind and refuses both before storage is
+ * confirmed. Anything but `complete` means drain storage and call again.
+ */
+export async function completeEmbryoUnwind(input: {
+  rpc: EmbryoFragmentRpc; unwindId: string; signal: AbortSignal;
+}): Promise<{ status: "complete" | "planned" | "storage_pending" }> {
+  const signal = AbortSignal.any([input.signal, AbortSignal.timeout(25_000)]);
+  const result = completionSchema.parse(await call(input.rpc, "complete_embryo_ingest_unwind_v1",
+    { p_unwind_id: input.unwindId }, signal));
+  return { status: result.status };
+}

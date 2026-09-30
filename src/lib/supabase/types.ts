@@ -2636,6 +2636,7 @@ export type Database = {
           id: string
           ingest_revision: number
           matrix_fingerprint: string | null
+          purpose: string
           recipients: Json | null
           session_id: string | null
           state: string
@@ -2649,6 +2650,7 @@ export type Database = {
           id?: string
           ingest_revision: number
           matrix_fingerprint?: string | null
+          purpose?: string
           recipients?: Json | null
           session_id?: string | null
           state?: string
@@ -2662,6 +2664,7 @@ export type Database = {
           id?: string
           ingest_revision?: number
           matrix_fingerprint?: string | null
+          purpose?: string
           recipients?: Json | null
           session_id?: string | null
           state?: string
@@ -8013,6 +8016,10 @@ export type Database = {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: undefined
       }
+      complete_embryo_ingest_unwind_v1: {
+        Args: { p_unwind_id: string }
+        Returns: Json
+      }
       complete_embryo_terminal_mail_v1: {
         Args: {
           p_accepted: boolean
@@ -8146,6 +8153,10 @@ export type Database = {
           p_attestation_sha256: string
           p_test_jurisdiction: boolean
         }
+        Returns: Json
+      }
+      embryo_ingest_unwind_work_v1: {
+        Args: { p_limit: number }
         Returns: Json
       }
       embryo_ingest_write_targets_v1: {
