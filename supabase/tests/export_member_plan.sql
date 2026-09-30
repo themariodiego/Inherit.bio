@@ -29,14 +29,6 @@ create temporary table export_member_plan as select $plan$
     "excluded-protected": "A contact value, identity HMAC, evidence document or other ciphertext the export contracts always exclude.",
     "exported": "The requester's own rows leave in the export. columns and withheld classify every column; withheld columns never leave. A member named archive: is a member of the synchronous archive; one named reader: is an asynchronous reader class whose rows become archive content.",
     "out-of-scope": "About a person, but not the requester's own record: a short-lived draft about someone else, or staff workflow.",
-    "private.claim_review_chunk_receipts": {
-      "disposition": "excluded-internal",
-      "reason": "Ephemeral expected delivery proofs and receipt acknowledgements; never exported."
-    },
-    "private.claim_review_receipt_sessions": {
-      "disposition": "excluded-credential",
-      "reason": "Short-lived challenge and consumed receipt operation nonce bindings; never exported."
-    },
     "reference": "Holds no person's data: catalogs, registries and service configuration."
   },
   "objects": {
@@ -72,6 +64,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "out-of-scope",
       "reason": "Named staff assignments for a temporary claim review. This is review workflow, not the requester’s genomics record."
     },
+    "private.claim_review_chunk_receipts": {
+      "disposition": "excluded-internal",
+      "reason": "Ephemeral expected delivery proofs and receipt acknowledgements; never exported."
+    },
     "private.claim_review_decisions": {
       "disposition": "excluded-protected",
       "reason": "Temporary claimant document digests and the sealed professional basis of a review decision. Claim evidence and private reviewer notes never leave in member exports."
@@ -83,6 +79,10 @@ create temporary table export_member_plan as select $plan$
     "private.claim_review_reads": {
       "disposition": "excluded-internal",
       "reason": "Temporary staff read receipts used to authorize a claim decision. This is authorization and review machinery, not a member export class."
+    },
+    "private.claim_review_receipt_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Short-lived challenge and consumed receipt operation nonce bindings; never exported."
     },
     "private.claim_reviewers": {
       "disposition": "out-of-scope",
