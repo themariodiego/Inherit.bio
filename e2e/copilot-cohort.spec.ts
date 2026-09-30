@@ -7,7 +7,7 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { grantAnalysis, seedPublishedCohort } from "./cohort-copilot-seed";
 import { LOCAL_MODEL_ORIGIN } from "../scripts/ci-browser-config";
 import { allowCopilot, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
-import { COHORT_CITATION_LABEL, cohortEmbryoLine } from "../src/copy/copilot/group-scopes";
+import { COHORT_CITATION_LABEL, COHORT_COPILOT_LEDE, cohortEmbryoLine } from "../src/copy/copilot/group-scopes";
 import { STANDING_STATEMENT } from "../src/copy/embryos/compare";
 import { EMBRYO_STATUS, ROLE_OTHER_PARENT, waitingForResultsBody } from "../src/copy/embryos/index";
 import { GATE_BUTTON } from "../src/copy/embryos/gate";
@@ -122,7 +122,20 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
     ]);
     await expect(pageA.locator('[data-slot="copilot-standing-statement"]')).toHaveText(STANDING_STATEMENT);
     await expect(pageA.getByTestId("data-flow-indicator")).toContainText("Local mode");
-    await expect(pageA.locator("main")).not.toContainText(/\b(sex|male|female|rank|ranked|best embryo)\b/i);
+    const safety = pageA.locator('[data-slot="copilot-cohort"] > p').filter({ hasText: COHORT_COPILOT_LEDE });
+    await expect(safety).toHaveCount(1);
+    await expect(safety).toHaveText(COHORT_COPILOT_LEDE);
+    // The required exact safety notice explicitly refuses ranking and sex.
+    // Only that one whole paragraph is exempt; every other main node keeps
+    // the original strict result/content prohibition.
+    const remaining = await pageA.locator("main").evaluate((main, exactSafety) => {
+      const copy = main.cloneNode(true) as HTMLElement;
+      const notices = [...copy.querySelectorAll("p")].filter(p => p.textContent === exactSafety);
+      if (notices.length !== 1) throw new Error("Exact cohort safety notice required once");
+      notices[0].remove();
+      return copy.textContent;
+    }, COHORT_COPILOT_LEDE);
+    expect(remaining).not.toMatch(/\b(sex|male|female|rank|ranked|best embryo)\b/i);
   });
 
   test("A's answer comes from the embryos' quality checks and cites the comparison and exactly the embryos it names", async () => {

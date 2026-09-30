@@ -30,6 +30,9 @@ async function signStatements(page: Page, button: string) {
   for (const box of await form.getByRole("checkbox").all()) await box.check();
   await form.getByLabel("Full legal name").fill("Synthetic Parent");
   await form.getByRole("button", { name: button, exact: true }).click();
+  // All real artifact receipts and the refreshed server stage must finish
+  // before another browser can inspect the newly committed signatures.
+  await expect(form).toHaveCount(0);
 }
 
 test.beforeAll(async () => {
@@ -87,6 +90,8 @@ test("mixed measured calls preserve a failed embryo without a source after real 
     await other.getByLabel("Country where you live").selectOption("DK");
     await other.getByLabel("Full legal name").fill("Synthetic Parent");
     await other.getByRole("button", { name: "Sign and accept invitation" }).click();
+    // This heading is rendered only after the real accepted native receipt.
+    await expect(other.getByRole("heading", { name: "You have accepted the invitation", exact: true })).toBeVisible();
     await other.goto("/embryos/upload");
     await expect(other.locator('[data-stage="co-parent-sign"]')).toBeVisible();
     await page.reload();
