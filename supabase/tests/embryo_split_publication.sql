@@ -38,7 +38,7 @@ create function pg_temp.publish(p_token text default null) returns jsonb languag
 $$;
 create function pg_temp.outcome(p_outcome text,p_verdict text,p_reasons text[],p_called integer,p_rows integer,
   p_reason text default null) returns jsonb language sql as $$
-  select jsonb_build_object('outcome',p_outcome,'qc',jsonb_build_object('sites_expected',10,'sites_called',p_called,
+  select jsonb_build_object('outcome',p_outcome,'qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.4,12.5),'sites_expected',10,'sites_called',p_called,
     'call_rate',p_called::double precision/10,'autosomal_het_rate',0.4,'mean_depth',12.5,
     'qc_verdict',p_verdict,'qc_reasons',to_jsonb(p_reasons)),'failureReason',p_reason,'variantCount',p_rows);
 $$;
@@ -63,9 +63,9 @@ select is((select (body->>'attempt')::integer from claim),1,'the fixture job is 
 -- probe that rolls back, before the main three-embryo flow below.
 create function pg_temp.whole(p_failed boolean,p_rows integer) returns jsonb language sql as $$
   select case when p_failed then jsonb_build_object('outcome','qc_fail_no_source','qc',jsonb_build_object(
-      'sites_expected',10,'sites_called',5,'call_rate',0.5,'autosomal_het_rate',null,'mean_depth',null,
+      'figure_basis',pg_temp.qc_receipt(null,null),'sites_expected',10,'sites_called',5,'call_rate',0.5,'autosomal_het_rate',null,'mean_depth',null,
       'qc_verdict','fail','qc_reasons',jsonb_build_array('embryo_call_rate')),'failureReason','embryo_call_rate','variantCount',0)
-    else jsonb_build_object('outcome','passed','qc',jsonb_build_object('sites_expected',10,'sites_called',10,
+    else jsonb_build_object('outcome','passed','qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.3,null),'sites_expected',10,'sites_called',10,
       'call_rate',1,'autosomal_het_rate',0.3,'mean_depth',null,'qc_verdict','pass','qc_reasons','[]'::jsonb),
       'failureReason',null,'variantCount',p_rows) end;
 $$;
@@ -173,6 +173,9 @@ select is(pg_temp.probe($$update public.embryos set status='qc_pass' where cohor
 create temporary table before_mail as select count(*) n from public.mail_outbox;
 create temporary table before_audit as select count(*) n from public.legal_audit_log where event_code='embryo.cohort.published';
 create temporary table before_subjects as select id,lifecycle_revision from public.subjects where cohort_id=(select cohort_id from live);
+select throws_ok($$update private.embryo_split_ordinals set figure_basis=null where session_id=(select id from live) and sample_ordinal=0$$,
+ '42501','immutable QC classification','the ordinal receipt cannot be erased before publication');
+create temporary table before_qc_receipts as select sample_ordinal,figure_basis from private.embryo_split_ordinals where session_id=(select id from live);
 create temporary table published as select pg_temp.publish() as body;
 select is((select body from published),
   '{"status":"published","publicationRevision":1,"published":2,"qcFailed":1}'::jsonb,
@@ -218,6 +221,29 @@ select ok((select bool_and(q.parent_a_concordance is null and q.parent_b_concord
     and q.source_laboratory is null and q.source_assay is null)
   from public.embryo_qc q join public.embryos e on e.id=q.embryo_id where e.cohort_id=(select cohort_id from live)),
   'what the file does not measure stays null; nothing is estimated from a parent or a panel');
+
+select ok((select count(*) = 3 and bool_and(q.figure_basis = o.figure_basis and q.figure_basis = pg_temp.qc_receipt(q.autosomal_het_rate,q.mean_depth))
+ from public.embryo_qc q join public.embryos e on e.id=q.embryo_id
+ join before_qc_receipts o on o.sample_ordinal=e.sample_ordinal
+ where e.cohort_id=(select cohort_id from live)),
+ 'terminal publication preserves every exact measured producer receipt from its own ordinal');
+
+select throws_ok($$update public.embryo_qc set figure_basis=null where embryo_id=(select id from public.embryos where cohort_id=(select cohort_id from live) and sample_ordinal=0)$$,
+ '42501','immutable QC classification','a saved producer classification cannot be erased after publication');
+
+select throws_ok($$select pg_temp.probe(
+  $legacy$with removed as (delete from public.embryo_qc where embryo_id=(select id from public.embryos
+      where cohort_id=(select cohort_id from live) and sample_ordinal=0) returning *)
+    insert into public.embryo_qc select (jsonb_populate_record(null::public.embryo_qc,
+      to_jsonb(removed)||'{"figure_basis":null}'::jsonb)).* from removed$legacy$,
+  $backfill$update public.embryo_qc set figure_basis=pg_temp.qc_receipt(autosomal_het_rate,mean_depth)
+    where embryo_id=(select id from public.embryos where cohort_id=(select cohort_id from live) and sample_ordinal=0)
+    returning embryo_id::text$backfill$)$$,
+ '42501','immutable QC classification','an unclassified historical QC row cannot be silently backfilled');
+select ok((select count(*) = 3 and bool_and(q.figure_basis = o.figure_basis)
+ from public.embryo_qc q join public.embryos e on e.id=q.embryo_id
+ join before_qc_receipts o on o.sample_ordinal=e.sample_ordinal where e.cohort_id=(select cohort_id from live)),
+ 'the historical backfill refusal rolls back its entire probe and preserves every original receipt');
 
 -- The empty condition registry scores nothing; no research estimate runs.
 select is((select count(*) from public.embryo_scores x join public.embryos e on e.id=x.embryo_id

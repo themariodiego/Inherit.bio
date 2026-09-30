@@ -1,3 +1,4 @@
+import { vcfQcFigureBasis } from "./qc-basis";
 import { resultBasis } from "../figures/result-basis";
 /**
  * Synthetic embryo fixtures for the unit suite (C7: they describe no one).
@@ -12,6 +13,7 @@ export const SYNTHETIC_COMPUTED_AT = "2026-09-03T10:00:00.000Z";
 
 export function syntheticQc(overrides: Partial<QcDto> = {}): QcDto {
   return {
+    figure_basis: vcfQcFigureBasis({ autosomal_het_rate: overrides.autosomal_het_rate === undefined ? 0.31 : overrides.autosomal_het_rate, mean_depth: overrides.mean_depth ?? null }),
     source_facts: { ...UNKNOWN_EMBRYO_INPUT },
     sites_expected: 1000,
     sites_called: 990,
@@ -34,6 +36,7 @@ export function syntheticQc(overrides: Partial<QcDto> = {}): QcDto {
     qc_reasons: [],
     computed_at: SYNTHETIC_COMPUTED_AT,
     ...overrides,
+    ...([overrides.parent_a_concordance, overrides.parent_b_concordance, overrides.allelic_dropout_estimate, overrides.contamination_estimate].some((v) => v != null) ? { figure_basis: null } : {}),
   };
 }
 

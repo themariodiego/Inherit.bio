@@ -1,3 +1,4 @@
+import { vcfQcFigureBasis } from "@/lib/embryos/qc-basis";
 import { describe, expect, it } from "vitest";
 import type { RscEmbryoComparison } from "@/lib/embryos/policy";
 import { STANDING_STATEMENT } from "@/copy/embryos/compare";
@@ -7,6 +8,7 @@ import { buildCohortContext, cohortAuthoritySchema, cohortCitations, cohortSyste
 const cohortId = "c0000000-0000-4000-8000-000000000001";
 const ids = ["e0000000-0000-4000-8000-000000000001", "e0000000-0000-4000-8000-000000000002", "e0000000-0000-4000-8000-000000000003"];
 const qc = (callRate: number, verdict: "pass" | "marginal" | "fail") => ({
+  figure_basis: vcfQcFigureBasis({ autosomal_het_rate: 0.4, mean_depth: 12.5 }),
   source_facts: { coordinate_conversion: "not-needed", source_origin: "external-unverified", source_imputation: "not-recorded", call_observation: "not-recorded" },
   sites_expected: 10, sites_called: Math.round(callRate * 10), call_rate: callRate, autosomal_het_rate: 0.4, mean_depth: 12.5,
   parent_a_concordance: null, parent_b_concordance: null, allelic_dropout_estimate: null, allelic_dropout_interval_low: null,

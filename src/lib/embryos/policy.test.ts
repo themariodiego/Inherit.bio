@@ -22,7 +22,7 @@ import { projectFinding } from "./projection";
 
 function comparison(): RscEmbryoComparison {
   const embryos = [
-    { id: "e1", sample_ordinal: 0, display_label: "Embryo 1", status: "qc_pass" as const, qc: syntheticQc({ call_rate: 0.97 }) },
+    { id: "e1", sample_ordinal: 0, display_label: "Embryo 1", status: "qc_pass" as const, qc: syntheticQc({ call_rate: 0.97, sites_called: 970 }) },
     { id: "e2", sample_ordinal: 1, display_label: "Embryo 2", status: "qc_fail" as const, qc: syntheticQc({ call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate"] }) },
     { id: "e3", sample_ordinal: 2, display_label: "Embryo 3", status: "qc_pass" as const, qc: syntheticQc({ call_rate: 0.99 }) },
   ];
@@ -84,7 +84,7 @@ describe("closed shapes", () => {
     expect([...SHAPES.EmbryoFinding.keys].sort()).toEqual([
       "citation_ids", "condition_id", "condition_name", "coverage_state", "embryo_label", "evidence_label", "finding", "not_covered_reason",
     ]);
-    expect(SHAPES.qc.keys).toHaveLength(21);
+    expect(SHAPES.qc.keys).toHaveLength(22);
     expect(SHAPES.inputFacts.keys).toEqual(["coordinate_conversion", "source_origin", "source_imputation", "call_observation"]);
     expect(SHAPES.rscEmbryoComparison.keys).toEqual(["cohort_id", "context_counts", "embryos", "result_rows", "trade_offs", "standing_statement"]);
     expect(SHAPES.tradeOffs.keys).toEqual(["statement_copy_id", "conflicts"]);

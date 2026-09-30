@@ -16,6 +16,7 @@ import { NO_RESULTS_SENTENCE } from "@/copy/embryos/detail";
 import { EMBRYO_STATUS, RETENTION_SENTENCE } from "@/copy/embryos/index";
 import {
   DROPOUT_NOT_MEASURED,
+  DROPOUT_NOT_MEASURED_NO_RANGE,
   NOT_MEASURABLE_FROM_FILE,
   NOT_STATED_BY_SOURCE,
   QC_FAILED_CHIP,
@@ -63,7 +64,7 @@ const E = (n: number) => `0e000000-0000-4000-8000-00000000000${n}`;
 function embryos(): ComparisonEmbryo[] {
   return [
     { id: E(1), sample_ordinal: 0, display_label: "Embryo 1", status: "qc_pass", qc: syntheticQc({ call_rate: 0.97, sites_called: 970 }) },
-    { id: E(2), sample_ordinal: 1, display_label: "Embryo 2", status: "qc_fail", qc: syntheticQc({ call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate", "unknown_reason"], parent_a_concordance: 0.8 }) },
+    { id: E(2), sample_ordinal: 1, display_label: "Embryo 2", status: "qc_fail", qc: syntheticQc({ call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate", "unknown_reason"] }) },
     { id: E(3), sample_ordinal: 2, display_label: "Embryo 3", status: "qc_pass", qc: syntheticQc({ call_rate: 0.99, sites_called: 990 }) },
   ];
 }
@@ -348,7 +349,8 @@ describe("QcTable and QcBlock", () => {
     const html = renderToStaticMarkup(h(QcTable, { embryos: embryos(), subjectIds }));
     expect(html.match(new RegExp(NOT_STATED_BY_SOURCE, "g"))!.length).toBeGreaterThanOrEqual(12);
     expect(html).toContain(NOT_MEASURABLE_FROM_FILE);
-    expect(html).toContain(DROPOUT_NOT_MEASURED);
+    expect(html).toContain(DROPOUT_NOT_MEASURED_NO_RANGE);
+    expect(html).not.toContain(DROPOUT_NOT_MEASURED);
     expect(html).toMatch(/data-figure-kind="coverage"/);
     expect(html).toContain(QC_FAILED_CHIP);
     expect(html).not.toContain("—</");
@@ -378,35 +380,32 @@ describe("QcTable and QcBlock", () => {
     expect(table).not.toMatch(/your DNA|your file|spots in your|effects from your/i);
   });
 
-  // Every QC number is a stored laboratory field handed on by
-  // src/lib/embryos/policy.ts (`displayedFigure`); qc-policy.ts holds the
-  // thresholds and never produces one, and no src/lib/embryos/qc.ts exists.
-  it("attributes every QC figure to the module its value passes through, and the dropout interval to its row", () => {
+  // Saved called-VCF measurements resolve to the actual split-analysis
+  // producer. qc-policy.ts supplies gates, not measured values.
+  it("attributes only classified measured QC figures and withholds an unproduced dropout interval", () => {
     const qc = syntheticQc({
       mean_depth: 31.26,
-      allelic_dropout_estimate: 0.02,
-      allelic_dropout_interval_low: 0.01,
-      allelic_dropout_interval_high: 0.03,
     });
     const html = renderToStaticMarkup(h(QcBlock, { qc, embryoId: E(1), subjectId: S(1) }));
-    expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-provenance="computed:embryos\/policy"/);
-    expect(html).toMatch(/data-figure-kind="natural-frequency"[^>]*data-provenance="computed:embryos\/policy"/);
-    expect(html).toMatch(new RegExp(`data-figure-kind="interval"[^>]*data-provenance="seed:embryo_qc/${E(1)}"`));
+    expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-provenance="computed:embryos\/split-analysis"/);
+    expect(html).toMatch(/data-figure-kind="natural-frequency"[^>]*data-provenance="computed:embryos\/split-analysis"/);
+    expect(html).not.toContain('data-figure-kind="interval"');
     expect(html).not.toContain("embryos/qc");
     const rows = embryos();
     rows[0] = { ...rows[0], qc };
     const table = renderToStaticMarkup(h(QcTable, { embryos: rows, subjectIds }));
-    expect(table).toMatch(/data-figure-kind="measure"[^>]*data-provenance="computed:embryos\/policy"/);
+    expect(table).toMatch(/data-figure-kind="measure"[^>]*data-provenance="computed:embryos\/split-analysis"/);
     expect(table).not.toContain("embryos/qc");
   });
 
   it("renders one attributed block on the detail page with the coverage figure and the dropout sentence", () => {
-    const html = renderToStaticMarkup(h(QcBlock, { qc: syntheticQc({ contamination_estimate: 0.01 }), embryoId: E(1), subjectId: S(1) }));
+    const html = renderToStaticMarkup(h(QcBlock, { qc: syntheticQc(), embryoId: E(1), subjectId: S(1) }));
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(1);
     expect(html).toContain(`data-subject-id="${S(1)}"`);
     expect(html).toContain('data-density-primary-claim="true"');
     expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-figure-class="quality"[^>]*data-figure-basis="observed"/);
-    expect(html).toContain(DROPOUT_NOT_MEASURED);
+    expect(html).toContain(DROPOUT_NOT_MEASURED_NO_RANGE);
+    expect(html).not.toContain(DROPOUT_NOT_MEASURED);
     expect(html).toContain(NOT_STATED_BY_SOURCE);
     expect(html).not.toContain(MODELLED_MARKER);
   });

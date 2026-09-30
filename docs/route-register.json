@@ -750,7 +750,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "required": [
             "sites_expected",
@@ -773,7 +774,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "children": {
             "source_facts": {
@@ -781,7 +783,7 @@
               "cardinality": "exactly-one"
             }
           },
-          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels",
+          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels; figure_basis-is-null-only-for-unclassified-historical-QC-or-the-closed-version-1-embryo-split-calls-v1-receipt-with-observed-coverage-call_rate-and-null-or-observed-autosomal_het_rate-mean_depth-matching-present-fields-and-no-parent-dropout-contamination-input",
           "unknownFields": "reject"
         },
         "inputFacts": {
@@ -1991,6 +1993,9 @@
         },
         "computedMetricNullCopyId": {
           "const": "embryo.qc.not-measurable-from-file"
+        },
+        "dropoutNoRangeCopyId": {
+          "const": "embryo.qc.dropout-no-range"
         },
         "dropoutNotMeasuredCopyId": {
           "const": "embryo.qc.dropout-not-measured"

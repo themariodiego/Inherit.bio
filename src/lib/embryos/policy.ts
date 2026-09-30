@@ -1,3 +1,4 @@
+import { qcFigureBasisSchema, type QcFigureBasis } from "./qc-basis";
 /**
  * The embryo non-ranking and closed-shape policy — the runtime mirror of
  * `docs/route-register.json#policyContracts.embryo-autosomal-only-v1`
@@ -141,6 +142,7 @@ const QC_KEYS = [
   "qc_reasons",
   "computed_at",
   "source_facts",
+  "figure_basis",
 ] as const;
 
 export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
@@ -265,6 +267,7 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
 // ---------------------------------------------------------------------------
 
 export interface QcDto {
+  figure_basis: QcFigureBasis | null;
   source_facts: EmbryoInputFacts;
   sites_expected: number;
   sites_called: number;
@@ -587,6 +590,17 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       return { ok: true };
     }
     case "qc": {
+      if (value.figure_basis !== null) {
+        const receipt = qcFigureBasisSchema.safeParse(value.figure_basis);
+        if (!receipt.success) return fail(at("figure_basis"), "invalid QC producer receipt");
+        if (!(typeof value.sites_expected === "number" && value.sites_expected > 0 &&
+            value.call_rate === Number(value.sites_called) / value.sites_expected)) return fail(at("figure_basis"), "receipt needs the measured count ratio");
+        if ((receipt.data.autosomal_het_rate === null) !== (value.autosomal_het_rate === null) ||
+            (receipt.data.mean_depth === null) !== (value.mean_depth === null)) return fail(at("figure_basis"), "receipt disagrees with measured fields");
+        if (["parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "contamination_estimate"].some((key) => value[key] !== null)) {
+          return fail(at("figure_basis"), "called VCF producer has no estimate or parent input");
+        }
+      }
       if (!Number.isInteger(value.sites_expected) || (value.sites_expected as number) < 0) {
         return fail(at("sites_expected"), "must be a non-negative integer");
       }

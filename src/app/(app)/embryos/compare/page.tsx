@@ -217,6 +217,8 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
 
   const subjectIds = new Map(cohort.embryos.map((embryo) => [embryo.id, embryo.subjectId]));
   const layers = layerOf();
+  const riskRangeEmbryoIds = new Set(comparison.embryos.filter((embryo) => comparison.result_rows.some((row) =>
+    row.findings.some((finding) => finding.embryo_label === embryo.display_label && finding.finding?.kind === "absolute_risk"))).map((embryo) => embryo.id));
   const rowsFor = (layer: FindingLayer): ComparisonResultRow[] =>
     comparison.result_rows.filter((row) => layers.get(row.findings[0].condition_id) === layer);
   const conditionNames = new Map(
@@ -246,7 +248,7 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
         <h2 id="quality-check-heading" className="text-lg font-semibold text-ink">
           {QUALITY_CHECK_HEADING}
         </h2>
-        <QcTable embryos={comparison.embryos} subjectIds={subjectIds} />
+        <QcTable embryos={comparison.embryos} subjectIds={subjectIds} riskRangeEmbryoIds={riskRangeEmbryoIds} />
       </section>
 
       <section aria-labelledby="how-sure-heading" data-density-top-level-section className="space-y-3">

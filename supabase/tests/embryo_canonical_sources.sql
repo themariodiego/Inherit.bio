@@ -53,12 +53,12 @@ create function pg_temp.publish(p text,p_attempt integer) returns jsonb language
   select public.publish_embryo_split_v1((select id from job),p_attempt,pg_temp.token(p));
 $$;
 create function pg_temp.passed(p_count integer) returns jsonb language sql as $$
-  select jsonb_build_object('outcome','passed','qc',jsonb_build_object('sites_expected',8,'sites_called',8,
+  select jsonb_build_object('outcome','passed','qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.25,null),'sites_expected',8,'sites_called',8,
     'call_rate',1,'autosomal_het_rate',0.25,'mean_depth',null,'qc_verdict','pass','qc_reasons','[]'::jsonb),
     'failureReason',null,'variantCount',p_count);
 $$;
 create function pg_temp.failed() returns jsonb language sql as $$
-  select jsonb_build_object('outcome','qc_fail_no_source','qc',jsonb_build_object('sites_expected',8,'sites_called',4,
+  select jsonb_build_object('outcome','qc_fail_no_source','qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.25,null),'sites_expected',8,'sites_called',4,
     'call_rate',0.5,'autosomal_het_rate',0.25,'mean_depth',null,'qc_verdict','fail',
     'qc_reasons',jsonb_build_array('embryo_call_rate')),'failureReason','embryo_call_rate','variantCount',0);
 $$;

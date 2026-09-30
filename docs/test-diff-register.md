@@ -1,5 +1,11 @@
 # Test diff register
 
+## Called embryo QC persists its actual producer classification · 30 September 2026
+
+The closed QC projection deliberately gains one nullable saved receipt, so the exact key census increases from 21 to 22. The actual sanitized VCF parser emits observed receipts only for measured coverage, call rate, heterozygosity and depth. Every existing split, canonical, dates, withdrawal and cleanup assertion remains; their synthetic per-ordinal producer payloads gain explicit matching receipts. Positive synthetic 0.97 call-rate examples explicitly use 970 of 1,000 calls, and a new refusal pins disagreement with the measured count ratio. New refusals reject missing, changed, unknown-version and extra receipt fields before an ordinal writes, and terminal publication must preserve the exact receipt. Receipt updates, including historical backfill or erasure, are refused.
+
+The old unit example combined a called-VCF receipt with unproduced parent, contamination and laboratory dropout values. Its measured-figure assertions now use only that real producer's fields, while a separate historical test retains all those former unsupported values and strictly requires no figure and an explicit explanation. No laboratory estimate is classified by a display literal. Provenance now names the real split-analysis computation. The no-score/no-job assertions and the empty approved registry remain unchanged. The registered null-dropout widening sentence remains exact when risk ranges exist; QC-only and withheld historical records instead use the new registered neutral sentence and strictly forbid a claim about nonexistent wider ranges. G4.2 stays NO; no score engine, laboratory dropout producer, calibrated condition, scientific review or browser success is claimed.
+
 ## Embryo joins complete isolated browser coverage · 30 September 2026
 
 The integrated runtime has five standard projects, including the real embryo
