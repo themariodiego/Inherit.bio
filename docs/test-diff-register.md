@@ -1,5 +1,19 @@
 # Test diff register
 
+## Cohort Copilot's current-main inventory · 30 September 2026
+
+Main's HMAC keyring makes the exact direct environment-read count 21; the
+branch's old count of 20 omitted that shipped read. The merged test retains
+main's strict assertion and explanatory comment. The purge contract now
+requires exactly 131 stores: main's 129 plus the split worker's two pending
+stores. Neither assertion is a range or an allowance.
+
+The export member plan now classifies the split configuration as reference
+and the two pending split tables as internal worker state. Its generated
+pgTAP assertions still require set equality with the complete database
+catalog and complete classifications. No embryo export class is claimed to
+be complete by these internal dispositions.
+
 ## Embryo (cohort) Copilot scope under TEST-LOCAL · 28 September 2026
 
 New tests, none loosened.
