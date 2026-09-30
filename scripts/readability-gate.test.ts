@@ -13,6 +13,16 @@ import {
 } from "./readability-gate";
 
 describe("readability copy extraction", () => {
+  const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  let repositoryFailures: string[];
+
+  // These assertions inspect one immutable checkout. Scan it once; each
+  // individual provider/template/page assertion retains its exact filter.
+  // Planted-copy regressions below still scan their own separate fixture trees.
+  beforeAll(() => {
+    repositoryFailures = runReadabilityGate(repositoryRoot).failures;
+  });
+
   it("scores nested copy containers separately instead of inventing a composite block", () => {
     const blocks = extractTsxBlocksFromSource(
       "src/example.tsx",
@@ -48,8 +58,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every displayed provider field within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const providerFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const providerFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/providers/providers.json:"),
     );
 
@@ -57,8 +66,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every lifestyle and wellness template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const lifestyleFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const lifestyleFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/lifestyle-wellness.json:"),
     );
 
@@ -66,8 +74,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every Medicines template within the grade limit and every title within the plain vocabulary (ADR 0021)", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const medicinesFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const medicinesFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/medicines.json:"),
     );
 
@@ -75,8 +82,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every brain-health template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const brainHealthFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const brainHealthFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/brain-health.json:"),
     );
 
@@ -84,8 +90,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every gastrointestinal template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const gastrointestinalFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const gastrointestinalFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/gastrointestinal.json:"),
     );
 
@@ -93,8 +98,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every longevity template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const longevityFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const longevityFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/longevity.json:"),
     );
 
@@ -102,8 +106,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every mental-health template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const mentalHealthFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const mentalHealthFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/mental-health.json:"),
     );
 
@@ -111,8 +114,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every basic-traits template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const basicTraitsFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const basicTraitsFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/basic-traits.json:"),
     );
 
@@ -120,8 +122,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every addiction template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const addictionFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const addictionFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/addiction.json:"),
     );
 
@@ -129,8 +130,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every aesthetic-cosmetic template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const aestheticFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const aestheticFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/aesthetic-cosmetic.json:"),
     );
 
@@ -138,8 +138,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every heart-cardiovascular template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const heartFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const heartFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/heart-cardiovascular.json:"),
     );
 
@@ -147,8 +146,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the privacy policy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const privacyFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const privacyFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/privacy/page.tsx:"),
     );
 
@@ -156,8 +154,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every environmental-sensitivity template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const environmentalFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const environmentalFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/environmental-sensitivity.json:"),
     );
 
@@ -165,8 +162,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every reproductive-family template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const reproductiveFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const reproductiveFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/reproductive-family.json:"),
     );
 
@@ -174,8 +170,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every metabolic-obesity template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const metabolicFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const metabolicFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/metabolic-obesity.json:"),
     );
 
@@ -183,8 +178,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every neurodegenerative template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const neurodegenerativeFailures = runReadabilityGate(repositoryRoot).failures.filter(
+    const neurodegenerativeFailures = repositoryFailures.filter(
       (failure) => failure.startsWith("data/templates/neurodegenerative.json:"),
     );
 
@@ -192,8 +186,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every autoimmune template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const autoimmuneFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const autoimmuneFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/autoimmune.json:"),
     );
 
@@ -201,8 +194,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the GINA explainer within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const ginaFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const ginaFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/gina/page.tsx:"),
     );
 
@@ -210,8 +202,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the deceased-account policy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const deceasedFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const deceasedFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/deceased/page.tsx:"),
     );
 
@@ -219,8 +210,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the law-enforcement policy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const lawEnforcementFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const lawEnforcementFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/law-enforcement/page.tsx:"),
     );
 
@@ -228,8 +218,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the research-consent policy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const researchConsentFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const researchConsentFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/research-consent/page.tsx:"),
     );
 
@@ -237,8 +226,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the Copilot setup copy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const copilotFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const copilotFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(app)/copilot/[scope]/page.tsx:"),
     );
 
@@ -246,8 +234,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the appeals policy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const appealsFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const appealsFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/appeals/page.tsx:"),
     );
 
@@ -255,8 +242,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the Future Person Charter within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const futurePersonFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const futurePersonFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/future-person/page.tsx:"),
     );
 
@@ -264,8 +250,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the GDPR status page within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const gdprFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const gdprFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/gdpr/page.tsx:"),
     );
 
@@ -273,8 +258,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps the incident-response policy within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const incidentFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const incidentFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("src/app/(marketing)/legal/incident-response/page.tsx:"),
     );
 
@@ -282,8 +266,7 @@ describe("readability copy extraction", () => {
   });
 
   it("keeps every cancer-risk template within the long-block grade limit", () => {
-    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+    const cancerRiskFailures = repositoryFailures.filter((failure) =>
       failure.startsWith("data/templates/cancer-risk.json:"),
     );
 
