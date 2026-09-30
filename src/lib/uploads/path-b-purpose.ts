@@ -7,11 +7,11 @@ import { z } from "zod";
  * (directional-purpose-grant-v1). The direction and every revision live in
  * the server-sealed presentation token; the body names only the layer.
  *
- * Nothing is made either way yet: analysis-eligibility-v1's other_adult
- * common gate "a subject-bound source a reader can use" is closed, because a
- * held file has no readable file row and no normalization job exists. The
- * database answers every read with that gate
- * (`20260930220000_path_b_reading_layer.sql`).
+ * The queued normalization continuation can create a subject-bound canonical
+ * source under its own confirmation, mitigation and worker fences. Reading
+ * still requires the exact current grant in the selected direction and stops
+ * at analysis-not-generated until a distinct queued report contract executes.
+ * Normalization and a purpose grant alone never imply report readiness.
  */
 export const PATH_B_PURPOSES = ["reports.monogenic", "reports.polygenic", "ancestry"] as const;
 export type PathBPurpose = (typeof PATH_B_PURPOSES)[number];
@@ -41,7 +41,7 @@ export const pathBPurposeBody = z.object({
 export type PathBPurposeRequest = z.infer<typeof pathBPurposeBody>;
 
 /** The database's gates, as the read decision names them. */
-export const PATH_B_GATES = ["subject-bound-source", "directional-purpose-grant-v1", "adult.non-account-holder-24mo",
+export const PATH_B_GATES = ["subject-bound-source", "analysis-not-generated", "directional-purpose-grant-v1", "adult.non-account-holder-24mo",
   "adult.acceptance-hold-72h", "adult.re-notice-30d", "not-found", "purpose"] as const;
 export type PathBGate = (typeof PATH_B_GATES)[number];
 

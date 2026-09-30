@@ -1,5 +1,25 @@
 # Test diff register
 
+## Path B queued normalization and read boundaries · 30 September 2026
+
+The separate normalization continuation adds synthetic rollback-only database
+cases for confirmation before queue admission, exact generic worker identity,
+finite claim ownership, source-position registration, strict stage sequencing,
+whole-source hash/count publication, direct-reader denial, source disposal and
+revocation between staging and publication. A synthetic database trigger
+expires the claim during a stage insert and proves that the statement rolls
+back both its genetic row and its deadline mutation. Actual plain and gzip VCF bytes are
+parsed by the paired worker tests using the existing bounded range/hash and
+incremental parser. No existing assertion is removed or loosened.
+
+The reading gate advances from `subject-bound-source` to
+`analysis-not-generated` only after the exact current source is normalized and
+the reader has a current grant for that layer and direction. Normalization
+creates no purpose, analytic result or report-ready notice. Queued Path B report
+execution still needs its distinct registered kind/output contract; the
+self-only synchronous-report exception is not used. Missing 24-month, 72-hour
+and re-notice evidence continues to deny source admission and every checkpoint.
+
 ## Path B reading choices and closed source gate · 30 September 2026
 
 The account journey in `e2e/other-adult-upload.spec.ts` now continues through
