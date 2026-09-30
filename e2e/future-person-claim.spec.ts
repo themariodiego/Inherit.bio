@@ -1,6 +1,7 @@
 import { type BrowserContext, type Page } from "@playwright/test";
 import { randomBytes, randomInt } from "node:crypto";
 import { expect, test } from "./audited-test";
+import { observeNativeResponses } from "./helpers/native-response-observer";
 
 /**
  * `/future-person/claim` where claims are open: the TEST-LOCAL deployment,
@@ -151,6 +152,7 @@ test("/future-person/claim complete: a Record Key, a Recovery Key and a keyless 
       const page = await context.newPage();
       await page.goto("/future-person/claim");
       await fillClaim(page, mode);
+      const observed = await observeNativeResponses(page, { start: "^/api/future-person/claim$" });
       const answered = page.waitForResponse("**/api/future-person/claim");
       await page.locator("main form").getByRole("button", { name: "Start my claim", exact: true }).click();
       const response = await answered;
@@ -159,10 +161,11 @@ test("/future-person/claim complete: a Record Key, a Recovery Key and a keyless 
       const setCookies = (await response.headersArray()).filter((header) => header.name.toLowerCase() === "set-cookie");
       answers.push({
         status: response.status(),
-        body: await response.text(),
+        body: (await observed.read("start")).text,
         cookieNames: setCookies.map((header) => header.value.slice(0, header.value.indexOf("="))),
         panel: (await panel.innerText()).trim(),
       });
+      await observed.dispose();
       // The claim session is HttpOnly: no script on the page can read it.
       const session = (await context.cookies()).find((cookie) => /^(__Host-)?inherit-claim$/.test(cookie.name));
       expect(session).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/" });
@@ -199,20 +202,27 @@ test("/future-person/claim processing: a sent file waits, quarantined, for its v
   const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), randomBytes(2048)]);
   await documents.getByLabel("Picture ID").setInputFiles({ name: "picture-id.png", mimeType: "image/png", buffer: png });
 
+  const observed = await observeNativeResponses(page, {
+    document: "^/api/future-person/claim/session/documents$",
+    complete: "^/api/evidence/[^/]+/complete$",
+  });
   const opened = page.waitForResponse("**/api/future-person/claim/session/documents");
   const chunk = page.waitForResponse("**/api/evidence/*/chunks/0");
   const completed = page.waitForResponse("**/api/evidence/*/complete");
   await documents.getByRole("button", { name: "Send this file" }).first().click();
   const session = await opened;
   expect(session.status()).toBe(201);
-  const body = await session.json() as Record<string, unknown>;
+  const openedBody = await observed.read("document");
+  expect(openedBody.status).toBe(session.status());
+  const body = JSON.parse(openedBody.text) as Record<string, unknown>;
   expect(Object.keys(body).sort()).toEqual(["chunkBytes", "chunkRoute", "completeRoute", "documentKind", "expiresAt",
     "maximumChunks", "maximumDocumentBytes", "session"]);
   expect(JSON.stringify(body)).not.toMatch(/future-person-identity|picture-id/u);
   expect((await chunk).status()).toBe(204);
   const done = await completed;
   expect(done.status()).toBe(202);
-  expect(await done.json()).toEqual({ status: "scanning" });
+  expect(await observed.read("complete")).toEqual({ status: 202, text: '{"status":"scanning"}' });
+  await observed.dispose();
   await expect(documents.getByRole("status")).toHaveText("We are checking this file.");
   // The evidence cookie is HttpOnly: no script on the page can read it.
   const evidence = (await context.cookies()).find((cookie) => /^(__Host-)?inherit-evidence$/.test(cookie.name));
