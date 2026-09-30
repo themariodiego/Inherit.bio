@@ -61,6 +61,46 @@ select ok((private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),
  and not exists(select 1 from public.retention_rows where target_id=(select subject from custody_ids)
   and retention_id='future-person.claimant-reverification-until-request'),
  'older-executor refusal rolls back revocation, new controls and all claimant nonce effects');
+-- Real request/worker reservation doors, no provider bytes or fabricated ACK.
+create function pg_temp.deletion_export(p_nonce text) returns jsonb language plpgsql as $$
+declare c jsonb;n bigint;
+begin
+ c:=public.future_person_export_request_v1('capture',pg_temp.h('deletion-rights'));
+ n:=floor(extract(epoch from clock_timestamp())*1000)::bigint;
+ return public.future_person_export_request_v1('create',pg_temp.h('deletion-rights'),jsonb_build_object(
+  'exportCookieHash',pg_temp.h('deletion-export-cookie'),'envelope',jsonb_build_object(
+   'routeId','api.future-person-export','origin','independent-rights','principalId',c->>'principalId',
+   'targetKind','subject','targetId',(select subject from custody_ids)::text,'exportContract','approved-future-person-export-v1',
+   'originBinding',c->>'originBinding','authorityReceipt',c->>'authorityReceipt','csrfBinding',pg_temp.h('deletion-export-csrf'),
+   'operation','create','nonceHash',pg_temp.h(p_nonce),'issuedAt',n,'expiresAt',n+300000)),pg_temp.h('deletion-export-csrf'));
+end $$;
+create function pg_temp.refuse_uncertain_export_deletion() returns uuid language plpgsql as $$
+declare body jsonb;attempt uuid:=gen_random_uuid();c jsonb;key text;
+begin
+ body:=pg_temp.deletion_export('deletion-uncertain-export');
+ c:=public.export_archive_worker_v1('preflight',(body->>'exportId')::uuid,attempt,body->>'authorityReceipt');
+ perform public.export_archive_worker_v1('begin',(body->>'exportId')::uuid,attempt,body->>'authorityReceipt');
+ key:=(c->>'principalHash')||'/'||(body->>'exportId')||'/'||attempt||'-0.part';
+ perform public.export_archive_worker_v1('reserve',(body->>'exportId')::uuid,attempt,body->>'authorityReceipt',
+  jsonb_build_object('ordinal',0,'offset',0,'sizeBytes',1,'sha256',pg_temp.h('reserved-byte'),'objectKey',key));
+ return private.prepare_future_person_deletion_v1(pg_temp.h('deletion-rights'),'delete-refused-export-reservation-aaaaaaaa');
+end $$;
+select throws_ok($$select pg_temp.refuse_uncertain_export_deletion()$$,'42501','claimant deletion unavailable',
+ 'a real unACKed archive reservation cannot disappear through the claimant deletion request');
+select ok((private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),false)).id is not null
+ and not exists(select 1 from public.generated_exports where target_kind='subject' and target_id=(select subject from custody_ids))
+ and exists(select 1 from public.embryo_qc where embryo_id=(select embryo from custody_ids)),
+ 'uncertain archive refusal rolls back the complete job/reservation/request and preserves genuine result/rights authority');
+create temporary table queued_deletion_export as select pg_temp.deletion_export('queued-export-before-delete') body;
+select is((select count(*) from public.generated_exports where id=(select (body->>'exportId')::uuid from queued_deletion_export)
+ and status='queued' and object_id is null and archive_sha256 is null and byte_count is null),1::bigint,
+ 'one actual claimant export is queued without an attempt, reservation or provider bytes before deletion');
+create temporary table genuine_qc_before as select to_jsonb(q) value from public.embryo_qc q
+ where q.embryo_id=(select embryo from custody_ids);
+create temporary table sibling_qc_before as select to_jsonb(q) value from public.embryo_qc q
+ where q.embryo_id<>(select embryo from custody_ids);
+select is((select count(*) from genuine_qc_before),1::bigint,
+ 'the genuine published claimant has one measured QC result before its own deletion request');
 create temporary table deletion_plan as select private.prepare_future_person_deletion_v1(pg_temp.h('deletion-rights'),
  'claimant-delete-nonce-positive-aaaaaaaa') id;
 select is((select count(*) from deletion_plan where id is not null),1::bigint,'the real current claimant creates one sealed exact source plan');
@@ -70,6 +110,22 @@ select ok((select r.retention_id='future-person.claimant-reverification-until-re
  from deletion_plan d join public.purge_manifests m on m.id=d.id join public.retention_rows r on r.id=m.retention_row_id
  join public.retention_due_phases p on p.retention_row_id=r.id and p.phase_id=m.phase_id),
  'the registered inline claimant trigger retains distinct original seven-day source and thirty-day completion deadlines');
+select is((select count(*) from public.embryo_qc where embryo_id=(select embryo from custody_ids)),0::bigint,
+ 'the actual measured QC result is hard-deleted in the request transaction before any source-provider claim');
+select ok(exists(select 1 from public.purge_manifest_entries where manifest_id=(select id from deletion_plan)
+ and store_name='public.embryo_qc' and status='deleted')
+ and not exists(select 1 from public.purge_manifest_entries where manifest_id=(select id from deletion_plan)
+  and entry_revision<=50 and status<>'pending'),
+ 'derived cleanup records only its own sealed exact key and leaves every canonical payload disposal pending');
+select ok(not exists(select 1 from sibling_qc_before b where not exists(select 1 from public.embryo_qc q where to_jsonb(q)=b.value)),
+ 'immediate derived cleanup preserves every genuine sibling QC row byte-identically');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
+ where has_function_privilege(role,'private.purge_future_person_derived_v1(uuid)','execute')),0::bigint,
+ 'no API role can supply derived cleanup authority or an arbitrary target');
+select ok(not exists(select 1 from public.generated_exports where id=(select (body->>'exportId')::uuid from queued_deletion_export))
+ and not exists(select 1 from private.export_archive_jobs where export_id=(select (body->>'exportId')::uuid from queued_deletion_export))
+ and not exists(select 1 from private.export_archive_nonce_uses where export_id=(select (body->>'exportId')::uuid from queued_deletion_export)),
+ 'the real queued byte-free export and every exact job/nonce child are deleted in the same request transaction');
 select is(public.future_person_rights_view_v1(pg_temp.h('deletion-rights')),null::jsonb,
  'request revokes every read through the genuine old claimant session');
 select is((select count(*) from public.future_person_claim_release_credentials where subject_id=(select subject from custody_ids)
@@ -96,6 +152,8 @@ select is((select jsonb_array_length(receipt->'objects') from claimed_parts),2,'
 select ok((select m.state='executing' and m.physical_purge_started_at is not null and m.frozen_manifest_hash~'^[0-9a-f]{64}$'
  from public.purge_manifests m where id=(select id from deletion_plan)),
  'the immutable purge start is durable before any irreversible provider action');
+select throws_ok($$select private.purge_future_person_derived_v1((select id from deletion_plan))$$,
+ '42501','claimant deletion unavailable','a claimed source-disposal phase cannot replay the private request-only derived executor');
 select throws_ok($$select public.future_person_deletion_parts_v1('claim',(select id from deletion_plan),pg_temp.h('crossed-lease'))$$,
  '42501','claimant deletion unavailable','a second worker cannot cross the live exact disposal lease');
 select throws_ok($$select public.future_person_deletion_parts_v1('acknowledge',(select id from deletion_plan),pg_temp.h('disposal-lease'),

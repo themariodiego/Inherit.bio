@@ -597,6 +597,65 @@ begin
  return p;
 end $$;
 
+-- The registered derived.revocation-60s clock is independent of source
+-- disposal. Known database-only results disappear in the request transaction;
+-- provider-bearing/uncertain results have no fabricated completion door.
+create function private.purge_future_person_derived_v1(p_manifest uuid)
+returns bigint language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
+declare p public.retention_due_phases;m public.purge_manifests;e public.purge_manifest_entries;
+ v_count bigint;v_progress bigint;v_pending bigint;v_total bigint:=0;
+ v_stores constant text[]:=array['public.ancestry_regions','public.ancestry_results','public.user_prs',
+  'public.portrait_results','public.embryo_figures','public.embryo_qc','public.embryo_scores','public.suppressions',
+  'public.chat_messages','public.chats','public.copilot_context_tokens','public.copilot_context_history',
+  'public.copilot_turn_dependencies','public.copilot_generation_sessions','public.model_contexts',
+  'private.own_analysis_runs','public.report_observed_calls','public.generated_exports',
+  'private.export_archive_jobs','private.export_archive_nonce_uses'];
+begin
+ p:=private.assert_future_person_deletion_plan_v1(p_manifest);
+ select * into m from public.purge_manifests where id=p_manifest;
+ if m.state<>'frozen' or m.physical_purge_started_at is not null or p.claim_token_hash is not null
+  or p.claim_expires_at is not null then
+  raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+ perform private.assert_future_person_deletion_fk_closure_v1(p_manifest);
+ -- An admitted provider operation cannot become absent by deleting its SQL
+ -- reservation. Refuse the whole request before promising immediate cleanup.
+ if exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50
+  and e.store_name in('public.report_artifacts','public.cloud_model_calls','public.cloud_provider_attempts',
+   'public.cloud_provider_payloads','private.export_archive_attempts','private.export_archive_segments',
+   'private.export_archive_downloads','private.export_archive_manifest_pages')) then
+  raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+ loop
+  v_progress:=0;
+  for e in select * from public.purge_manifest_entries where manifest_id=p_manifest and entry_revision>50
+   and store_name=any(v_stores) order by case store_name when 'private.export_archive_nonce_uses' then 0
+    when 'private.export_archive_jobs' then 1 when 'public.generated_exports' then 2 else 0 end,entry_revision loop
+   v_count:=private.future_person_deletion_row_v1(e.store_name,e.row_key,false);
+   if v_count=0 then
+    if e.status<>'deleted' then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+    continue;
+   end if;
+   begin
+    update public.purge_manifest_entries set status='deleted' where manifest_id=e.manifest_id
+     and target_id=e.target_id and store_name=e.store_name and entry_revision=e.entry_revision;
+    perform private.future_person_deletion_row_v1(e.store_name,e.row_key,true);
+    v_progress:=v_progress+1;v_total:=v_total+1;
+   exception when foreign_key_violation then
+    null;
+   end;
+  end loop;
+  v_pending:=0;
+  for e in select * from public.purge_manifest_entries where manifest_id=p_manifest and entry_revision>50
+   and store_name=any(v_stores) loop
+   v_pending:=v_pending+private.future_person_deletion_row_v1(e.store_name,e.row_key,false);
+  end loop;
+  exit when v_pending=0;
+  if v_progress=0 then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+ end loop;
+ return v_total;
+end $$;
+revoke all on function private.purge_future_person_derived_v1(uuid)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+
 create function private.prepare_future_person_deletion_v1(p_session_hash text,p_nonce text)
 returns uuid language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
 declare rs public.rights_sessions;s public.subjects;c private.future_person_custody_slices;
@@ -697,7 +756,7 @@ begin
  if exists(select 1 from public.purge_manifests earlier where earlier.state='executing' and earlier.retention_row_id in(
   select control_row_id from private.future_person_deletion_controls_v1(m))) then
   raise exception using errcode='42501',message='claimant deletion unavailable';end if;
- perform private.assert_future_person_deletion_fk_closure_v1(m);
+ perform private.purge_future_person_derived_v1(m);
  perform private.assert_future_person_deletion_plan_v1(m);
  return m;
 end $$;

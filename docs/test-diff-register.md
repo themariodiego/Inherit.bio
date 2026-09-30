@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-01: Delete exact claimant results in the requesting transaction
+
+The source/provider clock must not delay `derived.revocation-60s`. The private
+request now deletes only a closed list of database-derived keys already sealed
+by the exact claimant manifest, before returning and before any source disposal
+lease. Source calls, parts, membership, custody and sibling results remain.
+Any selected report/provider/archive reservation without its actual proved
+cleanup door refuses the entire transaction, including nonce consumption and
+capability revocation. No provider ACK is manufactured by SQL metadata cleanup.
+
+The genuine publication fixture pins one real measured QC row before the
+request and zero rows immediately afterward, its exact sealed deleted status,
+all source parts still pending and byte-identical sibling QC. Actual export
+request/worker doors create a real unACKed reservation; deletion must refuse and
+roll back its entire job/reservation/request while preserving result/rights
+authority. A genuine queued export with no attempt or bytes is deleted with all
+exact job/nonce children in the request. A new API-role
+ACL assertion and claimed-phase replay refusal guard the private executor.
+All previous source, provider, expired lease, contact-control, final graph and
+audit assertions remain. The full database/provider/browser proof is pending;
+public deletion and every acceptance/availability gate stay closed.
+
+
 ## 2026-10-01: Minimize exact earlier claimant control envelopes
 
 The actual237 release timer targets the claimant UUID under `claim` and keeps

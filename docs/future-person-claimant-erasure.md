@@ -82,3 +82,10 @@ only typed targets from the sealed current manifest. An older executing plan or
 unproved physical key refuses. Current246/247 export authority retains its
 subject-first lock before requests and provider reservations, so deletion
 serializes with that authority; every export/provider hold remains in force.
+
+The derived continuation removes the closed database-only result keys inside
+the request transaction, before its source-provider lease. This closes the
+source-code timing gap for those rows; genuine QC and sibling assertions still
+need the full database rehearsal. Report/model/export provider reservations
+without a proved disposal door refuse the entire request. Source and custody
+remain pending until their separate ACK-backed finish. No public action opens.
