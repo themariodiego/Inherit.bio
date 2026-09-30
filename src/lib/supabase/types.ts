@@ -7653,6 +7653,19 @@ export type Database = {
         }
         Returns: string
       }
+      ack_embryo_ingest_r2_write_v1: {
+        Args: {
+          p_etag: string
+          p_expected: Json
+          p_observed_byte_count: number
+          p_observed_sha256: string
+          p_ordinal: number
+          p_provider_version: string
+          p_sequence: number
+          p_session_id: string
+        }
+        Returns: Json
+      }
       acknowledge_portrait_v1: {
         Args: { p_account_id: string; p_subject_id: string }
         Returns: string
@@ -7796,6 +7809,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      claim_embryo_ingest_object_disposals_v1: {
+        Args: { p_claim_token_hash: string; p_unwind_id: string }
+        Returns: Json
+      }
       claim_embryo_terminal_mail_v1: {
         Args: never
         Returns: {
@@ -7871,6 +7888,10 @@ export type Database = {
           p_upload_session_id: string
         }
         Returns: string
+      }
+      confirm_embryo_ingest_unwind_storage_v1: {
+        Args: { p_unwind_id: string }
+        Returns: Json
       }
       create_adult_subject_invitation_v1: {
         Args: {
@@ -8035,6 +8056,16 @@ export type Database = {
           key_revision: number
           recipient_set_revision: number
         }[]
+      }
+      finish_embryo_ingest_object_disposal_v1: {
+        Args: {
+          p_claim_token_hash: string
+          p_evidence: Json
+          p_expected: Json
+          p_ordinal: number
+          p_unwind_id: string
+        }
+        Returns: Json
       }
       grant_cloud_model_consent: {
         Args: {

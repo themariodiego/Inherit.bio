@@ -48,6 +48,37 @@ export interface GuardScope {
   displayLabel: string;
   /** Present for a cohort: the largest embryo count a response may state. */
   cohortSize?: number;
+  /**
+   * Present for a group scope: the display names of the people it reads.
+   * The own scope's subject is "I" in a question and "you" in an answer, and
+   * every rule is written for that person; a group thread names its people
+   * instead. Each name is read as that person before the rules run, so
+   * "Does Bea have diabetes?" is gated exactly as "Do I have diabetes?" is,
+   * and "Bea has diabetes." is replaced exactly as "You have diabetes." is.
+   */
+  people?: readonly string[];
+}
+
+/**
+ * Each of the scope's people, named in `text` (already normalized, and
+ * lowercased when `caseInsensitive`), replaced by a pronoun the rule table
+ * already treats as a person; a possessive takes the possessive form.
+ */
+export function withPeopleAsPersons(text: string, people: readonly string[] | undefined,
+  person: string, possessive: string, caseInsensitive = true): string {
+  if (!people?.length) return text;
+  let result = text;
+  const names = [...new Set(people.map((name) => (caseInsensitive ? normalizeMessage(name) : normalizeKeepingCase(name))))]
+    .filter((name) => name.length > 0)
+    .sort((left, right) => right.length - left.length);
+  for (const name of names) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const flags = caseInsensitive ? "gu" : "giu";
+    result = result
+      .replace(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}'s(?![\\p{L}\\p{N}])`, flags), possessive)
+      .replace(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, flags), person);
+  }
+  return result;
 }
 
 export type GatedIntent =
@@ -471,8 +502,8 @@ function normalizeKeepingCase(message: string): string {
 }
 
 export function classifyIntent(message: string, scope: GuardScope): IntentVerdict {
-  const raw = normalizeKeepingCase(message);
-  const text = raw.toLowerCase();
+  const raw = withPeopleAsPersons(normalizeKeepingCase(message), scope.people, "I", "my", false);
+  const text = withPeopleAsPersons(normalizeKeepingCase(message).toLowerCase(), scope.people, "i", "my");
   const embryoContext = scope.kind === "cohort" || EMBRYO_MENTION.test(text);
   for (const rule of INTENT_RULES) {
     if (rule.embryoContext && !embryoContext) continue;
@@ -930,7 +961,7 @@ export type OutputViolation = GatedIntent | "unsupported-number" | "unsupported-
  * These deterministic rules are regression-tested defenses, not a claim to
  * recognize every possible paraphrase of natural language.
  */
-export function checkResponsePolicy(text: string, scope: CopilotScopeKind = "self"): IntentVerdict {
+export function checkResponsePolicy(text: string, scope: CopilotScopeKind = "self", people?: readonly string[]): IntentVerdict {
   const normalized = text.normalize("NFKC").replace(/\p{Cf}/gu, "");
   const embryoContext = scope === "cohort" || /\bembryos?\b/iu.test(normalized);
   const outputProductWords = `${PRODUCT_WORDS}|results?|sources?|links?|filters?|pages?|sections?`;
@@ -961,7 +992,8 @@ export function checkResponsePolicy(text: string, scope: CopilotScopeKind = "sel
     rules.push({ id: "output.cross-subject", intent: "cross-subject", pattern: new RegExp(`\\byour (?:${RELATIVES})(?:'s|s')? (?:${DATA_WORDS}) (?:is|are|shows?|says?|contains?|means?)\\b`, "gu") });
   }
   for (const sentence of normalized.split(/(?:[.!?;]\s+|\n+)/u)) {
-    const plain = normalizeMessage(sentence).replace(/\byou're\b/gu, "you are");
+    // A group scope names its people; each is read as "you", the person every output rule already covers.
+    const plain = withPeopleAsPersons(normalizeMessage(sentence).replace(/\byou're\b/gu, "you are"), people, "you", "your");
     for (const rule of rules) {
       for (const match of plain.matchAll(rule.pattern)) {
         if (safeFrame.test(plain.slice(0, match.index))) continue;
@@ -988,9 +1020,9 @@ export function checkResponse(
   text: string,
   toolJson: unknown,
   allowed: AllowedNumerals,
-  context: { cohortSize?: number; scope?: CopilotScopeKind } = {},
+  context: { cohortSize?: number; scope?: CopilotScopeKind; people?: readonly string[] } = {},
 ): OutputVerdict {
-  const policy = checkResponsePolicy(text, context.scope);
+  const policy = checkResponsePolicy(text, context.scope, context.people);
   if (policy.intent !== "allowed") return { ok: false, violation: policy.intent, unsupported: [policy.rule!] };
   const numerals = checkResponseNumerals(text, toolJson, allowed, context);
   if (!numerals.ok) return { ok: false, violation: "unsupported-number", unsupported: numerals.unsupported };

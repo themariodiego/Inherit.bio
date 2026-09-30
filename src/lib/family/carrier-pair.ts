@@ -1,7 +1,8 @@
 import "server-only";
 
 import { genotypeKey } from "@/lib/genome/reports";
-import { getSubjectGenotypesByRsid, type Db } from "@/lib/genome/load";
+import { getSubjectCallsAtLoci, getSubjectGenotypesByRsid, type Db } from "@/lib/genome/load";
+import { assertionLoci, carrierReference, exactGenotypes, parseCarrierAssertionRows } from "./carrier-assertions";
 import { readSubjectRuns, subjectRunsState, type StoredRohMeasure } from "./roh";
 import { xLinkedRoles, type DeclaredChromosomalSex } from "./chromosomal-sex";
 import { autosomalCross, xLinkedCross, type MendelCross } from "./mendel";
@@ -45,14 +46,55 @@ import { autosomalCross, xLinkedCross, type MendelCross } from "./mendel";
 /** The one Mendelian fraction this module can produce (brief §3 §8.4). */
 export const BOTH_CHANGED_COPIES_PROBABILITY = 0.25;
 
-/** One reference-variant row, as the candidate set reads it. */
+/**
+ * What the reviewed assertion behind a reading says, printed beside the
+ * finding as the brief requires (line 1335): the variant, its ClinVar review
+ * status and the date ClinVar last evaluated it.
+ */
+export interface CarrierEvidence {
+  variantName: string;
+  reviewStatus: string;
+  reviewStars: number;
+  /** ISO date, or null where ClinVar records none. */
+  lastEvaluated: string | null;
+  /** `unestablished` renders the brief's exact not-established label (line 1332). */
+  penetranceClass: "high" | "moderate" | "low" | "unestablished";
+  releaseId: string;
+  /** The date of the ClinGen snapshot the release was imported with. */
+  geneValidityReadOn: string;
+  variationId: number;
+}
+
+/** An exact allele key and the other spellings of the same insertion or deletion. */
+export interface CarrierAlleleKey {
+  chrom: number;
+  pos: number;
+  ref: string;
+  alt: string;
+  equivalents: readonly { pos: number; ref: string; alt: string }[];
+}
+
+/**
+ * One reference row, as the candidate set reads it.
+ *
+ * `rsid` is the key the rule groups and reads by. The synthetic rule tests
+ * key by rsID; the production reader (`./carrier-assertions`) keys every row
+ * by its assertion id and sets `key`, so a file is read by exact allele and
+ * an rsID never selects anything (docs/carrier-importer-design.md, point 3).
+ */
 export interface CarrierRefVariant {
   rsid: number;
   geneSymbol: string | null;
-  /** The changed letter the classification is about. */
+  /** The changed letters the classification is about. */
   alt: string | null;
   /** Null means the position has no clinical classification: never a candidate. */
   clinvarSignificance: string | null;
+  /** Present on every production row: the exact allele, read against the assertion's own letters. */
+  key?: CarrierAlleleKey;
+  /** Present on every production row: what the reviewed assertion says. */
+  evidence?: CarrierEvidence;
+  /** Present on every production row: the reviewed condition the assertion belongs to. */
+  condition?: CarrierCondition;
 }
 
 /** One condition-registry row, joined through `gene_symbols` (X16.3). */
@@ -127,6 +169,8 @@ export interface CarrierVariantReading {
   classification: string;
   genotype: string;
   copies: CarrierCopies;
+  /** The reviewed assertion behind the reading, where the row came from one. */
+  evidence?: CarrierEvidence;
 }
 
 export interface CarrierMatchPerson {
@@ -236,6 +280,28 @@ export function copiesShown(genotype: string, alt: string | null): CarrierCopies
   return null;
 }
 
+/**
+ * The same count for an exact allele. The reader has already rewritten the
+ * file's letters into the assertion's own spelling, so each copy is one
+ * allele of the genotype, whatever its length: "ATCT/A" is one copy of the
+ * deletion `ATCT>A`. An allele that is neither spelling is a copy that is
+ * not this change.
+ */
+export function exactCopiesShown(genotype: string, key: Pick<CarrierAlleleKey, "ref" | "alt">): CarrierCopies | null {
+  if (genotype === "--") return "copies not shown";
+  const alleles = genotype.split("/");
+  if (alleles.some((allele) => !/^[ACGT]+$/.test(allele))) return "copies not shown";
+  const changed = alleles.filter((allele) => allele === key.alt).length;
+  if (alleles.length === 1) return changed === 1 ? "copies not shown" : null;
+  if (alleles.length !== 2) return null;
+  return changed === 2 ? "two copies" : changed === 1 ? "one copy" : null;
+}
+
+/** How many changed copies a file shows at one reference row: by exact allele where the row has one. */
+export function copiesShownFor(variant: CarrierRefVariant, genotype: string): CarrierCopies | null {
+  return variant.key ? exactCopiesShown(genotype, variant.key) : copiesShown(genotype, variant.alt);
+}
+
 function conditionFor(
   gene: string,
   conditions: readonly CarrierCondition[],
@@ -290,13 +356,14 @@ function carriedReading(
     if (!isClassified(variant)) continue;
     const genotype = person.genotypes.get(variant.rsid);
     if (genotype === undefined) continue;
-    const copies = copiesShown(genotype, variant.alt);
+    const copies = copiesShownFor(variant, genotype);
     if (copies === null) continue;
     const reading: CarrierVariantReading = {
       rsid: variant.rsid,
       classification: variant.clinvarSignificance.trim(),
       genotype,
       copies,
+      ...(variant.evidence ? { evidence: variant.evidence } : {}),
     };
     if (
       chosen === null ||
@@ -506,16 +573,19 @@ export function countPositionsBothCover(
 
 // ---------------------------------------------------------------------------
 // Reading the rows the rule decides on (design §5: computed server-side, at
-// request time). The legacy classification reader is withheld regardless of
-// existing database labels. No genotype or runs measure is read for an empty
-// classified set, and the panel states that it has nothing to check yet.
+// request time). The rows come only from the reviewed assertion rule in the
+// database (`./carrier-assertions`); legacy rsID labels in `ref_variants` and
+// `condition_registry` are never read for a carrier result. No genotype or
+// runs measure is read for an empty classified set, and the panel states
+// that it has nothing to check yet.
 // ---------------------------------------------------------------------------
 
 /**
- * Reserved read budget for a future verified assertion reader, not a
- * scientific threshold. The current legacy reader always returns empty.
+ * The read budget for the reviewed assertion rule, not a scientific
+ * threshold: more rows than this and nothing is read at all. The pinned
+ * 2026-09 starter list holds 2,850.
  */
-export const MAX_CLASSIFIED_POSITIONS = 5_000;
+export const MAX_CLASSIFIED_POSITIONS = 20_000;
 
 export interface CarrierPairSummary {
   inputFileIds?: { a: string[]; b: string[] };
@@ -537,30 +607,41 @@ export interface CarrierPairSummary {
 
 const NO_GENOTYPES: CarrierPairSummary["genotypes"] = { a: new Map(), b: new Map() };
 
+type AssertionsRpc = (name: "carrier_assertions_v1") => PromiseLike<{ data: unknown; error: unknown }>;
+
 /**
- * No row in the legacy rsID reference table carries the allele/condition/
- * assertion provenance this rule needs. Neither seed labels nor old refresh
- * labels may activate personal carrier output. Keep the rule available for
- * verified fixtures, but withhold the production reader until the reviewed
- * clinical assertion importer exists.
+ * The reviewed assertions the database rule admits, as reference rows keyed
+ * by assertion id and exact allele. Anything the rule refuses never arrives;
+ * a malformed or oversized answer, or a failed read, is read as nothing at
+ * all, which every surface states as "cannot check yet", never as negative.
  */
 export async function readClassifiedVariants(supabase: Db): Promise<CarrierRefVariant[]> {
-  void supabase;
-  return [];
+  try {
+    const response = await (supabase.rpc.bind(supabase) as unknown as AssertionsRpc)("carrier_assertions_v1");
+    const rows = response.error ? null : parseCarrierAssertionRows(response.data);
+    if (!rows || rows.length > MAX_CLASSIFIED_POSITIONS) return [];
+    return carrierReference(rows).refVariants;
+  } catch {
+    return [];
+  }
 }
 
-/** Every registry row that names a gene, read once per request. */
-export async function readCarrierConditions(supabase: Db): Promise<CarrierCondition[]> {
-  const { data } = await supabase
-    .from("condition_registry")
-    .select("condition_id, condition_name, gene_symbols, inheritance_mode")
-    .order("condition_id");
-  return (data ?? []).map((row) => ({
-    conditionId: row.condition_id,
-    conditionName: row.condition_name,
-    geneSymbols: row.gene_symbols ?? [],
-    inheritanceMode: row.inheritance_mode,
-  }));
+/**
+ * The conditions of the rows the rule admitted: each reviewed, active and
+ * carrying its stored inheritance mode. Taken from the same rows, so a
+ * condition and its assertions are always one read.
+ */
+export async function readCarrierConditions(
+  supabase: Db,
+  refVariants: readonly CarrierRefVariant[] = [],
+): Promise<CarrierCondition[]> {
+  void supabase;
+  const conditions = new Map<string, CarrierCondition>();
+  for (const variant of refVariants) {
+    const condition = variant.condition;
+    if (condition && !conditions.has(condition.conditionId)) conditions.set(condition.conditionId, condition);
+  }
+  return [...conditions.values()];
 }
 
 export interface CarrierPairPerson {
@@ -588,10 +669,19 @@ export async function resolveCarrierPair(
   if (classifiedPositions === 0) {
     return { matches: [], classifiedPositions, positionsBothCover: 0, genotypes: NO_GENOTYPES };
   }
-  const rsids = refVariants.map((variant) => variant.rsid);
+  // Reviewed rows are read by exact allele at their own loci; only the
+  // rule tests' synthetic rows, which carry no key, are read by rsID.
+  const exact = refVariants.every((variant) => variant.key !== undefined);
+  const read = async (subjectId: string, files?: readonly string[]) => {
+    if (!exact) return getSubjectGenotypesByRsid(supabase, subjectId, refVariants.map((variant) => variant.rsid), files);
+    const calls = await getSubjectCallsAtLoci(supabase, subjectId, assertionLoci(refVariants), files);
+    const readings = exactGenotypes(refVariants, calls.calls);
+    return { genotypes: readings.genotypes, inputFileIds: calls.inputFileIds, checkedFileIds: calls.checkedFileIds,
+      inputFilesByRsid: readings.inputFilesByKey };
+  };
   const [readA, readB] = await Promise.all([
-    getSubjectGenotypesByRsid(supabase, a.dataSubjectId, rsids, legacyFileIds?.a),
-    getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids, legacyFileIds?.b),
+    read(a.dataSubjectId, legacyFileIds?.a),
+    read(b.dataSubjectId, legacyFileIds?.b),
   ]);
   const genotypes = { a: readA.genotypes, b: readB.genotypes };
   const inputFileIds = { a: readA.inputFileIds, b: readB.inputFileIds };

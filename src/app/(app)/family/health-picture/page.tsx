@@ -276,7 +276,7 @@ export default async function FamilyHealthPicturePage() {
     };
     const refVariants = permits(carrierMatch) && ownCaptured && permittedLegacy(self.id).length > 0
       ? await readClassifiedVariants(admin) : [];
-    const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+    const conditions = refVariants.length > 0 ? await readCarrierConditions(admin, refVariants) : [];
     // The declared chromosomal sex of the people this viewer's live grants
     // already authorise the joint comparison for, read only where a classified
     // position could produce a cross at all (D-031). It picks which Mendelian
