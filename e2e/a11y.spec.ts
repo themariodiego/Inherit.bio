@@ -18,10 +18,6 @@ const USER = { email: "a11y@e2e.local", password: "e2e-a11y-pw" };
 // job still runs exactly one worker. No assertion or sweep is split or omitted.
 test.describe.configure({ mode: "parallel" });
 
-test.beforeAll(async () => {
-  await createConfirmedUser(USER.email, USER.password);
-});
-
 /**
  * G2.7 asks that every new route render in both themes under unmodified
  * assertions. A hand-kept list cannot honour "every": this one held four
@@ -410,6 +406,7 @@ test("skip link: first tabbable element, moves focus to main without navigating 
   expect(await page.evaluate(() => history.length)).toBe(historyBefore);
 
   // Signed-in app layout: same contract.
+  await createConfirmedUser(USER.email, USER.password);
   await signIn(page, USER.email, USER.password);
   await page.goto("/dashboard");
   await page.keyboard.press("Tab");
