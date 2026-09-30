@@ -38,7 +38,9 @@ invitation transition locks, seed/catalog consistency, rendered legal checks
 and Lighthouse. Lighthouse uses its repository job's independently seeded
 database, exact build and actual provider; it does not reuse another job's state.
 Superseded pull-request runs may be cancelled. Main/release runs are never
-cancelled by the concurrency policy.
+cancelled by the concurrency policy: their concurrency group includes the
+unique GitHub run ID, so one pending release cannot replace another pending
+release. Pull-request groups instead use the stable PR number.
 
 Coverage artifacts contain only fixed case IDs, relative committed spec paths,
 source/run identity, actual provider-upload counts and bounded timing fields.

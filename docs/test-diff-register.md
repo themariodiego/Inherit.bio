@@ -21,6 +21,9 @@ Ordinary full/local and Lighthouse runs retain their direct positive assertion.
 No sentinel upload, narrowed selector, fixture bypass or execution skip is added.
 
 The required checks job still rejects failed, cancelled or skipped job families.
+The parsed concurrency contract requires a unique run ID for non-PR groups;
+turning off active cancellation alone would still let a pending main run replace
+an older pending main run. PR groups retain their stable PR number.
 Every tracked ordinary spec must be discovered; only the exact existing density
 capture and paid comprehension-run spec remain opt-in. A central project
 registry refuses empty or unregistered projects. Raw configuration/report JSON

@@ -132,6 +132,7 @@ describe("mandatory browser coverage across isolated jobs", () => {
     expect(doc.jobs.browser.strategy).toEqual({ "fail-fast": false, "max-parallel": 6, matrix: { shard: [1, 2, 3, 4, 5, 6] } });
     expect(doc.jobs.browser.if).toBeUndefined(); expect(doc.jobs["repository-checks"].if).toBeUndefined();
     expect(doc.concurrency["cancel-in-progress"]).toBe("${{ github.event_name == 'pull_request' }}");
+    expect(doc.concurrency.group).toBe("ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}");
     for (const job of Object.values(doc.jobs)) {
       expect(job["continue-on-error"]).toBeUndefined();
       const checkout = job.steps.find(step => step.uses === "actions/checkout@v4")!;
