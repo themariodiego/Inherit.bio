@@ -1,5 +1,9 @@
 # Test diff register
 
+## Temporary claimant contact expires without losing custody · 30 September 2026
+
+The reserved contact migration fixes one immutable 24-month deadline only for a claimant/contact/release generation. A selector-free service drain freezes the exact registered primary keys, deletes only contact/mail/release/token/session/nonce working rows and requires zero residuals before completion. The two existing release-credential and release-notice stores move into the delivery target without changing the exact 147-store total or rewriting any frozen historical manifest. Strict deadline/selector refusal and replay cases preserve the entire subject, canonical bytes and memberships, agreement slice, random claimant, verified HMAC and Recovery Key byte for byte. A private clock argument, inaccessible to every API role, tests the deadline without editing frozen fields; the public drain accepts neither a clock nor an identifier. An independent-worker failure test proves other queues still progress. No custody clock, source deletion or G5.4 completion is introduced.
+
 ## Attested claimant release and separate contact lifetime · 30 September 2026
 
 The old five-argument reviewer door keeps rejection and more-information behavior but refuses every approval. Its original nominal-approval test now pins refusal, unchanged pending state and zero approval audit writes; the positive approval moves to the new real canonical-source/attestation/receipt journey. All original stale revision, competing-case, role, scan, deadline and document-read assertions remain. The private unattested executor loses authenticated grants. Custody provenance is immutable and exact-source purge start/cursor refusal gains strict assertions.

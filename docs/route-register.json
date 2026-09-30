@@ -6301,9 +6301,11 @@
             "public.token_hashes",
             "public.token_candidates",
             "public.rights_sessions",
-            "public.rights_nonces"
+            "public.rights_nonces",
+            "public.future_person_claim_notices",
+            "public.future_person_claim_release_credentials"
           ],
-          "joinRule": "select-only-by-the-exact-retention-campaign-invitation-claim-review-export-subject-cohort-or-recipient-authority-FK-and-revision; independently-authorized-minimal-terminal-notice-rows-are-explicit-manifest-exclusions-until-their-own-retention-class-is-due; review-working-and-claim-working-select-only-case-bound-delivery-state-and-never-an-unrelated-notice",
+          "joinRule": "select-only-by-the-exact-retention-campaign-invitation-claim-review-export-subject-cohort-or-recipient-authority-FK-and-revision; independently-authorized-minimal-terminal-notice-rows-are-explicit-manifest-exclusions-until-their-own-retention-class-is-due; review-working-and-claim-working-select-only-case-bound-delivery-state-and-never-an-unrelated-notice; future-person.claimed-unbound-24mo selects only its exact claimant/contact/outbox/release revision and never durable claim approval, claimant principal, verified identity HMAC, Recovery Key, source, result or agreement slice",
           "manifestClasses": [
             "notice-contact-working",
             "invitation-working",
@@ -6326,9 +6328,7 @@
             "public.future_person_claim_documents",
             "public.future_person_claim_review_packages",
             "public.future_person_claim_assignments",
-            "public.future_person_claim_notices",
-            "public.future_person_claim_objections",
-            "public.future_person_claim_release_credentials"
+            "public.future_person_claim_objections"
           ],
           "joinRule": "select-only-the-exact-public.future_person_claims-row-and-claim-session-or-review-package-plus-its-document-object-references-contact-notice-objection-release-and-assignment-revisions; working-class-deletion-preserves-only-the-coded-resolution-timestamps-and-pseudonymized-audit-when-the-retention-authority-explicitly-requires-that-residue-and-never-selects-the-underlying-subject",
           "manifestClasses": [

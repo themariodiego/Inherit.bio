@@ -164,6 +164,14 @@ export async function POST(request: Request) {
   if (claimIntakePurgeError) failed++;
   else if (typeof purgedIntakes === "number") processed += purgedIntakes;
 
+  // The claimant's temporary delivery material expires independently. This
+  // exact working-only manifest preserves durable custody and recovery.
+  try {
+    const {data: purgedContacts,error: claimantContactPurgeError}=await admin.rpc("purge_due_future_person_contacts_v1");
+    if(claimantContactPurgeError)failed++;
+    else if(typeof purgedContacts==="number")processed+=purgedContacts;
+  } catch { failed++; }
+
   // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
   // not prevent this already-due work from making progress.
   try {
