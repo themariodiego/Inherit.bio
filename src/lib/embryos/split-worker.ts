@@ -1,7 +1,10 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { createAdminClient } from "../supabase/admin";
+import { embryoR2WriteTargetSchema, type EmbryoFragmentRpc, type EmbryoR2WriteTarget,
+  type EmbryoStoredFragment } from "./fragment-storage";
 import { EmbryoTransportError } from "./ingest-lines";
 import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
   type EmbryoSplitRow } from "./split-analysis";
@@ -17,9 +20,14 @@ import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
  * embryo's fragments, prove its size and SHA-256 against the locked manifest,
  * revalidate and parse it with the product parser, stage its validated rows,
  * then record its QC outcome in its own transaction. An embryo that fails QC
- * keeps only a closed reason and the job continues. When every embryo has an
- * outcome, one terminal transaction (`publish_embryo_split_v1`) publishes the
- * whole cohort at once; nothing is visible before it commits.
+ * keeps only a closed reason and the job continues. An embryo that passes is
+ * recorded only after its canonical source has landed: each of its fragments
+ * is read and verified again and copied byte for byte into a new R2 object,
+ * reserved and acknowledged under the live claim. No object is ever written
+ * for an embryo that fails. When every embryo has an outcome, one terminal
+ * transaction (`publish_embryo_split_v1`) publishes the whole cohort at once,
+ * binding each pass to its own canonical source and `genome_files` row;
+ * nothing is visible before it commits.
  *
  * Fragment bytes come through `EmbryoFragmentReader`, keyed only by
  * (session, sequence, ordinal). The fragment store behind it (R2 under ADR
@@ -88,6 +96,18 @@ export class EmbryoSplitFragmentMismatch extends Error {
  */
 export type EmbryoFragmentReader = (fragment: EmbryoFragmentRef, signal: AbortSignal) => Promise<Uint8Array>;
 
+/**
+ * The one seam to the canonical-source store: write `bytes` create-only to the
+ * exact receipt `reserve_embryo_canonical_part_v1` issued, read them back and
+ * land them through `acknowledge`, which carries the fragment store's ACK call
+ * to the canonical-part ACK under the live claim. Resolves with the landed
+ * identity only after SQL accepted it. Any rejection is a transient failure of
+ * this attempt; the next attempt reserves new keys.
+ */
+export type EmbryoCanonicalPartWriter = (part: {
+  target: EmbryoR2WriteTarget; bytes: Uint8Array; acknowledge: EmbryoFragmentRpc;
+}, signal: AbortSignal) => Promise<EmbryoStoredFragment>;
+
 export type EmbryoSplitResult =
   | { status: "idle" }
   | { status: "published"; jobId: string; passed: number; failed: number }
@@ -121,7 +141,7 @@ export function adminSplitRpc(): EmbryoSplitRpc {
 }
 
 export async function runNextEmbryoSplit(options: {
-  readFragment: EmbryoFragmentReader;
+  readFragment: EmbryoFragmentReader; writeCanonicalPart: EmbryoCanonicalPartWriter;
   signal?: AbortSignal; rpc?: EmbryoSplitRpc; workerId?: string; batchSize?: number; renewEveryMs?: number;
 }): Promise<EmbryoSplitResult> {
   const controller = new AbortController();
@@ -136,7 +156,7 @@ export async function runNextEmbryoSplit(options: {
   try {
     active();
     const rpc = options.rpc ?? adminSplitRpc();
-    const readFragment = options.readFragment;
+    const { readFragment, writeCanonicalPart } = options;
     const call = async (name: string, args: Record<string, unknown>) => { active(); const data = await rpc(name, args, signal); active(); return data; };
     const token = createHash("sha256").update(randomBytes(32)).digest("hex");
     const raw = await call("claim_embryo_split_job_v1", { p_claim_token_hash: token,
@@ -188,6 +208,60 @@ export async function runNextEmbryoSplit(options: {
         : { status: "failure_pending", jobId: claim.jobId, code: reported.failureCode });
     };
 
+    // Read one fragment under read authority issued for exactly it, and prove
+    // its size and SHA-256 against the locked manifest.
+    const readVerified = async (ordinal: number, fragment: EmbryoSplitFragment): Promise<Uint8Array> => {
+      const authorized = fragmentReadSchema.parse(stopIfFailed(await call("read_embryo_split_fragment_v1", {
+        ...args, p_ordinal: ordinal, p_sequence: fragment.sequence })));
+      if (authorized.sessionId !== claim.sessionId || authorized.ordinal !== ordinal
+        || authorized.sequence !== fragment.sequence || authorized.byteCount !== fragment.byteCount
+        || authorized.sha256 !== fragment.sha256) fail("integrity_mismatch");
+      let bytes: Uint8Array;
+      try {
+        bytes = await readFragment({ sessionId: claim.sessionId, sequence: fragment.sequence, ordinal,
+          byteCount: fragment.byteCount, sha256: fragment.sha256, landed: authorized.landed }, signal);
+      } catch (error) {
+        active();
+        return await report(error instanceof EmbryoSplitFragmentMismatch ? "chunk" : "transient");
+      }
+      active();
+      if (bytes.byteLength !== fragment.byteCount
+        || createHash("sha256").update(bytes).digest("hex") !== fragment.sha256) return await report("chunk");
+      return bytes;
+    };
+
+    // Copy one verified fragment into its own canonical part: reserve the part
+    // under the claim, write it, and land it through the part ACK.
+    const writePart = async (ordinal: number, fragment: EmbryoSplitFragment, bytes: Uint8Array) => {
+      const target = embryoR2WriteTargetSchema.parse(stopIfFailed(await call("reserve_embryo_canonical_part_v1", {
+        ...args, p_ordinal: ordinal, p_sequence: fragment.sequence })));
+      if (target.sessionId !== claim.sessionId || target.ordinal !== ordinal || target.sequence !== fragment.sequence
+        || target.byteCount !== fragment.byteCount || target.sha256 !== fragment.sha256) fail("integrity_mismatch");
+      let refused: unknown = null;
+      const acknowledge: EmbryoFragmentRpc = (name, ackArgs) => ({
+        abortSignal: async () => {
+          if (name !== "ack_embryo_ingest_r2_write_v1") return { data: null, error: "refused" };
+          try {
+            const data = await call("ack_embryo_canonical_part_v1", { ...args, ...ackArgs });
+            if (failureSchema.safeParse(data).success) refused = data;
+            return { data, error: null };
+          } catch { return { data: null, error: "unavailable" }; }
+        },
+      });
+      let stored: EmbryoStoredFragment;
+      try {
+        stored = await writeCanonicalPart({ target, bytes, acknowledge }, signal);
+      } catch {
+        active();
+        stopIfFailed(refused);
+        return await report("transient");
+      }
+      active();
+      // A failure the ACK recorded stands, whatever the writer made of it.
+      stopIfFailed(refused);
+      if (!isDeepStrictEqual(stored.receipt, target)) fail("integrity_mismatch");
+    };
+
     let passed = 0, failed = 0;
     for (let ordinal = 0; ordinal < claim.embryoCount; ordinal++) {
       let batch = 0;
@@ -202,23 +276,7 @@ export async function runNextEmbryoSplit(options: {
       };
       let measure = emptyMeasure();
       for (const fragment of byOrdinal[ordinal]) {
-        // Read authority for exactly this fragment, under the live claim.
-        const authorized = fragmentReadSchema.parse(stopIfFailed(await call("read_embryo_split_fragment_v1", {
-          ...args, p_ordinal: ordinal, p_sequence: fragment.sequence })));
-        if (authorized.sessionId !== claim.sessionId || authorized.ordinal !== ordinal
-          || authorized.sequence !== fragment.sequence || authorized.byteCount !== fragment.byteCount
-          || authorized.sha256 !== fragment.sha256) fail("integrity_mismatch");
-        let bytes: Uint8Array;
-        try {
-          bytes = await readFragment({ sessionId: claim.sessionId, sequence: fragment.sequence, ordinal,
-            byteCount: fragment.byteCount, sha256: fragment.sha256, landed: authorized.landed }, signal);
-        } catch (error) {
-          active();
-          return await report(error instanceof EmbryoSplitFragmentMismatch ? "chunk" : "transient");
-        }
-        active();
-        if (bytes.byteLength !== fragment.byteCount
-          || createHash("sha256").update(bytes).digest("hex") !== fragment.sha256) return await report("chunk");
+        const bytes = await readVerified(ordinal, fragment);
         try {
           measure = addMeasures(measure, await analyseEmbryoFragment(bytes, ordinal, claim.build, async (row) => {
             pending.push(row);
@@ -232,7 +290,14 @@ export async function runNextEmbryoSplit(options: {
         }
       }
       const outcome = embryoOrdinalOutcome(measure);
-      if (outcome.outcome === "passed") await flush();
+      if (outcome.outcome === "passed") {
+        await flush();
+        // The canonical source, one fragment at a time: nothing is held for
+        // the whole embryo, and nothing is written for one that failed.
+        for (const fragment of byOrdinal[ordinal]) {
+          await writePart(ordinal, fragment, await readVerified(ordinal, fragment));
+        }
+      }
       await check();
       const recorded = recordedSchema.parse(stopIfFailed(await call("finish_embryo_split_ordinal_v1", {
         ...args, p_ordinal: ordinal, p_result: outcome })));

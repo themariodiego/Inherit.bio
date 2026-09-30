@@ -21,10 +21,11 @@ select is(private.configure_embryo_vcf_ingest_v1(
   'configured','fixture: the attempt records a VCF format, a header-derived build and a completion nonce');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 -- Metadata-only tests land fragments on the Supabase backend when the
--- fragment store's configuration exists.
+-- fragment store's configuration exists. Canonical parts always go to R2, so
+-- a synthetic bucket name is configured for them.
 do $$ begin
   if to_regclass('private.embryo_ingest_object_config') is not null then
-    execute 'update private.embryo_ingest_object_config set provider=''supabase''';
+    execute 'update private.embryo_ingest_object_config set provider=''supabase'',r2_bucket=''inherit-embryo-synthetic''';
   end if;
 end $$;
 
@@ -53,3 +54,25 @@ select is((select body->>'status' from completed),'sanitization_pending',
   'fixture: the upload completes into one queued sanitization job');
 create temporary table job as select w.* from public.worker_jobs w
   where w.id=(select (body->>'jobId')::uuid from completed);
+
+-- Reserve and land every canonical part of one embryo, the way the worker
+-- does after a pass: one part per fragment, each ACKed with a synthetic
+-- provider identity and the size and digest the receipt names. A part this
+-- attempt already reserved is left as it is. Returns the number landed.
+create function pg_temp.land_parts(p_ordinal integer,p_token text,p_attempt integer default 1)
+returns integer language plpgsql as $$
+declare f record; t jsonb; n integer:=0;
+begin
+  for f in select x.sequence from public.embryo_ingest_fragments x
+    where x.session_id=(select id from live) and x.sample_ordinal=p_ordinal and not exists (
+      select 1 from private.embryo_canonical_parts p where p.worker_job_id=(select id from job)
+        and p.attempt=p_attempt and p.sample_ordinal=p_ordinal and p.sequence=x.sequence)
+    order by x.sequence loop
+    t:=public.reserve_embryo_canonical_part_v1((select id from job),p_attempt,p_token,p_ordinal,f.sequence);
+    perform public.ack_embryo_canonical_part_v1((select id from job),p_attempt,p_token,(t->>'sessionId')::uuid,
+      (t->>'sequence')::integer,(t->>'ordinal')::integer,t,md5('version:'||(t->>'objectKey')),
+      md5('etag:'||(t->>'objectKey')),t->>'sha256',(t->>'byteCount')::bigint);
+    n:=n+1;
+  end loop;
+  return n;
+end $$;

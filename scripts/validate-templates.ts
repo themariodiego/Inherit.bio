@@ -182,10 +182,19 @@ function genotypeKeys(ref: string, alt: string, chrom: number): string[] {
 }
 
 /**
- * Citations carrying no `accessedOn`, as measured on 2026-09-10. Lower it when
- * sources are dated; it may never be raised. See the ratchet in `main`.
+ * Citations carrying no `accessedOn`, as measured on 2026-09-10 (189), lowered
+ * to 177 on 27 September and to 7 on 28 September after each remaining source
+ * was retrieved (PubMed E-utilities, PMC/Europe PMC, doi.org resolution,
+ * NHGRI-EBI GWAS Catalog and Ensembl), its identifier and title confirmed, and
+ * its support for the cited statement checked; see
+ * docs/sources/citation-review-2026-09.json. Reaches 0 on 28 September after the
+ * six content defects were corrected against their sources (two cited the wrong
+ * paper and now cite the retrieved right one; four had a wording or allele
+ * direction fixed to match the source) through the scientific-corrections
+ * register, and Markt 2016 on asparagus-odor-detection-or2m7 was dated with the
+ * reviewed-content freeze updated. Lower it when sources are dated; never raise.
  */
-const UNDATED_CITATION_BACKLOG = 177;
+const UNDATED_CITATION_BACKLOG = 0;
 
 function main() {
   let totalCitations = 0;

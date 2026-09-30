@@ -22,8 +22,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18765803", "label": "Willcox et al., Proc Natl Acad Sci USA 2008" },
-      { "pmid": "19196970", "label": "Flachsbart et al., Proc Natl Acad Sci USA 2009" }
+      { "pmid": "18765803", "label": "Willcox et al., Proc Natl Acad Sci USA 2008", "accessedOn": "2026-09-28" },
+      { "pmid": "19196970", "label": "Flachsbart et al., Proc Natl Acad Sci USA 2009", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -62,8 +62,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8136829", "label": "Schächter et al., Nat Genet 1994" },
-      { "pmid": "31413261", "label": "Deelen et al., Nat Commun 2019" }
+      { "pmid": "8136829", "label": "Schächter et al., Nat Genet 1994", "accessedOn": "2026-09-28" },
+      { "pmid": "31413261", "label": "Deelen et al., Nat Commun 2019", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -89,7 +89,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "14559957", "label": "Barzilai et al., JAMA 2003" }
+      { "pmid": "14559957", "label": "Barzilai et al., JAMA 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -115,7 +115,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12843179", "label": "Bonafè et al., J Clin Endocrinol Metab 2003" }
+      { "pmid": "12843179", "label": "Bonafè et al., J Clin Endocrinol Metab 2003", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -141,7 +141,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "25785999", "label": "Kilic et al., PLoS One 2015" }
+      { "pmid": "25785999", "label": "Kilic et al., PLoS One 2015", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -167,7 +167,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "23535734", "label": "Codd et al., Nat Genet 2013" }
+      { "pmid": "23535734", "label": "Codd et al., Nat Genet 2013", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -193,7 +193,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "23535734", "label": "Codd et al., Nat Genet 2013" }
+      { "pmid": "23535734", "label": "Codd et al., Nat Genet 2013", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -219,8 +219,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "11792841", "label": "Arking et al., Proc Natl Acad Sci USA 2002" },
-      { "pmid": "24813892", "label": "Dubal et al., Cell Rep 2014" }
+      { "pmid": "11792841", "label": "Arking et al., Proc Natl Acad Sci USA 2002", "accessedOn": "2026-09-28" },
+      { "pmid": "24813892", "label": "Dubal et al., Cell Rep 2014", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -246,8 +246,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17535973", "label": "Ørsted et al., J Exp Med 2007" },
-      { "pmid": "15732191", "label": "van Heemst et al., Exp Gerontol 2005" }
+      { "pmid": "17535973", "label": "Ørsted et al., J Exp Med 2007", "accessedOn": "2026-09-28" },
+      { "pmid": "15732191", "label": "van Heemst et al., Exp Gerontol 2005", "accessedOn": "2026-09-28" }
     ]
   },
   {
@@ -273,7 +273,7 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "15130757", "label": "Christiansen et al., Mech Ageing Dev 2004" }
+      { "pmid": "15130757", "label": "Christiansen et al., Mech Ageing Dev 2004", "accessedOn": "2026-09-28" }
     ]
   }
 ]
