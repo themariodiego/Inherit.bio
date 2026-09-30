@@ -121,6 +121,9 @@ select is((select to_jsonb(c) from(select id,status,lifecycle_revision from publ
 select is((select jsonb_agg(to_jsonb(g) order by grant_id) from(select grant_id,revoked_at,revocation_reason from public.purpose_grants
  where target_kind='cohort' and target_id=(select cohort_id from live))g),
  (select jsonb_agg(to_jsonb(g) order by grant_id) from ended_grants g),'cancellation restores no independently ended consent');
+select is((select count(*) from public.mail_outbox where target_id=(select id from deletion)
+ and template_id='account-deletion-affected' and state in('queued','claimed')),0::bigint,
+ 'cancellation invalidates every unsent or claimed obsolete deletion notice');
 select is((select count(*) from auth.sessions where user_id='7a000000-0000-0000-0000-000000000001'),0::bigint,
  'cancellation revokes every old holder session');
 select is((select phase_deadline from public.retention_due_phases where retention_row_id=(select retention_row_id from original_phase)

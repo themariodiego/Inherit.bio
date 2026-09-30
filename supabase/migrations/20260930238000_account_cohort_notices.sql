@@ -186,6 +186,9 @@ begin
   limit 1
   for update of sp;
 
+  if (select count(*) from public.encrypted_contact_references where principal_id=v_principal.id and status='current')>1 then
+    raise exception using errcode='55000',message='account_notice_binding_unavailable'; end if;
+
   select greatest(coalesce(max(sp.principal_revision), 1), 1)
   into v_graph_revision
   from public.subject_principals sp
@@ -430,6 +433,9 @@ begin
 
   -- A cancelled request requires a fresh normal sign-in. No consent or
   -- resource state is reactivated here, and every old session is revoked.
+  if not exists(select 1 from public.encrypted_contact_references e where e.principal_id=v_principal.id
+    and e.status='current' and e.contact_ciphertext is not null and e.authority_revision=v_principal.principal_revision) then
+    raise exception using errcode='55000',message='account_notice_binding_unavailable'; end if;
   update public.subject_principals set principal_revision=principal_revision+1
   where id=v_principal.id returning * into v_principal;
   if (select count(*) from public.encrypted_contact_references where principal_id=v_principal.id and status='current')<>1 then
@@ -456,6 +462,9 @@ begin
     v_now + interval '30 days',v_now,v_now
   );
 
+  update public.mail_outbox set state='invalidated',claimed_at=null,last_outcome_code='account_deletion_cancelled'
+  where target_kind='account' and target_id=v_request.id and template_id='account-deletion-affected'
+    and state in('queued','claimed');
   v_notice:=private.account_affected_notice_envelope_v1(p_account_id);
   for v_binding in select value from jsonb_array_elements(v_notice->'recipients') loop
     perform private.enqueue_account_affected_notice_v1(v_request.id,v_binding,true,v_now);
