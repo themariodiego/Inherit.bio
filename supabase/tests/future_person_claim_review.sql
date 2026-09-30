@@ -62,6 +62,27 @@ returns void language sql volatile as $$
    'timestamp', floor(extract(epoch from clock_timestamp())) - p_mfa_age)))::text, true)
 $$;
 
+-- A database fixture supplies service-verified synthetic proofs. Transport
+-- tests separately prove the hashes come from complete real plaintext bytes.
+create function pg_temp.acknowledge_document(p_session uuid,p_cookie text)
+returns void language plpgsql security definer set search_path='' as $$
+declare n integer; proof text;
+begin
+  perform public.open_claim_review_receipt_v1(p_session,p_cookie,pg_temp.h('receipt:'||p_session));
+  for n in 0..(select chunk_count-1 from private.claim_review_downloads where id=p_session) loop
+    proof:=pg_temp.h('proof:'||p_session||':'||n);
+    perform public.prepare_claim_review_chunk_receipt_v1(p_session,p_cookie,n,proof);
+    perform public.acknowledge_claim_review_chunk_v1(p_session,p_cookie,n,proof,pg_temp.h('ack:'||p_session||':'||n));
+  end loop;
+end $$;
+create function pg_temp.receive_document(p_document uuid,p_cookie text)
+returns void language plpgsql security definer set search_path='' as $$
+declare d jsonb;
+begin
+  d:=public.open_claim_review_download_v1(p_document,p_cookie);
+  perform pg_temp.acknowledge_document((d->>'session')::uuid,p_cookie);
+end $$;
+
 -- The local synthetic issuer required by the shared authenticated-session gate.
 insert into private.upload_authorization_config (singleton, auth_issuer)
 values (true, 'http://127.0.0.1:54321/auth/v1')
@@ -236,7 +257,7 @@ grant select on ids to authenticated;
 set local role authenticated;
 create temporary table dl as select
   public.open_claim_review_download_v1((select photo from ids), (select photo_cookie from ids)) photo,
-  public.open_claim_review_download_v1((select birth from ids), (select birth_cookie from ids)) birth;
+  null::jsonb birth;
 reset role;
 select is((select (photo->>'chunkCount')::integer from dl), 2, 'a 5,000,001-byte document is two chunks');
 select ok((select not (photo ? 'objectKey') and not (photo ? 'wrappedDataKey') from dl),
@@ -272,26 +293,29 @@ select ok(public.authorize_claim_review_chunk_v1((select (photo->>'session')::uu
 select throws_ok($$select public.decide_claim_review_v1((select id from rv), 1, 'reject',
   encode(extensions.digest('n1','sha256'),'hex'), (select r from reason))$$,
   '42501', null, 'one document read is not enough');
+select pg_temp.acknowledge_document((select (photo->>'session')::uuid from dl),(select photo_cookie from ids));
+update dl set birth=public.open_claim_review_download_v1((select birth from ids),(select birth_cookie from ids));
 select ok(public.authorize_claim_review_chunk_v1((select (birth->>'session')::uuid from dl),
   (select birth_cookie from ids), 0) ? 'objectKey', 'birth record chunk 0 is authorized');
+select pg_temp.acknowledge_document((select (birth->>'session')::uuid from dl),(select birth_cookie from ids));
 reset role;
 select is((select count(*) from private.claim_review_reads where review_id = (select id from rv)
-  and document_id is not null), 3::bigint, 'each chunk read is recorded');
+  and document_id is not null), 3::bigint, 'each complete client chunk receipt is recorded');
 
 -- A stored download cannot survive an account or originating-session revision change.
 update public.profiles set auth_session_revision = auth_session_revision + 1
 where id = '7e000000-0000-4000-8000-000000000001';
 set local role authenticated;
-select throws_ok($$select public.authorize_claim_review_chunk_v1((select (photo->>'session')::uuid from dl),
-  (select photo_cookie from ids), 0)$$, '42501', null, 'a stale account revision revokes the download');
+select throws_ok($$select public.authorize_claim_review_chunk_v1((select (birth->>'session')::uuid from dl),
+  (select birth_cookie from ids), 0)$$, '42501', null, 'a stale account revision revokes the download');
 reset role;
 update public.profiles set auth_session_revision = auth_session_revision - 1
 where id = '7e000000-0000-4000-8000-000000000001';
 update auth.sessions set refresh_token_counter = coalesce(refresh_token_counter, 0) + 1
 where id = '5e000000-0000-4000-8000-000000000001';
 set local role authenticated;
-select throws_ok($$select public.authorize_claim_review_chunk_v1((select (photo->>'session')::uuid from dl),
-  (select photo_cookie from ids), 0)$$, '42501', null, 'a stale originating session revision revokes the download');
+select throws_ok($$select public.authorize_claim_review_chunk_v1((select (birth->>'session')::uuid from dl),
+  (select birth_cookie from ids), 0)$$, '42501', null, 'a stale originating session revision revokes the download');
 reset role;
 update auth.sessions set refresh_token_counter = refresh_token_counter - 1
 where id = '5e000000-0000-4000-8000-000000000001';
@@ -324,6 +348,11 @@ select ok((select photo_sha256 = (select sha256 from private.claim_documents whe
   and auth_session_id = '5e000000-0000-4000-8000-000000000001' and review_revision = 1
   from private.claim_review_decisions where review_id = (select id from rv)),
   'the decision is recorded against the exact documents'' digests, reviewer and session');
+
+-- A new review revision requires fresh verified delivery, rather than the
+-- previous decision's receipts authorizing a later decision.
+select pg_temp.receive_document((select photo from docs_a),pg_temp.h('download:photo:revision2'));
+select pg_temp.receive_document((select birth from docs_a),pg_temp.h('download:birth:revision2'));
 
 -- Reject.
 select pg_temp.jwt('7e000000-0000-4000-8000-000000000001', '5e000000-0000-4000-8000-000000000001');
@@ -411,14 +440,17 @@ select ok(public.read_claim_review_case_v1((select id from rk))->>'parentIdentit
   'and carries the recorded parent link, sealed, for the route to open');
 create temporary table dk as select
   public.open_claim_review_download_v1((select photo from rk), (select pc from rk)) p,
-  public.open_claim_review_download_v1((select birth from rk), (select bc from rk)) b;
+  null::jsonb b;
 reset role;
 grant select on dk to authenticated;
 set local role authenticated;
 select ok(public.authorize_claim_review_chunk_v1((select (p->>'session')::uuid from dk), (select pc from rk), 0) ? 'objectKey',
   'photo read');
+select pg_temp.acknowledge_document((select (p->>'session')::uuid from dk),(select pc from rk));
+update dk set b=public.open_claim_review_download_v1((select birth from rk),(select bc from rk));
 select ok(public.authorize_claim_review_chunk_v1((select (b->>'session')::uuid from dk), (select bc from rk), 0) ? 'objectKey',
   'birth record read');
+select pg_temp.acknowledge_document((select (b->>'session')::uuid from dk),(select bc from rk));
 select is(public.decide_claim_review_v1((select id from rk), 1, 'approve-record-key',
   encode(extensions.digest('k1-approve','sha256'),'hex'), (select r from reason))->>'state', 'release_queued',
   'approval records the release decision');
@@ -492,8 +524,8 @@ select ok(not exists (select 1 from unnest(array['anon', 'service_role']) r,
   unnest(array['public.read_claim_review_case_v1(uuid)', 'public.open_claim_review_download_v1(uuid,text)',
     'public.authorize_claim_review_chunk_v1(uuid,text,integer)', 'public.decide_claim_review_v1(uuid,bigint,text,text,bytea)']) f
   where has_function_privilege(r, f, 'execute')), 'the reviewer doors are the reviewer''s JWT only, never the service role');
-select is((select count(*) from public.purge_target_stores where store_name like 'private.claim_review%'), 5::bigint,
-  'all five review stores are in the purge register');
+select is((select count(*) from public.purge_target_stores where store_name like 'private.claim_review%'), 7::bigint,
+  'all seven review stores are in the purge register');
 
 select * from finish();
 rollback;

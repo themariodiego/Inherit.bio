@@ -148,3 +148,20 @@ describe("the claim session (claim-session-api-v1)", () => {
     expect(newClaimSession().sessionHash).not.toBe(newClaimSession().sessionHash);
   });
 });
+
+describe("claim mutation credential rotation",()=>{
+  it("binds distinct CSRF to the current cookie, operation and page nonce",async()=>{
+    const {claimMutationCsrf,claimMutationCsrfMatches,newClaimSessionRotation}=await import("./claim-session");
+    const current=newClaimSessionRotation();
+    const successor=newClaimSessionRotation();
+    const value=claimMutationCsrf(current.sessionHash,"documents","page-nonce");
+    expect(claimMutationCsrfMatches(value,current.sessionHash,"documents","page-nonce")).toBe(true);
+    expect(claimMutationCsrfMatches(value,successor.sessionHash,"documents","page-nonce")).toBe(false);
+    expect(claimMutationCsrfMatches(value,current.sessionHash,"complete","page-nonce")).toBe(false);
+    expect(claimMutationCsrfMatches(value,current.sessionHash,"documents","other-nonce")).toBe(false);
+    expect(claimMutationCsrfMatches("page-nonce",current.sessionHash,"documents","page-nonce")).toBe(false);
+    expect(successor.setCookie(new Date(NOW+60_000),NOW)).toContain("Max-Age=60;");
+    expect(successor.setCookie(new Date(NOW-1),NOW)).toContain("Max-Age=0;");
+    expect(successor.setCookie(new Date(NOW+172_800_000),NOW)).toContain("Max-Age=86400;");
+  });
+});

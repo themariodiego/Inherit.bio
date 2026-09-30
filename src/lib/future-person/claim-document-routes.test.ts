@@ -40,7 +40,7 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY", BYOK);
 const documents = await import("@/app/api/future-person/claim/session/documents/route");
 const chunks = await import("@/app/api/evidence/[session]/chunks/[sequence]/route");
 const completion = await import("@/app/api/evidence/[session]/complete/route");
-const { CLAIM_SESSION_COOKIE, sha256Hex } = await import("./claim-session");
+const { CLAIM_SESSION_COOKIE, sha256Hex, claimMutationCsrf } = await import("./claim-session");
 const { EVIDENCE_COOKIE, evidenceCompleteNonce, evidenceCsrf, mintClaimDocumentNonce } = await import("./evidence-session");
 const { encryptSecret } = await import("@/lib/crypto");
 const { openDocumentBytes } = await import("./document-envelope");
@@ -81,7 +81,9 @@ describe("POST /api/future-person/claim/session/documents", () => {
   const post = (payload: string, headers: Record<string, string | null> = {}) =>
     documents.POST(new Request(`${ORIGIN}/api/future-person/claim/session/documents`, {
       method: "POST", body: payload,
-      headers: headersFor({ cookie: `${CLAIM_SESSION_COOKIE}=${CLAIM_COOKIE_VALUE}`, ...headers }, "application/json"),
+      headers: headersFor({ cookie: `${CLAIM_SESSION_COOKIE}=${CLAIM_COOKIE_VALUE}`,
+        "x-inherit-csrf":claimMutationCsrf(sha256Hex(CLAIM_COOKIE_VALUE),"documents",String((JSON.parse(payload) as {nonce:unknown}).nonce)),
+        ...headers }, "application/json"),
     }));
 
   it("opens one evidence session and returns its credentials only in headers", async () => {
@@ -95,8 +97,14 @@ describe("POST /api/future-person/claim/session/documents", () => {
       completeRoute: `/api/evidence/${SESSION}/complete`, expiresAt: "2026-09-29T12:00:00.000Z",
     });
     const args = mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("open_claim_document_session_v1");
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("open_claim_document_session_rotated_v1");
     expect(args.p_claim_session_hash).toBe(sha256Hex(CLAIM_COOKIE_VALUE));
+    expect(response.headers.getSetCookie()).toHaveLength(2);
+    const rotated=response.headers.getSetCookie().find(value=>value.startsWith(`${CLAIM_SESSION_COOKIE}=`))!;
+    const claimantSecret=rotated.slice(rotated.indexOf("=")+1,rotated.indexOf(";"));
+    expect(claimantSecret).not.toBe(CLAIM_COOKIE_VALUE);
+    expect(args.p_successor_claim_session_hash).toBe(sha256Hex(claimantSecret));
+    expect(JSON.stringify(args)).not.toContain(claimantSecret);
     const cookie = response.headers.getSetCookie()[0]!;
     expect(cookie).toMatch(new RegExp(`^${EVIDENCE_COOKIE}=[A-Za-z0-9_-]{43}; Path=/; Max-Age=\\d+; HttpOnly; SameSite=Strict$`));
     const secret = cookie.slice(cookie.indexOf("=") + 1, cookie.indexOf(";"));
@@ -129,6 +137,8 @@ describe("POST /api/future-person/claim/session/documents", () => {
 
   it.each([
     ["no claim cookie", { cookie: null }],
+    ["missing CSRF", { "x-inherit-csrf":null }],
+    ["a CSRF value from another operation", { "x-inherit-csrf":claimMutationCsrf(sha256Hex(CLAIM_COOKIE_VALUE),"complete","nonce") }],
     ["another origin", { origin: "https://elsewhere.invalid" }],
     ["cross-site metadata", { "sec-fetch-site": "cross-site" }],
   ])("is the opaque 404 with %s", async (_label, headers) => {

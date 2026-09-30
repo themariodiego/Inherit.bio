@@ -45,9 +45,11 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * (api.future-person-claim-complete) with the stored mode and the two
  * received document ids; the page then shows that the claim was received.
  */
-export function ClaimDocuments({ nonce, completeNonce, mode }: {
+export function ClaimDocuments({ nonce, completeNonce, mode, documentCsrf, completeCsrf }: {
   nonce: string;
   completeNonce: string;
+  documentCsrf: string;
+  completeCsrf: string;
   mode: "record-key" | "claimant-recovery-key" | "keyless";
 }) {
   const router = useRouter();
@@ -74,7 +76,7 @@ export function ClaimDocuments({ nonce, completeNonce, mode }: {
       const opened = await fetch("/api/future-person/claim/session/documents", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-inherit-csrf": documentCsrf },
         body: JSON.stringify({ documentKind: kind, mediaType, sizeBytes: bytes.length, sha256, nonce }),
       });
       router.refresh();
@@ -131,7 +133,7 @@ export function ClaimDocuments({ nonce, completeNonce, mode }: {
       const sent = await fetch("/api/future-person/claim/session/complete", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-inherit-csrf": completeCsrf },
         body: JSON.stringify({
           mode,
           photoIdentityDocumentId: received["future-photo-identity"],

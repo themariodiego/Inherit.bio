@@ -7800,6 +7800,29 @@ export type Database = {
         Args: { p_session_hash: string }
         Returns: Json
       }
+      open_claim_review_receipt_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_nonce_hash: string }
+        Returns: Json
+      }
+      prepare_claim_review_chunk_receipt_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_sequence: number; p_expected_proof: string }
+        Returns: undefined
+      }
+      acknowledge_claim_review_chunk_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_sequence: number; p_proof: string; p_nonce_hash: string }
+        Returns: undefined
+      }
+      complete_future_person_claim_rotated_v1: {
+        Args: { p_birth_record_document_id: string; p_mode: string; p_nonce_hash: string;
+          p_photo_document_id: string; p_session_hash: string; p_successor_session_hash: string }
+        Returns: Json
+      }
+      open_claim_document_session_rotated_v1: {
+        Args: { p_claim_session_hash: string; p_successor_claim_session_hash: string; p_cookie_hash: string;
+          p_create_nonce_hash: string; p_document_kind: string; p_media_type: string;
+          p_sha256: string; p_size_bytes: number }
+        Returns: Json
+      }
       complete_future_person_claim_v1: {
         Args: {
           p_birth_record_document_id: string

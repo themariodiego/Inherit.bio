@@ -13,7 +13,7 @@ import {
   SUBMITTED_BODY,
   SUBMITTED_HEADING,
 } from "@/copy/rights/future-person-claim";
-import { CLAIM_FORM_TOKEN_HEADER, CLAIM_SESSION_COOKIE, sha256Hex } from "@/lib/future-person/claim-session";
+import { CLAIM_FORM_TOKEN_HEADER, CLAIM_SESSION_COOKIE, claimMutationCsrf, sha256Hex } from "@/lib/future-person/claim-session";
 import { mintClaimCompleteNonce, mintClaimDocumentNonce } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
@@ -39,7 +39,7 @@ export const metadata: Metadata = { title: "Claim a future-person record" };
  * that it was received. The only thing read is that status.
  */
 type ClaimStatus =
-  | { status: "live"; mode: "record-key" | "claimant-recovery-key" | "keyless"; documentNonce: string; completeNonce: string }
+  | { status: "live"; mode: "record-key" | "claimant-recovery-key" | "keyless"; documentNonce: string; completeNonce: string; documentCsrf: string; completeCsrf: string }
   | { status: "completed" }
   | null;
 
@@ -54,7 +54,9 @@ async function claimStatus(): Promise<ClaimStatus> {
   if (error || !value) return null;
   if (value.status === "completed") return { status: "completed" };
   if (value.status === "live" && (value.mode === "record-key" || value.mode === "claimant-recovery-key" || value.mode === "keyless")) {
-    return { status: "live", mode: value.mode, documentNonce, completeNonce };
+    return { status: "live", mode: value.mode, documentNonce, completeNonce,
+      documentCsrf: claimMutationCsrf(sha256Hex(secret), "documents", documentNonce),
+      completeCsrf: claimMutationCsrf(sha256Hex(secret), "complete", completeNonce) };
   }
   return null;
 }
@@ -89,7 +91,8 @@ export default async function FuturePersonClaimPage() {
       ) : claim?.status === "live" ? (
         <div className="mt-8 space-y-4">
           <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
-          <ClaimDocuments nonce={claim.documentNonce} completeNonce={claim.completeNonce} mode={claim.mode} />
+          <ClaimDocuments nonce={claim.documentNonce} completeNonce={claim.completeNonce} mode={claim.mode}
+            documentCsrf={claim.documentCsrf} completeCsrf={claim.completeCsrf} />
         </div>
       ) : open && formToken ? (
         <div className="mt-8 space-y-4">

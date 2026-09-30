@@ -2,7 +2,7 @@ import { z } from "zod";
 import { closedResponse } from "@/lib/embryos/guards";
 import { notFound, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
-import { sha256Hex } from "@/lib/future-person/claim-session";
+import { claimMutationCsrfMatches, newClaimSessionRotation, sha256Hex } from "@/lib/future-person/claim-session";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimSessionHash, readClaimCompleteNonce } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -57,16 +57,23 @@ async function complete(request: Request): Promise<Response> {
   const parsed = body.safeParse(await readBoundedJson(request, 4096));
   if (!parsed.success) return notFound();
   const nonce = readClaimCompleteNonce(parsed.data.nonce, claimHash);
-  if (!nonce) return notFound();
+  if (!nonce || !claimMutationCsrfMatches(request.headers.get("x-inherit-csrf"), claimHash, "complete", parsed.data.nonce)) return notFound();
 
-  const { data, error } = await createAdminClient().rpc("complete_future_person_claim_v1", {
+  const successor = newClaimSessionRotation();
+  const { data, error } = await createAdminClient().rpc("complete_future_person_claim_rotated_v1", {
     p_session_hash: claimHash,
+    p_successor_session_hash: successor.sessionHash,
     p_nonce_hash: sha256Hex(nonce),
     p_mode: parsed.data.mode,
     p_photo_document_id: parsed.data.photoIdentityDocumentId,
     p_birth_record_document_id: parsed.data.birthRecordDocumentId,
   });
   if (error) return ["42501", "23505", "22023"].includes(error.code ?? "") ? notFound() : unavailable();
-  if (data !== "received") return unavailable();
-  return closedResponse("api.future-person-claim-complete", RECEIVED_KEYS, { status: "received" }, 202);
+  const accepted = data as { status?: unknown; expiresAt?: unknown } | null;
+  if (accepted?.status !== "received" || typeof accepted.expiresAt !== "string") return unavailable();
+  const expiry = new Date(accepted.expiresAt);
+  if (Number.isNaN(expiry.getTime())) return unavailable();
+  const response = await closedResponse("api.future-person-claim-complete", RECEIVED_KEYS, { status: "received" }, 202);
+  if (response.status === 202) response.headers.append("Set-Cookie", successor.setCookie(expiry));
+  return response;
 }

@@ -5,6 +5,7 @@ import { supabaseClaimObjectStore } from "@/lib/future-person/claim-objects";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimDataKey, openDocumentBytes } from "@/lib/future-person/document-envelope";
 import { CHUNK_BYTES, downloadCookieHash, isCanonicalId } from "@/lib/future-person/review";
+import { chunkReceiptProof } from "@/lib/future-person/review-receipt";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,7 +47,7 @@ async function chunk(request: Request, session: string, sequence: string): Promi
     p_session_id: session, p_cookie_hash: cookieHash, p_sequence: Number(sequence),
   });
   if (error) return error.code === "42501" ? notFound() : unavailable();
-  const grant = data as { objectKey?: unknown; sha256?: unknown; byteCount?: unknown; wrappedDataKey?: unknown } | null;
+  const grant = data as { objectKey?: unknown; sha256?: unknown; byteCount?: unknown; wrappedDataKey?: unknown; receiptChallenge?: unknown } | null;
   if (!grant || typeof grant.objectKey !== "string" || typeof grant.sha256 !== "string"
     || typeof grant.byteCount !== "number" || typeof grant.wrappedDataKey !== "string") {
     return unavailable();
@@ -58,9 +59,17 @@ async function chunk(request: Request, session: string, sequence: string): Promi
   } catch {
     return unavailable();
   }
-  const key = claimDataKey(grant.wrappedDataKey);
-  const bytes = openDocumentBytes(key, grant.objectKey, sealed);
-  key.fill(0);
+  let bytes: Buffer | null;
+  let key: Buffer | undefined;
+  try {
+    key = claimDataKey(grant.wrappedDataKey);
+    bytes = openDocumentBytes(key, grant.objectKey, sealed);
+  } catch {
+    return unavailable();
+  } finally {
+    key?.fill(0);
+    sealed.fill(0);
+  }
   try {
     if (!bytes || bytes.length !== grant.byteCount
       || crypto.createHash("sha256").update(bytes).digest("hex") !== grant.sha256) {
@@ -69,6 +78,21 @@ async function chunk(request: Request, session: string, sequence: string): Promi
     const start = Number(sequence) * CHUNK_BYTES;
     const part = Buffer.from(bytes.subarray(start, Math.min(start + CHUNK_BYTES, bytes.length)));
     if (part.length === 0) return notFound();
+    if (typeof grant.receiptChallenge === "string") {
+      const { error } = await createAdminClient().rpc("prepare_claim_review_chunk_receipt_v1", {
+        p_session_id: session, p_cookie_hash: cookieHash, p_sequence: Number(sequence),
+        p_expected_proof: chunkReceiptProof(grant.receiptChallenge, part),
+      });
+      if (error) { part.fill(0); return error.code === "42501" ? notFound() : unavailable(); }
+    }
+    // Revocation during the Storage read/decryption must still stop delivery.
+    const { data: current, error: revoked } = await supabase.rpc("authorize_claim_review_chunk_v1", {
+      p_session_id:session,p_cookie_hash:cookieHash,p_sequence:Number(sequence),
+    });
+    if (revoked || (current as { sha256?: unknown } | null)?.sha256 !== grant.sha256) {
+      part.fill(0);
+      return revoked?.code === "42501" ? notFound() : unavailable();
+    }
     return new Response(new Uint8Array(part), {
       status: 200,
       headers: {

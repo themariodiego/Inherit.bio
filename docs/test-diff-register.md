@@ -1,5 +1,9 @@
 # Test diff register
 
+## Claim rotation and complete reviewer byte receipts · 30 September 2026
+
+Claim document creation and completion now require a distinct cookie-bound CSRF value and atomically rotate the claimant credential without extending its original deadline. New refusal cases cover old cookies, crossed operations and reused page material. Reviewer Storage authorization no longer counts as document delivery. The registered receipt POST issues challenges and distinct chunk nonces; only service-verified exact bytes can prepare an expected proof. Every accepted acknowledgement rechecks current reviewer authority and consumes its nonce once. Partial, canceled, corrupt, crossed or unacknowledged delivery cannot satisfy the decision gate. Full document size and SHA-256 remain pinned, and raw chunk GET bodies and headers remain unchanged. The two ephemeral receipt stores have explicit export exclusions and increase the exact purge inventory from 138 to 140.
+
 ## Named claim review reconciled and its authority strengthened · 30 September 2026
 
 The review working packages add exactly five purge stores, so the contract

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { closedResponse } from "@/lib/embryos/guards";
 import { notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
-import { sha256Hex } from "@/lib/future-person/claim-session";
+import { claimMutationCsrfMatches, newClaimSessionRotation, sha256Hex } from "@/lib/future-person/claim-session";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import {
   EVIDENCE_COMPLETE_NONCE_HEADER,
@@ -82,11 +82,13 @@ async function open(request: Request): Promise<Response> {
   const parsed = body.safeParse(await readBoundedJson(request, 4096));
   if (!parsed.success) return notFound();
   const nonce = readClaimDocumentNonce(parsed.data.nonce, claimHash);
-  if (!nonce) return notFound();
+  if (!nonce || !claimMutationCsrfMatches(request.headers.get("x-inherit-csrf"), claimHash, "documents", parsed.data.nonce)) return notFound();
 
   const evidence = newEvidenceSecret();
-  const { data, error } = await createAdminClient().rpc("open_claim_document_session_v1", {
+  const successor = newClaimSessionRotation();
+  const { data, error } = await createAdminClient().rpc("open_claim_document_session_rotated_v1", {
     p_claim_session_hash: claimHash,
+    p_successor_claim_session_hash: successor.sessionHash,
     p_create_nonce_hash: sha256Hex(nonce),
     p_document_kind: parsed.data.documentKind,
     p_media_type: parsed.data.mediaType,
@@ -116,6 +118,7 @@ async function open(request: Request): Promise<Response> {
   }, 201);
   if (response.status !== 201) return response;
   response.headers.append("Set-Cookie", evidenceCookie(evidence.secret, expiresAt));
+  response.headers.append("Set-Cookie", successor.setCookie(expiresAt));
   response.headers.set(EVIDENCE_CSRF_HEADER, evidenceCsrf(id, evidence.hash));
   response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
   return response;

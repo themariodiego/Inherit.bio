@@ -16,6 +16,7 @@ import {
   reviewDecisionBody,
   sealReason,
 } from "@/lib/future-person/review";
+import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -68,6 +69,8 @@ async function read(request: Request, id: string): Promise<Response> {
   return sensitiveJson(body, 200, {
     [REVIEW_CSRF_HEADER]: reviewCsrf(id, account.user.id, account.sessionId),
     [REVIEW_NONCE_HEADER]: mintReviewNonce(id, account.user.id, account.sessionId),
+    "x-inherit-photo-receipt-nonce": mintReceiptOpenNonce(String((body.evidence as Record<string, unknown>).photoIdentityDocumentId), account.user.id, account.sessionId),
+    "x-inherit-birth-receipt-nonce": mintReceiptOpenNonce(String((body.evidence as Record<string, unknown>).birthRecordDocumentId), account.user.id, account.sessionId),
   });
 }
 
