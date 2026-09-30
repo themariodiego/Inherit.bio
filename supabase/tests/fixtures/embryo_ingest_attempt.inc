@@ -59,7 +59,16 @@ begin
     v_tries:=v_tries+1;
     if v_tries>10 then raise exception 'fixture invitation not claimable'; end if;
     select * into v_mail from public.claim_mail_outbox();
-    if not found then raise exception 'fixture invitation not claimable'; end if;
+    if not found then
+      -- Keep this refusal strict. Synthetic state flags distinguish queue
+      -- readiness from a revoked authority without leaking contact/token data.
+      raise exception 'fixture invitation not claimable: %', (
+        select jsonb_agg(jsonb_build_object('state',m.state,'outcome',m.last_outcome_code,
+          'due',m.not_before<=clock_timestamp(),'unexpired',m.expires_at>clock_timestamp(),
+          'invitationCurrent',private.invitation_mail_current_v1(m),
+          'attemptCount',m.attempt_count))
+        from public.mail_outbox m where m.target_id=v_invitation);
+    end if;
     exit when exists(select 1 from public.mail_outbox where id=v_mail.outbox_id and target_id=v_invitation);
   end loop;
   v_token_hash:=encode(extensions.digest(convert_to(v_mail.delivery_token,'UTF8'),'sha256'),'hex');
