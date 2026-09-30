@@ -1293,7 +1293,7 @@ create temporary table export_member_plan as select $plan$
     },
     "public.subjects": {
       "disposition": "exported",
-      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account.",
+      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account. Claimant authority, verified-age timing and the analysis-stop control are withheld until their separate typed Future Person projection is implemented.",
       "scope": "subject_account_id = the requesting account (synchronous); the captured partitions, which are the same subjects (reader).",
       "members": [
         "archive:subject-record.json",
@@ -1315,7 +1315,10 @@ create temporary table export_member_plan as select $plan$
       ],
       "withheld": [
         "owner_account_id",
-        "cohort_id"
+        "cohort_id",
+        "claimant_principal_id",
+        "earliest_claim_at",
+        "analysis_stopped_at"
       ]
     },
     "public.suppressions": {
