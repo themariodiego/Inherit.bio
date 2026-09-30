@@ -138,6 +138,10 @@
       "why": "The account-deletion purge groups a database manifest by bucketId and removes each group. Same limitation, same database allowlist."
     },
     {
+      "site": "(database-selected) src/lib/exports/archive-segment-read-storage.ts",
+      "why": "Measured 2026-10-01: the bounded archive reader uses the closed imported ARCHIVE_BUCKET constant, classified as database-selected by the static scanner. Whole-object GET and SDK metadata reads verify the same exact durable descriptor, version and ETag before and after EOF; the bounded outer reader additionally verifies length, digest and current authority. The REST info segment is a metadata operation, not another bucket. This adapter does not establish READY publication, provider cleanup or a new backend contract."
+    },
+    {
       "site": "(database-selected) src/lib/exports/archive-segment-storage.ts",
       "why": "The static scanner classifies the nonliteral ARCHIVE_BUCKET argument as database-selected. The imported constant and closed attempt validator permit only exports. This create-only byte adapter is not yet wired to a route or worker; it requires exact server-owned reservation keys and does not establish database authorization or provider cleanup."
     },
