@@ -3,8 +3,8 @@
 ## Publication fixture capacity and combined purge inventory · 30 September 2026
 
 `supabase/tests/embryo_publication_dates.sql` now configures the four own-upload
-capacity fields before reading the synthetic parent's allowance. The embryo
-fixture configures a different capacity and left these fields unset, so the
+capacity row and its four limits before reading the synthetic parent's allowance.
+The embryo fixture configures a different capacity and left this row absent, so the
 reader correctly raised `upload_unavailable` before publication assertions
 could run. The setup is transaction-local; every existing assertion remains.
 

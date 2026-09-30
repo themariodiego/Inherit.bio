@@ -5,10 +5,16 @@ select no_plan();
 -- The completed-embryo fixture configures embryo capacity only. The own-file
 -- allowance reader also needs an explicit, complete deployment capacity.
 -- These synthetic limits exist only inside this rollback-only transaction.
-update private.upload_authorization_config
-  set maximum_array_bytes=52428800, maximum_vcf_bytes=25165824,
-    maximum_account_bytes=134217728, maximum_active_uploads=2
-  where singleton;
+insert into private.upload_authorization_config (
+  singleton, auth_issuer, maximum_array_bytes, maximum_vcf_bytes,
+  maximum_account_bytes, maximum_active_uploads
+) values (true, 'http://127.0.0.1:54321/auth/v1', 52428800, 25165824,
+  134217728, 2)
+on conflict (singleton) do update
+  set maximum_array_bytes=excluded.maximum_array_bytes,
+    maximum_vcf_bytes=excluded.maximum_vcf_bytes,
+    maximum_account_bytes=excluded.maximum_account_bytes,
+    maximum_active_uploads=excluded.maximum_active_uploads;
 
 -- Retire every other split job inside this transaction so the claim is ours.
 update public.worker_jobs set status='cancelled',finished_at=clock_timestamp(),claim_token_hash=null,
