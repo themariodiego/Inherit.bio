@@ -129,8 +129,7 @@ insert into public.purpose_grant_nonces(nonce_hash,account_id) values
  (repeat('8',64),'79400000-0000-4000-8000-000000000001');
 create temporary table nonce_before as select * from public.purpose_grant_nonces;
 set local role service_role;
-select public.issue_account_operation_nonce_v1('79400000-0000-4000-8000-000000000001','79400000-0000-4000-8000-000000000010','account_delete',repeat('f',64),clock_timestamp()+interval '9 minutes');
-create temporary table deletion as select * from public.request_account_deletion_v1('79400000-0000-4000-8000-000000000001','79400000-0000-4000-8000-000000000010',repeat('f',64),decode(repeat('ab',40),'hex'),repeat('e',64),repeat('d',64));
+create temporary table deletion as select * from public.request_account_deletion_v2('79400000-0000-4000-8000-000000000001','79400000-0000-4000-8000-000000000010',repeat('f',64),clock_timestamp()+interval '9 minutes',decode(repeat('ab',40),'hex'),repeat('e',64),repeat('d',64));
 select is((select count(*) from public.purpose_grant_nonces where account_id='79400000-0000-4000-8000-000000000001'),2::bigint,'notice leaves linked and unbound nonce records intact');
 with deadline as (select clock_timestamp()-interval '8 days' requested_at)
 update public.account_deletion_requests set requested_at=deadline.requested_at,notice_ends_at=deadline.requested_at+interval '7 days' from deadline where account_id='79400000-0000-4000-8000-000000000001';

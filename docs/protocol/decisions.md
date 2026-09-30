@@ -4460,3 +4460,23 @@ nothing opens in production.
 - **A claim document being scanned answers `202 {"status":"scanning"}`.**
   `evidence-complete-v1` gains that interim answer beside `201
   review_pending`. Holding the request open until the verdict was declined.
+
+## 2026-09-30 — Full browser verification on the fresh CI runner
+
+Asked in chat with the recommended choice first. The owner chose
+"Use the full CI browser suite" for the reviewed account-deletion and
+embryo draft branches.
+
+- Local type checks, lint, the full unit suite, all ten gates and fresh-database
+  pgTAP must pass before a draft branch is pushed.
+- The repository's unchanged full browser suite runs on its disposable CI
+  runner, replacing the pre-push local browser run for these branches. No
+  test, assertion, selector, retry or runtime boundary is weakened.
+- Guarded production changes and merges still wait for green CI on the exact
+  reviewed head. Two-phase nonce migrations retain their before/after deploy
+  order.
+
+Reason: the isolated browser runner requires the actual GitHub-hosted
+disposable environment. The local checks now run successfully, including the
+strict inference isolation assertions in Linux. The owner chose the existing
+fresh CI proof rather than additional local browser infrastructure.
