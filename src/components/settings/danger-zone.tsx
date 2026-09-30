@@ -1,27 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-interface ActiveState {
-  status: "active";
-  operationNonce: string;
-}
-
-interface NoticeState {
-  status: "notice_period";
-  noticeEndsAt: string;
-  operationNonce: string;
-}
-
-type DeletionState = ActiveState | NoticeState;
-
-interface LoadedState {
-  state: DeletionState | null;
-  error: string | null;
-}
+import type { DeletionControlState } from "@/lib/account-deletion-state";
 
 const errorCopy: Record<string, string> = {
   recent_reauthentication_required:
@@ -33,106 +17,72 @@ const errorCopy: Record<string, string> = {
     "The notice period has ended and deletion can no longer be cancelled.",
 };
 
-async function fetchDeletionState(): Promise<LoadedState> {
-  const response = await fetch("/api/account/delete", {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  });
-  const body = (await response.json().catch(() => null)) as
-    | (DeletionState & { error?: string })
-    | null;
-  if (!response.ok || !body) {
-    const code = body?.error ?? "account_deletion_failed";
-    return {
-      state: null,
-      error: errorCopy[code] ?? "Account deletion controls are unavailable.",
-    };
-  }
-  return { state: body, error: null };
-}
-
-export function DangerZone() {
+/**
+ * The page renders the deletion state and the one-time operation nonce
+ * (brief X1.5), so this component fetches nothing to start. After each POST
+ * it asks the page to render again, which brings the new state and a fresh
+ * nonce; nothing here stores or rotates one.
+ */
+export function DangerZone({ deletion }: { deletion: DeletionControlState | null }) {
+  const router = useRouter();
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [state, setState] = useState<DeletionState | null>(null);
+  const [error, setError] = useState<string | null>(
+    deletion ? null : "Account deletion controls are unavailable.",
+  );
 
-  useEffect(() => {
-    let ignore = false;
-    void fetchDeletionState().then((loaded) => {
-      if (ignore) return;
-      setState(loaded.state);
-      setError(loaded.error);
-    });
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  async function refresh() {
-    const loaded = await fetchDeletionState();
-    setState(loaded.state);
-    setError(loaded.error);
-  }
-
-  async function requestDeletion() {
-    if (!state || state.status !== "active") return;
+  async function submit(
+    path: string,
+    confirmation: string,
+    succeeded: (body: { status?: string; noticeEndsAt?: string } | null) => boolean,
+    failure: string,
+  ) {
+    if (!deletion) return;
     setBusy(true);
     setError(null);
-    const response = await fetch("/api/account/delete", {
+    const response = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        confirmation: "account.delete.confirmation",
-        nonce: state.operationNonce,
-      }),
+      body: JSON.stringify({ confirmation, nonce: deletion.operationNonce }),
     });
     const body = (await response.json().catch(() => null)) as
       | { status?: string; noticeEndsAt?: string; error?: string }
       | null;
-    if (!response.ok || body?.status !== "notice_period" || !body.noticeEndsAt) {
+    if (!response.ok || !succeeded(body)) {
       const code = body?.error ?? "account_deletion_failed";
-      setError(errorCopy[code] ?? "The deletion request could not be scheduled.");
-      setBusy(false);
-      await refresh();
-      return;
-    }
-    setConfirm("");
-    setBusy(false);
-    await refresh();
-  }
-
-  async function cancelDeletion() {
-    if (!state || state.status !== "notice_period") return;
-    setBusy(true);
-    setError(null);
-    const response = await fetch("/api/account/delete/cancel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        confirmation: "account.delete.cancel-confirmation",
-        nonce: state.operationNonce,
-      }),
-    });
-    const body = (await response.json().catch(() => null)) as
-      | { status?: string; error?: string }
-      | null;
-    if (!response.ok || body?.status !== "active") {
-      const code = body?.error ?? "account_deletion_failed";
-      setError(errorCopy[code] ?? "The deletion request could not be cancelled.");
-      setBusy(false);
-      await refresh();
-      return;
+      setError(errorCopy[code] ?? failure);
+    } else {
+      setConfirm("");
     }
     setBusy(false);
-    await refresh();
+    router.refresh();
   }
 
-  if (state?.status === "notice_period") {
+  function requestDeletion() {
+    if (deletion?.status !== "active") return;
+    void submit(
+      "/api/account/delete",
+      "account.delete.confirmation",
+      (body) => body?.status === "notice_period" && Boolean(body.noticeEndsAt),
+      "The deletion request could not be scheduled.",
+    );
+  }
+
+  function cancelDeletion() {
+    if (deletion?.status !== "notice_period") return;
+    void submit(
+      "/api/account/delete/cancel",
+      "account.delete.cancel-confirmation",
+      (body) => body?.status === "active",
+      "The deletion request could not be cancelled.",
+    );
+  }
+
+  if (deletion?.status === "notice_period") {
     const deadline = new Intl.DateTimeFormat(undefined, {
       dateStyle: "long",
       timeStyle: "short",
-    }).format(new Date(state.noticeEndsAt));
+    }).format(new Date(deletion.noticeEndsAt));
     return (
       <div className="space-y-3 rounded-2xl border border-danger/40 p-5">
         <h3 className="font-medium">Account deletion scheduled</h3>
@@ -177,7 +127,7 @@ export function DangerZone() {
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       <Button
         variant="destructive"
-        disabled={confirm !== "delete my genome" || busy || !state}
+        disabled={confirm !== "delete my genome" || busy || !deletion}
         data-testid="delete-account"
         onClick={requestDeletion}
       >

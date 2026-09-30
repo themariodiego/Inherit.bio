@@ -48,18 +48,11 @@ select '74000000-0000-0000-0000-000000000023',
 from public.family_pairs fp
 where fp.id = '74000000-0000-0000-0000-000000000022';
 
-select public.issue_account_operation_nonce_v1(
-  '74000000-0000-0000-0000-000000000001',
-  '74000000-0000-4000-8000-000000000010',
-  'account_delete', repeat('1', 64),
-  clock_timestamp() + interval '10 minutes'
-);
-
 create temporary table purge_request as
-select * from public.request_account_deletion_v1(
+select * from public.request_account_deletion_v2(
   '74000000-0000-0000-0000-000000000001',
   '74000000-0000-4000-8000-000000000010',
-  repeat('1', 64), decode('0011223344556677', 'hex'), repeat('2', 64),
+  repeat('1', 64), clock_timestamp() + interval '10 minutes', decode('0011223344556677', 'hex'), repeat('2', 64),
   repeat('3', 64)
 );
 
