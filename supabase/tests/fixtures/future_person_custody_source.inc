@@ -46,14 +46,20 @@ select is(public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.t
   pg_temp.outcome('qc_fail_no_source','fail',0))->>'outcome','qc_fail_no_source','embryo 2 fails QC');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,pg_temp.token(),2,
   pg_temp.outcome('passed','marginal',1))->>'outcome','passed','embryo 3 is marginal');
+-- Publication consumes its attempt-owned ordinals; capture only their genuine
+-- saved receipts before the transaction, as the core publication suite does.
+create temporary table custody_fixture_qc_receipts as
+  select sample_ordinal,figure_basis from private.embryo_split_ordinals where session_id=(select id from live);
 select is(public.publish_embryo_split_v1((select id from job),1,pg_temp.token())->>'status','published',
   'the cohort publishes two sources');
 select ok((select count(*)=3 and bool_and(q.figure_basis=pg_temp.qc_receipt(q.autosomal_het_rate,q.mean_depth)
   and q.figure_basis=o.figure_basis)
   from public.embryo_qc q join public.embryos e on e.id=q.embryo_id
-  join private.embryo_split_ordinals o on o.session_id=(select id from live) and o.sample_ordinal=e.sample_ordinal
+  join custody_fixture_qc_receipts o on o.sample_ordinal=e.sample_ordinal
   where e.cohort_id=(select cohort_id from live)),
   'all three newly produced custody QC rows preserve their exact current ordinal receipts');
+select is((select count(*) from private.embryo_split_ordinals where session_id=(select id from live)),0::bigint,
+  'successful custody source publication removes every consumed attempt ordinal');
 create temporary table sources as select x.file_id, x.embryo_id, x.subject_id from private.embryo_canonical_sources x
   where x.cohort_id=(select cohort_id from live);
 create temporary table source_parts as select m.part_id id, p.provider_bucket||'/'||p.provider_key object
