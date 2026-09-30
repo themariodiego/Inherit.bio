@@ -7855,6 +7855,7 @@ export type Database = {
       future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
       issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
       stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
+      purge_due_future_person_contacts_v1:{Args:Record<PropertyKey,never>;Returns:number}
       decide_claim_review_attested_v1: {
         Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
           p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;p_parent_link_confirmed:boolean;

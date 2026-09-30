@@ -1,5 +1,5 @@
 begin;
-select plan(95);
+select plan(96);
 -- The Future Person claim review, up to the release decision: completion,
 -- the case the server resolves, the named reviewer's step-up MFA and
 -- assignment, audited reads, decisions bound to the exact documents'
@@ -365,6 +365,9 @@ select throws_ok($$select public.read_claim_review_case_v1((select id from rv))$
 select throws_ok($$select public.authorize_claim_review_chunk_v1((select (photo->>'session')::uuid from dl),
   (select photo_cookie from ids), 0)$$, '42501', null, 'nor are its documents');
 reset role;
+select ok((select mode='keyless-start' and key_hash is null and octet_length(wrapped_data_key)=29
+  and octet_length(identity_ciphertext)=29 from private.future_person_claim_intakes where id=(select id from rv)),
+  'final refusal crypto-shreds working fields while preserving the required keyless null key');
 select ok(not exists (select 1 from private.claim_document_review_object_v1((select photo from docs_a))),
   'the read gate returns nothing for a refused case');
 select is((select coded_context from public.legal_audit_log where event_code = 'claim.resolved'

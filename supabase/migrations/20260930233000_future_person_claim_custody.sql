@@ -669,7 +669,7 @@ begin
   end if;
 
   if v_outbox.token_purpose='approved-future-person-release' then
-    select * into v_candidate from public.token_candidates where outbox_id=v_outbox.id for update;
+    select tc.* into v_candidate from public.token_candidates tc where tc.outbox_id=v_outbox.id for update;
     if v_candidate.id is null or not private.future_person_release_current_v1(v_candidate.id) then return; end if;
     v_raw_token:=rtrim(translate(encode(extensions.gen_random_bytes(32),'base64'),'+/','-_'),'=');
     v_token_hash:=encode(extensions.digest(convert_to(v_raw_token,'UTF8'),'sha256'),'hex');
@@ -841,7 +841,8 @@ begin
  if not exists(select 1 from private.claim_reviews where id=p_review and state in('refused','closed')
    and resolved_at is not null) then raise exception using errcode='42501',message='claim review unavailable';end if;
  update private.future_person_claim_intakes set identity_ciphertext=extensions.gen_random_bytes(29),
-   wrapped_data_key=extensions.gen_random_bytes(29),key_hash=encode(extensions.gen_random_bytes(32),'hex'),
+   wrapped_data_key=extensions.gen_random_bytes(29),
+   key_hash=case when mode='keyless-start' then null else encode(extensions.gen_random_bytes(32),'hex') end,
    identifier_hmac=encode(extensions.gen_random_bytes(32),'hex'),network_hmac=encode(extensions.gen_random_bytes(32),'hex')
  where id=p_review;
  update private.claim_review_decisions set reason_ciphertext=extensions.gen_random_bytes(29),
@@ -966,6 +967,44 @@ $$;
 insert into private.rights_session_purposes(session_purpose,matrix_purpose,invitation_kind,target_kind)
 values('approved-future-person-release','approved-future-person-release',null,'claimed-subject');
 
+-- A newly registered purpose does not turn another issuer's hash into claimant
+-- authority. The release executor inserts while its exact token is current,
+-- then consumes the token and credential in the same transaction.
+create or replace function private.assert_rights_session_purpose_v1()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if not exists(select 1 from private.rights_session_purposes p
+   where p.session_purpose=new.purpose and p.target_kind=new.target_kind) then
+   raise exception using errcode='42501',message='rights purpose unavailable';
+ end if;
+ if tg_op='UPDATE' and old.purpose='approved-future-person-release'
+   and (new.token_hash_id,new.principal_id,new.purpose,new.target_kind,new.target_id,new.authority_revision)
+     is distinct from
+       (old.token_hash_id,old.principal_id,old.purpose,old.target_kind,old.target_id,old.authority_revision) then
+   raise exception using errcode='42501',message='rights purpose unavailable';
+ end if;
+ if new.purpose='approved-future-person-release' and
+   (tg_op='INSERT' or old.purpose is distinct from new.purpose) and not exists(
+     select 1 from public.token_hashes h
+     join public.future_person_claim_release_credentials r on r.candidate_id=h.candidate_id
+       and r.credential_hash=h.token_hash and r.status='current' and r.expires_at>clock_timestamp()
+     join public.future_person_claimant_principals cp on cp.id=r.claimant_principal_id
+       and cp.principal_id=new.principal_id and cp.release_revision=new.authority_revision
+       and cp.release_revision=r.credential_revision
+     where h.id=new.token_hash_id and h.status='current' and h.expires_at>clock_timestamp()
+       and r.subject_id=new.target_id and new.status='active'
+       and new.expires_at>clock_timestamp() and new.expires_at<=r.expires_at
+       and new.expires_at<=h.expires_at and new.expires_at<=new.created_at+interval '60 minutes'
+       and private.future_person_release_current_v1(h.candidate_id)
+   ) then raise exception using errcode='42501',message='rights purpose unavailable';end if;
+ return new;
+end $$;
+revoke all on function private.assert_rights_session_purpose_v1() from public,anon,authenticated,service_role;
+drop trigger rights_sessions_registered_purpose on public.rights_sessions;
+create trigger rights_sessions_registered_purpose before insert or update of
+ token_hash_id,principal_id,purpose,target_kind,target_id,authority_revision on public.rights_sessions
+ for each row execute function private.assert_rights_session_purpose_v1();
+
 -- Existing invitation and withdrawal activation branches remain exact.
 create or replace function public.activate_rights_session_v1(
   p_token_hash text,
@@ -1029,9 +1068,9 @@ begin
     if v_release.id is null then return; end if;
     v_expires_at:=least(v_now+interval '60 minutes',v_release.expires_at);
     insert into public.rights_sessions(token_hash_id,principal_id,purpose,target_kind,target_id,
-      authority_revision,session_hash,status,expires_at)
+      authority_revision,session_hash,status,expires_at,created_at)
     select v_token.id,c.principal_id,'approved-future-person-release','claimed-subject',v_release.subject_id,
-      c.release_revision,p_session_hash,'active',v_expires_at
+      c.release_revision,p_session_hash,'active',v_expires_at,v_now
     from public.future_person_claimant_principals c where c.id=v_release.claimant_principal_id;
     update public.token_hashes set status='consumed',ended_at=v_now where id=v_token.id;
     update public.future_person_claim_release_credentials set status='consumed' where id=v_release.id;

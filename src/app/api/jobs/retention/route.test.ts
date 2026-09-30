@@ -46,6 +46,25 @@ const run = () => POST(new Request("http://localhost/api/jobs/retention", {
 describe("independent retention queues", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 
+  it.each(["returned","thrown"])("keeps temporary claimant contact cleanup independent when its failure is %s",async(failure)=>{
+    vi.stubEnv("JOBS_SECRET","test-job-secret");idleExceptStranded([]);
+    const baseline=mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async(name:string,...args:unknown[])=>{
+      if(name==="purge_due_future_person_contacts_v1") {
+        if(failure==="thrown")throw new Error("synthetic transport failure");
+        return {data:null,error:{code:"synthetic"}};
+      }
+      return baseline(name,...args);
+    });
+    const response=await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({status:"complete",outcome:"completed_with_failures"});
+    expect(mocks.rpc.mock.calls.filter(call=>call[0]==="purge_due_future_person_contacts_v1")).toEqual([["purge_due_future_person_contacts_v1"]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_adult_subject_invitations_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1",expect.any(Object));
+  });
+
   it("continues invitation, draft and account retention when terminal-contact expiry fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
