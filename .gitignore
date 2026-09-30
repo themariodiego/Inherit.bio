@@ -48,6 +48,7 @@ worker/node_modules
 # playwright
 /test-results
 /playwright-report
+/public/review-document-assets/
 
 # ancestry-resolution research byproducts
 # Reference allele frequencies fetched at run time, and the rows a measurement

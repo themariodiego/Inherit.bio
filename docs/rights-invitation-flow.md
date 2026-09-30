@@ -195,6 +195,14 @@ tables are left alone: the first requires an embryo id, and the second hangs
 off `public.future_person_claims`, which does too. A public claim must never
 learn one.
 
+## Local reviewer document display contract · 30 September 2026
+
+The named-reviewer page is `/reviews/future-person/claims/[id]`. A current own-JWT named assignment and recent MFA are required before it renders a case, and its fresh browser GET rechecks that authority. A complete document is fetched through the existing closed raw chunk GET bodies and headers, with the declared whole size and SHA-256 checked before any acknowledgement. Each authorized download-session POST issues its own exact session/chunk/digest proof; GET creates no operation nonce, challenge or read receipt. Service preparation of the proof remains inaccessible to the reviewer JWT. The reviewer's replay-safe acknowledgement rechecks current authority and is distinct from the explicit human read and documentary attestation.
+
+Byte receipt alone does not enable the human read confirmation. PNG and JPG must decode successfully in a native image. PDFs use local pinned PDF.js 6.3.289 in a dedicated worker, rendering only to canvas. There is no annotation HTML, active link, scripting manager or remote document URL, and document-selected asset names cannot leave the exact packaged local filename/size inventory. Every full PDF page must successfully render before the separate human checkbox appears. Previous/next page and 1–3-times page size controls retain the entire page in a scrollable view. Each loading, asset-read or page-render step is bounded to 20 seconds; documents over 200 pages or a page canvas above 16 million pixels are refused as a whole, with no read confirmation. Errors, cancellation and decision completion terminate the worker and clear the document view. These display bounds do not change the registered 20-million-byte upload limit or the PNG/JPG/PDF type support.
+
+The real loopback renderer check proves exact nonblank pages and inert planted links/actions without app or database access. The two full application journeys are authored with their correct complete/processing route titles and remain unexecuted until full CI passes. No G5.4 acceptance row is changed. Release of export, binding, correction, claimant deletion and recovery/keyless notice transfer remains closed pending implementation and verification.
+
 ## Release receipt (2026-09-06)
 
 Exact reviewed head `98ee24bd938b0a9475b529c1cea544008a7170a0` passed full CI

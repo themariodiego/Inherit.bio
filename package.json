@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "tsx scripts/prepare-review-pdf-assets.mts && next dev",
+    "build": "tsx scripts/prepare-review-pdf-assets.mts && next build",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
@@ -52,6 +52,7 @@
     "lucide-react": "^1.35.0",
     "next": "16.3.3",
     "next-themes": "^0.4.6",
+    "pdfjs-dist": "6.3.289",
     "postgres": "3.4.9",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",
