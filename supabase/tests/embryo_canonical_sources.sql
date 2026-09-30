@@ -147,7 +147,8 @@ select throws_ok($$select pg_temp.ack((select body from t00),'a',1,null,null,rep
   'canonical part unavailable','bytes that read back with another digest do not land');
 select throws_ok($$select pg_temp.ack((select body from t00),'a',1,null,null,null,1)$$,'42501',
   'canonical part unavailable','bytes that read back at another size do not land');
-select throws_ok($$select pg_temp.probe('alter table private.embryo_canonical_parts disable trigger embryo_canonical_part_immutable;
+select throws_ok($$select pg_temp.probe('set constraints all immediate;
+    alter table private.embryo_canonical_parts disable trigger embryo_canonical_part_immutable;
     update private.embryo_canonical_parts set created_at=clock_timestamp()-interval ''2 minutes'',
       write_expires_at=clock_timestamp()-interval ''1 minute'' where provider_key=(select body->>''objectKey'' from t00);
     alter table private.embryo_canonical_parts enable trigger embryo_canonical_part_immutable',

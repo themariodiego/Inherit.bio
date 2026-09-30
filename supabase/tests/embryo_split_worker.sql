@@ -130,7 +130,8 @@ select is(pg_temp.probe($$select private.mark_embryo_ingest_failure_v1((select i
   $$select coalesce(public.claim_embryo_split_job_v1(pg_temp.token('a'),'synthetic-worker')::text,'none')$$,
   $$select status from public.worker_jobs where id=(select id from job)$$),
   'none / cancelled','a job whose attempt already failed is cancelled, not run');
-select is(pg_temp.probe($$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
+select is(pg_temp.probe($$set constraints all immediate;
+    alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     update public.embryo_ingest_sessions set source_format='pgt_table' where id=(select id from live);
     alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable$$,
   $$select coalesce(public.claim_embryo_split_job_v1(pg_temp.token('a'),'synthetic-worker')::text,'none')$$,
@@ -151,7 +152,8 @@ select is(pg_temp.probe($$select private.enqueue_worker_job_v2('7a000000-0000-00
   $$select string_agg(status,',') from public.worker_jobs where kind='score_embryo' and source_binding_id=(select id from live)$$),
   'none / queued','no other job kind is ever claimed, cancelled or changed by the embryo worker');
 -- A legitimately completed table attempt has no fragment reader yet.
-select is(pg_temp.probe($$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
+select is(pg_temp.probe($$set constraints all immediate;
+    alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     alter table public.embryo_ingest_sessions disable trigger embryo_ingest_manifest_immutable;
     alter table public.worker_jobs disable trigger worker_jobs_binding_immutable;
     update public.embryo_ingest_sessions set source_format='pgt_table' where id=(select id from live);
