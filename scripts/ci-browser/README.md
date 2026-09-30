@@ -1,7 +1,10 @@
 # Standard CI browser runtime
 
-The standard `pnpm e2e` gate runs every existing project and case. On the fresh
-GitHub-hosted Ubuntu job, its actual Storage bootstrap also owns one isolated
+The standard `pnpm e2e` gate runs every existing project and case. Default CI
+partitions that same suite across six independent fresh hosted jobs with a
+mandatory exactly-once coverage gate; see
+[`ci-browser-sharding.md`](../../docs/evidence/ci-browser-sharding.md).
+On each fresh GitHub-hosted Ubuntu job, its actual Storage bootstrap owns one isolated
 Next/Copilot container. Local execution continues using its existing servers.
 The main, jurisdiction-off and paused variants do not enable local-model
 permission or exempt any model endpoint policy. The fourth variant, on port
@@ -84,7 +87,8 @@ INHERIT_DISPOSABLE_LOCAL_E2E=true pnpm e2e
 
 The job's existing CI/GitHub-hosted indicators and actual local keys are required;
 setting these flags on a shared machine is not a substitute for a disposable job.
-No selectors or alternate configuration are accepted in CI. Discovery remains
+Only the six registered native shard assignments are accepted in CI, with no
+file/project/grep selectors or alternate configuration. Discovery remains
 available through `playwright test --list` without starting this runtime.
 
 The earlier isolated local baseline was 73 Copilot cases with no skips/retries,
