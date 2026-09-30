@@ -108,8 +108,32 @@ select is(public.issue_future_person_recovery_key_v1(pg_temp.h('rights'),'future
  'one-time Recovery Key stores only the hash and reports the separate contact deadline');
 select throws_ok($$select public.issue_future_person_recovery_key_v1(pg_temp.h('rights'),'future-person-key-nonce-bbbbbbbb',pg_temp.h('new-key'))$$,
  '42501','claimant rights unavailable','a live claimant cannot reissue or replace a Recovery Key without fresh documentary review');
+create temporary table stopped_source_before as select to_jsonb(f) row from public.genome_files f where id=(select file from custody_ids);
 select ok(public.stop_future_person_analysis_v1(pg_temp.h('rights'),'future-person-stop-nonce-aaaaaaaa') is not null,
  'the approved accountless claimant can stop future analysis');
+
+select is((select count(*) from public.legal_audit_log where event_code='claimant.analysis_stopped'),1::bigint,
+ 'analysis stop commits exactly one pseudonymized event');
+select ok((select audit_principal_id is not null and coded_context='{}' from public.legal_audit_log where event_code='claimant.analysis_stopped'),
+ 'the audit carries only a fresh random pseudonym with no source, contact or credential');
+select throws_ok($$update public.subjects set analysis_stopped_at=null where id=(select subject from custody_ids)$$,
+ '55000','claimant_analysis_stopped','no operator or claimant can clear the stop');
+select throws_ok($$update public.subjects set analysis_stopped_at=clock_timestamp() where id=(select subject from custody_ids)$$,
+ '55000','claimant_analysis_stopped','no operator can replace the stop with another clock');
+select throws_ok($$select public.stop_future_person_analysis_v1(pg_temp.h('rights'),'future-person-stop-nonce-bbbbbbbb')$$,
+ '42501','claimant rights unavailable','a fresh nonce cannot repeat the stop or create another audit');
+select throws_ok($$select private.assert_current_analysis_subjects_v1(array[(select subject from custody_ids)])$$,
+ '55000','claimant_analysis_stopped','the current subject fence refuses resumed computation');
+select throws_ok($$insert into public.worker_jobs(user_id,file_id,subject_id,kind,output_kind,source_binding_kind,source_binding_id,
+ source_binding_revision,file_sha256,computation_revision,idempotency_key)
+ select '7a000000-0000-0000-0000-000000000001',file,subject,'annotate_vcf','ingest.normalize','genome-file',file,1,
+ pg_temp.h('future-job-source'),'synthetic',pg_temp.h('future-job') from custody_ids$$,
+ '55000','claimant_analysis_stopped','a real worker enqueue cannot target the stopped claimed source');
+select throws_ok($$update public.embryo_qc set sites_called=sites_called where embryo_id=(select embryo from custody_ids)$$,
+ '55000','claimant_analysis_stopped','an actual derived-result write rechecks the stopped subject');
+select is((select to_jsonb(f) from public.genome_files f where id=(select file from custody_ids)),
+ (select row from stopped_source_before),'stop retains the source file metadata byte for byte');
+
 select is((select count(*) from private.embryo_canonical_sources where file_id=(select file from custody_ids)),1::bigint,
  'analysis stop retains the exact sanitized canonical source');
 select throws_ok($$select public.stop_future_person_analysis_v1(pg_temp.h('rights'),'future-person-stop-nonce-aaaaaaaa')$$,

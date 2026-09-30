@@ -140,7 +140,8 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/settings");
 
-  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/");
+  const isClaimReviewPage=path.startsWith("/reviews/future-person/claims/");
+  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isClaimReviewPage;
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -200,7 +201,9 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return sensitive ? withSensitiveHeaders(response) : response;
+  if(sensitive)withSensitiveHeaders(response);
+  if(isClaimReviewPage)response.headers.set("Referrer-Policy","no-referrer");
+  return response;
 }
 
 /**
