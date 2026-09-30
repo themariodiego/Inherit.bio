@@ -1,5 +1,30 @@
 # Test diff register
 
+## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
+
+The combined checkpoint has 158 required route/state pairs: the prior 156
+includes cohort Copilot's real not-covered state, and the named reviewer page
+adds complete and processing. The exact census is corrected from 157 to 158;
+no state waiver, execution assertion, acceptance mark or ratchet changes.
+Hosted CI still has to execute the authored reviewer journeys.
+
+The storage inventory now names the actual bounded archive reader. The source
+scanner consumes a REST metadata operation before parsing its bucket, so a
+dynamic bucket cannot make regex backtracking invent an `info` bucket. New
+regressions require exact SDK/REST metadata buckets, all existing REST operation
+prefixes, dynamic buckets, genuinely unregistered buckets and a genuine SDK
+bucket named `info`. All bidirectional inventory and undeclared-bucket checks
+remain unchanged.
+
+The shared Future Person custody fixture now sends the real current called-VCF
+QC receipt through the existing producer, then proves exact preservation in
+all three published QC rows. Missing receipts and invented classifications are
+refused before completion. This is a newly staged synthetic split; no historic
+receipt is inferred or backfilled. Original historical-NULL, immutable-receipt,
+source, release, privacy and refusal assertions remain unchanged. Full fresh
+SQL and hosted execution for this combined correction remain pending.
+
+
 ## Complete genuinely attributable claimant ledger members · 1 October 2026
 
 The existing analysis-stop transaction created a fresh unlinked audit principal,

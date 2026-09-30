@@ -121,9 +121,9 @@ describe("the route gate holds the register to the code", () => {
     // is removed; the merged Future Person processing state remains required.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    // The named-reviewer page adds its complete and processing pairs. These
+    // 156 -> 158: the named-reviewer page adds its complete and processing pairs. These
     // authored titles are statically counted; hosted CI must execute them.
-    expect(result.requiredStateCount).toBe(157);
+    expect(result.requiredStateCount).toBe(158);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
