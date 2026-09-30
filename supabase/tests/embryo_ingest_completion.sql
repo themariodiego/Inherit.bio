@@ -190,14 +190,16 @@ select is(pg_temp.probe(
 -- A table chunk may carry a subset of ordinals, so for tables only the whole
 -- ordinal set decides; the VCF per-chunk rule below cannot mask this one.
 select is(pg_temp.probe(
-  $$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
+  $$set constraints all immediate;
+    alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     update public.embryo_ingest_sessions set source_format='pgt_table' where id=(select id from live);
     alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable;
     delete from public.embryo_ingest_fragments where session_id=(select id from live) and sample_ordinal=2$$,
   'select pg_temp.complete()->>''failureCode'''),
   'format','a table upload missing one embryo is terminal');
 select is(pg_temp.probe(
-  $$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
+  $$set constraints all immediate;
+    alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     update public.embryo_ingest_sessions set source_format='pgt_table' where id=(select id from live);
     alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable;
     delete from public.embryo_ingest_fragments where session_id=(select id from live) and sample_ordinal=2 and sequence=1$$,
@@ -231,13 +233,15 @@ select is(pg_temp.probe(
   'select pg_temp.complete()->>''failureCode'''),
   'chunk','a fragment whose write intent never landed blocks completion');
 select is(pg_temp.probe(
-  $$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
+  $$set constraints all immediate;
+    alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     update public.embryo_ingest_sessions set reference_build=null where id=(select id from live);
     alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable$$,
   'select pg_temp.complete()->>''failureCode'''),
   'build','an unresolved build at completion is terminal');
 select is(pg_temp.probe(
-  $$alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
+  $$set constraints all immediate;
+    alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     update public.embryo_ingest_sessions set configuration_nonce_hash=null,configured_build=null,
       build_evidence=null where id=(select id from live);
     alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable$$,
