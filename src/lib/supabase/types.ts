@@ -7618,6 +7618,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: Json }
+      check_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: boolean }
+      swap_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string; p_bytes: number; p_sha256: string; p_version: string; p_etag: string }; Returns: boolean }
+      finish_future_person_relocation_v1: { Args: { p_id: string; p_old_version: string; p_old_etag: string }; Returns: boolean }
+      future_person_binding_context_v1: { Args: { p_rights_session_hash: string }; Returns: Json }
+      bind_future_person_account_v1: { Args: { p_rights_session_hash: string; p_nonce: string; p_expected: Json }; Returns: boolean }
+
       finish_genome_file_deletion_v1: {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
         Returns: undefined

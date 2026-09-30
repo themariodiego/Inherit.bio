@@ -1,3 +1,5 @@
+import {loadAccountBinding} from "@/lib/future-person/account-binding";
+import {ClaimantAccountBinding} from "@/components/future-person/account-binding";
 import {loadClaimantRights} from "@/lib/future-person/rights";
 import {ClaimantRights} from "@/components/future-person/claimant-rights";
 import type { Metadata } from "next";
@@ -26,7 +28,7 @@ export default async function RightsSessionPage() {
   // loader returns null for a session that is not its own, so a co-parent
   // cookie can never reach the adult or embryo screen, and so on.
   const claimant=await loadClaimantRights(request);
-  if(claimant)return <ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/>;
+  if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/><div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding csrf={claimant.csrf} nonce={await loadAccountBinding(request)}/></div></>;
   const adult = await loadAdultSubjectReview(request);
   if (adult) return <AdultSubjectReviewForm review={adult} />;
   const embryo = await loadEmbryoParentWithdrawal(request);

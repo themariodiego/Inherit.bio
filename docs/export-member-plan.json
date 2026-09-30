@@ -152,6 +152,14 @@
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for family reports. It is machinery, not the person's record."
     },
+    "private.future_person_account_bindings": {
+      "disposition": "excluded-credential",
+      "reason": "Exact claimant account/session authorization revisions and binding receipt; never an export member or a retroactive identity attribution."
+    },
+    "private.future_person_binding_config": {
+      "disposition": "reference",
+      "reason": "Closed service configuration for verified TEST-LOCAL claimant account binding; no person data."
+    },
     "private.future_person_claim_intakes": {
       "disposition": "excluded-protected",
       "reason": "Unfinished Future Person claim starts: sealed identity and contact ciphertext, a key hash and keyed digests, deleted within 24 hours. The export contracts always exclude contact values and identity. No account holds one."
@@ -159,6 +167,10 @@
     "private.future_person_custody_slices": {
       "disposition": "deferred",
       "reason": "The exact claimed subject’s immutable autosomal source provenance and minimum historical agreement slice, preserved against parent restriction; approved-future-person-export-v1 requires its own claimant reader."
+    },
+    "private.future_person_object_relocations": {
+      "disposition": "excluded-credential",
+      "reason": "Exact claimed-source relocation locators, worker claim token hash and transient source-version authority; excluded from person archives."
     },
     "private.genome_file_deletions": {
       "disposition": "excluded-credential",

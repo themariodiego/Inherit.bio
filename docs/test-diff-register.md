@@ -1,5 +1,13 @@
 # Test diff register
 
+## Future Person account binding requires both current credentials · 30 September 2026
+
+The registered claimant account route is authored under TEST-LOCAL in a separate stream. Its nonce-only body combines the current approved claimant rights cookie with the actual caller's verified own Auth JWT; its database context and signed control bind the exact account, session, claimant, claim and all current revisions. Seven new transport tests plant foreign cookies/accounts/sessions, every stale revision, expired controls, missing or extra body fields, CSRF/origin drift and unexpected DB output. No service client substitutes for account authentication. The explicit UI confirmation grants no analysis or sharing purpose.
+
+The new database test first repeats the actual documentary decision, mail delivery and release-token activation prerequisite. It then checks a separate synthetic authenticated account, strict closed-by-default configuration, exact grants, foreign/stale/malformed refusal, atomic claimed-bound custody, one intent per exact canonical part, unbound secret/contact/session erasure, replay refusal and immutable binding/locator snapshots. SQL fixtures are database boundary evidence, not genuine browser login evidence. New internal/session-bound stores have exact excluded export dispositions and the generated plan remains bidirectional.
+
+The source checkpoint stays CLOSED: actual object copy/hash/swap/deletion transport, current-location reader integration, positive genuine-Auth browser approval/binding journey and full fresh database/hosted execution remain required. Historical canonical source rows and call-immutability proof are unchanged. This entry adds strict expected behavior; no prior assertion, timeout, skip, retry or acceptance verdict changes.
+
 ## Case-read auditing and verified document delivery · 30 September 2026
 
 The reviewer browser journeys originally required zero total rows in
