@@ -24,7 +24,8 @@ import { chromium } from "@playwright/test";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
 import { assertLocalProviderEnvironment, localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 import { appServerEnvironment } from "./ci-browser-app-environment";
-import { browserSetupTimingSchema, ciBrowserShard } from "./ci-browser-shards";
+import { ciBrowserShard } from "./ci-browser-shards";
+import { readCiBrowserSetupTimings } from "./ci-browser-setup-timings";
 import { assertCiRuntime } from "./ci-browser-config";
 import { ciBrowserSourceIdentity } from "./ci-browser-shards-io";
 import { writeFileSync } from "node:fs";
@@ -32,7 +33,11 @@ import { writeFileSync } from "node:fs";
 const arguments_ = process.argv.slice(2);
 const bootstrapStarted = performance.now();
 const shard = ciBrowserShard(arguments_[0], process.env);
-if (shard !== null) { assertCiRuntime(process.env); ciBrowserSourceIdentity(); }
+const shardSource = shard === null ? null : ciBrowserSourceIdentity();
+if (shard !== null) {
+  assertCiRuntime(process.env);
+  readCiBrowserSetupTimings(process.env, shardSource!, shard);
+}
 const fullSuite = arguments_[0] === "--full" || shard !== null;
 const bootstrapOnly = arguments_[0] === "--bootstrap-only";
 const lighthouseGate = arguments_[0] === "--lighthouse";
@@ -372,7 +377,7 @@ try {
     if (shard !== null) {
       // Publish coverage only after the unchanged actual-provider invariant.
       const receipt = JSON.parse(readFileSync("test-results/ci-browser-shard-pending.json", "utf8"));
-      const setup = browserSetupTimingSchema.parse(JSON.parse(readFileSync("test-results/ci-browser-setup-timings.json", "utf8")));
+      const setup = readCiBrowserSetupTimings(process.env, shardSource!, shard);
       writeFileSync("test-results/ci-browser-shard.json", JSON.stringify({ ...receipt, providerUploads: forwardedUploads,
         timings: { ...receipt.timings, ...setup, bootstrapMs } }) + "\n",
         { mode: 0o600, flag: "wx" });

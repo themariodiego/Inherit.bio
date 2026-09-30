@@ -77,6 +77,11 @@ by summed actual test duration. These receipts are retained for 14 days and
 allow later slowdowns or imbalance to be compared without a frozen case count.
 Setup includes dependency/browser installation, fresh Supabase/seed and runtime
 image preparation; build measures the production build and identity receipt.
+Pre-run timing input resides in private, job-owned `RUNNER_TEMP` files outside
+Playwright's output directory, which native execution clears. Input carries the
+exact checkout/run/attempt/shard identity and bounded integer durations; missing,
+linked, permissive, stale or foreign input fails before execution and before
+receipt publication. Only sanitized final coverage receipts enter artifacts.
 Six independent setups/builds consume more runner minutes in exchange for
 shorter wall time. The slowest indivisible fixture group and available hosted
 runner concurrency still bound the gain.
@@ -90,3 +95,11 @@ the implementation remains necessary before claiming execution or timing gains.
 
 The architecture follows [Playwright's native sharding guidance](https://playwright.dev/docs/test-sharding)
 and [GitHub's job prerequisite semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs).
+
+The first hosted run passed all 565 cases across all six jobs with zero skips
+or retries, but the jobs then failed when receipt publication read timing input
+that Playwright had deleted. Those failures remain failed evidence. The external
+timing-input correction has a real native-cleanup regression; a complete hosted
+rerun on the corrected version remains required for a green release gate and
+measured speed claims. The failure receipt is retained in the integrator review
+directory.

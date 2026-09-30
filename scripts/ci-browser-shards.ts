@@ -14,6 +14,9 @@ const fileTiming = z.object({ file: z.string().regex(/^[a-z0-9][a-z0-9._/-]*\.sp
 const identity = z.object({ head: z.string().regex(/^[0-9a-f]{40}$/),
   runId: z.string().regex(/^[1-9][0-9]*$/), runAttempt: z.string().regex(/^[1-9][0-9]*$/) }).strict();
 export type CiBrowserIdentity = z.infer<typeof identity>;
+export const ciBrowserSetupTimingReceiptSchema = identity.extend({ schemaVersion: z.literal(1),
+  index: z.number().int().min(1).max(CI_BROWSER_SHARDS), total: z.literal(CI_BROWSER_SHARDS),
+  ...browserSetupTimingSchema.shape }).strict();
 const specFile = z.string().regex(/^e2e\/[a-z0-9][a-z0-9._/-]*\.spec\.ts$/).refine(value => !value.includes(".."));
 const manifestSchema = identity.extend({ schemaVersion: z.literal(1), total: z.literal(CI_BROWSER_SHARDS), cases: caseSet,
   files: z.array(specFile).min(1) }).strict();
