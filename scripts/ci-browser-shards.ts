@@ -3,6 +3,9 @@ import { z } from "zod";
 import { assertStandardCiBrowserProjects, STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
 
 export const CI_BROWSER_SHARDS = 6;
+// Only this independently initialized spec may span fresh database jobs.
+// Stateful journeys retain their complete project/file group on one job.
+export const INDEPENDENT_BROWSER_SPEC_FILES = Object.freeze(["a11y.spec.ts"]);
 const caseId = z.string().regex(/^[0-9a-f]{20}-[0-9a-f]{20}:[a-z-]+$/)
   .refine(value => STANDARD_CI_BROWSER_PROJECTS.includes(value.split(":")[1]));
 const caseSet = z.array(caseId).min(1);
@@ -153,9 +156,16 @@ export function verifyBrowserShards(expected: unknown, values: unknown[], source
     sameCases(receipt.fullCases, manifest.cases);
     sameCases(receipt.executedCases, receipt.assignedCases);
     sameCases(receipt.files.flatMap(file => file.cases), receipt.executedCases);
+    sortedUnique(receipt.files.map(file => `${file.project}:${file.file}`));
     assert.deepEqual(sortedUnique(receipt.fullFiles), sortedUnique(manifest.files), "Browser source file inventories differ");
   }
-  sortedUnique(receipts.flatMap(receipt => receipt.files.map(file => `${file.project}:${file.file}`)));
+  const groups = new Set<string>();
+  for (const receipt of receipts) for (const file of receipt.files) {
+    const group = `${file.project}:${file.file}`;
+    assert(!groups.has(group) || INDEPENDENT_BROWSER_SPEC_FILES.includes(file.file),
+      "A stateful browser project/file group spans database jobs");
+    groups.add(group);
+  }
   assert(receipts.reduce((sum, receipt) => sum + receipt.providerUploads, 0) > 0,
     "No browser upload crossed the actual provider across the complete suite");
   // sortedUnique refuses duplicates across shards before comparing complete sets.

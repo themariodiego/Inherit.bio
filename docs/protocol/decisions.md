@@ -4514,3 +4514,8 @@ prepared import. Every condition remains inactive. This approval does not
 activate a condition: each still requires the owner's signed condition review
 and separate activation approval. No carrier result becomes visible through
 this import alone.
+
+
+## 2026-10-01 — Structural CI continuation: independent accessibility case grouping
+
+Implementation of the owner’s permanent hosted-CI and structural speed request: the accessibility spec’s independent cases may be natively assigned to different fresh database jobs. Each job retains one browser worker. Every stateful journey keeps its complete project/file group, and all original checks and assertion limits remain. The required aggregate rejects partial, duplicated, foreign-version, failed, skipped or retried evidence. This is an implementation choice within the existing authorized policy; it does not grant a test exception. Actual final-head full hosted timing is needed before recording any further speed gain.

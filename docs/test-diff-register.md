@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Distribute independently initialized accessibility cases across isolated CI jobs
+
+The observed accessibility file group takes about seventeen minutes even after the six-job redesign. Its existing cases initialize their own browser page and any required content, so their native parallel grouping may distribute whole cases across separate disposable databases. Each job still has one worker, global fullyParallel remains false, and every existing test title, assertion, full route/theme/viewport sweep, timeout and retry limit is unchanged. The aggregate admits a repeated project/file group only for the exact independent a11y.spec.ts name; all stateful files retain their whole group. New regression evidence accepts distinct accessibility cases and rejects missing/duplicate cases, duplicate receipt rows, every other shared file and similar names. Full native inventories and full hosted execution are required before crediting a speed improvement.
+
 ## Browser setup timing input survives native cleanup · 30 September 2026
 
 The first hosted run executed all 565 cases successfully across six fresh jobs
