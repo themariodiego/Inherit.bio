@@ -48,6 +48,14 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.embryo_ingest_object_config": {
+      "disposition": "reference",
+      "reason": "The operator's embryo fragment storage backend selection: provider, bucket and gateway audience. It holds no person's data."
+    },
+    "private.embryo_ingest_object_disposals": {
+      "disposition": "excluded-internal",
+      "reason": "Claim tokens and provider disposal evidence for an unwound embryo upload's storage objects. It is machinery, not the person's record."
+    },
     "private.embryo_ingest_write_fences": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write fences and their drain state. It is machinery, not the person's record."
@@ -55,6 +63,18 @@ create temporary table export_member_plan as select $plan$
     "private.embryo_ingest_write_intents": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write intents: fenced object names, reserved sizes and landing state. It is machinery, not the person's record."
+    },
+    "private.embryo_split_config": {
+      "disposition": "reference",
+      "reason": "The operator's split-worker enablement and capacity settings; they hold no person's data."
+    },
+    "private.embryo_split_ordinals": {
+      "disposition": "excluded-internal",
+      "reason": "Attempt-owned ordinal progress and pending QC; publication writes the durable embryo and QC records. This is worker machinery."
+    },
+    "private.embryo_split_variants": {
+      "disposition": "excluded-internal",
+      "reason": "Attempt-owned pending embryo variants, removed at terminal publication or failure. Published embryo variants have their own deferred export class."
     },
     "private.export_archive_attempts": {
       "disposition": "excluded-internal",
@@ -99,6 +119,10 @@ create temporary table export_member_plan as select $plan$
     "private.health_picture_grant_snapshots": {
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for the health picture. It is machinery, not the person's record."
+    },
+    "private.hmac_key_versions": {
+      "disposition": "excluded-credential",
+      "reason": "Revision states of the HMAC keys behind contact and rate-limit lookups. It holds no key material, but it is key-management state, so it stays with the credentials it describes."
     },
     "private.invitation_terminal_notices": {
       "disposition": "excluded-protected",
@@ -326,6 +350,14 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Audit pseudonyms. The requester's own is used only to select their events and never leaves. It is machinery, not the person's record."
     },
+    "public.carrier_condition_reviews": {
+      "disposition": "out-of-scope",
+      "reason": "Staff workflow: the named reviewer's decision to activate or deactivate a carrier condition. It is about the reviewer, not a requester's record."
+    },
+    "public.carrier_conditions": {
+      "disposition": "reference",
+      "reason": "The carrier-condition registry: gene, inheritance, the reviewed assertion release and whether the condition is active. It holds no person's data."
+    },
     "public.changelog_entries": {
       "disposition": "reference",
       "reason": "The public changelog. It holds no person's data."
@@ -400,6 +432,14 @@ create temporary table export_member_plan as select $plan$
         "legacy_unverified",
         "canonical_authority"
       ]
+    },
+    "public.clinical_assertion_releases": {
+      "disposition": "reference",
+      "reason": "Imported ClinVar assertion releases: source, date and digests. It holds no person's data."
+    },
+    "public.clinical_assertions": {
+      "disposition": "reference",
+      "reason": "Reviewed clinical assertions by variant and condition, imported from ClinVar. It holds no person's data."
     },
     "public.cloud_model_calls": {
       "disposition": "excluded-internal",

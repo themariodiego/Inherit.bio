@@ -2940,12 +2940,7 @@
       "authorityRotationInvalidation": "every transaction that changes a recipient contact principal subject binding upload authority invitation target ownership or other authorizing revision atomically terminalizes every old-revision unsent or claimed authorizing outbox row revokes every token candidate source rights session and operation nonce and cancels provider submission before committing the successor; a worker holding a stale claim must observe the terminal or revision mismatch and submit nothing",
       "issuance": {
         "link": {
-          "routeFrom": "rights.withdraw",
-          "params": {
-            "token": {
-              "const": "request"
-            }
-          },
+          "routeFrom": "rights.withdraw-request",
           "fragment": {
             "const": "raw-token"
           }
@@ -8366,19 +8361,6 @@
           "routeFrom": "rights.withdraw"
         },
         "branches": {
-          "request": {
-            "params": {
-              "token": {
-                "const": "request"
-              }
-            },
-            "targetSource": {
-              "const": "none"
-            },
-            "operation": {
-              "const": "public-generic-zero-data-interstitial-and-candidate-cookie-only"
-            }
-          },
           "session": {
             "params": {
               "token": {
@@ -8392,6 +8374,17 @@
               "const": "rights-cookie-bound-page-read-or-declared-operation"
             }
           }
+        }
+      },
+      "rights.withdraw-request": {
+        "route": {
+          "routeFrom": "rights.withdraw-request"
+        },
+        "targetSource": {
+          "const": "none"
+        },
+        "operation": {
+          "const": "public-generic-zero-data-interstitial-and-candidate-cookie-only"
         }
       },
       "api.future-person-export": {
@@ -8791,36 +8784,21 @@
       "requestTarget": {
         "absoluteUrlFrom": {
           "originFrom": "canonicalOrigin",
-          "routeFrom": "rights.withdraw",
-          "params": {
-            "token": {
-              "const": "request"
-            }
-          }
+          "routeFrom": "rights.withdraw-request"
         },
         "rawTokenTransport": {
           "const": "URL-fragment"
         }
       },
       "historyReplacement": {
-        "routeFrom": "rights.withdraw",
-        "params": {
-          "token": {
-            "const": "request"
-          }
-        }
+        "routeFrom": "rights.withdraw-request"
       },
       "behavior": "fragments-never-cross-HTTP-or-Vercel-proxy-telemetry; before-render-or-any-async-work-a-minimal-inline-script-reads-the-fragment-exactly-once-into-bounded-memory-and-immediately-applies-historyReplacement; localStorage-sessionStorage-IndexedDB-clipboard-cache-telemetry-error-reporting-and-crash-reporting-persistence-are-forbidden; the-GET-only-sets-a-short-lived-non-authorizing-CSRF-candidate-cookie-and-renders-a-generic-interstitial-without-reading-the-fragment"
     },
     "activation": "only-api.rights-activate-may-receive-the-raw-token-in-a-closed-POST-body-consume-it-and-create-the-rights-session-after-an-explicit-user-action-with-origin-fetch-metadata-candidate-cookie-and-one-time-form-nonce; for-a-rights-recovery-delivery-candidate-apply-rights-credential-reissue-v1.activation-before-session-mint; scanner-prefetch-GETs-cannot-see-burn-or-use-a-token",
     "platformLogging": {
       "requestTarget": {
-        "routeFrom": "rights.withdraw",
-        "params": {
-          "token": {
-            "const": "request"
-          }
-        }
+        "routeFrom": "rights.withdraw-request"
       },
       "rule": "every-issued-request-target-resolves-only-from-requestTarget-with-no-secret-query-or-path-segment; application-logs-traces-errors-analytics-and-audit-never-record-request-bodies-fragments-credentials-or-token-derived-identifiers-other-than-a-pseudonymized-event-id"
     },
@@ -8968,6 +8946,7 @@
     ],
     "tokenPageOrEndpoint": [
       "rights.withdraw",
+      "rights.withdraw-request",
       "api.rights-activate",
       "api.adult-subject-bind",
       "api.rights-reissue",
@@ -9698,12 +9677,7 @@
     "token-candidate-api-v1": {
       "credential": {
         "issuedBy": {
-          "routeFrom": "rights.withdraw",
-          "params": {
-            "token": {
-              "const": "request"
-            }
-          }
+          "routeFrom": "rights.withdraw-request"
         },
         "shape": "non-authorizing-secure-httpOnly-sameSite-strict-__Host-inherit-candidate-cookie-plus-a-one-time-form-nonce; it-is-not-bound-to-or-evidence-of-a-token-until-the-activation-transaction"
       },
@@ -11419,6 +11393,29 @@
         "render": "that-routes-purpose-matrix-renders-only-the-one-registered-action"
       },
       "rawToken": "never-returned-or-forwarded"
+    },
+    "rights-interstitial-v1": {
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "body": "one-generic-interstitial-document-with-an-activation-control-and-no-account-invitation-subject-or-target-data",
+      "script": "exactly-one-inline-script-under-the-per-response-nonce-that-reads-the-fragment-once-into-bounded-memory-and-applies-urlCredentialInterstitial.historyReplacement-before-any-other-work; activation-is-an-explicit-user-action-posting-to-api.rights-activate",
+      "headers": {
+        "Cache-Control": "private, no-store",
+        "Referrer-Policy": "no-referrer",
+        "X-Robots-Tag": "noindex, nofollow, noarchive",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Content-Security-Policy": "default-src 'none'; script-src 'nonce-{per-response-random-nonce}'; style-src 'nonce-{per-response-random-nonce}'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+      },
+      "headerBinding": "sensitiveResponseHeaders.tokenPageOrEndpoint; the-Content-Security-Policy-above-is-stricter-than-the-bound-token-page-policy-so-no-other-script-can-read-location.hash-first",
+      "setCookie": "GET-sets-only-the-short-lived-non-authorizing-CSRF-candidate-cookie",
+      "head": {
+        "status": 200,
+        "body": "empty",
+        "setCookie": "none",
+        "headers": "the-GET-headers-except-Content-Security-Policy"
+      },
+      "rawTokenAccountOrTargetRead": "forbidden"
     },
     "future-person-deletion-accepted-v1": {
       "status": 202,
@@ -13847,6 +13844,9 @@
         "resource-not-found-page-v1",
         "embryo-closed-schema-v1"
       ],
+      "rights.withdraw-request": [
+        "rights-interstitial-v1"
+      ],
       "genome.reports": [
         "owned-file-redirect-response-v1",
         "resource-not-found-page-v1"
@@ -14573,7 +14573,6 @@
       "parameterContract": {
         "token": {
           "enum": [
-            "request",
             "session"
           ],
           "raw-bearer": "forbidden"
@@ -14583,7 +14582,6 @@
       "width": "64rem",
       "stateProfile": "public-rights-flow",
       "policy": {
-        "requestMode": "the-browser-holds-the-fragment-only-in-ephemeral-memory-and-the-server-GET-reads-no-target; explicit-activation-posts-it-to-api.rights-activate",
         "sessionMode": "requires-an-active-rights-cookie-then-resolves-the-server-owned-token-purpose-through-withdrawal-target-v1.purposeMatrix-before-any-target-read",
         "dataScope": "rights-session-bound-target-only-after-activation",
         "contracts": [
@@ -14665,6 +14663,32 @@
       },
       "disposition": "kept",
       "expectedStatus": 200
+    },
+    {
+      "id": "rights.withdraw-request",
+      "path": "/withdraw/request",
+      "kind": "endpoint",
+      "domain": "rights",
+      "auth": "public",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": "never-read",
+        "fragment": "never-reaches-the-server; read-once-in-the-browser-by-the-inline-script-only"
+      },
+      "stateProfile": "endpoint",
+      "cachePolicy": "no-store-per-response-script-nonce-and-candidate-cookie",
+      "policy": {
+        "requestMode": "the-browser-holds-the-fragment-only-in-ephemeral-memory-and-the-server-GET-reads-no-target; explicit-activation-posts-it-to-api.rights-activate",
+        "interstitialContract": "tokenSecurityContract.urlCredentialInterstitial",
+        "targetRead": "none; no-credential-account-invitation-subject-or-target-lookup-on-GET-or-HEAD",
+        "head": "HEAD-answers-with-no-body-and-no-candidate-cookie-so-a-link-preview-issues-nothing",
+        "accessibility": "the-rendered-document-meets-the-registered-public-page-bar-in-both-themes"
+      },
+      "successResponseContract": "rights-interstitial-v1",
+      "disposition": "kept"
     },
     {
       "id": "auth.sign-in",
@@ -15118,8 +15142,9 @@
         "rpc": "public.family_portrait_source_readiness_v1(account,session,pair,counterpart-account,expected-receipt)",
         "readBoundary": "after-both-own-session-Portrait-grants-independent-logins-acknowledgments-and-the-session-Tier-2-gate; metadata-only-presence-of-a-current-prepared-source-per-side-with-exact-store-source-object-normalization-and-endpoint-proof-and-server-only-exact-legacy-file-IDs; the-readiness-RPC-reads-no-variant-observed-call-reference-ROH-or-result-payload",
         "terminalConfirmation": "the-last-await-before-render-rechecks-the-captured-receipt-under-one-transaction-locking-both-current-endpoints-grants-and-source-metadata; mismatch-session-end-pause-withdrawal-or-source-change-denies-without-legacy-fallback",
-        "outputLimit": "canonical-source-readiness-only; canonical-clinical-outputs-remain-explicitly-unavailable; independently-valid-legacy-pair-output-is-preserved-using-only-the-captured-subject-bound-legacy-file-IDs-rechecked-for-null-canonical-markers-at-genotype-and-ROH-read-time; no-Portrait-result-or-new-export-derivative-is-created; this-does-not-complete-carrier-ROH-trait-or-whole-Portrait-acceptance",
-        "migration": "20260907142213_portrait_canonical_source_readiness.sql"
+        "outputLimit": "canonical-carrier-outputs-only-through-public.family_portrait_carrier_calls_v1-which-re-proves-the-captured-readiness-receipt-and-reads-each-current-prepared-source-at-the-reviewed-assertion-rule-loci-only-with-each-file's-stored-ROH-measure; a-null-or-refused-read-states-unavailable-never-negative; independently-valid-legacy-pair-output-is-preserved-using-only-the-captured-subject-bound-legacy-file-IDs-rechecked-for-null-canonical-markers-at-genotype-and-ROH-read-time-when-either-side-lacks-a-prepared-source; no-Portrait-result-or-new-export-derivative-is-created; this-does-not-complete-trait-or-whole-Portrait-acceptance",
+        "migration": "20260907142213_portrait_canonical_source_readiness.sql",
+        "carrierReaderMigration": "20260929130000_carrier_assertions.sql"
       },
       "kind": "page",
       "domain": "family",

@@ -31,8 +31,8 @@ export async function preparePortraitGrant(db: Db, subjectId: string, recipientA
  * the already-authorized page, never replacement principals or source selectors. */
 export async function loadPortraitSourceReadiness(db: Db, options: {
   pairId: string; counterpartAccountId: string; subjectAId: string; subjectBId: string;
-}): Promise<{ state: PortraitSourceState | null; confirm(): Promise<boolean> }> {
-  const denied = { state: null, confirm: async () => false };
+}): Promise<{ state: PortraitSourceState | null; receipt: string | null; confirm(): Promise<boolean> }> {
+  const denied = { state: null, receipt: null, confirm: async () => false };
   try {
     if (!Object.values(options).every(id => z.uuid().safeParse(id).success)) return denied;
     const actor = await currentOwnUploadAccount();
@@ -44,7 +44,9 @@ export async function loadPortraitSourceReadiness(db: Db, options: {
     if (captured.error || !parsed.success || parsed.data.a.subjectId !== options.subjectAId || parsed.data.b.subjectId !== options.subjectBId) return denied;
     const snapshot = parsed.data;
     let closed = false;
-    return { state: { kind: snapshot.kind, a: snapshot.a, b: snapshot.b }, confirm: async () => {
+    // The receipt is handed on only to readers that prove it again in the
+    // database before reading (family_portrait_carrier_calls_v1).
+    return { state: { kind: snapshot.kind, a: snapshot.a, b: snapshot.b }, receipt: snapshot.receipt, confirm: async () => {
       if (closed) return false;
       try {
         const now = await currentOwnUploadAccount();

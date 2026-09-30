@@ -3,6 +3,7 @@
 -- token. Retiring those rows inside the test transaction makes every claim
 -- below deterministic wherever the suite runs; the rollback puts them back.
 update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
+\ir invitation_quota_keys.inc
 
 -- Three accounts: the owner-parent A, the invited co-parent B, a stranger C.
 insert into auth.users (id, email, raw_user_meta_data)
@@ -220,7 +221,8 @@ create temporary table inv as
 select * from public.create_embryo_draft_invitation_v1(
   '7a000000-0000-0000-0000-000000000001',
   '7a000000-0000-4000-8000-0000000000a1', (select draft_id from draft),
-  repeat('b', 64), repeat('1', 64), 'nonce-invite-0001-aaaaaaaaaaa', true
+  repeat('b', 64), repeat('1', 64), 'nonce-invite-0001-aaaaaaaaaaa', true,
+  p_quota_keys => pg_temp.invitation_quota_keys()
 );
 
 select ok((select invitation_id from inv) is not null,
@@ -234,7 +236,8 @@ select ok(
   (select invitation_id from public.create_embryo_draft_invitation_v1(
     '7a000000-0000-0000-0000-000000000001',
     '7a000000-0000-4000-8000-0000000000a1', (select draft_id from draft),
-    repeat('e', 64), repeat('2', 64), 'nonce-invite-0002-aaaaaaaaaaa', true)) is null,
+    repeat('e', 64), repeat('2', 64), 'nonce-invite-0002-aaaaaaaaaaa', true,
+    p_quota_keys => pg_temp.invitation_quota_keys())) is null,
   'an address the draft never named gets the same empty receipt and no mail');
 select is(
   (select count(*) from public.subject_invitations

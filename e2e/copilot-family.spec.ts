@@ -224,7 +224,7 @@ test.describe("the Family group scope, end to end on the local model", () => {
     expect(body.message.citations[1]).toMatchObject({ label: `${title} (shared by ${B_AS_SEEN_BY_A})`,
       href: `/genome/s-${invitedSubjectB}/reports/${CAFFEINE_SLUG}` });
     await expect(pageA.getByText(REPORT_ANSWER, { exact: true })).toBeVisible();
-    await expect(pageA.getByRole("list", { name: "Sources" }).last().getByRole("link", { name: `Shared by ${B_AS_SEEN_BY_A}` }))
+    await expect(pageA.getByRole("list", { name: "Sources" }).last().getByRole("link", { name: `Shared by ${B_AS_SEEN_BY_A}`, exact: true }))
       .toHaveAttribute("href", `/family/s-${invitedSubjectB}`);
     await expect(pageA.locator(NOT_DIAGNOSTIC_SLOT).last()).toHaveText(NOT_DIAGNOSTIC);
 

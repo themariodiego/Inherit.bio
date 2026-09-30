@@ -16,11 +16,11 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- checkpoints, cleanup plans/entries and original retirement add four stores.
 -- Legal audit attribution adds private.legal_audit_account_principals, the
 -- account-to-pseudonym link deleted with the account (20260928160000).
--- The embryo-ingest write fence adds its write intents and session fences.
--- The embryo split worker adds its two attempt-owned pending stores
--- (private.embryo_split_ordinals, private.embryo_split_variants).
-select is((select count(*) from public.purge_target_stores), 130::bigint,
-  'all 130 purge stores, including private prepared-object, embryo write-fence and embryo split working state and the legal audit account link, are classified');
+-- Main contributes 129 stores, including unwind storage disposal and the
+-- legal audit account link. The split worker adds exactly its two pending
+-- stores: private.embryo_split_ordinals and private.embryo_split_variants.
+select is((select count(*) from public.purge_target_stores), 131::bigint,
+  'all 131 purge stores, including unwind storage disposal, the legal audit account link and both split pending stores, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');
