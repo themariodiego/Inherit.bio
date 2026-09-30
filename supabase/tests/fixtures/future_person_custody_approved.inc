@@ -75,9 +75,9 @@ insert into public.future_person_claimant_principals(id,claim_id,principal_id,cl
   select claimant,review,principal,1,'current' from custody_ids;
 insert into private.claim_review_reads(review_id,reviewer_account_id,auth_session_id,review_revision,document_id,
   chunk_sequence,assignment_revision,document_sha256,delivery_verified_at,account_auth_session_revision,originating_session_revision)
-  select review,'7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',1,
+  select review,'7a000000-0000-0000-0000-000000000001'::uuid,'7a000000-0000-4000-8000-0000000000a1'::uuid,1,
     photo,0,1,pg_temp.h('photo'),clock_timestamp(),1,1 from custody_ids union all
-  select review,'7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',1,
+  select review,'7a000000-0000-0000-0000-000000000001'::uuid,'7a000000-0000-4000-8000-0000000000a1'::uuid,1,
     birth,0,1,pg_temp.h('birth'),clock_timestamp(),1,1 from custody_ids;
 insert into private.upload_authorization_config(singleton,auth_issuer)
 values(true,'http://127.0.0.1:54321/auth/v1') on conflict(singleton) do update set auth_issuer=excluded.auth_issuer;
