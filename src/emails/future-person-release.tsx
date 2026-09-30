@@ -14,7 +14,7 @@ export function FuturePersonReleaseEmail({releaseUrl}:FuturePersonReleaseProps) 
     </Text>
     <Button href={releaseUrl} style={{backgroundColor:brand.forest,color:brand.paper,
       padding:"14px 22px",borderRadius:"8px",textDecoration:"none",fontSize:"16px"}}>
-      Open your private link
+      Open your link
     </Button>
   </EmailLayout>;
 }

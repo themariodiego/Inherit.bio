@@ -819,9 +819,9 @@ begin
    'approved-future-person-release',s.id,'{}',expiry) returning id into outbox;
  insert into public.token_candidates(outbox_id,purpose,target_kind,target_id,token_revision,expires_at)
  values(outbox,'approved-future-person-release','claimed-subject',s.id,cp.release_revision,expiry) returning id into candidate;
- insert into public.future_person_claim_release_credentials(claim_id,claimant_principal_id,credential_hash,credential_revision,
+ insert into public.future_person_claim_release_credentials(claim_id,claimant_principal_id,credential_hash,credential_revision,status,
    expires_at,candidate_id,subject_id,subject_lifecycle_revision,subject_binding_revision,contact_reference_id)
- values(p_claim,cp.id,encode(extensions.gen_random_bytes(32),'hex'),cp.release_revision,expiry,candidate,s.id,
+ values(p_claim,cp.id,encode(extensions.gen_random_bytes(32),'hex'),cp.release_revision,'current',expiry,candidate,s.id,
    s.lifecycle_revision,s.subject_binding_revision,p_contact);
  insert into public.future_person_claim_notices(claim_id,outbox_id,notice_kind,notice_revision)
  values(p_claim,outbox,'release',cp.release_revision);
