@@ -2,7 +2,7 @@ begin;
 select no_plan();
 -- Metadata-only synthetic canonical publication and reviewed custody. This
 -- proves SQL authority/receipt transitions, never hosted-provider deletion.
-\ir fixtures/future_person_custody_source.inc
+\ir fixtures/account_cohort_r2_custody_source.inc
 \ir fixtures/account_cohort_custody_approved.inc
 select is(private.detach_future_person_subject_v1((select review from custody_ids)),
   (select claimant from custody_ids),'the real approved custody transition detaches one exact source');
@@ -17,6 +17,10 @@ create function pg_temp.snapshot() returns jsonb language sql as $$
   'agreement',(select to_jsonb(x) from private.future_person_custody_slices x where subject_id=(select subject from custody_ids)));
 $$;
 create temporary table before_source as select pg_temp.snapshot() body;
+select is((select count(*) from public.embryo_ingest_fragments f join private.embryo_ingest_write_intents w
+ on w.session_id=f.session_id and w.sequence=f.sequence and w.sample_ordinal=f.sample_ordinal
+ where f.session_id=(select id from live) and w.backend='r2' and w.state='landed' and w.storage_object_id is null),
+ 6::bigint,'all six synthetic fragments pass the real R2 receipt verifier without Storage rows');
 create function pg_temp.request_without_contact() returns uuid language plpgsql as $$
 begin
  update public.encrypted_contact_references set status='rotated',ended_at=clock_timestamp()
@@ -94,6 +98,32 @@ select is((select count(*) from pg_constraint where contype='f' and conrelid in(
  'public.embryo_ingest_sessions'::regclass,'public.worker_jobs'::regclass)),0::bigint,
  'historical receipts cannot preserve a parent authority or runtime foreign key');
 
+-- Crossed receipts and false tombstone reports remain strict refusals. The
+-- caught probes roll back their claims and leave every object pending.
+create function pg_temp.reject_disposal(p_unwind uuid,p_kind text) returns jsonb language plpgsql as $$
+declare item private.embryo_ingest_object_disposals; receipt jsonb; evidence jsonb;
+begin
+ perform public.claim_embryo_ingest_object_disposals_v1(p_unwind,repeat('a',64));
+ select * into strict item from private.embryo_ingest_object_disposals
+  where unwind_id=p_unwind order by ordinal limit 1;
+ receipt:=private.embryo_ingest_disposal_receipt_v1(item);
+ evidence:=jsonb_build_object('version','embryo-ingest-object-tombstone-evidence-v1','provider','r2',
+  'disposition','payload-tombstoned','bucket',item.bucket_id,'objectKey',item.object_name,
+  'providerVersion',repeat('9',32),'etag','d41d8cd98f00b204e9800998ecf8427e','byteCount',0,
+  'sha256','e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+ if p_kind='crossed' then receipt:=jsonb_set(receipt,'{objectKey}',to_jsonb('embryo/crossed'::text));
+ else evidence:=jsonb_set(evidence,'{sha256}',to_jsonb(repeat('a',64))); end if;
+ return public.finish_embryo_ingest_object_disposal_v1(p_unwind,item.ordinal,repeat('a',64),receipt,evidence);
+end $$;
+select throws_ok(format('select pg_temp.reject_disposal(%L::uuid,''crossed'')',x->>'unwindId'),
+ '42501','embryo_unwind_unavailable','a crossed planned R2 object receipt cannot acknowledge cleanup')
+ from jsonb_array_elements(public.account_embryo_unwinds_v1((select id from deletion),repeat('d',64))) x;
+select throws_ok(format('select pg_temp.reject_disposal(%L::uuid,''hash'')',x->>'unwindId'),
+ '22023','invalid_disposal_evidence','a nonempty payload digest cannot masquerade as an empty R2 tombstone')
+ from jsonb_array_elements(public.account_embryo_unwinds_v1((select id from deletion),repeat('d',64))) x;
+select is((select count(*) from private.embryo_ingest_object_disposals where state='disposed'),0::bigint,
+ 'refused receipt and evidence probes mark no object disposed');
+
 -- Exact synthetic provider acknowledgements target the SQL verifier only.
 create function pg_temp.dispose(p_unwind uuid) returns text language plpgsql as $$
 declare claimed jsonb; receipt jsonb; evidence jsonb; item private.embryo_ingest_object_disposals; result jsonb;
@@ -107,11 +137,7 @@ begin
     'providerVersion',lpad(item.ordinal::text,32,'9'),'etag','d41d8cd98f00b204e9800998ecf8427e','byteCount',0,
     'sha256','e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
   else
-   delete from storage.objects where id=(receipt->>'storageObjectId')::uuid and version=receipt->>'storageVersion'
-    and bucket_id=receipt->>'bucket' and name=receipt->>'objectKey';
-   evidence:=jsonb_build_object('version','embryo-ingest-object-delete-evidence-v1','provider','supabase','disposition','object-deleted',
-    'objectId',receipt->'storageObjectId','bucket',receipt->'bucket','objectKey',receipt->'objectKey',
-    'storageVersion',receipt->'storageVersion','byteCount',receipt->'byteCount');
+   raise exception 'account R2 verifier fixture selected an unexpected provider';
   end if;
   perform public.finish_embryo_ingest_object_disposal_v1(p_unwind,item.ordinal,repeat('a',64),receipt,evidence);
  end loop;

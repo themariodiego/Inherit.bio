@@ -186,7 +186,7 @@ begin
   limit 1
   for update of sp;
 
-  if (select count(*) from public.encrypted_contact_references where principal_id=v_principal.id and status='current')>1 then
+  if (select count(*) from public.encrypted_contact_references ecr where ecr.principal_id=v_principal.id and ecr.status='current')>1 then
     raise exception using errcode='55000',message='account_notice_binding_unavailable'; end if;
 
   select greatest(coalesce(max(sp.principal_revision), 1), 1)
@@ -438,10 +438,10 @@ begin
     raise exception using errcode='55000',message='account_notice_binding_unavailable'; end if;
   update public.subject_principals set principal_revision=principal_revision+1
   where id=v_principal.id returning * into v_principal;
-  if (select count(*) from public.encrypted_contact_references where principal_id=v_principal.id and status='current')<>1 then
+  if (select count(*) from public.encrypted_contact_references ecr where ecr.principal_id=v_principal.id and ecr.status='current')<>1 then
     raise exception using errcode='55000',message='account_notice_binding_unavailable'; end if;
-  update public.encrypted_contact_references set authority_revision=v_principal.principal_revision
-  where principal_id=v_principal.id and status='current';
+  update public.encrypted_contact_references ecr set authority_revision=v_principal.principal_revision
+  where ecr.principal_id=v_principal.id and ecr.status='current';
   delete from auth.sessions where user_id=p_account_id;
 
   select ecr.id into strict v_contact_id

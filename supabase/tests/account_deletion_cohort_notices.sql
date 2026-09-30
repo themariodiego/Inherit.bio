@@ -4,6 +4,10 @@ select no_plan();
 \ir fixtures/future_person_custody_source.inc
 create temporary table recipients as select distinct p.id from public.subject_principals p
  where p.id=any(private.embryo_cohort_set_v1((select cohort_id from live),'notice_recipients'));
+select throws_ok($$select private.assert_supported_account_fk_shape_v1(
+ '7a000000-0000-0000-0000-000000000002',
+ array(select subject_id from public.embryos where cohort_id=(select cohort_id from live)),'{}'::uuid[])$$,
+ '55000','unsupported_account_graph','a counterpart cannot admit the owner embryo subject tuple as its own graph');
 create function pg_temp.request(p_key text) returns uuid language sql as $$
  select deletion_id from public.request_account_deletion_v2(
  '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',

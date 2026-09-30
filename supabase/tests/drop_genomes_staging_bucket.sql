@@ -13,15 +13,14 @@ select is((select column_default from information_schema.columns where table_sch
  and column_name='storage_bucket'),'''genomes''::text','a session that omits its bucket names genomes, which exists');
 select ok((select allowed_mime_types is null and not public from storage.buckets where id='genomes'),'genomes is unchanged');
 
--- No policy, and no live function body outside the one recorded manifest
--- builder, still names the dropped bucket. The embryo unwind planner stopped
--- naming it when #255 (20260929101000) fixed D-130's embryo leg.
+-- No policy or live function body still names the dropped bucket. The account
+-- manifest builder now preserves exact current Storage identity without a
+-- retired-bucket literal, so its former exception is no longer appropriate.
 select is_empty($$select policyname from pg_policies where schemaname='storage'
  and (coalesce(qual,'')||coalesce(with_check,'')) like '%genomes-staging%'$$,'no storage policy names the dropped bucket');
-select set_eq($$select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+select is_empty($$select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%genomes-staging%'$$,
- array['claim_due_account_deletion_v1(text,integer)'],
- 'only the account-deletion manifest builder still carries the literal');
+ 'no live function names the retired staging bucket');
 
 -- The one surviving upload path cannot reach it: every token-bearing
 -- session must name genomes.

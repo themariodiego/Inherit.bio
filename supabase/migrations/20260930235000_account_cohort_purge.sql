@@ -475,7 +475,7 @@ declare
     'user_variants.subject_id', 'user_variants.user_id',
     'worker_jobs.subject_id', 'worker_jobs.user_id',
     'embryo_cohort_drafts.owner_account_id','embryo_cohort_drafts.uploader_principal_id',
-    'embryo_cohorts.owner_account_id','embryo_draft_participants.principal_id',
+    'embryo_cohorts.owner_account_id','embryos.subject_id','embryo_draft_participants.principal_id',
     'draft_participant_slots.principal_id','embryo_participant_sets.principal_id',
     'embryo_donor_attributions.donor_principal_id',
     'embryo_ingest_sessions.account_id','embryo_ingest_sessions.uploader_principal_id',
@@ -485,6 +485,15 @@ declare
     'embryo_disposition_proposals.proposer_principal_id','embryo_operation_nonces.account_id'
   ];
 begin
+  -- This newly supported FK is only the exact live owner-cohort tuple.
+  -- An arbitrary embryo pointing into the selected subject list is not an
+  -- owned graph and cannot gain admission from the table-name census.
+  if exists(select 1 from public.embryos e join public.subjects s on s.id=e.subject_id
+    where e.subject_id=any(p_subject_ids) and (s.subject_class<>'embryo'
+      or s.cohort_id is distinct from e.cohort_id
+      or not exists(select 1 from public.embryo_cohorts c where c.id=e.cohort_id
+        and c.owner_account_id=p_account_id and s.owner_account_id=p_account_id))) then
+    raise exception using errcode='55000',message='unsupported_account_graph'; end if;
   -- These hash-only replay receipts are now also written by canonical own
   -- choices. Admit only an exact owned historical self-grant tuple. Current
   -- validity is intentionally irrelevant after withdrawal/deletion hold.
