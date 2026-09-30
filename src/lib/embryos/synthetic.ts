@@ -1,3 +1,4 @@
+import { resultBasis } from "../figures/result-basis";
 /**
  * Synthetic embryo fixtures for the unit suite (C7: they describe no one).
  * Every value is invented here for a test; nothing is a real embryo, a real
@@ -53,7 +54,7 @@ export function syntheticAbsoluteFinding(
     condition_id: conditionId,
     condition_name: `Synthetic condition ${conditionId}`,
     finding: {
-      kind: "absolute_risk",
+      kind: "absolute_risk", schema_version: 2, figure_basis: resultBasis("modelled"),
       risk_model: {
         model_id: `synthetic-model-${conditionId}`,
         model_version: "1",
@@ -124,7 +125,7 @@ export function syntheticCarrierFinding(
     condition_id: conditionId,
     condition_name: `Synthetic condition ${conditionId}`,
     finding: {
-      kind: "carrier_status",
+      kind: "carrier_status", schema_version: 2, figure_basis: resultBasis("observed"),
       carrier_state: state,
       inheritance_mode: "autosomal_recessive",
       confirmation_required: true,
@@ -143,7 +144,7 @@ export function syntheticCoverageFailure(embryoLabel: string, conditionId: strin
     condition_id: conditionId,
     condition_name: `Synthetic condition ${conditionId}`,
     finding: {
-      kind: "coverage_failure",
+      kind: "coverage_failure", schema_version: 2, figure_basis: resultBasis("observed"),
       metric: "score_coverage",
       measured_value: 0.6,
       required_minimum: 0.8,
