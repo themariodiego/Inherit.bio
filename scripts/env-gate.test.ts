@@ -117,17 +117,20 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // capability, which reads the flag through `isTestJurisdictionEnabled`.
     // The seventh binding is the same shape in `declarableCode`
     // (`src/lib/legal/jurisdiction-declaration.ts`), which admits the
-    // block-only row's stored code only while that flag is on. It is 21:
-    // the embryo fragment transport (`src/lib/embryos/fragment-storage.ts`)
-    // reads INHERIT_EMBRYO_R2_ORIGIN and INHERIT_EMBRYO_R2_BUCKET directly, and
-    // G5.4's keyring reads `INHERIT_HMAC_KEYRING` as the default argument of
+    // block-only row's stored code only while that flag is on. An eighth,
+    // `copilotGroupScopes` (`src/lib/copilot/group-scopes.ts`), read the same
+    // flag for one day and is gone again: on 2026-09-28 the owner turned the
+    // Family Copilot scope on everywhere (PR #260), so it reads no
+    // environment at all, and the count is back to seven with no key lost.
+    // Direct reads are 21 since the embryo fragment transport
+    // (`src/lib/embryos/fragment-storage.ts`) reads INHERIT_EMBRYO_R2_ORIGIN and
+    // INHERIT_EMBRYO_R2_BUCKET directly, and G5.4's keyring reads
+    // `INHERIT_HMAC_KEYRING` directly as the default argument of
     // `keyedDigestSet`; all three are declared in the template and named in
-    // the guide. The eighth binding (G5.4, 2026-09-28) is `futurePersonClaimsOpen`
-    // (`src/lib/future-person/claims-open.ts`), which reads the same
-    // `INHERIT_TEST_JURISDICTION` through a defaulted `env` parameter, so it
-    // adds a binding and no new variable.
+    // the guide.
     expect(result.directReadKeyCount).toBe(21);
     expect(result.boundReadKeyCount).toBe(16);
+    // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
     expect(result.boundBindingCount).toBe(8);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(37);
