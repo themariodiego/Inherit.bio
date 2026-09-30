@@ -2948,6 +2948,7 @@
         "rule": "for-every-authorizing-purpose-the-mail-worker-locks-the-exact-outbox-row-and-current-server-owned-authority-rows-rechecks-every-authorityRevisionBinding-immediately-before-creating-a-raw-token-and-again-immediately-before-provider-submission-then-creates-the-raw-token-only-in-bounded-memory-commits-only-its-hash-purpose-target-authority-revisions-and-expiry-constructs-the-link-from-issuance.link-and-zeroizes-the-raw-value-after-provider-submission; any-stale-terminal-mismatch-or-cancellation-writes-no-token-and-makes-no-provider-call"
       },
       "retry": "for-delivery-retries-of-the-same-authorizing-source-every-regeneration-creates-a-new-raw-token-and-new-hash-and-atomically-revokes-or-replaces-the-prior-hash-before-provider-submit-including-definitive-failure-uncertain-outcome-and-scheduled-reminder-reissue; the-public-rights-credential-reissue-v1-flow-is-the-only-exception-and-creates-a-separate-non-authorizing-recovery-delivery-candidate-that-does-not-revoke-any-live-source-or-session-until-successful-api.rights-activate; the-same-hash-can-never-correspond-to-a-new-token-and-no-durable-plaintext-is-required",
+      "providerAttemptKey": "the-provider-idempotency-key-binds-the-outbox-semantic-key-and-exact-attempt-ordinal-for-every-token-bearing-delivery; repeated-submission-of-one-attempt-retains-the-identical-key-and-payload-in-bounded-memory-but-regeneration-on-a-successor-attempt-uses-a-different-provider-key-and-new-raw-token-after-atomic-prior-hash-revocation; the-outbox-semantic-key-still-deduplicates-the-authorizing-event-and-neither-provider-payload-nor-raw-token-is-persisted-or-logged",
       "invitationReminderRotation": "the-single-invitation.reminder-7d-due-phase-may-only-lock-the-unchanged-invitation-authority-contact-and-fixed-expiry-and-atomically-enqueue-exactly-one-deduplicated-token-free-outbox-row-bound-to-those-immutable-revisions; only-jobs.mail-may-claim-that-row-create-one-new-raw-replacement-token-in-bounded-memory-and-immediately-before-provider-submit-atomically-revoke-and-replace-the-prior-live-hash-so-exactly-one-live-hash-remains-then-submit-zeroize-the-raw-value-and-record-the-coded-provider-outcome; the-prior-raw-value-is-never-read-or-reused-no-parallel-token-is-created-and-the-invitation-deadline-is-never-extended",
       "providerPayload": "contains-only-the-minimum-recipient-template-and-fixed-fragment-link; Resend-click-tracking-link-rewriting-and-template-analytics-wrappers-are-disabled-for-every-fragment-bearer-message-and-open-tracking-is-disabled; Resend-native-email-data-retention-is-hard-bounded-by-the-persisted-mail.resend-provider-payload-30d-deadline-from-docs/retention.md-or-a-shorter-contractually-enforced-Enterprise-setting-and-the-key-is-least-privilege-with-dashboard-access-restricted; an-expired-or-rotated-link-is-cryptographically-useless-even-while-provider-retained; application-logs-webhook-payload-storage-analytics-and-audit-never-contain-the-token-or-link",
       "claimObjectionCredential": "for-the-current-owner_user_id-only-create-or-refresh-one-objection-rights-credential-when-that-notice-delivery-is-committed-and-set-its-hard-absolute-expiry-equal-to-the-owner-notice-deadline-never-earlier-or-later; if-the-owner-has-an-account-an-equivalent-authenticated-session-bound-objection-action-remains-available-only-through-that-deadline; release-refusal-withdrawal-terminalization-or-objection-decision-atomically-invalidates-it-and-no-former-owner-parent-or-other-principal-is-notified",
@@ -3075,7 +3076,18 @@
       "contracts": [
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
-      ]
+      ],
+      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC"
+    },
+    "claim-review-receipt-v1": {
+      "purpose": "prove-complete-client-receipt-of-each-exact-clean-document-chunk-before-a-named-human-review-decision; receipt-is-not-the-human-documentary-attestation",
+      "open": "only-an-authorized-api.claim-review-receipt-POST-consumes-the-distinct-stateless-page-nonce-and-stores-random-challenges; GET-does-not-create-or-store-a-challenge-or-operation-nonce",
+      "proof": "SHA-256-of-32-byte-challenge-followed-by-the-exact-plaintext-chunk; challenge-is-bound-to-download-id-sequence-and-document-digest; public-whole-file-digest-is-insufficient",
+      "preparation": "only-service-role-transport-may-store-an-expected-proof-after-opening-and-verifying-the-exact-Storage-bytes; direct-reviewer-JWT-preparation-and-settlement-helper-access-are-denied",
+      "acknowledgement": "an-operation-specific-reviewer-JWT-door-rechecks-live-auth-MFA-current-account-session-review-and-assignment-revisions-current-download-cookie-and-clean-document; exact-proof-and-distinct-acknowledgement-nonce-settle-atomically-once",
+      "refusal": "unacknowledged-partial-canceled-corrupt-other-chunk-other-session-other-assignment-rotated-credential-or-replayed-proofs-do-not-satisfy-the-document-read-requirement",
+      "client": "read-every-exact-chunk-and-verify-full-size-and-sha256-before-acknowledging; cancellation-or-truncation-before-complete-assembly-sends-zero-acknowledgements",
+      "rawGet": "api.download-chunk-retains-the-exact-registered-raw-byte-body-and-closed-headers; challenges-and-acknowledgement-nonces-travel-only-in-the-authorized-receipt-POST-response"
     }
   },
   "payloadBoundaryContract": {
@@ -4343,7 +4355,11 @@
             "retentionMaximumDays",
             "allowedActionIds"
           ],
-          "geneticData": "not-read-on-the-page-and-available-only-through-the-exact-operation-specific-export-route"
+          "geneticData": "not-read-on-the-page-and-available-only-through-the-exact-operation-specific-export-route",
+          "retentionMaximumDays": {
+            "const": null,
+            "meaning": "no-source-retention-deadline-for-a-claimed-record-kept-until-claimant-deletion; temporary-contact-expiry-is-separate"
+          }
         }
       },
       "pageProjectionRule": "select-exactly-one-server-purpose-case-before-any-target-read-fetch-only-that-closed-projection-and-serialize-no-unlisted-nested-field; raw-data-bytes-are-never-a-page-projection-and-require-the-explicit-export-create-and-chunk-contracts",
@@ -6285,9 +6301,11 @@
             "public.token_hashes",
             "public.token_candidates",
             "public.rights_sessions",
-            "public.rights_nonces"
+            "public.rights_nonces",
+            "public.future_person_claim_notices",
+            "public.future_person_claim_release_credentials"
           ],
-          "joinRule": "select-only-by-the-exact-retention-campaign-invitation-claim-review-export-subject-cohort-or-recipient-authority-FK-and-revision; independently-authorized-minimal-terminal-notice-rows-are-explicit-manifest-exclusions-until-their-own-retention-class-is-due; review-working-and-claim-working-select-only-case-bound-delivery-state-and-never-an-unrelated-notice",
+          "joinRule": "select-only-by-the-exact-retention-campaign-invitation-claim-review-export-subject-cohort-or-recipient-authority-FK-and-revision; independently-authorized-minimal-terminal-notice-rows-are-explicit-manifest-exclusions-until-their-own-retention-class-is-due; review-working-and-claim-working-select-only-case-bound-delivery-state-and-never-an-unrelated-notice; future-person.claimed-unbound-24mo selects only its exact claimant/contact/outbox/release revision and never durable claim approval, claimant principal, verified identity HMAC, Recovery Key, source, result or agreement slice",
           "manifestClasses": [
             "notice-contact-working",
             "invitation-working",
@@ -6310,9 +6328,7 @@
             "public.future_person_claim_documents",
             "public.future_person_claim_review_packages",
             "public.future_person_claim_assignments",
-            "public.future_person_claim_notices",
-            "public.future_person_claim_objections",
-            "public.future_person_claim_release_credentials"
+            "public.future_person_claim_objections"
           ],
           "joinRule": "select-only-the-exact-public.future_person_claims-row-and-claim-session-or-review-package-plus-its-document-object-references-contact-notice-objection-release-and-assignment-revisions; working-class-deletion-preserves-only-the-coded-resolution-timestamps-and-pseudonymized-audit-when-the-retention-authority-explicitly-requires-that-residue-and-never-selects-the-underlying-subject",
           "manifestClasses": [
@@ -7027,7 +7043,7 @@
         "migrationGate": "before-and-after-each-migration-introspect-pg_catalog-and-information_schema-including-partitions-and-view-dependencies-then-run-the-set-equality-and-store-target-class-edge-inverse-checks; a-migration-that-adds-renames-drops-or-reclassifies-a-store-without-updating-docs/schema-requirements.md-and-this-registry-fails-before-application-code-runs"
       },
       "schemaCoverage": "docs/schema-requirements.md-migrations-pg_catalog-and-Storage-metadata-are-compared-by-schemaIntrospectionValidation-with-exact-disjoint-set-equality; no-table-view-materialized-view-partition-object-class-reference-store-or-sensitive-edge-may-rely-on-a-name-heuristic-or-remain-unclassified",
-      "zeroResidualVerification": "after-each-batch-and-before-phase-completion-use-a-service-role-only-SECURITY-DEFINER-verifier-under-the-same-target-and-manifest-revision-to-count-every-prohibited-row-and-DB-joined-current-or-legacy-storage-object-across-all-orderedTargets; completion-requires-zero-for-every-applicable-targetId-and-a-nonzero-unknown-unclassified-or-unverifiable-count-fails-closed; only-after-that-proof-atomically-terminalize-but-do-not-delete-the-exact-active-retention-disposition-phase-manifest-and-worker-control-rows-with-coded-counts-for-crash-recovery-and-replay-defense; any-later-control-tombstone-cleanup-requires-a-separate-registered-nonauthorizing-housekeeping-retention-ID",
+      "zeroResidualVerification": "after-each-batch-and-before-phase-completion-use-a-service-role-only-SECURITY-DEFINER-verifier-under-the-same-target-and-manifest-revision-to-count-every-prohibited-row-and-DB-joined-current-or-legacy-storage-object-across-all-orderedTargets; completion-requires-zero-for-every-applicable-targetId-and-a-nonzero-unknown-unclassified-or-unverifiable-count-fails-closed; only-after-that-proof-atomically-terminalize-but-do-not-delete-the-exact-active-retention-disposition-phase-manifest-and-worker-control-rows-with-coded-counts-for-crash-recovery-and-replay-defense; any-later-control-tombstone-cleanup-requires-a-separate-registered-nonauthorizing-housekeeping-retention-ID; the-ingest-abandoned-no-source-verifier-skips-exactly-one-named-reference-public.legal_reviews.target_id-only-for-an-approved-single_parent_basis-review-which-is-a-retained-human-review-decision-(owner-2026-09-28;-supabase/migrations/20260930131000_embryo_purge_retained_review.sql)",
       "contracts": [
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
@@ -8460,6 +8476,16 @@
         "targetSource": "rights-session-bound-withdrawal-target",
         "operation": "token-target-export",
         "authorization": "recompute-every-bound-subject-joint-contributor-grant-and-other-adult-mitigation-state-v1-before-generation-before-each-source-read-and-before-each-chunk; jurisdiction-is-bypassed-for-the-data-subjects-own-right-but-current-confirmation-and-lifecycle-remain-required"
+      },
+      "api.claim-review-receipt": {
+        "targetSource": "server-bound-download-row-review-document-and-current-named-assignment",
+        "operation": "claim-document-receipt",
+        "authorization": "claim-review-receipt-v1-current-live-reviewer-MFA-session-and-assignment"
+      },
+      "api.claim-review-chunk-acknowledgement": {
+        "targetSource": "server-bound-download-row-review-document-and-current-named-assignment",
+        "operation": "claim-document-receipt",
+        "authorization": "claim-review-receipt-v1-current-live-reviewer-MFA-session-and-assignment"
       }
     }
   },
@@ -12222,7 +12248,19 @@
         "malware-clear",
         "fresh-envelope-encrypted-object",
         "fragment-deletion"
-      ]
+      ],
+      "scanning": {
+        "status": 202,
+        "contentType": "application/json",
+        "body": {
+          "status": {
+            "const": "scanning"
+          }
+        },
+        "retryAfterSeconds": 5,
+        "unknownFieldsRecursively": "forbidden",
+        "rule": "owner-decision-2026-09-28: while-the-composed-document-is-quarantined-awaiting-the-malware-scan-worker-the-route-answers-this-and-nothing-else; the-same-session-cookie-and-completion-nonce-may-repeat-the-request-to-read-the-outcome-and-the-201-is-returned-only-after-malware-clear"
+      }
     },
     "evidence-review-v1": {
       "status": 200,
@@ -13354,6 +13392,29 @@
         "effects": "the-same-attemptFailure-effects-as-buildUnknown"
       },
       "selection": "exactly-one-branch-per-request; the-header-build-is-decided-before-the-sample-count-and-no-branch-returns-any-submitted-line-or-count"
+    },
+    "claim-review-receipt-v1": {
+      "success": {
+        "status": 201,
+        "contentType": "application/json",
+        "body": {
+          "session": "current-download-UUID",
+          "chunks": "one-closed-sequence-challenge-and-distinct-nonce-object-for-each-server-recorded-chunk"
+        },
+        "unknownFieldsRecursively": "forbidden",
+        "headers": {
+          "X-Inherit-CSRF": "receipt-session-bound-CSRF-distinct-from-every-chunk-operation-nonce"
+        }
+      },
+      "objectPathUrlOrCredentialInBody": "forbidden-except-the-explicit-short-lived-acknowledgement-nonce"
+    },
+    "empty-acknowledgement-v1": {
+      "success": {
+        "status": 204,
+        "body": "empty"
+      },
+      "cache": "private-no-store",
+      "unknownFields": "forbidden"
     }
   },
   "responseContractBindings": {
@@ -13876,6 +13937,14 @@
       "api.file-delete": [
         "resource-not-found-v1",
         "capability-denied-api-v1"
+      ],
+      "api.claim-review-receipt": [
+        "claim-review-receipt-v1",
+        "resource-not-found-v1"
+      ],
+      "api.claim-review-chunk-acknowledgement": [
+        "empty-acknowledgement-v1",
+        "resource-not-found-v1"
       ]
     }
   },
@@ -14120,17 +14189,17 @@
     },
     "public-rights-flow": {
       "supported": [
-        "complete"
+        "complete",
+        "processing"
       ],
       "notApplicable": {
         "awaiting-choice": "A rights request is about data already held. It offers no analysis to choose and does not read whether a file is prepared.",
-        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is \u201cClaims are not open yet\u201d, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its \u201cempty\u201d word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
-        "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
+        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim always shows the refusal standard and then either the claim form or, where claims are not open, \u201cClaims are not open yet\u201d, which is what the page is rather than an absence (re-read 2026-09-28). /withdraw/[token] renders an outcome or the invitation; its \u201cempty\u201d word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
         "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked.",
-        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The claim start added 2026-09-28 keeps to it: a stale or foreign form is notFound(), a malformed body marks its fields, and a start over a limit gets the one shared try-again answer; none of the three is a fault. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "redirect": {
@@ -14400,6 +14469,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
+      "notApplicableStates": {
+        "processing": "/legal/appeals performs no request at all: it is a static legal page with no form and no button. Moved here from the public-rights-flow profile on 2026-09-28, when /future-person/claim began performing one. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "mode": "right",
         "jurisdictionBypass": true,
@@ -14582,6 +14654,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
+      "notApplicableStates": {
+        "processing": "PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Moved here from the public-rights-flow profile on 2026-09-28. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "sessionMode": "requires-an-active-rights-cookie-then-resolves-the-server-owned-token-purpose-through-withdrawal-target-v1.purposeMatrix-before-any-target-read",
         "dataScope": "rights-session-bound-target-only-after-activation",
@@ -19013,9 +19088,9 @@
         },
         "clientRangeOffsetOrObjectPath": "forbidden",
         "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session",
-          "X-Inherit-Chunk-Nonce": "one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256"
-        }
+          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session"
+        },
+        "chunkAuthority": "owner-decision-2026-09-28: the-server-reserves-each-session-sequence-once-in-the-transaction-that-rechecks-the-session-principal-target-lifecycle-cumulative-bytes-and-the-server-computed-chunk-sha256; a-replayed-or-reused-sequence-is-refused-so-no-separate-one-time-chunk-nonce-is-required"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -19932,7 +20007,23 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                },
+                "recordedParentLinkConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -19940,7 +20031,20 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -19948,7 +20052,20 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -19956,7 +20073,23 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                },
+                "recordedParentLinkConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -21124,6 +21257,102 @@
       },
       "disposition": "kept",
       "successResponseContract": "empty-provider-acknowledgement"
+    },
+    {
+      "id": "api.claim-review-receipt",
+      "path": "/api/downloads/[session]/receipt",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "reviewer",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "session": "canonical-lowercase-UUID-bound-to-the-current-download-cookie-and-named-reviewer"
+      },
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "nonce": "required-distinct-recent-stateless-page-token-bound-to-exact-document-reviewer-and-auth-session"
+        },
+        "requiredSignals": [
+          "Origin-exactly-canonical-origin",
+          "Sec-Fetch-Site-same-origin",
+          "X-Inherit-CSRF-distinct-from-the-operation-nonce"
+        ],
+        "unknownMissingInvalidOrAmbiguous": "resource-not-found-v1"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "reviewer",
+        "jurisdictionBypass": true,
+        "contracts": [
+          "resource-authorization-v1",
+          "claim-review-receipt-v1"
+        ],
+        "authority": "current-named-reviewer-assignment-live-MFA-and-recent-auth-session-revision"
+      },
+      "successResponseContract": "claim-review-receipt-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.claim-review-chunk-acknowledgement",
+      "path": "/api/downloads/[session]/chunks/[sequence]/acknowledge",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "reviewer",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "session": "canonical-lowercase-UUID-bound-to-the-current-download-cookie-and-named-reviewer",
+        "sequence": "canonical-integer-0-through-4-less-than-server-chunk-count"
+      },
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "proof": "64-lowercase-hex-SHA-256-challenge-and-exact-plaintext-chunk",
+          "nonce": "required-distinct-recent-per-chunk-token-from-the-receipt-POST"
+        },
+        "requiredSignals": [
+          "Origin-exactly-canonical-origin",
+          "Sec-Fetch-Site-same-origin",
+          "X-Inherit-CSRF-distinct-from-the-operation-nonce"
+        ],
+        "unknownMissingInvalidOrAmbiguous": "resource-not-found-v1"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "reviewer",
+        "jurisdictionBypass": true,
+        "contracts": [
+          "resource-authorization-v1",
+          "claim-review-receipt-v1"
+        ],
+        "authority": "current-named-reviewer-assignment-live-MFA-and-recent-auth-session-revision"
+      },
+      "successResponseContract": "empty-acknowledgement-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "reviews.future-person-claim",
+      "path": "/reviews/future-person/claims/[id]",
+      "kind": "page",
+      "domain": "rights",
+      "auth": "reviewer",
+      "surface": "standard",
+      "width": "64rem",
+      "stateProfile": "auth-flow",
+      "policy": {
+        "mode": "named-human-claim-review",
+        "resolver": "reviewer-api-v1",
+        "jurisdictionBypass": true,
+        "requires": "current-named-human-reviewer-assignment-own-JWT-live-session-and-recent-MFA-before-render-and-at-every-document-receipt-or-decision",
+        "byteRead": "complete-exact-size-and-SHA256-verified-document-before-any-acknowledgement-separate-explicit-human-attestation-no-local-storage-or-download",
+        "approvalScope": "record-key-only-other-approval-branches-remain-closed"
+      },
+      "disposition": "kept",
+      "expectedStatus": 200
     }
   ],
   "storagePrefixes": [

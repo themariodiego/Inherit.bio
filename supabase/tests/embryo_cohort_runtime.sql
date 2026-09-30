@@ -838,6 +838,9 @@ select throws_ok(
 select is(
   (select count(*) from pg_event_trigger where evtname = 'embryo_forbidden_columns_guard'),
   1::bigint, 'the forbidden-column guard exists');
+-- Run the real valid custody checks before DDL; pending deferred events must
+-- not mask the existing forbidden-column refusal.
+set constraints all immediate;
 select throws_ok(
   $$alter table public.embryos add column sex text$$,
   '42501', 'forbidden embryo column embryos.sex',

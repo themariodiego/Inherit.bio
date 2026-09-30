@@ -149,3 +149,9 @@ not choose it:
   discovering this only after they trusted it.
 
 None of these announces itself at launch. That is why they are on a checklist.
+
+### Future Person independent document-key preflight · 30 September 2026
+
+The reserved `20260930240000_future_person_document_keys.sql` migration requires the legacy private claim-document session store to be empty. The guarded release must confirm this read-only prerequisite. If legacy encrypted sessions exist, stop this migration and prepare a separately reviewed re-encryption plan that preserves the current bytes, live authority and fixed deadlines. Do not delete valid sessions or substitute independent keys for ciphertext sealed under the old identity key. Fresh TEST-LOCAL fixtures use independent synthetic wrapped envelopes, and the runtime uses the existing deployment key; no new owner secret is required.
+
+The named-reviewer PDF display requires the generated `public/review-document-assets/6.3.289` directory from the same pinned build. The build and development commands prepare it before starting Next. Hosted browser partitions must carry that directory with the build or run `pnpm exec tsx scripts/prepare-review-pdf-assets.mts` after the frozen dependency install. These files contain library code, fonts and manifests only; document bytes remain in the browser's memory. Missing or mismatched support assets fail closed and cannot enable the human read checkbox. Full app browser execution remains required before release.

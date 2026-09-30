@@ -155,6 +155,36 @@ describe("independent mail queues", () => {
     expect(receipts[0][1]).toMatchObject({ p_success: true, p_outcome_code: "accepted" });
   });
 
+  // The payload exactly as the embryo publication transaction builds it
+  // (20260930124000_embryo_publication_dates.sql): the no-source addendum
+  // carries its date; one without it is a payload error, never sent.
+  function claimAddendum(payload: Record<string, unknown>) {
+    let claimed = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") {
+        const data = claimed ? [] : [{ ...row, template_id: "record-key-addendum", template_payload: payload, delivery_token: null }];
+        claimed = true;
+        return { data, error: null };
+      }
+      if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+  }
+  it("delivers a no-source addendum with the date its record is deleted", async () => {
+    const payload = { kind: "no-source", displayLabel: "Embryo 2", closingDateIso: "2028-09-28", closingDateWords: "28 September 2028" };
+    claimAddendum(payload);
+    const response = await POST(workerRequest());
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", { id: "record-key-addendum", payload }, row.idempotency_key);
+  });
+  it("never sends a no-source addendum without its date", async () => {
+    claimAddendum({ kind: "no-source", displayLabel: "Embryo 2" });
+    const response = await POST(workerRequest());
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
   it("records a failure when the provider rejects the request", async () => {
     claimOnce({ data: true, error: null });
     mocks.submit.mockRejectedValue(new Error("provider rejected"));

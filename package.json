@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "tsx scripts/prepare-review-pdf-assets.mts && next dev",
+    "build": "tsx scripts/prepare-review-pdf-assets.mts && next build",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "worker:prepared": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/prepared-worker.run.mts",
+    "worker:claim-scan": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/claim-document-scan-worker.run.mts",
     "test:invitation-locks": "node scripts/invitation-transition-locks.mjs",
     "e2e": "tsx scripts/run-upload-browser.mts --full",
     "e2e:lighthouse": "tsx scripts/run-upload-browser.mts --lighthouse",
@@ -31,7 +32,8 @@
     "seed:participants": "tsx scripts/run-upload-browser.mts --full -- comprehension-participants.spec.ts",
     "comprehension:run": "tsx scripts/comprehension/run.mts",
     "comprehension:records": "tsx scripts/comprehension/records.ts",
-    "comprehension:human": "tsx scripts/comprehension/human-round.ts"
+    "comprehension:human": "tsx scripts/comprehension/human-round.ts",
+    "worker:embryo-split": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/embryo-split-worker.run.mts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",
@@ -50,6 +52,7 @@
     "lucide-react": "^1.35.0",
     "next": "16.3.3",
     "next-themes": "^0.4.6",
+    "pdfjs-dist": "6.3.289",
     "postgres": "3.4.9",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",

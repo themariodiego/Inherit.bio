@@ -129,17 +129,19 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // `keyedDigestSet`; all three are declared in the template and named in
     // the guide.
     expect(result.directReadKeyCount).toBe(21);
-    expect(result.boundReadKeyCount).toBe(16);
-    expect(result.boundBindingCount).toBe(7);
+    expect(result.boundReadKeyCount).toBe(17);
+    // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
+    // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
+    expect(result.boundBindingCount).toBe(9);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(37);
-    expect(result.templateKeyCount).toBe(30);
+    expect(result.readKeyCount).toBe(38);
+    expect(result.templateKeyCount).toBe(31);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(30);
-    expect(result.guideNamedCount).toBe(40);
+    expect(result.guideDocumentedKeyCount).toBe(31);
+    expect(result.guideNamedCount).toBe(41);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(7);
   });

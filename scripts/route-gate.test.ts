@@ -115,9 +115,13 @@ describe("the route gate holds the register to the code", () => {
     // register's jurisdiction refusal (awaiting-choice waived with its
     // reason), and the same change proves it (e2e/copilot-family.spec.ts), so
     // the unproven count does not move.
+    // 154 -> 155: Future Person intake adds its processing state on the
+    // public-rights-flow profile and proves it in future-person-claim.spec.ts.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(154);
+    // The named-reviewer page adds its complete and processing pairs. These
+    // authored titles are statically counted; hosted CI must execute them.
+    expect(result.requiredStateCount).toBe(157);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -940,12 +944,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("reads both shapes the register declares a required header in", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
-    // Both declared shapes still resolve to three names: the evidence chunk
-    // has a requiredHeaders map; other routes use requiredHeader prose.
-    expect(result.requiredHeaderCount).toBe(3);
+    // Both declared shapes still resolve, now to two names: the evidence chunk
+    // has a requiredHeaders map; other routes use requiredHeader prose. The
+    // owner removed `X-Inherit-Chunk-Nonce` from api.evidence-chunk on
+    // 2026-09-28 (the chunk reservation is the authority), so 3 -> 2.
+    expect(result.requiredHeaderCount).toBe(2);
     // `X-Inherit-CSRF` and `X-Inherit-Operation-Nonce` are both minted and
-    // verified in `operation-token.ts`; `X-Inherit-Chunk-Nonce` is named
-    // nowhere outside the register.
+    // verified in `operation-token.ts`, and both are read.
     expect(result.readRequiredHeaderCount).toBe(2);
   });
 
@@ -986,9 +991,9 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails when the singular half of the register stops being read", async () => {
     const root = plant({ register: (register) => strip(register, "requiredHeader") });
     const { failures } = await runRouteGate(root);
-    // Two left: the evidence chunk route's two required headers.
+    // One left: the evidence chunk route's X-Inherit-CSRF.
     expect(failures.join("\n")).toContain(
-      "required header check found 2 declared headers across all routes, expected at least 8",
+      "required header check found 1 declared headers across all routes, expected at least 8",
     );
   });
 
@@ -1006,9 +1011,11 @@ describe("the route gate refuses a required header nothing reads", () => {
   });
 
   it("fails when the register stops declaring a header the ledger still records", async () => {
+    // The register no longer declares the chunk nonce (owner decision
+    // 2026-09-28), so a ledger row that still records it is stale.
     const root = plant({
-      register: (register) => {
-        delete headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"];
+      ledger: (ledger) => {
+        rowsOf(ledger).push({ routeId: "api.evidence-chunk", header: "X-Inherit-Chunk-Nonce" });
       },
     });
     const { failures } = await runRouteGate(root);
@@ -1019,9 +1026,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   });
 
   it("fails when a recorded row names a route that does not declare it", async () => {
+    // An unread header declared on one route and recorded against another.
     const root = plant({
+      register: (register) => {
+        headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"] = "a-token-no-module-mints";
+      },
       ledger: (ledger) => {
-        rowsOf(ledger)[0] = { ...rowsOf(ledger)[0], routeId: "api.embryo-ingest-complete" };
+        rowsOf(ledger).push({ routeId: "api.embryo-ingest-complete", header: "X-Inherit-Chunk-Nonce" });
       },
     });
     const { failures } = await runRouteGate(root);

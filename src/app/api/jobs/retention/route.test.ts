@@ -46,6 +46,43 @@ const run = () => POST(new Request("http://localhost/api/jobs/retention", {
 describe("independent retention queues", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 
+  it.each(["returned","thrown"])("continues retention after a %s document-key erase failure",async(failure)=>{
+    vi.stubEnv("JOBS_SECRET","test-job-secret");idleExceptStranded([]);
+    const baseline=mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async(name:string,...args:unknown[])=>{
+      if(name==="shred_due_claim_working_keys_v1") {
+        if(failure==="thrown")throw new Error("synthetic transport failure");
+        return {data:null,error:{code:"synthetic"}};
+      }
+      return baseline(name,...args);
+    });
+    const response=await run();
+    expect(await response.json()).toEqual({status:"complete",outcome:"completed_with_failures"});
+    expect(mocks.rpc.mock.calls.filter(call=>call[0]==="shred_due_claim_working_keys_v1")).toEqual([["shred_due_claim_working_keys_v1"]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_document_objects_due_v1",{p_limit:100});
+    expect(mocks.rpc).toHaveBeenCalledWith("purge_due_future_person_contacts_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1",expect.any(Object));
+  });
+
+  it.each(["returned","thrown"])("keeps temporary claimant contact cleanup independent when its failure is %s",async(failure)=>{
+    vi.stubEnv("JOBS_SECRET","test-job-secret");idleExceptStranded([]);
+    const baseline=mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async(name:string,...args:unknown[])=>{
+      if(name==="purge_due_future_person_contacts_v1") {
+        if(failure==="thrown")throw new Error("synthetic transport failure");
+        return {data:null,error:{code:"synthetic"}};
+      }
+      return baseline(name,...args);
+    });
+    const response=await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({status:"complete",outcome:"completed_with_failures"});
+    expect(mocks.rpc.mock.calls.filter(call=>call[0]==="purge_due_future_person_contacts_v1")).toEqual([["purge_due_future_person_contacts_v1"]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_adult_subject_invitations_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1",expect.any(Object));
+  });
+
   it("continues invitation, draft and account retention when terminal-contact expiry fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
@@ -199,5 +236,48 @@ describe("stranded file deletion backstop", () => {
     ]);
     expect(mocks.remove).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).not.toHaveBeenCalledWith("finish_genome_file_deletion_claimed_v1", expect.anything());
+  });
+});
+
+describe("Future Person claim document objects", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
+
+  const KEY = "11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/33333333-3333-4333-8333-333333333333";
+  function claimObjects(due: unknown) {
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "claim_document_objects_due_v1") return due as { data: unknown; error: unknown };
+      if (name === "confirm_claim_document_objects_deleted_v1") return { data: 1, error: null };
+      if (name === "purge_future_person_claim_intakes_v1") return { data: 1, error: null };
+      return { data: null, error: null };
+    });
+  }
+
+  it("deletes the due objects from the claim bucket, confirms them, and only then purges the claim", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    claimObjects({ data: [{ object_key: KEY }], error: null });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.remove.mock.calls).toEqual([["future-person-identity", [KEY]]]);
+    const order = mocks.rpc.mock.calls.map((call) => call[0]).filter((name) =>
+      ["close_due_claim_reviews_v1", "shred_due_claim_working_keys_v1", "claim_document_objects_due_v1", "confirm_claim_document_objects_deleted_v1",
+        "purge_future_person_claim_intakes_v1"].includes(name as string));
+    // Reviews past their deadline close first, so their documents are due in the same run.
+    expect(order).toEqual(["close_due_claim_reviews_v1", "shred_due_claim_working_keys_v1", "claim_document_objects_due_v1",
+      "confirm_claim_document_objects_deleted_v1", "purge_future_person_claim_intakes_v1"]);
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_claim_document_objects_deleted_v1",
+      { p_object_keys: [KEY], p_route_id: "jobs.retention" });
+  });
+
+  it("confirms nothing when Storage refuses the deletion", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    claimObjects({ data: [{ object_key: KEY }], error: null });
+    mocks.remove.mockResolvedValue({ data: null, error: { message: "private storage failure" } });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).not.toHaveBeenCalledWith("confirm_claim_document_objects_deleted_v1", expect.anything());
   });
 });

@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCATION_UNAVAILABLE_BODY, LOCATION_UNAVAILABLE_TITLE } from "@/copy/availability";
 import { isEmbargoedCountry, isEmbargoedLocation } from "@/lib/legal/service-restrictions";
+import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
+import { CLAIM_FORM_TOKEN_HEADER, claimFormSecret, mintClaimForm } from "@/lib/future-person/claim-session";
 
 /**
  * Response headers every page or endpoint that can read or write user,
@@ -82,8 +84,16 @@ export async function proxy(request: NextRequest) {
   // signed-in account. An unrelated account's deletion notice must not block
   // the recipient from declining an invitation.
   if (request.nextUrl.pathname === "/api/rights/activate"
-    || request.nextUrl.pathname === "/api/withdraw/session") {
+    || request.nextUrl.pathname === "/api/withdraw/session"
+    || request.nextUrl.pathname === "/api/future-person/claim"
+    || request.nextUrl.pathname.startsWith("/api/future-person/claim/session/")
+    || request.nextUrl.pathname.startsWith("/api/evidence/")) {
     return withSensitiveHeaders(NextResponse.next({ request }));
+  }
+  // The public claim page reads only what the claimant types: no account,
+  // no record, no prior claim (rights.future-person-claim.policy.dataScope).
+  if (request.nextUrl.pathname === "/future-person/claim") {
+    return claimPage(request);
   }
   let response = NextResponse.next({ request });
 
@@ -130,7 +140,8 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/settings");
 
-  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/");
+  const isClaimReviewPage=path.startsWith("/reviews/future-person/claims/");
+  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isClaimReviewPage;
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -190,7 +201,36 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return sensitive ? withSensitiveHeaders(response) : response;
+  if(sensitive)withSensitiveHeaders(response);
+  if(isClaimReviewPage)response.headers.set("Referrer-Policy","no-referrer");
+  return response;
+}
+
+/**
+ * `GET /future-person/claim` while claims are open: a non-authorizing form
+ * pair. The cookie goes to the browser, and a browser that already holds one
+ * keeps it, because Next.js prefetches this page while it is showing it. The
+ * sealed token goes only to this render, in a request header no client value
+ * can supply, and the page writes it into the form. Nothing is looked up.
+ */
+function claimPage(request: NextRequest): NextResponse {
+  const headers = new Headers(request.headers);
+  headers.delete(CLAIM_FORM_TOKEN_HEADER);
+  if (request.method !== "GET" || !futurePersonClaimsOpen()) {
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
+  let form: ReturnType<typeof mintClaimForm>;
+  try {
+    form = mintClaimForm(Date.now(), claimFormSecret(request));
+  } catch {
+    // No sealing key: the page renders closed rather than a form that cannot post.
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
+  headers.set(CLAIM_FORM_TOKEN_HEADER, form.formToken);
+  const response = withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  response.headers.append("Set-Cookie", form.setCookie);
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
 }
 
 export const config = {

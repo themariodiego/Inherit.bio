@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { encryptSecret, hmacSecret } from "@/lib/crypto";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
-import { invitationQuotaKeys } from "@/lib/invitation-quota";
+import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { accountCapability } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
