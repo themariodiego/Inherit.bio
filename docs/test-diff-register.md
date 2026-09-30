@@ -11,6 +11,15 @@ The exact purge inventory includes all current embryo withdrawal stores and all 
 ## Claimant custody dependency retains all embryo stores · 30 September 2026
 
 The receipt and reviewer branch now includes the canonical-source and terminal/restriction safeguard dependency. The exact purge inventory is 145: current main’s 129, five embryo split/canonical stores and eleven Future Person intake/document/review/receipt stores. Both worker commands, both parents’ dated assertions and every export exclusion are retained.
+## Retired buckets with the private claim identity store · 30 September 2026
+
+The two retired-bucket tests now require exactly three surviving buckets:
+genomes, exports and the document branch's future-person-identity store.
+The former two-element assertion rejected that deliberate private store.
+Set equality remains strict; both retired buckets remain forbidden, all
+original function, policy and object-form assertions are retained, and a
+new assertion pins the identity bucket's private flag, sealed-byte size
+limit and exact allowed media type.
 
 ## Claim rotation and complete reviewer byte receipts · 30 September 2026
 

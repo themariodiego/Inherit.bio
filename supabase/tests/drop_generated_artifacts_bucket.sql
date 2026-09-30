@@ -8,8 +8,11 @@ select no_plan();
 -- anything is there, so on a fresh database this is its whole effect.
 
 select is((select count(*) from storage.buckets where id='generated-artifacts'),0::bigint,'the generated-artifacts bucket is gone');
-select set_eq('select id from storage.buckets',array['genomes','exports'],
- 'genomes and exports are the buckets the migrations leave in place');
+select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity'],
+ 'the exact surviving buckets are genomes, exports and private claim identity');
+select ok((select not public and file_size_limit=20000028
+ and allowed_mime_types=array['application/octet-stream'] from storage.buckets
+ where id='future-person-identity'),'claim identity stays private with its exact sealed-byte limit');
 select ok((select allowed_mime_types is null and not public from storage.buckets where id='genomes'),'genomes is unchanged');
 select ok((select not public and file_size_limit=4000000 from storage.buckets where id='exports'),'exports is unchanged');
 select is_empty($$select policyname from pg_policies where schemaname='storage'
