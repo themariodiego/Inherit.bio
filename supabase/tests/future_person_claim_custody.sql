@@ -26,6 +26,23 @@ create function pg_temp.source_snapshot() returns jsonb language sql as $$
       where source_file_id=(select file from custody_ids)));
 $$;
 create temporary table original_source as select pg_temp.source_snapshot() body;
+select ok(not (select prosecdef from pg_proc where oid='private.guard_structural_file_identity_v1()'::regprocedure),
+  'the identity trigger preserves the actual invoker role');
+select ok((select prosecdef and provolatile='v' from pg_proc where oid=
+  'private.file_claimant_transition_matches_v1(public.genome_files,public.genome_files)'::regprocedure),
+  'the narrow read helper sees current custody within the real transition transaction');
+select is((select count(*) from unnest(array['anon','authenticated','inherit_upload_only']) role where
+  has_function_privilege(role,'private.file_claimant_transition_matches_v1(public.genome_files,public.genome_files)','execute')),
+  0::bigint,'ordinary API roles cannot inspect sealed custody through the read helper');
+select ok(has_function_privilege('service_role',
+  'private.file_claimant_transition_matches_v1(public.genome_files,public.genome_files)','execute')
+  and not has_table_privilege('service_role','private.future_person_custody_slices','select'),
+  'the operator may evaluate the exact transition without direct custody table access');
+select file as guard_source_id from custody_ids \gset
+set local role service_role;
+select throws_ok(format('update public.genome_files set user_id=null where id=%L::uuid',:'guard_source_id'),
+  '55000','immutable_file_identity','a real service-role update before approved detachment is refused by identity, not table permissions');
+reset role;
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
   where has_function_privilege(role,'private.detach_future_person_subject_v1(uuid)','execute')
     or has_function_privilege(role,'private.cancel_unstarted_claim_subject_purge_v1(uuid)','execute')),0::bigint,

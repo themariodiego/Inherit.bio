@@ -168,6 +168,11 @@ plan creation boundaries; missing authority/plan/evidence never means deletion.
 No existing expectation or assertion changed. Genuine positive approval-to-plan
 SQL, complete subject graph cleanup, registered DELETE/UI and hosted evidence
 remain pending; source disposal alone is not deletion acceptance. G8 remains NO.
+## 2026-09-30 — Preserve custody identity checks under the real API role and audit real reviewer pages
+
+The first complete hosted custody run found the service-role immutable-file refusal returning a sealed-table permission error before its existing `immutable_file_identity` assertion. The invoker trigger retains its real caller-role test and all original identity fields. A service-only read-only definer evaluates the unchanged exact approved claimant tuple without granting table reads. Fresh pgTAP checks the real service-role refusal, invoker semantics, current-transaction visibility and restricted helper grants; all old refusal and positive detachment assertions remain.
+
+The local disposable Auth configuration now enables real TOTP enrollment and verification so the existing reviewer journeys obtain their own genuine `aal2` sessions. No claims are forged and no production Auth setting changes. The genuine assigned reviewer page is now audited in both themes using the existing full accessibility and origin helpers before any document read or decision, and the global page census names that actual audit. Existing document, receipt, human-checkbox, cancellation and decision assertions retain their limits.
 
 ## Case-read auditing and verified document delivery · 30 September 2026
 

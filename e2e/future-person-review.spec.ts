@@ -1,6 +1,6 @@
 import {createServerClient} from "@supabase/ssr";
 import type {BrowserContext} from "@playwright/test";
-import {ANON_KEY,SUPABASE_URL} from "./helpers";
+import {ANON_KEY,SUPABASE_URL,assertNoThirdParty,expectAxeClean,watchRequests} from "./helpers";
 import {expect,test} from "./audited-test";
 import {observeNativeResponses} from "./helpers/native-response-observer";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
@@ -56,6 +56,9 @@ test("/reviews/future-person/claims/[id] complete: full bytes, separate human re
   expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
   await expect(page.getByRole("heading",{name:"Review claim",exact:true})).toBeVisible();
   await expect(page.getByText("Claimant: Synthetic Claimant. Birth date: 2000-01-31.",{exact:true})).toBeVisible();
+  const observed=watchRequests(page);
+  await expectAxeClean(page);
+  await assertNoThirdParty(page,observed,"the genuine assigned reviewer page, both themes");
   await expectCaseAuditWithoutDocumentReceipt(claim,reviewer,authSession);
   const save=page.getByRole("button",{name:"Save choice",exact:true});
   await page.getByLabel("Reason",{exact:true}).fill("The synthetic blank papers do not prove a link to any record.");
