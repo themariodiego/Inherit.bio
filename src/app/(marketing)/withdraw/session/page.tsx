@@ -1,5 +1,6 @@
 import {loadClaimantRights} from "@/lib/future-person/rights";
 import {ClaimantRights} from "@/components/future-person/claimant-rights";
+import { route } from "@/lib/primary-routes";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -39,7 +40,7 @@ export default async function RightsSessionPage() {
     <section className="mx-auto max-w-5xl px-6 py-16">
       <h1 className="display text-4xl">Sign in to review this invitation</h1>
       <p className="mt-5 max-w-prose text-ink-muted">Use the email address that received the invitation. Signing in does not accept it.</p>
-      <Link href="/auth/sign-in?next=%2Fwithdraw%2Fsession" className="mt-6 inline-block rounded-full bg-forest px-6 py-3 text-on-forest">Sign in</Link>
+      <Link href={route("auth.sign-in", { query: { next: "/withdraw/session" } })} className="mt-6 inline-block rounded-full bg-forest px-6 py-3 text-on-forest">Sign in</Link>
       <InvitationRefusalForm nonce={refusal.nonce} />
     </section>
   );

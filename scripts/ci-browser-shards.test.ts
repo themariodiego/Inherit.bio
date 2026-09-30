@@ -4,14 +4,15 @@ import { describe, expect, it } from "vitest";
 import { browserManifest, browserReportCases, browserShardReceipt, ciBrowserShard, verifyBrowserShards, verifyBrowserSourceCensus } from "./ci-browser-shards";
 
 const source = { head: "a".repeat(40), runId: "12345", runAttempt: "2" };
-const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
+const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source", "embryo-ingest", "embryo-mixed-qc"];
 function id(n: number) { return `${n.toString(16).padStart(20, "0")}-${n.toString(16).padStart(20, "0")}`; }
-const tracked = [1,2,3,4,5,6].map(n => `e2e/synthetic-${n}.spec.ts`);
+const fileFor = (n: number) => n === 5 ? "embryo-ingest-journey.spec.ts" : n === 6 ? "embryo-mixed-qc-journey.spec.ts" : `synthetic-${n}.spec.ts`;
+const tracked = [1,2,3,4,5,6].map(n => `e2e/${fileFor(n)}`);
 const timings = { setupMs: 100, buildMs: 200, bootstrapMs: 300, browserMs: 400 };
 function report(cases: number[], shard: number | null = null, executed = false) {
   return { config: { workers: 1, fullyParallel: false, shard: shard === null ? null : { current: shard, total: 6 },
     projects: projects.map(name => ({ name, retries: 0, repeatEach: 1 })), webServer: { env: { PRIVATE_FIXTURE: "must not be copied" } } },
-  suites: [{ suites: [{ specs: cases.map(n => ({ id: id(n), file: `synthetic-${n}.spec.ts`, tests: [{ projectName: projects[(n-1)%4], expectedStatus: "passed",
+  suites: [{ suites: [{ specs: cases.map(n => ({ id: id(n), file: fileFor(n), tests: [{ projectName: projects[(n-1)%projects.length], expectedStatus: "passed",
     results: executed ? [{ status: "passed", retry: 0, duration: 10, stdout: ["private fixture"], attachments: ["private fixture"] }] : [] }] })) }] }],
   errors: [], stats: { expected: executed ? cases.length : 0,
     unexpected: 0, flaky: 0, skipped: executed ? 0 : cases.length } };
@@ -108,8 +109,8 @@ describe("mandatory browser coverage across isolated jobs", () => {
     expect(() => verifyBrowserSourceCensus([...tracked, "e2e/comprehension-run.spec.ts"], tracked)).toThrow();
   });
   it("refuses a registered project that discovers no case and an unregistered project", () => {
-    expect(() => browserReportCases(report([1, 2, 3]), null, false)).toThrow("Standard browser projects differ");
-    const value = report([1, 2, 3, 4]); value.config.projects[3].name = "unregistered";
+    expect(() => browserReportCases(report([1, 2, 3, 4]), null, false)).toThrow("Standard browser projects differ");
+    const value = report([1, 2, 3, 4, 5]); value.config.projects[4].name = "unregistered";
     expect(() => browserReportCases(value, null, false)).toThrow("Standard browser projects differ");
   });
   it("refuses fractional, negative, nonfinite or over-job-budget timing receipts", () => {

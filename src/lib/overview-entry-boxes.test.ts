@@ -61,16 +61,22 @@ describe("entry box targets", () => {
   // with no scopes passed, which is how Overview calls it, the box goes where
   // the register's box contract says (`copilot.scope`, `family`) for every
   // account shape and in every environment, hosted production included.
+  // The cohort scope is built under TEST-LOCAL only (2026-09-28): there the
+  // Embryos box opens the account's newest cohort's scope, and it stays on the
+  // hub everywhere else and for an account with no cohort.
   it("opens the Family Copilot box on /copilot/family by default, on every deployment", () => {
     const byId = Object.fromEntries(ENTRY_BOXES.map(b => [b.id, b]));
-    expect(copilotGroupScopes()).toEqual(FAMILY_BUILT);
-    for (const env of [{}, { INHERIT_TEST_JURISDICTION: "1" }, { VERCEL: "1", VERCEL_ENV: "production" }]) {
+    for (const env of [{ INHERIT_TEST_JURISDICTION: "" }, { INHERIT_TEST_JURISDICTION: "1" },
+      { INHERIT_TEST_JURISDICTION: "", VERCEL: "1", VERCEL_ENV: "production" }]) {
       vi.unstubAllEnvs();
       for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
+      const testLocal = env.INHERIT_TEST_JURISDICTION === "1";
+      expect(copilotGroupScopes(), JSON.stringify(env)).toEqual({ family: true, cohort: testLocal });
       for (const targets of Object.values(TARGETS)) {
         expect(resolveBoxHref(byId["family.copilot"], targets), JSON.stringify(env))
           .toBe(route("copilot.scope", { scope: "family" }));
-        expect(resolveBoxHref(byId["embryos.copilot"], targets), JSON.stringify(env)).toBe(route("embryos.index"));
+        expect(resolveBoxHref(byId["embryos.copilot"], targets), JSON.stringify(env)).toBe(testLocal && targets.cohortId
+          ? route("copilot.scope", { scope: `c-${targets.cohortId}` }) : route("embryos.index"));
       }
     }
     vi.unstubAllEnvs();

@@ -11,6 +11,7 @@
  * the app continues using the normal local stack and its identical DB/backend.
  */
 import assert from "node:assert/strict";
+import { assertEmbryoCiShard } from "./ci-browser-embryo-partitions";
 import { startCiBrowserRuntime } from "./ci-browser-runtime";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
@@ -33,6 +34,7 @@ import { writeFileSync } from "node:fs";
 const arguments_ = process.argv.slice(2);
 const bootstrapStarted = performance.now();
 const shard = ciBrowserShard(arguments_[0], process.env);
+if (!["--lighthouse", "--bootstrap-only"].includes(arguments_[0] ?? "")) assertEmbryoCiShard(shard, process.env);
 const shardSource = shard === null ? null : ciBrowserSourceIdentity();
 if (shard !== null) {
   assertCiRuntime(process.env);

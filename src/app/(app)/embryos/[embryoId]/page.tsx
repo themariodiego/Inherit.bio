@@ -201,6 +201,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
         body = <BlockingState state="processing">{STILL_CHECKING_STATUS}</BlockingState>;
         break;
       }
+      const hasRiskRanges = detail.findings.some((finding) => finding.finding?.kind === "absolute_risk");
       const notCovered = detail.findings.some((finding) => finding.coverage_state === "not_covered");
       const column = { id: detail.id, sample_ordinal: detail.sample_ordinal, display_label: detail.display_label, status: detail.status, qc: detail.qc };
       body = (
@@ -222,11 +223,11 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
             }
             howSureWeAre={
               <>
-                <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} />
+                <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} hasRiskRanges={hasRiskRanges} />
                 <details data-slot="qc-detail" className="text-sm">
                   <summary className="cursor-pointer text-ink-muted">{FULL_QC_TABLE_SUMMARY}</summary>
                   <div className="mt-3">
-                    <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} />
+                    <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} riskRangeEmbryoIds={new Set(hasRiskRanges ? [detail.id] : [])} />
                   </div>
                 </details>
               </>

@@ -1,3 +1,4 @@
+import { readResultBasis } from "@/lib/figures/result-basis";
 /**
  * <CompareCell> — one cell of the comparison and one finding on the detail
  * page (design §2.4 cell contract; A.10 brief line 2270): exactly one number
@@ -98,7 +99,7 @@ export function CompareCell({
     const spec: StandaloneFigureSpec = {
       kind: "carrier-status",
       class: "variant-call",
-      basis: "observed",
+      basis: readResultBasis(body.figure_basis, "observed"),
       // The carrier state is not computed here or anywhere else in the app:
       // the worker writes it into `embryo_scores.finding`, and
       // src/lib/embryos/policy.ts is the module that gives it its value —
@@ -123,7 +124,7 @@ export function CompareCell({
     );
   }
   const provenance = { kind: "seed", table: "risk_models", id: body.risk_model.model_id } as const;
-  const modelled = { class: "estimate", basis: "modelled", provenance } as const;
+  const modelled = { class: "estimate", basis: readResultBasis(body.figure_basis, "modelled"), provenance } as const;
   // The embryo's own figure is captioned as the embryo's ("for Embryo 1"),
   // never as the population: one cell never attributes two numbers to the
   // general population, which keeps the comparator alone (R3).
@@ -161,7 +162,7 @@ export function CompareCell({
     figures.push({
       kind: "interval",
       class: "estimate",
-      basis: "modelled",
+      basis: readResultBasis(body.figure_basis, "modelled"),
       provenance: { kind: "citation", id: withinFamily.citation_ids[0] },
       point: displayedFigure(withinFamily.point_estimate),
       low: displayedFigure(withinFamily.interval_low),

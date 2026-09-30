@@ -107,7 +107,7 @@ export function scanText(
   const findings: SecretFinding[] = [];
   const seen = new Set<string>();
   const assignment = new RegExp(
-    `(?:["']?${SECRET_NAME_PATTERN}["']?)\\s*[:=]\\s*(?:["']([^"'\\n]+)["']|([^\\s,}\\]#]+))`,
+    `(?:["']?${SECRET_NAME_PATTERN}["']?)\\s*(?::|=(?!=))\\s*(?:["']([^"'\\n]+)["']|([^\\s,}\\]#]+))`,
     "g",
   );
 

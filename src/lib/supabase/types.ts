@@ -2793,6 +2793,7 @@ export type Database = {
       }
       embryo_qc: {
         Row: {
+          figure_basis: Json | null
           allelic_dropout_estimate: number | null
           allelic_dropout_interval_high: number | null
           allelic_dropout_interval_low: number | null
@@ -2816,6 +2817,7 @@ export type Database = {
           source_laboratory: string | null
         }
         Insert: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -2839,6 +2841,7 @@ export type Database = {
           source_laboratory?: string | null
         }
         Update: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -7633,6 +7636,10 @@ export type Database = {
         Args: { p_operation: string; p_session_hash: string; p_authority_receipt?: string; p_after_variant_id?: number }
         Returns: Json
       }
+      embryo_upload_account_live_v1: {
+        Args: { p_account_id: string; p_auth_session_id: string }
+        Returns: boolean
+      }
       finish_genome_file_deletion_v1: {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
         Returns: undefined
@@ -8029,6 +8036,48 @@ export type Database = {
       }
       commit_embryo_ingest_chunk_v1: {
         Args: { p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
+      }
+      complete_embryo_ingest_v1: {
+        Args: {
+          p_account: string
+          p_auth: string
+          p_session: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort: string
+          p_ingest_revision: number
+          p_chunk_count: number
+          p_nonce: string
+          p_test?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_issued_tokens_match_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_completion_nonce_hash: string
+          p_csrf_hash: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: boolean
+      }
+      fail_embryo_ingest_attempt_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_code: string
+          p_test_jurisdiction?: boolean
+        }
         Returns: Json
       }
       complete_account_deletion_storage_batch_v1: {

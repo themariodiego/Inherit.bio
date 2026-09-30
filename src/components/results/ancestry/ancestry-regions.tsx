@@ -63,11 +63,13 @@ const ADMIXTURE_MODULE = "src/lib/genome/admixture.ts";
 const PROVENANCE = { kind: "computed", module: ADMIXTURE_MODULE } as const;
 const UNAVAILABLE: AncestryShareRange = { unavailable: true };
 
-function shareSpec(share: number, range: AncestryShareRange): AncestryShareSpec {
-  return { kind: "ancestry-share", class: "ancestry", basis: "modelled", provenance: PROVENANCE, share, range };
+function shareSpec(share: number, range: AncestryShareRange, basis: "modelled"): AncestryShareSpec {
+  return { kind: "ancestry-share", class: "ancestry", basis, provenance: PROVENANCE, share, range };
 }
 
 export interface AncestryResultView {
+  basis: "modelled";
+  coverageBasis?: "observed";
   markersUsed: number;
   /** The stored support note; rendered only inside the grey-state disclosure. */
   supportNote: string;
@@ -137,7 +139,7 @@ function GreyRegions({
   result: AncestryResultView;
 }) {
   const rows = result.view.rows;
-  const figures: StandaloneFigureSpec[] = rows.map((row) => shareSpec(row.share, row.range));
+  const figures: StandaloneFigureSpec[] = rows.map((row) => shareSpec(row.share, row.range, result.basis));
   return (
     <div className="space-y-4">
       <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} />
@@ -201,25 +203,25 @@ function ShownRegions({
   const selectedRow = visibleRows.find((row) => row.code === openCode) ?? null;
   const chipShares = wellSupportedOnly ? chips.on : chips.off;
 
-  const rowSpecs = rows.map((row) => shareSpec(row.share, row.range));
+  const rowSpecs = rows.map((row) => shareSpec(row.share, row.range, result.basis));
   // How many regions actually carry an interval. Zero is a result captured
   // before intervals existed; fewer than all is a result where some region's
   // resamples never moved.
   const rangedRows = rows.filter((row) => !("unavailable" in row.range)).length;
-  const chipSpecs = [shareSpec(chipShares.unassignable, UNAVAILABLE), shareSpec(chipShares.hidden, UNAVAILABLE)];
-  const coverageSpec: CoverageSpec = {
+  const chipSpecs = [shareSpec(chipShares.unassignable, UNAVAILABLE, result.basis), shareSpec(chipShares.hidden, UNAVAILABLE, result.basis)];
+  const coverageSpec: CoverageSpec | null = result.coverageBasis === undefined ? null : {
     kind: "coverage",
     class: "quality",
-    basis: "observed",
+    basis: result.coverageBasis,
     provenance: PROVENANCE,
     read: result.markersUsed,
     needed: panel.markers,
   };
-  const panelSpecs = selectedRow ? [shareSpec(selectedRow.share, selectedRow.range)] : [];
-  const figures: StandaloneFigureSpec[] = [...rowSpecs, ...chipSpecs, ...(panel.known === false ? [] : [coverageSpec]), ...panelSpecs];
+  const panelSpecs = selectedRow ? [shareSpec(selectedRow.share, selectedRow.range, result.basis)] : [];
+  const figures: StandaloneFigureSpec[] = [...rowSpecs, ...chipSpecs, ...(panel.known === false || coverageSpec === null ? [] : [coverageSpec]), ...panelSpecs];
   const chipIndex = rows.length;
   const coverageIndex = chipIndex + 2;
-  const panelIndex = coverageIndex + (panel.known === false ? 0 : 1);
+  const panelIndex = coverageIndex + (panel.known === false || coverageSpec === null ? 0 : 1);
 
   function renderFigures(nodes: ReactNode[]) {
     return (
@@ -304,7 +306,7 @@ function ShownRegions({
             <p>{panelLine(panel)}</p>
             <p className="flex flex-wrap items-baseline gap-x-2">
               <span>{markersLine(result.markersUsed, panel, minMarkers)}</span>
-              {panel.known === false ? null : nodes[coverageIndex]}
+              {panel.known === false || coverageSpec === null ? null : nodes[coverageIndex]}
             </p>
             <p>{MARKER_GLOSS}</p>
             {panel.known === false ? null : <p>{RESOLUTION_LIMIT}</p>}

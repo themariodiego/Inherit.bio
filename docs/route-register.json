@@ -750,7 +750,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "required": [
             "sites_expected",
@@ -773,7 +774,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "children": {
             "source_facts": {
@@ -781,7 +783,7 @@
               "cardinality": "exactly-one"
             }
           },
-          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels",
+          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels; figure_basis-is-null-only-for-unclassified-historical-QC-or-the-closed-version-1-embryo-split-calls-v1-receipt-with-observed-coverage-call_rate-and-null-or-observed-autosomal_het_rate-mean_depth-matching-present-fields-and-no-parent-dropout-contamination-input",
           "unknownFields": "reject"
         },
         "inputFacts": {
@@ -874,6 +876,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "metric",
             "measured_value",
             "required_minimum",
@@ -881,12 +885,18 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "metric",
             "measured_value",
             "required_minimum",
             "display_copy_id"
           ],
-          "children": {},
+          "children": {
+            "figure_basis": {
+              "shape": "resultBasis"
+            }
+          },
           "scalarConstraints": {
             "kind": {
               "const": "coverage_failure"
@@ -900,7 +910,11 @@
             },
             "display_copy_id": {
               "const": "embryo.result.insufficient-coverage"
-            }
+            },
+            "schema_version": {
+              "const": 2
+            },
+            "figure_basis": "version-1-result-basis-exactly-observed"
           },
           "semanticRule": "this-is-a-measured-eligibility-metric-and-never-a-risk-figure-score-rank-or-reportable-result",
           "unknownFields": "reject"
@@ -909,6 +923,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "risk_model",
             "score_coverage",
             "absolute_risk",
@@ -923,6 +939,8 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "risk_model",
             "score_coverage",
             "absolute_risk",
@@ -955,9 +973,12 @@
             "within_family": {
               "shape": "withinFamilyValidation",
               "cardinality": "exactly-one"
+            },
+            "figure_basis": {
+              "shape": "resultBasis"
             }
           },
-          "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero",
+          "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero; schema_version-exactly-2; figure_basis-version-1-exactly-modelled",
           "unknownFields": "reject"
         },
         "embryoRiskModelBinding": {
@@ -1104,6 +1125,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "carrier_state",
             "inheritance_mode",
             "confirmation_required",
@@ -1111,12 +1134,18 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "carrier_state",
             "inheritance_mode",
             "confirmation_required",
             "display_copy_id"
           ],
-          "children": {},
+          "children": {
+            "figure_basis": {
+              "shape": "resultBasis"
+            }
+          },
           "scalarConstraints": {
             "kind": {
               "const": "carrier_status"
@@ -1130,7 +1159,11 @@
             },
             "confirmation_required": {
               "const": true
-            }
+            },
+            "schema_version": {
+              "const": 2
+            },
+            "figure_basis": "version-1-result-basis-exactly-observed"
           },
           "categoryRule": "permitted-only-for-Having-children-and-never-converted-into-a-disease-risk-rank-or-transfer-recommendation",
           "notReportableRule": "a-not-reportable-carrier-result-is-never-a-carrierFinding; the-parent-EmbryoFinding-must-have-finding-null-and-one-exact-not_covered_reason",
@@ -1862,6 +1895,31 @@
             }
           },
           "unknownFields": "reject"
+        },
+        "resultBasis": {
+          "kind": "object",
+          "keys": [
+            "version",
+            "basis"
+          ],
+          "required": [
+            "version",
+            "basis"
+          ],
+          "children": {},
+          "scalarConstraints": {
+            "version": {
+              "const": 1
+            },
+            "basis": {
+              "enum": [
+                "observed",
+                "modelled",
+                "exact"
+              ]
+            }
+          },
+          "unknownFields": "reject"
         }
       },
       "qcProjection": {
@@ -1935,6 +1993,9 @@
         },
         "computedMetricNullCopyId": {
           "const": "embryo.qc.not-measurable-from-file"
+        },
+        "dropoutNoRangeCopyId": {
+          "const": "embryo.qc.dropout-no-range"
         },
         "dropoutNotMeasuredCopyId": {
           "const": "embryo.qc.dropout-not-measured"
@@ -9018,7 +9079,8 @@
       "copilot.provider-policy",
       "copilot.transport-availability",
       "embryo.closed-schema-serialization",
-      "jurisdiction.capability-gate"
+      "jurisdiction.capability-gate",
+      "embryo.ingest-unwind-dispatch"
     ],
     "featureBlockedReasonIds": [
       "prohibited-intent",
@@ -9027,7 +9089,8 @@
       "transport-unavailable",
       "unsafe-embryo-response-shape",
       "jurisdiction-denied",
-      "missing-required-capability"
+      "missing-required-capability",
+      "unwind-dispatch-unavailable"
     ]
   },
   "observabilityEventTemplates": {
@@ -15572,7 +15635,6 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
-        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own \u2014 read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
         "awaiting-choice": "A conversation answers questions about results that already exist; no scope renders an invitation to choose an analysis. Carried over unchanged from the own-product-result profile this route left on 2026-09-28."
       },
