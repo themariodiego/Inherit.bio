@@ -262,6 +262,7 @@ const contractLedger = JSON.parse(readFileSync(CONTRACT_LEDGER, "utf8")) as {
   endpointAuthModeWithoutContract: { mode: string; verdict: string; routeIds: string[] }[];
   endpointSuccessContractUndefined: { routeId: string; contract: string }[];
   endpointSuccessContractUnbound: { routeId: string; contract: string }[];
+  nonceStoredBeforeUse: { rpc: string; file: string }[];
   storageCallSites: { site: string }[];
   declaredPrefixBucketNotAddressed: { bucket: string }[];
   liveCallSiteOnUncreatedBucket: { bucket: string; file: string }[];
@@ -765,5 +766,39 @@ describe("every form posts somewhere the register describes", () => {
 
   it("accepts a computed action only when the register is what resolves it", () => {
     expect(actions.filter((form) => form.resolved === "unresolvable")).toEqual([]);
+  });
+});
+
+/**
+ * Brief X1.5 (owner decision 2026-09-28): an operation nonce is rendered by
+ * the page that offers the operation, only the state-changing request consumes
+ * it, and no GET creates, rotates or stores one. A nonce stored ahead of use
+ * leaves a trace a static walk can find: a call to a database function named
+ * `issue_*nonce*`, or a write to `account_operation_nonces`. Every such site is
+ * compared, in both directions, with `nonceStoredBeforeUse` in
+ * `docs/register-contract-divergence.json`.
+ */
+describe("no request stores an operation nonce before the request that spends it", () => {
+  const sites = codeFiles().flatMap(file => {
+    const source = readFileSync(file, "utf8");
+    const found = [...source.matchAll(/\.rpc\(\s*["'`](issue_[a-z0-9_]*nonce[a-z0-9_]*)["'`]/gu)].map(match => `${match[1]} ${file}`);
+    if (/from\(\s*["'`]account_operation_nonces["'`]\s*\)\s*\.(?:insert|upsert)\(/u.test(source)) found.push(`account_operation_nonces ${file}`);
+    return found;
+  });
+
+  it("finds the one recorded site, so a passing run is not an empty scan", () => {
+    expect(sites).toContain("issue_own_upload_nonce_v1 src/lib/uploads/prepare-own-upload.ts");
+  });
+
+  it("stores no nonce ahead of use except where the ledger records it", () => {
+    compareBothWays([...new Set(sites)], contractLedger.nonceStoredBeforeUse.map(known => `${known.rpc} ${known.file}`));
+  });
+
+  it("renders the account-deletion nonce: no GET on either deletion route, and nothing issues one", () => {
+    for (const file of ["src/app/api/account/delete/route.ts", "src/app/api/account/delete/cancel/route.ts"]) {
+      expect(exportedMethods(readFileSync(file, "utf8")), file).toEqual(["POST"]);
+    }
+    expect(sites.filter(site => site.startsWith("issue_account_operation_nonce") || site.startsWith("account_operation_nonces"))).toEqual([]);
+    expect(readFileSync("src/app/(app)/settings/data/page.tsx", "utf8")).toContain("deletionControlState()");
   });
 });
