@@ -1,5 +1,14 @@
 # Test diff register
 
+## Report purge inventory includes the closed Path B binding · 30 September 2026
+
+The exact generated-artifacts retention-store set now includes the new private
+Path B report binding. Every previously required store remains in the equality
+assertion. The retired bucket and archive-form refusals remain unchanged, and
+the queued-report tests still require browser-role refusal and current-grant
+binding for the private store. This adds an exact registered store; it does not
+allow an unknown store or restore the retired Storage bucket.
+
 ## Path B distinct queued report kinds · 30 September 2026
 
 The brief's compute placement and the closed worker register now name exactly

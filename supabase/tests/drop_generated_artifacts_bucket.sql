@@ -21,8 +21,8 @@ select set_eq($$select p.oid::regprocedure::text from pg_proc p join pg_namespac
  array['private.prepare_own_report_purge_v1(uuid,timestamp with time zone)','private.execute_own_report_purge_v1(uuid)'],
  'only the own-report purge functions carry the literal, as a retention target id');
 select set_eq($$select store_name from public.purge_target_stores where target_id='generated-artifacts'$$,
- array['public.report_artifacts','public.generated_exports','public.download_sessions','public.model_contexts','private.own_analysis_runs'],
- 'the generated-artifacts retention target keeps every store it had');
+ array['public.report_artifacts','public.generated_exports','public.download_sessions','public.model_contexts','private.own_analysis_runs','private.path_b_report_bindings'],
+ 'the generated-artifacts retention target keeps every old store and the closed Path B binding');
 
 -- The single-object form cannot be recorded again. Foreign keys are off so
 -- each insert reaches only the check it is aimed at.
