@@ -1,5 +1,12 @@
 # Test diff register
 
+## Queued-report insurance and source signing use distinct nonces · 30 September 2026
+
+The subject's insurance signature fixture uses its own single-use nonce,
+rather than reusing the later source-signing nonce. Both real signature doors
+still execute, and all request, claim, publication, revocation and deletion
+assertions remain. The production nonce uniqueness rule stays strict.
+
 ## Report purge inventory includes the closed Path B binding · 30 September 2026
 
 The exact generated-artifacts retention-store set now includes the new private

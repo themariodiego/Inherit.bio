@@ -30,7 +30,7 @@ begin
 end;
 $$;
 select pg_temp.insurance('1','9');
-select pg_temp.insurance('2','a');
+select pg_temp.insurance('2','0');
 select pg_temp.requested('main','a',repeat('a',64));
 select is(pg_temp.account_confirms('a','queue-sign-aaaaaaaaaaaaaaaaaaa','2',repeat('a',64)),
  'accepted','the report source has actual subject confirmation');
