@@ -22,7 +22,16 @@ and report operators. It requires exact normalized letters, three exact done
 dispatch rows, both personal layers, only the selected shared layer, the real
 session gate, immediate revocation, an unaffected self grant, and a newly
 computed result after regrant. No genetic or saved-result fixture row is
-invented. The existing held-before-worker zero-row assertions remain. Ready
+invented. Unconfirmed and no-account revisions still require zero descriptors
+and jobs. Eligible account confirmation now requires exactly one unreadable
+`uploaded` descriptor and one unattempted `annotate_vcf` / `ingest.normalize`
+job bound to the exact source revision and hash, matching the verified
+normalization contract. The older account journey's metadata-zero and blocked
+state expectations become this exact pending tuple and
+`confirmed_awaiting_purpose`; all genetic tables remain empty before actual
+worker execution, the person's account still receives no own-file rows, and
+raw downloads and saved-report reads return exactly 404. Each purpose choice
+must preserve that same pending tuple and zero genetic rows. Ready
 links and state copy replace the former unconditional claim that nothing can
 be generated; ancestry and all unimplemented mitigation cases stay closed.
 

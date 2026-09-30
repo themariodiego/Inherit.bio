@@ -129,6 +129,23 @@ data. Public benchmark genotypes are also excluded from current test inputs.
 - The caffeine row uses forward GRCh38 REF C / ALT A, correcting swapped
   labels while preserving the invented heterozygous A/C call.
 
+## path-b-reports-grch38.vcf
+
+- Classification: hand-written synthetic single-sample GRCh38 VCF. The
+  heterozygous calls, quality and depth are invented; no genotype came from a
+  person, customer file or public benchmark sample.
+- Its two public positions and alleles match the committed report catalog:
+  rs762551 at chr15:74749576, REF C / ALT A, and rs9923231 at chr16:31096368,
+  REF C / ALT T. Both carry GT 0/1, GQ 50 and DP 30, so the real parser reads
+  exactly A/C and C/T with two usable PASS calls and no skipped records.
+- The Path B browser journey uploads these actual bytes through the real
+  chooser and Storage transport, confirms their source, and uses the registered
+  normalization and queued-report operators. It does not invent database
+  genotypes or saved results. The two calls exercise a personally readable
+  caffeine estimate and a separately granted shared VKORC1 position report.
+- Repository SHA-256:
+  `ea66da366d641b565461ed54815c97e20e37a7e060c79be70b7762d247da6565`.
+
 ## tiny-b-grch38.vcf
 
 - Classification: synthetic single-sample GRCh38 VCF, the second seed for

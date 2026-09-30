@@ -40,7 +40,7 @@ import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/
  * Another adult's DNA under the register's Path B, "I have their file"
  * (G2.6 adult half, G5.3; owner decision of 2026-09-28). TEST-LOCAL only.
  *
- * Both journeys go through the real screens, Storage, mail and database:
+ * These journeys go through the real screens, Storage, mail and database:
  *   1. a Path A invitation offers its inviter nothing to upload; then the
  *      uploader asks a person to sign, the person signs with no account, the
  *      uploader adds a file, which is stored with no readable row and a notice
@@ -51,8 +51,10 @@ import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/
  *      re-query showing zero rows and zero Storage objects;
  *   3. Path B's account branch: a person signed in with the invited address
  *      signs with that account (its declared country counts), sees the file
- *      on their own Files page, and says yes to it signed in; still nothing
- *      reads it.
+ *      on their own Files page, and says yes to it signed in; only an unreadable
+ *      descriptor and pending normalization job exist until the worker runs;
+ *   4. completed normalization and queued reports reach only the explicitly
+ *      selected readers, through the real session gate and revocation.
  */
 
 const FIXTURE = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
@@ -233,11 +235,37 @@ async function addFile(page: Page, person: { name: string }, fixture = FIXTURE) 
   const held = page.locator('[data-slot="other-adult-held"]').filter({ hasText: person.name });
   await expect(held.getByRole("status")).toHaveText(COPY.pendingStatus(person.name));
   const row = await adminClient().from("other_adult_held_uploads")
-    .select("id, upload_session_id, subject_id, state, object_name, raw_sha256, notice_outbox_id")
+    .select("id, upload_session_id, subject_id, state, object_name, raw_sha256, upload_revision, notice_outbox_id")
     .eq("id", receipt.fileId).single();
   expect(row.error).toBeNull();
   expect(row.data).toMatchObject({ state: "pending", raw_sha256: createHash("sha256").update(fs.readFileSync(fixture)).digest("hex") });
-  return row.data as { id: string; upload_session_id: string; subject_id: string; object_name: string; notice_outbox_id: string };
+  return row.data as { id: string; upload_session_id: string; subject_id: string; object_name: string;
+    raw_sha256: string; upload_revision: number; notice_outbox_id: string };
+}
+
+/** Admission records only this pending source tuple; it cannot expose genetics. */
+async function assertPendingNormalization(held: Awaited<ReturnType<typeof addFile>>, uploaderId: string) {
+  const admin = adminClient();
+  const source = await admin.from("genome_files")
+    .select("id,user_id,subject_id,bucket_path,sha256,upload_revision,status,normalization_completed_at,normalization_source_revision")
+    .eq("subject_id", held.subject_id);
+  expect(source.error).toBeNull();
+  expect(source.data).toEqual([{ id: held.id, user_id: uploaderId, subject_id: held.subject_id,
+    bucket_path: held.object_name, sha256: held.raw_sha256, upload_revision: held.upload_revision,
+    status: "uploaded", normalization_completed_at: null, normalization_source_revision: null }]);
+  const jobs = await admin.from("worker_jobs")
+    .select("kind,output_kind,status,user_id,file_id,subject_id,source_binding_kind,source_binding_id,source_binding_revision,file_sha256,computation_revision,attempts")
+    .eq("subject_id", held.subject_id);
+  expect(jobs.error).toBeNull();
+  expect(jobs.data).toEqual([{ kind: "annotate_vcf", output_kind: "ingest.normalize", status: "queued",
+    user_id: uploaderId, file_id: held.id, subject_id: held.subject_id, source_binding_kind: "genome-file",
+    source_binding_id: held.id, source_binding_revision: held.upload_revision, file_sha256: held.raw_sha256,
+    computation_revision: "path-b-normalization-v1", attempts: 0 }]);
+  for (const table of ["user_variants", "report_observed_calls", "user_prs", "ancestry_results"] as const) {
+    const result = await admin.from(table).select("*", { count: "exact", head: true }).eq("file_id", held.id);
+    expect(result.error, table).toBeNull();
+    expect(result.count, `${table} before the actual worker`).toBe(0);
+  }
 }
 
 /** Derived genetic rows for one account, which must stay zero for another adult's file. */
@@ -312,7 +340,7 @@ test("another adult's file under Path B: signed without an account, held unreada
   await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
 
   // Confirmed, and the quarantine is lifted only for this revision. The
-  // other_adult analysis gate is not built, so the register's
+  // no-account mitigation remains closed, so the register's
   // confirmed_blocked_current_gate outcome holds: still nothing reads it.
   const confirmed = await admin.from("other_adult_held_uploads").select("state, analysis_state, confirmed_at")
     .eq("id", held.id).single();
@@ -387,6 +415,7 @@ test("another adult's file under Path B: confirmed into the person's own account
   test.setTimeout(360_000);
   const admin = adminClient();
   const personId = await createConfirmedUser(ACCOUNT_PERSON.email, ACCOUNT_PERSON.password);
+  const uploaderId = (await findUserByEmail(admin, UPLOADER.email))!.id;
   await signIn(page, UPLOADER.email, UPLOADER.password);
   const subjectId = await pathBPerson(page, request, ACCOUNT_PERSON);
 
@@ -421,14 +450,15 @@ test("another adult's file under Path B: confirmed into the person's own account
   await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
   await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
   const confirmed = await admin.from("other_adult_held_uploads").select("state, analysis_state").eq("id", held.id).single();
-  expect(confirmed.data).toEqual({ state: "confirmed", analysis_state: "confirmed_blocked_current_gate" });
+  expect(confirmed.data).toEqual({ state: "confirmed", analysis_state: "confirmed_awaiting_purpose" });
 
   await page.goto("/files");
   await expect(page.locator('[data-slot="held-for-you"]').getByRole("status")).toHaveText(HELD.confirmed(added, "vcf"));
-  // Seeing the file is not reading it: nothing exists for either account to read.
+  // Seeing the file is not reading it: its one queued descriptor is unreadable.
   expect(await derivedRows(personId)).toEqual(NONE);
-  expect((await admin.from("genome_files").select("id", { count: "exact", head: true })
-    .eq("subject_id", subjectId)).count).toBe(0);
+  await assertPendingNormalization(held, uploaderId);
+  expect((await page.request.get(`/api/files/${held.id}/download`)).status()).toBe(404);
+  expect((await page.request.get(route("genome.reports", { subject: `s-${subjectId}` }))).status()).toBe(404);
 
   // The reading layer records each explicit choice, while the source gate
   // remains closed for the person and the uploader alike.
@@ -461,11 +491,10 @@ test("another adult's file under Path B: confirmed into the person's own account
       recipient_account_id: direction === "self" ? personId : (await findUserByEmail(admin, UPLOADER.email))!.id,
       status: "current" });
     grants.push({ id: receipt.recordId, direction });
-    // Choosing a layer cannot promote a quarantined original or start work.
+    // Choosing a layer cannot run normalization or manufacture an analytic result.
     expect(await derivedRows(personId)).toEqual(NONE);
-    const source = await admin.from("genome_files").select("id", { count: "exact", head: true }).eq("subject_id", subjectId);
-    expect(source.error).toBeNull();
-    expect(source.count).toBe(0);
+    await assertPendingNormalization(held, uploaderId);
+    expect((await page.request.get(`/api/files/${held.id}/download`)).status()).toBe(404);
   }
   for (const grant of grants) {
     const row = choices.locator(`[data-purpose="reports.monogenic"][data-direction="${grant.direction}"]`);
@@ -487,6 +516,10 @@ test("another adult's file under Path B: confirmed into the person's own account
     expect(direction.error).toBeNull();
     expect(direction.data?.status).toBe("revoked");
   }
+  await signOut(page);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  expect((await page.request.get(`/api/files/${held.id}/download`)).status()).toBe(404);
+  expect((await page.request.get(route("genome.reports", { subject: `s-${subjectId}` }))).status()).toBe(404);
 });
 
 /** Use the registered operator doors, with real loopback storage/RPC reads.
