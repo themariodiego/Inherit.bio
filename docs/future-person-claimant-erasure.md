@@ -74,3 +74,11 @@ continues to refuse; these have no fabricated completion path. Terminal coded
 controls preserve original clocks and counts while losing the live subject,
 provider key and body associations. This source checkpoint still requires a
 fresh database rehearsal and real provider proof before opening the action.
+
+The controls continuation also minimizes the actual older237 claimant-contact
+timer after complete graph proof. Its original fixed deadline and coded
+controls remain; subject/contact/outbox associations are erased. Selection uses
+only typed targets from the sealed current manifest. An older executing plan or
+unproved physical key refuses. Current246/247 export authority retains its
+subject-first lock before requests and provider reservations, so deletion
+serializes with that authority; every export/provider hold remains in force.

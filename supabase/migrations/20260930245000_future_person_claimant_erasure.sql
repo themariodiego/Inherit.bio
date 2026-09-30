@@ -188,7 +188,7 @@ begin
  union all
  select 'disposition-proposals-and-transient-authority'::text target_id,'public.embryo_disposition_confirmations'::text store_name,jsonb_build_object('proposal_id',t.proposal_id,'confirmer_principal_id',t.confirmer_principal_id) row_key from public.embryo_disposition_confirmations t where t.proposal_id in (select id from public.embryo_disposition_proposals where embryo_id=p_embryo)
  union all
- select 'disposition-proposals-and-transient-authority'::text target_id,'public.retention_notice_campaigns'::text store_name,jsonb_build_object('id',t.id) row_key from public.retention_notice_campaigns t where t.retention_row_id in (select id from public.retention_rows where target_kind='subject' and target_id=p_subject and retention_id<>'future-person.claimant-reverification-until-request')
+ select 'disposition-proposals-and-transient-authority'::text target_id,'public.retention_notice_campaigns'::text store_name,jsonb_build_object('id',t.id) row_key from public.retention_notice_campaigns t where t.retention_row_id in (select id from public.retention_rows where ((target_kind='subject' and target_id=p_subject) or (target_kind='claim' and target_id=p_claimant and retention_id='future-person.claimed-unbound-24mo')) and retention_id<>'future-person.claimant-reverification-until-request')
  union all
  select 'drafts-invitations-and-candidates'::text target_id,'public.adult_subject_drafts'::text store_name,jsonb_build_object('id',t.id) row_key from public.adult_subject_drafts t where t.subject_id=p_subject
  union all
@@ -340,7 +340,7 @@ revoke all on function private.future_person_deletion_graph_rows_v1(uuid,uuid,uu
 -- service transports cannot supply a relation, predicate, handle or body.
 create function private.future_person_deletion_row_v1(p_store text,p_key jsonb,p_delete boolean default false)
 returns bigint language plpgsql security definer set search_path='' as $$
-declare v_store text;v_keys text[];v_count bigint;
+declare v_store text;v_keys text[];v_count bigint;v_join text;
 begin
  case p_store
  when 'public.ancestry_regions' then v_store:='public.ancestry_regions';v_keys:=array['ancestry_result_id','region_code'];
@@ -460,14 +460,19 @@ begin
  else raise exception using errcode='42501',message='claimant deletion unavailable';end case;
  if p_key is null or jsonb_typeof(p_key)<>'object'
   or (select array_agg(k order by k) from jsonb_object_keys(p_key) k)
-   is distinct from (select array_agg(k order by k) from unnest(v_keys) k) then
+   is distinct from (select array_agg(k order by k) from unnest(v_keys) k)
+  or exists(select 1 from jsonb_each(p_key) field where field.value='null'::jsonb) then
   raise exception using errcode='42501',message='claimant deletion unavailable';end if;
- execute format('select count(*) from %s t where to_jsonb(t) @> $1',v_store) into v_count using p_key;
+ select string_agg(format('t.%I=k.%I',key,key),' and ') into v_join from unnest(v_keys) key;
+ -- Typed equality uses the real PK/unique indexes. It neither scans/report-
+ -- serializes each body nor accepts a caller-supplied predicate.
+ execute format('select count(*) from %s t,jsonb_populate_record(null::%s,$1) k where %s',v_store,v_store,v_join)
+  into v_count using p_key;
  if v_count>1 then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
  if p_delete and v_count=1 then
   -- Storage metadata is deleted only by the real provider API, never SQL.
   if v_store='storage.objects' then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
-  execute format('delete from %s t where to_jsonb(t) @> $1',v_store) using p_key;
+  execute format('delete from %s t using jsonb_populate_record(null::%s,$1) k where %s',v_store,v_store,v_join) using p_key;
   get diagnostics v_count=row_count;
   if v_count<>1 then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
  end if;
@@ -689,6 +694,9 @@ begin
  select m,g.purge_target_id,g.physical_store,g.primary_key,
   50+row_number() over(order by g.purge_target_id,g.physical_store,g.primary_key::text)
  from private.future_person_deletion_graph_rows_v1(s.id,c.claimant_principal_id,x.file_id,x.embryo_id,c.audit_principal_id) g;
+ if exists(select 1 from public.purge_manifests earlier where earlier.state='executing' and earlier.retention_row_id in(
+  select control_row_id from private.future_person_deletion_controls_v1(m))) then
+  raise exception using errcode='42501',message='claimant deletion unavailable';end if;
  perform private.assert_future_person_deletion_fk_closure_v1(m);
  perform private.assert_future_person_deletion_plan_v1(m);
  return m;
@@ -956,7 +964,7 @@ returns boolean language sql stable security definer set search_path='' as $$
   join public.purge_manifests m on m.retention_row_id=r.id and m.phase_id=p.phase_id and m.phase_revision=p.phase_revision
   join public.subjects s on s.id=r.target_id join private.future_person_custody_slices c on c.subject_id=s.id
   where r.target_kind='subject' and r.target_id=p_subject and r.state='active' and m.state='executing'
-   and p.phase_id='future-person-claimed-source-disposal' and p.status='claimed' and p.claim_expires_at>clock_timestamp()
+   and p.phase_id='future-person-claimed-source-disposal' and p.status='claimed'
    and s.lifecycle='claimed_unbound' and s.claimant_principal_id=c.claimant_principal_id
    and s.owner_account_id is null and s.subject_account_id is null and s.cohort_id is null
    and s.analysis_stopped_at is not null and c.source_file_id=p_file
@@ -1114,10 +1122,114 @@ end;
 $$;
 
 
+-- Retention controls are not working-data purge targets. Select only the
+-- exact typed targets already proved by this immutable subject manifest; an
+-- old cohort UUID or a JSON string search never expands the custody boundary.
+create function private.future_person_deletion_controls_v1(p_manifest uuid)
+returns table(control_row_id uuid) language plpgsql stable security definer set search_path='' as $$
+declare env jsonb;v_main uuid;
+begin
+ select p.immutable_envelope,m.retention_row_id into env,v_main from public.purge_manifests m
+  join public.retention_due_phases p on p.retention_row_id=m.retention_row_id and p.phase_id=m.phase_id and p.phase_revision=m.phase_revision
+  where m.id=p_manifest and m.phase_id='future-person-claimed-source-disposal';
+ if env->>'version' is distinct from 'future-person-deletion-plan-v1' then
+  raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+ return query select r.id from public.retention_rows r where r.id<>v_main and (
+  (r.target_kind='subject' and r.target_id=(env->>'subjectId')::uuid)
+  or (r.target_kind='file' and r.target_id=(env->>'sourceFileId')::uuid)
+  or (r.target_kind='claim' and r.target_id=(env->>'claimantPrincipalId')::uuid
+    and r.retention_id='future-person.claimed-unbound-24mo')
+  or exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50 and (
+    (r.target_kind='claim' and e.store_name in('public.future_person_claims','public.future_person_claim_sessions','private.future_person_claim_intakes')
+      and r.target_id=(e.row_key->>'id')::uuid)
+    or (r.target_kind='evidence' and e.store_name in('private.claim_documents','public.legal_evidence_documents')
+      and r.target_id=(e.row_key->>'id')::uuid)
+    or (r.target_kind='export' and e.store_name='public.generated_exports' and r.target_id=(e.row_key->>'id')::uuid)
+    or (r.target_kind='upload_session' and e.store_name='public.upload_sessions' and r.target_id=(e.row_key->>'id')::uuid)))
+ ) order by r.id;
+end $$;
+revoke all on function private.future_person_deletion_controls_v1(uuid)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+
+-- This is proof, not a caller flag. Only after the entire current sealed graph
+-- has disappeared may its exact older controls lose the obsolete target and
+-- working envelope. All original clocks, revisions and immutable hashes stay.
+create function private.future_person_control_minimization_allowed_v1(p_row uuid)
+returns boolean language sql stable security definer set search_path='' as $$
+ select exists(select 1 from public.purge_manifests m join public.retention_due_phases p on p.retention_row_id=m.retention_row_id
+  and p.phase_id=m.phase_id and p.phase_revision=m.phase_revision
+  where m.phase_id='future-person-claimed-source-disposal' and m.state='complete' and p.status='claimed'
+   and p.immutable_envelope->>'version'='future-person-deletion-plan-v1'
+   and not exists(select 1 from public.subjects s where s.id=p.target_id)
+   and exists(select 1 from public.purge_manifest_entries e where e.manifest_id=m.id)
+   and not exists(select 1 from public.purge_manifest_entries e where e.manifest_id=m.id and e.status<>'deleted')
+   and exists(select 1 from private.future_person_deletion_controls_v1(m.id) selected where selected.control_row_id=p_row));
+$$;
+revoke all on function private.future_person_control_minimization_allowed_v1(uuid)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+
+create or replace function private.guard_future_person_contact_retention_v1()
+returns trigger language plpgsql security invoker set search_path='' as $$
+declare v_minimize boolean:=false;
+begin
+ -- Keep the existing invoker trigger and table ACLs. The exact public control
+ -- proof is inlined here; an ordinary permitted UPDATE never needs EXECUTE
+ -- on the separately closed private selector helper.
+ if tg_table_name in('retention_rows','retention_due_phases')
+  and to_jsonb(old)->>'retention_id'='future-person.claimed-unbound-24mo' then
+  select exists(select 1 from public.purge_manifests m join public.retention_due_phases p
+   on p.retention_row_id=m.retention_row_id and p.phase_id=m.phase_id and p.phase_revision=m.phase_revision
+   join public.retention_rows earlier on earlier.id=case when tg_table_name='retention_rows'
+    then (to_jsonb(old)->>'id')::uuid else (to_jsonb(old)->>'retention_row_id')::uuid end
+   where m.phase_id='future-person-claimed-source-disposal' and m.state='complete' and p.status='claimed'
+    and p.immutable_envelope->>'version'='future-person-deletion-plan-v1'
+    and earlier.retention_id='future-person.claimed-unbound-24mo' and earlier.target_kind='claim'
+    and earlier.target_id=(p.immutable_envelope->>'claimantPrincipalId')::uuid
+    and not exists(select 1 from public.subjects s where s.id=p.target_id)
+    and exists(select 1 from public.purge_manifest_entries e where e.manifest_id=m.id)
+    and not exists(select 1 from public.purge_manifest_entries e where e.manifest_id=m.id and e.status<>'deleted')) into v_minimize;
+ end if;
+ if tg_table_name='retention_rows' and v_minimize then
+  if new.state<>'complete' or new.ended_at is null or new.target_id=old.target_id
+   or to_jsonb(new)-array['state','ended_at','target_id'] is distinct from to_jsonb(old)-array['state','ended_at','target_id'] then
+   raise exception using errcode='23514',message='claimant contact deadline is immutable';end if;
+  return new;
+ elsif tg_table_name='retention_due_phases' and v_minimize then
+  if new.status not in('cancelled','succeeded','failed') or new.target_id=old.target_id
+   or new.immutable_envelope is distinct from jsonb_build_object('version','future-person-control-receipt-v1','outcome','subject-deleted')
+   or to_jsonb(new)-array['status','target_id','immutable_envelope','claim_token_hash','claim_expires_at','terminal_outcome_code','completed_at']
+    is distinct from to_jsonb(old)-array['status','target_id','immutable_envelope','claim_token_hash','claim_expires_at','terminal_outcome_code','completed_at'] then
+   raise exception using errcode='23514',message='claimant contact deadline is immutable';end if;
+  return new;
+ end if;
+ if tg_table_name='retention_rows' then
+   if old.retention_id='future-person.claimed-unbound-24mo' or new.retention_id='future-person.claimed-unbound-24mo' then
+     if to_jsonb(new)-array['state','ended_at'] is distinct from to_jsonb(old)-array['state','ended_at'] then
+       raise exception using errcode='23514',message='claimant contact deadline is immutable';end if;
+   end if;
+ elsif tg_table_name='retention_due_phases' then
+   if old.retention_id='future-person.claimed-unbound-24mo' or new.retention_id='future-person.claimed-unbound-24mo' then
+     if to_jsonb(new)-array['status','claim_token_hash','claim_expires_at','attempts','terminal_outcome_code','completed_at']
+       is distinct from to_jsonb(old)-array['status','claim_token_hash','claim_expires_at','attempts','terminal_outcome_code','completed_at'] then
+       raise exception using errcode='23514',message='claimant contact deadline is immutable';end if;
+   end if;
+ else
+   if old.phase_id='claimed-unbound-working-data-purge' or new.phase_id='claimed-unbound-working-data-purge' then
+     if to_jsonb(new)-array['state','physical_purge_started_at','frozen_manifest_hash','batch_cursor']
+       is distinct from to_jsonb(old)-array['state','physical_purge_started_at','frozen_manifest_hash','batch_cursor']
+       or (old.physical_purge_started_at is not null and new.physical_purge_started_at is distinct from old.physical_purge_started_at)
+       or (old.frozen_manifest_hash is not null and new.frozen_manifest_hash is distinct from old.frozen_manifest_hash)
+       or new.batch_cursor<old.batch_cursor then
+       raise exception using errcode='23514',message='claimant contact manifest is immutable';end if;
+   end if;
+ end if;
+ return new;
+end $$;
+
 create function private.finish_future_person_deletion_v1(p_manifest uuid,p_claim_token_hash text)
 returns jsonb language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
 declare p public.retention_due_phases;m public.purge_manifests;e public.purge_manifest_entries;
- v_now timestamptz;v_count bigint;v_progress bigint;v_pending bigint;v_audit uuid;v_anon uuid:=gen_random_uuid();v_total bigint;
+ v_now timestamptz;v_count bigint;v_progress bigint;v_pending bigint;v_audit uuid;v_anon uuid:=gen_random_uuid();v_total bigint;v_controls uuid[];v_control uuid;old_entry public.purge_manifest_entries;
 begin
  p:=private.assert_future_person_deletion_plan_v1(p_manifest);v_now:=clock_timestamp();
  select * into m from public.purge_manifests where id=p_manifest;
@@ -1148,6 +1260,11 @@ begin
     or exists(select 1 from private.embryo_canonical_parts part where part.session_id=x.session_id
       and not exists(select 1 from private.embryo_canonical_source_parts b where b.part_id=part.id))
     or exists(select 1 from public.embryo_ingest_unwinds u where u.session_id=x.session_id and u.purpose='published' and u.state<>'complete'))) then
+  raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+ select array_agg(control_row_id order by control_row_id) into v_controls
+  from private.future_person_deletion_controls_v1(p_manifest);
+ if exists(select 1 from public.purge_manifests earlier where earlier.retention_row_id=any(coalesce(v_controls,'{}'::uuid[]))
+   and earlier.state='executing') then
   raise exception using errcode='42501',message='claimant deletion unavailable';end if;
  select count(*) into v_total from public.purge_manifest_entries where manifest_id=p_manifest;
  set constraints public.subjects_claimant_principal_id_fkey deferred;
@@ -1194,6 +1311,30 @@ begin
  -- Preserve coded terminal controls, original clocks/counts and chain hashes.
  -- Destroy every working row's subject, provider key, contact and body link.
  update public.purge_manifests set state='complete',batch_cursor=v_total where id=p_manifest;
+ foreach v_control in array coalesce(v_controls,'{}'::uuid[]) loop
+  perform 1 from public.retention_rows r where r.id=v_control for update;
+  perform 1 from public.retention_due_phases q where q.retention_row_id=v_control for update;
+  -- A second manifest cannot stand in for provider evidence. Every earlier
+  -- row key must be a closed PK and already absent; opaque object handles or
+  -- unresolved provider reservations refuse this entire final transaction.
+  for old_entry in select e.* from public.purge_manifest_entries e join public.purge_manifests old_m on old_m.id=e.manifest_id
+   where old_m.retention_row_id=v_control loop
+   if old_entry.object_id is not null or private.future_person_deletion_row_v1(old_entry.store_name,old_entry.row_key,false)<>0 then
+    raise exception using errcode='42501',message='claimant deletion unavailable';end if;
+   update public.purge_manifest_entries set status='deleted',row_key=jsonb_build_object('version','future-person-deletion-entry-receipt-v1',
+    'ordinal',old_entry.entry_revision,'disposition','deleted') where manifest_id=old_entry.manifest_id and target_id=old_entry.target_id
+    and store_name=old_entry.store_name and entry_revision=old_entry.entry_revision;
+  end loop;
+  update public.purge_manifests old_m set state=case when old_m.state='complete' then 'complete' else 'cancelled' end
+   where old_m.retention_row_id=v_control;
+  update public.retention_due_phases q set target_id=v_anon,
+   immutable_envelope=jsonb_build_object('version','future-person-control-receipt-v1','outcome','subject-deleted'),
+   status=case when q.status in('cancelled','succeeded','failed') then q.status else 'cancelled' end,
+   terminal_outcome_code=coalesce(q.terminal_outcome_code,'subject-deleted'),completed_at=coalesce(q.completed_at,v_now),
+   claim_token_hash=null,claim_expires_at=null where q.retention_row_id=v_control;
+  update public.retention_rows r set target_id=v_anon,state='complete',ended_at=coalesce(r.ended_at,v_now) where r.id=v_control;
+ end loop;
+
  update public.retention_due_phases set status='succeeded',claim_token_hash=null,claim_expires_at=null,
   terminal_outcome_code='purged',completed_at=v_now,target_id=v_anon,
   immutable_envelope=jsonb_build_object('version','future-person-deletion-receipt-v1','outcome','purged','entryCount',v_total,

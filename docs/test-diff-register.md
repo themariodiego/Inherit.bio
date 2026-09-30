@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01: Minimize exact earlier claimant control envelopes
+
+The actual237 release timer targets the claimant UUID under `claim` and keeps
+subject, principal, contact and mail IDs in its fixed working envelope. After
+ACK-backed zero-row graph proof, the private finisher now selects these exact
+typed controls, retains all original clocks/revisions/hashes and reduces the
+working envelope to a coded subject-deleted receipt with an anonymous target.
+It does not search JSON strings or adopt the historical cohort as ownership.
+An executing earlier manifest, opaque object or remaining physical key refuses
+the complete final transaction. The237 immutable guard permits only this
+proved one-way terminal minimization; ordinary live timer/clock refusals remain.
+Its existing invoker security mode and table permissions stay unchanged: the
+exact terminal proof is inlined rather than requiring a new private-helper
+EXECUTE grant for ordinary updates.
+
+The real approved-release fixture now pins its one actual earlier timer,
+original private envelope fields, exact post-cleanup coded projection, unchanged
+clocks/revisions and refusal to restore any destroyed association. Both new
+helpers deny every API role. New conflicting-earlier-executor and expired-final-lease
+probes require full rollback and preservation of the original authority/source.
+Closed row operations now use typed primary-key equality rather than a whole
+row JSON scan; caller key shapes and null keys refuse. Source DELETE retains
+the exact sealed key/ACK guard inside the already locked final transaction;
+lease expiry is still checked before entering that transaction and all expired
+claim/refusal semantics remain. All existing source, provider, lease, sibling,
+audit-chain and completed-main-control assertions remain unchanged. Latest246
+and247 source/audit contracts plus the exact QC snapshot/C-collation correction
+are merged with both branches' dated entries retained. Full fresh database,
+provider and browser verification still belongs to the coordinator. No public
+deletion, export delivery or acceptance gate is opened by this checkpoint.
+
+
 ## 2026-10-01 — Compare genuine QC receipts before their consumed attempt rows disappear
 
 The full fresh database run showed that successful split publication removes

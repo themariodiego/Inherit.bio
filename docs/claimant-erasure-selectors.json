@@ -463,7 +463,7 @@
       "keys": [
         "id"
       ],
-      "selector": "t.retention_row_id in (select id from public.retention_rows where target_kind='subject' and target_id=p_subject and retention_id<>'future-person.claimant-reverification-until-request')",
+      "selector": "t.retention_row_id in (select id from public.retention_rows where ((target_kind='subject' and target_id=p_subject) or (target_kind='claim' and target_id=p_claimant and retention_id='future-person.claimed-unbound-24mo')) and retention_id<>'future-person.claimant-reverification-until-request')",
       "disposition": "exact-current-row"
     },
     {

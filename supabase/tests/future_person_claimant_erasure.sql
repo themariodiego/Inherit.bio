@@ -51,6 +51,16 @@ create temporary table sibling_before as select to_jsonb(s) subject,to_jsonb(e) 
  from private.embryo_canonical_sources x join public.subjects s on s.id=x.subject_id join public.embryos e on e.id=x.embryo_id
  where x.cohort_id=(select cohort_id from live) and x.file_id<>(select file from custody_ids);
 select public.issue_future_person_recovery_key_v1(pg_temp.h('deletion-rights'),'recovery-before-delete-aaaaaaaa',pg_temp.h('offline-recovery'));
+select throws_ok($$select pg_temp.deletion_probe(
+ 'update public.purge_manifests set state=''executing'' where retention_row_id in(select id from public.retention_rows
+  where retention_id=''future-person.claimed-unbound-24mo'' and target_id=(select claimant_principal_id from public.subjects
+   where id=(select subject from custody_ids)))',
+ 'select private.prepare_future_person_deletion_v1(pg_temp.h(''deletion-rights''),''delete-refused-old-worker-aaaaaaaa'')')$$,
+ '42501','claimant deletion unavailable','a conflicting older executor refuses the complete atomic request');
+select ok((private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),false)).id is not null
+ and not exists(select 1 from public.retention_rows where target_id=(select subject from custody_ids)
+  and retention_id='future-person.claimant-reverification-until-request'),
+ 'older-executor refusal rolls back revocation, new controls and all claimant nonce effects');
 create temporary table deletion_plan as select private.prepare_future_person_deletion_v1(pg_temp.h('deletion-rights'),
  'claimant-delete-nonce-positive-aaaaaaaa') id;
 select is((select count(*) from deletion_plan where id is not null),1::bigint,'the real current claimant creates one sealed exact source plan');
@@ -129,6 +139,8 @@ select throws_ok($$select private.future_person_deletion_row_v1('public.profiles
 select throws_ok($$select private.future_person_deletion_row_v1('public.subjects',jsonb_build_object('id',
  (select subject from custody_ids),'subject_id',(select subject from custody_ids)),true)$$,
  '42501','claimant deletion unavailable','a widened key shape is refused before any DELETE');
+select throws_ok($$select private.future_person_deletion_row_v1('public.subjects',jsonb_build_object('id',null),true)$$,
+ '42501','claimant deletion unavailable','a null primary key never widens the typed row executor');
 select throws_ok($$select private.future_person_deletion_graph_rows_v1((select subject from custody_ids),
  (select claimant_principal_id from public.subjects where id=(select subject from custody_ids)),gen_random_uuid(),
  (select embryo from custody_ids),private.future_person_audit_selector_v1((select subject from custody_ids)))$$,
@@ -148,6 +160,15 @@ select ok(exists(select 1 from private.claim_documents where intake_id=(select r
 create temporary table sealed_graph_keys as select store_name,row_key from public.purge_manifest_entries
  where manifest_id=(select id from deletion_plan) and entry_revision>50;
 create temporary table prior_audit_chain as select to_jsonb(l) value from public.legal_audit_log l;
+create temporary table previous_claimant_controls as select r.id,r.created_at,r.fixed_deadline,r.retention_revision,
+ p.phase_id,p.phase_revision,p.phase_deadline,p.immutable_envelope original_envelope
+ from public.retention_rows r join public.retention_due_phases p on p.retention_row_id=r.id
+ where r.retention_id='future-person.claimed-unbound-24mo' and r.target_kind='claim'
+ and r.target_id=(select claimant_principal_id from public.subjects where id=(select subject from custody_ids));
+select is((select count(*) from previous_claimant_controls),1::bigint,
+ 'the genuine release owns one original temporary-contact timer and exact working envelope');
+select ok((select original_envelope ?& array['subjectId','claimantPrincipalId','principalId','contactReferenceId','outboxId']
+ from previous_claimant_controls),'the real predecessor timer carries the exact old privacy associations to be minimized');
 create temporary table original_deletion_clocks as select r.created_at,r.fixed_deadline,p.phase_deadline,
  p.immutable_envelope->'completionDeadline' completion from public.purge_manifests m
  join public.retention_rows r on r.id=m.retention_row_id join public.retention_due_phases p on p.retention_row_id=r.id
@@ -178,6 +199,15 @@ select is(public.confirm_embryo_ingest_unwind_storage_v1((select id from origina
  'original upload copies have exact marker evidence before metadata cleanup');
 select is(public.complete_embryo_ingest_unwind_v1((select id from original_upload_cleanup))->>'status','complete',
  'the actual published cleanup finishes without touching any sibling canonical part');
+select throws_ok($$select pg_temp.deletion_probe(
+ 'update public.retention_due_phases set claim_expires_at=clock_timestamp()-interval ''1 microsecond''
+  where retention_row_id=(select retention_row_id from public.purge_manifests where id=(select id from deletion_plan))
+   and phase_id=''future-person-claimed-source-disposal''',
+ 'select private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h(''disposal-lease''))')$$,
+ '42501','claimant deletion unavailable','an expired exact lease cannot enter the final atomic source deletion');
+select ok(exists(select 1 from private.embryo_canonical_sources where file_id=(select file from custody_ids))
+ and exists(select 1 from public.subjects where id=(select subject from custody_ids)),
+ 'expired finisher refusal preserves the complete source and subject graph');
 select is(private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))->>'status',
  'deleted','the exact ACK-backed private transaction deletes the genuine approved unbound claimant graph');
 select is((select coalesce(sum(private.future_person_deletion_row_v1(store_name,row_key,false)),0) from sealed_graph_keys),0::numeric,
@@ -205,6 +235,21 @@ select ok(not exists(select 1 from public.purge_manifest_entries e where e.manif
  and (e.status<>'deleted' or e.row_key is distinct from jsonb_build_object('version','future-person-deletion-entry-receipt-v1',
  'ordinal',e.entry_revision,'disposition','deleted'))),
  'terminal entry receipts contain no DNA, provider keys, names, contacts or original physical row identifiers');
+select ok((select count(*)=1 and bool_and(r.state='complete' and r.target_id<>(c.original_envelope->>'claimantPrincipalId')::uuid
+ and r.target_id=p.target_id and p.status in('cancelled','succeeded','failed')
+ and p.immutable_envelope=jsonb_build_object('version','future-person-control-receipt-v1','outcome','subject-deleted')
+ and r.created_at=c.created_at and r.fixed_deadline=c.fixed_deadline and r.retention_revision=c.retention_revision
+ and p.phase_revision=c.phase_revision and p.phase_deadline=c.phase_deadline)
+ from previous_claimant_controls c join public.retention_rows r on r.id=c.id
+ join public.retention_due_phases p on p.retention_row_id=r.id and p.phase_id=c.phase_id),
+ 'older contact controls retain their original clocks and revisions but no subject/contact/outbox association');
+select throws_ok($$update public.retention_due_phases set immutable_envelope=(select original_envelope from previous_claimant_controls)
+ where retention_row_id=(select id from previous_claimant_controls)$$,'23514','claimant contact deadline is immutable',
+ 'an older minimized contact receipt cannot restore its destroyed private links');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
+ where has_function_privilege(role,'private.future_person_deletion_controls_v1(uuid)','execute')
+ or has_function_privilege(role,'private.future_person_control_minimization_allowed_v1(uuid)','execute')),0::bigint,
+ 'no API role can select older controls or manufacture their terminal minimization proof');
 select throws_ok($$update public.retention_due_phases set immutable_envelope=jsonb_build_object('subjectId',
  (select subject from custody_ids)) where retention_row_id=(select retention_row_id from public.purge_manifests
  where id=(select id from deletion_plan))$$,'23514','claimant deletion plan immutable',
