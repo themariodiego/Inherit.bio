@@ -7618,6 +7618,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      future_person_export_source_v1: {
+        Args: { p_operation: string; p_session_hash: string; p_authority_receipt?: string; p_after_variant_id?: number }
+        Returns: Json
+      }
       finish_genome_file_deletion_v1: {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
         Returns: undefined
