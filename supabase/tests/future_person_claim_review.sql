@@ -451,17 +451,17 @@ update dk set b=public.open_claim_review_download_v1((select birth from rk),(sel
 select ok(public.authorize_claim_review_chunk_v1((select (b->>'session')::uuid from dk), (select bc from rk), 0) ? 'objectKey',
   'birth record read');
 select pg_temp.acknowledge_document((select (b->>'session')::uuid from dk),(select bc from rk));
-select is(public.decide_claim_review_v1((select id from rk), 1, 'approve-record-key',
-  encode(extensions.digest('k1-approve','sha256'),'hex'), (select r from reason))->>'state', 'release_queued',
-  'approval records the release decision');
+select throws_ok($$select public.decide_claim_review_v1((select id from rk), 1, 'approve-record-key',
+  encode(extensions.digest('k1-approve','sha256'),'hex'), (select r from reason))$$,'42501','claim review unavailable',
+  'the obsolete nominal approval cannot authorize a release without documentary attestation');
 select throws_ok($$select public.decide_claim_review_v1((select id from rk), 2, 'reject',
   encode(extensions.digest('k1-late','sha256'),'hex'), (select r from reason))$$, '42501', null,
-  'an approved case takes no further decision here');
-select throws_ok($$select public.read_claim_review_case_v1((select id from rk))$$, '42501', null,
-  'and is no longer read here: the release step reads it on its own terms');
+  'a stale decision still cannot advance the unapproved case');
+select is(public.read_claim_review_case_v1((select id from rk))->>'state','document_review_pending',
+  'the refused nominal approval leaves the case pending for the real attested door');
 reset role;
-select is((select count(*) from public.legal_audit_log where event_code = 'claim.review.approved'), 1::bigint,
-  'the ledger records the approval with no identifier');
+select is((select count(*) from public.legal_audit_log where event_code = 'claim.review.approved'), 0::bigint,
+  'the refused nominal approval creates no approval audit event');
 select ok(exists (select 1 from private.claim_document_review_object_v1((select photo from rk))),
   'the approved case''s documents stay readable for the release step');
 

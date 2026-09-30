@@ -2,10 +2,11 @@ import "server-only";
 
 import crypto from "node:crypto";
 import { z } from "zod";
-import { decryptSecret, encryptSecret, hmacSecret } from "@/lib/crypto";
+import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { mintPublicFormToken, readPublicFormToken } from "@/lib/embryos/operation-token";
 import { sha256Hex } from "./claim-session";
-import { claimDataKey } from "./document-envelope";
+import { keyringRootKeys, type DigestSet } from "@/lib/hmac-keyring";
+import { claimDataKey, sealDocumentBytes } from "./document-envelope";
 
 /**
  * The named-human claim review (api.future-person-claim-review,
@@ -57,17 +58,64 @@ const DECISIONS = [
 ] as const;
 
 /** methodRequestContracts.POST: one of six closed bodies, told apart by `decision`. */
-export const reviewDecisionBody = z.object({
-  decision: z.enum(DECISIONS),
+const decisionFields = {
   reviewRevision: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
   reason: z.string().transform((value) => value.normalize("NFC").trim())
     .refine((value) => [...value].length >= 20 && [...value].length <= 2000 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value)),
   nonce: z.string().min(1).max(2048),
+};
+export const verifiedDocumentIdentity = z.object({
+  fullName: z.string().max(480).transform(value=>value.normalize("NFC").trim().replace(/\s+/gu," "))
+    .refine(value=>[...value].length>=2&&[...value].length<=120&&!/[\u0000-\u001f\u007f-\u009f]/u.test(value)),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).refine(value=>{
+    const date=new Date(`${value}T00:00:00.000Z`);
+    if(Number.isNaN(date.getTime())||date.toISOString().slice(0,10)!==value||date.getUTCFullYear()<1900)return false;
+    const year=date.getUTCFullYear()+18;
+    const month=date.getUTCMonth();
+    const day=Math.min(date.getUTCDate(),new Date(Date.UTC(year,month+1,0)).getUTCDate());
+    return new Date(Date.UTC(year,month,day)).toISOString().slice(0,10)<=new Date().toISOString().slice(0,10);
+  }),
+  photoIdentityReviewed: z.literal(true),
+  birthRecordReviewed: z.literal(true),
+  adultAgeConfirmed: z.literal(true),
 }).strict();
-
-/** The reviewer's professional basis, sealed before it reaches the database (a bytea literal). */
-export function sealReason(reason: string): string {
-  return `\\x${encryptSecret(reason).toString("hex")}`;
+const linkedIdentity=verifiedDocumentIdentity.extend({recordedParentLinkConfirmed:z.literal(true)}).strict();
+/** Approval requires the named human's explicit document and verified-tuple attestation. */
+export const reviewDecisionBody=z.discriminatedUnion("decision",[
+  z.object({...decisionFields,decision:z.enum(["reject","needs-more-information"])}).strict(),
+  z.object({...decisionFields,decision:z.literal("approve-record-key"),documentaryAttestation:linkedIdentity}).strict(),
+  z.object({...decisionFields,decision:z.enum(["approve-recovery-key","approve-claimed-unbound-no-key-recovery"]),documentaryAttestation:verifiedDocumentIdentity}).strict(),
+  z.object({...decisionFields,decision:z.literal("keyless-document-match"),documentaryAttestation:linkedIdentity}).strict(),
+]);
+/** Purpose-separated verified identity under every held external revision.
+ * The database chooses its current contact-root revision and forbids retiring
+ * a revision still used by a durable claimant identity. No identity is public.
+ */
+export function verifiedIdentityDigestSet(attestation:z.infer<typeof verifiedDocumentIdentity>):DigestSet {
+  const parsed=verifiedDocumentIdentity.parse({fullName:attestation.fullName,dateOfBirth:attestation.dateOfBirth,photoIdentityReviewed:attestation.photoIdentityReviewed,birthRecordReviewed:attestation.birthRecordReviewed,adultAgeConfirmed:attestation.adultAgeConfirmed});
+  const value=JSON.stringify([parsed.fullName.toLowerCase(),parsed.dateOfBirth]);
+  const set:DigestSet={"1":hmacSecret(value,"future-person-claimant-identity-v1")};
+  for(const {revision,key} of keyringRootKeys(process.env.INHERIT_HMAC_KEYRING)) {
+    let subKey:Buffer|undefined;
+    try {
+      subKey=crypto.createHmac("sha256",key).update(`future-person-claimant-identity-v${revision}`).digest();
+      set[String(revision)]=crypto.createHmac("sha256",subKey).update(value).digest("hex");
+    } finally { subKey?.fill(0);key.fill(0); }
+  }
+  return set;
+}
+function sealReviewField(value:string,wrappedHex:string,reviewId:string,nonceHash:string,field:string):string {
+  const key=claimDataKey(wrappedHex);
+  const bytes=Buffer.from(value,"utf8");
+  try { return `\\x${sealDocumentBytes(key,`claim-review-v1|${reviewId}|${nonceHash}|${field}`,bytes).toString("hex")}`; }
+  finally { key.fill(0);bytes.fill(0); }
+}
+export function sealDocumentaryAttestation(attestation:z.infer<typeof verifiedDocumentIdentity>,wrappedHex:string,reviewId:string,nonceHash:string) {
+  return sealReviewField(JSON.stringify(attestation),wrappedHex,reviewId,nonceHash,"attestation");
+}
+/** The professional basis uses the claim's own key, destroyed at closure. */
+export function sealReason(reason:string,wrappedHex:string,reviewId:string,nonceHash:string):string {
+  return sealReviewField(reason,wrappedHex,reviewId,nonceHash,"reason");
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +142,7 @@ const caseRow = z.object({
 
 const claimantIdentity = z.object({
   version: z.literal(1),
+  contactEmail:z.email().max(254),
   claimantName: z.string().min(2).max(480),
   claimantDateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(),
   childDateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(),
@@ -111,7 +160,7 @@ const parentIdentity = z.object({
   parentRoles: z.array(z.enum(["genetic-parent", "legal-parent", "gestational-parent", "intended-parent"])).min(1).max(4),
 }).passthrough();
 
-function openIdentity(identityHex: string, wrappedHex: string): z.infer<typeof claimantIdentity> | null {
+export function openClaimReviewIdentity(identityHex: string, wrappedHex: string): z.infer<typeof claimantIdentity> | null {
   let key: Buffer | undefined;
   try {
     key = claimDataKey(wrappedHex);
@@ -142,7 +191,7 @@ export function reviewCaseBody(row: unknown): Record<string, unknown> | null {
   const parsed = caseRow.safeParse(row);
   if (!parsed.success) return null;
   const value = parsed.data;
-  const identity = openIdentity(value.identityCiphertext, value.wrappedDataKey);
+  const identity = openClaimReviewIdentity(value.identityCiphertext, value.wrappedDataKey);
   if (!identity) return null;
   const dateOfBirth = value.mode === "keyless" ? identity.childDateOfBirth : identity.claimantDateOfBirth;
   if (!dateOfBirth) return null;

@@ -1,3 +1,6 @@
+import crypto from "node:crypto";
+import { contactDigestSet } from "@/lib/hmac-keyring";
+import { sealClaimantContact } from "@/lib/future-person/claimant-contact";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
@@ -15,6 +18,9 @@ import {
   reviewCsrfMatches,
   reviewDecisionBody,
   sealReason,
+  sealDocumentaryAttestation,
+  verifiedIdentityDigestSet,
+  openClaimReviewIdentity,
 } from "@/lib/future-person/review";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
 import { createClient } from "@/lib/supabase/server";
@@ -95,13 +101,24 @@ async function decide(request: Request, id: string): Promise<Response> {
   if (!parsed.success) return notFound();
   const nonce = readReviewNonce(parsed.data.nonce, id, account.user.id, account.sessionId);
   if (!nonce) return notFound();
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("decide_claim_review_v1", {
-    p_review_id: id,
-    p_review_revision: parsed.data.reviewRevision,
-    p_decision: parsed.data.decision,
-    p_nonce_hash: sha256Hex(nonce),
-    p_reason_ciphertext: sealReason(parsed.data.reason),
+  const supabase=await createClient();
+  const caseResult=await supabase.rpc("read_claim_review_case_v1",{p_review_id:id});
+  if(caseResult.error)return caseResult.error.code==="42501"?notFound():unavailable();
+  const row=caseResult.data as {identityCiphertext?:unknown;wrappedDataKey?:unknown}|null;
+  if(typeof row?.wrappedDataKey!=="string"||typeof row.identityCiphertext!=="string")return notFound();
+  const identity=openClaimReviewIdentity(row.identityCiphertext,row.wrappedDataKey);
+  if(!identity)return notFound();
+  const attestation="documentaryAttestation" in parsed.data?parsed.data.documentaryAttestation:null;
+  const digests=attestation?verifiedIdentityDigestSet(attestation):null;
+  const contactId=crypto.randomUUID();const nonceHash=sha256Hex(nonce);
+  const {data,error}=await supabase.rpc("decide_claim_review_attested_v1",{
+    p_review_id:id,p_review_revision:parsed.data.reviewRevision,p_decision:parsed.data.decision,p_nonce_hash:nonceHash,
+    p_reason_ciphertext:sealReason(parsed.data.reason,row.wrappedDataKey,id,nonceHash),
+    p_attestation_ciphertext:attestation?sealDocumentaryAttestation(attestation,row.wrappedDataKey,id,nonceHash):null,
+    p_identity_hmac_set:digests,p_verified_date_of_birth:attestation?.dateOfBirth??null,
+    p_parent_link_confirmed:attestation!==null&&"recordedParentLinkConfirmed" in attestation,
+    p_contact_reference_id:contactId,p_contact_ciphertext:sealClaimantContact(contactId,identity.contactEmail),
+    p_contact_hmac_set:contactDigestSet(identity.contactEmail),
   });
   if (error) return ["42501", "23505", "22023"].includes(error.code ?? "") ? notFound() : unavailable();
   const outcome = data as { claimId?: unknown; state?: unknown; reviewRevision?: unknown } | null;

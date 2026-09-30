@@ -153,10 +153,15 @@ const recordKeyShape = /[0-9A-HJKMNP-TV-Z]{20}/;
 const fragment = `${"a".repeat(21)}-${"b".repeat(21)}`;
 const invitationUrl = `https://example.test/withdraw/request#${fragment}`;
 
-function expectSafeBody(html: string) {
+function expectSafeBody(html: string, privacyContact = false) {
   expect(html).toContain(ATTRIBUTION);
   expect(html).toContain(DISCLAIMER);
-  expect(html).not.toContain("@");
+  if (privacyContact) {
+    expect(html.match(/privacy@inherit\.bio/g)).toHaveLength(1);
+    expect(html.replace("privacy@inherit.bio", "")).not.toContain("@");
+  } else {
+    expect(html).not.toContain("@");
+  }
   expect(html).not.toMatch(recordKeyShape);
 }
 
@@ -201,7 +206,7 @@ describe("embryo upload notice email", () => {
     expect(html).toContain(`href="${invitationUrl}"`);
     expect(html).toContain("Review your options");
     expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
-    expectSafeBody(html);
+    expectSafeBody(html, true);
   });
 
   it("renders one record in the singular, a neutral uploader and no link without a withdraw URL", async () => {
@@ -213,7 +218,7 @@ describe("embryo upload notice email", () => {
     expect(html).toContain("If you did not expect this, write to privacy@inherit.bio.");
     expect(html).not.toContain("Review your options");
     expect(html).not.toContain("href=");
-    expectSafeBody(html);
+    expectSafeBody(html, true);
   });
 });
 
@@ -410,7 +415,7 @@ describe("embryo mail subjects and render map", () => {
   it.each(embryoMails)("$mail.id renders through the template map", async ({ mail, heading }) => {
     const html = stripMarkers(await renderMail(mail));
     expect(html).toContain(heading);
-    expectSafeBody(html);
+    expectSafeBody(html, mail.id === "embryo-upload-notice");
   });
 
   it("keeps the existing subjects unchanged", () => {
@@ -419,4 +424,11 @@ describe("embryo mail subjects and render map", () => {
     expect(mailSubject({ id: "adult-subject-invitation", payload: { invitationUrl } }))
       .toBe("You were invited to Inherit");
   });
+});
+
+it("the claimant release email contains only a private one-use fragment link and the registered seven-day window",async()=>{
+  const html=await renderMail({id:"future-person-release",payload:{releaseUrl:"https://example.test/withdraw/request#synthetic-token"}});
+  expect(html).toContain("https://example.test/withdraw/request#synthetic-token");
+  expect(html).toContain("expires in seven days");expect(html).toContain("do not need an account");
+  expect(html).not.toMatch(/claimantId|subjectId|parent|genotype|rs[0-9]|photo|birth record/u);
 });

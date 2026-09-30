@@ -3,6 +3,7 @@ import type { RequiredSurface } from "./corpus";
 
 /** Every production renderer must have an independently discovered component export. */
 export const EMAIL_RENDERERS = {
+  "future-person-release":["future-person-release.tsx","FuturePersonReleaseEmail"],
   "report-ready": ["report-ready.tsx", "ReportReadyEmail"],
   "research-digest": ["research-digest.tsx", "ResearchDigestEmail"],
   "account-deletion-notice": ["account-deletion.tsx", "AccountDeletionNoticeEmail"],
@@ -40,6 +41,7 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
       requiresClaimWrapping: false, requiredClaimRegions: ["email-body",
         ...(mail.id === "research-digest" && mail.payload.entries.length ? ["research-digest-entries"] : [])] } });
   };
+  add("release",{id:"future-person-release",payload:{releaseUrl:`${url}#synthetic-release`}});
   for (const count of [0, 1, 162]) add(`count-${count}`, { id: "report-ready", payload: { reportCount: count, dashboardUrl: url } });
   const entries = [...catalog].sort((a, b) => a.slug.localeCompare(b.slug)).map((t) => ({ title: t.title, summary: t.summary, url: `${url}/${t.slug}` }));
   for (const [name, selected] of [["empty", []], ["single", entries.slice(0, 1)], ["public-catalog", entries]] as const) {

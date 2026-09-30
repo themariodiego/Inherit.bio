@@ -50,10 +50,12 @@ import {
   EmbryoIngestAbandonedEmail,
   type EmbryoIngestAbandonedProps,
 } from "@/emails/embryo-ingest-abandoned";
+import { FuturePersonReleaseEmail,type FuturePersonReleaseProps } from "@/emails/future-person-release";
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
+  "future-person-release":FuturePersonReleaseProps;
   "report-ready": ReportReadyProps;
   "research-digest": ResearchDigestProps;
   "account-deletion-notice": AccountDeletionNoticeProps;
@@ -81,6 +83,7 @@ export type MailTemplate = {
 const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
+  "future-person-release":(payload)=>createElement(FuturePersonReleaseEmail,payload),
   "report-ready": (payload) => createElement(ReportReadyEmail, payload),
   "research-digest": (payload) => createElement(ResearchDigestEmail, payload),
   "account-deletion-notice": (payload) =>
@@ -108,6 +111,7 @@ const renderers: {
 // Subjects are fixed per template. The Record Key addendum is the one
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
+  "future-person-release":"Your Inherit request is ready",
   "report-ready": "Your Inherit reports are ready",
   "research-digest": "New reports in the Inherit research library",
   "account-deletion-notice": "Your Inherit account deletion is scheduled",
