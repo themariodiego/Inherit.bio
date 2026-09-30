@@ -298,5 +298,18 @@ select is(public.prepare_embryo_ingest_unwind_v1((select cohort_id from live),(s
   'published','a published cohort is never unwound');
 select is(pg_temp.visible(),'qc_pass,qc_fail,qc_marginal:active:3:5:active/1','the published state stands');
 
+select ok(has_function_privilege('service_role',
+  'private.valid_embryo_vcf_qc_basis_v1(jsonb,double precision,double precision)','execute')
+  and not has_function_privilege('anon','private.valid_embryo_vcf_qc_basis_v1(jsonb,double precision,double precision)','execute')
+  and not has_function_privilege('authenticated','private.valid_embryo_vcf_qc_basis_v1(jsonb,double precision,double precision)','execute'),
+  'only the service table writer can execute the pure QC constraint validator');
+select id as qc_service_embryo_id from public.embryos where cohort_id=(select cohort_id from live) and sample_ordinal=0 \gset
+set local role service_role;
+select lives_ok(format('update public.embryo_qc set call_rate=call_rate where embryo_id=%L::uuid',:'qc_service_embryo_id'),
+  'the real service role evaluates the saved QC receipt without a privilege error');
+select throws_ok(format('update public.embryo_qc set call_rate=0.01 where embryo_id=%L::uuid',:'qc_service_embryo_id'),
+  '23514','new row for relation "embryo_qc" violates check constraint "embryo_qc_figure_basis_closed"',
+  'the same service role cannot change a receipt-bound call rate');
+reset role;
 select * from finish();
 rollback;

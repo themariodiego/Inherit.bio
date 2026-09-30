@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-09-30 — Execute the pure QC constraint under its actual service writer
+
+The full hosted Embryo run reached real app cases and found the normal service-role QC writer denied EXECUTE on the new CHECK validator. The validator is immutable, reads only its own JSON/scalar arguments and grants no data access or classification mutation. Only service_role gains EXECUTE; anon/authenticated remain denied. Fresh pgTAP runs a real service-role update against a genuinely published saved receipt and requires the unchanged exact CHECK failure for a crossed call rate. Existing immutable-classification, producer, publication and browser assertions remain, with unchanged time limits and retries.
+
 ## 2026-09-30 — Preserve custody identity checks under the real API role and audit real reviewer pages
 
 The first complete hosted custody run found the service-role immutable-file refusal returning a sealed-table permission error before its existing `immutable_file_identity` assertion. The invoker trigger retains its real caller-role test and all original identity fields. A service-only read-only definer evaluates the unchanged exact approved claimant tuple without granting table reads. Fresh pgTAP checks the real service-role refusal, invoker semantics, current-transaction visibility and restricted helper grants; all old refusal and positive detachment assertions remain.
