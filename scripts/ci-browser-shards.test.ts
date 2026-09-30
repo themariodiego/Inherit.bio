@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
-import { browserManifest, browserReportCases, browserShardReceipt, ciBrowserShard, INDEPENDENT_BROWSER_SPEC_FILES, verifyBrowserShards, verifyBrowserSourceCensus } from "./ci-browser-shards";
+import { browserManifest, browserReportCases, browserShardReceipt, ciBrowserShard, verifyBrowserShards, verifyBrowserSourceCensus } from "./ci-browser-shards";
 
 const source = { head: "a".repeat(40), runId: "12345", runAttempt: "2" };
 const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
@@ -22,36 +22,6 @@ function evidence() {
     browserShardReceipt(full, report([index], index), report([index], index, true), source, index, index, timings, tracked)) };
 }
 describe("mandatory browser coverage across isolated jobs", () => {
-  it("admits only independent accessibility cases across jobs, retaining exact-once case coverage", () => {
-    const grouped = (file: string) => {
-      const value = (cases: number[], shard: number | null = null, executed = false) => {
-        const result = report(cases, shard, executed);
-        for (const spec of result.suites[0].suites[0].specs)
-          if ([id(1), id(5)].includes(spec.id)) spec.file = file;
-        return result;
-      };
-      const full = value([1, 2, 3, 4, 5, 6]);
-      const specs = [...new Set(full.suites[0].suites[0].specs.map(spec => `e2e/${spec.file}`))];
-      return { manifest: browserManifest(full, source, specs), receipts: [1, 2, 3, 4, 5, 6].map(index =>
-        browserShardReceipt(full, value([index], index), value([index], index, true), source, index, index, timings, specs)) };
-    };
-    expect(INDEPENDENT_BROWSER_SPEC_FILES).toEqual(["a11y.spec.ts"]);
-    const independent = grouped("a11y.spec.ts");
-    expect(verifyBrowserShards(independent.manifest, independent.receipts, source)).toBe(6);
-    for (const file of ["synthetic-1.spec.ts", "a11y-other.spec.ts", "nested/a11y.spec.ts"]) {
-      const serial = grouped(file);
-      expect(() => verifyBrowserShards(serial.manifest, serial.receipts, source)).toThrow("stateful browser");
-    }
-    const duplicated = structuredClone(independent.receipts);
-    duplicated[4].assignedCases = duplicated[0].assignedCases;
-    duplicated[4].executedCases = duplicated[0].executedCases;
-    duplicated[4].files[0].cases = duplicated[0].files[0].cases;
-    expect(() => verifyBrowserShards(independent.manifest, duplicated, source)).toThrow();
-    const duplicatedFile = structuredClone(independent.receipts);
-    duplicatedFile[0].files.push({ ...duplicatedFile[0].files[0], cases: [] });
-    expect(() => verifyBrowserShards(independent.manifest, duplicatedFile, source)).toThrow();
-  });
-
   it("requires the real native listing statistics and refuses declared skips or discovery executions", () => {
     const cases = [1, 2, 3, 4, 5, 6];
     expect(browserReportCases(report(cases), null, false)).toHaveLength(6);

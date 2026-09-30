@@ -13,11 +13,6 @@ import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 
 const USER = { email: "a11y@e2e.local", password: "e2e-a11y-pw" };
 
-// Every case creates its own page and any required content. Native sharding
-// may distribute these independent cases between fresh database jobs; each
-// job still runs exactly one worker. No assertion or sweep is split or omitted.
-test.describe.configure({ mode: "parallel" });
-
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
 });
