@@ -1,5 +1,15 @@
 # Test diff register
 
+## 2026-10-01 — Type deliberately corrupted ACL fixtures without changing their proof
+
+The combined account/export compiler check passed route generation but refused
+two negative lock-catalog fixtures because the exact empty API-access arrays
+infer an element type of `never`. Those two mutation callbacks now explicitly
+allow string entries in their test-only input type. The exact production-source
+catalog, empty API ACL expectation, every corruption/refusal assertion and all
+31 actual independent-session lock probes remain unchanged. The failed compiler
+log is retained; no runtime source, SQL, role grant or acceptance change occurs.
+
 ## 2026-10-01 — Preserve complete ordinary scientific and prepared archive sources
 
 New ordinary scientific factories compose the actual consumed-attempt content

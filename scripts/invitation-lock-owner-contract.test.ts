@@ -53,11 +53,15 @@ describe("the independently verified protected objection lock path", () => {
   });
   it("accepts only the exact reviewed owner, denied ACL, enabled trigger and native source contract", () => {
     expect(() => assertProtectedObjectionCatalog(structuredClone(EXPECTED_PROTECTED_OBJECTION_CATALOG))).not.toThrow();
+    type MutableCatalog = Omit<typeof EXPECTED_PROTECTED_OBJECTION_CATALOG, "apiTableAccess" | "apiColumnAccess"> & {
+      apiTableAccess: string[];
+      apiColumnAccess: string[];
+    };
     const mutations = [
       (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.tableOwner = "service_role"; },
       (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.rowSecurity = false; },
-      (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.apiTableAccess = ["service_role"]; },
-      (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.apiColumnAccess = ["authenticated"]; },
+      (value: MutableCatalog) => { value.apiTableAccess = ["service_role"]; },
+      (value: MutableCatalog) => { value.apiColumnAccess = ["authenticated"]; },
       (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.foreignTableAcl = 1; },
       (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.trigger.enabled = "D"; },
       (value: typeof EXPECTED_PROTECTED_OBJECTION_CATALOG) => { value.trigger.type = 31; },
