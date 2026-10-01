@@ -1,5 +1,18 @@
 # Test diff register
 
+## 2026-10-01 — Distinguish the quality table from its enclosing landmark
+
+The full hosted suite on `2280e7f4` refused the populated comparison page at
+320, 390 and 1,280 pixels because both the quality section and its focusable
+table scroller were named "Quality check". The scroller now has the distinct
+plain label "Quality check table". Both region landmarks, the section heading,
+the table headers, horizontal scrolling and the keyboard focus stop remain.
+A new real Chromium regression renders the populated table inside its named
+section, requires exactly two separately addressable landmarks, focuses the
+scroller and requires no axe `landmark-unique` violation. All original hosted
+accessibility assertions and their viewport/theme/motion sweeps are unchanged;
+this isolated regression supplies no full-suite or acceptance credit.
+
 ## 2026-10-01 — Require a genuinely changed negative encrypted-proof fixture
 
 The full nonroot Linux suite on `65f9f752` passed 8,719 tests and failed the

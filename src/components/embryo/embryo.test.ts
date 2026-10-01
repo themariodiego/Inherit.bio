@@ -1,6 +1,8 @@
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { chromium } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { FUTURE_PERSON_LINK } from "@/copy/family/index";
 import { GATE_BUTTON, GATE_CHECKBOX_LABEL, GATE_SESSION_NOTE } from "@/copy/embryos/gate";
 import {
@@ -8,6 +10,8 @@ import {
   EMBRYO_LAYER_DEFINITIONS,
   NO_ROWS_SENTENCE,
   NOT_MEASURED_COMPARISON,
+  QUALITY_CHECK_HEADING,
+  QUALITY_CHECK_TABLE_LABEL,
   STANDING_STATEMENT,
   WITHIN_FAMILY_NOT_TESTED,
   withinFamilyInconclusive,
@@ -339,6 +343,29 @@ describe("ContextStrip", () => {
 });
 
 describe("QcTable and QcBlock", () => {
+  it("keeps the quality section and keyboard-scrollable table as distinctly named landmarks", async () => {
+    const html = renderToStaticMarkup(h("section", { "aria-labelledby": "quality-check-heading" },
+      h("h2", { id: "quality-check-heading" }, QUALITY_CHECK_HEADING),
+      h(QcTable, { embryos: embryos(), subjectIds }),
+    ));
+    const browser = await chromium.launch();
+    try {
+      const context = await browser.newContext({ viewport: { width: 320, height: 844 } });
+      const page = await context.newPage();
+      await page.setContent(`<html lang="en"><head><title>Quality check</title></head><body><main><h1>Compare embryos</h1>${html}</main></body></html>`);
+      expect(await page.getByRole("region").count()).toBe(2);
+      expect(await page.getByRole("region", { name: QUALITY_CHECK_HEADING, exact: true }).count()).toBe(1);
+      const tableRegion = page.getByRole("region", { name: QUALITY_CHECK_TABLE_LABEL, exact: true });
+      expect(await tableRegion.count()).toBe(1);
+      expect(await tableRegion.getAttribute("tabindex")).toBe("0");
+      expect(await tableRegion.getAttribute("class")).toContain("overflow-x-auto");
+      await tableRegion.focus();
+      expect(await tableRegion.evaluate(element => document.activeElement === element)).toBe(true);
+      expect((await new AxeBuilder({ page }).withRules(["landmark-unique"]).analyze()).violations).toEqual([]);
+    } finally {
+      await browser.close();
+    }
+  });
   it("shows each embryo's closed source facts in compare and detail without a disclosure", () => {
     const rows = embryos();
     rows[0].qc.source_facts = { coordinate_conversion: "converted", source_origin: "external-unverified", source_imputation: "not-recorded", call_observation: "not-recorded" };

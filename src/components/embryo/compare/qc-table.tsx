@@ -25,7 +25,7 @@ import {
   QC_PASSED,
   QC_REASON_WORDS,
 } from "@/copy/embryos/qc";
-import { QUALITY_CHECK_HEADING } from "@/copy/embryos/compare";
+import { QUALITY_CHECK_HEADING, QUALITY_CHECK_TABLE_LABEL } from "@/copy/embryos/compare";
 import type { ComparisonEmbryo, QcDto } from "@/lib/embryos/policy";
 import { mapQcReason } from "@/lib/embryos/qc-policy";
 import { sourceLabelText } from "@/lib/embryos/source-labels";
@@ -166,7 +166,7 @@ export function QcTable({
   riskRangeEmbryoIds?: ReadonlySet<string>;
 }) {
   return (
-    <div className="overflow-x-auto" role="region" aria-label={QUALITY_CHECK_HEADING} tabIndex={0}>
+    <div className="overflow-x-auto" role="region" aria-label={QUALITY_CHECK_TABLE_LABEL} tabIndex={0}>
       <table data-slot="qc-table" data-card="true" data-compare-surface="true" className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm">
         <thead>
           <tr>
