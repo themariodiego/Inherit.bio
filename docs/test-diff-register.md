@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-01 — Preserve complete ordinary scientific and prepared archive sources
+
+New ordinary scientific factories compose the actual consumed-attempt content
+reader and independently checked metadata counts. Tests retain 1,207 normalized
+rows across short pages, literal observations, stored report text/JSON and genuine
+source-empty partitions. Prepared tests preserve the complete source header and
+every normalized, duplicate, reference, unmapped, unsupported and observed record;
+large valid record bytes are split without omission. No analytical recalculation
+or database-row fallback substitutes for prepared evidence.
+
+The callback bridge retains one item and awaits consumer backpressure. Actual
+member cancellation reaches the source reader independently of the whole archive
+lifetime. Partial errors, failed EOF/counts, changed header/source/outcomes,
+revocation and stalled authority retain strict refusal and the original 30-second
+operation limit. Every previous assertion and five-second test limit remains.
+These focused consumer/provider seams establish no live Auth, database, browser
+or delivery proof. The general worker and unsupported nonempty graph classes
+remain incomplete and public/READY/acceptance gates remain closed.
+
 ## 2026-10-01 — Prove exhaustive account partition rows and complete archive EOF
 
 New assembly tests consume the existing actual closed history/class/metadata
