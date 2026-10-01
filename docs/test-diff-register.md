@@ -1,5 +1,14 @@
 # Test diff register
 
+## 2026-10-01 — Close the account member context's exact JSON path literal
+
+The next complete fresh reset onfc2975bd passed013000 and caught a missing
+closing quote in014000's account-session JSON path while compiling the actual
+member reader. The path literal now parses as its originally intended exact
+session field. No payload shape, reader, authority, source or assertion changes.
+The failed reset is retained and pgTAP was not reached. The complete fresh run
+continues on the corrected frozen source before any draft push.
+
 ## 2026-10-01 — Parse the bound archive target as JSON before its field projection
 
 The first combined full fresh-database reset on13f5d145 stopped while creating
