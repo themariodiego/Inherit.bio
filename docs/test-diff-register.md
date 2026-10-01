@@ -13,8 +13,8 @@ The deletion fixture now supplies the original export fixture's bounded syntheti
 signing ciphertext before the real publication signatures and custody capture.
 It does not edit historical custody or reconstruct a missing signing identity.
 The production rejection of incomplete historical agreements remains unchanged.
-The deletion writer removes an assignment to the nonexistent legacy claim_token
-column while still clearing the actual claim_token_hash and every existing
+The deletion writer removes assignments to the nonexistent legacy claim_token
+and claimed_at columns while still clearing the actual claim_token_hash and every existing
 worker lease field. All refusal, atomic rollback and retention clock assertions
 remain. The matrix headline's remaining count is corrected to its actual 21 NO
 rows without flipping any row. Earlier full failures are retained; the corrected
