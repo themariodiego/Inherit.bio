@@ -25,8 +25,10 @@ const encoder=new TextEncoder();const bytes=(value:string)=>encoder.encode(value
  * supplies no authority: each caller must use its exact scoped SQL door and
  * actual current attempt before/after every call and every member read. */
 export async function prepareFuturePersonArchiveMembers(options:{authorityReceipt:string;signal:AbortSignal;
+ auditMemberSchema?:z.ZodType<{id:string;event:{seq:number;occurred_at:string;event_code:string;route_id:string;outcome_code:string;coded_context:Record<string,never>}}>;
  active:()=>void;check:(signal:AbortSignal)=>Promise<unknown>;
  call:(operation:FuturePersonMemberOperation,signal:AbortSignal,after?:string|null)=>Promise<unknown>}){
+ const auditMemberSchema=options.auditMemberSchema??claimantAuditMember;
  const call=options.call,check=options.check,active=options.active,signal=options.signal;
   async function* records<T>(operation:"scores"|"figures"|"reports"|"variants"|"legal-audit",schema:z.ZodType<T>,expectedRows:number,signal:AbortSignal){
     let after:string|null=null,total=0;
@@ -67,7 +69,7 @@ export async function prepareFuturePersonArchiveMembers(options:{authorityReceip
       chunks:async function*(current){
         yield bytes(JSON.stringify({schema_version:LEGAL_AUDIT_SCHEMA_VERSION,note:auditNote,
           attribution_started_at:snapshot.legalAudit.attributionStartedAt}).slice(0,-1)+',"events":[');let comma=false;
-        for await(const row of records("legal-audit",claimantAuditMember,snapshot.membership.legalAuditEvents,current)){
+        for await(const row of records("legal-audit",auditMemberSchema,snapshot.membership.legalAuditEvents,current)){
           yield bytes((comma?",":"")+JSON.stringify(row.event));comma=true;
         }yield bytes("]}\n");
       }});
@@ -100,7 +102,7 @@ export async function prepareFuturePersonArchiveMembers(options:{authorityReceip
       for await(const row of records("reports",historicalClaimantReport,snapshot.membership.reports,current))
         yield bytes(`Historical report\n${JSON.stringify(projectHistoricalClaimantReport(row))}\n\n`);
       yield bytes(CLAIMANT_LEDGER_TEXT_HEADING+"\n"+auditNote+"\n");
-      for await(const row of records("legal-audit",claimantAuditMember,snapshot.membership.legalAuditEvents,current))
+      for await(const row of records("legal-audit",auditMemberSchema,snapshot.membership.legalAuditEvents,current))
         yield bytes(JSON.stringify(row.event)+"\n");
       yield bytes(agreements.map(renderFuturePersonAgreement).join("\n\n"));}});
     const csv=(value:string|null)=>value===null?"":`"${value.replaceAll('"','""')}"`;

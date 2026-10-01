@@ -1,4 +1,8 @@
-\ir fixtures/future_person_completed_bound_source.inc
+begin;
+select no_plan();
+select set_config('inherit.synthetic_signing_ciphertext',repeat('ab',64),true);
+\ir fixtures/future_person_binding_lifecycle.inc
+\ir fixtures/future_person_completed_bound_relocation.inc
 -- Complete documentary/binding/physical-source predecessor above; this actual
 -- service-role protocol consumes a real create envelope and begins a durable
 -- writing attempt. Synthetic accounts/provider ACKs remain explicit boundaries.
@@ -20,6 +24,8 @@ update bound_archive set created=public.export_archive_request_v1('create',origi
  'csrfBinding',repeat('c',64),'operation','create','nonceHash',repeat('a',64),
  'issuedAt',floor(extract(epoch from statement_timestamp())*1000)::bigint,
  'expiresAt',floor(extract(epoch from statement_timestamp())*1000)::bigint+300000)),repeat('c',64));
+select lives_ok('set constraints all immediate','actual queued export creation flushes every deferred origin and storage invariant');
+set constraints all deferred;
 select throws_ok($$select public.export_archive_bound_source_v1('manifest',(select (created->>'exportId')::uuid from bound_archive),
  (select attempt from bound_archive),(select capture->>'authorityReceipt' from bound_archive))$$,'42501','export_source_unavailable',
  'a genuine consumed request still gives no source before an actual writing attempt begins');
@@ -37,9 +43,11 @@ select throws_ok($$select public.export_archive_bound_source_v1('check',(select 
  (select attempt from bound_archive),(select capture->>'authorityReceipt' from bound_archive),
  (select source->'source'||jsonb_build_object('purpose','embryo.analysis') from bound_archive))$$,'42501','export_source_unavailable',
  'a durable source worker cannot turn own access into an analytical grant');
-select throws_ok($$select public.export_archive_request_v1('capture',(select origin from bound_archive),'account',
- '7b100000-0000-4000-8000-000000000001')$$,'0A000','export_partition_projection_unavailable',
- 'a source member never opens an incomplete whole-account projector');
+select ok((select public.export_archive_request_v1('capture',origin,'account',
+ '7b100000-0000-4000-8000-000000000001')->'subjectPartitions'=(select jsonb_agg(id order by id) from public.subjects
+ where subject_account_id='7b100000-0000-4000-8000-000000000001' and lifecycle<>'purged')
+ and public.export_archive_request_v1('capture',origin,'account','7b100000-0000-4000-8000-000000000001')->>'fileCount'='1'
+ from bound_archive),'whole own authority includes the exact current self and complete bound source without omitting either partition');
 reset role;
 select ok(not has_function_privilege('authenticated','public.export_archive_bound_source_v1(text,uuid,uuid,text,jsonb)','execute')
  and not has_function_privilege('anon','public.export_archive_bound_source_v1(text,uuid,uuid,text,jsonb)','execute')

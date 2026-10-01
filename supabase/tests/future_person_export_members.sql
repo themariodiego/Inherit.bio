@@ -3,21 +3,7 @@ select no_plan();
 \ir fixtures/future_person_export_authority.inc
 -- Recorded historical components are written before the authority capture,
 -- then frozen by that exact capture. No current-catalog substitution occurs.
-create temporary table recorded_finding as select $synthetic${"embryo_label":"Embryo 1","condition_id":"retired-synthetic-condition","condition_name":"Synthetic condition retired-synthetic-condition","finding":{"kind":"absolute_risk","risk_model":{"model_id":"synthetic-model-retired-synthetic-condition","model_version":"1","age_band":"lifetime","prevalence_basis":"lifetime_risk","birth_cohort":"synthetic 1990s","calibration_cohort":"synthetic cohort","calibration_n":1000},"score_coverage":0.9,"absolute_risk":0.071,"interval_low":0.056799999999999996,"interval_high":0.08875,"matched_baseline":{"absolute_risk":0.05,"interval_low":0.04,"interval_high":0.06,"citation_ids":["synthetic:1"]},"difference_pp":2.1,"natural_frequency":{"subject_numerator":5,"comparator_numerator":5,"denominator":100,"fallback_copy_id":null},"number_needed_to_select":null,"comparators":[{"comparator":"vs_average_embryo","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":false},{"comparator":"vs_randomly_selected_embryo","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":true},{"comparator":"vs_highest_risk_embryo","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":false},{"comparator":"vs_population_baseline","relative_difference":0,"absolute_difference_pp":0,"number_needed_to_select":null,"lead":false}],"within_family":{"status":"not_measured","point_estimate":null,"interval_low":null,"interval_high":null,"family_count":null,"citation_ids":[],"display_copy_id":"embryo.within-family.not-tested","enabled_by_default":false}},"evidence_label":"emerging","coverage_state":"covered","citation_ids":["synthetic:1"],"not_covered_reason":null}$synthetic$::jsonb body;
-insert into public.embryo_scores(id,embryo_id,condition_id,condition_name,finding,evidence_label,coverage_state,citation_ids,
- not_covered_reason,model_id,model_version,source_binding_fingerprint,computation_revision,computed_at)
-select '7a100000-0000-4000-8000-000000000001'::uuid,(select embryo from custody_ids),body->>'condition_id',body->>'condition_name',
- body->'finding',body->>'evidence_label',body->>'coverage_state',array['synthetic:1'],null,
- 'retired-synthetic-model','original',(select source_sha256 from private.embryo_canonical_sources where file_id=(select file from custody_ids)),2,clock_timestamp() from recorded_finding;
-insert into public.embryo_figures(id,finding_id,figure_kind,payload,figure_revision,created_at)
-select ('7a200000-0000-4000-8000-00000000000'||ordinal)::uuid,'7a100000-0000-4000-8000-000000000001'::uuid,kind,
- case kind when 'absolute_risk' then body->'finding'
- when 'interval' then jsonb_build_object('interval_low',body#>'{finding,interval_low}','interval_high',body#>'{finding,interval_high}')
- when 'natural_frequency' then body#>'{finding,natural_frequency}' else body#>'{finding,within_family}' end,
- 3,clock_timestamp() from recorded_finding cross join (values(1,'absolute_risk'),(2,'interval'),(3,'natural_frequency'),(4,'within_family')) kinds(ordinal,kind);
-insert into public.report_artifacts(id,subject_id,report_kind,report_revision,source_binding_fingerprint,artifact,created_at)
-select '7a300000-0000-4000-8000-000000000001'::uuid,(select subject from custody_ids),'historical-own-finding',4,
- (select source_sha256 from private.embryo_canonical_sources where file_id=(select file from custody_ids)),body,clock_timestamp() from recorded_finding;
+\ir fixtures/future_person_recorded_scientific_members.inc
 select throws_ok($$select pg_temp.probe('update public.embryo_scores set source_binding_fingerprint=pg_temp.h(''foreign-historical-finding'')
  where id=''7a100000-0000-4000-8000-000000000001''','select public.future_person_export_request_v1(''capture'',pg_temp.h(''rights''))::text')$$,
  '55000','export_source_unavailable','a historical finding with a different actual source refuses authority capture');
