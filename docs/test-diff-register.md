@@ -16,6 +16,11 @@ The thirteen existing nonempty whole-request refusal assertions,014 graph guard,
 closure stay unchanged. The appeal/correction statements remain unreadable
 without their actual purpose-bound producer; no key/ciphertext/empty plaintext
 substitute ships. Held originals retain their exact out-of-scope disposition.
+The first398 whole-type check caught one union annotation in the new digest:
+its dynamically selected strict schema did not narrow two participant fields.
+Only the already schema-validated row's type annotation is widened; stripping
+that annotation reproduces the entire original runtime source. The failed
+account-graph-projection-typecheck.log is retained. No assertion/value changes.
 This prerequisite adds no SQL/API/grant/store and no acceptance, browser,
 database or provider proof. Complete current partition/grant doors and real
 scientific/member consumers remain separate required work.

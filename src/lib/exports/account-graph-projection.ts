@@ -116,7 +116,7 @@ export function accountGraphProjectionDigest(kind:AccountGraphClass,values:Itera
   z.object({version:z.literal("account-graph-projection-v1"),kind:z.enum(ACCOUNT_GRAPH_CLASSES),identity:z.string().max(512),row:z.unknown()}).strict().parse(value);
   if(value.version!=="account-graph-projection-v1"||value.kind!==kind)throw new Error("account_archive_class_unavailable");
   const tuple=accountGraphIdentitySchemas[kind].parse(JSON.parse(value.identity)),identity=JSON.stringify(tuple);
-  const row=accountGraphRowSchemas[kind].parse(value.row);
+  const row:Record<string,unknown>=accountGraphRowSchemas[kind].parse(value.row);
   const primary="id" in row?row.id:"proposal_id" in row?row.proposal_id:row.cohort_id;
   if(tuple[0]!==primary||kind==="embryo_participant_sets"&&(tuple[1]!==row.set_kind||tuple[3]!==row.membership_revision))
    throw new Error("account_archive_class_unavailable");
