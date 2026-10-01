@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01: combined current rights issuer census
+
+The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
+
 ## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
 
 The unchanged purpose census exposed the real held-file issuer missing from
