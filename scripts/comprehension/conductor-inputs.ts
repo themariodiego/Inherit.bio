@@ -96,19 +96,34 @@ export const isFullRun = (manifest: AnyManifest) =>
 export const expectedSessions = (manifest: AnyManifest) =>
   manifest.personaIds.length * (manifest.kind === "instrument-dry-run" ? 10 : manifest.taskIds.length);
 
-/** Tasks whose bound account no seed can build yet, with the binding's own
- * reason. These are recorded as skipped, never as passed or failed answers. */
-export function seedSkips(repository = root): { taskId: (typeof taskIds)[number]; reason: string }[] {
+/** Account readiness and a task's actual scientific surface are independent.
+ * A published embryo seed cannot turn missing personal risk into an answer. */
+export function bindingSkips(value: unknown): { taskId: (typeof taskIds)[number]; reason: string }[] {
   const bindings = z.object({
-    accounts: z.array(z.object({ id: z.string(), seed: z.unknown().optional(), seedBlockedBy: z.string().optional() }).passthrough()),
-    tasks: z.array(z.object({ id: z.enum(taskIds), account: z.string() }).passthrough()),
-  }).passthrough().parse(JSON.parse(readFileSync(path.join(repository, "scripts/comprehension/bindings.json"), "utf8")));
+    accounts: z.array(z.object({ id: z.string(), seed: z.unknown().optional(), seedBlockedBy: z.string().min(1).optional() }).passthrough()),
+    tasks: z.array(z.object({ id: z.enum(taskIds), account: z.string(), fixtureBlockedBy: z.string().min(1).optional() }).passthrough()),
+  }).passthrough().parse(value);
   return bindings.tasks.flatMap(task => {
     const account = bindings.accounts.find(candidate => candidate.id === task.account);
     if (!account) throw new Error(`Task ${task.id} names an unbound account`);
-    return account.seed === null && account.seedBlockedBy
-      ? [{ taskId: task.id, reason: `${account.id} cannot be seeded: ${account.seedBlockedBy}` }] : [];
+    if (account.seed === null && !account.seedBlockedBy) throw new Error(`Account ${account.id} has no seed or refusal reason`);
+    const reasons = [account.seed === null ? `${account.id} cannot be seeded: ${account.seedBlockedBy}` : null,
+      task.fixtureBlockedBy ? `${task.id} cannot be run: ${task.fixtureBlockedBy}` : null].filter((reason): reason is string => reason !== null);
+    return reasons.length ? [{ taskId: task.id, reason: reasons.join("; ") }] : [];
   });
+}
+export function seedSkips(repository = root): { taskId: (typeof taskIds)[number]; reason: string }[] {
+  const bindings = JSON.parse(readFileSync(path.join(repository, "scripts/comprehension/bindings.json"), "utf8"));
+  const skips = bindingSkips(bindings);
+  // The ordinary runner gives every persona a fresh account on 3100. A native
+  // journey on 3105 does not supply thirty independent empty-queue runtimes.
+  // Its real read adapter is available only inside that single fresh journey.
+  const t6 = bindings.tasks.find((task: { id: string }) => task.id === "T6");
+  const account = bindings.accounts.find((account: { id: string }) => account.id === t6?.account);
+  if (account?.seed?.runtime === "exact-disposable-ci-native-partition" && !skips.some(skip => skip.taskId === "T6")) {
+    skips.push({ taskId: "T6", reason: "T6 cannot be run here: the ordinary comprehension runner has no fresh isolated embryo runtime per simulation. The real participant-c read adapter runs only inside its native signed-parent publication journey." });
+  }
+  return skips.sort((a, b) => a.taskId.localeCompare(b.taskId, undefined, { numeric: true }));
 }
 
 /** Model configuration is part of "the same settings" for the stopping rule:
