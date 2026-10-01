@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Require exhaustive current account class membership
+
+The complete assembler needs an explicit inventory for all original 27 public
+deferred classes plus the two integrated Path B stores. New consumer tests add
+closed metadata projections, independent count/ordered ID/content/partition
+proof through all three pages of 1,103 rows, exact complete bound source
+snapshots and six nonzero historical scientific memberships. Missing,
+duplicate, foreign, stale, same-count source changes, wrong partition counts,
+private fields, ignored cancellation and final revocation remain refusals. The
+original 30-second operation limits are unchanged. No existing assertion or
+unsupported account/non-self/cohort/joint graph refusal is relaxed. The new
+real-role pgTAP fixture preserves all original review/release/Auth/MFA/binding
+and relocation assertions through unchanged includes. Nonempty unproved
+classes, including withheld Path B stores, refuse the whole request; absence
+proof never fabricates a producer, clinical output, byte receipt or empty
+placeholder. This authored prerequisite supplies no database, hosted/browser,
+provider, READY, public-gate or acceptance credit.
+
 ## 2026-10-01 — Pin every reviewed purge pair after Path B integration
 
 The actual complete fresh database rehearsal reached 167 suites and 10,080
