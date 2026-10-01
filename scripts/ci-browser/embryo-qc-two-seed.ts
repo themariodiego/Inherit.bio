@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { assertRegisteredQcFigures, type QcFigurePresentation } from "../../e2e/embryo-qc-cross-surface";
-import { assertEmbryoDto } from "../../src/lib/embryos/policy";
+import { assertEmbryoDto, type QcDto } from "../../src/lib/embryos/policy";
 import type { CiBrowserIdentity, CiBrowserShardReceipt } from "../ci-browser-shards";
 
 export const QC_SEEDS = Object.freeze({
@@ -41,7 +41,7 @@ export function checkedQcSeed(value: unknown): EmbryoQcSeedReceipt {
     ["/embryos/compare:null", "/embryos/[embryoId]:0", "/embryos/[embryoId]:1"].sort(), "Exact populated QC surfaces required");
   for (const surface of receipt.surfaces) {
     const sources = receipt.sources.filter(row => surface.ordinal === null || row.ordinal === surface.ordinal)
-      .map(row => ({ subjectId: row.subjectId, qc: assertEmbryoDto("qc", row.qc) }));
+      .map(row => ({ subjectId: row.subjectId, qc: assertEmbryoDto("qc", row.qc) as QcDto }));
     assertRegisteredQcFigures(surface.ordinal === null ? "compare" : "detail", surface.figures, sources);
   }
   return receipt;

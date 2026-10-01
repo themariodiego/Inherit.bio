@@ -39,6 +39,16 @@ POST/status execution and delivery remain mandatory. Unsupported graphs,
 public/READY and G5.4/G5.6 remain closed. This prerequisite does not establish
 whole-account completion.
 
+## 2026-10-01 — Use the current shared keyed quota implementation in Path B
+
+The first complete combined local checks on `1f51064f` exposed the old Path B invitation-quota import after Future Person had consolidated that byte-equivalent keyed invitation implementation into `rate-limit-keys`. Path B now imports the current shared module. The operation namespace, every revision, account/network dimensions, SQL quota arguments and ceilings remain unchanged; both original refusal test suites must pass. The two-publication QC verifier now names the `QcDto` type only after the existing strict runtime `assertEmbryoDto` validation; no schema, value or assertion is relaxed.
+
+The same full run also correctly rejected an actual Path B rights-session issuer missing from the later Future Person purpose registry. That is a separate database integration obligation, not a test waiver; its strict census remains unchanged until the complete registered purpose and activation bridge is implemented and executed.
+
+## 2026-10-01 — Reveal documentary comparison only after both complete reads
+
+The complete hosted run `36816036175` on `a3ea135e` retained the original canceled-second-chunk test and exposed the new keyless documentary-verification checkbox before either full document was read. The original strict zero-checkbox assertion failed; no test expectation changes. The reviewer screen now reveals that comparison control and any approval attestation fields only after both complete documents render and the reviewer separately confirms each read. Existing download digest/chunk acknowledgements, current named-reviewer authority, database receipts, approval proof and disabled Save choice remain unchanged. The unchanged browser test must execute successfully on the final source before release.
+
 ## 2026-10-01 — Preserve both completed flows in the shared integration
 
 The ordinary merge of exact Path B `87ac893b` into the Future Person integration retains all purpose-bound rights forms, both retention test groups, the stricter native POST/PUT/DELETE response observer, and the prior legal-audit, claimant and encrypted-review privacy projections. Each new Path B member-plan entry remains deferred; `path_b_originating_session_id` joins the explicit withheld list, and the generated database copy is regenerated from the complete plan.

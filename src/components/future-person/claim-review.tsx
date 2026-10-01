@@ -125,7 +125,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
              I read this file.</label>}
         </>}
       </section>)}
-      {loaded.record.mode==="keyless"&&loaded.lookupNonce&&<KeylessDocumentVerification claimId={claimId}
+      {loaded.record.mode==="keyless"&&loaded.lookupNonce&&received&&checked.photo&&checked.birth&&<KeylessDocumentVerification claimId={claimId}
         reviewRevision={loaded.record.reviewRevision} csrf={loaded.csrf} nonce={loaded.lookupNonce}
         documentsRead={received&&checked.photo&&checked.birth&&!busy}
         onVerified={(record,proof)=>{verificationProof.current=proof;setVerificationReady(proof!==null);setLoaded(previous=>previous?{...previous,record}:null);setDecision("reject");}}/>}
@@ -143,7 +143,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
             {reviewPageDecisions(loaded.record).map(value=><option key={value} value={value}>{LABEL[value]}</option>)}
           </select>
         </div>
-        {approval&&<fieldset disabled={!received||Boolean(busy)} className="space-y-3">
+        {approval&&received&&checked.photo&&checked.birth&&<fieldset disabled={Boolean(busy)} className="space-y-3">
           <legend>Identity checked from the documents</legend>
           <label className="block">Full name<input value={fullName} maxLength={120} onChange={event=>setFullName(event.target.value)} required/></label>
           <label className="block">Birth date<input type="date" value={dateOfBirth} onChange={event=>setDateOfBirth(event.target.value)} required/></label>
