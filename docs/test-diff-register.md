@@ -1,5 +1,36 @@
 # Test diff register
 
+## 2026-10-01 — Require the existing complete-source refusal for physical size drift
+
+Actual corrected migration 026 rehearsal reached all 42 assertions and exposed
+one incorrectly authored expected error. A changed real Storage size makes the
+existing `own_export_source_v1` return NULL at its full object/file identity
+check. The preserved ordinary authority then raises exactly SQLSTATE 55000,
+`export_source_unavailable`, while recomputing the whole consumed job before
+the new original descriptor is constructed. The test now requires that exact
+existing code/message, with an additional exact unchanged durable
+export/job/attempt snapshot. It accepts no alternative code and changes no
+source, permission, expected data or timeout. This remains a whole-source
+refusal before any provider I/O, not an original retirement or omitted member.
+The failed actual rehearsal is retained; an independent corrected run is still
+required and no hosted/provider acceptance is asserted.
+
+## 2026-10-01 — Separate complete planning from the bounded attempt INSERT
+
+The complete account assembler needs multiple independently bounded source
+proofs. A new optional segmentation hook runs that planning after the real
+attempt INSERT and before source acquisition. The original 30-second INSERT,
+read, write and metadata operation limits and the original whole-job deadline
+remain unchanged. Current authority is required before and after planning;
+cancellation, deadline and uncertain mutation cleanup holds still fail closed.
+
+Every old segmentation assertion remains. New tests prove multiple bounded
+preparation steps, unchanged stalled-INSERT refusal, ignored-cancellation and
+late-completion refusal with zero source/reservation/write, and revocation
+before source acquisition. Existing callers retain their original path.
+Complete class/member orchestration and actual POST/status/provider execution
+remain required; no public/READY or acceptance claim is made.
+
 ## 2026-10-01 — Keep the private dispatcher denied while restoring its native service door
 
 The actual corrected combined database rehearsal reached the real provider pre-submit call and failed because022 denied service execution on the private dispatcher while the original public SQL wrapper still used SECURITY INVOKER. The existing public service-only ABI now delegates under its fixed owner with an empty search path after validating its exact original two-argument body, owner, language and configuration. Every private dispatcher/delegate stays API-denied; browser and upload roles remain denied at the public door. Eight new actual-role assertions test those permissions and missing-outbox refusal. The existing genuine provider eligibility, attempt rotation, stale callback and delivery-clock assertions are retained unchanged. An owner-defined test wrapper is not used to hide the broken native RPC. SQL and provider execution remain uncredited until independent rehearsal.
