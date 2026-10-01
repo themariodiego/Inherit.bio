@@ -3,15 +3,17 @@ import assert from "node:assert/strict";
 import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ciBrowserSourceIdentity, discoverBrowserCases, trackedBrowserSpecs } from "./ci-browser-shards-io";
-import { browserManifest, browserReportCases, CI_BROWSER_SHARDS, verifyBrowserShards, type CiBrowserShardReceipt } from "./ci-browser-shards";
+import { browserManifest, CI_BROWSER_SHARDS, verifyBrowserShards, type CiBrowserShardReceipt } from "./ci-browser-shards";
+import { verifyAccessibilitySweepPlacement, verifyNativeBrowserBalance } from "./ci-browser-balance";
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === path.resolve("scripts/ci-browser-shards.run.mts");
 if (invoked) {
   const source = ciBrowserSourceIdentity(), mode = process.argv[2];
   if (mode === "manifest") {
     assert(process.argv.length === 3, "Manifest has no selectors");
-    const manifest = browserManifest(discoverBrowserCases(), source, trackedBrowserSpecs());
-    for (let index = 1; index <= CI_BROWSER_SHARDS; index++) browserReportCases(discoverBrowserCases(index), index, false);
+    const full = discoverBrowserCases();
+    const manifest = browserManifest(full, source, trackedBrowserSpecs());
+    verifyNativeBrowserBalance(full, Array.from({ length: CI_BROWSER_SHARDS }, (_, index) => discoverBrowserCases(index + 1)));
     mkdirSync("test-results", { recursive: true });
     writeFileSync("test-results/ci-browser-manifest.json", JSON.stringify(manifest) + "\n", { mode: 0o600, flag: "wx" });
     console.log(`Browser manifest: ${manifest.cases.length} cases on ${source.head}.`);
@@ -28,6 +30,7 @@ if (invoked) {
     const receipts = Array.from({ length: CI_BROWSER_SHARDS }, (_, i) =>
       read(`browser-case-${source.runAttempt}-shard-${i + 1}`, "ci-browser-shard.json"));
     const count = verifyBrowserShards(manifest, receipts, source);
+    verifyAccessibilitySweepPlacement(receipts);
     console.log(`Full browser coverage: ${count} cases, exactly once, zero skips or retries, six isolated jobs, source ${source.head}.`);
     const clean = receipts as CiBrowserShardReceipt[];
     const seconds = (value: number) => (value / 1000).toFixed(1);
