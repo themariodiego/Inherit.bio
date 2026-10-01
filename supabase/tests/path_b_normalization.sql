@@ -31,7 +31,19 @@ select is((select count(*) from public.genome_files where subject_id=pg_temp.sid
 select is((select count(*) from public.worker_jobs where subject_id=pg_temp.sid('main')),0::bigint,
  'an unconfirmed revision creates no normalization job');
 select pg_temp.notice_session('main','1');
-select is(public.respond_adult_upload_revision_v1(repeat('1',64),'norm-confirm-1111111111111111','confirm',pg_temp.a('2')),
+create temporary table confirmation_service_receipt(effective_role text,jwt_role text,result text);
+grant insert on confirmation_service_receipt to service_role;
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+insert into confirmation_service_receipt
+ select current_user,auth.role(),public.respond_adult_upload_revision_v1(repeat('1',64),
+  'norm-confirm-1111111111111111','confirm','0b5e0000-0000-4000-8000-000000000002'::uuid);
+reset role;
+select is((select effective_role from confirmation_service_receipt),'service_role',
+ 'the real confirmation RPC executes under the actual API service role');
+select is((select jwt_role from confirmation_service_receipt),'service_role',
+ 'the real confirmation RPC carries actual service-role request claims');
+select is((select result from confirmation_service_receipt),
  'confirmed','the person confirms this exact file revision');
 select is((select count(*) from public.genome_files where subject_id=pg_temp.sid('main')),1::bigint,
  'confirmation creates one exact source descriptor after all common gates pass');
