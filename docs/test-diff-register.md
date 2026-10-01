@@ -1,5 +1,34 @@
 # Test diff register
 
+## 2026-10-01 — Compose complete consumed account members before archive reservation
+
+New consumed-account worker tests exercise actual ZIP64 generation through the
+existing durable request/attempt and source interfaces. They independently pin
+all twelve registered members for every selected subject, one actual actor
+ledger, every artifact byte size/SHA-256, raw original equality, complete current
+bound parts, saved reports and all six prepared dispositions. Current metadata
+and retained signed documents coexist as complete named JSON sections; neither
+producer is overwritten. Original retirement retains prepared/scientific output
+without invented original bytes. The saved-chat tests exhaust103 headers and
+307 messages, exact fields/citations/count/hash and cross-page identity; no
+model/provider call or internal credential enters the archive.
+
+The thirteen literal nonempty unsupported classes, foreign bound actor/subject/
+file, missing/truncated source, changed saved output, revocation and cancellation
+remain whole refusals. Writer uncertainty preserves cleanupRequired and refuses
+byte completion; current authority is checked again after a real writer seam.
+The first broad focused run retained184/185 passing tests and a prepared-plus-
+bound case timeout at the unchanged five-second limit. Phase evidence found
+redundant recursive projector checks and tiny punctuation fragments at ZIP
+boundaries. The executor retains the same actual current complete graph receipt
+at every boundary and each factory's independent EOF/content proof; an owned
+32KiB fragment coalescer preserves exact bytes, cap, cancellation and backpressure.
+The unchanged five-second case and191 tests across eight focused files pass.
+No prior assertion, timeout, retry, SQL, grant, provider or public/READY gate
+changes. The failed log remains account-consumed-worker-focused-final.log.
+This source checkpoint has no full combined database/browser/provider credit;
+actual POST/status orchestration and the remaining graphs stay outstanding.
+
 ## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
 
 The retirement branch now merges the exact verified main release. Its earlier
