@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
+
+The retirement branch now merges the exact verified main release. Its earlier
+coverage-description correction is retained in the shared accessibility sweep
+where main moved it. The complete native `a11y.spec.ts` remains byte-identical
+to current main; no old sweep is duplicated or omitted. The registered rights
+key still points to the canonical session flow, and the raw-path retirement
+keeps its original exact 404 assertions. Both existing G8.5 notes and every
+test-register entry are preserved. Full qualification on the combined source
+is required before the draft push.
+
 ## D-081 retirement prepared for the end of the invitation overlap · 30 September 2026
 
 This branch is held unless the read-only release check in
@@ -25,6 +36,313 @@ session refusal case now titles the register's
 same nine-unproven-pair ratchet. The form scan now pins the exact two remaining
 forms, files and resolved targets in both directions, replacing the old minimum
 of five that included the retired page's three forms.
+
+## 2026-10-01 — Bind queued Path B preparation to each actual job and preserve the declared build
+
+Hosted run `36809283041` passed the repository and five browser groups but the
+queued-report journey observed zero calls for its target after one successful
+global worker execution. Earlier genuine serial confirmation journeys had
+left preparation queued. The journey now inventories the real FIFO queue,
+runs each distinct job exactly once and verifies its exact job/file/attempt
+transition and source completion before the original exact two-call assertion.
+No job, source or result is fabricated or deleted, and no failed execution is
+retried. Every report, purpose, session and revocation assertion remains.
+
+Investigation also found that a worker with a public GRCh37 reference loaded
+could map an already-GRCh38 input again. A new counterexample failed with
+`empty_after_parse` on the old source. The shared parser now derives its mapper
+from the declared source build, preserving GRCh38 coordinates and genotypes
+exactly while retaining all GRCh37 mapping/loss checks. The strict new regression
+compares variant and observation fields and requires zero mapper calls.
+The failed hosted run remains recorded; full new-source proof follows.
+
+## 2026-10-01 — Bind queued Path B reports to the held original after real normalization
+
+The complete fresh-database run on86cf8daf passed the strengthened normalization
+suite but caught an older report-authority check that still compared a held
+original with an own-file storage registry binding. The report now requires that
+registry field to remain absent and matches the descriptor's exact current
+object key, byte count and file type against the independently rechecked held
+authority, retaining all existing source, hash, revision, session, purpose,
+insurance and completion requirements. It creates no registry row or second
+source owner. New assertions compare the actual normalization object identity
+with the queued report and require every deferred transaction constraint to pass
+at that real boundary. All original report/reader/refusal assertions stay intact.
+The failed full run remains recorded; the corrected complete fresh run follows.
+
+## 2026-10-01 — Commit Path B confirmation against its real held storage identity
+
+The actual owned-stack HTTP confirmation failed with23503: the normalization
+descriptor copied the held storage.objects UUID into genome_files.storage_object_id,
+which references the separate genome_storage_objects registry. The original
+still belongs to the exact held upload-working inventory, so that own-file
+binding now stays NULL. The dedicated worker manifest takes its object UUID
+from the current independently rechecked held authority, and requires the
+descriptor's exact path, size, kind, hashes and source revision to match it.
+No storage identity, provider copy, permission or grant is fabricated.
+
+The actual-service-role positive test now requires every deferred constraint
+to pass immediately after confirmation, then restores the test transaction's
+deferred setting. It additionally requires absence of an own-file binding,
+the exact held object UUID at worker claim, and final transaction consistency.
+All original quarantine, current-evidence, revocation, canonical-output,
+RLS and zero-purpose-grant assertions remain unchanged. No browser expectation,
+timeout or retry changes. The prior full hosted failure remains recorded;
+full fresh-database and hosted proof follow on this corrected source.
+
+## Path B actual service-role confirmation and exact HTTP receipt · 1 October 2026
+
+The current hosted account-bound journey reaches the real revision form but
+renders its refusal alert after confirmation; its original five-second
+`File accepted` assertion fails, so the following serial report journey has
+no execution credit. The normalization regression now makes its existing
+confirmation call under an actual `SET LOCAL ROLE service_role` with service
+JWT claims, and proves both role identities before retaining every exact
+confirmation, source, job and zero-purpose assertion. A SQL exception remains
+visible; the regression does not catch or convert it into a success.
+
+The browser now independently observes that same native confirmation POST
+and requires its exact 202 and closed `{status, operation}` response before
+the unchanged heading assertion. It disposes the observer on either outcome
+without replaying or modifying the request or original response. No timeout,
+retry, skip, authority, permission or application response is changed. These
+changes improve evidence and coverage; they do not identify or repair the
+hosted product refusal. Its cause and fresh full browser proof remain pending.
+
+## Path B account-bound upload dispatch and exact stage proof · 1 October 2026
+
+The actual hosted account-confirmation journey stopped before finalization:
+the server dispatcher still classified only accountless Path B subjects as
+held-upload targets. After the person's real account signature, the subject
+correctly named that account and was incorrectly sent to the own-file issuer.
+The dispatcher now recognizes both registered confirmation principals for an
+active uploader-owned other-adult subject. The recipient account must differ
+from the uploader. TEST-LOCAL, capability, consent, session, signed lease and
+the database's atomic authority remain required; no migration or permission
+changes. A held-issuer refusal cannot fall through to own-file issuance.
+
+The old unit expectation that any recipient account selects the own issuer
+is replaced by exact held-issuer arguments, a cryptographically verified
+upload bearer bound to the uploader's actual account/session, and closed
+no-store issuance. Foreign ownership, uploader-as-recipient, drafts, purged
+subjects, other classes, malformed or unreadable rows, jurisdiction refusal
+and missing consent retain strict refusals. The browser helper now proves
+native 201 issuance and the exact real Storage staging-key 200 before reading
+finalization, and binds the held row to that issued session. Every existing
+finalize status/body, notice, stored hash, UI and database assertion remains;
+the observer is disposed on failure. No timeout, retry or skip changes.
+Focused tests and discovery are local evidence; full hosted execution remains
+required before any acceptance credit.
+
+## Path B permanent CI and shared native observer proof · 30 September 2026
+
+The Path B continuation now incorporates the permanent six-job full browser
+pipeline, exact case coverage and durable setup-timing receipt correction.
+The standard registry retains exactly its four configured projects. Every
+Path B migration byte and application-source assertion remains unchanged;
+only the already-reviewed shared embryo fixture adds coded diagnostics.
+
+The response observer and its isolated proof are copied byte for byte from
+the reviewed Future Person checkpoint. The observer accepts the actual native
+empty body only for statuses 204 and 205 while retaining exact bounded bytes,
+duplicate refusal, original Response identity and unchanged request transport.
+The real loopback/Chromium proof executes eight native requests and checks the
+exact body/header/status observations and disposal. Existing Path B finalize,
+grant and revocation assertions still require their exact 200/201/200 responses.
+No app response, migration, timeout, retry or skip is changed. Native full and
+six assigned discovery sets must pass the actual coverage parser exactly once;
+that discovery remains distinct from actual hosted browser completion.
+
+## Path B saved reading and stale queue admission · 30 September 2026
+
+The existing registered report routes now consume only completed captured Path B
+results under their exact recipient, current purpose and direction. The uploader
+passes the existing session Tier-2 gate before genetic capture. The new three
+service-only doors project non-genetic ready metadata, capture saved results,
+and confirm the exact current session/source/grant/catalog/result digest as the
+last awaited operation before rendering. Browser/upload credentials remain
+refused. Raw and ancestry routes cannot fall through to ordinary own readers,
+and an explicit unavailable source cannot select another file or legacy data.
+Strict application and database cases cover foreign subjects, sources and
+sessions, cross-layer reads, duplicate captures, catalog replacement, modified
+digests and revocation between capture and serialization. Original report and
+purpose assertions remain.
+
+The browser continuation uploads a new synthetic VCF through the real chooser,
+signed lease and installed Storage transport. It signs actual insurance and
+purpose artifacts and executes the registered loopback TEST-LOCAL normalization
+and report operators. It requires exact normalized letters, three exact done
+dispatch rows, both personal layers, only the selected shared layer, the real
+session gate, immediate revocation, an unaffected self grant, and a newly
+computed result after regrant. No genetic or saved-result fixture row is
+invented. Unconfirmed and no-account revisions still require zero descriptors
+and jobs. Eligible account confirmation now requires exactly one unreadable
+`uploaded` descriptor and one unattempted `annotate_vcf` / `ingest.normalize`
+job bound to the exact source revision and hash, matching the verified
+normalization contract. The older account journey's metadata-zero and blocked
+state expectations become this exact pending tuple and
+`confirmed_awaiting_purpose`; all genetic tables remain empty before actual
+worker execution, the person's account still receives no own-file rows, and
+raw downloads and saved-report reads return exactly 404. Each purpose choice
+must preserve that same pending tuple and zero genetic rows. Ready
+links and state copy replace the former unconditional claim that nothing can
+be generated; ancestry and all unimplemented mitigation cases stay closed.
+
+Normalization admission previously stopped forever behind a stale oldest
+snapshot. Its bounded claim now terminalizes only that exact queued admission
+before genetic reads and proceeds to a current source. A strict stale-first,
+current-next regression preserves source, purpose and claim authority checks.
+The finalize helper reads the exact native browser response clone with the
+existing bounded observer; its status, closed body schema, notice state,
+stored hash and UI assertions are unchanged. No retry, skip, timeout increase
+or response replay is added to an existing test.
+
+## Queued-report insurance and source signing use distinct nonces · 30 September 2026
+
+The subject's insurance signature fixture uses its own single-use nonce,
+rather than reusing the later source-signing nonce. Both real signature doors
+still execute, and all request, claim, publication, revocation and deletion
+assertions remain. The production nonce uniqueness rule stays strict.
+
+## Report purge inventory includes the closed Path B binding · 30 September 2026
+
+The exact generated-artifacts retention-store set now includes the new private
+Path B report binding. Every previously required store remains in the equality
+assertion. The retired bucket and archive-form refusals remain unchanged, and
+the queued-report tests still require browser-role refusal and current-grant
+binding for the private store. This adds an exact registered store; it does not
+allow an unknown store or restore the retired Storage bucket.
+
+## Path B distinct queued report kinds · 30 September 2026
+
+The brief's compute placement and the closed worker register now name exactly
+`compute_monogenic_report` / `report.monogenic` and
+`compute_polygenic_report` / `report.polygenic`. This implements the existing
+other-adult analytic output permissions through their required queued path.
+The explicit own-account synchronous exception still excludes other adults.
+The new closed contract requires the exact current purpose and direction,
+subject/source/normalization revisions, signing session, mitigation, insurance
+and jurisdiction evidence at enqueue, claim, each read, stage, publication,
+replay and derived read. Isolated TEST-LOCAL execution remains required;
+missing no-account, 72-hour and re-notice evidence still denies every operation.
+It creates no new product permission or implicit grant. The strict tests preserve
+every existing source and reading assertion and add exact kind/output refusal,
+authority-revision idempotency, claim expiry, revocation, recipient isolation and
+rollback controls. The new queued worker uses the existing pure report arithmetic
+against actual synthetic calls; it never calls the own-report execution exception.
+Synthetic triggers expire the claim inside both private staging and final
+publication, proving complete statement rollback. Actual public grant and
+revocation calls prove new keys for revoke/regrant over identical source bytes,
+and immediate deletion of the exact completed result. The normalization fixture
+helpers move verbatim into a shared include; every original normalization
+assertion remains.
+
+The exact purge inventory increases from 130 to 131 for the one private
+purpose/source binding and result store. Catalog set equality remains exact.
+The signing-session scalar is explicitly withheld from purpose exports. Saved
+Path B results are classified as deferred for the subject-partitioned export
+projection; a private execution journal containing completed personal results
+is not mislabeled as internal machinery or exported before a reader exists.
+
+## Path B lifecycle inventory and authenticated RLS helper · 30 September 2026
+
+The held-source exact function inventory now includes the reviewed normalization
+enqueue, authority, worker and current-source reading gates. The measured browser
+function inventory permits exactly `private.is_path_b_file_v1(uuid)`, a boolean
+RLS helper scoped to the authenticated caller's own billing files. Every other
+Path B function remains denied to browsers and upload credentials. Separate
+privilege assertions deny the helper to anonymous and upload roles. The new
+database cases prove that foreign self files, foreign Path B files and absent
+files all return the same false value, and verify positive self-file reads,
+negative foreign reads and anonymous empty reads. The two ownership policies
+now apply explicitly to authenticated callers, so anonymous reads do not need
+permission to execute that helper.
+
+Additional cases prove that a normalization job cannot replace its exact
+authority snapshot, billing owner or file descriptor while preserving its
+dispatch tuple. All prior row-denial, reader-probe and privilege assertions
+remain; only the two measured inventories change for these reviewed functions.
+
+## Path B queued normalization and read boundaries · 30 September 2026
+
+The separate normalization continuation adds synthetic rollback-only database
+cases for confirmation before queue admission, exact generic worker identity,
+finite claim ownership, source-position registration, strict stage sequencing,
+whole-source hash/count publication, direct-reader denial, source disposal and
+revocation between staging and publication. A synthetic database trigger
+expires the claim during a stage insert and proves that the statement rolls
+back both its genetic row and its deadline mutation. Actual plain and gzip VCF bytes are
+parsed by the paired worker tests using the existing bounded range/hash and
+incremental parser. No existing assertion is removed or loosened.
+
+The reading gate advances from `subject-bound-source` to
+`analysis-not-generated` only after the exact current source is normalized and
+the reader has a current grant for that layer and direction. Normalization
+creates no purpose, analytic result or report-ready notice. Queued Path B report
+execution still needs its distinct registered kind/output contract; the
+self-only synchronous-report exception is not used. Missing 24-month, 72-hour
+and re-notice evidence continues to deny source admission and every checkpoint.
+
+## Path B reading choices and closed source gate · 30 September 2026
+
+The account journey in `e2e/other-adult-upload.spec.ts` now continues through
+the reading-layer choices on Files. It signs an observed-variant grant for
+the person and a separate uploader grant, checks exact response fields and
+both directional rows, then revokes each through its visible control and
+checks both persisted revocations. After each choice, genetic rows and
+subject-bound sources remain absent: a permission cannot open the missing
+normalization gate. All prior confirmation and quarantine assertions remain.
+
+Response bytes are observed from a clone of the real native browser fetch,
+using the same bounded observer as the Future Person stream. No request is
+replayed, mocked, or changed, and the app receives its original response.
+
+## Path B file selection waits for its handler · 30 September 2026
+
+The ready-card markup now keeps the file input and Choose button disabled
+until hydration attaches their handlers. The static-render test asserts both
+controls are disabled in the server preview, where selecting a file cannot
+start an upload. The browser journey opens the Path B section and selects its
+synthetic file through the actual Choose button and native file chooser.
+Every exact finalize status/body, queued notice, UI state, quarantine, byte
+comparison and database assertion remains. No timeout or retry was increased.
+
+The earlier account-branch CI stalled before any finalize response was
+observed; it did not retain a request trace. This change closes the measured
+server-preview interaction gap. The complete CI journey still must establish
+whether it was the cause of that failure.
+
+## Path B merged purge and export inventory · 30 September 2026
+
+Merging current main into the held-upload branch combines main's 129 classified
+purge stores with `public.other_adult_held_uploads`. The exact count assertion
+in `supabase/tests/v2_contracts.sql` is therefore 130. The source remains
+quarantined and belongs to another adult, so the generated export-member plan
+classifies it as out of scope for the uploader. Catalog set equality and every
+existing quarantine and export assertion remain unchanged.
+
+**30 September 2026 (UTC): prevent accessibility scheduling from regressing.** The mandatory hosted inventory now discovers the actual six native assignments and refuses missing/duplicated cases, split serial project/file groups, missing/duplicated or subdivided accessibility sweeps, fewer than three sweep jobs, or more than two complete sweeps in one job. The same sweep-placement guard runs after strict exact-source final coverage. New positive and adversarial scheduling tests cover the real regression where all original checks still run once but their six long measurements land on one job. Every existing browser assertion, limit, case and strict coverage check is retained. No raw browser configuration or private diagnostic is added to artifacts.
+
+## Complete accessibility sweeps in independent native file groups · 1 October 2026
+
+The six long accessibility sweeps shared one file, so native whole-file sharding
+put all six on the same job. They now live in semantic standalone specs. Every
+original test title, test body, assertion, timeout and route/theme/viewport loop
+is preserved byte for byte; helper bodies retain their exact original tokens.
+The original fixed skip-link account and its setup remain in `a11y.spec.ts`.
+Each complete G1.13b measurement initializes its own confirmed UUID account and
+actual chosen-report upload before its full sweep. A regression refuses shared
+account or authentication-closure state between measurement fixtures.
+
+The original CI coverage guard, single worker, serial file groups, full suite,
+transport preflight, zero retries and same-attempt receipts are unchanged.
+Actual native full plus six discovery calls preserve all 565 semantic cases and
+all unmoved case IDs, cover 94 ordinary files exactly once, and place the long
+sweeps across five jobs: authenticated pages on 1, target size on 2, text
+alternatives on 3, reflow and signed-in public pages on 4, keyboard traversal on
+5. Only the six declared file moves change native case IDs. This is discovery
+proof; full hosted execution and a measured timing gain remain pending.
+
 ## Browser setup timing input survives native cleanup · 30 September 2026
 
 The first hosted run executed all 565 cases successfully across six fresh jobs
@@ -75,7 +393,6 @@ and now also requires expected=the executed case count and skipped=0. Two new
 regressions reject false listing counts, declared skips, discovery executions,
 false passed counts and any skipped execution. No actual execution assertion,
 timeout, retry, case or gate is relaxed or removed.
-
 
 ## CI readability scan reuse · 30 September 2026
 
@@ -221,6 +538,49 @@ check was planted and failed; the details are in
 `docs/register-divergence-proposals.md` section 8. No existing assertion was
 removed or loosened.
 
+## Brief X1.5: the upload page stores no nonce while it renders · 28 September 2026
+
+**Two pgTAP files move off `issue_own_upload_nonce_v1`, which is dropped.**
+- `own_upload_account_completion.sql` still has 42 assertions.
+  - Its seven issuance assertions become the same checks on the v2 path the
+    route now takes: digest shape, the ten-minute ceiling, an expired token,
+    missing adult details, and the account-revision recheck.
+  - Two new assertions say that nothing is stored before use, and that the
+    completion records its nonce as a completion. They replace "a completion
+    screen cannot issue a deletion nonce" and "a verified service route can
+    issue the initial completion presentation".
+  - The v1 body assertions keep a stored-row fixture, now written directly as
+    the other own-upload tests already do.
+  - The service-role completion, and "the completed account can proceed to
+    its consent decision", now go through v2. The privilege check names the
+    v2 door instead of the dropped one.
+- `own_upload_consent.sql` (30) changes one call. The service-role signing
+  goes through v2 with no stored row. Every other assertion is unchanged.
+
+**New tests.**
+- `supabase/tests/own_upload_nonce_rendered.sql`, 25 assertions:
+  - both issuing doors are gone, and v1 is out of the service role's reach;
+  - the doors are invokers over private definer bodies;
+  - nothing is stored before an operation;
+  - the recorder's bounds hold, and refusals record nothing;
+  - completion and signing through v2 record one spent hash each;
+  - replay fails, including across operations;
+  - an expired spent hash is pruned.
+- `src/lib/uploads/prepare-own-upload.test.ts` (3): preparing the page makes
+  no write and no RPC other than the read-only context lookup, for both
+  token kinds.
+- The two route unit tests now expect the v2 RPCs with the token's expiry.
+- `scripts/route-register-correspondence.test.ts`: `nonceStoredBeforeUse` is
+  empty. The test that relied on finding its one site now proves the scan
+  reads shipped code and that its pattern finds both removed shapes.
+
+**Planted, each seen to fail.**
+- The page render storing its nonce: 2 tests fail.
+- A new GET route that inserts a nonce row: 3 tests fail.
+- In the database, each of these fails the new file: the issuing door
+  surviving, v1 left callable by the service role, a spent hash accepted
+  again, and no expiry bound.
+
 ## Brief X1.5: the account-deletion nonce is rendered, not fetched · 28 September 2026
 
 **Four pgTAP files move from the stored nonce to the rendered one.** They are
@@ -270,6 +630,7 @@ removed or loosened.
   - v1 left callable by the service role;
   - a spent hash accepted again;
   - no expiry bound.
+
 ## Prepared sources carry their runs of homozygosity · 28 September 2026
 
 `e2e/family-health-picture.spec.ts` ("both adults prepare their real source
@@ -1095,6 +1456,7 @@ The bound is the largest size observed to be accepted (5,242,880,000), not the
 boundary itself: 5,368,708,096 and above were refused at once with 413 by
 Cloudflare on the declared Content-Length. No consent check, retry rule,
 browser assertion or matrix row changes, and no configured ceiling moves.
+
 ## A file too large to prepare says so, and offers no retry (31a) · 20 September 2026
 
 The surface half. `src/components/uploads/preparation-recovery.test.ts` gains a
@@ -1234,6 +1596,7 @@ that reaches it, between the enqueue and the claim, where the job is `queued`:
 a frozen or published row would trip the immutable-row rule first and pass with
 the clause deleted. `throws_ok` rolls its subtransaction back, so the claim
 below is unaffected, and no existing assertion changes.
+
 ## An Overview box can no longer link Overview to itself · 20 September 2026
 
 `docs/acceptance-matrix.md` records one latent hazard against G2.4 that nothing
@@ -1261,6 +1624,7 @@ Behaviour is unchanged. This closes the hazard half of G2.4 only. The row stays
 **NO** on both of its own halves: task depth is still uninstrumented, and four
 of the nine boxes still do not arrive where the box says — which the row calls
 deliberate and defensible, and which is a decision rather than a defect.
+
 ## The reflow sweep can name an out-of-flow cause, and keeps what it finds · 20 September 2026
 
 `e2e/a11y.spec.ts`'s 320 CSS px reflow probe measures
@@ -1389,6 +1753,7 @@ product change behind them is the sentence the owner decided on 18 September
 without a source on both pages, the `file-preparing` cell state, and the two
 copy strings, with unit cases in the copy and page tests. No existing
 assertion moved; `UNPROVEN_ROUTE_STATE_PAIRS` 13 → 11.
+
 ## Every glossary definition renders (G1.11, decisions 19 and 28) · 19 September 2026
 
 `scripts/claims-gate.test.ts`: the designated-surface count the gate is held
@@ -1558,6 +1923,7 @@ redirect and kept page is alive and never 404 (an authenticated alias may send
 the reader to sign in, a kept authenticated page must, a public page answers
 200); every kept endpoint is served under each declared method, refusing as a
 handler and never as the HTML not-found page. No existing assertion moved.
+
 ## Two Family route-state pairs proven, ratchet 19 → 17 · 18 September 2026
 
 `e2e/family-health-picture.spec.ts` +1 case: `/family/[person] complete`,
@@ -3106,7 +3472,6 @@ The plain-word registry adds “birth”, “date”, “complete” and “own�
 literal account and DNA labels. No jargon entry, readability threshold,
 extractor or legal statement is removed or relaxed.
 
-
 ## Private WGS prepared-object integration · 8 September 2026
 
 - `canonical.test.ts` adds source-position duplicate/conflict, all-observation,
@@ -3143,7 +3508,6 @@ extractor or legal statement is removed or relaxed.
   exact source-working classification assertions for the two new private stores;
   all previous assertions remain. Fresh full replay remains a release requirement.
 
-
 ## Final prepared publication foundation · 8 September 2026
 
 - `materialize-canonical-rsid.test.ts` adds 31 final pointer-order, merge-terminal,
@@ -3171,7 +3535,6 @@ extractor or legal statement is removed or relaxed.
 - `v2_contracts.sql` now expects 121 stores (the previous 119 plus immutable
   manifest and final-member stores), with 24 assertions. Existing classifications
   and protections remain intact; this registration is not a cleanup executor.
-
 
 ## Published source transport and member authority · 8 September 2026
 
@@ -3296,7 +3659,6 @@ extractor or legal statement is removed or relaxed.
   Escape requirements. The old midpoint no longer named that marker after the
   resize correction. No count, density, route, test or timeout bound changes.
 
-
 ## Native viewer initialization failure cleanup · 22 September 2026
 
 - Four native Chromium cases cover the installed ESM and UMD package entries,
@@ -3324,7 +3686,6 @@ extractor or legal statement is removed or relaxed.
   it did not record which route request or transition failed. The absent hub
   waypoint is a demonstrated test gap, not a proven cause of that failure.
   No application behavior, network limit or release verdict changes here.
-
 
 ## Detached viewer mutation cleanup · 22 September 2026
 
@@ -3399,7 +3760,6 @@ extractor or legal statement is removed or relaxed.
   upload/report/ancestry/Copilot browser journey remain pending CI. No hosted
   model, database, provider, upload or cleanup measurement was made here.
 
-
 ## Complete own-genome browser journey · 23 September 2026
 
 - Two new scenarios start at Overview and My Genome, respectively. Each uploads
@@ -3456,7 +3816,6 @@ extractor or legal statement is removed or relaxed.
   pending CI. No database, provider, inference or hosted activation ran locally;
   no release acceptance row is changed by these results.
 
-
 ## Complete prepared-source browser journey · 23 September 2026
 
 - Added the actual prepared-object journey and the guarded CI-only fifth app
@@ -3489,7 +3848,6 @@ extractor or legal statement is removed or relaxed.
   intact. No executor behavior, safety bound or test is removed or relaxed.
 - The corrected database assertions require a new CI run; source review and
   focused unit checks do not substitute for their execution.
-
 
 ## Complete gzip prepared-source journey · 23 September 2026
 

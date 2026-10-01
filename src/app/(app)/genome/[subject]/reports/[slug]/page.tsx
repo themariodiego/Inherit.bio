@@ -83,6 +83,9 @@ import { euDeviceNoticeApplies } from "@/lib/legal/eu-device-notice";
 import { readDeclaredJurisdiction } from "@/lib/legal/jurisdiction-declaration";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { loadSharedReportSnapshot } from "@/lib/family/shared-report-results";
+import { loadPathBReportSnapshot } from "@/lib/uploads/path-b-report-reader";
+import { acknowledged } from "@/lib/family/tier2";
+import { ResultGate } from "@/components/family/result-gate";
 import { resolveStoredSharedReport, selectSharedReport, sharedReportsForSlug } from "@/lib/family/shared-report-display";
 import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
 import { route } from "@/lib/primary-routes";
@@ -124,7 +127,17 @@ const loadReport = cache(async (segment: string, slug: string, source?: string |
     anyOf: ["reports.monogenic", "reports.polygenic"],
   });
   if (context.kind !== "ok") return context;
+  if (context.pathB?.direction === "uploader" && !await acknowledged(context.user)) return { kind: "path-b-gate" } as const;
   const admin = createAdminClient();
+  if (context.pathB) {
+    const shared = await loadPathBReportSnapshot(context.dataSubjectId);
+    const sharedReport = shared.authorized && source !== "legacy" ? selectSharedReport(shared.reports, slug, source) : null;
+    if (!sharedReport) return { kind: "not-found" } as const;
+    return { ...context, shared, sharedReport, sharedChoices: sharedReportsForSlug(shared.reports, slug), sharedLegacyAvailable: false,
+      template: sharedReport.report.catalogSnapshot.template,
+      files: [{ id: sharedReport.fileId, file_type: shared.sources.find(row => row.fileId === sharedReport.fileId)?.fileType ?? "unknown" }],
+      fileCount: new Set(shared.sources.map(row => row.fileId)).size };
+  }
   if (!context.person && source !== undefined) {
     const own = await loadOwnStoredReportSnapshot(admin, { subjectId: context.dataSubjectId, fileId: source, slug });
     const stored = own.reports[0];
@@ -330,6 +343,7 @@ export default async function ReportDetailPage(
   const sourceParam = searchParams.source;
   const context = await loadReport(subjectSegment, slug, sourceParam);
   if (context.kind === "not-found") notFound();
+  if (context.kind === "path-b-gate") return <section className="page-stack mx-auto max-w-prose space-y-4"><h1 className="display text-3xl">{REPORTS_TITLE}</h1><ResultGate /></section>;
   if (context.kind === "shared-unavailable") {
     return <section role="status" className="page-stack mx-auto max-w-prose space-y-4">
       <h1 className="display text-3xl">Saved result unavailable</h1>
@@ -357,7 +371,7 @@ export default async function ReportDetailPage(
   // relative's record without a file count, so the sentence would tell one
   // adult something new about another's record — the reason
   // `/family/portrait/[pairId]` is still left alone.
-  const preparing = person ? false : await hasFileInPreparation(createAdminClient(), dataSubjectId);
+  const preparing = person || context.pathB ? false : await hasFileInPreparation(createAdminClient(), dataSubjectId);
 
   const reportName = reportNameOf(template.title);
   const layer: FindingLayer = template.layer ?? "estimate";

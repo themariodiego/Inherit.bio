@@ -1,0 +1,11 @@
+##fileformat=VCFv4.2
+##source=Inherit deterministic synthetic Path B report fixture; no real person
+##reference=GRCh38
+##contig=<ID=chr15,length=101991189>
+##contig=<ID=chr16,length=90338345>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SYNTHETIC
+chr15	74749576	rs762551	C	A	50	PASS	.	GT:GQ:DP	0/1:50:30
+chr16	31096368	rs9923231	C	T	50	PASS	.	GT:GQ:DP	0/1:50:30

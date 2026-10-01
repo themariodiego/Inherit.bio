@@ -19,9 +19,11 @@ export async function POST(request: Request) {
   if (!token || token.accountId !== context.accountId || token.sessionId !== context.sessionId) {
     return ownUploadJson({ error: "not_found" }, 404);
   }
-  const { data, error } = await createAdminClient().rpc("complete_own_upload_account_v1", {
+  // Brief X1.5: v2 records the nonce hash once, in the completion transaction.
+  const { data, error } = await createAdminClient().rpc("complete_own_upload_account_v2", {
     ...ownSnapshotArgs(token), p_date_of_birth: body.data.dateOfBirth,
     p_nonce_hash: crypto.createHash("sha256").update(token.nonce).digest("hex"),
+    p_nonce_expires_at: new Date(token.expiresAt).toISOString(),
   });
   if (error) {
     if (error.code === "42501" || error.code === "23505") return ownUploadJson({ error: "not_found" }, 404);

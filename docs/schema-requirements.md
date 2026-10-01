@@ -1,5 +1,35 @@
 # Inherit v2 schema requirements
 
+## Queued Path B reports (30 September 2026)
+
+`policyResolvers.path-b-report-queued-v1` in the route register authorizes
+exactly the two new closed kind/output pairs. Its implementation adds one
+private RLS-protected `path_b_report_bindings` store under the existing
+`generated-artifacts` purge target. File, subject, recipient and purpose-grant
+foreign keys cascade the exact output when that authority is removed. The
+database-issued binding revision, complete authority snapshot and dispatch
+identity are immutable. The same row holds its finite claim, bounded private
+stage and completed per-purpose result; completed output is immutable.
+
+The purpose ledger records `path_b_originating_session_id` only from the
+verified grant call. That ID is immutable once assigned, is never chosen by
+the worker and is withheld from exports. No foreign key may make session
+cleanup depend on keeping a purpose grant. The dedicated claim/read/stage/
+complete service RPC rechecks that live session, the current source and
+normalization, exact directional purpose, principal and relationship revisions,
+current insurance for the grantor and recipient, current jurisdiction and
+mitigation evidence, and the published template snapshot. The computation
+revision includes the exact public catalog fingerprint. Every result stage
+and publication rechecks after its write and rolls back on expiry or drift.
+
+Revocation or an ended direction deletes the exact staged/completed row and
+cancels its job in the same transaction. A source disposition cascades every
+source-dependent binding. A reader supplies its actual live session and sees
+only results for its own exact current recipient grant. Private claims and
+authority are unavailable to browsers and upload credentials. This is an
+isolated TEST-LOCAL continuation, with no production runner or new route.
+The absent no-account, 72-hour and re-notice evidence remains a denial.
+
 ## Approved upload-only predicate exception (2026-09-06)
 
 The operator approved one additional private, zero-argument boolean check

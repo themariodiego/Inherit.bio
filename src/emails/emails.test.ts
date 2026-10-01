@@ -404,3 +404,36 @@ describe("embryo mail subjects and render map", () => {
       .toBe("You were invited to Inherit");
   });
 });
+
+// The register's Path B for another adult's DNA (TEST-LOCAL only): the
+// request to sign, and the upload-time notice for each held file.
+describe("Path B mails", () => {
+  it("asks for a signature, not an account, and never says a file was added", async () => {
+    const mail = { id: "adult-subject-invitation", payload: { invitationUrl, request: "esignature" } } as const;
+    expect(mailSubject(mail)).toBe("A request to add your DNA file to Inherit");
+    const html = stripMarkers(await renderMail(mail));
+    expect(html).toContain("Nothing is added until you sign, and you do not need an account.");
+    expect(html).toContain("nothing is made from a file until you say yes");
+    expect(html).toContain("30 days");
+    expect(html).toContain(invitationUrl);
+    expect(html).not.toContain("accept through your own account");
+    expectSafeBody(html);
+  });
+
+  it.each([["array", "a raw data file"], ["vcf", "a VCF file"]] as const)(
+    "notices a held %s file with its dates, the fixed deletion and one link, and nothing else", async (fileKind, kind) => {
+      const mail = { id: "adult-upload-notice", payload: { fileKind, uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+        reviewUrl: invitationUrl } } as const;
+      expect(mailSubject(mail)).toBe("A DNA file was added for you on Inherit");
+      const html = stripMarkers(await renderMail(mail));
+      expect(html).toContain("A DNA file was added for you");
+      expect(html).toContain("On 28 September 2026, the person you gave permission to added a DNA file for you on Inherit.");
+      expect(html).toContain(`It is ${kind}.`);
+      expect(html).toContain("Nothing is made from it unless you say yes");
+      expect(html).toContain("If you do nothing, it is deleted on 28 October 2026, 30 days after it was added.");
+      expect(html).toContain("You do not need an account.");
+      expect(html.match(/href="/g)).toHaveLength(1);
+      expect(html).toContain(invitationUrl);
+      expectSafeBody(html);
+    });
+});

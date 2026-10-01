@@ -7,6 +7,8 @@ import { directUploadReceipt, uploadCeilingBytes, uploadSessionBody } from "./su
 import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 import { canonicalUploadsPaused } from "./canonical-upload-pause";
 import { readOwnUploadLimits } from "./own-upload-limits";
+import { heldUploadRpc, isHeldUploadTarget, otherAdultUploadAvailable } from "./other-adult-upload-server";
+import { isTestJurisdictionEnabled } from "../legal/jurisdictions";
 
 /** This endpoint accepts a small declaration, never the file or a filename. */
 async function readDeclaration(request: Request): Promise<unknown> {
@@ -53,13 +55,23 @@ export async function issueSubjectUpload(request: Request) {
     if (body.data.sizeBytes > SINGLE_REQUEST_MAXIMUM_BYTES) {
       return ownUploadJson({ error: "too_large" }, 413);
     }
+    // Another adult's reserved subject, from this account's own pending
+    // invitation: the held-upload branch, TEST-LOCAL only. Anywhere else the
+    // same subject answers exactly as an unknown one does.
+    // Outside TEST-LOCAL nothing is looked up and the own issuer answers alone.
+    const held = body.data.subjectId !== "me" && isTestJurisdictionEnabled()
+      && await isHeldUploadTarget(actor.accountId, body.data.subjectId);
+    if (held && !(await otherAdultUploadAvailable(actor.accountId))) return ownUploadJson({ error: "not_found" }, 404);
     // No durable upload row when the deployment cannot mint its bearer.
     assertStorageUploadSignerAvailable();
-    const { data, error } = await createAdminClient().rpc("issue_own_storage_upload_v1", {
+    const declaration = {
       p_account_id: actor.accountId, p_session_id: actor.sessionId,
       p_subject_id: body.data.subjectId === "me" ? null : body.data.subjectId,
       p_declared_format: body.data.declaredFormat, p_size_bytes: body.data.sizeBytes, p_sha256: body.data.sha256,
-    });
+    };
+    const { data, error } = held
+      ? await heldUploadRpc(createAdminClient(), "issue_other_adult_held_upload_v1", { ...declaration, p_test_jurisdiction: true })
+      : await createAdminClient().rpc("issue_own_storage_upload_v1", declaration);
     if (error) {
       if (error.code === "42501") return ownUploadJson({ error: "not_found" }, 404);
       // The issuer raises one class for a malformed declaration and for both
