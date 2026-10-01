@@ -1,5 +1,42 @@
 # Test diff register
 
+## 2026-10-01 — Consume exact account export actions and discover only account jobs
+
+New NEXT-RELEASE source tests prove current Auth identity/expiry before service
+capture, exact canonical Origin/fetch mode, closed bounded body, independently
+randomized CSRF and operation proofs, refusal when two genuine pairs are mixed,
+atomic request consumption, current-owner/source races, and cookie-bound pending
+polls with zero writes or credential rotation. An uncertain create is never
+retried or given a replacement cookie. READY/open-ready stay refused without
+the complete delivery proof. The no-cookie synchronous GET and every existing
+archive assertion remain unchanged. No public UI or provider is opened.
+
+The new scheduler tests pin all16 ordered account descriptors, literal fields,
+duplicates/foreign/stale/oversize/partial refusal, initial and per-job provider
+configuration checks, current source and uncertain-write errors, caller abort
+and the unchanged thirty-second bound. Its real executor's existing complete
+ZIP64 tests retain all source/member/EOF/hash assertions. Scheduling mocks prove
+only orchestration, not provider completion. The actual operator entrypoint
+returns exactly account_export_generation_unavailable before client creation
+because no export provider has been selected/proved; no DB or provider runs.
+
+The first final focus run retained133 passing tests and one new exact upper-
+deadline refusal failure: native readiness took more than the fixture's one-
+millisecond excess, so its initially invalid timestamp became valid. Only Date
+is now fixed for the new metadata-boundary fixtures; real timers, production
+clocks, the exact one-millisecond refusal and every assertion stay unchanged.
+The failed account-export-http-worker-focused-final.log is retained.
+
+Reserved037 adds one service-only account-origin metadata discovery door and
+leaves the old mixed dispatcher body intact. Authored real-role pgTAP pins the
+entire predecessor ABI/default/config/body/ACL and uses actual current request,
+nonce and begin producers, complete deferred-constraint flushing,17 real empty
+own accounts and exact16+1 cursor coverage. API roles, wrong JWT/role, route,
+contract, owner, target, rights origin, deadline and active attempt are refused.
+No source assertion, timeout, skip, retry, grant, table or acceptance changes.
+SQL execution is explicitly pending root's independent chronological rehearsal;
+synthetic source units and native closed-worker refusal do not supply it.
+
 ## 2026-10-01 — Type the unchanged saved-chat fixture seams
 
 The nonincremental type check on ordinary qualification merge46b97040 failed
