@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-01 — Bind the incomplete document proof to real Auth and the current document composite
+
+Complete hosted C4 run36877690069 failed the second keyless review case at its
+owner SQL call: the third argument was a UUID, but the actual230 callee requires
+the current private.claim_documents composite. That callee also selects receipts
+by the actual Auth session. Passing only the correct composite under an empty
+owner JWT would give a false result without testing the missing acknowledgement.
+
+The same real signInReviewer journey now supplies current browser cookies to the
+SSR SDK's verified getClaims result. A separate quiet owner metadata helper carries
+that unedited Auth context through stdin in a read-only transaction, retaining the
+original15-second and65,536-byte limits. It logs no token, claims, keys or native
+error payload. The shared SQL passes the real selected document row and proves
+current Auth, document, assignment, profile revision, originating session revision,
+one delivered chunk and the exact two-chunk document before the original f
+assertion. NULL is refused rather than converted into f. Every other original
+browser assertion, case, timeout, retry and product authority remains unchanged.
+
+The permanent existing CI EXPLAIN preflight now plans this exact shared callee
+query alongside the complete keyless side-effect query. Planning dummy UUIDs
+executes no query or authority operation. Source and focused checks do not credit
+native execution; the genuine current-row and hosted browser proof remain pending.
+
 ## 2026-10-01 — Name each original prepared-upload response and worker phase
 
 Hosted run36866428888 browser6 at36061663 timed out in the plain prepared

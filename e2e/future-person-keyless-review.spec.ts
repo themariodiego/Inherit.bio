@@ -5,6 +5,7 @@ import {observeNativeResponses} from "./helpers/native-response-observer";
 import {currentDocumentaryCase,expectNoUniqueKeylessResponse,keylessEffectProof,nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/keyless-review-journey";
 import {keylessReviewDocument} from "./fixtures/keyless-review-documents";
 import {randomBytes} from "node:crypto";
+import {currentClaimDocumentReadProof} from "./helpers/claim-document-read-proof";
 
 // Real Auth/TOTP, native encrypted uploads/compose/scan, current named owner
 // assignment and actual EOF/client ACKs. No parent/source/history/notice row is
@@ -122,8 +123,9 @@ test("Keyless documentary review: all bytes without the last acknowledgement rem
     expect(await reviewFixtureSql(`select count(*)||'/'||coalesce(bool_and(x.sequence=0 and x.acknowledged_at is not null),false)
       from private.claim_review_downloads d join private.claim_review_chunk_receipts x on x.download_id=d.id
       where d.review_id='${claim}'::uuid and x.acknowledged_at is not null`)).toBe("1/true");
-    expect(await reviewFixtureSql(`select private.claim_document_fully_read_v1('${claim}'::uuid,'${reviewer}'::uuid,r.photo_document_id)
-      from private.claim_reviews r where r.id='${claim}'::uuid`)).toBe("f");
+    const readProof=await currentClaimDocumentReadProof(context,claim,reviewer);
+    expect(readProof).toEqual({authCurrent:true,documentCurrent:true,receiptsCurrent:true,deliveredChunks:1,expectedChunks:2,fullyRead:"f"});
+    expect(readProof.fullyRead).toBe("f");
     const response=await nativeReviewRequest(page,`/api/reviews/future-person/claims/${claim}/verify-documents`,{reviewRevision:1,nonce:current.lookup,
       documentaryAttestation:{fullName:"Synthetic Claimant",dateOfBirth:"2000-01-31",photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}},current.csrf);
     expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(unchanged);
