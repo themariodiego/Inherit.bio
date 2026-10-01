@@ -1,5 +1,19 @@
 # Test diff register
 
+## 2026-10-01 — Bind queued Path B reports to the held original after real normalization
+
+The complete fresh-database run on86cf8daf passed the strengthened normalization
+suite but caught an older report-authority check that still compared a held
+original with an own-file storage registry binding. The report now requires that
+registry field to remain absent and matches the descriptor's exact current
+object key, byte count and file type against the independently rechecked held
+authority, retaining all existing source, hash, revision, session, purpose,
+insurance and completion requirements. It creates no registry row or second
+source owner. New assertions compare the actual normalization object identity
+with the queued report and require every deferred transaction constraint to pass
+at that real boundary. All original report/reader/refusal assertions stay intact.
+The failed full run remains recorded; the corrected complete fresh run follows.
+
 ## 2026-10-01 — Commit Path B confirmation against its real held storage identity
 
 The actual owned-stack HTTP confirmation failed with23503: the normalization

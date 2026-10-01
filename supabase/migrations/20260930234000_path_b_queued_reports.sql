@@ -142,7 +142,9 @@ begin
  select * into n from private.own_normalization_runs where file_id=f.id for share;
  if f.id is null or f.user_id is distinct from(a->>'uploaderAccountId')::uuid
   or f.subject_id is distinct from(a->>'subjectId')::uuid or f.sha256 is distinct from a->>'rawSha256'
-  or f.source_sha256 is distinct from a->>'decodedSha256' or f.storage_object_id is distinct from(a->>'objectId')::uuid
+  or f.source_sha256 is distinct from a->>'decodedSha256' or f.storage_object_id is not null
+  or f.bucket_path is distinct from a->>'objectKey' or f.size_bytes is distinct from(a->>'sizeBytes')::bigint
+  or f.file_type::text is distinct from a->>'fileType'
   or f.upload_revision is distinct from(a->>'sourceRevision')::bigint
   or f.single_logical_sample_verified_at is null or f.structural_validator_version is null
   or n.state<>'complete' or n.authority is distinct from a

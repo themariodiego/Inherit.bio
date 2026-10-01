@@ -69,6 +69,17 @@ select is(public.path_b_normalization_v1('complete',(c->>'jobId')::uuid,repeat('
    'sourceRevision',1,'liftoverSha256',null,'attempted',0,'unmapped',0)),true)->>'analysisState',
  'not_generated','normalization still returns no analytic result receipt') from source_claim;
 select is((select count(*) from private.path_b_report_bindings),1::bigint,'normalization reevaluates only the one current selected report grant');
+select ok((select f.storage_object_id is null
+ and b.authority->>'objectId'=n.manifest->>'objectId'
+ and b.authority->>'objectKey'=f.bucket_path
+ and (b.authority->>'sizeBytes')::bigint=f.size_bytes
+ and b.authority->>'fileType'=f.file_type::text
+ from private.path_b_report_bindings b join public.genome_files f on f.id=b.file_id
+ join private.own_normalization_runs n on n.file_id=f.id),
+ 'the report binds the actual held original and complete descriptor without inventing an own-file storage binding');
+select lives_ok('set constraints all immediate',
+ 'normalization and its genuine queued report satisfy every real deferred transaction constraint');
+set constraints all deferred;
 select is((select kind||'/'||output_kind from public.worker_jobs where computation_revision like 'path-b-reports-v1:%'),
  'compute_monogenic_report/report.monogenic','the exact purpose selects its registered distinct kind and output');
 select is(public.enqueue_path_b_reports_v1(pg_temp.sid('main'),true),1,'an identical current snapshot reuses its one binding and job');
