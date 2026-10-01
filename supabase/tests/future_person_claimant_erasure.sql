@@ -199,6 +199,7 @@ select is((select count(*) from public.purge_target_stores where target_id='gene
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
  where has_function_privilege(role,'private.finish_future_person_deletion_v1(uuid,text)','execute')
  or has_function_privilege(role,'private.future_person_deletion_graph_rows_v1(uuid,uuid,uuid,uuid,uuid)','execute')
+ or has_function_privilege(role,'private.future_person_deletion_cascade_pending_v1(text,jsonb)','execute')
  or has_function_privilege(role,'private.future_person_deletion_row_v1(text,jsonb,boolean)','execute')),0::bigint,
  'no API role can select a graph table or invoke the closed final transaction');
 select throws_ok($$select private.future_person_deletion_row_v1('public.profiles','{}',true)$$,
@@ -304,6 +305,12 @@ select throws_ok($$select pg_temp.deletion_probe(
 select ok(exists(select 1 from private.embryo_canonical_sources where file_id=(select file from custody_ids))
  and exists(select 1 from public.subjects where id=(select subject from custody_ids)),
  'expired finisher refusal preserves the complete source and subject graph');
+select ok(exists(select 1 from public.purge_manifest_entries e where e.manifest_id=(select id from deletion_plan)
+ and e.entry_revision>50 and e.store_name='private.claim_review_downloads'
+ and private.future_person_deletion_cascade_pending_v1(e.store_name,e.row_key)),
+ 'the genuine review download waits for its existing protected receipt and chunk children');
+select throws_ok($$select private.future_person_deletion_cascade_pending_v1('public.profiles','{}')$$,
+ '42501','claimant deletion unavailable','dependency ordering cannot expand the closed row inventory');
 select is(private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))->>'status',
  'deleted','the exact ACK-backed private transaction deletes the genuine approved unbound claimant graph');
 select is((select coalesce(sum(private.future_person_deletion_row_v1(store_name,row_key,false)),0) from sealed_graph_keys),0::numeric,

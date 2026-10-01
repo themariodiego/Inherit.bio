@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Execute exact protected children before a database cascade
+
+The actual positive deletion rehearsal passed 126 assertions before a review
+download DELETE reached its still-sealed receipt-session child through its real
+foreign key. Both private executors now wait while an exact frozen row has live
+CASCADE or SET NULL/DEFAULT children, then execute those children's own sealed
+entries first. The catalog check validates the existing closed PK operation and
+only orders the already-authorized graph; it never authorizes another row.
+RESTRICT/NO ACTION constraints and the explicit existing deferred claimant
+constraint retain their original behavior. No guard, constraint or trigger is
+disabled, and insufficient-privilege errors are never caught as progress.
+
+New assertions require the genuine review-download dependency and refusal of an
+account table outside the closed executor. The API-role privilege assertion now
+also excludes the new private ordering helper. Every original exact-absence,
+sibling, audit-chain, lease, clock and minimized-receipt assertion remains. The
+complete rollback rehearsal and full fresh-database run must still pass.
+
 ## 2026-10-01 — Rehearse exact original-copy disposal before claimant completion
 
 The complete positive deletion rehearsal exposed the same record/table alias

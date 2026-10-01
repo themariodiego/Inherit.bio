@@ -515,6 +515,34 @@ end $$;
 revoke all on function private.assert_future_person_deletion_fk_closure_v1(uuid)
  from public,anon,authenticated,service_role,inherit_upload_only;
 
+-- Cascades and SET NULL/DEFAULT must not reach a still-sealed child before
+-- its own exact entry has been executed. This catalog check orders only the
+-- already closed graph; it never selects additional rows for deletion.
+create function private.future_person_deletion_cascade_pending_v1(p_store text,p_key jsonb)
+returns boolean language plpgsql security definer set search_path='' as $$
+declare fk record;v_join text;v_pending boolean;
+begin
+ perform private.future_person_deletion_row_v1(p_store,p_key,false);
+ for fk in select c.conkey,c.confkey,c.conrelid,c.confrelid,
+   format('%I.%I',n.nspname,r.relname) child_store,
+   format('%I.%I',pn.nspname,pr.relname) parent_store
+  from pg_catalog.pg_constraint c join pg_catalog.pg_class r on r.oid=c.conrelid
+   join pg_catalog.pg_namespace n on n.oid=r.relnamespace
+   join pg_catalog.pg_class pr on pr.oid=c.confrelid join pg_catalog.pg_namespace pn on pn.oid=pr.relnamespace
+  where c.contype='f' and c.confdeltype in('c','n','d') and c.confrelid=to_regclass(p_store) loop
+  select string_agg(format('child.%I=parent.%I',ca.attname,pa.attname),' and ' order by k.i)
+   into v_join from generate_subscripts(fk.conkey,1) k(i)
+    join pg_catalog.pg_attribute ca on ca.attrelid=fk.conrelid and ca.attnum=fk.conkey[k.i]
+    join pg_catalog.pg_attribute pa on pa.attrelid=fk.confrelid and pa.attnum=fk.confkey[k.i];
+  execute format('select exists(select 1 from %s child join %s parent on %s where to_jsonb(parent) @> $1)',
+   fk.child_store,fk.parent_store,v_join) into v_pending using p_key;
+  if v_pending then return true;end if;
+ end loop;
+ return false;
+end $$;
+revoke all on function private.future_person_deletion_cascade_pending_v1(text,jsonb)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+
 create function private.assert_future_person_deletion_graph_v1(p_manifest uuid)
 returns void language plpgsql security definer set search_path='' as $$
 declare env jsonb;v_embryo uuid;v_audit uuid;g record;e public.purge_manifest_entries;
@@ -640,6 +668,7 @@ begin
     if e.status<>'deleted' then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
     continue;
    end if;
+   if private.future_person_deletion_cascade_pending_v1(e.store_name,e.row_key) then continue;end if;
    begin
     update public.purge_manifest_entries set status='deleted' where manifest_id=e.manifest_id
      and target_id=e.target_id and store_name=e.store_name and entry_revision=e.entry_revision;
@@ -1351,6 +1380,7 @@ begin
     if e.status<>'deleted' then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
     continue;
    end if;
+   if private.future_person_deletion_cascade_pending_v1(e.store_name,e.row_key) then continue;end if;
    begin
     update public.purge_manifest_entries set status='deleted' where manifest_id=e.manifest_id
      and target_id=e.target_id and store_name=e.store_name and entry_revision=e.entry_revision;
