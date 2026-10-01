@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Require SQL include targets in the actual tracked inventory
+
+An existing local fixture can pass file-existence checks and still be absent
+from a hosted checkout if it was never added to Git. The structural preflight
+now checks every included path and its real target against the complete
+actual Git-tracked source inventory, independently of SQL entry roots. A
+tracked entry may include another file extension; that target must also be
+tracked. Internal symlinks to untracked content refuse as well.
+
+A genuine temporary Git repository pins the failure with a present untracked
+fixture and proves that adding that exact fixture resolves it. Separate
+synthetic inventory tests preserve nested positive cases and reject a
+truncated entry-only inventory. Existing missing/escaping/cyclic and dynamic
+refusals, live all-tree closure and fresh-stack ordering assertions remain.
+No database, provider, native case, timeout or acceptance contract changes.
+
 ## 2026-10-01 — Compare genuinely published QC figures across Embryo surfaces
 
 The earlier cross-surface record assumed Embryo pages could render no figure.

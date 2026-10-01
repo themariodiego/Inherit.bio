@@ -3,7 +3,7 @@ import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-export type IncludeFailure = { file: string; line: number; code: "literal" | "missing" | "escape" | "cycle" };
+export type IncludeFailure = { file: string; line: number; code: "literal" | "missing" | "escape" | "cycle" | "untracked" };
 export type IncludeEdge = { file: string; line: number; target: string };
 
 /** psql resolves \ir against the containing file, including nested scripts.
@@ -54,13 +54,21 @@ export function relativeIncludes(source: string): { line: number; filename: stri
   return out;
 }
 
-export function trackedSqlFiles(root: string): string[] {
-  return execFileSync("git", ["ls-files", "-z", "--", "*.sql", "*.inc"], { cwd: root, encoding: "utf8" })
+export function trackedSourceFiles(root: string): string[] {
+  return execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })
     .split("\0").filter(Boolean).sort();
 }
 
-export function inspectSqlFixtureIncludes(root: string, files = trackedSqlFiles(root)) {
+export function trackedSqlFiles(root: string): string[] {
+  return trackedSourceFiles(root).filter(file => /\.(?:sql|inc)$/.test(file));
+}
+
+export function inspectSqlFixtureIncludes(root: string, files = trackedSqlFiles(root),
+  trackedInventory = trackedSourceFiles(root)) {
   const boundary = realpathSync(root);
+  // The complete tracked inventory is separate from entry roots: an include
+  // may have another extension, but a merely local file cannot exist in CI.
+  const tracked = new Set(trackedInventory.map(file => path.resolve(boundary, file)));
   const failures: IncludeFailure[] = [], edges: IncludeEdge[] = [];
   const visited = new Set<string>(), active = new Set<string>();
   const inside = (file: string) => { const relative = path.relative(boundary, file);return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative); };
@@ -76,6 +84,7 @@ export function inspectSqlFixtureIncludes(root: string, files = trackedSqlFiles(
       if (!existsSync(target) || !statSync(target).isFile()) { failures.push({ ...where, code: "missing" });continue; }
       const exact = realpathSync(target);
       if (!inside(exact)) { failures.push({ ...where, code: "escape" });continue; }
+      if (!tracked.has(target) || !tracked.has(exact)) { failures.push({ ...where, code: "untracked" });continue; }
       edges.push({ ...where, target: path.relative(boundary, target) });
       if (active.has(exact)) failures.push({ ...where, code: "cycle" });
       else visit(target);
@@ -86,7 +95,9 @@ export function inspectSqlFixtureIncludes(root: string, files = trackedSqlFiles(
     const file = path.resolve(boundary, name);
     if (!inside(file)) { failures.push({ file: name, line: 1, code: "escape" });continue; }
     if (!existsSync(file) || !statSync(file).isFile()) { failures.push({ file: name, line: 1, code: "missing" });continue; }
-    if (!inside(realpathSync(file))) { failures.push({ file: name, line: 1, code: "escape" });continue; }
+    const exact = realpathSync(file);
+    if (!inside(exact)) { failures.push({ file: name, line: 1, code: "escape" });continue; }
+    if (!tracked.has(file) || !tracked.has(exact)) { failures.push({ file: name, line: 1, code: "untracked" });continue; }
     visit(file);
   }
   return { files: visited.size, edges, failures };
