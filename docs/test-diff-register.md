@@ -1,9 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Identify the original claim-start wait without changing its proof
+
+Hosted6f8's three-mode start journey timed out at its original120seconds; the
+only extra stack was a secondary context.close protocol error. Fixed native
+test.step labels now identify each original awaited operation, including the
+response header/body read and received panel text. On failure a coded phase and
+error category are recorded before cleanup; no key, contact, cookie, body or
+error text is logged. The genuine original error is rethrown, both observer
+disposal and context closure still run, and a cleanup error still fails if it
+was the original failure. A secondary cleanup exception cannot replace an
+already recorded original error. Every original assertion, request order,
+cookie/header/body/panel equality,120second limit and zero retries is retained.
+The underlying timeout remains unproved pending genuine native phase evidence.
+
 ## 2026-10-01 — Preserve documentary review no-referrer through the actual proxy
 
-Hosted6f8 browser3 reached the original opaque404 documentary refusal, but its
-two strict native security-header assertions received same-origin. The route
+Hosted6f8 browser3 reached the actual current-case200 GET, but its two strict
+native security-header assertions received same-origin. The route
 sets no-referrer; the proxy overwrote it with the general sensitive API header
 set and applied its stricter override only to review HTML pages. Both exact
 review page/API namespaces now receive no-referrer at that common proxy
