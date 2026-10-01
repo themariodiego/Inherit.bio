@@ -140,6 +140,8 @@ grant select on own_notice to authenticated,service_role;
 create temporary table account_read_before as select
   (select count(*) from public.embryo_operation_nonces) nonces,
   (select count(*) from public.rights_sessions) sessions,
+  (select coalesce(jsonb_agg(to_jsonb(existing_session) order by existing_session.id),'[]'::jsonb)
+    from public.rights_sessions existing_session) session_rows,
   (select count(*) from public.token_candidates) candidates,
   (select count(*) from public.future_person_claims) claims;
 select set_config('request.jwt.claims','{}',true);
@@ -230,7 +232,12 @@ select ok((select status='submitted' and objection_revision=1 and notice_id=(sel
   from public.future_person_claim_objections),'the account action uses the same immutable bounded claim-only freeze');
 select ok((select status='current' and review_operation='claim-objection' and assignment_revision=2
   from private.claim_review_assignments where status='current'),'the actual action issues a new named operation assignment');
-select is((select count(*) from public.rights_sessions),0::bigint,'account-equivalent authority creates no borrowed link session');
+select is((select coalesce(jsonb_agg(to_jsonb(current_session) order by current_session.id),'[]'::jsonb)
+  from public.rights_sessions current_session),(select session_rows from account_read_before),
+  'account-equivalent authority preserves the exact complete pre-existing session set without borrowing or issuing one');
+select is((select count(*) from public.rights_sessions where purpose='future-person-claim-objection'
+  and target_id=(select id from own_notice)),0::bigint,
+  'account-equivalent authority creates no owner-notice link session');
 select is((select count(*) from public.future_person_claimant_principals),0::bigint,'the objection creates no approved claimant');
 select is((select count(*) from private.future_person_custody_slices),0::bigint,'the objection detaches no source');
 select ok((select subject=(select to_jsonb(s) from public.subjects s where id=(select subject from keyless_ids))

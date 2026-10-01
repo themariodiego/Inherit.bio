@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Compare the complete pre-existing rights-session set in account objection
+
+The actual combined role rehearsal passes the native mail door and cookie objection, then reveals that the shared synthetic source fixture already has an unrelated rights session. The account-equivalent journey now freezes the complete original rights-session rows before every account read/write and requires byte-identical ordered rows afterward, plus exactly zero owner-notice objection sessions. This is stricter than a total-count assumption: no unrelated session may change and no session may be borrowed or created. All original stateless-read count, account freshness/MFA, revision, source preservation and provider-clock assertions remain. The failed receipt is retained; no account, provider or browser execution credit is inferred until independent rerun.
+
 ## 2026-10-01 — Require the existing complete-source refusal for physical size drift
 
 Actual corrected migration 026 rehearsal reached all 42 assertions and exposed
