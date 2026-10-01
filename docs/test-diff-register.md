@@ -2,6 +2,13 @@
 
 ## 2026-10-01 — Consume exact account export actions and discover only account jobs
 
+The strict route gate correctly refused the stale GET-only api.export method
+row after the actual POST landed. That obsolete method row is removed while a
+dated note retains every synchronous-GET, provider, READY and unsupported-class
+gap. Method equality supplies no acceptance proof. The existing wrong-handler-
+file regression now plants its own registered GET+POST+PUT mismatch and exact
+wrong-file row; its original failure assertion and the gate itself are unchanged.
+
 New NEXT-RELEASE source tests prove current Auth identity/expiry before service
 capture, exact canonical Origin/fetch mode, closed bounded body, independently
 randomized CSRF and operation proofs, refusal when two genuine pairs are mixed,

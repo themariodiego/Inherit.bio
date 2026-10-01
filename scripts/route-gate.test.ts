@@ -485,10 +485,12 @@ describe("the route gate holds the register to the code", () => {
 
   it("fails when a method row names a file the route is not built in", async () => {
     const root = plant({
+      register: (register) => {
+        (register.routes as Route[]).find((entry) => entry.id === "api.export")!.methods = ["GET", "POST", "PUT"];
+      },
       ledger: (ledger) => {
-        for (const known of ledger.methodDivergence as Record<string, unknown>[]) {
-          if (known.routeId === "api.export") known.file = "src/app/api/export/moved/route.ts";
-        }
+        (ledger.methodDivergence as Record<string, unknown>[]).push({routeId:"api.export",
+          declared:["GET","POST","PUT"],exported:["GET","POST"],file:"src/app/api/export/moved/route.ts"});
       },
     });
     const { failures } = await runRouteGate(root);
