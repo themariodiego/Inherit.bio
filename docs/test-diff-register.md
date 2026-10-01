@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Keep the same genuine claim-start receipt after server refresh
+
+The real202 start displayed its common receipt and called router.refresh; the
+server's verified live-claim branch then replaced that status with the document
+step. The original browser journey reads the receipt again after actual header/
+body observation, so removing it can leave that unbounded panel-text read
+waiting. The safe hosted timeout snapshot shows the document step with no
+receipt; exact failed-await timing remains unproved pending the fixed native
+phase diagnostic. One pure shared receipt now supplies the exact original
+heading/body/markup both immediately after202 and in the genuine current live
+server branch. Documents, completion wording, all cookies/nonces/read authority,
+claims availability and refusal standards are unchanged. No record existence
+or mode is disclosed. Actual React server-rendering tests retain identical
+receipt bytes for all three live modes, its order before documents, the single
+existing status read, and zero invented receipt for absent/malformed/failed/
+unknown/closed states. Completed claims keep their distinct original receipt.
+Interactive controls and RPC/Auth state are synthetic unit seams; no native,
+database or provider execution credit follows. Every original browser status,
+body/cookie/panel equality, timeout and retry remains unchanged.
+
 ## 2026-10-01 — Identify the original claim-start wait without changing its proof
 
 Hosted6f8's three-mode start journey timed out at its original120seconds; the
