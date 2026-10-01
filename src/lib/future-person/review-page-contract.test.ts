@@ -9,22 +9,23 @@ describe("the named reviewer page contract",()=>{
  it("offers only the implemented attested Record Key approval",()=>{
   const parsed=reviewPageCase.parse(row);expect(reviewPageDecisions(parsed)).toEqual(["reject","needs-more-information","approve-record-key"]);
  });
- it("keeps recovery approval closed until its fresh recovery transaction exists",()=>{
+ it("offers the exact existing-principal documentary recovery transaction",()=>{
   const parsed=reviewPageCase.parse({...row,mode:"claimant-recovery-key",case:{kind:"claimant_recovery_key",recoverySelector:{matched:true},
    claimantBinding:{lifecycle:"claimed_unbound",identityHmacComparison:"pending_human_verified_document_tuple"}}});
-  expect(reviewPageDecisions(parsed)).toEqual(["reject","needs-more-information"]);
+  expect(reviewPageDecisions(parsed)).toEqual(["reject","needs-more-information","approve-recovery-key"]);
  });
  it("keeps ambiguous or unmatched keyless cases free of any release action",()=>{
   for(const kind of ["keyless_none","keyless_ambiguous"]){const parsed=reviewPageCase.parse({...row,mode:"keyless",case:{kind,selectorOutcome:"no_unique_candidate",allowedDecisions:["reject","needs-more-information"]}});
    expect(reviewPageDecisions(parsed)).toEqual(["reject","needs-more-information"]);}
  });
- it("keeps unique documentary projections free of approval until their complete transaction exists",()=>{
+ it("offers only existing-principal recovery while an unclaimed profile still waits for the notice transaction",()=>{
   for(const candidate of [{kind:"claimed_unbound_no_key_recovery",claimantBinding:{candidateClass:"exactly_one",
    lifecycle:"claimed_unbound",identityHmacComparison:"pending_human_verified_document_tuple"}},
    {kind:"unclaimed_keyless",candidateClass:"exactly_one",selectedProfile:{childDateOfBirth:"2000-01-31",
     childPlaceOfBirth:"Synthetic City",parentNames:["Synthetic Parent"]}}]){
    const reviewCase=reviewPageCase.parse({...row,mode:"keyless",case:candidate});
-   expect(reviewPageDecisions(reviewCase)).toEqual(["reject","needs-more-information"]);
+   expect(reviewPageDecisions(reviewCase)).toEqual(candidate.kind==="claimed_unbound_no_key_recovery"
+    ?["reject","needs-more-information","approve-claimed-unbound-no-key-recovery"]:["reject","needs-more-information"]);
    const body={reviewCase,verificationProof:"a".repeat(300)};
    expect(keylessVerificationResponse.safeParse(body).success).toBe(true);
    expect(keylessVerificationResponse.safeParse({...body,verificationProof:null}).success).toBe(false);

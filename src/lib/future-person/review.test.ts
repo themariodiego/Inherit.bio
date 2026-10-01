@@ -109,10 +109,14 @@ describe("verified document identity requires an adult named-human attestation",
     for(const decision of ["approve-record-key","approve-recovery-key","approve-claimed-unbound-no-key-recovery","keyless-document-match"]){
       const linked=decision==="approve-record-key"||decision==="keyless-document-match";
       const attestation={...identity,...(linked?{recordedParentLinkConfirmed:true}:{})};
-      const body={decision,reviewRevision:1,reason:"I reviewed both complete synthetic documents and their required link.",nonce:"synthetic",documentaryAttestation:attestation};
+      const keyless=decision==="approve-claimed-unbound-no-key-recovery"||decision==="keyless-document-match";
+      const body={decision,reviewRevision:1,reason:"I reviewed both complete synthetic documents and their required link.",nonce:"synthetic",documentaryAttestation:attestation,
+        ...(keyless?{verificationProof:"a".repeat(300)}:{})};
       expect(reviewDecisionBody.safeParse(body).success).toBe(true);
       for(const bad of [{...body,documentaryAttestation:undefined},{...body,documentaryAttestation:{...attestation,photoIdentityReviewed:false}},
         {...body,documentaryAttestation:{...attestation,guessedSubject:"forbidden"}}])expect(reviewDecisionBody.safeParse(bad).success).toBe(false);
+      if(keyless)for(const verificationProof of [undefined,null,"short","a".repeat(1025),"a=".repeat(150)])
+        expect(reviewDecisionBody.safeParse({...body,verificationProof}).success).toBe(false);
     }
   });
   it("uses calendar majority including the non-leap eighteenth birthday",()=>{

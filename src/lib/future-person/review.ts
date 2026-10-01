@@ -80,12 +80,14 @@ export const verifiedDocumentIdentity = z.object({
   adultAgeConfirmed: z.literal(true),
 }).strict();
 const linkedIdentity=verifiedDocumentIdentity.extend({recordedParentLinkConfirmed:z.literal(true)}).strict();
+const verificationProof=z.string().min(40).max(1024).regex(/^[A-Za-z0-9_-]+$/u);
 /** Approval requires the named human's explicit document and verified-tuple attestation. */
 export const reviewDecisionBody=z.discriminatedUnion("decision",[
   z.object({...decisionFields,decision:z.enum(["reject","needs-more-information"])}).strict(),
   z.object({...decisionFields,decision:z.literal("approve-record-key"),documentaryAttestation:linkedIdentity}).strict(),
-  z.object({...decisionFields,decision:z.enum(["approve-recovery-key","approve-claimed-unbound-no-key-recovery"]),documentaryAttestation:verifiedDocumentIdentity}).strict(),
-  z.object({...decisionFields,decision:z.literal("keyless-document-match"),documentaryAttestation:linkedIdentity}).strict(),
+  z.object({...decisionFields,decision:z.literal("approve-recovery-key"),documentaryAttestation:verifiedDocumentIdentity}).strict(),
+  z.object({...decisionFields,decision:z.literal("approve-claimed-unbound-no-key-recovery"),documentaryAttestation:verifiedDocumentIdentity,verificationProof}).strict(),
+  z.object({...decisionFields,decision:z.literal("keyless-document-match"),documentaryAttestation:linkedIdentity,verificationProof}).strict(),
 ]);
 /** Purpose-separated verified identity under every held external revision.
  * The database chooses its current contact-root revision and forbids retiring
