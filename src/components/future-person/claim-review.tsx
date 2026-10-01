@@ -12,7 +12,8 @@ type DocumentKind="photo"|"birth";
 type Loaded={record:ReviewPageCase;csrf:string;nonce:string;photoNonce:string;birthNonce:string;lookupNonce:string|null};
 type View={url:string;type:string;ready:boolean;failed:boolean};
 const HEX=/^[0-9a-f]{64}$/u;
-const LABEL:Record<ReviewDecision,string>={reject:"Refuse claim","needs-more-information":"Ask for more information","approve-record-key":"Approve claim"};
+const LABEL:Record<ReviewDecision,string>={reject:"Refuse claim","needs-more-information":"Ask for more information","approve-record-key":"Approve claim",
+  "approve-recovery-key":"Approve claim","approve-claimed-unbound-no-key-recovery":"Approve claim"};
 const MIME:Record<string,string>={pdf:"application/pdf",jpg:"image/jpeg",png:"image/png"};
 
 export function ReviewDocumentView({kind,view,onState}:{kind:DocumentKind;view:View;onState:(kind:DocumentKind,ready:boolean,failed:boolean)=>void}) {
@@ -36,6 +37,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
   const [fullName,setFullName]=useState("");const [dateOfBirth,setDateOfBirth]=useState("");const [reason,setReason]=useState("");
   const operation=useRef<AbortController|null>(null);const urls=useRef<string[]>([]);
   const verificationProof=useRef<string|null>(null);
+  const [verificationReady,setVerificationReady]=useState(false);
   const documentState=useCallback((kind:DocumentKind,ready:boolean,failed:boolean)=>{
     setViews(previous=>previous[kind]?{...previous,[kind]:{...previous[kind],ready,failed}}:previous);
     if(!ready)setChecked(previous=>({...previous,[kind]:false}));
@@ -55,16 +57,18 @@ export function ClaimReview({claimId}:{claimId:string}) {
           ||!nonce||!photoNonce||!birthNonce||[nonce,photoNonce,birthNonce].some(value=>value.length>2048))throw new Error("unavailable");
         if(record.data.mode==="keyless"&&(!lookupNonce||lookupNonce.length>2048))throw new Error("unavailable");
         if(controller.signal.aborted)return;
-        setLoaded({record:record.data,csrf,nonce,photoNonce,birthNonce,lookupNonce});setMessage("");
+        setLoaded({record:record.data,csrf,nonce,photoNonce,birthNonce,lookupNonce});setVerificationReady(false);setMessage("");
       } catch {if(!controller.signal.aborted)setMessage("This claim is not available. Sign in again and open the case assigned to you.");}
       finally{if(!controller.signal.aborted)setBusy(null);}
     })();
     return ()=>{controller.abort();operation.current?.abort();verificationProof.current=null;for(const url of urls.current)URL.revokeObjectURL(url);urls.current=[];};
   },[claimId]);
   const received=Boolean(views.photo?.ready&&views.birth?.ready);
-  const approval=decision==="approve-record-key";
+  const approval=decision.startsWith("approve-");
+  const parentLink=decision==="approve-record-key";
   const canSubmit=loaded&&received&&checked.photo&&checked.birth&&!busy&&reason.trim().length>=20&&reason.length<=2000
-    &&(!approval||(checked.adult&&checked.parent&&fullName.trim().length>=2&&dateOfBirth.length===10));
+    &&(!approval||(checked.adult&&(!parentLink||checked.parent)&&fullName.trim().length>=2&&dateOfBirth.length===10))
+    &&(decision!=="approve-claimed-unbound-no-key-recovery"||verificationReady);
 
   async function openDocument(kind:DocumentKind) {
     if(!loaded||busy)return;
@@ -87,7 +91,9 @@ export function ClaimReview({claimId}:{claimId:string}) {
     event.preventDefault();if(!loaded||!canSubmit)return;
     const controller=new AbortController();operation.current=controller;setBusy("decision");setMessage("");
     const body={reviewRevision:loaded.record.reviewRevision,decision,reason,nonce:loaded.nonce,
-      ...(approval?{documentaryAttestation:{fullName,dateOfBirth,photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true,recordedParentLinkConfirmed:true}}:{})};
+      ...(approval?{documentaryAttestation:{fullName,dateOfBirth,photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true,
+        ...(parentLink?{recordedParentLinkConfirmed:true}:{})}}:{}),
+      ...(decision==="approve-claimed-unbound-no-key-recovery"?{verificationProof:verificationProof.current}:{})};
     try {
       const response=await fetch(`/api/reviews/future-person/claims/${claimId}`,{method:"POST",credentials:"same-origin",signal:controller.signal,
         headers:{"content-type":"application/json","x-inherit-csrf":loaded.csrf},body:JSON.stringify(body)});
@@ -95,8 +101,9 @@ export function ClaimReview({claimId}:{claimId:string}) {
       if(response.status!==200||result===null||typeof result!=="object"||Array.isArray(result))throw new Error("unavailable");
       const row=result as Record<string,unknown>;
       if(Object.keys(row).sort().join("|")!=="claimId|reviewRevision|state"||row.claimId!==claimId||row.reviewRevision!==loaded.record.reviewRevision+1
-        ||row.state!==({reject:"refused","needs-more-information":"more_information_required","approve-record-key":"release_queued"} as const)[decision])throw new Error("unavailable");
-      clearViews();verificationProof.current=null;setLoaded(null);setFullName("");setDateOfBirth("");setReason("");setMessage("Decision saved.");
+        ||row.state!==({reject:"refused","needs-more-information":"more_information_required","approve-record-key":"release_queued",
+          "approve-recovery-key":"release_queued","approve-claimed-unbound-no-key-recovery":"release_queued"} as const)[decision])throw new Error("unavailable");
+      clearViews();verificationProof.current=null;setVerificationReady(false);setLoaded(null);setFullName("");setDateOfBirth("");setReason("");setMessage("Decision saved.");
     } catch {if(!controller.signal.aborted)setMessage("The decision was not saved. Reload this page and check the current case before trying again.");}
     finally {if(!controller.signal.aborted)setBusy(null);}
   }
@@ -121,7 +128,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
       {loaded.record.mode==="keyless"&&loaded.lookupNonce&&<KeylessDocumentVerification claimId={claimId}
         reviewRevision={loaded.record.reviewRevision} csrf={loaded.csrf} nonce={loaded.lookupNonce}
         documentsRead={received&&checked.photo&&checked.birth&&!busy}
-        onVerified={(record,proof)=>{verificationProof.current=proof;setLoaded(previous=>previous?{...previous,record}:null);setDecision("reject");}}/>}
+        onVerified={(record,proof)=>{verificationProof.current=proof;setVerificationReady(proof!==null);setLoaded(previous=>previous?{...previous,record}:null);setDecision("reject");}}/>}
       {loaded.record.case.kind==="unclaimed_keyless"&&<section className="space-y-2 rounded-xl border p-4">
         <h2>Parent details</h2>
         <p>Birth date: {loaded.record.case.selectedProfile.childDateOfBirth}.</p>
@@ -141,7 +148,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
           <label className="block">Full name<input value={fullName} maxLength={120} onChange={event=>setFullName(event.target.value)} required/></label>
           <label className="block">Birth date<input type="date" value={dateOfBirth} onChange={event=>setDateOfBirth(event.target.value)} required/></label>
           <label className="block"><input type="checkbox" checked={checked.adult} onChange={event=>setChecked(previous=>({...previous,adult:event.target.checked}))}/> This person is an adult.</label>
-          <label className="block"><input type="checkbox" checked={checked.parent} onChange={event=>setChecked(previous=>({...previous,parent:event.target.checked}))}/> The birth record and the parent name match.</label>
+          {parentLink&&<label className="block"><input type="checkbox" checked={checked.parent} onChange={event=>setChecked(previous=>({...previous,parent:event.target.checked}))}/> The birth record and the parent name match.</label>}
         </fieldset>}
         <label className="block">Reason<textarea value={reason} minLength={20} maxLength={2000} rows={5} disabled={Boolean(busy)} onChange={event=>setReason(event.target.value)} required/></label>
         <button type="submit" disabled={!canSubmit}>Save choice</button>

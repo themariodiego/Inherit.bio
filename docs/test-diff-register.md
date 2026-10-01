@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Existing-principal documentary recovery transaction
+
+The registered Recovery Key and prior-claimant no-key branches now have an actual subject-first transaction. The own-JWT named reviewer must freshly read both complete clean documents, attest the verified adult name/DOB, and match the durable versioned identity HMAC. Keyless restoration also requires the current encrypted ten-minute lookup proof in the native POST, followed by an atomic fresh SQL comparison and the distinct consumed decision nonce. Wrong branch, identity, assignment, digest, session, lifecycle, key, comparison receipt or started purge refuses with zero effect.
+
+The two keyless positive request-shape assertions now include the newly registered `verificationProof`; missing, malformed and expired proofs remain explicit refusals. Reviewer choice assertions now list only the actual existing-principal recovery action for the two supported recovery cases. Unclaimed-profile approval stays absent until the owner-notice/objection/fresh-release transaction is implemented. All ambiguous, unknown-field, cross-mode and earlier Card assertions remain intact. These changes author real product behavior; they do not record browser execution or flip G5.4/G4.2.
+
+Recovery preserves the exact subject, claimant, custody, canonical source/parts/provider locations, durable identity HMAC and every prior fixed retention deadline. It revokes old keys and release/session/download authority, advances only the working release revision, and queues one new claimant-contact release with its registered seven-day token and separate 24-month working-material clock. A replacement Recovery Key may be created once through the existing native rights door for that genuine release revision; revoked historical hashes never regain validity, and no raw key is persisted.
+
+`future_person_documentary_recovery.sql` adds real-role/real-door SQL probes for incomplete or wrong-assignment receipts, changed identity/key, erased durable identity, replay, both actual recovery effects, replacement-key one-show behavior, and byte-identical durable provenance/old deadlines. The synthetic scan/provider/receipt calls target database authority and are explicitly not real browser delivery, provider delivery or human evidence. New SQL and native recovery journeys remain unexecuted pending the root's immutable rehearsal. Production stays closed.
+
+
 ## 2026-10-01 — Parse the bound archive target as JSON before its field projection
 
 The first combined full fresh-database reset on13f5d145 stopped while creating

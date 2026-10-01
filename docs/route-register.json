@@ -20204,7 +20204,8 @@
           "future-person-claim-intake-privacy-v1"
         ],
         "GET": "operation-specific-assignment-RPC-decrypts-only-the-recursively-closed-future-person-claim-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read",
-        "keylessVerificationResponse": "for-keyless-only-the-authorized-case-session-response-issues-x-inherit-keyless-lookup-nonce-as-a-stateless-10-minute-purpose-separated-reviewer-session-case-bound-read-only-lookup-proof-no-GET-stores-rotates-or-consumes-an-operation-nonce-final-decisions-retain-the-distinct-existing-one-use-review-nonce"
+        "keylessVerificationResponse": "for-keyless-only-the-authorized-case-session-response-issues-x-inherit-keyless-lookup-nonce-as-a-stateless-10-minute-purpose-separated-reviewer-session-case-bound-read-only-lookup-proof-no-GET-stores-rotates-or-consumes-an-operation-nonce-final-decisions-retain-the-distinct-existing-one-use-review-nonce",
+        "recoveryTransaction": "subject-first-current-claimed_unbound-existing-approved-principal-only; freshly-compare-the-human-verified-name-DOB-HMAC-under-all-held-roots-and-both-complete-current-document-receipts; Recovery-Key-must-still-be-current-or-keyless-receipt-must-freshly-match-the-exact-prior-claimant-branch; consume-the-distinct-decision-nonce-once-revoke-old-keys-release-candidates-rights-and-downloads-increment-release-revision-and-queue-one-new-verified-contact-release; no-new-custody-parent-notice-subject-or-source-revision; replacement-Recovery-Key-is-shown-once-through-the-native-rights-door-for-that-new-release-revision"
       },
       "disposition": "kept",
       "methodRequestContracts": {
@@ -20278,7 +20279,8 @@
                 "adultAgeConfirmed": {
                   "const": true
                 }
-              }
+              },
+              "verificationProof": "required-current-encrypted-documentary-lookup-receipt-bound-to-exact-own-reviewer-session-assignment-documents-and-verified-tuple-expiring-within-ten-minutes; separate-final-operation-nonce-is-consumed-atomically"
             },
             {
               "decision": {
@@ -20302,7 +20304,8 @@
                 "recordedParentLinkConfirmed": {
                   "const": true
                 }
-              }
+              },
+              "verificationProof": "required-current-encrypted-documentary-lookup-receipt-bound-to-exact-own-reviewer-session-assignment-documents-and-verified-tuple-expiring-within-ten-minutes; separate-final-operation-nonce-is-consumed-atomically"
             },
             {
               "decision": {

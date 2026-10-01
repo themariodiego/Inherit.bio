@@ -23,7 +23,8 @@ import {
   openClaimReviewIdentity,
 } from "@/lib/future-person/review";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
-import {mintKeylessLookupNonce} from "@/lib/future-person/keyless-verification";
+import {mintKeylessLookupNonce,keylessVerificationIndexes,shapeKeylessVerification} from "@/lib/future-person/keyless-verification";
+import {keylessVerificationProofMatches} from "@/lib/future-person/keyless-verification-proof";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -113,15 +114,37 @@ async function decide(request: Request, id: string): Promise<Response> {
   const attestation="documentaryAttestation" in parsed.data?parsed.data.documentaryAttestation:null;
   const digests=attestation?verifiedIdentityDigestSet(attestation):null;
   const contactId=crypto.randomUUID();const nonceHash=sha256Hex(nonce);
-  const {data,error}=await supabase.rpc("decide_claim_review_attested_v1",{
+  const common={
     p_review_id:id,p_review_revision:parsed.data.reviewRevision,p_decision:parsed.data.decision,p_nonce_hash:nonceHash,
     p_reason_ciphertext:sealReason(parsed.data.reason,row.wrappedDataKey,id,nonceHash),
     p_attestation_ciphertext:attestation?sealDocumentaryAttestation(attestation,row.wrappedDataKey,id,nonceHash):null,
     p_identity_hmac_set:digests,p_verified_date_of_birth:attestation?.dateOfBirth??null,
-    p_parent_link_confirmed:attestation!==null&&"recordedParentLinkConfirmed" in attestation,
     p_contact_reference_id:contactId,p_contact_ciphertext:sealClaimantContact(contactId,identity.contactEmail),
     p_contact_hmac_set:contactDigestSet(identity.contactEmail),
-  });
+  };
+  let result;
+  if(parsed.data.decision==="approve-claimed-unbound-no-key-recovery") {
+    const indexes=keylessVerificationIndexes(identity,parsed.data.documentaryAttestation);
+    if(!indexes)return notFound();
+    const fresh=await supabase.rpc("verify_keyless_claim_documents_v1",{
+      p_review_id:id,p_review_revision:parsed.data.reviewRevision,p_verified_date_of_birth:parsed.data.documentaryAttestation.dateOfBirth,
+      p_identity_hmac_set:indexes.identity,p_profile_hmac_set:indexes.profile,
+    });
+    if(fresh.error)return ["42501","22023","23505"].includes(fresh.error.code??"")?notFound():unavailable();
+    const shaped=shapeKeylessVerification(fresh.data,{reviewId:id,accountId:account.user.id,
+      sessionId:account.sessionId,reviewRevision:parsed.data.reviewRevision},parsed.data.documentaryAttestation);
+    if(!shaped||((shaped.reviewCase.case as Record<string,unknown>).kind!=="claimed_unbound_no_key_recovery")
+      ||!keylessVerificationProofMatches(parsed.data.verificationProof,shaped.scope))return notFound();
+    result=await supabase.rpc("restore_future_person_claim_review_v1",{...common,
+      p_profile_hmac_set:indexes.profile,p_comparison_receipt_digest:shaped.scope.comparisonReceiptDigest});
+  }else if(parsed.data.decision==="approve-recovery-key") {
+    result=await supabase.rpc("restore_future_person_claim_review_v1",{...common,
+      p_profile_hmac_set:null,p_comparison_receipt_digest:null});
+  }else {
+    result=await supabase.rpc("decide_claim_review_attested_v1",{...common,
+      p_parent_link_confirmed:attestation!==null&&"recordedParentLinkConfirmed" in attestation});
+  }
+  const {data,error}=result;
   if (error) return ["42501", "23505", "22023"].includes(error.code ?? "") ? notFound() : unavailable();
   const outcome = data as { claimId?: unknown; state?: unknown; reviewRevision?: unknown } | null;
   if (

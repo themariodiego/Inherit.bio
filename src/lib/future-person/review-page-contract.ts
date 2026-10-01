@@ -35,8 +35,11 @@ export const keylessVerificationResponse=z.object({reviewCase:reviewPageCase,
   if(value.reviewCase.mode!=="keyless"||positive!==(value.verificationProof!==null))
     context.addIssue({code:"custom",message:"claim review unavailable"});
 });
-export type ReviewDecision="reject"|"needs-more-information"|"approve-record-key";
-/** Only the actually implemented attested release branch is offered. */
+export type ReviewDecision="reject"|"needs-more-information"|"approve-record-key"|"approve-recovery-key"|"approve-claimed-unbound-no-key-recovery";
+/** Each positive choice has its own actual attested transaction. Parent
+ * profile matching still awaits notice/objection/fresh-release completion. */
 export function reviewPageDecisions(value:ReviewPageCase):ReviewDecision[] {
-  return value.case.kind==="record_key"?["reject","needs-more-information","approve-record-key"]:["reject","needs-more-information"];
+  const positive=value.case.kind==="record_key"?"approve-record-key":value.case.kind==="claimant_recovery_key"?"approve-recovery-key":
+    value.case.kind==="claimed_unbound_no_key_recovery"?"approve-claimed-unbound-no-key-recovery":null;
+  return positive?["reject","needs-more-information",positive]:["reject","needs-more-information"];
 }
