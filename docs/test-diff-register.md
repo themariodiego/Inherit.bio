@@ -1,5 +1,33 @@
 # Test diff register
 
+## 2026-10-01 — Preserve live clocks while adding an explicitly synthetic historical producer fixture
+
+The reviewed plan requires genuine producer-generated historical disposition
+state for a later positive documentary claim fixture. New owner-only finite
+clock entries share the complete original disposition, proposal closure and
+mail algorithms; strict source comparisons invert only their bounded clock
+propagation and current-authority additions. Ordinary callers pass an internal
+NULL instruction, preserving the original mail clock after principal/contact
+locks and its early idempotency return. No clock is captured in that wrapper,
+no expiry is clamped, and the complete public disposition body stays exact.
+All new cores are denied to every API role, including service_role.
+
+New source/token negatives reject caller clocks, crossed or stale/tampered
+genuine operation envelopes and finite-clock misuse. New rollback-only pgTAP
+coverage retains the existing canonical signing/ingest/QC assertions and adds
+exact current parent, seven-day proposal closure, thirty-day queued mail,
+five-phase transfer, source/history immutability, nonce replay and ordinary
+public actual-clock proofs. The native helper captures only real page-issued
+requests aborted before dispatch and proves unchanged effects; the later owner
+producer receipt explicitly separates synthetic effective time from actual
+recording time. Original positive specs/default document bytes/limits/retries
+are unchanged. SQL, catalog/native execution and full type qualification are
+pending root; no provider/human/elapsed-time or final release credit is claimed.
+All20 focused tests, scoped lint, nine ordinary source gates and exact SQL
+include closure pass. The local name gate passes with the approved one-entry
+sentinel only; hosted CI still requires the real private comparator. The empty
+placeholder correctly failed and its receipt remains recorded.
+
 ## 2026-10-01 — Qualify objection outcome columns after the actual fresh-database failure
 
 The full fresh run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48 stopped at
