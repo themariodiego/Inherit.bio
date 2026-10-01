@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Recheck the exact owner notice and provider attempt before issuing delivery time
+
+The bounded provider prerequisite adds a subject-first current-owner branch to the canonical mail doors, preserving every existing branch by owner-only predecessor delegation. It issues a new transient fragment credential and attempt-specific provider key on retry, revokes the preceding hash before submit, and refuses stale owner, revision, deadline or attempt authority. A callback from a prior uncertain provider attempt cannot overwrite the successor delivery. Only the exact delivered current attempt commits the full fixed30-day period; acceptance and queue eligibility cannot. Terminal provider failure runs the existing claim-only crypto-shred transaction, and late delivery cannot resurrect it. All original subject/profile/source/provider-location/Card data remain byte-identical.
+
+The new minimum owner template has a closed empty persisted payload; only the bounded in-memory fragment enters its renderer. The independent email census becomes exactly15 named renderers in14 files and32 fixture variants/64 observations, retaining all old variants, exact hashes, privacy and incomplete-corpus failures. Strict gateway tests reject missing or malformed fragments, extra claimant/profile/selector/deadline/link fields and stale pre-submit authority. The new real-role SQL fixture exercises canonical claim, retry, authorization, acceptance and callback transactions using explicitly synthetic provider/queue metadata; no raw token is persisted or returned by its helper. It carries no provider, browser, human review or elapsed-time execution credit.
+
+Native positive documentary approval, objection, separate fresh-human release and whole physical cleanup remain closed. New SQL and full hosted verification remain pending; no acceptance row or production gate changes.
+
+## 2026-10-01 — Claim the synthetic owner notice once at the actual delivery boundary
+
+The independent real database rehearsal reached86 strict assertions, then the fixture failed while projecting a volatile composite-returning queue claim. PostgreSQL expands `(function()).*` into a separate function evaluation for every column: the first evaluation can claim the genuine notice, while a later evaluation finds no due row. The fixture now calls the same actual canonical mail door once in `FROM` and selects its resulting row. Every current-owner, fixed-deadline, acceptance-versus-delivery, immutable retry, terminal shred and byte-identical source assertion remains unchanged. No product guard, queue eligibility, retry limit or provider receipt is changed. The failed rehearsal is retained; the corrected complete database suite remains pending independent execution.
+
+## 2026-10-01 — Transfer only the encrypted minimum into a closed owner-notice prerequisite
+
+The registered keyless positive determination now has an owner-only package/clock transaction for independent rehearsal. It preserves the original documentary deadline, commits the exact current-owner outbox and existing claim package atomically, gives the minimum comparison a separate random wrapped key, and erases original intake/search/duplicated decision working data. Provider acceptance cannot start the notice period: only the exact delivered attempt can commit the full immutable30-day clock within the fixed24-hour delivery deadline. Duplicate delivery cannot renew it; terminal undeliverability shreds only the claim and preserves byte-identical subject, profile, results, source, provider locations, Card and later claimability.
+
+The existing review-package export disposition changes from excluded-internal to excluded-protected because it now contains a wrapped key and bounded identity/profile ciphertext. The table census and every original omission assertion remain exact. New strict crypto cases refuse document/scope/key/revision swaps, unknown decrypted fields, old working reasons, contact/search leakage and non-adult or incoherent documentary values. The new SQL fixture follows the real synthetic publication, transfer, profile, document scan, completion and named-reviewer producers; its opaque encrypted/provider/chunk metadata is explicitly SQL authority evidence only.
+
+All API execute/direct-table access and native positive approval remain closed until the complete actual owner-objection, provider callback, scheduled terminal cleanup and separate fresh-human-release flow is implemented and independently verified. New SQL/native execution and final whole checks are pending. This prerequisite neither records browser/provider execution nor changes G5.4/G4.2.
+
 ## 2026-10-01 — Pin actual legacy content and complete consumed-account metadata
 
 Migration `20261001021000` supplements the existing exact owned capture with

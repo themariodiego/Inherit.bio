@@ -781,8 +781,8 @@ create temporary table export_member_plan as select $plan$
       "reason": "Claim release credential hashes. Exporting it would be a security defect, not completeness."
     },
     "public.future_person_claim_review_packages": {
-      "disposition": "excluded-internal",
-      "reason": "Claim review packages. It is machinery, not the person's record."
+      "disposition": "excluded-protected",
+      "reason": "Temporary encrypted documentary comparison and independently erasable key. Identity/profile fields, review evidence and claimant contact are always withheld from member exports."
     },
     "public.future_person_claim_sessions": {
       "disposition": "excluded-credential",
