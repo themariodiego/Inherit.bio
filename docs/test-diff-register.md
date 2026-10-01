@@ -1,5 +1,15 @@
 # Test diff register
 
+## 2026-10-01 — Keep integrated account-binding links under the primary route contract
+
+The integrated focused rehearsal found two literal links in the existing
+account-binding component. They now use the same primary route identifiers
+as the rest of the application, retaining the exact sign-in return query and
+destination. The source-wide no-literal-link test is unchanged. The native
+Overview action uses the installed Playwright locator intersection of exact
+accessible link name and the actual primary button slot; count and href
+assertions still require one unique real primary action.
+
 ## 2026-10-01 — Preserve mixed-QC result-link refusal and target the actual Overview action
 
 Hosted run36805076949 reached genuine whole-cohort publication in both journeys.
