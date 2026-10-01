@@ -33,8 +33,9 @@ describe("owner-only objection envelope and proof", () => {
   it("accepts only the current cookie's distinct recent operation proof and same origin", () => {
     const token = mintPublicFormToken("future-person-claim-objection", Date.now(), hash);
     const current = request(token); expect(ownerObjectionMutation(current.request, current.token)).not.toBeNull();
-    for (const edits of [{ origin: "https://example.test" }, { "sec-fetch-site": "cross-site" }, { "x-inherit-csrf": "f".repeat(64) },
-      { cookie: `inherit-rights=${secret}; inherit-rights=${secret}` }]) {
+    const refusalHeaders: Record<string, string>[] = [{ origin: "https://example.test" }, { "sec-fetch-site": "cross-site" }, { "x-inherit-csrf": "f".repeat(64) },
+      { cookie: `inherit-rights=${secret}; inherit-rights=${secret}` }];
+    for (const edits of refusalHeaders) {
       const altered = request(token, edits); expect(ownerObjectionMutation(altered.request, altered.token)).toBeNull();
     }
     const other = mintPublicFormToken("future-person-recovery-key", Date.now(), hash);

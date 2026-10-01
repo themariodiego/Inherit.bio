@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Type the actual objection RPC ABI without weakening negative headers
+
+The clean prerequisite's first nonincremental type pass found three missing explicit public RPC type entries and a negative-test header union whose absent properties inferred undefined. The database ABI now lists the exact statement scope, owner view, objection write and current-operation reader signatures; the header refusal cases are explicitly string maps. No cast or assertion is weakened. Next's generated route/PageProps types are generated in the fresh checkout before repeating the check; their initial absence is an environment failure, not an altered product contract. The original failed receipt is retained. SQL, whole-flow and hosted execution remain pending.
+
 ## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
 
 The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.

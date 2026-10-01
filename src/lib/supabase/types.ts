@@ -7933,6 +7933,14 @@ export type Database = {
         Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string }
         Returns: Json
       }
+      future_person_objection_view_v1: { Args: { p_session_hash: string }; Returns: Json }
+      future_person_objection_statement_scope_v1: { Args: { p_session_hash: string }; Returns: Json }
+      submit_future_person_owner_objection_v1: {
+        Args: { p_session_hash: string; p_nonce: string; p_notice_id: string; p_notice_revision: number;
+          p_statement_ciphertext: string; p_wrapped_statement_key: string }
+        Returns: Json
+      }
+      read_keyless_review_operation_v1: { Args: { p_id: string; p_operation: string }; Returns: Json }
       future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
       issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
       stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
