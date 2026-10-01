@@ -1,5 +1,74 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the unique secret-expression registry in canonical native assembly
+
+The actual scanner at frozen 15f6292b refused six current/history findings from
+three unit-test source lines. The values were generated-reference identifiers,
+not stored credentials. Earlier frozen 7c/15f and failure receipts remain
+preserved. A new canonical branch ordinarily merges C4 with qualified 035/853/4a
+before applying the native patch once. Two uniquely named aliases still refer
+to the same random per-run verifier, and the malformed-input loop has a third
+distinct identifier. Three exact source-line/binding hashes use ADR0006's
+existing expression mechanism; no parser, duplicate-value invariant, detector,
+history baseline or path-wide exception changes.
+
+Existing mutation/cross-path/current/historical negatives also cover each new
+binding and select the actual pinned source line rather than a declaration
+mention. A new actual-context test rejects literal replacements. Environment
+assertions retain exact equality for every field; the verifier itself is
+compared as a boolean so a failing assertion cannot persist its generated value.
+The original native case, PDF bytes, 035 source and 91 SQL assertions remain
+exact. Mechanical scanner checks await root's concrete binding review before
+being treated as release proof. Native positive execution remains unrun.
+
+## 2026-10-01 — Keep exact Chromium publication membership with the declared string input
+
+After ordinary C4 integration, actual Next type generation passed and the
+nonincremental check at b79071e2 found one TS2345 error: the two literal
+Chromium journey names inferred a narrower array input than the existing
+`row.file: string`. Declaring that same two-member array as readonly strings
+allows the genuine typed input; its exact runtime membership, project, count,
+partition and all refusal assertions are unchanged. The first failed type log
+is retained. Frozen 7c530d78, 4943369f and 853fa292 remain untouched. C4's exact
+shared effect-proof builder is reused and both complete dated histories are
+preserved; no alternate SQL, timeout, authority or execution claim is added.
+
+## 2026-10-01 — Register a separate native documentary-match and real owner-notice hold journey
+
+`reviews-keyless-owner-notice-journey.spec.ts` adds one audited TEST-LOCAL case;
+every original journey, assertion, timeout and zero-retry setting remains
+unchanged. Optional DOB-aware paper generation preserves both complete default
+PDF byte streams from frozen 4943369f, with their exact lengths and SHA-256
+digests pinned in seven focused fixture tests. The new journey uses genuine
+current two-parent publication and page-issued verified tokens with the
+separately labeled 035 historical producer, then actual profile controls,
+encrypted uploads/scanning, named Auth/TOTP reviewers, rendered two-page
+documents and current full-byte acknowledgement receipts.
+
+The software mail receiver returns its actual accepted message ID. An ephemeral
+key exists only in the isolated launcher/process environment; the unchanged
+native webhook and installed provider SDK verify the callback. Wrong signatures
+and past/future callback clocks refuse; replay leaves the genuine delivered
+timestamp and fixed thirty-day deadline unchanged. A different named reviewer
+must read and acknowledge both documents again. Before the real deadline,
+native final-release requests refuse without changing decision/custody effects.
+This does not claim external provider delivery, human review, elapsed years or
+days, final approval, or any acceptance-row completion.
+
+The exact publication inventory grows from three to four journeys, and its
+synthetic complete-coverage fixture grows from seven to eight cases. The six
+original project identities, exact-file/one-case requirements, one publication
+journey per fresh partition, complete source census, zero skips/retries and
+whole serial/accessibility scheduling constraints remain strict. Two initial
+discovery layouts correctly failed publication collocation preflight. The
+registered final native listing passes all six guards: 589 cases partitioned
+as 100/98/115/81/105/90; the new case is in partition five against its literal
+isolated 3105 origin. The ephemeral key is absent from all seven actual native
+JSON listings. AST admission also refuses disconnected producer, rendered-read
+or callback calls and a substituted app origin. These are authored-source and
+discovery proofs, not execution of the new browser case. Type/full suites and
+actual hosted browser execution remain pending in the combined checkpoint.
+
 ## 2026-10-01 — Name each original prepared-upload response and worker phase
 
 Hosted run36866428888 browser6 at36061663 timed out in the plain prepared

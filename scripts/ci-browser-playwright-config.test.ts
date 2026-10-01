@@ -71,6 +71,7 @@ describe("standard Playwright server readiness", () => {
     const value = await config(false);
     const servers = [value.webServer].flat();
     expect(servers).toHaveLength(4); expect(value.projects).toHaveLength(3);
+    expect(String(value.projects?.find(project => project.name === "chromium")?.testIgnore)).toContain("reviews-keyless-owner-notice-journey");
     for (const [index, server] of servers.entries()) {
       expect(server?.port).toBe(3100 + index); expect(server?.url).toBeUndefined();
       expect(server?.reuseExistingServer).toBe(false);

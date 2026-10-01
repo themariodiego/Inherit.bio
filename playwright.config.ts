@@ -47,6 +47,7 @@ const PREPARED_JOURNEY = /own-prepared-genome-journey\.spec\.ts$/;
 const MIXED_QC_JOURNEY = /embryo-mixed-qc-journey\.spec\.ts$/;
 const QC_SEED_JOURNEY = /embryo-qc-second-seed-journey\.spec\.ts$/;
 const EMBRYO_JOURNEY = /embryo-ingest-journey\.spec\.ts$/;
+const KEYLESS_NOTICE_JOURNEY = /reviews-keyless-owner-notice-journey\.spec\.ts$/;
 const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
@@ -102,7 +103,7 @@ const config = defineConfig({
   },
   projects: [
     ...(includePreparedJourney ? [{ name: "embryo-mixed-qc", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${EMBRYO_APP_PORT}` }, testMatch: MIXED_QC_JOURNEY }] : []),
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY, MIXED_QC_JOURNEY, ...(includePreparedJourney ? [] : [QC_SEED_JOURNEY])] },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY, MIXED_QC_JOURNEY, ...(includePreparedJourney ? [] : [QC_SEED_JOURNEY, KEYLESS_NOTICE_JOURNEY])] },
     ...(comprehensionRun ? [{ name: "comprehension-run", use: { ...devices["Desktop Chrome"] }, testMatch: COMPREHENSION_RUN }] : []),
     {
       name: "jurisdiction-off",
@@ -220,7 +221,8 @@ const config = defineConfig({
     ...(isolatedCi ? [{
       command: ciServer(EMBRYO_APP_PORT), url: `http://localhost:${EMBRYO_APP_PORT}/auth/sign-in`,
       reuseExistingServer: false, timeout: 120_000,
-      env: { ...SERVER_ENV, ...EMBRYO_APP_ENV, NEXT_PUBLIC_SITE_URL: `http://localhost:${EMBRYO_APP_PORT}`,
+      env: { ...SERVER_ENV, ...EMBRYO_APP_ENV, RESEND_WEBHOOK_SECRET: process.env.INHERIT_CI_SYNTHETIC_WEBHOOK_SECRET ?? "",
+        NEXT_PUBLIC_SITE_URL: `http://localhost:${EMBRYO_APP_PORT}`,
         NEXT_PUBLIC_APP_URL: `http://localhost:${EMBRYO_APP_PORT}`, INHERIT_TEST_JURISDICTION: "1" },
     }] : []),
   ],

@@ -6,6 +6,7 @@ const journeys = [
   { project: "embryo-ingest", file: "embryo-ingest-journey.spec.ts", cases: 1 },
   { project: "embryo-mixed-qc", file: "embryo-mixed-qc-journey.spec.ts", cases: 1 },
   { project: "chromium", file: "embryo-qc-second-seed-journey.spec.ts", cases: 1 },
+  { project: "chromium", file: "reviews-keyless-owner-notice-journey.spec.ts", cases: 1 },
 ];
 describe("fresh native embryo partitions", () => {
   it("requires all inventoried journeys but permits only one in each fresh job", () => {
@@ -19,6 +20,9 @@ describe("fresh native embryo partitions", () => {
     expect(() => assertEmbryoJourneyPartition([{ ...journeys[1], project: "chromium" }], false)).toThrow();
     expect(() => assertEmbryoJourneyPartition([{ ...journeys[2], project: "embryo-ingest" }], false)).toThrow();
     expect(() => assertEmbryoJourneyPartition([journeys[2], journeys[0]], false)).toThrow("at most one");
+    expect(() => assertEmbryoJourneyPartition([{ ...journeys[3], project: "embryo-ingest" }], false)).toThrow();
+    for (const earlier of journeys.slice(0, 3))
+      expect(() => assertEmbryoJourneyPartition([earlier, journeys[3]], false)).toThrow("at most one");
     expect(() => assertEmbryoJourneyPartition([{ project: "chromium", file: "ordinary.spec.ts", cases: 1 }], false)).not.toThrow();
   });
   it("refuses unsharded CI while preserving ordinary local behavior", () => {
@@ -66,6 +70,14 @@ describe("permanent genuine embryo audit preflight", () => {
     const missing = real();delete missing[name];
     expect(() => assertEmbryoJourneyAudits(missing)).toThrow("source inventory");
     expect(() => assertEmbryoJourneyAudits({ ...real(), "unknown.spec.ts": "" })).toThrow("source inventory");
+    const positive = EMBRYO_BROWSER_JOURNEYS["future-person-keyless"];
+    for (const symbol of ["seedParticipantC", "withEmbryoJourney", "syntheticHistoricalTransfer", "saveNativeMatchingDetails",
+      "expectFullDocumentReceipts", "openSyntheticReviewPdf", "sendSyntheticDeliveredCallback"]) {
+      const current = real();current[positive] = current[positive].replace(`await ${symbol}(`, "await unconnectedPositiveFixture(");
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow("connected native producer");
+    }
+    const wrongOrigin = real();wrongOrigin[positive] = wrongOrigin[positive].replace('test.use({baseURL:"http://localhost:3105"})', 'test.use({baseURL:"http://localhost:3100"})');
+    expect(() => assertEmbryoJourneyAudits(wrongOrigin)).toThrow("isolated 3105 origin");
   });
   it("checks source before execution and in the independent inventory and aggregation entry point", () => {
     const run = readFileSync("scripts/run-e2e.ts", "utf8");

@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { assertEmbryoCiShard, assertEmbryoJourneyAudits, EMBRYO_BROWSER_JOURNEYS } from "./ci-browser-embryo-partitions";
 import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { verifyE2EReport } from "./e2e-report-contract";
@@ -23,6 +24,9 @@ if (process.env.CI) assert(args[0] === "--config=playwright.config.ts"
   && (shard === null ? args.length === 1 : args.length === 2),
 "CI execution accepts only the full standard suite or its registered native shard, without selectors");
 let fullDiscovery: unknown, assignedDiscovery: unknown;
+// This run's verifier exists only in inherited process memory. The fixed
+// TEST-LOCAL variant alone receives it; no file, log or production secret.
+if (process.env.CI) process.env.INHERIT_CI_SYNTHETIC_WEBHOOK_SECRET = `whsec_${randomBytes(32).toString("base64")}`;
 if (shard !== null) {
   assert(args.length === 2 && args[0] === "--config=playwright.config.ts"
     && process.env.INHERIT_CI_BROWSER_RUNTIME === "ready", "Only the preflighted standard CI shard is accepted");

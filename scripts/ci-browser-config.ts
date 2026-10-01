@@ -72,7 +72,7 @@ export const LOCAL_MODEL_ENV_NAMES = Object.keys(LOCAL_MODEL_ENV) as ReadonlyArr
 /** Extra fields belong only to their fixed local-model or prepared variant. */
 export function admittedAppEnvironmentNames(port: number): readonly string[] {
   return port === LOCAL_MODEL_PORT ? [...APP_ENV_NAMES, ...LOCAL_MODEL_ENV_NAMES]
-    : port === EMBRYO_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(EMBRYO_APP_ENV)]
+    : port === EMBRYO_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(EMBRYO_APP_ENV), "RESEND_WEBHOOK_SECRET"]
     : port === PREPARED_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(PREPARED_APP_ENV)] : APP_ENV_NAMES;
 }
 export function checkedAppEnvironment(value: unknown, port: number): Record<string, string> {
@@ -94,6 +94,7 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
   if (port === EMBRYO_APP_PORT) {
     for (const [name, value] of Object.entries(EMBRYO_APP_ENV))
       assert(env[name] === value, "Embryo variant differs from its fixed fragment scope");
+    assert(/^whsec_[A-Za-z0-9+/]{43}=$/.test(env.RESEND_WEBHOOK_SECRET), "Missing isolated ephemeral webhook verifier");
   }
   if (port === PREPARED_APP_PORT) {
     for (const [name, value] of Object.entries(PREPARED_APP_ENV))
