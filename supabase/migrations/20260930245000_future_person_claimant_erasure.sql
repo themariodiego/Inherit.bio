@@ -1309,8 +1309,8 @@ begin
  select audit_principal_id into v_audit from private.future_person_custody_slices where subject_id=p.target_id;
  -- Legacy unindexed audit actors cannot be guessed. Uncertain provider
  -- inventories have no completion door; do not erase the manifest or source.
- if v_audit is null or exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50
-  and e.status<>'deleted' and e.store_name in('private.claim_documents','private.claim_document_fragments','storage.objects',
+ if v_audit is null or exists(select 1 from public.purge_manifest_entries candidate where candidate.manifest_id=p_manifest and candidate.entry_revision>50
+  and candidate.status<>'deleted' and candidate.store_name in('private.claim_documents','private.claim_document_fragments','storage.objects',
    'private.export_archive_attempts','private.export_archive_segments','public.cloud_model_calls','public.cloud_provider_attempts',
    'public.cloud_provider_payloads','public.report_artifacts','public.legal_evidence_documents','public.legal_evidence_fragments',
    'public.legal_evidence_review_copies','public.upload_staging_objects')) then
@@ -1384,7 +1384,7 @@ begin
   -- A second manifest cannot stand in for provider evidence. Every earlier
   -- row key must be a closed PK and already absent; opaque object handles or
   -- unresolved provider reservations refuse this entire final transaction.
-  for old_entry in select e.* from public.purge_manifest_entries e join public.purge_manifests old_m on old_m.id=e.manifest_id
+  for old_entry in select candidate.* from public.purge_manifest_entries candidate join public.purge_manifests old_m on old_m.id=candidate.manifest_id
    where old_m.retention_row_id=v_control loop
    if old_entry.object_id is not null or private.future_person_deletion_row_v1(old_entry.store_name,old_entry.row_key,false)<>0 then
     raise exception using errcode='42501',message='claimant deletion unavailable';end if;

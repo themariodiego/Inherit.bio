@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Rehearse exact original-copy disposal before claimant completion
+
+The complete positive deletion rehearsal exposed the same record/table alias
+collision in the private terminal finisher; its two table aliases now avoid
+the existing entry record without changing any selection or refusal.
+
+The original publication fixture actually lands ingest fragments in Supabase
+and canonical source parts in R2. The deletion fixture now drains those exact
+recorded backends through their existing disposal doors. Supabase requires one
+exact metadata DELETE by object id, bucket, name, version and size, followed by
+the matching registered receipt; a new negative assertion refuses that receipt
+while the object still exists. R2 retains its exact marker evidence. Unknown
+backends still fail the fixture. No provider is relabeled, guard disabled,
+timeout extended, worker state forged or production proof claimed. This is
+rollback-only SQL protocol evidence; physical provider/browser verification
+remains separately required. All original completion, sibling, audit-chain,
+lease, clock and minimized-receipt assertions remain intact.
+
 ## 2026-10-01 — Preserve typed retention targets and the exact provider refusal
 
 The actual claimant deletion rehearsal reached the sealed graph and exposed
