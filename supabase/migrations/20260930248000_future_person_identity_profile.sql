@@ -140,17 +140,17 @@ begin
     raise exception using errcode='42501',message='not_found'; end if;
   v_actor:=v_principals[1];
   if p_signature is not null then
-    perform 1 from public.consent_signatures cs join public.consent_artifacts a
-      on a.artifact_key=cs.artifact_key and a.version=cs.artifact_version
-        and a.body_sha256=cs.artifact_body_sha256
+    perform 1 from public.consent_signatures cs join public.consent_artifacts ca
+      on ca.artifact_key=cs.artifact_key and ca.version=cs.artifact_version
+        and ca.body_sha256=cs.artifact_body_sha256
       where cs.id=p_signature and cs.signer_principal_id=v_actor and cs.signer_account_id=p_account
         and cs.target_kind='cohort_draft' and cs.target_id=c.draft_id
-        and cs.artifact_key='consent.upload-embryo' and a.superseded_at is null
-        and a.published_at<=clock_timestamp() and a.effective_on<=timezone('UTC',clock_timestamp())::date
-        and a.body_sha256=encode(extensions.digest(convert_to(a.body_markdown,'UTF8'),'sha256'),'hex')
+        and cs.artifact_key='consent.upload-embryo' and ca.superseded_at is null
+        and ca.published_at<=clock_timestamp() and ca.effective_on<=timezone('UTC',clock_timestamp())::date
+        and ca.body_sha256=encode(extensions.digest(convert_to(ca.body_markdown,'UTF8'),'sha256'),'hex')
         and cs.statement_keys=private.embryo_statement_keys_v1('consent.upload-embryo','parent')
         and cs.purpose='embryo-upload-parent-class' and cs.jurisdiction_code=p.jurisdiction_code
-        and cs.jurisdiction_revision=p.jurisdiction_revision for share of cs,a;
+        and cs.jurisdiction_revision=p.jurisdiction_revision for share of cs,ca;
     if not found then raise exception using errcode='42501',message='not_found'; end if;
   end if;
   -- A fixed live disposition row is the sole deadline source. The parent
