@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Pin actual graph metadata and composite identities before a consumed export door
+
+New source tests pin seven current physical row schemas against the generated
+Row columns and actual composite PK declarations, exact recorded projections,
+all clocks/revisions/status fields and explicit counterparty/privacy exclusions.
+A real tuple contains every PK column; no UUID is invented. Distinct real rows
+with equal redacted content remain distinct in the source receipt. Numeric
+revision order, duplicates, reordered/crossed/stale keys, unreviewed source/output
+columns and impossible physical constraint shapes refuse. Neither that receipt
+nor a pure requester-equality projection supplies authority or scientific bytes.
+
+The thirteen existing nonempty whole-request refusal assertions,014 graph guard,
+029 class/runtime consumer, registered member plan and provider/public/READY
+closure stay unchanged. The appeal/correction statements remain unreadable
+without their actual purpose-bound producer; no key/ciphertext/empty plaintext
+substitute ships. Held originals retain their exact out-of-scope disposition.
+This prerequisite adds no SQL/API/grant/store and no acceptance, browser,
+database or provider proof. Complete current partition/grant doors and real
+scientific/member consumers remain separate required work.
+
 ## 2026-10-01 — Consume exact account export actions and discover only account jobs
 
 The strict route gate correctly refused the stale GET-only api.export method
