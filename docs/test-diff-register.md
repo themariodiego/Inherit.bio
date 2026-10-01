@@ -1,5 +1,14 @@
 # Test diff register
 
+## 2026-10-01 — Keep native keyless notice, objection and final fresh release distinct
+
+Initial unclaimed documentary matching now has its real pending-notice action; pending notice cases receive no repeated initial approval choice. The registered pending delivery/notice/objection shapes remain recursively closed. The new final native body accepts only the two registered decisions/five actual refusal codes, current revisions, professional basis and a distinct current assigned proof. Public execution captures the real server clock. One finite owner-only/API-denied clock core provides synthetic executor boundary evidence; it cannot supply elapsed provider, native or human credit. Every original Card/source/EOF/ACK/refusal guard remains. The UI requires newly complete/rendered full files and explicit current human checks, and assigned objection controls preserve all three revisions.
+
+Successful release now genuinely persists its exact custody audit selector and one correlated claim.resolved/api.future-person-claim-release/accepted/{outcome:approved} event. Exact predecessor body/ABI/owner/ACL guards precede the additive reader contract. Every prior empty-context event and legacy NULL refusal stays intact. The actual historical signing DTO additionally preserves the literal newly recorded approve-release kind rather than inventing approve-keyless history; all former body/name/role/digest/privacy assertions remain. Complete ZIP/member/hash tests retain every old omission and add strict substituted-approval refusals.
+
+Focused authoring found and corrected a strict profile-envelope scope projection (ciphertext/key fields must never be passed into its independently strict AAD parser), PostgreSQL offset-clock projection to the existing page format, an omitted state field in a newly authored exact GET expectation, unsupported minimum-index refusal, and render-time clock/accessibility-copy findings. These are source/fixture corrections, not relaxed parsers, old expectations, timeouts, retries or authority. Composed native/encryption/archive/source tests pass; actual SQL/full suite/browser/type checks remain separately required, with G5.4 unchanged. Database-dependent drift gates explicitly refuse without a configured deployed database and grant no pass. The new SQL fixture copies every unchanged genuine provider assertion and labels all synthetic metadata/time as SQL executor evidence only.
+
+
 ## 2026-10-01 — Require a genuinely changed negative encrypted-proof fixture
 
 The full nonroot Linux suite on `65f9f752` passed 8,719 tests and failed the

@@ -24,6 +24,7 @@ import {
 } from "@/lib/future-person/review";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
 import {mintKeylessLookupNonce,keylessVerificationIndexes,shapeKeylessVerification} from "@/lib/future-person/keyless-verification";
+import {keylessCurrentReview,mintKeylessReleaseNonce} from "@/lib/future-person/keyless-release";
 import {sealNoticePackage} from "@/lib/future-person/notice-package";
 import {keylessVerificationProofMatches} from "@/lib/future-person/keyless-verification-proof";
 import { createClient } from "@/lib/supabase/server";
@@ -72,7 +73,24 @@ async function read(request: Request, id: string): Promise<Response> {
   if (!account) return notFound();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("read_claim_review_case_v1", { p_review_id: id });
-  if (error) return error.code === "42501" ? notFound() : unavailable();
+  if (error) {
+    if(error.code!=="42501")return unavailable();
+    const current=await supabase.rpc("read_keyless_current_review_v1",{p_review:id});
+    if(current.error)return current.error.code==="42501"?notFound():unavailable();
+    const review=keylessCurrentReview(current.data,id);
+    if(!review||Date.parse(review.scope.deadline)<=Date.now()
+      ||(review.scope.operation!=="claim-release"&&!review.scope.current))return notFound();
+    const release=review.scope.operation==="claim-release"&&review.scope.noticeDeadline!==null
+      &&Date.parse(review.scope.noticeDeadline)<=Date.now();
+    return sensitiveJson(review.caseBody,200,{
+      [REVIEW_CSRF_HEADER]:reviewCsrf(id,account.user.id,account.sessionId),
+      [REVIEW_NONCE_HEADER]:release?mintKeylessReleaseNonce(review.scope,account.user.id,account.sessionId):mintReviewNonce(id,account.user.id,account.sessionId),
+      "x-inherit-review-operation":review.scope.operation,
+      ...(review.scope.objectionId!==null?{"x-inherit-objection-review-id":review.scope.objectionId}:{}),
+      "x-inherit-photo-receipt-nonce":mintReceiptOpenNonce(review.scope.photoDocumentId,account.user.id,account.sessionId),
+      "x-inherit-birth-receipt-nonce":mintReceiptOpenNonce(review.scope.birthDocumentId,account.user.id,account.sessionId),
+    });
+  }
   const body = reviewCaseBody(data);
   if (!body) return notFound();
   return sensitiveJson(body, 200, {
