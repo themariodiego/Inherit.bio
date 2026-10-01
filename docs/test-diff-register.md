@@ -1,5 +1,15 @@
 # Test diff register
 
+## 2026-10-01 — Parse the bound archive target as JSON before its field projection
+
+The first combined full fresh-database reset on13f5d145 stopped while creating
+the013000 bound-frame SQL function: an unparenthesized JSON arrow/minus
+expression made PostgreSQL attempt to subtract two unknown strings. The exact
+target JSON expression is now parenthesized before removing its existing expiry
+field. No field, authority check, tuple, reader, test or assertion changes.
+The failed reset is retained; no SQL execution or archive completion is inferred
+from the earlier source-only checkpoints. Full fresh proof follows this fix.
+
 ## 2026-10-01 — Observe the authoritative upload presentation before its unchanged UI assertions
 
 Hosted run36805076949 finished with the own-export journey stopped immediately
