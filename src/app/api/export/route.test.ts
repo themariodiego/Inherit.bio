@@ -458,12 +458,19 @@ describe("legal-audit.json", () => {
  */
 describe("the archive against the export member plan", () => {
   const ACCOUNT = "12345678-1234-4234-8234-000000000001";
+  const destination = { providerLabel: "Synthetic recorded provider", origin: "https://model.e2e.local", revision: 3,
+    providerClass: "cloud", baseUrl: "https://model.e2e.local/v1", provider: "openai_compatible", model: "synthetic-model" };
+  const recordedRecipient = { ...destination,
+    credentialFingerprint: "withheld:public.subject_consents.credentialFingerprint",
+    runtimeAttestationFingerprint: "withheld:public.subject_consents.runtimeAttestationFingerprint",
+    futureInternalEvidence: "withheld:public.subject_consents.futureInternalEvidence" };
   /** Values the route's own logic depends on; every other column says where it came from. */
   const FIXED: Record<string, Record<string, unknown>> = {
     "public.genome_files": { id: "legacy-0", subject_id: "subject", original_name: "Legacy file", variant_count: 1, file_type: "vcf" },
     "public.ancestry_results": { file_id: "legacy-0", subject_id: "subject" },
     "public.subjects": { id: "subject", subject_account_id: ACCOUNT },
     "public.profiles": { id: ACCOUNT },
+    "public.subject_consents": { copilot_recipient: recordedRecipient },
   };
   const wholeRow = (table: string) => {
     const entry = exportedTable(table);
@@ -473,16 +480,51 @@ describe("the archive against the export member plan", () => {
       ...entry.withheld.map(column => [column, `withheld:${table}.${column}`]),
     ]);
   };
-  const archive = async () => {
+  const prepareRows = () => {
     mocks.prepared = true; // one prepared canonical file and one database-backed one
     mocks.processed = [{ id: "legacy-0", original_name: "Legacy file" }];
     mocks.grants = new Set(["subject ancestry", "subject reports.monogenic", "subject reports.polygenic"]);
     mocks.tableRows = Object.fromEntries(Object.entries(exportMemberPlan.tables)
       .filter(([, entry]) => entry.disposition === "exported")
       .map(([table]) => [table.replace(/^public\./, ""), [wholeRow(table)]]));
-    const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+  };
+  const archive = async () => {
+    prepareRows();
+    const response = await GET();
+    expect(response.status).toBe(200);
+    const zip = new AdmZip(Buffer.from(await response.arrayBuffer()));
     return zip.getEntries().map(entry => ({ name: entry.entryName, text: entry.getData().toString("utf8") }));
   };
+
+  it("retains the complete recorded destination in actual ZIP bytes and excludes its nested internal evidence", async () => {
+    const entries = await archive();
+    const record = JSON.parse(entries.find(entry => entry.name === "subject-record.json")!.text);
+    expect(record.subject_consents[0].copilot_recipient).toEqual(destination);
+    expect(entries.map(entry => entry.text).join("\n"))
+      .not.toMatch(/credentialFingerprint|runtimeAttestationFingerprint|futureInternalEvidence/);
+    expect(recordedRecipient).toHaveProperty("credentialFingerprint", "withheld:public.subject_consents.credentialFingerprint");
+  });
+
+  it.each(["scalar", "missing-destination", "credential-url"])("refuses an actual %s recipient before opening source bytes", async failure => {
+    prepareRows();
+    let recipient: unknown = { ...recordedRecipient };
+    if (failure === "scalar") recipient = "value:public.subject_consents.copilot_recipient";
+    if (failure === "missing-destination") delete (recipient as Record<string, unknown>).model;
+    if (failure === "credential-url") {
+      const unsafe = new URL(destination.baseUrl);
+      unsafe.username = "synthetic-user"; unsafe.password = "synthetic-secret";
+      (recipient as Record<string, unknown>).baseUrl = unsafe.href;
+    }
+    mocks.tableRows!.subject_consents[0].copilot_recipient = recipient;
+    const response = await GET();
+    expect(response.status).toBe(503);
+    expect(response.headers.get("content-type")).toBe("text/plain;charset=UTF-8");
+    expect(await response.text()).toBe("Export unavailable");
+    expect(mocks.originalReads).toEqual([]);
+    expect(mocks.streamReads).toBe(0);
+    expect(mocks.variantReads).toBe(0);
+    expect(mocks.reportReads).toBe(0);
+  });
 
   it("carries no withheld column of any table it reads", async () => {
     const entries = await archive();

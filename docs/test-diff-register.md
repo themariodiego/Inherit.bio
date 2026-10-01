@@ -1,5 +1,26 @@
 # Test diff register
 
+## 2026-10-01 — Exercise the real recipient JSON contract in the whole-archive catalog fixture
+
+The actual full Linux run on `517fb4` failed the three existing archive-member
+plan assertions because their whole-catalog fixture represented the nullable
+`copilot_recipient` JSON destination as a scalar column sentinel. The strict
+seven-field projection correctly refused that malformed history with HTTP 503;
+the subsequent ZIP parser therefore received a refusal response. The fixture
+now supplies all actual recorded destination fields, plus nested internal-field
+sentinels. Every original withheld-column, exported-table, non-vacuity and exact
+member-set assertion remains intact, and ZIP construction now requires an
+explicit HTTP 200.
+
+The actual generated ZIP must preserve the complete recorded destination and
+withhold known and future nested credential evidence. Scalar, incomplete and
+credential-bearing destinations must still return HTTP 503 before any original,
+variant or report source is opened. This changes only the synthetic fixture and
+adds stricter output/refusal evidence; no runtime projection, requester filter,
+member plan, authority, source permission, timeout or public gate changes.
+The failed full-run receipt remains preserved; focused passes do not supersede
+it with a whole-suite, database, browser or provider claim.
+
 ## 2026-10-01 — Preserve actual SQL compilation failure and correct the original descriptor path
 
 The owned full fresh-database rehearsal of the combined source failed with
