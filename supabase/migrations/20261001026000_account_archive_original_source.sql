@@ -108,7 +108,7 @@ begin
   if expiry<=clock_timestamp() then raise exception using errcode='42501',message='not_found';end if;
  end if;
  result:=jsonb_build_object('version','account-archive-original-v1','exportId',p_export_id,'attemptId',p_attempt_id,
-  'authorityReceipt',p_authority_receipt,'fileId',p_file_id,'state',state,'source',source,'decodedSha256',snapshot#>'{file,source_sha256},
+  'authorityReceipt',p_authority_receipt,'fileId',p_file_id,'state',state,'source',source,'decodedSha256',snapshot#>'{file,source_sha256}',
   'actor',jsonb_build_object('accountId',permit#>'{origin,accountId}','sessionId',permit#>'{origin,sessionId}'));
  if (p_expected is not null and result is distinct from p_expected)
   or private.export_account_archive_attempt_v1(p_export_id,p_attempt_id,p_authority_receipt) is distinct from permit

@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Preserve actual SQL compilation failure and correct the original descriptor path
+
+The owned full fresh-database rehearsal of the combined source failed with
+SQLSTATE42601 while applying migration `20261001026000`: the descriptor's
+`decodedSha256` JSON path lacked its closing quote. The exact one-character
+source correction closes that path without changing any expression, source,
+authority, assertion, limit or permission. Frozen `a209bb02` and its authored
+receipt remain unchanged; its unit/type/static passes never supplied database
+execution credit. The failed actual database log remains preserved. Independent
+corrected SQL execution and full fresh qualification are still required.
+
 ## 2026-10-01 — Prove actual current original bytes for consumed account members
 
 Migration `20261001026000` pins actual original availability and physical Storage
