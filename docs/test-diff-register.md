@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Reveal documentary comparison only after both complete reads
+
+The complete hosted run `36816036175` on `a3ea135e` retained the original canceled-second-chunk test and exposed the new keyless documentary-verification checkbox before either full document was read. The original strict zero-checkbox assertion failed; no test expectation changes. The reviewer screen now reveals that comparison control and any approval attestation fields only after both complete documents render and the reviewer separately confirms each read. Existing download digest/chunk acknowledgements, current named-reviewer authority, database receipts, approval proof and disabled Save choice remain unchanged. The unchanged browser test must execute successfully on the final source before release.
+
 ## 2026-10-01 — Preserve both completed flows in the shared integration
 
 The ordinary merge of exact Path B `87ac893b` into the Future Person integration retains all purpose-bound rights forms, both retention test groups, the stricter native POST/PUT/DELETE response observer, and the prior legal-audit, claimant and encrypted-review privacy projections. Each new Path B member-plan entry remains deferred; `path_b_originating_session_id` joins the explicit withheld list, and the generated database copy is regenerated from the complete plan.
