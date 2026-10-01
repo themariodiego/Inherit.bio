@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Compare every original archive byte with the native Buffer primitive
+
+The actual full Linux run reached 8,718 passing tests and one unchanged
+five-second timeout in the plain original ZIP64 case. An isolated native phase
+probe retained the original assertion and measured raw/decoded EOF proof at
+21.89 ms, ZIP generation at 35.54 ms, parse at 0.48 ms, the generic byte-array
+`toEqual` assertion at 4,527.47 ms, and independent SHA-256 at 13.83 ms. The
+small gzip assertion took 5.36 ms. The full run's plain case took 9,014 ms under
+concurrent resource pressure; there was no observed stalled transport or cleanup.
+
+That one equality assertion now requires a non-null native Buffer, the exact
+original byte length and `Buffer.prototype.equals` over every original byte.
+The separate original SHA-256 assertion, the 2,097,159-byte fixture, raw and
+decoded EOF, ZIP64 entry identity, exact read count and five-second timeout are
+unchanged. A new independent refusal test corrupts the first and last byte,
+truncates, appends and substitutes a foreign byte container or NULL. It also
+checks a distinct correct full-size copy. No product source, SQL, provider
+behavior, retry, skip or acceptance row changes. The failed full run is retained;
+a corrected full run is still required.
+
 ## 2026-10-01 — Require exhaustive current account class membership
 
 The complete assembler needs an explicit inventory for all original 27 public

@@ -39,6 +39,11 @@ async function archive(member:Zip64Member,receipt:string){const rows:Uint8Array[
  members:(async function*(){yield member;})(),expectedMemberCount:1,expectedPayloadBytes:member.sizeBytes,
  modifiedAt:Date.UTC(2026,9,1),deadline:Date.now()+30_000,signal:new AbortController().signal,authorityReceipt:receipt,
  checkAuthority:async()=>receipt,spool:{append:async row=>{rows.push(row.slice());},replay:()=>new ReadableStream({start(c){for(const row of rows)c.enqueue(row);c.close();}}),dispose:async()=>{}}}));}
+function expectExactBuffer(actual:unknown,expected:Buffer){
+ expect(actual).not.toBeNull();expect(Buffer.isBuffer(actual)).toBe(true);
+ const bytes=actual as Buffer;expect(bytes.byteLength).toBe(expected.byteLength);
+ expect(Buffer.prototype.equals.call(bytes,expected)).toBe(true);
+}
 afterEach(()=>{vi.useRealTimers();vi.restoreAllMocks();});
 describe("actual consumed ordinary original member",()=>{
  it.each([false,true])("proves raw and decoded EOF then writes/open verifies the exact original ZIP64 bytes (gzip=%s)",async compressed=>{
@@ -47,12 +52,19 @@ describe("actual consumed ordinary original member",()=>{
    subjectId:f.snapshot.file.subject_id,originalRetired:false,byteIdenticalToUpload:true,rawSha256:hash(f.raw),decodedSha256:hash(f.decoded),sizeBytes:f.raw.length});
   const preparedCalls=f.readRange.mock.calls.length,zip=new AdmZip(await archive(result.member!,f.reference.authorityReceipt));
   expect(zip.getEntries().map(row=>row.entryName)).toEqual([`originals/${f.snapshot.file.id}/original.vcf${compressed?".gz":""}`]);
-  expect(zip.readFile(result.member!.name)).toEqual(f.raw);expect(hash(zip.readFile(result.member!.name)!)).toBe(f.source.rawSha256);
+  expectExactBuffer(zip.readFile(result.member!.name),f.raw);expect(hash(zip.readFile(result.member!.name)!)).toBe(f.source.rawSha256);
   expect(f.readRange).toHaveBeenCalledTimes(preparedCalls*2);
   for(const [,args] of f.rpc.mock.calls)expect(Object.keys(args).sort()).toEqual([
    "p_attempt_id","p_authority_receipt","p_expected","p_export_id","p_file_id","p_operation"]);
   expect(JSON.stringify(result.provenance)).not.toMatch(/sessionId|accountId|objectKey|objectId|storageVersion|bucket|manifestId/);
   expect(f.receipt.source).not.toHaveProperty("manifestId");
+ });
+ it("refuses a different first or last byte, truncation, extra bytes and a foreign byte container at the exact full-byte assertion",()=>{
+  const expected=Buffer.alloc(2_097_159,37),first=Buffer.from(expected),last=Buffer.from(expected);
+  first[0]^=1;last[last.length-1]^=1;
+  for(const changed of [first,last,expected.subarray(0,-1),Buffer.concat([expected,Buffer.of(37)]),
+   Uint8Array.from(expected),null])expect(()=>expectExactBuffer(changed,expected)).toThrow();
+  expectExactBuffer(Buffer.from(expected),expected);
  });
  it("uses the real prepared manifest identity without substituting one for a legacy source",async()=>{
   const f=fixture(true,true,4096),result=await prepareAccountOriginalSource(f.options);
