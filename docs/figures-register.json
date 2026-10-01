@@ -224,7 +224,7 @@
     }
   },
   "census": {
-    "rule": "G8.3's completeness: every route whose page can put a figure on a surface — measured by scripts/figures-census.ts as an import path from the page to a figure component — is either differenced under two seeds by e2e/figures-two-seed.spec.ts, or recorded here with the reason no figure state of it can render today and the specs that assert zero figures on it. scripts/figures-census.test.ts holds this list to the built application in both directions.",
+    "rule": "G8.3's completeness: every route whose page can put a figure on a surface — measured by scripts/figures-census.ts as an import path from the page to a figure component — is either differenced under two seeds by e2e/figures-two-seed.spec.ts, or recorded here with its exact pending native-publication proof contract, or the reason no figure state can render and the specs that assert zero figures. A pending entry is not executed G8.3 evidence: the full native aggregation must prove both real publications before any acceptance closure. scripts/figures-census.test.ts holds this list to the built application in both directions.",
     "figureSources": [
       "src/components/figures/figure.tsx",
       "src/components/figures/relative-figure.tsx"
@@ -283,19 +283,23 @@
       },
       {
         "route": "/embryos/compare",
-        "status": "no-reachable-figure-state",
-        "reason": "The ingest slice is not shipped (G2.6; docs/capability-register.md): no path creates a cohort's quality rows or calls, so every cohort renders its blocking, unavailable or processing state and the compare table and QC table the page imports never receive a figure. e2e/embryos.spec.ts asserts no figure on each state it renders. This route becomes a differenced entry when the Embryos workstream lands, not before; the census test fails the day a figure can render here without one.",
-        "assertedBy": [
-          "e2e/embryos.spec.ts"
-        ]
+        "status": "two-publication-proof-required",
+        "reason": "Actual signed-parent upload/worker publication now makes observed QC figures reachable. The old whole-route zero-figure reason is invalid. Two independent fresh native jobs must upload the two exact committed synthetic call sets, retain current source receipts, collect the full figure census and prove every corresponding QC value changes. This authored contract is not hosted execution or acceptance credit.",
+        "specs": [
+          "e2e/embryo-ingest-journey.spec.ts",
+          "e2e/embryo-qc-second-seed-journey.spec.ts"
+        ],
+        "proofContract": "scripts/ci-browser/embryo-qc-two-seed.ts"
       },
       {
         "route": "/embryos/[embryoId]",
-        "status": "no-reachable-figure-state",
-        "reason": "The ingest slice is not shipped (G2.6; docs/capability-register.md): no path creates an embryo's quality rows or calls, so the detail page renders its blocking, unavailable or processing state and the QC block it imports never receives a figure. e2e/embryos.spec.ts asserts no figure on each state it renders. This route becomes a differenced entry when the Embryos workstream lands, not before; the census test fails the day a figure can render here without one.",
-        "assertedBy": [
-          "e2e/embryos.spec.ts"
-        ]
+        "status": "two-publication-proof-required",
+        "reason": "Actual signed-parent upload/worker publication now makes observed QC figures reachable. The old whole-route zero-figure reason is invalid. Two independent fresh native jobs must upload the two exact committed synthetic call sets, retain current source receipts, collect the full figure census and prove every corresponding QC value changes. This authored contract is not hosted execution or acceptance credit.",
+        "specs": [
+          "e2e/embryo-ingest-journey.spec.ts",
+          "e2e/embryo-qc-second-seed-journey.spec.ts"
+        ],
+        "proofContract": "scripts/ci-browser/embryo-qc-two-seed.ts"
       }
     ]
   }

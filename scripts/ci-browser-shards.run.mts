@@ -1,5 +1,6 @@
 /** GitHub-only case inventory and fail-closed aggregation; no browser transport. */
 import assert from "node:assert/strict";
+import { checkedQcSeed, verifyQcSeedPublications } from "./ci-browser/embryo-qc-two-seed";
 import { assertEmbryoJourneyAudits, EMBRYO_BROWSER_JOURNEYS } from "./ci-browser-embryo-partitions";
 import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -42,6 +43,19 @@ if (invoked) {
     verifyAccessibilitySweepPlacement(receipts);
     console.log(`Full browser coverage: ${count} cases, exactly once, zero skips or retries, six isolated jobs, source ${source.head}.`);
     const clean = receipts as CiBrowserShardReceipt[];
+    const seedReceipts = clean.flatMap(job => {
+      const name = `browser-case-${source.runAttempt}-shard-${job.index}`;
+      const files = readdirSync(path.join(directory, name)).sort();
+      assert(files.every(file => ["ci-browser-shard.json", "embryo-qc-seed.json"].includes(file)), "Unregistered native artifact contents");
+      if (!files.includes("embryo-qc-seed.json")) return [];
+      const receipt = checkedQcSeed(read(name, "embryo-qc-seed.json"));
+      assert.equal(receipt.index, job.index, "QC receipt must come from its actual artifact job");
+      return [receipt];
+    });
+    const qcProof = verifyQcSeedPublications(seedReceipts, clean, source);
+    mkdirSync("test-results", { recursive: true });
+    writeFileSync("test-results/embryo-qc-two-seed.json", JSON.stringify(qcProof) + "\n", { mode: 0o600, flag: "wx" });
+    console.log(`Embryo QC: ${qcProof.comparedFigures} corresponding figures changed across two actual independent native publications.`);
     const seconds = (value: number) => (value / 1000).toFixed(1);
     const rows = clean.sort((a, b) => a.index - b.index).map(receipt =>
       `| ${receipt.index} | ${receipt.executedCases.length} | ${seconds(receipt.timings.setupMs)} | ${seconds(receipt.timings.buildMs)} | ${seconds(receipt.timings.bootstrapMs)} | ${seconds(receipt.timings.browserMs)} | ${receipt.providerUploads} |`);
