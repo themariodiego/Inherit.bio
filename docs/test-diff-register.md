@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Remove the profile signature alias conflict and preserve the exact phase census
+
+The genuine fresh database rehearsal reached the profile's save authority and
+exposed a PL/pgSQL record-variable collision: the current consent-artifact SQL
+alias had the same name as the declared basis-authority record. Only that
+artifact alias is renamed. The same signature UUID, signer principal/account,
+draft target, artifact key/version/body/hash, publication/effective date,
+statement set, purpose and current jurisdiction revision are still required.
+No authority or request expectation changes.
+
+The phase census now requires exactly 54 rows rather than 53 and adds an
+explicit assertion for the already-registered
+`future-person-claimed-source-disposal` purge phase from migration245. This is
+the actual additional phase; the optional-profile prerequisite reuses its two
+existing phases and introduces no extra registry row. All original census
+assertions remain exact, and the plan grows by exactly this new row-shape
+assertion. The correction awaits the coordinator's focused SQL rehearsal.
+
 ## 2026-10-01 — Render prospective parent profile controls without reading saved identity fields
 
 The settings loader's new tests verify both genuine stateless operation proofs
