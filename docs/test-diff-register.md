@@ -1,5 +1,13 @@
 # Test diff register
 
+## 2026-10-01 — Transfer only the encrypted minimum into a closed owner-notice prerequisite
+
+The registered keyless positive determination now has an owner-only package/clock transaction for independent rehearsal. It preserves the original documentary deadline, commits the exact current-owner outbox and existing claim package atomically, gives the minimum comparison a separate random wrapped key, and erases original intake/search/duplicated decision working data. Provider acceptance cannot start the notice period: only the exact delivered attempt can commit the full immutable30-day clock within the fixed24-hour delivery deadline. Duplicate delivery cannot renew it; terminal undeliverability shreds only the claim and preserves byte-identical subject, profile, results, source, provider locations, Card and later claimability.
+
+The existing review-package export disposition changes from excluded-internal to excluded-protected because it now contains a wrapped key and bounded identity/profile ciphertext. The table census and every original omission assertion remain exact. New strict crypto cases refuse document/scope/key/revision swaps, unknown decrypted fields, old working reasons, contact/search leakage and non-adult or incoherent documentary values. The new SQL fixture follows the real synthetic publication, transfer, profile, document scan, completion and named-reviewer producers; its opaque encrypted/provider/chunk metadata is explicitly SQL authority evidence only.
+
+All API execute/direct-table access and native positive approval remain closed until the complete actual owner-objection, provider callback, scheduled terminal cleanup and separate fresh-human-release flow is implemented and independently verified. New SQL/native execution and final whole checks are pending. This prerequisite neither records browser/provider execution nor changes G5.4/G4.2.
+
 ## 2026-10-01 — Execute archive assertions under their real role and pin the current-source refusal
 
 The complete affected boundary run on `60e91cbc` passed actual binding,
