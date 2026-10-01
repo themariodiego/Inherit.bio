@@ -7,7 +7,7 @@ const execute=vi.hoisted(()=>vi.fn());
 vi.mock("./account-archive-worker",()=>({buildAccountArchive:execute}));
 afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();});
 function fixture(count=2){
- const jobs=Array.from({length:count},()=>({exportId:randomUUID(),principalHash:"a".repeat(64),authorityReceipt:"b".repeat(64),deadline:new Date(Date.now()+600000).toISOString()}))
+ const jobs=Array.from({length:count},()=>({exportId:randomUUID() as string,principalHash:"a".repeat(64),authorityReceipt:"b".repeat(64),deadline:new Date(Date.now()+600000).toISOString()}))
   .sort((a,b)=>a.exportId.localeCompare(b.exportId));
  const rpc=vi.fn<AccountArchiveDueRpc>(async()=>({data:structuredClone(jobs),error:null}));
  const capability:AccountArchiveGenerationCapability={assertReady:vi.fn(async signal=>{signal.throwIfAborted();}),execution:{} as AccountArchiveGenerationCapability["execution"]};

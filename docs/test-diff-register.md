@@ -27,6 +27,12 @@ is now fixed for the new metadata-boundary fixtures; real timers, production
 clocks, the exact one-millisecond refusal and every assertion stay unchanged.
 The failed account-export-http-worker-focused-final.log is retained.
 
+Whole nonincremental type on54fa5656 found one scheduling-fixture annotation:
+the inferred randomUUID template type could not receive the intentional foreign
+identity refusal. Its ID is typed string; removing that annotation reproduces
+the exact fixture bytes. No row, value, assertion or product code changes. The
+failed account-export-http-worker-typecheck.log is retained.
+
 Reserved037 adds one service-only account-origin metadata discovery door and
 leaves the old mixed dispatcher body intact. Authored real-role pgTAP pins the
 entire predecessor ABI/default/config/body/ACL and uses actual current request,
