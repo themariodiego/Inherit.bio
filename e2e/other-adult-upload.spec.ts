@@ -470,8 +470,13 @@ test("another adult's file under Path B: confirmed into the person's own account
     `the upload-time notice to ${ACCOUNT_PERSON.email}`);
   await openRightsLink(page, noticeMail.html);
   const screen = page.locator('[data-slot="adult-upload-revision"]');
-  await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
-  await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+  const confirmation = await observeNativeResponses(page, { confirm: "^/api/withdraw/session$" });
+  try {
+    await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
+    const response = await confirmation.read("confirm");
+    expect(response).toEqual({ status: 202, text: JSON.stringify({ status: "accepted", operation: "confirm" }) });
+    await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+  } finally { await confirmation.dispose(); }
   const confirmed = await admin.from("other_adult_held_uploads").select("state, analysis_state").eq("id", held.id).single();
   expect(confirmed.data).toEqual({ state: "confirmed", analysis_state: "confirmed_awaiting_purpose" });
 

@@ -1,5 +1,24 @@
 # Test diff register
 
+## Path B actual service-role confirmation and exact HTTP receipt · 1 October 2026
+
+The current hosted account-bound journey reaches the real revision form but
+renders its refusal alert after confirmation; its original five-second
+`File accepted` assertion fails, so the following serial report journey has
+no execution credit. The normalization regression now makes its existing
+confirmation call under an actual `SET LOCAL ROLE service_role` with service
+JWT claims, and proves both role identities before retaining every exact
+confirmation, source, job and zero-purpose assertion. A SQL exception remains
+visible; the regression does not catch or convert it into a success.
+
+The browser now independently observes that same native confirmation POST
+and requires its exact 202 and closed `{status, operation}` response before
+the unchanged heading assertion. It disposes the observer on either outcome
+without replaying or modifying the request or original response. No timeout,
+retry, skip, authority, permission or application response is changed. These
+changes improve evidence and coverage; they do not identify or repair the
+hosted product refusal. Its cause and fresh full browser proof remain pending.
+
 ## Path B account-bound upload dispatch and exact stage proof · 1 October 2026
 
 The actual hosted account-confirmation journey stopped before finalization:
@@ -406,6 +425,49 @@ only when the named migration really drops the bucket. The new pgTAP file
 check was planted and failed; the details are in
 `docs/register-divergence-proposals.md` section 8. No existing assertion was
 removed or loosened.
+
+## Brief X1.5: the upload page stores no nonce while it renders · 28 September 2026
+
+**Two pgTAP files move off `issue_own_upload_nonce_v1`, which is dropped.**
+- `own_upload_account_completion.sql` still has 42 assertions.
+  - Its seven issuance assertions become the same checks on the v2 path the
+    route now takes: digest shape, the ten-minute ceiling, an expired token,
+    missing adult details, and the account-revision recheck.
+  - Two new assertions say that nothing is stored before use, and that the
+    completion records its nonce as a completion. They replace "a completion
+    screen cannot issue a deletion nonce" and "a verified service route can
+    issue the initial completion presentation".
+  - The v1 body assertions keep a stored-row fixture, now written directly as
+    the other own-upload tests already do.
+  - The service-role completion, and "the completed account can proceed to
+    its consent decision", now go through v2. The privilege check names the
+    v2 door instead of the dropped one.
+- `own_upload_consent.sql` (30) changes one call. The service-role signing
+  goes through v2 with no stored row. Every other assertion is unchanged.
+
+**New tests.**
+- `supabase/tests/own_upload_nonce_rendered.sql`, 25 assertions:
+  - both issuing doors are gone, and v1 is out of the service role's reach;
+  - the doors are invokers over private definer bodies;
+  - nothing is stored before an operation;
+  - the recorder's bounds hold, and refusals record nothing;
+  - completion and signing through v2 record one spent hash each;
+  - replay fails, including across operations;
+  - an expired spent hash is pruned.
+- `src/lib/uploads/prepare-own-upload.test.ts` (3): preparing the page makes
+  no write and no RPC other than the read-only context lookup, for both
+  token kinds.
+- The two route unit tests now expect the v2 RPCs with the token's expiry.
+- `scripts/route-register-correspondence.test.ts`: `nonceStoredBeforeUse` is
+  empty. The test that relied on finding its one site now proves the scan
+  reads shipped code and that its pattern finds both removed shapes.
+
+**Planted, each seen to fail.**
+- The page render storing its nonce: 2 tests fail.
+- A new GET route that inserts a nonce row: 3 tests fail.
+- In the database, each of these fails the new file: the issuing door
+  surviving, v1 left callable by the service role, a spent hash accepted
+  again, and no expiry bound.
 
 ## Brief X1.5: the account-deletion nonce is rendered, not fetched · 28 September 2026
 
