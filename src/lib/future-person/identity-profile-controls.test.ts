@@ -16,10 +16,10 @@ const context={embryoId:A,subjectId:B,actorPrincipal:C,basisFingerprint:"a".repe
   nextIdentityRevision:2,expiresAt:"2040-10-01T00:00:00Z"};
 const erase={...context,consentSignatureId:null,basisFingerprint:"b".repeat(64)};
 const item={embryoId:A,label:"Synthetic record",hasProfile:true,expiresAt:context.expiresAt,saveContext:context,deleteContext:erase};
-beforeEach(()=>{vi.clearAllMocks();vi.stubEnv("BYOK_ENCRYPTION_KEY",randomBytes(32).toString("base64"));
+beforeEach(()=>{vi.clearAllMocks();vi.spyOn(console,"warn").mockImplementation(()=>{});vi.stubEnv("BYOK_ENCRYPTION_KEY",randomBytes(32).toString("base64"));
   mocks.open.mockReturnValue(true);mocks.auth.mockResolvedValue({user:{id:B},sessionId:C});
   mocks.rpc.mockResolvedValue({data:{items:[item],nextCursor:D},error:null});});
-afterEach(()=>vi.unstubAllEnvs());
+afterEach(()=>{vi.unstubAllEnvs();vi.restoreAllMocks();});
 it("renders only display status and prospective stateless proofs, with no profile or authority DTO fields",async()=>{
   const result=await identityProfileControls(null,NOW);expect(result).toMatchObject({unavailable:false,nextCursor:D});
   const control=result!.items[0];expect(Object.keys(control).sort()).toEqual(["delete","embryoId","expiresAt","hasProfile","label","save"]);
@@ -66,4 +66,44 @@ it("keeps source failures closed without exposing database error details",async(
   expect(await identityProfileControls(null,NOW)).toEqual({items:[],nextCursor:null,unavailable:true});
   mocks.rpc.mockRejectedValueOnce(new Error("forbidden protected evidence"));
   expect(await identityProfileControls(null,NOW)).toEqual({items:[],nextCursor:null,unavailable:true});
+});
+it("keeps the original parent's fresh saved-profile delete authority after the other parent saved",async()=>{
+  const savedId="49000000-0000-4000-8000-000000000005";
+  const ownerSave={...context,actorPrincipal:D,consentSignatureId:A,currentProfileId:savedId,nextIdentityRevision:3};
+  const ownerErase={...ownerSave,consentSignatureId:null,basisFingerprint:"c".repeat(64)};
+  mocks.auth.mockResolvedValueOnce({user:{id:B},sessionId:C});
+  mocks.rpc.mockResolvedValueOnce({data:{items:[{...item,saveContext:ownerSave,deleteContext:ownerErase}],nextCursor:null},error:null});
+  const result=await identityProfileControls(null,NOW);expect(result!.unavailable).toBe(false);
+  const control=result!.items[0];expect(control.hasProfile).toBe(true);expect(control.delete).not.toBeNull();
+  expect(readIdentityProfileOperation(control.delete!.operationNonce,control.delete!.csrf,
+    {accountId:B,sessionId:C,embryoId:A,operation:"delete"},ownerErase,NOW)).not.toBeNull();
+  expect(readIdentityProfileOperation(control.delete!.operationNonce,control.delete!.csrf,
+    {accountId:D,sessionId:C,embryoId:A,operation:"delete"},ownerErase,NOW)).toBeNull();
+  expect(console.warn).not.toHaveBeenCalled();
+});
+it("identifies RPC/schema/proof stages without logging sensitive fields or changing the generic refusal",async()=>{
+  const refused={items:[],nextCursor:null,unavailable:true};
+  mocks.rpc.mockResolvedValueOnce({data:null,error:{code:"40P01",message:"protected SQL",details:"protected authority"}});
+  expect(await identityProfileControls(null,NOW)).toEqual(refused);
+  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"rpc",code:"40P01"});
+  const bad=structuredClone(item);bad.deleteContext.currentProfileId="protected profile";
+  mocks.rpc.mockResolvedValueOnce({data:{items:[bad],nextCursor:null},error:null});
+  expect(await identityProfileControls(null,NOW)).toEqual(refused);
+  const schema=vi.mocked(console.warn).mock.calls.at(-1)![1];expect(schema).toMatchObject({stage:"schema"});
+  expect(JSON.stringify(schema)).toContain("currentProfileId");expect(JSON.stringify(schema)).not.toContain("protected profile");
+  const expired=structuredClone(item);expired.expiresAt=expired.saveContext.expiresAt=expired.deleteContext.expiresAt=new Date(NOW).toISOString();
+  mocks.rpc.mockResolvedValueOnce({data:{items:[expired],nextCursor:null},error:null});
+  expect(await identityProfileControls(null,NOW)).toEqual(refused);
+  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"proof",code:"unavailable"});
+  expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/protected SQL|protected authority|protected profile|[a-f0-9]{64}/u);
+});
+it("retains the generic refusal if a response or schema accessor throws, without exposing the exception",async()=>{
+  mocks.rpc.mockResolvedValueOnce(Object.defineProperty({data:null},"error",{get(){throw new Error("protected RPC getter");}}));
+  expect(await identityProfileControls(null,NOW)).toEqual({items:[],nextCursor:null,unavailable:true});
+  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"rpc",code:"unavailable"});
+  const data=Object.defineProperty({},"items",{get(){throw new Error("protected schema getter");}});
+  mocks.rpc.mockResolvedValueOnce({data,error:null});
+  expect(await identityProfileControls(null,NOW)).toEqual({items:[],nextCursor:null,unavailable:true});
+  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"schema",issues:[{code:"unavailable",field:"inventory"}]});
+  expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/protected|getter/u);
 });
