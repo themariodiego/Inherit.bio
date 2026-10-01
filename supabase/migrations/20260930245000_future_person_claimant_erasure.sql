@@ -872,7 +872,7 @@ begin
     'ordinal',old.entry_revision,'disposition','deleted') or to_jsonb(new)-'row_key' is distinct from to_jsonb(old)-'row_key' then
    raise exception using errcode='23514',message='claimant deletion plan immutable';end if;
   return new;
- elsif tg_table_name='purge_manifests' and to_jsonb(old)->>'phase_id'='future-person-claimed-source-disposal' and old.state='complete' then
+ elsif tg_table_name='purge_manifests' and to_jsonb(old)->>'phase_id'='future-person-claimed-source-disposal' and to_jsonb(old)->>'state'='complete' then
   if to_jsonb(new) is distinct from to_jsonb(old) then raise exception using errcode='23514',message='claimant deletion plan immutable';end if;
   return new;
  end if;

@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Preserve ordinary retention transitions in the shared deletion guard
+
+The integrated fresh database run exposed a shared trigger record-shape error:
+its manifest-only combined predicate referenced `OLD.state` while executing
+against ordinary due-phase rows, which have `status` instead. The same exact
+terminal manifest predicate now reads that field from the already used closed
+row representation. Claimed-plan immutability, terminal minimization, manifest
+state and every prior refusal remain unchanged. No test assertion or timeout
+changes. The actual failed full run is retained; the complete fresh rehearsal
+will follow on this corrected source. Production and public actions stay closed.
+
 ## 2026-10-01 — Rehearse integrated current profile, controls and claimant deletion source
 
 The coordinator combines the actual failed fresh-database corrections with the
