@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Read gate inputs once within each invocation
+
+The full c232 Linux suite passed 9,039 tests but exceeded the unchanged
+five-second limit in the first whole-input claims test and the planted unread
+header route test. Their failure receipt remains; the cause of those Linux
+delays is not established by the host measurements below.
+
+An instrumented c232 invocation read 2,501 claims input files across 1,041
+distinct paths, and the route gate read browser specs twice. Claims now reuses
+successful source reads and parsed import edges within one invocation; route
+titles and audit checks use one fresh spec inventory. No cache survives a
+call, and every existing input, parser, detector, floor, finding and deadline
+remains. Two new regressions mutate and restore the same repository root to
+prove source/import and browser-title/audit changes are read on the next call.
+The first normal focused run hit the unchanged five-second limit in the new
+claims regression that performed three calls in one test (100/101 passed).
+That failed log remains. Each isolation now uses three sequential cases with
+exactly one gate invocation per case, the same five-second default, and the
+same strict changed/restored assertions; setup alone is outside those cases.
+The corrected focused run passes all 105 cases and scoped lint. Full Linux
+qualification remains required; none of the original 99 case bodies changed.
+
+A temporary dual-reader harness retained all original assertions and compared
+88 complete results on the real and planted repositories against frozen c232:
+all equal, with all 101 tests passing. Profiled reads fell from 2,501 to 1,041
+for claims and 611 to 507 for routes. Median host invocation times improved,
+but the two exact previously timed-out cases did not show a clear improvement:
+first claims was 480/480 ms; planted header was 194/200 ms (old/new). This is
+evidence of less redundant work, not a claim that the Linux timeout is fixed.
+Full failed logs, profiles, complete-result hashes and harness source remain
+under the gate-reader-baseline-3ifmmepl receipt directory.
+
 ## 2026-10-01 — Make full PDF pages reachable by keyboard
 
 Hosted e83 run36887181762 reached genuine re-read PDFs, then the unchanged

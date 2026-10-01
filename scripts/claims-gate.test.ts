@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   elementTags,
   hasAttribute,
@@ -132,6 +132,39 @@ const unrecorded = (label: string, finding: string) =>
 
 const stale = (label: string, finding: string) =>
   `${label}: recorded in ${LEDGER} but no longer present: ${finding}`;
+
+describe.sequential("claims reader invocation isolation", () => {
+  let root: string;
+  let file: string;
+  let original: string;
+  let before: ReturnType<typeof runClaimsGate>;
+  beforeAll(() => {
+    root = plant({ source: () => {} });
+    file = path.join(root, "src/app/(marketing)/privacy/page.tsx");
+    original = readFileSync(file, "utf8");
+  });
+  it("reads the original same-root input", () => {
+    before = runClaimsGate(root);
+    expect(before.failures).toEqual([]);
+  });
+  it("reads changed source and import edges again at the same repository root", () => {
+    writeFileSync(file, 'export { Claim as default } from "@/components/claims/claim";');
+    try {
+      const changed = runClaimsGate(root);
+      expect(changed.failures).toContain(unrecorded("designated surface",
+        "legal pages: 21 of 22 page modules never reach the shared claim component " +
+        "(src/components/claims/claim.tsx), so their prose is rendered outside it"));
+      expect(changed.failures).toContain(stale("designated surface",
+        "legal pages: 22 of 22 page modules never reach the shared claim component " +
+        "(src/components/claims/claim.tsx), so their prose is rendered outside it"));
+    } finally {
+      writeFileSync(file, original);
+    }
+  });
+  it("reads the restored same-root input with an exactly equal full result", () => {
+    expect(runClaimsGate(root)).toEqual(before);
+  });
+});
 
 describe("the claims gate holds the registers to the product", () => {
   it("reads every input on this repository, and no floor guard fires", () => {
