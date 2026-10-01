@@ -7691,6 +7691,7 @@ export type Database = {
       export_archive_account_content_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_payload?: Json }; Returns: Json }
       export_archive_account_audit_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_seq?: number }; Returns: Json }
       export_archive_account_members_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_id?: string }; Returns: Json }
+      read_embryo_qc_rows_v1: { Args: { p_cohort_id: string; p_embryo_ids: string[] }; Returns: Json }
       export_archive_account_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id: string; p_expected?: Json }; Returns: Json }
       export_archive_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_expected?: Json }; Returns: Json }
       future_person_bound_source_manifest_v1: { Args: { p_subject: string }; Returns: Json }

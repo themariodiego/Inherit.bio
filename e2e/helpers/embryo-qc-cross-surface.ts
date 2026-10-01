@@ -4,13 +4,14 @@ import { collectFigures } from "../figure-collector";
 import { assertRegisteredQcFigures, collectQcPresentations, type QcFigurePresentation } from "../embryo-qc-cross-surface";
 import { participantCPublication } from "../../scripts/comprehension/participant-c-seed";
 import { projectQc, type EmbryoQcRow } from "@/lib/embryos/projection";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 
 /** Reads genuine published QC; never advances a job or creates a result. */
 export async function provePublishedQcCrossSurface(input: { page: Page; ownerId: string; cohortId: string; read(): Promise<unknown> }) {
   const current = async () => participantCPublication(await input.read(), input.ownerId, input.cohortId);
   const publication = await current();
   const readQc = async () => {
-    const result = await adminClient().from("embryo_qc").select("*").in("embryo_id", publication.embryos.map(row => row.id));
+    const result = await readEmbryoQcRows(adminClient(), input.cohortId, publication.embryos.map(row => row.id));
     expect(result.error).toBeNull();expect(result.data).toHaveLength(2);
     expect(result.data!.map(row => row.embryo_id).sort()).toEqual(publication.embryos.map(row => row.id).sort());
     return publication.embryos.map(embryo => ({ embryoId: embryo.id, subjectId: embryo.subject_id,

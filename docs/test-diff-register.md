@@ -1,5 +1,32 @@
 # Test diff register
 
+## 2026-10-01 — Preserve measured QC ratios across database JSON formation
+
+The actual hosted second-seed journey on `2280e7f4` fails the unchanged strict
+figure-basis ratio assertion. The native seed-B worker measures 1,184 of 1,200
+sites and stores `0.9866666666666667`. Independent read-only PostgreSQL probes
+prove the same binary double (`3fef92c5f92c5f93`) becomes
+`0.986666666666667` when JSON is formed with the actual session setting
+`extra_float_digits=0`; the scoped setting `3` preserves the exact value. This
+is a representation defect, not permission to tolerate a changed scientific
+ratio. The failed hosted run and actual probe receipts remain evidence.
+
+Additive034 pins the four reviewed serializer bodies, owners, ACLs and original
+configuration, then adds only their function-local precise-output setting. A
+new service-role/JWT-only SECURITY INVOKER reader forms complete closed QC rows
+with that local setting. It refuses missing, duplicate, foreign, multidimensional
+or partial selections and restores the session setting. Its 1–64 limit matches
+the original register and pre-upload ingest validator. Product detail/compare
+and the actual cross-surface/mixed-QC proof readers use the same bounded door.
+All original page gates, measured count/ratio/provenance/figure assertions,
+fixtures, timeouts, retries and skips remain. The original worker roundtrip test
+now also runs on the actual second-seed fixture. New independent tests cover
+all fields, exact ratio, strict truncated-value refusal, the full 64-response
+capacity and malformed/foreign/incomplete rows. Authored real-role pgTAP proves
+binary identity, complete fields, local configuration/ACLs and refusal; it is
+not execution evidence until the root-owned database run passes. No provider,
+public-gate, READY, deployment or acceptance claim is added.
+
 ## 2026-10-01 — Exercise native keyless no-match and canceled client acknowledgement
 
 Two additional browser journeys retain the original complete/processing tests, exact default evidence,120000ms suite limit and zero retries. Optional evidence changes only genuinely uploaded synthetic bytes/fields; real intake, encryption, composition, ClamAV, Auth/TOTP and current owner-assigned review remain necessary. Explicitly synthetic identity-bearing PDFs replace blank papers only in the new no-match journey. Every page must actually render before a separate read attestation. No/one document, stale or substituted authority, another reviewer, borrowed decision nonce, forced approval and client-clock final release all refuse without decision/notice/custody/key/rights-nonce effects. Repeated genuine read-only lookup has an exact closed no-unique response and cannot issue approval proof. Genuine refusal and independent key shredding are required once, with stale lookup/decision replay refused. A second journey requires the exact first acknowledgement but cancels the last after both actual chunks arrive; partial receipts must never render evidence or authorize verification. Discovery is source evidence only; both journeys remain UNRUN pending hosted execution, and genuine historical/elapsed-notice positive proof is explicitly still outstanding. No product guard, old assertion, timeout, retry, route-state ratchet or acceptance value changes.

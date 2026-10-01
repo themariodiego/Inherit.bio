@@ -35,6 +35,7 @@ import { allowedConditions } from "@/lib/embryos/allowed-conditions";
 import { EmbryoReadError, rowsOrThrow, selectEmbryo } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -73,7 +74,7 @@ async function loadDetail(input: {
   const admin = createAdminClient();
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
   const [qcResult, scoreResult] = await Promise.all([
-    admin.from("embryo_qc").select("*").eq("embryo_id", input.embryo.id).maybeSingle(),
+    readEmbryoQcRows(admin, input.embryo.cohortId, [input.embryo.id]),
     registered.size > 0
       ? admin
           .from("embryo_scores")
@@ -84,7 +85,7 @@ async function loadDetail(input: {
   ]);
   // A failed read is the error state, never "Still checking the files" (R11).
   if (qcResult.error) throw new EmbryoReadError("embryo_qc", qcResult.error.message);
-  const qc = qcResult.data;
+  const qc = qcResult.data?.[0];
   const scoreRows = rowsOrThrow("embryo_scores", scoreResult);
   if (!qc) return null;
   return projectDetail({
