@@ -255,16 +255,19 @@ select throws_ok($$select private.finish_future_person_deletion_v1((select id fr
 create temporary table original_upload_cleanup as select id from public.embryo_ingest_unwinds
  where purpose='published' and session_id=(select id from live);
 create function pg_temp.original_copy_ack_before_delete() returns jsonb language plpgsql as $$
-declare d private.embryo_ingest_object_disposals;claim jsonb;
+declare d private.embryo_ingest_object_disposals;claim jsonb;evidence jsonb;
 begin
  claim:=public.claim_embryo_ingest_object_disposals_v1((select id from original_upload_cleanup),pg_temp.h('original-copy-disposal'));
  select * into d from private.embryo_ingest_object_disposals
   where unwind_id=(select id from original_upload_cleanup) and state='claimed' and backend='supabase' order by ordinal limit 1;
  if not found then raise exception 'the genuine original fixture must have its landed Supabase disposal';end if;
- return public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
-  private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-delete-evidence-v1',
+ evidence:=jsonb_build_object('version','embryo-ingest-object-delete-evidence-v1',
    'provider','supabase','disposition','object-deleted','bucket',d.bucket_id,'objectKey',d.object_name,
-   'storageObjectId',d.storage_object_id,'storageVersion',d.storage_version));
+   'objectId',d.storage_object_id,'storageVersion',d.storage_version,'byteCount',d.byte_count);
+ if private.embryo_ingest_disposal_evidence_ok_v1(d,evidence) is distinct from true then
+  raise exception 'the negative fixture must carry the exact registered provider evidence';end if;
+ return public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
+  private.embryo_ingest_disposal_receipt_v1(d),evidence);
 end $$;
 select throws_ok($$select pg_temp.original_copy_ack_before_delete()$$,'42501','embryo_unwind_unavailable',
  'an exact Supabase receipt cannot acknowledge the original copy while its real metadata still exists');
@@ -279,7 +282,7 @@ do $$ declare claim jsonb;d private.embryo_ingest_object_disposals;begin
    perform public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
     private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-delete-evidence-v1',
      'provider','supabase','disposition','object-deleted','bucket',d.bucket_id,'objectKey',d.object_name,
-     'storageObjectId',d.storage_object_id,'storageVersion',d.storage_version));
+     'objectId',d.storage_object_id,'storageVersion',d.storage_version,'byteCount',d.byte_count));
   elsif d.backend='r2' then
    perform public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
     private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-tombstone-evidence-v1','provider','r2',
