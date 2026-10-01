@@ -8836,7 +8836,7 @@
       "approved-future-person-release-token": "7-days",
       "future-person-claim-objection": {
         "retentionId": "future-person.owner-notice-30d",
-        "clamp": "credential-and-every-derived-rights-session-expire-exactly-at-the-server-owned-notice-deadline-and-are-invalidated-earlier-on-release-refusal-withdrawal-terminalization-or-objection-decision"
+        "clamp": "credential-expires-exactly-at-server-owned-notice-deadline-derived-rights-sessions-have-60-minute-absolute-and-15-minute-idle-ceilings-both-clamped-at-notice-deadline-and-all-are-invalidated-earlier-on-release-refusal-withdrawal-terminalization-or-objection-decision"
       },
       "non-authorizing-candidate-cookie": "10-minutes",
       "active-rights-session": "60-minutes-and-never-beyond-the-source-token-or-claim-validity",

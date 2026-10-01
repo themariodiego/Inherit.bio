@@ -1,3 +1,5 @@
+import { loadOwnerObjection } from "@/lib/future-person/owner-objection";
+import { OwnerObjection } from "@/components/future-person/owner-objection";
 import {loadAccountBinding} from "@/lib/future-person/account-binding";
 import {ClaimantAccountBinding} from "@/components/future-person/account-binding";
 import {loadClaimantRights} from "@/lib/future-person/rights";
@@ -28,6 +30,9 @@ export default async function RightsSessionPage() {
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
   // cookie can never reach the adult or embryo screen, and so on.
+  const ownerNotice = await loadOwnerObjection(request);
+  if (ownerNotice) return <OwnerObjection summary={ownerNotice.view.safeNoticeSummary} deadline={ownerNotice.view.noticeDeadline}
+    explanation={ownerNotice.view.objectionArtifactBody} csrf={ownerNotice.csrf} nonce={ownerNotice.nonce} />;
   const claimant=await loadClaimantRights(request);
   if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/><div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding csrf={claimant.csrf} nonce={await loadAccountBinding(request)}/></div></>;
   const adult = await loadAdultSubjectReview(request);
