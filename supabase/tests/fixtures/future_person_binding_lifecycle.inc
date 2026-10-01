@@ -3,8 +3,8 @@ select ok(has_function_privilege('authenticated','public.decide_claim_review_att
  and not has_function_privilege('authenticated','private.decide_claim_review_v1(uuid,bigint,text,text,bytea)','execute')
  and not has_function_privilege('service_role','public.decide_claim_review_attested_v1(uuid,bigint,text,text,bytea,bytea,jsonb,date,boolean,uuid,bytea,jsonb)','execute'),
  'only the human own-JWT attested decision door can authorize release through the API');
-\ir fixtures/future_person_custody_source.inc
-\ir fixtures/future_person_custody_approved.inc
+\ir future_person_custody_source.inc
+\ir future_person_custody_approved.inc
 -- Restore the documentary predecessor. The real attested decision must create
 -- every durable claimant, custody and delivery row itself, atomically.
 delete from public.future_person_claimant_principals where id=(select id from public.future_person_claimant_principals where claim_id=(select review from custody_ids) and status='current');
@@ -80,7 +80,7 @@ create temporary table delivered as select * from pg_temp.claim_release();
 select ok((select token~'^[A-Za-z0-9_-]{43}$' from delivered),'the worker makes a bounded-runtime release token');
 select ok(private.authorize_mail_submission_v1((select outbox_id from delivered),(select attempt from delivered)),
  'pre-submit rechecks the exact approved claimant and current source binding');
-\ir fixtures/mail_attempt_retry.inc
+\ir mail_attempt_retry.inc
 select * from pg_temp.assert_mail_retry((select outbox_id from delivered),(select key from delivered),(select token from delivered));
 select is(pg_temp.probe('update public.future_person_claimant_principals set release_revision=release_revision+1
  where claim_id=(select review from custody_ids)',
