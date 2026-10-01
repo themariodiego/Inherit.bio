@@ -27,10 +27,10 @@ language plpgsql security definer set search_path='' set lock_timeout='250ms' as
 declare pending record; m public.mail_outbox; n public.future_person_claim_notices;
   tc public.token_candidates; contact public.encrypted_contact_references; raw_token text; token_digest text;
 begin
-  select k.subject_id,k.claim_id,n.outbox_id into pending from public.future_person_claim_review_packages k
-    join public.future_person_claim_notices n on n.claim_id=k.claim_id and n.owner_account_id is not null
-    join public.mail_outbox o on o.id=n.outbox_id
-    where k.state='open' and k.review_id is not null and n.delivered_at is null
+  select k.subject_id,k.claim_id,stored_notice.outbox_id into pending from public.future_person_claim_review_packages k
+    join public.future_person_claim_notices stored_notice on stored_notice.claim_id=k.claim_id and stored_notice.owner_account_id is not null
+    join public.mail_outbox o on o.id=stored_notice.outbox_id
+    where k.state='open' and k.review_id is not null and stored_notice.delivered_at is null
       and o.state in('queued','claimed') and o.not_before<=clock_timestamp()
       and (o.state='queued' or o.claimed_at<clock_timestamp()-interval '10 minutes')
     order by o.created_at,o.id limit 1;
@@ -40,7 +40,7 @@ begin
   perform 1 from public.subjects where id=pending.subject_id for update;
   perform 1 from public.retention_rows where target_kind='claim' and target_id=pending.claim_id order by id for update;
   perform private.lock_invitation_transitions_v1();
-  select * into n from public.future_person_claim_notices where outbox_id=pending.outbox_id for update;
+  select stored_notice.* into n from public.future_person_claim_notices stored_notice where stored_notice.outbox_id=pending.outbox_id for update;
   select * into m from public.mail_outbox where id=n.outbox_id for update;
   if n.id is null or m.id is null or n.delivered_at is not null or m.state not in('queued','claimed')
     or m.not_before>clock_timestamp() or (m.state='claimed' and m.claimed_at>=clock_timestamp()-interval '10 minutes') then return;end if;

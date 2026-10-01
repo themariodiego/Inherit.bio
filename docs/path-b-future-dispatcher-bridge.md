@@ -15,11 +15,16 @@ owner/API ACLs refuse. No historical migration or issued credential is rewritten
 | `private.authorize_mail_submission_before_keyless_notice_v1(uuid,smallint)` | `0ecf82fc522f48e52d3f86298a7a71cb` | `62c932b7c2b4863a23280a793fe7c264` |
 | `public.activate_rights_session_v1(text,text,text)`, or its actual023 denied delegate | `4777886cd6cd45b883e5e8c5ead6c8ee` | `7c176e100123ecbdf9aedd8ee41b0539` |
 
-The022 canonical claim/submission wrappers remain byte-identical with MD5
-`e486e7e418358d3e5e7429c143ff3b71` and
+When022 is installed, its corrected canonical claim/submission wrappers
+remain byte-identical with MD5
+`abb70e7d8ec45731aebcbaa870ab9c13` and
 `448f258385a4c6f4392a1ca1781f0f2a`. When023 is installed, its canonical activation
 wrapper remains byte-identical with MD5 `5f92f26f9e5f94f7593f833d17db7d6c`.
-All three aliases remain API-denied, including `service_role`. Only the existing
+Without022, only the exact233 canonical mail bodies are accepted; both aliases
+must be absent. A partial alias pair or unknown body/ABI/configuration/ACL refuses.
+With022, both full wrappers remain unchanged and both mail aliases remain
+API-denied, including `service_role`. The actual023 activation alias remains
+API-denied. Only the existing
 canonical service doors are used. The current Future provider attempt-key
 output is retained rather than restoring the older Path B return expression.
 
@@ -42,6 +47,8 @@ Embryo withdrawal, claimant release and keyless owner-notice/objection paths.
 New genuine issued-notice probes cover candidate expiry, token/subject revision,
 revocation, consumed replay, service-only execution, exact original deadline,
 and rollback identity of the complete source/mail/contact and nonce/session
-tuples. A separate rollback rehearsal without023 can prove the explicitly
-supported direct-canonical predecessor; the full combined source must prove
-the actual023 denied-alias path. Neither check has been executed by this agent.
+tuples. A separate chronological account rehearsal without022/023 must prove the
+explicitly supported direct-canonical mail/activation predecessors; the full
+combined source must prove the actual022/023 denied-alias paths. The lifecycle
+census names exactly the real canonical or023 delegate and independently proves
+its exact restored body and unchanged service-only entry point. Neither check has been executed by this agent.
