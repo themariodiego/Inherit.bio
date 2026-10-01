@@ -124,13 +124,42 @@ select throws_ok($$select pg_temp.historical_call((select logical_at+interval '1
   '23505','operation nonce already used','one-use operation consumption is unchanged at the logical seam');
 -- The genuine public ABI still has no caller time and captures its own actual
 -- instant. A different sibling uses the same shared algorithm at real time.
+create temporary table real_request_clock_before as select clock_timestamp() captured_at;
 create temporary table real_proposal as select public.record_embryo_disposition_v1(
   '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
   (select id from public.embryos where cohort_id=(select cohort_id from live) and sample_ordinal=2),
   'propose','transferred',null,'historical-real-wrapper-propose-0001') body;
-select ok((select p.created_at>=s.recorded_at and p.expires_at=p.created_at+interval '7 days'
-  from public.embryo_disposition_proposals p cross join historical_scope s where p.id=(select (body->>'proposalId')::uuid from real_proposal)),
-  'the original public path creates its proposal at actual server time');
+create temporary table real_request_clock_after as select clock_timestamp() captured_at;
+-- The unchanged public producer captures its expiry request clock before its
+-- separately captured insertion clock. Pin both to the genuine call bounds,
+-- and pin the receipt/phase/manifest to that exact immutable stored deadline.
+select ok((select count(*)=1 and bool_and(
+  clock_before.captured_at<=clock_after.captured_at
+  and p.created_at>=clock_before.captured_at and p.created_at<=clock_after.captured_at
+  and p.expires_at>=clock_before.captured_at+interval '7 days'
+  and p.expires_at<=clock_after.captured_at+interval '7 days'
+  and p.expires_at>p.created_at and p.expires_at<=p.created_at+interval '7 days'
+  and receipt.body->>'status'='awaiting_other_parent'
+  and receipt.body->>'expiresAt'=to_char(p.expires_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+  and phase.retention_id='embryo.disposition-proposal-7d'
+  and phase.phase_id='embryo-disposition-proposal-expiry' and phase.phase_kind='purge'
+  and phase.phase_revision=1 and phase.phase_deadline=p.expires_at and phase.status='pending'
+  and phase.target_kind='subject' and phase.target_id=embryo.subject_id
+  and phase.immutable_envelope=jsonb_build_object('proposalId',p.id)
+  and retention.retention_id=phase.retention_id and retention.fixed_deadline=p.expires_at
+  and retention.target_kind=phase.target_kind and retention.target_id=phase.target_id and retention.state='scheduled'
+  and manifest.manifest_class='proposal-working' and manifest.manifest_revision=1 and manifest.state='frozen'
+  and manifest.source_binding_fingerprint=encode(extensions.digest(convert_to(
+    concat_ws(':','embryo-disposition-proposal-v1',p.id::text),'UTF8'),'sha256'),'hex'))
+  from public.embryo_disposition_proposals p
+  join public.embryos embryo on embryo.id=p.embryo_id
+  join public.retention_due_phases phase on phase.immutable_envelope->>'proposalId'=p.id::text
+  join public.retention_rows retention on retention.id=phase.retention_row_id
+  join public.purge_manifests manifest on manifest.retention_row_id=phase.retention_row_id
+    and manifest.phase_id=phase.phase_id and manifest.phase_revision=phase.phase_revision
+  cross join real_request_clock_before clock_before cross join real_request_clock_after clock_after
+  cross join real_proposal receipt where p.id=(receipt.body->>'proposalId')::uuid),
+  'the original public path preserves its actual request clock and exact receipt/phase/manifest deadline');
 create temporary table real_transfer as select public.record_embryo_disposition_v1(
   '7a000000-0000-0000-0000-000000000002','7a000000-0000-4000-8000-0000000000b1',
   (select id from public.embryos where cohort_id=(select cohort_id from live) and sample_ordinal=2),

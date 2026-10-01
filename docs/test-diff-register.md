@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-01 — Pin the unchanged public proposal clock after actual historical-producer rehearsal
+
+The exact frozen 4943369f source applied successfully as one owner DO on the
+qualified 360 schema. The new historical pgTAP fixture completed all 91
+assertions with only assertion 87 failing: it incorrectly equated the public
+proposal expiry's earlier request clock with the separately captured insertion
+clock. The product deliberately preserves those two original real-clock
+capture points. The first failed 91-test output and complete catalog/215-row
+ledger restoration receipt remain in historical-producer-035-owned-rehearsal.
+
+This test-only correction records real server times immediately before and
+after the public request. Assertion 87 now pins creation and the unchanged
+seven-day expiry inside those genuine bounds, preserves the strict positive
+expiry and upper creation-time bound, and requires the exact API expiry
+precision, current proposal receipt, registered phase, immutable envelope,
+retention deadline and source-bound manifest. Historical finite-clock creation
+and expiry still require exact equality. The other 90 assertions, every old
+fixture, producer body/ABI/ACL, period, precision and timeout are unchanged.
+All 20 focused source/token tests pass again. Frozen 494 also passed actual
+Next type generation and a nonincremental type check. Corrected actual rollback
+execution is pending; no native, provider, human or elapsed-time credit follows
+from these executor assertions.
+
 ## 2026-10-01 — Preserve live clocks while adding an explicitly synthetic historical producer fixture
 
 The reviewed plan requires genuine producer-generated historical disposition
