@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Preserve reviewer coverage while integrating native accessibility groups
+
+The genuine assigned Future Person reviewer page remains in the complete registered-page census. Its existing exact checked-elsewhere entry now lives in the shared accessibility helper after the six unchanged sweeps moved into standalone native files. Both the strict Embryo case partition validation and permanent whole-file/sweep placement guards execute against the same six actual native discoveries. No case, assertion, limit or route-state coverage is removed.
+
 ## 2026-10-01 — Compare genuine QC receipts before their consumed attempt rows disappear
 
 The full fresh database run showed that successful split publication removes
@@ -229,6 +233,28 @@ The closed standard project census deliberately grows from five to six; native P
 ## Browser card values keep server origins protected · 30 September 2026
 
 The actual upload Client Component imported its receipt reader, which imported server-only application origin generation through the Record Key card module. Pure key/calendar validation now lives in a separate shared module; the server card producer retains its existing API and server-only origin boundary. Every former calendar, key, receipt, shape and origin assertion remains. A new installed-bundler regression follows the actual Client Component graph and refuses any server-only import; it separately proves the server producer remains forbidden in a browser bundle. No client origin configuration, authority, keys or environment access is introduced.
+
+**30 September 2026 (UTC): prevent accessibility scheduling from regressing.** The mandatory hosted inventory now discovers the actual six native assignments and refuses missing/duplicated cases, split serial project/file groups, missing/duplicated or subdivided accessibility sweeps, fewer than three sweep jobs, or more than two complete sweeps in one job. The same sweep-placement guard runs after strict exact-source final coverage. New positive and adversarial scheduling tests cover the real regression where all original checks still run once but their six long measurements land on one job. Every existing browser assertion, limit, case and strict coverage check is retained. No raw browser configuration or private diagnostic is added to artifacts.
+
+## Complete accessibility sweeps in independent native file groups · 1 October 2026
+
+The six long accessibility sweeps shared one file, so native whole-file sharding
+put all six on the same job. They now live in semantic standalone specs. Every
+original test title, test body, assertion, timeout and route/theme/viewport loop
+is preserved byte for byte; helper bodies retain their exact original tokens.
+The original fixed skip-link account and its setup remain in `a11y.spec.ts`.
+Each complete G1.13b measurement initializes its own confirmed UUID account and
+actual chosen-report upload before its full sweep. A regression refuses shared
+account or authentication-closure state between measurement fixtures.
+
+The original CI coverage guard, single worker, serial file groups, full suite,
+transport preflight, zero retries and same-attempt receipts are unchanged.
+Actual native full plus six discovery calls preserve all 565 semantic cases and
+all unmoved case IDs, cover 94 ordinary files exactly once, and place the long
+sweeps across five jobs: authenticated pages on 1, target size on 2, text
+alternatives on 3, reflow and signed-in public pages on 4, keyboard traversal on
+5. Only the six declared file moves change native case IDs. This is discovery
+proof; full hosted execution and a measured timing gain remain pending.
 
 ## Browser setup timing input survives native cleanup · 30 September 2026
 
