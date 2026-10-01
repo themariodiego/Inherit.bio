@@ -1,20 +1,49 @@
 # Test diff register
 
-## 2026-10-01 — Recovery hash minimization
+## 2026-10-01 — Execute archive assertions under their real role and pin the current-source refusal
 
-Re-reading `retention.md`’s exact claimant-reverification clause confirmed that rotation replaces only the optional Recovery Key hash. The restoration transaction therefore erases superseded hashes atomically, and the native key issuer preserves its original blanket refusal whenever any key row already exists for that claimant. A new release revision still identifies the one genuine replacement. SQL assertions now require exact zero old hashes and zero old-key lookup candidate, plus the same replacement once-only refusal; this is a stronger omission boundary, not additional durable key history. Source, custody, identity HMAC and every old retention deadline remain unchanged. SQL/native execution is still pending.
+The complete affected boundary run on `60e91cbc` passed actual binding,
+relocation, source reading, account audit and both documentary recovery paths.
+It exposed two test-only temporary-table reads that lacked SELECT under the
+real service role. Only the local `custody_ids` and `recorded_finding` anchors
+now grant that role SELECT so the original exact refusal and historical-byte
+assertions reach the actual producer. No product ACL or authority changes.
+
+The stale bound-source probe now pins the current authority guard's exact
+opaque `42501: not_found`, replacing a generic `55000` with no message. A new
+independent before/after snapshot also requires all durable exports, jobs and
+consumed envelopes to remain byte-identical. Every source, foreign-attempt,
+session, signing and complete-graph assertion remains. The prior failures are
+retained; corrected complete suites run before a full fresh run.
 
 
-## 2026-10-01 — Existing-principal documentary recovery transaction
 
-The registered Recovery Key and prior-claimant no-key branches now have an actual subject-first transaction. The own-JWT named reviewer must freshly read both complete clean documents, attest the verified adult name/DOB, and match the durable versioned identity HMAC. Keyless restoration also requires the current encrypted ten-minute lookup proof in the native POST, followed by an atomic fresh SQL comparison and the distinct consumed decision nonce. Wrong branch, identity, assignment, digest, session, lifecycle, key, comparison receipt or started purge refuses with zero effect.
+## 2026-10-01 — Reuse the claimant account's actual provisioned self identity
 
-The two keyless positive request-shape assertions now include the newly registered `verificationProof`; missing, malformed and expired proofs remain explicit refusals. Reviewer choice assertions now list only the actual existing-principal recovery action for the two supported recovery cases. Unclaimed-profile approval stays absent until the owner-notice/objection/fresh-release transaction is implemented. All ambiguous, unknown-field, cross-mode and earlier Card assertions remain intact. These changes author real product behavior; they do not record browser execution or flip G5.4/G4.2.
+The independent fresh database run reached 90 original binding checks, then
+correctly rejected the shared fixture's second ordinary self at
+`subjects_one_self_per_account_idx`. Inserting the claimant's actual Auth user
+already runs the real profile/subject/principal/binding producer. The fixture
+now selects that exact existing active self, active account principal and
+matching current self binding, and independently requires both the unique
+current self count and the complete tuple count to equal one. It creates no
+extra identity or authority row and changes no uniqueness guard.
 
-Recovery preserves the exact subject, claimant, custody, canonical source/parts/provider locations, durable identity HMAC and every prior fixed retention deadline. It revokes old keys and release/session/download authority, advances only the working release revision, and queues one new claimant-contact release with its registered seven-day token and separate 24-month working-material clock. A replacement Recovery Key may be created once through the existing native rights door for that genuine release revision; superseded hashes are erased rather than retained as historical credentials, and no raw key is persisted.
+Every original documentary approval, activation, binding, relocation, archive
+and refusal assertion remains. Ordinary-self refusals and the ordinary audit
+metadata positive now target the same genuinely provisioned subject through a
+shared read-only temporary anchor, rather than an invented UUID. The failed
+fresh run is retained. This is an authored fixture correction until the parent
+independently executes the affected database suites; it carries no browser,
+provider, READY or acceptance credit.
 
-`future_person_documentary_recovery.sql` adds real-role/real-door SQL probes for incomplete or wrong-assignment receipts, changed identity/key, erased durable identity, replay, both actual recovery effects, replacement-key one-show behavior, and byte-identical durable provenance/old deadlines. The synthetic scan/provider/receipt calls target database authority and are explicitly not real browser delivery, provider delivery or human evidence. New SQL and native recovery journeys remain unexecuted pending the root's immutable rehearsal. Production stays closed.
+## 2026-10-01 — Preserve actor-only legal audit without inventing ordinary subject targets
 
+The existing legal ledger records who acted, but has no ordinary subject target selector. The approved owner-A policy cannot copy those account events under a guessed subject. Migration `20261001017000` adds a distinct service-only reader under the real consumed account request, complete current graph and active writing attempt. It emits each actual eligible account actor or genuinely assigned bound custody/binding event once globally, while ordinary subject members carry the exact registered unrecorded/count-free historical note. Actual assigned Future selectors keep their original strict subject-event contracts and are refused by the ordinary fallback. No existing audit event, archive member-plan row, source guard or assertion is removed.
+
+Strict new tests cover complete nonempty multi-page actual actor content once globally, every ordinary partition remaining unassigned, foreign/service event exclusion at the actual database selector, exact six-field privacy, a newly appended actual own event invalidating the original job receipt, and a genuine assigned selector refusing ordinary metadata. Page omissions, duplicates, changed counts/cursors, unsafe sequences, revoked authority and pseudonym/hash leakage also refuse. SQL fixtures use the original real approval, binding and relocation producers and flush deferred creation constraints; they remain authored until independently executed. The TypeScript RPC seam is synthetic authority evidence, never provider/browser proof.
+
+All remaining whole-account/non-self/cohort/joint members, POST/status worker integration and provider delivery stay required. G5.4/G5.6 remain NO; public/READY gates stay closed.
 ## 2026-10-01 — Keep the subject-first restricted disposition refusal opaque and prove zero effects
 
 The complete fresh run on `2bfc9db9` reached all migrations and found the
@@ -42,6 +71,31 @@ distinct registered stages. The original strict intake constraint and every
 document/reviewer/refusal assertion stay unchanged. The failed full run remains
 recorded; corrected complete boundary suites are executed before a fresh rerun.
 
+## 2026-10-01 — Audit populated Embryo pages through their genuine native publication
+
+The default authenticated accessibility sweep uses an own-genome account and
+therefore reaches empty Embryo pages. A supplemental census now requires all
+four data-bearing registered Embryo routes to be read in the original all-pass
+journey before parent disposition changes its grants. Every current source/QC
+receipt is rechecked before and after each route; actual page200, exact URL,
+cohort/ordinal identity, current permissions and measured verdicts are required.
+Each real populated page and both detail records receive the unchanged complete
+axe audit in both themes, all pinned viewports and reduced motion, plus the
+existing fixed context network/tracker/payment audit. The upload read observes
+the honest post-publication new-upload form, without creating another draft.
+
+The mixed-QC case now also imports the permanent audited test. An AST source
+preflight before native execution and independent inventory/aggregation refuses
+plain Playwright imports, commented audit lookalikes, missing/crossed journey
+sources and a disconnected populated audit. No original expectation, title,
+case, timeout, retry, project or native assignment changes. The nine unproved
+route-state pairs and both existing upload waivers remain unchanged. Six
+coverage pairs still lack a genuine eligible result contract; failed QC and an
+empty calibrated-model registry are not substitute scientific coverage. The
+new audits are authored, and hosted execution remains required.
+
+
+
 ## 2026-10-01 — Close the account member context's exact JSON path literal
 
 The next complete fresh reset onfc2975bd passed013000 and caught a missing
@@ -50,6 +104,21 @@ member reader. The path literal now parses as its originally intended exact
 session field. No payload shape, reader, authority, source or assertion changes.
 The failed reset is retained and pgTAP was not reached. The complete fresh run
 continues on the corrected frozen source before any draft push.
+
+## 2026-10-01 — Recovery hash minimization
+
+Re-reading `retention.md`’s exact claimant-reverification clause confirmed that rotation replaces only the optional Recovery Key hash. The restoration transaction therefore erases superseded hashes atomically, and the native key issuer preserves its original blanket refusal whenever any key row already exists for that claimant. A new release revision still identifies the one genuine replacement. SQL assertions now require exact zero old hashes and zero old-key lookup candidate, plus the same replacement once-only refusal; this is a stronger omission boundary, not additional durable key history. Source, custody, identity HMAC and every old retention deadline remain unchanged. SQL/native execution is still pending.
+
+
+## 2026-10-01 — Existing-principal documentary recovery transaction
+
+The registered Recovery Key and prior-claimant no-key branches now have an actual subject-first transaction. The own-JWT named reviewer must freshly read both complete clean documents, attest the verified adult name/DOB, and match the durable versioned identity HMAC. Keyless restoration also requires the current encrypted ten-minute lookup proof in the native POST, followed by an atomic fresh SQL comparison and the distinct consumed decision nonce. Wrong branch, identity, assignment, digest, session, lifecycle, key, comparison receipt or started purge refuses with zero effect.
+
+The two keyless positive request-shape assertions now include the newly registered `verificationProof`; missing, malformed and expired proofs remain explicit refusals. Reviewer choice assertions now list only the actual existing-principal recovery action for the two supported recovery cases. Unclaimed-profile approval stays absent until the owner-notice/objection/fresh-release transaction is implemented. All ambiguous, unknown-field, cross-mode and earlier Card assertions remain intact. These changes author real product behavior; they do not record browser execution or flip G5.4/G4.2.
+
+Recovery preserves the exact subject, claimant, custody, canonical source/parts/provider locations, durable identity HMAC and every prior fixed retention deadline. It revokes old keys and release/session/download authority, advances only the working release revision, and queues one new claimant-contact release with its registered seven-day token and separate 24-month working-material clock. A replacement Recovery Key may be created once through the existing native rights door for that genuine release revision; superseded hashes are erased rather than retained as historical credentials, and no raw key is persisted.
+
+`future_person_documentary_recovery.sql` adds real-role/real-door SQL probes for incomplete or wrong-assignment receipts, changed identity/key, erased durable identity, replay, both actual recovery effects, replacement-key one-show behavior, and byte-identical durable provenance/old deadlines. The synthetic scan/provider/receipt calls target database authority and are explicitly not real browser delivery, provider delivery or human evidence. New SQL and native recovery journeys remain unexecuted pending the root's immutable rehearsal. Production stays closed.
 
 ## 2026-10-01 — Parse the bound archive target as JSON before its field projection
 

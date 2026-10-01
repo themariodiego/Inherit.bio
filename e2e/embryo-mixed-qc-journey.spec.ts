@@ -5,7 +5,7 @@ import { mixedQcVcf } from "../scripts/ci-browser/embryo-mixed-qc-fixture";
 import { assertMixedQcPublication } from "../scripts/ci-browser/embryo-mixed-qc-proof";
 import { QC_TABLE_ROWS } from "@/components/embryo/compare/qc-table";
 import { QC_FAILED_CHIP, DROPOUT_NOT_MEASURED_NO_RANGE, DROPOUT_NOT_MEASURED } from "@/copy/embryos/qc";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
 import bindings from "../scripts/comprehension/bindings.json";
 import { adminClient, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn } from "./helpers";

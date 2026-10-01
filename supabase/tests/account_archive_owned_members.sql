@@ -8,6 +8,7 @@ select set_config('inherit.synthetic_signing_ciphertext',repeat('ab',64),true);
 \ir fixtures/future_person_binding_lifecycle.inc
 \ir fixtures/future_person_completed_bound_relocation.inc
 \ir fixtures/future_person_recorded_scientific_members.inc
+grant select on recorded_finding to service_role;
 create temporary table owned_archive(origin jsonb,capture jsonb,created jsonb,attempt uuid,context jsonb,source jsonb);
 insert into owned_archive(origin,attempt) values(jsonb_build_object('kind','account',
  'accountId','7b100000-0000-4000-8000-000000000001','sessionId','7b100000-0000-4000-8000-000000000002'),gen_random_uuid());
@@ -67,7 +68,7 @@ select ok((select jsonb_array_length(source#>'{source,parts}')=2 and source#>>'{
 select is((select public.export_archive_account_bound_source_v1('check',(created->>'exportId')::uuid,attempt,capture->>'authorityReceipt',
  (select subject from custody_ids),source->'source') from owned_archive),(select source from owned_archive),'full exact source proof rechecks before any returned byte');
 select throws_ok($$select public.export_archive_account_members_v1('bound-context',(select (created->>'exportId')::uuid from owned_archive),
- (select attempt from owned_archive),(select capture->>'authorityReceipt' from owned_archive),'7b100000-0000-4000-8000-000000000003')$$,
+ (select attempt from owned_archive),(select capture->>'authorityReceipt' from owned_archive),(select id from claimant_account_self))$$,
  '42501','not_found','an ordinary partition cannot choose a bound scientific reader');
 select throws_ok($$select public.export_archive_account_bound_source_v1('manifest',(select (created->>'exportId')::uuid from owned_archive),
  gen_random_uuid(),(select capture->>'authorityReceipt' from owned_archive),(select subject from custody_ids))$$,

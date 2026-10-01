@@ -4,6 +4,7 @@ import { expect, test } from "./audited-test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
 import bindings from "../scripts/comprehension/bindings.json";
 import { participantCSeed } from "../scripts/comprehension/participant-c-seed";
+import { auditPublishedEmbryoSurfaces } from "./helpers/embryo-published-audits";
 import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
 import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
 import { PRIMARY } from "@/copy/overview";
@@ -91,6 +92,11 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
         await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
         await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
       }
+      const auditedSurfaces = await auditPublishedEmbryoSurfaces({ page, ownerId: owner, cohortId,
+        read: readPublication });
+      await testInfo.attach("published-embryo-surface-audits", { contentType: "application/json",
+        body: JSON.stringify({ source: "actual-native-signed-parent-publication", cohortId,
+          surfaces: auditedSurfaces, scientificCoverageStates: "held: no eligible result producer" }) });
       await proveNativeDispositionAndProfile({ owner: page, other, browser, cohortId,
         embryoId: embryos[0].id, siblingId: embryos[1].id });
     } finally { await closeCoParent(); }

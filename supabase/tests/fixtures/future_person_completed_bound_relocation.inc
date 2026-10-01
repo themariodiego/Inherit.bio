@@ -58,7 +58,7 @@ select ok((select value->>'purpose'='approved-future-person-export-v1' and value
  'the actual own authenticated role resolves only its fully moved published source and fixed non-analytical access purpose');
 select ok(public.check_future_person_bound_source_v1((select subject from custody_ids),(select value from reader_manifest)),
  'the actual authenticated caller can recheck the exact complete source receipt without private-table grants');
-select is(public.future_person_bound_source_manifest_v1('7b100000-0000-4000-8000-000000000003'),null::jsonb,
+select is(public.future_person_bound_source_manifest_v1((select id from claimant_account_self)),null::jsonb,
  'the same accounts unrelated ordinary self subject cannot choose a claimed canonical source');
 select is(public.future_person_bound_source_manifest_v1(gen_random_uuid()),null::jsonb,
  'an unknown or foreign subject names no private source or provider key');

@@ -73,13 +73,24 @@ select throws_ok($$select public.export_archive_bound_source_v1('manifest',(sele
  (select attempt from bound_archive),(select capture->>'authorityReceipt' from bound_archive))$$,'42501',null,
  'a revoked real account session refuses background source access');
 reset role;rollback to revoked_session;
+create temporary table stale_source_jobs_before as select jsonb_build_object(
+ 'exports',(select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text),'[]'::jsonb) from public.generated_exports r),
+ 'jobs',(select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text),'[]'::jsonb) from private.export_archive_jobs r),
+ 'nonceUses',(select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text),'[]'::jsonb) from private.export_archive_nonce_uses r)
+) snapshot;
 savepoint stale_source;
 update public.subjects set lifecycle_revision=lifecycle_revision+1 where id=(select subject from custody_ids);
 set local role service_role;
 select throws_ok($$select public.export_archive_bound_source_v1('manifest',(select (created->>'exportId')::uuid from bound_archive),
- (select attempt from bound_archive),(select capture->>'authorityReceipt' from bound_archive))$$,'55000',null,
+ (select attempt from bound_archive),(select capture->>'authorityReceipt' from bound_archive))$$,'42501','not_found',
  'a changed bound source/current revision refuses the original durable receipt');
-reset role;rollback to stale_source;
+reset role;
+select is(jsonb_build_object(
+ 'exports',(select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text),'[]'::jsonb) from public.generated_exports r),
+ 'jobs',(select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text),'[]'::jsonb) from private.export_archive_jobs r),
+ 'nonceUses',(select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text),'[]'::jsonb) from private.export_archive_nonce_uses r)
+),(select snapshot from stale_source_jobs_before),'stale source refusal leaves every durable export, job and consumed envelope byte-identical');
+rollback to stale_source;
 select ok(not has_function_privilege('service_role','private.future_person_bound_source_for_actor_v1(uuid,timestamptz,jsonb)','execute')
  and not has_function_privilege('authenticated','private.future_person_archive_account_actor_v1(uuid,uuid)','execute'),
  'a caller cannot supply actor IDs directly to the private source core');
