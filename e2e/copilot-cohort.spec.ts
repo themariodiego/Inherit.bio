@@ -56,7 +56,7 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
 
   let fixture: CopilotFixture;
   let contexts: BrowserContext[] = [];
-  let pageA: Page, pageC: Page;
+  let pageA: Page, pageB: Page, pageC: Page;
   let accountA = "", accountB = "", cohortId = "", chatId = "";
   let embryoIds: string[] = [], subjectIds: string[] = [];
 
@@ -73,8 +73,8 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
     accountA = await createConfirmedUser(A.email, A.password);
     accountB = await createConfirmedUser(B.email, B.password);
     await createConfirmedUser(C.email, C.password);
-    contexts = await Promise.all([0, 1].map(() => browser.newContext({ baseURL: info.project.use.baseURL })));
-    [pageA, pageC] = await Promise.all(contexts.map(context => context.newPage()));
+    contexts = await Promise.all([0, 1, 2].map(() => browser.newContext({ baseURL: info.project.use.baseURL })));
+    [pageA, pageC, pageB] = await Promise.all(contexts.map(context => context.newPage()));
     await signIn(pageA, A.email, A.password);
     // A's own file: the own-Copilot permission is given over A's own upload consent.
     await uploadOwnFileWithChosenReports(pageA, FIXTURE_VCF, { fileType: "vcf", purposes: ["reports.polygenic"] });
@@ -85,6 +85,7 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
     ] }));
     await grantAnalysis(accountA, cohortId);
     await signIn(pageC, C.email, C.password);
+    await signIn(pageB, B.email, B.password);
   });
 
   test.afterAll(async () => {
@@ -185,13 +186,38 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
   test("when the other parent's analysis grant is withdrawn, A's next turn is cut off and the stored conversation is gone", async () => {
     const admin = adminClient();
     const principals = (await admin.from("subject_principals").select("id").eq("account_id", accountB)).data!.map(row => row.id);
-    const { data: grant } = await admin.from("purpose_grants").select("grant_id").eq("target_kind", "cohort").eq("target_id", cohortId)
+    const { data: grant, error: grantError } = await admin.from("purpose_grants").select("grant_id,grant_revision,subject_binding_revision,revoked_at,revocation_reason").eq("target_kind", "cohort").eq("target_id", cohortId)
       .eq("purpose", "embryo.analysis").in("signer_principal_id", principals).is("revoked_at", null).single();
-    // The same two writes every withdrawal path makes; the database trigger does the rest.
-    expect((await admin.from("purpose_grants").update({ revoked_at: new Date().toISOString(), revocation_reason: "withdrawn" })
-      .eq("grant_id", grant!.grant_id)).error).toBeNull();
-    expect((await admin.from("directional_grants").update({ status: "revoked", ended_at: new Date().toISOString() })
-      .eq("grant_id", grant!.grant_id)).error).toBeNull();
+    expect(grantError).toBeNull();
+    const directionBefore = await admin.from("directional_grants").select("grant_revision,status,ended_at,relationship_or_pair_revision")
+      .eq("grant_id", grant!.grant_id).single();
+    expect(directionBefore.error).toBeNull();
+    expect(directionBefore.data).toMatchObject({ grant_revision: grant!.grant_revision, status: "current", ended_at: null });
+    // Separate REST transactions must not violate the joint base/direction lifecycle.
+    const invalid = await admin.from("purpose_grants").update({ revoked_at: new Date().toISOString(), revocation_reason: "withdrawn" })
+      .eq("grant_id", grant!.grant_id);
+    expect(invalid.error).toMatchObject({ code: "23514", message: "directional grant revision or lifecycle mismatch" });
+    expect((await admin.from("purpose_grants").select("grant_id,grant_revision,subject_binding_revision,revoked_at,revocation_reason")
+      .eq("grant_id", grant!.grant_id).single()).data).toEqual(grant);
+    expect((await admin.from("directional_grants").select("grant_revision,status,ended_at,relationship_or_pair_revision")
+      .eq("grant_id", grant!.grant_id).single()).data).toEqual(directionBefore.data);
+    const revoked = await pageB.evaluate(async id => {
+      const response = await fetch(`/api/consents/${id}/revoke`, { method: "POST", credentials: "same-origin" });
+      return { status: response.status, body: await response.json() };
+    }, grant!.grant_id);
+    expect(revoked.status).toBe(200);
+    expect(Object.keys(revoked.body).sort()).toEqual(["effectiveAt", "revoked"]);
+    expect(revoked.body.revoked).toBe(true);
+    expect(Number.isFinite(Date.parse(revoked.body.effectiveAt))).toBe(true);
+    const ended = await admin.from("purpose_grants").select("grant_revision,subject_binding_revision,revoked_at,revocation_reason")
+      .eq("grant_id", grant!.grant_id).single();
+    const direction = await admin.from("directional_grants").select("grant_revision,status,ended_at,relationship_or_pair_revision")
+      .eq("grant_id", grant!.grant_id).single();
+    expect(ended.error).toBeNull(); expect(direction.error).toBeNull();
+    expect(ended.data).toEqual({ grant_revision: grant!.grant_revision, subject_binding_revision: grant!.subject_binding_revision,
+      revoked_at: ended.data!.revoked_at, revocation_reason: "withdrawn" });
+    expect(new Date(ended.data!.revoked_at!).toISOString()).toBe(revoked.body.effectiveAt);
+    expect(direction.data).toEqual({ ...directionBefore.data, status: "revoked", ended_at: ended.data!.revoked_at });
     const { count } = await admin.from("chat_messages").select("id", { count: "exact", head: true }).eq("chat_id", chatId);
     expect(count).toBe(0);
     const before = (await fixture.snapshot()).calls;

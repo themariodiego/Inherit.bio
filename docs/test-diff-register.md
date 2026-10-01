@@ -1,5 +1,32 @@
 # Test diff register
 
+## 2026-10-01: Verify actual native signing receipts and atomic cohort revocation
+
+Both real embryo journeys now require every displayed artifact to produce its
+exact native 201 response and one committed signature with the displayed
+version, digest, statement set, actual signer and exact draft/cohort binding.
+Each receipt must also match the signer's current active principal, current
+declared country and revision, and the exact paired affirmed attestation where
+required. Purpose receipts bind the real grant to its signature. Pending and
+failed UI states must clear; completion no longer assumes a generic form is
+unmounted. All next-stage and full worker assertions, timeouts, retries and
+native case inventory are unchanged.
+
+Both synthetic accounts already declare GB through the common account helper,
+but the invitation forms had signed DK. The current-signature reader correctly
+refuses that mismatch, while the signing RPC returns the existing artifact
+receipt unchanged. The forms now truthfully select the same declared GB code;
+no profile, authority, signature or grant row is fabricated to advance them.
+
+The Copilot revocation case retains the exact 23514 direct-write refusal and
+unchanged base/direction rows, then uses the registered revoke POST in the
+other parent’s authenticated native browser. It requires the closed response,
+one exact shared revocation time, original grant/binding/direction revisions
+and both terminal rows. Immediate next-turn refusal, zero model calls,
+conversation purge, inaccessible history and the blocked page remain asserted.
+Full hosted execution is required; discovery and focused unit checks do not
+claim that the new native observations have already passed.
+
 ## Embryo hosted journeys wait for committed signatures and preserve exact content refusals · 1 October 2026
 
 The first full hosted Embryo run reached real invitation and artifact submissions, but its tests navigated the invited parent or reloaded the owner immediately after a click while the native fetch was still pending. Both upload journeys now wait for the exact accepted receipt's real UI heading before navigation and for the signing form to leave the refreshed server stage after all sequential 201 artifact receipts. Every parent role, separate upload/analysis consent, original stage assertion, five-second UI bound, ingestion and measured QC assertion remains. No authority row, grant or UI state is inserted or bypassed.

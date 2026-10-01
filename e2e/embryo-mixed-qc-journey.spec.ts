@@ -5,14 +5,15 @@ import { mixedQcVcf } from "../scripts/ci-browser/embryo-mixed-qc-fixture";
 import { assertMixedQcPublication } from "../scripts/ci-browser/embryo-mixed-qc-proof";
 import { QC_TABLE_ROWS } from "@/components/embryo/compare/qc-table";
 import { QC_FAILED_CHIP, DROPOUT_NOT_MEASURED_NO_RANGE, DROPOUT_NOT_MEASURED } from "@/copy/embryos/qc";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
 import bindings from "../scripts/comprehension/bindings.json";
-import { adminClient, createConfirmedUser, drainMailUntil, signIn } from "./helpers";
+import { adminClient, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn } from "./helpers";
 import { EMBRYO_APP_PORT } from "../scripts/ci-browser-config";
 import { GATE_BUTTON } from "@/copy/embryos/gate";
 import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
+import { signStatements } from "./embryo-signing-helpers";
 
 /** No product handler, consent, worker or stored result is replaced here.
  * The local mail receiver captures synthetic delivery only. The isolated
@@ -24,16 +25,6 @@ const parentEmail = "mixed-qc-parent@e2e.local";
 const fixture = bindings.accounts.find(account => account.id === "participant-c")!.files[0];
 let mail: http.Server;
 const messages: { to: string | string[]; html?: string }[] = [];
-
-async function signStatements(page: Page, button: string) {
-  const form = page.locator('[data-slot="signing-form"]');
-  for (const box of await form.getByRole("checkbox").all()) await box.check();
-  await form.getByLabel("Full legal name").fill("Synthetic Parent");
-  await form.getByRole("button", { name: button, exact: true }).click();
-  // All real artifact receipts and the refreshed server stage must finish
-  // before another browser can inspect the newly committed signatures.
-  await expect(form).toHaveCount(0);
-}
 
 test.beforeAll(async () => {
   mail = http.createServer((request, response) => {
@@ -52,7 +43,7 @@ test("mixed measured calls preserve a failed embryo without a source after real 
   test.setTimeout(300_000);
   await withEmbryoJourney(process.env, async runtime => {
   const owner = await createConfirmedUser(ownerEmail, password);
-  await createConfirmedUser(parentEmail, password);
+  const parentAccount = await createConfirmedUser(parentEmail, password);
   const held = await adminClient().from("embryo_cohorts").select("id").eq("owner_account_id", owner);
   expect(held.error).toBeNull();
   expect(held.data, "This fresh journey must not adopt seeded or previous cohort rows").toEqual([]);
@@ -74,7 +65,7 @@ test("mixed measured calls preserve a failed embryo without a source after real 
     await page.getByLabel("Other parent’s email").fill(parentEmail);
     await page.getByRole("button", { name: SAVE_DRAFT_BUTTON }).click();
     await expect(page.locator('[data-stage="owner-sign"]')).toBeVisible();
-    await signStatements(page, SIGN_BUTTON);
+    await signStatements(page, SIGN_BUTTON, owner);
     await expect(page.locator('[data-stage="invite"]')).toBeVisible();
     await page.getByLabel("Other parent’s email").fill(parentEmail);
     await page.getByRole("button", { name: SEND_INVITATION_BUTTON }).click();
@@ -87,7 +78,7 @@ test("mixed measured calls preserve a failed embryo without a source after real 
     await other.getByRole("button", { name: "Continue", exact: true }).click();
     await expect(other.getByRole("heading", { name: "Review this invitation before you sign" })).toBeVisible();
     for (const box of await other.getByRole("checkbox").all()) await box.check();
-    await other.getByLabel("Country where you live").selectOption("DK");
+    await other.getByLabel("Country where you live").selectOption(DEFAULT_TEST_JURISDICTION);
     await other.getByLabel("Full legal name").fill("Synthetic Parent");
     await other.getByRole("button", { name: "Sign and accept invitation" }).click();
     // This heading is rendered only after the real accepted native receipt.
@@ -96,10 +87,10 @@ test("mixed measured calls preserve a failed embryo without a source after real 
     await expect(other.locator('[data-stage="co-parent-sign"]')).toBeVisible();
     await page.reload();
     await expect(page.locator('[data-stage="waiting"]')).toBeVisible();
-    await signStatements(other, SIGN_BUTTON);
+    await signStatements(other, SIGN_BUTTON, parentAccount);
     await page.reload();
     await expect(page.locator('[data-stage="acknowledge"]')).toBeVisible();
-    await signStatements(page, FINALIZE_BUTTON);
+    await signStatements(page, FINALIZE_BUTTON, owner);
     await expect(page.locator('[data-stage="file"]')).toBeVisible();
     await expect(page.locator('[data-slot="record-key-card"]')).toHaveCount(2);
     await page.getByLabel(FILE_INPUT_LABEL, { exact: true }).setInputFiles({ name: "synthetic-mixed-qc.vcf", mimeType: "text/plain", buffer: Buffer.from(mixedQcVcf(readFileSync(fixture, "utf8"))) });
@@ -125,10 +116,10 @@ test("mixed measured calls preserve a failed embryo without a source after real 
     expect(qcRows.error).toBeNull(); expect(qcRows.data).toHaveLength(2);
     expect(qcRows.data!.find(row => row.embryo_id === embryos.data![1].id)).toMatchObject({ sites_expected: 1200, sites_called: 588, call_rate: 0.49, qc_verdict: "fail", figure_basis: { producer: "embryo-split-calls-v1", call_rate: { basis: "observed" } }, parent_a_concordance: null, parent_b_concordance: null, allelic_dropout_estimate: null, contamination_estimate: null });
     expect(files.data!.every(file => file.status === "normalization_complete")).toBe(true);
-    for (const parent of [other, page]) {
+    for (const [parent, accountId] of [[other, parentAccount], [page, owner]] as const) {
       await parent.goto(`/embryos/compare?cohort=${cohortId}`);
       await expect(parent.locator('[data-slot="cohort-permission"]')).toBeVisible();
-      await signStatements(parent, ANALYSIS_PERMISSION_BUTTON);
+      await signStatements(parent, ANALYSIS_PERMISSION_BUTTON, accountId);
       await expect(parent.locator('[data-slot="cohort-permission"]')).toHaveCount(0);
     }
     await page.reload();
