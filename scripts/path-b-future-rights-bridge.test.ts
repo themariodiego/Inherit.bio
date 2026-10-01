@@ -119,7 +119,7 @@ describe("held mail restoration behind the exact keyless notice wrappers", () =>
     for (const name of ["public.claim_mail_outbox", "private.authorize_mail_submission_v1"]) {
       const pattern = new RegExp(`create (?:or replace )?function ${name.replaceAll(".", "\\.")}\\b`, "iu");
       const files = readdirSync(directory).sort().filter(file => file > "20260928150000_other_adult_held_upload.sql" && pattern.test(readFileSync(path.join(directory,file),"utf8")));
-      expect(files).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", "20261001022000_future_person_notice_provider_execution.sql"]);
+      expect(files).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", "20261001022000_future_person_notice_provider_execution.sql", ...(name === "private.authorize_mail_submission_v1" ? ["20261001028000_future_person_keyless_human_decisions.sql"] : [])]);
     }
   });
 });
@@ -143,6 +143,7 @@ it("closes the complete later Path B replacement inventory, including dynamic re
     "20261001022000_future_person_notice_provider_execution.sql|private.authorize_mail_submission_v1",
     "20261001022000_future_person_notice_provider_execution.sql|public.claim_mail_outbox",
     ...(readdirSync(directory).includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql|public.activate_rights_session_v1"] : []),
+    "20261001028000_future_person_keyless_human_decisions.sql|private.authorize_mail_submission_v1",
   ].sort());
   expect(patches).toEqual(["20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1"]);
 });
@@ -163,10 +164,24 @@ it("reviews shared replacements across all six authored Path B migration stages"
     "20261001022000_future_person_notice_provider_execution.sql|private.authorize_mail_submission_v1",
     "20261001022000_future_person_notice_provider_execution.sql|public.claim_mail_outbox",
     ...(readdirSync(directory).includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql|public.activate_rights_session_v1"] : []),
+    "20261001028000_future_person_keyless_human_decisions.sql|private.authorize_mail_submission_v1",
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",
     "20260930234000_path_b_queued_reports.sql|private.path_b_result_read_v1",
     "20260930236000_path_b_report_reading.sql|private.path_b_normalization_v1",
   ]);
+});
+
+
+it("preserves the entire corrected mail dispatcher behind the token-free information branch", () => {
+  const source = readFileSync(path.join(directory, "20261001028000_future_person_keyless_human_decisions.sql"), "utf8");
+  const wrapped = functionBody(source, "private.authorize_mail_submission_v1");
+  expect(source).toContain("alter function private.authorize_mail_submission_v1(uuid,smallint) rename to authorize_mail_submission_before_keyless_information_v1;");
+  expect(source).toContain("revoke all on function private.authorize_mail_submission_before_keyless_information_v1(uuid,smallint)\n from public,anon,authenticated,inherit_upload_only,service_role;");
+  expect(wrapped).toContain("if m.purpose is distinct from 'future-person-claim-more-information' then\n    return private.authorize_mail_submission_before_keyless_information_v1(p_outbox,p_attempt);end if;");
+  for (const guard of ["m.template_payload='{}'", "m.token_purpose is null and m.token_target_id is null",
+    "m.attempt_count=p_attempt", "m.expires_at=o.timely_deadline", "m.semantic_revision=r.review_revision",
+    "private.keyless_owner_notice_current_v1(r.id)", "sp.status='pending'", "d.decision='needs-more-information'"])
+    expect(wrapped).toContain(guard);
 });

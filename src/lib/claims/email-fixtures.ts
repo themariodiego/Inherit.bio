@@ -3,6 +3,7 @@ import type { RequiredSurface } from "./corpus";
 
 /** Every production renderer must have an independently discovered component export. */
 export const EMAIL_RENDERERS = {
+  "future-person-more-information": ["future-person-more-information.tsx", "FuturePersonMoreInformationEmail"],
   "future-person-release":["future-person-release.tsx","FuturePersonReleaseEmail"],
   "future-person-owner-notice": ["future-person-owner-notice.tsx", "FuturePersonOwnerNoticeEmail"],
   "report-ready": ["report-ready.tsx", "ReportReadyEmail"],
@@ -43,6 +44,7 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
       requiresClaimWrapping: false, requiredClaimRegions: ["email-body",
         ...(mail.id === "research-digest" && mail.payload.entries.length ? ["research-digest-entries"] : [])] } });
   };
+  add("request", { id: "future-person-more-information", payload: {} });
   add("release",{id:"future-person-release",payload:{releaseUrl:`${url}#synthetic-release`}});
   add("owner", { id: "future-person-owner-notice", payload: { objectionUrl: `${url}#synthetic-objection` } });
   for (const count of [0, 1, 162]) add(`count-${count}`, { id: "report-ready", payload: { reportCount: count, dashboardUrl: url } });

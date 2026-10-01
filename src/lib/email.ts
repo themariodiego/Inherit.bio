@@ -55,11 +55,13 @@ import {
   type EmbryoIngestAbandonedProps,
 } from "@/emails/embryo-ingest-abandoned";
 import { FuturePersonReleaseEmail,type FuturePersonReleaseProps } from "@/emails/future-person-release";
+import { FuturePersonMoreInformationEmail } from "@/emails/future-person-more-information";
 import { FuturePersonOwnerNoticeEmail, type FuturePersonOwnerNoticeProps } from "@/emails/future-person-owner-notice";
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
+  "future-person-more-information": Record<string, never>;
   "future-person-release":FuturePersonReleaseProps;
   "future-person-owner-notice": FuturePersonOwnerNoticeProps;
   "report-ready": ReportReadyProps;
@@ -90,6 +92,7 @@ export type MailTemplate = {
 const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
+  "future-person-more-information": () => createElement(FuturePersonMoreInformationEmail),
   "future-person-release":(payload)=>createElement(FuturePersonReleaseEmail,payload),
   "future-person-owner-notice": (payload) => createElement(FuturePersonOwnerNoticeEmail, payload),
   "report-ready": (payload) => createElement(ReportReadyEmail, payload),
@@ -121,6 +124,7 @@ const renderers: {
 // Subjects are fixed per template. The Record Key addendum is the one
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
+  "future-person-more-information": "We need more information about your Inherit request",
   "future-person-release":"Your Inherit request is ready",
   "future-person-owner-notice": "A claim needs your review on Inherit",
   "report-ready": "Your Inherit reports are ready",
@@ -192,7 +196,7 @@ export async function submitMail(
   const html = await renderMail(mail);
 
   const { data, error } = await resend.emails.send(
-    { from: from(), to, subject, html },
+    { from: from(), to, subject, html, ...(mail.id === "future-person-more-information" ? { replyTo: "privacy@inherit.bio" } : {}) },
     { idempotencyKey },
   );
   if (error || !data?.id) throw new Error("mail_provider_rejected");

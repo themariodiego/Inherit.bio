@@ -297,4 +297,29 @@ describe("independent mail queues", () => {
         note: undefined, request: "esignature" },
     }, row.idempotency_key);
   });
+  it("sends the fixed token-free information request only after its exact native pre-submit proof", async () => {
+    claimRow({ ...row, template_id: "future-person-more-information", template_payload: {}, delivery_token: null });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", { id: "future-person-more-information", payload: {} }, row.idempotency_key);
+    expect(mocks.rpc).toHaveBeenCalledWith("authorize_mail_submission_v1", { p_outbox_id: row.outbox_id, p_attempt_ordinal: 2 });
+    expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("synthetic@example.test");
+    expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("synthetic-provider-id");
+  });
+  it.each([{ template_payload: { reason: "Synthetic private basis" } }, { template_payload: { claimantName: "Synthetic Claimant" } },
+    { template_payload: {}, delivery_token: "a".repeat(43) }, { template_payload: {}, delivery_token: "" }])(
+    "refuses information requests with private payload or any access fragment: %j", async patch => {
+      claimRow({ ...row, template_id: "future-person-more-information", template_payload: {}, delivery_token: null, ...patch });
+      expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+      expect(mocks.submit).not.toHaveBeenCalled();
+      expect(mocks.rpc.mock.calls.some(call => call[0] === "authorize_mail_submission_v1")).toBe(false);
+    });
+  it("refuses information delivery after its exact claim revision or deadline became stale", async () => {
+    let done = false;
+    mocks.rpc.mockImplementation(async name => name === "claim_mail_outbox"
+      ? { data: done ? [] : (done = true, [{ ...row, template_id: "future-person-more-information", template_payload: {}, delivery_token: null }]), error: null }
+      : { data: false, error: null });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "complete_mail_attempt")).toHaveLength(0);
+  });
 });
