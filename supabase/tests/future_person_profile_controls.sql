@@ -56,8 +56,10 @@ create function pg_temp.controls_without_new_consent() returns jsonb language pl
 declare body jsonb;
 begin
   begin
-    update public.consent_artifacts set superseded_at=clock_timestamp()
-      where artifact_key='consent.upload-embryo' and superseded_at is null;
+    perform private.publish_consent_artifact_v1(a.artifact_key,a.version,a.body_sha256,a.version+1,
+      a.body_markdown||E'\nSynthetic next-version publication.',a.summary_markdown,current_date,
+      'Synthetic current-version authority rehearsal.')
+      from public.consent_artifacts a where a.artifact_key='consent.upload-embryo' and a.superseded_at is null;
     body:=pg_temp.controls();
     raise exception using errcode='ZY001',message='restore genuine consent predecessor';
   exception when sqlstate 'ZY001' then null;end;
