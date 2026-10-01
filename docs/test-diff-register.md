@@ -8,6 +8,33 @@ Strict new tests cover complete nonempty multi-page actual actor content once gl
 
 All remaining whole-account/non-self/cohort/joint members, POST/status worker integration and provider delivery stay required. G5.4/G5.6 remain NO; public/READY gates stay closed.
 
+## 2026-10-01 — Keep the subject-first restricted disposition refusal opaque and prove zero effects
+
+The complete fresh run on `2bfc9db9` reached all migrations and found the
+restricted disposition door now refuses at its exact embryo authority check,
+before loading cohort authority. The expected error remains exactly `42501`
+and now names its actual opaque `embryo unavailable` message. The independent
+cohort-only card and grant refusals retain `cohort unavailable`. A new strict
+before/after snapshot requires every cohort, embryo, disposition proposal,
+print right and purpose grant to remain byte-identical after the refused
+disposition. The original zero-nonce assertion and all other boundary checks
+remain. The failed full run is retained; the complete corrected suite must pass.
+
+## 2026-10-01 — Resolve moved SQL fixtures from their actual directory and use the registered intake mode
+
+The complete 151-file fresh run on `2bfc9db9` reached every migration and exposed
+three inherited include paths inside the newly factored lifecycle fixture that
+still named its former parent directory. They now resolve from the include's
+actual directory, as psql requires. Every original binding/approval/release
+assertion remains unchanged. An independent whole-tree include scan now
+requires every literal include to resolve before the next database run.
+
+The new documentary lookup fixture now names the actual existing intake mode
+`keyless-start`. Its later completed review kind remains `keyless`; these are
+distinct registered stages. The original strict intake constraint and every
+document/reviewer/refusal assertion stay unchanged. The failed full run remains
+recorded; corrected complete boundary suites are executed before a fresh rerun.
+
 ## 2026-10-01 — Close the account member context's exact JSON path literal
 
 The next complete fresh reset onfc2975bd passed013000 and caught a missing
