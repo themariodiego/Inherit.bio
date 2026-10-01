@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01: parse the original-source expected JSON envelope exactly
+
+The corrected real026 journey next reached assertion15 and exposed PostgreSQL operator ambiguity in the expected-source expression. Parenthesizing the existing JSON extraction before removing expiresAt preserves every locator, revision, hash, size and fixed expected value. The prior332-assertion diagnostic remains failed; this parser correction changes no authority or expected result and grants no execution credit.
+
 ## 2026-10-01 — Exercise the real recipient JSON contract in the whole-archive catalog fixture
 
 The actual full Linux run on `517fb4` failed the three existing archive-member
