@@ -103,6 +103,8 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
       - name: Database tests (pgTAP)
         run: pnpm exec supabase test db
+      - name: Plan the actual browser claim review read proof against current schema
+        run: pnpm test:claim-review-fixture-sql
       - name: Source file privacy under chronological and deployed migration order
         run: pnpm test:source-file-policy-order
       - name: Invitation transition locks (independent database sessions)
@@ -207,6 +209,8 @@ jobs:
         run: pnpm gate:sql-includes
       - name: Start this job's fresh local Supabase
         run: pnpm exec supabase start
+      - name: Plan the actual browser claim review read proof before seed and build
+        run: pnpm test:claim-review-fixture-sql
       - name: Export this job's local Supabase keys
         run: |
           eval "$(pnpm exec supabase status -o env)"
