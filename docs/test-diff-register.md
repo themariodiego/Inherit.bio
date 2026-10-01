@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Keep the exact held dispatcher bridge usable on both release chronologies
+
+The unpublished025 bridge now supports the account release's exact233 canonical
+mail bodies when both022 aliases are physically absent. With022, it retains
+both exact corrected canonical wrappers and patches only their API-denied
+aliases. Partial installation, any unreviewed body, argument/return ABI,
+configuration, owner or ACL refuses atomically. The corrected022 claim body pin
+is `abb70e7d8ec45731aebcbaa870ab9c13`; the ambiguous previous body is not accepted.
+All three restored held arms and their resulting full-body hashes remain exact.
+
+The actual corrected full chronology passed155 of156 original held assertions;
+the remaining exact lifecycle-name census expected the old canonical activation
+name despite023's reviewed rename. It now names precisely the canonical body
+when023 is absent or the actual API-denied023 delegate when present. A new
+independent assertion requires the exact restored body, unchanged canonical
+service-only execution and full API denial on the delegate. Every original
+native activation, expiry, revision, token, rollback and role assertion remains.
+No wildcard census, grant change, timeout or weakened value is introduced.
+Full direct and wrapper SQL chronologies remain root-owned verification.
+
 ## 2026-10-01 — Compare the complete pre-existing rights-session set in account objection
 
 The actual combined role rehearsal passes the native mail door and cookie objection, then reveals that the shared synthetic source fixture already has an unrelated rights session. The account-equivalent journey now freezes the complete original rights-session rows before every account read/write and requires byte-identical ordered rows afterward, plus exactly zero owner-notice objection sessions. This is stricter than a total-count assumption: no unrelated session may change and no session may be borrowed or created. All original stateless-read count, account freshness/MFA, revision, source preservation and provider-clock assertions remain. The failed receipt is retained; no account, provider or browser execution credit is inferred until independent rerun.
