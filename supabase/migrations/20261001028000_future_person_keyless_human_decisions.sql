@@ -151,6 +151,29 @@ revoke all on function public.decide_keyless_objection_v1(uuid,bigint,bigint,big
 grant execute on function public.decide_keyless_objection_v1(uuid,bigint,bigint,bigint,text,text,bytea) to authenticated;
 
 -- Keep every current022/025 canonical provider branch by exact delegation.
+-- Only the reviewed complete wrapper may become the private predecessor.
+do $information_mail_predecessor$
+declare predecessor oid:=to_regprocedure('private.authorize_mail_submission_v1(uuid,smallint)');
+begin
+  if predecessor is null or to_regprocedure('private.authorize_mail_submission_before_keyless_information_v1(uuid,smallint)') is not null
+    or not exists(select 1 from pg_proc p join pg_namespace ns on ns.oid=p.pronamespace
+      join pg_language language on language.oid=p.prolang join pg_roles owner_role on owner_role.oid=p.proowner
+      where p.oid=predecessor and ns.nspname='private' and p.proname='authorize_mail_submission_v1'
+        and owner_role.rolname='postgres' and language.lanname='plpgsql' and p.prosecdef
+        and p.prokind='f' and not p.proretset and p.prorettype='boolean'::regtype
+        and p.pronargs=2 and p.pronargdefaults=0 and p.provariadic=0 and p.proallargtypes is null
+        and p.proargtypes[0]='uuid'::regtype and p.proargtypes[1]='smallint'::regtype
+        and p.proargnames=array['p_outbox','p_attempt']::text[]
+        and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+        and md5(p.prosrc)='448f258385a4c6f4392a1ca1781f0f2a')
+    or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) role_name
+      where has_function_privilege(role_name,predecessor,'execute'))
+    or exists(select 1 from pg_proc p,
+      lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) acl
+      where p.oid=predecessor and acl.privilege_type='EXECUTE' and acl.grantee<>p.proowner) then
+    raise exception using errcode='55000',message='information mail predecessor differs';end if;
+end;
+$information_mail_predecessor$;
 alter function private.authorize_mail_submission_v1(uuid,smallint) rename to authorize_mail_submission_before_keyless_information_v1;
 revoke all on function private.authorize_mail_submission_before_keyless_information_v1(uuid,smallint)
  from public,anon,authenticated,inherit_upload_only,service_role;

@@ -189,6 +189,16 @@ it("reviews shared replacements across all six authored Path B migration stages"
 it("preserves the entire corrected mail dispatcher behind the token-free information branch", () => {
   const source = readFileSync(path.join(directory, "20261001028000_future_person_keyless_human_decisions.sql"), "utf8");
   const wrapped = functionBody(source, "private.authorize_mail_submission_v1");
+  const preflight = source.slice(source.indexOf("do $information_mail_predecessor$"), source.indexOf("$information_mail_predecessor$;"));
+  expect(preflight).toContain("md5(p.prosrc)='448f258385a4c6f4392a1ca1781f0f2a'");
+  for (const exact of ["owner_role.rolname='postgres'", "language.lanname='plpgsql' and p.prosecdef",
+    "p.prorettype='boolean'::regtype", "p.pronargs=2 and p.pronargdefaults=0", "p.provariadic=0 and p.proallargtypes is null",
+    "p.proargtypes[0]='uuid'::regtype and p.proargtypes[1]='smallint'::regtype",
+    "p.proargnames=array['p_outbox','p_attempt']::text[]", "p.proconfig=array['search_path=\"\"','lock_timeout=250ms']::text[]",
+    "array['anon','authenticated','inherit_upload_only','service_role']", "acl.grantee<>p.proowner",
+    "message='information mail predecessor differs'"]) expect(preflight).toContain(exact);
+  expect(preflight).not.toMatch(/or md5|v_target:=|execute |grant |return;/iu);
+  expect(source.indexOf("$information_mail_predecessor$;")).toBeLessThan(source.indexOf("alter function private.authorize_mail_submission_v1"));
   expect(source).toContain("alter function private.authorize_mail_submission_v1(uuid,smallint) rename to authorize_mail_submission_before_keyless_information_v1;");
   expect(source).toContain("revoke all on function private.authorize_mail_submission_before_keyless_information_v1(uuid,smallint)\n from public,anon,authenticated,inherit_upload_only,service_role;");
   expect(wrapped).toContain("if m.purpose is distinct from 'future-person-claim-more-information' then\n    return private.authorize_mail_submission_before_keyless_information_v1(p_outbox,p_attempt);end if;");

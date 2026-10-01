@@ -1,6 +1,10 @@
 # Test diff register
 
 ## 2026-10-01 — Keep the protected objection table closed during independent lock proof
+## 2026-10-01 — Require the exact complete mail predecessor before information delegation
+
+The isolated033 continuation's focused shared-dispatcher check caught one exact per-function inventory omitted during the ordinary strict025 merge: private028, already present in the two full replacement censuses. That list now includes precisely the one private028 definition and still excludes it from the public claim dispatcher. Before028 renames the canonical pre-submit function, a runtime preflight now requires the complete corrected022 body hash, exact two-argument boolean ABI, owner, PL/pgSQL security-definer configuration, and owner-only execution. Unknown, missing, previously wrapped, changed or API-executable predecessors refuse before mutation. Every other purpose continues to delegate the original full body; no alternative body or permissive fallback is accepted. Focused source checks retain all former closed inventories and delegation guards; actual chronological SQL proof remains root-owned and pending.
+
 ## 2026-10-01 — Add exact named objection decisions without borrowing final release
 
 The registered assigned objection endpoint now has both a real closed GET and all three POST decisions under own current JWT/MFA/operation authority. A ten-minute stateless proof binds the object, reviewer, session and all three current revisions. The unique decision nonce is consumed atomically after the original complete current document receipt checks; the surviving minimum key encrypts the professional basis. Uphold shreds only claim working material, overrule persists its bounded close phase and new distinct release assignment without changing the original provider-committed owner period, and information requests retain the exact original objection deadline. Full final release and reviewer-page integration remain closed gaps, with G5.4 unchanged.
@@ -6771,3 +6775,44 @@ and planted observed/modelled/unknown-version cases prove that exact is not
 silently renamed. QC dropout/contamination classification remains unchanged
 pending the source inconsistency documented in docs/result-basis-contract.md.
 This is a bounded contract improvement and does not mark G4.2 YES.
+## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
+
+The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.
+
+The working owner objection encrypts its bounded statement under an independent random wrapped key tied to its exact claim, notice and initial revision. It pauses only the claim, consumes a distinct current-cookie operation nonce, invalidates its link/session and assigns a named objection reviewer atomically. The original 62-day package clock remains immutable; a genuine timely objection transfers document readability to the separately persisted review deadline capped at submission plus 92 days. A delivered period can assign a fresh release operation and invalidate old document receipts; it cannot approve, detach or deliver the record. A private API-denied trusted clock seam rehearses the exact session boundaries without rewriting stored times. The unfinished GET-only human-review HTTP handler remains outside this checkpoint until its genuine decision POST exists.
+
+Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
+## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
+
+The unchanged purpose census exposed the real held-file issuer missing from
+`rights_session_purposes`. Embryo232000 and Future233000 subsequently replaced
+its notice invalidation, opaque-token minting, pre-submit and activation arms.
+Migration `20261001025000` registers its exact existing purpose/revision pair
+and restores these original held branches into the exact latest dispatchers
+in one atomic block, guarded by complete predecessor/postcondition body hashes.
+Both022 canonical mail wrappers stay byte-identical; their API-denied233
+delegates retain every claimant/withdrawal/invitation branch and the current
+provider attempt key. Full ABI, configuration and owner/API ACL guards refuse
+an unknown predecessor without applying any part of the bridge.
+The reviewed023 owner-objection wrapper, when present, stays byte-identical;
+only its API-denied delegate changes. Unknown wrappers/dispatchers refuse.
+
+Every existing assertion is retained. The old exact four-purpose SQL census
+now expects the five genuine issuers, plus the owner-objection issuer only when
+its actual023 delegate exists. It still rejects every extra/missing pair; two
+new assertions bind the held revision target and its exact three existing
+matrix actions. The genuine old held-notice activation assertion runs through
+the real service role with its unchanged expected result. New rollback probes
+require zero session for expired candidate, crossed token revision and changed
+subject revision, preserving the complete source/token tuple and nonce/session
+counts; browser/upload roles stay denied and a consumed token cannot reopen.
+New genuine pre-submit probes require refusal for an expired candidate, a
+revoked token and a changed subject revision, rolling back the complete
+source/mail/contact tuple; the original positive submission assertion remains.
+The actual minted notice hash is checked against its exact candidate, revision
+and fixed deadline. New source tests compare all three complete dispatcher
+bodies before/after their exact insertions and all later replacement sites,
+preserving original claimant,
+withdrawal, invitation, nonce and fixed-deadline behavior. No grant, backfill,
+provider proof or acceptance is inferred. SQL remains authored until root's
+fresh execution; focused source tests do not substitute for database proof.
