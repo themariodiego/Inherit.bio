@@ -4,8 +4,8 @@
 
 Hosted run36805076949 finished with the own-export journey stopped immediately
 after a successful insurance signature201: the captured page still showed the
-saved, disabled insurance screen while its authoritative presentation refresh
-was in flight. The shared real-upload helper now waits for the exact current
+saved, disabled insurance screen, and the helper had not observed its
+authoritative presentation refresh. The shared real-upload helper now waits for the exact current
 surface's actual GET/RSC response200 after each successful account/signature
 POST, excluding prefetch responses, before its original visible/enabled checks.
 This matches the existing report-choice helper's request ordering. It retains
@@ -14,6 +14,16 @@ the complete two-originals/export/withdrawal assertions. No assertion timeout,
 suite limit, retry, skip or manual reload changes. A failed refresh still fails
 the real journey. The failed hosted source remains recorded; full proof follows
 on the coherent correction.
+## 2026-10-01 — complete bound scientific/source archive and strict own member authority
+
+Migration `20261001014000` supplies a distinct service-only, consumed-request/current-attempt member and current-source reader. A complete own claimed-bound subject producer now emits the full retained agreement identity, actual historical scientific rows, exact custody/binding audit slice and every full-EOF copied current canonical part. Real archive tests independently open all 25 members, compare every payload size/hash and both actual source parts. The original approved-unbound event projection remains closed; only the bound producer accepts the exact issued binding event tuple. No account actor audit is guessed into a subject ledger. No JWT, parent/provider locator or identity-document byte is exported.
+
+The original source-only SQL positive fixture is strengthened to the existing complete v2 encrypted-signing predecessor while retaining every documentary approval, activation, binding, relocation, source/auth/refusal and immutability assertion. Its obsolete whole-own subset refusal becomes exact server-derived self/bound partition and one-file equality because that own authority is now implemented. A separate original abbreviated signing predecessor still refuses BOTH subject and whole-account archive capture and creates zero jobs. The new full SQL journey flushes every deferred creation invariant before worker reads, proves exact actual source/scientific/audit members, and retains unsupported non-self whole-graph, foreign-attempt, revoked-session and changed-historical-content refusals. Original long fixtures and historical scientific inserts are extracted byte-for-byte into shared includes; no existing assertion is deleted.
+
+The independently generated ZIP exposed a real preparation cancellation bug: a member retained the short preparation signal after preparation completed. Preparation and archive delivery now use their separate genuine lifetimes; strict tests prove preparation abort refusal, successful later reads after ordinary preparation completion, and actual archive abort refusal. No timeout, retry, skip or provider/authority fence is relaxed. The closed producer registry adds exactly the implemented claimed-bound subject origin, and either claimant origin losing a required member fails independently.
+
+Focused unit, type/lint and gate results are recorded separately at the exact checkpoint. SQL remains authored until independently executed; hosted browser/provider completion is not inferred. Whole-account assembly and all remaining non-self/cohort/joint classes, real POST/status worker wiring and final publication/delivery remain required. No READY/public gate or G5.4/G5.6 acceptance flip occurs.
+
 
 ## 2026-10-01 — Keep integrated account-binding links under the primary route contract
 

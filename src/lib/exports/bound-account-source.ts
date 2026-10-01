@@ -16,7 +16,7 @@ const unavailable=()=>new Error("bound_account_archive_source_unavailable");
  * to a background worker. Provider bytes are read through the distinct current
  * relocation audience to complete EOF before even a member descriptor returns.
  * No provider paths, signing capabilities or historical actor guess enters ZIP. */
-export async function prepareBoundAccountArchiveSource(value:unknown,rpc:BoundArchiveSourceRpc,signal:AbortSignal){
+export async function prepareBoundAccountArchiveSource(value:unknown,rpc:BoundArchiveSourceRpc,signal:AbortSignal,preparationSignal:AbortSignal=signal){
  const selected=reference.safeParse(value);if(!selected.success||!futurePersonClaimsOpen()||signal.aborted)throw unavailable();
  const ref:Reference=selected.data;let receipt:z.infer<typeof envelope>|undefined;
  async function call(operation:"manifest"|"check",current:AbortSignal){
@@ -37,10 +37,10 @@ export async function prepareBoundAccountArchiveSource(value:unknown,rpc:BoundAr
   }finally{clearTimeout(timer);combined.removeEventListener("abort",abort);timeout.abort();}
  }
  try{
-  receipt=await call("manifest",signal);const source=receipt.source;
+  receipt=await call("manifest",preparationSignal);const source=receipt.source;
   const members:Zip64Member[]=[],descriptors=[];
   for(const part of source.parts){
-   await call("check",signal);const data=await readRelocation(part.target,part.identity,signal);await call("check",signal);
+   await call("check",preparationSignal);const data=await readRelocation(part.target,part.identity,AbortSignal.any([signal,preparationSignal]));await call("check",preparationSignal);
    const name=`originals/${source.fileId}/canonical-part-${String(part.sequence).padStart(4,"0")}.vcf`;
    descriptors.push({name,sequence:part.sequence,partId:part.partId,sizeBytes:data.byteLength,sha256:part.target.sha256});
    members.push({name,sizeBytes:data.byteLength,open:async current=>{
@@ -51,7 +51,7 @@ export async function prepareBoundAccountArchiveSource(value:unknown,rpc:BoundAr
     }},{highWaterMark:0});
    }});
   }
-  await call("check",signal);
+  await call("check",preparationSignal);
   // Closed archival provenance, deliberately excludes actor sessions, source
   // provider locators/versions, parent identifiers and credential machinery.
   const provenance={version:"bound-account-archive-source-v1",projection:"sanitized-autosomal-canonical-parts",

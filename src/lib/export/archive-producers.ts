@@ -5,14 +5,23 @@ import {plannedArchiveMembers} from "./member-plan";
 const producer=z.object({origin:z.string().min(20),reader:z.string().min(10),
  plannedMembers:z.array(z.string().min(1)).min(1)}).strict();
 const schema=z.object({version:z.literal("export-archive-producers-v1"),producers:z.object({
- "legacy-account":producer,"approved-unbound":producer}).strict()}).strict();
+ "legacy-account":producer,"approved-unbound":producer,"claimed-bound-subject":producer}).strict()}).strict();
 export type ArchiveProducer=keyof z.infer<typeof schema>["producers"];
 /** Every table/object plan member must have an implemented eligible producer.
  * This registry does not authorize a job or excuse a missing archive member.
  * Each producer's real ZIP tests prove its assigned patterns and content.
- * Unimplemented bound/whole-account classes keep their existing refusal. */
+ * Unimplemented whole-account/non-self classes keep their existing refusal. */
 export function parseArchiveProducers(value:unknown,planned:ReadonlySet<string>=plannedArchiveMembers()){
  const parsed=schema.parse(value),covered=new Set<string>();
+ // Both complete claimant producers must really emit their retained audit and
+ // printable history; a second origin cannot cover up an omitted first origin.
+ const claimantPatterns=new Set(["manifest.json","legal-audit.json","originals/","variants/",
+  "subjects/{subject_id}/audit-log.json","subjects/{subject_id}/reports.txt"]);
+ for(const name of ["approved-unbound","claimed-bound-subject"] as const){
+  const members=new Set(parsed.producers[name].plannedMembers);
+  if(members.size!==claimantPatterns.size||[...claimantPatterns].some(pattern=>!members.has(pattern)))
+   throw new Error("archive_producer_member_unassigned");
+ }
  for(const entry of Object.values(parsed.producers)){
   if(new Set(entry.plannedMembers).size!==entry.plannedMembers.length)throw new Error("duplicate_archive_producer_member");
   for(const name of entry.plannedMembers){if(!planned.has(name))throw new Error("unknown_archive_producer_member");covered.add(name);}

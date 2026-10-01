@@ -31,7 +31,10 @@ function stream(source:AsyncIterable<Uint8Array>,signal:AbortSignal,expected?:{s
  * the whole ZIP/source authority checks. READY/delivery remain a separate CAS.
  * Nonempty unknown report/figure classes refuse the WHOLE attempt. */
 export async function buildClaimantArchive(options:{job:{exportId:string;principalHash:string;authorityReceipt:string;deadline:string};
-  workerRpc:ArchiveWorkerRpc;memberRpc:ClaimantMemberRpc;write:ArchiveSegmentationOptions["write"];signal:AbortSignal}) {
+  workerRpc:ArchiveWorkerRpc;memberRpc:ClaimantMemberRpc;
+  auditMemberSchema?:Parameters<typeof prepareFuturePersonArchiveMembers>[0]["auditMemberSchema"];
+  sourceMembers?:(signal:AbortSignal,snapshot:z.infer<typeof futurePersonExportSnapshot>)=>Promise<{members:Zip64Member[];provenance:unknown}>;
+  write:ArchiveSegmentationOptions["write"];signal:AbortSignal}) {
   const persistence=createArchivePersistence(options.job,options.workerRpc);
   let attempt:ArchiveAttempt|null=null;const plan:Zip64Member[]=[];let payloadBytes=0;let snapshot:z.infer<typeof futurePersonExportSnapshot>;
   const spool=await createZip64FileSpool();
@@ -48,15 +51,28 @@ export async function buildClaimantArchive(options:{job:{exportId:string;princip
     }catch{throw unavailable();}finally{clearTimeout(timeout);current.removeEventListener("abort",rejectAbort);bound.abort();}
   }
   async function prepare(signal:AbortSignal){
-    const prepared=await prepareFuturePersonArchiveMembers({authorityReceipt:options.job.authorityReceipt,signal,active,check,call});
+    const prepared=await prepareFuturePersonArchiveMembers({authorityReceipt:options.job.authorityReceipt,signal,active,check,call,auditMemberSchema:options.auditMemberSchema});
     snapshot=prepared.snapshot;const factories=prepared.factories;
     const subjectId=snapshot.source.subjectId,fileId=snapshot.source.fileId;
     const descriptors=[];
     for(const factory of factories){let sizeBytes=0;const digest=createHash("sha256");for await(const chunk of factory.chunks(signal)){active();sizeBytes+=chunk.byteLength;if(!Number.isSafeInteger(sizeBytes))throw unavailable();digest.update(chunk);}
       const descriptor={name:factory.name,sizeBytes,sha256:digest.digest("hex"),rows:factory.rows};descriptors.push(descriptor);
       plan.push({name:factory.name,sizeBytes,open:async current=>stream(factory.chunks(current),current,descriptor)});payloadBytes+=sizeBytes;}
+    const source=options.sourceMembers?await options.sourceMembers(signal,snapshot):null;
+    if(source){for(const item of source.members){if(plan.some(existing=>existing.name===item.name)||!item.name.startsWith(`originals/${fileId}/`))throw unavailable();
+      const input=await item.open(signal),reader=input.getReader(),digest=createHash("sha256");let sizeBytes=0;
+      try{for(;;){await check(signal);const next=await reader.read();if(next.done)break;
+        if(!(next.value instanceof Uint8Array)||next.value.byteLength>4_000_000)throw unavailable();sizeBytes+=next.value.byteLength;
+        if(!Number.isSafeInteger(sizeBytes)||sizeBytes>item.sizeBytes)throw unavailable();digest.update(next.value);}}
+      finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+      if(sizeBytes!==item.sizeBytes)throw unavailable();const descriptor={name:item.name,sizeBytes,sha256:digest.digest("hex"),rows:0};descriptors.push(descriptor);
+      plan.push({...item,open:async current=>{const content=await item.open(current);return stream((async function*(){const reader=content.getReader();
+        try{for(;;){await check(current);const next=await reader.read();if(next.done)return;yield next.value;}}
+        finally{await reader.cancel().catch(()=>{});reader.releaseLock();}})(),current,descriptor);}});payloadBytes+=sizeBytes;
+    }}
     const manifest=bytes(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",subjectPartitions:[subjectId],
-      files:[{fileId,subjectId,sourceSha256:snapshot.source.sourceSha256,membershipSha256:snapshot.source.membershipSha256}],members:descriptors})+"\n");
+      files:[{fileId,subjectId,sourceSha256:snapshot.source.sourceSha256,membershipSha256:snapshot.source.membershipSha256,byte_identical_to_upload:false}],members:descriptors,
+      ...(source?{currentSource:source.provenance}:{})})+"\n");
     plan.push({name:"manifest.json",sizeBytes:manifest.byteLength,open:async current=>stream((async function*(){await check(current);yield manifest;await check(current);})(),current)});
     payloadBytes+=manifest.byteLength;plan.sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:0);
   }

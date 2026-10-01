@@ -7678,6 +7678,8 @@ export type Database = {
       check_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json }; Returns: boolean }
       finish_future_person_relocation_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json; p_evidence: Json }; Returns: boolean }
       future_person_relocation_work_v1: { Args: Record<PropertyKey, never>; Returns: Json }
+      export_archive_account_members_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_id?: string }; Returns: Json }
+      export_archive_account_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id: string; p_expected?: Json }; Returns: Json }
       export_archive_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_expected?: Json }; Returns: Json }
       future_person_bound_source_manifest_v1: { Args: { p_subject: string }; Returns: Json }
       check_future_person_bound_source_v1: { Args: { p_subject: string; p_expected: Json }; Returns: boolean }
