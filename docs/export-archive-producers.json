@@ -1,0 +1,36 @@
+{
+  "version": "export-archive-producers-v1",
+  "producers": {
+    "legacy-account": {
+      "origin": "verified-authenticated-account-session",
+      "reader": "GET /api/export",
+      "plannedMembers": [
+        "ancestry.json",
+        "canonical/",
+        "chats.json",
+        "consents.json",
+        "legal-audit.json",
+        "manifest.json",
+        "observed/",
+        "originals/",
+        "prs.json",
+        "reports.json",
+        "reports.txt",
+        "subject-record.json",
+        "variants/"
+      ]
+    },
+    "approved-unbound": {
+      "origin": "approved-independent-rights-future-person-session-and-current-writing-attempt",
+      "reader": "buildClaimantArchive / future_person_export_members_v1",
+      "plannedMembers": [
+        "manifest.json",
+        "legal-audit.json",
+        "originals/",
+        "variants/",
+        "subjects/{subject_id}/audit-log.json",
+        "subjects/{subject_id}/reports.txt"
+      ]
+    }
+  }
+}

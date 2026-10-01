@@ -1,6 +1,7 @@
 import { createHash,randomBytes } from "node:crypto";
 import AdmZip from "adm-zip";
 import { afterEach,describe,expect,it,vi } from "vitest";
+import {generatedProducerMembers,producerArchiveMembers} from "@/lib/export/archive-producers";
 import { encryptSecret } from "@/lib/crypto";
 import { syntheticQc,syntheticAbsoluteFinding } from "@/lib/embryos/synthetic";
 import type { ArchiveWorkerRpc } from "./archive-persistence";
@@ -57,6 +58,8 @@ describe("actual claimant member to ZIP64 attempt",()=>{
   it("writes and independently opens every required member, verifying all manifest sizes and hashes",async()=>{
     const f=fixture(),result=await buildClaimantArchive(f.options),all=Buffer.concat(f.writes),zip=new AdmZip(all);
     expect(result.memberCount).toBe(23);expect(zip.getEntries()).toHaveLength(23);
+    expect(generatedProducerMembers(zip.getEntries().map(entry=>entry.entryName),"approved-unbound"))
+      .toEqual(producerArchiveMembers("approved-unbound"));
     expect(result.summary).toMatchObject({state:"bytes-complete",sizeBytes:all.length,sha256:createHash("sha256").update(all).digest("hex")});
     const manifest=JSON.parse(zip.readAsText("manifest.json"));expect(manifest.subjectPartitions).toEqual([SUBJECT]);expect(manifest.members).toHaveLength(22);
     for(const member of manifest.members){const value=zip.readFile(member.name)!;expect(value).not.toBeNull();
