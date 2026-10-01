@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Exercise a fresh Card intake and genuine immutable artifact publication
+
+The full fresh rehearsal exposed two invalid fixture transitions. Closing an
+existing review runs the real terminal shredding trigger, replaces its Card
+hash and destroys its identity wrapper. The Card-positive fixture now uses a
+distinct new synthetic intake with independent opaque evidence. It additionally
+requires the still-open competing review to refuse that intake and proves the
+predecessor's actual shredding before the fresh intake can identify the same
+eligible record without an optional profile. All original named-reviewer,
+recent-MFA, signed-parent evidence and unassigned-reviewer refusals remain.
+The scoped rollback-only Card rehearsal passes all 98 assertions.
+
+The current-consent fixture attempted an UPDATE forbidden by the immutable
+artifact guard. A separate owner-only administrative publisher now binds the
+exact current predecessor version and actual full-body digest, publishes only
+the immediate successor with a full body/change summary, and changes only the
+predecessor's previously NULL supersession timestamp. Every signed predecessor
+field and historical signature FK remains identical. Its one-use authority is
+an exact owner-owned temporary relation in the current backend's temporary
+namespace; API-owned lookalikes and caller configuration are refused. No API
+role, including service_role, receives the publisher or guard; the blanket
+immutable guard on every other table is unchanged. There is no durable store,
+new secret, automatic publication, data backfill or production gate change.
+
+The profile-control fixture now uses that actual publication door, preserving
+the same strict save-closed/delete-available expectation. New SQL coverage
+requires owner publication, predecessor/signature byte equality, exact body
+hash/version/timestamp, no other artifact mutation, atomic failure rollback,
+no surviving capability, replay/revival/date-extension refusal and forged
+API-temporary-relation denial. Publisher and profile-control SQL execution is
+pending the shared database slot; no browser or acceptance credit is claimed.
+
 ## 2026-10-01 — Preserve exact archive retention census and genuine deletion export history
 
 The complete integrated database rehearsal found two stale census expectations:
