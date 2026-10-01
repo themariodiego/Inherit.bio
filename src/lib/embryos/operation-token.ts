@@ -115,7 +115,7 @@ const PUBLIC_FORM_DIGEST_CONTEXT = "public-form-v1";
  */
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
 
-type PublicForm = "rights-activate" | "invitation-refuse" | "adult-subject-respond";
+type PublicForm = "rights-activate" | "invitation-refuse" | "adult-subject-respond" | "adult-upload-respond";
 
 interface PublicFormClaims {
   form: PublicForm;

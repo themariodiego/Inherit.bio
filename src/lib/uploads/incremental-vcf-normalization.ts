@@ -61,6 +61,7 @@ export function normalizationJsonbByteLength(value: unknown): number {
  * The exact-claim database index owns cross-batch duplicate/conflict checks. */
 export async function prepareIncrementalVcf(lines: AsyncIterable<string>, options: Options) {
   if (options.build === "GRCh37" && !options.lift) throw new IncrementalVcfError("unavailable");
+  const sourceLift = options.build === "GRCh37" ? options.lift : undefined;
   let current: PendingPosition | undefined;
   let batch: PendingPosition[] = [];
   let batchBytes = 0;
@@ -95,14 +96,14 @@ export async function prepareIncrementalVcf(lines: AsyncIterable<string>, option
     attempted = receipt.attempted; unmapped = receipt.unmapped;
     const variants = accepted.flatMap(ordinal => {
       const source = batch[ordinal].variant!;
-      const mapped = options.lift ? liftSingleBaseVariant(source, options.lift) : source;
+      const mapped = sourceLift ? liftSingleBaseVariant(source, sourceLift) : source;
       return mapped ? [mapped] : [];
     });
     const observed = batch.flatMap(row => {
       const source = row.observed;
       if (!source) return [];
-      const normalized = options.lift ? liftSingleBaseVariant({ ...source,
-        genotype: source.genotype === "--" ? `${source.ref}/${source.ref}` : source.genotype }, options.lift)
+      const normalized = sourceLift ? liftSingleBaseVariant({ ...source,
+        genotype: source.genotype === "--" ? `${source.ref}/${source.ref}` : source.genotype }, sourceLift)
         : { ...source };
       if (!normalized) return [];
       if (source.genotype === "--") normalized.genotype = "--";

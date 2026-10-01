@@ -2,7 +2,7 @@
 
 Status: binding
 Baseline application SHA: `864736979c92a08ba77e8580d61946eba6864918`
-Brief SHA-256: `2914f42bba3ccdb34816f07c23b4cffdee14f3328b4fa5f2a0f231133be9abbe`
+Brief SHA-256: `34b1102b747e70e184b90d75fbc6062135aa30302179285926471f2e28082660`
 Platform: GitHub `themariodiego/Inherit.bio`; canonical domain `inherit.bio`; Supabase project **Inherit** (`zuvloczwgrayonqabnss`); Vercel project `sequence` (`prj_K7bVowhjFr0uIapXraH41hthJkgy`) pending a separately reviewed platform rename.
 
 This file is the index required by X0.2. An item has one authority. Generated code, tests, seed files and rendered copy may consume an authority, but may not redefine it. A differing second definition is a defect.
@@ -75,6 +75,7 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 | Self-hosted genetic worker claim and execution entrypoint | `scripts/worker.ts` with `docs/route-register.json#workerExecutionBindings.self-hosted-worker-claim-and-execution` | `jobs.run`, queue claims, embryo sanitization, analytic workers and worker tests |
 | Public security-contact document | `content/security.txt` | registered route `public.security`, incident-response links and `security-text-v1`; runtime interpolation is forbidden |
 | Canonical-artifact index | `docs/canonical-artifacts.md` | `gate:canon` |
+| Queued other-adult report authority and its distinct closed kinds | `docs/route-register.json#policyResolvers.path-b-report-queued-v1` | dedicated finite worker, exact-purpose/source binding, private staging, atomic publication and current-recipient result readers |
 | Schema requirements before migration authoring | `docs/schema-requirements.md` | Supabase migrations only |
 | Jurisdiction statuses, capabilities and `TEST-LOCAL` | `data/jurisdictions.json` | `src/lib/legal/jurisdictions.ts`, settings picker, jurisdiction E2E |
 | Citation metadata | `data/citations.json` | report templates, legal/science surfaces, provenance gate |

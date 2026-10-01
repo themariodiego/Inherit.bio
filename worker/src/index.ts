@@ -34,6 +34,8 @@ async function claimJob(client: pg.Client): Promise<{ id: string; payload: unkno
     const { rows } = await client.query<{ id: string; payload: unknown }>(
       `select id, payload from public.worker_jobs
        where status = 'queued' and kind = 'annotate_vcf'
+         and not exists (select 1 from public.subjects s
+           where s.id = worker_jobs.subject_id and s.subject_class = 'other_adult')
        order by created_at
        limit 1
        for update skip locked`,
