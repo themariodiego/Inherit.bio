@@ -1,5 +1,30 @@
 # Test diff register
 
+## 2026-10-01 — Restore exact worker cleanup authority without exposing protected evidence
+
+The167-file fresh diagnostic fails two original native refusal cleanup cases:
+023 correctly closes claimant objections, but their inherited SECURITY INVOKER
+machine entries cannot execute the shared-evidence check as service. Additive032
+pins the complete current bodies, ABIs, owner and empty search paths, converts
+only the five registered service cleanup doors to owner-defined execution, and
+removes API execution from four internal graph/evidence helpers. It grants no
+protected-table SELECT and retains every exact claim, frozen object, expiry,
+shared-evidence, physical-storage-presence and graph-refusal condition. Original
+native refusal assertions remain unchanged. New genuine-role probes independently
+refuse direct table/helper access and invented public cleanup/ACK claims.
+
+210 also revoked the original explicitly required service TRUNCATE on
+`public.user_variants`, conflicting with the unchanged original
+`rls_truncate_not_bypassed.sql` assertion.032 restores exactly that one table/role
+tuple, guarded by its installed content-revision trigger; no browser/upload or
+observed-call TRUNCATE is granted. The newer archive-frame eight-tuple census
+now requires this one original grant and retains the seven other exact denials.
+Its original two-file TRUNCATE/receipt test now executes as actual service,
+adds a role identity assertion, and retains exact per-file revision increments
+and refusal of all old member bytes. This is a deliberate reconciliation with
+the pre-existing contract, not a weakened RLS or stale-frame assertion.
+Fresh database execution remains pending and source authoring grants no credit.
+
 ## 2026-10-01 — Pin every reviewed purge pair after Path B integration
 
 The actual complete fresh database rehearsal reached 167 suites and 10,080
