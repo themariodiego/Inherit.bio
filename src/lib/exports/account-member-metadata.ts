@@ -53,13 +53,13 @@ export async function prepareAccountArchiveMetadata(options:{reference:{exportId
  if(profiles.length!==1||profiles[0].id!==context.actor.accountId)throw unavailable();
  const purposeGrants:z.infer<typeof grant>[]=[],fileCounts:z.infer<typeof fileCount>[]=[];
  let after:string|null=null;
- for(;;){const page=await call("purpose-grants",grant,500,options.signal,after);await check(options.signal);if(!page.length)break;
+ for(;;){const page:z.infer<typeof grant>[]=await call("purpose-grants",grant,500,options.signal,after);await check(options.signal);if(!page.length)break;
   for(const row of page){if(row.grant_id<=(after??"")||!subjects.has(row.target_id)||purposeGrants.length>=snapshot[0].purposeGrantCount)throw unavailable();
    after=row.grant_id;purposeGrants.push(row);}
  }
  if(purposeGrants.length!==snapshot[0].purposeGrantCount)throw unavailable();
  after=null;
- for(;;){const page=await call("legacy-counts",fileCount,100,options.signal,after);await check(options.signal);if(!page.length)break;
+ for(;;){const page:z.infer<typeof fileCount>[]=await call("legacy-counts",fileCount,100,options.signal,after);await check(options.signal);if(!page.length)break;
   for(const row of page){if(row.fileId<=(after??"")||expected.get(row.fileId)!==row.subjectId||fileCounts.length>=expected.size)throw unavailable();
    after=row.fileId;fileCounts.push(row);}
  }
