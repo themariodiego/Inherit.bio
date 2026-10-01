@@ -1,5 +1,18 @@
 # Test diff register
 
+## 2026-10-01 — Refuse broken nested SQL fixture includes before a fresh database run
+
+The full fresh run found that an extracted fixture kept `fixtures/` in its own
+relative includes, so psql looked for a nonexistent second fixtures directory.
+A structural preflight now walks every tracked SQL/inc file and every literal
+relative include from its containing file, with actual filesystem existence,
+repository/realpath fences and cycle detection. Missing directories, copied
+root-relative paths, absolute/symlink escapes and dynamic arguments refuse.
+Planted direct/indirect cycles and the actual extraction shape pin the refusal;
+the complete live graph must close without an exception. CI checks before its
+fresh stack/test, and native provider bootstrap checks before resource work.
+No SQL assertion, grant, test count, database or provider boundary changes.
+
 ## 2026-10-01 — Audit populated Embryo pages through their genuine native publication
 
 The default authenticated accessibility sweep uses an own-genome account and

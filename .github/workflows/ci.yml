@@ -91,6 +91,8 @@ jobs:
         run: pnpm gate:env
       - name: Jurisdiction review gate
         run: pnpm gate:jurisdictions
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys

@@ -96,3 +96,5 @@ writing code. Decisions are reversible; they are just not reversible silently.
 
 Inherit is [AGPL-3.0](LICENSE). By contributing, you agree that your
 contributions are licensed under the same terms.
+
+Before a fresh database reset or test, run `pnpm gate:sql-includes`. It checks the complete tracked SQL/fixture include graph without database access, resolving every literal relative include from its containing file. Missing, escaping, dynamic or cyclic paths refuse the run. CI and the native browser bootstrap enforce this preflight before starting their database.
