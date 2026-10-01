@@ -1,5 +1,6 @@
 /** GitHub-only case inventory and fail-closed aggregation; no browser transport. */
 import assert from "node:assert/strict";
+import { assertEmbryoJourneyAudits, EMBRYO_BROWSER_JOURNEYS } from "./ci-browser-embryo-partitions";
 import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ciBrowserSourceIdentity, discoverBrowserCases, trackedBrowserSpecs } from "./ci-browser-shards-io";
@@ -8,6 +9,8 @@ import { verifyAccessibilitySweepPlacement, verifyNativeBrowserBalance } from ".
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === path.resolve("scripts/ci-browser-shards.run.mts");
 if (invoked) {
+  assertEmbryoJourneyAudits(Object.fromEntries(Object.values(EMBRYO_BROWSER_JOURNEYS)
+    .map(file => [file, readFileSync(path.join("e2e", file), "utf8")])));
   const source = ciBrowserSourceIdentity(), mode = process.argv[2];
   if (mode === "manifest") {
     assert(process.argv.length === 3, "Manifest has no selectors");

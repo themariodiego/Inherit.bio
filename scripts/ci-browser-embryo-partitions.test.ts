@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { assertEmbryoCiShard, assertEmbryoJourneyPartition } from "./ci-browser-embryo-partitions";
+import { assertEmbryoCiShard, assertEmbryoJourneyPartition, assertEmbryoJourneyAudits, EMBRYO_BROWSER_JOURNEYS } from "./ci-browser-embryo-partitions";
 
 const journeys = [
   { project: "embryo-ingest", file: "embryo-ingest-journey.spec.ts", cases: 1 },
@@ -29,5 +29,34 @@ describe("fresh native embryo partitions", () => {
     expect(inventory).toContain("const native = discoverBrowserCases(index)");
     expect(inventory).toContain("browserReportCases(native, index, false)");
     expect(inventory.indexOf("discoverBrowserCases(index)")).toBeLessThan(inventory.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
+  });
+});
+
+describe("permanent genuine embryo audit preflight", () => {
+  const real = () => Object.fromEntries(Object.values(EMBRYO_BROWSER_JOURNEYS)
+    .map(file => [file, readFileSync(`e2e/${file}`, "utf8")]));
+  it("requires both real network audits and the connected populated all-pass audit", () => {
+    expect(() => assertEmbryoJourneyAudits(real())).not.toThrow();
+    for (const file of Object.values(EMBRYO_BROWSER_JOURNEYS)) {
+      const current = real();
+      current[file] = current[file].replace('from "./audited-test"', 'from "@playwright/test"');
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow("genuine state network audit");
+      current[file] += '\n// import { test } from "./audited-test";';
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow("genuine state network audit");
+    }
+    const name = EMBRYO_BROWSER_JOURNEYS["embryo-ingest"];
+    for (const replacement of ["unconnectedAudit", "auditPublishedEmbryoSurfaces.toString"]) {
+      const current = real();current[name] = current[name].replace("await auditPublishedEmbryoSurfaces(", `await ${replacement}(`);
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow("populated surface audit");
+    }
+    const missing = real();delete missing[name];
+    expect(() => assertEmbryoJourneyAudits(missing)).toThrow("source inventory");
+    expect(() => assertEmbryoJourneyAudits({ ...real(), "unknown.spec.ts": "" })).toThrow("source inventory");
+  });
+  it("checks source before execution and in the independent inventory and aggregation entry point", () => {
+    const run = readFileSync("scripts/run-e2e.ts", "utf8");
+    expect(run.indexOf("assertEmbryoJourneyAudits(Object.fromEntries")).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
+    const inventory = readFileSync("scripts/ci-browser-shards.run.mts", "utf8");
+    expect(inventory.indexOf("assertEmbryoJourneyAudits(Object.fromEntries")).toBeLessThan(inventory.indexOf("const source = ciBrowserSourceIdentity()"));
   });
 });
