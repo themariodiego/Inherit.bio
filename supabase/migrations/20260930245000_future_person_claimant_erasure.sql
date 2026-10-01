@@ -546,7 +546,7 @@ revoke all on function private.assert_future_person_deletion_graph_v1(uuid)
 create function private.assert_future_person_deletion_plan_v1(p_manifest uuid)
 returns public.retention_due_phases language plpgsql security definer set search_path='' as $$
 declare m public.purge_manifests; p public.retention_due_phases; r public.retention_rows;
- s public.subjects; c private.future_person_custody_slices; x private.embryo_canonical_sources; n bigint;
+ s public.subjects; v_embryo public.embryos; c private.future_person_custody_slices; x private.embryo_canonical_sources; n bigint;
 begin
  -- Resolve without locks, then take the registered subject-first lock order.
  select * into m from public.purge_manifests where id=p_manifest;
@@ -558,6 +558,7 @@ begin
    and phase_id=m.phase_id and phase_revision=m.phase_revision for update;
  select * into c from private.future_person_custody_slices where subject_id=s.id;
  select * into x from private.embryo_canonical_sources where file_id=c.source_file_id;
+ select * into v_embryo from public.embryos where id=x.embryo_id for update;
  if m.id is null or m.manifest_class<>'complete-retention' or m.state not in('frozen','executing')
    or r.retention_id<>'future-person.claimant-reverification-until-request' or r.target_kind<>'subject' or r.state<>'active'
    or p.phase_id<>'future-person-claimed-source-disposal' or p.status not in('pending','retry','claimed')
@@ -565,13 +566,18 @@ begin
    or s.subject_account_id is not null or s.cohort_id is not null or s.analysis_stopped_at is null
    or c.subject_id is null or c.claimant_principal_id is distinct from s.claimant_principal_id
    or x.file_id is null or x.subject_id is distinct from s.id
+   or v_embryo.id is null or v_embryo.subject_id is distinct from s.id or v_embryo.cohort_id is not null or v_embryo.status<>'claimed_unbound'
+   or r.disposition_revision is distinct from v_embryo.disposition_revision
+   or p.disposition_revision is distinct from v_embryo.disposition_revision
+   or r.target_lifecycle_revision is distinct from s.lifecycle_revision
+   or p.target_lifecycle_revision is distinct from s.lifecycle_revision
    or (c.source_sha256,c.source_membership_sha256,c.publication_revision,c.historical_cohort_id)
      is distinct from (x.source_sha256,x.membership_sha256,x.publication_revision,x.cohort_id)
    or p.immutable_envelope is distinct from jsonb_build_object('version','future-person-deletion-plan-v1',
      'subjectId',s.id,'claimantPrincipalId',c.claimant_principal_id,'sourceFileId',x.file_id,
      'sourceSha256',x.source_sha256,'membershipSha256',x.membership_sha256,
      'publicationRevision',x.publication_revision,'subjectBindingRevision',s.subject_binding_revision,
-     'subjectLifecycleRevision',s.lifecycle_revision,'requestedAt',r.created_at,
+     'subjectLifecycleRevision',s.lifecycle_revision,'embryoDispositionRevision',v_embryo.disposition_revision,'requestedAt',r.created_at,
      'sourceDeadline',r.created_at+interval '7 days','completionDeadline',r.created_at+interval '30 days')
    or r.fixed_deadline is distinct from r.created_at+interval '7 days'
    or p.phase_deadline is distinct from r.created_at
@@ -658,7 +664,7 @@ revoke all on function private.purge_future_person_derived_v1(uuid)
 
 create function private.prepare_future_person_deletion_v1(p_session_hash text,p_nonce text)
 returns uuid language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
-declare rs public.rights_sessions;s public.subjects;c private.future_person_custody_slices;
+declare rs public.rights_sessions;s public.subjects;v_embryo public.embryos;c private.future_person_custody_slices;
  x private.embryo_canonical_sources;v_now timestamptz;r uuid;m uuid;env jsonb;
 begin
  rs:=private.future_person_rights_session_v1(p_session_hash,true);
@@ -666,12 +672,14 @@ begin
  select * into s from public.subjects where id=rs.target_id for update;
  select * into c from private.future_person_custody_slices where subject_id=s.id for update;
  select * into x from private.embryo_canonical_sources where file_id=c.source_file_id for update;
+ select * into v_embryo from public.embryos where id=x.embryo_id for update;
  perform private.assert_future_person_subject_custody_v1(s.id);
  perform private.assert_future_person_settled_source_v1(x.file_id);
  v_now:=clock_timestamp();
  -- Until the real archive cleanup door can prove every reservation absent,
  -- any archive attempt is a refusal, including unACKed/uncertain writes.
- if x.file_id is null or c.audit_principal_id is null or (select count(*) from public.genome_files where subject_id=s.id)<>1
+ if x.file_id is null or v_embryo.id is null or v_embryo.subject_id is distinct from s.id
+   or v_embryo.cohort_id is not null or v_embryo.status<>'claimed_unbound' or c.audit_principal_id is null or (select count(*) from public.genome_files where subject_id=s.id)<>1
    or exists(select 1 from private.export_archive_attempts a join public.generated_exports e on e.id=a.export_id
       where e.target_kind='subject' and e.target_id=s.id)
    or exists(select 1 from public.generated_exports e where e.target_kind='subject' and e.target_id=s.id
@@ -697,17 +705,17 @@ begin
  end if;
  insert into public.retention_rows(retention_id,target_kind,target_id,retention_revision,target_lifecycle_revision,
    disposition_revision,fixed_deadline,state,created_at)
- values('future-person.claimant-reverification-until-request','subject',s.id,1,s.lifecycle_revision,s.disposition_revision,v_now+interval '7 days','active',v_now)
+ values('future-person.claimant-reverification-until-request','subject',s.id,1,s.lifecycle_revision,v_embryo.disposition_revision,v_now+interval '7 days','active',v_now)
  returning id into r;
  env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,
    'claimantPrincipalId',c.claimant_principal_id,'sourceFileId',x.file_id,'sourceSha256',x.source_sha256,
    'membershipSha256',x.membership_sha256,'publicationRevision',x.publication_revision,
    'subjectBindingRevision',s.subject_binding_revision,'subjectLifecycleRevision',s.lifecycle_revision,
-   'requestedAt',v_now,'sourceDeadline',v_now+interval '7 days','completionDeadline',v_now+interval '30 days');
+   'embryoDispositionRevision',v_embryo.disposition_revision,'requestedAt',v_now,'sourceDeadline',v_now+interval '7 days','completionDeadline',v_now+interval '30 days');
  insert into public.retention_due_phases(retention_row_id,retention_id,phase_id,phase_kind,phase_revision,phase_deadline,
    target_kind,target_id,target_lifecycle_revision,disposition_revision,recipient_authority_kind,recipient_authority_revision,immutable_envelope)
  values(r,'future-person.claimant-reverification-until-request','future-person-claimed-source-disposal','purge',1,v_now,'subject',s.id,
-   s.lifecycle_revision,s.disposition_revision,'approved-claimant',rs.authority_revision,env);
+   s.lifecycle_revision,v_embryo.disposition_revision,'approved-claimant',rs.authority_revision,env);
  insert into public.purge_manifests(retention_row_id,phase_id,phase_revision,manifest_class,manifest_revision,source_binding_fingerprint)
  values(r,'future-person-claimed-source-disposal',1,'complete-retention',1,
    encode(extensions.digest(convert_to(env::text,'UTF8'),'sha256'),'hex')) returning id into m;
@@ -715,7 +723,7 @@ begin
  select m,'variant-rows','private.embryo_canonical_parts',to_jsonb(a),b.sequence+1
    from private.embryo_canonical_source_parts b join private.embryo_canonical_parts a on a.id=b.part_id where b.file_id=x.file_id;
  update public.subjects set analysis_stopped_at=coalesce(analysis_stopped_at,v_now) where id=s.id;
- update public.worker_jobs w set status='cancelled',claimed_by=null,claim_token=null,claimed_at=null,
+ update public.worker_jobs w set status='cancelled',claimed_by=null,claim_token=null,claim_token_hash=null,claimed_at=null,
    claim_expires_at=null,finished_at=v_now where w.status in('queued','running') and w.kind not in('revoke_purge','retention_purge')
      and (w.subject_id=s.id or w.file_id=x.file_id);
  update public.rights_sessions q set status='revoked',ended_at=v_now,session_revision=session_revision+1

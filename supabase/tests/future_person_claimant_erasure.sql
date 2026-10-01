@@ -37,7 +37,9 @@ select ok((select min(a.write_expires_at)>clock_timestamp() from private.embryo_
  'the actual publication retains its original still-live create-only write window');
 select lives_ok($$select private.assert_future_person_settled_source_v1((select file from custody_ids))$$,
  'a genuine completed publication qualifies without changing its original clock');
-select throws_ok($$select pg_temp.deletion_probe('update public.worker_jobs set status=''running'' where id=(select id from job)',
+select throws_ok($$select pg_temp.deletion_probe('update public.worker_jobs set status=''running'',claim_token_hash=pg_temp.h(''running-deletion-probe''),
+ claimed_by=''claimant-erasure-test-worker'',claim_expires_at=clock_timestamp()+interval ''60 seconds'',
+ finished_at=null where id=(select id from job)',
  'select private.prepare_future_person_deletion_v1(pg_temp.h(''deletion-rights''),''delete-refused-running-aaaaaaaa'')')$$,
  '42501','claimant deletion unavailable','a running publication cannot create a disposal plan');
 select is((select count(*) from public.retention_rows where target_id=(select subject from custody_ids)
@@ -110,6 +112,13 @@ select ok((select r.retention_id='future-person.claimant-reverification-until-re
  from deletion_plan d join public.purge_manifests m on m.id=d.id join public.retention_rows r on r.id=m.retention_row_id
  join public.retention_due_phases p on p.retention_row_id=r.id and p.phase_id=m.phase_id),
  'the registered inline claimant trigger retains distinct original seven-day source and thirty-day completion deadlines');
+select ok((select r.disposition_revision=e.disposition_revision and p.disposition_revision=e.disposition_revision
+ and (p.immutable_envelope->>'embryoDispositionRevision')::bigint=e.disposition_revision
+ and r.target_lifecycle_revision=s.lifecycle_revision and p.target_lifecycle_revision=s.lifecycle_revision
+ from deletion_plan d join public.purge_manifests m on m.id=d.id join public.retention_rows r on r.id=m.retention_row_id
+ join public.retention_due_phases p on p.retention_row_id=r.id and p.phase_id=m.phase_id
+ join public.subjects s on s.id=r.target_id join public.embryos e on e.subject_id=s.id),
+ 'the exact plan binds actual embryo disposition and subject lifecycle revisions independently');
 select is((select count(*) from public.embryo_qc where embryo_id=(select embryo from custody_ids)),0::bigint,
  'the actual measured QC result is hard-deleted in the request transaction before any source-provider claim');
 select ok(exists(select 1 from public.purge_manifest_entries where manifest_id=(select id from deletion_plan)

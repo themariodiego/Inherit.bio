@@ -1,5 +1,29 @@
 # Test diff register
 
+## 2026-10-01: Bind claimant deletion to the real disposition and audit source receipts
+
+The genuine claimant plan now locks the exact detached embryo and reads its
+actual disposition revision independently of the subject lifecycle revision.
+Both retention rows, the closed immutable envelope and every subsequent plan
+check require that same current pair. A positive assertion pins the actual
+row values; no missing subject field or invented revision is used. The running
+publication refusal first creates a constraint-valid claim with a real hash,
+worker and lease, retaining the original 42501 refusal and zero-effects checks.
+Cancellation clears both legacy and current worker claim tokens.
+
+The audit fixture keeps its exact 501 own events, assigned attribution, original
+reference clock and seven member classes. Those fields belong to the private
+source snapshot and actual leased worker context. The public request exposes
+its existing closed authority envelope. New equality assertions bind its receipt
+to that full snapshot and require every original context field through the real
+worker member door. No public response gains private source or actor fields.
+
+The already authored sealed graph, fixed-deadline minimization and immediate
+result deletion proofs are merged intact into this newer profile source. All
+prior sibling, source, provider, uncertain-reservation, actor and rollback
+assertions remain. Full database and hosted verification are pending; the
+public deletion and export delivery holds and acceptance results do not change.
+
 ## 2026-10-01 — Bound optional identity profiles to actual parent authority and the original transfer clock
 
 New profile tests require the current record-key recipient, that same parent's
