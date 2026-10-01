@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Exercise native keyless no-match and canceled client acknowledgement
+
+Two additional browser journeys retain the original complete/processing tests, exact default evidence,120000ms suite limit and zero retries. Optional evidence changes only genuinely uploaded synthetic bytes/fields; real intake, encryption, composition, ClamAV, Auth/TOTP and current owner-assigned review remain necessary. Explicitly synthetic identity-bearing PDFs replace blank papers only in the new no-match journey. Every page must actually render before a separate read attestation. No/one document, stale or substituted authority, another reviewer, borrowed decision nonce, forced approval and client-clock final release all refuse without decision/notice/custody/key/rights-nonce effects. Repeated genuine read-only lookup has an exact closed no-unique response and cannot issue approval proof. Genuine refusal and independent key shredding are required once, with stale lookup/decision replay refused. A second journey requires the exact first acknowledgement but cancels the last after both actual chunks arrive; partial receipts must never render evidence or authorize verification. Discovery is source evidence only; both journeys remain UNRUN pending hosted execution, and genuine historical/elapsed-notice positive proof is explicitly still outstanding. No product guard, old assertion, timeout, retry, route-state ratchet or acceptance value changes.
+
 ## 2026-10-01 — Preserve the complete fresh linked attestation through TypeScript
 
 Actual Next type generation passed on7a054b3f, while the nonincremental compiler found an owned excess-property error at the inline fresh attestation literal. The established sealer accepts its five documentary fields structurally and seals the complete supplied registered linked object. Naming the exact linked attestation before the call preserves its mandatory true parent fact and every encrypted byte/field expectation, without a cast, parser relaxation, field omission or sealer ABI change. Composed native tests continue to decrypt and require all six exact fields. The two inherited mail-fixture/preparation-mock type errors remain separately visible for root integration; the failed source/log is retained. No actual database, hosted browser or provider completion is inferred from this correction.
@@ -6559,5 +6563,4 @@ preserving original claimant,
 withdrawal, invitation, nonce and fixed-deadline behavior. No grant, backfill,
 provider proof or acceptance is inferred. SQL remains authored until root's
 fresh execution; focused source tests do not substitute for database proof.
-
 

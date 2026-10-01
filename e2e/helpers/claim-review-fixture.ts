@@ -102,22 +102,28 @@ async function scanUntilSessionClean(session:string):Promise<void> {
   throw new Error("The genuine bounded scan worker did not reach this document");
 }
 
-/** Real claimant start, rotation, encrypted chunk upload, composition, scan and completion. */
-export async function createReviewCase(page:Page,context:BrowserContext):Promise<string> {
+type ReviewEvidence={bytes:Buffer;extension:"png"|"pdf"|"jpg";mimeType:"image/png"|"application/pdf"|"image/jpeg"};
+/** Real claimant start, rotation, encrypted chunk upload, composition, scan and completion.
+ * An optional explicitly synthetic paper changes only the actual uploaded bytes.
+ * Original journeys retain their exact two-chunk picture and inert two-page PDF. */
+export async function createReviewCase(page:Page,context:BrowserContext,evidence?:{photo:ReviewEvidence;birth:ReviewEvidence;
+  claimant?:{fullName:string;placeOfBirth:string;parentNames:string[]}}):Promise<string> {
   const block=randomBytes(4).toString("hex");
   await context.setExtraHTTPHeaders({"x-real-ip":`2001:db8:${block.slice(0,4)}:${block.slice(4)}::1`});
   await page.goto("/future-person/claim");const form=page.locator("main form");
   await form.getByRole("radio",{name:"I have no key",exact:true}).check();
-  await form.getByLabel("Your full name").fill("Synthetic Claimant");
+  await form.getByLabel("Your full name").fill(evidence?.claimant?.fullName??"Synthetic Claimant");
   await form.getByLabel("Your date of birth").fill("2000-01-31");
-  await form.getByLabel("Where you were born").fill("Synthetic Town");
-  await form.getByLabel("The name of each parent").fill("Synthetic Parent One\nSynthetic Parent Two");
+  await form.getByLabel("Where you were born").fill(evidence?.claimant?.placeOfBirth??"Synthetic Town");
+  await form.getByLabel("The name of each parent").fill(evidence?.claimant?.parentNames.join("\n")??"Synthetic Parent One\nSynthetic Parent Two");
   await form.getByLabel("Your email address").fill(`review-claim-${randomBytes(8).toString("hex")}@e2e.local`);
   await form.getByRole("checkbox").check();
   const started=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/future-person/claim"&&response.request().method()==="POST");
   await form.getByRole("button",{name:"Start my claim",exact:true}).click();expect((await started).status()).toBe(202);
   const documents=page.getByRole("region",{name:"Send your files"});await expect(documents).toBeVisible();
-  for(const [ordinal,label,picture,extension,mimeType] of [[0,"Picture ID",reviewPicture(3,2,true),"png","image/png"],[1,"Birth record",reviewPdf(),"pdf","application/pdf"]] as const) {
+  const files=evidence??{photo:{bytes:reviewPicture(3,2,true),extension:"png",mimeType:"image/png"},birth:{bytes:reviewPdf(),extension:"pdf",mimeType:"application/pdf"}};
+  for(const [ordinal,label,kind] of [[0,"Picture ID","photo"],[1,"Birth record","birth"]] as const) {
+    const {bytes:picture,extension,mimeType}=files[kind];
     await documents.getByLabel(label,{exact:true}).setInputFiles({name:`synthetic-${ordinal}.${extension}`,mimeType,buffer:picture});
     const observer=await observeNativeResponses(page,{session:"^/api/future-person/claim/session/documents$"});
     try {
