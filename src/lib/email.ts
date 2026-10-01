@@ -57,9 +57,13 @@ import {
 import { FuturePersonReleaseEmail,type FuturePersonReleaseProps } from "@/emails/future-person-release";
 import { FuturePersonOwnerNoticeEmail, type FuturePersonOwnerNoticeProps } from "@/emails/future-person-owner-notice";
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
+import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
+  type AccountDeletionAffectedProps, type AccountDeletionAffectedCancelledProps } from "@/emails/account-deletion-affected";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
+  "account-deletion-affected": AccountDeletionAffectedProps;
+  "account-deletion-affected-cancelled": AccountDeletionAffectedCancelledProps;
   "future-person-release":FuturePersonReleaseProps;
   "future-person-owner-notice": FuturePersonOwnerNoticeProps;
   "report-ready": ReportReadyProps;
@@ -90,6 +94,8 @@ export type MailTemplate = {
 const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
+  "account-deletion-affected": (payload) => createElement(AccountDeletionAffectedEmail, payload),
+  "account-deletion-affected-cancelled": (payload) => createElement(AccountDeletionAffectedCancelledEmail, payload),
   "future-person-release":(payload)=>createElement(FuturePersonReleaseEmail,payload),
   "future-person-owner-notice": (payload) => createElement(FuturePersonOwnerNoticeEmail, payload),
   "report-ready": (payload) => createElement(ReportReadyEmail, payload),
@@ -121,6 +127,8 @@ const renderers: {
 // Subjects are fixed per template. The Record Key addendum is the one
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
+  "account-deletion-affected": "Records held on Inherit will be deleted",
+  "account-deletion-affected-cancelled": "A record deletion request on Inherit was cancelled",
   "future-person-release":"Your Inherit request is ready",
   "future-person-owner-notice": "A claim needs your review on Inherit",
   "report-ready": "Your Inherit reports are ready",

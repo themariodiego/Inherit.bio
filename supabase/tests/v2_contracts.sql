@@ -23,8 +23,8 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- The embryo-ingest write fence adds its write intents and session fences,
 -- and the unwind's exact storage disposals add one more.
 -- Both complete embryo and Future Person working-store dependencies.
-select is((select count(*) from public.purge_target_stores), 155::bigint,
-  'all 155 purge stores, including Path B held uploads and report bindings, embryo withdrawal and Future Person working packages and receipts, are classified');
+select is((select count(*) from public.purge_target_stores), 158::bigint,
+  'all 158 purge stores, including Path B held uploads and report bindings, embryo withdrawal and Future Person working packages and receipts, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

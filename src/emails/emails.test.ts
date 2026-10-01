@@ -442,6 +442,25 @@ it("the claimant release email contains only a private one-use fragment link and
   expect(html).not.toMatch(/claimantId|subjectId|parent|genotype|rs[0-9]|photo|birth record/u);
 });
 
+
+describe("affected account deletion mail", () => {
+  it("renders only its fixed event deadline without holder actions or genetic context", async () => {
+    const html = await renderMail({ id: "account-deletion-affected", payload: { noticeEndsAt: "2026-10-07T12:00:00Z" } });
+    expect(html).toContain("7 October 2026");
+    expect(html).toContain("UTC");
+    expect(html).toContain("Copies already held in your own account stay separate");
+    expect(html).toContain("This notice gives no new access to records");
+    expect(html).not.toMatch(/cancel the request|Review or cancel|Export your data|settings\/data|api\/export|href=|genotype|rs[0-9]/);
+  });
+  it("cancellation preserves separately ended resources and offers no holder action", async () => {
+    const html = await renderMail({ id: "account-deletion-affected-cancelled", payload: { cancelledAt: "2026-10-01T12:00:00Z" } });
+    expect(html).toContain("1 October 2026");
+    expect(html).toContain("Records or consent already withdrawn, deleted, moved, restricted");
+    expect(html).toContain("or expired stay that way");
+    expect(html).not.toMatch(/Open data settings|settings\/data|api\/export|href=/);
+  });
+});
+
 // The register's Path B for another adult's DNA (TEST-LOCAL only): the
 // request to sign, and the upload-time notice for each held file.
 describe("Path B mails", () => {

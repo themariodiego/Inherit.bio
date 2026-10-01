@@ -256,6 +256,43 @@ describe("independent mail queues", () => {
       p_success: false, p_outcome_code: "provider_or_payload_error",
     }));
   });
+  it.each([
+    ["account-deletion-affected", { noticeEndsAt: "2026-10-07T12:00:00Z" }],
+    ["account-deletion-affected-cancelled", { cancelledAt: "2026-10-01T12:00:00Z" }],
+  ] as const)("sends the strict token-free %s payload through current submission authority", async (id, payload) => {
+    let claimed = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") { const data = claimed ? [] : [{ ...row, template_id: id, template_payload: payload, delivery_token: null }]; claimed = true; return { data, error: null }; }
+      if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", { id, payload }, row.idempotency_key);
+    expect(mocks.rpc).toHaveBeenCalledWith("authorize_mail_submission_v1", { p_outbox_id: row.outbox_id, p_attempt_ordinal: 2 });
+  });
+  it.each(["cancelPath", "exportPath", "contact", "subjectId", "genotype"])("refuses an affected notice with extra %s", async (field) => {
+    let claimed = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") { const data = claimed ? [] : [{ ...row, template_id: "account-deletion-affected", template_payload: { noticeEndsAt: "2026-10-07T12:00:00Z", [field]: "forbidden" }, delivery_token: null }]; claimed = true; return { data, error: null }; }
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+  it("refuses a valid affected payload when its submission authority became stale", async () => {
+    let claimed = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") { const data = claimed ? [] : [{ ...row, template_id: "account-deletion-affected", template_payload: { noticeEndsAt: "2026-10-07T12:00:00Z" }, delivery_token: null }]; claimed = true; return { data, error: null }; }
+      if (name === "authorize_mail_submission_v1") return { data: false, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
 
   // The register's Path B (TEST-LOCAL only): the request to sign and the
   // upload-time notice go out through the same checked claim.

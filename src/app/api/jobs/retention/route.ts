@@ -12,6 +12,7 @@ import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-clean
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
 import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
 import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
+import { drainAccountEmbryoCleanup } from "@/lib/embryos/account-cleanup";
 import { machineJobDrained } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
@@ -290,6 +291,10 @@ export async function POST(request: Request) {
       if (!claim.database_already_purged) {
         if (!(await prepareAccountCleanup(admin, claim.deletion_id, claimToken, preparedCleanupSignal))) {
           throw new Error("prepared_cleanup_pending");
+        }
+        if (!(await drainAccountEmbryoCleanup({ rpc: admin.rpc.bind(admin) as unknown as import("@/lib/embryos/fragment-storage").EmbryoFragmentRpc,
+          deletionId: claim.deletion_id, claimToken, signal: preparedCleanupSignal }))) {
+          throw new Error("embryo_cleanup_pending");
         }
         const manifest = storageManifest.parse(claim.storage_objects);
         const byBucket = new Map<string, typeof manifest>();

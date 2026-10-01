@@ -48,6 +48,10 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.account_owned_cohort_purges": {
+      "disposition": "excluded-internal",
+      "reason": "Exact current account-deletion cohort work plan and original deadline. It is worker control state, removed after cleanup, not a person\u2019s record."
+    },
     "private.claim_document_fragments": {
       "disposition": "excluded-protected",
       "reason": "Sealed pieces of an identity document in upload, deleted once composed or refused. The export contracts always exclude identity documents and evidence bytes."
@@ -62,7 +66,7 @@ create temporary table export_member_plan as select $plan$
     },
     "private.claim_review_assignments": {
       "disposition": "out-of-scope",
-      "reason": "Named staff assignments for a temporary claim review. This is review workflow, not the requester’s genomics record."
+      "reason": "Named staff assignments for a temporary claim review. This is review workflow, not the requester\u2019s genomics record."
     },
     "private.claim_review_chunk_receipts": {
       "disposition": "excluded-internal",
@@ -86,11 +90,19 @@ create temporary table export_member_plan as select $plan$
     },
     "private.claim_reviewers": {
       "disposition": "out-of-scope",
-      "reason": "Operator-appointed reviewers and their revocation state. This is staff authorization, not the requester’s genomics record."
+      "reason": "Operator-appointed reviewers and their revocation state. This is staff authorization, not the requester\u2019s genomics record."
     },
     "private.claim_reviews": {
       "disposition": "excluded-protected",
       "reason": "Temporary claimant identity case bindings and document digests. Claim-review working packages and identity evidence are always withheld from member exports."
+    },
+    "private.claimed_embryo_ingest_receipts": {
+      "disposition": "deferred",
+      "reason": "Minimum immutable split-session provenance retained for an already-detached claimed source. No account, contact or credential remains; approved-future-person-export-v1 requires its claimant reader."
+    },
+    "private.claimed_embryo_job_receipts": {
+      "disposition": "deferred",
+      "reason": "Minimum immutable completed split-job provenance retained for an already-detached claimed source. No full job payload, authority or credential remains; approved-future-person-export-v1 requires its claimant reader."
     },
     "private.embryo_canonical_parts": {
       "disposition": "excluded-internal",
@@ -186,7 +198,7 @@ create temporary table export_member_plan as select $plan$
     },
     "private.future_person_custody_slices": {
       "disposition": "deferred",
-      "reason": "The exact claimed subject’s immutable autosomal source provenance and minimum historical agreement slice, preserved against parent restriction; approved-future-person-export-v1 requires its own claimant reader."
+      "reason": "The exact claimed subject\u2019s immutable autosomal source provenance and minimum historical agreement slice, preserved against parent restriction; approved-future-person-export-v1 requires its own claimant reader."
     },
     "private.future_person_object_relocations": {
       "disposition": "excluded-credential",
