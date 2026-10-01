@@ -114,6 +114,27 @@ export function mintEmbryoFragmentCapability(claim: {
   } catch { throw new UploadTokenUnavailable(); }
 }
 
+/** Exact registered bind/attempt receipt only, after its current SQL fence.
+ * Internal transport audience; never an Auth or ordinary fragment token. */
+export function mintSubjectRelocationCapability(claim: {
+  operation: "copy" | "get" | "dispose-old" | "dispose-new";
+  bindingId: string; relocationId: string; attemptId: string; accountId: string;
+  bucket: string; oldKey: string; oldVersion: string; oldEtag: string; newKey: string;
+  byteCount: number; sha256: string; expiresAt: string; newVersion?: string; newEtag?: string;
+}): string {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const exp = Math.min(now + 30, Math.floor(Date.parse(claim.expiresAt) / 1000));
+    if (!Number.isSafeInteger(exp) || exp <= now) throw new UploadTokenUnavailable();
+    const { kid, key } = signingKey();
+    const header = Buffer.from(JSON.stringify({ alg: "ES256", kid, typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({ ...claim, iss: issuer(), aud: "inherit-subject-relocation-v1",
+      iat: now, nbf: now, exp })).toString("base64url");
+    const input = header + "." + payload;
+    return input + "." + crypto.sign("sha256", Buffer.from(input), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+  } catch { throw new UploadTokenUnavailable(); }
+}
+
 /** Check deployment readiness before the database commits an upload lease. */
 export function assertStorageUploadSignerAvailable(): void {
   try { signingKey(); issuer(); } catch { throw new UploadTokenUnavailable(); }

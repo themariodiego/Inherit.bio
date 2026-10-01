@@ -137,7 +137,8 @@ vi.mock("@/lib/uploads/prepared-original-download", async importOriginal => {
   } };
 });
 import { GET } from "./route";
-import { exportMemberPlan, exportedTable, plannedArchiveMembers } from "@/lib/export/member-plan";
+import {producerArchiveMembers} from "@/lib/export/archive-producers";
+import { exportMemberPlan, exportedTable } from "@/lib/export/member-plan";
 beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false;
   mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0;
   mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; mocks.tableRows = null; mocks.fromReads = [];
@@ -505,6 +506,6 @@ describe("the archive against the export member plan", () => {
   it("holds exactly the members the plan names, and no other", async () => {
     const names = (await archive()).map(entry => entry.name);
     const members = new Set(names.map(name => (name.includes("/") ? name.slice(0, name.indexOf("/") + 1) : name)));
-    expect(members).toEqual(plannedArchiveMembers());
+    expect(members).toEqual(producerArchiveMembers("legacy-account"));
   });
 });

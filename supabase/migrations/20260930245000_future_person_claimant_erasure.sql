@@ -515,6 +515,34 @@ end $$;
 revoke all on function private.assert_future_person_deletion_fk_closure_v1(uuid)
  from public,anon,authenticated,service_role,inherit_upload_only;
 
+-- Cascades and SET NULL/DEFAULT must not reach a still-sealed child before
+-- its own exact entry has been executed. This catalog check orders only the
+-- already closed graph; it never selects additional rows for deletion.
+create function private.future_person_deletion_cascade_pending_v1(p_store text,p_key jsonb)
+returns boolean language plpgsql security definer set search_path='' as $$
+declare fk record;v_join text;v_pending boolean;
+begin
+ perform private.future_person_deletion_row_v1(p_store,p_key,false);
+ for fk in select c.conkey,c.confkey,c.conrelid,c.confrelid,
+   format('%I.%I',n.nspname,r.relname) child_store,
+   format('%I.%I',pn.nspname,pr.relname) parent_store
+  from pg_catalog.pg_constraint c join pg_catalog.pg_class r on r.oid=c.conrelid
+   join pg_catalog.pg_namespace n on n.oid=r.relnamespace
+   join pg_catalog.pg_class pr on pr.oid=c.confrelid join pg_catalog.pg_namespace pn on pn.oid=pr.relnamespace
+  where c.contype='f' and c.confdeltype in('c','n','d') and c.confrelid=to_regclass(p_store) loop
+  select string_agg(format('child.%I=parent.%I',ca.attname,pa.attname),' and ' order by k.i)
+   into v_join from generate_subscripts(fk.conkey,1) k(i)
+    join pg_catalog.pg_attribute ca on ca.attrelid=fk.conrelid and ca.attnum=fk.conkey[k.i]
+    join pg_catalog.pg_attribute pa on pa.attrelid=fk.confrelid and pa.attnum=fk.confkey[k.i];
+  execute format('select exists(select 1 from %s child join %s parent on %s where to_jsonb(parent) @> $1)',
+   fk.child_store,fk.parent_store,v_join) into v_pending using p_key;
+  if v_pending then return true;end if;
+ end loop;
+ return false;
+end $$;
+revoke all on function private.future_person_deletion_cascade_pending_v1(text,jsonb)
+ from public,anon,authenticated,service_role,inherit_upload_only;
+
 create function private.assert_future_person_deletion_graph_v1(p_manifest uuid)
 returns void language plpgsql security definer set search_path='' as $$
 declare env jsonb;v_embryo uuid;v_audit uuid;g record;e public.purge_manifest_entries;
@@ -625,8 +653,8 @@ begin
  perform private.assert_future_person_deletion_fk_closure_v1(p_manifest);
  -- An admitted provider operation cannot become absent by deleting its SQL
  -- reservation. Refuse the whole request before promising immediate cleanup.
- if exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50
-  and e.store_name in('public.report_artifacts','public.cloud_model_calls','public.cloud_provider_attempts',
+ if exists(select 1 from public.purge_manifest_entries candidate where candidate.manifest_id=p_manifest and candidate.entry_revision>50
+  and candidate.store_name in('public.report_artifacts','public.cloud_model_calls','public.cloud_provider_attempts',
    'public.cloud_provider_payloads','private.export_archive_attempts','private.export_archive_segments',
    'private.export_archive_downloads','private.export_archive_manifest_pages')) then
   raise exception using errcode='42501',message='claimant deletion unavailable';end if;
@@ -640,6 +668,7 @@ begin
     if e.status<>'deleted' then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
     continue;
    end if;
+   if private.future_person_deletion_cascade_pending_v1(e.store_name,e.row_key) then continue;end if;
    begin
     update public.purge_manifest_entries set status='deleted' where manifest_id=e.manifest_id
      and target_id=e.target_id and store_name=e.store_name and entry_revision=e.entry_revision;
@@ -1208,11 +1237,11 @@ begin
     and r.retention_id='future-person.claimed-unbound-24mo')
   or exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50 and (
     (r.target_kind='claim' and e.store_name in('public.future_person_claims','public.future_person_claim_sessions','private.future_person_claim_intakes')
-      and r.target_id=(e.row_key->>'id')::uuid)
+      and r.target_id::text=e.row_key->>'id')
     or (r.target_kind='evidence' and e.store_name in('private.claim_documents','public.legal_evidence_documents')
-      and r.target_id=(e.row_key->>'id')::uuid)
-    or (r.target_kind='export' and e.store_name='public.generated_exports' and r.target_id=(e.row_key->>'id')::uuid)
-    or (r.target_kind='upload_session' and e.store_name='public.upload_sessions' and r.target_id=(e.row_key->>'id')::uuid)))
+      and r.target_id::text=e.row_key->>'id')
+    or (r.target_kind='export' and e.store_name='public.generated_exports' and r.target_id::text=e.row_key->>'id')
+    or (r.target_kind='upload_session' and e.store_name='public.upload_sessions' and r.target_id::text=e.row_key->>'id')))
  ) order by r.id;
 end $$;
 revoke all on function private.future_person_deletion_controls_v1(uuid)
@@ -1309,8 +1338,8 @@ begin
  select audit_principal_id into v_audit from private.future_person_custody_slices where subject_id=p.target_id;
  -- Legacy unindexed audit actors cannot be guessed. Uncertain provider
  -- inventories have no completion door; do not erase the manifest or source.
- if v_audit is null or exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50
-  and e.status<>'deleted' and e.store_name in('private.claim_documents','private.claim_document_fragments','storage.objects',
+ if v_audit is null or exists(select 1 from public.purge_manifest_entries candidate where candidate.manifest_id=p_manifest and candidate.entry_revision>50
+  and candidate.status<>'deleted' and candidate.store_name in('private.claim_documents','private.claim_document_fragments','storage.objects',
    'private.export_archive_attempts','private.export_archive_segments','public.cloud_model_calls','public.cloud_provider_attempts',
    'public.cloud_provider_payloads','public.report_artifacts','public.legal_evidence_documents','public.legal_evidence_fragments',
    'public.legal_evidence_review_copies','public.upload_staging_objects')) then
@@ -1351,6 +1380,7 @@ begin
     if e.status<>'deleted' then raise exception using errcode='42501',message='claimant deletion unavailable';end if;
     continue;
    end if;
+   if private.future_person_deletion_cascade_pending_v1(e.store_name,e.row_key) then continue;end if;
    begin
     update public.purge_manifest_entries set status='deleted' where manifest_id=e.manifest_id
      and target_id=e.target_id and store_name=e.store_name and entry_revision=e.entry_revision;
@@ -1384,7 +1414,7 @@ begin
   -- A second manifest cannot stand in for provider evidence. Every earlier
   -- row key must be a closed PK and already absent; opaque object handles or
   -- unresolved provider reservations refuse this entire final transaction.
-  for old_entry in select e.* from public.purge_manifest_entries e join public.purge_manifests old_m on old_m.id=e.manifest_id
+  for old_entry in select candidate.* from public.purge_manifest_entries candidate join public.purge_manifests old_m on old_m.id=candidate.manifest_id
    where old_m.retention_row_id=v_control loop
    if old_entry.object_id is not null or private.future_person_deletion_row_v1(old_entry.store_name,old_entry.row_key,false)<>0 then
     raise exception using errcode='42501',message='claimant deletion unavailable';end if;

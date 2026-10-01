@@ -33,7 +33,8 @@
     "comprehension:run": "tsx scripts/comprehension/run.mts",
     "comprehension:records": "tsx scripts/comprehension/records.ts",
     "comprehension:human": "tsx scripts/comprehension/human-round.ts",
-    "worker:embryo-split": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/embryo-split-worker.run.mts"
+    "worker:embryo-split": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/embryo-split-worker.run.mts",
+    "worker:subject-relocation": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/future-person-relocation-worker.run.mts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",

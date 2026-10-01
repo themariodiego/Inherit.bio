@@ -33,7 +33,7 @@ interface Bindings {
   measurement: Record<string, number | string>;
   accounts: {
     id: string; role: string; files: string[];
-    seed?: { email: string; by: string; fileTypes: string[]; purposes: string[]; order?: string } | null;
+    seed?: { email: string; by: string; fileTypes: string[]; purposes: string[]; order?: string; coParentEmail?: string; project?: string; runtime?: string; readiness?: string } | null;
     seedBlockedBy?: string;
   }[];
   tasks: Task[];
@@ -132,7 +132,14 @@ describe("every comprehension task is bound to something that exists", () => {
         .toContain(`"${account.id}"`);
       expect(seed!.fileTypes).toEqual(account.files.map((file) => sniff(readFileSync(path.join(ROOT, file))).kind));
       expect(new Set(seed!.purposes).size).toBe(seed!.purposes.length);
-      for (const purpose of seed!.purposes) expect(OWN_REPORT_PURPOSES, account.id).toContain(purpose);
+      if (account.id === "participant-c") {
+        expect(seed!.purposes).toEqual(["embryo.analysis"]);
+        expect(seed!.by).toBe("e2e/embryo-ingest-journey.spec.ts");
+        expect(seed!.coParentEmail).toBe("participant-c-parent@e2e.local");
+        expect(seed!.project).toBe("embryo-ingest");
+        expect(seed!.runtime).toBe("exact-disposable-ci-native-partition");
+        expect(seed!.readiness).toBe("real-signed-parent-upload-worker-publication-required");
+      } else for (const purpose of seed!.purposes) expect(OWN_REPORT_PURPOSES, account.id).toContain(purpose);
       if (!account.files.length) expect(seed!.purposes, `${account.id} holds no file to choose reports for`).toEqual([]);
     }
     const t2 = bindings.tasks.find((task) => task.id === "T2")!;

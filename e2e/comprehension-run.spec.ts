@@ -43,8 +43,10 @@ import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-r
  * participant's address and invites them in their own context, and the
  * participant starts signed out at the home page with that one email in an
  * inbox beside the browser. Opening it is an entry, never a counted action.
- * T6 and T7 are recorded as skipped with the binding's reason until
- * participant-c can be seeded; they are never recorded as answered.
+ * T6 is held in this ordinary runner until every simulation can own a fresh
+ * isolated embryo runtime. Its native single-journey read adapter is genuine
+ * but cannot be shared between personas. T7 separately lacks its approved
+ * personal absolute risk producer. Neither hold becomes an answered task.
  *
  * The pinned model identifier is written only into the run record's
  * `manifest.json` (owner decision, 25 September 2026). Nothing here logs it,
@@ -182,7 +184,8 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
   };
   const openSession: LiveEnvironment["openBrowser"] = async ({ id, taskId, account: accountId }) => {
     const account = accounts.find(candidate => candidate.id === accountId);
-    if (!account || account.id === "participant-c") throw new Error(`No seed for ${accountId}`);
+    if (!account) throw new Error(`No seed for ${accountId}`);
+    if (account.id === "participant-c") throw new Error("Each participant-c simulation requires its own fresh isolated embryo runtime; use the native journey read adapter only inside that journey");
     const email = `cmp-${short}-${id.slice(0, 8)}@e2e.local`;
     const task = boundTask(taskId);
     let inbox: InboxMessage[] | undefined;
