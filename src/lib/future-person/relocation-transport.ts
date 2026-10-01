@@ -38,9 +38,13 @@ async function request(target:RelocationTarget,operation:"copy"|"get"|"dispose-o
 }
 async function complete(response:Response,maximum:number,signal:AbortSignal){
  const body=response.body;if(!body)return fail();const reader=body.getReader(),chunks:Uint8Array[]=[];let size=0;
- try{for(;;){if(signal.aborted)fail();const next=await reader.read();if(next.done)break;
+ // Cancel the admitted body as well as fetch. A pending read must settle so
+ // the worker can persist its temporary-only fence when authority expires.
+ const abort=()=>{void reader.cancel().catch(()=>{});};
+ signal.addEventListener("abort",abort,{once:true});
+ try{for(;;){if(signal.aborted)fail();const next=await reader.read();if(signal.aborted)fail();if(next.done)break;
   size+=next.value.byteLength;if(size>maximum)fail();chunks.push(next.value);}}
- finally{void reader.cancel().catch(()=>{});reader.releaseLock();}
+ finally{signal.removeEventListener("abort",abort);void reader.cancel().catch(()=>{});reader.releaseLock();}
  return Uint8Array.from(Buffer.concat(chunks));
 }
 async function json(response:Response,signal:AbortSignal){

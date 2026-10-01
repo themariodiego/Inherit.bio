@@ -57,6 +57,21 @@ describe("exact claimant relocation transport over the real gateway and syntheti
   await expect(readRelocation(f.target,identity,signal())).rejects.toThrow();
   expect(f.gateway.values.get(f.target.oldKey)?.bytes).toEqual(f.bytes);
  });
+ it.each(["copy","get","dispose-new"] as const)("cancels an admitted stalled %s body and refuses incomplete evidence",async operation=>{
+  const f=await fixture(),identity=await copyRelocation(f.target,signal()),controller=new AbortController();
+  let entered!:()=>void;const pending=new Promise<void>(resolve=>{entered=resolve;});
+  const cancel=vi.fn(),body=new ReadableStream<Uint8Array>({pull(){entered();return new Promise(()=>{});},cancel});
+  const headers=operation==="get"?{"content-length":String(f.target.byteCount),
+   "x-inherit-object-version":identity.providerVersion,etag:`"${identity.etag}"`}:undefined;
+  f.fetch.mockResolvedValueOnce(new Response(body,{headers}));
+  const result=operation==="copy"?copyRelocation(f.target,controller.signal):operation==="get"?
+   readRelocation(f.target,identity,controller.signal):disposeRelocation(f.target,"new",controller.signal);
+  const refusal=expect(result).rejects.toThrow("relocation_transport_unavailable");
+  await pending;controller.abort();await refusal;
+  expect(cancel).toHaveBeenCalledTimes(1);expect(body.locked).toBe(false);
+  expect(f.gateway.values.get(f.target.oldKey)?.bytes).toEqual(f.bytes);
+  expect(f.gateway.values.get(f.target.newKey)?.bytes).toEqual(f.bytes);
+ });
  it("retires only the exact old payload after the committed-swap caller supplies the copied identity",async()=>{
   const f=await fixture(),identity=await copyRelocation(f.target,signal());
   await readRelocation(f.target,identity,signal());

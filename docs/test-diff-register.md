@@ -1,5 +1,12 @@
 # Test diff register
 
+## Claimant relocation cancels admitted bodies and composes exact transport receipts · 1 October 2026
+
+A stalled admitted response body could keep the registered relocation worker inside a pending read after its external cancellation or capability deadline. The complete-byte reader now cancels that body on abort, rechecks cancellation after each read and always removes the listener and releases the lock. Strict copy, readback and cleanup regressions require refusal of incomplete evidence, actual stream cancellation and unchanged source/current payloads. No timeout, size/hash assertion or receipt contract changes.
+
+New composed tests run the actual worker, signer, relocation transport and gateway together over explicit synthetic SQL authority and an in-memory R2 binding. They require complete independent EOF readback before swap, exact version receipts and old-only acknowledged cleanup; lost committed-swap responses preserve the current copy. Revocation after copy or complete readback and corrupted bytes refuse swap and select only temporary cleanup. Cancellation must persist the failure fence with an independent live signal before later temporary cleanup. These are source integration proofs, not fresh database, native HTTP, hosted R2 or genuine browser evidence. Migration 244000 and all four closed binding stores are byte-identical to 000b912e. The bound reader and bound erasure resolver remain required; the 153-store unbound erasure census does not include these four stores. G5.4 and public execution stay CLOSED.
+
+
 ## Claimant relocation requires exact committed swap and acknowledged retry cleanup · 1 October 2026
 
 The registered TEST-LOCAL relocation continuation adds a separate signed audience over the existing private embryo R2 binding. It copies only the immutable old version, ETag, size and SHA-256, and independently consumes the copied version to EOF before the service worker may atomically commit a physical-location swap. Terminal cleanup writes and independently verifies the existing permanent empty-marker disposition: current payload removal and a late-create-only-write fence, never key absence or media erasure. Historical source/dispatch descriptors and the original fragment audience, assertions, size ceilings and provider contracts remain unchanged.
