@@ -1,5 +1,47 @@
 # Test diff register
 
+## 2026-10-01 — Name each original prepared-upload response and worker phase
+
+Hosted run36866428888 browser6 at36061663 timed out in the plain prepared
+journey at its unchanged300-second limit; the page showed preparation could
+not be confirmed. The following gzip case then hit the original strict fixture
+configuration refusal. Both failures remain evidence, and neither exact await
+nor abandoned configuration state is established. Fixed test.step labels now
+surround the original input send, finalization/queue/completed response waits,
+their existing Playwright JSON reads, the actual worker launch and original
+receipt/UI reads in both cases. They add no timeout, retry, request, fallback,
+provider/config mutation or body substitution. Every assertion, value, consent,
+source hash, EOF proof, cleanup and300-second limit is retained. An independent
+TypeScript AST comparison strips only these diagnostic wrappers and requires
+the entire original spec to remain equal. This is failure localization source
+proof, not corrected browser/provider execution or a claimed preparation cause.
+
+## 2026-10-01 — Carry only closed profile failure stages through both isolated launcher pipes
+
+Full hosted run36866428888 at360616639efbecce65e52e1796583a60a7e0bb32
+again saved the other parent's profile with the genuine200 and stored encrypted
+profile/source proofs, then failed the original five-second owner reload
+assertion. The page's generic unavailable state is proven; its RPC/schema/proof
+stage is not. The previous stage-only logger was discarded by both isolated app
+and host-launcher pipe drains. Its exact existing coded event now occupies one
+canonical JSON line and passes a strict validator at both boundaries. Only the
+existing RPC/issue codes and fixed schema field names pass; raw app/provider
+logs, error text, unknown keys, identity values, malformed/oversize/truncated
+lines and approved-looking suffixes of oversize lines remain discarded. Each
+pipe buffer is bounded to2048ASCII bytes, each record to eight schema issues,
+and both pipes share a maximum64 emitted records per launcher hop.
+
+Original logger assertions now require the same complete closed records as one
+exact JSON argument, including the unchanged malicious-value refusals and
+failed-sink isolation. New strict tests prove every chunk split, both streams'
+shared output budget, close/truncation, serialization-hook refusal and two real
+Node child-process pipe hops. The actual browser helper, every original native
+assertion/deadline/retry, profile authority/DTO, schema and public gate remain
+unchanged. Both original prepared-flow failures in the same job (300-second
+timeout, then strict configuration refusal) remain failed evidence. This is
+diagnostic transport source proof, not a corrected native run or a proven
+profile cause; no speculative product authority change is made.
+
 ## 2026-10-01 — Claim review fixture uses the actual public claim identity
 
 Full hosted run 36866428888 at `360616639efbecce65e52e1796583a60a7e0bb32`

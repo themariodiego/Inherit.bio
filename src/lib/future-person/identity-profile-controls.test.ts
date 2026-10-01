@@ -7,6 +7,7 @@ vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:mocks.auth}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:mocks.rpc})}));
 vi.mock("./claims-open",()=>({futurePersonClaimsOpen:mocks.open}));
 import {identityProfileControls} from "./identity-profile-controls";
+const wire=(value:unknown)=>"identity_profile_controls_unavailable "+JSON.stringify(value);
 
 const NOW=Date.parse("2026-10-01T00:00:00Z"),A="49000000-0000-4000-8000-000000000001",B="49000000-0000-4000-8000-000000000002";
 const C="49000000-0000-4000-8000-000000000003",D="49000000-0000-4000-8000-000000000004";
@@ -85,25 +86,25 @@ it("identifies RPC/schema/proof stages without logging sensitive fields or chang
   const refused={items:[],nextCursor:null,unavailable:true};
   mocks.rpc.mockResolvedValueOnce({data:null,error:{code:"40P01",message:"protected SQL",details:"protected authority"}});
   expect(await identityProfileControls(null,NOW)).toEqual(refused);
-  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"rpc",code:"40P01"});
+  expect(console.warn).toHaveBeenLastCalledWith(wire({stage:"rpc",code:"40P01"}));
   const bad=structuredClone(item);bad.deleteContext.currentProfileId="protected profile";
   mocks.rpc.mockResolvedValueOnce({data:{items:[bad],nextCursor:null},error:null});
   expect(await identityProfileControls(null,NOW)).toEqual(refused);
-  const schema=vi.mocked(console.warn).mock.calls.at(-1)![1];expect(schema).toMatchObject({stage:"schema"});
+  const schema=JSON.parse(vi.mocked(console.warn).mock.calls.at(-1)![0].slice("identity_profile_controls_unavailable ".length));expect(schema).toMatchObject({stage:"schema"});
   expect(JSON.stringify(schema)).toContain("currentProfileId");expect(JSON.stringify(schema)).not.toContain("protected profile");
   const expired=structuredClone(item);expired.expiresAt=expired.saveContext.expiresAt=expired.deleteContext.expiresAt=new Date(NOW).toISOString();
   mocks.rpc.mockResolvedValueOnce({data:{items:[expired],nextCursor:null},error:null});
   expect(await identityProfileControls(null,NOW)).toEqual(refused);
-  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"proof",code:"unavailable"});
+  expect(console.warn).toHaveBeenLastCalledWith(wire({stage:"proof",code:"unavailable"}));
   expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/protected SQL|protected authority|protected profile|[a-f0-9]{64}/u);
 });
 it("retains the generic refusal if a response or schema accessor throws, without exposing the exception",async()=>{
   mocks.rpc.mockResolvedValueOnce(Object.defineProperty({data:null},"error",{get(){throw new Error("protected RPC getter");}}));
   expect(await identityProfileControls(null,NOW)).toEqual({items:[],nextCursor:null,unavailable:true});
-  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"rpc",code:"unavailable"});
+  expect(console.warn).toHaveBeenLastCalledWith(wire({stage:"rpc",code:"unavailable"}));
   const data=Object.defineProperty({},"items",{get(){throw new Error("protected schema getter");}});
   mocks.rpc.mockResolvedValueOnce({data,error:null});
   expect(await identityProfileControls(null,NOW)).toEqual({items:[],nextCursor:null,unavailable:true});
-  expect(console.warn).toHaveBeenLastCalledWith("identity_profile_controls_unavailable",{stage:"schema",issues:[{code:"unavailable",field:"inventory"}]});
+  expect(console.warn).toHaveBeenLastCalledWith(wire({stage:"schema",issues:[{code:"unavailable",field:"inventory"}]}));
   expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/protected|getter/u);
 });
