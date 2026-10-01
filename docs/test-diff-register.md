@@ -1,5 +1,17 @@
 # Test diff register
 
+## 2026-10-01 — Give populated Embryo tables keyboard access on mobile
+
+Hosted run `36816036175` on `a3ea135e` reached genuine publication and the
+unchanged populated accessibility assertion. The comparison QC table failed
+`scrollable-region-focusable` at 320×568 and 390×844. Both horizontal data
+scrollers now use the established named-region/tab-stop pattern already used
+by the Family table. The QC region keeps the registered quality heading;
+each findings region is named by its existing unique layer caption. Existing
+global focus-visible styling supplies the focus indicator. No data, figure,
+caption wording, native assertion, timeout, retry or waiver changes. The
+actual hosted failure is retained; the coherent source requires full checks.
+
 ## 2026-10-01 — Keep the bound-source unit helper outside production source
 
 The full Linux run on `9319dddc` passed 8,364 tests and refused one unlisted
