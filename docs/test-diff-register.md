@@ -1,5 +1,27 @@
 # Test diff register
 
+## 2026-10-01 — Prove exhaustive account partition rows and complete archive EOF
+
+New assembly tests consume the existing actual closed history/class/metadata
+readers through their exact RPC seams and independently reconcile every source
+row to exactly one authorized directory, including 1,103 rows across real
+consumer pages. Requester actions whose target is foreign or unrecorded retain
+explicit account-history scope under the actual self record; no target, grant
+or source access is inferred. A missing/ambiguous self, omitted source row,
+same-count change, protected field, authority loss or cancellation refuses.
+
+The byte-plan tests require the independent register's entire twelve-member
+subject set, open all 33 actual ZIP artifacts, match every manifest payload
+count/length/SHA, and reject missing, duplicate, foreign, sensitive-root,
+truncated and same-length changed bytes. They also retain the actual signing,
+copy/old-disposal/current-read code against the explicit synthetic R2 gateway
+and require every exact canonical part, including independent part hashes.
+Operation limits remain 30 seconds and original job/source clocks do not move.
+Every original assertion remains; no timeout, retry, skip, SQL, grant, store,
+public gate, READY or acceptance row changes. Unit authority/provider seams
+are explicit, and complete scientific/non-self/POST/status composition and
+live database/browser/provider proof remain separate outstanding work.
+
 ## 2026-10-01 — Compare every original archive byte with the native Buffer primitive
 
 The actual full Linux run reached 8,718 passing tests and one unchanged
