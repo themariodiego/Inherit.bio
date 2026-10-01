@@ -1,5 +1,44 @@
 # Test diff register
 
+## 2026-10-01 — Prove complete consumed history membership before account assembly
+
+Migration `20261001024000` binds independent complete counts and ordered
+identity/content receipts for all nine existing own-history classes to the
+actual consumed account request and writing attempt. The closed source reader
+retains the original named columns and requester predicates, every current
+source/session guard and all unsupported graph refusals. No existing member,
+assertion, timeout or source permission is removed.
+
+The streaming consumer rejects missing, duplicate, foreign, same-count changed
+or altered canonical rows, wrong cursors/classes, internal fields and changed
+authority before member completion. A new source fixture retains the original
+actual scientific assertions, checks genuine export creation constraints, reads
+all 1,103 actual recorded history rows past fixed/API page caps, independently
+compares every source identity and named field and reconstructs its complete
+membership receipt. It also preserves every durable job/attempt byte after
+reads and refusals. SQL is authored until independently executed; synthetic
+unit transports prove consumer validation only.
+
+The real Copilot settings/grant producer records credential and transport
+fingerprints inside the old `copilot_recipient` JSON. The new source explicitly
+projects its seven actual destination fields and withholds those internal
+fields; strict consumer and actual-producer SQL probes require both complete
+destination preservation and zero credential leakage. The existing synchronous
+`SubjectRecord` shares the same exact seven-field destination schema. It keeps
+all requester predicates and page/count assertions, preserves every destination
+field over 1,003 rows, strips known and future internal credential evidence, and
+refuses malformed destinations and credential-bearing URLs. Its original fake
+scalar recipient fixture is corrected to the actual nullable JSON contract;
+all original key/column/scoping assertions remain. Historical nullable
+signature fields remain truthful rather than gaining a guessed purpose or
+binding revision. No consent/grant/source is rewritten and no provider proof
+is invented.
+
+The complete assembler, every required non-self/cohort/joint class, actual
+POST/status execution and delivery remain mandatory. Unsupported graphs,
+public/READY and G5.4/G5.6 remain closed. This prerequisite does not establish
+whole-account completion.
+
 ## 2026-10-01 — Pin actual legacy content and complete consumed-account metadata
 
 Migration `20261001021000` supplements the existing exact owned capture with
