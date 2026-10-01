@@ -128,7 +128,7 @@ describe("actual production email HTML and envelope capture", () => {
         resolveSeed: () => false, resolveComputed: () => false });
         console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
     const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: projectRoot, timeout: 30_000 });
-    expect(JSON.parse(output.stdout)).toEqual({ receipts: 33, observations: 66, ok: false });
+    expect(JSON.parse(output.stdout)).toEqual({ receipts: 36, observations: 72, ok: false });
     const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
     expect(retained.observations).toEqual(result.observations);
     expect(retained.collector.sha256).toBe(result.collector.sha256);
