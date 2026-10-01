@@ -118,15 +118,17 @@ select is(pg_temp.restore()->>'state','release_queued','actual fresh Recovery Ke
 select throws_ok($$select pg_temp.restore()$$,'42501','claim review unavailable','closed decision and consumed nonce cannot rotate a second release');
 select is((select count(*) from public.future_person_claimant_principals),1::bigint,'recovery creates no second claimant or custody');
 select is((select release_revision from public.future_person_claimant_principals where id=(select claimant from custody_ids)),2::bigint,'the old release capability is superseded atomically');
-select ok((select bool_and(status='revoked') from public.future_person_recovery_key_hashes where claimant_principal_id=(select claimant from custody_ids)),
-  'every old Recovery Key stays revoked');
+select is((select count(*) from public.future_person_recovery_key_hashes where claimant_principal_id=(select claimant from custody_ids)),0::bigint,
+  'rotation removes every superseded key hash rather than keeping historical credentials');
+select is((select count(*) from public.future_person_recovery_key_hashes where recovery_key_hash=pg_temp.h('recovery-original')),0::bigint,
+  'the old Recovery Key can never select a current restoration candidate');
 select ok(public.future_person_rights_view_v1(pg_temp.h('rights-original')) is null,'old active rights fail immediately after restoration');
 select ok((select bool_and(wrapped_document_key is null and document_key_shredded_at is not null)
   from private.claim_document_sessions where intake_id=(select review from recovery_ids)),'recovery resolution destroys both independent document keys');
 select is((select count(*) from public.future_person_claim_notices where notice_kind='owner_notice'),0::bigint,'recovery never invents a parent notice');
 select pg_temp.activate_latest('rights-restored','documentary-restored-activate-0001');
 select lives_ok($$select public.issue_future_person_recovery_key_v1(pg_temp.h('rights-restored'),'documentary-replacement-key-nonce-0001',pg_temp.h('recovery-replacement'))$$,
-  'new current release can show one replacement Recovery Key despite preserved historical revoked rows');
+  'new current release can show one replacement Recovery Key after actual credential rotation');
 select throws_ok($$select public.issue_future_person_recovery_key_v1(pg_temp.h('rights-restored'),'documentary-replacement-key-nonce-0002',pg_temp.h('recovery-second'))$$,
   '42501','claimant rights unavailable','the same release revision cannot show a second replacement key');
 select pg_temp.new_recovery_review('keyless',null);

@@ -114,8 +114,9 @@ begin
     verified_date_of_birth=p_verified_date_of_birth,recorded_parent_link_confirmed=false
     where review_id=r.id and review_revision=r.review_revision;
   now_at:=clock_timestamp();
-  update public.future_person_recovery_key_hashes set status='revoked'
-    where claimant_principal_id=cp.id and status in ('current','consumed');
+  -- Rotation replaces the optional hash; it does not retain a historical
+  -- collection of superseded credentials under the durable identity purpose.
+  delete from public.future_person_recovery_key_hashes where claimant_principal_id=cp.id;
   update public.rights_sessions set status='revoked',ended_at=now_at
     where principal_id=sp.id and purpose='approved-future-person-release' and status='active';
   update public.download_sessions set status='revoked',ended_at=now_at,session_revision=session_revision+1
@@ -144,8 +145,9 @@ revoke all on function public.restore_future_person_claim_review_v1(uuid,bigint,
 grant execute on function public.restore_future_person_claim_review_v1(uuid,bigint,text,text,bytea,bytea,jsonb,date,jsonb,text,uuid,bytea,jsonb) to authenticated;
 
 -- One Recovery Key may be shown per genuinely issued release revision.
--- Historical revoked hashes remain revoked. A reverified claimant can create
--- the replacement once through the existing native rights door; no raw key is
+-- Superseded hashes were erased by the real restoration transaction. The
+-- original blanket repeat refusal remains: the replacement may be shown once
+-- through the existing native rights door; no raw key is
 -- written to a database, notice, log, review response or retained package.
 create or replace function public.issue_future_person_recovery_key_v1(p_session_hash text,p_nonce text,p_key_hash text)
 returns date language plpgsql security definer set search_path='' as $$
@@ -156,8 +158,7 @@ begin
     or not private.rights_action_permitted_v1(rs.purpose,'create-recovery-key','api.future-person-recovery-key') then
     raise exception using errcode='42501',message='claimant rights unavailable'; end if;
   select * into cp from public.future_person_claimant_principals where principal_id=rs.principal_id and status='current' for update;
-  if exists(select 1 from public.future_person_recovery_key_hashes where claimant_principal_id=cp.id
-      and (status='current' or key_revision>=cp.release_revision))
+  if exists(select 1 from public.future_person_recovery_key_hashes where claimant_principal_id=cp.id)
     or not exists(select 1 from public.future_person_claimant_identity_hmacs where claimant_principal_id=cp.id and expires_at is null) then
     raise exception using errcode='42501',message='claimant rights unavailable'; end if;
   perform private.consume_future_person_rights_nonce_v1(rs,p_nonce);
