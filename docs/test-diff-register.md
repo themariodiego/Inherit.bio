@@ -8,6 +8,25 @@ Strict new tests cover complete nonempty multi-page actual actor content once gl
 
 All remaining whole-account/non-self/cohort/joint members, POST/status worker integration and provider delivery stay required. G5.4/G5.6 remain NO; public/READY gates stay closed.
 
+## 2026-10-01 — Close the account member context's exact JSON path literal
+
+The next complete fresh reset onfc2975bd passed013000 and caught a missing
+closing quote in014000's account-session JSON path while compiling the actual
+member reader. The path literal now parses as its originally intended exact
+session field. No payload shape, reader, authority, source or assertion changes.
+The failed reset is retained and pgTAP was not reached. The complete fresh run
+continues on the corrected frozen source before any draft push.
+
+## 2026-10-01 — Parse the bound archive target as JSON before its field projection
+
+The first combined full fresh-database reset on13f5d145 stopped while creating
+the013000 bound-frame SQL function: an unparenthesized JSON arrow/minus
+expression made PostgreSQL attempt to subtract two unknown strings. The exact
+target JSON expression is now parenthesized before removing its existing expiry
+field. No field, authority check, tuple, reader, test or assertion changes.
+The failed reset is retained; no SQL execution or archive completion is inferred
+from the earlier source-only checkpoints. Full fresh proof follows this fix.
+
 ## 2026-10-01 — Observe the authoritative upload presentation before its unchanged UI assertions
 
 Hosted run36805076949 finished with the own-export journey stopped immediately

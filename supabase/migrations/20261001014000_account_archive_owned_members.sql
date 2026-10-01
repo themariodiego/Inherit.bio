@@ -289,7 +289,7 @@ begin
  if p_operation='context' then
   result:=jsonb_build_object('version','account-archive-members-v1','targetKind',permit->'targetKind','targetId',permit->'targetId',
    'authorityReceipt',p_authority_receipt,'deadline',permit->'deadline','capturedAt',permit->'capturedAt',
-   'actor',jsonb_build_object('accountId',permit#>'{origin,accountId}','sessionId',permit#>'{origin,sessionId}),'fileCount',capture#>'{authority,fileCount}',
+   'actor',jsonb_build_object('accountId',permit#>'{origin,accountId}','sessionId',permit#>'{origin,sessionId}'),'fileCount',capture#>'{authority,fileCount}',
    'partitions',(select jsonb_agg(jsonb_build_object('subjectId',x->'subjectId','class',x->'class',
      'fileCount',case when x->>'class'='claimed-bound' then '1'::jsonb else x#>'{capture,fileCount}' end,
      'fileIds',(select coalesce(jsonb_agg(gf.id order by gf.id),'[]') from public.genome_files gf where gf.subject_id=(x->>'subjectId')::uuid)) order by x->>'subjectId')
