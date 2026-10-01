@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-01 — Parenthesize the exact account guard ACL expectation
+
+The actual complete fresh reset of29492581 stopped at migration030, statement0, with SQLSTATE42601. Its outer PL/pgSQL IF compared ACL cardinality with a bare CASE expression, so the parser treated the CASE/IF boundary incorrectly. Parentheses now delimit that same exact CASE expression. The expected owner-only/service-door ACL cardinalities remain1/2; every predecessor and replacement MD5, owner, language, ABI, configuration, role denial, ACL predicate, source anchor and generated runtime body stays byte-identical.
+
+The failed reset log is retained. This is a two-parenthesis grammar correction, not a database or gate pass inferred from source. Root must rehearse the actual prefix through029 and repeat the complete chronological reset and test suite before release. No assertion, timeout, retry, permission or acceptance changes.
+
 ## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
 
 The retirement branch now merges the exact verified main release. Its earlier

@@ -74,7 +74,7 @@ $body$;$definition$;
         where p.oid=target and (a.privilege_type<>'EXECUTE' or a.grantor<>p.proowner or a.is_grantable
           or (a.grantee<>p.proowner and (not item.service_door or a.grantee<>(select oid from pg_roles where rolname='service_role')))))
       or (select cardinality(coalesce(proacl,acldefault('f',proowner))) from pg_proc where oid=target)
-        <>case when item.service_door then 2 else 1 end then
+        <>(case when item.service_door then 2 else 1 end) then
       raise exception using errcode='55000',message='account Path B predecessor differs';end if;
     definition:=pg_get_functiondef(target);
     if (length(definition)-length(replace(definition,item.anchor,'')))/length(item.anchor)<>1 then
