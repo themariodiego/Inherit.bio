@@ -5,6 +5,7 @@ import type {z} from "zod";
 import {claimantArchiveFixture} from "./__fixtures__/claimant-archive";
 import {boundSourceFixture} from "./__fixtures__/bound-source";
 import {buildBoundAccountArchive,accountArchiveContextSchema,type AccountMemberRpc,type AccountBoundSourceRpc} from "./bound-account-archive-worker";
+import {generatedProducerMembers,producerArchiveMembers} from "@/lib/export/archive-producers";
 import {claimantAuditMember} from "./claimant-legal-audit";
 import {boundClaimantAuditMember} from "./bound-claimant-legal-audit";
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllMocks();});
@@ -45,6 +46,8 @@ describe("complete real bound-account subject archive",()=>{
  it("independently opens every historical member and every actual moved canonical part with exact manifest hashes",async()=>{
   const f=await fixture(),result=await buildBoundAccountArchive(f.options),all=Buffer.concat(f.historical.writes),zip=new AdmZip(all);
   expect(result.memberCount).toBe(25);expect(zip.getEntries()).toHaveLength(25);
+  expect(generatedProducerMembers(zip.getEntries().map(entry=>entry.entryName),"claimed-bound-subject"))
+   .toEqual(producerArchiveMembers("claimed-bound-subject"));
   const manifest=JSON.parse(zip.readAsText("manifest.json"));expect(manifest.members).toHaveLength(24);
   expect(new Set(manifest.members.map((row:{name:string})=>row.name))).toEqual(new Set(zip.getEntries().filter(row=>row.entryName!=="manifest.json").map(row=>row.entryName)));
   for(const member of manifest.members){const bytes=zip.readFile(member.name)!;expect(bytes.length).toBe(member.sizeBytes);

@@ -27,7 +27,7 @@ export async function boundSourceFixture(payloads?:Uint8Array[]){
   claimantRevision:1,releaseRevision:1,principalRevision:1,subjectId,subjectBindingRevision:1,subjectLifecycleRevision:1,
   fileId:randomUUID(),sourceSha256:sha(bytes[0]),membershipSha256:sha(bytes[1]),publicationRevision:1,
   byteCount:bytes.reduce((sum,p)=>sum+p.length,0),partCount:2,expiresAt,parts};
- const reference={exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)};
+ const reference:{exportId:string;attemptId:string;authorityReceipt:string}={exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)};
  const reply={version:"bound-account-archive-source-v1",...reference,source:manifest};
  const rpc=vi.fn<BoundArchiveSourceRpc>(async(name,args)=>{
   expect(name).toBe("export_archive_bound_source_v1");expect(args).toMatchObject({p_export_id:reference.exportId,

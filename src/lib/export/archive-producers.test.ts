@@ -12,8 +12,8 @@ describe("every archive member has an exact implemented eligible producer",()=>{
   expect(()=>parseArchiveProducers(source,new Set([...plannedArchiveMembers(),"subjects/{subject_id}/new-record.json"])))
    .toThrow("archive_producer_member_unassigned");
  });
- it("cannot suppress a missing claimant producer or invent an unknown pattern",()=>{
-  const missing=structuredClone(source);missing.producers["approved-unbound"].plannedMembers.pop();
+ it.each(["approved-unbound","claimed-bound-subject"] as const)("cannot suppress a missing %s producer or invent an unknown pattern",name=>{
+  const missing=structuredClone(source);missing.producers[name].plannedMembers.pop();
   expect(()=>parseArchiveProducers(missing)).toThrow("archive_producer_member_unassigned");
   const unknown=structuredClone(source);unknown.producers["legacy-account"].plannedMembers.push("made-up.json");
   expect(()=>parseArchiveProducers(unknown)).toThrow("unknown_archive_producer_member");
