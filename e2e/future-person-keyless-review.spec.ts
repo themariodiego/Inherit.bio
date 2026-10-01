@@ -5,6 +5,7 @@ import {observeNativeResponses} from "./helpers/native-response-observer";
 import {currentDocumentaryCase,expectNoUniqueKeylessResponse,keylessEffectProof,nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/keyless-review-journey";
 import {keylessReviewDocument} from "./fixtures/keyless-review-documents";
 import {randomBytes} from "node:crypto";
+import {currentClaimDocumentReadProof} from "./helpers/claim-document-read-proof";
 
 // Real Auth/TOTP, native encrypted uploads/compose/scan, current named owner
 // assignment and actual EOF/client ACKs. No parent/source/history/notice row is
@@ -77,7 +78,24 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
     const denied=await nativeReviewRequest(otherPage,lookupPath,lookup,current.csrf);expect(denied.status).toBe(404);
     expect(denied.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(unchanged);
   }finally{await other.close();}
-  const observed=watchRequests(page);await expectAxeClean(page);await assertNoThirdParty(page,observed,"real keyless documentary controls, both themes");
+  const observed=watchRequests(page);await expectAxeClean(page,async()=>{
+    // A real reload invalidates local rendered/read attestations. Re-read both
+    // original papers under the fresh page authority before auditing controls.
+    await openSyntheticReviewPdf(page,"photo");await openSyntheticReviewPdf(page,"birth");
+    await expect(controls).toBeVisible();
+    await controls.getByLabel("Full name",{exact:true}).fill(identity.fullName);
+    await controls.getByLabel("Birth date",{exact:true}).fill("2000-01-31");
+    await controls.getByRole("checkbox",{name:"This person is an adult.",exact:true}).check();
+    const verified=await observeNativeResponses(page,{verify:`^${lookupPath}$`});
+    try{
+      await controls.getByRole("button",{name:"Check details",exact:true}).click();
+      const response=await verified.read("verify");expect(response.status).toBe(200);expectNoUniqueKeylessResponse(response.text,claim);
+      await expect(controls.getByRole("status")).toHaveText("No single record could be found. Do not choose a record.");
+    }finally{await verified.dispose();}
+    expect(await keylessEffectProof(claim)).toBe(unchanged);
+    await page.getByLabel("Reason",{exact:true}).fill("The synthetic documentary papers match no unique eligible record. No record was chosen.");
+    await expect(page.getByRole("button",{name:"Save choice",exact:true})).toBeEnabled();
+  });await assertNoThirdParty(page,observed,"real keyless documentary controls, both themes");
   await page.getByLabel("Reason",{exact:true}).fill("The synthetic documentary papers match no unique eligible record. No record was chosen.");
   const decision=await observeNativeResponses(page,{save:`^/api/reviews/future-person/claims/${claim}$`});
   try{
@@ -122,8 +140,9 @@ test("Keyless documentary review: all bytes without the last acknowledgement rem
     expect(await reviewFixtureSql(`select count(*)||'/'||coalesce(bool_and(x.sequence=0 and x.acknowledged_at is not null),false)
       from private.claim_review_downloads d join private.claim_review_chunk_receipts x on x.download_id=d.id
       where d.review_id='${claim}'::uuid and x.acknowledged_at is not null`)).toBe("1/true");
-    expect(await reviewFixtureSql(`select private.claim_document_fully_read_v1('${claim}'::uuid,'${reviewer}'::uuid,r.photo_document_id)
-      from private.claim_reviews r where r.id='${claim}'::uuid`)).toBe("f");
+    const readProof=await currentClaimDocumentReadProof(context,claim,reviewer);
+    expect(readProof).toEqual({authCurrent:true,documentCurrent:true,receiptsCurrent:true,deliveredChunks:1,expectedChunks:2,fullyRead:"f"});
+    expect(readProof.fullyRead).toBe("f");
     const response=await nativeReviewRequest(page,`/api/reviews/future-person/claims/${claim}/verify-documents`,{reviewRevision:1,nonce:current.lookup,
       documentaryAttestation:{fullName:"Synthetic Claimant",dateOfBirth:"2000-01-31",photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}},current.csrf);
     expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(unchanged);

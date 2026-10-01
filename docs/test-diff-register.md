@@ -69,6 +69,62 @@ or callback calls and a substituted app origin. These are authored-source and
 discovery proofs, not execution of the new browser case. Type/full suites and
 actual hosted browser execution remain pending in the combined checkpoint.
 
+## 2026-10-01 — Bind the incomplete document proof to real Auth and the current document composite
+
+Complete hosted C4 run36877690069 failed the second keyless review case at its
+owner SQL call: the third argument was a UUID, but the actual230 callee requires
+the current private.claim_documents composite. That callee also selects receipts
+by the actual Auth session. Passing only the correct composite under an empty
+owner JWT would give a false result without testing the missing acknowledgement.
+
+The same real signInReviewer journey now supplies current browser cookies to the
+SSR SDK's verified getClaims result. A separate quiet owner metadata helper carries
+that unedited Auth context through stdin in a read-only transaction, retaining the
+original15-second and65,536-byte limits. It logs no token, claims, keys or native
+error payload. The shared SQL passes the real selected document row and proves
+current Auth, document, assignment, profile revision, originating session revision,
+one delivered chunk and the exact two-chunk document before the original f
+assertion. NULL is refused rather than converted into f. Every other original
+browser assertion, case, timeout, retry and product authority remains unchanged.
+
+The SDK's AMR type also permits strings. The exact-head type check requires
+an explicit object entry before reading its method; strings still cannot satisfy
+the original genuine TOTP-object check. This narrowing changes no authority.
+
+The permanent existing CI EXPLAIN preflight now plans this exact shared callee
+query alongside the complete keyless side-effect query. Planning dummy UUIDs
+executes no query or authority operation. Source and focused checks do not credit
+native execution; the genuine current-row and hosted browser proof remain pending.
+
+## 2026-10-01 — Restore genuine documentary controls after each themed reload
+
+The full hosted run on c4d3346d retains its failed first keyless case
+at the unchanged120-second limit. Its saved page shows the original Open
+Picture ID/Open Birth record buttons, no rendered papers and disabled Save
+choice. The shared accessibility helper reloads once per theme, which correctly
+clears the component's ephemeral rendered/read attestations. The final native
+POST therefore never starts. The helper now accepts an optional restoration
+callback after each genuine reload and before its unchanged full viewport,
+reduced-motion and contrast audits. Only this keyless case uses it: both original
+PDFs are reopened through their actual complete-byte/hash/read-ACK/render flow,
+both human read attestations are made again, documentary fields are restored,
+the exact native no-match response and unchanged effects are checked again, and
+Save choice must be enabled before each theme audit. Every original assertion,
+refusal, replay, key-shredding proof, deadline and no-retry policy remains.
+
+The timeout was secondarily masked by observer cleanup evaluating a page that
+Playwright had closed. Cleanup now returns only when the page is demonstrably
+closed, including a close during cleanup; an evaluate error on an open page
+still fails. The original native observation,10-second bounded body read and
+4096-byte limit remain unchanged. Causal tests prove reload state loss, fresh
+restoration before all eight audits, restoration refusal, and all three cleanup
+states. The real loopback HTTP/Chromium fixture retains every original assertion
+and adds closed-page disposal. Source proof removes only the new callback and
+requires the entire original keyless spec AST, all assertions and configuration
+to equal c4. This is a fixture correction with independent source/native helper
+proof; corrected full hosted execution and positive documentary release remain
+unproven. The separate cancelled-ACK SQL ABI correction is outside this child.
+
 ## 2026-10-01 — Name each original prepared-upload response and worker phase
 
 Hosted run36866428888 browser6 at36061663 timed out in the plain prepared
