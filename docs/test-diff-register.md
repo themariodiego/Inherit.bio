@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Exercise the real recipient JSON contract in the whole-archive catalog fixture
+
+The actual full Linux run on `517fb4` failed the three existing archive-member
+plan assertions because their whole-catalog fixture represented the nullable
+`copilot_recipient` JSON destination as a scalar column sentinel. The strict
+seven-field projection correctly refused that malformed history with HTTP 503;
+the subsequent ZIP parser therefore received a refusal response. The fixture
+now supplies all actual recorded destination fields, plus nested internal-field
+sentinels. Every original withheld-column, exported-table, non-vacuity and exact
+member-set assertion remains intact, and ZIP construction now requires an
+explicit HTTP 200.
+
+The actual generated ZIP must preserve the complete recorded destination and
+withhold known and future nested credential evidence. Scalar, incomplete and
+credential-bearing destinations must still return HTTP 503 before any original,
+variant or report source is opened. This changes only the synthetic fixture and
+adds stricter output/refusal evidence; no runtime projection, requester filter,
+member plan, authority, source permission, timeout or public gate changes.
+The failed full-run receipt remains preserved; focused passes do not supersede
+it with a whole-suite, database, browser or provider claim.
+
+## 2026-10-01 — Preserve actual SQL compilation failure and correct the original descriptor path
+
+The owned full fresh-database rehearsal of the combined source failed with
+SQLSTATE42601 while applying migration `20261001026000`: the descriptor's
+`decodedSha256` JSON path lacked its closing quote. The exact one-character
+source correction closes that path without changing any expression, source,
+authority, assertion, limit or permission. Frozen `a209bb02` and its authored
+receipt remain unchanged; its unit/type/static passes never supplied database
+execution credit. The failed actual database log remains preserved. Independent
+corrected SQL execution and full fresh qualification are still required.
+
 ## 2026-10-01: correct errors found by the actual combined database run
 
 The full fresh reset of commit517fb4 stopped at026 with SQLSTATE42601 because its source SHA JSON path lacked a closing quote. A corrected local diagnostic then exposed an ambiguous022 notice alias and the026 pgTAP expected-set expression being interpreted as a prepared statement. The source fixes close the literal, qualify the two notice lookups, and wrap the same exact nine expected field names in SELECT. They retain every authority, lock, clock, token and field-set predicate. The025 body guard, its source assertion and documentation now pin only the corrected canonical mail body MD5abb70e7d8ec45731aebcbaa870ab9c13; the ambiguous predecessor is not admitted as an alternative.
