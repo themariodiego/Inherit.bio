@@ -8,7 +8,7 @@ function fixture(count=1){
  const actor={accountId:randomUUID(),sessionId:randomUUID()},subjectId=randomUUID(),boundSubject=randomUUID(),boundFile=randomUUID();
  const reference={exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)},deadline=new Date(Date.now()+600000).toISOString();
  const files:OwnExportSnapshot[]=Array.from({length:count},()=>({file:{id:randomUUID(),subject_id:subjectId,original_name:"Synthetic source",
-  file_type:"vcf",tier:1,size_bytes:3,sha256:createHash("sha256").update("ABC").digest("hex"),source_sha256:createHash("sha256").update("ABC").digest("hex"),
+  file_type:"vcf",tier:1 as const,size_bytes:3,sha256:createHash("sha256").update("ABC").digest("hex"),source_sha256:createHash("sha256").update("ABC").digest("hex"),
   status:"stored",build:"GRCh38",created_at:"2026-10-01T00:00:00.000Z",variant_count:1,bucket_path:randomUUID(),storage_object_id:randomUUID(),upload_revision:1},
   binding:{...actor,accountRevision:1,authSessionRevision:1,sessionRevision:1,subjectBindingRevision:1,lifecycleRevision:1,
    accountBindingId:randomUUID(),accountBindingRevision:1,subjectPrincipalId:randomUUID(),subjectPrincipalRevision:1,
