@@ -250,6 +250,7 @@ export type Database = {
       }
       adult_subject_drafts: {
         Row: {
+          adult_flow: string
           created_at: string
           draft_revision: number
           fixed_expires_at: string
@@ -259,6 +260,7 @@ export type Database = {
           subject_id: string
         }
         Insert: {
+          adult_flow?: string
           created_at?: string
           draft_revision: number
           fixed_expires_at: string
@@ -268,6 +270,7 @@ export type Database = {
           subject_id: string
         }
         Update: {
+          adult_flow?: string
           created_at?: string
           draft_revision?: number
           fixed_expires_at?: string

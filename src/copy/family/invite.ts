@@ -2,10 +2,10 @@
  * `/family/invite` — Path A, the only path that exists (design §2.6; brief
  * §5 §5.2). Every user-visible string of that page lives here.
  *
- * Path B ("Upload with their written permission") is not built, so its
- * secondary link is not rendered: a link to a screen that does not exist is
- * a dead link. The string is kept here, unused and guarded, so the day Path
- * B ships it is already written.
+ * Path B ("Upload with their written permission") is open nowhere outside
+ * TEST-LOCAL, so its secondary link is not rendered: a link to a screen no
+ * real jurisdiction offers is a dead link. The string is kept here, unused
+ * and guarded, so the day Path B opens it is already written.
  */
 
 /** The h1 and the document title; pinned by e2e/adult-subject-invitation.spec.ts. */
@@ -49,8 +49,10 @@ export const BLOCKED_HERE_STATUS = "Inherit cannot send invitations here yet.";
 export const REQUEST_FAILED_STATUS = "The invitation could not be requested.";
 
 /**
- * Path B does not exist: no screen, no route, no consent record. The link
- * renders only when this is true, so nothing dead ships (brief line 332).
+ * Path B exists only under TEST-LOCAL, as the closed section of
+ * `/files/upload`; no real jurisdiction offers it. The owner keeps this link
+ * hidden until one does (docs/protocol/decisions.md, 2026-09-28 evening). The
+ * link renders only when this is true, so nothing dead ships (brief line 332).
  */
 export const PATH_B_AVAILABLE = false;
 export const PATH_B_LINK = "They can’t use Inherit themselves";

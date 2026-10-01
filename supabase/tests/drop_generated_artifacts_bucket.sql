@@ -27,9 +27,9 @@ select set_eq($$select p.oid::regprocedure::text from pg_proc p join pg_namespac
  'only the exact own-report and claimant deletion functions carry the retention target literal');
 select set_eq($$select store_name from public.purge_target_stores where target_id='generated-artifacts'$$,
  array['public.report_artifacts','public.generated_exports','public.download_sessions','public.model_contexts','private.own_analysis_runs',
- 'private.export_archive_jobs','private.export_archive_attempts','private.export_archive_downloads',
+ 'private.path_b_report_bindings','private.export_archive_jobs','private.export_archive_attempts','private.export_archive_downloads',
  'private.export_archive_manifest_pages','private.export_archive_segments','private.export_archive_nonce_uses'],
- 'the generated-artifacts target keeps every prior store and all six exact registered archive children');
+ 'the generated-artifacts target keeps every prior store, the exact Path B binding and all six registered archive children');
 
 -- The single-object form cannot be recorded again. Foreign keys are off so
 -- each insert reaches only the check it is aimed at.
