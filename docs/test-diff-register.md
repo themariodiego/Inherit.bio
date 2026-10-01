@@ -1,5 +1,35 @@
 # Test diff register
 
+## 2026-10-01 — Refuse the unproved Path B graph before an account deletion can start
+
+The refreshed account chronology has152 actual registered stores. The new
+held-original and private report-binding stores have no complete account-owned,
+subject-bound and recipient disposal/ACK executor. Additive030 therefore keeps
+that graph closed before the v2 nonce recorder, hold, retention phase or notice.
+It validates the actual fresh session first and takes the same profile lock
+used by real draft/account-binding/upload issuers. The v1 request and existing
+due/finalization graph guard receive the same narrow preflight; every other
+predecessor body byte, public/private ABI, owner, configuration and ACL is pinned
+and preserved. Terminal/history rows are included; ending a normalized file or
+report is never substituted for physical original disposal acknowledgement.
+No unknown FK allowlist, source owner, provider state or deadline is widened.
+
+A new rollback-only suite uses real draft/signature, invited account binding,
+held issuance/finalization, current permission and normalization/queued-report
+producers. It checks the uploader and bound person separately at the genuine
+stages and compares every registered store plus Auth and Storage byte for byte
+around each actual service request refusal. It requires zero nonce record,
+no account hold and no changed notice/phase/source/report row. An unrelated
+ordinary account still creates its original exact seven-day phase. Foreign
+Auth and direct helper calls remain refused. These are synthetic SQL protocol
+fixtures; their Storage byte metadata is not a provider disposal proof.
+
+The exact held lifecycle census gains only the actual030 helper when installed,
+with a separate full-body/API-denial assertion; the157 earlier held assertions
+remain. No other source assertion, timeout, skip, acceptance value or152-store
+baseline is removed. Focused source checks are distinct from pending root-owned
+fresh-database/full/browser verification. Full Path B erasure remains unfinished.
+
 ## 2026-10-01 — Apply the shared held-mail prerequisite without importing Future additions
 
 The refreshed account branch takes the exact unpublished025 shared bridge and
