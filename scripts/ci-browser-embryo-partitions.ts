@@ -4,28 +4,30 @@ import ts from "typescript";
 export const EMBRYO_BROWSER_JOURNEYS = Object.freeze({
   "embryo-ingest": "embryo-ingest-journey.spec.ts",
   "embryo-mixed-qc": "embryo-mixed-qc-journey.spec.ts",
+  "embryo-qc-seed": "embryo-qc-second-seed-journey.spec.ts",
 });
 type FileCases = { project: string; file: string; cases: number };
 
-/** Both real journeys need an empty split queue. Native partitions must put
+/** The three real journeys need an empty split queue. Native partitions must put
  * them in separate fresh jobs; this never changes native case assignment. */
 export function assertEmbryoJourneyPartition(rows: readonly FileCases[], full: boolean): void {
-  const projects = Object.keys(EMBRYO_BROWSER_JOURNEYS);
+  const projects = ["embryo-ingest", "embryo-mixed-qc"];
   const files: string[] = Object.values(EMBRYO_BROWSER_JOURNEYS);
   const journeys = rows.filter(row => projects.includes(row.project) || files.includes(row.file));
   for (const row of journeys) {
-    assert(EMBRYO_BROWSER_JOURNEYS[row.project as keyof typeof EMBRYO_BROWSER_JOURNEYS] === row.file
-      && row.cases === 1, "Each embryo project requires its exact single real journey");
+    const expectedProject = row.file === EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"] ? "chromium"
+      : Object.entries(EMBRYO_BROWSER_JOURNEYS).find(([, file]) => file === row.file)?.[0];
+    assert(row.project === expectedProject && row.cases === 1, "Each embryo file requires its exact project and single real journey");
   }
-  assert((full ? journeys.length === 2 : journeys.length <= 1),
+  assert((full ? journeys.length === files.length : journeys.length <= 1),
     "Each fresh native partition permits at most one embryo journey");
-  if (full) assert.deepEqual(journeys.map(row => row.project).sort(), projects.sort(),
-    "Both real embryo journeys must be inventoried and executed");
+  if (full) assert.deepEqual(journeys.map(row => row.file).sort(), files.sort(),
+    "All real embryo journeys must be inventoried and executed");
 }
 
 export function assertEmbryoCiShard(shard: number | null, env: Readonly<Record<string, string | undefined>>): void {
   assert(env.CI !== "true" || shard !== null,
-    "The two embryo journeys require separate fresh native CI partitions; unsharded CI is unsupported");
+    "The embryo journeys require separate fresh native CI partitions; unsharded CI is unsupported");
 }
 
 /** The real publication journeys must retain the permanent context audit.
@@ -44,7 +46,47 @@ export function assertEmbryoJourneyAudits(sources: Readonly<Record<string, strin
           original: binding.propertyName?.text ?? binding.name.text, typeOnly: statement.importClause?.isTypeOnly || binding.isTypeOnly })) : [];
     });
     assert(bindings.length === 1 && bindings[0].module === "./audited-test" && bindings[0].original === "test"
-      && !bindings[0].typeOnly, "Both embryo journeys must use the genuine state network audit");
+      && !bindings[0].typeOnly, "All embryo journeys must use the genuine state network audit");
+    if (name === EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"]) {
+      const exactImport = (original: string, module: string) => imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)
+        && statement.moduleSpecifier.text === module && !statement.importClause?.isTypeOnly
+        && statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)
+        && statement.importClause.namedBindings.elements.some(binding => binding.name.text === original && !binding.propertyName && !binding.isTypeOnly));
+      const calls: Record<string, ts.CallExpression[]> = {};
+      let fixedOrigin = 0;
+      function visitSeed(node: ts.Node) {
+        if (ts.isCallExpression(node)) {
+          if (ts.isIdentifier(node.expression)) (calls[node.expression.text] ??= []).push(node);
+          if (ts.isPropertyAccessExpression(node.expression) && ts.isIdentifier(node.expression.expression)
+            && node.expression.expression.text === "test" && node.expression.name.text === "use"
+            && node.arguments.length === 1 && ts.isObjectLiteralExpression(node.arguments[0])
+            && node.arguments[0].properties.length === 1) {
+            const property = node.arguments[0].properties[0];
+            if (ts.isPropertyAssignment(property) && property.name.getText(file) === "baseURL"
+              && ts.isStringLiteral(property.initializer) && property.initializer.text === "http://localhost:3105") fixedOrigin++;
+          }
+        }
+        ts.forEachChild(node, visitSeed);
+      }
+      visitSeed(file);
+      for (const [symbol, module] of [["seedParticipantC", "./participant-c-journey"],
+        ["withEmbryoJourney", "../scripts/ci-embryo-journey"], ["provePublishedQcCrossSurface", "./helpers/embryo-qc-cross-surface"],
+        ["saveQcSeedReceipt", "./helpers/embryo-qc-seed-receipt"]])
+        assert(exactImport(symbol, module) && calls[symbol]?.length === 1, "Second QC seed requires its real closed producer and receipt calls");
+      const receiptSeed = calls.saveQcSeedReceipt[0].arguments[0];
+      const seedOptions = calls.seedParticipantC[0].arguments[0];
+      assert(ts.isObjectLiteralExpression(seedOptions), "Second QC seed requires literal closed producer options");
+      for (const [name, value] of [["qcSeed", "b"], ["ownerEmail", "qc-seed-b@e2e.local"],
+        ["parentEmail", "qc-seed-b-parent@e2e.local"]]) {
+        const properties = seedOptions.properties.filter(property => ts.isPropertyAssignment(property)
+          && property.name.getText(file) === name);
+        assert(properties.length === 1 && ts.isPropertyAssignment(properties[0])
+          && ts.isStringLiteral(properties[0].initializer) && properties[0].initializer.text === value,
+        "Second QC seed requires its exact committed-fixture selector and synthetic parent pair");
+      }
+      assert(fixedOrigin === 1 && ts.isStringLiteral(receiptSeed) && receiptSeed.text === "b",
+        "Second QC seed requires the exact owned 3105 origin and seed identity");
+    }
     if (name === EMBRYO_BROWSER_JOURNEYS["embryo-ingest"]) {
       const bound = imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)
         && statement.moduleSpecifier.text === "./helpers/embryo-published-audits"

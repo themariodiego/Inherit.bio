@@ -61,6 +61,7 @@ export default async function GenomePage(
       />
     );
   }
+  if (context.pathB) redirect(route("genome.reports", { subject: context.subject.routeSegment }));
   const { user, subject, dataSubjectId, person, domain, displayLabel } = context;
   // The subject bar counts every file in the record, whatever its status.
   // `preparing` is a narrower question and a different sentence: a rejected

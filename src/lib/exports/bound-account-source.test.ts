@@ -2,7 +2,7 @@ import {createHash,randomUUID} from "node:crypto";
 import AdmZip from "adm-zip";
 import {afterEach,describe,expect,it,vi} from "vitest";
 import {prepareBoundAccountArchiveSource} from "./bound-account-source";
-import {boundSourceFixture} from "./__fixtures__/bound-source";
+import {boundSourceFixture} from "../../../scripts/unit-fixtures/bound-source";
 import {createZip64Archive,type Zip64Member} from "./archive-zip64";
 const sha=(v:Uint8Array)=>createHash("sha256").update(v).digest("hex"),signal=()=>new AbortController().signal;
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllMocks();});

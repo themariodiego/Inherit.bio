@@ -17,8 +17,8 @@ const resolvers = { registry: noCanonicalRegistry, resolveSeed: () => false, res
 describe("independent production email fixture inventory", () => {
   it("covers all actual named exports and both account-deletion entrypoints", () => {
     const discovered = readEmailInventory(projectRoot), fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(discovered).toHaveLength(15);
-    expect(new Set(discovered.map((e) => e.path)).size).toBe(14);
+    expect(discovered).toHaveLength(16);
+    expect(new Set(discovered.map((e) => e.path)).size).toBe(15);
     expect(discovered.filter((e) => e.path.endsWith("account-deletion.tsx")).map((e) => e.exportName)).toEqual([
       "AccountDeletionCancelledEmail", "AccountDeletionNoticeEmail",
     ]);
@@ -48,7 +48,7 @@ describe("independent production email fixture inventory", () => {
   });
   it("expands all current conditional branches and explicitly distinguishes empty digest scope", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(fixtures).toHaveLength(32);
+    expect(fixtures).toHaveLength(35);
     expect(fixtures.filter((f) => f.mail.id === "embryo-disposition-notice").map((f) => f.mail.payload)).toEqual(expect.arrayContaining([
       expect.objectContaining({ disposition: "stored" }), expect.objectContaining({ disposition: "transferred" }),
       expect.objectContaining({ disposition: "donated" }), expect.objectContaining({ disposition: "discarded" }),
@@ -75,9 +75,9 @@ describe("actual production email HTML and envelope capture", () => {
   }, 60_000);
 
   it("retains every expected fixture before reporting actual annotation failures", () => {
-    expect(result.receipts).toHaveLength(32);
-    expect(result.observations).toHaveLength(64);
-    expect(result.requiredSurfaces).toHaveLength(64);
+    expect(result.receipts).toHaveLength(35);
+    expect(result.observations).toHaveLength(70);
+    expect(result.requiredSurfaces).toHaveLength(70);
     expect(result.observations.every((o) => o.channel === "email" && o.contentCommitSha === result.contentCommitSha)).toBe(true);
     expect(result.audit.ok).toBe(false);
     expect(result.audit.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["missing-channel", "missing-region", "empty-corpus"]));
@@ -128,7 +128,7 @@ describe("actual production email HTML and envelope capture", () => {
         resolveSeed: () => false, resolveComputed: () => false });
         console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
     const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: projectRoot, timeout: 30_000 });
-    expect(JSON.parse(output.stdout)).toEqual({ receipts: 32, observations: 64, ok: false });
+    expect(JSON.parse(output.stdout)).toEqual({ receipts: 35, observations: 70, ok: false });
     const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
     expect(retained.observations).toEqual(result.observations);
     expect(retained.collector.sha256).toBe(result.collector.sha256);

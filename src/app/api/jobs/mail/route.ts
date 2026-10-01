@@ -49,6 +49,18 @@ const adultSubjectInvitationPayload = z
       .max(500)
       .regex(/^[^\u0000-\u0008\u000b-\u001f\u007f]+$/)
       .optional(),
+    // The register's Path B request (TEST-LOCAL only): a signature, not an account.
+    request: z.literal("esignature").optional(),
+  })
+  .strict();
+
+// The upload-time notice for another adult's held file (Path B, TEST-LOCAL
+// only). Dates and a file kind; never a name, an address or a file name.
+const adultUploadNoticePayload = z
+  .object({
+    fileKind: z.enum(["array", "vcf"]),
+    uploadedOn: z.iso.date(),
+    deleteBy: z.iso.date(),
   })
   .strict();
 
@@ -171,7 +183,17 @@ function parseMail(
       payload: {
         invitationUrl: fragmentUrl(deliveryToken),
         note: parsed.note,
+        request: parsed.request,
       },
+    };
+  }
+  if (templateId === "adult-upload-notice") {
+    const parsed = adultUploadNoticePayload.parse(payload);
+    // The confirmation credential exists for every notice row; without it
+    // the mail fails rather than going out with no way to answer.
+    return {
+      id: templateId,
+      payload: { ...parsed, reviewUrl: fragmentUrl(deliveryToken) },
     };
   }
   if (templateId === "co-parent-invitation") {

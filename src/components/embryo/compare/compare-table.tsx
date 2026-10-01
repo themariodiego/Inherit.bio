@@ -97,15 +97,16 @@ export function ColumnFooter({ embryo, subjectId }: { embryo: ComparisonEmbryo; 
 }
 
 export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableProps) {
+  const captionId = `embryo-comparison-caption-${layer}`;
   return (
-    <div data-slot="compare-scroller" className="overflow-x-auto">
+    <div data-slot="compare-scroller" className="overflow-x-auto" role="region" aria-labelledby={captionId} tabIndex={0}>
       <table
         data-compare-surface="true"
         data-card="true"
         data-layer={layer}
         className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm"
       >
-        <caption className="p-3 text-left text-sm text-ink-muted">
+        <caption id={captionId} className="p-3 text-left text-sm text-ink-muted">
           {LAYER_LABELS[layer]}. {EMBRYO_LAYER_DEFINITIONS[layer]}
         </caption>
         <thead>

@@ -5,6 +5,7 @@ import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { hasZipMagic, openOwnUploadZip, OwnUploadZipError } from "./own-upload-zip";
 import { route } from "../primary-routes";
+import { heldFinalizationReceipt } from "./other-adult-upload";
 import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
@@ -92,6 +93,24 @@ async function responseFailure(response: Response): Promise<never> {
  * fingerprint, filename metadata, background retry or implicit analysis. */
 export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
   limits?: OwnUploadLimits | null) {
+  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits);
+  onProgress({ step: "validating", pct: 0 });
+  return finishStagedUpload(uploadId);
+}
+
+/** Another adult's file under Path B: the same transport, finished as held
+ * (TEST-LOCAL). The file is stored and validated, then waits, unreadable, for
+ * its subject to confirm it; the upload-time notice is queued with it. */
+export async function uploadHeldSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
+  limits?: OwnUploadLimits | null) {
+  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits);
+  onProgress({ step: "validating", pct: 0 });
+  return finishHeldUpload(uploadId);
+}
+
+/** Checks, hashes and sends the bytes to their one staging key; returns the upload. */
+async function stageSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
+  limits?: OwnUploadLimits | null): Promise<string> {
   onProgress({ step: "checking", pct: 0 });
   // This upload-path bound is known even when deployment limits could not be
   // read. Refuse before hashing or sending bytes; an edge 413 may otherwise
@@ -175,8 +194,7 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
     };
     xhr.send(file);
   });
-  onProgress({ step: "validating", pct: 0 });
-  return finishStagedUpload(issued.uploadId);
+  return issued.uploadId;
 }
 
 /** Statuses the finalize route never answers with, so they come from the edge
@@ -204,6 +222,22 @@ const NO_DECISION_STATUSES = new Set([408, 502, 504]);
  * finalization. That refusal carries `stagedUploadId` too: the bytes are still
  * there and asking later still works. */
 export async function finishStagedUpload(uploadId: string) {
+  const finalized = await requestFinalization(uploadId);
+  const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
+  if (!receipt.success) throw new BrowserUploadError("unavailable");
+  return receipt.data;
+}
+
+/** The held counterpart: the same request, answered stored and quarantined
+ * with the notice queued (register file-finalize-v1, the other-adult outcome). */
+export async function finishHeldUpload(uploadId: string) {
+  const finalized = await requestFinalization(uploadId);
+  const receipt = heldFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
+  if (!receipt.success) throw new BrowserUploadError("unavailable");
+  return receipt.data;
+}
+
+async function requestFinalization(uploadId: string): Promise<Response> {
   if (!directUploadReceipt.shape.uploadId.safeParse(uploadId).success) throw new BrowserUploadError("unavailable");
   const staged = (code: UploadFailureCode) => new BrowserUploadError(code, undefined, uploadId);
   const finalized = await fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
@@ -217,7 +251,5 @@ export async function finishStagedUpload(uploadId: string) {
     throw staged("unavailable");
   }
   if (!finalized.ok) await responseFailure(finalized);
-  const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
-  if (!receipt.success) throw new BrowserUploadError("unavailable");
-  return receipt.data;
+  return finalized;
 }

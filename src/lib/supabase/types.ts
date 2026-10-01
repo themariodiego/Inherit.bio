@@ -250,6 +250,7 @@ export type Database = {
       }
       adult_subject_drafts: {
         Row: {
+          adult_flow: string
           created_at: string
           draft_revision: number
           fixed_expires_at: string
@@ -259,6 +260,7 @@ export type Database = {
           subject_id: string
         }
         Insert: {
+          adult_flow?: string
           created_at?: string
           draft_revision: number
           fixed_expires_at: string
@@ -268,6 +270,7 @@ export type Database = {
           subject_id: string
         }
         Update: {
+          adult_flow?: string
           created_at?: string
           draft_revision?: number
           fixed_expires_at?: string
@@ -4082,6 +4085,7 @@ export type Database = {
           cohort_id: string | null
           created_at: string
           error: string | null
+          export_content_revision: number
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id: string
           is_cohort_file: boolean
@@ -4125,6 +4129,7 @@ export type Database = {
           cohort_id?: string | null
           created_at?: string
           error?: string | null
+          export_content_revision?: number
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
@@ -4168,6 +4173,7 @@ export type Database = {
           cohort_id?: string | null
           created_at?: string
           error?: string | null
+          export_content_revision?: number
           file_type?: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
@@ -7678,6 +7684,9 @@ export type Database = {
       check_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json }; Returns: boolean }
       finish_future_person_relocation_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json; p_evidence: Json }; Returns: boolean }
       future_person_relocation_work_v1: { Args: Record<PropertyKey, never>; Returns: Json }
+      export_archive_account_inventory_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind?: string; p_after_id?: string }; Returns: Json }
+      export_archive_account_metadata_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_after_id?: string }; Returns: Json }
+      export_archive_account_content_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_payload?: Json }; Returns: Json }
       export_archive_account_audit_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_seq?: number }; Returns: Json }
       export_archive_account_members_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_id?: string }; Returns: Json }
       export_archive_account_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id: string; p_expected?: Json }; Returns: Json }

@@ -4,6 +4,8 @@ import { expect, test } from "./audited-test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
 import bindings from "../scripts/comprehension/bindings.json";
 import { participantCSeed } from "../scripts/comprehension/participant-c-seed";
+import { saveQcSeedReceipt } from "./helpers/embryo-qc-seed-receipt";
+import { provePublishedQcCrossSurface } from "./helpers/embryo-qc-cross-surface";
 import { auditPublishedEmbryoSurfaces } from "./helpers/embryo-published-audits";
 import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
 import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
@@ -97,6 +99,9 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
       await testInfo.attach("published-embryo-surface-audits", { contentType: "application/json",
         body: JSON.stringify({ source: "actual-native-signed-parent-publication", cohortId,
           surfaces: auditedSurfaces, scientificCoverageStates: "held: no eligible result producer" }) });
+      const repeatedQc = await provePublishedQcCrossSurface({ page, ownerId: owner, cohortId, read: readPublication });
+      await testInfo.attach("published-qc-cross-surface", { contentType: "application/json", body: JSON.stringify(repeatedQc) });
+      saveQcSeedReceipt("a", testInfo, runtime.runtimeOwner, repeatedQc);
       await proveNativeDispositionAndProfile({ owner: page, other, browser, cohortId,
         embryoId: embryos[0].id, siblingId: embryos[1].id });
     } finally { await closeCoParent(); }

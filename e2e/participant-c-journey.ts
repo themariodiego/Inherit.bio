@@ -10,18 +10,22 @@ import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles } 
 
 export const participantCPassword = "synthetic-embryo-browser-password";
 const origin = "http://localhost:3105";
-const fixture = participantCSeed(bindings.accounts.find(row => row.id === "participant-c")).files[0];
+const defaultFixture = participantCSeed(bindings.accounts.find(row => row.id === "participant-c")).files[0];
 export type ParticipantCMail = { to: string | string[]; html?: string };
 
 /** Same native producer used by the ordinary single journey. No result row,
  * signature, permission, job advancement or provider ACK is substituted. */
 export async function seedParticipantC(options: { page: Page; browser: Browser;
-  ownerEmail: string; parentEmail: string; password: typeof participantCPassword;
+  ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b";
   messages: ParticipantCMail[]; runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> } }) {
   const { page, browser, ownerEmail, parentEmail, password, messages, runtime } = options;
+  if (options.qcSeed !== undefined && options.qcSeed !== "b") throw new Error("Unregistered QC seed");
+  const qcSeed = options.qcSeed === "b";
+  const fixture = qcSeed ? "e2e/fixtures/embryo-pair-qc-b-grch38.vcf" : defaultFixture;
   const regular = ownerEmail ==="participant-c@e2e.local" && parentEmail ==="participant-c-parent@e2e.local";
   const fresh = ownerEmail.match(/^cmp-t6-([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})@e2e\.local$/);
-  if (!regular && (!fresh || parentEmail !==`cmp-t6-${fresh[1]}-parent@e2e.local`)) throw new Error("Exact synthetic parent pair required");
+  if (qcSeed ? ownerEmail !== "qc-seed-b@e2e.local" || parentEmail !== "qc-seed-b-parent@e2e.local"
+    : !regular && (!fresh || parentEmail !==`cmp-t6-${fresh[1]}-parent@e2e.local`)) throw new Error("Exact synthetic parent pair required");
   const owner = await createConfirmedUser(ownerEmail, password);
   const parentAccount = await createConfirmedUser(parentEmail, password);
   const held = await adminClient().from("embryo_cohorts").select("id").eq("owner_account_id", owner);

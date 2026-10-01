@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "7ef458e2576481a7be1f448a5cd803459191763cce8e90a862b3065fad1701d1",
+  "briefSha256": "34b1102b747e70e184b90d75fbc6062135aa30302179285926471f2e28082660",
   "canonicalOrigin": "https://inherit.bio",
   "originAliases": [
     {
@@ -403,7 +403,9 @@
         "compute_portrait",
         "compute_ancestry_regional",
         "revoke_purge",
-        "retention_purge"
+        "retention_purge",
+        "compute_monogenic_report",
+        "compute_polygenic_report"
       ],
       "readyIndex": "worker_jobs_ready_idx-(status,not_before,created_at)",
       "claim": "one-database-transaction-selects-status-queued-and-not_before-less-than-or-equal-to-now-ordered-by-created_at-then-id-FOR-UPDATE-SKIP-LOCKED-increments-attempts-and-invokes-the-worker-job-dispatch-v1-matrix-selected-resolver-with-the-exact-immutable-kind-output-target-source-binding-file_sha256-computation_revision-and-every-sourceBindingMatrix-revision; only-that-resolver-may-return-the-current-authorized-source-or-manifest",
@@ -3999,6 +4001,26 @@
           ],
           "resolver": "retention-purge-v1",
           "mustNotInvoke": "analysis-eligibility-v1-live-purpose-consent-or-active-subject-state-gate"
+        },
+        "compute_monogenic_report": {
+          "allowedOutputKinds": [
+            "report.monogenic"
+          ],
+          "resolver": "analysis-eligibility-v1",
+          "sourceBindingKind": {
+            "const": "genome-file"
+          },
+          "completionContract": "policyResolvers.path-b-report-queued-v1"
+        },
+        "compute_polygenic_report": {
+          "allowedOutputKinds": [
+            "report.polygenic"
+          ],
+          "resolver": "analysis-eligibility-v1",
+          "sourceBindingKind": {
+            "const": "genome-file"
+          },
+          "completionContract": "policyResolvers.path-b-report-queued-v1"
         }
       },
       "sanitization": "for-split_cohort_vcf-require-the-exact-embryo-ingest-fragment-set-source-binding-row-and-policyResolvers.embryo-ingest-session-v1.workerCompletion-at-claim-before-every-fragment-read-before-each-per-ordinal-canonical-source-write-and-before-fragment-and-handle-map-deletion; recompute-and-constant-time-compare-the-fingerprint-and-every-bound-revision-and-never-substitute-a-current-finalized-cohort-source-set; any-terminal-pre-publication-format-header-build-mapping-chunk-quota-limit-cancel-abort-auth-stale-binding-or-retry-exhaustion-branch-must-preserve-the-session-and-due-target-and-dispatch-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-cleanup",
@@ -5293,6 +5315,36 @@
         "purpose-to-capability-v1",
         "jurisdiction-v1",
         "resource-authorization-v1"
+      ]
+    },
+    "path-b-report-queued-v1": {
+      "scope": "TEST-LOCAL-only-current-confirmed-other_adult-single-file-report-monogenic-or-polygenic; never-own-report-synchronous-v1",
+      "source": "one-immutable-server-owned-private.path_b_report_bindings-row-per-file-and-authority-revision; source_binding_id-is-the-exact-file-UUID-and-source_binding_revision-is-that-bindings-positive-database-issued-revision",
+      "identity": "the-exact-worker-job-enqueue-v1-tuple-plus-a-byte-for-byte-compared-authority-snapshot; the-snapshot-covers-every-single-file-analytic.lockedRevisions-value-and-the-exact-grant-direction-recipient-principal-relationship-current-signing-session-normalization-source-artifact-insurance-jurisdiction-and-mitigation-evidence",
+      "replay": "an-identical-full-snapshot-reuses-one-current-binding-and-job; changed-grant-or-lifecycle-authority-creates-a-new-source-binding-revision-even-with-identical-genetic-bytes; computation_revision-changes-only-with-the-algorithm-reference-or-output-schema",
+      "checkpoints": [
+        "enqueue",
+        "worker-claim",
+        "each-bounded-genetic-read",
+        "private-result-stage",
+        "atomic-result-publication",
+        "derived-read",
+        "replay"
+      ],
+      "claims": "service-only-dedicated-RPC-selects-one-exact-registered-job-FOR-UPDATE-SKIP-LOCKED; a-server-random-claim-UUID-and-claim-hash-have-a-fixed-at-most-five-minute-deadline-clamped-to-every-source-grant-and-signing-session-deadline; no-browser-or-upload-role-can-claim-read-stage-or-publish",
+      "publication": "the-complete-bounded-result-is-staged-in-the-private-binding-row; current-full-authority-and-time-are-rechecked-after-stage-and-publication-writes; a-stale-claim-rolls-back-the-whole-statement; completion-stores-the-exact-published-template-snapshots-and-coverage-only-PGS-results-for-this-purpose-and-recipient-with-no-global-annotated-flag-and-no-report-ready-notice-before-the-separate-ready-notice-contract",
+      "reading": "a-live-reader-session-the-exact-current-directional-purpose-grant-and-the-identical-completed-binding-are-required-before-serialization; source-owner-or-a-completed-different-purpose-or-direction-grants-no-read",
+      "readingScreens": "TEST-LOCAL-existing-genome.reports-and-genome.report-routes-use-only-current-queued-saved-results-for-confirmed-Path-B-subjects; metadata-has-no-genetics; uploader-must-pass-the-existing-session-Tier-2-gate-before-capture; a-server-only-digest-covers-the-exact-current-session-subject-purpose-grant-full-binding-source-catalog-and-result-projection-and-is-recomputed-under-the-existing-authority-locks-as-the-last-awaited-operation-before-serialization; no-ordinary-own-legacy-source-fallback-and-no-raw-ancestry-or-Copilot-authority-is-created",
+      "normalizationQueue": "bounded-oldest-first-admission-terminalizes-only-an-exact-queued-normalization-job-whose-current-authority-no-longer-matches-its-immutable-snapshot-before-any-genetic-source-read; proceeds-to-the-next-current-job-within-the-same-100-row-limit; internal-errors-abort-and-no-stale-admission-publishes-or-grants-permission",
+      "revocation": "revoke-supersede-or-end-the-exact-purpose-or-direction-cancels-its-queued-running-job-and-deletes-its-private-staged-and-completed-result-in-the-same-transaction; source-disposition-and-account-removal-cascade-the-binding; no-replay-revives-a-revoked-result",
+      "unimplementedMitigations": "adult.non-account-holder-24mo-adult.acceptance-hold-72h-and-adult.re-notice-30d-remain-closed-without-their-required-current-evidence",
+      "contracts": [
+        "analysis-eligibility-v1",
+        "worker-job-enqueue-v1",
+        "worker-job-dispatch-v1",
+        "directional-purpose-grant-v1",
+        "other-adult-mitigation-state-v1",
+        "canonical-source-publication-v1"
       ]
     }
   },

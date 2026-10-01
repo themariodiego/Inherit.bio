@@ -18,6 +18,9 @@ import { loadEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdraw
 import { InvitationRefusalForm, InvitationRefusalReceipt } from "@/components/embryo/invitation-refusal-form";
 import { loadInvitationRefusal } from "@/lib/embryos/invitation-refusal";
 import { jurisdictionChoices } from "@/lib/legal/jurisdiction-declaration";
+import { loadAdultUploadRevisionReview, loadPathBRequestReview } from "@/lib/uploads/path-b-review";
+import { AdultUploadRevisionForm } from "@/components/uploads/adult-upload-revision-form";
+import { PathBRequestForm } from "@/components/uploads/path-b-request-form";
 
 export const metadata: Metadata = { title: "Review your request", robots: { index: false, follow: false } };
 
@@ -35,6 +38,11 @@ export default async function RightsSessionPage() {
     explanation={ownerNotice.view.objectionArtifactBody} csrf={ownerNotice.csrf} nonce={ownerNotice.nonce} />;
   const claimant=await loadClaimantRights(request);
   if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/><div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding csrf={claimant.csrf} nonce={await loadAccountBinding(request)}/></div></>;
+
+  const pathB = await loadPathBRequestReview(request);
+  if (pathB) return <PathBRequestForm review={pathB} />;
+  const revision = await loadAdultUploadRevisionReview(request);
+  if (revision) return <AdultUploadRevisionForm review={revision} />;
   const adult = await loadAdultSubjectReview(request);
   if (adult) return <AdultSubjectReviewForm review={adult} />;
   const embryo = await loadEmbryoParentWithdrawal(request);

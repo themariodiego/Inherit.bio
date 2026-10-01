@@ -322,6 +322,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Upload finalization checkpoints. It is machinery, not the person's record."
     },
+    "private.path_b_report_bindings": {
+      "disposition": "deferred",
+      "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
+    },
     "private.rights_purpose_matrix": {
       "disposition": "reference",
       "reason": "The rights-purpose matrix the database enforces: purposes, actions and routes. It holds no person's data."
@@ -877,7 +881,8 @@ create temporary table export_member_plan as select $plan$
         "input_provenance",
         "input_source_sha256",
         "processing_run_id",
-        "normalization_source_revision"
+        "normalization_source_revision",
+        "export_content_revision"
       ]
     },
     "public.genome_storage_objects": {
@@ -976,6 +981,10 @@ create temporary table export_member_plan as select $plan$
     "public.model_contexts": {
       "disposition": "excluded-internal",
       "reason": "Model context fingerprints. It is machinery, not the person's record."
+    },
+    "public.other_adult_held_uploads": {
+      "disposition": "out-of-scope",
+      "reason": "The uploader's quarantined original belongs to another adult. It is not the uploader's own record; no genetic result or held source can leave in the uploader's export."
     },
     "public.pending_source_rows": {
       "disposition": "excluded-internal",
@@ -1106,7 +1115,8 @@ create temporary table export_member_plan as select $plan$
         "revocation_reason"
       ],
       "withheld": [
-        "copilot_recipient_revision"
+        "copilot_recipient_revision",
+        "path_b_originating_session_id"
       ]
     },
     "public.rate_limit_hmac_buckets": {

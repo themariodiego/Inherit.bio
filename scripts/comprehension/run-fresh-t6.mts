@@ -1,6 +1,7 @@
 /** Separate hosted smoke/calibration launcher. Never invoked by standard CI,
  * never sets CI ownership variables, never borrows an existing cohort. */
 import assert from "node:assert/strict";
+import { assertSqlFixtureIncludes } from "../sql-fixture-includes";
 import { randomUUID } from "node:crypto";
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
@@ -19,6 +20,7 @@ import { openFreshParticipantCBrowser } from "./fresh-t6-browser";
 
 
 async function main() {
+  assertSqlFixtureIncludes();
   const argv = process.argv.slice(2), file = argv.find(value => !value.startsWith("--"));
   assert(file && path.isAbsolute(file) && argv.every(value => value === file || value === "--prepare" || value === "--plan"),
     "Use an absolute private configuration and only --prepare or --plan");

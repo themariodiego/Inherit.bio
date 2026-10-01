@@ -23,6 +23,10 @@ import {
   type AdultSubjectInvitationProps,
 } from "@/emails/adult-subject-invitation";
 import {
+  AdultUploadNoticeEmail,
+  type AdultUploadNoticeProps,
+} from "@/emails/adult-upload-notice";
+import {
   CoParentInvitationEmail,
   type CoParentInvitationProps,
 } from "@/emails/co-parent-invitation";
@@ -63,6 +67,7 @@ interface MailPayloads {
   "account-deletion-notice": AccountDeletionNoticeProps;
   "account-deletion-cancelled": AccountDeletionCancelledProps;
   "adult-subject-invitation": AdultSubjectInvitationProps;
+  "adult-upload-notice": AdultUploadNoticeProps;
   "co-parent-invitation": CoParentInvitationProps;
   "embryo-upload-notice": EmbryoUploadNoticeProps;
   "record-key-addendum": RecordKeyAddendumProps;
@@ -95,6 +100,8 @@ const renderers: {
     createElement(AccountDeletionCancelledEmail, payload),
   "adult-subject-invitation": (payload) =>
     createElement(AdultSubjectInvitationEmail, payload),
+  "adult-upload-notice": (payload) =>
+    createElement(AdultUploadNoticeEmail, payload),
   "co-parent-invitation": (payload) =>
     createElement(CoParentInvitationEmail, payload),
   "embryo-upload-notice": (payload) =>
@@ -121,6 +128,7 @@ const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string 
   "account-deletion-notice": "Your Inherit account deletion is scheduled",
   "account-deletion-cancelled": "Your Inherit account deletion was cancelled",
   "adult-subject-invitation": "You were invited to Inherit",
+  "adult-upload-notice": "A DNA file was added for you on Inherit",
   "co-parent-invitation": "You were named as a genetic parent on Inherit",
   "embryo-upload-notice": "Embryo records were added on Inherit",
   "embryo-disposition-notice": "A disposition was recorded for one embryo record",
@@ -139,6 +147,10 @@ const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {
 export function mailSubject(mail: MailTemplate): string {
   if (mail.id === "record-key-addendum") {
     return addendumSubjects[mail.payload.kind];
+  }
+  // The register's Path B request (TEST-LOCAL only) asks for a signature, not an account.
+  if (mail.id === "adult-subject-invitation" && mail.payload.request === "esignature") {
+    return "A request to add your DNA file to Inherit";
   }
   return subjects[mail.id];
 }

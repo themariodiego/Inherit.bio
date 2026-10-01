@@ -10,6 +10,7 @@ export const EMAIL_RENDERERS = {
   "account-deletion-notice": ["account-deletion.tsx", "AccountDeletionNoticeEmail"],
   "account-deletion-cancelled": ["account-deletion.tsx", "AccountDeletionCancelledEmail"],
   "adult-subject-invitation": ["adult-subject-invitation.tsx", "AdultSubjectInvitationEmail"],
+  "adult-upload-notice": ["adult-upload-notice.tsx", "AdultUploadNoticeEmail"],
   "co-parent-invitation": ["co-parent-invitation.tsx", "CoParentInvitationEmail"],
   "embryo-upload-notice": ["embryo-upload-notice.tsx", "EmbryoUploadNoticeEmail"],
   "record-key-addendum": ["record-key-addendum.tsx", "RecordKeyAddendumEmail"],
@@ -53,6 +54,10 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   add("cancelled", { id: "account-deletion-cancelled", payload: { settingsUrl: url } });
   add("without-note", { id: "adult-subject-invitation", payload: { invitationUrl: url } });
   add("with-note", { id: "adult-subject-invitation", payload: { invitationUrl: url, note: "Synthetic invitation note." } });
+  add("esignature-request", { id: "adult-subject-invitation", payload: { invitationUrl: url, request: "esignature" } });
+  for (const fileKind of ["array", "vcf"] as const) add(fileKind, {
+    id: "adult-upload-notice", payload: { fileKind, uploadedOn: "2026-09-28", deleteBy: "2026-10-28", reviewUrl: url },
+  });
   add("invitation", { id: "co-parent-invitation", payload: { invitationUrl: url } });
   for (const count of [1, 3]) for (const link of [false, true]) add(`count-${count}-${link ? "link" : "no-link"}`, {
     id: "embryo-upload-notice", payload: { embryoCount: count, uploaderName: count === 1 ? "Alex Synthetic" : null,
