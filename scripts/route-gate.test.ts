@@ -819,7 +819,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     // since 2026-09-28, on the real path the owner chose, after the 22 September
     // decision settled its ceiling. The two that remain, T6 and T7, are bound to
     // embryo files no ingest path can produce yet.
-    expect(result.taskDepthMeasuredCount).toBe(6);
+    expect(result.taskDepthMeasuredCount).toBe(7);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -901,11 +901,11 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
   it("fails when a task gains a measurement without the ratchet coming down", async () => {
     const root = plant({
       extraSpec: 'import { test } from "@playwright/test";\n'
-        + 'test("task depth T6 stays within its registered ceiling", async () => {});\n',
+        + 'test("task depth T7 stays within its registered ceiling", async () => {});\n',
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 1 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 0 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
@@ -921,7 +921,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T7; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 1 of 7 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 0 of 7 ceilinged tasks are measured by no browser test",
     );
   });
 

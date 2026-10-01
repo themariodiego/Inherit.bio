@@ -10,11 +10,14 @@ thing only the operator can do. `docs/release-checklist.md` records that as
 launch-blocking. Where a round has been run, its per-task results belong in
 `docs/comprehension-results-<date>.md`, one file per round, and nowhere else.
 
-**As of 2026-09-28, G3.3 is not green.** The 30-persona harness now exists
+**As of 2026-10-01, G3.3 is not green.** The 30-persona harness now exists
 (`scripts/comprehension/README.md`) and has run end to end against the local
 build only with a deterministic stub, which is never evidence. No model
-credential exists, so `docs/comprehension-runs/` holds no run. T6 and T7
-cannot run until embryo ingest lands, so no run could be clean yet anyway.
+credential exists, so `docs/comprehension-runs/` holds no run. The existing
+isolated native embryo journey now authors a genuine participant-c
+seed and T6 action measurement. Full hosted execution is still pending. T7
+remains explicitly blocked: no approved producer supplies its personal absolute
+risk figure, so no complete round can qualify yet.
 This document completes G3.4's own half, and G3.4 remains NO on the other
 half. That is recorded in `docs/acceptance-matrix.md` rather than smoothed
 over here.
@@ -147,12 +150,29 @@ pointed at the historical registry and would reject answers the current page
 actually shows. The binding test now compares the same display constants the
 current page uses; the legacy result renderer remains unchanged.
 
+**Participant-c setup.** Its binding names the existing `embryo-ingest` native
+project. The exact fresh disposable partition must execute both current parent
+signatures, the bound VCF upload, the real isolated worker, whole publication
+and both separate analysis grants. The ordinary `pnpm seed:participants`
+command continues to build only participant-a/b; it does not create this
+isolated runtime or seed c. Never replace this setup with direct result rows.
+The T6 action trace starts on the Overview after the seed's genuine permissions
+and result acknowledgement, and follows the visible comparison link to the
+exact no-ranking statement. That instrument is authored, not a scored round.
+Its completed publication supplies the native live-harness read adapter's
+credentials and current worker/source proof. The ordinary multi-persona runner
+still holds T6 until each simulation can own its fresh isolated embryo runtime;
+this single native rehearsal is never shared across personas.
+
 **T7 carries a constraint worth reading before the round.** Measured
 2026-09-11: the My Genome report detail page renders exactly one figure kind —
 `genotype` — and no percentage at all. The only surface in the product that
-renders a personal absolute figure is the embryo comparison cell. So T7 is bound
+can render a personal absolute figure is the embryo comparison cell. No approved
+producer currently supplies that figure. QC and call-rate are not substitutes.
+The task-level refusal remains even after participant-c is seeded. T7 is bound
 there, and **outside an environment where `embryo_analysis` is permitted, T7 has
-no bound surface at all.** Under `TEST-LOCAL` it runs. In production today it
+no bound surface at all.** `TEST-LOCAL` permits the capability, but the missing
+approved personal risk producer still prevents T7 from running. In production it
 cannot, because no real jurisdiction has a signed review. This is recorded
 rather than worked around: binding T7 to a surface that shows no number would
 make every answer prohibited by construction, which would measure nothing.
