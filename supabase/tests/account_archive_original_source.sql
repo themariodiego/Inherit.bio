@@ -116,8 +116,11 @@ reset role;rollback to changed_actual_version;
 savepoint changed_actual_size;
 update storage.objects set metadata='{"size":9}' where id='77900000-0000-4000-8000-000000000020';
 set local role service_role;
-select throws_ok($$select pg_temp.original('descriptor')$$,'42501','not_found','physical size mismatch refuses the whole original reader');
-reset role;rollback to changed_actual_size;
+select throws_ok($$select pg_temp.original('descriptor')$$,'55000','export_source_unavailable','physical size mismatch refuses the complete source before an original descriptor exists');
+reset role;
+select is(pg_temp.original_job_state(),(select value from unchanged_original_job),
+ 'physical size refusal preserves every durable export/job/attempt byte');
+rollback to changed_actual_size;
 savepoint actual_original_logout;
 delete from auth.sessions where id='77900000-0000-4000-8000-000000000010';
 set local role service_role;

@@ -1,5 +1,20 @@
 # Test diff register
 
+## 2026-10-01 — Require the existing complete-source refusal for physical size drift
+
+Actual corrected migration 026 rehearsal reached all 42 assertions and exposed
+one incorrectly authored expected error. A changed real Storage size makes the
+existing `own_export_source_v1` return NULL at its full object/file identity
+check. The preserved ordinary authority then raises exactly SQLSTATE 55000,
+`export_source_unavailable`, while recomputing the whole consumed job before
+the new original descriptor is constructed. The test now requires that exact
+existing code/message, with an additional exact unchanged durable
+export/job/attempt snapshot. It accepts no alternative code and changes no
+source, permission, expected data or timeout. This remains a whole-source
+refusal before any provider I/O, not an original retirement or omitted member.
+The failed actual rehearsal is retained; an independent corrected run is still
+required and no hosted/provider acceptance is asserted.
+
 ## 2026-10-01 — Separate complete planning from the bounded attempt INSERT
 
 The complete account assembler needs multiple independently bounded source
