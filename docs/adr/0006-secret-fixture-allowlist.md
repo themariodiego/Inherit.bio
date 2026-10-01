@@ -102,3 +102,26 @@ fixture values, scanner rules, exact-path occurrence checks and history baseline
 remain intact. This adds no hosted key, new credential value or global path
 exemption. The newly required GitHub OIDC request bearer stays in host memory;
 its signed identity is checked, and it is omitted from every child environment.
+
+### Exact isolated webhook source-expression review packet (2026-10-01)
+
+- Secret-Allowlist-ID: isolated-webhook-generated-reference
+- Secret-Allowlist-ID: isolated-webhook-malformed-reference
+- Secret-Allowlist-ID: isolated-webhook-cross-variant-reference
+
+These three review candidates bind distinct code identifiers in three exact
+unit-test source lines. Two aliases refer to the same freshly generated per-run
+software webhook key; the third is a loop variable containing only rejected
+malformed inputs. No key literal is stored. Complete source-line and binding
+hashes use the existing independently pinned expression mechanism. The scanner,
+unique-value invariant, first-entry selection, exact-path/current/historical
+context checks and history baseline remain unchanged. Literal replacement,
+changed metadata/context, another path and changed historical source refuse.
+
+Canonical assembly starts from C4 ordinarily merged with the qualified 035/853
+prerequisite before the native patch is committed with these unique aliases.
+The earlier frozen 7c/15f snapshots and failed scanner/type receipts remain
+preserved; no shared history is rewritten. Key equality is tested as a boolean,
+with the other complete environment fields still compared exactly, so a failed
+unit assertion cannot dump the generated verifier. This packet awaits root's
+concrete binding review before its mechanical scanner result is release proof.
