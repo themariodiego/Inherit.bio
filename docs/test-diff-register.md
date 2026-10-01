@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Hold reachable Embryo QC to two genuine native publications
+
+The old figure census incorrectly called both Embryo result routes unreachable
+because ingest could not create QC. Actual signed-parent upload/worker flow
+now creates observed QC. The two route entries explicitly require hosted
+publication proof; they no longer receive whole-route zero-figure credit.
+No G8.3 acceptance change is made from authored source or local discovery.
+
+The existing all-pass and mixed journeys, original fixture bytes, assertions,
+case identities and 300000ms limits remain. A new ordinary chromium case uses
+the same exact owned 3105 runtime and real parent/upload/worker producer with
+a second committed synthetic call set at the same registered GRCh38 loci.
+Only its synthetic GT calls differ. Current source receipts and the existing
+complete figure classifier hold all compare/detail values, units, captions,
+observed basis and attribution. Every corresponding QC value must move;
+there is no invariant exception and no score, laboratory estimate or risk.
+
+The exact filename/project fence now inventories three real journeys while
+retaining six native projects and six fresh partitions. It refuses collisions,
+foreign projects, extra cases, plain audit imports and disconnected producer
+or receipt calls. Actual native discovery places the new case naturally in
+partition 3, with original mixed and all-pass cases in partitions 1 and 6.
+All original cases remain, plus one genuinely new case; no custom assignment,
+selector, retry, skip or resource/timeout increase is introduced.
+
+The final aggregate requires the two bounded figure receipts only from their
+actually passed same-head/run/attempt native case and artifact job, exact
+committed fixture hashes, different partitions/runtime owners/cohorts and
+current full QC censuses. Missing, crossed, stale, constant or extra evidence
+refuses. Receipt unit tests are synthetic validation boundaries, not native
+execution. Full exact-head hosted proof is still required before closure.
+
 ## 2026-10-01 — Give populated Embryo tables keyboard access on mobile
 
 Hosted run `36816036175` on `a3ea135e` reached genuine publication and the
