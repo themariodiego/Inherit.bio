@@ -1,5 +1,29 @@
 # Test diff register
 
+## 2026-10-01: Bind claimant deletion to the real disposition and audit source receipts
+
+The genuine claimant plan now locks the exact detached embryo and reads its
+actual disposition revision independently of the subject lifecycle revision.
+Both retention rows, the closed immutable envelope and every subsequent plan
+check require that same current pair. A positive assertion pins the actual
+row values; no missing subject field or invented revision is used. The running
+publication refusal first creates a constraint-valid claim with a real hash,
+worker and lease, retaining the original 42501 refusal and zero-effects checks.
+Cancellation clears both legacy and current worker claim tokens.
+
+The audit fixture keeps its exact 501 own events, assigned attribution, original
+reference clock and seven member classes. Those fields belong to the private
+source snapshot and actual leased worker context. The public request exposes
+its existing closed authority envelope. New equality assertions bind its receipt
+to that full snapshot and require every original context field through the real
+worker member door. No public response gains private source or actor fields.
+
+The already authored sealed graph, fixed-deadline minimization and immediate
+result deletion proofs are merged intact into this newer profile source. All
+prior sibling, source, provider, uncertain-reservation, actor and rollback
+assertions remain. Full database and hosted verification are pending; the
+public deletion and export delivery holds and acceptance results do not change.
+
 ## 2026-10-01 — Bound optional identity profiles to actual parent authority and the original transfer clock
 
 New profile tests require the current record-key recipient, that same parent's
@@ -31,6 +55,60 @@ state, and none of these metadata fixtures proves human documentary review.
 The new SQL fixture and full browser flows remain unexecuted here. Keyless
 matching, actual owner-notice delivery, waiting-period objections and a fresh
 release decision remain closed prerequisites; acceptance does not change.
+## 2026-10-01: Delete exact claimant results in the requesting transaction
+
+The source/provider clock must not delay `derived.revocation-60s`. The private
+request now deletes only a closed list of database-derived keys already sealed
+by the exact claimant manifest, before returning and before any source disposal
+lease. Source calls, parts, membership, custody and sibling results remain.
+Any selected report/provider/archive reservation without its actual proved
+cleanup door refuses the entire transaction, including nonce consumption and
+capability revocation. No provider ACK is manufactured by SQL metadata cleanup.
+
+The genuine publication fixture pins one real measured QC row before the
+request and zero rows immediately afterward, its exact sealed deleted status,
+all source parts still pending and byte-identical sibling QC. Actual export
+request/worker doors create a real unACKed reservation; deletion must refuse and
+roll back its entire job/reservation/request while preserving result/rights
+authority. A genuine queued export with no attempt or bytes is deleted with all
+exact job/nonce children in the request. A new API-role
+ACL assertion and claimed-phase replay refusal guard the private executor.
+All previous source, provider, expired lease, contact-control, final graph and
+audit assertions remain. The full database/provider/browser proof is pending;
+public deletion and every acceptance/availability gate stay closed.
+
+
+## 2026-10-01: Minimize exact earlier claimant control envelopes
+
+The actual237 release timer targets the claimant UUID under `claim` and keeps
+subject, principal, contact and mail IDs in its fixed working envelope. After
+ACK-backed zero-row graph proof, the private finisher now selects these exact
+typed controls, retains all original clocks/revisions/hashes and reduces the
+working envelope to a coded subject-deleted receipt with an anonymous target.
+It does not search JSON strings or adopt the historical cohort as ownership.
+An executing earlier manifest, opaque object or remaining physical key refuses
+the complete final transaction. The237 immutable guard permits only this
+proved one-way terminal minimization; ordinary live timer/clock refusals remain.
+Its existing invoker security mode and table permissions stay unchanged: the
+exact terminal proof is inlined rather than requiring a new private-helper
+EXECUTE grant for ordinary updates.
+
+The real approved-release fixture now pins its one actual earlier timer,
+original private envelope fields, exact post-cleanup coded projection, unchanged
+clocks/revisions and refusal to restore any destroyed association. Both new
+helpers deny every API role. New conflicting-earlier-executor and expired-final-lease
+probes require full rollback and preservation of the original authority/source.
+Closed row operations now use typed primary-key equality rather than a whole
+row JSON scan; caller key shapes and null keys refuse. Source DELETE retains
+the exact sealed key/ACK guard inside the already locked final transaction;
+lease expiry is still checked before entering that transaction and all expired
+claim/refusal semantics remain. All existing source, provider, lease, sibling,
+audit-chain and completed-main-control assertions remain unchanged. Latest246
+and247 source/audit contracts plus the exact QC snapshot/C-collation correction
+are merged with both branches' dated entries retained. Full fresh database,
+provider and browser verification still belongs to the coordinator. No public
+deletion, export delivery or acceptance gate is opened by this checkpoint.
+
 
 ## 2026-10-01 — Compare genuine QC receipts before their consumed attempt rows disappear
 
@@ -52,6 +130,10 @@ the coordinator's genuine fresh SQL rehearsal.
 
 The full hosted reviewer journey reached its genuine assigned case and passed the accessibility audit, then found no control with the exact label `Choice`: the implicit wrapping label included the option text in the accessible name. The visible label now explicitly references its separate native select. The original exact two-option browser assertion, every document/read/decision/refusal assertion, and all time limits remain unchanged. This corrects the product's accessible name rather than changing the expected choices. Full hosted execution on the final version remains required.
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ae5aa8616b76bcb27847a3a1e61eca56830d242d
 ## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
 
 The combined checkpoint has 158 required route/state pairs: the prior 156
@@ -76,6 +158,10 @@ receipt is inferred or backfilled. Original historical-NULL, immutable-receipt,
 source, release, privacy and refusal assertions remain unchanged. Full fresh
 SQL and hosted execution for this combined correction remain pending.
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ae5aa8616b76bcb27847a3a1e61eca56830d242d
 
 ## Complete genuinely attributable claimant ledger members · 1 October 2026
 
@@ -113,6 +199,40 @@ prove a deletion API decision. New actual-ZIP tests refuse incomplete, reordered
 foreign-field, nested-contact, mismatched or unassigned material before provider
 writes. Existing account readers, withheld columns, source refusals, READY and
 provider/disposal holds remain unchanged. Full SQL/browser proof is pending.
+
+
+## 2026-10-01: Sealed claimant graph and exact terminal cleanup
+
+The actual schema-only 147-store catalog omitted six already-existing private
+archive children: jobs, attempts, downloads, manifest pages, segments and nonce
+uses. The physical registry now contains exactly153 stores; source/member and
+v2 census assertions rise to153 and independently pin all six existing tables.
+No table or export class is created, and no prior positive or negative assertion
+is removed. Archive attempts and uncertain provider reservations remain closed.
+
+The claimed-subject plan now freezes applicable closed, source-authored primary
+keys and exact object handles before part disposal. Ordinals1–50 still belong
+only to the current canonical part gateway; graph rows start at51. Both live
+rows missing from the sealed inventory and unACKed vanished rows refuse. Every issued claimant release, queued export, download and model context is
+revoked in the request transaction, with the actual release revision advanced. A
+pending sealed row cannot be deleted by generic cascading cleanup. The final
+private transaction keeps every original provider/lease refusal, requires all
+part markers, claim-document provider callbacks and actual published-upload
+cleanup, deletes every frozen graph
+key, and checks zero remaining rows. The SQL fixture adds exact crossed-source,
+widened-key, missing-document-ACK, sibling preservation and rollback evidence.
+Synthetic SQL ACKs prove the protocol, not hosted provider disposal.
+
+One subject-to-claimant FK uses validated NO ACTION, deferrable but initially
+immediate, so the genuine subject/principal/claimant cycle can be deleted in one
+closed transaction. Canonical source/membership/call guards permit only that
+exact sealed source after every permanent part ACK; no parent path is widened.
+The existing document callback still uses the real provider API: SQL never
+deletes Storage metadata. Working identity/body links are removed; original
+clocks, coded counts, chain hashes and terminal controls remain, with a fresh
+anonymous target and minimal immutable terminal receipts. The public API/UI and
+acceptance rows remain closed pending full database and real provider proof.
+
 
 ## 2026-10-01: Claimed source disposal uses settled publication evidence
 

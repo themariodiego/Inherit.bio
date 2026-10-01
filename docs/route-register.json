@@ -6362,7 +6362,13 @@
             "public.report_artifacts",
             "public.generated_exports",
             "public.download_sessions",
-            "public.model_contexts"
+            "public.model_contexts",
+            "private.export_archive_jobs",
+            "private.export_archive_attempts",
+            "private.export_archive_downloads",
+            "private.export_archive_manifest_pages",
+            "private.export_archive_segments",
+            "private.export_archive_nonce_uses"
           ],
           "joinRule": "select-only-by-the-exact-subject-cohort-file-export-purpose-pair-donor-attribution-draft-or-ingest-FK-and-its-current-immutable-revision-tuple; export-artifact-only-selects-one-generated-export-download-row-and-logical-archive-identity-and-raw-export-only-selects-only-the-exact-subject-account-raw-export-tuple; resolve-each-selected-export-only-to-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes; never-prefix-selection",
           "manifestClasses": [
