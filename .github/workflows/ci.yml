@@ -91,6 +91,8 @@ jobs:
         run: pnpm gate:env
       - name: Jurisdiction review gate
         run: pnpm gate:jurisdictions
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys
@@ -199,6 +201,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start this job's fresh local Supabase
         run: pnpm exec supabase start
       - name: Export this job's local Supabase keys
