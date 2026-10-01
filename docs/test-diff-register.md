@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-01 — Audit populated Embryo pages through their genuine native publication
+
+The default authenticated accessibility sweep uses an own-genome account and
+therefore reaches empty Embryo pages. A supplemental census now requires all
+four data-bearing registered Embryo routes to be read in the original all-pass
+journey before parent disposition changes its grants. Every current source/QC
+receipt is rechecked before and after each route; actual page200, exact URL,
+cohort/ordinal identity, current permissions and measured verdicts are required.
+Each real populated page and both detail records receive the unchanged complete
+axe audit in both themes, all pinned viewports and reduced motion, plus the
+existing fixed context network/tracker/payment audit. The upload read observes
+the honest post-publication new-upload form, without creating another draft.
+
+The mixed-QC case now also imports the permanent audited test. An AST source
+preflight before native execution and independent inventory/aggregation refuses
+plain Playwright imports, commented audit lookalikes, missing/crossed journey
+sources and a disconnected populated audit. No original expectation, title,
+case, timeout, retry, project or native assignment changes. The nine unproved
+route-state pairs and both existing upload waivers remain unchanged. Six
+coverage pairs still lack a genuine eligible result contract; failed QC and an
+empty calibrated-model registry are not substitute scientific coverage. The
+new audits are authored, and hosted execution remains required.
+
 ## 2026-10-01 — Observe the authoritative upload presentation before its unchanged UI assertions
 
 Hosted run36805076949 finished with the own-export journey stopped immediately

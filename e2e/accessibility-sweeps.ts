@@ -168,6 +168,16 @@ export const CHECKED_ELSEWHERE: Record<string, string> = {
   "/embryos/[embryoId]": "e2e/embryos.spec.ts",
 };
 
+/** The ordinary sweep keeps its empty-state visits. Populated Embryo reads
+ * require the separate real signed-parent/native worker journey; this is its
+ * closed supplemental census, checked against the actual registered routes. */
+export const POPULATED_EMBRYO_AUDITS: Readonly<Record<string, string>> = Object.freeze({
+  "/embryos": "e2e/embryo-ingest-journey.spec.ts",
+  "/embryos/upload": "e2e/embryo-ingest-journey.spec.ts",
+  "/embryos/compare": "e2e/embryo-ingest-journey.spec.ts",
+  "/embryos/[embryoId]": "e2e/embryo-ingest-journey.spec.ts",
+});
+
 export type RegisteredPage = { kind: string; auth: string; path: string; disposition: unknown };
 
 export function registeredPages(): RegisteredPage[] {
