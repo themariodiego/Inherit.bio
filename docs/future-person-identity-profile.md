@@ -54,3 +54,30 @@ attestation. The actual delivered owner notice must start the registered
 30-day objection window, followed by a fresh authorized human release
 transaction; elapsed time alone never releases a record. Those actions remain
 closed until implemented and proved. G5.4 and G4.2 remain unaccepted.
+
+## Settings control follow-up
+
+The controls are offered on the existing authenticated `/settings/data` page,
+independently of an analytical grant. `profileAfter` is a canonical UUID cursor
+for a read-only, bounded current-parent record inventory. The page renders
+stateless prospective proofs and writes no nonce, session or profile during a
+GET. It paginates every remaining candidate record rather than truncating the
+set. A stranger, stale parent or crossed own Auth session receives no control;
+unsupported current authority is withheld. The actual mutation recomputes the
+complete receipt under the subject lock before consuming its nonce.
+
+Saved profile values are never loaded into the settings page or form. The
+native inputs start blank, use no local storage or sensitive cache, and clear
+after a confirmed successful save or deletion. The client requires the exact
+closed successful response and original deadline; an uncertain response asks
+for a fresh page without claiming that a change failed to commit. A current
+parent's deletion control remains available without signing new upload
+consent. Account export and account deletion retain their top-level position.
+
+The strict runtime loader checks pass. Fresh SQL and native browser execution
+remain pending. A source review found that the existing embryo detail path
+requires `embryo_analysis`, and no page currently renders the implemented
+disposition endpoint's prospective nonce or native propose/confirm controls.
+A separate narrow parent rights control is therefore required to reach a real
+transferred record through the product before profile browser proof. No
+matching authority or operation proof will be fabricated in a fixture.

@@ -18,6 +18,27 @@ existing phases and introduces no extra registry row. All original census
 assertions remain exact, and the plan grows by exactly this new row-shape
 assertion. The correction awaits the coordinator's focused SQL rehearsal.
 
+## 2026-10-01 — Render prospective parent profile controls without reading saved identity fields
+
+The settings loader's new tests verify both genuine stateless operation proofs
+against the full source-selected current receipt, crossed operation/session/
+subject/record/profile refusals, unknown-field rejection, the exact bounded
+inventory and cursor, and zero mutation RPC calls on repeated page reads.
+The client receives only the authorized record label, storage status, unchanged
+deadline and prospective action proofs. No birth detail, parent name, index,
+ciphertext, key or raw authority snapshot is returned or used as a form default.
+Production and anonymous requests stop before trusted inventory reads.
+
+The profile-control SQL fixture uses the real two-parent transfer writer,
+requires no nonce/profile creation by repeated read-only discovery, rejects a
+stranger or crossed live session, preserves each parent's own signature and
+requires deletion controls to survive a superseded upload consent. The top
+account export and deletion controls remain in their existing position.
+No fixture is a native disposition or profile browser proof: the genuine
+page-issued disposition control is still required before that journey can
+reach a transferred record, and is a separate follow-up. New SQL and hosted
+browser execution remain pending; acceptance is unchanged.
+
 ## 2026-10-01: Bind claimant deletion to the real disposition and audit source receipts
 
 The genuine claimant plan now locks the exact detached embryo and reads its
