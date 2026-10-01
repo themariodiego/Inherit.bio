@@ -92,7 +92,7 @@ describe("immutable logical archive segmentation", () => {
   });
 
   it("preserves the original30 second begin INSERT limit even when a planner is supplied", async () => {
-    vi.useFakeTimers(); const f = fixture(); f.options.beginAttempt = vi.fn(() => new Promise(() => {}));
+    vi.useFakeTimers(); const f = fixture(); f.options.beginAttempt = vi.fn(() => new Promise<void>(() => {}));
     f.options.prepareSource = vi.fn(async () => {});
     const result = storeArchiveSegments(f.options), refused = expect(result).rejects.toMatchObject({code:"deadline",cleanupRequired:true});
     await vi.advanceTimersByTimeAsync(30_001); await refused;
