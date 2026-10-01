@@ -591,8 +591,80 @@ revoke all on function private.genome_file_owner_listable_v1(uuid)
   from public, anon, authenticated, inherit_upload_only, service_role;
 grant execute on function private.genome_file_owner_listable_v1(uuid) to authenticated;
 
--- Signed-in users only: an anonymous request never had a matching row.
-alter policy genome_files_select_own on public.genome_files to authenticated
-  using ((select auth.uid()) = user_id and private.genome_file_owner_listable_v1(id));
+-- A fresh chronological replay reaches the legacy owner-only policy here.
+-- An append to the already deployed main graph reaches the later Path B
+-- policy. Compose both refusals immediately in that case; the final privacy
+-- migration verifies the same composition. Never overwrite the newer refusal
+-- with the older embryo-only rule, even between committed migrations.
+do $canonical_owner_policy$
+declare actual_qual text; actual_roles oid[]; legacy_qual text; path_b_qual text;
+  path_b_helper oid := to_regprocedure('private.is_path_b_file_v1(uuid)');
+begin
+  if not exists(select 1 from pg_catalog.pg_class file_table
+    join pg_catalog.pg_policy policy on policy.polrelid=file_table.oid
+    where file_table.oid='public.genome_files'::regclass and file_table.relkind='r'
+      and file_table.relrowsecurity and not file_table.relforcerowsecurity
+      and file_table.relowner=(select oid from pg_catalog.pg_roles where rolname='postgres')
+      and policy.polname='genome_files_select_own' and policy.polcmd='r'
+      and policy.polpermissive and policy.polwithcheck is null)
+    or exists(select 1 from pg_catalog.pg_policy policy
+      where policy.polrelid='public.genome_files'::regclass and policy.polcmd in('r','*')
+        and policy.polname<>'genome_files_select_own') then
+    raise exception using errcode='55000',message='unexpected canonical owner policy';
+  end if;
+  select pg_catalog.pg_get_expr(policy.polqual,policy.polrelid),policy.polroles
+    into actual_qual,actual_roles from pg_catalog.pg_policy policy
+    where policy.polrelid='public.genome_files'::regclass and policy.polname='genome_files_select_own';
+  create temporary table canonical_owner_policy_predecessor(like public.genome_files) on commit drop;
+  create policy canonical_owner_legacy on canonical_owner_policy_predecessor
+    using((select auth.uid())=user_id);
+  select pg_catalog.pg_get_expr(policy.polqual,policy.polrelid) into legacy_qual
+    from pg_catalog.pg_policy policy
+    where policy.polrelid='pg_temp.canonical_owner_policy_predecessor'::regclass
+      and policy.polname='canonical_owner_legacy';
+  if path_b_helper is null then
+    if actual_roles is distinct from array[0]::oid[] or actual_qual is distinct from legacy_qual then
+      raise exception using errcode='55000',message='unexpected canonical owner predecessor';
+    end if;
+    alter policy genome_files_select_own on public.genome_files to authenticated
+      using((select auth.uid())=user_id and private.genome_file_owner_listable_v1(id));
+  else
+    if not exists(select 1 from pg_catalog.pg_proc helper where helper.oid=path_b_helper
+      and helper.proowner=(select oid from pg_catalog.pg_roles where rolname='postgres')
+      and helper.prokind='f' and helper.prosecdef and helper.provolatile='s'
+      and not helper.proisstrict and not helper.proleakproof and helper.proparallel='u'
+      and not helper.proretset and helper.prorettype='boolean'::regtype
+      and helper.pronargs=1 and helper.proargtypes[0]='uuid'::regtype and helper.proargnames=array['p_file_id']::text[]
+      and helper.proargmodes is null and helper.proallargtypes is null
+      and helper.pronargdefaults=0 and helper.proargdefaults is null and helper.provariadic=0
+      and helper.prolang=(select oid from pg_catalog.pg_language where lanname='sql')
+      and helper.proconfig=array['search_path=""']::text[] and helper.probin is null
+      and helper.procost=100 and helper.prorows=0
+      and md5(helper.prosrc)='fae16b4a98c3e99447754ac6b284a412'
+      and array(select grant_entry::text from unnest(helper.proacl) grant_entry order by grant_entry::text)
+        =array['authenticated=X/postgres','postgres=X/postgres']::text[]
+      and has_function_privilege('authenticated',helper.oid,'execute')
+      and not has_function_privilege('anon',helper.oid,'execute')
+      and not has_function_privilege('inherit_upload_only',helper.oid,'execute')
+      and not has_function_privilege('service_role',helper.oid,'execute')) then
+      raise exception using errcode='55000',message='unexpected canonical Path B helper';
+    end if;
+    create policy canonical_owner_path_b on canonical_owner_policy_predecessor to authenticated
+      using(user_id=(select auth.uid()) and not private.is_path_b_file_v1(id));
+    select pg_catalog.pg_get_expr(policy.polqual,policy.polrelid) into path_b_qual
+      from pg_catalog.pg_policy policy
+      where policy.polrelid='pg_temp.canonical_owner_policy_predecessor'::regclass
+        and policy.polname='canonical_owner_path_b';
+    if actual_roles is distinct from array[(select oid from pg_catalog.pg_roles where rolname='authenticated')]::oid[]
+      or actual_qual is distinct from path_b_qual then
+      raise exception using errcode='55000',message='unexpected canonical Path B predecessor';
+    end if;
+    alter policy genome_files_select_own on public.genome_files to authenticated
+      using(user_id=(select auth.uid()) and private.genome_file_owner_listable_v1(id)
+        and not private.is_path_b_file_v1(id));
+  end if;
+  drop table canonical_owner_policy_predecessor;
+end
+$canonical_owner_policy$;
 
 notify pgrst, 'reload schema';

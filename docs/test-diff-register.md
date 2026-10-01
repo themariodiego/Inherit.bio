@@ -7056,3 +7056,27 @@ and planted observed/modelled/unknown-version cases prove that exact is not
 silently renamed. QC dropout/contamination classification remains unchanged
 pending the source inconsistency documented in docs/result-basis-contract.md.
 This is a bounded contract improvement and does not mark G4.2 YES.
+
+## Source-file privacy across deployed migration order · 1 October 2026
+
+The deployed main graph already contains the later Path B owner-list refusal.
+Appending the older pending canonical migration overwrote it with the
+embryo-only rule, and the final privacy migration correctly rejected that
+unexpected predecessor. A chronological fresh installation had hidden this
+ordering defect. No deployed migration or original refusal assertion changes.
+
+The pending canonical migration now accepts only the exact legacy owner policy
+on a fresh prefix or the exact deployed Path B policy and fully pinned helper.
+The latter branch composes the canonical exclusion immediately, preserving
+both refusals between committed pending migrations. The final migration pins
+both helpers and accepts only the exact Path B predecessor or exact completed
+composition; the completed policy remains byte-identical. A fresh installation
+must complete all migrations, including that final composition, before use.
+
+CI executes the actual two sourced guards against both reviewed predecessors,
+with strict planted policy, role, RLS, helper-source, helper-attribute and grant
+corruptions. All 15 local transaction probes pass and roll back; the permanent
+check adds no fixture grant, user data or migration ledger entry. The release
+also requires the full pending-source append rehearsal and catalog comparison
+with a fresh installation. This correction promotes no acceptance row and
+changes no browser expectation, retry or deadline.
