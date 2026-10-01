@@ -1,5 +1,43 @@
 # Test diff register
 
+## 2026-10-01 — Compare every original archive byte with the native Buffer primitive
+
+The actual full Linux run reached 8,718 passing tests and one unchanged
+five-second timeout in the plain original ZIP64 case. An isolated native phase
+probe retained the original assertion and measured raw/decoded EOF proof at
+21.89 ms, ZIP generation at 35.54 ms, parse at 0.48 ms, the generic byte-array
+`toEqual` assertion at 4,527.47 ms, and independent SHA-256 at 13.83 ms. The
+small gzip assertion took 5.36 ms. The full run's plain case took 9,014 ms under
+concurrent resource pressure; there was no observed stalled transport or cleanup.
+
+That one equality assertion now requires a non-null native Buffer, the exact
+original byte length and `Buffer.prototype.equals` over every original byte.
+The separate original SHA-256 assertion, the 2,097,159-byte fixture, raw and
+decoded EOF, ZIP64 entry identity, exact read count and five-second timeout are
+unchanged. A new independent refusal test corrupts the first and last byte,
+truncates, appends and substitutes a foreign byte container or NULL. It also
+checks a distinct correct full-size copy. No product source, SQL, provider
+behavior, retry, skip or acceptance row changes. The failed full run is retained;
+a corrected full run is still required.
+
+## 2026-10-01 — Require exhaustive current account class membership
+
+The complete assembler needs an explicit inventory for all original 27 public
+deferred classes plus the two integrated Path B stores. New consumer tests add
+closed metadata projections, independent count/ordered ID/content/partition
+proof through all three pages of 1,103 rows, exact complete bound source
+snapshots and six nonzero historical scientific memberships. Missing,
+duplicate, foreign, stale, same-count source changes, wrong partition counts,
+private fields, ignored cancellation and final revocation remain refusals. The
+original 30-second operation limits are unchanged. No existing assertion or
+unsupported account/non-self/cohort/joint graph refusal is relaxed. The new
+real-role pgTAP fixture preserves all original review/release/Auth/MFA/binding
+and relocation assertions through unchanged includes. Nonempty unproved
+classes, including withheld Path B stores, refuse the whole request; absence
+proof never fabricates a producer, clinical output, byte receipt or empty
+placeholder. This authored prerequisite supplies no database, hosted/browser,
+provider, READY, public-gate or acceptance credit.
+
 ## 2026-10-01 — Restore exact worker cleanup authority without exposing protected evidence
 
 The167-file fresh diagnostic fails two original native refusal cleanup cases:
