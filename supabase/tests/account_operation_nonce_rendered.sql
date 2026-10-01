@@ -56,19 +56,34 @@ select throws_ok($$select * from public.request_account_deletion_v2('7a300000-00
 select is((select count(*) from public.account_operation_nonces where account_id='7a300000-0000-4000-8000-000000000001'),
  0::bigint,'a refused attempt records nothing');
 
+-- The real page saves a millisecond render instant and its exact ten-minute
+-- expiry before the POST. Pass that saved expiry, never re-evaluate it inside
+-- an inline volatile argument through nested SQL/PLpgSQL wrappers.
+create temporary table rendered_nonces as
+select repeat(n,64) nonce_hash, rendered_at, rendered_at+interval '10 minutes' expires_at
+from (select date_trunc('milliseconds',clock_timestamp()) rendered_at) rendered
+cross join (values('1'),('2'),('3'),('4')) nonce(n);
+select ok((select count(*)=4 and bool_and(expires_at=rendered_at+interval '10 minutes'
+ and rendered_at=date_trunc('milliseconds',rendered_at)) from rendered_nonces),
+ 'every saved rendered nonce has exactly the original ten-minute millisecond lifetime');
+
 create temporary table requested as
 select * from public.request_account_deletion_v2('7a300000-0000-4000-8000-000000000001',
- '7a300000-0000-4000-8000-000000000010',repeat('1',64),clock_timestamp()+interval '10 minutes',
+ '7a300000-0000-4000-8000-000000000010',repeat('1',64),(select expires_at from rendered_nonces where nonce_hash=repeat('1',64)),
  decode('00112233','hex'),repeat('b',64),repeat('c',64));
 select is((select status from requested),'notice_period','a rendered nonce schedules deletion through v2');
 select is((select count(*) from public.account_operation_nonces where nonce_hash=repeat('1',64)
  and operation='account_delete' and consumed_at is not null),1::bigint,
  'the operation records the nonce once, already spent');
 
+select is((select expires_at from public.account_operation_nonces where nonce_hash=repeat('1',64)),
+ (select expires_at from rendered_nonces where nonce_hash=repeat('1',64)),
+ 'the actual request stores the original saved expiry without renewal');
+
 -- A failed operation spends nothing: the notice period already exists, so a
 -- second request fails and its nonce is not recorded.
 select throws_ok($$select * from public.request_account_deletion_v2('7a300000-0000-4000-8000-000000000001',
- '7a300000-0000-4000-8000-000000000010',repeat('2',64),clock_timestamp()+interval '10 minutes',
+ '7a300000-0000-4000-8000-000000000010',repeat('2',64),(select expires_at from rendered_nonces where nonce_hash=repeat('2',64)),
  decode('00','hex'),repeat('b',64),repeat('d',64))$$,'23505','deletion_request_exists',
  'a second request while the first is pending is refused');
 select is((select count(*) from public.account_operation_nonces where nonce_hash=repeat('2',64)),0::bigint,
@@ -76,8 +91,11 @@ select is((select count(*) from public.account_operation_nonces where nonce_hash
 
 create temporary table cancelled as
 select * from public.cancel_account_deletion_v2('7a300000-0000-4000-8000-000000000001',
- '7a300000-0000-4000-8000-000000000010',repeat('3',64),clock_timestamp()+interval '10 minutes',repeat('e',64));
+ '7a300000-0000-4000-8000-000000000010',repeat('3',64),(select expires_at from rendered_nonces where nonce_hash=repeat('3',64)),repeat('e',64));
 select is((select status from cancelled),'active','a rendered nonce cancels through v2');
+select is((select expires_at from public.account_operation_nonces where nonce_hash=repeat('3',64)),
+ (select expires_at from rendered_nonces where nonce_hash=repeat('3',64)),
+ 'the actual cancellation stores the original saved expiry without renewal');
 
 select is((select count(*) from auth.sessions where user_id='7a300000-0000-4000-8000-000000000001'),0::bigint,
  'cancellation revokes all pre-cancellation sessions');
@@ -89,11 +107,11 @@ insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
 -- The first request's nonce is spent: replaying it fails on the nonce, before
 -- anything about the account is read.
 select throws_ok($$select * from public.request_account_deletion_v2('7a300000-0000-4000-8000-000000000001',
- '7a300000-0000-4000-8000-000000000011',repeat('1',64),clock_timestamp()+interval '10 minutes',
+ '7a300000-0000-4000-8000-000000000011',repeat('1',64),(select expires_at from rendered_nonces where nonce_hash=repeat('1',64)),
  decode('00','hex'),repeat('b',64),repeat('f',64))$$,'22023','invalid_operation_nonce',
  'a spent nonce cannot be replayed');
 select throws_ok($$select * from public.cancel_account_deletion_v2('7a300000-0000-4000-8000-000000000001',
- '7a300000-0000-4000-8000-000000000011',repeat('1',64),clock_timestamp()+interval '10 minutes',repeat('9',64))$$,
+ '7a300000-0000-4000-8000-000000000011',repeat('1',64),(select expires_at from rendered_nonces where nonce_hash=repeat('1',64)),repeat('9',64))$$,
  '22023','invalid_operation_nonce','nor spent on the other operation');
 
 -- A spent hash lives until its nonce would have expired, then goes.
@@ -101,7 +119,7 @@ update public.account_operation_nonces set issued_at=clock_timestamp()-interval 
  expires_at=clock_timestamp()-interval '2 minutes' where nonce_hash=repeat('1',64);
 create temporary table again as
 select * from public.request_account_deletion_v2('7a300000-0000-4000-8000-000000000001',
- '7a300000-0000-4000-8000-000000000011',repeat('4',64),clock_timestamp()+interval '10 minutes',
+ '7a300000-0000-4000-8000-000000000011',repeat('4',64),(select expires_at from rendered_nonces where nonce_hash=repeat('4',64)),
  decode('00112233','hex'),repeat('b',64),repeat('0',64));
 select is((select count(*) from public.account_operation_nonces where nonce_hash=repeat('1',64)),0::bigint,
  'an expired spent hash is pruned by the next operation');

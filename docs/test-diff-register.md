@@ -1,5 +1,41 @@
 # Test diff register
 
+## 2026-10-01 — Use saved nonce expiries and genuine uploader insurance in the combined account fixtures
+
+The actual full fresh run of f54502eb2d7cf1c0e81e4664f89b45e0b5adea48
+passed all 215 migrations but stopped account_operation_nonce_rendered after
+its first 14 assertions: the recorder rejected the inline volatile exact
+clock-plus-ten-minute argument. The same unchanged 24-assertion file passed
+when rerun alone. The failure is retained; no backward-clock cause is proved.
+The fixture now saves one millisecond render instant and its exact ten-minute
+expiry before posting, as the actual stateless nonce renderer does. Every
+original positive, expired, eleven-minute, old-session, replay, cancellation
+and pruning assertion remains. Three added assertions pin the exact saved
+lifetime and verify that request/cancellation persist that original expiry
+without renewal. The production recorder, ten-minute maximum, all session
+checks and account nonce source remain byte-identical.
+
+The same full run stopped account_path_b_request_refusal after 28 assertions.
+Its original insurance helper signed only for the recipient, while the real
+normalization authority independently requires the uploader's current own
+insurance signature. The helper now signs the current artifact through the
+actual own-upload context and signature producer for both accounts. One
+additional assertion requires a non-null native claim with the exact source,
+subject, held object, hashes, revision, worker dispatch, claim hash and lease
+before the unchanged real stage/complete and whole-graph rollback assertions.
+No queued/running job, normalized result or provider acknowledgement is
+planted; unsupported Path B account erasure remains closed.
+
+The held-table source census also failed exactly one assertion: migration029
+adds the private, API-denied account class inventory. Its exact literal name
+joins the expected census only when the reviewed function is installed. A new
+assertion pins that actual body MD5, postgres ownership, full configuration
+and every API execution denial. The current canonical-vs-denied023 activation
+identity and every other original census/body/role predicate remain exact.
+No permissions, production functions, migration bytes, timeouts, retries,
+case omissions or acceptance values change. Full fresh SQL qualification is
+root-owned and remains required; focused source checks are not SQL execution.
+
 ## 2026-10-01 — Qualify objection outcome columns after the actual fresh-database failure
 
 The full fresh run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48 stopped at
