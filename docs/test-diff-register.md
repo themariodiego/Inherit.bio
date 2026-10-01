@@ -1,5 +1,45 @@
 # Test diff register
 
+## 2026-10-01 — Prove actual current original bytes for consumed account members
+
+Migration `20261001026000` pins actual original availability and physical Storage
+identity into the existing complete ordinary-file capture. Its service-only
+worker descriptor/check derives the actor, session, selected source and writing
+attempt from the genuinely consumed request. Missing catalog versions are not
+invented; changed metadata, retirement, source, session or authority cannot be
+adopted into an old receipt. Every unsupported graph refusal and public/READY
+closure remains. No store, human JWT, analytical grant or permission is added.
+
+The new ordinary consumer shares the unchanged one-MiB range transport and
+native status/header, EOF, hash, timeout and current-authority assertions. Legacy
+originals use their own exact kind instead of a fabricated prepared manifest;
+prepared originals retain the actual existing manifest and retirement checks.
+Tests prove complete raw and decoded hashes, real gzip and independently read
+ZIP64 bytes, foreign/stale/missing/version/refusal boundaries and cancellation.
+A member opens by reading its actual pinned source again, so late corruption
+cannot be concealed by retained preparation bytes. A genuine prepared retirement
+has an explicit absent-original warning; deletion or missing legacy metadata
+remains a refusal.
+
+The bound reader now retains member metadata rather than every preparation
+byte array. Opening a part performs the same complete distinct-audience R2
+version/hash/EOF proof again before streaming it, with current authority checks
+and one-part memory ownership. The existing positive test keeps its exact bytes
+and adds the two genuine second reads; a strict new late-change regression
+requires refusal. No original assertion, source permission, timeout or part
+identity is relaxed. Authenticated human doors and original parent descriptors
+remain unchanged.
+
+The new SQL fixture retains the unchanged real scientific/Auth/signing producer
+assertions, flushes actual deferred request invariants, and tests the real service
+role, descriptor, independent source/actor fields and writing/deadline lease.
+It also tests absent versions, foreign/open/stale inputs, actual catalog changes
+and logout, every exact function grant and unchanged durable job bytes. Its
+physical metadata is explicitly synthetic, and authored SQL/unit seams supply
+no provider/browser/database execution credit. Whole-account assembly, every
+registered non-self/cohort/joint class, POST/status and provider delivery remain
+necessary; G5.4/G5.6 stay NO.
+
 ## 2026-10-01 — Prove complete consumed history membership before account assembly
 
 Migration `20261001024000` binds independent complete counts and ordered

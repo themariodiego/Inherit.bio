@@ -11,17 +11,20 @@ export const preparedOriginalDownloadSourceSchema = z.object({
   expiresAt: z.iso.datetime({ offset: true }),
 }).strict();
 export type PreparedOriginalDownloadSource = z.infer<typeof preparedOriginalDownloadSourceSchema>;
-export type PreparedOriginalDownloadOptions = {
-  source: PreparedOriginalDownloadSource;
+export type OriginalByteSource = Pick<PreparedOriginalDownloadSource,
+  "fileId" | "sourceRevision" | "rawSha256" | "bucket" | "objectId" | "objectKey" | "storageVersion" | "sizeBytes" | "expiresAt">;
+export type OriginalRangeOptions<Source extends OriginalByteSource> = {
+  source: Source;
   /** Current SQL authorization of this exact source, including manifest, known
    * physical identity, fixed retirement/session/consent deadline and lifecycle.
    * An earlier grant or the descriptor alone is never read permission. */
-  check: (source: PreparedOriginalDownloadSource, signal: AbortSignal) => Promise<void>;
+  check: (source: Source, signal: AbortSignal) => Promise<void>;
   signal: AbortSignal;
   /** Optional trusted transport seam; production defaults to the configured
    * service-authenticated original store. Never accept a URL from a request. */
-  readRange?: (source: PreparedOriginalDownloadSource, start: number, end: number, signal: AbortSignal) => Promise<Response>;
+  readRange?: (source: Source, start: number, end: number, signal: AbortSignal) => Promise<Response>;
 };
+export type PreparedOriginalDownloadOptions = OriginalRangeOptions<PreparedOriginalDownloadSource>;
 export class PreparedOriginalDownloadError extends Error {
   constructor(readonly code: "invalid_source" | "integrity_mismatch" | "unavailable" | "aborted") {
     super(code); this.name = "PreparedOriginalDownloadError";
@@ -39,8 +42,16 @@ const RANGE_BYTES = 1_048_576;
  * This returns the raw stored original (including gzip), never decoded calls.
  */
 export async function* streamPreparedOriginalDownload(options: PreparedOriginalDownloadOptions): AsyncGenerator<Uint8Array> {
-  let source: PreparedOriginalDownloadSource;
-  try { source = preparedOriginalDownloadSourceSchema.parse(options.source); }
+  yield* streamVerifiedOriginalRanges(options, preparedOriginalDownloadSourceSchema);
+}
+
+/** Shared complete-range transport. Its callers supply a fixed internal
+ * source schema; ordinary sources never fabricate a prepared manifest. */
+export async function* streamVerifiedOriginalRanges<Source extends OriginalByteSource>(
+  options: OriginalRangeOptions<Source>, schema: z.ZodType<Source>,
+): AsyncGenerator<Uint8Array> {
+  let source: Source;
+  try { source = schema.parse(options.source); }
   catch { return fail("invalid_source"); }
   const controller = new AbortController(), signal = AbortSignal.any([options.signal, controller.signal]);
   const remaining = Math.min(300_000, Date.parse(source.expiresAt) - Date.now());
