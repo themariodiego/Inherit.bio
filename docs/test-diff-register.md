@@ -1179,6 +1179,49 @@ check was planted and failed; the details are in
 `docs/register-divergence-proposals.md` section 8. No existing assertion was
 removed or loosened.
 
+## Brief X1.5: the upload page stores no nonce while it renders · 28 September 2026
+
+**Two pgTAP files move off `issue_own_upload_nonce_v1`, which is dropped.**
+- `own_upload_account_completion.sql` still has 42 assertions.
+  - Its seven issuance assertions become the same checks on the v2 path the
+    route now takes: digest shape, the ten-minute ceiling, an expired token,
+    missing adult details, and the account-revision recheck.
+  - Two new assertions say that nothing is stored before use, and that the
+    completion records its nonce as a completion. They replace "a completion
+    screen cannot issue a deletion nonce" and "a verified service route can
+    issue the initial completion presentation".
+  - The v1 body assertions keep a stored-row fixture, now written directly as
+    the other own-upload tests already do.
+  - The service-role completion, and "the completed account can proceed to
+    its consent decision", now go through v2. The privilege check names the
+    v2 door instead of the dropped one.
+- `own_upload_consent.sql` (30) changes one call. The service-role signing
+  goes through v2 with no stored row. Every other assertion is unchanged.
+
+**New tests.**
+- `supabase/tests/own_upload_nonce_rendered.sql`, 25 assertions:
+  - both issuing doors are gone, and v1 is out of the service role's reach;
+  - the doors are invokers over private definer bodies;
+  - nothing is stored before an operation;
+  - the recorder's bounds hold, and refusals record nothing;
+  - completion and signing through v2 record one spent hash each;
+  - replay fails, including across operations;
+  - an expired spent hash is pruned.
+- `src/lib/uploads/prepare-own-upload.test.ts` (3): preparing the page makes
+  no write and no RPC other than the read-only context lookup, for both
+  token kinds.
+- The two route unit tests now expect the v2 RPCs with the token's expiry.
+- `scripts/route-register-correspondence.test.ts`: `nonceStoredBeforeUse` is
+  empty. The test that relied on finding its one site now proves the scan
+  reads shipped code and that its pattern finds both removed shapes.
+
+**Planted, each seen to fail.**
+- The page render storing its nonce: 2 tests fail.
+- A new GET route that inserts a nonce row: 3 tests fail.
+- In the database, each of these fails the new file: the issuing door
+  surviving, v1 left callable by the service role, a spent hash accepted
+  again, and no expiry bound.
+
 ## Brief X1.5: the account-deletion nonce is rendered, not fetched · 28 September 2026
 
 **Four pgTAP files move from the stored nonce to the rendered one.** They are
