@@ -10,7 +10,7 @@ async function fixture(total=103){
  const context={version:"account-archive-members-v1" as const,targetKind:"account" as const,targetId:actor.accountId,
   authorityReceipt:reference.authorityReceipt,deadline:new Date(Date.now()+600000).toISOString(),capturedAt:date,actor,fileCount:0,
   partitions:[self,other].map(subjectId=>({subjectId,class:"ordinary" as const,fileCount:0,fileIds:[]}))};
- const headers=Array.from({length:total},(_,i)=>({id:randomUUID(),subject_id:i%2?other:self,scope_kind:"self",created_at:date,message_count:i===0?307:2}))
+ const headers=Array.from({length:total},(_,i)=>({id:randomUUID() as string,subject_id:i%2?other:self,scope_kind:"self",created_at:date,message_count:i===0?307:2}))
   .sort((a,b)=>a.id.localeCompare(b.id));
  const messages=new Map(headers.map(row=>[row.id,Array.from({length:row.message_count},(_,i)=>({id:randomUUID(),role:i%2?"assistant":"user",
   content:`Saved synthetic turn${i}`,citations:[{id:"saved-reference",label:"Stored reference",href:"/genome/me/reports/synthetic-report"}],embryoFindings:[],createdAt:date}))]));
@@ -67,7 +67,7 @@ describe("actual consumed saved-chat factory",()=>{
   if(fault==="private-header")Object.assign(f.headers[0],{credentialFingerprint:"withheld"});
   if(fault==="duplicate-header")f.headers[1]=structuredClone(f.headers[0]);
   if(fault==="wrong-cursor"){const original=f.contentRpc.getMockImplementation()!;f.contentRpc.mockImplementation(async(...args)=>{
-   const result=await original(...args);if(args[1].p_operation==="chats")Object.assign(result.data,{nextAfterChatId:f.headers[0].id});return result;});}
+   const result=await original(...args);if(args[1].p_operation==="chats")Object.assign(result.data as Record<string,unknown>,{nextAfterChatId:f.headers[0].id});return result;});}
   await expect(prepareAccountChatMembers(f.options)).rejects.toThrow();
  });
  it("refuses changed header membership and current revocation before subsequent bytes",async()=>{

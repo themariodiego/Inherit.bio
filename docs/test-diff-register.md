@@ -1,5 +1,17 @@
 # Test diff register
 
+## 2026-10-01 — Type the unchanged saved-chat fixture seams
+
+The nonincremental type check on ordinary qualification merge46b97040 failed
+at two new saved-chat fixture annotations: Node's inferred UUID template
+literal narrowed the map key, and the closed RPC callback intentionally returns
+unknown data. The synthetic header ID is now typed string and the known header
+mutation seam is typed as a record. Removing exactly these two type annotations
+reproduces every original fixture byte; rows, cursors, assertions, limits and
+product code remain unchanged. The failed account-consumed-qualified-typecheck.log
+is retained. Whole-type qualification of the corrected exact source remains
+required; no database, Auth, browser or provider proof is inferred.
+
 ## 2026-10-01 — Compose complete consumed account members before archive reservation
 
 New consumed-account worker tests exercise actual ZIP64 generation through the
