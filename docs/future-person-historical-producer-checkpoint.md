@@ -68,9 +68,21 @@ root's approved one-entry sentinel at
 `/tmp/inherit-integrator-20260930/local-denylist.txt`; this is not the private
 comparator. The correctly refused empty-placeholder receipt is retained, and
 hosted CI must use the actual encrypted private list. These checks cover the
-authored local source, not complete release qualification. The new SQL,
-native helper/executor and predecessor catalog checks have not run here; root
-owns those executions. This prerequisite does not yet provide the complete
+authored local source, not complete release qualification.
+
+The frozen 4943369f source subsequently passed actual Next type generation and
+a nonincremental type check. The separate 853fa292 test-only public-clock
+correction passed the exact migration as one owner DO plus all five complete
+SQL suites on qualified 360: 481 assertions, zero failures/skips. The complete
+catalog before and after equals the qualified baseline, and all 215 migration
+rows/digest remain unchanged after rollback. The reviewed capture query keeps
+the original seed and complete projection bytes, materializes identical edges
+once and records its pinned SHA; its complete JSON equality was verified under
+the unchanged 45-second bound. The initial failed assertion and original
+capture timeout remain preserved. These are actual executor/catalog proofs;
+the native helper/executor still awaits its browser execution.
+
+This prerequisite does not yet provide the complete
 positive documentary claim → provider-committed owner notice → objections →
 separate assigned fresh EOF/client-ACK read → final operation-specific release
 journey. The existing real public thirty-day refusal remains mandatory and

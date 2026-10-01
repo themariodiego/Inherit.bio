@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-01 — Rehearse the corrected historical producer against the complete qualified catalog
+
+The exact 035 migration passed as one owner DO on the qualified 360 schema.
+The separate test-only 853fa292 correction then passed all 91 new historical
+assertions, plus the unchanged mail creation clock (61), disposition controls
+(62), cohort runtime (152) and parent withdrawal (115) suites: 481 assertions,
+zero failures or skips. Every transaction rolled back. The complete catalog
+before and after is exactly equal to the qualified 360 baseline, and all 215
+migration rows and their digest remain unchanged.
+
+The first complete-capture attempt hit its unchanged 45-second limit before
+applying any source. Bounded count/instrumentation probes found no active
+blockers, and did not establish a product defect. The reviewed replacement
+capture materializes the same dependency edges once, preserving the seed and
+entire projection byte-for-byte. Its complete JSON equals the prior qualified
+catalog and finishes inside the same limit; its pinned source SHA is recorded
+in the rehearsal receipt. No assertion, application clock, period, precision,
+grant, timeout or database lifecycle changes. Frozen 4943369f also passed
+actual Next type generation and a nonincremental type check. The failed first
+91-test output and capture timeout remain retained. This is executor evidence,
+not native positive, provider delivery, human review or real elapsed-time
+credit; the complete positive browser journey remains to be implemented.
+
 ## 2026-10-01 — Pin the unchanged public proposal clock after actual historical-producer rehearsal
 
 The exact frozen 4943369f source applied successfully as one owner DO on the
