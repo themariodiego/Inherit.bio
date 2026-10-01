@@ -25,6 +25,31 @@ The independently generated ZIP exposed a real preparation cancellation bug: a m
 Focused unit, type/lint and gate results are recorded separately at the exact checkpoint. SQL remains authored until independently executed; hosted browser/provider completion is not inferred. Whole-account assembly and all remaining non-self/cohort/joint classes, real POST/status worker wiring and final publication/delivery remain required. No READY/public gate or G5.4/G5.6 acceptance flip occurs.
 
 
+## 2026-10-01 — Retain the actual co-parent session through native parent controls
+
+The integrated shared participant-c producer returns its genuine co-parent page
+and an explicit context closer after setup. The native journey closes that
+context in a finally block only after every original T6, harness and detail
+assertion plus the actual disposition/profile controls. Seed failure still
+closes it immediately. The separate fresh-persona launcher closes the co-parent
+context before creating its read-only task session, retaining the original
+persona boundary. No account, signature, permission, source, assertion, timeout,
+retry or case identity is replaced. Hosted execution remains pending.
+
+## 2026-10-01 — Share the genuine participant-c producer with a separate fresh-runtime instrument
+
+The existing native all-pass seed/signature/upload/worker/publication assertions
+move unchanged into `e2e/participant-c-journey.ts`, with its co-parent context
+closed at the end of setup. The native T6 DOM/action/read evidence stays in the
+same case, with its title, case identity, project, timeout and retry policy.
+The separate manual hosted smoke workflow calls that same producer for each
+persona after refusing existing resources and creating a fresh owned stack.
+Its lifecycle, crossed/missing resource identity, uncertain cleanup, budget and
+scope checks use synthetic IO in units; they do not count as browser/provider
+proof. Standard CI and ordinary T6/T7 holds remain unchanged. The new manual
+workflow and real per-persona lifecycle are authored and unexecuted here.
+No expectation, signature predicate, scientific producer or acceptance row is
+weakened or marked complete.
 ## 2026-10-01 — Keep integrated account-binding links under the primary route contract
 
 The integrated focused rehearsal found two literal links in the existing
