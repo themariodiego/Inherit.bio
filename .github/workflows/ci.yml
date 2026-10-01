@@ -91,6 +91,8 @@ jobs:
         run: pnpm gate:env
       - name: Jurisdiction review gate
         run: pnpm gate:jurisdictions
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys
@@ -199,6 +201,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start this job's fresh local Supabase
         run: pnpm exec supabase start
       - name: Export this job's local Supabase keys
@@ -223,7 +227,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browser-case-${{ github.run_attempt }}-shard-${{ matrix.shard }}
-          path: test-results/ci-browser-shard.json
+          path: |
+            test-results/ci-browser-shard.json
+            test-results/embryo-qc-seed.json
           retention-days: 14
           if-no-files-found: error
       - name: Keep safe failing browser evidence
@@ -275,3 +281,11 @@ jobs:
           path: ci-browser-coverage
       - name: Require exact expected, assigned and executed case equality
         run: pnpm exec tsx scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage
+
+      - name: Keep only verified synthetic QC differencing evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: embryo-qc-two-seed-${{ github.run_attempt }}
+          path: test-results/embryo-qc-two-seed.json
+          if-no-files-found: error
+          retention-days: 14

@@ -23,6 +23,10 @@ import {
   type AdultSubjectInvitationProps,
 } from "@/emails/adult-subject-invitation";
 import {
+  AdultUploadNoticeEmail,
+  type AdultUploadNoticeProps,
+} from "@/emails/adult-upload-notice";
+import {
   CoParentInvitationEmail,
   type CoParentInvitationProps,
 } from "@/emails/co-parent-invitation";
@@ -51,16 +55,19 @@ import {
   type EmbryoIngestAbandonedProps,
 } from "@/emails/embryo-ingest-abandoned";
 import { FuturePersonReleaseEmail,type FuturePersonReleaseProps } from "@/emails/future-person-release";
+import { FuturePersonOwnerNoticeEmail, type FuturePersonOwnerNoticeProps } from "@/emails/future-person-owner-notice";
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
   "future-person-release":FuturePersonReleaseProps;
+  "future-person-owner-notice": FuturePersonOwnerNoticeProps;
   "report-ready": ReportReadyProps;
   "research-digest": ResearchDigestProps;
   "account-deletion-notice": AccountDeletionNoticeProps;
   "account-deletion-cancelled": AccountDeletionCancelledProps;
   "adult-subject-invitation": AdultSubjectInvitationProps;
+  "adult-upload-notice": AdultUploadNoticeProps;
   "co-parent-invitation": CoParentInvitationProps;
   "embryo-upload-notice": EmbryoUploadNoticeProps;
   "record-key-addendum": RecordKeyAddendumProps;
@@ -84,6 +91,7 @@ const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
   "future-person-release":(payload)=>createElement(FuturePersonReleaseEmail,payload),
+  "future-person-owner-notice": (payload) => createElement(FuturePersonOwnerNoticeEmail, payload),
   "report-ready": (payload) => createElement(ReportReadyEmail, payload),
   "research-digest": (payload) => createElement(ResearchDigestEmail, payload),
   "account-deletion-notice": (payload) =>
@@ -92,6 +100,8 @@ const renderers: {
     createElement(AccountDeletionCancelledEmail, payload),
   "adult-subject-invitation": (payload) =>
     createElement(AdultSubjectInvitationEmail, payload),
+  "adult-upload-notice": (payload) =>
+    createElement(AdultUploadNoticeEmail, payload),
   "co-parent-invitation": (payload) =>
     createElement(CoParentInvitationEmail, payload),
   "embryo-upload-notice": (payload) =>
@@ -112,11 +122,13 @@ const renderers: {
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
   "future-person-release":"Your Inherit request is ready",
+  "future-person-owner-notice": "A claim needs your review on Inherit",
   "report-ready": "Your Inherit reports are ready",
   "research-digest": "New reports in the Inherit research library",
   "account-deletion-notice": "Your Inherit account deletion is scheduled",
   "account-deletion-cancelled": "Your Inherit account deletion was cancelled",
   "adult-subject-invitation": "You were invited to Inherit",
+  "adult-upload-notice": "A DNA file was added for you on Inherit",
   "co-parent-invitation": "You were named as a genetic parent on Inherit",
   "embryo-upload-notice": "Embryo records were added on Inherit",
   "embryo-disposition-notice": "A disposition was recorded for one embryo record",
@@ -135,6 +147,10 @@ const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {
 export function mailSubject(mail: MailTemplate): string {
   if (mail.id === "record-key-addendum") {
     return addendumSubjects[mail.payload.kind];
+  }
+  // The register's Path B request (TEST-LOCAL only) asks for a signature, not an account.
+  if (mail.id === "adult-subject-invitation" && mail.payload.request === "esignature") {
+    return "A request to add your DNA file to Inherit";
   }
   return subjects[mail.id];
 }

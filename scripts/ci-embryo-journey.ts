@@ -124,6 +124,7 @@ function cohortLiteral(cohortId: string) {
  * Browser mutations and the real worker create all authority and results;
  * this helper cannot insert data, grant permission, advance a job or publish. */
 export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
+  runtimeOwner: string;
   runWorker: (cohortId: string) => Promise<void>;
   proof: (cohortId: string) => Promise<unknown>;
 }) => Promise<T>, io = defaultIo(env), platform = process.platform): Promise<T> {
@@ -172,6 +173,7 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
         update ${SPLIT} set enabled=true where singleton;
       end $$; select 'true';`) === "true", "Embryo fixture activation was uncertain");
     return await work({
+      runtimeOwner: owner.owner,
       runWorker: async cohortId => {
         const cohort = cohortLiteral(cohortId);
         assert(!attempted, "No duplicate or uncertain embryo worker attempt is permitted");

@@ -185,6 +185,68 @@ describe("independent mail queues", () => {
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
+  function claimOwnerNotice(payload: unknown = {}, token: string | null = row.delivery_token,
+    authorization = true) {
+    let claimed = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") {
+        const data = claimed ? [] : [{ ...row, template_id: "future-person-owner-notice",
+          template_payload: payload, delivery_token: token }];
+        claimed = true;
+        return { data, error: null };
+      }
+      if (name === "authorize_mail_submission_v1") return { data: authorization, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+  }
+
+  it("submits the closed owner notice only after exact current-attempt authority", async () => {
+    claimOwnerNotice();
+    const response = await POST(workerRequest());
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledExactlyOnceWith("synthetic@example.test", {
+      id: "future-person-owner-notice", payload: { objectionUrl: `http://localhost:3000/withdraw/request#${row.delivery_token}` },
+    }, row.idempotency_key);
+    const authorizationIndex = mocks.rpc.mock.calls.findIndex(([name]) => name === "authorize_mail_submission_v1");
+    expect(mocks.rpc.mock.invocationCallOrder[authorizationIndex]).toBeLessThan(mocks.submit.mock.invocationCallOrder[0]);
+    expect(mocks.rpc.mock.calls.filter(([name]) => name === "complete_mail_attempt")).toEqual([["complete_mail_attempt", {
+      p_outbox_id: row.outbox_id, p_attempt_ordinal: 2, p_success: true,
+      p_provider_message_id_hmac: "provider-id-hash", p_outcome_code: "accepted",
+    }]]);
+    expect(mocks.from).not.toHaveBeenCalled();
+    // Acceptance writes only the coded provider HMAC. The raw token, link,
+    // recipient, claimant/profile fields and rendered body never enter RPCs.
+    expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain(row.delivery_token);
+    expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("synthetic@example.test");
+    expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("objectionUrl");
+  });
+
+  it.each([null, "a".repeat(42), "a".repeat(44), "../unsafe", "a".repeat(42) + "+"])(
+    "refuses an absent or malformed owner-notice fragment credential: %s", async (token) => {
+      claimOwnerNotice({}, token);
+      const response = await POST(workerRequest());
+      expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+      expect(mocks.submit).not.toHaveBeenCalled();
+      expect(mocks.rpc.mock.calls.filter(([name]) => name === "authorize_mail_submission_v1")).toEqual([]);
+    });
+
+  it.each([{ verifiedName: "Synthetic claimant" }, { embryoId: "target" }, { noticeEndsAt: "future" },
+    { objectionUrl: "https://example.test/other" }])("refuses extra owner-notice payload fields: %j", async (payload) => {
+    claimOwnerNotice(payload);
+    const response = await POST(workerRequest());
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("never sends an owner notice under stale current-owner or attempt authority", async () => {
+    claimOwnerNotice({}, row.delivery_token, false);
+    const response = await POST(workerRequest());
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+    expect(mocks.rpc.mock.calls.filter(([name]) => name === "complete_mail_attempt")).toEqual([]);
+  });
+
   it("records a failure when the provider rejects the request", async () => {
     claimOnce({ data: true, error: null });
     mocks.submit.mockRejectedValue(new Error("provider rejected"));
@@ -193,5 +255,46 @@ describe("independent mail queues", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("complete_mail_attempt", expect.objectContaining({
       p_success: false, p_outcome_code: "provider_or_payload_error",
     }));
+  });
+
+  // The register's Path B (TEST-LOCAL only): the request to sign and the
+  // upload-time notice go out through the same checked claim.
+  function claimRow(claimed: Record<string, unknown>) {
+    let done = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") { const data = done ? [] : [claimed]; done = true; return { data, error: null }; }
+      if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+  }
+
+  it("sends the upload-time notice with its dates, its kind and its one fragment link", async () => {
+    claimRow({ ...row, template_id: "adult-upload-notice",
+      template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
+      id: "adult-upload-notice", payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+        reviewUrl: expect.stringContaining(`/withdraw/request#${row.delivery_token}`) },
+    }, row.idempotency_key);
+  });
+
+  it.each([
+    { template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" }, delivery_token: null },
+    { template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28", name: "Someone" } },
+    { template_payload: { fileKind: "bam", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } },
+  ])("fails an upload-time notice with no link or with anything beyond its closed payload: %j", async (patch) => {
+    claimRow({ ...row, template_id: "adult-upload-notice", ...patch });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("marks the Path B request so it asks for a signature", async () => {
+    claimRow({ ...row, template_id: "adult-subject-invitation", template_payload: { request: "esignature" } });
+    await POST(workerRequest());
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
+      id: "adult-subject-invitation", payload: { invitationUrl: expect.stringContaining(`#${row.delivery_token}`),
+        note: undefined, request: "esignature" },
+    }, row.idempotency_key);
   });
 });

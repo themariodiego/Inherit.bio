@@ -9,6 +9,7 @@ import type { CapabilityDecision } from "./access";
 import { familyCapability, liveGrantsToViewer, permits } from "./access";
 import { resolveFamilyPerson, type FamilyPerson, type Purpose } from "./graph";
 import { acknowledged } from "./tier2";
+import { isPathBSubject, listPathBReportMetadata, type PathBReportMetadata } from "@/lib/uploads/path-b-report-reader";
 
 /**
  * One subject-derived route, resolved for either domain (design §2.2).
@@ -43,6 +44,8 @@ export interface SubjectRouteContext {
   domain: { label: string; href: string };
   /** The name to print for this record, which is never the self placeholder. */
   displayLabel: string;
+  /** Present only for the dedicated queued Path B reader; never own/legacy data. */
+  pathB?: PathBReportMetadata;
 }
 
 export type SubjectRouteResult =
@@ -70,6 +73,19 @@ export async function resolveSubjectRoute(
 
   const own = await resolveSubjectForAccount(user.id, segment);
   if (own) {
+    if (own.subjectClass === "other_adult") {
+      let pathB: boolean;
+      try { pathB = await isPathBSubject(own.id); } catch { return { kind: "not-found" }; }
+      if (pathB) {
+        // This continuation has exactly two saved-report outputs. Raw and
+        // ancestry URLs must not borrow the ordinary own-record resolver.
+        if (!options.anyOf?.some(purpose => purpose === "reports.monogenic" || purpose === "reports.polygenic")) return { kind: "not-found" };
+        const metadata = (await listPathBReportMetadata().catch(() => [])).find(row => row.subjectId === own.id);
+        if (!metadata || !options.anyOf.some(purpose => metadata.purposes.includes(purpose as "reports.monogenic" | "reports.polygenic"))) return { kind: "not-found" };
+        return { kind: "ok", user, subject: own, dataSubjectId: own.id, person: null, pathB: metadata,
+          domain: { label: "Files", href: route("files.index") }, displayLabel: metadata.label };
+      }
+    }
     return {
       kind: "ok",
       user,

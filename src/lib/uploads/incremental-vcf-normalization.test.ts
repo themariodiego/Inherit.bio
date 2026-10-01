@@ -47,6 +47,19 @@ function staged(stage: ReturnType<typeof setup>["stage"], kind: "variants" | "ob
 const lift: Liftover = (chrom, pos) => ({ chrom, pos: pos + 100, strand: -1 });
 
 describe("incremental VCF normalization", () => {
+  it("keeps every GRCh38 call unchanged when the shared worker has a GRCh37 reference loaded", async () => {
+    const unusedLift = vi.fn<Liftover>(() => null);
+    const harness = setup({ lift: unusedLift });
+    const result = await prepareIncrementalVcf(input([row(10), row(20, "0/0")]), harness.options);
+    expect(result).toEqual({ variantCount: 1, observedCallCount: 2, attempted: 0, unmapped: 0 });
+    expect(unusedLift).not.toHaveBeenCalled();
+    expect(staged(harness.stage, "variants")).toMatchObject([{ chrom: 1, pos: 10, ref: "A", alt: "C", genotype: "A/C" }]);
+    expect(staged(harness.stage, "observed")).toMatchObject([
+      { source_chrom: 1, source_pos: 10, chrom: 1, pos: 10, genotype: "A/C", usable: true },
+      { source_chrom: 1, source_pos: 20, chrom: 1, pos: 20, genotype: "A/A", usable: true },
+    ]);
+  });
+
   function assertByteBounds(harness: ReturnType<typeof setup>) {
     expect(harness.register.mock.calls.every(([, entries]) => entries.length <= 1000 && normalizationJsonbByteLength(entries) <= 4_001_024)).toBe(true);
     for (const kind of ["variants", "observed"] as const) {

@@ -5,9 +5,10 @@ import { assertEmbryoCiShard, assertEmbryoJourneyPartition, assertEmbryoJourneyA
 const journeys = [
   { project: "embryo-ingest", file: "embryo-ingest-journey.spec.ts", cases: 1 },
   { project: "embryo-mixed-qc", file: "embryo-mixed-qc-journey.spec.ts", cases: 1 },
+  { project: "chromium", file: "embryo-qc-second-seed-journey.spec.ts", cases: 1 },
 ];
 describe("fresh native embryo partitions", () => {
-  it("requires both inventoried journeys but permits only one in each fresh job", () => {
+  it("requires all inventoried journeys but permits only one in each fresh job", () => {
     expect(() => assertEmbryoJourneyPartition(journeys, true)).not.toThrow();
     for (const journey of journeys) expect(() => assertEmbryoJourneyPartition([journey], false)).not.toThrow();
     expect(() => assertEmbryoJourneyPartition([], false)).not.toThrow();
@@ -16,6 +17,9 @@ describe("fresh native embryo partitions", () => {
       [journeys[0], { ...journeys[1], file: journeys[0].file }],
       [journeys[0], { ...journeys[1], cases: 2 }]]) expect(() => assertEmbryoJourneyPartition(invalid, true)).toThrow();
     expect(() => assertEmbryoJourneyPartition([{ ...journeys[1], project: "chromium" }], false)).toThrow();
+    expect(() => assertEmbryoJourneyPartition([{ ...journeys[2], project: "embryo-ingest" }], false)).toThrow();
+    expect(() => assertEmbryoJourneyPartition([journeys[2], journeys[0]], false)).toThrow("at most one");
+    expect(() => assertEmbryoJourneyPartition([{ project: "chromium", file: "ordinary.spec.ts", cases: 1 }], false)).not.toThrow();
   });
   it("refuses unsharded CI while preserving ordinary local behavior", () => {
     expect(() => assertEmbryoCiShard(null, { CI: "true" })).toThrow("unsharded CI");
@@ -35,7 +39,7 @@ describe("fresh native embryo partitions", () => {
 describe("permanent genuine embryo audit preflight", () => {
   const real = () => Object.fromEntries(Object.values(EMBRYO_BROWSER_JOURNEYS)
     .map(file => [file, readFileSync(`e2e/${file}`, "utf8")]));
-  it("requires both real network audits and the connected populated all-pass audit", () => {
+  it("requires all real network audits and the connected populated all-pass audit", () => {
     expect(() => assertEmbryoJourneyAudits(real())).not.toThrow();
     for (const file of Object.values(EMBRYO_BROWSER_JOURNEYS)) {
       const current = real();
@@ -48,6 +52,16 @@ describe("permanent genuine embryo audit preflight", () => {
     for (const replacement of ["unconnectedAudit", "auditPublishedEmbryoSurfaces.toString"]) {
       const current = real();current[name] = current[name].replace("await auditPublishedEmbryoSurfaces(", `await ${replacement}(`);
       expect(() => assertEmbryoJourneyAudits(current)).toThrow("populated surface audit");
+    }
+    const second = EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"];
+    for (const replacement of [(text: string) => text.replace("http://localhost:3105", "http://localhost:3100"),
+      (text: string) => text.replace('saveQcSeedReceipt("b"', 'saveQcSeedReceipt("a"'),
+      (text: string) => text.replace('qcSeed: "b"', 'qcSeed: "a"'),
+      (text: string) => text.replace('qcSeed: "b"', 'qcSeed: selectedSeed'),
+      (text: string) => text.replace('ownerEmail: "qc-seed-b@e2e.local"', 'ownerEmail: "participant-c@e2e.local"'),
+      (text: string) => text.replace("await seedParticipantC(", "await unconnectedSeed(")]) {
+      const current = real();current[second] = replacement(current[second]);
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow();
     }
     const missing = real();delete missing[name];
     expect(() => assertEmbryoJourneyAudits(missing)).toThrow("source inventory");

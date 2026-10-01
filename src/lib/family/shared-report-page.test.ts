@@ -6,12 +6,15 @@ import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
 import { ScientificCorrectionNotice } from "@/components/reports/scientific-correction-notice";
 import { ReportLibrary, type LibraryGroup } from "@/components/reports/report-library";
 
-const mocks = vi.hoisted(() => ({ context: vi.fn(), ownSnapshot: vi.fn(), snapshot: vi.fn(), confirm: vi.fn(),
+const mocks = vi.hoisted(() => ({ context: vi.fn(), ownSnapshot: vi.fn(), snapshot: vi.fn(), pathB: vi.fn(), confirm: vi.fn(),
   candidates: vi.fn(), calls: vi.fn(), inputs: vi.fn(), admin: vi.fn(), template: null as unknown, gate: vi.fn(), legacyCount: 0 }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("404"); }, redirect: () => { throw new Error("redirect"); } }));
 vi.mock("@/lib/family/subject-route", () => ({ resolveSubjectRoute: mocks.context }));
+vi.mock("@/lib/uploads/path-b-report-reader", () => ({ loadPathBReportSnapshot: mocks.pathB }));
 vi.mock("@/lib/genome/own-stored-report", () => ({ loadOwnStoredReportSnapshot: mocks.ownSnapshot }));
-vi.mock("@/lib/family/shared-report-results", () => ({ loadSharedReportSnapshot: mocks.snapshot }));
+vi.mock("@/lib/family/shared-report-results", async importOriginal => ({
+  ...await importOriginal<typeof import("./shared-report-results")>(), loadSharedReportSnapshot: mocks.snapshot,
+}));
 vi.mock("@/lib/family/access", () => ({ grantedLayers: () => ["variant_call", "estimate"], viewerMaySee: () => true,
   permits: () => true, personCapability: async () => ({}),
   LAYER_PURPOSES: { estimate: "reports.polygenic", variant_call: "reports.monogenic" } }));
@@ -280,5 +283,46 @@ describe("Own exact-source report detail", () => {
   it("keeps no-query own compatibility on its existing loader", async () => {
     ownCapture(); await ReportPage(ownProps()); expect(mocks.ownSnapshot).not.toHaveBeenCalled();
     expect(mocks.candidates).toHaveBeenCalled();
+  });
+});
+
+
+describe("Path B report-route isolation", () => {
+  function pathB(direction: "self" | "uploader" = "self") {
+    const row = saved();
+    const state = { authorized: true, reports: [{ ...row, purpose: "reports.polygenic" }],
+      access: [{ purpose: "reports.polygenic", kind: "canonical" }],
+      sources: [{ fileId: row.fileId, fileType: "vcf", processedAt: row.completedAt }], unavailableReports: [] };
+    mocks.context.mockResolvedValue({ kind: "ok", user: { id: "viewer" },
+      subject: { id: "source", routeSegment: "person", displayLabel: "Shared adult", subjectClass: "other_adult" },
+      dataSubjectId: "source", person: null, pathB: { direction, purposes: ["reports.polygenic"] },
+      domain: { label: "Files", href: "/files" }, displayLabel: "Shared adult" });
+    mocks.pathB.mockResolvedValue({ ...state, confirm: mocks.confirm });
+    mocks.confirm.mockResolvedValue(state);
+  }
+  it("lists only captured Path B results and calls no own/legacy genotype loader", async () => {
+    pathB();
+    const page = await ReportsPage({ params: props().params, searchParams: Promise.resolve({}) });
+    expect(renderedProps(page)).toContain("Captured trait");
+    expect(mocks.pathB).toHaveBeenCalledWith("source");
+    expect(mocks.candidates).not.toHaveBeenCalled(); expect(mocks.calls).not.toHaveBeenCalled();
+    expect(mocks.ownSnapshot).not.toHaveBeenCalled(); expect(mocks.snapshot).not.toHaveBeenCalled();
+  });
+  it("shows the uploader session gate before any saved or ordinary genetic fetch", async () => {
+    pathB("uploader"); mocks.gate.mockResolvedValue(false);
+    const page = await ReportPage(props());
+    expect(renderedProps(page)).not.toContain("Captured explanation.");
+    expect(mocks.pathB).not.toHaveBeenCalled(); expect(mocks.candidates).not.toHaveBeenCalled();
+    expect(mocks.calls).not.toHaveBeenCalled(); expect(mocks.ownSnapshot).not.toHaveBeenCalled();
+  });
+  it("refuses an explicit absent source without falling back to the own stored reader", async () => {
+    pathB();
+    await expect(ReportPage(props({ source: "different-source" }))).rejects.toThrow("404");
+    expect(mocks.ownSnapshot).not.toHaveBeenCalled(); expect(mocks.calls).not.toHaveBeenCalled();
+  });
+  it("refuses a capture whose final authorization ended before rendering", async () => {
+    pathB(); mocks.confirm.mockResolvedValue({ authorized: false });
+    await expect(ReportPage(props())).rejects.toThrow("404");
+    expect(mocks.calls).not.toHaveBeenCalled(); expect(mocks.ownSnapshot).not.toHaveBeenCalled();
   });
 });
