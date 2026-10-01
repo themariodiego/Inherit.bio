@@ -1,5 +1,17 @@
 # Test diff register
 
+## 2026-10-01 — Validate the real export request before the deletion request
+
+The rollback-only positive rehearsal now crosses the same creation boundary as
+the two actual HTTP requests: immediately after its genuine queued export is
+created, it requires that export's exact deferred origin constraint to pass
+while the original claimant authority is still current. It then restores that
+constraint's deferred setting before the separate deletion request. Without
+this boundary, a pending INSERT trigger survived until the test's final check
+after the same export/job/nonce rows had been correctly removed by deletion.
+The product constraint and authority checks are unchanged. The new assertion
+requires genuine complete creation; no invalid export or deletion gets credit.
+
 ## 2026-10-01 — Execute exact protected children before a database cascade
 
 The actual positive deletion rehearsal passed 126 assertions before a review

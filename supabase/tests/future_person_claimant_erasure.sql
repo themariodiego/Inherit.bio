@@ -94,6 +94,9 @@ select ok((private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),
  and exists(select 1 from public.embryo_qc where embryo_id=(select embryo from custody_ids)),
  'uncertain archive refusal rolls back the complete job/reservation/request and preserves genuine result/rights authority');
 create temporary table queued_deletion_export as select pg_temp.deletion_export('queued-export-before-delete') body;
+select lives_ok('set constraints public.independent_export_origin_complete immediate',
+ 'the actual queued export passes its deferred creation contract before the separate deletion request');
+set constraints public.independent_export_origin_complete deferred;
 select is((select count(*) from public.generated_exports where id=(select (body->>'exportId')::uuid from queued_deletion_export)
  and status='queued' and object_id is null and archive_sha256 is null and byte_count is null),1::bigint,
  'one actual claimant export is queued without an attempt, reservation or provider bytes before deletion');
