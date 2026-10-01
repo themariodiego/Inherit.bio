@@ -1,5 +1,17 @@
 # Test diff register
 
+## 2026-10-01 — Type the actual objection RPC ABI without weakening negative headers
+
+The clean prerequisite's first nonincremental type pass found three missing explicit public RPC type entries and a negative-test header union whose absent properties inferred undefined. The database ABI now lists the exact statement scope, owner view, objection write and current-operation reader signatures; the header refusal cases are explicitly string maps. No cast or assertion is weakened. Next's generated route/PageProps types are generated in the fresh checkout before repeating the check; their initial absence is an environment failure, not an altered product contract. The original failed receipt is retained. SQL, whole-flow and hosted execution remain pending.
+
+## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
+
+The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.
+
+The working owner objection encrypts its bounded statement under an independent random wrapped key tied to its exact claim, notice and initial revision. It pauses only the claim, consumes a distinct current-cookie operation nonce, invalidates its link/session and assigns a named objection reviewer atomically. The original 62-day package clock remains immutable; a genuine timely objection transfers document readability to the separately persisted review deadline capped at submission plus 92 days. A delivered period can assign a fresh release operation and invalidate old document receipts; it cannot approve, detach or deliver the record. A private API-denied trusted clock seam rehearses the exact session boundaries without rewriting stored times. The unfinished GET-only human-review HTTP handler remains outside this checkpoint until its genuine decision POST exists.
+
+Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
+
 ## 2026-10-01 — Prove complete consumed history membership before account assembly
 
 Migration `20261001024000` binds independent complete counts and ordered

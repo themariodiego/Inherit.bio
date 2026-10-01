@@ -1,5 +1,5 @@
 begin;
-select plan(33);
+select plan(34);
 \ir fixtures/rights_invitation_pending.inc
 -- policyResolvers.withdrawal-target-v1.purposeMatrix in the database. The
 -- fixture above issues one real co-parent invitation; everything rolls back.
@@ -9,8 +9,8 @@ select is((select count(distinct purpose) from private.rights_purpose_matrix), 1
 select is((select count(*) from private.rights_purpose_matrix), 34::bigint,
   'with every registered action and route');
 select is((select array_agg(session_purpose order by session_purpose) from private.rights_session_purposes),
-  array['adult-subject-invitation', 'approved-future-person-release', 'co-parent-invitation', 'embryo-parent-withdrawal'],
-  'exactly the four purposes with a real issuer can be stored on a session');
+  array['adult-subject-invitation', 'approved-future-person-release', 'co-parent-invitation', 'embryo-parent-withdrawal', 'future-person-claim-objection'],
+  'exactly the five purposes with a real issuer can be stored on a session');
 select is((select target_kind from private.rights_session_purposes where session_purpose = 'embryo-parent-withdrawal'),
   'cohort', 'an embryo withdrawal session binds the whole cohort, never one embryo');
 
@@ -67,9 +67,14 @@ select throws_ok($$insert into public.rights_sessions
   '42501', 'rights purpose unavailable', 'a co-parent hash cannot be forged into an approved claimant session');
 select throws_ok($$insert into public.rights_sessions
   (token_hash_id, principal_id, purpose, target_kind, target_id, authority_revision, session_hash, expires_at)
-  select token_hash_id, principal_id, 'future-person-claim-objection', 'claim', target_id, 1,
+  select token_hash_id, principal_id, 'appeal-evidence', 'appeal-case', target_id, 1,
     repeat('a',64), clock_timestamp() + interval '10 minutes' from held$$,
   '42501', 'rights purpose unavailable', 'a purpose still lacking an issuer cannot be written');
+select throws_ok($$insert into public.rights_sessions
+  (token_hash_id, principal_id, purpose, target_kind, target_id, authority_revision, session_hash, expires_at)
+  select token_hash_id, principal_id, 'future-person-claim-objection', 'claim-notice', target_id, 1,
+    repeat('b',64), clock_timestamp() + interval '10 minutes' from held$$,
+  '42501', 'rights purpose unavailable', 'a genuine co-parent credential cannot forge an issued owner-objection purpose');
 select throws_ok($$insert into public.rights_sessions
   (token_hash_id, principal_id, purpose, target_kind, target_id, authority_revision, session_hash, expires_at)
   select token_hash_id, principal_id, 'co-parent-invitation', 'subject', target_id, 1,
