@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Pin actual legacy content and complete consumed-account metadata
+
+Migration `20261001021000` supplements the existing exact owned capture with
+the requester profile, selected demographics, own signed purpose grants and
+an internal per-file content revision. Actual variant/observed-call statements
+advance every affected old/new file once under its row lock. No genetic
+plaintext hashing is added to page checks, no revision is caller-selected and
+all original current source, actor, session, writing-attempt and unsupported
+graph refusals remain. The new internal column is explicitly withheld in the
+complete member plan and uses the file's existing cascade disposal.
+
+The new metadata reader has closed service-only operations and complete
+server-selected UUID pages. Independent consumer tests read 1,103 own grants
+and 108 file clocks and refuse omitted, duplicate, foreign, changed or leaked
+rows, unsafe counters, source-count mismatch, expired/cancelled calls and
+revoked durable authority. The SQL fixture preserves the original actual
+normalization/report/PRS positive assertions and flushes genuine creation
+constraints before worker reads. New strict probes cover actual multi-row and
+same-count genetic changes, both old/new retargets, deletions, empty statements,
+privileged maintenance, profile/session changes and unchanged durable jobs.
+The original file-deletion prepare/finish protocol must still refuse missing
+storage absence, complete its actual cascade without disabling guards, retain
+the sibling source and pass every deferred source identity constraint. The
+Storage metadata ACK seam is explicitly SQL-only and carries no provider
+credit.
+
+No assertion, source guard, member or timeout is removed. New SQL is authored
+until independently executed; synthetic unit RPCs are consumer evidence only.
+The complete assembler, every non-self/cohort/joint class, asynchronous
+POST/status flow and real provider delivery remain necessary. Public/READY and
+G5.4/G5.6 remain closed.
+
 ## 2026-10-01 — Compose ordinary account content under the real consumed worker request
 
 Migration `20261001019000` adds a distinct service-only account content door.
@@ -5784,4 +5816,3 @@ The existing legal ledger records who acted, but has no ordinary subject target 
 Strict new tests cover complete nonempty multi-page actual actor content once globally, every ordinary partition remaining unassigned, foreign/service event exclusion at the actual database selector, exact six-field privacy, a newly appended actual own event invalidating the original job receipt, and a genuine assigned selector refusing ordinary metadata. Page omissions, duplicates, changed counts/cursors, unsafe sequences, revoked authority and pseudonym/hash leakage also refuse. SQL fixtures use the original real approval, binding and relocation producers and flush deferred creation constraints; they remain authored until independently executed. The TypeScript RPC seam is synthetic authority evidence, never provider/browser proof.
 
 All remaining whole-account/non-self/cohort/joint members, POST/status worker integration and provider delivery stay required. G5.4/G5.6 remain NO; public/READY gates stay closed.
-
