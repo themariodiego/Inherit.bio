@@ -50,6 +50,7 @@ import { allowedConditions, registryIsEmpty } from "@/lib/embryos/allowed-condit
 import { EmbryoReadError, isCanonicalId, rowsOrThrow, selectCohort, type EmbryoCohortView } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type ComparisonResultRow, type RscEmbryoComparison } from "@/lib/embryos/policy";
 import { projectComparison, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { acknowledged } from "@/lib/embryos/tier2";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
@@ -93,7 +94,7 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
   const embryoIds = cohort.embryos.map((embryo) => embryo.id);
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
   const [qcResult, scoreResult] = await Promise.all([
-    admin.from("embryo_qc").select("*").in("embryo_id", embryoIds),
+    readEmbryoQcRows(admin, cohort.id, embryoIds),
     // A score outside the registry is never read (requestRule).
     registered.size > 0
       ? admin

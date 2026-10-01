@@ -1,5 +1,32 @@
 # Test diff register
 
+## 2026-10-01 — Preserve measured QC ratios across database JSON formation
+
+The actual hosted second-seed journey on `2280e7f4` fails the unchanged strict
+figure-basis ratio assertion. The native seed-B worker measures 1,184 of 1,200
+sites and stores `0.9866666666666667`. Independent read-only PostgreSQL probes
+prove the same binary double (`3fef92c5f92c5f93`) becomes
+`0.986666666666667` when JSON is formed with the actual session setting
+`extra_float_digits=0`; the scoped setting `3` preserves the exact value. This
+is a representation defect, not permission to tolerate a changed scientific
+ratio. The failed hosted run and actual probe receipts remain evidence.
+
+Additive034 pins the four reviewed serializer bodies, owners, ACLs and original
+configuration, then adds only their function-local precise-output setting. A
+new service-role/JWT-only SECURITY INVOKER reader forms complete closed QC rows
+with that local setting. It refuses missing, duplicate, foreign, multidimensional
+or partial selections and restores the session setting. Its 1–64 limit matches
+the original register and pre-upload ingest validator. Product detail/compare
+and the actual cross-surface/mixed-QC proof readers use the same bounded door.
+All original page gates, measured count/ratio/provenance/figure assertions,
+fixtures, timeouts, retries and skips remain. The original worker roundtrip test
+now also runs on the actual second-seed fixture. New independent tests cover
+all fields, exact ratio, strict truncated-value refusal, the full 64-response
+capacity and malformed/foreign/incomplete rows. Authored real-role pgTAP proves
+binary identity, complete fields, local configuration/ACLs and refusal; it is
+not execution evidence until the root-owned database run passes. No provider,
+public-gate, READY, deployment or acceptance claim is added.
+
 ## 2026-10-01 — Require a genuinely changed negative encrypted-proof fixture
 
 The full nonroot Linux suite on `65f9f752` passed 8,719 tests and failed the

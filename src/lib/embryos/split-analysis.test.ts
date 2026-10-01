@@ -16,8 +16,8 @@ import { coverageSpec, depthSpec, rateSpec, dropoutSpec } from "@/components/emb
 const binding = { challenge: "s".repeat(43), revision: 3, build: "GRCh38" as const, sampleCount: 2,
   handles: ["h".repeat(43), "k".repeat(43)] };
 
-it("round trips the actual sanitized fragment measurement through the saved row, reader and rendered figures", async () => {
-  const file = readFileSync("e2e/fixtures/embryo-pair-grch38.vcf", "utf8");
+it.each(["e2e/fixtures/embryo-pair-grch38.vcf", "e2e/fixtures/embryo-pair-qc-b-grch38.vcf"])("round trips the actual sanitized fragment measurement through the saved row, reader and rendered figures (%s)", async (path) => {
+  const file = readFileSync(path, "utf8");
   const chunks = await Array.fromAsync(embryoVcfChunks(new Blob([file]), binding));
   expect(chunks).toHaveLength(1);
   const fragments = validateEmbryoVcfChunk(chunks[0], { ...binding, resolveHandle: (handle) => {
@@ -30,6 +30,10 @@ it("round trips the actual sanitized fragment measurement through the saved row,
     const read = projectQc(saved);
     expect(read.figure_basis).toEqual(actual.figure_basis);
     expect(read.call_rate).toBe(measure.called / measure.sites);
+    if (path === "e2e/fixtures/embryo-pair-qc-b-grch38.vcf" && fragment.ordinal === 1) {
+      expect(measure.sites).toBe(1200); expect(measure.called).toBe(1184);
+      expect(read.call_rate).toBe(0.9866666666666667);
+    }
     expect(coverageSpec(read)?.basis).toBe(actual.figure_basis.coverage.basis);
     expect(rateSpec(read, "call_rate")?.basis).toBe(actual.figure_basis.call_rate.basis);
     expect(depthSpec(read)?.basis ?? null).toBe(actual.figure_basis.mean_depth?.basis ?? null);

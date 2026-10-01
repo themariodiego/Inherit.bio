@@ -15,6 +15,7 @@ import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRA
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { signStatements } from "./embryo-signing-helpers";
 import { EMBRYO_PUBLISHED_FILE_SELECT, publishedEmbryoFiles } from "../scripts/comprehension/participant-c-seed";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 
 /** No product handler, consent, worker or stored result is replaced here.
  * The local mail receiver captures synthetic delivery only. The isolated
@@ -115,7 +116,7 @@ test("mixed measured calls preserve a failed embryo without a source after real 
     const files = await adminClient().from("genome_files").select(EMBRYO_PUBLISHED_FILE_SELECT).in("subject_id", embryos.data!.map(item => item.subject_id));
     expect(files.error).toBeNull(); expect(files.data).toHaveLength(1);
     expect(files.data!.map(file => file.subject_id)).toEqual([embryos.data![0].subject_id]);
-    const qcRows = await adminClient().from("embryo_qc").select("embryo_id,sites_expected,sites_called,call_rate,qc_verdict,figure_basis,parent_a_concordance,parent_b_concordance,allelic_dropout_estimate,contamination_estimate").in("embryo_id", embryos.data!.map(item => item.id));
+    const qcRows = await readEmbryoQcRows(adminClient(), cohortId, embryos.data!.map(item => item.id));
     expect(qcRows.error).toBeNull(); expect(qcRows.data).toHaveLength(2);
     expect(qcRows.data!.find(row => row.embryo_id === embryos.data![1].id)).toMatchObject({ sites_expected: 1200, sites_called: 588, call_rate: 0.49, qc_verdict: "fail", figure_basis: { producer: "embryo-split-calls-v1", call_rate: { basis: "observed" } }, parent_a_concordance: null, parent_b_concordance: null, allelic_dropout_estimate: null, contamination_estimate: null });
     expect(publishedEmbryoFiles(files.data, { ownerId: owner, publishedAt: published.data!.uploaded_at!,
