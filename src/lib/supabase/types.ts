@@ -7912,6 +7912,11 @@ export type Database = {
         Args: { p_review_id: string }
         Returns: Json
       }
+      verify_keyless_claim_documents_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_verified_date_of_birth:string;
+          p_identity_hmac_set:Json;p_profile_hmac_set:Json}
+        Returns:Json
+      }
       open_claim_review_download_v1: {
         Args: { p_cookie_hash: string; p_document_id: string }
         Returns: Json
