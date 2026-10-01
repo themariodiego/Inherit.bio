@@ -3,12 +3,13 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from "react";
 import Image from "next/image";
 import {ReviewPdfDocument} from "./review-pdf";
+import {KeylessDocumentVerification} from "./keyless-verification";
 import {DOCUMENT_LABELS} from "@/copy/rights/future-person-claim";
 import {readReviewDocument} from "@/lib/future-person/read-review-document";
 import {reviewPageCase,reviewPageDecisions,type ReviewPageCase,type ReviewDecision} from "@/lib/future-person/review-page-contract";
 
 type DocumentKind="photo"|"birth";
-type Loaded={record:ReviewPageCase;csrf:string;nonce:string;photoNonce:string;birthNonce:string};
+type Loaded={record:ReviewPageCase;csrf:string;nonce:string;photoNonce:string;birthNonce:string;lookupNonce:string|null};
 type View={url:string;type:string;ready:boolean;failed:boolean};
 const HEX=/^[0-9a-f]{64}$/u;
 const LABEL:Record<ReviewDecision,string>={reject:"Refuse claim","needs-more-information":"Ask for more information","approve-record-key":"Approve claim"};
@@ -34,6 +35,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
   const [decision,setDecision]=useState<ReviewDecision>("reject");
   const [fullName,setFullName]=useState("");const [dateOfBirth,setDateOfBirth]=useState("");const [reason,setReason]=useState("");
   const operation=useRef<AbortController|null>(null);const urls=useRef<string[]>([]);
+  const verificationProof=useRef<string|null>(null);
   const documentState=useCallback((kind:DocumentKind,ready:boolean,failed:boolean)=>{
     setViews(previous=>previous[kind]?{...previous,[kind]:{...previous[kind],ready,failed}}:previous);
     if(!ready)setChecked(previous=>({...previous,[kind]:false}));
@@ -48,14 +50,16 @@ export function ClaimReview({claimId}:{claimId:string}) {
         const record=reviewPageCase.safeParse(await response.json());
         const csrf=response.headers.get("x-inherit-csrf");const nonce=response.headers.get("x-inherit-review-nonce");
         const photoNonce=response.headers.get("x-inherit-photo-receipt-nonce");const birthNonce=response.headers.get("x-inherit-birth-receipt-nonce");
+        const lookupNonce=response.headers.get("x-inherit-keyless-lookup-nonce");
         if(response.status!==200||!record.success||record.data.claimId!==claimId||!csrf||!HEX.test(csrf)
           ||!nonce||!photoNonce||!birthNonce||[nonce,photoNonce,birthNonce].some(value=>value.length>2048))throw new Error("unavailable");
+        if(record.data.mode==="keyless"&&(!lookupNonce||lookupNonce.length>2048))throw new Error("unavailable");
         if(controller.signal.aborted)return;
-        setLoaded({record:record.data,csrf,nonce,photoNonce,birthNonce});setMessage("");
+        setLoaded({record:record.data,csrf,nonce,photoNonce,birthNonce,lookupNonce});setMessage("");
       } catch {if(!controller.signal.aborted)setMessage("This claim is not available. Sign in again and open the case assigned to you.");}
       finally{if(!controller.signal.aborted)setBusy(null);}
     })();
-    return ()=>{controller.abort();operation.current?.abort();for(const url of urls.current)URL.revokeObjectURL(url);urls.current=[];};
+    return ()=>{controller.abort();operation.current?.abort();verificationProof.current=null;for(const url of urls.current)URL.revokeObjectURL(url);urls.current=[];};
   },[claimId]);
   const received=Boolean(views.photo?.ready&&views.birth?.ready);
   const approval=decision==="approve-record-key";
@@ -92,7 +96,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
       const row=result as Record<string,unknown>;
       if(Object.keys(row).sort().join("|")!=="claimId|reviewRevision|state"||row.claimId!==claimId||row.reviewRevision!==loaded.record.reviewRevision+1
         ||row.state!==({reject:"refused","needs-more-information":"more_information_required","approve-record-key":"release_queued"} as const)[decision])throw new Error("unavailable");
-      clearViews();setLoaded(null);setFullName("");setDateOfBirth("");setReason("");setMessage("Decision saved.");
+      clearViews();verificationProof.current=null;setLoaded(null);setFullName("");setDateOfBirth("");setReason("");setMessage("Decision saved.");
     } catch {if(!controller.signal.aborted)setMessage("The decision was not saved. Reload this page and check the current case before trying again.");}
     finally {if(!controller.signal.aborted)setBusy(null);}
   }
@@ -114,6 +118,17 @@ export function ClaimReview({claimId}:{claimId:string}) {
              I read this file.</label>}
         </>}
       </section>)}
+      {loaded.record.mode==="keyless"&&loaded.lookupNonce&&<KeylessDocumentVerification claimId={claimId}
+        reviewRevision={loaded.record.reviewRevision} csrf={loaded.csrf} nonce={loaded.lookupNonce}
+        documentsRead={received&&checked.photo&&checked.birth&&!busy}
+        onVerified={(record,proof)=>{verificationProof.current=proof;setLoaded(previous=>previous?{...previous,record}:null);setDecision("reject");}}/>}
+      {loaded.record.case.kind==="unclaimed_keyless"&&<section className="space-y-2 rounded-xl border p-4">
+        <h2>Parent-supplied details</h2>
+        <p>Birth date: {loaded.record.case.selectedProfile.childDateOfBirth}.</p>
+        <p>Birth place: {loaded.record.case.selectedProfile.childPlaceOfBirth}.</p>
+        <p>Parent names: {loaded.record.case.selectedProfile.parentNames.join(", ")}.</p>
+      </section>}
+      {loaded.record.case.kind==="claimed_unbound_no_key_recovery"&&<p>The document identity matches one previously claimed record. A new rights session needs its own review.</p>}
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label className="block" htmlFor="claim-review-choice">Choice</label>

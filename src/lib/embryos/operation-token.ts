@@ -115,7 +115,7 @@ const PUBLIC_FORM_DIGEST_CONTEXT = "public-form-v1";
  */
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
 
-type PublicForm = "future-person-recovery-key" | "future-person-analysis-stop" | "rights-activate" | "invitation-refuse" | "adult-subject-respond" | "future-person-claim" | "future-person-claim-document" | "future-person-claim-complete" | "future-person-claim-review" | "claim-review-receipt-open" | "claim-review-receipt-ack" | "embryo-parent-withdraw";
+type PublicForm = "future-person-recovery-key" | "future-person-analysis-stop" | "rights-activate" | "invitation-refuse" | "adult-subject-respond" | "future-person-claim" | "future-person-claim-document" | "future-person-claim-complete" | "future-person-claim-review" | "claim-review-keyless-verification" | "claim-review-receipt-open" | "claim-review-receipt-ack" | "embryo-parent-withdraw";
 
 interface PublicFormClaims {
   form: PublicForm;

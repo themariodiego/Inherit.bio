@@ -1,5 +1,33 @@
 # Test diff register
 
+## 2026-10-01 — Add a bounded named-reviewer keyless documentary lookup
+
+The registered keyless workflow requires the named human's freshly verified
+document name and date of birth before searching a prior claimant HMAC or a
+parent-supplied profile. The earlier case read always returned `keyless_none`
+and could not carry that human input. A separate, explicitly registered
+read-only POST now performs that prerequisite after current own-JWT MFA,
+assignment and full current delivery receipts for both clean kind-bound
+documents. It searches prior claimant identities first; only zero proceeds
+to the existing intake place/name candidate signals and documentary DOB.
+Nothing establishes identity or parent link from equality alone.
+
+New crypto, closed-projection and composed-route tests require exact actor,
+session, assignment, document digests, comparison and verified-tuple binding,
+canonical ciphertext encoding, original ten-minute expiry, deployment-key
+rotation refusal, strict recursive omission and zero positive writes. The
+reviewer can read the registered unique-case projection while every previous
+Record-Key, negative, recovery, unknown-field and unsupported-release
+assertion remains unchanged. The new cases still offer only refusal or more
+information until their complete positive transaction exists.
+
+The new SQL fixture is authored and unexecuted at this checkpoint. It uses
+real synthetic canonical publication, native parent transfer, the current
+profile producer, quarantine/scan/completion and actual role calls; explicitly
+synthetic receipt metadata tests database authority only. It is not evidence
+of browser byte delivery, human documentary determination, owner-notice
+delivery or final release. No acceptance row becomes YES.
+
 ## 2026-10-01 — Exercise a fresh Card intake and genuine immutable artifact publication
 
 The full fresh rehearsal exposed two invalid fixture transitions. Closing an
