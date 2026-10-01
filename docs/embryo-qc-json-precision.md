@@ -13,7 +13,7 @@ PostgreSQL's shortest precise decimal representation; see the official
 
 034 adds read_embryo_qc_rows_v1(uuid,uuid[]), service-only SECURITY INVOKER with
 both the actual PostgreSQL service role and its genuine JWT required. It accepts
-one authorized cohort and 1–64 unique nonnull embryo IDs, returning all 23 QC
+one authorized cohort and 1–64 unique nonnull embryo IDs, returning all 22 QC
 columns only if both the exact cohort identities and every QC row are present.
 No table privilege, human door, stored number, result provenance or global GUC
 changes. The limit comes from docs/route-register.json

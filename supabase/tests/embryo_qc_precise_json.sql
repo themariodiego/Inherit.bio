@@ -70,9 +70,11 @@ select throws_ok($$select public.read_embryo_qc_rows_v1((select cohort_id from p
  '42501','not_found','actual service role without the genuine service JWT is refused');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select is(public.read_embryo_qc_rows_v1((select cohort_id from precise_expected),(select ids from precise_expected)),
- (select body from precise_expected),'genuine role+JWT preserve the complete23-field QC rows and immutable provenance');
+ (select body from precise_expected),'genuine role+JWT preserve the complete22-field QC rows and immutable provenance');
 select is(public.read_embryo_qc_rows_v1((select cohort_id from precise_expected),(select ids from precise_expected))->0->>'call_rate',
  '0.9866666666666667','scoped reader returns the exact measured nonterminating ratio');
+select is((select count(*)from jsonb_object_keys(public.read_embryo_qc_rows_v1((select cohort_id from precise_expected),
+ (select ids from precise_expected))->0)),22::bigint,'the complete closed QC row has exactly22 registered fields');
 select is(encode(pg_catalog.float8send((public.read_embryo_qc_rows_v1((select cohort_id from precise_expected),
  (select ids from precise_expected))->0->>'call_rate')::double precision),'hex'),'3fef92c5f92c5f93',
  'a complete JSON read roundtrips to the identical stored double bits');
