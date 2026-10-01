@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Pin every reviewed purge pair after Path B integration
+
+The actual complete fresh database rehearsal reached 167 suites and 10,080
+assertions; only three old census expectations still required 153 stores. The
+Path B migrations deliberately add `public.other_adult_held_uploads` to
+`upload-and-ingest-working-state` (20260928150000) and
+`private.path_b_report_bindings` to `generated-artifacts` (20260930234000).
+The three Future Person fixtures now require exactly 155 physical registry
+rows. A shared literal two-column expected set independently reconciles the
+register's 117 baseline target/store pairs with all 38 reviewed later additions,
+including the existing exact contact-store reclassification. Each fixture also
+requires both Path B tables to exist and exactly their two reviewed target/store
+pairs. Equal-count replacement, omission or reclassification cannot satisfy the
+complete set comparison. The original separate exact six-private-archive-child
+assertion and every other original assertion remain intact; neither the export
+member-plan universe nor the observed catalog supplies runtime expectations.
+The failed actual rehearsal is retained. This bounded fixture correction changes
+no source, migration, permission, deletion execution or acceptance row; corrected
+SQL execution remains for the independent database rehearsal.
+
 ## 2026-10-01 — Preserve both generic source-file privacy refusals in the combined graph
 
 The actual combined pending database diagnostic fails original canonical assertions117/118: the authenticated owner's ordinary file query sees the two canonical embryo descriptors beside their self file. Later Path B normalization replaced the earlier canonical owner-list policy and retained only its other-adult refusal. The additive031 policy composes both existing reviewed helpers under the same authenticated user ownership check. Before any change it requires the exact table owner/schema/RLS, policy name/command/role/permissiveness/check, no extra read policy, and the exact stable security-definer helper bodies, configuration and API ACLs. It parses the exact reviewed predecessor on an empty owner-created transaction-local table to compare the actual complete expression without accepting extra spellings, predicates or flags; the empty table is dropped in the same transaction. No durable store or data backfill is added.
