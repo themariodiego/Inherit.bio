@@ -67,7 +67,7 @@ select ok((select jsonb_array_length(source#>'{source,parts}')=2 and source#>>'{
 select is((select public.export_archive_account_bound_source_v1('check',(created->>'exportId')::uuid,attempt,capture->>'authorityReceipt',
  (select subject from custody_ids),source->'source') from owned_archive),(select source from owned_archive),'full exact source proof rechecks before any returned byte');
 select throws_ok($$select public.export_archive_account_members_v1('bound-context',(select (created->>'exportId')::uuid from owned_archive),
- (select attempt from owned_archive),(select capture->>'authorityReceipt' from owned_archive),'7b100000-0000-4000-8000-000000000003')$$,
+ (select attempt from owned_archive),(select capture->>'authorityReceipt' from owned_archive),(select id from claimant_account_self))$$,
  '42501','not_found','an ordinary partition cannot choose a bound scientific reader');
 select throws_ok($$select public.export_archive_account_bound_source_v1('manifest',(select (created->>'exportId')::uuid from owned_archive),
  gen_random_uuid(),(select capture->>'authorityReceipt' from owned_archive),(select subject from custody_ids))$$,

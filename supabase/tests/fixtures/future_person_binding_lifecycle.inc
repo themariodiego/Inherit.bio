@@ -138,12 +138,25 @@ insert into auth.users(id,email) values('7b100000-0000-4000-8000-000000000001','
 insert into public.profiles(id) values('7b100000-0000-4000-8000-000000000001') on conflict(id) do nothing;
 insert into auth.sessions(id,user_id,aal,created_at,updated_at) values('7b100000-0000-4000-8000-000000000002',
  '7b100000-0000-4000-8000-000000000001','aal1',clock_timestamp(),clock_timestamp());
-insert into public.subjects(id,owner_account_id,subject_account_id,subject_class,upload_class,display_label)
- values('7b100000-0000-4000-8000-000000000003','7b100000-0000-4000-8000-000000000001',
- '7b100000-0000-4000-8000-000000000001','self','self','Synthetic claimant account');
-insert into public.subject_principals(id,subject_id,account_id,principal_kind)
- values('7b100000-0000-4000-8000-000000000004','7b100000-0000-4000-8000-000000000003',
- '7b100000-0000-4000-8000-000000000001','account_subject');
+-- The real Auth trigger provisions this account's unique ordinary self graph.
+-- Select its actual subject/principal/current binding instead of inventing a
+-- second self or a fixture-only authority row.
+create temporary table claimant_account_self as
+ select s.id,p.id principal_id,b.id binding_id from public.subjects s
+ join public.subject_principals p on p.subject_id=s.id and p.account_id=s.subject_account_id
+  and p.principal_kind='account_subject' and p.status='active'
+ join public.subject_account_bindings b on b.subject_id=s.id and b.account_id=s.subject_account_id
+  and b.subject_principal_id=p.id and b.account_principal_id=p.id
+  and b.binding_kind='self' and b.status='current' and b.binding_revision=s.subject_binding_revision
+ where s.owner_account_id='7b100000-0000-4000-8000-000000000001'
+  and s.subject_account_id=s.owner_account_id and s.subject_class='self' and s.upload_class='self'
+  and s.lifecycle='active';
+grant select on claimant_account_self to authenticated,service_role;
+select is((select count(*) from public.subjects where subject_account_id='7b100000-0000-4000-8000-000000000001'
+ and subject_class='self' and lifecycle<>'purged'),1::bigint,
+ 'the actual Auth producer creates exactly one current ordinary self for the independent claimant account');
+select is((select count(*) from claimant_account_self),1::bigint,
+ 'that real self has exactly its active account principal and matching current self binding');
 select set_config('request.jwt.claims',jsonb_build_object('sub','7b100000-0000-4000-8000-000000000001',
  'session_id','7b100000-0000-4000-8000-000000000002','role','authenticated','aal','aal1','iss','http://127.0.0.1:54321/auth/v1',
  'aud','authenticated','exp',extract(epoch from clock_timestamp())::bigint+3600,

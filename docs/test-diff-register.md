@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-01 — Reuse the claimant account's actual provisioned self identity
+
+The independent fresh database run reached 90 original binding checks, then
+correctly rejected the shared fixture's second ordinary self at
+`subjects_one_self_per_account_idx`. Inserting the claimant's actual Auth user
+already runs the real profile/subject/principal/binding producer. The fixture
+now selects that exact existing active self, active account principal and
+matching current self binding, and independently requires both the unique
+current self count and the complete tuple count to equal one. It creates no
+extra identity or authority row and changes no uniqueness guard.
+
+Every original documentary approval, activation, binding, relocation, archive
+and refusal assertion remains. Ordinary-self refusals and the ordinary audit
+metadata positive now target the same genuinely provisioned subject through a
+shared read-only temporary anchor, rather than an invented UUID. The failed
+fresh run is retained. This is an authored fixture correction until the parent
+independently executes the affected database suites; it carries no browser,
+provider, READY or acceptance credit.
+
 ## 2026-10-01 — Preserve actor-only legal audit without inventing ordinary subject targets
 
 The existing legal ledger records who acted, but has no ordinary subject target selector. The approved owner-A policy cannot copy those account events under a guessed subject. Migration `20261001017000` adds a distinct service-only reader under the real consumed account request, complete current graph and active writing attempt. It emits each actual eligible account actor or genuinely assigned bound custody/binding event once globally, while ordinary subject members carry the exact registered unrecorded/count-free historical note. Actual assigned Future selectors keep their original strict subject-event contracts and are refused by the ordinary fallback. No existing audit event, archive member-plan row, source guard or assertion is removed.

@@ -56,7 +56,7 @@ insert into account_audit_result select
  public.export_archive_account_audit_v1('context',(created->>'exportId')::uuid,attempt,capture->>'authorityReceipt'),
  public.export_archive_account_audit_v1('events',(created->>'exportId')::uuid,attempt,capture->>'authorityReceipt'),
  public.export_archive_account_audit_v1('ordinary-subject',(created->>'exportId')::uuid,attempt,capture->>'authorityReceipt',
-  '7b100000-0000-4000-8000-000000000003') from owned_archive;
+  (select id from claimant_account_self)) from owned_archive;
 reset role;
 -- Independent exact selection from the underlying ledger; no fixture-created
 -- archive authority or assigned-selector shortcut supplies the expected set.
