@@ -1,5 +1,30 @@
 # Test diff register
 
+## 2026-10-01 — Restore exact worker cleanup authority without exposing protected evidence
+
+The167-file fresh diagnostic fails two original native refusal cleanup cases:
+023 correctly closes claimant objections, but their inherited SECURITY INVOKER
+machine entries cannot execute the shared-evidence check as service. Additive032
+pins the complete current bodies, ABIs, owner and empty search paths, converts
+only the five registered service cleanup doors to owner-defined execution, and
+removes API execution from four internal graph/evidence helpers. It grants no
+protected-table SELECT and retains every exact claim, frozen object, expiry,
+shared-evidence, physical-storage-presence and graph-refusal condition. Original
+native refusal assertions remain unchanged. New genuine-role probes independently
+refuse direct table/helper access and invented public cleanup/ACK claims.
+
+210 also revoked the original explicitly required service TRUNCATE on
+`public.user_variants`, conflicting with the unchanged original
+`rls_truncate_not_bypassed.sql` assertion.032 restores exactly that one table/role
+tuple, guarded by its installed content-revision trigger; no browser/upload or
+observed-call TRUNCATE is granted. The newer archive-frame eight-tuple census
+now requires this one original grant and retains the seven other exact denials.
+Its original two-file TRUNCATE/receipt test now executes as actual service,
+adds a role identity assertion, and retains exact per-file revision increments
+and refusal of all old member bytes. This is a deliberate reconciliation with
+the pre-existing contract, not a weakened RLS or stale-frame assertion.
+Fresh database execution remains pending and source authoring grants no credit.
+
 ## 2026-10-01 — Preserve both generic source-file privacy refusals in the combined graph
 
 The actual combined pending database diagnostic fails original canonical assertions117/118: the authenticated owner's ordinary file query sees the two canonical embryo descriptors beside their self file. Later Path B normalization replaced the earlier canonical owner-list policy and retained only its other-adult refusal. The additive031 policy composes both existing reviewed helpers under the same authenticated user ownership check. Before any change it requires the exact table owner/schema/RLS, policy name/command/role/permissiveness/check, no extra read policy, and the exact stable security-definer helper bodies, configuration and API ACLs. It parses the exact reviewed predecessor on an empty owner-created transaction-local table to compare the actual complete expression without accepting extra spellings, predicates or flags; the empty table is dropped in the same transaction. No durable store or data backfill is added.

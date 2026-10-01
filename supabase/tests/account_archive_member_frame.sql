@@ -183,10 +183,13 @@ select lives_ok('set constraints all immediate','the completed real cascade flus
 set constraints all deferred;
 rollback to actual_file_purge;
 savepoint privileged_maintenance;
+set local role service_role;
+select is(current_user::text,'service_role','the original permitted service maintenance uses the actual role');
 truncate public.user_variants;
+reset role;
 select ok((select bool_and(f.export_content_revision=c.export_content_revision+1) from public.genome_files f
  join content_clocks c on c.id=f.id where f.id in('77900000-0000-4000-8000-000000000040','77900000-0000-4000-8000-000000000063')),
- 'privileged maintenance advances every actual affected source once without granting API maintenance');
+ 'service maintenance advances every actual affected source once while browser/upload maintenance stays denied');
 set local role service_role;
 select throws_ok($$select pg_temp.member_metadata('context')$$,'42501','not_found',
  'privileged maintenance also invalidates the old consumed source frame');
@@ -207,7 +210,8 @@ select ok(not has_function_privilege(r,f,'execute'),r||' cannot call internal fr
  'private.export_account_owned_capture_pre_member_frame_v1(jsonb,text,uuid)'])f;
 select is(has_function_privilege(r,'public.export_archive_account_metadata_v1(text,uuid,uuid,text,uuid)','execute'),r='service_role',
  r||' exact consumed-worker metadata grant') from unnest(array['anon','authenticated','service_role','inherit_upload_only'])r;
-select ok(not has_table_privilege(r,t,'TRUNCATE'),r||' cannot bypass ordinary source DML clocks using TRUNCATE '||t)
+select is(has_table_privilege(r,t,'TRUNCATE'),r='service_role' and t='public.user_variants',
+ r||' exact original maintenance tuple still passes through the source DML clock '||t)
  from unnest(array['anon','authenticated','service_role','inherit_upload_only'])r cross join unnest(array['public.user_variants','public.report_observed_calls'])t;
 select is(pg_temp.member_job_state(),(select value from unchanged_member_job),'every refusal preserves the complete original durable request and attempt');
 select * from finish();rollback;
