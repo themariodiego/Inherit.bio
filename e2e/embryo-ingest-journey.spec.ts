@@ -1,7 +1,7 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./audited-test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
 import bindings from "../scripts/comprehension/bindings.json";
 import { adminClient, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn } from "./helpers";
@@ -10,15 +10,22 @@ import { GATE_BUTTON } from "@/copy/embryos/gate";
 import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { signStatements } from "./embryo-signing-helpers";
+import { participantCSeed } from "../scripts/comprehension/participant-c-seed";
+import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
+import { PRIMARY } from "@/copy/overview";
+import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
+import { openParticipantCReadSession } from "./participant-c-harness";
+import { viewSchema } from "../scripts/comprehension/conductor-contract";
 
 /** No product handler, consent, worker or stored result is replaced here.
  * The local mail receiver captures synthetic delivery only. The isolated
  * launcher owns real worker execution; this test never publishes a row. */
 const origin = `http://localhost:${EMBRYO_APP_PORT}`;
 const password = "synthetic-embryo-browser-password";
-const ownerEmail = "participant-c@e2e.local";
-const parentEmail = "participant-c-parent@e2e.local";
-const fixture = bindings.accounts.find(account => account.id === "participant-c")!.files[0];
+const boundSeed = participantCSeed(bindings.accounts.find(account => account.id === "participant-c"));
+const ownerEmail = boundSeed.seed.email;
+const parentEmail = boundSeed.seed.coParentEmail;
+const fixture = boundSeed.files[0];
 let mail: http.Server;
 const messages: { to: string | string[]; html?: string }[] = [];
 
@@ -35,7 +42,7 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => { mail?.closeAllConnections(); if (mail) await new Promise<void>(resolve => mail.close(() => resolve())); });
 
-test("participant-c adds the bound embryo pair through both parents, upload and real publication", async ({ page, browser }) => {
+test("participant-c adds the bound embryo pair through both parents, upload and real publication; task depth T6 follows the actual no-ranking statement", async ({ page, browser }, testInfo) => {
   test.setTimeout(300_000);
   await withEmbryoJourney(process.env, async runtime => {
   const owner = await createConfirmedUser(ownerEmail, password);
@@ -119,6 +126,53 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
     await expect(gate).toBeVisible(); await gate.getByRole("checkbox").check(); await gate.getByRole("button", { name: GATE_BUTTON }).click();
     await expect(page.locator('[data-slot="result-gate"]')).toHaveCount(0);
     await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
+    // The genuine seed and explicit current parent permissions are setup.
+    // T6 starts from the Overview after its real result gate has been passed.
+    await page.goto("/overview");
+    await expect(page.locator("main h1")).toBeVisible();
+    await startTaskSixTrace(page);
+    await page.getByRole("link", { name: PRIMARY.compareEmbryos, exact: true }).click();
+    await expect(page).toHaveURL(url => url.pathname === "/embryos/compare");
+    await expect(page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
+    for (const role of ["button", "combobox", "checkbox", "radio"] as const) {
+      await expect(page.getByRole(role, { name: /rank|best embryo|recommend/i })).toHaveCount(0);
+    }
+    const measured = await readTaskSixTrace(page);
+    expect(measured.actions).toBe(1);
+    expect(measured.trace).toEqual([{ event: "click", path: "/overview" }]);
+    await testInfo.attach("task-depth-T6", { contentType: "application/json", body: JSON.stringify({
+      taskId: "T6", source: "actual-native-signed-parent-publication", fixture, cohortId,
+      start: "/overview", end: "/embryos/compare", ...measured,
+    }) });
+    // Consume the actual published seed through the live harness's fresh
+    // context/read/action interface, without invoking any inference process.
+    const reader = await openParticipantCReadSession({ browser, sessionId: "native-participant-c-T6",
+      ownerId: owner, cohortId, email: ownerEmail, password,
+      read: async () => {
+        const cohort = await adminClient().from("embryo_cohorts").select("id,owner_account_id,status,publication_revision").eq("id", cohortId).single();
+        const embryos = await adminClient().from("embryos").select("id,subject_id,sample_ordinal,status").eq("cohort_id", cohortId).order("sample_ordinal");
+        expect(cohort.error).toBeNull(); expect(embryos.error).toBeNull();
+        const files = await adminClient().from("genome_files").select("subject_id,status").in("subject_id", embryos.data!.map(row => row.subject_id));
+        expect(files.error).toBeNull();
+        return { cohort: cohort.data, embryos: embryos.data, files: files.data, proof: await runtime.proof(cohortId) };
+      } });
+    try {
+      const view = viewSchema.parse(await reader.observe());
+      const compare = view.visibleText.split("\n").find(line => line.endsWith(PRIMARY.compareEmbryos));
+      const id = compare?.match(/^\[([^ ]+) link\]/)?.[1];
+      expect(id, "The actual harness snapshot must expose the Overview comparison link").toBeTruthy();
+      await reader.act({ kind: "click", target: id! });
+      const comparison = viewSchema.parse(await reader.observe());
+      expect(comparison.path).toBe("/embryos/compare");
+      expect(comparison.visibleText).toContain(NO_RANKING_STATEMENT);
+      const record = await reader.record();
+      expect(record).toEqual({ completed: true, path: ["/overview", "/embryos/compare"],
+        actions: 1, entries: 0, confirmationExclusions: [] });
+      await testInfo.attach("participant-c-harness-read", { contentType: "application/json", body: JSON.stringify({
+        taskId: "T6", source: "actual-current-published-seed", cohortId, ownerId: owner,
+        publicationRevision: 1, fixture, ...record,
+      }) });
+    } finally { await reader.close(); }
     for (const embryo of embryos.data!) {
       await page.goto(`/embryos/${embryo.id}`);
       await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();

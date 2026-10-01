@@ -1,5 +1,41 @@
 # Test diff register
 
+## 2026-10-01: Bind participant-c to its real native seed and keep the unsupported risk task closed
+
+The existing single embryo-ingest case now consumes the exact participant-c
+file/parent/project/purpose binding and keeps every signature, mail, upload,
+real-worker, empty-runtime and publication assertion. It adds network auditing,
+the exact no-ranking statement, absence of ranking controls and an attached
+native click/submit trace from the Overview after genuine seed setup. The T6
+trace requires the original ceiling of three and exactly one actual link action;
+missing storage, unknown events/paths and too many actions refuse. No new
+browser case, direct result writer, retry or timeout is introduced.
+
+The same case consumes its just-published IDs and credentials through the live
+harness's real fresh-context read/action/record interface. Current database
+reads and the real isolated worker proof are rechecked before setup and
+completion. Strict parser regressions refuse crossed/repeated identities,
+failed/pending/later results, incomplete files, missing or noncurrent canonical
+parts, dirty queues and any unsupported score. No model call, credential
+attachment or fabricated seed result is introduced. The ordinary runner keeps
+T6's explicit runtime hold until each persona has its own fresh native partition;
+the single native rehearsal cannot unblock a whole comprehension round.
+
+The task-depth source ratchet becomes one because T6 now has authored strict
+instrumentation. Its planted new-measurement/retired-ceiling regressions move
+to the still-unmeasured T7 and retain exact refusal counts. Full hosted native
+execution remains pending; this is not a completed comprehension round.
+
+The obsolete account-level ingest blocker is replaced by the actual isolated
+native seed binding. T7 gains its independent task-level refusal for the absent
+approved personal absolute risk producer; QC cannot answer that task. The
+existing calibration skip regression now uses T7, retaining all two-skip,
+non-qualification, raw record, cost and isolated-process assertions. Full-run
+skip evidence still fails qualification, retaining exact T6 and T7 thirty-skip
+and blocker assertions. Missing seed reasons refuse rather
+than silently enabling a task. No model call, synthetic personal risk, acceptance
+flip, DB reset or provider/production operation occurred.
+
 ## 2026-10-01 — Combine complete native inventories without losing Embryo isolation
 
 The first full local combined run found the new scheduling fixture still named only the four earlier browser projects while this branch requires six. Its complete synthetic native listings now use the exact registered project set and include both genuine declared journey file groups, with one case in each separate assigned job. Every concentration, omission, duplicate and whole-file refusal remains exact. Manifest discovery explicitly validates each actual native report before the permanent balance guard and before writing its manifest; the original static assertion follows that same direct call after the discovery is stored in a local variable. No selector, browser case, time limit, retry or isolation contract is weakened. The two unchanged five-second local tests that timed out under measured memory/disk pressure remain unchanged; their failure is retained and a fresh full run follows the cache recovery.
