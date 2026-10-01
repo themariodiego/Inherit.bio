@@ -18,9 +18,9 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- account-to-pseudonym link deleted with the account (20260928160000).
 -- The embryo-ingest write fence adds its write intents and session fences,
 -- and the unwind's exact storage disposals add one more.
--- Both complete embryo and Future Person working-store dependencies.
-select is((select count(*) from public.purge_target_stores), 150::bigint,
-  'all 150 purge stores, including embryo withdrawal and Future Person working packages and receipts, are classified');
+-- Complete embryo/Future and the two actual Path B stores.
+select is((select count(*) from public.purge_target_stores), 152::bigint,
+  'all152 purge stores, including exact Path B held uploads and queued report bindings, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

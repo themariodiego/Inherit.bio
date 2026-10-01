@@ -14,10 +14,15 @@ import {
 } from "@/lib/embryos/guards";
 import { coParentInvitationBody } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isPathBInvitationPayload } from "@/lib/uploads/other-adult-upload";
+import { createPathBInvitation } from "@/lib/uploads/path-b-routes";
 
 /**
- * `POST /api/invitations` (register api.invitations; contract §6.3), the
- * co-parent body only: the adult bodies stay on `/api/subject-drafts`. The
+ * `POST /api/invitations` (register api.invitations; contract §6.3). The
+ * adult body with `targetSubjectDraftId` is the register's Path B
+ * e-signature request, TEST-LOCAL only (`src/lib/uploads/path-b-routes.ts`);
+ * a Path A invitation is still sent by `/api/subject-drafts`. For the
+ * co-parent body below, the
  * typed address is normalised and keyed here; the RPC matches the key
  * against the one unfilled parent slot of the owner's draft and mails it.
  * A mismatch, a filled slot, a live refusal bar, a foreign draft or a
@@ -32,6 +37,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * an exhausted quota is the same receipt as a barred address.
  */
 export async function POST(request: Request) {
+  const payload = await readJson(request);
+  if (isPathBInvitationPayload(payload)) return createPathBInvitation(request, payload);
+
   const context = await getSensitiveAccountContext();
   if (!context) return unauthorized();
   const forbidden = originDenied(request);
@@ -39,7 +47,7 @@ export async function POST(request: Request) {
   const denied = await accountJurisdictionDenied(context.user.id);
   if (denied) return denied;
 
-  const parsed = coParentInvitationBody.safeParse(await readJson(request));
+  const parsed = coParentInvitationBody.safeParse(payload);
   if (!parsed.success) return invalidRequest(["body"]);
 
   const claims = csrfOperation(request, {

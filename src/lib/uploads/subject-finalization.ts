@@ -11,6 +11,7 @@ import { SUBJECT_UPLOAD_FORMATS, subjectFinalizationReceipt as completed } from 
 import { SubjectStructureError, validateSubjectStructure } from "./subject-structure";
 import { advanceFinalization, finalizationCheckpointReceiptSchema, finalizationPhaseRank,
   type FinalizationCheckpoint } from "./finalization-progress";
+import { heldFinalizationReceipt } from "./other-adult-upload";
 
 /** Long enough that a working request keeps its lease, short enough that an
  * ordinary retry after a kill can resume rather than wait out the session. */
@@ -25,6 +26,8 @@ const manifestSchema = z.object({ status: z.literal("authorized"), uploadId: uui
 }).strict().refine(value => value.stagingKey !== value.finalKey);
 type Manifest = z.infer<typeof manifestSchema>;
 const alreadyComplete = z.object({ status: z.literal("complete"), fileId: uuid }).strict();
+/** Another adult's file revision that already stopped at the held state (Path B, TEST-LOCAL). */
+const alreadyHeld = z.object({ status: z.literal("held"), fileId: uuid }).strict();
 const cleanupSchema = z.object({ bucket: z.literal("genomes"), stagingKey: uuid, finalKey: uuid }).strict();
 class FinalizationUnavailable extends Error { constructor() { super("upload_unavailable"); } }
 function fail(): never { throw new FinalizationUnavailable(); }
@@ -81,6 +84,11 @@ async function runFinalization(request: Request, uploadId: string, fenced: boole
     if (prior.success) return ownUploadJson(completed.parse({ fileId: prior.data.fileId,
       status: "finalized_ready_for_processing", analysisState: "ready_for_processing",
       next: { routeId: "api.file-process", operation: "process" } }));
+    const priorHeld = alreadyHeld.safeParse(begin.data);
+    if (priorHeld.success) {
+      return ownUploadJson(heldFinalizationReceipt.parse({ fileId: priorHeld.data.fileId,
+        status: "stored_quarantined", analysisState: "quarantined", noticeState: "queued" }));
+    }
     const parsed = manifestSchema.safeParse(begin.data);
     if (!parsed.success || parsed.data.uploadId !== uploadId) fail();
     manifest = parsed.data;
@@ -283,8 +291,13 @@ async function runFinalization(request: Request, uploadId: string, fenced: boole
     const result = await call("complete_own_upload_finalization_v1", { ...authorization,
       p_storage_object_id: object.data!.id, p_raw_sha256: evidence.rawSha256, p_decoded_sha256: evidence.decodedSha256 });
     const receipt = completed.safeParse(result.data);
-    if (result.error || !receipt.success) fail();
-    return ownUploadJson(receipt.data);
+    // Another adult's file stops here, stored and unreadable, with no file
+    // row, and its upload-time notice queued in the same commit.
+    const held = heldFinalizationReceipt.safeParse(result.data);
+    if (result.error) fail();
+    if (receipt.success) return ownUploadJson(receipt.data);
+    if (!held.success) fail();
+    return ownUploadJson(held.data);
   } catch (error) {
     await attemptLease?.stop();
     // A network interruption, expired claim or uncertain response proves no

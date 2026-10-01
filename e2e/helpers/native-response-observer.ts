@@ -50,7 +50,13 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
             if (reader) void reader.cancel().catch(() => {});
           }, 10000);
           try {
-            if (!clone.body) throw new Error("Missing native response body");
+            if (!clone.body) {
+              if (clone.status===204||clone.status===205) {
+                entry.resolve({status:response.status,text:""});
+                return;
+              }
+              throw new Error("Missing native response body");
+            }
             reader = clone.body.getReader(); readers.add(reader);
             const decoder = new TextDecoder("utf-8", { fatal: true });
             let bytes = 0, text = "";

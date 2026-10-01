@@ -253,6 +253,12 @@
         ]
       },
       {
+        "artifactKey": "consent.subject-adult-esignature",
+        "version": 1,
+        "migration": "20260928150000_other_adult_held_upload.sql",
+        "readings": []
+      },
+      {
         "artifactKey": "consent.upload-embryo",
         "version": 1,
         "migration": "20260905103317_embryo_cohort_runtime.sql",
@@ -262,6 +268,19 @@
             "finding": "not-the-statement",
             "words": "It will not sell it, share it with an insurer, an employer or a school, or send it to an outside AI compan",
             "reading": "a refusal to sell the data, not a statement that Inherit sells nothing and takes no payment for sequencing"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.upload-other-adult",
+        "version": 2,
+        "migration": "20260928150000_other_adult_held_upload.sql",
+        "readings": [
+          {
+            "class": "eligibility",
+            "finding": "present",
+            "words": "The person whose DNA this is is alive and 18 or older.",
+            "reading": "the uploader's warranty that the other adult is alive and 18 or older; the next statement is their warranty of holding that adult's permission"
           }
         ]
       },

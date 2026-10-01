@@ -18,6 +18,9 @@ const server = http.createServer(async (request, response) => {
   const body = Buffer.concat(chunks).toString();
   received.push({ path: request.url, method: request.method!, body, origin: request.headers.origin,
     site: request.headers["sec-fetch-site"] as string });
+  if(request.url==="/api/synthetic/empty204"||request.url==="/api/synthetic/empty205") {
+    response.writeHead(request.url.endsWith("204")?204:205);response.end();return;
+  }
   response.writeHead(202, { "content-type": "application/json" });
   response.end(body.includes("oversized") ? "x".repeat(4097) : expected);
 });
@@ -78,16 +81,29 @@ try {
     assert.deepEqual(await action(), { status: 202, text: expected, sameResponse: true });
     await assert.rejects(duplicate.read("duplicate"), /Duplicate native response observation/);
   } finally { await duplicate.dispose(); }
+  for(const status of [204,205]) {
+    const empty=await observeNativeResponses(page,{empty:`^/api/synthetic/empty${status}$`});
+    try {
+      const actual=await page.evaluate(async status=>{
+        const response=await fetch(`/api/synthetic/empty${status}`,{method:"POST",
+          headers:{"content-type":"application/json"},body:JSON.stringify({synthetic:`empty${status}`})});
+        return {status:response.status,bytes:(await response.arrayBuffer()).byteLength,
+          sameResponse:response===(window as Window & {originalReply?:Response}).originalReply};
+      },status);
+      assert.deepEqual(actual,{status,bytes:0,sameResponse:true});
+      assert.deepEqual(await empty.read("empty"),{status,text:""});
+    } finally {await empty.dispose();}
+  }
   const unused = await observeNativeResponses(page, { unused: "^/api/synthetic/unused$" });
   const unusedRead = unused.read("unused"); void unusedRead.catch(() => {});
   await unused.dispose(); await assert.rejects(unusedRead, /observer disposed/);
-  assert.deepEqual(received, ["normal", "oversized", "first", "second", "duplicate", "duplicate"].map(mode => ({
+  assert.deepEqual(received, ["normal", "oversized", "first", "second", "duplicate", "duplicate", "empty204", "empty205"].map(mode => ({
     path: `/api/synthetic/${["normal", "oversized"].includes(mode) ? "complete" : mode}`,
     method: "POST", body: JSON.stringify({ synthetic: mode }), origin, site: "same-origin",
   })));
-  assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 6);
+  assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 8);
   assert.equal(await page.evaluate(() => "__inheritNativeResponseObserver" in window), false);
-  console.log("PASS native response observer: exact 202 bytes, original response identity, unchanged browser headers/body, bounded rejection, multiple observations, duplicate rejection after first body settled and unused cleanup.");
+  console.log("PASS native response observer: exact 202 and empty 204/205 bytes, original response identity, unchanged browser headers/body, bounded rejection, multiple observations, duplicate rejection after first body settled and unused cleanup.");
 } finally {
   await browser.close(); server.closeAllConnections();
   await new Promise<void>(resolve => server.close(() => resolve()));

@@ -3,12 +3,18 @@ import "server-only";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveSubjectForAccount } from "@/lib/subjects";
-import { currentOwnUploadAccount, ownSnapshotArgs, ownUploadContextSchema } from "./own-upload-context";
+import { currentOwnUploadAccount, ownUploadContextSchema } from "./own-upload-context";
 import { mintOwnAccountCompletionPresentation, mintOwnConsentPresentation } from "./own-consent-token";
 import { OWN_UPLOAD_ARTIFACT_KEYS } from "./own-consent";
 import type { OwnUploadView } from "./own-upload-view";
 
-/** No personal birth date or genotype enters the client presentation. */
+/**
+ * No personal birth date or genotype enters the client presentation.
+ *
+ * Brief X1.5: this runs while the page renders, so it writes nothing. The
+ * presentation token is signed and stateless; the POST that consumes it
+ * records its nonce hash once, in the same transaction as the operation.
+ */
 export async function prepareOwnUpload(subject = "me"): Promise<OwnUploadView> {
   const actor = await currentOwnUploadAccount();
   if (!actor) return { kind: "unavailable" };
@@ -25,12 +31,7 @@ export async function prepareOwnUpload(subject = "me"): Promise<OwnUploadView> {
   const snapshot = { ...actor, ...revisions, subjectId: target.id };
   if (birthDateState === "underage") return { kind: "underage" };
   if (birthDateState === "missing") {
-    const presentation = mintOwnAccountCompletionPresentation(snapshot);
-    const { error } = await admin.rpc("issue_own_upload_nonce_v1", {
-      ...ownSnapshotArgs(snapshot), p_operation: "own_account_completion",
-      p_nonce_hash: presentation.nonceHash, p_expires_at: new Date(presentation.claims.expiresAt).toISOString(),
-    });
-    return error ? { kind: "unavailable" } : { kind: "account-completion", token: presentation.token };
+    return { kind: "account-completion", token: mintOwnAccountCompletionPresentation(snapshot).token };
   }
   const now = new Date().toISOString();
   const [artifactResult, bindingResult] = await Promise.all([
@@ -69,11 +70,6 @@ export async function prepareOwnUpload(subject = "me"): Promise<OwnUploadView> {
     if (current) continue;
     const presentation = mintOwnConsentPresentation({ ...snapshot, artifactKey: key,
       artifactVersion: artifact.version, artifactBodySha256: artifact.body_sha256 });
-    const { error } = await admin.rpc("issue_own_upload_nonce_v1", {
-      ...ownSnapshotArgs(snapshot), p_operation: "own_upload_artifact_sign", p_nonce_hash: presentation.nonceHash,
-      p_expires_at: new Date(presentation.claims.expiresAt).toISOString(),
-    });
-    if (error) return { kind: "unavailable" };
     return { kind: "consent", subjectId: target.id, token: presentation.token,
       artifact: { key, version: artifact.version, summary: artifact.summary_markdown, body: artifact.body_markdown } };
   }

@@ -232,4 +232,44 @@ describe("independent mail queues", () => {
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
+  // The register's Path B (TEST-LOCAL only): the request to sign and the
+  // upload-time notice go out through the same checked claim.
+  function claimRow(claimed: Record<string, unknown>) {
+    let done = false;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") { const data = done ? [] : [claimed]; done = true; return { data, error: null }; }
+      if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+  }
+
+  it("sends the upload-time notice with its dates, its kind and its one fragment link", async () => {
+    claimRow({ ...row, template_id: "adult-upload-notice",
+      template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
+      id: "adult-upload-notice", payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+        reviewUrl: expect.stringContaining(`/withdraw/request#${row.delivery_token}`) },
+    }, row.idempotency_key);
+  });
+
+  it.each([
+    { template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" }, delivery_token: null },
+    { template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28", name: "Someone" } },
+    { template_payload: { fileKind: "bam", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } },
+  ])("fails an upload-time notice with no link or with anything beyond its closed payload: %j", async (patch) => {
+    claimRow({ ...row, template_id: "adult-upload-notice", ...patch });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("marks the Path B request so it asks for a signature", async () => {
+    claimRow({ ...row, template_id: "adult-subject-invitation", template_payload: { request: "esignature" } });
+    await POST(workerRequest());
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
+      id: "adult-subject-invitation", payload: { invitationUrl: expect.stringContaining(`#${row.delivery_token}`),
+        note: undefined, request: "esignature" },
+    }, row.idempotency_key);
+  });
 });

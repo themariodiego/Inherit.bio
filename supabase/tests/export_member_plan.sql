@@ -1087,7 +1087,8 @@ create temporary table export_member_plan as select $plan$
         "revocation_reason"
       ],
       "withheld": [
-        "copilot_recipient_revision"
+        "copilot_recipient_revision",
+        "path_b_originating_session_id"
       ]
     },
     "public.rate_limit_hmac_buckets": {
@@ -1417,6 +1418,14 @@ create temporary table export_member_plan as select $plan$
     "private.account_owned_cohort_purges": {
       "disposition": "excluded-internal",
       "reason": "Exact current account-deletion cohort work plan and original deadline. It is worker control state, removed after cleanup, not a person’s record."
+    },
+    "private.path_b_report_bindings": {
+      "disposition": "deferred",
+      "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
+    },
+    "public.other_adult_held_uploads": {
+      "disposition": "out-of-scope",
+      "reason": "The uploader's quarantined original belongs to another adult. It is not the uploader's own record; no genetic result or held source can leave in the uploader's export."
     }
   }
 }

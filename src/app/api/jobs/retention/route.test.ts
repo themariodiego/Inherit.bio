@@ -263,3 +263,26 @@ describe("Future Person claim document objects", () => {
     expect(mocks.rpc).not.toHaveBeenCalledWith("confirm_claim_document_objects_deleted_v1", expect.anything());
   });
 });
+
+describe("another adult's held uploads", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
+  it("rejects due held files before the upload cleanup, so one run deletes them", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    expect((await run()).status).toBe(200);
+    const names = mocks.rpc.mock.calls.map(call => call[0] as string);
+    expect(names).toContain("expire_due_other_adult_held_uploads_v1");
+    expect(names.indexOf("expire_due_other_adult_held_uploads_v1")).toBeLessThan(names.indexOf("claim_own_upload_purge_v1"));
+  });
+  it("reports a failed held sweep and still runs the upload cleanup", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) =>
+      name === "expire_due_other_adult_held_uploads_v1" ? { data: null, error: { code: "synthetic" } } : idle(name, ...rest));
+    const response = await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc.mock.calls.some(call => call[0] === "claim_own_upload_purge_v1")).toBe(true);
+  });
+});

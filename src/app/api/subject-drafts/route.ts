@@ -6,6 +6,8 @@ import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { accountCapability } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isPathBDraftPayload } from "@/lib/uploads/other-adult-upload";
+import { createPathBDraft } from "@/lib/uploads/path-b-routes";
 
 const requestSchema = z.object({
   kind: z.literal("other_adult"),
@@ -30,6 +32,12 @@ function normalizedEmail(value: string): string {
 }
 
 export async function POST(request: Request) {
+  const payload: unknown = await request.json().catch(() => null);
+  // The register's Path B body ("I have their file"): a draft with the
+  // person's name, date of birth and address, TEST-LOCAL only
+  // (`src/lib/uploads/path-b-routes.ts`). Path A below is unchanged.
+  if (isPathBDraftPayload(payload)) return createPathBDraft(request, payload);
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return new Response("Unauthorized", { status: 401 });
@@ -41,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "jurisdiction_unavailable" }, { status: 409 });
   }
 
-  const parsed = requestSchema.safeParse(await request.json().catch(() => null));
+  const parsed = requestSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

@@ -7,15 +7,20 @@ import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
 import { normalizeContact } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { adultUploadRevisionBody, pathBAccountConfirmBody, pathBSubjectConfirmBody } from "@/lib/uploads/other-adult-upload";
+import {
+  answerAdultUploadRevision,
+  confirmPathBSubject,
+  confirmPathBSubjectWithAccount,
+} from "@/lib/uploads/path-b-respond";
+import { readAdultUploadRevisionResponse } from "@/lib/uploads/path-b-review";
 
 /**
  * `POST /api/withdraw/[token]` with the segment pinned to `session`
- * (register api.withdraw). Three rights holders answer here, and which one is
- * answering is decided by the form token the page served, never by a field
- * in the body: an adult-subject form token cannot drive a co-parent refusal
- * or an embryo withdrawal, and no other pairing is possible either. The
- * embryo-parent-withdrawal session refuses or deletes the whole cohort; the
- * database rechecks its credential and the purpose matrix.
+ * (register api.withdraw). The stored purpose and the page's signed form
+ * token resolve the exact invited adult, co-parent, held revision or embryo
+ * withdrawal authority. No body's field substitutes for that purpose. The
+ * database rechecks each current credential, target and purpose matrix.
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
@@ -48,6 +53,26 @@ export async function POST(request: Request) {
   if (!refusalRequestAllowed(request)) return notFound();
   const json = await readBoundedJson(request);
   if (json === null) return notFound();
+
+  // The register's Path B (TEST-LOCAL only): the person's own signature of a
+  // request, with or without their account, and their answer to one held
+  // file. The adult-subject form token decides the first; the upload-revision
+  // form token the second.
+  const pathBAccount = pathBAccountConfirmBody.safeParse(json);
+  if (pathBAccount.success) {
+    const authority = readAdultSubjectResponse(request, pathBAccount.data.nonce);
+    return authority ? confirmPathBSubjectWithAccount(authority, pathBAccount.data) : notFound();
+  }
+  const pathB = pathBSubjectConfirmBody.safeParse(json);
+  if (pathB.success) {
+    const authority = readAdultSubjectResponse(request, pathB.data.nonce);
+    return authority ? confirmPathBSubject(authority, pathB.data) : notFound();
+  }
+  const revision = adultUploadRevisionBody.safeParse(json);
+  if (revision.success) {
+    const authority = readAdultUploadRevisionResponse(request, revision.data.nonce);
+    if (authority) return answerAdultUploadRevision(authority, revision.data.operation);
+  }
 
   const adult = adultSubjectResponseBody.safeParse(json);
   if (adult.success) {

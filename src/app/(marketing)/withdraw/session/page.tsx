@@ -13,6 +13,9 @@ import { loadEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdraw
 import { InvitationRefusalForm, InvitationRefusalReceipt } from "@/components/embryo/invitation-refusal-form";
 import { loadInvitationRefusal } from "@/lib/embryos/invitation-refusal";
 import { jurisdictionChoices } from "@/lib/legal/jurisdiction-declaration";
+import { loadAdultUploadRevisionReview, loadPathBRequestReview } from "@/lib/uploads/path-b-review";
+import { AdultUploadRevisionForm } from "@/components/uploads/adult-upload-revision-form";
+import { PathBRequestForm } from "@/components/uploads/path-b-request-form";
 
 export const metadata: Metadata = { title: "Review your request", robots: { index: false, follow: false } };
 
@@ -23,10 +26,14 @@ export default async function RightsSessionPage() {
     headers: { cookie: incoming.get("cookie") ?? "" },
   });
   // The purpose stored on the session decides what this page is about. Each
-  // loader returns null for a session that is not its own, so a co-parent
-  // cookie can never reach the adult or embryo screen, and so on.
+  // loader returns null for a session that is not its own.
   const claimant=await loadClaimantRights(request);
   if(claimant)return <ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/>;
+  // Path B screens remain distinct from Path A account acceptance.
+  const pathB = await loadPathBRequestReview(request);
+  if (pathB) return <PathBRequestForm review={pathB} />;
+  const revision = await loadAdultUploadRevisionReview(request);
+  if (revision) return <AdultUploadRevisionForm review={revision} />;
   const adult = await loadAdultSubjectReview(request);
   if (adult) return <AdultSubjectReviewForm review={adult} />;
   const embryo = await loadEmbryoParentWithdrawal(request);
