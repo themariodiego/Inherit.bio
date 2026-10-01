@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-01 — Preserve both completed flows in the shared integration
+
+The ordinary merge of exact Path B `87ac893b` into the Future Person integration retains all purpose-bound rights forms, both retention test groups, the stricter native POST/PUT/DELETE response observer, and the prior legal-audit, claimant and encrypted-review privacy projections. Each new Path B member-plan entry remains deferred; `path_b_originating_session_id` joins the explicit withheld list, and the generated database copy is regenerated from the complete plan.
+
+The independent real email inventory is now exactly 16 named exports in 15 files and 35 conditional fixtures, producing 70 required rendered subject/body surfaces. The assertions still pin the full census and its strict annotation audit; neither branch's original email assertions is removed. Both new Path B stores join the already classified Future Person/Embryo graph, so the exact purge census is 155 and the generated-artifacts assertion enumerates the original stores, the Path B binding and all six archive children. The fresh-database run must prove these source-derived expectations. Historical acceptance notes from both branches remain, with no completion checkbox changed.
+
 ## 2026-10-01 — Bind queued Path B preparation to each actual job and preserve the declared build
 
 Hosted run `36809283041` passed the repository and five browser groups but the
