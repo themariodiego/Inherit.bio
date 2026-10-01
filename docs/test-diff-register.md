@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the source build in the shared incremental parser
+
+The integrated parser and its test were byte-identical to Path B's failed
+GRCh38-with-reference counterexample. This combined source adopts the exact
+two corrected blobs from `87ac893b`: a loaded GRCh37 reference is used only
+for a GRCh37 input. The new regression requires unchanged coordinates,
+genotypes and observations and zero mapper calls for GRCh38; all existing
+GRCh37 loss, strand and bounded-stage assertions remain. Path B's focused and
+full Linux proofs are recorded independently. The combined source receives
+its own full qualification; no browser or deployment proof is borrowed.
+
 ## 2026-10-01 — Require SQL include targets in the actual tracked inventory
 
 An existing local fixture can pass file-existence checks and still be absent
