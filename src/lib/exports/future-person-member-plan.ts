@@ -25,7 +25,7 @@ const encoder=new TextEncoder();const bytes=(value:string)=>encoder.encode(value
  * supplies no authority: each caller must use its exact scoped SQL door and
  * actual current attempt before/after every call and every member read. */
 export async function prepareFuturePersonArchiveMembers(options:{authorityReceipt:string;signal:AbortSignal;
- auditMemberSchema?:z.ZodType<{id:string;event:{seq:number;occurred_at:string;event_code:string;route_id:string;outcome_code:string;coded_context:Record<string,never>}}>;
+ auditMemberSchema?:z.ZodType<{id:string;event:{seq:number;occurred_at:string;event_code:string;route_id:string;outcome_code:string;coded_context:Record<string,never>|{outcome:"approved"}}}>;
  active:()=>void;check:(signal:AbortSignal)=>Promise<unknown>;
  call:(operation:FuturePersonMemberOperation,signal:AbortSignal,after?:string|null)=>Promise<unknown>}){
  const auditMemberSchema=options.auditMemberSchema??claimantAuditMember;

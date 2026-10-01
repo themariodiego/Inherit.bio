@@ -141,6 +141,11 @@ function parseMail(
   payload: unknown,
   deliveryToken?: string | null,
 ): MailTemplate {
+  if (templateId === "future-person-more-information") {
+    z.object({}).strict().parse(payload);
+    if (deliveryToken != null) throw new Error("mail_token_forbidden");
+    return { id: templateId, payload: {} };
+  }
   if (templateId === "future-person-owner-notice") {
     z.object({}).strict().parse(payload);
     return { id: templateId, payload: { objectionUrl: fragmentUrl(deliveryToken) } };

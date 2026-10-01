@@ -17,14 +17,18 @@ const caseBody=z.discriminatedUnion("kind",[
   z.object({kind:z.enum(["keyless_none","keyless_ambiguous"]),selectorOutcome:z.literal("no_unique_candidate"),allowedDecisions:refusal}).strict(),
 ]);
 export const reviewPageCase=z.object({claimId:z.uuid(),mode:z.enum(["record-key","claimant-recovery-key","keyless"]),
-  state:z.enum(["document_review_pending","more_information_required"]),reviewRevision:z.number().int().positive(),deadline:z.iso.datetime(),
+  state:z.enum(["document_review_pending","more_information_required","approved_pending_owner_notice"]),reviewRevision:z.number().int().positive(),deadline:z.iso.datetime(),
   claimant:z.object({fullName:z.string().min(2).max(480),dateOfBirth:z.string().regex(/^\d{4}-\d{2}-\d{2}$/u)}).strict(),
   evidence:z.object({photoIdentityDocumentId:z.uuid(),birthRecordDocumentId:z.uuid()}).strict(),case:caseBody,
-  notice:z.object({state:z.literal("not_applicable"),noticeRevision:z.null()}).strict(),
+  notice:z.union([z.object({state:z.literal("not_applicable"),noticeRevision:z.null()}).strict(),
+    z.object({state:z.enum(["delivery_pending","notice_pending","objected"]),noticeRevision:z.number().int().positive().safe(),
+      deadline:z.iso.datetime({offset:true}).nullable()}).strict()]),
 }).strict().superRefine((value,context)=>{
   const expected=value.case.kind.startsWith("record_key")?"record-key":
     value.case.kind==="claimant_recovery_key"||value.case.kind==="recovery_key_unmatched_or_ineligible"?"claimant-recovery-key":"keyless";
-  if(value.mode!==expected||value.evidence.photoIdentityDocumentId===value.evidence.birthRecordDocumentId)
+  if(value.mode!==expected||value.evidence.photoIdentityDocumentId===value.evidence.birthRecordDocumentId
+    ||(value.state==="approved_pending_owner_notice")!==(value.notice.state!=="not_applicable")
+    ||(value.state==="approved_pending_owner_notice"&&value.case.kind!=="unclaimed_keyless"))
     context.addIssue({code:"custom",message:"claim review unavailable"});
 });
 export type ReviewPageCase=z.infer<typeof reviewPageCase>;
@@ -35,11 +39,12 @@ export const keylessVerificationResponse=z.object({reviewCase:reviewPageCase,
   if(value.reviewCase.mode!=="keyless"||positive!==(value.verificationProof!==null))
     context.addIssue({code:"custom",message:"claim review unavailable"});
 });
-export type ReviewDecision="reject"|"needs-more-information"|"approve-record-key"|"approve-recovery-key"|"approve-claimed-unbound-no-key-recovery";
+export type ReviewDecision="reject"|"needs-more-information"|"approve-record-key"|"approve-recovery-key"|"approve-claimed-unbound-no-key-recovery"|"keyless-document-match";
 /** Each positive choice has its own actual attested transaction. Parent
- * profile matching still awaits notice/objection/fresh-release completion. */
+ * profile matching enters the independent owner-notice transaction only. */
 export function reviewPageDecisions(value:ReviewPageCase):ReviewDecision[] {
+  if(value.state==="approved_pending_owner_notice")return [];
   const positive=value.case.kind==="record_key"?"approve-record-key":value.case.kind==="claimant_recovery_key"?"approve-recovery-key":
-    value.case.kind==="claimed_unbound_no_key_recovery"?"approve-claimed-unbound-no-key-recovery":null;
+    value.case.kind==="claimed_unbound_no_key_recovery"?"approve-claimed-unbound-no-key-recovery":value.case.kind==="unclaimed_keyless"?"keyless-document-match":null;
   return positive?["reject","needs-more-information",positive]:["reject","needs-more-information"];
 }

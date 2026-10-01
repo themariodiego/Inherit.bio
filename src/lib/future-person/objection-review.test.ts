@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sealNoticePackage } from "./notice-package";
 import { sealOwnerObjection } from "./owner-objection";
-import { mintObjectionReviewNonce, readObjectionReviewNonce, shapeObjectionReview } from "./objection-review";
+import { mintObjectionReviewNonce, readObjectionReviewNonce, shapeObjectionReview,
+  mintAssignedObjectionNonce, readAssignedObjectionNonce, objectionDecisionBody, objectionDecisionScope } from "./objection-review";
 const id = (n: number) => `61000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const statement = "The claim should receive further documentary review.";
 const human = { fullName: "Synthetic Claimant", dateOfBirth: "2000-01-01", photoIdentityReviewed: true as const,
@@ -51,5 +52,29 @@ describe("closed assigned objection shaping", () => {
     for (const tuple of [[id(1), id(6), id(7)], [id(5), id(8), id(7)], [id(5), id(6), id(8)]])
       expect(readObjectionReviewNonce(proof, tuple[0]!, tuple[1]!, tuple[2]!, now)).toBeNull();
     expect(readObjectionReviewNonce(proof, id(5), id(6), id(7), now + 600001)).toBeNull();
+  });
+  it("binds the assigned decision to all three current revisions and refuses the former unbound proof", () => {
+    const now = Date.now(), revisions = { objectionRevision: 1, claimReviewRevision: 3, noticeRevision: 2 };
+    const proof = mintAssignedObjectionNonce(id(5), id(6), id(7), revisions, now);
+    expect(readAssignedObjectionNonce(proof, id(5), id(6), id(7), revisions, now)).toMatch(/^[A-Za-z0-9_-]{16,256}$/u);
+    for (const key of Object.keys(revisions) as (keyof typeof revisions)[]) {
+      expect(readAssignedObjectionNonce(proof, id(5), id(6), id(7), { ...revisions, [key]: revisions[key] + 1 }, now)).toBeNull();
+    }
+    for (const tuple of [[id(20), id(6), id(7)], [id(5), id(20), id(7)], [id(5), id(6), id(20)]])
+      expect(readAssignedObjectionNonce(proof, tuple[0]!, tuple[1]!, tuple[2]!, revisions, now)).toBeNull();
+    expect(readAssignedObjectionNonce(proof, id(5), id(6), id(7), revisions, now + 600001)).toBeNull();
+    expect(readAssignedObjectionNonce(mintObjectionReviewNonce(id(5), id(6), id(7), now), id(5), id(6), id(7), revisions, now)).toBeNull();
+  });
+  it("accepts only the registered three decisions, current revisions and professional basis", () => {
+    const body = { decision: "uphold-objection", objectionRevision: 1, claimReviewRevision: 3, noticeRevision: 2,
+      reason: "  The complete documents need a further human decision.  ", nonce: "proof" };
+    expect(objectionDecisionBody.parse(body).reason).toBe(body.reason.trim());
+    for (const given of [{ ...body, decision: "approve-release" }, { ...body, noticeRevision: 0 },
+      { ...body, claimReviewRevision: Number.MAX_SAFE_INTEGER + 1 }, { ...body, reason: "Too short" },
+      { ...body, reason: "x".repeat(2001) }, { ...body, reason: `${body.reason}\u0085` },
+      { ...body, nonce: "x".repeat(2049) }, { ...body, subjectId: id(20) }])
+      expect(objectionDecisionBody.safeParse(given).success).toBe(false);
+    expect(objectionDecisionScope(row(), id(5))?.wrappedComparisonKey).toMatch(/^[0-9a-f]{144}$/u);
+    expect(objectionDecisionScope({ ...row(), comparisonCiphertext: "00".repeat(128) }, id(5))).toBeNull();
   });
 });

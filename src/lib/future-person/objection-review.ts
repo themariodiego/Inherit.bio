@@ -51,3 +51,29 @@ export function mintObjectionReviewNonce(id: string, account: string, session: s
 export function readObjectionReviewNonce(token: string, id: string, account: string, session: string, now = Date.now()) {
   return token.length <= 2048 ? readPublicFormToken(token, "future-person-claim-objection-review", now, nonceBinding(id, account, session))?.nonce ?? null : null;
 }
+
+export const objectionDecisionBody = z.object({ decision: z.enum(["uphold-objection", "overrule-objection", "needs-more-information"]),
+  objectionRevision: rev, claimReviewRevision: rev, noticeRevision: rev,
+  reason: z.string().max(8000).transform(value => value.normalize("NFC").trim())
+    .refine(value => [...value].length >= 20 && [...value].length <= 2000
+      && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(value)),
+  nonce: z.string().min(1).max(2048),
+}).strict();
+export function objectionDecisionScope(raw: unknown, expectedObjection: string) {
+  const parsed = operationRow.safeParse(raw);
+  if (!parsed.success || parsed.data.operation !== "claim-objection" || parsed.data.objection?.id !== expectedObjection
+    || !shapeObjectionReview(parsed.data, expectedObjection)) return null;
+  return parsed.data;
+}
+type DecisionBinding = { objectionRevision: number; claimReviewRevision: number; noticeRevision: number };
+function currentDecisionBinding(id: string, account: string, session: string, revisions: DecisionBinding) {
+  return sha256Hex(JSON.stringify([id, account, session, revisions.objectionRevision, revisions.claimReviewRevision, revisions.noticeRevision]));
+}
+export function mintAssignedObjectionNonce(id: string, account: string, session: string, revisions: DecisionBinding, now = Date.now()) {
+  return mintPublicFormToken("future-person-claim-objection-review", now, currentDecisionBinding(id, account, session, revisions));
+}
+export function readAssignedObjectionNonce(token: string, id: string, account: string, session: string,
+  revisions: DecisionBinding, now = Date.now()) {
+  return token.length <= 2048 ? readPublicFormToken(token, "future-person-claim-objection-review", now,
+    currentDecisionBinding(id, account, session, revisions))?.nonce ?? null : null;
+}
