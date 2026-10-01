@@ -1,5 +1,39 @@
 # Test diff register
 
+## 2026-10-01 — Apply the shared held-mail prerequisite without importing Future additions
+
+The refreshed account branch takes the exact unpublished025 shared bridge and
+its closed source inventory. It does not install022/023 or their unrelated
+Future tables. Its actual chronology uses only the guarded233 canonical mail
+and activation bodies. The147 original held assertions remain; nine exact
+issued-notice refusal/rollback assertions and one precise body/role/census proof
+from the reviewed bridge extend them to157. The33 original purpose assertions
+remain alongside two exact held target/action proofs (35 total). The native
+page and handlers retain every registered purpose. Database execution is still
+pending; neither this source step nor the additive request refusal proves
+complete Path B account disposal.
+
+## 2026-10-01 — Keep the exact held dispatcher bridge usable on both release chronologies
+
+The unpublished025 bridge now supports the account release's exact233 canonical
+mail bodies when both022 aliases are physically absent. With022, it retains
+both exact corrected canonical wrappers and patches only their API-denied
+aliases. Partial installation, any unreviewed body, argument/return ABI,
+configuration, owner or ACL refuses atomically. The corrected022 claim body pin
+is `abb70e7d8ec45731aebcbaa870ab9c13`; the ambiguous previous body is not accepted.
+All three restored held arms and their resulting full-body hashes remain exact.
+
+The actual corrected full chronology passed155 of156 original held assertions;
+the remaining exact lifecycle-name census expected the old canonical activation
+name despite023's reviewed rename. It now names precisely the canonical body
+when023 is absent or the actual API-denied023 delegate when present. A new
+independent assertion requires the exact restored body, unchanged canonical
+service-only execution and full API denial on the delegate. Every original
+native activation, expiry, revision, token, rollback and role assertion remains.
+No wildcard census, grant change, timeout or weakened value is introduced.
+Full direct and wrapper SQL chronologies remain root-owned verification.
+
+
 ## 2026-10-01 — Preserve both account and held-upload contracts at the exact main merge
 
 The account/cohort deletion branch is ordinarily merged with main

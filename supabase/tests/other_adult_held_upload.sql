@@ -436,7 +436,20 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
- 'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, private.subject_held_files_v1, public.activate_rights_session_v1, public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+ 'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, private.subject_held_files_v1, ' || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
+   then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || ', public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
+ where oid=coalesce(to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)'),
+   to_regprocedure('public.activate_rights_session_v1(text,text,text)')))
+ and has_function_privilege('service_role','public.activate_rights_session_v1(text,text,text)','execute')
+ and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) r
+   where has_function_privilege(r,'public.activate_rights_session_v1(text,text,text)','execute'))
+ and (to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
+   or ((select md5(prosrc)='5f92f26f9e5f94f7593f833d17db7d6c' from pg_proc
+     where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
+    and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
+      where has_function_privilege(r,to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)'),'execute')))),
+ 'the exact held activation body is only behind the current service door; the actual023 delegate remains API-denied');
 select is((select jsonb_agg(distinct k order by k) from jsonb_array_elements(
  public.other_adult_upload_targets_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',true)) t,
  jsonb_object_keys(t) k),
@@ -533,11 +546,109 @@ create temporary table notice as select m.id as outbox_id,null::text as token_ha
 grant select on notice to service_role;
 update notice set token_hash=pg_temp.claim_for(pg_temp.fxv('main','revision')::uuid);
 select ok((select token_hash is not null from notice),'the mail worker mints the notice credential');
+select ok((select tc.purpose='adult-upload-confirmation' and tc.target_kind='adult_upload_revision'
+ and tc.target_id=h.id and tc.outbox_id=h.notice_outbox_id and tc.state='issued'
+ and th.status='current' and th.token_revision=tc.token_revision and th.token_hash=n.token_hash
+ and tc.expires_at<=h.fixed_deadline and tc.expires_at>clock_timestamp()
+ from notice n join public.token_candidates tc on tc.outbox_id=n.outbox_id
+ join public.token_hashes th on th.candidate_id=tc.id and th.token_hash=n.token_hash
+ join public.other_adult_held_uploads h on h.id=tc.target_id),
+ 'the real claim issues only the exact held notice hash, revision and original fixed deadline');
+create function pg_temp.held_submission_refuses(p_case text) returns boolean language plpgsql as $$
+declare allowed boolean; before_rows jsonb; after_rows jsonb;
+begin
+ select jsonb_build_object('held',to_jsonb(h),'subject',to_jsonb(s),'candidate',to_jsonb(tc),
+  'token',to_jsonb(th),'mail',to_jsonb(m),'contact',to_jsonb(e)) into before_rows
+ from notice n join public.mail_outbox m on m.id=n.outbox_id
+ join public.other_adult_held_uploads h on h.id=m.target_id
+ join public.subjects s on s.id=h.subject_id join public.token_candidates tc on tc.outbox_id=m.id
+ join public.token_hashes th on th.candidate_id=tc.id and th.token_hash=n.token_hash
+ join public.encrypted_contact_references e on e.id=m.contact_reference_id;
+ begin
+  if p_case='candidate-expired' then
+   update public.token_candidates set expires_at=clock_timestamp()-interval '1 second'
+    where outbox_id=(select outbox_id from notice);
+  elsif p_case='token-revoked' then
+   update public.token_hashes set status='revoked',ended_at=clock_timestamp()
+    where token_hash=(select token_hash from notice);
+  elsif p_case='subject-revision' then
+   update public.subjects set subject_binding_revision=subject_binding_revision+1 where id=pg_temp.sid('main');
+  else raise exception 'unknown submission counterexample';end if;
+  allowed:=public.authorize_mail_submission_v1((select outbox_id from notice),
+   (select attempt_count from public.mail_outbox where id=(select outbox_id from notice)));
+  raise exception using errcode='P2500',message='rollback exact submission counterexample';
+ exception when sqlstate 'P2500' then null;
+ end;
+ select jsonb_build_object('held',to_jsonb(h),'subject',to_jsonb(s),'candidate',to_jsonb(tc),
+  'token',to_jsonb(th),'mail',to_jsonb(m),'contact',to_jsonb(e)) into after_rows
+ from notice n join public.mail_outbox m on m.id=n.outbox_id
+ join public.other_adult_held_uploads h on h.id=m.target_id
+ join public.subjects s on s.id=h.subject_id join public.token_candidates tc on tc.outbox_id=m.id
+ join public.token_hashes th on th.candidate_id=tc.id and th.token_hash=n.token_hash
+ join public.encrypted_contact_references e on e.id=m.contact_reference_id;
+ return allowed is false and before_rows=after_rows;
+end $$;
+select ok(pg_temp.held_submission_refuses('candidate-expired'),
+ 'an expired real held candidate refuses submission and rolls back its complete source/mail/contact tuple');
+select ok(pg_temp.held_submission_refuses('token-revoked'),
+ 'a revoked real held token refuses submission and rolls back its complete source/mail/contact tuple');
+select ok(pg_temp.held_submission_refuses('subject-revision'),
+ 'a changed subject revision refuses submission and rolls back its complete source/mail/contact tuple');
 select is(public.authorize_mail_submission_v1((select outbox_id from notice),
  (select attempt_count from public.mail_outbox where id=(select outbox_id from notice))),true,
  'the notice may be submitted while its revision is pending');
+--025: each counterexample uses the actual already-issued notice credential.
+-- The subtransaction always rolls back; no expired/revision replacement is kept.
+create function pg_temp.held_activation_refuses(p_case text) returns boolean
+language plpgsql as $$
+declare v_count bigint; v_sessions bigint; v_nonce_count bigint; v_before jsonb; v_after jsonb;
+begin
+ select jsonb_build_object('held',to_jsonb(h),'subject',to_jsonb(s),'candidate',to_jsonb(tc),'token',to_jsonb(th)) into v_before
+ from public.other_adult_held_uploads h join public.subjects s on s.id=h.subject_id
+ join public.token_candidates tc on tc.target_id=h.id and tc.outbox_id=h.notice_outbox_id
+ join public.token_hashes th on th.candidate_id=tc.id where h.id=pg_temp.fxv('main','revision')::uuid;
+ select count(*) into v_sessions from public.rights_sessions;
+ select count(*) into v_nonce_count from public.embryo_operation_nonces;
+ begin
+  if p_case='candidate-expired' then
+   update public.token_candidates set expires_at=clock_timestamp()-interval '1 second'
+    where target_id=pg_temp.fxv('main','revision')::uuid;
+  elsif p_case='token-revision' then
+   update public.token_hashes set token_revision=token_revision+1
+    where token_hash=(select token_hash from notice);
+  elsif p_case='subject-revision' then
+   update public.subjects set subject_binding_revision=subject_binding_revision+1 where id=pg_temp.sid('main');
+  else raise exception 'unknown activation counterexample';end if;
+  select count(*) into v_count from public.activate_rights_session_v1((select token_hash from notice),
+   encode(extensions.digest('bridge:'||p_case,'sha256'),'hex'),'bridge-'||p_case||'-aaaaaaaaaaaaaaaa');
+  raise exception using errcode='P2500',message='rollback exact activation counterexample';
+ exception when sqlstate 'P2500' then null;
+ end;
+ select jsonb_build_object('held',to_jsonb(h),'subject',to_jsonb(s),'candidate',to_jsonb(tc),'token',to_jsonb(th)) into v_after
+ from public.other_adult_held_uploads h join public.subjects s on s.id=h.subject_id
+ join public.token_candidates tc on tc.target_id=h.id and tc.outbox_id=h.notice_outbox_id
+ join public.token_hashes th on th.candidate_id=tc.id where h.id=pg_temp.fxv('main','revision')::uuid;
+ return v_count=0 and v_before=v_after
+  and v_sessions=(select count(*) from public.rights_sessions)
+  and v_nonce_count=(select count(*) from public.embryo_operation_nonces);
+end $$;
+select ok(pg_temp.held_activation_refuses('candidate-expired'),
+ 'an expired genuine held notice issues zero session and rolls back its entire source and nonce tuple');
+select ok(pg_temp.held_activation_refuses('token-revision'),
+ 'a crossed token revision issues zero session and rolls back its entire source and nonce tuple');
+select ok(pg_temp.held_activation_refuses('subject-revision'),
+ 'a changed actual subject revision issues zero session and rolls back its entire source and nonce tuple');
+select ok(has_function_privilege('service_role','public.activate_rights_session_v1(text,text,text)','execute')
+ and not has_function_privilege('anon','public.activate_rights_session_v1(text,text,text)','execute')
+ and not has_function_privilege('authenticated','public.activate_rights_session_v1(text,text,text)','execute')
+ and not has_function_privilege('inherit_upload_only','public.activate_rights_session_v1(text,text,text)','execute'),
+ 'only the service activation door is callable; browser/upload roles gain no issuer authority');
+set local role service_role;
 select is(pg_temp.open_session((select token_hash from notice),'1','notice-open-kkkkkkkkkkkkkkkk'),1::bigint,
  'the notice link opens a rights session without an account');
+reset role;
+select is(pg_temp.open_session((select token_hash from notice),'8','bridge-consumed-aaaaaaaaaaaaaaaa'),0::bigint,
+ 'the already consumed real notice token cannot open a second session');
 select ok((select rs.purpose='adult-upload-confirmation' and rs.target_kind='adult_upload_revision'
   and rs.target_id=pg_temp.fxv('main','revision')::uuid and rs.principal_id=h.confirmation_principal_id
   and rs.expires_at<=h.fixed_deadline
