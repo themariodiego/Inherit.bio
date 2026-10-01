@@ -1,0 +1,141 @@
+[
+  {
+    "signature": "private.capture_claimed_embryo_provenance_v1(uuid,uuid)",
+    "body": "9d2ad554c7193b23e64714db6166e9f3",
+    "args": [
+      "p_deletion",
+      "p_cohort"
+    ],
+    "result": "void",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.purge_account_owned_cohorts_v1(uuid)",
+    "body": "3fe1b53e74675885cb9f825917dc3c70",
+    "args": [
+      "p_deletion"
+    ],
+    "result": "void",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.prepare_future_person_deletion_v1(text,text)",
+    "body": "f32e9ce755719d34ad802f975ff223ea",
+    "args": [
+      "p_session_hash",
+      "p_nonce"
+    ],
+    "result": "uuid",
+    "config": [
+      "search_path=\"\"",
+      "lock_timeout=250ms"
+    ]
+  },
+  {
+    "signature": "private.assert_future_person_deletion_plan_v1(uuid)",
+    "body": "c009f02ee0e43a661d7b70d23b5c6ba3",
+    "args": [
+      "p_manifest"
+    ],
+    "result": "public.retention_due_phases",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.finish_future_person_deletion_v1(uuid,text)",
+    "body": "644965a2ad8adff622d7121725f40922",
+    "args": [
+      "p_manifest",
+      "p_claim_token_hash"
+    ],
+    "result": "jsonb",
+    "config": [
+      "search_path=\"\"",
+      "lock_timeout=250ms"
+    ]
+  },
+  {
+    "signature": "private.freeze_future_person_deletion_plan_v1()",
+    "body": "79e16acea2f613885ad4d461cef1ecdf",
+    "args": [],
+    "result": "trigger",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.assert_claimed_provenance_candidate_v1(jsonb)",
+    "body": "16d31d0fc60b68849291c5777f342efc",
+    "args": [
+      "p_candidate"
+    ],
+    "result": "void",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.lock_claimed_provenance_pairs_v1(jsonb)",
+    "body": "d7d81532b00699557d8ab457b3bffc71",
+    "args": [
+      "p_candidates"
+    ],
+    "result": "void",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.claimed_provenance_pair_state_v1(jsonb)",
+    "body": "3da68cf25c64e8e579a8d5ef17cd90a6",
+    "args": [
+      "p_candidate"
+    ],
+    "result": "jsonb",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.claimed_provenance_candidate_v1(uuid)",
+    "body": "ebcefdc066f98a2d53eed69d4b986ce7",
+    "args": [
+      "p_file"
+    ],
+    "result": "jsonb",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.account_claimed_provenance_candidates_v1(uuid,uuid)",
+    "body": "953bacdc28d89aba93433112b5fea2b2",
+    "args": [
+      "p_deletion",
+      "p_cohort"
+    ],
+    "result": "jsonb",
+    "config": [
+      "search_path=\"\""
+    ]
+  },
+  {
+    "signature": "private.collect_claimed_provenance_pair_v1(text,uuid,jsonb,text)",
+    "body": "6c07ce2353fb8ffb0bcf2dfd9e8e7256",
+    "args": [
+      "p_origin",
+      "p_authority",
+      "p_candidate",
+      "p_claim_hash"
+    ],
+    "result": "text",
+    "config": [
+      "search_path=\"\""
+    ]
+  }
+]

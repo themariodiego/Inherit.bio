@@ -1,5 +1,40 @@
 # Test diff register
 
+## 2026-10-01 — Preserve shared claimed provenance until the actual last consumer
+
+The235 account worker preserves minimum split session/job receipts for a
+surviving detached source. The245 claimant finisher previously removed its own
+source graph without collecting that shared minimum pair. Migration036 adds
+an immutable candidate inside the existing phase before fingerprinting and
+one sorted pair-lock contract used by both native paths. It adds no store,
+period, public execution grant or historical backfill. Exact predecessor body,
+ABI, configuration, owner, ACL, column/type, RLS, original guard and trigger
+pins refuse unknown source. The original receipt update/delete protections,
+provider/document/archive checks, deadlines and all235/245 assertions remain.
+
+Two additive rollback suites follow actual signed upload/publication,
+attested claimant release and native disposal producers in both finalization
+orders. They require byte-identical receipts while a source survives, exact
+sealed candidates, unchanged original clocks, missing/crossed ACK and lease
+refusals, direct role/update/delete denials, final pair absence, coded terminal
+minimization and replay refusal. The extended parent-last scenario retains
+every original245 line and assertion in order; original files are untouched.
+Synthetic acknowledgement metadata tests only the real SQL protocol and does
+not substitute for physical-provider or hosted proof. A separate prefix035
+forward rehearsal creates a real old plan with the old native producer, applies
+036 inside the same rollback and requires refusal plus byte-identical old
+phase/manifest; no immutable trigger or source guard is disabled.
+
+The bounded independent-session harness requires a real committed synthetic
+fixture with both actual authorities and current exact protocol ACKs. Both
+native finalizers must take the same pair lock, and all public/private row
+fingerprints must match after cancellation/rollback in either order. No new
+timeout, retry, skip, table grant, general collector or fabricated authority
+is added to an existing case. Full SQL/concurrency and physical-provider
+execution are root-owned and pending. G5.6 and all other acceptance values
+remain unchanged; the current public erasure/unsupported bound graph stays
+closed. Focused source/capability tests are not database execution.
+
 ## 2026-10-01 — Control only the quota fixture clock and prove the unchanged capability boundaries
 
 The actual complete Linux unit run on f54502eb failed one assertion in the
