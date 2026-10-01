@@ -1,5 +1,53 @@
 # Test diff register
 
+## 2026-10-01 — Keep the same genuine claim-start receipt after server refresh
+
+The real202 start displayed its common receipt and called router.refresh; the
+server's verified live-claim branch then replaced that status with the document
+step. The original browser journey reads the receipt again after actual header/
+body observation, so removing it can leave that unbounded panel-text read
+waiting. The safe hosted timeout snapshot shows the document step with no
+receipt; exact failed-await timing remains unproved pending the fixed native
+phase diagnostic. One pure shared receipt now supplies the exact original
+heading/body/markup both immediately after202 and in the genuine current live
+server branch. Documents, completion wording, all cookies/nonces/read authority,
+claims availability and refusal standards are unchanged. No record existence
+or mode is disclosed. Actual React server-rendering tests retain identical
+receipt bytes for all three live modes, its order before documents, the single
+existing status read, and zero invented receipt for absent/malformed/failed/
+unknown/closed states. Completed claims keep their distinct original receipt.
+Interactive controls and RPC/Auth state are synthetic unit seams; no native,
+database or provider execution credit follows. Every original browser status,
+body/cookie/panel equality, timeout and retry remains unchanged.
+
+## 2026-10-01 — Identify the original claim-start wait without changing its proof
+
+Hosted6f8's three-mode start journey timed out at its original120seconds; the
+only extra stack was a secondary context.close protocol error. Fixed native
+test.step labels now identify each original awaited operation, including the
+response header/body read and received panel text. On failure a coded phase and
+error category are recorded before cleanup; no key, contact, cookie, body or
+error text is logged. The genuine original error is rethrown, both observer
+disposal and context closure still run, and a cleanup error still fails if it
+was the original failure. A secondary cleanup exception cannot replace an
+already recorded original error. Every original assertion, request order,
+cookie/header/body/panel equality,120second limit and zero retries is retained.
+The underlying timeout remains unproved pending genuine native phase evidence.
+
+## 2026-10-01 — Preserve documentary review no-referrer through the actual proxy
+
+Hosted6f8 browser3 reached the actual current-case200 GET, but its two strict
+native security-header assertions received same-origin. The route
+sets no-referrer; the proxy overwrote it with the general sensitive API header
+set and applied its stricter override only to review HTML pages. Both exact
+review page/API namespaces now receive no-referrer at that common proxy
+boundary, including its own423 and451 responses. Every other sensitive header,
+Auth/profile/location/deletion gate and unrelated path's same-origin policy is
+unchanged. New scoped regressions pin signed-in/out pass-through, complete
+header sets, both location refusal sources, deletion refusal and similar-path
+nonmatches. All original browser assertions, limits and retries are preserved.
+The failed hosted receipt remains; this source proof is not a native rerun pass.
+
 ## 2026-10-01 — Diagnose the saved-profile owner reload without exposing protected records
 
 The actual hosted browser job at 6f8d86d06a0a027b62c6eee23c99167fb144f04e
