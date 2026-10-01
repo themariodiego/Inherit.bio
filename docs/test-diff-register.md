@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Name each original prepared-upload response and worker phase
+
+Hosted run36866428888 browser6 at36061663 timed out in the plain prepared
+journey at its unchanged300-second limit; the page showed preparation could
+not be confirmed. The following gzip case then hit the original strict fixture
+configuration refusal. Both failures remain evidence, and neither exact await
+nor abandoned configuration state is established. Fixed test.step labels now
+surround the original input send, finalization/queue/completed response waits,
+their existing Playwright JSON reads, the actual worker launch and original
+receipt/UI reads in both cases. They add no timeout, retry, request, fallback,
+provider/config mutation or body substitution. Every assertion, value, consent,
+source hash, EOF proof, cleanup and300-second limit is retained. An independent
+TypeScript AST comparison strips only these diagnostic wrappers and requires
+the entire original spec to remain equal. This is failure localization source
+proof, not corrected browser/provider execution or a claimed preparation cause.
+
 ## 2026-10-01 — Carry only closed profile failure stages through both isolated launcher pipes
 
 Full hosted run36866428888 at360616639efbecce65e52e1796583a60a7e0bb32
