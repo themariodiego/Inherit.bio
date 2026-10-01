@@ -1,6 +1,7 @@
 -- Restore the existing held-revision notice claim, pre-submit check and session
 -- issuer after the shared Embryo/Future dispatcher replacements. Preserve the
 -- complete022 mail wrappers and, when present,023 owner-objection wrapper.
+-- Without022, patch only the exact233 canonical mail dispatcher bodies.
 -- Patch only the exact inherited dispatchers; retain every current non-held arm.
 do $bridge$
 declare
@@ -121,28 +122,33 @@ begin
       where has_function_privilege(r,v_alias,'execute'))) then
     raise exception using errcode='55000',message='rights activation bridge postcondition differs';end if;
 
-  --022 owns the canonical mail entries. Its delegates carry the exact233
-  -- shared dispatcher and remain denied even to service_role.
+  --022, when present, owns both canonical mail entries. Its delegates carry
+  -- exact233 bodies and stay API-denied. Otherwise only exact233 canonical
+  -- entries are supported. A partial/unknown wrapper installation refuses.
+  if (to_regprocedure('public.claim_mail_outbox_before_keyless_notice_v1()') is null)
+    is distinct from (to_regprocedure('private.authorize_mail_submission_before_keyless_notice_v1(uuid,smallint)') is null) then
+    raise exception using errcode='55000',message='mail wrapper pair predecessor differs';end if;
   v_mail_target:=to_regprocedure('public.claim_mail_outbox_before_keyless_notice_v1()');
   v_mail_canonical:=to_regprocedure('public.claim_mail_outbox()');
-  if v_mail_target is null or v_mail_canonical is null then
-    raise exception using errcode='55000',message='mail claim wrapper predecessor unavailable';end if;
+  if v_mail_canonical is null then
+    raise exception using errcode='55000',message='mail claim canonical predecessor unavailable';end if;
+  if v_mail_target is null then v_mail_target:=v_mail_canonical;end if;
   select prosrc into v_mail_wrapper_body from pg_proc where oid=v_mail_canonical;
-  if md5(v_mail_wrapper_body) is distinct from 'abb70e7d8ec45731aebcbaa870ab9c13' or not exists(
+  if (v_mail_target<>v_mail_canonical and (md5(v_mail_wrapper_body) is distinct from 'abb70e7d8ec45731aebcbaa870ab9c13' or not exists(
     select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_mail_canonical
       and l.lanname='plpgsql' and p.prosecdef and p.pronargs=0 and p.proargdefaults is null
       and p.proargnames=array['outbox_id','template_id','template_payload','idempotency_key','attempt_ordinal','contact_ciphertext','delivery_token']::text[]
       and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[]
       and pg_get_function_result(p.oid)='TABLE(outbox_id uuid, template_id text, template_payload jsonb, idempotency_key text, attempt_ordinal smallint, contact_ciphertext bytea, delivery_token text)'
-  ) or (select md5(prosrc) from pg_proc where oid=v_mail_target) is distinct from '12222529081824e4e71833c2997911b3'
+  ))) or (select md5(prosrc) from pg_proc where oid=v_mail_target) is distinct from '12222529081824e4e71833c2997911b3'
     or not exists(select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_mail_target
       and l.lanname='plpgsql' and p.prosecdef and p.pronargs=0 and p.proargdefaults is null
       and p.proargnames=array['outbox_id','template_id','template_payload','idempotency_key','attempt_ordinal','contact_ciphertext','delivery_token']::text[]
       and p.proconfig=array['search_path=""']::text[]
       and pg_get_function_result(p.oid)='TABLE(outbox_id uuid, template_id text, template_payload jsonb, idempotency_key text, attempt_ordinal smallint, contact_ciphertext bytea, delivery_token text)'
       and p.proowner=(select proowner from pg_proc where oid=v_mail_canonical))
-    or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
-      where has_function_privilege(r,v_mail_target,'execute'))
+    or (v_mail_target<>v_mail_canonical and exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
+      where has_function_privilege(r,v_mail_target,'execute')))
     or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) r
       where has_function_privilege(r,v_mail_canonical,'execute'))
     or not has_function_privilege('service_role',v_mail_canonical,'execute') then
@@ -210,22 +216,24 @@ begin
   select$held_mail_token$);
   execute v_patched;
   if (select md5(prosrc) from pg_proc where oid=v_mail_target) is distinct from 'c14b060235af46b3046205d3b95a4976'
-    or (select prosrc from pg_proc where oid=v_mail_canonical) is distinct from v_mail_wrapper_body
-    or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
-      where has_function_privilege(r,v_mail_target,'execute')) then
+    or (v_mail_target<>v_mail_canonical and (select prosrc from pg_proc where oid=v_mail_canonical) is distinct from v_mail_wrapper_body)
+    or (v_mail_target<>v_mail_canonical and exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
+      where has_function_privilege(r,v_mail_target,'execute')))
+    or not has_function_privilege('service_role',v_mail_canonical,'execute') then
     raise exception using errcode='55000',message='mail claim bridge postcondition differs';end if;
   v_mail_target:=to_regprocedure('private.authorize_mail_submission_before_keyless_notice_v1(uuid,smallint)');
   v_mail_canonical:=to_regprocedure('private.authorize_mail_submission_v1(uuid,smallint)');
-  if v_mail_target is null or v_mail_canonical is null then
-    raise exception using errcode='55000',message='mail submission wrapper predecessor unavailable';end if;
+  if v_mail_canonical is null then
+    raise exception using errcode='55000',message='mail submission canonical predecessor unavailable';end if;
+  if v_mail_target is null then v_mail_target:=v_mail_canonical;end if;
   select prosrc into v_mail_wrapper_body from pg_proc where oid=v_mail_canonical;
-  if md5(v_mail_wrapper_body) is distinct from '448f258385a4c6f4392a1ca1781f0f2a' or not exists(
+  if (v_mail_target<>v_mail_canonical and (md5(v_mail_wrapper_body) is distinct from '448f258385a4c6f4392a1ca1781f0f2a' or not exists(
     select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_mail_canonical
       and l.lanname='plpgsql' and p.prosecdef and p.pronargs=2 and p.proargdefaults is null
       and p.proargnames=array['p_outbox','p_attempt']::text[]
       and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[]
       and pg_get_function_result(p.oid)='boolean'
-  ) or (select md5(prosrc) from pg_proc where oid=v_mail_target) is distinct from '0ecf82fc522f48e52d3f86298a7a71cb'
+  ))) or (select md5(prosrc) from pg_proc where oid=v_mail_target) is distinct from '0ecf82fc522f48e52d3f86298a7a71cb'
     or not exists(select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_mail_target
       and l.lanname='plpgsql' and p.prosecdef and p.pronargs=2 and p.proargdefaults is null
       and p.proargnames=array['p_outbox','p_attempt']::text[]
@@ -259,7 +267,7 @@ begin
  if m.template_id='report-ready' and private.file_ready_mail_current_v1(m) is not true then return false; end if;$held_mail_submission$);
   execute v_patched;
   if (select md5(prosrc) from pg_proc where oid=v_mail_target) is distinct from '62c932b7c2b4863a23280a793fe7c264'
-    or (select prosrc from pg_proc where oid=v_mail_canonical) is distinct from v_mail_wrapper_body
+    or (v_mail_target<>v_mail_canonical and (select prosrc from pg_proc where oid=v_mail_canonical) is distinct from v_mail_wrapper_body)
     or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
       where has_function_privilege(r,v_mail_target,'execute')) then
     raise exception using errcode='55000',message='mail submission bridge postcondition differs';end if;

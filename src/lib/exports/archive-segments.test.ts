@@ -70,6 +70,55 @@ describe("immutable logical archive segmentation", () => {
     expect(exact.options.write).toHaveBeenCalledTimes(1);
   });
 
+  it("plans complete members after the bounded actual INSERT, with each source step below the unchanged limit", async () => {
+    vi.useFakeTimers(); const f = fixture(), observations: ArchiveAttempt[] = [];
+    f.options.prepareSource = vi.fn(async (attempt, signal) => {
+      observations.push(attempt); f.events.push("prepare");
+      // Two independent bounded steps exceed one INSERT interval together.
+      // The original begin/source/write limits remain30 seconds.
+      for (let i = 0; i < 2; i++) {
+        await f.options.checkAuthority(attempt, signal);
+        await new Promise(resolve => setTimeout(resolve, 20_000));
+        expect(signal.aborted).toBe(false);
+        await f.options.checkAuthority(attempt, signal);
+      }
+    });
+    const running = storeArchiveSegments(f.options);
+    await vi.advanceTimersByTimeAsync(40_001); const result = await running;
+    expect(observations).toEqual([result.attempt]); expect(f.options.beginAttempt).toHaveBeenCalledOnce();
+    expect(f.events.indexOf("begin")).toBeLessThan(f.events.indexOf("prepare"));
+    expect(f.events.indexOf("prepare")).toBeLessThan(f.events.indexOf("read"));
+    expect(Buffer.concat(f.writes)).toEqual(Buffer.from([1, 2, 3])); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("preserves the original30 second begin INSERT limit even when a planner is supplied", async () => {
+    vi.useFakeTimers(); const f = fixture(); f.options.beginAttempt = vi.fn(() => new Promise(() => {}));
+    f.options.prepareSource = vi.fn(async () => {});
+    const result = storeArchiveSegments(f.options), refused = expect(result).rejects.toMatchObject({code:"deadline",cleanupRequired:true});
+    await vi.advanceTimersByTimeAsync(30_001); await refused;
+    expect(f.options.prepareSource).not.toHaveBeenCalled(); expect(f.source).not.toHaveBeenCalled();
+    expect(f.options.write).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["aborted", "deadline"] as const)("closes uncooperative planning at the original%s fence without admitting a late source", async code => {
+    vi.useFakeTimers(); const f = fixture(), planning = deferred<void>(); f.options.deadline = Date.now() + 60_000;
+    f.options.prepareSource = vi.fn(() => planning.promise);
+    const running = storeArchiveSegments(f.options), refused = expect(running).rejects.toMatchObject({code,cleanupRequired:true});
+    await vi.advanceTimersByTimeAsync(1);
+    if (code === "aborted") f.abort.abort(); else await vi.advanceTimersByTimeAsync(60_000);
+    await refused; planning.resolve(); await vi.advanceTimersByTimeAsync(1);
+    expect(f.source).not.toHaveBeenCalled(); expect(f.options.reserve).not.toHaveBeenCalled();
+    expect(f.options.write).not.toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("requires the actual whole authority again after successful planning before source acquisition", async () => {
+    const f = fixture(); f.options.prepareSource = vi.fn(async () => {
+      f.options.checkAuthority = vi.fn(async () => { throw new Error("revoked during source preparation"); });
+    });
+    await expect(storeArchiveSegments(f.options)).rejects.toMatchObject({code:"authority",cleanupRequired:true});
+    expect(f.source).not.toHaveBeenCalled(); expect(f.options.write).not.toHaveBeenCalled();
+  });
+
   it("uses a new attempt namespace every time and never adopts an existing claim", async () => {
     const a = fixture(), b = fixture();
     const first = await storeArchiveSegments(a.options), second = await storeArchiveSegments(b.options);

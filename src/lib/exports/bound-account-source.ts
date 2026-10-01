@@ -41,14 +41,18 @@ export async function prepareBoundAccountArchiveSource(value:unknown,rpc:BoundAr
   const members:Zip64Member[]=[],descriptors=[];
   for(const part of source.parts){
    await call("check",preparationSignal);const data=await readRelocation(part.target,part.identity,AbortSignal.any([signal,preparationSignal]));await call("check",preparationSignal);
-   const name=`originals/${source.fileId}/canonical-part-${String(part.sequence).padStart(4,"0")}.vcf`;
-   descriptors.push({name,sequence:part.sequence,partId:part.partId,sizeBytes:data.byteLength,sha256:part.target.sha256});
-   members.push({name,sizeBytes:data.byteLength,open:async current=>{
-    await call("check",current);let offset=0;return new ReadableStream<Uint8Array>({async pull(controller){
-     try{await call("check",current);if(offset===data.byteLength){controller.close();return;}
-      const next=data.slice(offset,offset+4_000_000);offset+=next.byteLength;controller.enqueue(next);
-     }catch{controller.error(unavailable());}
-    }},{highWaterMark:0});
+   const name=`originals/${source.fileId}/canonical-part-${String(part.sequence).padStart(4,"0")}.vcf`,sizeBytes=data.byteLength;
+   descriptors.push({name,sequence:part.sequence,partId:part.partId,sizeBytes,sha256:part.target.sha256});
+   members.push({name,sizeBytes,open:async current=>{
+    // Preparation proves every part but retains descriptors only. Re-read the
+    // actual current audience at open, including full EOF/hash/version proof,
+    // so memory holds one part rather than the whole account's source bytes.
+    await call("check",current);let opened=await readRelocation(part.target,part.identity,AbortSignal.any([signal,current]));
+    await call("check",current);let offset=0,closed=false;return new ReadableStream<Uint8Array>({async pull(controller){
+     try{if(closed)throw unavailable();await call("check",current);if(offset===sizeBytes){closed=true;opened=new Uint8Array(0);controller.close();return;}
+      const next=opened.slice(offset,offset+4_000_000);offset+=next.byteLength;controller.enqueue(next);
+     }catch{closed=true;opened=new Uint8Array(0);controller.error(unavailable());}
+    },cancel(){closed=true;opened=new Uint8Array(0);}},{highWaterMark:0});
    }});
   }
   await call("check",preparationSignal);

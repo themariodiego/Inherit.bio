@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -8,7 +8,9 @@ const directory = path.join(root, "supabase/migrations");
 const current = readFileSync(path.join(directory, "20260930233000_future_person_claim_custody.sql"), "utf8");
 const held = readFileSync(path.join(directory, "20260928150000_other_adult_held_upload.sql"), "utf8");
 const bridge = readFileSync(path.join(directory, "20261001025000_path_b_future_rights_activation.sql"), "utf8");
-const notice = readFileSync(path.join(directory, "20261001022000_future_person_notice_provider_execution.sql"), "utf8");
+const noticeFile = "20261001022000_future_person_notice_provider_execution.sql";
+const notice = existsSync(path.join(directory, noticeFile)) ? readFileSync(path.join(directory, noticeFile), "utf8") : null;
+const noticeReplacements = notice ? [noticeFile] : [];
 const functionBody = (source: string, name: string): string => {
   const escaped = name.replaceAll(".", "\\.");
   const match = source.match(new RegExp(`create (?:or replace )?function ${escaped}\\([^;]*?\\bas\\s+(\\$[a-z_]*\\$)([\\s\\S]*?)\\1;`, "iu"));
@@ -103,7 +105,7 @@ describe("held mail restoration behind the exact keyless notice wrappers", () =>
   });
   it("preserves both full022 canonical wrappers and all denied delegate roles", () => {
     for (const [name, hash] of [["public.claim_mail_outbox", "abb70e7d8ec45731aebcbaa870ab9c13"], ["private.authorize_mail_submission_v1", "448f258385a4c6f4392a1ca1781f0f2a"]]) {
-      expect(md5(functionBody(notice, name!))).toBe(hash);
+      if (notice) expect(md5(functionBody(notice, name!))).toBe(hash);
       expect(bridge).toContain(`md5(v_mail_wrapper_body) is distinct from '${hash}'`);
     }
     expect(bridge).toContain("to_regprocedure('public.claim_mail_outbox_before_keyless_notice_v1()')");
@@ -115,11 +117,23 @@ describe("held mail restoration behind the exact keyless notice wrappers", () =>
     expect(bridge.match(/^do \$bridge\$/gmu)).toHaveLength(1);
     expect(bridge.match(/^\$bridge\$;/gmu)).toHaveLength(1);
   });
+  it("supports only the exact direct canonical or paired denied-alias installation", () => {
+    expect(bridge).toContain("if (to_regprocedure('public.claim_mail_outbox_before_keyless_notice_v1()') is null)");
+    expect(bridge).toContain("is distinct from (to_regprocedure('private.authorize_mail_submission_before_keyless_notice_v1(uuid,smallint)') is null)");
+    expect(bridge).toContain("message='mail wrapper pair predecessor differs'");
+    expect(bridge.match(/if v_mail_target is null then v_mail_target:=v_mail_canonical;end if;/gu)).toHaveLength(2);
+    expect(bridge.match(/v_mail_target<>v_mail_canonical and \(md5\(v_mail_wrapper_body\)/gu)).toHaveLength(2);
+    expect(bridge).not.toContain("e486e7e418358d3e5e7429c143ff3b71");
+    expect(bridge).toContain("p.oid<>v_mail_canonical");
+    expect(bridge).toContain("a.grantee<>(select oid from pg_roles where rolname='service_role')");
+    expect(bridge).toContain("case when p.oid=v_mail_canonical then 2 else 1 end");
+    expect(bridge).not.toMatch(/revoke |grant |on conflict/iu);
+  });
   it("audits every later shared mail replacement instead of accepting an unknown dispatcher", () => {
     for (const name of ["public.claim_mail_outbox", "private.authorize_mail_submission_v1"]) {
       const pattern = new RegExp(`create (?:or replace )?function ${name.replaceAll(".", "\\.")}\\b`, "iu");
       const files = readdirSync(directory).sort().filter(file => file > "20260928150000_other_adult_held_upload.sql" && pattern.test(readFileSync(path.join(directory,file),"utf8")));
-      expect(files).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", "20261001022000_future_person_notice_provider_execution.sql", ...(name === "private.authorize_mail_submission_v1" ? ["20261001028000_future_person_keyless_human_decisions.sql"] : [])]);
+      expect(files).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", ...noticeReplacements]);
     }
   });
 });
@@ -140,8 +154,7 @@ it("closes the complete later Path B replacement inventory, including dynamic re
     "20260930210000_path_b_account_branch.sql|public.expire_due_other_adult_held_uploads_v1",
     "20260930210000_path_b_account_branch.sql|public.respond_adult_upload_revision_v1",
     ...["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql"].flatMap(file => ["private.authorize_mail_submission_v1", "public.activate_rights_session_v1", "public.claim_mail_outbox"].map(name => `${file}|${name}`)),
-    "20261001022000_future_person_notice_provider_execution.sql|private.authorize_mail_submission_v1",
-    "20261001022000_future_person_notice_provider_execution.sql|public.claim_mail_outbox",
+    ...noticeReplacements.flatMap(file => ["private.authorize_mail_submission_v1", "public.claim_mail_outbox"].map(name => `${file}|${name}`)),
     ...(readdirSync(directory).includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql|public.activate_rights_session_v1"] : []),
     "20261001028000_future_person_keyless_human_decisions.sql|private.authorize_mail_submission_v1",
   ].sort());
@@ -161,8 +174,7 @@ it("reviews shared replacements across all six authored Path B migration stages"
   }
   expect(outsideReplacements.sort()).toEqual([
     ...["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql"].flatMap(file => ["private.authorize_mail_submission_v1", "public.activate_rights_session_v1", "public.claim_mail_outbox"].map(name => `${file}|${name}`)),
-    "20261001022000_future_person_notice_provider_execution.sql|private.authorize_mail_submission_v1",
-    "20261001022000_future_person_notice_provider_execution.sql|public.claim_mail_outbox",
+    ...noticeReplacements.flatMap(file => ["private.authorize_mail_submission_v1", "public.claim_mail_outbox"].map(name => `${file}|${name}`)),
     ...(readdirSync(directory).includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql|public.activate_rights_session_v1"] : []),
     "20261001028000_future_person_keyless_human_decisions.sql|private.authorize_mail_submission_v1",
   ].sort());

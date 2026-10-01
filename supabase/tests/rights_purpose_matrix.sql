@@ -9,10 +9,8 @@ select is((select count(distinct purpose) from private.rights_purpose_matrix), 1
 select is((select count(*) from private.rights_purpose_matrix), 34::bigint,
   'with every registered action and route');
 select is((select array_agg(session_purpose order by session_purpose) from private.rights_session_purposes),
-  array['adult-subject-invitation','adult-upload-confirmation','approved-future-person-release','co-parent-invitation','embryo-parent-withdrawal']
-    || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is not null
-      then array['future-person-claim-objection'] else array[]::text[] end,
-  'exactly the real issuer purposes can be stored, including the held revision and only the actual023 owner issuer');
+  array['adult-subject-invitation','adult-upload-confirmation','approved-future-person-release','co-parent-invitation','embryo-parent-withdrawal','future-person-claim-objection'],
+  'exactly the six reviewed real issuers can be stored, including held revision and owner objection');
 select is((select target_kind from private.rights_session_purposes where session_purpose = 'embryo-parent-withdrawal'),
   'cohort', 'an embryo withdrawal session binds the whole cohort, never one embryo');
 

@@ -6,13 +6,106 @@ The registered assigned objection endpoint now has both a real closed GET and al
 
 One actual data-free mail renderer/file/fixture raises the exact census16/15/35/70 to17/16/36/72; all former privacy, export and immutable receipt assertions remain. The strict shared mail replacement inventory adds only028 and requires exact delegation of every unrelated purpose, with current claimant/contact/revision/attempt/deadline guards on its token-free branch. Real SQL branch probes retain the entire provider/account-objection predecessor and compare closed outcomes, independent shredding, unchanged source/Card, fresh assignments and immutable delivery clocks; synthetic metadata is explicitly not browser, human, byte or provider credit. Focused tests caught and fixed the missing response await. Mail copy uses existing vocabulary, and the fragment refusal inspects actual hrefs separately from harmless HTML color/entity notation. No timeout, retry, policy, negative boundary or acceptance is relaxed; actual SQL/full suites and hosted whole-flow proof remain pending.
 
+## 2026-10-01 — Preserve both generic source-file privacy refusals in the combined graph
+
+The actual combined pending database diagnostic fails original canonical assertions117/118: the authenticated owner's ordinary file query sees the two canonical embryo descriptors beside their self file. Later Path B normalization replaced the earlier canonical owner-list policy and retained only its other-adult refusal. The additive031 policy composes both existing reviewed helpers under the same authenticated user ownership check. Before any change it requires the exact table owner/schema/RLS, policy name/command/role/permissiveness/check, no extra read policy, and the exact stable security-definer helper bodies, configuration and API ACLs. It parses the exact reviewed predecessor on an empty owner-created transaction-local table to compare the actual complete expression without accepting extra spellings, predicates or flags; the empty table is dropped in the same transaction. No durable store or data backfill is added.
+
+Every original canonical123 assertion and Path B held157/normalization positive and negative file/variant/outsider/anonymous assertion stays unchanged. The original failed diagnostic is retained. Source-only authoring grants no execution or production-leak claim: the failure belongs to the combined pending graph, and corrected actual focused/full database proof remains required.
+
+## 2026-10-01 — Keep the exact held dispatcher bridge usable on both release chronologies
+
+The unpublished025 bridge now supports the account release's exact233 canonical
+mail bodies when both022 aliases are physically absent. With022, it retains
+both exact corrected canonical wrappers and patches only their API-denied
+aliases. Partial installation, any unreviewed body, argument/return ABI,
+configuration, owner or ACL refuses atomically. The corrected022 claim body pin
+is `abb70e7d8ec45731aebcbaa870ab9c13`; the ambiguous previous body is not accepted.
+All three restored held arms and their resulting full-body hashes remain exact.
+
+The actual corrected full chronology passed155 of156 original held assertions;
+the remaining exact lifecycle-name census expected the old canonical activation
+name despite023's reviewed rename. It now names precisely the canonical body
+when023 is absent or the actual API-denied023 delegate when present. A new
+independent assertion requires the exact restored body, unchanged canonical
+service-only execution and full API denial on the delegate. Every original
+native activation, expiry, revision, token, rollback and role assertion remains.
+No wildcard census, grant change, timeout or weakened value is introduced.
+Full direct and wrapper SQL chronologies remain root-owned verification.
+
 ## 2026-10-01 — Compare the complete pre-existing rights-session set in account objection
 
 The actual combined role rehearsal passes the native mail door and cookie objection, then reveals that the shared synthetic source fixture already has an unrelated rights session. The account-equivalent journey now freezes the complete original rights-session rows before every account read/write and requires byte-identical ordered rows afterward, plus exactly zero owner-notice objection sessions. This is stricter than a total-count assumption: no unrelated session may change and no session may be borrowed or created. All original stateless-read count, account freshness/MFA, revision, source preservation and provider-clock assertions remain. The failed receipt is retained; no account, provider or browser execution credit is inferred until independent rerun.
 
+## 2026-10-01 — Require the existing complete-source refusal for physical size drift
+
+Actual corrected migration 026 rehearsal reached all 42 assertions and exposed
+one incorrectly authored expected error. A changed real Storage size makes the
+existing `own_export_source_v1` return NULL at its full object/file identity
+check. The preserved ordinary authority then raises exactly SQLSTATE 55000,
+`export_source_unavailable`, while recomputing the whole consumed job before
+the new original descriptor is constructed. The test now requires that exact
+existing code/message, with an additional exact unchanged durable
+export/job/attempt snapshot. It accepts no alternative code and changes no
+source, permission, expected data or timeout. This remains a whole-source
+refusal before any provider I/O, not an original retirement or omitted member.
+The failed actual rehearsal is retained; an independent corrected run is still
+required and no hosted/provider acceptance is asserted.
+
+## 2026-10-01 — Separate complete planning from the bounded attempt INSERT
+
+The complete account assembler needs multiple independently bounded source
+proofs. A new optional segmentation hook runs that planning after the real
+attempt INSERT and before source acquisition. The original 30-second INSERT,
+read, write and metadata operation limits and the original whole-job deadline
+remain unchanged. Current authority is required before and after planning;
+cancellation, deadline and uncertain mutation cleanup holds still fail closed.
+
+Every old segmentation assertion remains. New tests prove multiple bounded
+preparation steps, unchanged stalled-INSERT refusal, ignored-cancellation and
+late-completion refusal with zero source/reservation/write, and revocation
+before source acquisition. Existing callers retain their original path.
+Complete class/member orchestration and actual POST/status/provider execution
+remain required; no public/READY or acceptance claim is made.
+
 ## 2026-10-01 — Keep the private dispatcher denied while restoring its native service door
 
 The actual corrected combined database rehearsal reached the real provider pre-submit call and failed because022 denied service execution on the private dispatcher while the original public SQL wrapper still used SECURITY INVOKER. The existing public service-only ABI now delegates under its fixed owner with an empty search path after validating its exact original two-argument body, owner, language and configuration. Every private dispatcher/delegate stays API-denied; browser and upload roles remain denied at the public door. Eight new actual-role assertions test those permissions and missing-outbox refusal. The existing genuine provider eligibility, attempt rotation, stale callback and delivery-clock assertions are retained unchanged. An owner-defined test wrapper is not used to hide the broken native RPC. SQL and provider execution remain uncredited until independent rehearsal.
+
+## 2026-10-01: parse the original-source expected JSON envelope exactly
+
+The corrected real026 journey next reached assertion15 and exposed PostgreSQL operator ambiguity in the expected-source expression. Parenthesizing the existing JSON extraction before removing expiresAt preserves every locator, revision, hash, size and fixed expected value. The prior332-assertion diagnostic remains failed; this parser correction changes no authority or expected result and grants no execution credit.
+
+## 2026-10-01 — Exercise the real recipient JSON contract in the whole-archive catalog fixture
+
+The actual full Linux run on `517fb4` failed the three existing archive-member
+plan assertions because their whole-catalog fixture represented the nullable
+`copilot_recipient` JSON destination as a scalar column sentinel. The strict
+seven-field projection correctly refused that malformed history with HTTP 503;
+the subsequent ZIP parser therefore received a refusal response. The fixture
+now supplies all actual recorded destination fields, plus nested internal-field
+sentinels. Every original withheld-column, exported-table, non-vacuity and exact
+member-set assertion remains intact, and ZIP construction now requires an
+explicit HTTP 200.
+
+The actual generated ZIP must preserve the complete recorded destination and
+withhold known and future nested credential evidence. Scalar, incomplete and
+credential-bearing destinations must still return HTTP 503 before any original,
+variant or report source is opened. This changes only the synthetic fixture and
+adds stricter output/refusal evidence; no runtime projection, requester filter,
+member plan, authority, source permission, timeout or public gate changes.
+The failed full-run receipt remains preserved; focused passes do not supersede
+it with a whole-suite, database, browser or provider claim.
+
+## 2026-10-01 — Preserve actual SQL compilation failure and correct the original descriptor path
+
+The owned full fresh-database rehearsal of the combined source failed with
+SQLSTATE42601 while applying migration `20261001026000`: the descriptor's
+`decodedSha256` JSON path lacked its closing quote. The exact one-character
+source correction closes that path without changing any expression, source,
+authority, assertion, limit or permission. Frozen `a209bb02` and its authored
+receipt remain unchanged; its unit/type/static passes never supplied database
+execution credit. The failed actual database log remains preserved. Independent
+corrected SQL execution and full fresh qualification are still required.
 
 ## 2026-10-01: correct errors found by the actual combined database run
 
@@ -24,21 +117,6 @@ The original failed full-reset and focused diagnostic logs remain in the integra
 
 The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
 
-## 2026-10-01 — Give the current owner an independently authenticated objection action
-
-The registered account-equivalent action now requires the owner's own live, freshly reauthenticated account and configured MFA before exact notice scope selection and mutation. Its stateless encrypted ten-minute form proof binds the current account, session, notice and revision; link/cookie authority never substitutes for those checks. Settings reads remain paginated and create no nonce, case, candidate or session. The native owner endpoint retains its closed two-field body and202 receipt, and both authorized actor paths use the same API-denied subject-first mutation, immutable notice/deadline, named objection assignment and claim-only revocation. Focused tests add actual account-route composition and refuse actor/session/revision/CSRF swaps without weakening any existing cookie test. The new real-role SQL journey follows genuine synthetic producers and canonical provider doors; its synthetic encrypted/provider/chunk metadata is expressly not browser, human, byte or provider-delivery credit. Full objection adjudication and separate fresh release remain closed and pending. No acceptance or production gate changes.
-
-## 2026-10-01 — Type the actual objection RPC ABI without weakening negative headers
-
-The clean prerequisite's first nonincremental type pass found three missing explicit public RPC type entries and a negative-test header union whose absent properties inferred undefined. The database ABI now lists the exact statement scope, owner view, objection write and current-operation reader signatures; the header refusal cases are explicitly string maps. No cast or assertion is weakened. Next's generated route/PageProps types are generated in the fresh checkout before repeating the check; their initial absence is an environment failure, not an altered product contract. The original failed receipt is retained. SQL, whole-flow and hosted execution remain pending.
-
-## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
-
-The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.
-
-The working owner objection encrypts its bounded statement under an independent random wrapped key tied to its exact claim, notice and initial revision. It pauses only the claim, consumes a distinct current-cookie operation nonce, invalidates its link/session and assigns a named objection reviewer atomically. The original 62-day package clock remains immutable; a genuine timely objection transfers document readability to the separately persisted review deadline capped at submission plus 92 days. A delivered period can assign a fresh release operation and invalidate old document receipts; it cannot approve, detach or deliver the record. A private API-denied trusted clock seam rehearses the exact session boundaries without rewriting stored times. The unfinished GET-only human-review HTTP handler remains outside this checkpoint until its genuine decision POST exists.
-
-Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
 ## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
 
 The unchanged purpose census exposed the real held-file issuer missing from
@@ -74,6 +152,61 @@ withdrawal, invitation, nonce and fixed-deadline behavior. No grant, backfill,
 provider proof or acceptance is inferred. SQL remains authored until root's
 fresh execution; focused source tests do not substitute for database proof.
 
+## 2026-10-01 — Give the current owner an independently authenticated objection action
+
+The registered account-equivalent action now requires the owner's own live, freshly reauthenticated account and configured MFA before exact notice scope selection and mutation. Its stateless encrypted ten-minute form proof binds the current account, session, notice and revision; link/cookie authority never substitutes for those checks. Settings reads remain paginated and create no nonce, case, candidate or session. The native owner endpoint retains its closed two-field body and202 receipt, and both authorized actor paths use the same API-denied subject-first mutation, immutable notice/deadline, named objection assignment and claim-only revocation. Focused tests add actual account-route composition and refuse actor/session/revision/CSRF swaps without weakening any existing cookie test. The new real-role SQL journey follows genuine synthetic producers and canonical provider doors; its synthetic encrypted/provider/chunk metadata is expressly not browser, human, byte or provider-delivery credit. Full objection adjudication and separate fresh release remain closed and pending. No acceptance or production gate changes.
+
+## 2026-10-01 — Prove actual current original bytes for consumed account members
+
+Migration `20261001026000` pins actual original availability and physical Storage
+identity into the existing complete ordinary-file capture. Its service-only
+worker descriptor/check derives the actor, session, selected source and writing
+attempt from the genuinely consumed request. Missing catalog versions are not
+invented; changed metadata, retirement, source, session or authority cannot be
+adopted into an old receipt. Every unsupported graph refusal and public/READY
+closure remains. No store, human JWT, analytical grant or permission is added.
+
+The new ordinary consumer shares the unchanged one-MiB range transport and
+native status/header, EOF, hash, timeout and current-authority assertions. Legacy
+originals use their own exact kind instead of a fabricated prepared manifest;
+prepared originals retain the actual existing manifest and retirement checks.
+Tests prove complete raw and decoded hashes, real gzip and independently read
+ZIP64 bytes, foreign/stale/missing/version/refusal boundaries and cancellation.
+A member opens by reading its actual pinned source again, so late corruption
+cannot be concealed by retained preparation bytes. A genuine prepared retirement
+has an explicit absent-original warning; deletion or missing legacy metadata
+remains a refusal.
+
+The bound reader now retains member metadata rather than every preparation
+byte array. Opening a part performs the same complete distinct-audience R2
+version/hash/EOF proof again before streaming it, with current authority checks
+and one-part memory ownership. The existing positive test keeps its exact bytes
+and adds the two genuine second reads; a strict new late-change regression
+requires refusal. No original assertion, source permission, timeout or part
+identity is relaxed. Authenticated human doors and original parent descriptors
+remain unchanged.
+
+The new SQL fixture retains the unchanged real scientific/Auth/signing producer
+assertions, flushes actual deferred request invariants, and tests the real service
+role, descriptor, independent source/actor fields and writing/deadline lease.
+It also tests absent versions, foreign/open/stale inputs, actual catalog changes
+and logout, every exact function grant and unchanged durable job bytes. Its
+physical metadata is explicitly synthetic, and authored SQL/unit seams supply
+no provider/browser/database execution credit. Whole-account assembly, every
+registered non-self/cohort/joint class, POST/status and provider delivery remain
+necessary; G5.4/G5.6 stay NO.
+
+## 2026-10-01 — Type the actual objection RPC ABI without weakening negative headers
+
+The clean prerequisite's first nonincremental type pass found three missing explicit public RPC type entries and a negative-test header union whose absent properties inferred undefined. The database ABI now lists the exact statement scope, owner view, objection write and current-operation reader signatures; the header refusal cases are explicitly string maps. No cast or assertion is weakened. Next's generated route/PageProps types are generated in the fresh checkout before repeating the check; their initial absence is an environment failure, not an altered product contract. The original failed receipt is retained. SQL, whole-flow and hosted execution remain pending.
+
+## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
+
+The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.
+
+The working owner objection encrypts its bounded statement under an independent random wrapped key tied to its exact claim, notice and initial revision. It pauses only the claim, consumes a distinct current-cookie operation nonce, invalidates its link/session and assigns a named objection reviewer atomically. The original 62-day package clock remains immutable; a genuine timely objection transfers document readability to the separately persisted review deadline capped at submission plus 92 days. A delivered period can assign a fresh release operation and invalidate old document receipts; it cannot approve, detach or deliver the record. A private API-denied trusted clock seam rehearses the exact session boundaries without rewriting stored times. The unfinished GET-only human-review HTTP handler remains outside this checkpoint until its genuine decision POST exists.
+
+Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
 
 ## 2026-10-01 — Prove complete consumed history membership before account assembly
 
@@ -6348,3 +6481,46 @@ and planted observed/modelled/unknown-version cases prove that exact is not
 silently renamed. QC dropout/contamination classification remains unchanged
 pending the source inconsistency documented in docs/result-basis-contract.md.
 This is a bounded contract improvement and does not mark G4.2 YES.
+## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
+
+The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.
+
+The working owner objection encrypts its bounded statement under an independent random wrapped key tied to its exact claim, notice and initial revision. It pauses only the claim, consumes a distinct current-cookie operation nonce, invalidates its link/session and assigns a named objection reviewer atomically. The original 62-day package clock remains immutable; a genuine timely objection transfers document readability to the separately persisted review deadline capped at submission plus 92 days. A delivered period can assign a fresh release operation and invalidate old document receipts; it cannot approve, detach or deliver the record. A private API-denied trusted clock seam rehearses the exact session boundaries without rewriting stored times. The unfinished GET-only human-review HTTP handler remains outside this checkpoint until its genuine decision POST exists.
+
+Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
+## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
+
+The unchanged purpose census exposed the real held-file issuer missing from
+`rights_session_purposes`. Embryo232000 and Future233000 subsequently replaced
+its notice invalidation, opaque-token minting, pre-submit and activation arms.
+Migration `20261001025000` registers its exact existing purpose/revision pair
+and restores these original held branches into the exact latest dispatchers
+in one atomic block, guarded by complete predecessor/postcondition body hashes.
+Both022 canonical mail wrappers stay byte-identical; their API-denied233
+delegates retain every claimant/withdrawal/invitation branch and the current
+provider attempt key. Full ABI, configuration and owner/API ACL guards refuse
+an unknown predecessor without applying any part of the bridge.
+The reviewed023 owner-objection wrapper, when present, stays byte-identical;
+only its API-denied delegate changes. Unknown wrappers/dispatchers refuse.
+
+Every existing assertion is retained. The old exact four-purpose SQL census
+now expects the five genuine issuers, plus the owner-objection issuer only when
+its actual023 delegate exists. It still rejects every extra/missing pair; two
+new assertions bind the held revision target and its exact three existing
+matrix actions. The genuine old held-notice activation assertion runs through
+the real service role with its unchanged expected result. New rollback probes
+require zero session for expired candidate, crossed token revision and changed
+subject revision, preserving the complete source/token tuple and nonce/session
+counts; browser/upload roles stay denied and a consumed token cannot reopen.
+New genuine pre-submit probes require refusal for an expired candidate, a
+revoked token and a changed subject revision, rolling back the complete
+source/mail/contact tuple; the original positive submission assertion remains.
+The actual minted notice hash is checked against its exact candidate, revision
+and fixed deadline. New source tests compare all three complete dispatcher
+bodies before/after their exact insertions and all later replacement sites,
+preserving original claimant,
+withdrawal, invitation, nonce and fixed-deadline behavior. No grant, backfill,
+provider proof or acceptance is inferred. SQL remains authored until root's
+fresh execution; focused source tests do not substitute for database proof.
+
+

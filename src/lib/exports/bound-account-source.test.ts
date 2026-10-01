@@ -20,6 +20,7 @@ describe("durable bound own-source member with actual gateway and generated ZIP6
  it("opens every complete exact moved part in a real archive without JWT/provider descriptors or parent bytes",async()=>{
   const f=await boundSourceFixture(),result=await prepareBoundAccountArchiveSource(f.reference,f.rpc,signal());
   expect(f.fetch).toHaveBeenCalledTimes(2);const zip=new AdmZip(await archive(f,result.members));
+  expect(f.fetch).toHaveBeenCalledTimes(4);
   expect(zip.getEntries().map(e=>e.entryName)).toEqual(result.provenance.parts.map(p=>p.name));
   for(const [i,p] of result.provenance.parts.entries()){
    const stored=zip.readFile(p.name)!;expect(stored).toEqual(Buffer.from(f.bytes[i]));expect(stored.length).toBe(p.sizeBytes);expect(sha(stored)).toBe(p.sha256);
@@ -42,6 +43,11 @@ describe("durable bound own-source member with actual gateway and generated ZIP6
  it("requires full provider EOF and matching hashes before returning any member",async()=>{
   const f=await boundSourceFixture();f.gateway.values.get(f.manifest.parts[1].target.newKey)!.bytes=new Uint8Array([1]);
   await expect(prepareBoundAccountArchiveSource(f.reference,f.rpc,signal())).rejects.toThrow();expect(f.fetch).toHaveBeenCalledTimes(2);
+ });
+ it("rechecks complete actual current bytes at open instead of retaining an earlier part copy",async()=>{
+  const f=await boundSourceFixture(),result=await prepareBoundAccountArchiveSource(f.reference,f.rpc,signal());
+  f.gateway.values.get(f.manifest.parts[0].target.newKey)!.bytes=new Uint8Array([1]);
+  await expect(archive(f,result.members)).rejects.toThrow();expect(f.fetch).toHaveBeenCalledTimes(3);
  });
  it("refuses an expired proof and a revoked source while writing the generated ZIP",async()=>{
   const f=await boundSourceFixture(),result=await prepareBoundAccountArchiveSource(f.reference,f.rpc,signal());

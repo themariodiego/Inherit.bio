@@ -32,7 +32,7 @@ export default async function RightsSessionPage() {
   });
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
-  // cookie can never reach the adult or embryo screen, and so on.
+  // cookie can never reach another purpose screen.
   const ownerNotice = await loadOwnerObjection(request);
   if (ownerNotice) return <OwnerObjection summary={ownerNotice.view.safeNoticeSummary} deadline={ownerNotice.view.noticeDeadline}
     explanation={ownerNotice.view.objectionArtifactBody} csrf={ownerNotice.csrf} nonce={ownerNotice.nonce} />;
