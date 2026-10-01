@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Run the restricted-role QC assertion without test-schema grants
+
+The actual f54502eb full fresh run reached58 passing QC precision assertions,
+then could not resolve pgTAP `throws_ok` under `inherit_upload_only`. That role
+intentionally lacks USAGE on `extensions`; the failure did not call the QC
+reader. The owner now resolves `extensions.throws_ok`, and its caught SQL
+executes SET LOCAL ROLE followed by the exact original reader invocation.
+The original42501 SQLSTATE, exact permission-denied message and assertion
+remain unchanged. Three additional assertions prove absent test-schema usage
+before and after the call and restoration of the original test owner.
+No role grant, search path, product ACL or function changes. pgTAP's original
+EXECUTE/exception block provides the transactional role restoration; its
+primary source is https://github.com/theory/pgtap/blob/master/sql/pgtap.sql.in.
+The failed run remains recorded. This is source-backed fixture correction;
+root must execute it against the actual restricted role. No database ran here.
+
 ## 2026-10-01 — Name both exact class-inventory comparison columns
 
 The actual full fresh database run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48
