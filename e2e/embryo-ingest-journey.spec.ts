@@ -9,6 +9,7 @@ import { EMBRYO_APP_PORT } from "../scripts/ci-browser-config";
 import { GATE_BUTTON } from "@/copy/embryos/gate";
 import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
+import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
 import { signStatements } from "./embryo-signing-helpers";
 import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles } from "../scripts/comprehension/participant-c-seed";
 import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
@@ -181,6 +182,8 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
       await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
       await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
     }
+    await proveNativeDispositionAndProfile({owner:page,other,browser,cohortId,
+      embryoId:embryos.data![0].id,siblingId:embryos.data![1].id});
   } finally { await otherContext.close(); }
   });
 });

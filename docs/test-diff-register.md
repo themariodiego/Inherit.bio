@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Append native parent controls after every original Embryo assertion
+
+The actual integrated journey now calls the authored native disposition/profile
+helper only after every original publication, comparison, harness-read and
+embryo-detail assertion. The exact stored-source receipt and genuine T6 trace
+remain intact. The addition requires real parent proposal and other-parent
+confirmation, delivered replacement Card, permission revocation, encrypted
+profile save, cross-record/stranger refusal, read-only page nonce counts and
+actual profile shredding without changing canonical source or signed history.
+No original assertion, case, serial group, 300000ms limit or zero-retry policy
+changes. This combined source still requires its own full hosted proof.
+
+The focused rollback predecessor rehearsal on `aa35bce7ec7638033b0480311c36c9c06445c559`
+passes all 403 assertions across five suites: strict storage census14, immutable
+publication78, parent profile controls72, identity-profile98 and complete
+claimant deletion141. It applies only the exact corrected functions and private
+ordering helper plus the immutable publisher inside BEGIN/ROLLBACK on the owned
+local9ed predecessor. It is not a full fresh-migration run or provider/browser
+proof. Every failed earlier checkpoint remains recorded; full fresh proof follows.
+
 ## 2026-10-01 — Validate the real export request before the deletion request
 
 The rollback-only positive rehearsal now crosses the same creation boundary as
