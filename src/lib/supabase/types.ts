@@ -7919,6 +7919,13 @@ export type Database = {
           p_identity_hmac_set:Json;p_profile_hmac_set:Json}
         Returns:Json
       }
+      restore_future_person_claim_review_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
+          p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;
+          p_profile_hmac_set:Json|null;p_comparison_receipt_digest:string|null;
+          p_contact_reference_id:string;p_contact_ciphertext:string;p_contact_hmac_set:Json}
+        Returns:Json
+      }
       open_claim_review_download_v1: {
         Args: { p_cookie_hash: string; p_document_id: string }
         Returns: Json

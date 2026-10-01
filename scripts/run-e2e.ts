@@ -2,7 +2,7 @@
  * Invoked inside run-upload-browser.mts so every run has a real local provider.
  */
 import assert from "node:assert/strict";
-import { assertEmbryoCiShard } from "./ci-browser-embryo-partitions";
+import { assertEmbryoCiShard, assertEmbryoJourneyAudits, EMBRYO_BROWSER_JOURNEYS } from "./ci-browser-embryo-partitions";
 import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -12,6 +12,8 @@ import { ciBrowserSourceIdentity, discoverBrowserCases, trackedBrowserSpecs } fr
 
 assert(process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY && process.env.INHERIT_UPLOAD_SIGNING_JWK,
   "Run pnpm e2e through the real local provider bootstrap");
+assertEmbryoJourneyAudits(Object.fromEntries(Object.values(EMBRYO_BROWSER_JOURNEYS)
+  .map(file => [file, readFileSync(path.join("e2e", file), "utf8")])));
 const reportPath = path.resolve("test-results/results.json");
 const args = process.argv.slice(2);
 const browserStarted = performance.now();
