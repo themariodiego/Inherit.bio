@@ -625,13 +625,15 @@ export async function axeViolations(page: Page, theme: AxeTheme): Promise<AxeFin
  * Axe in both themes, each on a fresh load in that theme: the theme provider
  * flips the class on the live page and the chrome animates its colours, so an
  * audit taken on a page loaded in the other theme samples mid-transition
- * colours. Leaves the page in light, as it found it.
+ * colours. Callers with ephemeral rendered evidence may restore it after each
+ * fresh load, before the unchanged full audit. Leaves the page in light, as it found it.
  */
-export async function expectAxeClean(page: Page) {
+export async function expectAxeClean(page: Page, afterReload?: () => Promise<void>) {
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
     await page.reload();
     await page.waitForLoadState("networkidle");
+    await afterReload?.();
     expect(await axeViolations(page, theme), `${new URL(page.url()).pathname} (${theme})`).toEqual([]);
   }
   await page.emulateMedia({ colorScheme: "light" });

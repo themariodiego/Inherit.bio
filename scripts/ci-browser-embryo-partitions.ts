@@ -5,17 +5,19 @@ export const EMBRYO_BROWSER_JOURNEYS = Object.freeze({
   "embryo-ingest": "embryo-ingest-journey.spec.ts",
   "embryo-mixed-qc": "embryo-mixed-qc-journey.spec.ts",
   "embryo-qc-seed": "embryo-qc-second-seed-journey.spec.ts",
+  "future-person-keyless": "reviews-keyless-owner-notice-journey.spec.ts",
 });
 type FileCases = { project: string; file: string; cases: number };
 
-/** The three real journeys need an empty split queue. Native partitions must put
+/** The four real journeys need an empty split queue. Native partitions must put
  * them in separate fresh jobs; this never changes native case assignment. */
 export function assertEmbryoJourneyPartition(rows: readonly FileCases[], full: boolean): void {
   const projects = ["embryo-ingest", "embryo-mixed-qc"];
+  const chromiumJourneys: readonly string[] = [EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"], EMBRYO_BROWSER_JOURNEYS["future-person-keyless"]];
   const files: string[] = Object.values(EMBRYO_BROWSER_JOURNEYS);
   const journeys = rows.filter(row => projects.includes(row.project) || files.includes(row.file));
   for (const row of journeys) {
-    const expectedProject = row.file === EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"] ? "chromium"
+    const expectedProject = chromiumJourneys.includes(row.file) ? "chromium"
       : Object.entries(EMBRYO_BROWSER_JOURNEYS).find(([, file]) => file === row.file)?.[0];
     assert(row.project === expectedProject && row.cases === 1, "Each embryo file requires its exact project and single real journey");
   }
@@ -47,6 +49,42 @@ export function assertEmbryoJourneyAudits(sources: Readonly<Record<string, strin
     });
     assert(bindings.length === 1 && bindings[0].module === "./audited-test" && bindings[0].original === "test"
       && !bindings[0].typeOnly, "All embryo journeys must use the genuine state network audit");
+    if (name === EMBRYO_BROWSER_JOURNEYS["future-person-keyless"]) {
+      const required = [
+        ["seedParticipantC", "./participant-c-journey", 1],
+        ["withEmbryoJourney", "../scripts/ci-embryo-journey", 1],
+        ["syntheticHistoricalTransfer", "./helpers/historical-embryo-transfer", 1],
+        ["saveNativeMatchingDetails", "./helpers/keyless-positive-journey", 1],
+        ["expectFullDocumentReceipts", "./helpers/keyless-positive-journey", 2],
+        ["openSyntheticReviewPdf", "./helpers/keyless-review-journey", 4],
+        ["sendSyntheticDeliveredCallback", "./helpers/keyless-positive-journey", 2],
+      ] as const;
+      const calls: Record<string, number> = {};
+      let origins = 0;
+      function visitPositive(node: ts.Node) {
+        if (ts.isCallExpression(node)) {
+          if (ts.isIdentifier(node.expression)) calls[node.expression.text] = (calls[node.expression.text] ?? 0) + 1;
+          if (ts.isPropertyAccessExpression(node.expression) && ts.isIdentifier(node.expression.expression)
+            && node.expression.expression.text === "test" && node.expression.name.text === "use"
+            && node.arguments.length === 1 && ts.isObjectLiteralExpression(node.arguments[0])
+            && node.arguments[0].properties.length === 1) {
+            const property = node.arguments[0].properties[0];
+            if (ts.isPropertyAssignment(property) && property.name.getText(file) === "baseURL"
+              && ts.isStringLiteral(property.initializer) && property.initializer.text === "http://localhost:3105") origins++;
+          }
+        }
+        ts.forEachChild(node, visitPositive);
+      }
+      visitPositive(file);
+      for (const [symbol, module, count] of required) {
+        const imported = imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)
+          && statement.moduleSpecifier.text === module && !statement.importClause?.isTypeOnly
+          && statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)
+          && statement.importClause.namedBindings.elements.some(binding => binding.name.text === symbol && !binding.propertyName && !binding.isTypeOnly));
+        assert(imported && calls[symbol] === count, "Keyless notice journey requires its exact connected native producer, document and callback calls");
+      }
+      assert(origins === 1, "Keyless notice journey requires the exact isolated 3105 origin");
+    }
     if (name === EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"]) {
       const exactImport = (original: string, module: string) => imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)
         && statement.moduleSpecifier.text === module && !statement.importClause?.isTypeOnly

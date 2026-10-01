@@ -107,13 +107,13 @@ type ReviewEvidence={bytes:Buffer;extension:"png"|"pdf"|"jpg";mimeType:"image/pn
  * An optional explicitly synthetic paper changes only the actual uploaded bytes.
  * Original journeys retain their exact two-chunk picture and inert two-page PDF. */
 export async function createReviewCase(page:Page,context:BrowserContext,evidence?:{photo:ReviewEvidence;birth:ReviewEvidence;
-  claimant?:{fullName:string;placeOfBirth:string;parentNames:string[]}}):Promise<string> {
+  claimant?:{fullName:string;placeOfBirth:string;parentNames:string[];dateOfBirth?:string}}):Promise<string> {
   const block=randomBytes(4).toString("hex");
   await context.setExtraHTTPHeaders({"x-real-ip":`2001:db8:${block.slice(0,4)}:${block.slice(4)}::1`});
   await page.goto("/future-person/claim");const form=page.locator("main form");
   await form.getByRole("radio",{name:"I have no key",exact:true}).check();
   await form.getByLabel("Your full name").fill(evidence?.claimant?.fullName??"Synthetic Claimant");
-  await form.getByLabel("Your date of birth").fill("2000-01-31");
+  await form.getByLabel("Your date of birth").fill(evidence?.claimant?.dateOfBirth??"2000-01-31");
   await form.getByLabel("Where you were born").fill(evidence?.claimant?.placeOfBirth??"Synthetic Town");
   await form.getByLabel("The name of each parent").fill(evidence?.claimant?.parentNames.join("\n")??"Synthetic Parent One\nSynthetic Parent Two");
   await form.getByLabel("Your email address").fill(`review-claim-${randomBytes(8).toString("hex")}@e2e.local`);

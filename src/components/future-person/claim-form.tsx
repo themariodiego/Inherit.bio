@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ClaimStartReceipt } from "./claim-start-receipt";
 import {
   AFFIRM_LABEL,
   BIRTH_PLACE_LABEL,
@@ -25,8 +26,6 @@ import {
   NAME_LABEL,
   PARENT_NAMES_HINT,
   PARENT_NAMES_LABEL,
-  RECEIVED_BODY,
-  RECEIVED_HEADING,
   RECORD_KEY_LABEL,
   RECOVERY_KEY_LABEL,
   SENDING_BUTTON,
@@ -57,12 +56,7 @@ export function FuturePersonClaimForm({ formToken }: { formToken: string }) {
   const [invalid, setInvalid] = useState<ReadonlySet<string>>(new Set());
 
   if (received) {
-    return (
-      <div role="status" className="rounded-2xl border border-line bg-card p-6">
-        <h2 className="font-medium">{RECEIVED_HEADING}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">{RECEIVED_BODY}</p>
-      </div>
-    );
+    return <ClaimStartReceipt />;
   }
 
   const fieldProps = (name: string) =>

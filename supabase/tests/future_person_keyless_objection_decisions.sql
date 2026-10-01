@@ -33,19 +33,25 @@ insert into private.claim_review_reads(review_id,reviewer_account_id,auth_sessio
 -- resulting rows, then roll back the subtransaction. TAP assertions remain
 -- outside it, and the base branch/receipts are never silently overwritten.
 create function pg_temp.objection_outcome(p_decision text) returns jsonb language plpgsql as $$
-declare snapshot jsonb; result jsonb; claimed_mail record; mail_authorized boolean;
+declare snapshot jsonb; result jsonb; claimed_mail record; mail_authorized boolean; token_snapshot jsonb;
+  tokens_unchanged boolean; wrong_attempt_closed boolean;
 begin
   begin
     result:=public.decide_keyless_objection_v1((select id from current_objection),1,3,2,p_decision,
       pg_temp.keyless_hash('decision:'||p_decision),extensions.gen_random_bytes(64));
     if p_decision='needs-more-information' then
+      token_snapshot:=jsonb_build_object('candidates',(select jsonb_agg(to_jsonb(candidate) order by candidate.id) from public.token_candidates candidate),
+        'hashes',(select jsonb_agg(to_jsonb(hash) order by hash.id) from public.token_hashes hash));
       set local role service_role;
       select * into claimed_mail from public.claim_mail_outbox();
       if claimed_mail.outbox_id is null or claimed_mail.template_id<>'future-person-more-information'
         or claimed_mail.delivery_token is not null then
         raise exception 'synthetic information request was not genuinely claimed without a token';end if;
       mail_authorized:=public.authorize_mail_submission_v1(claimed_mail.outbox_id,claimed_mail.attempt_ordinal);
+      wrong_attempt_closed:=not public.authorize_mail_submission_v1(claimed_mail.outbox_id,(claimed_mail.attempt_ordinal+1)::smallint);
       reset role;
+      tokens_unchanged:=token_snapshot=jsonb_build_object('candidates',(select jsonb_agg(to_jsonb(candidate) order by candidate.id) from public.token_candidates candidate),
+        'hashes',(select jsonb_agg(to_jsonb(hash) order by hash.id) from public.token_hashes hash));
     end if;
     snapshot:=jsonb_build_object('receipt',result,
       'objection',(select to_jsonb(obj) from public.future_person_claim_objections obj),
@@ -57,6 +63,7 @@ begin
       'overrulePhase',(select to_jsonb(phase) from public.retention_due_phases phase where phase.phase_id='overrule-release-close'),
       'priorPhase',(select to_jsonb(phase) from public.retention_due_phases phase where phase.phase_id='objection-review-decision-close'),
       'informationAuthorized',mail_authorized,
+      'informationTokensUnchanged',tokens_unchanged,'wrongAttemptClosed',wrong_attempt_closed,
       'claimants',(select count(*) from public.future_person_claimant_principals),
       'custody',(select count(*) from private.future_person_custody_slices),
       'sourceUnchanged',(select subject=(select to_jsonb(subject) from public.subjects subject where subject.id=(select subject from keyless_ids))
@@ -104,6 +111,13 @@ select ok((select body#>>'{mail,purpose}'='future-person-claim-more-information'
   'the minimal notification has no token, reason or identity, no extension and no source mutation');
 select ok((select body->>'informationAuthorized'='true' and body->>'terminalMailClosed'='true' from information),
   'the real service role claims and authorizes the token-free request; terminal resolution invalidates it before any later submit');
+select ok((select body->>'informationTokensUnchanged'='true' and body->>'wrongAttemptClosed'='true' from information),
+  'the exact information attempt creates or rotates no token candidate/hash; another attempt cannot authorize delivery');
+select ok(not has_function_privilege('service_role','public.claim_mail_outbox_before_keyless_information_v1()','EXECUTE')
+  and not has_function_privilege('authenticated','public.claim_mail_outbox_before_keyless_information_v1()','EXECUTE')
+  and not has_function_privilege('anon','public.claim_mail_outbox_before_keyless_information_v1()','EXECUTE')
+  and not has_function_privilege('inherit_upload_only','public.claim_mail_outbox_before_keyless_information_v1()','EXECUTE'),
+  'every API role is denied the complete inherited dispatcher delegate');
 create temporary table overruled as select pg_temp.objection_outcome('overrule-objection') body;
 select is((select body->'receipt' from overruled),jsonb_build_object('objectionId',(select id from current_objection),
   'state','release_recheck_required','objectionRevision',2),'an overrule queues only the distinct future operation');

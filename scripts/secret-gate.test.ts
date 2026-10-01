@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { isAllowedFinding, scanText, validateAllowlist } from "./secret-gate";
 
 function readAllowlist() {
@@ -10,7 +11,13 @@ function readAllowlist() {
 }
 const reviewedIds = ["browser-origin-credential-refusal", "storage-proxy-credential-refusal",
   "model-endpoint-credential-refusal", "ready-origin-credential-refusal", "chat-token-deterministic-expression",
-  "prepared-storage-credential-refusal"];
+  "prepared-storage-credential-refusal", "isolated-webhook-generated-reference",
+  "isolated-webhook-malformed-reference", "isolated-webhook-cross-variant-reference"];
+const lineHash = (line: string) => createHash("sha256").update(line).digest("hex");
+function reviewedFinding(text: string, entry: ReturnType<typeof readAllowlist>["entries"][number]) {
+  return scanText(text, entry.paths[0]).find(item => item.value === entry.value
+    && lineHash(text.split(/\r?\n/u)[item.line - 1]) === entry.sourceLineSha256)!;
+}
 
 describe("secret gate detector", () => {
   it("detects provider keys, JWTs, private keys, and contextual assignments", () => {
@@ -111,7 +118,7 @@ describe("secret gate detector", () => {
     const { entries } = readAllowlist();
     const entry = entries.find(item => item.id === id)!;
     const text = fs.readFileSync(entry.paths[0], "utf8");
-    const finding = scanText(text, entry.paths[0]).find(item => item.value === entry.value)!;
+    const finding = reviewedFinding(text, entry);
     expect(finding).toBeDefined(); // The detector still reports the fixture.
     expect(isAllowedFinding(finding, entries, process.cwd())).toBe(true);
     expect(isAllowedFinding({ ...finding, path: "src/unapproved.test.ts" }, entries, process.cwd())).toBe(false);
@@ -145,7 +152,7 @@ describe("secret gate detector", () => {
       for (const id of reviewedIds) {
         const entry = entries.find(item => item.id === id)!;
         const original = fs.readFileSync(entry.paths[0], "utf8");
-        const sourceLine = original.split(/\r?\n/).find(line => line.includes(entry.value))!;
+        const sourceLine = original.split(/\r?\n/).find(line => lineHash(line) === entry.sourceLineSha256)!;
         const target = path.join(root, entry.paths[0]);
         fs.mkdirSync(path.dirname(target), { recursive: true });
         const changed = sourceLine.replace("Buffer.alloc(32, 9)", "Buffer.alloc(32, 10)") + " // changed context";
@@ -179,9 +186,27 @@ describe("secret gate detector", () => {
       const changed = git("rev-parse", "HEAD");
       for (const { entry, target, source } of records) {
         fs.writeFileSync(target, source);
-        const finding = scanText(source, entry.paths[0]).find(item => item.value === entry.value)!;
+        const finding = reviewedFinding(source, entry);
         expect(isAllowedFinding({ ...finding, commit: approved }, entries, root)).toBe(true);
         expect(isAllowedFinding({ ...finding, commit: changed }, entries, root)).toBe(false);
+      }
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+  it("keeps three unique webhook expressions and refuses literal replacements in their actual reviewed contexts", () => {
+    const { entries } = readAllowlist();
+    const selected = entries.filter(entry => entry.id.startsWith("isolated-webhook-"));
+    expect(selected).toHaveLength(3);
+    expect(new Set(selected.map(entry => entry.value)).size).toBe(3);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "secret-gate-webhook-literal-"));
+    try {
+      for (const entry of selected) {
+        const source = fs.readFileSync(entry.paths[0], "utf8");
+        const original = source.split(/\r?\n/u).find(line => lineHash(line) === entry.sourceLineSha256)!;
+        const target = path.join(root, entry.paths[0]);fs.mkdirSync(path.dirname(target), { recursive: true });
+        const changed = original.replace(entry.value, '"unapproved-literal"');fs.writeFileSync(target, changed);
+        const findings = scanText(changed, entry.paths[0]);
+        expect(findings).toHaveLength(1);expect(findings[0].rule).toBe("secret-assignment");
+        expect(isAllowedFinding(findings[0], entries, root)).toBe(false);
       }
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   });

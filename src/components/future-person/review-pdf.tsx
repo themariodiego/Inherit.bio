@@ -28,7 +28,7 @@ export function ReviewPdfDocument({url,title,onRendered,onPending,onFailure}:{ur
   return <section aria-label={title} aria-busy={busy} className="space-y-3">
     {failed?<p>The file could not be shown. Reload this page before trying again.</p>:<>
       <p role="status">{busy?"Reading page…":`Page ${page} of ${pages}`}</p>
-      <div className="max-h-[40rem] overflow-auto rounded border bg-white"><canvas ref={canvas} role="img" aria-label={`${title}, page ${page}`} className={busy?"invisible":"block"}/></div>
+      <div role="region" aria-label={`${title}, page ${page} view`} tabIndex={0} className="max-h-[40rem] overflow-auto rounded border bg-white focus-visible:outline-2 focus-visible:outline-offset-2"><canvas ref={canvas} role="img" aria-label={`${title}, page ${page}`} className={busy?"invisible":"block"}/></div>
       <div className="flex flex-wrap gap-3">
         <button type="button" disabled={busy||page<=1} onClick={()=>changePage(page-1)}>Go back</button>
         <button type="button" disabled={busy||page>=pages} onClick={()=>changePage(page+1)}>Go on</button>

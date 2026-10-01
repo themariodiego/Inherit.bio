@@ -11,6 +11,7 @@ function listing(numbers: number[], index: number | null = null) {
     { number: 120, project: "embryo-mixed-qc", file: "embryo-mixed-qc-journey.spec.ts", index: 1 },
     { number: 121, project: "embryo-ingest", file: "embryo-ingest-journey.spec.ts", index: 6 },
     { number: 122, project: "chromium", file: "embryo-qc-second-seed-journey.spec.ts", index: 5 },
+    { number: 123, project: "chromium", file: "reviews-keyless-owner-notice-journey.spec.ts", index: 3 },
   ].filter(journey => projects.includes(journey.project) && (index === null || journey.index === index));
   return { config: { workers: 1, fullyParallel: false, shard: index === null ? null : { current: index, total: 6 },
     projects: projects.map(name => ({ name, retries: 0, repeatEach: 1 })) },

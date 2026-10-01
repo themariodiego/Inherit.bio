@@ -101,10 +101,19 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       if (observer.matchCounts[key] !== 1) throw new Error("Duplicate native response observation");
       return response;
     }, key),
-    dispose: () => page.evaluate(() => {
-      const target = window as ObserverWindow, observer = target.__inheritNativeResponseObserver;
-      if (observer && window.fetch === observer.observedFetch) window.fetch = observer.nativeFetch;
-      observer?.cancel(); delete target.__inheritNativeResponseObserver;
-    }),
+    dispose: async () => {
+      // A disposed page has no remaining observer to restore. Preserve the
+      // original failure when Playwright closes it at the test deadline.
+      if (page.isClosed()) return;
+      try {
+        await page.evaluate(() => {
+          const target = window as ObserverWindow, observer = target.__inheritNativeResponseObserver;
+          if (observer && window.fetch === observer.observedFetch) window.fetch = observer.nativeFetch;
+          observer?.cancel(); delete target.__inheritNativeResponseObserver;
+        });
+      } catch (error) {
+        if (!page.isClosed()) throw error;
+      }
+    },
   };
 }

@@ -148,33 +148,52 @@ test("/future-person/claim complete: a Record Key, a Recovery Key and a keyless 
   for (const mode of ["record-key", "claimant-recovery-key", "keyless-start"] as const) {
     const context = await browser.newContext();
     let observed: Awaited<ReturnType<typeof observeNativeResponses>> | undefined;
+    let phase = "new context";
+    let originalFailed = false;
+    const step = async <T>(label: string, work: () => Promise<T>): Promise<T> => {
+      phase = label;
+      return test.step(`Claim start ${mode}: ${label}`, work);
+    };
     try {
-      await ownNetwork(context);
-      const page = await context.newPage();
-      await page.goto("/future-person/claim");
-      await fillClaim(page, mode);
-      observed = await observeNativeResponses(page, { start: "^/api/future-person/claim$" });
+      await step("set independent source network", () => ownNetwork(context));
+      const page = await step("open page", () => context.newPage());
+      await step("visit claim form", () => page.goto("/future-person/claim"));
+      await step("fill original claim fields", () => fillClaim(page, mode));
+      observed = await step("install native response observer", () => observeNativeResponses(page, { start: "^/api/future-person/claim$" }));
       const answered = page.waitForResponse("**/api/future-person/claim");
-      await page.locator("main form").getByRole("button", { name: "Start my claim", exact: true }).click();
-      const response = await answered;
+      await step("press original start control", () => page.locator("main form").getByRole("button", { name: "Start my claim", exact: true }).click());
+      const response = await step("receive original POST response", () => answered);
       const panel = page.getByRole("status");
-      await expect(panel.getByRole("heading", { name: "We have your request" })).toBeVisible();
-      const setCookies = (await response.headersArray()).filter((header) => header.name.toLowerCase() === "set-cookie");
-      const native = await observed.read("start");
+      await step("assert original received heading", () => expect(panel.getByRole("heading", { name: "We have your request" })).toBeVisible());
+      const setCookies = (await step("read original native response headers", () => response.headersArray())).filter((header) => header.name.toLowerCase() === "set-cookie");
+      const native = await step("read bounded native response body", () => observed!.read("start"));
       expect(native.status).toBe(response.status());
       answers.push({
         status: native.status,
         body: native.text,
         cookieNames: setCookies.map((header) => header.value.slice(0, header.value.indexOf("="))),
-        panel: (await panel.innerText()).trim(),
+        panel: (await step("read original received panel text", () => panel.innerText())).trim(),
       });
-      await observed.dispose();
+      await step("dispose original native response observer", () => observed!.dispose());
       // The claim session is HttpOnly: no script on the page can read it.
-      const session = (await context.cookies()).find((cookie) => /^(__Host-)?inherit-claim$/.test(cookie.name));
+      const session = (await step("read actual browser cookie attributes", () => context.cookies())).find((cookie) => /^(__Host-)?inherit-claim$/.test(cookie.name));
       expect(session).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/" });
-      expect(await page.evaluate(() => document.cookie)).toBe("");
+      expect(await step("assert script cannot read the claim cookie", () => page.evaluate(() => document.cookie))).toBe("");
+    } catch (error) {
+      originalFailed = true;
+      // Fixed phase/category only: never print cookies, keys, contact, body or
+      // original error text. Rethrow the genuine error before cleanup runs.
+      console.error(JSON.stringify({ event: "claim-start-original-failure", mode, phase,
+        errorName: error instanceof Error ? error.name : "unknown" }));
+      throw error;
     } finally {
-      try { await observed?.dispose(); } finally { await context.close(); }
+      let cleanupError: unknown;
+      try { await observed?.dispose(); } catch (error) { cleanupError = error; }
+      try { await context.close(); } catch (error) { cleanupError ??= error; }
+      if (cleanupError) {
+        if (!originalFailed) throw cleanupError;
+        console.error(JSON.stringify({ event: "claim-start-secondary-cleanup-failure", mode, phase }));
+      }
     }
   }
   expect(answers[0]).toMatchObject({ status: 202, body: '{"status":"received"}' });
