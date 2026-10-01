@@ -92,6 +92,25 @@ describe("actual claimant member to ZIP64 attempt",()=>{
       expect(createHash("sha256").update(body).digest("hex")).toBe(member.sha256);}
     expect(JSON.stringify(zip.getEntries().map(entry=>zip.readAsText(entry)))).not.toMatch(/audit_principal_id|previous_hash|row_hash|subject_ciphertext/);
   });
+  it("includes only the exact newly attributable approved release tuple in actual ZIP JSON and text",async()=>{
+    const f=claimantArchiveFixture();f.snapshot.membership.legalAuditEvents=1;
+    const event={seq:2,occurred_at:DATE,event_code:"claim.resolved",route_id:"api.future-person-claim-release",outcome_code:"accepted",coded_context:{outcome:"approved"}};
+    f.audit.push({id:"2",event});await buildClaimantArchive(f.options);const zip=new AdmZip(Buffer.concat(f.writes));
+    for(const name of ["legal-audit.json",`subjects/${SUBJECT}/audit-log.json`])expect(JSON.parse(zip.readAsText(name)).events).toEqual([event]);
+    expect(zip.readAsText(`subjects/${SUBJECT}/reports.txt`)).toContain(JSON.stringify(event));
+    const manifest=JSON.parse(zip.readAsText("manifest.json"));for(const member of manifest.members){const bytes=zip.readFile(member.name)!;
+      expect(bytes.length).toBe(member.sizeBytes);expect(createHash("sha256").update(bytes).digest("hex")).toBe(member.sha256);}
+  });
+  it.each(["wrong-route","refused","wrong-code","empty-code","private-context","actor","legacy-attribution"])("refuses %s substituted resolution from every archive member",async kind=>{
+    const f=claimantArchiveFixture();f.snapshot.membership.legalAuditEvents=1;
+    const event={seq:2,occurred_at:DATE,event_code:"claim.resolved",route_id:"api.future-person-claim-release",outcome_code:"accepted",coded_context:{outcome:"approved"}};
+    if(kind==="wrong-route")event.route_id="api.future-person-delete";if(kind==="refused")event.outcome_code="refused";
+    if(kind==="wrong-code")event.coded_context.outcome="released";if(kind==="empty-code")Object.assign(event,{coded_context:{}});
+    if(kind==="private-context")Object.assign(event.coded_context,{name:"Synthetic Claimant"});if(kind==="actor")Object.assign(event,{audit_principal_id:SUBJECT});
+    if(kind==="legacy-attribution")Object.assign(f.snapshot.legalAudit,{attribution:"unrecorded",attributionStartedAt:null});
+    f.audit.push({id:"2",event});await expect(buildClaimantArchive(f.options)).rejects.toMatchObject({cleanupRequired:true});
+    expect(f.write).not.toHaveBeenCalled();expect(f.calls.some(call=>call.p_operation==="bytes-complete")).toBe(false);
+  });
   it("keeps genuine legacy unassigned records empty with a count-free explanation",async()=>{
     const f=claimantArchiveFixture();Object.assign(f.snapshot.legalAudit,{attribution:"unrecorded",attributionStartedAt:null});
     await buildClaimantArchive(f.options);const zip=new AdmZip(Buffer.concat(f.writes));

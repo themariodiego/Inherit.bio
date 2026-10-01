@@ -24,6 +24,8 @@ import {
 } from "@/lib/future-person/review";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
 import {mintKeylessLookupNonce,keylessVerificationIndexes,shapeKeylessVerification} from "@/lib/future-person/keyless-verification";
+import {keylessCurrentReview,mintKeylessReleaseNonce} from "@/lib/future-person/keyless-release";
+import {sealNoticePackage} from "@/lib/future-person/notice-package";
 import {keylessVerificationProofMatches} from "@/lib/future-person/keyless-verification-proof";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,7 +73,24 @@ async function read(request: Request, id: string): Promise<Response> {
   if (!account) return notFound();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("read_claim_review_case_v1", { p_review_id: id });
-  if (error) return error.code === "42501" ? notFound() : unavailable();
+  if (error) {
+    if(error.code!=="42501")return unavailable();
+    const current=await supabase.rpc("read_keyless_current_review_v1",{p_review:id});
+    if(current.error)return current.error.code==="42501"?notFound():unavailable();
+    const review=keylessCurrentReview(current.data,id);
+    if(!review||Date.parse(review.scope.deadline)<=Date.now()
+      ||(review.scope.operation!=="claim-release"&&!review.scope.current))return notFound();
+    const release=review.scope.operation==="claim-release"&&review.scope.noticeDeadline!==null
+      &&Date.parse(review.scope.noticeDeadline)<=Date.now();
+    return sensitiveJson(review.caseBody,200,{
+      [REVIEW_CSRF_HEADER]:reviewCsrf(id,account.user.id,account.sessionId),
+      [REVIEW_NONCE_HEADER]:release?mintKeylessReleaseNonce(review.scope,account.user.id,account.sessionId):mintReviewNonce(id,account.user.id,account.sessionId),
+      "x-inherit-review-operation":review.scope.operation,
+      ...(review.scope.objectionId!==null?{"x-inherit-objection-review-id":review.scope.objectionId}:{}),
+      "x-inherit-photo-receipt-nonce":mintReceiptOpenNonce(review.scope.photoDocumentId,account.user.id,account.sessionId),
+      "x-inherit-birth-receipt-nonce":mintReceiptOpenNonce(review.scope.birthDocumentId,account.user.id,account.sessionId),
+    });
+  }
   const body = reviewCaseBody(data);
   if (!body) return notFound();
   return sensitiveJson(body, 200, {
@@ -123,7 +142,40 @@ async function decide(request: Request, id: string): Promise<Response> {
     p_contact_hmac_set:contactDigestSet(identity.contactEmail),
   };
   let result;
-  if(parsed.data.decision==="approve-claimed-unbound-no-key-recovery") {
+  if(parsed.data.decision==="keyless-document-match") {
+    // The linked attestation has one additional required fact. Project the
+    // exact five documentary fields for its independently strict schemas;
+    // preserve the separately required true parent link in the transaction.
+    const given=parsed.data.documentaryAttestation;
+    const human={fullName:given.fullName,dateOfBirth:given.dateOfBirth,photoIdentityReviewed:given.photoIdentityReviewed,
+      birthRecordReviewed:given.birthRecordReviewed,adultAgeConfirmed:given.adultAgeConfirmed};
+    const indexes=keylessVerificationIndexes(identity,human);
+    if(!indexes)return notFound();
+    const fresh=await supabase.rpc("verify_keyless_claim_documents_v1",{
+      p_review_id:id,p_review_revision:parsed.data.reviewRevision,p_verified_date_of_birth:human.dateOfBirth,
+      p_identity_hmac_set:indexes.identity,p_profile_hmac_set:indexes.profile,
+    });
+    if(fresh.error)return ["42501","22023","23505"].includes(fresh.error.code??"")?notFound():unavailable();
+    const shaped=shapeKeylessVerification(fresh.data,{reviewId:id,accountId:account.user.id,
+      sessionId:account.sessionId,reviewRevision:parsed.data.reviewRevision},human);
+    if(!shaped||shaped.reviewCase.case===null||typeof shaped.reviewCase.case!=="object"
+      ||!keylessVerificationProofMatches(parsed.data.verificationProof,shaped.scope))return notFound();
+    const branch=shaped.reviewCase.case as Record<string,unknown>;
+    if(branch.kind!=="unclaimed_keyless")return notFound();
+    const minimum=sealNoticePackage(human,branch.selectedProfile as {
+      childDateOfBirth:string;childPlaceOfBirth:string;parentNames:string[];
+    },{reviewId:id,documentaryRevision:shaped.scope.reviewRevision,
+      photoDocumentId:shaped.scope.photoIdentity.id,photoSha256:shaped.scope.photoIdentity.sha256,
+      birthDocumentId:shaped.scope.birthRecord.id,birthSha256:shaped.scope.birthRecord.sha256});
+    result=await supabase.rpc("prepare_keyless_owner_notice_v1",{
+      p_review:id,p_revision:parsed.data.reviewRevision,p_nonce_hash:nonceHash,p_reason:common.p_reason_ciphertext,
+      p_attestation:common.p_attestation_ciphertext,p_verified_birth:human.dateOfBirth,
+      p_parent_link_confirmed:given.recordedParentLinkConfirmed,p_identity_set:indexes.identity,p_profile_set:indexes.profile,
+      p_comparison_receipt:shaped.scope.comparisonReceiptDigest,p_minimum_ciphertext:minimum.ciphertext,
+      p_minimum_wrapped_key:minimum.wrappedKey,p_contact_id:contactId,p_contact_ciphertext:common.p_contact_ciphertext,
+      p_contact_set:common.p_contact_hmac_set,
+    });
+  }else if(parsed.data.decision==="approve-claimed-unbound-no-key-recovery") {
     const indexes=keylessVerificationIndexes(identity,parsed.data.documentaryAttestation);
     if(!indexes)return notFound();
     const fresh=await supabase.rpc("verify_keyless_claim_documents_v1",{
@@ -149,7 +201,10 @@ async function decide(request: Request, id: string): Promise<Response> {
   const outcome = data as { claimId?: unknown; state?: unknown; reviewRevision?: unknown } | null;
   if (
     !outcome || outcome.claimId !== id || typeof outcome.reviewRevision !== "number" ||
-    !["release_queued", "more_information_required", "refused"].includes(String(outcome.state))
+    outcome.reviewRevision!==parsed.data.reviewRevision+1 ||
+    Object.keys(outcome).sort().join("|")!=="claimId|reviewRevision|state" ||
+    !(parsed.data.decision==="keyless-document-match" ? outcome.state==="approved_pending_owner_notice" :
+      ["release_queued", "more_information_required", "refused"].includes(String(outcome.state)))
   ) {
     return unavailable();
   }

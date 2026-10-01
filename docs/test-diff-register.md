@@ -1,206 +1,24 @@
 # Test diff register
 
-## 2026-10-01 — Keep the protected objection table closed during independent lock proof
-## 2026-10-01 — Require the exact complete mail predecessor before information delegation
+## 2026-10-01 — Keep account cleanup and the current native keyless decisions together
 
-The isolated033 continuation's focused shared-dispatcher check caught one exact per-function inventory omitted during the ordinary strict025 merge: private028, already present in the two full replacement censuses. That list now includes precisely the one private028 definition and still excludes it from the public claim dispatcher. Before028 renames the canonical pre-submit function, a runtime preflight now requires the complete corrected022 body hash, exact two-argument boolean ABI, owner, PL/pgSQL security-definer configuration, and owner-only execution. Unknown, missing, previously wrapped, changed or API-executable predecessors refuse before mutation. Every other purpose continues to delegate the original full body; no alternative body or permissive fallback is accepted. Focused source checks retain all former closed inventories and delegation guards; actual chronological SQL proof remains root-owned and pending.
+The isolated ordinary integration keeps every existing root migration byte and adds only the two already authored keyless decision/release migrations,028 and033. The exact account/Future purge census remains158 and the table/member plan remains228. All encrypted and protected assignments, current shared dispatcher guards, original243 document/Card checks, browser cases and the44-of65 acceptance matrix stay intact.
 
-## 2026-10-01 — Add exact named objection decisions without borrowing final release
+The mail fixture union contains the existing account affected-recipient notice and the new token-free information notice:19 exports,17 files,38 fixtures and76 subject/body observations. This updates only that exact union census; every previous fixture, privacy assertion and mail limit remains. Every parent dated note is retained as a complete block. A complete staged whitespace check precedes the merge checkpoint. The older2a review packet is corrected separately: its claimed clean whitespace check missed an added empty fixture EOF line; root removed exactly that line without changing a SQL statement or assertion.
 
-The registered assigned objection endpoint now has both a real closed GET and all three POST decisions under own current JWT/MFA/operation authority. A ten-minute stateless proof binds the object, reviewer, session and all three current revisions. The unique decision nonce is consumed atomically after the original complete current document receipt checks; the surviving minimum key encrypts the professional basis. Uphold shreds only claim working material, overrule persists its bounded close phase and new distinct release assignment without changing the original provider-committed owner period, and information requests retain the exact original objection deadline. Full final release and reviewer-page integration remain closed gaps, with G5.4 unchanged.
+Focused source checks and static gates provide no database, provider, human or browser execution credit. The genuine historical fixture gap and incomplete shared-receipt disposal proof remain open. Complete current-head database, type, unit and hosted browser verification is still required; no acceptance row changes.
 
-One actual data-free mail renderer/file/fixture raises the exact census16/15/35/70 to17/16/36/72; all former privacy, export and immutable receipt assertions remain. The strict shared mail replacement inventory adds only028 and requires exact delegation of every unrelated purpose, with current claimant/contact/revision/attempt/deadline guards on its token-free branch. Real SQL branch probes retain the entire provider/account-objection predecessor and compare closed outcomes, independent shredding, unchanged source/Card, fresh assignments and immutable delivery clocks; synthetic metadata is explicitly not browser, human, byte or provider credit. Focused tests caught and fixed the missing response await. Mail copy uses existing vocabulary, and the fragment refusal inspects actual hrefs separately from harmless HTML color/entity notation. No timeout, retry, policy, negative boundary or acceptance is relaxed; actual SQL/full suites and hosted whole-flow proof remain pending.
+## 2026-10-01 — Preserve the complete fresh linked attestation through TypeScript
 
-## 2026-10-01 — Compare the complete pre-existing rights-session set in account objection
+Actual Next type generation passed on7a054b3f, while the nonincremental compiler found an owned excess-property error at the inline fresh attestation literal. The established sealer accepts its five documentary fields structurally and seals the complete supplied registered linked object. Naming the exact linked attestation before the call preserves its mandatory true parent fact and every encrypted byte/field expectation, without a cast, parser relaxation, field omission or sealer ABI change. Composed native tests continue to decrypt and require all six exact fields. The two inherited mail-fixture/preparation-mock type errors remain separately visible for root integration; the failed source/log is retained. No actual database, hosted browser or provider completion is inferred from this correction.
 
-The actual combined role rehearsal passes the native mail door and cookie objection, then reveals that the shared synthetic source fixture already has an unrelated rights session. The account-equivalent journey now freezes the complete original rights-session rows before every account read/write and requires byte-identical ordered rows afterward, plus exactly zero owner-notice objection sessions. This is stricter than a total-count assumption: no unrelated session may change and no session may be borrowed or created. All original stateless-read count, account freshness/MFA, revision, source preservation and provider-clock assertions remain. The failed receipt is retained; no account, provider or browser execution credit is inferred until independent rerun.
+## 2026-10-01 — Keep native keyless notice, objection and final fresh release distinct
 
-## 2026-10-01 — Keep the private dispatcher denied while restoring its native service door
+Initial unclaimed documentary matching now has its real pending-notice action; pending notice cases receive no repeated initial approval choice. The registered pending delivery/notice/objection shapes remain recursively closed. The new final native body accepts only the two registered decisions/five actual refusal codes, current revisions, professional basis and a distinct current assigned proof. Public execution captures the real server clock. One finite owner-only/API-denied clock core provides synthetic executor boundary evidence; it cannot supply elapsed provider, native or human credit. Every original Card/source/EOF/ACK/refusal guard remains. The UI requires newly complete/rendered full files and explicit current human checks, and assigned objection controls preserve all three revisions.
 
-The actual corrected combined database rehearsal reached the real provider pre-submit call and failed because022 denied service execution on the private dispatcher while the original public SQL wrapper still used SECURITY INVOKER. The existing public service-only ABI now delegates under its fixed owner with an empty search path after validating its exact original two-argument body, owner, language and configuration. Every private dispatcher/delegate stays API-denied; browser and upload roles remain denied at the public door. Eight new actual-role assertions test those permissions and missing-outbox refusal. The existing genuine provider eligibility, attempt rotation, stale callback and delivery-clock assertions are retained unchanged. An owner-defined test wrapper is not used to hide the broken native RPC. SQL and provider execution remain uncredited until independent rehearsal.
+Successful release now genuinely persists its exact custody audit selector and one correlated claim.resolved/api.future-person-claim-release/accepted/{outcome:approved} event. Exact predecessor body/ABI/owner/ACL guards precede the additive reader contract. Every prior empty-context event and legacy NULL refusal stays intact. The actual historical signing DTO additionally preserves the literal newly recorded approve-release kind rather than inventing approve-keyless history; all former body/name/role/digest/privacy assertions remain. Complete ZIP/member/hash tests retain every old omission and add strict substituted-approval refusals.
 
-## 2026-10-01: correct errors found by the actual combined database run
-
-The full fresh reset of commit517fb4 stopped at026 with SQLSTATE42601 because its source SHA JSON path lacked a closing quote. A corrected local diagnostic then exposed an ambiguous022 notice alias and the026 pgTAP expected-set expression being interpreted as a prepared statement. The source fixes close the literal, qualify the two notice lookups, and wrap the same exact nine expected field names in SELECT. They retain every authority, lock, clock, token and field-set predicate. The025 body guard, its source assertion and documentation now pin only the corrected canonical mail body MD5abb70e7d8ec45731aebcbaa870ab9c13; the ambiguous predecessor is not admitted as an alternative.
-
-The original failed full-reset and focused diagnostic logs remain in the integration receipts. No assertion, retry or timeout is removed or weakened, and no database execution credit is inferred from these edits. Corrected complete fresh-database, unit, quality and hosted browser runs remain required before release.
-
-## 2026-10-01: combined current rights issuer census
-
-The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
-
-## 2026-10-01 — Give the current owner an independently authenticated objection action
-
-The actual hosted repository job on `2280e7f4` reaches the unchanged
-`future_person_claim_objections` statement probe and receives `42501` before its
-trigger runs. Migration 023 deliberately revokes every API table privilege;
-027's actual Auth/link objection entrypoints run their exact private executor
-under the table owner's authority. Native 032 cleanup preserves that boundary.
-Restoring a direct service DELETE grant would contradict those contracts.
-
-All 31 original independent-session lock probes, advisory key, waiting assertion,
-query cancellation/57014, three-second observation bound, twenty-millisecond
-poll, five-second statement bound and every other operation limit remain.
-Only this exact table's empty statement uses its verified postgres owner.
-A read-only preflight pins its owner/RLS, every API table/column denial, enabled
-statement trigger, actual trigger/advisory bodies and all three current native
-executor/entrypoint bodies, ABIs, configurations and role boundaries. Unknown
-ACL/source changes refuse; no role is selected from observed privileges.
-A new independent service session must actually receive this table's `42501`
-while the holder lock remains held, without entering an advisory wait. The
-original owner-context statement must then wait and end only by cancellation.
-
-New deterministic source/refusal tests guard that narrow role choice, native
-source ancestry and adversarial owner/ACL/trigger/body changes. No product SQL,
-table privilege, mutation authority, fixture row, timeout, retry or acceptance
-row changes. Actual concurrent execution is pending the root's owned database
-rehearsal; source checks provide no independent-backend execution credit.
-
-## 2026-10-01 — Preserve the complete account and Future integration inventory
-
-The ordinary merge of frozen Future `2280e7f4` and account `2d0be122`
-retains every original assertion and migration body. The literal purge census
-is the independently reviewed 155 pairs plus the three actual account235
-stores: claimed ingest receipts, claimed job receipts and account cohort work.
-The complete member plan has 228 tables, preserving protected review packages,
-withheld file internals, genuine claimant audit scope and binding exclusions.
-The four existing complete-count assertions now require exactly 158; their
-three literal-set consumers use a new full 158-pair fixture. The original
-155-pair fixture remains unchanged. Native email discovery requires all 18
-exports in 16 files, 37 conditional fixtures and 74 body/subject observations,
-including both affected-account notices and the Future owner notice.
-
-Two account-only metadata fixtures predate current source contracts. The R2
-custody fixture now supplies the same explicit versioned QC receipt as the
-current split producer, refuses missing and invented receipts, captures genuine
-ordinal receipts before publication, requires exact saved QC equality and
-requires consumed ordinals to be gone. Both finalized documentary sessions now
-carry distinct independently wrapped 72-byte keys, with an additional exact
-shape assertion. Every original publication, source, part, review, scan and
-role assertion remains; the independent reviewer is still account C. These
-synthetic SQL transitions prove no scientific measurement or provider deletion.
-
-New route tests execute the composed retention path: profile/document key
-shredding precedes account preparation; an exact empty embryo inventory precedes
-Storage, database, Auth and finalization. Missing/refused embryo inventories
-and refused Storage removal preserve the claim and block later deletion. All
-existing failures, operation limits, native cases and acceptance rows remain.
-Full chronological SQL and hosted execution remain required. The245 shared
-provenance-receipt disposal gap is not filled by this integration; G5.6 stays
-open and no graph/provider completion is claimed.
-
-## 2026-10-01 — Refuse the unproved Path B graph before an account deletion can start
-
-The refreshed account chronology has152 actual registered stores. The new
-held-original and private report-binding stores have no complete account-owned,
-subject-bound and recipient disposal/ACK executor. Additive030 therefore keeps
-that graph closed before the v2 nonce recorder, hold, retention phase or notice.
-It validates the actual fresh session first and takes the same profile lock
-used by real draft/account-binding/upload issuers. The v1 request and existing
-due/finalization graph guard receive the same narrow preflight; every other
-predecessor body byte, public/private ABI, owner, configuration and ACL is pinned
-and preserved. Terminal/history rows are included; ending a normalized file or
-report is never substituted for physical original disposal acknowledgement.
-No unknown FK allowlist, source owner, provider state or deadline is widened.
-
-A new rollback-only suite uses real draft/signature, invited account binding,
-held issuance/finalization, current permission and normalization/queued-report
-producers. It checks the uploader and bound person separately at the genuine
-stages and compares every registered store plus Auth and Storage byte for byte
-around each actual service request refusal. It requires zero nonce record,
-no account hold and no changed notice/phase/source/report row. An unrelated
-ordinary account still creates its original exact seven-day phase. Foreign
-Auth and direct helper calls remain refused. These are synthetic SQL protocol
-fixtures; their Storage byte metadata is not a provider disposal proof.
-
-The exact held lifecycle census gains only the actual030 helper when installed,
-with a separate full-body/API-denial assertion; the157 earlier held assertions
-remain. No other source assertion, timeout, skip, acceptance value or152-store
-baseline is removed. Focused source checks are distinct from pending root-owned
-fresh-database/full/browser verification. Full Path B erasure remains unfinished.
-
-## 2026-10-01 — Apply the shared held-mail prerequisite without importing Future additions
-
-The refreshed account branch takes the exact unpublished025 shared bridge and
-its closed source inventory. It does not install022/023 or their unrelated
-Future tables. Its actual chronology uses only the guarded233 canonical mail
-and activation bodies. The147 original held assertions remain; nine exact
-issued-notice refusal/rollback assertions and one precise body/role/census proof
-from the reviewed bridge extend them to157. The33 original purpose assertions
-remain alongside two exact held target/action proofs (35 total). The native
-page and handlers retain every registered purpose. Database execution is still
-pending; neither this source step nor the additive request refusal proves
-complete Path B account disposal.
-
-## 2026-10-01 — Preserve both account and held-upload contracts at the exact main merge
-
-The account/cohort deletion branch is ordinarily merged with main
-`1c63e91620548629e7f7300079a3f04fade0135d`. The combined suites retain every
-existing account affected-notice, holder-mail, retention, rendering and Path B
-assertion. The native observer keeps all previous status/body/identity checks
-and main's additional genuine bodyless 204/205 proofs. The purpose page keeps
-claimant, embryo, invitation and co-parent loaders alongside the two distinct
-Path B loaders; no purpose falls through to another screen.
-
-The two actual new held-upload/report-binding stores extend the account's
-150-entry export inventory to 152. Protected fields from both plans remain
-withheld. This updates the matching embedded plan and exact database census;
-it does not claim either deferred report/source class is exportable. The actual
-combined email inventory is 17 named exports in 15 files with 36 variants,
-therefore its two strict capture receipts contain exactly 72 observations.
-These counts are derived from the preserved renderer variants, not lowered
-baselines. Both branches' dated decision and test notes are retained.
-
-This merge alone does not prove Path B account erasure. The existing closed
-whole-graph refusal remains: normalized descriptor/report cancellation is not
-physical upload-working disposal acknowledgement. The shared held-mail and
-activation arms still require their strict dispatcher bridge before the
-combined chronology is qualified. Focused local checks are separate from the
-pending complete database, browser and hosted verification; acceptance remains
-unchanged.
-
-## 2026-09-30 — Preserve the immutable-file refusal under the real service role
-
-The complete hosted run found the existing `immutable_file_identity` assertion receiving a protected custody-table permission error. The trigger remains an invoker and raises unchanged identity/role refusals before calling a narrow service-only read-only definer for the unchanged positive claimant transition. No direct custody table access is granted. Fresh pgTAP now checks invoker semantics, current transaction visibility, exact grants and the actual service-role identity refusal; all original positive and negative custody tests and browser assertions remain.
-
-## Account cancellation browser proof requires the registered fresh sign-in · 30 September 2026
-
-The first full hosted account/cohort run reached the real Welcome back page after cancellation because the transaction correctly revokes every pre-cancellation Auth session. The old browser expectation attempted to render the Delete account control without the registered normal reauthorization. The journey now requires the actual native cancellation POST to return 200 with no-store, the exact sign-in handoff back to data settings, the genuine Welcome back screen and an unauthenticated export refusal before signing in through the real password form. It then retains every original Delete account, cancelled request/timestamp, cleared hold and overview assertion. No session, confirmation or successful authority is inserted into a fixture; no application/migration bytes, assertions, time limits, retries or skips are relaxed. This source correction is not a hosted pass receipt.
-
-## Exact cohort invitations and unambiguous cleanup identifiers · 30 September 2026
-
-The supported account graph now admits invitation principal FKs only when their actual target is an exact current cohort or draft owned by the deleting account, matching the worker's existing deletion selector. Any invitation using a selected principal for another target still refuses. A new counterpart-account assertion pins this separate invitation boundary without changing the original missing, stale, ambiguous-contact or outbox rollback assertions. The cleanup executor names all seven selected ID arrays distinctly from table names, so PostgreSQL's implicit embryo/subject row names cannot shadow the intended array. Every existing runtime/cohort/draft/session/job removal, claimed byte-equality, minimal-receipt and missing-receipt refusal assertion remains unchanged. No grant, deadline, supported documentary graph or provider acceptance changes.
-
-## Fresh account rehearsal reaches the exact notice and R2 receipt boundaries · 30 September 2026
-
-Request and cancellation now qualify the current-contact status column so their returned status cannot shadow it. The supported FK census admits an embryo subject only through an exact same-owner live cohort/subject/embryo tuple; a new counterpart-account refusal pins that boundary. Every missing, stale, ambiguous-contact and mandatory-outbox rollback assertion remains unchanged. The account worker proof uses a dedicated completed R2 reserve/ACK publication fixture and the real disposal receipt/evidence verifier; it never deletes Storage rows or changes Storage guards. Six exact landed R2 fragment receipts, crossed planned-object and false tombstone-digest refusals, and zero disposed rows after refusal extend the proof. Every existing cleanup success, claimed byte equality, immutable receipt, expired claim, incomplete disposal and missing provenance assertion remains. Provider identities are synthetic SQL evidence; hosted deletion is not claimed. The retired staging-bucket check now requires zero live function bodies instead of preserving a manifest-builder exception whose literal is gone. No production or browser acceptance is introduced.
-
-## Shared rights sessions use the actual issued candidate expiry · 30 September 2026
-
-The strict Future Person session trigger now reads expiry from the issued token candidate; token hashes have no expiry column. It requires the exact issued purpose, target and revision, the current unended hash, the current matching claimant credential and the original source and 60-minute session bindings. Two added ordinary adult/co-parent identity-update assertions prove that their genuine issued sessions pass this shared trigger. Five added Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. The genuine one-time claimant activation remains the positive proof. The existing exact plans increase by one each to 39 and 33; every earlier assertion and refusal remains. This account package retains its committed contact/delivery retention dependency and its exact 15-column claim-intake census.
-
-## Atomic owned-cohort notices and cancellation · 30 September 2026
-
-The supported owned-cohort request now commits every exact current affected-principal notice with its original seven-day account phase or rolls back the nonce, hold and all mail. A saved original recipient/cohort binding blocks legacy unnotified or newly crossed deadline claims. Contacts must be unique, current and authority-matched; stale, absent, ambiguous and failed outbox cases remain strict refusals. Cancellation invalidates every unsent or claimed obsolete affected deletion notice and sends one separate token-free notice per applicable principal, cancels the original unstarted phase without changing its deadline, revokes old sessions and preserves independently revoked/restricted records and consents. Unsupported documentary, draft-only, unfinished-ingest and unresolved-claim graphs remain refused. The old blanket owned-cohort request refusal is replaced with an actual missing-contact rollback refusal; every worker provenance, disposal and missing-receipt assertion remains. No browser or hosted-provider acceptance is claimed.
-
-Two real affected-recipient renderers and fixtures deliberately raise the independent inventory from 14 to 16 exports and 31 to 33 fixtures, with exactly 66 body/subject observations. They accept only one event timestamp and never receive a holder cancellation/export link, contact, identifier or genetic field. New strict mail-route and renderer cases refuse those extra fields and stale submission authority. The holder cancellation prose now states that account deletion did not start, avoiding a claim that separately withdrawn data was never deleted. The rendered-nonce regression adds an exact zero-old-session assertion and represents the later ordinary sign-in with a new synthetic session; every original spent-hash, cross-operation and pruning refusal remains unchanged under that live authority. No existing negative test, cap or timeout is relaxed.
-
-## Owned-cohort deletion worker preserves exact claimed provenance · 30 September 2026
-
-Three narrowly classified private stores increase the exact purge inventory from 147 to 150: two immutable minimum provenance receipts for an already-detached claimed source and one temporary account-deletion cohort work plan. No source, membership, canonical part or claimant genotype is rewritten. New database refusal tests pin receipt mutation, missing or crossed provenance, expired deletion claims and incomplete provider cleanup; bounded runtime tests require exact deletion/claim selection and an empty durable reread before account Storage completion. Existing assertions are retained. Public requests for an owned cohort remain closed pending the registered affected-recipient notice and cancellation envelope; the worker prerequisite does not complete the full account/cohort journey. Documentary bases, unfinished ingest/draft-only graphs and unresolved claims remain refused. No browser or hosted-provider acceptance is claimed.
-
-## 2026-10-01 — Distinguish the quality table from its enclosing landmark
-
-The full hosted suite on `2280e7f4` refused the populated comparison page at
-320, 390 and 1,280 pixels because both the quality section and its focusable
-table scroller were named "Quality check". The scroller now has the distinct
-plain label "Quality check table". Both region landmarks, the section heading,
-the table headers, horizontal scrolling and the keyboard focus stop remain.
-A new real Chromium regression renders the populated table inside its named
-section, requires exactly two separately addressable landmarks, focuses the
-scroller and requires no axe `landmark-unique` violation. All original hosted
-accessibility assertions and their viewport/theme/motion sweeps are unchanged;
-this isolated regression supplies no full-suite or acceptance credit.
+Focused authoring found and corrected a strict profile-envelope scope projection (ciphertext/key fields must never be passed into its independently strict AAD parser), PostgreSQL offset-clock projection to the existing page format, an omitted state field in a newly authored exact GET expectation, unsupported minimum-index refusal, and render-time clock/accessibility-copy findings. These are source/fixture corrections, not relaxed parsers, old expectations, timeouts, retries or authority. Composed native/encryption/archive/source tests pass; actual SQL/full suite/browser/type checks remain separately required, with G5.4 unchanged. Database-dependent drift gates explicitly refuse without a configured deployed database and grant no pass. The new SQL fixture copies every unchanged genuine provider assertion and labels all synthetic metadata/time as SQL executor evidence only.
 
 ## 2026-10-01 — Require a genuinely changed negative encrypted-proof fixture
 
@@ -216,88 +34,20 @@ deployment-key rotation assertions remain. No product source, SQL, timeout,
 retry or acceptance change is made. The failed full-suite receipt is retained
 and a complete corrected run is required before pushing.
 
-## 2026-10-01 — Compare every original archive byte with the native Buffer primitive
+## 2026-10-01 — Route initial keyless documentary approval to the real owner-notice transaction
 
-The actual full Linux run reached 8,718 passing tests and one unchanged
-five-second timeout in the plain original ZIP64 case. An isolated native phase
-probe retained the original assertion and measured raw/decoded EOF proof at
-21.89 ms, ZIP generation at 35.54 ms, parse at 0.48 ms, the generic byte-array
-`toEqual` assertion at 4,527.47 ms, and independent SHA-256 at 13.83 ms. The
-small gzip assertion took 5.36 ms. The full run's plain case took 9,014 ms under
-concurrent resource pressure; there was no observed stalled transport or cleanup.
 
-That one equality assertion now requires a non-null native Buffer, the exact
-original byte length and `Buffer.prototype.equals` over every original byte.
-The separate original SHA-256 assertion, the 2,097,159-byte fixture, raw and
-decoded EOF, ZIP64 entry identity, exact read count and five-second timeout are
-unchanged. A new independent refusal test corrupts the first and last byte,
-truncates, appends and substitutes a foreign byte container or NULL. It also
-checks a distinct correct full-size copy. No product source, SQL, provider
-behavior, retry, skip or acceptance row changes. The failed full run is retained;
-a corrected full run is still required.
+The native initial keyless decision previously entered the older attested dispatcher, which refuses every non-Record-Key approval. It now repeats the actual own-JWT documentary lookup, validates its current assignment/session/document/comparison proof, and calls the existing020 producer through a narrow authenticated definer door delegating the existing own-JWT reviewer transaction after exact predecessor validation; the private prerequisite stays owner-only. The linked attestation's mandatory true parent fact is separately preserved while its exact five documentary fields are projected for the independently strict identity and minimum-envelope parsers. No parser strips unknown fields. The transferred minimum and contact receive independent wrapped keys, all original clocks and full-document receipt checks remain, and the only initial positive receipt is approved_pending_owner_notice; no detachment or release is implied. Response validation now demands exactly the registered three fields and the next revision. Composed native encrypted tests and actual-role SQL are being authored; whole release/reviewer/browser proof remains pending and acceptance unchanged.
 
-## 2026-10-01 — Require exhaustive current account class membership
+## 2026-10-01 — Require the exact complete mail predecessor before information delegation
 
-The complete assembler needs an explicit inventory for all original 27 public
-deferred classes plus the two integrated Path B stores. New consumer tests add
-closed metadata projections, independent count/ordered ID/content/partition
-proof through all three pages of 1,103 rows, exact complete bound source
-snapshots and six nonzero historical scientific memberships. Missing,
-duplicate, foreign, stale, same-count source changes, wrong partition counts,
-private fields, ignored cancellation and final revocation remain refusals. The
-original 30-second operation limits are unchanged. No existing assertion or
-unsupported account/non-self/cohort/joint graph refusal is relaxed. The new
-real-role pgTAP fixture preserves all original review/release/Auth/MFA/binding
-and relocation assertions through unchanged includes. Nonempty unproved
-classes, including withheld Path B stores, refuse the whole request; absence
-proof never fabricates a producer, clinical output, byte receipt or empty
-placeholder. This authored prerequisite supplies no database, hosted/browser,
-provider, READY, public-gate or acceptance credit.
+The isolated033 continuation's focused shared-dispatcher check caught one exact per-function inventory omitted during the ordinary strict025 merge: private028, already present in the two full replacement censuses. That list now includes precisely the one private028 definition and still excludes it from the public claim dispatcher. Before028 renames the canonical pre-submit function, a runtime preflight now requires the complete corrected022 body hash, exact two-argument boolean ABI, owner, PL/pgSQL security-definer configuration, and owner-only execution. Unknown, missing, previously wrapped, changed or API-executable predecessors refuse before mutation. Every other purpose continues to delegate the original full body; no alternative body or permissive fallback is accepted. Focused source checks retain all former closed inventories and delegation guards; actual chronological SQL proof remains root-owned and pending.
 
-## 2026-10-01 — Restore exact worker cleanup authority without exposing protected evidence
+## 2026-10-01 — Add exact named objection decisions without borrowing final release
 
-The167-file fresh diagnostic fails two original native refusal cleanup cases:
-023 correctly closes claimant objections, but their inherited SECURITY INVOKER
-machine entries cannot execute the shared-evidence check as service. Additive032
-pins the complete current bodies, ABIs, owner and empty search paths, converts
-only the five registered service cleanup doors to owner-defined execution, and
-removes API execution from four internal graph/evidence helpers. It grants no
-protected-table SELECT and retains every exact claim, frozen object, expiry,
-shared-evidence, physical-storage-presence and graph-refusal condition. Original
-native refusal assertions remain unchanged. New genuine-role probes independently
-refuse direct table/helper access and invented public cleanup/ACK claims.
+The registered assigned objection endpoint now has both a real closed GET and all three POST decisions under own current JWT/MFA/operation authority. A ten-minute stateless proof binds the object, reviewer, session and all three current revisions. The unique decision nonce is consumed atomically after the original complete current document receipt checks; the surviving minimum key encrypts the professional basis. Uphold shreds only claim working material, overrule persists its bounded close phase and new distinct release assignment without changing the original provider-committed owner period, and information requests retain the exact original objection deadline. Full final release and reviewer-page integration remain closed gaps, with G5.4 unchanged.
 
-210 also revoked the original explicitly required service TRUNCATE on
-`public.user_variants`, conflicting with the unchanged original
-`rls_truncate_not_bypassed.sql` assertion.032 restores exactly that one table/role
-tuple, guarded by its installed content-revision trigger; no browser/upload or
-observed-call TRUNCATE is granted. The newer archive-frame eight-tuple census
-now requires this one original grant and retains the seven other exact denials.
-Its original two-file TRUNCATE/receipt test now executes as actual service,
-adds a role identity assertion, and retains exact per-file revision increments
-and refusal of all old member bytes. This is a deliberate reconciliation with
-the pre-existing contract, not a weakened RLS or stale-frame assertion.
-Fresh database execution remains pending and source authoring grants no credit.
-
-## 2026-10-01 — Pin every reviewed purge pair after Path B integration
-
-The actual complete fresh database rehearsal reached 167 suites and 10,080
-assertions; only three old census expectations still required 153 stores. The
-Path B migrations deliberately add `public.other_adult_held_uploads` to
-`upload-and-ingest-working-state` (20260928150000) and
-`private.path_b_report_bindings` to `generated-artifacts` (20260930234000).
-The three Future Person fixtures now require exactly 155 physical registry
-rows. A shared literal two-column expected set independently reconciles the
-register's 117 baseline target/store pairs with all 38 reviewed later additions,
-including the existing exact contact-store reclassification. Each fixture also
-requires both Path B tables to exist and exactly their two reviewed target/store
-pairs. Equal-count replacement, omission or reclassification cannot satisfy the
-complete set comparison. The original separate exact six-private-archive-child
-assertion and every other original assertion remain intact; neither the export
-member-plan universe nor the observed catalog supplies runtime expectations.
-The failed actual rehearsal is retained. This bounded fixture correction changes
-no source, migration, permission, deletion execution or acceptance row; corrected
-SQL execution remains for the independent database rehearsal.
+One actual data-free mail renderer/file/fixture raises the exact census16/15/35/70 to17/16/36/72; all former privacy, export and immutable receipt assertions remain. The strict shared mail replacement inventory adds only028 and requires exact delegation of every unrelated purpose, with current claimant/contact/revision/attempt/deadline guards on its token-free branch. Real SQL branch probes retain the entire provider/account-objection predecessor and compare closed outcomes, independent shredding, unchanged source/Card, fresh assignments and immutable delivery clocks; synthetic metadata is explicitly not browser, human, byte or provider credit. Focused tests caught and fixed the missing response await. Mail copy uses existing vocabulary, and the fragment refusal inspects actual hrefs separately from harmless HTML color/entity notation. No timeout, retry, policy, negative boundary or acceptance is relaxed; actual SQL/full suites and hosted whole-flow proof remain pending.
 
 ## 2026-10-01 — Preserve both generic source-file privacy refusals in the combined graph
 
@@ -410,7 +160,6 @@ The original failed full-reset and focused diagnostic logs remain in the integra
 
 The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
 
-Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
 ## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
 
 The unchanged purpose census exposed the real held-file issuer missing from
@@ -6775,44 +6524,259 @@ and planted observed/modelled/unknown-version cases prove that exact is not
 silently renamed. QC dropout/contamination classification remains unchanged
 pending the source inconsistency documented in docs/result-basis-contract.md.
 This is a bounded contract improvement and does not mark G4.2 YES.
-## 2026-10-01 — Bound owner objection sessions separately from the immutable notice deadline
 
-The owner credential keeps the registered provider-committed notice deadline. The register previously said every derived session expired exactly then, while its shared active-session contract caps sessions at 60 minutes absolute and 15 minutes idle. The coordinator clarified that the stronger existing 60/15-minute ceilings apply to these sessions too, both clamped at the fixed notice deadline; this changes no owner period or account-equivalent authority. The exact issuer census becomes five because this branch supplies a real independently checked current-owner issuer. The original unissued-purpose refusal now uses still-unissued appeal evidence; a new exact co-parent-to-owner forgery refusal preserves the old credential boundary.
+## 2026-10-01 — Keep the protected objection table closed during independent lock proof
 
-The working owner objection encrypts its bounded statement under an independent random wrapped key tied to its exact claim, notice and initial revision. It pauses only the claim, consumes a distinct current-cookie operation nonce, invalidates its link/session and assigns a named objection reviewer atomically. The original 62-day package clock remains immutable; a genuine timely objection transfers document readability to the separately persisted review deadline capped at submission plus 92 days. A delivered period can assign a fresh release operation and invalidate old document receipts; it cannot approve, detach or deliver the record. A private API-denied trusted clock seam rehearses the exact session boundaries without rewriting stored times. The unfinished GET-only human-review HTTP handler remains outside this checkpoint until its genuine decision POST exists.
+The actual hosted repository job on `2280e7f4` reaches the unchanged
+`future_person_claim_objections` statement probe and receives `42501` before its
+trigger runs. Migration 023 deliberately revokes every API table privilege;
+027's actual Auth/link objection entrypoints run their exact private executor
+under the table owner's authority. Native 032 cleanup preserves that boundary.
+Restoring a direct service DELETE grant would contradict those contracts.
 
-Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
-## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
+All 31 original independent-session lock probes, advisory key, waiting assertion,
+query cancellation/57014, three-second observation bound, twenty-millisecond
+poll, five-second statement bound and every other operation limit remain.
+Only this exact table's empty statement uses its verified postgres owner.
+A read-only preflight pins its owner/RLS, every API table/column denial, enabled
+statement trigger, actual trigger/advisory bodies and all three current native
+executor/entrypoint bodies, ABIs, configurations and role boundaries. Unknown
+ACL/source changes refuse; no role is selected from observed privileges.
+A new independent service session must actually receive this table's `42501`
+while the holder lock remains held, without entering an advisory wait. The
+original owner-context statement must then wait and end only by cancellation.
 
-The unchanged purpose census exposed the real held-file issuer missing from
-`rights_session_purposes`. Embryo232000 and Future233000 subsequently replaced
-its notice invalidation, opaque-token minting, pre-submit and activation arms.
-Migration `20261001025000` registers its exact existing purpose/revision pair
-and restores these original held branches into the exact latest dispatchers
-in one atomic block, guarded by complete predecessor/postcondition body hashes.
-Both022 canonical mail wrappers stay byte-identical; their API-denied233
-delegates retain every claimant/withdrawal/invitation branch and the current
-provider attempt key. Full ABI, configuration and owner/API ACL guards refuse
-an unknown predecessor without applying any part of the bridge.
-The reviewed023 owner-objection wrapper, when present, stays byte-identical;
-only its API-denied delegate changes. Unknown wrappers/dispatchers refuse.
+New deterministic source/refusal tests guard that narrow role choice, native
+source ancestry and adversarial owner/ACL/trigger/body changes. No product SQL,
+table privilege, mutation authority, fixture row, timeout, retry or acceptance
+row changes. Actual concurrent execution is pending the root's owned database
+rehearsal; source checks provide no independent-backend execution credit.
 
-Every existing assertion is retained. The old exact four-purpose SQL census
-now expects the five genuine issuers, plus the owner-objection issuer only when
-its actual023 delegate exists. It still rejects every extra/missing pair; two
-new assertions bind the held revision target and its exact three existing
-matrix actions. The genuine old held-notice activation assertion runs through
-the real service role with its unchanged expected result. New rollback probes
-require zero session for expired candidate, crossed token revision and changed
-subject revision, preserving the complete source/token tuple and nonce/session
-counts; browser/upload roles stay denied and a consumed token cannot reopen.
-New genuine pre-submit probes require refusal for an expired candidate, a
-revoked token and a changed subject revision, rolling back the complete
-source/mail/contact tuple; the original positive submission assertion remains.
-The actual minted notice hash is checked against its exact candidate, revision
-and fixed deadline. New source tests compare all three complete dispatcher
-bodies before/after their exact insertions and all later replacement sites,
-preserving original claimant,
-withdrawal, invitation, nonce and fixed-deadline behavior. No grant, backfill,
-provider proof or acceptance is inferred. SQL remains authored until root's
-fresh execution; focused source tests do not substitute for database proof.
+## 2026-10-01 — Preserve the complete account and Future integration inventory
+
+The ordinary merge of frozen Future `2280e7f4` and account `2d0be122`
+retains every original assertion and migration body. The literal purge census
+is the independently reviewed 155 pairs plus the three actual account235
+stores: claimed ingest receipts, claimed job receipts and account cohort work.
+The complete member plan has 228 tables, preserving protected review packages,
+withheld file internals, genuine claimant audit scope and binding exclusions.
+The four existing complete-count assertions now require exactly 158; their
+three literal-set consumers use a new full 158-pair fixture. The original
+155-pair fixture remains unchanged. Native email discovery requires all 18
+exports in 16 files, 37 conditional fixtures and 74 body/subject observations,
+including both affected-account notices and the Future owner notice.
+
+Two account-only metadata fixtures predate current source contracts. The R2
+custody fixture now supplies the same explicit versioned QC receipt as the
+current split producer, refuses missing and invented receipts, captures genuine
+ordinal receipts before publication, requires exact saved QC equality and
+requires consumed ordinals to be gone. Both finalized documentary sessions now
+carry distinct independently wrapped 72-byte keys, with an additional exact
+shape assertion. Every original publication, source, part, review, scan and
+role assertion remains; the independent reviewer is still account C. These
+synthetic SQL transitions prove no scientific measurement or provider deletion.
+
+New route tests execute the composed retention path: profile/document key
+shredding precedes account preparation; an exact empty embryo inventory precedes
+Storage, database, Auth and finalization. Missing/refused embryo inventories
+and refused Storage removal preserve the claim and block later deletion. All
+existing failures, operation limits, native cases and acceptance rows remain.
+Full chronological SQL and hosted execution remain required. The245 shared
+provenance-receipt disposal gap is not filled by this integration; G5.6 stays
+open and no graph/provider completion is claimed.
+
+## 2026-10-01 — Refuse the unproved Path B graph before an account deletion can start
+
+The refreshed account chronology has152 actual registered stores. The new
+held-original and private report-binding stores have no complete account-owned,
+subject-bound and recipient disposal/ACK executor. Additive030 therefore keeps
+that graph closed before the v2 nonce recorder, hold, retention phase or notice.
+It validates the actual fresh session first and takes the same profile lock
+used by real draft/account-binding/upload issuers. The v1 request and existing
+due/finalization graph guard receive the same narrow preflight; every other
+predecessor body byte, public/private ABI, owner, configuration and ACL is pinned
+and preserved. Terminal/history rows are included; ending a normalized file or
+report is never substituted for physical original disposal acknowledgement.
+No unknown FK allowlist, source owner, provider state or deadline is widened.
+
+A new rollback-only suite uses real draft/signature, invited account binding,
+held issuance/finalization, current permission and normalization/queued-report
+producers. It checks the uploader and bound person separately at the genuine
+stages and compares every registered store plus Auth and Storage byte for byte
+around each actual service request refusal. It requires zero nonce record,
+no account hold and no changed notice/phase/source/report row. An unrelated
+ordinary account still creates its original exact seven-day phase. Foreign
+Auth and direct helper calls remain refused. These are synthetic SQL protocol
+fixtures; their Storage byte metadata is not a provider disposal proof.
+
+The exact held lifecycle census gains only the actual030 helper when installed,
+with a separate full-body/API-denial assertion; the157 earlier held assertions
+remain. No other source assertion, timeout, skip, acceptance value or152-store
+baseline is removed. Focused source checks are distinct from pending root-owned
+fresh-database/full/browser verification. Full Path B erasure remains unfinished.
+
+## 2026-10-01 — Apply the shared held-mail prerequisite without importing Future additions
+
+The refreshed account branch takes the exact unpublished025 shared bridge and
+its closed source inventory. It does not install022/023 or their unrelated
+Future tables. Its actual chronology uses only the guarded233 canonical mail
+and activation bodies. The147 original held assertions remain; nine exact
+issued-notice refusal/rollback assertions and one precise body/role/census proof
+from the reviewed bridge extend them to157. The33 original purpose assertions
+remain alongside two exact held target/action proofs (35 total). The native
+page and handlers retain every registered purpose. Database execution is still
+pending; neither this source step nor the additive request refusal proves
+complete Path B account disposal.
+
+## 2026-10-01 — Preserve both account and held-upload contracts at the exact main merge
+
+The account/cohort deletion branch is ordinarily merged with main
+`1c63e91620548629e7f7300079a3f04fade0135d`. The combined suites retain every
+existing account affected-notice, holder-mail, retention, rendering and Path B
+assertion. The native observer keeps all previous status/body/identity checks
+and main's additional genuine bodyless 204/205 proofs. The purpose page keeps
+claimant, embryo, invitation and co-parent loaders alongside the two distinct
+Path B loaders; no purpose falls through to another screen.
+
+The two actual new held-upload/report-binding stores extend the account's
+150-entry export inventory to 152. Protected fields from both plans remain
+withheld. This updates the matching embedded plan and exact database census;
+it does not claim either deferred report/source class is exportable. The actual
+combined email inventory is 17 named exports in 15 files with 36 variants,
+therefore its two strict capture receipts contain exactly 72 observations.
+These counts are derived from the preserved renderer variants, not lowered
+baselines. Both branches' dated decision and test notes are retained.
+
+This merge alone does not prove Path B account erasure. The existing closed
+whole-graph refusal remains: normalized descriptor/report cancellation is not
+physical upload-working disposal acknowledgement. The shared held-mail and
+activation arms still require their strict dispatcher bridge before the
+combined chronology is qualified. Focused local checks are separate from the
+pending complete database, browser and hosted verification; acceptance remains
+unchanged.
+
+## 2026-09-30 — Preserve the immutable-file refusal under the real service role
+
+The complete hosted run found the existing `immutable_file_identity` assertion receiving a protected custody-table permission error. The trigger remains an invoker and raises unchanged identity/role refusals before calling a narrow service-only read-only definer for the unchanged positive claimant transition. No direct custody table access is granted. Fresh pgTAP now checks invoker semantics, current transaction visibility, exact grants and the actual service-role identity refusal; all original positive and negative custody tests and browser assertions remain.
+
+## Account cancellation browser proof requires the registered fresh sign-in · 30 September 2026
+
+The first full hosted account/cohort run reached the real Welcome back page after cancellation because the transaction correctly revokes every pre-cancellation Auth session. The old browser expectation attempted to render the Delete account control without the registered normal reauthorization. The journey now requires the actual native cancellation POST to return 200 with no-store, the exact sign-in handoff back to data settings, the genuine Welcome back screen and an unauthenticated export refusal before signing in through the real password form. It then retains every original Delete account, cancelled request/timestamp, cleared hold and overview assertion. No session, confirmation or successful authority is inserted into a fixture; no application/migration bytes, assertions, time limits, retries or skips are relaxed. This source correction is not a hosted pass receipt.
+
+## Exact cohort invitations and unambiguous cleanup identifiers · 30 September 2026
+
+The supported account graph now admits invitation principal FKs only when their actual target is an exact current cohort or draft owned by the deleting account, matching the worker's existing deletion selector. Any invitation using a selected principal for another target still refuses. A new counterpart-account assertion pins this separate invitation boundary without changing the original missing, stale, ambiguous-contact or outbox rollback assertions. The cleanup executor names all seven selected ID arrays distinctly from table names, so PostgreSQL's implicit embryo/subject row names cannot shadow the intended array. Every existing runtime/cohort/draft/session/job removal, claimed byte-equality, minimal-receipt and missing-receipt refusal assertion remains unchanged. No grant, deadline, supported documentary graph or provider acceptance changes.
+
+## Fresh account rehearsal reaches the exact notice and R2 receipt boundaries · 30 September 2026
+
+Request and cancellation now qualify the current-contact status column so their returned status cannot shadow it. The supported FK census admits an embryo subject only through an exact same-owner live cohort/subject/embryo tuple; a new counterpart-account refusal pins that boundary. Every missing, stale, ambiguous-contact and mandatory-outbox rollback assertion remains unchanged. The account worker proof uses a dedicated completed R2 reserve/ACK publication fixture and the real disposal receipt/evidence verifier; it never deletes Storage rows or changes Storage guards. Six exact landed R2 fragment receipts, crossed planned-object and false tombstone-digest refusals, and zero disposed rows after refusal extend the proof. Every existing cleanup success, claimed byte equality, immutable receipt, expired claim, incomplete disposal and missing provenance assertion remains. Provider identities are synthetic SQL evidence; hosted deletion is not claimed. The retired staging-bucket check now requires zero live function bodies instead of preserving a manifest-builder exception whose literal is gone. No production or browser acceptance is introduced.
+
+## Shared rights sessions use the actual issued candidate expiry · 30 September 2026
+
+The strict Future Person session trigger now reads expiry from the issued token candidate; token hashes have no expiry column. It requires the exact issued purpose, target and revision, the current unended hash, the current matching claimant credential and the original source and 60-minute session bindings. Two added ordinary adult/co-parent identity-update assertions prove that their genuine issued sessions pass this shared trigger. Five added Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. The genuine one-time claimant activation remains the positive proof. The existing exact plans increase by one each to 39 and 33; every earlier assertion and refusal remains. This account package retains its committed contact/delivery retention dependency and its exact 15-column claim-intake census.
+
+## Atomic owned-cohort notices and cancellation · 30 September 2026
+
+The supported owned-cohort request now commits every exact current affected-principal notice with its original seven-day account phase or rolls back the nonce, hold and all mail. A saved original recipient/cohort binding blocks legacy unnotified or newly crossed deadline claims. Contacts must be unique, current and authority-matched; stale, absent, ambiguous and failed outbox cases remain strict refusals. Cancellation invalidates every unsent or claimed obsolete affected deletion notice and sends one separate token-free notice per applicable principal, cancels the original unstarted phase without changing its deadline, revokes old sessions and preserves independently revoked/restricted records and consents. Unsupported documentary, draft-only, unfinished-ingest and unresolved-claim graphs remain refused. The old blanket owned-cohort request refusal is replaced with an actual missing-contact rollback refusal; every worker provenance, disposal and missing-receipt assertion remains. No browser or hosted-provider acceptance is claimed.
+
+Two real affected-recipient renderers and fixtures deliberately raise the independent inventory from 14 to 16 exports and 31 to 33 fixtures, with exactly 66 body/subject observations. They accept only one event timestamp and never receive a holder cancellation/export link, contact, identifier or genetic field. New strict mail-route and renderer cases refuse those extra fields and stale submission authority. The holder cancellation prose now states that account deletion did not start, avoiding a claim that separately withdrawn data was never deleted. The rendered-nonce regression adds an exact zero-old-session assertion and represents the later ordinary sign-in with a new synthetic session; every original spent-hash, cross-operation and pruning refusal remains unchanged under that live authority. No existing negative test, cap or timeout is relaxed.
+
+## Owned-cohort deletion worker preserves exact claimed provenance · 30 September 2026
+
+Three narrowly classified private stores increase the exact purge inventory from 147 to 150: two immutable minimum provenance receipts for an already-detached claimed source and one temporary account-deletion cohort work plan. No source, membership, canonical part or claimant genotype is rewritten. New database refusal tests pin receipt mutation, missing or crossed provenance, expired deletion claims and incomplete provider cleanup; bounded runtime tests require exact deletion/claim selection and an empty durable reread before account Storage completion. Existing assertions are retained. Public requests for an owned cohort remain closed pending the registered affected-recipient notice and cancellation envelope; the worker prerequisite does not complete the full account/cohort journey. Documentary bases, unfinished ingest/draft-only graphs and unresolved claims remain refused. No browser or hosted-provider acceptance is claimed.
+
+## 2026-10-01 — Distinguish the quality table from its enclosing landmark
+
+The full hosted suite on `2280e7f4` refused the populated comparison page at
+320, 390 and 1,280 pixels because both the quality section and its focusable
+table scroller were named "Quality check". The scroller now has the distinct
+plain label "Quality check table". Both region landmarks, the section heading,
+the table headers, horizontal scrolling and the keyboard focus stop remain.
+A new real Chromium regression renders the populated table inside its named
+section, requires exactly two separately addressable landmarks, focuses the
+scroller and requires no axe `landmark-unique` violation. All original hosted
+accessibility assertions and their viewport/theme/motion sweeps are unchanged;
+this isolated regression supplies no full-suite or acceptance credit.
+
+## 2026-10-01 — Compare every original archive byte with the native Buffer primitive
+
+The actual full Linux run reached 8,718 passing tests and one unchanged
+five-second timeout in the plain original ZIP64 case. An isolated native phase
+probe retained the original assertion and measured raw/decoded EOF proof at
+21.89 ms, ZIP generation at 35.54 ms, parse at 0.48 ms, the generic byte-array
+`toEqual` assertion at 4,527.47 ms, and independent SHA-256 at 13.83 ms. The
+small gzip assertion took 5.36 ms. The full run's plain case took 9,014 ms under
+concurrent resource pressure; there was no observed stalled transport or cleanup.
+
+That one equality assertion now requires a non-null native Buffer, the exact
+original byte length and `Buffer.prototype.equals` over every original byte.
+The separate original SHA-256 assertion, the 2,097,159-byte fixture, raw and
+decoded EOF, ZIP64 entry identity, exact read count and five-second timeout are
+unchanged. A new independent refusal test corrupts the first and last byte,
+truncates, appends and substitutes a foreign byte container or NULL. It also
+checks a distinct correct full-size copy. No product source, SQL, provider
+behavior, retry, skip or acceptance row changes. The failed full run is retained;
+a corrected full run is still required.
+
+## 2026-10-01 — Require exhaustive current account class membership
+
+The complete assembler needs an explicit inventory for all original 27 public
+deferred classes plus the two integrated Path B stores. New consumer tests add
+closed metadata projections, independent count/ordered ID/content/partition
+proof through all three pages of 1,103 rows, exact complete bound source
+snapshots and six nonzero historical scientific memberships. Missing,
+duplicate, foreign, stale, same-count source changes, wrong partition counts,
+private fields, ignored cancellation and final revocation remain refusals. The
+original 30-second operation limits are unchanged. No existing assertion or
+unsupported account/non-self/cohort/joint graph refusal is relaxed. The new
+real-role pgTAP fixture preserves all original review/release/Auth/MFA/binding
+and relocation assertions through unchanged includes. Nonempty unproved
+classes, including withheld Path B stores, refuse the whole request; absence
+proof never fabricates a producer, clinical output, byte receipt or empty
+placeholder. This authored prerequisite supplies no database, hosted/browser,
+provider, READY, public-gate or acceptance credit.
+
+## 2026-10-01 — Restore exact worker cleanup authority without exposing protected evidence
+
+The167-file fresh diagnostic fails two original native refusal cleanup cases:
+023 correctly closes claimant objections, but their inherited SECURITY INVOKER
+machine entries cannot execute the shared-evidence check as service. Additive032
+pins the complete current bodies, ABIs, owner and empty search paths, converts
+only the five registered service cleanup doors to owner-defined execution, and
+removes API execution from four internal graph/evidence helpers. It grants no
+protected-table SELECT and retains every exact claim, frozen object, expiry,
+shared-evidence, physical-storage-presence and graph-refusal condition. Original
+native refusal assertions remain unchanged. New genuine-role probes independently
+refuse direct table/helper access and invented public cleanup/ACK claims.
+
+210 also revoked the original explicitly required service TRUNCATE on
+`public.user_variants`, conflicting with the unchanged original
+`rls_truncate_not_bypassed.sql` assertion.032 restores exactly that one table/role
+tuple, guarded by its installed content-revision trigger; no browser/upload or
+observed-call TRUNCATE is granted. The newer archive-frame eight-tuple census
+now requires this one original grant and retains the seven other exact denials.
+Its original two-file TRUNCATE/receipt test now executes as actual service,
+adds a role identity assertion, and retains exact per-file revision increments
+and refusal of all old member bytes. This is a deliberate reconciliation with
+the pre-existing contract, not a weakened RLS or stale-frame assertion.
+Fresh database execution remains pending and source authoring grants no credit.
+
+## 2026-10-01 — Pin every reviewed purge pair after Path B integration
+
+The actual complete fresh database rehearsal reached 167 suites and 10,080
+assertions; only three old census expectations still required 153 stores. The
+Path B migrations deliberately add `public.other_adult_held_uploads` to
+`upload-and-ingest-working-state` (20260928150000) and
+`private.path_b_report_bindings` to `generated-artifacts` (20260930234000).
+The three Future Person fixtures now require exactly 155 physical registry
+rows. A shared literal two-column expected set independently reconciles the
+register's 117 baseline target/store pairs with all 38 reviewed later additions,
+including the existing exact contact-store reclassification. Each fixture also
+requires both Path B tables to exist and exactly their two reviewed target/store
+pairs. Equal-count replacement, omission or reclassification cannot satisfy the
+complete set comparison. The original separate exact six-private-archive-child
+assertion and every other original assertion remain intact; neither the export
+member-plan universe nor the observed catalog supplies runtime expectations.
+The failed actual rehearsal is retained. This bounded fixture correction changes
+no source, migration, permission, deletion execution or acceptance row; corrected
+SQL execution remains for the independent database rehearsal.

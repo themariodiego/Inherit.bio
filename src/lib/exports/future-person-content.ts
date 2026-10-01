@@ -27,7 +27,7 @@ const agreement=z.object({version:z.literal("future-person-agreement-v2"),
   bodySha256:hash,bodyMarkdown:z.string().min(1),recomputedBodySha256:hash,statementKeys:z.array(z.string().min(1)).min(1),
   signedAt:date,signaturePurpose:z.string().min(1),recordedRole:z.enum(["parent","uploader","owner"]),signingNameCiphertext:z.string().min(58).max(4096).regex(/^(?:[0-9a-f]{2})+$/u),
   signaturePrincipalPseudonym:hash,jurisdictionCode:z.string().regex(/^[A-Z]{2}$/u),jurisdictionRevision:revision,
-  attestations:z.array(attestation),review:z.object({kind:z.enum(["approve-record-key","approve-keyless"]),decidedAt:date,
+  attestations:z.array(attestation),review:z.object({kind:z.enum(["approve-record-key","approve-keyless","approve-release"]),decidedAt:date,
     outcome:z.literal("approved"),reviewerPrincipalPseudonym:hash}).strict(),
 }).strict();
 const variant=z.object({id,chromosome:z.number().int().min(1).max(22),position:z.number().int().positive().safe(),

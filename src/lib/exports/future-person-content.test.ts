@@ -40,6 +40,14 @@ describe("genuine historical claimant agreements",()=>{
     expect(renderFuturePersonAgreement(result[0])).toContain(source[0].bodyMarkdown);
     expect(result[0]).not.toHaveProperty("signingNameCiphertext");expect(source[0].signingNameCiphertext).toBeTruthy();
   });
+  it("preserves the exact newly recorded final keyless decision without relabeling earlier history",()=>{
+    const source=agreements();for(const row of source)row.review.kind="approve-release";
+    const projected=projectFuturePersonAgreements(source);expect(projected.map(row=>row.review.kind)).toEqual(["approve-release","approve-release"]);
+    expect(renderFuturePersonAgreement(projected[0])).toContain(`Recorded review: approve-release; approved; ${DATE}`);
+    for(const kind of ["keyless-document-match","overrule-objection","refuse-release","invented-approval"]){
+      const malformed=structuredClone(source);malformed[0].review.kind=kind;expect(()=>projectFuturePersonAgreements(malformed)).toThrow("export unavailable");
+    }
+  });
   it.each(["changed-body","changed-signed-digest","missing-signing-name","wrong-key","missing-role","unaffirmed-role","current-profile","duplicate-artifact","swapped-artifact-role"])("refuses %s without a current identity fallback",kind=>{
     const source=agreements();
     switch(kind){

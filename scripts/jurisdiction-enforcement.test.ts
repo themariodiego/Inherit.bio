@@ -54,6 +54,8 @@ const SURFACE_FILES = new Set(["route.ts", "page.tsx", "layout.tsx"]);
  * reviewable and a new one cannot join them silently.
  */
 export const WITHOUT_CHECK: Record<string, string> = {
+  "src/app/api/reviews/future-person/claims/[id]/release/route.ts":
+    "Distinct final Future Person rights review under own current Auth/recent MFA and exact operation-specific named assignment, current claim/notice/session/document revisions and one-use proof. Every current full-document acknowledgement, minimum/profile/parent authority and immutable provider-committed notice deadline is rechecked by the subject-first SQL transaction. It opens no analytical capability and must remain independent of jurisdiction, embryo_analysis and QC.",
   "src/app/api/reviews/future-person/claim-objections/[id]/route.ts":
     "Current named human objection reviewer under own live Auth, recent MFA, exact operation assignment and current claim/objection/notice revisions. Both documents require complete byte acknowledgement; decisions mutate only the pending claim and must remain independent of analysis, jurisdiction and QC. No analytical capability is opened.",
   "src/app/api/family/acknowledge/route.ts":
