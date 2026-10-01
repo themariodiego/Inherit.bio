@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createdBuckets, droppedBuckets, exportedMethods, migrationBuckets, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
 
 /**
@@ -81,6 +81,38 @@ function plant(overrides: Overrides): string {
 }
 
 type Route = { id: string; kind: string; methods?: string[]; stateProfile?: string };
+
+describe.sequential("route reader invocation isolation", () => {
+  const neutral = 'import { test } from "./audited-test"; test("Synthetic reader check", () => {});';
+  let root: string;
+  let file: string;
+  let before: Awaited<ReturnType<typeof runRouteGate>>;
+  beforeAll(() => {
+    root = plant({ extraSpec: neutral });
+    file = path.join(root, "e2e/planted.spec.ts");
+  });
+  it("reads the original same-root input", async () => {
+    before = await runRouteGate(root);
+    expect(before.failures).toEqual([]);
+  });
+  it("reads changed titles and audit imports again at the same repository root", async () => {
+    writeFileSync(file, 'import { test } from "@playwright/test"; test("/future-person/claim complete", () => {});');
+    try {
+      const changed = await runRouteGate(root);
+      expect(changed.failures).toEqual([
+        "network audit: e2e/planted.spec.ts proves a registered (route, state) pair but takes `test` " +
+        "from @playwright/test instead of ./audited-test, so that state is never audited " +
+        "for third-party origins, tracker hosts or tracker globals (G1.7).",
+      ]);
+      expect(changed.stateProvingSpecCount).toBe(before.stateProvingSpecCount + 1);
+    } finally {
+      writeFileSync(file, neutral);
+    }
+  });
+  it("reads the restored same-root input with an exactly equal full result", async () => {
+    expect(await runRouteGate(root)).toEqual(before);
+  });
+});
 
 describe("the route gate holds the register to the code", () => {
   it("passes on this repository, having actually read all four inputs", async () => {
