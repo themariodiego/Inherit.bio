@@ -16,7 +16,10 @@ The production rejection of incomplete historical agreements remains unchanged.
 The deletion writer removes assignments to the nonexistent legacy claim_token
 and claimed_at columns while still clearing the actual claim_token_hash and every existing
 worker lease field. All refusal, atomic rollback and retention clock assertions
-remain. The matrix headline's remaining count is corrected to its actual 21 NO
+remain. Rights sessions are revoked using their actual status and ended_at
+columns; their nonexistent session_revision is not written. The real claimant
+release revision still advances and fences every old issuer. Download sessions
+retain their existing revision advance. The matrix headline's remaining count is corrected to its actual 21 NO
 rows without flipping any row. Earlier full failures are retained; the corrected
 source must pass its own complete checks before any draft push.
 

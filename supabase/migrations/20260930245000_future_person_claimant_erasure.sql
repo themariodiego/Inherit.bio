@@ -726,7 +726,7 @@ begin
  update public.worker_jobs w set status='cancelled',claimed_by=null,claim_token_hash=null,
    claim_expires_at=null,finished_at=v_now where w.status in('queued','running') and w.kind not in('revoke_purge','retention_purge')
      and (w.subject_id=s.id or w.file_id=x.file_id);
- update public.rights_sessions q set status='revoked',ended_at=v_now,session_revision=session_revision+1
+ update public.rights_sessions q set status='revoked',ended_at=v_now
    where q.target_kind='claimed-subject' and q.target_id=s.id and q.status='active';
  -- Close every currently issued claimant capability before freezing rows.
  -- Raising the real release revision also fences a concurrent old issuer;
