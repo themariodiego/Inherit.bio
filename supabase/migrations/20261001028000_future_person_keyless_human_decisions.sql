@@ -150,6 +150,83 @@ revoke all on function public.decide_keyless_objection_v1(uuid,bigint,bigint,big
   from public,anon,inherit_upload_only,service_role;
 grant execute on function public.decide_keyless_objection_v1(uuid,bigint,bigint,bigint,text,text,bytea) to authenticated;
 
+-- The generic inherited queue correctly refuses a pending non-invitation
+-- principal. Only this exact current token-free information request may use
+-- the existing pending claimant contact, under its own closed authority.
+-- Preserve the complete022/025 queue for every other current branch.
+do $information_claim_predecessor$
+declare predecessor oid:=to_regprocedure('public.claim_mail_outbox()');
+begin
+  if predecessor is null or to_regprocedure('public.claim_mail_outbox_before_keyless_information_v1()') is not null
+    or not exists(select 1 from pg_proc p join pg_namespace ns on ns.oid=p.pronamespace
+      join pg_language language on language.oid=p.prolang join pg_roles owner_role on owner_role.oid=p.proowner
+      where p.oid=predecessor and ns.nspname='public' and p.proname='claim_mail_outbox'
+        and owner_role.rolname='postgres' and language.lanname='plpgsql' and p.prosecdef
+        and p.prokind='f' and p.proretset and p.pronargs=0 and p.pronargdefaults=0 and p.provariadic=0
+        and p.proargnames=array['outbox_id','template_id','template_payload','idempotency_key','attempt_ordinal','contact_ciphertext','delivery_token']::text[]
+        and p.proallargtypes=array['uuid'::regtype,'text'::regtype,'jsonb'::regtype,'text'::regtype,'smallint'::regtype,'bytea'::regtype,'text'::regtype]::oid[]
+        and p.proargmodes=array['t','t','t','t','t','t','t']::"char"[] and p.proargtypes=''::oidvector
+        and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+        and pg_get_function_result(p.oid)='TABLE(outbox_id uuid, template_id text, template_payload jsonb, idempotency_key text, attempt_ordinal smallint, contact_ciphertext bytea, delivery_token text)'
+        and md5(p.prosrc)='abb70e7d8ec45731aebcbaa870ab9c13')
+    or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) api
+      where has_function_privilege(api,predecessor,'execute'))
+    or not has_function_privilege('service_role',predecessor,'execute')
+    or exists(select 1 from pg_proc p,lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) acl
+      where p.oid=predecessor and (acl.privilege_type<>'EXECUTE' or acl.is_grantable or acl.grantor<>p.proowner
+        or acl.grantee not in(p.proowner,'service_role'::regrole)))
+    or (select cardinality(coalesce(p.proacl,acldefault('f',p.proowner))) from pg_proc p where p.oid=predecessor)<>2 then
+    raise exception using errcode='55000',message='information claim predecessor differs';end if;
+end;
+$information_claim_predecessor$;
+alter function public.claim_mail_outbox() rename to claim_mail_outbox_before_keyless_information_v1;
+revoke all on function public.claim_mail_outbox_before_keyless_information_v1()
+ from public,anon,authenticated,inherit_upload_only,service_role;
+create function public.claim_mail_outbox()
+returns table(outbox_id uuid,template_id text,template_payload jsonb,idempotency_key text,
+  attempt_ordinal smallint,contact_ciphertext bytea,delivery_token text)
+language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
+declare pending record; queued_information public.mail_outbox; contact public.encrypted_contact_references;
+begin
+  select package.subject_id,package.claim_id,mail.id into pending
+    from public.future_person_claim_review_packages package join public.mail_outbox mail
+      on mail.target_kind='claim' and mail.target_id=package.claim_id and mail.purpose='future-person-claim-more-information'
+    where package.state='objected' and package.review_id=package.claim_id
+      and mail.state in('queued','claimed') and mail.not_before<=clock_timestamp()
+      and (mail.state='queued' or mail.claimed_at<clock_timestamp()-interval '10 minutes')
+    order by mail.not_before,mail.created_at,mail.id limit 1;
+  if pending.id is null then
+    return query select * from public.claim_mail_outbox_before_keyless_information_v1();return;
+  end if;
+  perform 1 from public.subjects subject where subject.id=pending.subject_id for update;
+  perform 1 from public.retention_rows retained where retained.target_kind='claim' and retained.target_id=pending.claim_id
+    order by retained.id for update;
+  perform private.lock_invitation_transitions_v1();
+  select mail.* into queued_information from public.mail_outbox mail where mail.id=pending.id for update;
+  if queued_information.id is null or queued_information.state not in('queued','claimed')
+    or queued_information.not_before>clock_timestamp()
+    or (queued_information.state='claimed' and queued_information.claimed_at>=clock_timestamp()-interval '10 minutes') then return;end if;
+  if queued_information.expires_at<=clock_timestamp() or queued_information.attempt_count>=10 then
+    update public.mail_outbox mail set state=case when queued_information.expires_at<=clock_timestamp() then 'expired' else 'invalidated' end,
+      claimed_at=null,last_outcome_code='information_delivery_unavailable' where mail.id=queued_information.id;return;
+  end if;
+  select current_contact.* into contact from public.encrypted_contact_references current_contact
+    where current_contact.id=queued_information.contact_reference_id for update;
+  update public.mail_outbox mail set state='claimed',claimed_at=clock_timestamp(),
+    attempt_count=mail.attempt_count+1,last_outcome_code=null where mail.id=queued_information.id returning mail.* into queued_information;
+  -- The identical pre-submit predicate proves the complete current review,
+  -- exact pending principal/contact/revisions, original deadline and no-token
+  -- shape. Failure never exposes bytes or borrows the generic pending rule.
+  if not private.authorize_mail_submission_v1(queued_information.id,queued_information.attempt_count) then
+    update public.mail_outbox mail set state='invalidated',claimed_at=null,last_outcome_code='information_authority_stale'
+      where mail.id=queued_information.id;return;
+  end if;
+  return query select queued_information.id,queued_information.template_id,queued_information.template_payload,
+    private.mail_provider_attempt_key_v1(queued_information),queued_information.attempt_count,contact.contact_ciphertext,null::text;
+end $$;
+revoke all on function public.claim_mail_outbox() from public,anon,authenticated,inherit_upload_only;
+grant execute on function public.claim_mail_outbox() to service_role;
+
 -- Keep every current022/025 canonical provider branch by exact delegation.
 -- Only the reviewed complete wrapper may become the private predecessor.
 do $information_mail_predecessor$

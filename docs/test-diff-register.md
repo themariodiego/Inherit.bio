@@ -1,5 +1,30 @@
 # Test diff register
 
+## 2026-10-01 — Claim the exact token-free information request under its own pending claimant authority
+
+The actual full fresh database run on b1b4af22a903d7b4f636b27be87d861f80dbec4f
+completed123 assertions in future_person_keyless_objection_decisions.sql before
+the genuine information request could not be claimed. Its issuer correctly
+uses the pending future_person principal, but the inherited generic queue
+permits pending recipients only for invitations and invalidates this row.
+The missing narrow claim arm now locks the exact subject, retention rows,
+transition and mail/contact, then requires the identical existing current
+information pre-submit predicate before exposing contact bytes. The complete
+strictly pinned022/025 dispatcher is retained in an API-denied delegate for
+every other branch; its generic pending-principal refusal is unchanged.
+
+Every original claim/no-token/provider authorization, terminal invalidation,
+deadline, payload and source assertion remains. Two additional SQL assertions
+require exact unchanged token candidate/hash rows, wrong-attempt refusal and
+denial of the new delegate to all API roles. The shared replacement census
+adds exactly the new028 canonical claim wrapper; exact comparisons remain.
+The original combined-stable-clock-final-pgtap.log failure remains recorded.
+Corrected real SQL execution is pending root's independent rollback rehearsal;
+no native/provider/human or full fresh-pass credit is claimed here.
+The new claim/source census and unchanged mail route units pass56 tests across
+three files; scoped lint and the exact SQL include closure pass. No heavy type
+check, Docker/database operation or provider activity was run in this checkout.
+
 ## 2026-10-01 — Control only the quota fixture clock and prove the unchanged capability boundaries
 
 The actual complete Linux unit run on f54502eb failed one assertion in the
