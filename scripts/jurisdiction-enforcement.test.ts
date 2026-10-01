@@ -70,10 +70,6 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Subject rights interstitial: confirming, refusing, deleting or withdrawing is not a restricted capability and must answer in every jurisdiction; it opens no analysis.",
   "src/app/(marketing)/withdraw/session/page.tsx":
     "Subject rights review page for an activated rights session; rights are not a restricted capability and must answer in every jurisdiction.",
-  "src/app/(marketing)/withdraw/[token]/page.tsx":
-    "Pre-migration rights page kept while D-081 retires the open token segment; rights are not a restricted capability.",
-  "src/app/api/withdraw/route.ts":
-    "Pre-migration rights endpoint kept while D-081 retires it; rights are not a restricted capability.",
   "src/app/api/withdraw/session/route.ts":
     "Rights session responses (confirm, refuse, delete); rights are not a restricted capability and must answer in every jurisdiction.",
   "src/app/api/future-person/claim/session/objection/route.ts":

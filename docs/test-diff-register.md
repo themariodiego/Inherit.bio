@@ -1,5 +1,42 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
+
+The retirement branch now merges the exact verified main release. Its earlier
+coverage-description correction is retained in the shared accessibility sweep
+where main moved it. The complete native `a11y.spec.ts` remains byte-identical
+to current main; no old sweep is duplicated or omitted. The registered rights
+key still points to the canonical session flow, and the raw-path retirement
+keeps its original exact 404 assertions. Both existing G8.5 notes and every
+test-register entry are preserved. Full qualification on the combined source
+is required before the draft push.
+
+## D-081 retirement prepared for the end of the invitation overlap · 30 September 2026
+
+This branch is held unless the read-only release check in
+`scripts/tools/d081-retirement-precheck.sql` returns true immediately before
+merge. It must not deploy while older links are usable. The public cutover is
+PR #118's successful production deployment on 13 September. The conservative
+check includes every older adult invitation regardless of status; it returned
+true on 30 September and must be repeated before merging.
+The owner's dated obligation removes the bare `/api/withdraw` endpoint,
+`/withdraw/[token]` page, their two divergence rows and the overlap browser
+case together. The pinned `/withdraw/session` and fragment entry remain.
+
+The correspondence test now requires no dated exceptions, neither retired
+route in the built surface, no form targeting the bare endpoint and no ledger
+exception for it. Its generic deadline validation remains. The two deleted
+files leave the jurisdiction exemption list, whose bidirectional check remains.
+The overlap browser case is replaced with exact 404 assertions for both retired
+paths and a 200 assertion for the fragment entry. The existing canonical adult
+accept/refuse/delete journeys and their assertions remain. The canonical
+session refusal case now titles the register's
+`/withdraw/[token] complete` pattern and explicitly visits only its pinned
+`/withdraw/session` literal. It replaces the retired shim's state proof at the
+same nine-unproven-pair ratchet. The form scan now pins the exact two remaining
+forms, files and resolved targets in both directions, replacing the old minimum
+of five that included the retired page's three forms.
+
 ## 2026-10-01 — Preserve measured QC ratios across database JSON formation
 
 The actual hosted second-seed journey on `2280e7f4` fails the unchanged strict

@@ -1,38 +1,8 @@
 {
   "purpose": "Every place where the live App Router surface and docs/route-register.json disagree. scripts/route-register-correspondence.test.ts checks which routes exist; scripts/route-gate.ts (pnpm gate:routes) checks the methods they export, the status their redirects emit, the storage buckets their prefixes name and the (route, state) pairs a browser test proves. Both fail when a divergence appears that is not listed here, and fail when a listed one is fixed or misdescribed, so this file cannot quietly drift from reality in either direction.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. The register is the binding response-contract authority, so an unregistered live endpoint has no declared auth mode, response contract or policy. Each entry names what is missing and what closing it needs.",
-  "builtButNotRegistered": [
-    {
-      "path": "/api/withdraw",
-      "file": "src/app/api/withdraw/route.ts",
-      "methods": [
-        "POST"
-      ],
-      "handler": "inline POST",
-      "live": "posted by the form in src/app/(marketing)/withdraw/[token]/page.tsx",
-      "why": "The legacy adult-subject invitation response surface. api.withdraw is registered at /api/withdraw/[token] with token pinned to the literal \"session\", which src/app/api/withdraw/session/route.ts implements \u2014 and which, since 2026-09-13, answers the adult confirm/refuse/delete as well as the co-parent refusal. This bare path is the pre-migration form and is defect D-081. Nothing mails a link that reaches it any more; it stays only for the tokens mailed before that change.",
-      "priority": "defect D-081",
-      "deleteAfter": "2026-10-14",
-      "deleteAfterBasis": "#118 merged on 2026-09-13 and moved the adult invitation mail to /withdraw/request#<token>; a token mailed before it lives 30 days (invitation.pending-30d), so the last one expires by 2026-10-13. One day of margin. scripts/route-register-correspondence.test.ts fails after this date while the row exists, so the deletion cannot be forgotten. If production received #118 later than 2026-09-13, move this date by the same amount.",
-      "closing": "Delete with the /withdraw/[token] directory once the last pre-2026-09-13 token has expired; see the permissiveDynamicSegment row."
-    }
-  ],
-  "permissiveDynamicSegment": [
-    {
-      "routeId": "rights.withdraw",
-      "path": "/withdraw/[token]",
-      "file": "src/app/(marketing)/withdraw/[token]/page.tsx",
-      "segment": "token",
-      "pinnedTo": [
-        "session"
-      ],
-      "why": "The register pins this segment to the literal session and marks raw-bearer forbidden; since 2026-09-28 /withdraw/request is its own entry, rights.withdraw-request. Both paths are built (withdraw/session/page.tsx, withdraw/request/route.ts), and the [token] directory is built too, so /withdraw/<any raw token> still resolves. That is defect D-081. RE-SCOPED 2026-09-13: the adult invitation mail no longer links here. It links at /withdraw/request#<token> like every other mailed token, the adult purpose activates a rights session through api.rights-activate, and /withdraw/session answers confirm, refuse and delete off the cookie. What this directory still serves is the tokens that were mailed BEFORE that change, which live up to 30 days; deleting it today would take away the rights of the people holding them.",
-      "priority": "defect D-081",
-      "deleteAfter": "2026-10-14",
-      "deleteAfterBasis": "#118 merged on 2026-09-13 and moved the adult invitation mail to /withdraw/request#<token>; a token mailed before it lives 30 days (invitation.pending-30d), so the last one expires by 2026-10-13. One day of margin. scripts/route-register-correspondence.test.ts fails after this date while the row exists, so the deletion cannot be forgotten. If production received #118 later than 2026-09-13, move this date by the same amount.",
-      "closing": "Delete this directory, the bare POST /api/withdraw beside it, and both of these rows together, once the last token mailed before 2026-09-13 has expired \u2014 30 days by invitation.pending-30d. e2e/adult-subject-invitation.spec.ts keeps one test on this path until then, so the overlap is proven rather than assumed, and that test goes in the same commit."
-    }
-  ],
+  "builtButNotRegistered": [],
+  "permissiveDynamicSegment": [],
   "unregisteredServerActionsNote": "A server action is a live mutation surface that the route register does not describe: Next.js exposes it at a generated endpoint the App Router never shows, so none of the route checks above can see it and a second one could appear without anything noticing. G8.5 asks that every live surface match its register, so the surface is held as a ledger instead, compared in both directions by scripts/route-register-correspondence.test.ts. One exists today and it is unregistered on purpose, with the reason written in the file itself. Adding another fails until it is recorded here; deleting this one fails as a stale row.",
   "unregisteredServerActions": [
     {

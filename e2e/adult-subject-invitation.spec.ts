@@ -223,7 +223,7 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
  * refuse control whether or not anyone is signed in, and this test holds that
  * open by never signing in.
  */
-test("/withdraw/session complete: refusing closes the reserved subject and the page says so, with no account", async ({
+test("/withdraw/[token] complete: pinned /withdraw/session refusal closes the reserved subject with no account", async ({
   page,
   request,
 }) => {
@@ -267,44 +267,16 @@ test("/withdraw/session complete: refusing closes the reserved subject and the p
   expect(target?.lifecycle ?? "gone", "the reserved subject was closed").not.toBe("active");
 });
 
-/**
- * `/withdraw/[token] complete`: the surface D-081 is retiring, held open for
- * the tokens already in people's mailboxes.
- *
- * The mail no longer links here, so nothing arrives at this path by itself
- * any more. Someone who was invited before the change still has a link that
- * does, and it has to keep working until those tokens expire. This test is
- * that guarantee: it takes the same token out of the fragment the mail now
- * sends and opens the old path with it, exactly as an older mail would.
- *
- * When the last pre-change token has expired, this test and the directory it
- * drives go together.
- */
-test("/withdraw/[token] complete: a token mailed before the change still answers on the old path", async ({
-  page,
-  request,
-}) => {
-  const holdover = `adult-holdover-${Date.now()}@e2e.local`;
-  await signIn(page, INVITER.email, INVITER.password);
-  const { token } = await inviteAndRead(page, request, holdover, "the holdover invitation");
-  const admin = adminClient();
-  const invitation = await latestPendingInvitation();
-
-  await page.request.post("/auth/sign-out");
-  await page.context().clearCookies();
-  await page.goto(`/withdraw/${token}`);
-  await expect(page.getByText("No genetic data has been shared")).toBeVisible();
-  await page.getByRole("button", { name: "Refuse", exact: true }).click();
-
-  await expect(page.getByRole("heading", { name: "Invitation refused" })).toBeVisible();
-  await expect(page.getByText(
-    "The reserved subject was closed. This address will not receive another invitation for this target.",
-    { exact: true },
-  )).toBeVisible();
-
-  const { data: after } = await admin
-    .from("subject_invitations").select("status").eq("id", invitation.id).single();
-  expect(after?.status, "the old path still records, not merely renders").not.toBe("pending");
+/** The expired raw-bearer compatibility surfaces must stay retired. */
+test("retired withdrawal paths return 404 and the fragment entry remains available", async ({ page }) => {
+  const token = "retired-synthetic-invitation-token";
+  const pageResponse = await page.goto(`/withdraw/${token}`);
+  expect(pageResponse?.status()).toBe(404);
+  await expect(page.locator('form[action="/api/withdraw"]')).toHaveCount(0);
+  const postResponse = await page.request.post("/api/withdraw", { form: { token, action: "refuse" } });
+  expect(postResponse.status()).toBe(404);
+  const entryResponse = await page.goto("/withdraw/request");
+  expect(entryResponse?.status()).toBe(200);
 });
 
 test("signed-out current-session deletion closes only the empty reservation without refusing future invitations", async ({ page, request }) => {
