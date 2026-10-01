@@ -5,6 +5,7 @@ import {getSensitiveAccountContext} from "@/lib/account-deletion";
 import {createAdminClient} from "@/lib/supabase/admin";
 import {futurePersonClaimsOpen} from "./claims-open";
 import {identityProfileContext,mintIdentityProfileOperation} from "./identity-profile-operation";
+import {profileProofFailure,profileRpcFailure,profileSchemaFailure} from "./identity-profile-diagnostics";
 
 const row=z.object({embryoId:z.uuid(),label:z.string().min(1).max(240),hasProfile:z.boolean(),
   expiresAt:z.iso.datetime({offset:true}),saveContext:identityProfileContext.nullable(),
@@ -33,12 +34,24 @@ export async function identityProfileControls(after:string|null=null,now=Date.no
   if(!futurePersonClaimsOpen())return null;
   if(after!==null&&!z.uuid().safeParse(after).success)return {items:[],nextCursor:null,unavailable:true};
   const account=await getSensitiveAccountContext();if(!account)return null;
+  const unavailable={items:[],nextCursor:null,unavailable:true} as const;
+  const result=await (async()=>{
+    try{
+      const {data,error}=await createAdminClient().rpc("future_person_profile_controls_v1",{
+        p_account:account.user.id,p_session:account.sessionId,p_after:after,
+      });
+      if(error){profileRpcFailure(error);return null;}
+      return {data};
+    }catch(error){profileRpcFailure(error);return null;}
+  })();
+  if(!result)return {...unavailable,items:[]};
+  const parsed=(()=>{
+    try{return inventory.safeParse(result.data);}
+    catch{profileSchemaFailure([{code:"unavailable",path:[]}]);return null;}
+  })();
+  if(!parsed)return {...unavailable,items:[]};
+  if(!parsed.success){profileSchemaFailure(parsed.error.issues);return {...unavailable,items:[]};}
   try{
-    const result=await createAdminClient().rpc("future_person_profile_controls_v1",{
-      p_account:account.user.id,p_session:account.sessionId,p_after:after,
-    });
-    const parsed=inventory.safeParse(result.data);
-    if(result.error||!parsed.success)return {items:[],nextCursor:null,unavailable:true};
     const binding={accountId:account.user.id,sessionId:account.sessionId};
     const items=parsed.data.items.map(item=>({embryoId:item.embryoId,label:item.label,hasProfile:item.hasProfile,expiresAt:item.expiresAt,
       save:item.saveContext?{...mintIdentityProfileOperation({...binding,embryoId:item.embryoId,operation:"save"},item.saveContext,now),
@@ -46,5 +59,5 @@ export async function identityProfileControls(after:string|null=null,now=Date.no
       delete:item.hasProfile?mintIdentityProfileOperation({...binding,embryoId:item.embryoId,operation:"delete"},item.deleteContext,now):null,
     }));
     return {items,nextCursor:parsed.data.nextCursor,unavailable:false};
-  }catch{return {items:[],nextCursor:null,unavailable:true};}
+  }catch{profileProofFailure();return {...unavailable,items:[]};}
 }

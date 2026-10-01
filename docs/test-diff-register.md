@@ -1,5 +1,35 @@
 # Test diff register
 
+## 2026-10-01 — Diagnose the saved-profile owner reload without exposing protected records
+
+The actual hosted browser job at 6f8d86d06a0a027b62c6eee23c99167fb144f04e
+reached the genuine other-parent save: its 200 response, stored profile version,
+key/index/cipher shape, original deadline and immutable source proofs passed.
+The owner's subsequent settings reload rendered the generic unavailable state
+and failed the original five-second profile-control assertion. The sanitized
+error-context and failed run remain evidence. The underlying RPC, DTO or proof
+failure was not captured; no precise cause or corrected native execution is
+claimed from source inspection.
+
+The server-only loader now reports a fixed RPC, schema or proof stage. RPC codes
+and schema field names/codes use closed allowlists; array positions are removed
+and issue output is bounded. Error messages, hints, unknown keys, payloads,
+contacts, account/session/profile identifiers, authority values and token/key
+bytes never enter the diagnostic. Logging failure cannot change the existing
+refusal. The same strict DTO, prospective proofs, generic page message, public
+availability flags, native assertion, timeouts and zero retries remain.
+
+Every original profile-controls SQL assertion remains. Added genuine fixture
+steps let the other current parent save through the actual service-only native
+door, then require the owner's exact current list/context tuple, distinct own
+actor/signature, unchanged deadline and protected-row bytes, no GET nonce write,
+crossed-session refusal and stale pre-save receipt refusal before nonce use.
+No protected table/helper grants or fabricated profile row are introduced.
+The fixture remains rollback-only; actual SQL and full hosted qualification
+are root-owned and pending. Added focused reader/diagnostic regressions verify
+coded failures and strict privacy boundaries, without crediting those stubs as
+a native producer-to-reader execution.
+
 ## 2026-10-01 — Claim the exact token-free information request under its own pending claimant authority
 
 The actual full fresh database run on b1b4af22a903d7b4f636b27be87d861f80dbec4f
