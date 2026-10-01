@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Commit Path B confirmation against its real held storage identity
+
+The actual owned-stack HTTP confirmation failed with23503: the normalization
+descriptor copied the held storage.objects UUID into genome_files.storage_object_id,
+which references the separate genome_storage_objects registry. The original
+still belongs to the exact held upload-working inventory, so that own-file
+binding now stays NULL. The dedicated worker manifest takes its object UUID
+from the current independently rechecked held authority, and requires the
+descriptor's exact path, size, kind, hashes and source revision to match it.
+No storage identity, provider copy, permission or grant is fabricated.
+
+The actual-service-role positive test now requires every deferred constraint
+to pass immediately after confirmation, then restores the test transaction's
+deferred setting. It additionally requires absence of an own-file binding,
+the exact held object UUID at worker claim, and final transaction consistency.
+All original quarantine, current-evidence, revocation, canonical-output,
+RLS and zero-purpose-grant assertions remain unchanged. No browser expectation,
+timeout or retry changes. The prior full hosted failure remains recorded;
+full fresh-database and hosted proof follow on this corrected source.
+
 ## Path B actual service-role confirmation and exact HTTP receipt · 1 October 2026
 
 The current hosted account-bound journey reaches the real revision form but

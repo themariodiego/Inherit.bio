@@ -45,8 +45,14 @@ select is((select jwt_role from confirmation_service_receipt),'service_role',
  'the real confirmation RPC carries actual service-role request claims');
 select is((select result from confirmation_service_receipt),
  'confirmed','the person confirms this exact file revision');
+select lives_ok('set constraints all immediate',
+ 'the actual service-role confirmation satisfies every deferred transaction constraint');
+set constraints all deferred;
 select is((select count(*) from public.genome_files where subject_id=pg_temp.sid('main')),1::bigint,
  'confirmation creates one exact source descriptor after all common gates pass');
+select ok((select storage_object_id is null from public.genome_files where id=pg_temp.fxv('main','revision')::uuid)
+ and not exists(select 1 from public.genome_storage_objects where object_id=pg_temp.fxv('main','object')::uuid),
+ 'the original remains in its exact held upload-working inventory without an own-file storage binding');
 select is((select count(*) from public.worker_jobs where subject_id=pg_temp.sid('main') and kind='annotate_vcf'
  and output_kind='ingest.normalize' and source_binding_kind='genome-file'
  and source_binding_id=pg_temp.fxv('main','revision')::uuid),1::bigint,
@@ -70,6 +76,8 @@ insert into norm_manifest select public.path_b_normalization_v1('claim',null,rep
 grant select on norm_manifest,fx,held_fx to authenticated;
 select is((select c->>'fileId' from norm_manifest),pg_temp.fxv('main','revision'),
  'the worker claims exactly the confirmed revision descriptor');
+select is((select c->>'objectId' from norm_manifest),pg_temp.fxv('main','object'),
+ 'the worker reads the exact current held storage.objects identity');
 create function pg_temp.norm(p_operation text,p_payload jsonb default null) returns jsonb language sql as $$
  select public.path_b_normalization_v1(p_operation,(c->>'jobId')::uuid,repeat('8',64),(c->>'claim')::uuid,p_payload,true)
  from norm_manifest;
@@ -213,4 +221,5 @@ select is((select count(*) from private.own_normalization_batches where file_id=
  +(select count(*) from public.user_variants where file_id=pg_temp.fxv('revoked','revision')::uuid),0::bigint,
  'revoked source leaves neither private staged rows nor published genetic rows');
 select * from finish();
+set constraints all immediate;
 rollback;

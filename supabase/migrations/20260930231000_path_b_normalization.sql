@@ -143,12 +143,12 @@ begin
  select * into h from public.other_adult_held_uploads where id=p_revision_id for update;
  if h.file_type not in('vcf','gvcf') then return null; end if;
  insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,sha256,status,
-  upload_revision,structural_validator_version,single_logical_sample_verified_at,source_sha256,storage_object_id)
+  upload_revision,structural_validator_version,single_logical_sample_verified_at,source_sha256)
  values(h.id,h.uploader_account_id,h.subject_id,h.object_name,'Genome file',h.file_type,1,h.size_bytes,h.raw_sha256,
-  'uploaded',h.upload_revision,'single-logical-sample-v1',h.held_at,h.decoded_sha256,h.storage_object_id)
+  'uploaded',h.upload_revision,'single-logical-sample-v1',h.held_at,h.decoded_sha256)
  on conflict(id) do nothing;
  if not exists(select 1 from public.genome_files f where f.id=h.id and f.user_id=h.uploader_account_id
-  and f.subject_id=h.subject_id and f.storage_object_id=h.storage_object_id and f.bucket_path=h.object_name
+  and f.subject_id=h.subject_id and f.storage_object_id is null and f.bucket_path=h.object_name
   and f.sha256=h.raw_sha256 and f.source_sha256=h.decoded_sha256 and f.upload_revision=h.upload_revision
   and f.file_type=h.file_type and f.size_bytes=h.size_bytes and f.tier=1) then
   raise exception using errcode='42501',message='not_found'; end if;
@@ -237,6 +237,15 @@ begin
   when p_operation='check' then 'source-read-and-every-bounded-range' else 'derived-write-and-read' end);
  if j.payload is distinct from jsonb_build_object('authority',c) then
   raise exception using errcode='42501',message='not_found'; end if;
+ -- This original is still held by the exact upload-working inventory. Its
+ -- storage.objects identity comes from that current authority, never from an
+ -- own-file storage registry or a substituted descriptor path.
+ if f.storage_object_id is not null or f.bucket_path is distinct from c->>'objectKey'
+  or f.size_bytes is distinct from (c->>'sizeBytes')::bigint
+  or f.file_type::text is distinct from c->>'fileType'
+  or f.sha256 is distinct from c->>'rawSha256' or f.source_sha256 is distinct from c->>'decodedSha256'
+  or f.upload_revision is distinct from (c->>'sourceRevision')::bigint then
+  raise exception using errcode='42501',message='not_found'; end if;
  if p_operation='claim' then
   if f.normalization_completed_at is not null or (r.state='running' and r.expires_at>clock_timestamp()) then
    raise exception using errcode='42501',message='not_found'; end if;
@@ -245,7 +254,7 @@ begin
    claim_expires_at=least(clock_timestamp()+interval '5 minutes',(c->>'authorityExpiresAt')::timestamptz),claimed_by='path-b-normalization-v1',
    started_at=coalesce(started_at,clock_timestamp()) where id=j.id returning * into j;
   m:=jsonb_build_object('jobId',j.id,'claim',p_claim,'claimExpiresAt',j.claim_expires_at,
-   'fileId',f.id,'subjectId',f.subject_id,'bucket','genomes','objectId',f.storage_object_id,
+   'fileId',f.id,'subjectId',f.subject_id,'bucket','genomes','objectId',(c->>'objectId')::uuid,
    'objectKey',f.bucket_path,'sourceRevision',f.upload_revision,'rawSha256',f.sha256,
    'decodedSha256',f.source_sha256,'sizeBytes',f.size_bytes,'fileType',f.file_type,
    'maximumDecodedBytes',c->'maximumDecodedBytes');
