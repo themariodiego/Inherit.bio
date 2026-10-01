@@ -81,19 +81,20 @@ insert into public.report_templates(slug,category,title,summary,status,evidence,
  values('synthetic-account-path-b-variant','synthetic','Synthetic variant','Synthetic deletion-refusal fixture.',
  'published','emerging','variant_call',null,
  '[{"rsid":123,"gene":"SYNTHETIC","chrom":1,"pos38":100000,"ref":"A","alt":"G","interpretations":{"AG":"Synthetic covered genotype"}}]');
-create function pg_temp.insurance() returns jsonb language plpgsql as $$
+create function pg_temp.insurance(p_account text,p_nonce text) returns jsonb language plpgsql as $$
 declare c jsonb; own_subject uuid; a public.consent_artifacts;
 begin
- select id into strict own_subject from public.subjects where subject_class='self' and subject_account_id=pg_temp.a('2');
- c:=private.own_upload_context_v1(pg_temp.a('2'),pg_temp.s('2'),own_subject);
+ select id into strict own_subject from public.subjects where subject_class='self' and subject_account_id=pg_temp.a(p_account);
+ c:=private.own_upload_context_v1(pg_temp.a(p_account),pg_temp.s(p_account),own_subject);
  select * into strict a from public.consent_artifacts where artifact_key='disclosure.insurance-and-discrimination' and superseded_at is null;
  insert into public.account_operation_nonces(nonce_hash,account_id,session_id,operation,expires_at)
- values(repeat('0',64),pg_temp.a('2'),pg_temp.s('2'),'own_upload_artifact_sign',clock_timestamp()+interval '9 minutes');
- return public.sign_own_upload_artifact_v1(pg_temp.a('2'),pg_temp.s('2'),own_subject,a.artifact_key,a.version,a.body_sha256,array['understood'],
+ values(repeat(p_nonce,64),pg_temp.a(p_account),pg_temp.s(p_account),'own_upload_artifact_sign',clock_timestamp()+interval '9 minutes');
+ return public.sign_own_upload_artifact_v1(pg_temp.a(p_account),pg_temp.s(p_account),own_subject,a.artifact_key,a.version,a.body_sha256,array['understood'],
  (c->>'accountRevision')::bigint,(c->>'authSessionRevision')::bigint,(c->>'jurisdictionRevision')::bigint,
- (c->>'subjectBindingRevision')::bigint,(c->>'accountBindingRevision')::bigint,repeat('0',64));
+ (c->>'subjectBindingRevision')::bigint,(c->>'accountBindingRevision')::bigint,repeat(p_nonce,64));
 end $$;
-select pg_temp.insurance();
+select pg_temp.insurance('1','9');
+select pg_temp.insurance('2','0');
 select public.grant_path_b_purpose_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),'reports.monogenic','self',
  a.version,a.body_sha256,repeat('6',64),clock_timestamp()+interval '5 minutes',true)
  from public.consent_artifacts a where a.artifact_key='consent.own-monogenic' and a.superseded_at is null;
@@ -101,6 +102,16 @@ select pg_temp.notice_session('main','1');
 select is(public.respond_adult_upload_revision_v1(repeat('1',64),'deletion-confirm-11111111111111','confirm',pg_temp.a('2')),
  'confirmed','the exact mailed held revision really admits normalization');
 create temporary table normalization as select public.path_b_normalization_v1('claim',null,repeat('7',64),null,null,true)c;
+select ok((select c is not null and c->>'fileId'=pg_temp.fxv('main','revision')
+ and c->>'subjectId'=pg_temp.sid('main')::text and c->>'objectId'=pg_temp.fxv('main','object')
+ and c->>'rawSha256'=repeat('e',64) and c->>'decodedSha256'=repeat('b',64)
+ and (c->>'sourceRevision')::bigint=1 and (c->>'claimExpiresAt')::timestamptz>clock_timestamp()
+ and exists(select 1 from public.worker_jobs j where j.id=(c->>'jobId')::uuid
+  and j.status='running' and j.file_id=pg_temp.fxv('main','revision')::uuid
+  and j.user_id=pg_temp.a('1') and j.subject_id=pg_temp.sid('main')
+  and j.claim_token_hash=repeat('7',64) and j.claim_expires_at=(c->>'claimExpiresAt')::timestamptz
+  and j.computation_revision='path-b-normalization-v1' and j.output_kind='ingest.normalize') from normalization),
+ 'the actual worker returns one current claimed uploader source under both genuine insurance signatures');
 select is(public.path_b_normalization_v1('stage',(c->>'jobId')::uuid,repeat('7',64),(c->>'claim')::uuid,
  '{"kind":"variants","sequence":0,"rows":[{"rsid":123,"chrom":1,"pos":100000,"ref":"A","alt":"G","genotype":"A/G"}]}',true),
  'true'::jsonb,'the planted source passes through the actual normalization stage') from normalization;

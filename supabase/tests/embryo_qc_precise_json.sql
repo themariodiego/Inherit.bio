@@ -52,10 +52,18 @@ set local role authenticated;
 select throws_ok($$select public.read_embryo_qc_rows_v1('ad340000-0000-4000-8000-000000000001',array['ad340000-0000-4000-8000-000000000002']::uuid[])$$,
  '42501','permission denied for function read_embryo_qc_rows_v1','actual authenticated invocation is denied before any QC read');
 reset role;
-set local role inherit_upload_only;
-select throws_ok($$select public.read_embryo_qc_rows_v1('ad340000-0000-4000-8000-000000000001',array['ad340000-0000-4000-8000-000000000002']::uuid[])$$,
+-- The restricted role has no pgTAP schema usage. Resolve the test harness as
+-- the owner, then execute the unchanged reader denial under the actual role.
+-- pgTAP catches the exception in a subtransaction, restoring SET LOCAL ROLE.
+select extensions.ok(not has_schema_privilege('inherit_upload_only','extensions','usage'),
+ 'upload-only has no test-schema usage before its real reader refusal');
+select extensions.throws_ok($$set local role inherit_upload_only;
+select public.read_embryo_qc_rows_v1('ad340000-0000-4000-8000-000000000001',array['ad340000-0000-4000-8000-000000000002']::uuid[])$$,
  '42501','permission denied for function read_embryo_qc_rows_v1','actual upload-only invocation is denied before any QC read');
-reset role;
+select extensions.is(current_user::text,session_user::text,
+ 'caught upload-only refusal restores the original test owner');
+select extensions.ok(not has_schema_privilege('inherit_upload_only','extensions','usage'),
+ 'upload-only refusal preserves its absent test-schema usage');
 
 -- A JWT string alone never turns a PostgreSQL caller into the service role.
 select set_config('request.jwt.claims','{"role":"service_role"}',true);

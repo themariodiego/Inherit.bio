@@ -28,6 +28,128 @@ No prior assertion, timeout, retry, SQL, grant, provider or public/READY gate
 changes. The failed log remains account-consumed-worker-focused-final.log.
 This source checkpoint has no full combined database/browser/provider credit;
 actual POST/status orchestration and the remaining graphs stay outstanding.
+## 2026-10-01 — Control only the quota fixture clock and prove the unchanged capability boundaries
+
+The actual complete Linux unit run on f54502eb failed one assertion in the
+512-object prepared-artifact capacity test: a signed request answered404 where
+the unchanged test required200. The failed log is retained. A cause was not
+captured at that instant; later independent PostgreSQL and Node clock probes
+are not evidence of that request's clock or signature state.
+
+The capacity test now fixes only Date while it executes every original quota,
+request, isolation and closure assertion. Real signing, verification, payload
+reads, timers and production authorization remain unchanged. A separate test
+uses the same real gateway to require rejection of a future-issued signed
+capability, a lifetime above30seconds and an exactly expired capability, while
+accepting the original valid30second capability. Each test restores real Date
+in finally. No product tolerance, expiry, retry, timeout, skip or assertion is
+relaxed; this fixture clock is not an elapsed-time or provider receipt.
+
+## 2026-10-01 — Use saved nonce expiries and genuine uploader insurance in the combined account fixtures
+
+The actual full fresh run of f54502eb2d7cf1c0e81e4664f89b45e0b5adea48
+passed all 215 migrations but stopped account_operation_nonce_rendered after
+its first 14 assertions: the recorder rejected the inline volatile exact
+clock-plus-ten-minute argument. The same unchanged 24-assertion file passed
+when rerun alone. The failure is retained; no backward-clock cause is proved.
+The fixture now saves one millisecond render instant and its exact ten-minute
+expiry before posting, as the actual stateless nonce renderer does. Every
+original positive, expired, eleven-minute, old-session, replay, cancellation
+and pruning assertion remains. Three added assertions pin the exact saved
+lifetime and verify that request/cancellation persist that original expiry
+without renewal. The production recorder, ten-minute maximum, all session
+checks and account nonce source remain byte-identical.
+
+The same full run stopped account_path_b_request_refusal after 28 assertions.
+Its original insurance helper signed only for the recipient, while the real
+normalization authority independently requires the uploader's current own
+insurance signature. The helper now signs the current artifact through the
+actual own-upload context and signature producer for both accounts. One
+additional assertion requires a non-null native claim with the exact source,
+subject, held object, hashes, revision, worker dispatch, claim hash and lease
+before the unchanged real stage/complete and whole-graph rollback assertions.
+No queued/running job, normalized result or provider acknowledgement is
+planted; unsupported Path B account erasure remains closed.
+
+The held-table source census also failed exactly one assertion: migration029
+adds the private, API-denied account class inventory. Its exact literal name
+joins the expected census only when the reviewed function is installed. A new
+assertion pins that actual body MD5, postgres ownership, full configuration
+and every API execution denial. The current canonical-vs-denied023 activation
+identity and every other original census/body/role predicate remain exact.
+No permissions, production functions, migration bytes, timeouts, retries,
+case omissions or acceptance values change. Full fresh SQL qualification is
+root-owned and remains required; focused source checks are not SQL execution.
+
+## 2026-10-01 — Qualify objection outcome columns after the actual fresh-database failure
+
+The full fresh run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48 stopped at
+future_person_keyless_objection_decisions.sql:82: the decision handler's local
+state variable conflicted with mail_outbox.state in the final invalidation.
+The overrule branch had the same ambiguity when selecting the live retention
+row. Both statements now explicitly qualify their table columns. The exact
+predicates, locks, updates, all three receipts, current reviewer/read/nonce/
+revision checks and every existing SQL assertion remain unchanged. No
+dispatcher, grant, deadline, provider field or predecessor acceptance changes.
+The original combined-guarded-corrections-pgtap.log failure remains evidence;
+actual corrected SQL execution is pending root's independent rehearsal.
+The unchanged reviewer/native-route/bridge units pass all26 tests and scoped
+lint passes. No existing source body pin targets this decision handler; its
+body MD5 changes from707e6b235bf8eed92578c9b905d7162d to
+65dead9008accb470b2aec1cc82107cb. Protected mail-dispatcher pins are unchanged.
+
+## 2026-10-01 — Run the restricted-role QC assertion without test-schema grants
+
+The actual f54502eb full fresh run reached58 passing QC precision assertions,
+then could not resolve pgTAP `throws_ok` under `inherit_upload_only`. That role
+intentionally lacks USAGE on `extensions`; the failure did not call the QC
+reader. The owner now resolves `extensions.throws_ok`, and its caught SQL
+executes SET LOCAL ROLE followed by the exact original reader invocation.
+The original42501 SQLSTATE, exact permission-denied message and assertion
+remain unchanged. Three additional assertions prove absent test-schema usage
+before and after the call and restoration of the original test owner.
+No role grant, search path, product ACL or function changes. pgTAP's original
+EXECUTE/exception block provides the transactional role restoration; its
+primary source is https://github.com/theory/pgtap/blob/master/sql/pgtap.sql.in.
+The failed run remains recorded. This is source-backed fixture correction;
+root must execute it against the actual restricted role. No database ran here.
+
+## 2026-10-01 — Name both exact class-inventory comparison columns
+
+The actual full fresh database run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48
+stopped after134 passing assertions in account_archive_class_inventory.sql.
+pgTAP materializes its comparison query as a temporary table, and two unnamed
+JSON text expressions both became `?column?`. The actual class/mode and
+class/count projections now name their columns `kind`/`mode` and `kind`/`rows`,
+matching the already named comparators. Every expression, value, row, order,
+expected class, expected mode and assertion remains unchanged. Independent
+byte comparison after removing exactly those four aliases reproduces the
+original complete fixture. No product, permission, timeout or gate changes.
+The failed full-run log is retained at
+/tmp/inherit-integrator-20260930/combined-guarded-corrections-pgtap.log;
+root owns the actual database rerun. No database execution occurred here.
+
+## 2026-10-01 — Preserve information-request negative fixtures without a duplicate typed key
+
+The actual combined type check on 29492581b459f07183667620029bc033b656b711
+failed at src/app/api/jobs/mail/route.test.ts:348 with TS2783 because every negative patch
+already contains template_payload after the same object literal explicitly
+declares that key. The unchanged base fixture is now constructed first, then
+the original patch is spread over it. All four runtime rows, their override
+order and every original assertion remain exact: private payloads and access
+fragments still refuse before submission authorization or provider use. No
+product handler, mail producer, authority, delivery or retention rule changes.
+All40 focused mail tests and scoped lint pass. Independent comparison of the
+actual old/new constructors preserves all four serialized rows and key order;
+every other byte of the test file, including all assertions, is unchanged.
+Root retains combined-current-native-qc-final-typecheck.log and owns the
+complete combined type-check rerun; none ran in this corrective checkout.
+
+## 2026-10-01 — Parenthesize the exact account guard ACL expectation
+
+The actual complete fresh reset of29492581 stopped at migration030, statement0, with SQLSTATE42601. Its outer PL/pgSQL IF compared ACL cardinality with a bare CASE expression, so the parser treated the CASE/IF boundary incorrectly. Parentheses now delimit that same exact CASE expression. The expected owner-only/service-door ACL cardinalities remain1/2; every predecessor and replacement MD5, owner, language, ABI, configuration, role denial, ACL predicate, source anchor and generated runtime body stays byte-identical.
+
+The failed reset log is retained. This is a two-parenthesis grammar correction, not a database or gate pass inferred from source. Root must rehearse the actual prefix through029 and repeat the complete chronological reset and test suite before release. No assertion, timeout, retry, permission or acceptance changes.
 
 ## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
 
