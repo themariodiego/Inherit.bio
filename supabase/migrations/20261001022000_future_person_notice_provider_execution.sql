@@ -173,4 +173,23 @@ end $$;
 revoke all on function public.record_resend_mail_event(text,text,text,timestamptz)
   from public,anon,authenticated,inherit_upload_only;
 grant execute on function public.record_resend_mail_event(text,text,text,timestamptz) to service_role;
+
+-- The native service RPC is the sole API door to the now-denied private
+-- dispatcher. Its original invoker ABI must delegate under the owner, rather
+-- than restoring direct API execution on the private dispatcher/delegates.
+do $$
+begin
+  if not exists(select 1 from pg_catalog.pg_proc p where p.oid=
+    'public.authorize_mail_submission_v1(uuid,smallint)'::regprocedure
+    and p.proowner=(select oid from pg_catalog.pg_roles where rolname='postgres')
+    and p.prolang=(select oid from pg_catalog.pg_language where lanname='sql')
+    and p.prorettype='boolean'::regtype and p.proconfig=array['search_path=""']::text[]
+    and regexp_replace(p.prosrc,'\s','','g')=
+      'selectprivate.authorize_mail_submission_v1(p_outbox_id,p_attempt_ordinal);') then
+    raise exception using errcode='55000',message='unexpected mail submission door';end if;
+end $$;
+alter function public.authorize_mail_submission_v1(uuid,smallint) security definer;
+revoke all on function public.authorize_mail_submission_v1(uuid,smallint)
+  from public,anon,authenticated,inherit_upload_only,service_role;
+grant execute on function public.authorize_mail_submission_v1(uuid,smallint) to service_role;
 notify pgrst,'reload schema';
