@@ -38,11 +38,12 @@ async function decide(request:Request,id:string):Promise<Response> {
   if(body.data.decision==="refuse-release"&&body.data.refusalCode==="identity_profile_conflict"
     &&(review.profileMatches||review.scope.profile===null))return notFound();
   const contactId=approval?crypto.randomUUID():null;
+  const finalAttestation={...review.documentaryIdentity,recordedParentLinkConfirmed:true as const};
   const result=await ownJwt.rpc("decide_keyless_release_v1",{
     p_review:id,p_review_revision:body.data.reviewRevision,p_notice_revision:body.data.noticeRevision,p_decision:body.data.decision,
     p_refusal_code:body.data.decision==="refuse-release"?body.data.refusalCode:null,p_nonce_hash:nonceHash,
     p_reason:sealReason(body.data.reason,review.scope.wrappedComparisonKey,id,nonceHash),
-    p_attestation:approval?sealDocumentaryAttestation({...review.documentaryIdentity,recordedParentLinkConfirmed:true},review.scope.wrappedComparisonKey,id,nonceHash):null,
+    p_attestation:approval?sealDocumentaryAttestation(finalAttestation,review.scope.wrappedComparisonKey,id,nonceHash):null,
     p_verified_birth:approval?review.documentaryIdentity.dateOfBirth:null,p_identity_set:approval?verifiedIdentityDigestSet(review.documentaryIdentity):null,
     p_profile_set:approval||(body.data.decision==="refuse-release"&&body.data.refusalCode==="identity_profile_conflict")?review.profileIndexes:null,
     p_contact:contactId,p_contact_ciphertext:approval?sealClaimantContact(contactId!,address!):null,p_contact_set:approval?contactDigestSet(address!):null,

@@ -1,5 +1,10 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the complete fresh linked attestation through TypeScript
+
+Actual Next type generation passed on7a054b3f, while the nonincremental compiler found an owned excess-property error at the inline fresh attestation literal. The established sealer accepts its five documentary fields structurally and seals the complete supplied registered linked object. Naming the exact linked attestation before the call preserves its mandatory true parent fact and every encrypted byte/field expectation, without a cast, parser relaxation, field omission or sealer ABI change. Composed native tests continue to decrypt and require all six exact fields. The two inherited mail-fixture/preparation-mock type errors remain separately visible for root integration; the failed source/log is retained. No actual database, hosted browser or provider completion is inferred from this correction.
+
+
 ## 2026-10-01 — Keep native keyless notice, objection and final fresh release distinct
 
 Initial unclaimed documentary matching now has its real pending-notice action; pending notice cases receive no repeated initial approval choice. The registered pending delivery/notice/objection shapes remain recursively closed. The new final native body accepts only the two registered decisions/five actual refusal codes, current revisions, professional basis and a distinct current assigned proof. Public execution captures the real server clock. One finite owner-only/API-denied clock core provides synthetic executor boundary evidence; it cannot supply elapsed provider, native or human credit. Every original Card/source/EOF/ACK/refusal guard remains. The UI requires newly complete/rendered full files and explicit current human checks, and assigned objection controls preserve all three revisions.
