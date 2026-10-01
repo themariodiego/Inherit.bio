@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Keep the bound-source unit helper outside production source
+
+The full Linux run on `9319dddc` passed 8,364 tests and refused one unlisted
+Vitest-only helper under `src/lib/exports/__fixtures__`. Its only two callers
+are unit tests. The helper moves to `scripts/unit-fixtures/bound-source.ts`;
+only its import paths and those two test imports change. Every synthetic
+byte, gateway/relocation operation and original assertion is preserved.
+The production token census, allowlist and no-demo import-graph gate remain
+unchanged. No production fixture route, token exemption or acceptance credit
+is added. The failed full run stays recorded; this source is qualified again.
+
 ## 2026-10-01 — Compose ordinary account content under the real consumed worker request
 
 Migration `20261001019000` adds a distinct service-only account content door.

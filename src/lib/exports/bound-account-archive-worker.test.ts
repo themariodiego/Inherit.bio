@@ -3,7 +3,7 @@ import AdmZip from "adm-zip";
 import {afterEach,describe,expect,it,vi} from "vitest";
 import type {z} from "zod";
 import {claimantArchiveFixture} from "./__fixtures__/claimant-archive";
-import {boundSourceFixture} from "./__fixtures__/bound-source";
+import {boundSourceFixture} from "../../../scripts/unit-fixtures/bound-source";
 import {buildBoundAccountArchive,accountArchiveContextSchema,type AccountMemberRpc,type AccountBoundSourceRpc} from "./bound-account-archive-worker";
 import {generatedProducerMembers,producerArchiveMembers} from "@/lib/export/archive-producers";
 import {claimantAuditMember} from "./claimant-legal-audit";

@@ -1,9 +1,9 @@
 import {createHash,randomUUID} from "node:crypto";
 import {expect,vi} from "vitest";
 import {createEmbryoFixtureSigner,createEmbryoFragmentGateway,EMBRYO_FIXTURE_ORIGIN,
- EMBRYO_FIXTURE_BUCKET,EMBRYO_FIXTURE_SUPABASE_URL} from "../../../../scripts/ci-browser/embryo-fragment-fixture";
+ EMBRYO_FIXTURE_BUCKET,EMBRYO_FIXTURE_SUPABASE_URL} from "../ci-browser/embryo-fragment-fixture";
 import {copyRelocation,disposeRelocation,type RelocationTarget} from "@/lib/future-person/relocation-transport";
-import type {BoundArchiveSourceRpc} from "../bound-account-source";
+import type {BoundArchiveSourceRpc} from "@/lib/exports/bound-account-source";
 const sha=(v:Uint8Array)=>createHash("sha256").update(v).digest("hex"),signal=()=>new AbortController().signal;
 export async function boundSourceFixture(payloads?:Uint8Array[]){
  const signer=createEmbryoFixtureSigner(),gateway=createEmbryoFragmentGateway(signer.publicJwk);
