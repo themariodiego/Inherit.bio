@@ -151,7 +151,7 @@ select is((public.claim_embryo_split_job_v1(repeat('c',64),'synthetic-worker')->
 select is(public.stage_embryo_split_variants_v1((select id from job),1,repeat('c',64),0,0,
   '[[1,1000,"A","G","A/G"]]')->>'status','staged','it stages one synthetic genotype for embryo 1');
 select throws_ok($$select public.finish_embryo_split_ordinal_v1((select id from job),1,repeat('c',64),0,
-  jsonb_build_object('outcome','passed','qc',jsonb_build_object('sites_expected',10,'sites_called',10,
+  jsonb_build_object('outcome','passed','qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.3,null),'sites_expected',10,'sites_called',10,
     'call_rate',1,'autosomal_het_rate',0.3,'mean_depth',null,'qc_verdict','pass','qc_reasons','[]'::jsonb),
     'failureReason',null,'variantCount',1))$$,'55000','canonical source unlanded',
   'a staged result without landed canonical parts cannot record a passing outcome');
@@ -161,7 +161,7 @@ select is((select count(*) from private.embryo_canonical_parts where session_id=
   'the refused pass reserves no canonical provider write');
 select is(pg_temp.land_parts(0,repeat('c',64)),2,'it copies embryo 1''s two fragments into canonical parts');
 select is(public.finish_embryo_split_ordinal_v1((select id from job),1,repeat('c',64),0,
-  jsonb_build_object('outcome','passed','qc',jsonb_build_object('sites_expected',10,'sites_called',10,
+  jsonb_build_object('outcome','passed','qc',jsonb_build_object('figure_basis',pg_temp.qc_receipt(0.3,null),'sites_expected',10,'sites_called',10,
     'call_rate',1,'autosomal_het_rate',0.3,'mean_depth',null,'qc_verdict','pass','qc_reasons','[]'::jsonb),
     'failureReason',null,'variantCount',1))->>'outcome','passed','and records a pending outcome for it');
 -- A copy for embryo 2 is reserved and never landed; a short claim bounds

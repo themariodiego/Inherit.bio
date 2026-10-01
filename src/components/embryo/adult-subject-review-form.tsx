@@ -103,7 +103,7 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
         </div>
         {review.acceptanceBlockedBy === "sign-in" ? (
           <Link
-            href="/auth/sign-in?next=%2Fwithdraw%2Fsession"
+            href={route("auth.sign-in", { query: { next: "/withdraw/session" } })}
             className="inline-flex min-h-11 items-center rounded-full bg-forest px-6 py-3 text-on-forest"
           >
             Sign in to accept

@@ -17,11 +17,11 @@ const input = { accountId, sessionId, subjectId, accountRevision: 2, authSession
   jurisdictionRevision: 4, subjectBindingRevision: 5, accountBindingRevision: 1, artifactKey: "consent.upload-self" as const,
   artifactVersion: 1, artifactBodySha256: "a".repeat(64) };
 function requestCase(claims = input) {
-  const { token, nonceHash } = mintOwnConsentPresentation(claims);
+  const { token, nonceHash, claims: minted } = mintOwnConsentPresentation(claims);
   const body = { action: "sign-artifact", signatureClass: "tier1-self", subjectId,
     artifactVersion: 1, artifactPresentationToken: token, affirmed: true, statementKeys: ["own-adult-dna"] };
   const headers = { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": token };
-  return { body, headers, nonceHash };
+  return { body, headers, nonceHash, expiresAt: minted.expiresAt };
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -34,17 +34,18 @@ function send(body: unknown, headers: Record<string, string>) {
 }
 describe("own-account consent signing route", () => {
   it("passes only verified session/artifact/revision values and the nonce digest to the atomic signer", async () => {
-    const { body, headers, nonceHash } = requestCase();
+    const { body, headers, nonceHash, expiresAt } = requestCase();
     const res = await send(body, headers);
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual(receipt);
     expect(res.headers.get("cache-control")).toBe("private, no-store");
     expect(res.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("sign_own_upload_artifact_v1", {
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("sign_own_upload_artifact_v2", {
       p_account_id: accountId, p_session_id: sessionId, p_subject_id: subjectId,
       p_artifact_key: input.artifactKey, p_artifact_version: 1, p_artifact_body_sha256: input.artifactBodySha256,
       p_statement_keys: ["own-adult-dna"], p_account_revision: 2, p_auth_session_revision: 3,
       p_jurisdiction_revision: 4, p_subject_binding_revision: 5, p_account_binding_revision: 1, p_nonce_hash: nonceHash,
+      p_nonce_expires_at: new Date(expiresAt).toISOString(),
     });
   });
   it.each(["origin", "sec-fetch-site", "x-inherit-csrf"])("requires the same-origin %s signal", async (name) => {

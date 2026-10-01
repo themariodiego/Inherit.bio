@@ -211,13 +211,28 @@ was always registered, and its `methodDivergence` row is removed.
   In either other order, account deletion would briefly call a function that
   is missing or refused.
 
-**One more site the rule now covers.** The upload page renders an own-upload
-consent or account-completion token. It stores that token's nonce hash
-through `issue_own_upload_nonce_v1` on every render (`prepareOwnUpload`). X1.5
-forbids this too. It is recorded in
-`docs/register-contract-divergence.json#nonceStoredBeforeUse` and compared in
-both directions, with the same rebuild as its closing. No owner decision is
-needed for it.
+**The upload page, closed the same way (2026-09-28).** The page rendered
+its own-upload consent and account-completion tokens, which were already
+signed and stateless. But `prepareOwnUpload` also stored each token's nonce
+hash through `issue_own_upload_nonce_v1` on every render.
+
+- `prepareOwnUpload` now only reads and mints. It writes nothing.
+- `POST /api/account/completion` calls `complete_own_upload_account_v2`, and
+  the consent POST calls `sign_own_upload_artifact_v2`. Each records the nonce
+  hash once, then runs the unchanged v1 body in the same transaction.
+- The recorder refuses an expiry beyond ten minutes, a malformed hash, or a
+  hash it has seen, with the same `not_found` the v1 body gave for a spent
+  nonce.
+
+There are two migrations, in deploy order:
+1. `20260930140400_own_upload_nonce_rendered.sql` adds. Apply it **before**
+   the code deploys.
+2. `20260930140500_retire_stored_own_upload_nonce.sql` drops both
+   `issue_own_upload_nonce_v1` doors and revokes the v1 signer and completion
+   from the service role. Apply it **after** the code deploys.
+
+`nonceStoredBeforeUse` is empty again and is still compared in both
+directions.
 
 ## 3. `/withdraw/request`: a registered page built as a `route.ts`
 

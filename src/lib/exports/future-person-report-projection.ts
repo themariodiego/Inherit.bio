@@ -1,5 +1,5 @@
 import "server-only";
-import { assertEmbryoDto,type EmbryoFinding } from "@/lib/embryos/policy";
+import { readHistoricalFinding,historicalFindingBasis } from "./historical-embryo-dto";
 
 /** Own historical finding component. This deliberately accepts the complete
  * stored finding, rather than a current-catalog filtered page. The future
@@ -7,10 +7,11 @@ import { assertEmbryoDto,type EmbryoFinding } from "@/lib/embryos/policy";
  * Cohort comparisons remain excluded under the claimant export contract.
  * This projector alone is not a complete report/member/export authority. */
 export function projectFuturePersonFinding(value:unknown) {
-  const row=assertEmbryoDto("EmbryoFinding",value as EmbryoFinding);
+  const row=readHistoricalFinding(value);
   const finding=row.finding;
   const common={conditionId:row.condition_id,conditionName:row.condition_name,evidenceLabel:row.evidence_label,
-    coverageState:row.coverage_state,citationIds:[...row.citation_ids],notCoveredReason:row.not_covered_reason};
+    coverageState:row.coverage_state,citationIds:[...row.citation_ids],notCoveredReason:row.not_covered_reason,
+    classification:historicalFindingBasis(finding)};
   if(finding?.kind!=="absolute_risk")return {...common,finding:structuredClone(finding),withheldComponents:[]};
   const population=finding.comparators.find(item=>item.comparator==="vs_population_baseline")!;
   return {...common,finding:{kind:finding.kind,riskModel:structuredClone(finding.risk_model),scoreCoverage:finding.score_coverage,

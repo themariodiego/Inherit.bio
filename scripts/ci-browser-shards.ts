@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { z } from "zod";
+import { assertEmbryoJourneyPartition } from "./ci-browser-embryo-partitions";
 import { assertStandardCiBrowserProjects, STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
 
 export const CI_BROWSER_SHARDS = 6;
@@ -72,12 +73,14 @@ export function browserReportCases(value: unknown, index: number | null, execute
   assertStandardCiBrowserProjects(report.config.projects.map(project => project.name));
   assert.deepEqual(report.config.shard, index === null ? null : { current: index, total: CI_BROWSER_SHARDS }, "Browser shard differs");
   const cases: string[] = [];
+  const journeyRows: { project: string; file: string; cases: number }[] = [];
   const visit = (values: unknown[]) => {
     for (const value of values) {
       const suite = suiteSchema.parse(value);
       for (const spec of suite.specs ?? []) for (const test of spec.tests) {
         assert(test.results.length === (executed ? 1 : 0), "Each browser case requires exactly one execution and no discovery execution");
         cases.push(caseId.parse(`${spec.id}:${test.projectName}`));
+        journeyRows.push({ project: test.projectName, file: spec.file, cases: 1 });
       }
       visit(suite.suites ?? []);
     }
@@ -89,6 +92,7 @@ export function browserReportCases(value: unknown, index: number | null, execute
   assert.equal(report.stats.expected, executed ? cases.length : 0, "Browser expected-result count differs");
   assert.equal(report.stats.skipped, executed ? 0 : cases.length, "Browser skipped-result count differs");
   if (index === null) assertStandardCiBrowserProjects([...new Set(cases.map(id => id.split(":")[1]))]);
+  assertEmbryoJourneyPartition(journeyRows, index === null);
   return sortedUnique(cases);
 }
 export const OPTIONAL_BROWSER_SPEC_FILES = Object.freeze([
@@ -150,11 +154,13 @@ export function verifyBrowserShards(expected: unknown, values: unknown[], source
   assert(receipts.length === CI_BROWSER_SHARDS && new Set(receipts.map(item => item.index)).size === CI_BROWSER_SHARDS,
     "Exactly one receipt for every registered browser shard is required");
   for (const receipt of receipts) {
+    assertEmbryoJourneyPartition(receipt.files.map(row => ({ ...row, cases: row.cases.length })), false);
     sameCases(receipt.fullCases, manifest.cases);
     sameCases(receipt.executedCases, receipt.assignedCases);
     sameCases(receipt.files.flatMap(file => file.cases), receipt.executedCases);
     assert.deepEqual(sortedUnique(receipt.fullFiles), sortedUnique(manifest.files), "Browser source file inventories differ");
   }
+  assertEmbryoJourneyPartition(receipts.flatMap(receipt => receipt.files.map(row => ({ ...row, cases: row.cases.length }))), true);
   sortedUnique(receipts.flatMap(receipt => receipt.files.map(file => `${file.project}:${file.file}`)));
   assert(receipts.reduce((sum, receipt) => sum + receipt.providerUploads, 0) > 0,
     "No browser upload crossed the actual provider across the complete suite");

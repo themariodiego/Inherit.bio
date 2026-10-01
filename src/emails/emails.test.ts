@@ -209,6 +209,15 @@ describe("embryo upload notice email", () => {
     expectSafeBody(html, true);
   });
 
+  it("permits only the exact required privacy contact and still detects every additional address", async () => {
+    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail,
+      { ...notice, embryoCount: 1, uploaderName: null, uploadedBy: "someone-else" }));
+    expectSafeBody(html, true);
+    for (const addition of ["participant@e2e.local", "privacy@inherit.bio", "privacy@inherit.bio.attacker@example.test"]) {
+      expect(() => expectSafeBody(html + addition, true)).toThrow();
+    }
+  });
+
   it("renders one record in the singular, a neutral uploader and no link without a withdraw URL", async () => {
     const html = await renderHtml(createElement(EmbryoUploadNoticeEmail,
       { ...notice, embryoCount: 1, uploaderName: null, uploadedBy: "someone-else" }));

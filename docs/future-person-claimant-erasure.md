@@ -60,3 +60,32 @@ Source contracts: the Future Person Charter in `docs/inherit-v2-brief.md`,
 Local focused adapter tests are protocol tests, not hosted provider/browser
 acceptance. Full fresh database and complete browser verification remain
 required before this prerequisite can support a released action.
+
+The graph continuation deliberately corrects the physical registry from147 to
+153: the six existing private archive children are all covered, without adding
+a table. `docs/claimant-erasure-selectors.json` records every closed selector
+and exact exclusion. The sealed graph uses primary keys and exact object
+handles; it does not copy DNA, document bodies or ciphertext into the manifest.
+Only the actual part rows enter the gateway. A private final transaction checks
+all part markers, existing document-disposal callbacks and zero original graph
+keys, then removes the source, contact, claimant, review and subject together.
+A missing/uncertain export, model-provider or other object disposal receipt
+continues to refuse; these have no fabricated completion path. Terminal coded
+controls preserve original clocks and counts while losing the live subject,
+provider key and body associations. This source checkpoint still requires a
+fresh database rehearsal and real provider proof before opening the action.
+
+The controls continuation also minimizes the actual older237 claimant-contact
+timer after complete graph proof. Its original fixed deadline and coded
+controls remain; subject/contact/outbox associations are erased. Selection uses
+only typed targets from the sealed current manifest. An older executing plan or
+unproved physical key refuses. Current246/247 export authority retains its
+subject-first lock before requests and provider reservations, so deletion
+serializes with that authority; every export/provider hold remains in force.
+
+The derived continuation removes the closed database-only result keys inside
+the request transaction, before its source-provider lease. This closes the
+source-code timing gap for those rows; genuine QC and sibling assertions still
+need the full database rehearsal. Report/model/export provider reservations
+without a proved disposal door refuse the entire request. Source and custody
+remain pending until their separate ACK-backed finish. No public action opens.

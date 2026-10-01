@@ -2793,6 +2793,7 @@ export type Database = {
       }
       embryo_qc: {
         Row: {
+          figure_basis: Json | null
           allelic_dropout_estimate: number | null
           allelic_dropout_interval_high: number | null
           allelic_dropout_interval_low: number | null
@@ -2816,6 +2817,7 @@ export type Database = {
           source_laboratory: string | null
         }
         Insert: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -2839,6 +2841,7 @@ export type Database = {
           source_laboratory?: string | null
         }
         Update: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -3742,6 +3745,11 @@ export type Database = {
       }
       future_person_identity: {
         Row: {
+          profile_format_version: number | null
+          wrapped_profile_key: string | null
+          match_indexes: Json
+          fixed_expires_at: string | null
+          authority_snapshot: Json | null
           created_at: string
           embryo_id: string
           ended_at: string | null
@@ -3754,6 +3762,11 @@ export type Database = {
           state: string
         }
         Insert: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id: string
           ended_at?: string | null
@@ -3766,6 +3779,11 @@ export type Database = {
           state?: string
         }
         Update: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id?: string
           ended_at?: string | null
@@ -7621,6 +7639,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      future_person_profile_controls_v1: { Args: { p_account: string; p_session: string; p_after?: string | null }; Returns: Json }
+      future_person_profile_context_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string | null }
+        Returns: Json
+      }
+      write_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string; p_expected: Json;
+          p_profile: string; p_ciphertext: string; p_wrapped_key: string; p_indexes: Json; p_nonce: string }
+        Returns: Json
+      }
+      delete_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_expected: Json; p_nonce: string }
+        Returns: undefined
+      }
+      purge_due_future_person_profiles_v1: { Args: Record<PropertyKey, never>; Returns: number }
       future_person_export_request_v1: {
         Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
         Returns: Json
@@ -7647,6 +7680,10 @@ export type Database = {
       future_person_binding_context_v1: { Args: { p_rights_session_hash: string }; Returns: Json }
       bind_future_person_account_v1: { Args: { p_rights_session_hash: string; p_nonce: string; p_expected: Json }; Returns: boolean }
 
+      embryo_upload_account_live_v1: {
+        Args: { p_account_id: string; p_auth_session_id: string }
+        Returns: boolean
+      }
       finish_genome_file_deletion_v1: {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
         Returns: undefined
@@ -8043,6 +8080,48 @@ export type Database = {
       }
       commit_embryo_ingest_chunk_v1: {
         Args: { p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
+      }
+      complete_embryo_ingest_v1: {
+        Args: {
+          p_account: string
+          p_auth: string
+          p_session: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort: string
+          p_ingest_revision: number
+          p_chunk_count: number
+          p_nonce: string
+          p_test?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_issued_tokens_match_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_completion_nonce_hash: string
+          p_csrf_hash: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: boolean
+      }
+      fail_embryo_ingest_attempt_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_code: string
+          p_test_jurisdiction?: boolean
+        }
         Returns: Json
       }
       complete_account_deletion_storage_batch_v1: {
@@ -8636,22 +8715,6 @@ export type Database = {
         }
         Returns: Json
       }
-      issue_own_upload_nonce_v1: {
-        Args: {
-          p_account_binding_revision: number
-          p_account_id: string
-          p_account_revision: number
-          p_auth_session_revision: number
-          p_expires_at: string
-          p_jurisdiction_revision: number
-          p_nonce_hash: string
-          p_operation: string
-          p_session_id: string
-          p_subject_binding_revision: number
-          p_subject_id: string
-        }
-        Returns: undefined
-      }
       complete_own_upload_account_v1: {
         Args: {
           p_account_binding_revision: number
@@ -8660,6 +8723,22 @@ export type Database = {
           p_auth_session_revision: number
           p_date_of_birth: string
           p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      complete_own_upload_account_v2: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_auth_session_revision: number
+          p_date_of_birth: string
+          p_jurisdiction_revision: number
+          p_nonce_expires_at: string
           p_nonce_hash: string
           p_session_id: string
           p_subject_binding_revision: number
@@ -8677,6 +8756,25 @@ export type Database = {
           p_artifact_version: number
           p_auth_session_revision: number
           p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_statement_keys: string[]
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      sign_own_upload_artifact_v2: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_artifact_body_sha256: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_auth_session_revision: number
+          p_jurisdiction_revision: number
+          p_nonce_expires_at: string
           p_nonce_hash: string
           p_session_id: string
           p_statement_keys: string[]

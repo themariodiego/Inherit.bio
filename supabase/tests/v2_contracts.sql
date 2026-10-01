@@ -1,10 +1,14 @@
 begin;
-select plan(24);
+select plan(25);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
-select is((select count(*) from public.retention_phase_registry), 53::bigint,
-  '52 scheduled phases plus the canonical own-report revocation phase are registered');
+select is((select count(*) from public.retention_phase_registry), 54::bigint,
+  '52 scheduled phases, own-report revocation and claimed-source disposal are registered exactly');
+select ok(exists(select 1 from public.retention_phase_registry
+  where retention_id='future-person.claimant-reverification-until-request'
+    and phase_id='future-person-claimed-source-disposal' and phase_kind='purge'),
+  'the exact existing claimed-source disposal phase accounts for the additional registered phase');
 select is((select count(*) from public.purge_manifest_classes), 25::bigint,
   'all 25 purge manifest classes are registered');
 select is((select count(*) from public.purge_targets), 33::bigint,
@@ -19,8 +23,8 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- The embryo-ingest write fence adds its write intents and session fences,
 -- and the unwind's exact storage disposals add one more.
 -- Both complete embryo and Future Person working-store dependencies.
-select is((select count(*) from public.purge_target_stores), 147::bigint,
-  'all 147 purge stores, including embryo withdrawal and Future Person working packages and receipts, are classified');
+select is((select count(*) from public.purge_target_stores), 153::bigint,
+  'all 153 purge stores, including embryo withdrawal and Future Person working packages and receipts, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');

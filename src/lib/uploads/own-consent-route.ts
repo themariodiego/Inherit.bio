@@ -48,7 +48,8 @@ export async function ownUploadConsent(request: Request, payload: unknown): Prom
     || body.statementKeys[0] !== OWN_UPLOAD_STATEMENTS[presentation.artifactKey][0]) {
     return response({ error: "not_found" }, 404);
   }
-  const { data, error } = await createAdminClient().rpc("sign_own_upload_artifact_v1", {
+  // Brief X1.5: v2 records the nonce hash once, in the signing transaction.
+  const { data, error } = await createAdminClient().rpc("sign_own_upload_artifact_v2", {
     p_account_id: user.id, p_session_id: auth.session_id, p_subject_id: presentation.subjectId,
     p_artifact_key: presentation.artifactKey, p_artifact_version: presentation.artifactVersion,
     p_artifact_body_sha256: presentation.artifactBodySha256, p_statement_keys: body.statementKeys,
@@ -57,6 +58,7 @@ export async function ownUploadConsent(request: Request, payload: unknown): Prom
     p_subject_binding_revision: presentation.subjectBindingRevision,
     p_account_binding_revision: presentation.accountBindingRevision,
     p_nonce_hash: crypto.createHash("sha256").update(presentation.nonce).digest("hex"),
+    p_nonce_expires_at: new Date(presentation.expiresAt).toISOString(),
   });
   if (error) {
     if (error.code === "42501" || error.code === "23505") return response({ error: "not_found" }, 404);

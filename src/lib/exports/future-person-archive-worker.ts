@@ -1,5 +1,10 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { LEGAL_AUDIT_SCHEMA_VERSION } from "@/lib/export/legal-audit";
+import { exportLegalAuditNote } from "@/copy/settings/data-export";
+import { CLAIMANT_LEDGER_UNASSIGNED,CLAIMANT_LEDGER_TEXT_HEADING } from "@/copy/future-person-export";
+import { claimantAuditMember } from "./claimant-legal-audit";
+import { assertHistoricalJson } from "./historical-embryo-dto";
 import { z } from "zod";
 import { createArchivePersistence,type ArchiveWorkerRpc } from "./archive-persistence";
 import { storeArchiveSegments,type ArchiveSegmentationOptions,type ArchiveAttempt,type StoredArchive } from "./archive-segments";
@@ -7,16 +12,15 @@ import { createZip64Archive,createZip64FileSpool,type Zip64Member } from "./arch
 import { futurePersonExportSnapshot,projectFuturePersonAgreements,renderFuturePersonAgreement } from "./future-person-content";
 import { projectFuturePersonFinding } from "./future-person-report-projection";
 import { projectQc,type EmbryoQcRow } from "@/lib/embryos/projection";
+import { historicalClaimantScore,historicalClaimantFigure,historicalClaimantReport,
+  projectHistoricalClaimantFigure,projectHistoricalClaimantReport,projectHistoricalClaimantQc } from "./future-person-historical-members";
 
 const unavailable=()=>new Error("export unavailable");
-const uuid=z.uuid(),hash=z.string().regex(/^[0-9a-f]{64}$/u),count=z.number().int().nonnegative().safe();
 const variant=z.object({id:z.string().regex(/^[1-9][0-9]*$/u).refine(v=>BigInt(v)<=BigInt("9223372036854775807")),chromosome:z.number().int().min(1).max(22),position:z.number().int().positive().safe(),
   referenceAllele:z.string().nullable(),alternateAllele:z.string().nullable(),genotype:z.string()}).strict();
-const score=z.object({id:uuid,condition_id:z.string(),condition_name:z.string(),finding:z.unknown(),evidence_label:z.enum(["clinical","established","emerging","preliminary"]),
-  coverage_state:z.enum(["covered","partial","not_covered","quality_not_measurable"]),citation_ids:z.array(z.string()),not_covered_reason:z.string().nullable(),
-  model_id:z.string().nullable(),model_version:z.string().nullable(),source_binding_fingerprint:hash,computation_revision:count.refine(v=>v>0),computed_at:z.string()}).strict();
+const score=historicalClaimantScore;
 const page=z.object({rows:z.array(z.unknown()).max(500),nextAfterId:z.string().nullable(),count:z.number().int().min(0).max(500)}).strict();
-type Operation="context"|"agreements"|"quality"|"scores"|"variants";
+type Operation="context"|"agreements"|"quality"|"scores"|"figures"|"reports"|"variants"|"legal-audit";
 export type ClaimantMemberRpc=(name:"future_person_export_members_v1",args:{p_operation:Operation;p_export_id:string;p_attempt_id:string;
   p_authority_receipt:string;p_after_id:string|null},signal:AbortSignal)=>PromiseLike<{data:unknown;error:unknown}>;
 type MemberFactory={name:string;rows:number;chunks:(signal:AbortSignal)=>AsyncIterable<Uint8Array>};
@@ -57,26 +61,24 @@ export async function buildClaimantArchive(options:{job:{exportId:string;princip
       if(current.aborted||reply.error)throw unavailable();await check(signal);return reply.data;
     }catch{throw unavailable();}finally{clearTimeout(timeout);current.removeEventListener("abort",rejectAbort);bound.abort();}
   }
-  async function* records<T>(operation:"scores"|"variants",schema:z.ZodType<T>,expectedRows:number,signal:AbortSignal){
+  async function* records<T>(operation:"scores"|"figures"|"reports"|"variants"|"legal-audit",schema:z.ZodType<T>,expectedRows:number,signal:AbortSignal){
     let after:string|null=null,total=0;
     for(;;){const parsed=page.safeParse(await call(operation,signal,after));if(!parsed.success)throw unavailable();const data=parsed.data;
       if(data.count!==data.rows.length||data.nextAfterId!==((data.rows.at(-1) as {id:string}|undefined)?.id??null))throw unavailable();
       if(!data.count){if(total!==expectedRows)throw unavailable();return;}
-      for(const raw of data.rows){const row=schema.safeParse(raw);if(!row.success)throw unavailable();const identity=(raw as {id:string}).id;
-        if(after!==null&&(operation==="variants"?BigInt(identity)<=BigInt(after):identity<=after))throw unavailable();after=identity;
+      for(const raw of data.rows){assertHistoricalJson(raw);const row=schema.safeParse(raw);if(!row.success)throw unavailable();const identity=(raw as {id:string}).id;
+        if(after!==null&&((operation==="variants"||operation==="legal-audit")?BigInt(identity)<=BigInt(after):identity<=after))throw unavailable();after=identity;
         total++;if(total>expectedRows)throw unavailable();yield row.data;}
     }
   }
   async function prepare(signal:AbortSignal){
     const parsed=futurePersonExportSnapshot.safeParse(await call("context",signal));if(!parsed.success||parsed.data.authority.authorityReceipt!==options.job.authorityReceipt)throw unavailable();
     snapshot=parsed.data;
-    if(snapshot.membership.figures||snapshot.membership.reports)throw unavailable();
     const agreements=projectFuturePersonAgreements(await call("agreements",signal));if(agreements.length!==snapshot.membership.agreements)throw unavailable();
     const qcRows=await call("quality",signal);if(!Array.isArray(qcRows)||qcRows.length!==snapshot.membership.qualityReports)throw unavailable();
     const qc=qcRows.map(row=>{
       const complete=projectQc({...row,embryo_id:snapshot.source.subjectId} as EmbryoQcRow);
-      const {parent_a_concordance:_a,parent_b_concordance:_b,...own}=complete;void _a;void _b;
-      return {...own,parentConcordanceDisposition:"outside-claimed-subject"};
+      return projectHistoricalClaimantQc(complete);
     });
     const subjectId=snapshot.source.subjectId,fileId=snapshot.source.fileId,prefix=`subjects/${subjectId}/`;
     const factories:MemberFactory[]=[];
@@ -85,29 +87,54 @@ export async function buildClaimantArchive(options:{job:{exportId:string;princip
     fixed("subjects.json",{schemaVersion:"subject-partitioned-archive-v1",rows:[{subjectId,path:prefix}]},1);
     for(const kind of ["consents","attestations","audit-log","legacy-consents","portrait","embryos"]){
       fixed(`${kind}.json`,{schemaVersion:"subject-partitioned-archive-v1",rows:[{subjectId,path:`${prefix}${kind}.json`}]},1);
-      const ownRows=kind==="consents"?agreements.length:kind==="attestations"?agreements.flatMap(row=>row.attestations).length:kind==="embryos"?1:0;
+      const ownRows=kind==="audit-log"?snapshot.membership.legalAuditEvents:kind==="consents"?agreements.length:kind==="attestations"?agreements.flatMap(row=>row.attestations).length:kind==="embryos"?1:0;
+      if(kind==="audit-log")continue;
       fixed(`${prefix}${kind}.json`,kind==="consents"?{schemaVersion:"subject-partitioned-archive-v1",rows:agreements}:kind==="attestations"?
         {schemaVersion:"subject-partitioned-archive-v1",rows:agreements.flatMap(row=>row.attestations)}:kind==="embryos"?
         {schemaVersion:"subject-partitioned-archive-v1",rows:[{source:snapshot.source}]}:empty,ownRows);
     }
-    fixed("legal-audit.json",{schemaVersion:"legal-audit-export-v1",events:[],attribution:"No historical event is assigned without recorded proof of who acted."});
+    const auditNote=snapshot.legalAudit.attributionStartedAt===null?CLAIMANT_LEDGER_UNASSIGNED:exportLegalAuditNote(
+      new Date(snapshot.legalAudit.attributionStartedAt).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}));
+    for(const member of ["legal-audit.json",`${prefix}audit-log.json`])factories.push({name:member,rows:snapshot.membership.legalAuditEvents,
+      chunks:async function*(current){
+        yield bytes(JSON.stringify({schema_version:LEGAL_AUDIT_SCHEMA_VERSION,note:auditNote,
+          attribution_started_at:snapshot.legalAudit.attributionStartedAt}).slice(0,-1)+',"events":[');let comma=false;
+        for await(const row of records("legal-audit",claimantAuditMember,snapshot.membership.legalAuditEvents,current)){
+          yield bytes((comma?",":"")+JSON.stringify(row.event));comma=true;
+        }yield bytes("]}\n");
+      }});
     fixed(`${prefix}subject.json`,{schemaVersion:"subject-partitioned-archive-v1",subjectId,subjectClass:"embryo",source:snapshot.source},1);
     for(const kind of ["prs","ancestry","chats"])fixed(`${prefix}${kind}.json`,empty);
-    factories.push({name:`${prefix}reports.json`,rows:snapshot.membership.scores+qc.length,chunks:async function*(current){
+    const reportRows=snapshot.membership.scores+qc.length+snapshot.membership.figures+snapshot.membership.reports;
+    factories.push({name:`${prefix}reports.json`,rows:reportRows,chunks:async function*(current){
       yield bytes('{"schemaVersion":"future-person-historical-report-v1","rows":[');let comma=false;
       for(const quality of qc){yield bytes((comma?",":"")+JSON.stringify({kind:"quality",quality}));comma=true;}
       for await(const row of records("scores",score,snapshot.membership.scores,current)){
         const projected=projectFuturePersonFinding({embryo_label:"Your claimed record",condition_id:row.condition_id,condition_name:row.condition_name,
           finding:row.finding,evidence_label:row.evidence_label,coverage_state:row.coverage_state,citation_ids:row.citation_ids,not_covered_reason:row.not_covered_reason});
         yield bytes((comma?",":"")+JSON.stringify({kind:"finding",id:row.id,revision:row.computation_revision,computedAt:row.computed_at,modelId:row.model_id,modelVersion:row.model_version,sourceBindingFingerprint:row.source_binding_fingerprint,...projected}));comma=true;
+      }
+      for await(const row of records("figures",historicalClaimantFigure,snapshot.membership.figures,current)){
+        yield bytes((comma?",":"")+JSON.stringify({kind:"historical-figure",...projectHistoricalClaimantFigure(row)}));comma=true;
+      }
+      for await(const row of records("reports",historicalClaimantReport,snapshot.membership.reports,current)){
+        yield bytes((comma?",":"")+JSON.stringify({kind:"historical-report",...projectHistoricalClaimantReport(row)}));comma=true;
       }yield bytes("]}\n");}});
-    factories.push({name:`${prefix}reports.txt`,rows:snapshot.membership.scores+qc.length,chunks:async function*(current){
+    factories.push({name:`${prefix}reports.txt`,rows:reportRows+snapshot.membership.legalAuditEvents,chunks:async function*(current){
       yield bytes("Your claimed record\nQuality reports\n"+JSON.stringify(qc)+"\n\n");
       for await(const row of records("scores",score,snapshot.membership.scores,current)){
         const projected=projectFuturePersonFinding({embryo_label:"Your claimed record",condition_id:row.condition_id,condition_name:row.condition_name,
           finding:row.finding,evidence_label:row.evidence_label,coverage_state:row.coverage_state,citation_ids:row.citation_ids,not_covered_reason:row.not_covered_reason});
         yield bytes(`${row.condition_name}\nRecorded at: ${row.computed_at}\n${JSON.stringify(projected)}\n\n`);
-      }yield bytes(agreements.map(renderFuturePersonAgreement).join("\n\n"));}});
+      }
+      for await(const row of records("figures",historicalClaimantFigure,snapshot.membership.figures,current))
+        yield bytes(`Historical figure\n${JSON.stringify(projectHistoricalClaimantFigure(row))}\n\n`);
+      for await(const row of records("reports",historicalClaimantReport,snapshot.membership.reports,current))
+        yield bytes(`Historical report\n${JSON.stringify(projectHistoricalClaimantReport(row))}\n\n`);
+      yield bytes(CLAIMANT_LEDGER_TEXT_HEADING+"\n"+auditNote+"\n");
+      for await(const row of records("legal-audit",claimantAuditMember,snapshot.membership.legalAuditEvents,current))
+        yield bytes(JSON.stringify(row.event)+"\n");
+      yield bytes(agreements.map(renderFuturePersonAgreement).join("\n\n"));}});
     const csv=(value:string|null)=>value===null?"":`"${value.replaceAll('"','""')}"`;
     factories.push({name:`variants/${fileId}.csv`,rows:snapshot.membership.variants,chunks:async function*(current){
       yield bytes("chromosome,position,reference_allele,alternate_allele,genotype\n");

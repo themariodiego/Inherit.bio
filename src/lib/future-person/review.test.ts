@@ -72,6 +72,20 @@ describe("review case serialization withholds selectors and fails closed on seal
         allowedDecisions: ["reject", "needs-more-information"] }, notice: { state: "not_applicable", noticeRevision: null } });
     expect(JSON.stringify(body)).not.toMatch(/ciphertext|wrappedDataKey|keyHash|network|e2e.local/u);
   });
+  it("uses genuine prior signed names for a Card without optional profile data and withholds the ciphertext",()=>{
+    const signed={...row,caseKind:"record_key",allowedDecisions:["approve-record-key","reject","needs-more-information"],
+      recordedParentSigningEvidence:[{nameCiphertext:encryptSecret("Synthetic Signed Parent A").toString("hex"),role:"genetic-parent"},
+        {nameCiphertext:encryptSecret("Synthetic Signed Parent B").toString("hex"),role:"genetic-parent"}]};
+    const body=reviewCaseBody(signed);
+    expect(body?.case).toEqual({kind:"record_key",recordSelector:{matched:true},recordedParentLink:{
+      evidencedParentRoles:["genetic-parent"],recordedParentNames:["Synthetic Signed Parent A","Synthetic Signed Parent B"]}});
+    expect(JSON.stringify(body)).not.toMatch(/nameCiphertext|recordedParentSigningEvidence|wrappedDataKey|email/u);
+    expect(reviewCaseBody({...signed,recordedParentSigningEvidence:[{...signed.recordedParentSigningEvidence[0],extra:"forbidden"}]})).toBeNull();
+    expect(reviewCaseBody({...signed,recordedParentSigningEvidence:[{nameCiphertext:"aa".repeat(60),role:"genetic-parent"}]})).toBeNull();
+    expect(reviewCaseBody({...signed,parentIdentityCiphertext:encryptSecret("ambiguous source").toString("hex")})).toBeNull();
+    for(const caseKind of ["record_key_unmatched_or_ineligible","claimant_recovery_key","recovery_key_unmatched_or_ineligible","keyless_none","keyless_ambiguous"])
+      expect(reviewCaseBody({...signed,caseKind})).toBeNull();
+  });
   it("returns no case for unknown columns, malformed deadlines or unreadable encryption", () => {
     for (const bad of [{ ...row, matchedEmbryoId: ACCOUNT }, { ...row, deadline: "invalid" },
       { ...row, wrappedDataKey: "aa" }, { ...row, wrappedDataKey: encryptSecret("short").toString("hex") },

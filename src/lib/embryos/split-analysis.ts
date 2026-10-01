@@ -1,3 +1,4 @@
+import { vcfQcFigureBasis, type QcFigureBasis } from "./qc-basis";
 import { streamVcf } from "../genome/parsers/vcf";
 import { EmbryoTransportError } from "./ingest-lines";
 import type { EmbryoTransportBinding } from "./ingest-binding";
@@ -126,6 +127,7 @@ export async function analyseEmbryoFragment(bytes: Uint8Array, ordinal: number,
 }
 
 export interface EmbryoQcMeasurement {
+  figure_basis: QcFigureBasis;
   sites_expected: number;
   sites_called: number;
   call_rate: number;
@@ -160,12 +162,15 @@ export function embryoOrdinalOutcome(measure: EmbryoFragmentMeasure): EmbryoOrdi
     verdict = "fail";
     reasons = [...reasons, "qc_review_required"];
   }
+  const autosomal_het_rate = measure.diploidCalled > 0 ? measure.heterozygous / measure.diploidCalled : null;
+  const mean_depth = measure.depthCount > 0 ? measure.depthSum / measure.depthCount : null;
   const qc: EmbryoQcMeasurement = {
+    figure_basis: vcfQcFigureBasis({ autosomal_het_rate, mean_depth }),
     sites_expected: measure.sites,
     sites_called: measure.called,
     call_rate: callRate,
-    autosomal_het_rate: measure.diploidCalled > 0 ? measure.heterozygous / measure.diploidCalled : null,
-    mean_depth: measure.depthCount > 0 ? measure.depthSum / measure.depthCount : null,
+    autosomal_het_rate,
+    mean_depth,
     qc_verdict: verdict,
     qc_reasons: reasons,
   };

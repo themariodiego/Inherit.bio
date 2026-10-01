@@ -147,21 +147,24 @@ test("/future-person/claim complete: a Record Key, a Recovery Key and a keyless 
   const answers: { status: number; body: string; cookieNames: string[]; panel: string }[] = [];
   for (const mode of ["record-key", "claimant-recovery-key", "keyless-start"] as const) {
     const context = await browser.newContext();
+    let observed: Awaited<ReturnType<typeof observeNativeResponses>> | undefined;
     try {
       await ownNetwork(context);
       const page = await context.newPage();
       await page.goto("/future-person/claim");
       await fillClaim(page, mode);
-      const observed = await observeNativeResponses(page, { start: "^/api/future-person/claim$" });
+      observed = await observeNativeResponses(page, { start: "^/api/future-person/claim$" });
       const answered = page.waitForResponse("**/api/future-person/claim");
       await page.locator("main form").getByRole("button", { name: "Start my claim", exact: true }).click();
       const response = await answered;
       const panel = page.getByRole("status");
       await expect(panel.getByRole("heading", { name: "We have your request" })).toBeVisible();
       const setCookies = (await response.headersArray()).filter((header) => header.name.toLowerCase() === "set-cookie");
+      const native = await observed.read("start");
+      expect(native.status).toBe(response.status());
       answers.push({
-        status: response.status(),
-        body: (await observed.read("start")).text,
+        status: native.status,
+        body: native.text,
         cookieNames: setCookies.map((header) => header.value.slice(0, header.value.indexOf("="))),
         panel: (await panel.innerText()).trim(),
       });
@@ -171,7 +174,7 @@ test("/future-person/claim complete: a Record Key, a Recovery Key and a keyless 
       expect(session).toMatchObject({ httpOnly: true, sameSite: "Strict", path: "/" });
       expect(await page.evaluate(() => document.cookie)).toBe("");
     } finally {
-      await context.close();
+      try { await observed?.dispose(); } finally { await context.close(); }
     }
   }
   expect(answers[0]).toMatchObject({ status: 202, body: '{"status":"received"}' });
