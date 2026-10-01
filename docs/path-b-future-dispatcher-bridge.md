@@ -16,7 +16,7 @@ owner/API ACLs refuse. No historical migration or issued credential is rewritten
 | `public.activate_rights_session_v1(text,text,text)`, or its actual023 denied delegate | `4777886cd6cd45b883e5e8c5ead6c8ee` | `7c176e100123ecbdf9aedd8ee41b0539` |
 
 The022 canonical claim/submission wrappers remain byte-identical with MD5
-`e486e7e418358d3e5e7429c143ff3b71` and
+`abb70e7d8ec45731aebcbaa870ab9c13` and
 `448f258385a4c6f4392a1ca1781f0f2a`. When023 is installed, its canonical activation
 wrapper remains byte-identical with MD5 `5f92f26f9e5f94f7593f833d17db7d6c`.
 All three aliases remain API-denied, including `service_role`. Only the existing

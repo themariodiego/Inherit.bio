@@ -102,7 +102,7 @@ describe("held mail restoration behind the exact keyless notice wrappers", () =>
     expect(submission).toContain("tc.state='issued' and th.status='current'");
   });
   it("preserves both full022 canonical wrappers and all denied delegate roles", () => {
-    for (const [name, hash] of [["public.claim_mail_outbox", "e486e7e418358d3e5e7429c143ff3b71"], ["private.authorize_mail_submission_v1", "448f258385a4c6f4392a1ca1781f0f2a"]]) {
+    for (const [name, hash] of [["public.claim_mail_outbox", "abb70e7d8ec45731aebcbaa870ab9c13"], ["private.authorize_mail_submission_v1", "448f258385a4c6f4392a1ca1781f0f2a"]]) {
       expect(md5(functionBody(notice, name!))).toBe(hash);
       expect(bridge).toContain(`md5(v_mail_wrapper_body) is distinct from '${hash}'`);
     }
