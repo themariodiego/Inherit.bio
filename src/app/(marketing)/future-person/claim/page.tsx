@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { ClaimDocuments } from "@/components/future-person/claim-documents";
 import { FuturePersonClaimForm } from "@/components/future-person/claim-form";
+import { ClaimStartReceipt } from "@/components/future-person/claim-start-receipt";
 import {
   CLAIM_EYEBROW,
   CLAIM_H1,
@@ -90,6 +91,7 @@ export default async function FuturePersonClaimPage() {
         </section>
       ) : claim?.status === "live" ? (
         <div className="mt-8 space-y-4">
+          <ClaimStartReceipt />
           <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
           <ClaimDocuments nonce={claim.documentNonce} completeNonce={claim.completeNonce} mode={claim.mode}
             documentCsrf={claim.documentCsrf} completeCsrf={claim.completeCsrf} />

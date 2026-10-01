@@ -128,6 +128,9 @@ try {
   ])]);
   assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 12);
   assert.equal(await page.evaluate(() => "__inheritNativeResponseObserver" in window), false);
+  const closedPage=await browser.newPage();await closedPage.goto(origin);
+  const closedObserver=await observeNativeResponses(closedPage,{unused:"^/api/synthetic/unused$"});
+  await closedPage.close();await closedObserver.dispose();
   console.log("PASS native response observer: exact POST/PUT/DELETE bytes and empty 204/205, original response identity, unchanged browser headers/body, selected-method isolation, bounded rejection, multiple observations, duplicate rejection after first body settled and unused cleanup.");
 } finally {
   await browser.close(); server.closeAllConnections();

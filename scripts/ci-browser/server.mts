@@ -9,6 +9,7 @@ import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
 import { startCiArtifactGateway } from "./artifact-gateway-start";
+import { forwardProfileDiagnostics } from "./profile-diagnostic-filter";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
@@ -86,7 +87,7 @@ try {
       });
     }
     const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""]);
-    child.stdout?.pipe(process.stdout); child.stderr?.resume();
+    closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stdout.write(line+"\n")));
     child.stdin!.write(JSON.stringify(env) + "\n");
   } else {
     assert(process.getuid!() > 0);
@@ -166,8 +167,9 @@ try {
           cwd: "/app", env: { ...cleanEnv, ...env, NODE_ENV: "production", NODE_EXTRA_CA_CERTS: "/tls/fixture/ca.crt" },
           detached: true, stdio: ["ignore", "pipe", "pipe"],
         }));
-        // Drain app diagnostics without persisting request/provider secrets.
-        app.stdout?.resume(); app.stderr?.resume();
+        // Only complete, bounded, enum-only profile diagnostics cross either
+        // launcher hop. Every other app log stays discarded.
+        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stdout.write(line+"\n")));
         console.log(`Started isolated production app variant ${port}`);
       })().catch(() => { console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }

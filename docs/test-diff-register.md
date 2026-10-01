@@ -90,6 +90,225 @@ No prior assertion, timeout, retry, SQL, grant, provider or public/READY gate
 changes. The failed log remains account-consumed-worker-focused-final.log.
 This source checkpoint has no full combined database/browser/provider credit;
 actual POST/status orchestration and the remaining graphs stay outstanding.
+## 2026-10-01 — Bind the incomplete document proof to real Auth and the current document composite
+
+Complete hosted C4 run36877690069 failed the second keyless review case at its
+owner SQL call: the third argument was a UUID, but the actual230 callee requires
+the current private.claim_documents composite. That callee also selects receipts
+by the actual Auth session. Passing only the correct composite under an empty
+owner JWT would give a false result without testing the missing acknowledgement.
+
+The same real signInReviewer journey now supplies current browser cookies to the
+SSR SDK's verified getClaims result. A separate quiet owner metadata helper carries
+that unedited Auth context through stdin in a read-only transaction, retaining the
+original15-second and65,536-byte limits. It logs no token, claims, keys or native
+error payload. The shared SQL passes the real selected document row and proves
+current Auth, document, assignment, profile revision, originating session revision,
+one delivered chunk and the exact two-chunk document before the original f
+assertion. NULL is refused rather than converted into f. Every other original
+browser assertion, case, timeout, retry and product authority remains unchanged.
+
+The SDK's AMR type also permits strings. The exact-head type check requires
+an explicit object entry before reading its method; strings still cannot satisfy
+the original genuine TOTP-object check. This narrowing changes no authority.
+
+The permanent existing CI EXPLAIN preflight now plans this exact shared callee
+query alongside the complete keyless side-effect query. Planning dummy UUIDs
+executes no query or authority operation. Source and focused checks do not credit
+native execution; the genuine current-row and hosted browser proof remain pending.
+
+## 2026-10-01 — Restore genuine documentary controls after each themed reload
+
+The full hosted run on c4d3346d retains its failed first keyless case
+at the unchanged120-second limit. Its saved page shows the original Open
+Picture ID/Open Birth record buttons, no rendered papers and disabled Save
+choice. The shared accessibility helper reloads once per theme, which correctly
+clears the component's ephemeral rendered/read attestations. The final native
+POST therefore never starts. The helper now accepts an optional restoration
+callback after each genuine reload and before its unchanged full viewport,
+reduced-motion and contrast audits. Only this keyless case uses it: both original
+PDFs are reopened through their actual complete-byte/hash/read-ACK/render flow,
+both human read attestations are made again, documentary fields are restored,
+the exact native no-match response and unchanged effects are checked again, and
+Save choice must be enabled before each theme audit. Every original assertion,
+refusal, replay, key-shredding proof, deadline and no-retry policy remains.
+
+The timeout was secondarily masked by observer cleanup evaluating a page that
+Playwright had closed. Cleanup now returns only when the page is demonstrably
+closed, including a close during cleanup; an evaluate error on an open page
+still fails. The original native observation,10-second bounded body read and
+4096-byte limit remain unchanged. Causal tests prove reload state loss, fresh
+restoration before all eight audits, restoration refusal, and all three cleanup
+states. The real loopback HTTP/Chromium fixture retains every original assertion
+and adds closed-page disposal. Source proof removes only the new callback and
+requires the entire original keyless spec AST, all assertions and configuration
+to equal c4. This is a fixture correction with independent source/native helper
+proof; corrected full hosted execution and positive documentary release remain
+unproven. The separate cancelled-ACK SQL ABI correction is outside this child.
+
+## 2026-10-01 — Name each original prepared-upload response and worker phase
+
+Hosted run36866428888 browser6 at36061663 timed out in the plain prepared
+journey at its unchanged300-second limit; the page showed preparation could
+not be confirmed. The following gzip case then hit the original strict fixture
+configuration refusal. Both failures remain evidence, and neither exact await
+nor abandoned configuration state is established. Fixed test.step labels now
+surround the original input send, finalization/queue/completed response waits,
+their existing Playwright JSON reads, the actual worker launch and original
+receipt/UI reads in both cases. They add no timeout, retry, request, fallback,
+provider/config mutation or body substitution. Every assertion, value, consent,
+source hash, EOF proof, cleanup and300-second limit is retained. An independent
+TypeScript AST comparison strips only these diagnostic wrappers and requires
+the entire original spec to remain equal. This is failure localization source
+proof, not corrected browser/provider execution or a claimed preparation cause.
+
+## 2026-10-01 — Carry only closed profile failure stages through both isolated launcher pipes
+
+Full hosted run36866428888 at360616639efbecce65e52e1796583a60a7e0bb32
+again saved the other parent's profile with the genuine200 and stored encrypted
+profile/source proofs, then failed the original five-second owner reload
+assertion. The page's generic unavailable state is proven; its RPC/schema/proof
+stage is not. The previous stage-only logger was discarded by both isolated app
+and host-launcher pipe drains. Its exact existing coded event now occupies one
+canonical JSON line and passes a strict validator at both boundaries. Only the
+existing RPC/issue codes and fixed schema field names pass; raw app/provider
+logs, error text, unknown keys, identity values, malformed/oversize/truncated
+lines and approved-looking suffixes of oversize lines remain discarded. Each
+pipe buffer is bounded to2048ASCII bytes, each record to eight schema issues,
+and both pipes share a maximum64 emitted records per launcher hop.
+
+Original logger assertions now require the same complete closed records as one
+exact JSON argument, including the unchanged malicious-value refusals and
+failed-sink isolation. New strict tests prove every chunk split, both streams'
+shared output budget, close/truncation, serialization-hook refusal and two real
+Node child-process pipe hops. The actual browser helper, every original native
+assertion/deadline/retry, profile authority/DTO, schema and public gate remain
+unchanged. Both original prepared-flow failures in the same job (300-second
+timeout, then strict configuration refusal) remain failed evidence. This is
+diagnostic transport source proof, not a corrected native run or a proven
+profile cause; no speculative product authority change is made.
+
+## 2026-10-01 — Claim review fixture uses the actual public claim identity
+
+Full hosted run 36866428888 at `360616639efbecce65e52e1796583a60a7e0bb32`
+passed the original request receipt and review privacy header checks, then
+both keyless review cases failed before their side-effect comparisons with
+`column c.review_id does not exist`. The actual owner-notice producer inserts `r.id` as the public claim ID;
+`intake_session_id` refers to a separately generated public session. Both
+claims and notices in the complete read-proof now use `c.id = r.id`, the
+producer’s actual relationship. Every
+original fingerprint member, equality assertion, browser case and deadline
+remains; no product authority or fixture state is changed.
+
+The exact SQL is shared with a database preflight. Every browser job plans it
+using `EXPLAIN` without `ANALYZE` immediately after migrations, before seed
+and build. Repository checks plan it as well. The bounded local planner does
+not execute the query or read claim rows. This catches a missing column on
+the migrated schema before the costly browser run.
+
+## 2026-10-01 — Keep the same genuine claim-start receipt after server refresh
+
+The real202 start displayed its common receipt and called router.refresh; the
+server's verified live-claim branch then replaced that status with the document
+step. The original browser journey reads the receipt again after actual header/
+body observation, so removing it can leave that unbounded panel-text read
+waiting. The safe hosted timeout snapshot shows the document step with no
+receipt; exact failed-await timing remains unproved pending the fixed native
+phase diagnostic. One pure shared receipt now supplies the exact original
+heading/body/markup both immediately after202 and in the genuine current live
+server branch. Documents, completion wording, all cookies/nonces/read authority,
+claims availability and refusal standards are unchanged. No record existence
+or mode is disclosed. Actual React server-rendering tests retain identical
+receipt bytes for all three live modes, its order before documents, the single
+existing status read, and zero invented receipt for absent/malformed/failed/
+unknown/closed states. Completed claims keep their distinct original receipt.
+Interactive controls and RPC/Auth state are synthetic unit seams; no native,
+database or provider execution credit follows. Every original browser status,
+body/cookie/panel equality, timeout and retry remains unchanged.
+
+## 2026-10-01 — Identify the original claim-start wait without changing its proof
+
+Hosted6f8's three-mode start journey timed out at its original120seconds; the
+only extra stack was a secondary context.close protocol error. Fixed native
+test.step labels now identify each original awaited operation, including the
+response header/body read and received panel text. On failure a coded phase and
+error category are recorded before cleanup; no key, contact, cookie, body or
+error text is logged. The genuine original error is rethrown, both observer
+disposal and context closure still run, and a cleanup error still fails if it
+was the original failure. A secondary cleanup exception cannot replace an
+already recorded original error. Every original assertion, request order,
+cookie/header/body/panel equality,120second limit and zero retries is retained.
+The underlying timeout remains unproved pending genuine native phase evidence.
+
+## 2026-10-01 — Preserve documentary review no-referrer through the actual proxy
+
+Hosted6f8 browser3 reached the actual current-case200 GET, but its two strict
+native security-header assertions received same-origin. The route
+sets no-referrer; the proxy overwrote it with the general sensitive API header
+set and applied its stricter override only to review HTML pages. Both exact
+review page/API namespaces now receive no-referrer at that common proxy
+boundary, including its own423 and451 responses. Every other sensitive header,
+Auth/profile/location/deletion gate and unrelated path's same-origin policy is
+unchanged. New scoped regressions pin signed-in/out pass-through, complete
+header sets, both location refusal sources, deletion refusal and similar-path
+nonmatches. All original browser assertions, limits and retries are preserved.
+The failed hosted receipt remains; this source proof is not a native rerun pass.
+
+## 2026-10-01 — Diagnose the saved-profile owner reload without exposing protected records
+
+The actual hosted browser job at 6f8d86d06a0a027b62c6eee23c99167fb144f04e
+reached the genuine other-parent save: its 200 response, stored profile version,
+key/index/cipher shape, original deadline and immutable source proofs passed.
+The owner's subsequent settings reload rendered the generic unavailable state
+and failed the original five-second profile-control assertion. The sanitized
+error-context and failed run remain evidence. The underlying RPC, DTO or proof
+failure was not captured; no precise cause or corrected native execution is
+claimed from source inspection.
+
+The server-only loader now reports a fixed RPC, schema or proof stage. RPC codes
+and schema field names/codes use closed allowlists; array positions are removed
+and issue output is bounded. Error messages, hints, unknown keys, payloads,
+contacts, account/session/profile identifiers, authority values and token/key
+bytes never enter the diagnostic. Logging failure cannot change the existing
+refusal. The same strict DTO, prospective proofs, generic page message, public
+availability flags, native assertion, timeouts and zero retries remain.
+
+Every original profile-controls SQL assertion remains. Added genuine fixture
+steps let the other current parent save through the actual service-only native
+door, then require the owner's exact current list/context tuple, distinct own
+actor/signature, unchanged deadline and protected-row bytes, no GET nonce write,
+crossed-session refusal and stale pre-save receipt refusal before nonce use.
+No protected table/helper grants or fabricated profile row are introduced.
+The fixture remains rollback-only; actual SQL and full hosted qualification
+are root-owned and pending. Added focused reader/diagnostic regressions verify
+coded failures and strict privacy boundaries, without crediting those stubs as
+a native producer-to-reader execution.
+
+## 2026-10-01 — Claim the exact token-free information request under its own pending claimant authority
+
+The actual full fresh database run on b1b4af22a903d7b4f636b27be87d861f80dbec4f
+completed123 assertions in future_person_keyless_objection_decisions.sql before
+the genuine information request could not be claimed. Its issuer correctly
+uses the pending future_person principal, but the inherited generic queue
+permits pending recipients only for invitations and invalidates this row.
+The missing narrow claim arm now locks the exact subject, retention rows,
+transition and mail/contact, then requires the identical existing current
+information pre-submit predicate before exposing contact bytes. The complete
+strictly pinned022/025 dispatcher is retained in an API-denied delegate for
+every other branch; its generic pending-principal refusal is unchanged.
+
+Every original claim/no-token/provider authorization, terminal invalidation,
+deadline, payload and source assertion remains. Two additional SQL assertions
+require exact unchanged token candidate/hash rows, wrong-attempt refusal and
+denial of the new delegate to all API roles. The shared replacement census
+adds exactly the new028 canonical claim wrapper; exact comparisons remain.
+The original combined-stable-clock-final-pgtap.log failure remains recorded.
+Corrected real SQL execution is pending root's independent rollback rehearsal;
+no native/provider/human or full fresh-pass credit is claimed here.
+The new claim/source census and unchanged mail route units pass56 tests across
+three files; scoped lint and the exact SQL include closure pass. No heavy type
+check, Docker/database operation or provider activity was run in this checkout.
+
 ## 2026-10-01 — Control only the quota fixture clock and prove the unchanged capability boundaries
 
 The actual complete Linux unit run on f54502eb failed one assertion in the
@@ -7121,3 +7340,27 @@ and planted observed/modelled/unknown-version cases prove that exact is not
 silently renamed. QC dropout/contamination classification remains unchanged
 pending the source inconsistency documented in docs/result-basis-contract.md.
 This is a bounded contract improvement and does not mark G4.2 YES.
+
+## Source-file privacy across deployed migration order · 1 October 2026
+
+The deployed main graph already contains the later Path B owner-list refusal.
+Appending the older pending canonical migration overwrote it with the
+embryo-only rule, and the final privacy migration correctly rejected that
+unexpected predecessor. A chronological fresh installation had hidden this
+ordering defect. No deployed migration or original refusal assertion changes.
+
+The pending canonical migration now accepts only the exact legacy owner policy
+on a fresh prefix or the exact deployed Path B policy and fully pinned helper.
+The latter branch composes the canonical exclusion immediately, preserving
+both refusals between committed pending migrations. The final migration pins
+both helpers and accepts only the exact Path B predecessor or exact completed
+composition; the completed policy remains byte-identical. A fresh installation
+must complete all migrations, including that final composition, before use.
+
+CI executes the actual two sourced guards against both reviewed predecessors,
+with strict planted policy, role, RLS, helper-source, helper-attribute and grant
+corruptions. All 15 local transaction probes pass and roll back; the permanent
+check adds no fixture grant, user data or migration ledger entry. The release
+also requires the full pending-source append rehearsal and catalog comparison
+with a fresh installation. This correction promotes no acceptance row and
+changes no browser expectation, retry or deadline.
