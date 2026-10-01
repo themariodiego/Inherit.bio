@@ -616,7 +616,31 @@ test("Path B queued reports: real confirmed source and operators, separate self/
     // Neither choice manufactures a result before complete byte normalization.
     const variantsBefore = await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("subject_id", subjectId);
     expect(variantsBefore.error).toBeNull(); expect(variantsBefore.count).toBe(0);
-    await runPathBOperator("normalization");
+    // The registered worker consumes the global queue in FIFO order. Earlier
+    // genuine confirmation journeys intentionally left their jobs queued.
+    // Process each actual queued job once and independently check its exact
+    // job/source transition; a completed different file is never a receipt
+    // that this file was normalized. No queue row is removed or fabricated.
+    const normalizationQueue = await admin.from("worker_jobs")
+      .select("id,file_id,created_at,attempts,max_attempts,not_before")
+      .eq("status", "queued").eq("kind", "annotate_vcf").eq("output_kind", "ingest.normalize")
+      .eq("computation_revision", "path-b-normalization-v1").order("created_at").order("id");
+    expect(normalizationQueue.error).toBeNull();
+    expect(normalizationQueue.data?.filter(job => job.file_id === held.id)).toHaveLength(1);
+    for (const job of normalizationQueue.data!) {
+      expect(job.attempts).toBeLessThan(job.max_attempts);
+      expect(Date.parse(job.not_before)).toBeLessThanOrEqual(Date.now());
+      await runPathBOperator("normalization");
+      const normalizedJob = await admin.from("worker_jobs").select("status,file_id,attempts")
+        .eq("id", job.id).single();
+      expect(normalizedJob.error).toBeNull();
+      expect(normalizedJob.data).toEqual({ status: "done", file_id: job.file_id, attempts: job.attempts + 1 });
+      const normalizedSource = await admin.from("genome_files").select("normalization_completed_at,status")
+        .eq("id", job.file_id!).single();
+      expect(normalizedSource.error).toBeNull();
+      expect(normalizedSource.data?.status).toBe("stored");
+      expect(normalizedSource.data?.normalization_completed_at).not.toBeNull();
+    }
     const calls = await admin.from("user_variants").select("rsid,genotype,file_id,subject_id").eq("subject_id", subjectId).order("rsid");
     expect(calls.error).toBeNull();
     expect(calls.data).toEqual([{ rsid: 762551, genotype: "A/C", file_id: held.id, subject_id: subjectId },

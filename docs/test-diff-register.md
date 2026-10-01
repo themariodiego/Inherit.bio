@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-01 — Bind queued Path B preparation to each actual job and preserve the declared build
+
+Hosted run `36809283041` passed the repository and five browser groups but the
+queued-report journey observed zero calls for its target after one successful
+global worker execution. Earlier genuine serial confirmation journeys had
+left preparation queued. The journey now inventories the real FIFO queue,
+runs each distinct job exactly once and verifies its exact job/file/attempt
+transition and source completion before the original exact two-call assertion.
+No job, source or result is fabricated or deleted, and no failed execution is
+retried. Every report, purpose, session and revocation assertion remains.
+
+Investigation also found that a worker with a public GRCh37 reference loaded
+could map an already-GRCh38 input again. A new counterexample failed with
+`empty_after_parse` on the old source. The shared parser now derives its mapper
+from the declared source build, preserving GRCh38 coordinates and genotypes
+exactly while retaining all GRCh37 mapping/loss checks. The strict new regression
+compares variant and observation fields and requires zero mapper calls.
+The failed hosted run remains recorded; full new-source proof follows.
+
 ## 2026-10-01 — Bind queued Path B reports to the held original after real normalization
 
 The complete fresh-database run on86cf8daf passed the strengthened normalization
