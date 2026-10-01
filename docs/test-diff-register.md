@@ -1,5 +1,20 @@
 # Test diff register
 
+## 2026-10-01 — Name both exact class-inventory comparison columns
+
+The actual full fresh database run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48
+stopped after134 passing assertions in account_archive_class_inventory.sql.
+pgTAP materializes its comparison query as a temporary table, and two unnamed
+JSON text expressions both became `?column?`. The actual class/mode and
+class/count projections now name their columns `kind`/`mode` and `kind`/`rows`,
+matching the already named comparators. Every expression, value, row, order,
+expected class, expected mode and assertion remains unchanged. Independent
+byte comparison after removing exactly those four aliases reproduces the
+original complete fixture. No product, permission, timeout or gate changes.
+The failed full-run log is retained at
+/tmp/inherit-integrator-20260930/combined-guarded-corrections-pgtap.log;
+root owns the actual database rerun. No database execution occurred here.
+
 ## 2026-10-01 — Preserve information-request negative fixtures without a duplicate typed key
 
 The actual combined type check on 29492581b459f07183667620029bc033b656b711

@@ -56,7 +56,7 @@ select is((select value->'boundSnapshots'->0 from actual_class_context),
  'the declared immutable scientific snapshot equals the real separate current bound reader');
 select is((select jsonb_array_length(value->'classes') from actual_class_context),29,
  'all original27 deferred classes and both withheld Path B stores are classified');
-select set_eq($$select c->>'kind',c->>'mode' from actual_class_context,jsonb_array_elements(value->'classes')c$$,
+select set_eq($$select c->>'kind' as kind,c->>'mode' as mode from actual_class_context,jsonb_array_elements(value->'classes')c$$,
  $$select * from(values
  ('ancestry_regions','unsupported'),
  ('appeal_intakes','unsupported'),
@@ -102,7 +102,7 @@ select is((select jsonb_array_length(value->'rows') from actual_class_page2),500
 select is((select jsonb_array_length(value->'rows') from actual_class_page3),103,'third real class page contains every remaining row');
 select is((select value->'nextAfterId' from actual_class_page3),'null'::jsonb,'the last real class page has the exact EOF cursor');
 reset role;
-select results_eq($$select c->>'kind',(c->>'rows')::bigint from actual_class_context,
+select results_eq($$select c->>'kind' as kind,(c->>'rows')::bigint as rows from actual_class_context,
  jsonb_array_elements(value->'classes')c where c->>'mode'='claimed-bound' order by c->>'kind'$$,
  $$select kind,rows from(values
  ('embryo_figures',(select count(*) from public.embryo_figures f join public.embryo_scores sc on sc.id=f.finding_id where sc.embryo_id=(select embryo from custody_ids))),
