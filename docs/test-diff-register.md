@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Require the exact complete mail predecessor before information delegation
+
+The isolated033 continuation's focused shared-dispatcher check caught one exact per-function inventory omitted during the ordinary strict025 merge: private028, already present in the two full replacement censuses. That list now includes precisely the one private028 definition and still excludes it from the public claim dispatcher. Before028 renames the canonical pre-submit function, a runtime preflight now requires the complete corrected022 body hash, exact two-argument boolean ABI, owner, PL/pgSQL security-definer configuration, and owner-only execution. Unknown, missing, previously wrapped, changed or API-executable predecessors refuse before mutation. Every other purpose continues to delegate the original full body; no alternative body or permissive fallback is accepted. Focused source checks retain all former closed inventories and delegation guards; actual chronological SQL proof remains root-owned and pending.
+
 ## 2026-10-01 — Add exact named objection decisions without borrowing final release
 
 The registered assigned objection endpoint now has both a real closed GET and all three POST decisions under own current JWT/MFA/operation authority. A ten-minute stateless proof binds the object, reviewer, session and all three current revisions. The unique decision nonce is consumed atomically after the original complete current document receipt checks; the surviving minimum key encrypts the professional basis. Uphold shreds only claim working material, overrule persists its bounded close phase and new distinct release assignment without changing the original provider-committed owner period, and information requests retain the exact original objection deadline. Full final release and reviewer-page integration remain closed gaps, with G5.4 unchanged.
