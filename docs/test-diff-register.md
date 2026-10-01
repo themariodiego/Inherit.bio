@@ -32,6 +32,43 @@ no surviving capability, replay/revival/date-extension refusal and forged
 API-temporary-relation denial. Publisher and profile-control SQL execution is
 pending the shared database slot; no browser or acceptance credit is claimed.
 
+## 2026-10-01 — Reach genuine parent disposition controls without analytical permission
+
+The existing embryo detail path checks analytical eligibility before loading
+its record, and no page rendered the implemented disposition operation.
+The existing data settings page now offers the exact current parent's native
+propose/confirm or single-authority action without reading QC or analysis.
+The stateless page proof binds the real own account, live session, operation
+and target. The mutation still uses the original request ABI and complete
+writer for every state, proposal, other-parent refusal, committed timestamp,
+retention phase, notice and one-time replacement Card.
+
+A narrow current-right helper recomputes the actual finalized parent matrix,
+current parentage/disposition/single-parent artifact signatures and statements,
+real latest human basis evidence, recipient sets and contradictions under
+subject-first serialization. No cached set, owner, donor, uploader, analytical
+grant or successful QC substitutes for that legal authority. All API roles,
+including service_role, are denied both the helper and the preserved writer
+bypass; only the existing trusted writer and new read-only inventory are public
+to service_role. Discovery creates no database nonce, proposal, grant or clock.
+A changed parent-right artifact closes both discovery and the actual writer,
+while a new upload consent is not required to exercise the parent's right.
+
+Strict runtime tests require actual sealed page proofs, crossed actor/session/
+operation/record refusals, bounded closed inventories, no self-confirmation,
+all three exact registered response shapes, exact replacement Card/date fields
+and zero confirmation from a partial, extra, crossed or malformed receipt.
+The Card lives only in the actual response's component state until copied or
+printed; it is never stored, logged or reconstructed after navigation.
+Focused runtime/crypto/receipt/jurisdiction tests pass all 106 assertions across
+seven files; scoped lint and all ten static gates pass. The final type check,
+new real-producer SQL and native browser execution remain pending the shared
+verification slot. The original journey assertions, 300000ms limit, zero retries
+and acceptance marks are unchanged. The exact identity-profile route is classified
+as a current parent data right under its actual own Auth, operation proof and
+subject-first authority recheck; no analytical capability is opened or waived.
+Settings pagination/reset links use the existing primary route identifier.
+
 ## 2026-10-01 — Remove the profile signature alias conflict and preserve the exact phase census
 
 The genuine fresh database rehearsal reached the profile's save authority and

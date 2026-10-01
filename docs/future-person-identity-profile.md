@@ -81,3 +81,34 @@ disposition endpoint's prospective nonce or native propose/confirm controls.
 A separate narrow parent rights control is therefore required to reach a real
 transferred record through the product before profile browser proof. No
 matching authority or operation proof will be fabricated in a fixture.
+
+## Native disposition prerequisite
+
+A separate narrow settings control now renders genuine current-parent
+disposition actions independently of analytical permission and QC. Its page
+reads only neutral record labels, the legal disposition mode and current
+proposal metadata, then mints the existing exact own-Auth operation token.
+No GET creates a nonce, grant, proposal or deadline. Two parents propose and
+confirm in turn; a supported current sole authority commits directly.
+The original writer remains intact behind a new current parent-evidence
+recheck under subject-first locks, retaining every exact mode/state/refusal,
+notice, retention clock and one-time replacement Card. Production remains
+closed through the settings availability boundary.
+
+These new tests are authored source checks, not a native browser proof.
+The actual published-source journey must complete all original assertions
+before any added genuine disposition and profile actions. SQL and hosted
+execution still await the coordinator; no stored matching profile or real
+identity evidence is inferred from this control.
+
+The additional native journey is supplied as a reusable helper and a narrow
+patch against the coordinator's frozen `d46d13e9` original journey. It follows
+every original publication, QC, permission and rights assertion and retains
+the original 300000ms limit and zero retries. It requires exact native transfer,
+profile PUT and empty DELETE receipts, sibling/stranger refusals, actual stored
+wrapped-key/index metadata, complete profile shredding, and byte-identical
+canonical/source/signed-parent history throughout. The observer still forwards
+the original browser request/response, with bounded clone observation; selected
+PUT/DELETE cannot be satisfied by a POST to the same path. These newly authored
+journeys and the extended loopback observer proof are unexecuted at this freeze.
+The final type check and all actual SQL/browser checks remain pending.
