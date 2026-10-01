@@ -29,7 +29,7 @@ await new Promise<void>(resolve=>server.listen(0,"127.0.0.1",resolve));
 const address=server.address();assert(address&&typeof address!=="string");
 const origin=`http://127.0.0.1:${address.port}`;const browser=await chromium.launch();
 try {
-  const page=await browser.newPage();let external=0;
+  const context=await browser.newContext();const page=await context.newPage();let external=0;
   await page.addInitScript(()=>{
     const Native=window.Worker;const ended=new WeakSet<Worker>();
     const counts={started:0,ended:0};Object.assign(window,{pdfWorkerCounts:counts});

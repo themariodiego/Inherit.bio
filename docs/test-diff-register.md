@@ -9,6 +9,9 @@ PDF canvas container now has a native zero tabindex, a page-specific region
 name and a visible focus outline. No document rendering, complete-page proof,
 acknowledgement, safety boundary or original browser assertion changes.
 
+The first actual added axe run refused the fixture’s implicit browser.newPage
+context; axe requires an explicit context to open its audit page. The fixture
+now creates that same default context explicitly; the failed log is retained.
 The existing real-component Chromium/PDF fixture retains every original
 pixel, inert-action, malformed-file, canceled-worker and PNG/JPG refusal check.
 It additionally proves Tab focus and real vertical/horizontal key scrolling,
