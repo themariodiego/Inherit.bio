@@ -5411,7 +5411,26 @@
       },
       "crossSubjectRawWithoutGrant": "deny",
       "jointArtifacts": "include-only-while-every-other-contributor-to-that-exact-result-has-a-current-covering-grant-and-project-only-the-requesters-authorized-fields; otherwise omit-the-row-or-redact-every-other-contributor-field-so-no-value-remains-inferable",
-      "futureOrCohortProjection": "subject-partitioned-embryo-projections-only-with-no-parent-raw-rows"
+      "futureOrCohortProjection": "subject-partitioned-embryo-projections-only-with-no-parent-raw-rows",
+      "ordinarySubjectLedgerProjection": {
+        "policy": "owner-option-A-actor-only; existing ordinary ledger rows prove who acted but never recorded a subject target; no target inference or historical backfill",
+        "authority": "server-selected exact current ordinary own-subject partition under the real consumed account request and current writing attempt; actual Future custody or account-binding selectors refuse this ordinary reader",
+        "member": "subjects/{subject_id}/audit-log.json",
+        "shape": {
+          "schema_version": "legal-audit-v1",
+          "attribution": "unrecorded",
+          "attribution_started_at": null,
+          "note": "These audit records do not identify the subject of each action. Your recorded account actions are in legal-audit.json. This does not mean that nothing happened to this record.",
+          "events": []
+        },
+        "counts": "zero assigned subject events is not a count of historical actions; no historical event count is claimed",
+        "canonicalAccountMember": "all actual requester actor events plus exact genuinely assigned own bound-custody/binding events once in canonical ledger sequence in legal-audit.json; ordinary members never copy account actor events",
+        "privacy": "only six closed coded event fields; actor pseudonyms, chain hashes, account/session authority and unproved subject targets never leave",
+        "assignedBoundary": "claimed-bound and approved-unbound Future selectors retain their distinct reviewed exact event contracts; a new selector requires an explicit reviewed reader and never inherits ordinary unrecorded fallback",
+        "capture": "actual full graph receipt includes own canonical actor and genuine assigned Future audit membership/content; changed ledger or mapping refuses the whole request",
+        "reader": "service-only export_archive_account_audit_v1 with exact context, events and ordinary-subject operations; at most500 sequence-keyset events; current consumed job/attempt/source/actor authority before and after every call",
+        "release": "TEST-LOCAL source producer only; whole-account/non-self member completeness, public POST/status, READY and provider cleanup/delivery remain independently required"
+      }
     },
     "subject-export-v1": {
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
