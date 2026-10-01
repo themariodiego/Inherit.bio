@@ -52,6 +52,15 @@ describe("literal psql relative include closure", () => {
   it("runs before the fresh CI stack/tests and native provider bootstrap", () => {
     const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     expect(workflow.indexOf("pnpm gate:sql-includes")).toBeGreaterThan(0);
+    const freshJobs = workflow.split(/^  [a-z-]+:\n/m).filter(job => job.includes("run: pnpm exec supabase start"));
+    expect(freshJobs).toHaveLength(2);
+    for (const job of freshJobs) {
+      expect(job.indexOf("pnpm gate:sql-includes")).toBeGreaterThan(0);
+      expect(job.indexOf("pnpm gate:sql-includes")).toBeLessThan(job.indexOf("run: pnpm exec supabase start"));
+    }
+    const firstRun = readFileSync(".github/workflows/self-host-first-run.yml", "utf8");
+    expect(firstRun.indexOf("corepack pnpm gate:sql-includes")).toBeGreaterThan(0);
+    expect(firstRun.indexOf("corepack pnpm gate:sql-includes")).toBeLessThan(firstRun.indexOf("corepack pnpm exec supabase start"));
     expect(workflow.indexOf("pnpm gate:sql-includes")).toBeLessThan(workflow.indexOf("pnpm exec supabase start"));
     expect(workflow.indexOf("pnpm gate:sql-includes")).toBeLessThan(workflow.indexOf("pnpm exec supabase test db"));
     const fresh = readFileSync("scripts/comprehension/run-fresh-t6.mts", "utf8");

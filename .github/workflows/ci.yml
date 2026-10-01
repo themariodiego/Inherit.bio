@@ -201,6 +201,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start this job's fresh local Supabase
         run: pnpm exec supabase start
       - name: Export this job's local Supabase keys
