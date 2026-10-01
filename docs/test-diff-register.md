@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Compare the complete pre-existing rights-session set in account objection
+
+The actual combined role rehearsal passes the native mail door and cookie objection, then reveals that the shared synthetic source fixture already has an unrelated rights session. The account-equivalent journey now freezes the complete original rights-session rows before every account read/write and requires byte-identical ordered rows afterward, plus exactly zero owner-notice objection sessions. This is stricter than a total-count assumption: no unrelated session may change and no session may be borrowed or created. All original stateless-read count, account freshness/MFA, revision, source preservation and provider-clock assertions remain. The failed receipt is retained; no account, provider or browser execution credit is inferred until independent rerun.
+
 ## 2026-10-01 — Keep the private dispatcher denied while restoring its native service door
 
 The actual corrected combined database rehearsal reached the real provider pre-submit call and failed because022 denied service execution on the private dispatcher while the original public SQL wrapper still used SECURITY INVOKER. The existing public service-only ABI now delegates under its fixed owner with an empty search path after validating its exact original two-argument body, owner, language and configuration. Every private dispatcher/delegate stays API-denied; browser and upload roles remain denied at the public door. Eight new actual-role assertions test those permissions and missing-outbox refusal. The existing genuine provider eligibility, attempt rotation, stale callback and delivery-clock assertions are retained unchanged. An owner-defined test wrapper is not used to hide the broken native RPC. SQL and provider execution remain uncredited until independent rehearsal.
