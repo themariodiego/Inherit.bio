@@ -15,6 +15,41 @@ Recovery preserves the exact subject, claimant, custody, canonical source/parts/
 
 `future_person_documentary_recovery.sql` adds real-role/real-door SQL probes for incomplete or wrong-assignment receipts, changed identity/key, erased durable identity, replay, both actual recovery effects, replacement-key one-show behavior, and byte-identical durable provenance/old deadlines. The synthetic scan/provider/receipt calls target database authority and are explicitly not real browser delivery, provider delivery or human evidence. New SQL and native recovery journeys remain unexecuted pending the root's immutable rehearsal. Production stays closed.
 
+## 2026-10-01 — Keep the subject-first restricted disposition refusal opaque and prove zero effects
+
+The complete fresh run on `2bfc9db9` reached all migrations and found the
+restricted disposition door now refuses at its exact embryo authority check,
+before loading cohort authority. The expected error remains exactly `42501`
+and now names its actual opaque `embryo unavailable` message. The independent
+cohort-only card and grant refusals retain `cohort unavailable`. A new strict
+before/after snapshot requires every cohort, embryo, disposition proposal,
+print right and purpose grant to remain byte-identical after the refused
+disposition. The original zero-nonce assertion and all other boundary checks
+remain. The failed full run is retained; the complete corrected suite must pass.
+
+## 2026-10-01 — Resolve moved SQL fixtures from their actual directory and use the registered intake mode
+
+The complete 151-file fresh run on `2bfc9db9` reached every migration and exposed
+three inherited include paths inside the newly factored lifecycle fixture that
+still named its former parent directory. They now resolve from the include's
+actual directory, as psql requires. Every original binding/approval/release
+assertion remains unchanged. An independent whole-tree include scan now
+requires every literal include to resolve before the next database run.
+
+The new documentary lookup fixture now names the actual existing intake mode
+`keyless-start`. Its later completed review kind remains `keyless`; these are
+distinct registered stages. The original strict intake constraint and every
+document/reviewer/refusal assertion stay unchanged. The failed full run remains
+recorded; corrected complete boundary suites are executed before a fresh rerun.
+
+## 2026-10-01 — Close the account member context's exact JSON path literal
+
+The next complete fresh reset onfc2975bd passed013000 and caught a missing
+closing quote in014000's account-session JSON path while compiling the actual
+member reader. The path literal now parses as its originally intended exact
+session field. No payload shape, reader, authority, source or assertion changes.
+The failed reset is retained and pgTAP was not reached. The complete fresh run
+continues on the corrected frozen source before any draft push.
 
 ## 2026-10-01 — Parse the bound archive target as JSON before its field projection
 
