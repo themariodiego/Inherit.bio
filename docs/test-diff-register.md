@@ -1,6 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Require a genuinely changed negative encrypted-proof fixture
+
+The full nonroot Linux suite on `65f9f752` passed 8,719 tests and failed the
+encrypted keyless proof's malformed-input case. Its corruption fixture replaced
+the first base64url character with a fixed `x`. When the random encrypted token
+already starts with `x`, that operation leaves the valid token unchanged and the
+verifier correctly accepts it. The fixture now replaces an existing `x` with `y`
+and every other first character with `x`. Every negative input independently
+asserts that it differs from the original valid token before requiring refusal.
+All original malformed-scope, current-authority, canonical encoding, expiry and
+deployment-key rotation assertions remain. No product source, SQL, timeout,
+retry or acceptance change is made. The failed full-suite receipt is retained
+and a complete corrected run is required before pushing.
+
 ## 2026-10-01 — Route initial keyless documentary approval to the real owner-notice transaction
+
 
 The native initial keyless decision previously entered the older attested dispatcher, which refuses every non-Record-Key approval. It now repeats the actual own-JWT documentary lookup, validates its current assignment/session/document/comparison proof, and calls the existing020 producer through a narrow authenticated definer door delegating the existing own-JWT reviewer transaction after exact predecessor validation; the private prerequisite stays owner-only. The linked attestation's mandatory true parent fact is separately preserved while its exact five documentary fields are projected for the independently strict identity and minimum-envelope parsers. No parser strips unknown fields. The transferred minimum and contact receive independent wrapped keys, all original clocks and full-document receipt checks remain, and the only initial positive receipt is approved_pending_owner_notice; no detachment or release is implied. Response validation now demands exactly the registered three fields and the next revision. Composed native encrypted tests and actual-role SQL are being authored; whole release/reviewer/browser proof remains pending and acceptance unchanged.
 

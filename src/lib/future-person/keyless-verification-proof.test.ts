@@ -46,8 +46,12 @@ describe("keyless verification is a bounded encrypted receipt, never independent
       expect(()=>sealKeylessVerificationProof(bad,NOW)).toThrow("claim verification unavailable");
       expect(keylessVerificationProofMatches(token,bad,NOW)).toBe(false);
     }
-    for(const bad of [null,{},"",`${token}=`,` ${token}`,`x${token.slice(1)}`,token.slice(1),"a".repeat(1025),
-      encryptSecret("{} ").toString("base64url")])expect(keylessVerificationProofMatches(bad,scope,NOW)).toBe(false);
+    const changedPrefix=`${token[0]==="x"?"y":"x"}${token.slice(1)}`;
+    for(const bad of [null,{},"",`${token}=`,` ${token}`,changedPrefix,token.slice(1),"a".repeat(1025),
+      encryptSecret("{} ").toString("base64url")]){
+      expect(bad).not.toBe(token);
+      expect(keylessVerificationProofMatches(bad,scope,NOW)).toBe(false);
+    }
     for(const clock of [NaN,Infinity,-1,1.5,Number.MAX_SAFE_INTEGER])expect(()=>sealKeylessVerificationProof(scope,clock)).toThrow();
   });
   it("refuses deployment-key rotation without a historical proof fallback",()=>{
