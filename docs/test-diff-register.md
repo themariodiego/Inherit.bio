@@ -1,5 +1,26 @@
 # Test diff register
 
+## 2026-10-01 — Render prospective parent profile controls without reading saved identity fields
+
+The settings loader's new tests verify both genuine stateless operation proofs
+against the full source-selected current receipt, crossed operation/session/
+subject/record/profile refusals, unknown-field rejection, the exact bounded
+inventory and cursor, and zero mutation RPC calls on repeated page reads.
+The client receives only the authorized record label, storage status, unchanged
+deadline and prospective action proofs. No birth detail, parent name, index,
+ciphertext, key or raw authority snapshot is returned or used as a form default.
+Production and anonymous requests stop before trusted inventory reads.
+
+The profile-control SQL fixture uses the real two-parent transfer writer,
+requires no nonce/profile creation by repeated read-only discovery, rejects a
+stranger or crossed live session, preserves each parent's own signature and
+requires deletion controls to survive a superseded upload consent. The top
+account export and deletion controls remain in their existing position.
+No fixture is a native disposition or profile browser proof: the genuine
+page-issued disposition control is still required before that journey can
+reach a transferred record, and is a separate follow-up. New SQL and hosted
+browser execution remain pending; acceptance is unchanged.
+
 ## 2026-10-01 — Bound optional identity profiles to actual parent authority and the original transfer clock
 
 New profile tests require the current record-key recipient, that same parent's
