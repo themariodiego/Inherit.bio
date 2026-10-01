@@ -94,6 +94,9 @@ select ok((private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),
  and exists(select 1 from public.embryo_qc where embryo_id=(select embryo from custody_ids)),
  'uncertain archive refusal rolls back the complete job/reservation/request and preserves genuine result/rights authority');
 create temporary table queued_deletion_export as select pg_temp.deletion_export('queued-export-before-delete') body;
+select lives_ok('set constraints public.independent_export_origin_complete immediate',
+ 'the actual queued export passes its deferred creation contract before the separate deletion request');
+set constraints public.independent_export_origin_complete deferred;
 select is((select count(*) from public.generated_exports where id=(select (body->>'exportId')::uuid from queued_deletion_export)
  and status='queued' and object_id is null and archive_sha256 is null and byte_count is null),1::bigint,
  'one actual claimant export is queued without an attempt, reservation or provider bytes before deletion');
@@ -199,6 +202,7 @@ select is((select count(*) from public.purge_target_stores where target_id='gene
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
  where has_function_privilege(role,'private.finish_future_person_deletion_v1(uuid,text)','execute')
  or has_function_privilege(role,'private.future_person_deletion_graph_rows_v1(uuid,uuid,uuid,uuid,uuid)','execute')
+ or has_function_privilege(role,'private.future_person_deletion_cascade_pending_v1(text,jsonb)','execute')
  or has_function_privilege(role,'private.future_person_deletion_row_v1(text,jsonb,boolean)','execute')),0::bigint,
  'no API role can select a graph table or invoke the closed final transaction');
 select throws_ok($$select private.future_person_deletion_row_v1('public.profiles','{}',true)$$,
@@ -248,18 +252,47 @@ select is((select count(*) from private.claim_documents where intake_id=(select 
  'the real document disposal callback clears the exact ended claim documents');
 select throws_ok($$select private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))$$,
  '42501','claimant deletion unavailable','the original published ingest copies must also receive real disposal ACKs');
--- Drain the genuine published cleanup through its existing bounded R2 marker
--- RPCs. No Storage guard is disabled and no row or worker status is forged.
+-- Drain the genuine published cleanup through its existing exact provider
+-- doors. The original metadata fixture lands ingest fragments in Supabase,
+-- while its canonical source parts use R2. Neither provider may be relabeled.
+-- No Storage guard is disabled and no row or worker status is forged.
 create temporary table original_upload_cleanup as select id from public.embryo_ingest_unwinds
  where purpose='published' and session_id=(select id from live);
+create function pg_temp.original_copy_ack_before_delete() returns jsonb language plpgsql as $$
+declare d private.embryo_ingest_object_disposals;claim jsonb;evidence jsonb;
+begin
+ claim:=public.claim_embryo_ingest_object_disposals_v1((select id from original_upload_cleanup),pg_temp.h('original-copy-disposal'));
+ select * into d from private.embryo_ingest_object_disposals
+  where unwind_id=(select id from original_upload_cleanup) and state='claimed' and backend='supabase' order by ordinal limit 1;
+ if not found then raise exception 'the genuine original fixture must have its landed Supabase disposal';end if;
+ evidence:=jsonb_build_object('version','embryo-ingest-object-delete-evidence-v1',
+   'provider','supabase','disposition','object-deleted','bucket',d.bucket_id,'objectKey',d.object_name,
+   'objectId',d.storage_object_id,'storageVersion',d.storage_version,'byteCount',d.byte_count);
+ if private.embryo_ingest_disposal_evidence_ok_v1(d,evidence) is distinct from true then
+  raise exception 'the negative fixture must carry the exact registered provider evidence';end if;
+ return public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
+  private.embryo_ingest_disposal_receipt_v1(d),evidence);
+end $$;
+select throws_ok($$select pg_temp.original_copy_ack_before_delete()$$,'42501','embryo_unwind_unavailable',
+ 'an exact Supabase receipt cannot acknowledge the original copy while its real metadata still exists');
 do $$ declare claim jsonb;d private.embryo_ingest_object_disposals;begin
  claim:=public.claim_embryo_ingest_object_disposals_v1((select id from original_upload_cleanup),pg_temp.h('original-copy-disposal'));
  for d in select * from private.embryo_ingest_object_disposals where unwind_id=(select id from original_upload_cleanup) and state='claimed' loop
-  if d.backend<>'r2' then raise exception 'this synthetic source requires its real R2 receipt';end if;
-  perform public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
-   private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-tombstone-evidence-v1','provider','r2',
-    'disposition','payload-tombstoned','bucket',d.bucket_id,'objectKey',d.object_name,'providerVersion',lpad(d.ordinal::text,32,'9'),
-    'etag','d41d8cd98f00b204e9800998ecf8427e','byteCount',0,'sha256','e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'));
+  if d.backend='supabase' then
+   perform set_config('storage.allow_delete_query','true',true);
+   delete from storage.objects where id=d.storage_object_id and bucket_id=d.bucket_id
+    and name=d.object_name and version=d.storage_version and metadata->'size'=to_jsonb(d.byte_count);
+   if not found then raise exception 'the exact original Storage metadata must be deleted once';end if;
+   perform public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
+    private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-delete-evidence-v1',
+     'provider','supabase','disposition','object-deleted','bucket',d.bucket_id,'objectKey',d.object_name,
+     'objectId',d.storage_object_id,'storageVersion',d.storage_version,'byteCount',d.byte_count));
+  elsif d.backend='r2' then
+   perform public.finish_embryo_ingest_object_disposal_v1(d.unwind_id,d.ordinal,pg_temp.h('original-copy-disposal'),
+    private.embryo_ingest_disposal_receipt_v1(d),jsonb_build_object('version','embryo-ingest-object-tombstone-evidence-v1','provider','r2',
+     'disposition','payload-tombstoned','bucket',d.bucket_id,'objectKey',d.object_name,'providerVersion',lpad(d.ordinal::text,32,'9'),
+     'etag','d41d8cd98f00b204e9800998ecf8427e','byteCount',0,'sha256','e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'));
+  else raise exception 'unknown original provider cannot be acknowledged';end if;
  end loop;
 end $$;
 select is(public.confirm_embryo_ingest_unwind_storage_v1((select id from original_upload_cleanup))->>'status','storage_confirmed',
@@ -275,6 +308,12 @@ select throws_ok($$select pg_temp.deletion_probe(
 select ok(exists(select 1 from private.embryo_canonical_sources where file_id=(select file from custody_ids))
  and exists(select 1 from public.subjects where id=(select subject from custody_ids)),
  'expired finisher refusal preserves the complete source and subject graph');
+select ok(exists(select 1 from public.purge_manifest_entries e where e.manifest_id=(select id from deletion_plan)
+ and e.entry_revision>50 and e.store_name='private.claim_review_downloads'
+ and private.future_person_deletion_cascade_pending_v1(e.store_name,e.row_key)),
+ 'the genuine review download waits for its existing protected receipt and chunk children');
+select throws_ok($$select private.future_person_deletion_cascade_pending_v1('public.profiles','{}')$$,
+ '42501','claimant deletion unavailable','dependency ordering cannot expand the closed row inventory');
 select is(private.finish_future_person_deletion_v1((select id from deletion_plan),pg_temp.h('disposal-lease'))->>'status',
  'deleted','the exact ACK-backed private transaction deletes the genuine approved unbound claimant graph');
 select is((select coalesce(sum(private.future_person_deletion_row_v1(store_name,row_key,false)),0) from sealed_graph_keys),0::numeric,

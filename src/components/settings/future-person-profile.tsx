@@ -44,11 +44,15 @@ export function FuturePersonProfile({control}:{control:IdentityProfileControl}){
   }
   function save(event:FormEvent<HTMLFormElement>){event.preventDefault();void mutate("save",event.currentTarget);}
   const label=`profile-${control.embryoId}`;
-  return <article className="space-y-4 rounded-xl border border-line p-4" aria-labelledby={`${label}-heading`}>
+  return <article data-slot="future-person-profile-control" data-embryo-id={control.embryoId}
+    className="space-y-4 rounded-xl border border-line p-4" aria-labelledby={`${label}-heading`}>
     <h3 id={`${label}-heading`} className="font-medium">{control.label}</h3>
     <p className="text-sm text-ink-muted">{control.hasProfile?"Details are stored.":"No details are stored."} These details are kept only until <time dateTime={control.expiresAt}>
       {new Date(control.expiresAt).toLocaleDateString("en-GB",{year:"numeric",month:"long",day:"numeric"})}</time>, or deleted earlier.</p>
     {control.save?<form ref={formRef} onSubmit={save} autoComplete="off">
+      <input type="hidden" name="operationNonce" value={control.save.operationNonce} />
+      <input type="hidden" name="csrf" value={control.save.csrf} />
+      <input type="hidden" name="consentSignatureId" value={control.save.consentSignatureId} />
       <fieldset disabled={disabled} className="space-y-3">
         <legend className="sr-only">Matching details for {control.label}</legend>
         <div className="space-y-1"><label htmlFor={`${label}-birth-date`} className="text-sm">Child birth date</label>

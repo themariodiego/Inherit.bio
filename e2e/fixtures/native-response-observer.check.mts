@@ -18,6 +18,12 @@ const server = http.createServer(async (request, response) => {
   const body = Buffer.concat(chunks).toString();
   received.push({ path: request.url, method: request.method!, body, origin: request.headers.origin,
     site: request.headers["sec-fetch-site"] as string });
+  if(request.url==="/api/synthetic/put"&&request.method==="PUT") {
+    response.writeHead(200,{"content-type":"application/json"});response.end('{"status":"saved"}');return;
+  }
+  if(request.url==="/api/synthetic/delete"&&request.method==="DELETE") {
+    response.writeHead(204);response.end();return;
+  }
   if(request.url==="/api/synthetic/empty204"||request.url==="/api/synthetic/empty205") {
     response.writeHead(request.url.endsWith("204")?204:205);response.end();return;
   }
@@ -97,13 +103,32 @@ try {
   const unused = await observeNativeResponses(page, { unused: "^/api/synthetic/unused$" });
   const unusedRead = unused.read("unused"); void unusedRead.catch(() => {});
   await unused.dispose(); await assert.rejects(unusedRead, /observer disposed/);
-  assert.deepEqual(received, ["normal", "oversized", "first", "second", "duplicate", "duplicate", "empty204", "empty205"].map(mode => ({
+  for(const method of ["PUT","DELETE"] as const) {
+    const path=`/api/synthetic/${method.toLowerCase()}`;
+    const selected=await observeNativeResponses(page,{selected:`^${path}$`},method);
+    try {
+      // A POST to the identical path must not satisfy the selected method.
+      await page.evaluate(async path=>{const response=await fetch(path,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({synthetic:"excluded"})});if(await response.text()!== '{"status":"scanning"}')throw new Error("Excluded request changed");},path);
+      const actual=await page.evaluate(async ({path,method})=>{
+        const input=new Request(path,{method,...(method==="PUT"?{headers:{"content-type":"application/json"},body:JSON.stringify({synthetic:"put"})}:{})});
+        const response=await fetch(input);
+        return {status:response.status,text:await response.text(),sameResponse:response===(window as Window & {originalReply?:Response}).originalReply};
+      },{path,method});
+      const reply=method==="PUT"?{status:200,text:'{"status":"saved"}'}:{status:204,text:""};
+      assert.deepEqual(actual,{...reply,sameResponse:true});assert.deepEqual(await selected.read("selected"),reply);
+    } finally {await selected.dispose();}
+  }
+  assert.deepEqual(received, [...["normal", "oversized", "first", "second", "duplicate", "duplicate", "empty204", "empty205"].map(mode => ({
     path: `/api/synthetic/${["normal", "oversized"].includes(mode) ? "complete" : mode}`,
     method: "POST", body: JSON.stringify({ synthetic: mode }), origin, site: "same-origin",
-  })));
-  assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 8);
+  })),...["PUT","DELETE"].flatMap(method=>[
+    {path:`/api/synthetic/${method.toLowerCase()}`,method:"POST",body:JSON.stringify({synthetic:"excluded"}),origin,site:"same-origin"},
+    {path:`/api/synthetic/${method.toLowerCase()}`,method,body:method==="PUT"?JSON.stringify({synthetic:"put"}):"",origin,site:"same-origin"},
+  ])]);
+  assert.equal(await page.evaluate(() => (window as Window & { fetchCalls?: number }).fetchCalls), 12);
   assert.equal(await page.evaluate(() => "__inheritNativeResponseObserver" in window), false);
-  console.log("PASS native response observer: exact 202 and empty 204/205 bytes, original response identity, unchanged browser headers/body, bounded rejection, multiple observations, duplicate rejection after first body settled and unused cleanup.");
+  console.log("PASS native response observer: exact POST/PUT/DELETE bytes and empty 204/205, original response identity, unchanged browser headers/body, selected-method isolation, bounded rejection, multiple observations, duplicate rejection after first body settled and unused cleanup.");
 } finally {
   await browser.close(); server.closeAllConnections();
   await new Promise<void>(resolve => server.close(() => resolve()));

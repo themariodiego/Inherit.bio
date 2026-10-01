@@ -7639,6 +7639,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      embryo_disposition_controls_v1: {
+        Args: { p_account: string; p_session: string; p_after?: string | null }
+        Returns: Json
+      }
       future_person_profile_controls_v1: { Args: { p_account: string; p_session: string; p_after?: string | null }; Returns: Json }
       future_person_profile_context_v1: {
         Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string | null }

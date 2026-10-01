@@ -667,7 +667,11 @@ const UNPROVEN_ROUTE_STATE_PAIRS = 9;
  * that day although `navigationContract.publicRightsReachability` required it.
  * T6 and T7 remain, and both wait for embryo ingest.
  */
-const UNINSTRUMENTED_TASK_DEPTH_TASKS = 2;
+// 2026-10-01: the existing native participant-c publication case now counts
+// T6 through real Overview navigation to the exact no-ranking statement.
+// This is authored instrumentation; full hosted execution remains pending.
+// T7 stays uninstrumented until its genuine personal absolute figure exists.
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 1;
 
 /** The register's task-depth contract, as much of it as this gate reads. */
 interface TaskDepthContract {

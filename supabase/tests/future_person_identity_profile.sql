@@ -151,9 +151,25 @@ delete from public.subject_principals where id=(select principal from custody_id
 delete from private.claim_review_decisions where review_id=(select review from custody_ids);
 delete from private.claim_review_reads where review_id=(select review from custody_ids);
 update private.claim_reviews set state='document_review_pending',review_revision=1 where id=(select review from custody_ids);
+-- The competing review's terminal transition genuinely destroys its intake
+-- key. A distinct fresh opaque intake exercises the remaining current Card;
+-- no old ciphertext/AAD tuple or shredded credential is reused as authority.
+create temporary table fresh_card_intake as select gen_random_uuid() id;
+insert into private.future_person_claim_intakes(id,session_hash,form_nonce_hash,mode,key_hash,identity_ciphertext,
+  wrapped_data_key,identifier_hmac,identifier_key_revision,network_hmac,network_key_revision,created_at,last_active_at,expires_at,completed_at)
+  select f.id,pg_temp.h('fresh-card-session'),pg_temp.h('fresh-card-form'),'record-key',pg_temp.h('record-key'),
+    extensions.gen_random_bytes(64),extensions.gen_random_bytes(60),pg_temp.h('fresh-card-identifier'),1,
+    pg_temp.h('fresh-card-network'),1,t.n,t.n,t.n+interval '24 hours',t.n
+  from fresh_card_intake f cross join(select clock_timestamp() n)t;
+select is((select case_kind from private.resolve_claim_case_v1((select i from private.future_person_claim_intakes i
+  where id=(select id from fresh_card_intake)))), 'record_key_unmatched_or_ineligible',
+  'a genuine open competing review still refuses the fresh matching Card intake');
 select is(pg_temp.profile_probe('update private.claim_reviews set state=''closed'',resolved_at=clock_timestamp() where id=(select review from custody_ids)',
-  'select case_kind from private.resolve_claim_case_v1((select i from private.future_person_claim_intakes i where id=(select review from custody_ids)))'),
-  'record_key','the Card identifies its eligible record without an optional matching profile');
+  'select (key_hash<>pg_temp.h(''record-key'') and identity_key_shredded_at is not null and octet_length(wrapped_data_key)=29)::text from private.future_person_claim_intakes where id=(select review from custody_ids)'),
+  'true','closing the competing predecessor genuinely shreds its claim key and identity wrapper');
+select is(pg_temp.profile_probe('update private.claim_reviews set state=''closed'',resolved_at=clock_timestamp() where id=(select review from custody_ids)',
+  'select case_kind from private.resolve_claim_case_v1((select i from private.future_person_claim_intakes i where id=(select id from fresh_card_intake)))'),
+  'record_key','the fresh Card intake identifies its eligible record without an optional matching profile');
 create temporary table card_case as select public.read_claim_review_case_v1((select review from custody_ids)) body;
 select ok((select body->>'caseKind'='record_key' and body->'parentIdentityCiphertext'='null'::jsonb
   and jsonb_array_length(body->'recordedParentSigningEvidence')=2
