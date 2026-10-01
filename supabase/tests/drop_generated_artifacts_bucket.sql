@@ -18,14 +18,18 @@ select ok((select not public and file_size_limit=4000000 from storage.buckets wh
 select is_empty($$select policyname from pg_policies where schemaname='storage'
  and (coalesce(qual,'')||coalesce(with_check,'')) like '%generated-artifacts%'$$,'no storage policy names the dropped bucket');
 
--- The literal survives only as the retention target id over database rows.
+-- The literal survives only as the retention target id over database rows,
+-- including the exact claimant deletion graph over the registered archive rows.
 select set_eq($$select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private','storage') and p.prosrc like '%generated-artifacts%'$$,
- array['private.prepare_own_report_purge_v1(uuid,timestamp with time zone)','private.execute_own_report_purge_v1(uuid)'],
- 'only the own-report purge functions carry the literal, as a retention target id');
+ array['private.prepare_own_report_purge_v1(uuid,timestamp with time zone)','private.execute_own_report_purge_v1(uuid)',
+ 'private.future_person_deletion_graph_rows_v1(uuid,uuid,uuid,uuid,uuid)'],
+ 'only the exact own-report and claimant deletion functions carry the retention target literal');
 select set_eq($$select store_name from public.purge_target_stores where target_id='generated-artifacts'$$,
- array['public.report_artifacts','public.generated_exports','public.download_sessions','public.model_contexts','private.own_analysis_runs'],
- 'the generated-artifacts retention target keeps every store it had');
+ array['public.report_artifacts','public.generated_exports','public.download_sessions','public.model_contexts','private.own_analysis_runs',
+ 'private.export_archive_jobs','private.export_archive_attempts','private.export_archive_downloads',
+ 'private.export_archive_manifest_pages','private.export_archive_segments','private.export_archive_nonce_uses'],
+ 'the generated-artifacts target keeps every prior store and all six exact registered archive children');
 
 -- The single-object form cannot be recorded again. Foreign keys are off so
 -- each insert reaches only the check it is aimed at.

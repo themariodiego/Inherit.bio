@@ -1,5 +1,8 @@
 -- Genuine synthetic approval/release setup. SQL metadata predecessors are
 -- test-local; this is not hosted document/provider acceptance.
+-- Supply the same bounded synthetic signing ciphertext as the original export
+-- authority fixture, before any signature or historical custody capture exists.
+select set_config('inherit.synthetic_signing_ciphertext',repeat('ab',64),true);
 \ir future_person_custody_source.inc
 \ir future_person_custody_approved.inc
 -- Restore the documentary predecessor. The real attested decision must create

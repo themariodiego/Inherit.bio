@@ -32,6 +32,26 @@ The registered TEST-LOCAL relocation continuation adds a separate signed audienc
 Each bounded attempt owns a fresh server-derived account/attempt key. Failed or expired copies require a 35-second capability drain plus an exact persisted temporary-marker acknowledgement before a fresh-key retry; three acknowledged failures close the logical row. An uncertain committed-swap response cannot authorize deleting its new current key. Old-key disposal requires the committed copy and current claimant/account/source fences. Transport regressions use real gateway and signing code with a synthetic R2 binding. Operator regressions use the RPC seam and require complete bytes, exact checkpoint order, temporary-only failure disposition and separate persisted cleanup claims.
 
 The SQL tests move the complete existing binding predecessor and every original assertion byte-for-byte into a shared fixture; both binding and relocation suites run it. New strict lifecycle cases cover actual service-role execution without private-table grants, expiry/foreign/revision/config refusal, complete receipt schemas, size/hash equality, committed-only old cleanup, fixed drain, fresh-key retry ceilings, immutable receipts and complete historical source/sibling inventory equality. Fixture accounts and provider replies are explicit synthetic database boundaries, not browser Auth or hosted R2 evidence. The authored migration/lifecycle fixtures still need fresh database rehearsal; the actual bound reader, exact claimant/account erasure inventory and genuine browser flow remain required. The private gate and G5.4 acceptance remain CLOSED.
+## 2026-10-01 — Preserve exact archive retention census and genuine deletion export history
+
+The complete integrated database rehearsal found two stale census expectations:
+the claimant deletion graph names the existing generated-artifacts retention
+target, and its six existing archive child stores are now registered under that
+target. Both assertions remain exact set equality, retaining every original
+function and store while requiring the one genuine graph helper and all six
+archive children. No bucket, provider or additional retention class is accepted.
+
+The deletion fixture now supplies the original export fixture's bounded synthetic
+signing ciphertext before the real publication signatures and custody capture.
+It does not edit historical custody or reconstruct a missing signing identity.
+The production rejection of incomplete historical agreements remains unchanged.
+The deletion writer removes assignments to the nonexistent legacy claim_token
+and claimed_at columns while still clearing the actual claim_token_hash and every existing
+worker lease field. All refusal, atomic rollback and retention clock assertions
+remain. The matrix headline's remaining count is corrected to its actual 21 NO
+rows without flipping any row. Earlier full failures are retained; the corrected
+source must pass its own complete checks before any draft push.
+
 ## 2026-10-01 — Preserve ordinary retention transitions in the shared deletion guard
 
 The integrated fresh database run exposed a shared trigger record-shape error:

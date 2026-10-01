@@ -723,7 +723,7 @@ begin
  select m,'variant-rows','private.embryo_canonical_parts',to_jsonb(a),b.sequence+1
    from private.embryo_canonical_source_parts b join private.embryo_canonical_parts a on a.id=b.part_id where b.file_id=x.file_id;
  update public.subjects set analysis_stopped_at=coalesce(analysis_stopped_at,v_now) where id=s.id;
- update public.worker_jobs w set status='cancelled',claimed_by=null,claim_token=null,claim_token_hash=null,claimed_at=null,
+ update public.worker_jobs w set status='cancelled',claimed_by=null,claim_token_hash=null,
    claim_expires_at=null,finished_at=v_now where w.status in('queued','running') and w.kind not in('revoke_purge','retention_purge')
      and (w.subject_id=s.id or w.file_id=x.file_id);
  update public.rights_sessions q set status='revoked',ended_at=v_now,session_revision=session_revision+1
