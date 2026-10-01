@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Separate complete planning from the bounded attempt INSERT
+
+The complete account assembler needs multiple independently bounded source
+proofs. A new optional segmentation hook runs that planning after the real
+attempt INSERT and before source acquisition. The original 30-second INSERT,
+read, write and metadata operation limits and the original whole-job deadline
+remain unchanged. Current authority is required before and after planning;
+cancellation, deadline and uncertain mutation cleanup holds still fail closed.
+
+Every old segmentation assertion remains. New tests prove multiple bounded
+preparation steps, unchanged stalled-INSERT refusal, ignored-cancellation and
+late-completion refusal with zero source/reservation/write, and revocation
+before source acquisition. Existing callers retain their original path.
+Complete class/member orchestration and actual POST/status/provider execution
+remain required; no public/READY or acceptance claim is made.
+
 ## 2026-10-01 — Exercise the real recipient JSON contract in the whole-archive catalog fixture
 
 The actual full Linux run on `517fb4` failed the three existing archive-member
