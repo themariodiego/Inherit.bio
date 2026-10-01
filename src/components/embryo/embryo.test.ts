@@ -119,6 +119,16 @@ describe("CompareTable", () => {
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(3);
   });
 
+  it("links only the exact passing result columns while preserving the failed QC column", () => {
+    const links = [...html.matchAll(/<a href="\/embryos\/([^"]+)"/g)].map(match => match[1]);
+    expect(links).toEqual([E(1), E(3)]);
+    const start = html.indexOf(`data-embryo-id="${E(2)}"`);
+    const failedHeader = html.slice(start, html.indexOf("</th>", start));
+    expect(failedHeader).toContain("Embryo 2");
+    expect(failedHeader).toContain(QC_FAILED_CHIP);
+    expect(failedHeader).not.toContain("<a ");
+  });
+
   it("renders the honest sentence in place of the rows and no risk figure", () => {
     expect(html).toContain(NO_ROWS_SENTENCE);
     expect(html).not.toMatch(/data-figure-kind="(absolute|relative|percentile)"/);

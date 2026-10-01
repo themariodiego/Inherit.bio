@@ -4,6 +4,7 @@ import { expect, test } from "./audited-test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
 import bindings from "../scripts/comprehension/bindings.json";
 import { participantCSeed } from "../scripts/comprehension/participant-c-seed";
+import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
 import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
 import { PRIMARY } from "@/copy/overview";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
@@ -38,52 +39,60 @@ test.afterAll(async () => { mail?.closeAllConnections(); if (mail) await new Pro
 test("participant-c adds the bound embryo pair through both parents, upload and real publication; task depth T6 follows the actual no-ranking statement", async ({ page, browser }, testInfo) => {
   test.setTimeout(300_000);
   await withEmbryoJourney(process.env, async runtime => {
-  const { owner, cohortId, embryos, readPublication } = await seedParticipantC({ page, browser,
-    ownerEmail, parentEmail, password, messages, runtime });
-    // The genuine seed and explicit current parent permissions are setup.
-    // T6 starts from the Overview after its real result gate has been passed.
-    await page.goto("/overview");
-    await expect(page.locator("main h1")).toBeVisible();
-    await startTaskSixTrace(page);
-    await page.getByRole("link", { name: PRIMARY.compareEmbryos, exact: true }).click();
-    await expect(page).toHaveURL(url => url.pathname === "/embryos/compare");
-    await expect(page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
-    for (const role of ["button", "combobox", "checkbox", "radio"] as const) {
-      await expect(page.getByRole(role, { name: /rank|best embryo|recommend/i })).toHaveCount(0);
-    }
-    const measured = await readTaskSixTrace(page);
-    expect(measured.actions).toBe(1);
-    expect(measured.trace).toEqual([{ event: "click", path: "/overview" }]);
-    await testInfo.attach("task-depth-T6", { contentType: "application/json", body: JSON.stringify({
-      taskId: "T6", source: "actual-native-signed-parent-publication", fixture, cohortId,
-      start: "/overview", end: "/embryos/compare", ...measured,
-    }) });
-    // Consume the actual published seed through the live harness's fresh
-    // context/read/action interface, without invoking any inference process.
-    const reader = await openParticipantCReadSession({ browser, sessionId: "native-participant-c-T6",
-      ownerId: owner, cohortId, email: ownerEmail, password,
-      read: readPublication });
+    const { owner, cohortId, embryos, readPublication, other, closeCoParent } = await seedParticipantC({ page, browser,
+      ownerEmail, parentEmail, password, messages, runtime });
     try {
-      const view = viewSchema.parse(await reader.observe());
-      const compare = view.visibleText.split("\n").find(line => line.endsWith(PRIMARY.compareEmbryos));
-      const id = compare?.match(/^\[([^ ]+) link\]/)?.[1];
-      expect(id, "The actual harness snapshot must expose the Overview comparison link").toBeTruthy();
-      await reader.act({ kind: "click", target: id! });
-      const comparison = viewSchema.parse(await reader.observe());
-      expect(comparison.path).toBe("/embryos/compare");
-      expect(comparison.visibleText).toContain(NO_RANKING_STATEMENT);
-      const record = await reader.record();
-      expect(record).toEqual({ completed: true, path: ["/overview", "/embryos/compare"],
-        actions: 1, entries: 0, confirmationExclusions: [] });
-      await testInfo.attach("participant-c-harness-read", { contentType: "application/json", body: JSON.stringify({
-        taskId: "T6", source: "actual-current-published-seed", cohortId, ownerId: owner,
-        publicationRevision: 1, fixture, ...record,
+      // The genuine seed and explicit current parent permissions are setup.
+      // T6 starts from the Overview after its real result gate has been passed.
+      await page.goto("/overview");
+      await expect(page.locator("main h1")).toBeVisible();
+      await startTaskSixTrace(page);
+      const primaryCompare = page.getByRole("link", { name: PRIMARY.compareEmbryos, exact: true })
+        .and(page.locator('main a[data-slot="button"]'));
+      await expect(primaryCompare).toHaveCount(1);
+      await expect(primaryCompare).toHaveAttribute("href", "/embryos/compare");
+      await primaryCompare.click();
+      await expect(page).toHaveURL(url => url.pathname === "/embryos/compare");
+      await expect(page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
+      for (const role of ["button", "combobox", "checkbox", "radio"] as const) {
+        await expect(page.getByRole(role, { name: /rank|best embryo|recommend/i })).toHaveCount(0);
+      }
+      const measured = await readTaskSixTrace(page);
+      expect(measured.actions).toBe(1);
+      expect(measured.trace).toEqual([{ event: "click", path: "/overview" }]);
+      await testInfo.attach("task-depth-T6", { contentType: "application/json", body: JSON.stringify({
+        taskId: "T6", source: "actual-native-signed-parent-publication", fixture, cohortId,
+        start: "/overview", end: "/embryos/compare", ...measured,
       }) });
-    } finally { await reader.close(); }
-    for (const embryo of embryos) {
-      await page.goto(`/embryos/${embryo.id}`);
-      await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
-      await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
-    }
+      // Consume the actual published seed through the live harness's fresh
+      // context/read/action interface, without invoking any inference process.
+      const reader = await openParticipantCReadSession({ browser, sessionId: "native-participant-c-T6",
+        ownerId: owner, cohortId, email: ownerEmail, password,
+        read: readPublication });
+      try {
+        const view = viewSchema.parse(await reader.observe());
+        const compare = view.visibleText.split("\n").find(line => line.endsWith(PRIMARY.compareEmbryos));
+        const id = compare?.match(/^\[([^ ]+) link\]/)?.[1];
+        expect(id, "The actual harness snapshot must expose the Overview comparison link").toBeTruthy();
+        await reader.act({ kind: "click", target: id! });
+        const comparison = viewSchema.parse(await reader.observe());
+        expect(comparison.path).toBe("/embryos/compare");
+        expect(comparison.visibleText).toContain(NO_RANKING_STATEMENT);
+        const record = await reader.record();
+        expect(record).toEqual({ completed: true, path: ["/overview", "/embryos/compare"],
+          actions: 1, entries: 0, confirmationExclusions: [] });
+        await testInfo.attach("participant-c-harness-read", { contentType: "application/json", body: JSON.stringify({
+          taskId: "T6", source: "actual-current-published-seed", cohortId, ownerId: owner,
+          publicationRevision: 1, fixture, ...record,
+        }) });
+      } finally { await reader.close(); }
+      for (const embryo of embryos) {
+        await page.goto(`/embryos/${embryo.id}`);
+        await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
+        await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
+      }
+      await proveNativeDispositionAndProfile({ owner: page, other, browser, cohortId,
+        embryoId: embryos[0].id, siblingId: embryos[1].id });
+    } finally { await closeCoParent(); }
   });
 });

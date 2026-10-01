@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-01 — Retain the actual co-parent session through native parent controls
+
+The integrated shared participant-c producer returns its genuine co-parent page
+and an explicit context closer after setup. The native journey closes that
+context in a finally block only after every original T6, harness and detail
+assertion plus the actual disposition/profile controls. Seed failure still
+closes it immediately. The separate fresh-persona launcher closes the co-parent
+context before creating its read-only task session, retaining the original
+persona boundary. No account, signature, permission, source, assertion, timeout,
+retry or case identity is replaced. Hosted execution remains pending.
+
 ## 2026-10-01 — Share the genuine participant-c producer with a separate fresh-runtime instrument
 
 The existing native all-pass seed/signature/upload/worker/publication assertions
@@ -14,6 +25,233 @@ proof. Standard CI and ordinary T6/T7 holds remain unchanged. The new manual
 workflow and real per-persona lifecycle are authored and unexecuted here.
 No expectation, signature predicate, scientific producer or acceptance row is
 weakened or marked complete.
+## 2026-10-01 — Keep integrated account-binding links under the primary route contract
+
+The integrated focused rehearsal found two literal links in the existing
+account-binding component. They now use the same primary route identifiers
+as the rest of the application, retaining the exact sign-in return query and
+destination. The source-wide no-literal-link test is unchanged. The native
+Overview action uses the installed Playwright locator intersection of exact
+accessible link name and the actual primary button slot; count and href
+assertions still require one unique real primary action.
+
+## 2026-10-01 — Preserve mixed-QC result-link refusal and target the actual Overview action
+
+Hosted run36805076949 reached genuine whole-cohort publication in both journeys.
+The mixed-QC case then caught a real renderer defect: its failed column offered
+a result link despite the existing strict no-link assertion. Comparison headers
+now retain that column, ordinal label, measured QC, reasons and quality chip,
+but offer result links only for nonfailed QC. A new composed-renderer regression
+requires exactly the two passing links and the original failed header without
+any anchor. The native assertion stays unchanged.
+
+The participant-c case reached the Overview and found both the actual primary
+action and its separate entry-box link had the same accessible name. Its native
+click now identifies the primary action's existing button slot, requires exactly
+one exact-label match and the exact comparison href, then retains the original
+one-action trace, no-ranking statement, harness read and all original journey
+assertions. No arbitrary first/nth match, case, limit, retry or skip is introduced.
+The failed hosted jobs remain recorded; full proof follows on this correction.
+
+## 2026-10-01 — Append native parent controls after every original Embryo assertion
+
+The actual integrated journey now calls the authored native disposition/profile
+helper only after every original publication, comparison, harness-read and
+embryo-detail assertion. The exact stored-source receipt and genuine T6 trace
+remain intact. The addition requires real parent proposal and other-parent
+confirmation, delivered replacement Card, permission revocation, encrypted
+profile save, cross-record/stranger refusal, read-only page nonce counts and
+actual profile shredding without changing canonical source or signed history.
+No original assertion, case, serial group, 300000ms limit or zero-retry policy
+changes. This combined source still requires its own full hosted proof.
+
+The focused rollback predecessor rehearsal on `aa35bce7ec7638033b0480311c36c9c06445c559`
+passes all 403 assertions across five suites: strict storage census14, immutable
+publication78, parent profile controls72, identity-profile98 and complete
+claimant deletion141. It applies only the exact corrected functions and private
+ordering helper plus the immutable publisher inside BEGIN/ROLLBACK on the owned
+local9ed predecessor. It is not a full fresh-migration run or provider/browser
+proof. Every failed earlier checkpoint remains recorded; full fresh proof follows.
+
+## 2026-10-01 — Validate the real export request before the deletion request
+
+The rollback-only positive rehearsal now crosses the same creation boundary as
+the two actual HTTP requests: immediately after its genuine queued export is
+created, it requires that export's exact deferred origin constraint to pass
+while the original claimant authority is still current. It then restores that
+constraint's deferred setting before the separate deletion request. Without
+this boundary, a pending INSERT trigger survived until the test's final check
+after the same export/job/nonce rows had been correctly removed by deletion.
+The product constraint and authority checks are unchanged. The new assertion
+requires genuine complete creation; no invalid export or deletion gets credit.
+
+## 2026-10-01 — Execute exact protected children before a database cascade
+
+The actual positive deletion rehearsal passed 126 assertions before a review
+download DELETE reached its still-sealed receipt-session child through its real
+foreign key. Both private executors now wait while an exact frozen row has live
+CASCADE or SET NULL/DEFAULT children, then execute those children's own sealed
+entries first. The catalog check validates the existing closed PK operation and
+only orders the already-authorized graph; it never authorizes another row.
+RESTRICT/NO ACTION constraints and the explicit existing deferred claimant
+constraint retain their original behavior. No guard, constraint or trigger is
+disabled, and insufficient-privilege errors are never caught as progress.
+
+New assertions require the genuine review-download dependency and refusal of an
+account table outside the closed executor. The API-role privilege assertion now
+also excludes the new private ordering helper. Every original exact-absence,
+sibling, audit-chain, lease, clock and minimized-receipt assertion remains. The
+complete rollback rehearsal and full fresh-database run must still pass.
+
+## 2026-10-01 — Rehearse exact original-copy disposal before claimant completion
+
+The complete positive deletion rehearsal exposed the same record/table alias
+collision in the private terminal finisher; its two table aliases now avoid
+the existing entry record without changing any selection or refusal.
+
+The original publication fixture actually lands ingest fragments in Supabase
+and canonical source parts in R2. The deletion fixture now drains those exact
+recorded backends through their existing disposal doors. Supabase requires one
+exact metadata DELETE by object id, bucket, name, version and size, followed by
+the matching registered receipt; a new negative assertion refuses that receipt
+while the object still exists. R2 retains its exact marker evidence. Unknown
+backends still fail the fixture. No provider is relabeled, guard disabled,
+timeout extended, worker state forged or production proof claimed. This is
+rollback-only SQL protocol evidence; physical provider/browser verification
+remains separately required. All original completion, sibling, audit-chain,
+lease, clock and minimized-receipt assertions remain intact.
+
+## 2026-10-01 — Preserve typed retention targets and the exact provider refusal
+
+The actual claimant deletion rehearsal reached the sealed graph and exposed
+two SQL resolution errors. Retention control selection now compares the real
+UUID target's canonical text with the sealed row key after retaining every
+exact target-kind/store restriction. This avoids casting unrelated numeric
+audit-row keys when the query planner evaluates predicates in another order;
+it does not select any new control or expand custody. The provider-refusal
+query's table alias no longer collides with its declared manifest-entry record.
+The same exact provider-bearing store list still refuses the complete request.
+All prior atomicity, older-executor, current-source, signed-history and sibling
+assertions remain unchanged. These failures are retained and the full positive
+deletion rehearsal follows on the corrected source before any push.
+
+## 2026-10-01 — Exercise a fresh Card intake and genuine immutable artifact publication
+
+The full fresh rehearsal exposed two invalid fixture transitions. Closing an
+existing review runs the real terminal shredding trigger, replaces its Card
+hash and destroys its identity wrapper. The Card-positive fixture now uses a
+distinct new synthetic intake with independent opaque evidence. It additionally
+requires the still-open competing review to refuse that intake and proves the
+predecessor's actual shredding before the fresh intake can identify the same
+eligible record without an optional profile. All original named-reviewer,
+recent-MFA, signed-parent evidence and unassigned-reviewer refusals remain.
+The scoped rollback-only Card rehearsal passes all 98 assertions.
+
+The current-consent fixture attempted an UPDATE forbidden by the immutable
+artifact guard. A separate owner-only administrative publisher now binds the
+exact current predecessor version and actual full-body digest, publishes only
+the immediate successor with a full body/change summary, and changes only the
+predecessor's previously NULL supersession timestamp. Every signed predecessor
+field and historical signature FK remains identical. Its one-use authority is
+an exact owner-owned temporary relation in the current backend's temporary
+namespace; API-owned lookalikes and caller configuration are refused. No API
+role, including service_role, receives the publisher or guard; the blanket
+immutable guard on every other table is unchanged. There is no durable store,
+new secret, automatic publication, data backfill or production gate change.
+
+The profile-control fixture now uses that actual publication door, preserving
+the same strict save-closed/delete-available expectation. New SQL coverage
+requires owner publication, predecessor/signature byte equality, exact body
+hash/version/timestamp, no other artifact mutation, atomic failure rollback,
+no surviving capability, replay/revival/date-extension refusal and forged
+API-temporary-relation denial. Publisher and profile-control SQL execution is
+pending the shared database slot; no browser or acceptance credit is claimed.
+
+## Archive member census binds each actual producer to its eligible origin · 1 October 2026
+
+The complete account rehearsal exposed a real test-contract mismatch: claimant247 registered subjects/{subject_id}/audit-log.json and reports.txt, which the actual approved independent-rights ZIP producer generates from the retained custody selector, but the older synchronous account ZIP test demanded those literal templates after reducing every directory to its first prefix. Its account audit reader proves the acting account without recording an event subject; copying that ledger into every subject would invent attribution. No ordinary subject selector is inferred and no empty audit placeholder is added.
+
+A closed producer-applicability registry retains every table/object member-plan row. Its union must equal the complete unchanged plan; missing producers, newly unmapped members, duplicates and unknown origins/patterns fail. The synchronous real ZIP keeps exact member-set equality for its verified account-session contract. The independent-rights real ZIP proves every assigned pattern with genuine UUID partition paths, and its existing nonempty actual retained audit/text source tests preserve exact rows, counts, hashes, historical agreements and all refusal assertions. The two claimant members remain required and generated by their real eligible producer. The complete claimed-bound/whole-account executor is still required; this registry neither authorizes it nor establishes G5.6.
+
+The complete historical Future member factories are extracted without changing projection, pagination, count/SHA/EOF, source/attempt authority, ZIP or cleanup behavior. Original independent-rights execution still supplies its original scoped door; sharing the pure member plan supplies no authority. No assertion timeout, public gate, production provider or acceptance row changes.
+
+## Bound own-source archive members use durable request and attempt authority · 1 October 2026
+
+The narrow continuation adds one distinct service-only source manifest/check door for an actual account-origin, claimed-bound subject archive. It rederives the current actual account user/session/profile and recent/MFA requirements from the durable origin, verifies the complete immutable binding/custody/source/current-location proof, and requires the exact active writing attempt and genuinely consumed create envelope. No human JWT is stored or forged. The original authenticated-only human reading doors and every private helper remain denied to service, anonymous and upload callers. The ordinary whole-account authority implementation is retained intact: unsupported whole-account graphs still refuse. A complete account executor remains required; this source partition is not a complete archive and cannot mark READY or deliver anything.
+
+The actual source-member consumer reads every moved canonical part through the distinct relocation audience to complete EOF, verifies size/hash/provider identity, and rechecks the durable current source before returning any member. It preserves exact part bytes under the registered originals/{file_id}/{server_filename} layout, explicitly labels the source as a sanitized autosomal canonical projection and sets byteIdenticalToUpload=false. Its archival provenance excludes provider locations/versions, actor sessions and capabilities. Subsequent ZIP member reads recheck authority again and fail the attempt on revocation or expiry; the existing archive persistence retains uncertain-write cleanup holds.
+
+New tests use the real signer, gateway, transport and ZIP64 producer/independent ZIP reader over explicit synthetic R2 and SQL authority seams. They require exact member/byte/hash equality and refuse foreign export/attempt, stale/open/partial receipts, truncated provider bytes, every source release checkpoint, TEST-LOCAL closure and revocation during ZIP generation. The authored database suite preserves every documentary decision, credential activation, account binding and completed-source predecessor, then uses the real create-envelope consumption and durable begin protocol under service_role. Fresh database, hosted provider, browser and complete whole-account inventory proofs remain pending. No existing assertion/timeout is weakened and no acceptance row changes.
+
+
+## Bound claimant source access uses current scoped Auth and completed physical receipts · 1 October 2026
+
+The closed reader implements the existing account-export-v1 claimed-bound own-subject classifier and approved-future-person-export-v1 non-analytical access purpose. It creates no analytical grant and preserves the retained-source access right after analysis stops. Two exact authenticated-only manifest/check doors resolve the caller's live Auth session and current recent/MFA requirements, then the own claimed-bound relationship, immutable claim/binding, current custody, published exact-call source, complete membership and every completed physical move plus old-disposition ACK. All private builder/table grants remain denied to API roles; anonymous, upload and service callers cannot use the authenticated doors. No new store or public route is added.
+
+The server reader accepts only a subject UUID, verifies real getUser/getClaims agreement before the scoped source RPC, validates a closed SDK DTO, and reads the independently verified current versions through the distinct relocation GET audience. It rechecks current Auth and the whole source receipt before/after every complete EOF read and immediately before returning the buffered source. Queued, partial, swapped-but-unacknowledged, stale, revoked, foreign, missing or unproven source/relocation receipts have no parent/original-location fallback. Original source descriptors and parents' own/sibling permissions stay unchanged.
+
+New tests retain every binding predecessor assertion. Auth/SQL unit boundaries are explicitly synthetic; actual signing, gateway and relocated-byte transport are composed without injected read results. Strict tests cover every release checkpoint, incomplete/open/crossed DTOs, wrong purpose, Auth disagreement/replacement, expiry and provider-version refusal. The authored SQL lifecycle requires actual authenticated/service roles, the real documentary decision/credential activation/binding predecessor, complete copy/swap/old ACK protocol, and complete original/sibling source equality. Fresh database, hosted provider and genuine browser proof remain pending. The public binding configuration and G5.4 stay CLOSED; fresh bound erasure/current+temporary disposal and account-archive consumer integration are separate outstanding work.
+
+
+## Claimant relocation cancels admitted bodies and composes exact transport receipts · 1 October 2026
+
+A stalled admitted response body could keep the registered relocation worker inside a pending read after its external cancellation or capability deadline. The complete-byte reader now cancels that body on abort, rechecks cancellation after each read and always removes the listener and releases the lock. Strict copy, readback and cleanup regressions require refusal of incomplete evidence, actual stream cancellation and unchanged source/current payloads. No timeout, size/hash assertion or receipt contract changes.
+
+New composed tests run the actual worker, signer, relocation transport and gateway together over explicit synthetic SQL authority and an in-memory R2 binding. They require complete independent EOF readback before swap, exact version receipts and old-only acknowledged cleanup; lost committed-swap responses preserve the current copy. Revocation after copy or complete readback and corrupted bytes refuse swap and select only temporary cleanup. Cancellation must persist the failure fence with an independent live signal before later temporary cleanup. These are source integration proofs, not fresh database, native HTTP, hosted R2 or genuine browser evidence. Migration 244000 and all four closed binding stores are byte-identical to 000b912e. The bound reader and bound erasure resolver remain required; the 153-store unbound erasure census does not include these four stores. G5.4 and public execution stay CLOSED.
+
+
+## Claimant relocation requires exact committed swap and acknowledged retry cleanup · 1 October 2026
+
+The registered TEST-LOCAL relocation continuation adds a separate signed audience over the existing private embryo R2 binding. It copies only the immutable old version, ETag, size and SHA-256, and independently consumes the copied version to EOF before the service worker may atomically commit a physical-location swap. Terminal cleanup writes and independently verifies the existing permanent empty-marker disposition: current payload removal and a late-create-only-write fence, never key absence or media erasure. Historical source/dispatch descriptors and the original fragment audience, assertions, size ceilings and provider contracts remain unchanged.
+
+Each bounded attempt owns a fresh server-derived account/attempt key. Failed or expired copies require a 35-second capability drain plus an exact persisted temporary-marker acknowledgement before a fresh-key retry; three acknowledged failures close the logical row. An uncertain committed-swap response cannot authorize deleting its new current key. Old-key disposal requires the committed copy and current claimant/account/source fences. Transport regressions use real gateway and signing code with a synthetic R2 binding. Operator regressions use the RPC seam and require complete bytes, exact checkpoint order, temporary-only failure disposition and separate persisted cleanup claims.
+
+The SQL tests move the complete existing binding predecessor and every original assertion byte-for-byte into a shared fixture; both binding and relocation suites run it. New strict lifecycle cases cover actual service-role execution without private-table grants, expiry/foreign/revision/config refusal, complete receipt schemas, size/hash equality, committed-only old cleanup, fixed drain, fresh-key retry ceilings, immutable receipts and complete historical source/sibling inventory equality. Fixture accounts and provider replies are explicit synthetic database boundaries, not browser Auth or hosted R2 evidence. The authored migration/lifecycle fixtures still need fresh database rehearsal; the actual bound reader, exact claimant/account erasure inventory and genuine browser flow remain required. The private gate and G5.4 acceptance remain CLOSED.
+## 2026-10-01 — Preserve exact archive retention census and genuine deletion export history
+
+The complete integrated database rehearsal found two stale census expectations:
+the claimant deletion graph names the existing generated-artifacts retention
+target, and its six existing archive child stores are now registered under that
+target. Both assertions remain exact set equality, retaining every original
+function and store while requiring the one genuine graph helper and all six
+archive children. No bucket, provider or additional retention class is accepted.
+
+The deletion fixture now supplies the original export fixture's bounded synthetic
+signing ciphertext before the real publication signatures and custody capture.
+It does not edit historical custody or reconstruct a missing signing identity.
+The production rejection of incomplete historical agreements remains unchanged.
+The deletion writer removes assignments to the nonexistent legacy claim_token
+and claimed_at columns while still clearing the actual claim_token_hash and every existing
+worker lease field. All refusal, atomic rollback and retention clock assertions
+remain. Rights sessions are revoked using their actual status and ended_at
+columns; their nonexistent session_revision is not written. The real claimant
+release revision still advances and fences every old issuer. Download sessions
+retain their existing revision advance. The matrix headline's remaining count is corrected to its actual 21 NO
+rows without flipping any row. Earlier full failures are retained; the corrected
+source must pass its own complete checks before any draft push.
+
+## 2026-10-01 — Preserve ordinary retention transitions in the shared deletion guard
+
+The integrated fresh database run exposed a shared trigger record-shape error:
+its manifest-only combined predicate referenced `OLD.state` while executing
+against ordinary due-phase rows, which have `status` instead. The same exact
+terminal manifest predicate now reads that field from the already used closed
+row representation. Claimed-plan immutability, terminal minimization, manifest
+state and every prior refusal remain unchanged. No test assertion or timeout
+changes. The actual failed full run is retained; the complete fresh rehearsal
+will follow on this corrected source. Production and public actions stay closed.
+
+## 2026-10-01 — Rehearse integrated current profile, controls and claimant deletion source
+
+The coordinator combines the actual failed fresh-database corrections with the
+complete current erasure graph and prospective parent profile controls. The
+current-source native Embryo signing and atomic revocation observations are
+preserved intact. The CI fixture uses the exact six declared projects and
+validates each real native listing before both permanent scheduling guards.
+Every original case, isolation boundary, refusal, time limit and retry remains.
+Earlier documentation merge markers are removed while retaining every dated
+entry. This checkpoint does not claim database, hosted, provider or user-flow
+completion; each actual verification follows on its frozen source.
 
 ## 2026-10-01 — Observe stored canonical files with their exact normalization receipts
 
@@ -81,6 +319,192 @@ The first full local combined run found the new scheduling fixture still named o
 
 The genuine assigned Future Person reviewer page remains in the complete registered-page census. Its existing exact checked-elsewhere entry now lives in the shared accessibility helper after the six unchanged sweeps moved into standalone native files. Both the strict Embryo case partition validation and permanent whole-file/sweep placement guards execute against the same six actual native discoveries. No case, assertion, limit or route-state coverage is removed.
 
+## 2026-10-01 — Reach genuine parent disposition controls without analytical permission
+
+The existing embryo detail path checks analytical eligibility before loading
+its record, and no page rendered the implemented disposition operation.
+The existing data settings page now offers the exact current parent's native
+propose/confirm or single-authority action without reading QC or analysis.
+The stateless page proof binds the real own account, live session, operation
+and target. The mutation still uses the original request ABI and complete
+writer for every state, proposal, other-parent refusal, committed timestamp,
+retention phase, notice and one-time replacement Card.
+
+A narrow current-right helper recomputes the actual finalized parent matrix,
+current parentage/disposition/single-parent artifact signatures and statements,
+real latest human basis evidence, recipient sets and contradictions under
+subject-first serialization. No cached set, owner, donor, uploader, analytical
+grant or successful QC substitutes for that legal authority. All API roles,
+including service_role, are denied both the helper and the preserved writer
+bypass; only the existing trusted writer and new read-only inventory are public
+to service_role. Discovery creates no database nonce, proposal, grant or clock.
+A changed parent-right artifact closes both discovery and the actual writer,
+while a new upload consent is not required to exercise the parent's right.
+
+Strict runtime tests require actual sealed page proofs, crossed actor/session/
+operation/record refusals, bounded closed inventories, no self-confirmation,
+all three exact registered response shapes, exact replacement Card/date fields
+and zero confirmation from a partial, extra, crossed or malformed receipt.
+The Card lives only in the actual response's component state until copied or
+printed; it is never stored, logged or reconstructed after navigation.
+Focused runtime/crypto/receipt/jurisdiction tests pass all 106 assertions across
+seven files; scoped lint and all ten static gates pass. The final type check,
+new real-producer SQL and native browser execution remain pending the shared
+verification slot. The original journey assertions, 300000ms limit, zero retries
+and acceptance marks are unchanged. The exact identity-profile route is classified
+as a current parent data right under its actual own Auth, operation proof and
+subject-first authority recheck; no analytical capability is opened or waived.
+Settings pagination/reset links use the existing primary route identifier.
+
+## 2026-10-01 — Remove the profile signature alias conflict and preserve the exact phase census
+
+The genuine fresh database rehearsal reached the profile's save authority and
+exposed a PL/pgSQL record-variable collision: the current consent-artifact SQL
+alias had the same name as the declared basis-authority record. Only that
+artifact alias is renamed. The same signature UUID, signer principal/account,
+draft target, artifact key/version/body/hash, publication/effective date,
+statement set, purpose and current jurisdiction revision are still required.
+No authority or request expectation changes.
+
+The phase census now requires exactly 54 rows rather than 53 and adds an
+explicit assertion for the already-registered
+`future-person-claimed-source-disposal` purge phase from migration245. This is
+the actual additional phase; the optional-profile prerequisite reuses its two
+existing phases and introduces no extra registry row. All original census
+assertions remain exact, and the plan grows by exactly this new row-shape
+assertion. The correction awaits the coordinator's focused SQL rehearsal.
+
+## 2026-10-01 — Render prospective parent profile controls without reading saved identity fields
+
+The settings loader's new tests verify both genuine stateless operation proofs
+against the full source-selected current receipt, crossed operation/session/
+subject/record/profile refusals, unknown-field rejection, the exact bounded
+inventory and cursor, and zero mutation RPC calls on repeated page reads.
+The client receives only the authorized record label, storage status, unchanged
+deadline and prospective action proofs. No birth detail, parent name, index,
+ciphertext, key or raw authority snapshot is returned or used as a form default.
+Production and anonymous requests stop before trusted inventory reads.
+
+The profile-control SQL fixture uses the real two-parent transfer writer,
+requires no nonce/profile creation by repeated read-only discovery, rejects a
+stranger or crossed live session, preserves each parent's own signature and
+requires deletion controls to survive a superseded upload consent. The top
+account export and deletion controls remain in their existing position.
+No fixture is a native disposition or profile browser proof: the genuine
+page-issued disposition control is still required before that journey can
+reach a transferred record, and is a separate follow-up. New SQL and hosted
+browser execution remain pending; acceptance is unchanged.
+
+## 2026-10-01: Bind claimant deletion to the real disposition and audit source receipts
+
+The genuine claimant plan now locks the exact detached embryo and reads its
+actual disposition revision independently of the subject lifecycle revision.
+Both retention rows, the closed immutable envelope and every subsequent plan
+check require that same current pair. A positive assertion pins the actual
+row values; no missing subject field or invented revision is used. The running
+publication refusal first creates a constraint-valid claim with a real hash,
+worker and lease, retaining the original 42501 refusal and zero-effects checks.
+Cancellation clears both legacy and current worker claim tokens.
+
+The audit fixture keeps its exact 501 own events, assigned attribution, original
+reference clock and seven member classes. Those fields belong to the private
+source snapshot and actual leased worker context. The public request exposes
+its existing closed authority envelope. New equality assertions bind its receipt
+to that full snapshot and require every original context field through the real
+worker member door. No public response gains private source or actor fields.
+
+The already authored sealed graph, fixed-deadline minimization and immediate
+result deletion proofs are merged intact into this newer profile source. All
+prior sibling, source, provider, uncertain-reservation, actor and rollback
+assertions remain. Full database and hosted verification are pending; the
+public deletion and export delivery holds and acceptance results do not change.
+
+## 2026-10-01 — Bound optional identity profiles to actual parent authority and the original transfer clock
+
+New profile tests require the current record-key recipient, that same parent's
+current upload-consent signature, the exact finalized basis and participant
+revisions, the caller's live own Auth session, and the original transferred
+claim-window deadline. Each changed binding, stale receipt, nonce replay,
+account deletion hold, foreign origin and malformed closed request refuses
+before a write. DELETE requires the current parent basis independently of a
+new upload signature and retains the record and its canonical source.
+
+Runtime-random encryption tests require a separately erasable wrapped key,
+authenticated profile/record/revision scope, all held purpose-separated match
+indexes and no plaintext persistence or response fields. Replacement, deletion
+and exact due retention remove the wrapper, every index and ciphertext; the
+worker keeps all original queues after either a returned or thrown failure.
+Legacy rows acquire no inferred envelope, deadline, authority or matching proof.
+A root needed by a current profile cannot retire without its replacement index.
+The profile stays excluded from every existing export partition and introduces
+no store or foreign key beyond the existing protected row.
+
+The brief makes the matching profile optional and makes the Record Key Card
+sufficient to identify its record. The Card selector therefore removes only
+the old profile-existence dependency, retaining all prior key, age, disposition
+and competing-review refusals. Its current named, recent-MFA reviewer can read
+the genuine earlier signed parent names through the existing frozen signature
+matrix when the optional profile is absent. Unknown, conflicting or non-Card
+signed-parent envelopes are refused. No name is reconstructed from current
+state, and none of these metadata fixtures proves human documentary review.
+The new SQL fixture and full browser flows remain unexecuted here. Keyless
+matching, actual owner-notice delivery, waiting-period objections and a fresh
+release decision remain closed prerequisites; acceptance does not change.
+## 2026-10-01: Delete exact claimant results in the requesting transaction
+
+The source/provider clock must not delay `derived.revocation-60s`. The private
+request now deletes only a closed list of database-derived keys already sealed
+by the exact claimant manifest, before returning and before any source disposal
+lease. Source calls, parts, membership, custody and sibling results remain.
+Any selected report/provider/archive reservation without its actual proved
+cleanup door refuses the entire transaction, including nonce consumption and
+capability revocation. No provider ACK is manufactured by SQL metadata cleanup.
+
+The genuine publication fixture pins one real measured QC row before the
+request and zero rows immediately afterward, its exact sealed deleted status,
+all source parts still pending and byte-identical sibling QC. Actual export
+request/worker doors create a real unACKed reservation; deletion must refuse and
+roll back its entire job/reservation/request while preserving result/rights
+authority. A genuine queued export with no attempt or bytes is deleted with all
+exact job/nonce children in the request. A new API-role
+ACL assertion and claimed-phase replay refusal guard the private executor.
+All previous source, provider, expired lease, contact-control, final graph and
+audit assertions remain. The full database/provider/browser proof is pending;
+public deletion and every acceptance/availability gate stay closed.
+
+
+## 2026-10-01: Minimize exact earlier claimant control envelopes
+
+The actual237 release timer targets the claimant UUID under `claim` and keeps
+subject, principal, contact and mail IDs in its fixed working envelope. After
+ACK-backed zero-row graph proof, the private finisher now selects these exact
+typed controls, retains all original clocks/revisions/hashes and reduces the
+working envelope to a coded subject-deleted receipt with an anonymous target.
+It does not search JSON strings or adopt the historical cohort as ownership.
+An executing earlier manifest, opaque object or remaining physical key refuses
+the complete final transaction. The237 immutable guard permits only this
+proved one-way terminal minimization; ordinary live timer/clock refusals remain.
+Its existing invoker security mode and table permissions stay unchanged: the
+exact terminal proof is inlined rather than requiring a new private-helper
+EXECUTE grant for ordinary updates.
+
+The real approved-release fixture now pins its one actual earlier timer,
+original private envelope fields, exact post-cleanup coded projection, unchanged
+clocks/revisions and refusal to restore any destroyed association. Both new
+helpers deny every API role. New conflicting-earlier-executor and expired-final-lease
+probes require full rollback and preservation of the original authority/source.
+Closed row operations now use typed primary-key equality rather than a whole
+row JSON scan; caller key shapes and null keys refuse. Source DELETE retains
+the exact sealed key/ACK guard inside the already locked final transaction;
+lease expiry is still checked before entering that transaction and all expired
+claim/refusal semantics remain. All existing source, provider, lease, sibling,
+audit-chain and completed-main-control assertions remain unchanged. Latest246
+and247 source/audit contracts plus the exact QC snapshot/C-collation correction
+are merged with both branches' dated entries retained. Full fresh database,
+provider and browser verification still belongs to the coordinator. No public
+deletion, export delivery or acceptance gate is opened by this checkpoint.
+
+
 ## 2026-10-01 — Compare genuine QC receipts before their consumed attempt rows disappear
 
 The full fresh database run showed that successful split publication removes
@@ -100,6 +524,8 @@ the coordinator's genuine fresh SQL rehearsal.
 ## 2026-10-01 — Give the review decision control its exact visible label
 
 The full hosted reviewer journey reached its genuine assigned case and passed the accessibility audit, then found no control with the exact label `Choice`: the implicit wrapping label included the option text in the accessible name. The visible label now explicitly references its separate native select. The original exact two-option browser assertion, every document/read/decision/refusal assertion, and all time limits remain unchanged. This corrects the product's accessible name rather than changing the expected choices. Full hosted execution on the final version remains required.
+
+
 
 ## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
 
@@ -164,9 +590,127 @@ The first-two-steps test had selected a third-party uploader and two-parent basi
 
 The existing three-mode Future claim case already displays its accepted UI but then waits on Playwright's response-body retrieval behind the isolated transport proxy. It now observes complete bytes from a clone of the real browser fetch response through the unchanged verified shared native observer. Its status is cross-checked with Playwright and all exact 202/body/cookie/panel equivalence, HttpOnly and script-read refusal assertions remain. The shared observer and real loopback HTTP/Chromium proof are copied byte-for-byte from the verified Future prerequisite, including exact 204/205 native response handling, duplicate refusal, bounded bytes and cleanup. This changes test observation only: no request replay, fake response, scanner bypass, timeout extension, retry or skip. A fresh full hosted run is still required; this source correction is not browser completion evidence.
 
+
+
+
+
+## Complete genuinely attributable claimant ledger members · 1 October 2026
+
+The existing analysis-stop transaction created a fresh unlinked audit principal,
+so its accepted claimant action could not be selected as that person's record.
+For newly supported custody, it now uses only the already issued exact selector
+after current subject/custody proof. Legacy NULL custody stays unassigned, creates
+no new principal and preserves the stop, consumed nonce and anonymous ledger
+write. Existing unlinked events are never assigned to a claimant retroactively.
+
+The full source capture's prior source/agreement/scientific body is preserved
+in a private denied base helper. Its current receipt additionally binds every
+actual own ledger row in sequence, complete recorded content and the existing
+non-personal attribution reference metadata. Bounded pages preserve exactly the
+six registered coded fields and refuse unsupported envelopes/contexts. The
+readable member's exact manifest count includes its real ledger records; the
+scientific JSON count remains unchanged. Actor
+IDs and chain hashes stay internal. The actual ZIP includes the same complete
+slice in both ledger members and readable text, with exact manifest counts,
+lengths and hashes. A legacy empty slice carries a count-free explanation.
+
+The exact member-plan test adds only the three real claimant archive/reader
+locations while retaining both original account locations, exact six exported
+columns and every withheld actor/hash column. New scope assertions require the
+closed subject selector and explicit NULL/unlinked omission; the parser's
+original archive/reader namespace remains unchanged.
+
+All original export-authority setup and its assertions move unchanged into a
+shared fixture used by the existing member suite and new ledger integration.
+Additional SQL cases require genuine stop attribution, anonymous legacy stop,
+500-plus-one exact pages, no foreign/NULL actor membership, changed-ledger receipt
+refusal, malformed context/NULL route refusal and denied private helpers. Owner
+synthetic paging rows use the actual single chain writer and do not pretend to
+prove a deletion API decision. New actual-ZIP tests refuse incomplete, reordered,
+foreign-field, nested-contact, mismatched or unassigned material before provider
+writes. Existing account readers, withheld columns, source refusals, READY and
+provider/disposal holds remain unchanged. Full SQL/browser proof is pending.
+
+
+## 2026-10-01: Sealed claimant graph and exact terminal cleanup
+
+The actual schema-only 147-store catalog omitted six already-existing private
+archive children: jobs, attempts, downloads, manifest pages, segments and nonce
+uses. The physical registry now contains exactly153 stores; source/member and
+v2 census assertions rise to153 and independently pin all six existing tables.
+No table or export class is created, and no prior positive or negative assertion
+is removed. Archive attempts and uncertain provider reservations remain closed.
+
+The claimed-subject plan now freezes applicable closed, source-authored primary
+keys and exact object handles before part disposal. Ordinals1–50 still belong
+only to the current canonical part gateway; graph rows start at51. Both live
+rows missing from the sealed inventory and unACKed vanished rows refuse. Every issued claimant release, queued export, download and model context is
+revoked in the request transaction, with the actual release revision advanced. A
+pending sealed row cannot be deleted by generic cascading cleanup. The final
+private transaction keeps every original provider/lease refusal, requires all
+part markers, claim-document provider callbacks and actual published-upload
+cleanup, deletes every frozen graph
+key, and checks zero remaining rows. The SQL fixture adds exact crossed-source,
+widened-key, missing-document-ACK, sibling preservation and rollback evidence.
+Synthetic SQL ACKs prove the protocol, not hosted provider disposal.
+
+One subject-to-claimant FK uses validated NO ACTION, deferrable but initially
+immediate, so the genuine subject/principal/claimant cycle can be deleted in one
+closed transaction. Canonical source/membership/call guards permit only that
+exact sealed source after every permanent part ACK; no parent path is widened.
+The existing document callback still uses the real provider API: SQL never
+deletes Storage metadata. Working identity/body links are removed; original
+clocks, coded counts, chain hashes and terminal controls remain, with a fresh
+anonymous target and minimal immutable terminal receipts. The public API/UI and
+acceptance rows remain closed pending full database and real provider proof.
+
+
+## 2026-10-01: Claimed source disposal uses settled publication evidence
+
+The private claimant-erasure prerequisite now uses the existing
+`future-person.claimant-reverification-until-request` claimed-subject-deletion
+trigger. It does not add a scheduled `source.revocation-7d` worker phase against
+D-126. The original request still fixes seven-day source and thirty-day Charter
+completion clocks. The subject lock precedes the retention and worker locks,
+and the purge-start fingerprint commits before provider work.
+
+Published parts no longer wait for their original write lease to expire.
+They must instead prove a completed publication or the exact immutable235
+receipt and current custody tuple. The new gateway regression proves a
+permanent marker refuses a late create-only write while the original capability
+is still live, without calling SQL ACK. Unsettled publication still refuses.
+
+The SQL suite retains all nine original refusals and adds a genuine synthetic
+approval, verified document delivery, provider-submit receipt and one-time
+release activation before the real request and exact part-ACK paths. It pins
+nonce rollback, fixed deadlines, purge start, source/sibling byte identity,
+lease crossing and missing-marker refusal. Synthetic SQL ACKs establish the
+DB protocol only; full provider/browser proof remains pending.
+
+A new closed issuer gives future approved custody one random immutable audit
+selector in the existing private slice. Existing slices remain NULL; no
+historical identity is guessed or backfilled. The export authority fingerprint
+already covers the complete immutable slice. No new store is added. Whole
+147-store graph completion and the public deletion action remain closed.
+
+
+## Claimed-source erasure prerequisite · 30 September 2026
+
+New protocol tests pin the exact sealed inventory, permanent verified empty
+marker, unchanged receipt and one lease binding. Crossed manifests, duplicate
+objects, extra selectors, expired leases, lost ACKs and contradictory completion
+receipts refuse. New SQL probes preserve the service-only drain and private
+plan creation boundaries; missing authority/plan/evidence never means deletion.
+No existing expectation or assertion changed. Genuine positive approval-to-plan
+SQL, complete subject graph cleanup, registered DELETE/UI and hosted evidence
+remain pending; source disposal alone is not deletion acceptance. G8 remains NO.
 ## 2026-09-30 — Execute the pure QC constraint under its actual service writer
 
 The full hosted Embryo run reached real app cases and found the normal service-role QC writer denied EXECUTE on the new CHECK validator. The validator is immutable, reads only its own JSON/scalar arguments and grants no data access or classification mutation. Only service_role gains EXECUTE; anon/authenticated remain denied. Fresh pgTAP runs a real service-role update against a genuinely published saved receipt and requires the unchanged exact CHECK failure for a crossed call rate. Existing immutable-classification, producer, publication and browser assertions remain, with unchanged time limits and retries.
+
+## 2026-10-01 — Give the review decision control its exact visible label
+
+The full hosted reviewer journey reached its genuine assigned case and passed the accessibility audit, then found no control with the exact label `Choice`: the implicit wrapping label included the option text in the accessible name. The visible label now explicitly references its separate native select. The original exact two-option browser assertion, every document/read/decision/refusal assertion, and all time limits remain unchanged. This corrects the product's accessible name rather than changing the expected choices. Full hosted execution on the final version remains required.
 
 ## 2026-09-30 — Preserve custody identity checks under the real API role and audit real reviewer pages
 
@@ -486,6 +1030,49 @@ Migration 20260930242000 preserves the Charter's recorded signing name ciphertex
 The source prerequisite is service-only and read-only, accepts no subject/account/file selectors, binds the current genuine claimant/session/credential/source tuple, uses exact autosomal fields and lossless bigint keyset cursors, and checks live authority before and after each page. Twenty-two focused units cover genuine AES decoding, wrong keys and bodies, forged/current identity fields, missing roles, duplicate/truncated/mismatched pages, revocation before yielding bytes, cancellation and the bounded non-cooperative RPC. The real SQL fixture uses the existing attested decision, provider issue/completion and one-use activation sequence, then adds closed projection, sibling/stale receipt/selector denial, zero row-count mutation, exact 147-store count and independent analysis-stop/source checks. An optional synthetic signing envelope affects only this metadata fixture; every older fixture's default bytes and negative cases remain unchanged.
 
 This is an export source checkpoint. No public export route, complete member plan, queued worker, READY exception or successful archive delivery is claimed. Every existing account publication/late-write hold and excluded credential/document disposition remains. SQL and full hosted browser execution are pending independent verification; G5.4 remains NO.
+## Claimed-source erasure prerequisite · 30 September 2026
+
+New protocol tests pin the exact sealed inventory, permanent verified empty
+marker, unchanged receipt and one lease binding. Crossed manifests, duplicate
+objects, extra selectors, expired leases, lost ACKs and contradictory completion
+receipts refuse. New SQL probes preserve the service-only drain and private
+plan creation boundaries; missing authority/plan/evidence never means deletion.
+No existing expectation or assertion changed. Genuine positive approval-to-plan
+SQL, complete subject graph cleanup, registered DELETE/UI and hosted evidence
+remain pending; source disposal alone is not deletion acceptance. G8 remains NO.
+## 2026-09-30 — Preserve custody identity checks under the real API role and audit real reviewer pages
+
+The first complete hosted custody run found the service-role immutable-file refusal returning a sealed-table permission error before its existing `immutable_file_identity` assertion. The invoker trigger retains its real caller-role test and all original identity fields. A service-only read-only definer evaluates the unchanged exact approved claimant tuple without granting table reads. Fresh pgTAP checks the real service-role refusal, invoker semantics, current-transaction visibility and restricted helper grants; all old refusal and positive detachment assertions remain.
+
+The local disposable Auth configuration now enables real TOTP enrollment and verification so the existing reviewer journeys obtain their own genuine `aal2` sessions. No claims are forged and no production Auth setting changes. The genuine assigned reviewer page is now audited in both themes using the existing full accessibility and origin helpers before any document read or decision, and the global page census names that actual audit. Existing document, receipt, human-checkbox, cancellation and decision assertions retain their limits.
+
+## Future Person account binding requires both current credentials · 30 September 2026
+
+The registered claimant account route is authored under TEST-LOCAL in a separate stream. Its nonce-only body combines the current approved claimant rights cookie with the actual caller's verified own Auth JWT; its database context and signed control bind the exact account, session, claimant, claim and all current revisions. Seven new transport tests plant foreign cookies/accounts/sessions, every stale revision, expired controls, missing or extra body fields, CSRF/origin drift and unexpected DB output. No service client substitutes for account authentication. The explicit UI confirmation grants no analysis or sharing purpose.
+
+The new database test first repeats the actual documentary decision, mail delivery and release-token activation prerequisite. It then checks a separate synthetic authenticated account, strict closed-by-default configuration, exact grants, foreign/stale/malformed refusal, atomic claimed-bound custody, one intent per exact canonical part, unbound secret/contact/session erasure, replay refusal and immutable binding/locator snapshots. SQL fixtures are database boundary evidence, not genuine browser login evidence. New internal/session-bound stores have exact excluded export dispositions and the generated plan remains bidirectional.
+
+The source checkpoint stays CLOSED: actual object copy/hash/swap/deletion transport, current-location reader integration, positive genuine-Auth browser approval/binding journey and full fresh database/hosted execution remain required. Historical canonical source rows and call-immutability proof are unchanged. This entry adds strict expected behavior; no prior assertion, timeout, skip, retry or acceptance verdict changes.
+
+## Case-read auditing and verified document delivery · 30 September 2026
+
+The reviewer browser journeys originally required zero total rows in
+`private.claim_review_reads` before document acknowledgements. The real case
+reader already writes ordinary audit rows when the SSR page and browser GET
+read the assigned case, so that total-zero expectation conflated legitimate
+case auditing with actual document delivery.
+
+The corrected check requires zero rows carrying any document id, chunk
+sequence or delivery-verification timestamp, including a partial or failed
+receipt. A separate positive assertion requires genuine ordinary case-read
+rows, all under the exact claim, reviewer, actual SDK-verified browser Auth
+session and current review revision, with every document/receipt field null.
+It does not pin a fragile SSR/client metadata-read count or insert confirmation.
+The canceled second-chunk path repeats the same zero-receipt proof after error.
+All zero-ACK, disabled processing controls, exact three completed receipts,
+complete-byte/SHA, human checkbox, refusal and unchanged-revision assertions
+remain. No product, database, timeout, retry or acceptance gate changes.
+Actual execution of these corrected journeys remains required in full CI.
 
 ## Inert full-page review precedes human confirmation · 30 September 2026
 

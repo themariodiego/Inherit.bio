@@ -23,7 +23,7 @@ function fixture(){
   const snapshot={authority:{principalId:ID,subjectId:OTHER,originBinding:HASH,authorityReceipt:HASH,lifecycleRevision:3,
     bindingRevision:4,credentialRevision:5,expiresAt:new Date(Date.now()+60_000).toISOString()},
     source:{fileId:ID,subjectId:OTHER,referenceBuild:"GRCh38",sourceSha256:HASH,membershipSha256:HASH,publicationRevision:1,
-      variantCount:2,publishedAt:DATE},membership:{variants:2,qualityReports:1,scores:0,figures:0,reports:0,agreements:2}};
+      variantCount:2,publishedAt:DATE},membership:{variants:2,qualityReports:1,scores:0,figures:0,reports:0,agreements:2,legalAuditEvents:0},legalAudit:{attribution:"assigned",attributionStartedAt:DATE}};
   const row=(id:string)=>({id,chromosome:1,position:1000,referenceAllele:"A",alternateAllele:"G",genotype:"A/G"});
   const responses=[{rows:[row("9007199254740992")],nextAfterId:"9007199254740992",count:1},
     {rows:[row("9007199254740993")],nextAfterId:"9007199254740993",count:1},{rows:[],nextAfterId:null,count:0}];

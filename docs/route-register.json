@@ -3139,7 +3139,22 @@
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
       ],
-      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC"
+      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC",
+      "claimantDeletionPrivateExecutor": {
+        "retentionId": "future-person.claimant-reverification-until-request",
+        "trigger": "claimed-subject-deletion",
+        "manifestClass": "complete-retention",
+        "phaseId": "future-person-claimed-source-disposal",
+        "execution": "closed inline request continuation only; this private phase is not a source.revocation-7d scheduled worker phase and does not change D-126",
+        "originalDeadlines": {
+          "source": "request creation plus 7 days",
+          "charterCompletion": "same request creation plus 30 days",
+          "derived": "request creation plus 60 seconds"
+        },
+        "publishedSourceFence": "exact completed publication or exact immutable account235 receipt plus current approved detached custody; original still-live create-only capabilities are permanently fenced by verified empty markers",
+        "auditSelector": "new approved custody receives one random immutable audit principal through the closed issuer; existing NULL selectors remain NULL with no historical backfill; erase only matching current subject linkage and preserve the append-only chain",
+        "availability": "public claimant DELETE and deletion_accepted remain closed until complete registered-store graph cleanup and actual provider ACKs are proved"
+      }
     },
     "claim-review-receipt-v1": {
       "purpose": "prove-complete-client-receipt-of-each-exact-clean-document-chunk-before-a-named-human-review-decision; receipt-is-not-the-human-documentary-attestation",
@@ -5429,6 +5444,40 @@
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "price": "free",
       "credential": "approved-rights-session-bound-to-one-exact-transferred-embryo-subject-after-human-review-and-any-required-owner-notice",
+      "ledgerProjection": {
+        "authority": "only-the-exact-non-NULL-newly-issued-custody-audit-selector-proved-by-the-current-unbound-claimant-subject-tuple; legacy-NULL-and-previously-unlinked-actors-remain-unassigned-with-no-backfill",
+        "source": "the-existing-public.legal_audit_log; no-second-audit-store; exact-six-coded-event-fields-seq-occurred_at-event_code-route_id-outcome_code-coded_context; actor-UUID-chain-hashes-and-envelopes-never-leave",
+        "eventContracts": [
+          {
+            "eventCode": "claimant.analysis_stopped",
+            "routeId": "api.future-person-analysis-stop",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deletion_requested",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deleted",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "purged",
+            "codedContext": {}
+          }
+        ],
+        "unsupported": "unknown-or-mismatched-event-route-outcome-context-or-unsafe-sequence-refuses-the-whole-export-with-no-silent-field-or-event-omission",
+        "capture": "legalAudit-metadata-has-exact-attribution-assigned-or-unrecorded-and-attributionStartedAt-the-existing-non-personal-private.legal_audit_attribution_config-reference-clock-or-null-for-unrecorded; membership.legalAuditEvents-is-the-exact-count; the-current-authority-receipt-binds-full-own-ledger-membership-order-content-and-metadata",
+        "members": [
+          "legal-audit.json",
+          "subjects/{subject_id}/audit-log.json",
+          "subjects/{subject_id}/reports.txt"
+        ],
+        "reader": "service-only-future_person_export_members_v1-operation-legal-audit; at-most-500-exact-sequence-keyset-rows-per-page; unchanged-current-receipt-writing-attempt-and-lease-checks-before-and-after-every-page",
+        "legacy": "zero-assigned-events-with-a-count-free-explanation-does-not-claim-that-nothing-happened; old-NULL-actors-are-never-retroattributed",
+        "release": "public-export-READY-provider-cleanup-and-all-account-publication-holds-remain-closed-until-complete-proof"
+      },
       "historicalEvidenceReader": {
         "scope": "only-immutable-own-records-bound-to-the-exact-captured-approved-claimant-source-and-current-authority-receipt",
         "findingVersions": "the-original-closed-v1-body-has-neither-schema_version-nor-figure_basis-and-exports-with-figureBasis-null-and-classificationDisposition-unrecorded; a-body-containing-either-field-must-pass-the-current-closed-v2-contract-with-its-genuine-saved-classification-and-never-falls-back",
@@ -6313,7 +6362,13 @@
             "public.report_artifacts",
             "public.generated_exports",
             "public.download_sessions",
-            "public.model_contexts"
+            "public.model_contexts",
+            "private.export_archive_jobs",
+            "private.export_archive_attempts",
+            "private.export_archive_downloads",
+            "private.export_archive_manifest_pages",
+            "private.export_archive_segments",
+            "private.export_archive_nonce_uses"
           ],
           "joinRule": "select-only-by-the-exact-subject-cohort-file-export-purpose-pair-donor-attribution-draft-or-ingest-FK-and-its-current-immutable-revision-tuple; export-artifact-only-selects-one-generated-export-download-row-and-logical-archive-identity-and-raw-export-only-selects-only-the-exact-subject-account-raw-export-tuple; resolve-each-selected-export-only-to-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes; never-prefix-selection",
           "manifestClasses": [

@@ -3745,6 +3745,11 @@ export type Database = {
       }
       future_person_identity: {
         Row: {
+          profile_format_version: number | null
+          wrapped_profile_key: string | null
+          match_indexes: Json
+          fixed_expires_at: string | null
+          authority_snapshot: Json | null
           created_at: string
           embryo_id: string
           ended_at: string | null
@@ -3757,6 +3762,11 @@ export type Database = {
           state: string
         }
         Insert: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id: string
           ended_at?: string | null
@@ -3769,6 +3779,11 @@ export type Database = {
           state?: string
         }
         Update: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id?: string
           ended_at?: string | null
@@ -7624,6 +7639,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      embryo_disposition_controls_v1: {
+        Args: { p_account: string; p_session: string; p_after?: string | null }
+        Returns: Json
+      }
+      future_person_profile_controls_v1: { Args: { p_account: string; p_session: string; p_after?: string | null }; Returns: Json }
+      future_person_profile_context_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string | null }
+        Returns: Json
+      }
+      write_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string; p_expected: Json;
+          p_profile: string; p_ciphertext: string; p_wrapped_key: string; p_indexes: Json; p_nonce: string }
+        Returns: Json
+      }
+      delete_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_expected: Json; p_nonce: string }
+        Returns: undefined
+      }
+      purge_due_future_person_profiles_v1: { Args: Record<PropertyKey, never>; Returns: number }
       future_person_export_request_v1: {
         Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
         Returns: Json
@@ -7636,6 +7670,20 @@ export type Database = {
         Args: { p_operation: string; p_session_hash: string; p_authority_receipt?: string; p_after_variant_id?: number }
         Returns: Json
       }
+      claim_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: Json }
+      check_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: boolean }
+      swap_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string; p_target: Json; p_identity: Json; p_bytes: number; p_sha256: string }; Returns: boolean }
+      fence_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string | null }; Returns: boolean }
+      claim_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string }; Returns: Json }
+      check_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json }; Returns: boolean }
+      finish_future_person_relocation_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json; p_evidence: Json }; Returns: boolean }
+      future_person_relocation_work_v1: { Args: Record<PropertyKey, never>; Returns: Json }
+      export_archive_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_expected?: Json }; Returns: Json }
+      future_person_bound_source_manifest_v1: { Args: { p_subject: string }; Returns: Json }
+      check_future_person_bound_source_v1: { Args: { p_subject: string; p_expected: Json }; Returns: boolean }
+      future_person_binding_context_v1: { Args: { p_rights_session_hash: string }; Returns: Json }
+      bind_future_person_account_v1: { Args: { p_rights_session_hash: string; p_nonce: string; p_expected: Json }; Returns: boolean }
+
       embryo_upload_account_live_v1: {
         Args: { p_account_id: string; p_auth_session_id: string }
         Returns: boolean

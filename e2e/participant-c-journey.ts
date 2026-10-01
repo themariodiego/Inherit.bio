@@ -117,6 +117,7 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
         return { cohort: cohort.data, embryos: embryos.data, files: files.data, proof: await runtime.proof(cohortId) };
 
     };
-    return { owner, cohortId, embryos: embryos.data!, readPublication };
-  } finally { await otherContext.close(); }
+    return { owner, cohortId, embryos: embryos.data!, readPublication, other,
+      closeCoParent: () => otherContext.close() };
+  } catch (error) { await otherContext.close(); throw error; }
 }

@@ -46,6 +46,36 @@ const run = () => POST(new Request("http://localhost/api/jobs/retention", {
 describe("independent retention queues", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 
+  it.each(["returned","thrown"])("continues the original queues after a %s profile erase failure", async failure => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret"); idleExceptStranded([]);
+    const baseline = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...args: unknown[]) => {
+      if (name === "purge_due_future_person_profiles_v1") {
+        if (failure === "thrown") throw new Error("synthetic transport failure");
+        return { data: null, error: { code: "synthetic" } };
+      }
+      return baseline(name, ...args);
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "purge_due_future_person_profiles_v1"))
+      .toEqual([["purge_due_future_person_profiles_v1"]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+
+  it("erases only database-selected expired profiles before the original due queues", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret"); idleExceptStranded([]);
+    const baseline = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...args: unknown[]) =>
+      name === "purge_due_future_person_profiles_v1" ? { data: 2, error: null } : baseline(name, ...args));
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "purge_due_future_person_profiles_v1"))
+      .toEqual([["purge_due_future_person_profiles_v1"]]);
+    expect(mocks.rpc.mock.calls.findIndex(call => call[0] === "purge_due_future_person_profiles_v1"))
+      .toBeLessThan(mocks.rpc.mock.calls.findIndex(call => call[0] === "run_due_embryo_retention_phases_v1"));
+  });
+
   it.each(["returned","thrown"])("continues retention after a %s document-key erase failure",async(failure)=>{
     vi.stubEnv("JOBS_SECRET","test-job-secret");idleExceptStranded([]);
     const baseline=mocks.rpc.getMockImplementation()!;

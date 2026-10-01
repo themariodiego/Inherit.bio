@@ -78,6 +78,8 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Withdrawal-class cohort restriction under an operation token bound to the account, session, operation and target. A cohort exists only through create_embryo_cohort_draft_v1, create_embryo_draft_invitation_v1, accept_embryo_co_parent_invitation_v1 and grant_cohort_purpose_v1, each of which checks jurisdiction in the database, and restriction must work in every jurisdiction.",
   "src/app/api/embryos/[id]/disposition/route.ts":
     "Future-person disposition under an operation token bound to the account, session, operation and target, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant.",
+  "src/app/api/embryos/[id]/future-person-identity/route.ts":
+    "Optional parent matching-data save/delete under own recent Auth, exact current evidenced parent/recipient authority, account/session/operation/target proof and a subject-first database recheck. It opens no analytical capability. Saving requires the current signed upload artifact; the parent's deletion right remains independent of a new upload consent and embryo_analysis.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
 };

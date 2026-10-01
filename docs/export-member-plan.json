@@ -152,6 +152,14 @@
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for family reports. It is machinery, not the person's record."
     },
+    "private.future_person_account_bindings": {
+      "disposition": "excluded-credential",
+      "reason": "Exact claimant account/session authorization revisions and binding receipt; never an export member or a retroactive identity attribution."
+    },
+    "private.future_person_binding_config": {
+      "disposition": "reference",
+      "reason": "Closed service configuration for verified TEST-LOCAL claimant account binding; no person data."
+    },
     "private.future_person_claim_intakes": {
       "disposition": "excluded-protected",
       "reason": "Unfinished Future Person claim starts: sealed identity and contact ciphertext, a key hash and keyed digests, deleted within 24 hours. The export contracts always exclude contact values and identity. No account holds one."
@@ -159,6 +167,14 @@
     "private.future_person_custody_slices": {
       "disposition": "deferred",
       "reason": "The exact claimed subject’s immutable autosomal source provenance and minimum historical agreement slice, preserved against parent restriction; approved-future-person-export-v1 requires its own claimant reader."
+    },
+    "private.future_person_object_relocations": {
+      "disposition": "excluded-credential",
+      "reason": "Exact claimed-source relocation locators, worker claim token hash and transient source-version authority; excluded from person archives."
+    },
+    "private.future_person_relocation_attempts": {
+      "disposition": "excluded-credential",
+      "reason": "Exact relocation attempt claims, current and retired private object locators, provider acknowledgements and cleanup credentials. This is internal authority machinery, never export content."
     },
     "private.genome_file_deletions": {
       "disposition": "excluded-credential",
@@ -863,10 +879,13 @@
     "public.legal_audit_log": {
       "disposition": "exported",
       "reason": "L-34 and the owner's decision of 28 Sep 2026 (docs/export-legal-audit-resolver.md, option A): the events a person caused themselves. An event names who acted only when the transaction proved it, by a consumed session-bound nonce or the person's own JWT, and only on the closed list of events a person causes; events written before attribution began (20260928160000) name no one and never leave. Never the pseudonym or the chain hashes.",
-      "scope": "audit_principal_id is the requesting account's own pseudonym (private.legal_audit_account_principals). Account exports only: an event records no subject.",
+      "scope": "The requesting account's own audit pseudonym through private.legal_audit_account_principals, or only the approved unbound claimant's exact newly issued custody audit selector through private.future_person_audit_selector_v1. Existing NULL or unlinked actors remain unassigned; no event subject or old actor is inferred.",
       "members": [
         "archive:legal-audit.json",
-        "reader:history.legal-audit"
+        "reader:history.legal-audit",
+        "archive:subjects/{subject_id}/audit-log.json",
+        "archive:subjects/{subject_id}/reports.txt",
+        "reader:claimant.legal-audit"
       ],
       "columns": [
         "seq",

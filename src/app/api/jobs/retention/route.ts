@@ -82,6 +82,14 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+  // Independent profile keys expire without a Storage or mail-provider call.
+  // The database selects the exact due profiles; no request selector or clock.
+  try {
+    const { data: erasedProfiles, error: profileError } = await admin.rpc("purge_due_future_person_profiles_v1");
+    if (profileError) failed++;
+    else if (typeof erasedProfiles === "number") processed += erasedProfiles;
+  } catch { failed++; }
+
   const preparedCleanupSignal = AbortSignal.timeout(150_000);
   try {
     const prepared = await drainPreparedScratch(admin, preparedCleanupSignal);

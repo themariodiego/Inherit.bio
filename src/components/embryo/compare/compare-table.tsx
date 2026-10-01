@@ -124,7 +124,7 @@ export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableP
               >
                 <EmbryoChip
                   embryo={{ id: embryo.id, displayLabel: embryo.display_label }}
-                  href={route("embryos.detail", { embryoId: embryo.id })}
+                  href={embryo.qc.qc_verdict === "fail" ? undefined : route("embryos.detail", { embryoId: embryo.id })}
                   qcFailed={embryo.qc.qc_verdict === "fail"}
                 />
               </th>

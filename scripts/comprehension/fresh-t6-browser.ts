@@ -104,10 +104,14 @@ export const openFreshParticipantCBrowser: LiveEnvironment["openBrowser"] = asyn
     });
     try {
       const page = await context.newPage();
-      const seeded = await withEmbryoJourney({ ...process.env, ...runtime.env, INHERIT_UPLOAD_SIGNING_JWK: signer }, fixture => seedParticipantC({
-        page,
-        browser: browser!, ownerEmail: `cmp-t6-${input.id}@e2e.local`, parentEmail: `cmp-t6-${input.id}-parent@e2e.local`,
-        password: participantCPassword, messages: mail!.messages, runtime: { proof: fixture.proof, runWorker: async id => { signal.throwIfAborted(); await fixture.runWorker(id); } } }));
+      const seeded = await withEmbryoJourney({ ...process.env, ...runtime.env, INHERIT_UPLOAD_SIGNING_JWK: signer }, async fixture => {
+        const seeded = await seedParticipantC({
+          page,
+          browser: browser!, ownerEmail: `cmp-t6-${input.id}@e2e.local`, parentEmail: `cmp-t6-${input.id}-parent@e2e.local`,
+          password: participantCPassword, messages: mail!.messages, runtime: { proof: fixture.proof, runWorker: async id => { signal.throwIfAborted(); await fixture.runWorker(id); } } });
+        await seeded.closeCoParent();
+        return seeded;
+      });
       assert(!usedCohorts.has(seeded.cohortId) && !usedAccounts.has(seeded.owner), "Fresh persona publication/account identity reused");
       usedCohorts.add(seeded.cohortId); usedAccounts.add(seeded.owner);
       signal.throwIfAborted();

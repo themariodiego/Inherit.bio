@@ -138,7 +138,12 @@ const caseRow = z.object({
   identityCiphertext: z.string().regex(/^[0-9a-f]+$/u),
   wrappedDataKey: z.string().regex(/^[0-9a-f]+$/u),
   parentIdentityCiphertext: z.string().regex(/^[0-9a-f]+$/u).nullable(),
-}).strict();
+  recordedParentSigningEvidence: z.array(z.object({nameCiphertext:z.string().regex(/^[0-9a-f]{58,4096}$/u),
+    role:z.literal("genetic-parent")}).strict()).min(1).max(4).optional(),
+}).strict().superRefine((row,context)=>{
+  if(row.recordedParentSigningEvidence&&(row.caseKind!=="record_key"||row.parentIdentityCiphertext!==null))
+    context.addIssue({code:"custom",message:"Signed parent evidence belongs only to the Card case",path:["recordedParentSigningEvidence"]});
+});
 
 const claimantIdentity = z.object({
   version: z.literal(1),
@@ -150,9 +155,9 @@ const claimantIdentity = z.object({
 
 /**
  * The parent-supplied identity a record carries (public.future_person_identity
- * .parent_supplied_ciphertext), sealed with the deployment key. The profile
- * writer (api.future-person-identity-profile) is not built; this is the shape
- * it must write.
+ * .parent_supplied_ciphertext), for legacy deployment-key sealed rows. New
+ * optional matching profiles have an independently erasable key and are not
+ * the source of the Card's genuine earlier signed parent names.
  */
 const parentIdentity = z.object({
   version: z.literal(1),
@@ -186,6 +191,15 @@ function openParentIdentity(hex: string): z.infer<typeof parentIdentity> | null 
   }
 }
 
+function openSignedParents(evidence:z.infer<typeof caseRow>["recordedParentSigningEvidence"]):z.infer<typeof parentIdentity>|null {
+  if(!evidence)return null;
+  try {
+    const names=evidence.map(item=>decryptSecret(Buffer.from(item.nameCiphertext,"hex")));
+    if(names.some(name=>[...name].length<2||[...name].length>120||/[\u0000-\u001f\u007f-\u009f]/u.test(name)))return null;
+    return parentIdentity.parse({version:1,parentNames:names,parentRoles:[...new Set(evidence.map(item=>item.role))]});
+  }catch{return null;}
+}
+
 /** The closed case body, or null when the row or a sealed field does not open. */
 export function reviewCaseBody(row: unknown): Record<string, unknown> | null {
   const parsed = caseRow.safeParse(row);
@@ -199,7 +213,11 @@ export function reviewCaseBody(row: unknown): Record<string, unknown> | null {
   let caseBody: Record<string, unknown>;
   switch (value.caseKind) {
     case "record_key": {
-      const parents = value.parentIdentityCiphertext ? openParentIdentity(value.parentIdentityCiphertext) : null;
+      // The fallback consists only of genuine earlier signature ciphertext
+      // authorized by the current assigned-review RPC. No current-name guess.
+      if(value.recordedParentSigningEvidence&&value.parentIdentityCiphertext!==null)return null;
+      const parents = value.recordedParentSigningEvidence ? openSignedParents(value.recordedParentSigningEvidence)
+        : value.parentIdentityCiphertext ? openParentIdentity(value.parentIdentityCiphertext) : null;
       if (!parents) return null;
       caseBody = {
         kind: "record_key",

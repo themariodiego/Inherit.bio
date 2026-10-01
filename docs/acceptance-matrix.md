@@ -1,6 +1,6 @@
 # Acceptance matrix
 
-## Current interpretation (2026-09-30)
+## Current interpretation (2026-09-25)
 
 The full-resolution G1–G8 ledger below is the completion measure: **44/65
 verified**, with 21 still NO. This is the mechanical count of the YES/NO column
