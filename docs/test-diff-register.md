@@ -1,5 +1,20 @@
 # Test diff register
 
+## 2026-10-01 — Observe the authoritative upload presentation before its unchanged UI assertions
+
+Hosted run36805076949 finished with the own-export journey stopped immediately
+after a successful insurance signature201: the captured page still showed the
+saved, disabled insurance screen while its authoritative presentation refresh
+was in flight. The shared real-upload helper now waits for the exact current
+surface's actual GET/RSC response200 after each successful account/signature
+POST, excluding prefetch responses, before its original visible/enabled checks.
+This matches the existing report-choice helper's request ordering. It retains
+all original signature statuses, accessible headings, picker requirements and
+the complete two-originals/export/withdrawal assertions. No assertion timeout,
+suite limit, retry, skip or manual reload changes. A failed refresh still fails
+the real journey. The failed hosted source remains recorded; full proof follows
+on the coherent correction.
+
 ## 2026-10-01 — Keep integrated account-binding links under the primary route contract
 
 The integrated focused rehearsal found two literal links in the existing
