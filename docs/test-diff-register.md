@@ -1,5 +1,40 @@
 # Test diff register
 
+## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
+
+The unchanged purpose census exposed the real held-file issuer missing from
+`rights_session_purposes`. Embryo232000 and Future233000 subsequently replaced
+its notice invalidation, opaque-token minting, pre-submit and activation arms.
+Migration `20261001025000` registers its exact existing purpose/revision pair
+and restores these original held branches into the exact latest dispatchers
+in one atomic block, guarded by complete predecessor/postcondition body hashes.
+Both022 canonical mail wrappers stay byte-identical; their API-denied233
+delegates retain every claimant/withdrawal/invitation branch and the current
+provider attempt key. Full ABI, configuration and owner/API ACL guards refuse
+an unknown predecessor without applying any part of the bridge.
+The reviewed023 owner-objection wrapper, when present, stays byte-identical;
+only its API-denied delegate changes. Unknown wrappers/dispatchers refuse.
+
+Every existing assertion is retained. The old exact four-purpose SQL census
+now expects the five genuine issuers, plus the owner-objection issuer only when
+its actual023 delegate exists. It still rejects every extra/missing pair; two
+new assertions bind the held revision target and its exact three existing
+matrix actions. The genuine old held-notice activation assertion runs through
+the real service role with its unchanged expected result. New rollback probes
+require zero session for expired candidate, crossed token revision and changed
+subject revision, preserving the complete source/token tuple and nonce/session
+counts; browser/upload roles stay denied and a consumed token cannot reopen.
+New genuine pre-submit probes require refusal for an expired candidate, a
+revoked token and a changed subject revision, rolling back the complete
+source/mail/contact tuple; the original positive submission assertion remains.
+The actual minted notice hash is checked against its exact candidate, revision
+and fixed deadline. New source tests compare all three complete dispatcher
+bodies before/after their exact insertions and all later replacement sites,
+preserving original claimant,
+withdrawal, invitation, nonce and fixed-deadline behavior. No grant, backfill,
+provider proof or acceptance is inferred. SQL remains authored until root's
+fresh execution; focused source tests do not substitute for database proof.
+
 ## 2026-10-01 — Give the current owner an independently authenticated objection action
 
 The registered account-equivalent action now requires the owner's own live, freshly reauthenticated account and configured MFA before exact notice scope selection and mutation. Its stateless encrypted ten-minute form proof binds the current account, session, notice and revision; link/cookie authority never substitutes for those checks. Settings reads remain paginated and create no nonce, case, candidate or session. The native owner endpoint retains its closed two-field body and202 receipt, and both authorized actor paths use the same API-denied subject-first mutation, immutable notice/deadline, named objection assignment and claim-only revocation. Focused tests add actual account-route composition and refuse actor/session/revision/CSRF swaps without weakening any existing cookie test. The new real-role SQL journey follows genuine synthetic producers and canonical provider doors; its synthetic encrypted/provider/chunk metadata is expressly not browser, human, byte or provider-delivery credit. Full objection adjudication and separate fresh release remain closed and pending. No acceptance or production gate changes.

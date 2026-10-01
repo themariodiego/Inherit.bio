@@ -1,5 +1,5 @@
 begin;
-select plan(34);
+select plan(36);
 \ir fixtures/rights_invitation_pending.inc
 -- policyResolvers.withdrawal-target-v1.purposeMatrix in the database. The
 -- fixture above issues one real co-parent invitation; everything rolls back.
@@ -9,10 +9,19 @@ select is((select count(distinct purpose) from private.rights_purpose_matrix), 1
 select is((select count(*) from private.rights_purpose_matrix), 34::bigint,
   'with every registered action and route');
 select is((select array_agg(session_purpose order by session_purpose) from private.rights_session_purposes),
-  array['adult-subject-invitation', 'approved-future-person-release', 'co-parent-invitation', 'embryo-parent-withdrawal', 'future-person-claim-objection'],
-  'exactly the five purposes with a real issuer can be stored on a session');
+  array['adult-subject-invitation','adult-upload-confirmation','approved-future-person-release','co-parent-invitation','embryo-parent-withdrawal','future-person-claim-objection'],
+  'exactly the six reviewed real issuers can be stored, including held revision and owner objection');
 select is((select target_kind from private.rights_session_purposes where session_purpose = 'embryo-parent-withdrawal'),
   'cohort', 'an embryo withdrawal session binds the whole cohort, never one embryo');
+
+select is((select target_kind from private.rights_session_purposes where session_purpose='adult-upload-confirmation'),
+ 'adult_upload_revision','the held-file issuer has its exact revision target pair');
+select ok(private.rights_action_permitted_v1('adult-upload-confirmation','confirm','api.withdraw')
+ and private.rights_action_permitted_v1('adult-upload-confirmation','refuse','api.withdraw')
+ and private.rights_action_permitted_v1('adult-upload-confirmation','delete','api.withdraw')
+ and not private.rights_action_permitted_v1('adult-upload-confirmation','export','api.third-party-subject-export')
+ and not private.rights_action_permitted_v1('adult-upload-confirmation','delete','api.future-person-delete'),
+ 'the held-file purpose reaches exactly its existing three actions and no export or Future route');
 
 -- The one gate.
 select ok(private.rights_action_permitted_v1('adult-subject-invitation', 'confirm', 'api.withdraw'),
