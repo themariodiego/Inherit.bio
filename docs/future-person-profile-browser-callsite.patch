@@ -1,20 +1,12 @@
 diff --git a/e2e/embryo-ingest-journey.spec.ts b/e2e/embryo-ingest-journey.spec.ts
 --- a/e2e/embryo-ingest-journey.spec.ts
 +++ b/e2e/embryo-ingest-journey.spec.ts
-@@ -9,6 +9,7 @@
- import { GATE_BUTTON } from "@/copy/embryos/gate";
- import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
+@@ -11,2 +11,3 @@
  import { SIGN_BUTTON } from "@/copy/embryos/signing";
 +import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
  import { signStatements } from "./embryo-signing-helpers";
- 
- /** No product handler, consent, worker or stored result is replaced here.
-@@ -124,6 +125,8 @@
-       await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
-       await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
+@@ -126,2 +127,4 @@
      }
 +    await proveNativeDispositionAndProfile({owner:page,other,browser,cohortId,
 +      embryoId:embryos.data![0].id,siblingId:embryos.data![1].id});
    } finally { await otherContext.close(); }
-   });
- });
