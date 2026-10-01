@@ -1,5 +1,22 @@
 # Test diff register
 
+## 2026-10-01 — Control only the quota fixture clock and prove the unchanged capability boundaries
+
+The actual complete Linux unit run on f54502eb failed one assertion in the
+512-object prepared-artifact capacity test: a signed request answered404 where
+the unchanged test required200. The failed log is retained. A cause was not
+captured at that instant; later independent PostgreSQL and Node clock probes
+are not evidence of that request's clock or signature state.
+
+The capacity test now fixes only Date while it executes every original quota,
+request, isolation and closure assertion. Real signing, verification, payload
+reads, timers and production authorization remain unchanged. A separate test
+uses the same real gateway to require rejection of a future-issued signed
+capability, a lifetime above30seconds and an exactly expired capability, while
+accepting the original valid30second capability. Each test restores real Date
+in finally. No product tolerance, expiry, retry, timeout, skip or assertion is
+relaxed; this fixture clock is not an elapsed-time or provider receipt.
+
 ## 2026-10-01 — Use saved nonce expiries and genuine uploader insurance in the combined account fixtures
 
 The actual full fresh run of f54502eb2d7cf1c0e81e4664f89b45e0b5adea48
