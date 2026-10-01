@@ -1,5 +1,26 @@
 # Test diff register
 
+## 2026-10-01 — Compare genuinely published QC figures across Embryo surfaces
+
+The earlier cross-surface record assumed Embryo pages could render no figure.
+The actual native upload/worker journey now publishes observed QC and repeats
+its coverage and differing-copy share on comparison and detail. A closed
+registry pins every figure, field, subject and presentation count for the
+existing GT-only fixture. The existing classifier collects the complete DOM,
+including each footer and the detail's full table. Values, adjacent units,
+actual field captions, basis/provenance and marker captions must agree with
+the exact current saved producer receipt; primary comparison/detail captions
+and values must be identical. The separately shorter footer caption is
+registered explicitly and cannot silently change.
+
+Actual source/publication and QC rows are read before and after every surface,
+with no replacement writer, score or provider receipt. The additions follow
+the original T6/detail assertions and precede actual disposition revocation.
+All original titles, assertions, case identities and 300000ms limits remain.
+Planted changed values, units, captions, attribution, basis, extra/missing
+figures and absent receipts must refuse. This is authored source evidence;
+full exact-head execution remains required and no acceptance row flips.
+
 ## 2026-10-01 — Refuse broken nested SQL fixture includes before a fresh database run
 
 The full fresh run found that an extracted fixture kept `fixtures/` in its own
@@ -9,8 +30,10 @@ relative include from its containing file, with actual filesystem existence,
 repository/realpath fences and cycle detection. Missing directories, copied
 root-relative paths, absolute/symlink escapes and dynamic arguments refuse.
 Planted direct/indirect cycles and the actual extraction shape pin the refusal;
-the complete live graph must close without an exception. CI checks before its
-fresh stack/test, and native provider bootstrap checks before resource work.
+the complete live graph must close without an exception. Both ordinary CI
+job types and the stock self-host first run check before their fresh stacks;
+the database job checks before pgTAP, and native provider bootstrap checks
+before resource work. The manual fresh-T6 launcher checks before acquisition.
 No SQL assertion, grant, test count, database or provider boundary changes.
 
 ## 2026-10-01 — Audit populated Embryo pages through their genuine native publication

@@ -156,7 +156,71 @@
           "note": "One captured result per file and purpose — private.own_analysis_runs.result, written once at generation and immutable under capture_own_report_catalog_v1 — read by two readers: the side-by-side cell through health_picture_results_v1 (src/lib/family/health-picture-results.ts) and the report page through family_shared_report_results_v1 (src/lib/family/shared-report-results.ts). The cell renders one figure per genotype and the page one per genotyped position, so the comparison is of the sorted letters."
         }
       ],
-      "notCollected": "Portrait renders no figure in any reachable state and the two Embryo result pages render none until ingest ships (the census section records both), so nothing of theirs can repeat. The other adult's shared ancestry viewer is a different result under a different grant, not read in this journey because its fixtures carry no ancestry marker; e2e/family-ancestry.spec.ts already holds the five shares it renders equal to the owner's own ancestry page, which is that repeat's agreement."
+      "notCollected": "Portrait renders no figure in its empty state. The actual published Embryo compare/detail QC collection is independently registered in crossSurface.embryo and executed through its genuine native upload/worker journey before parent disposition. The other adult shared ancestry viewer is covered by e2e/family-ancestry.spec.ts, which holds its shares equal to the own ancestry page."
+    },
+    "embryo": {
+      "spec": "e2e/embryo-ingest-journey.spec.ts",
+      "fixture": "e2e/fixtures/embryo-pair-grch38.vcf",
+      "producer": "embryo-split-calls-v1",
+      "figuresPerEmbryo": {
+        "compare": 4,
+        "detail": 4
+      },
+      "repeated": [
+        {
+          "field": "coverage",
+          "key": "coverage|quality|observed|computed:embryos/split-analysis",
+          "sourceOfTruth": "src/lib/embryos/split-analysis.ts",
+          "compare": [
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "call_rate"
+            },
+            {
+              "location": "footer",
+              "count": 2,
+              "caption": "positions-read"
+            }
+          ],
+          "detail": [
+            {
+              "location": "block",
+              "count": 1,
+              "caption": "call_rate"
+            },
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "call_rate"
+            }
+          ]
+        },
+        {
+          "field": "autosomal_het_rate",
+          "key": "natural-frequency|quality|observed|computed:embryos/split-analysis",
+          "sourceOfTruth": "src/lib/embryos/split-analysis.ts",
+          "compare": [
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "autosomal_het_rate"
+            }
+          ],
+          "detail": [
+            {
+              "location": "block",
+              "count": 1,
+              "caption": "autosomal_het_rate"
+            },
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "autosomal_het_rate"
+            }
+          ]
+        }
+      ]
     }
   },
   "census": {
