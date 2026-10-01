@@ -1,5 +1,20 @@
 # Test diff register
 
+## 2026-10-01 — Share the genuine participant-c producer with a separate fresh-runtime instrument
+
+The existing native all-pass seed/signature/upload/worker/publication assertions
+move unchanged into `e2e/participant-c-journey.ts`, with its co-parent context
+closed at the end of setup. The native T6 DOM/action/read evidence stays in the
+same case, with its title, case identity, project, timeout and retry policy.
+The separate manual hosted smoke workflow calls that same producer for each
+persona after refusing existing resources and creating a fresh owned stack.
+Its lifecycle, crossed/missing resource identity, uncertain cleanup, budget and
+scope checks use synthetic IO in units; they do not count as browser/provider
+proof. Standard CI and ordinary T6/T7 holds remain unchanged. The new manual
+workflow and real per-persona lifecycle are authored and unexecuted here.
+No expectation, signature predicate, scientific producer or acceptance row is
+weakened or marked complete.
+
 ## 2026-10-01 — Observe stored canonical files with their exact normalization receipts
 
 The full hosted all-pass and mixed-QC journeys reached real whole-cohort
