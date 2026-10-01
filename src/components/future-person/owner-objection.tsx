@@ -2,9 +2,10 @@
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
 
-export function OwnerObjection({ summary, deadline, explanation, csrf, nonce }: {
-  summary: string; deadline: string; explanation: string; csrf: string; nonce: string;
+export function OwnerObjection({ summary, deadline, explanation, csrf, nonce, inSettings = false }: {
+  summary: string; deadline: string; explanation: string; csrf: string; nonce: string; inSettings?: boolean;
 }) {
+  const Heading = inSettings ? "h3" : "h1";
   const [statement, setStatement] = useState("");
   const [status, setStatus] = useState<"ready" | "pending" | "done" | "failed">("ready");
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -21,12 +22,12 @@ export function OwnerObjection({ summary, deadline, explanation, csrf, nonce }: 
       setStatement(""); setStatus("done");
     } catch { setStatus("failed"); }
   }
-  if (status === "done") return <section className="mx-auto max-w-3xl px-6 py-16" role="status">
-    <h1 className="display text-4xl">Your choice is recorded</h1>
+  if (status === "done") return <section className={inSettings ? "space-y-3 rounded-xl border border-line p-4" : "mx-auto max-w-3xl px-6 py-16"} role="status">
+    <Heading className={inSettings ? "font-medium" : "display text-4xl"}>Your choice is recorded</Heading>
     <p className="mt-5 max-w-prose text-ink-muted">This claim is paused while a named person reviews your objection. Your record stays as it is.</p>
   </section>;
-  return <section className="mx-auto max-w-3xl px-6 py-16">
-    <h1 className="display text-4xl">Review this claim</h1>
+  return <section className={inSettings ? "space-y-3 rounded-xl border border-line p-4" : "mx-auto max-w-3xl px-6 py-16"}>
+    <Heading className={inSettings ? "font-medium" : "display text-4xl"}>Review this claim</Heading>
     <p className="mt-5 max-w-prose text-ink-muted">{summary}</p>
     <p className="mt-4 max-w-prose">You can object through <time dateTime={deadline}>{new Date(deadline).toLocaleString("en-GB", { timeZone: "UTC", dateStyle: "long", timeStyle: "short" })} UTC</time>.</p>
     <p className="mt-4 max-w-prose text-ink-muted">{explanation}</p>

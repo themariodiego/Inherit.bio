@@ -73,7 +73,7 @@ export const WITHOUT_CHECK: Record<string, string> = {
   "src/app/api/withdraw/session/route.ts":
     "Rights session responses (confirm, refuse, delete); rights are not a restricted capability and must answer in every jurisdiction.",
   "src/app/api/future-person/claim/session/objection/route.ts":
-    "Current-owner claim objection under a purpose-specific cookie, same-origin CSRF and single-use nonce; subject-first SQL rechecks the exact delivered notice, current owner and immutable claim clock. It suspends only that claim, returns no analytical data and must work independently of jurisdiction, QC and embryo_analysis.",
+    "Current-owner claim objection under a purpose-specific cookie or independently fresh own Auth with configured MFA, same-origin CSRF and single-use operation proof; subject-first SQL rechecks the exact delivered notice, current owner and immutable claim clock. It suspends only that claim, returns no analytical data and must work independently of jurisdiction, QC and embryo_analysis.",
   "src/app/api/rights/activate/route.ts":
     "Activates a rights session from a mailed token; rights are not a restricted capability.",
   "src/app/api/cohorts/[id]/restrict/route.ts":

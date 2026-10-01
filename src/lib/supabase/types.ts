@@ -7943,6 +7943,12 @@ export type Database = {
         Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string }
         Returns: Json
       }
+      future_person_owner_objection_controls_v1: { Args: { p_after?: string | null }; Returns: Json }
+      future_person_owner_account_objection_scope_v1: { Args: { p_notice: string }; Returns: Json }
+      submit_future_person_account_objection_v1: {
+        Args: { p_notice: string; p_revision: number; p_nonce: string; p_statement_ciphertext: string; p_wrapped_statement_key: string }
+        Returns: Json
+      }
       future_person_objection_view_v1: { Args: { p_session_hash: string }; Returns: Json }
       future_person_objection_statement_scope_v1: { Args: { p_session_hash: string }; Returns: Json }
       submit_future_person_owner_objection_v1: {

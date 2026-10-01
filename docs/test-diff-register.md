@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Give the current owner an independently authenticated objection action
+
+The registered account-equivalent action now requires the owner's own live, freshly reauthenticated account and configured MFA before exact notice scope selection and mutation. Its stateless encrypted ten-minute form proof binds the current account, session, notice and revision; link/cookie authority never substitutes for those checks. Settings reads remain paginated and create no nonce, case, candidate or session. The native owner endpoint retains its closed two-field body and202 receipt, and both authorized actor paths use the same API-denied subject-first mutation, immutable notice/deadline, named objection assignment and claim-only revocation. Focused tests add actual account-route composition and refuse actor/session/revision/CSRF swaps without weakening any existing cookie test. The new real-role SQL journey follows genuine synthetic producers and canonical provider doors; its synthetic encrypted/provider/chunk metadata is expressly not browser, human, byte or provider-delivery credit. Full objection adjudication and separate fresh release remain closed and pending. No acceptance or production gate changes.
+
 ## 2026-10-01 — Prove actual current original bytes for consumed account members
 
 Migration `20261001026000` pins actual original availability and physical Storage
