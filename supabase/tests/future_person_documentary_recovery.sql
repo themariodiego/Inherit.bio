@@ -102,6 +102,7 @@ create temporary table durable_before as select jsonb_build_object(
   'parts',(select jsonb_agg(to_jsonb(p) order by p.sequence) from private.embryo_canonical_parts p join private.embryo_canonical_source_parts m on m.part_id=p.id where m.file_id=(select file from custody_ids)),
   'oldClock',(select fixed_deadline from public.retention_rows where retention_id='future-person.claimed-unbound-24mo' and target_id=(select claimant from custody_ids))) body;
 select pg_temp.new_recovery_review('claimant-recovery-key',pg_temp.h('recovery-original'));
+grant select on recovery_ids,custody_ids to authenticated;
 select throws_ok($$select pg_temp.restore()$$,'42501','claim review unavailable','a Recovery Key cannot replace complete current document delivery');
 select pg_temp.receive_recovery();
 select throws_ok($$select pg_temp.restore(p_identity=>jsonb_build_object('1',pg_temp.h('different-person')))$$,
@@ -114,8 +115,10 @@ select throws_ok($$select pg_temp.probe('update private.claim_review_reads set a
   'select pg_temp.restore()::text')$$,'42501','claim review unavailable','another assignment cannot satisfy the new human decision');
 select throws_ok($$select pg_temp.probe('delete from public.future_person_claimant_identity_hmacs where claimant_principal_id=(select claimant from custody_ids)',
   'select pg_temp.restore()::text')$$,'42501','claim review unavailable','erased claimant identity cannot be reconstructed from a parent profile or review');
-select is(pg_temp.restore()->>'state','release_queued','actual fresh Recovery Key decision queues one new existing-principal release');
+set local role authenticated;
+select is(pg_temp.restore()->>'state','release_queued','actual authenticated named reviewer queues one new existing-principal release');
 select throws_ok($$select pg_temp.restore()$$,'42501','claim review unavailable','closed decision and consumed nonce cannot rotate a second release');
+reset role;
 select is((select count(*) from public.future_person_claimant_principals),1::bigint,'recovery creates no second claimant or custody');
 select is((select release_revision from public.future_person_claimant_principals where id=(select claimant from custody_ids)),2::bigint,'the old release capability is superseded atomically');
 select is((select count(*) from public.future_person_recovery_key_hashes where claimant_principal_id=(select claimant from custody_ids)),0::bigint,
@@ -127,12 +130,15 @@ select ok((select bool_and(wrapped_document_key is null and document_key_shredde
   from private.claim_document_sessions where intake_id=(select review from recovery_ids)),'recovery resolution destroys both independent document keys');
 select is((select count(*) from public.future_person_claim_notices where notice_kind='owner_notice'),0::bigint,'recovery never invents a parent notice');
 select pg_temp.activate_latest('rights-restored','documentary-restored-activate-0001');
+set local role service_role;
 select lives_ok($$select public.issue_future_person_recovery_key_v1(pg_temp.h('rights-restored'),'documentary-replacement-key-nonce-0001',pg_temp.h('recovery-replacement'))$$,
   'new current release can show one replacement Recovery Key after actual credential rotation');
 select throws_ok($$select public.issue_future_person_recovery_key_v1(pg_temp.h('rights-restored'),'documentary-replacement-key-nonce-0002',pg_temp.h('recovery-second'))$$,
   '42501','claimant rights unavailable','the same release revision cannot show a second replacement key');
+reset role;
 select pg_temp.new_recovery_review('keyless',null);
 select pg_temp.receive_recovery();
+set local role authenticated;
 create temporary table keyless_fresh as select public.verify_keyless_claim_documents_v1((select review from recovery_ids),1,
   ((clock_timestamp() at time zone 'UTC')::date-interval '19 years')::date,
   jsonb_build_object('1',pg_temp.h('identity')),jsonb_build_object('1',pg_temp.h('profile'))) body;
@@ -142,6 +148,7 @@ select throws_ok($$select pg_temp.restore('approve-claimed-unbound-no-key-recove
 select is(pg_temp.restore('approve-claimed-unbound-no-key-recovery',jsonb_build_object('1',pg_temp.h('identity')),
   (select body->'scope'->>'comparisonReceiptDigest' from keyless_fresh))->>'state','release_queued',
   'actual fresh no-key documentary recovery restores only the exact existing claimant');
+reset role;
 select is((select release_revision from public.future_person_claimant_principals where id=(select claimant from custody_ids)),3::bigint,
   'no-key recovery independently rotates working release authority');
 select ok(public.future_person_rights_view_v1(pg_temp.h('rights-restored')) is null,'the superseded restored session is refused too');
