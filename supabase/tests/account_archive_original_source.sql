@@ -59,7 +59,7 @@ grant select on actual_original_descriptor to service_role;
 select is(pg_temp.original('check',(select value from actual_original_descriptor)),
  (select value from actual_original_descriptor),'a real current consumed writing attempt rechecks the exact descriptor');
 select set_eq($$select jsonb_object_keys(value) from actual_original_descriptor$$,
- $$values('version'),('exportId'),('attemptId'),('authorityReceipt'),('fileId'),('state'),('source'),('decodedSha256'),('actor')$$,
+ $$select field from (values('version'),('exportId'),('attemptId'),('authorityReceipt'),('fileId'),('state'),('source'),('decodedSha256'),('actor')) expected(field)$$,
  'the actual source response has the exact nine-field closed envelope');
 select is((select value->>'version' from actual_original_descriptor),'account-archive-original-v1','the actual ordinary descriptor has its own fixed kind');
 select is((select value->'actor' from actual_original_descriptor),
