@@ -18,6 +18,10 @@ one delivered chunk and the exact two-chunk document before the original f
 assertion. NULL is refused rather than converted into f. Every other original
 browser assertion, case, timeout, retry and product authority remains unchanged.
 
+The SDK's AMR type also permits strings. The exact-head type check requires
+an explicit object entry before reading its method; strings still cannot satisfy
+the original genuine TOTP-object check. This narrowing changes no authority.
+
 The permanent existing CI EXPLAIN preflight now plans this exact shared callee
 query alongside the complete keyless side-effect query. Planning dummy UUIDs
 executes no query or authority operation. Source and focused checks do not credit

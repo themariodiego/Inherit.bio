@@ -41,7 +41,7 @@ export async function currentClaimDocumentReadProof(context:BrowserContext,revie
   if(verified.error||!verified.data)throw new Error("Actual reviewer session verification failed");
   const claims=verified.data.claims;
   if(claims.sub!==account||claims.aal!=="aal2"||typeof claims.session_id!=="string"||!UUID.test(claims.session_id)
-    ||claims.role!=="authenticated"||!claims.amr?.some(entry=>entry.method==="totp")) {
+    ||claims.role!=="authenticated"||!claims.amr?.some(entry=>typeof entry!=="string"&&entry.method==="totp")) {
     throw new Error("Actual reviewer session verification failed");
   }
   return proof.parse(JSON.parse(await ownerRead(query,claims)));
