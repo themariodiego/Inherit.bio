@@ -5,6 +5,7 @@ import type { RequiredSurface } from "./corpus";
 export const EMAIL_RENDERERS = {
   "account-deletion-affected": ["account-deletion-affected.tsx", "AccountDeletionAffectedEmail"],
   "account-deletion-affected-cancelled": ["account-deletion-affected.tsx", "AccountDeletionAffectedCancelledEmail"],
+  "future-person-more-information": ["future-person-more-information.tsx", "FuturePersonMoreInformationEmail"],
   "future-person-release":["future-person-release.tsx","FuturePersonReleaseEmail"],
   "future-person-owner-notice": ["future-person-owner-notice.tsx", "FuturePersonOwnerNoticeEmail"],
   "report-ready": ["report-ready.tsx", "ReportReadyEmail"],
@@ -47,6 +48,7 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   };
   add("notice", { id: "account-deletion-affected", payload: { noticeEndsAt: "2026-10-07T12:00:00Z" } });
   add("cancelled", { id: "account-deletion-affected-cancelled", payload: { cancelledAt: "2026-10-01T12:00:00Z" } });
+  add("request", { id: "future-person-more-information", payload: {} });
   add("release",{id:"future-person-release",payload:{releaseUrl:`${url}#synthetic-release`}});
   add("owner", { id: "future-person-owner-notice", payload: { objectionUrl: `${url}#synthetic-objection` } });
   for (const count of [0, 1, 162]) add(`count-${count}`, { id: "report-ready", payload: { reportCount: count, dashboardUrl: url } });

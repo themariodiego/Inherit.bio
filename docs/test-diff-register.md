@@ -1,6 +1,31 @@
 # Test diff register
 
 ## 2026-10-01 — Keep the protected objection table closed during independent lock proof
+## 2026-10-01 — Add exact named objection decisions without borrowing final release
+
+The registered assigned objection endpoint now has both a real closed GET and all three POST decisions under own current JWT/MFA/operation authority. A ten-minute stateless proof binds the object, reviewer, session and all three current revisions. The unique decision nonce is consumed atomically after the original complete current document receipt checks; the surviving minimum key encrypts the professional basis. Uphold shreds only claim working material, overrule persists its bounded close phase and new distinct release assignment without changing the original provider-committed owner period, and information requests retain the exact original objection deadline. Full final release and reviewer-page integration remain closed gaps, with G5.4 unchanged.
+
+One actual data-free mail renderer/file/fixture raises the exact census16/15/35/70 to17/16/36/72; all former privacy, export and immutable receipt assertions remain. The strict shared mail replacement inventory adds only028 and requires exact delegation of every unrelated purpose, with current claimant/contact/revision/attempt/deadline guards on its token-free branch. Real SQL branch probes retain the entire provider/account-objection predecessor and compare closed outcomes, independent shredding, unchanged source/Card, fresh assignments and immutable delivery clocks; synthetic metadata is explicitly not browser, human, byte or provider credit. Focused tests caught and fixed the missing response await. Mail copy uses existing vocabulary, and the fragment refusal inspects actual hrefs separately from harmless HTML color/entity notation. No timeout, retry, policy, negative boundary or acceptance is relaxed; actual SQL/full suites and hosted whole-flow proof remain pending.
+
+## 2026-10-01 — Compare the complete pre-existing rights-session set in account objection
+
+The actual combined role rehearsal passes the native mail door and cookie objection, then reveals that the shared synthetic source fixture already has an unrelated rights session. The account-equivalent journey now freezes the complete original rights-session rows before every account read/write and requires byte-identical ordered rows afterward, plus exactly zero owner-notice objection sessions. This is stricter than a total-count assumption: no unrelated session may change and no session may be borrowed or created. All original stateless-read count, account freshness/MFA, revision, source preservation and provider-clock assertions remain. The failed receipt is retained; no account, provider or browser execution credit is inferred until independent rerun.
+
+## 2026-10-01 — Keep the private dispatcher denied while restoring its native service door
+
+The actual corrected combined database rehearsal reached the real provider pre-submit call and failed because022 denied service execution on the private dispatcher while the original public SQL wrapper still used SECURITY INVOKER. The existing public service-only ABI now delegates under its fixed owner with an empty search path after validating its exact original two-argument body, owner, language and configuration. Every private dispatcher/delegate stays API-denied; browser and upload roles remain denied at the public door. Eight new actual-role assertions test those permissions and missing-outbox refusal. The existing genuine provider eligibility, attempt rotation, stale callback and delivery-clock assertions are retained unchanged. An owner-defined test wrapper is not used to hide the broken native RPC. SQL and provider execution remain uncredited until independent rehearsal.
+
+## 2026-10-01: correct errors found by the actual combined database run
+
+The full fresh reset of commit517fb4 stopped at026 with SQLSTATE42601 because its source SHA JSON path lacked a closing quote. A corrected local diagnostic then exposed an ambiguous022 notice alias and the026 pgTAP expected-set expression being interpreted as a prepared statement. The source fixes close the literal, qualify the two notice lookups, and wrap the same exact nine expected field names in SELECT. They retain every authority, lock, clock, token and field-set predicate. The025 body guard, its source assertion and documentation now pin only the corrected canonical mail body MD5abb70e7d8ec45731aebcbaa870ab9c13; the ambiguous predecessor is not admitted as an alternative.
+
+The original failed full-reset and focused diagnostic logs remain in the integration receipts. No assertion, retry or timeout is removed or weakened, and no database execution credit is inferred from these edits. Corrected complete fresh-database, unit, quality and hosted browser runs remain required before release.
+
+## 2026-10-01: combined current rights issuer census
+
+The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
+
+## 2026-10-01 — Give the current owner an independently authenticated objection action
 
 The actual hosted repository job on `2280e7f4` reaches the unchanged
 `future_person_claim_objections` statement probe and receives `42501` before its
@@ -381,6 +406,7 @@ The original failed full-reset and focused diagnostic logs remain in the integra
 
 The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
 
+Focused native/crypto boundaries pass 29 tests; the new real-role SQL fixture uses explicitly synthetic metadata and remains unexecuted until independent rehearsal. The full reviewer decisions, account equivalent, final release and provider/browser completion remain held; no acceptance or production gate changes. The new objection-to-notice RESTRICT dependency must be removed child-first in the later exact whole-graph erasure integration.
 ## 2026-10-01 — Keep the held file issuer across shared rights dispatchers
 
 The unchanged purpose census exposed the real held-file issuer missing from

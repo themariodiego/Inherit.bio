@@ -54,6 +54,8 @@ const SURFACE_FILES = new Set(["route.ts", "page.tsx", "layout.tsx"]);
  * reviewable and a new one cannot join them silently.
  */
 export const WITHOUT_CHECK: Record<string, string> = {
+  "src/app/api/reviews/future-person/claim-objections/[id]/route.ts":
+    "Current named human objection reviewer under own live Auth, recent MFA, exact operation assignment and current claim/objection/notice revisions. Both documents require complete byte acknowledgement; decisions mutate only the pending claim and must remain independent of analysis, jurisdiction and QC. No analytical capability is opened.",
   "src/app/api/family/acknowledge/route.ts":
     "Records an acknowledgement, a Tier-2 result-gate cookie and a one-time portrait acknowledgement stamp. It returns no genetic result and opens no capability; the surfaces it precedes resolve capability themselves.",
   "src/app/(app)/embryos/acknowledge.ts":

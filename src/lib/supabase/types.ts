@@ -7960,6 +7960,8 @@ export type Database = {
           p_statement_ciphertext: string; p_wrapped_statement_key: string }
         Returns: Json
       }
+      decide_keyless_objection_v1: { Args: { p_objection: string; p_objection_revision: number; p_review_revision: number;
+        p_notice_revision: number; p_decision: string; p_nonce_hash: string; p_reason_ciphertext: string }; Returns: Json }
       read_keyless_review_operation_v1: { Args: { p_id: string; p_operation: string }; Returns: Json }
       future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
       issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}

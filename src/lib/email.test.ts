@@ -41,4 +41,15 @@ describe("minimum owner notice renderer", () => {
     for (const forbidden of ["verifiedName", "dateOfBirth", "parentNames", "genotype", "genome", "approved"])
       expect(html).not.toContain(forbidden);
   });
+  it("renders the fixed minimal information request without identity, reason, authority or a new closing date", async () => {
+    const mail = { id: "future-person-more-information", payload: {} } as const;
+    const html = await renderMail(mail);
+    expect(mailSubject(mail)).toBe("We need more information about your Inherit request");
+    expect(html).toContain("We need more details");
+    expect(html).toContain("Your request stays pending, and its closing date stays the same.");
+    expect(html).toContain("This message gives no access to a record.");
+    expect(html).not.toMatch(/contactEmail|verifiedName|dateOfBirth|parentNames|candidate|recordKey|recoveryKey|review_reason|synthetic|\d{4}-\d{2}-\d{2}/iu);
+    expect(html).not.toMatch(/href=["'][^"']*#/iu);
+    expect(html).not.toContain("/withdraw/request");
+  });
 });
