@@ -123,7 +123,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
         documentsRead={received&&checked.photo&&checked.birth&&!busy}
         onVerified={(record,proof)=>{verificationProof.current=proof;setLoaded(previous=>previous?{...previous,record}:null);setDecision("reject");}}/>}
       {loaded.record.case.kind==="unclaimed_keyless"&&<section className="space-y-2 rounded-xl border p-4">
-        <h2>Parent-supplied details</h2>
+        <h2>Parent details</h2>
         <p>Birth date: {loaded.record.case.selectedProfile.childDateOfBirth}.</p>
         <p>Birth place: {loaded.record.case.selectedProfile.childPlaceOfBirth}.</p>
         <p>Parent names: {loaded.record.case.selectedProfile.parentNames.join(", ")}.</p>

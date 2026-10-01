@@ -35,11 +35,11 @@ export function KeylessDocumentVerification({claimId,reviewRevision,csrf,nonce,d
   }
   return <fieldset disabled={!documentsRead||busy} className="space-y-3 rounded-xl border p-4" aria-busy={busy}>
     <legend>Identity checked from both documents</legend>
-    <label className="block">Document full name<input value={fullName} maxLength={120} onChange={event=>setFullName(event.target.value)}/></label>
-    <label className="block">Document birth date<input type="date" value={dateOfBirth} onChange={event=>setDateOfBirth(event.target.value)}/></label>
-    <label className="block"><input type="checkbox" checked={adult} onChange={event=>setAdult(event.target.checked)}/> Both documents show this person is an adult.</label>
+    <label className="block">Full name<input value={fullName} maxLength={120} onChange={event=>setFullName(event.target.value)}/></label>
+    <label className="block">Birth date<input type="date" value={dateOfBirth} onChange={event=>setDateOfBirth(event.target.value)}/></label>
+    <label className="block"><input type="checkbox" checked={adult} onChange={event=>setAdult(event.target.checked)}/> This person is an adult.</label>
     <button type="button" className="min-h-11" disabled={!adult||fullName.trim().length<2||dateOfBirth.length!==10} onClick={()=>void verify()}>
-      {busy?"Checking details…":"Check document identity"}
+      {busy?"Checking details…":"Check details"}
     </button>
     {message&&<p role="status">{message}</p>}
   </fieldset>;
