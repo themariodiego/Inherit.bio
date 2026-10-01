@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Pin actual legacy content and complete consumed-account metadata
+
+Migration `20261001021000` supplements the existing exact owned capture with
+the requester profile, selected demographics, own signed purpose grants and
+an internal per-file content revision. Actual variant/observed-call statements
+advance every affected old/new file once under its row lock. No genetic
+plaintext hashing is added to page checks, no revision is caller-selected and
+all original current source, actor, session, writing-attempt and unsupported
+graph refusals remain. The new internal column is explicitly withheld in the
+complete member plan and uses the file's existing cascade disposal.
+
+The new metadata reader has closed service-only operations and complete
+server-selected UUID pages. Independent consumer tests read 1,103 own grants
+and 108 file clocks and refuse omitted, duplicate, foreign, changed or leaked
+rows, unsafe counters, source-count mismatch, expired/cancelled calls and
+revoked durable authority. The SQL fixture preserves the original actual
+normalization/report/PRS positive assertions and flushes genuine creation
+constraints before worker reads. New strict probes cover actual multi-row and
+same-count genetic changes, both old/new retargets, deletions, empty statements,
+privileged maintenance, profile/session changes and unchanged durable jobs.
+The original file-deletion prepare/finish protocol must still refuse missing
+storage absence, complete its actual cascade without disabling guards, retain
+the sibling source and pass every deferred source identity constraint. The
+Storage metadata ACK seam is explicitly SQL-only and carries no provider
+credit.
+
+No assertion, source guard, member or timeout is removed. New SQL is authored
+until independently executed; synthetic unit RPCs are consumer evidence only.
+The complete assembler, every non-self/cohort/joint class, asynchronous
+POST/status flow and real provider delivery remain necessary. Public/READY and
+G5.4/G5.6 remain closed.
+
 ## 2026-10-01 — Hold reachable Embryo QC to two genuine native publications
 
 The old figure census incorrectly called both Embryo result routes unreachable

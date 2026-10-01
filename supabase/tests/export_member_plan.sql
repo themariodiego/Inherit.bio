@@ -877,7 +877,8 @@ create temporary table export_member_plan as select $plan$
         "input_provenance",
         "input_source_sha256",
         "processing_run_id",
-        "normalization_source_revision"
+        "normalization_source_revision",
+        "export_content_revision"
       ]
     },
     "public.genome_storage_objects": {
