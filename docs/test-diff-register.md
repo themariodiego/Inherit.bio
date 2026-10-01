@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Keep the private dispatcher denied while restoring its native service door
+
+The actual corrected combined database rehearsal reached the real provider pre-submit call and failed because022 denied service execution on the private dispatcher while the original public SQL wrapper still used SECURITY INVOKER. The existing public service-only ABI now delegates under its fixed owner with an empty search path after validating its exact original two-argument body, owner, language and configuration. Every private dispatcher/delegate stays API-denied; browser and upload roles remain denied at the public door. Eight new actual-role assertions test those permissions and missing-outbox refusal. The existing genuine provider eligibility, attempt rotation, stale callback and delivery-clock assertions are retained unchanged. An owner-defined test wrapper is not used to hide the broken native RPC. SQL and provider execution remain uncredited until independent rehearsal.
+
 ## 2026-10-01: parse the original-source expected JSON envelope exactly
 
 The corrected real026 journey next reached assertion15 and exposed PostgreSQL operator ambiguity in the expected-source expression. Parenthesizing the existing JSON extraction before removing expiresAt preserves every locator, revision, hash, size and fixed expected value. The prior332-assertion diagnostic remains failed; this parser correction changes no authority or expected result and grants no execution credit.
