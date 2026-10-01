@@ -1,5 +1,22 @@
 # Test diff register
 
+## 2026-10-01 — Make full PDF pages reachable by keyboard
+
+Hosted e83 run36887181762 reached genuine re-read PDFs, then the unchanged
+full accessibility audit refused both scroll containers at320/390/1280 widths
+and reduced motion because they could not receive keyboard focus. Each actual
+PDF canvas container now has a native zero tabindex, a page-specific region
+name and a visible focus outline. No document rendering, complete-page proof,
+acknowledgement, safety boundary or original browser assertion changes.
+
+The existing real-component Chromium/PDF fixture retains every original
+pixel, inert-action, malformed-file, canceled-worker and PNG/JPG refusal check.
+It additionally proves Tab focus and real vertical/horizontal key scrolling,
+and runs the failing axe rule at every registered width/reduced-motion setting
+in both themes. Its small isolated stylesheet applies the same two declared
+scroll utilities; the unchanged full product axe journey remains the complete
+hosted accessibility proof. Original120-second limits and zero retries remain.
+
 ## 2026-10-01 — Preserve the unique secret-expression registry in canonical native assembly
 
 The actual scanner at frozen 15f6292b refused six current/history findings from

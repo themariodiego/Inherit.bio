@@ -7,6 +7,7 @@ import {join} from "node:path";
 import {tmpdir} from "node:os";
 import {createRequire} from "node:module";
 import {chromium,expect} from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import {reviewPdf} from "./review-documents";
 
 const diagnostics:string[]=[];const requests:string[]=[];
@@ -17,7 +18,7 @@ await fromTsx("esbuild").build({entryPoints:["e2e/fixtures/review-pdf-browser.ts
   define:{"process.env.NODE_ENV":'"production"',"process.env":"{}"},outfile:bundle});
 const server=http.createServer(async(request,response)=>{
   const url=request.url??"";requests.push(url);
-  if(url==="/"){response.setHeader("content-type","text/html");response.end('<!doctype html><title>Local document proof</title><link rel="icon" href="data:,"><script type="module" src="/proof.js"></script>');return;}
+  if(url==="/"){response.setHeader("content-type","text/html");response.end('<!doctype html><title>Local document proof</title><link rel="icon" href="data:,"><style>.overflow-auto{overflow:auto}.max-h-\\[40rem\\]{max-height:40rem}</style><script type="module" src="/proof.js"></script>');return;}
   if(url==="/proof.js"){response.setHeader("content-type","text/javascript");response.end(await readFile(bundle));return;}
   if(!/^\/review-document-assets\/6\.3\.289\/[-A-Za-z0-9_./]+$/u.test(url)||url.includes("..")){response.writeHead(404);response.end();return;}
   try {const bytes=await readFile(join(process.cwd(),"public",url));
@@ -48,6 +49,20 @@ try {
   assert.deepEqual(await canvas.evaluate(element=>{
     const target=element as HTMLCanvasElement;return {width:target.width,height:target.height,pixel:Array.from(target.getContext("2d")!.getImageData(200,600,1,1).data)};
   }),{width:640,height:832,pixel:[255,0,0,255]});
+  const region=page.getByRole("region",{name:"Synthetic paper, page 1 view",exact:true});
+  await page.keyboard.press("Tab");await expect(region).toBeFocused();
+  await region.press("ArrowDown");
+  await expect.poll(()=>region.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+  for(const colorScheme of ["light","dark"] as const) {
+    await page.emulateMedia({colorScheme});
+    for(const viewport of [{width:320,height:568},{width:390,height:844},{width:1280,height:800}]) {
+      await page.setViewportSize(viewport);
+      assert.deepEqual((await new AxeBuilder({page}).withRules(["scrollable-region-focusable"]).analyze()).violations,[]);
+    }
+    await page.emulateMedia({reducedMotion:"reduce"});
+    assert.deepEqual((await new AxeBuilder({page}).withRules(["scrollable-region-focusable"]).analyze()).violations,[]);
+    await page.emulateMedia({reducedMotion:null});
+  }
   await page.getByRole("button",{name:"Go on",exact:true}).click();
   await expect(page.getByRole("status")).toHaveText("Page 2 of 2");
   await expect(page.getByRole("checkbox")).not.toBeChecked();
@@ -57,6 +72,10 @@ try {
   await expect.poll(()=>page.getByRole("img").evaluate(element=>({width:(element as HTMLCanvasElement).width,height:(element as HTMLCanvasElement).height})))
     .toEqual({width:1280,height:1664});
   await expect(page.getByRole("checkbox")).not.toBeChecked();
+  const zoomRegion=page.getByRole("region",{name:"Synthetic paper, page 2 view",exact:true});
+  await zoomRegion.focus();await expect(zoomRegion).toBeFocused();
+  await zoomRegion.press("ArrowRight");
+  await expect.poll(()=>zoomRegion.evaluate(element=>element.scrollLeft)).toBeGreaterThan(0);
   assert.equal(await page.evaluate(()=>"__documentScriptExecuted" in window),false);
   assert.equal(external,0);assert.equal(requests.some(url=>url.includes("synthetic-private-name")),false);
   await page.evaluate(()=>(window as unknown as {closePdfFixture:()=>void}).closePdfFixture());
@@ -83,5 +102,5 @@ try {
   await expect(page.getByRole("status")).toHaveText("The image could not be shown.");
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   assert.deepEqual(diagnostics,[]);
-  console.log("PASS inert document view: both PDF pages have exact nonblank pixels before human confirmation; full-page zoom; inert links/actions; no external requests or diagnostics; close, invalid bytes and canceled startup terminate every worker; native PNG/JPG decode before confirmation and invalid images refuse it.");
+  console.log("PASS keyboard-accessible inert document view: actual Tab focus, vertical/horizontal key scroll, both-theme viewport/reduced-motion axe scroll rule; both PDF pages have exact nonblank pixels before human confirmation; full-page zoom; inert links/actions; no external requests or diagnostics; close, invalid bytes and canceled startup terminate every worker; native PNG/JPG decode before confirmation and invalid images refuse it.");
 } finally {await browser.close();server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));await rm(temporary,{recursive:true,force:true});}
