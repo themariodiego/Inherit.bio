@@ -1,5 +1,19 @@
 # Test diff register
 
+## 2026-10-01 — Preserve documentary review no-referrer through the actual proxy
+
+Hosted6f8 browser3 reached the original opaque404 documentary refusal, but its
+two strict native security-header assertions received same-origin. The route
+sets no-referrer; the proxy overwrote it with the general sensitive API header
+set and applied its stricter override only to review HTML pages. Both exact
+review page/API namespaces now receive no-referrer at that common proxy
+boundary, including its own423 and451 responses. Every other sensitive header,
+Auth/profile/location/deletion gate and unrelated path's same-origin policy is
+unchanged. New scoped regressions pin signed-in/out pass-through, complete
+header sets, both location refusal sources, deletion refusal and similar-path
+nonmatches. All original browser assertions, limits and retries are preserved.
+The failed hosted receipt remains; this source proof is not a native rerun pass.
+
 ## 2026-10-01 — Claim the exact token-free information request under its own pending claimant authority
 
 The actual full fresh database run on b1b4af22a903d7b4f636b27be87d861f80dbec4f

@@ -23,9 +23,16 @@ export const SENSITIVE_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
   "X-Frame-Options": "DENY",
 };
 
-function withSensitiveHeaders<T extends NextResponse>(response: T): T {
+function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string): T {
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
+  }
+  // The proxy's response headers also reach route-handler responses. Review
+  // IDs and documentary decisions require the stricter policy on both the
+  // HTML page and its API, including refusals produced by the proxy itself.
+  if (path?.startsWith("/reviews/future-person/claims/") ||
+      path?.startsWith("/api/reviews/future-person/claims/")) {
+    response.headers.set("Referrer-Policy", "no-referrer");
   }
   return response;
 }
@@ -58,7 +65,7 @@ function locationUnavailable(path: string): NextResponse {
           `</main></body></html>`,
         { status: 451, headers: { "Content-Type": "text/html; charset=utf-8" } },
       );
-  return withSensitiveHeaders(response);
+  return withSensitiveHeaders(response, path);
 }
 
 // Next.js 16 proxy (successor to middleware): keeps the Supabase auth session
@@ -163,7 +170,7 @@ export async function proxy(request: NextRequest) {
           NextResponse.json(
             { error: "account_deletion_notice_period" },
             { status: 423 },
-          ),
+          ), path,
         );
       }
       if (isProtected && path !== "/settings/data") {
@@ -180,7 +187,7 @@ export async function proxy(request: NextRequest) {
     if (profile && isEmbargoedCountry(profile.jurisdiction_code)) {
       if (path.startsWith("/api/") && !isRightsEndpoint(path) && path !== "/api/settings/jurisdiction") {
         return withSensitiveHeaders(
-          NextResponse.json({ error: "not_available_in_jurisdiction" }, { status: 451 }),
+          NextResponse.json({ error: "not_available_in_jurisdiction" }, { status: 451 }), path,
         );
       }
       if (isProtected && !path.startsWith("/settings")) {
@@ -201,8 +208,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if(sensitive)withSensitiveHeaders(response);
-  if(isClaimReviewPage)response.headers.set("Referrer-Policy","no-referrer");
+  if(sensitive)withSensitiveHeaders(response,path);
   return response;
 }
 
