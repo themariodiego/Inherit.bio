@@ -1,5 +1,33 @@
 # Test diff register
 
+
+
+## 2026-10-01 — Reuse the claimant account's actual provisioned self identity
+
+The independent fresh database run reached 90 original binding checks, then
+correctly rejected the shared fixture's second ordinary self at
+`subjects_one_self_per_account_idx`. Inserting the claimant's actual Auth user
+already runs the real profile/subject/principal/binding producer. The fixture
+now selects that exact existing active self, active account principal and
+matching current self binding, and independently requires both the unique
+current self count and the complete tuple count to equal one. It creates no
+extra identity or authority row and changes no uniqueness guard.
+
+Every original documentary approval, activation, binding, relocation, archive
+and refusal assertion remains. Ordinary-self refusals and the ordinary audit
+metadata positive now target the same genuinely provisioned subject through a
+shared read-only temporary anchor, rather than an invented UUID. The failed
+fresh run is retained. This is an authored fixture correction until the parent
+independently executes the affected database suites; it carries no browser,
+provider, READY or acceptance credit.
+
+## 2026-10-01 — Preserve actor-only legal audit without inventing ordinary subject targets
+
+The existing legal ledger records who acted, but has no ordinary subject target selector. The approved owner-A policy cannot copy those account events under a guessed subject. Migration `20261001017000` adds a distinct service-only reader under the real consumed account request, complete current graph and active writing attempt. It emits each actual eligible account actor or genuinely assigned bound custody/binding event once globally, while ordinary subject members carry the exact registered unrecorded/count-free historical note. Actual assigned Future selectors keep their original strict subject-event contracts and are refused by the ordinary fallback. No existing audit event, archive member-plan row, source guard or assertion is removed.
+
+Strict new tests cover complete nonempty multi-page actual actor content once globally, every ordinary partition remaining unassigned, foreign/service event exclusion at the actual database selector, exact six-field privacy, a newly appended actual own event invalidating the original job receipt, and a genuine assigned selector refusing ordinary metadata. Page omissions, duplicates, changed counts/cursors, unsafe sequences, revoked authority and pseudonym/hash leakage also refuse. SQL fixtures use the original real approval, binding and relocation producers and flush deferred creation constraints; they remain authored until independently executed. The TypeScript RPC seam is synthetic authority evidence, never provider/browser proof.
+
+All remaining whole-account/non-self/cohort/joint members, POST/status worker integration and provider delivery stay required. G5.4/G5.6 remain NO; public/READY gates stay closed.
 ## 2026-10-01 — Keep the subject-first restricted disposition refusal opaque and prove zero effects
 
 The complete fresh run on `2bfc9db9` reached all migrations and found the
@@ -27,14 +55,6 @@ distinct registered stages. The original strict intake constraint and every
 document/reviewer/refusal assertion stay unchanged. The failed full run remains
 recorded; corrected complete boundary suites are executed before a fresh rerun.
 
-## 2026-10-01 — Preserve actor-only legal audit without inventing ordinary subject targets
-
-The existing legal ledger records who acted, but has no ordinary subject target selector. The approved owner-A policy cannot copy those account events under a guessed subject. Migration `20261001017000` adds a distinct service-only reader under the real consumed account request, complete current graph and active writing attempt. It emits each actual eligible account actor or genuinely assigned bound custody/binding event once globally, while ordinary subject members carry the exact registered unrecorded/count-free historical note. Actual assigned Future selectors keep their original strict subject-event contracts and are refused by the ordinary fallback. No existing audit event, archive member-plan row, source guard or assertion is removed.
-
-Strict new tests cover complete nonempty multi-page actual actor content once globally, every ordinary partition remaining unassigned, foreign/service event exclusion at the actual database selector, exact six-field privacy, a newly appended actual own event invalidating the original job receipt, and a genuine assigned selector refusing ordinary metadata. Page omissions, duplicates, changed counts/cursors, unsafe sequences, revoked authority and pseudonym/hash leakage also refuse. SQL fixtures use the original real approval, binding and relocation producers and flush deferred creation constraints; they remain authored until independently executed. The TypeScript RPC seam is synthetic authority evidence, never provider/browser proof.
-
-All remaining whole-account/non-self/cohort/joint members, POST/status worker integration and provider delivery stay required. G5.4/G5.6 remain NO; public/READY gates stay closed.
-
 ## 2026-10-01 — Audit populated Embryo pages through their genuine native publication
 
 The default authenticated accessibility sweep uses an own-genome account and
@@ -57,6 +77,8 @@ route-state pairs and both existing upload waivers remain unchanged. Six
 coverage pairs still lack a genuine eligible result contract; failed QC and an
 empty calibrated-model registry are not substitute scientific coverage. The
 new audits are authored, and hosted execution remains required.
+
+
 
 ## 2026-10-01 — Close the account member context's exact JSON path literal
 
