@@ -1,5 +1,31 @@
 # Test diff register
 
+## 2026-10-01 — Compose ordinary account content under the real consumed worker request
+
+Migration `20261001019000` adds a distinct service-only account content door.
+It resolves the actual consumed nonce/request, active writing attempt, exact
+account/session and whole current owned graph, then delegates the original
+closed ordinary content reader and rechecks both authorities after the read.
+Bound canonical files remain on their distinct current-location door. No
+human JWT, narrowed list, analytical grant, new store or public/READY door is
+introduced.
+
+The actual TypeScript composition exhaustively reads every server-selected
+ordinary file in 100-row pages and requires exact file/subject/account/session
+set equality before reading content. Strict tests cover 207 files, the genuine
+empty ordinary partition alongside its bound partition, omissions, duplicates,
+foreign actors/sources, changed graph/receipt/deadline, cancellation, expiry and
+revoked actual attempt or original purpose/source. The original normalized
+variant, saved-report and PRS positive assertions are copied byte-for-byte into
+a shared SQL predecessor and reused through the real request and worker APIs.
+Deferred export creation constraints are flushed before worker reads; original
+scientific data and every existing assertion remain.
+
+Focused RPC seams are synthetic unit evidence. The new SQL is authored until
+independently executed. Complete whole-account member assembly, every required
+non-self/cohort/joint class, real POST/status worker integration and provider
+delivery continue; G5.4/G5.6 and public/READY stay closed.
+
 ## 2026-10-01 — Preserve actor-only legal audit without inventing ordinary subject targets
 
 The existing legal ledger records who acted, but has no ordinary subject target selector. The approved owner-A policy cannot copy those account events under a guessed subject. Migration `20261001017000` adds a distinct service-only reader under the real consumed account request, complete current graph and active writing attempt. It emits each actual eligible account actor or genuinely assigned bound custody/binding event once globally, while ordinary subject members carry the exact registered unrecorded/count-free historical note. Actual assigned Future selectors keep their original strict subject-event contracts and are refused by the ordinary fallback. No existing audit event, archive member-plan row, source guard or assertion is removed.
