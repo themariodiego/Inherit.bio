@@ -128,7 +128,7 @@ begin
   if v_mail_target is null or v_mail_canonical is null then
     raise exception using errcode='55000',message='mail claim wrapper predecessor unavailable';end if;
   select prosrc into v_mail_wrapper_body from pg_proc where oid=v_mail_canonical;
-  if md5(v_mail_wrapper_body) is distinct from 'e486e7e418358d3e5e7429c143ff3b71' or not exists(
+  if md5(v_mail_wrapper_body) is distinct from 'abb70e7d8ec45731aebcbaa870ab9c13' or not exists(
     select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_mail_canonical
       and l.lanname='plpgsql' and p.prosecdef and p.pronargs=0 and p.proargdefaults is null
       and p.proargnames=array['outbox_id','template_id','template_payload','idempotency_key','attempt_ordinal','contact_ciphertext','delivery_token']::text[]

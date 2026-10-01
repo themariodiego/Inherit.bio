@@ -1,5 +1,15 @@
 # Test diff register
 
+## 2026-10-01: correct errors found by the actual combined database run
+
+The full fresh reset of commit517fb4 stopped at026 with SQLSTATE42601 because its source SHA JSON path lacked a closing quote. A corrected local diagnostic then exposed an ambiguous022 notice alias and the026 pgTAP expected-set expression being interpreted as a prepared statement. The source fixes close the literal, qualify the two notice lookups, and wrap the same exact nine expected field names in SELECT. They retain every authority, lock, clock, token and field-set predicate. The025 body guard, its source assertion and documentation now pin only the corrected canonical mail body MD5abb70e7d8ec45731aebcbaa870ab9c13; the ambiguous predecessor is not admitted as an alternative.
+
+The original failed full-reset and focused diagnostic logs remain in the integration receipts. No assertion, retry or timeout is removed or weakened, and no database execution credit is inferred from these edits. Corrected complete fresh-database, unit, quality and hosted browser runs remain required before release.
+
+## 2026-10-01: combined current rights issuer census
+
+The combined branch installs both the actual held-upload confirmation issuer and the independently bounded owner-objection issuer. Its purpose-matrix test now requires the exact sorted six-purpose array and plan36. This strengthens the bridge checkpoint’s conditional census to the complete reviewed current schema. Every original matrix refusal, the genuine co-parent forgery refusal, and both added held purpose/action checks remain. The complete chronological database suite and hosted browser suite are required before release; this source change grants no execution credit.
+
 ## 2026-10-01 — Give the current owner an independently authenticated objection action
 
 The registered account-equivalent action now requires the owner's own live, freshly reauthenticated account and configured MFA before exact notice scope selection and mutation. Its stateless encrypted ten-minute form proof binds the current account, session, notice and revision; link/cookie authority never substitutes for those checks. Settings reads remain paginated and create no nonce, case, candidate or session. The native owner endpoint retains its closed two-field body and202 receipt, and both authorized actor paths use the same API-denied subject-first mutation, immutable notice/deadline, named objection assignment and claim-only revocation. Focused tests add actual account-route composition and refuse actor/session/revision/CSRF swaps without weakening any existing cookie test. The new real-role SQL journey follows genuine synthetic producers and canonical provider doors; its synthetic encrypted/provider/chunk metadata is expressly not browser, human, byte or provider-delivery credit. Full objection adjudication and separate fresh release remain closed and pending. No acceptance or production gate changes.
