@@ -16,6 +16,7 @@
     "worker:path-b-reports": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/path-b-report-worker.run.mts",
     "test:invitation-locks": "node scripts/invitation-transition-locks.mjs",
     "test:source-file-policy-order": "node scripts/source-file-policy-order.mjs",
+    "test:claim-review-fixture-sql": "tsx scripts/claim-review-fixture-sql.run.mts",
     "e2e": "tsx scripts/run-upload-browser.mts --full",
     "e2e:lighthouse": "tsx scripts/run-upload-browser.mts --lighthouse",
     "gate:catalog-drift": "tsx scripts/catalog-drift-gate.ts",

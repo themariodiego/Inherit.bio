@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Claim review fixture uses the actual public claim identity
+
+Full hosted run 36866428888 at `360616639efbecce65e52e1796583a60a7e0bb32`
+passed the original request receipt and review privacy header checks, then
+both keyless review cases failed before their side-effect comparisons with
+`column c.review_id does not exist`. The actual owner-notice producer inserts `r.id` as the public claim ID;
+`intake_session_id` refers to a separately generated public session. Both
+claims and notices in the complete read-proof now use `c.id = r.id`, the
+producer’s actual relationship. Every
+original fingerprint member, equality assertion, browser case and deadline
+remains; no product authority or fixture state is changed.
+
+The exact SQL is shared with a database preflight. Every browser job plans it
+using `EXPLAIN` without `ANALYZE` immediately after migrations, before seed
+and build. Repository checks plan it as well. The bounded local planner does
+not execute the query or read claim rows. This catches a missing column on
+the migrated schema before the costly browser run.
+
 ## 2026-10-01 — Keep the same genuine claim-start receipt after server refresh
 
 The real202 start displayed its common receipt and called router.refresh; the
