@@ -7,6 +7,11 @@ const caseBody=z.discriminatedUnion("kind",[
       recordedParentNames:z.array(z.string().min(1).max(120)).min(1).max(4)}).strict()}).strict(),
   z.object({kind:z.literal("claimant_recovery_key"),recoverySelector:z.object({matched:z.literal(true)}).strict(),
     claimantBinding:z.object({lifecycle:z.literal("claimed_unbound"),identityHmacComparison:z.literal("pending_human_verified_document_tuple")}).strict()}).strict(),
+  z.object({kind:z.literal("claimed_unbound_no_key_recovery"),claimantBinding:z.object({candidateClass:z.literal("exactly_one"),
+    lifecycle:z.literal("claimed_unbound"),identityHmacComparison:z.literal("pending_human_verified_document_tuple")}).strict()}).strict(),
+  z.object({kind:z.literal("unclaimed_keyless"),candidateClass:z.literal("exactly_one"),selectedProfile:z.object({
+    childDateOfBirth:z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),childPlaceOfBirth:z.string().min(2).max(160),
+    parentNames:z.array(z.string().min(2).max(120)).min(1).max(4),}).strict()}).strict(),
   z.object({kind:z.enum(["record_key_unmatched_or_ineligible","recovery_key_unmatched_or_ineligible"]),
     selectorOutcome:z.literal("non_enumerating_unmatched_or_ineligible"),allowedDecisions:refusal}).strict(),
   z.object({kind:z.enum(["keyless_none","keyless_ambiguous"]),selectorOutcome:z.literal("no_unique_candidate"),allowedDecisions:refusal}).strict(),
@@ -23,6 +28,13 @@ export const reviewPageCase=z.object({claimId:z.uuid(),mode:z.enum(["record-key"
     context.addIssue({code:"custom",message:"claim review unavailable"});
 });
 export type ReviewPageCase=z.infer<typeof reviewPageCase>;
+export const keylessVerificationResponse=z.object({reviewCase:reviewPageCase,
+  verificationProof:z.string().min(40).max(1024).regex(/^[A-Za-z0-9_-]+$/u).nullable(),
+}).strict().superRefine((value,context)=>{
+  const positive=["unclaimed_keyless","claimed_unbound_no_key_recovery"].includes(value.reviewCase.case.kind);
+  if(value.reviewCase.mode!=="keyless"||positive!==(value.verificationProof!==null))
+    context.addIssue({code:"custom",message:"claim review unavailable"});
+});
 export type ReviewDecision="reject"|"needs-more-information"|"approve-record-key";
 /** Only the actually implemented attested release branch is offered. */
 export function reviewPageDecisions(value:ReviewPageCase):ReviewDecision[] {

@@ -8423,6 +8423,10 @@
         "targetSource": "current-record-key-claimant-recovery-key-or-keyless-claim-session-and-its-two-kind-bound-finalized-documents",
         "operation": "future-person-claim-complete"
       },
+      "api.future-person-documentary-verification": {
+        "targetSource": "current-own-JWT-named-keyless-review-assignment-and-current-two-kind-bound-clean-documents-with-full-byte-acknowledgements",
+        "operation": "read-only-human-verified-keyless-documentary-lookup"
+      },
       "api.future-person-claim-review": {
         "targetSource": "route-claim-current-review-revision-required-mode-specific-evidence-set-and-current-named-reviewer-assignment",
         "operation": "future-person-claim-review-read-or-decision"
@@ -12428,6 +12432,30 @@
       "unknownFields": "forbidden",
       "noticeDeadlineSubjectCandidateCountContactDocumentFieldsOrRecordKey": "never-returned-on-the-decision-response"
     },
+    "future-person-documentary-verification-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "reviewCase": "recursively-closed-responseContracts.future-person-claim-review-case-v1-body-for-this-assigned-keyless-review-only",
+        "verificationProof": "null-for-none-or-ambiguous-otherwise-opaque-purpose-separated-AES-GCM-receipt-at-most-1024-characters-bound-to-exact-current-reviewer-session-assignment-document-and-comparison-revisions-expiring-within-10-minutes"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "forbiddenFieldsAtAnyDepth": [
+        "contactEmail",
+        "candidateCount",
+        "otherCandidate",
+        "otherSubject",
+        "subjectId",
+        "profileId",
+        "embryoId",
+        "objectPath",
+        "bucket",
+        "releaseToken",
+        "ownerContact",
+        "parentContact"
+      ]
+    },
     "future-person-claim-review-case-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -13916,6 +13944,10 @@
       ],
       "api.future-person-claim-complete": [
         "future-person-claim-acceptance-v1",
+        "resource-not-found-v1"
+      ],
+      "api.future-person-documentary-verification": [
+        "future-person-documentary-verification-v1",
         "resource-not-found-v1"
       ],
       "api.future-person-claim-review": [
@@ -20046,6 +20078,59 @@
       "disposition": "kept"
     },
     {
+      "id": "api.future-person-documentary-verification",
+      "path": "/api/reviews/future-person/claims/[id]/verify-documents",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "reviewer",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "id": "canonical-lowercase-UUID-bound-to-the-current-named-reviewer-assignment"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "authority": "reviewer-api-v1-own-JWT-current-named-assignment-recent-MFA-and-both-exact-clean-document-full-byte-acknowledgements",
+        "readOnly": "records-only-the-existing-coded-assigned-case-read-audit-no-approval-notice-claimant-retained-documentary-value-or-new-clock",
+        "documentaryLookup": "human-verified-normalized-name-and-DOB-HMAC-searches-current-claimed_unbound-first-zero-only-proceeds-to-the-encrypted-intake-place-and-parent-name-candidate-signals-with-the-human-verified-DOB-one-profile-never-proves-identity-or-parent-link",
+        "proof": "encrypted-stateless-read-receipt-bound-to-current-reviewer-session-assignment-document-and-comparison-revisions-within-the-existing-10-minute-ceiling-final-decision-rechecks-the-entire-current-lookup-and-atomically-consumes-its-distinct-existing-operation-nonce",
+        "positiveDecision": "remains-closed-until-the-real-registered-current-owner-provider-committed-30-day-notice-objection-and-separate-fresh-human-release-transaction-is-complete",
+        "contracts": [
+          "resource-authorization-v1",
+          "future-person-claim-intake-privacy-v1"
+        ]
+      },
+      "disposition": "kept",
+      "methodRequestContracts": {
+        "POST": {
+          "contentType": "application/json",
+          "body": {
+            "reviewRevision": "current-positive-integer",
+            "documentaryAttestation": {
+              "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+              "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+              "photoIdentityReviewed": {
+                "const": true
+              },
+              "birthRecordReviewed": {
+                "const": true
+              },
+              "adultAgeConfirmed": {
+                "const": true
+              }
+            },
+            "nonce": "purpose-separated-recent-page-proof-for-this-read-only-lookup-not-the-consumed-final-decision-nonce"
+          },
+          "unknownFields": "forbidden",
+          "unknownFieldsRecursively": "forbidden"
+        }
+      },
+      "methodSuccessResponseContracts": {
+        "POST": "future-person-documentary-verification-v1"
+      }
+    },
+    {
       "id": "api.future-person-claim-review",
       "path": "/api/reviews/future-person/claims/[id]",
       "kind": "endpoint",
@@ -20118,7 +20203,8 @@
           "embryo-autosomal-only-v1",
           "future-person-claim-intake-privacy-v1"
         ],
-        "GET": "operation-specific-assignment-RPC-decrypts-only-the-recursively-closed-future-person-claim-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read"
+        "GET": "operation-specific-assignment-RPC-decrypts-only-the-recursively-closed-future-person-claim-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read",
+        "keylessVerificationResponse": "for-keyless-only-the-authorized-case-session-response-issues-x-inherit-keyless-lookup-nonce-as-a-stateless-10-minute-purpose-separated-reviewer-session-case-bound-read-only-lookup-proof-no-GET-stores-rotates-or-consumes-an-operation-nonce-final-decisions-retain-the-distinct-existing-one-use-review-nonce"
       },
       "disposition": "kept",
       "methodRequestContracts": {

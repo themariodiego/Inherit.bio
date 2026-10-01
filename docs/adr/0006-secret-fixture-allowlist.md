@@ -90,3 +90,15 @@ fixture-value paths, undocumented genome fixtures, and future secret-like
 additions anywhere in the v2-authored commit range. The previously documented
 hosted Supabase publishable key is removed from the current tree; it predates
 the pinned v2 baseline and remains visible only in immutable earlier history.
+
+### Existing local fixtures in the manual participant-c smoke (2026-10-01)
+
+The six already accepted local Supabase JWT, disposable encryption, job, cron
+and synthetic mail fixtures are reused byte-for-byte in the exact additional
+path `.github/workflows/participant-c-smoke.yml`. This manual instrument job
+uses only a newly created loopback Supabase stack and an isolated TEST-LOCAL
+app. It has no paid credential. The existing issuer/role/key-shape checks,
+fixture values, scanner rules, exact-path occurrence checks and history baseline
+remain intact. This adds no hosted key, new credential value or global path
+exemption. The newly required GitHub OIDC request bearer stays in host memory;
+its signed identity is checked, and it is omitted from every child environment.

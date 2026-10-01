@@ -23,6 +23,7 @@ import {
   openClaimReviewIdentity,
 } from "@/lib/future-person/review";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
+import {mintKeylessLookupNonce} from "@/lib/future-person/keyless-verification";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -77,6 +78,7 @@ async function read(request: Request, id: string): Promise<Response> {
     [REVIEW_NONCE_HEADER]: mintReviewNonce(id, account.user.id, account.sessionId),
     "x-inherit-photo-receipt-nonce": mintReceiptOpenNonce(String((body.evidence as Record<string, unknown>).photoIdentityDocumentId), account.user.id, account.sessionId),
     "x-inherit-birth-receipt-nonce": mintReceiptOpenNonce(String((body.evidence as Record<string, unknown>).birthRecordDocumentId), account.user.id, account.sessionId),
+    ...(body.mode==="keyless"?{"x-inherit-keyless-lookup-nonce":mintKeylessLookupNonce(id,account.user.id,account.sessionId)}:{}),
   });
 }
 
