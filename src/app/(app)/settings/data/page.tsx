@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ownerAccountObjectionControls } from "@/lib/future-person/owner-account-objection";
+import { OwnerObjection } from "@/components/future-person/owner-objection";
 import Link from "next/link";
 import { EmbryoDisposition } from "@/components/settings/embryo-disposition";
 import { embryoDispositionControls } from "@/lib/embryos/disposition-controls";
@@ -22,8 +24,9 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
   const query=await searchParams;
   const after=typeof query.profileAfter==="string"?query.profileAfter:query.profileAfter?"invalid":null;
   const dispositionAfter=typeof query.dispositionAfter==="string"?query.dispositionAfter:query.dispositionAfter?"invalid":null;
-  const [deletion,profiles,dispositions] = await Promise.all([
-    deletionControlState(),identityProfileControls(after),embryoDispositionControls(dispositionAfter),
+  const objectionAfter=typeof query.objectionAfter==="string"?query.objectionAfter:query.objectionAfter?"invalid":null;
+  const [deletion,profiles,dispositions,objections] = await Promise.all([
+    deletionControlState(),identityProfileControls(after),embryoDispositionControls(dispositionAfter),ownerAccountObjectionControls(objectionAfter),
   ]);
   return (
     <div className="page-stack mx-auto max-w-2xl space-y-8">
@@ -35,6 +38,15 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
         <Button asChild variant="outline" className="mt-4"><a href="/api/export">{DATA_EXPORT_BUTTON}</a></Button>
       </section>
       <DangerZone deletion={deletion} />
+      {objections?<section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="claim-requests-heading">
+        <h2 id="claim-requests-heading" className="font-medium">Review a claim</h2>
+        {objections.unavailable?<p className="text-sm">Sign in again to review current claims. <Link href={route("auth.sign-in",{query:{next:route("settings.data")}})} className="underline underline-offset-2">Sign in</Link></p>:<>
+          {objections.items.map(control=><OwnerObjection key={control.nonce} {...control} inSettings/>)}
+          {!objections.items.length?<p className="text-sm text-ink-muted">No claim on this page needs your reply.</p>:null}
+          {objections.nextCursor?<Button asChild variant="outline"><Link href={`${route("settings.data")}?objectionAfter=${objections.nextCursor}`}>More</Link></Button>:null}
+          {objectionAfter?<Link href={route("settings.data")} className="inline-flex min-h-11 items-center text-sm underline underline-offset-2">Back to the first records</Link>:null}
+        </>}
+      </section>:null}
       {dispositions?<section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="embryo-details-heading">
         <h2 id="embryo-details-heading" className="font-medium">Embryo details</h2>
         {dispositions.unavailable?<p role="status" className="text-sm">Refresh this page and try again.</p>:<>
