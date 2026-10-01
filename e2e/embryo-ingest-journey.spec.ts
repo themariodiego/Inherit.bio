@@ -10,7 +10,7 @@ import { GATE_BUTTON } from "@/copy/embryos/gate";
 import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { signStatements } from "./embryo-signing-helpers";
-import { participantCSeed } from "../scripts/comprehension/participant-c-seed";
+import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles } from "../scripts/comprehension/participant-c-seed";
 import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
 import { PRIMARY } from "@/copy/overview";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
@@ -112,9 +112,12 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
     const embryos = await adminClient().from("embryos").select("id,subject_id,sample_ordinal,status").eq("cohort_id", cohortId).order("sample_ordinal");
     expect(embryos.error).toBeNull();
     expect(embryos.data!.map(item => item.status)).toEqual(["qc_pass", "qc_pass"]);
-    const files = await adminClient().from("genome_files").select("subject_id,status").in("subject_id", embryos.data!.map(item => item.subject_id));
+    const published = await adminClient().from("embryo_cohorts").select("uploaded_at").eq("id", cohortId).single();
+    expect(published.error).toBeNull(); expect(published.data!.uploaded_at).not.toBeNull();
+    const files = await adminClient().from("genome_files").select(EMBRYO_PUBLISHED_FILE_SELECT).in("subject_id", embryos.data!.map(item => item.subject_id));
     expect(files.error).toBeNull(); expect(files.data).toHaveLength(2);
-    expect(files.data!.every(file => file.status === "normalization_complete")).toBe(true);
+    expect(publishedEmbryoFiles(files.data, { ownerId: owner, publishedAt: published.data!.uploaded_at!,
+      subjectIds: embryos.data!.map(item => item.subject_id) })).toHaveLength(2);
     for (const [parent, accountId] of [[other, parentAccount], [page, owner]] as const) {
       await parent.goto(`/embryos/compare?cohort=${cohortId}`);
       await expect(parent.locator('[data-slot="cohort-permission"]')).toBeVisible();
@@ -149,10 +152,10 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
     const reader = await openParticipantCReadSession({ browser, sessionId: "native-participant-c-T6",
       ownerId: owner, cohortId, email: ownerEmail, password,
       read: async () => {
-        const cohort = await adminClient().from("embryo_cohorts").select("id,owner_account_id,status,publication_revision").eq("id", cohortId).single();
+        const cohort = await adminClient().from("embryo_cohorts").select("id,owner_account_id,status,publication_revision,uploaded_at").eq("id", cohortId).single();
         const embryos = await adminClient().from("embryos").select("id,subject_id,sample_ordinal,status").eq("cohort_id", cohortId).order("sample_ordinal");
         expect(cohort.error).toBeNull(); expect(embryos.error).toBeNull();
-        const files = await adminClient().from("genome_files").select("subject_id,status").in("subject_id", embryos.data!.map(row => row.subject_id));
+        const files = await adminClient().from("genome_files").select(EMBRYO_PUBLISHED_FILE_SELECT).in("subject_id", embryos.data!.map(row => row.subject_id));
         expect(files.error).toBeNull();
         return { cohort: cohort.data, embryos: embryos.data, files: files.data, proof: await runtime.proof(cohortId) };
       } });

@@ -1,5 +1,27 @@
 # Test diff register
 
+## 2026-10-01 — Observe stored canonical files with their exact normalization receipts
+
+The full hosted all-pass and mixed-QC journeys reached real whole-cohort
+publication, then both failed an inherited observation that confused the file
+status with its normalization receipt. The actual producer inserts `stored`
+and records normalization separately: 20260930232000 lines 853–864 (the same
+contract as 20260930123000 lines 497–508). Existing canonical-source SQL
+assertions independently pin `stored`, publication revision, and normalization,
+single-sample and processing timestamps at the cohort publication commit.
+
+Both native observations now require the exact `stored` source, current
+publication/upload/normalization revisions, the three equal publication
+timestamps, their own subject/owner/digest/path and absence of any raw object.
+The participant-c read adapter checks that same tuple before setup and
+completion. Refusal tests add missing/stale/mismatched receipts, microsecond
+timestamp changes, crossed digests/owners, raw/shared objects and missing or
+extra sources. The mixed journey retains its one source for the actual passing
+ordinal, zero source for the failed sibling, real measured failed QC and all
+canonical/whole-publication/UI assertions. No producer, state, score, limit,
+retry, skip or signature predicate changes. Native discovery is not execution;
+full hosted proof of these corrected observations remains pending.
+
 ## 2026-10-01: Bind participant-c to its real native seed and keep the unsupported risk task closed
 
 The existing single embryo-ingest case now consumes the exact participant-c
