@@ -84,8 +84,8 @@ begin
       jsonb_build_object('outcome','objection-upheld'));
   elsif p_decision='overrule-objection' then
     deadline:=least(decision_at+interval '24 hours',o.timely_deadline);
-    select id into phase_row from public.retention_rows where target_kind='claim' and target_id=r.id
-      and retention_id='future-person.claim-objection-review-30d' and state in('scheduled','active') for update;
+    select retained.id into phase_row from public.retention_rows retained where retained.target_kind='claim' and retained.target_id=r.id
+      and retained.retention_id='future-person.claim-objection-review-30d' and retained.state in('scheduled','active') for update;
     if phase_row is null or deadline<=decision_at then
       raise exception using errcode='42501',message='claim review unavailable';end if;
     -- Commit the exact replacement before superseding the prior close phase.
@@ -132,9 +132,9 @@ begin
   end if;
   -- An old queued information request must not be delivered after a new
   -- revision/terminal decision, and no old release/session can regain access.
-  update public.mail_outbox set state='invalidated',claimed_at=null,last_outcome_code='claim_revision_changed'
-    where target_kind='claim' and target_id=r.id and purpose='future-person-claim-more-information'
-      and semantic_revision<>r.review_revision+1 and state in('queued','claimed');
+  update public.mail_outbox queued_information set state='invalidated',claimed_at=null,last_outcome_code='claim_revision_changed'
+    where queued_information.target_kind='claim' and queued_information.target_id=r.id and queued_information.purpose='future-person-claim-more-information'
+      and queued_information.semantic_revision<>r.review_revision+1 and queued_information.state in('queued','claimed');
   update public.future_person_claim_release_credentials set status='revoked' where claim_id=r.id and status in('current','consumed');
   return jsonb_build_object('objectionId',o.id,'state',state,'objectionRevision',o.objection_revision+1);
 end $$;

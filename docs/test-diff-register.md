@@ -1,5 +1,22 @@
 # Test diff register
 
+## 2026-10-01 — Qualify objection outcome columns after the actual fresh-database failure
+
+The full fresh run on f54502eb2d7cf1c0e81e4664f89b45e0b5adea48 stopped at
+future_person_keyless_objection_decisions.sql:82: the decision handler's local
+state variable conflicted with mail_outbox.state in the final invalidation.
+The overrule branch had the same ambiguity when selecting the live retention
+row. Both statements now explicitly qualify their table columns. The exact
+predicates, locks, updates, all three receipts, current reviewer/read/nonce/
+revision checks and every existing SQL assertion remain unchanged. No
+dispatcher, grant, deadline, provider field or predecessor acceptance changes.
+The original combined-guarded-corrections-pgtap.log failure remains evidence;
+actual corrected SQL execution is pending root's independent rehearsal.
+The unchanged reviewer/native-route/bridge units pass all26 tests and scoped
+lint passes. No existing source body pin targets this decision handler; its
+body MD5 changes from707e6b235bf8eed92578c9b905d7162d to
+65dead9008accb470b2aec1cc82107cb. Protected mail-dispatcher pins are unchanged.
+
 ## 2026-10-01 — Run the restricted-role QC assertion without test-schema grants
 
 The actual f54502eb full fresh run reached58 passing QC precision assertions,
