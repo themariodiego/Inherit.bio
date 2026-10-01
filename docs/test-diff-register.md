@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Preserve information-request negative fixtures without a duplicate typed key
+
+The actual combined type check on 29492581b459f07183667620029bc033b656b711
+failed at src/app/api/jobs/mail/route.test.ts:348 with TS2783 because every negative patch
+already contains template_payload after the same object literal explicitly
+declares that key. The unchanged base fixture is now constructed first, then
+the original patch is spread over it. All four runtime rows, their override
+order and every original assertion remain exact: private payloads and access
+fragments still refuse before submission authorization or provider use. No
+product handler, mail producer, authority, delivery or retention rule changes.
+All40 focused mail tests and scoped lint pass. Independent comparison of the
+actual old/new constructors preserves all four serialized rows and key order;
+every other byte of the test file, including all assertions, is unchanged.
+Root retains combined-current-native-qc-final-typecheck.log and owns the
+complete combined type-check rerun; none ran in this corrective checkout.
+
 ## 2026-10-01 — Parenthesize the exact account guard ACL expectation
 
 The actual complete fresh reset of29492581 stopped at migration030, statement0, with SQLSTATE42601. Its outer PL/pgSQL IF compared ACL cardinality with a bare CASE expression, so the parser treated the CASE/IF boundary incorrectly. Parentheses now delimit that same exact CASE expression. The expected owner-only/service-door ACL cardinalities remain1/2; every predecessor and replacement MD5, owner, language, ABI, configuration, role denial, ACL predicate, source anchor and generated runtime body stays byte-identical.

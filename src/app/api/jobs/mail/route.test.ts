@@ -345,7 +345,8 @@ describe("independent mail queues", () => {
   it.each([{ template_payload: { reason: "Synthetic private basis" } }, { template_payload: { claimantName: "Synthetic Claimant" } },
     { template_payload: {}, delivery_token: "a".repeat(43) }, { template_payload: {}, delivery_token: "" }])(
     "refuses information requests with private payload or any access fragment: %j", async patch => {
-      claimRow({ ...row, template_id: "future-person-more-information", template_payload: {}, delivery_token: null, ...patch });
+      const informationRequest = { ...row, template_id: "future-person-more-information", template_payload: {}, delivery_token: null };
+      claimRow({ ...informationRequest, ...patch });
       expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
       expect(mocks.submit).not.toHaveBeenCalled();
       expect(mocks.rpc.mock.calls.some(call => call[0] === "authorize_mail_submission_v1")).toBe(false);
