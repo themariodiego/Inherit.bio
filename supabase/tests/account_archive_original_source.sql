@@ -68,7 +68,7 @@ select is((select value->'actor' from actual_original_descriptor),
 select is((select value->'state' from actual_original_descriptor),jsonb_build_object('version','own-original-download-state-v1',
  'fileId','77900000-0000-4000-8000-000000000040','prepared',false,'retired',false,'expiresAt',null),
  'the actual legacy source cannot invent preparation or an original retirement warning');
-select is((select value->'source'-'expiresAt' from actual_original_descriptor),jsonb_build_object(
+select is((select (value->'source')-'expiresAt' from actual_original_descriptor),jsonb_build_object(
  'version','account-original-download-v1','fileId','77900000-0000-4000-8000-000000000040',
  'sourceRevision',1,'rawSha256',repeat('a',64),'bucket','genomes','objectId','77900000-0000-4000-8000-000000000020',
  'objectKey','77900000-0000-4000-8000-000000000030','storageVersion','77900000-0000-4000-8000-000000000021','sizeBytes',8),
