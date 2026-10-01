@@ -1,5 +1,36 @@
 # Test diff register
 
+## 2026-10-01 — Prove exhaustive account partition rows and complete archive EOF
+
+New assembly tests consume the existing actual closed history/class/metadata
+readers through their exact RPC seams and independently reconcile every source
+row to exactly one authorized directory, including 1,103 rows across real
+consumer pages. Requester actions whose target is foreign or unrecorded retain
+explicit account-history scope under the actual self record; no target, grant
+or source access is inferred. A missing/ambiguous self, omitted source row,
+same-count change, protected field, authority loss or cancellation refuses.
+
+The byte-plan tests require the independent register's entire twelve-member
+subject set, open all 33 actual ZIP artifacts, match every manifest payload
+count/length/SHA, and reject missing, duplicate, foreign, sensitive-root,
+truncated and same-length changed bytes. They also retain the actual signing,
+copy/old-disposal/current-read code against the explicit synthetic R2 gateway
+and require every exact canonical part, including independent part hashes.
+Operation limits remain 30 seconds and original job/source clocks do not move.
+Every original assertion remains; no timeout, retry, skip, SQL, grant, store,
+public gate, READY or acceptance row changes. Unit authority/provider seams
+are explicit, and complete scientific/non-self/POST/status composition and
+live database/browser/provider proof remain separate outstanding work.
+
+The first nonincremental type run found four fixture-only type seams: a
+zero-argument check mock, two probes assigning readonly source descriptors,
+and a generated UUID inferred more narrowly than a parsed historical UUID.
+The mock now names its actual AbortSignal/Promise<void> contract, the probes
+replace the immutable descriptor with the same bad values, and the UUID has
+the reader's string type. All runtime values, promise completion, assertions,
+source clocks and original source/SQL remain unchanged. The failed type receipt
+is retained and a refreshed exact-head type run is required.
+
 ## 2026-10-01 — Keep the protected objection table closed during independent lock proof
 
 The actual hosted repository job on `2280e7f4` reaches the unchanged
