@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Remove the profile signature alias conflict and preserve the exact phase census
+
+The genuine fresh database rehearsal reached the profile's save authority and
+exposed a PL/pgSQL record-variable collision: the current consent-artifact SQL
+alias had the same name as the declared basis-authority record. Only that
+artifact alias is renamed. The same signature UUID, signer principal/account,
+draft target, artifact key/version/body/hash, publication/effective date,
+statement set, purpose and current jurisdiction revision are still required.
+No authority or request expectation changes.
+
+The phase census now requires exactly 54 rows rather than 53 and adds an
+explicit assertion for the already-registered
+`future-person-claimed-source-disposal` purge phase from migration245. This is
+the actual additional phase; the optional-profile prerequisite reuses its two
+existing phases and introduces no extra registry row. All original census
+assertions remain exact, and the plan grows by exactly this new row-shape
+assertion. The correction awaits the coordinator's focused SQL rehearsal.
+
 ## 2026-10-01: Bind claimant deletion to the real disposition and audit source receipts
 
 The genuine claimant plan now locks the exact detached embryo and reads its
@@ -130,10 +148,8 @@ the coordinator's genuine fresh SQL rehearsal.
 
 The full hosted reviewer journey reached its genuine assigned case and passed the accessibility audit, then found no control with the exact label `Choice`: the implicit wrapping label included the option text in the accessible name. The visible label now explicitly references its separate native select. The original exact two-option browser assertion, every document/read/decision/refusal assertion, and all time limits remain unchanged. This corrects the product's accessible name rather than changing the expected choices. Full hosted execution on the final version remains required.
 
-<<<<<<< HEAD
-=======
 
->>>>>>> ae5aa8616b76bcb27847a3a1e61eca56830d242d
+
 ## 2026-10-01 — Preserve exact merged route, storage and current custody QC checks
 
 The combined checkpoint has 158 required route/state pairs: the prior 156
@@ -158,10 +174,8 @@ receipt is inferred or backfilled. Original historical-NULL, immutable-receipt,
 source, release, privacy and refusal assertions remain unchanged. Full fresh
 SQL and hosted execution for this combined correction remain pending.
 
-<<<<<<< HEAD
-=======
 
->>>>>>> ae5aa8616b76bcb27847a3a1e61eca56830d242d
+
 
 ## Complete genuinely attributable claimant ledger members · 1 October 2026
 
