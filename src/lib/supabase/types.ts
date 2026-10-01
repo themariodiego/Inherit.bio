@@ -3745,6 +3745,11 @@ export type Database = {
       }
       future_person_identity: {
         Row: {
+          profile_format_version: number | null
+          wrapped_profile_key: string | null
+          match_indexes: Json
+          fixed_expires_at: string | null
+          authority_snapshot: Json | null
           created_at: string
           embryo_id: string
           ended_at: string | null
@@ -3757,6 +3762,11 @@ export type Database = {
           state: string
         }
         Insert: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id: string
           ended_at?: string | null
@@ -3769,6 +3779,11 @@ export type Database = {
           state?: string
         }
         Update: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id?: string
           ended_at?: string | null
@@ -7624,6 +7639,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      future_person_profile_context_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string | null }
+        Returns: Json
+      }
+      write_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string; p_expected: Json;
+          p_profile: string; p_ciphertext: string; p_wrapped_key: string; p_indexes: Json; p_nonce: string }
+        Returns: Json
+      }
+      delete_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_expected: Json; p_nonce: string }
+        Returns: undefined
+      }
+      purge_due_future_person_profiles_v1: { Args: Record<PropertyKey, never>; Returns: number }
       future_person_export_request_v1: {
         Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
         Returns: Json

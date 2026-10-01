@@ -1,5 +1,37 @@
 # Test diff register
 
+## 2026-10-01 — Bound optional identity profiles to actual parent authority and the original transfer clock
+
+New profile tests require the current record-key recipient, that same parent's
+current upload-consent signature, the exact finalized basis and participant
+revisions, the caller's live own Auth session, and the original transferred
+claim-window deadline. Each changed binding, stale receipt, nonce replay,
+account deletion hold, foreign origin and malformed closed request refuses
+before a write. DELETE requires the current parent basis independently of a
+new upload signature and retains the record and its canonical source.
+
+Runtime-random encryption tests require a separately erasable wrapped key,
+authenticated profile/record/revision scope, all held purpose-separated match
+indexes and no plaintext persistence or response fields. Replacement, deletion
+and exact due retention remove the wrapper, every index and ciphertext; the
+worker keeps all original queues after either a returned or thrown failure.
+Legacy rows acquire no inferred envelope, deadline, authority or matching proof.
+A root needed by a current profile cannot retire without its replacement index.
+The profile stays excluded from every existing export partition and introduces
+no store or foreign key beyond the existing protected row.
+
+The brief makes the matching profile optional and makes the Record Key Card
+sufficient to identify its record. The Card selector therefore removes only
+the old profile-existence dependency, retaining all prior key, age, disposition
+and competing-review refusals. Its current named, recent-MFA reviewer can read
+the genuine earlier signed parent names through the existing frozen signature
+matrix when the optional profile is absent. Unknown, conflicting or non-Card
+signed-parent envelopes are refused. No name is reconstructed from current
+state, and none of these metadata fixtures proves human documentary review.
+The new SQL fixture and full browser flows remain unexecuted here. Keyless
+matching, actual owner-notice delivery, waiting-period objections and a fresh
+release decision remain closed prerequisites; acceptance does not change.
+
 ## 2026-10-01 — Compare genuine QC receipts before their consumed attempt rows disappear
 
 The full fresh database run showed that successful split publication removes
