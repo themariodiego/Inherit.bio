@@ -41,13 +41,17 @@ select is((select audit_principal_id from public.legal_audit_log where event_cod
  private.future_person_audit_selector_v1((select subject from custody_ids)),
  'the real accepted claimant action records the exact pre-issued custody actor, not a fresh unlinked identity');
 create temporary table ledger_authority as select public.future_person_export_request_v1('capture',pg_temp.h('rights')) body;
-select is((select (body#>>'{membership,legalAuditEvents}')::integer from ledger_authority),501,
+create temporary table ledger_snapshot as select private.future_person_export_capture_v1(pg_temp.h('rights')) body;
+select is((select body->>'authorityReceipt' from ledger_authority),
+ (select body#>>'{authority,authorityReceipt}' from ledger_snapshot),
+ 'the public closed authority binds the complete actual private source and ledger snapshot');
+select is((select (body#>>'{membership,legalAuditEvents}')::integer from ledger_snapshot),501,
  'capture declares every actual own ledger event and excludes foreign and NULL actors');
-select is((select body#>>'{legalAudit,attribution}' from ledger_authority),'assigned','metadata explicitly records genuine attribution');
-select is((select (body#>>'{legalAudit,attributionStartedAt}')::timestamptz from ledger_authority),
+select is((select body#>>'{legalAudit,attribution}' from ledger_snapshot),'assigned','metadata explicitly records genuine attribution');
+select is((select (body#>>'{legalAudit,attributionStartedAt}')::timestamptz from ledger_snapshot),
  (select started_at from private.legal_audit_attribution_config where singleton),
  'metadata retains the existing non-personal ledger attribution reference clock');
-select is((select array_agg(k order by k) from ledger_authority,jsonb_object_keys(body->'membership') k),
+select is((select array_agg(k order by k) from ledger_snapshot,jsonb_object_keys(body->'membership') k),
  array['agreements','figures','legalAuditEvents','qualityReports','reports','scores','variants'],
  'complete membership adds exactly the actual own ledger class');
 select ok(not (select body::text from ledger_authority)~'audit_principal_id|row_hash|previous_hash|ciphertext',
@@ -69,6 +73,10 @@ select lives_ok($$select public.export_archive_worker_v1('preflight',(select (bo
  (select id from ledger_attempt),(select body->>'authorityReceipt' from ledger_authority))$$,'the real durable worker authorizes the complete ledger origin');
 select lives_ok($$select public.export_archive_worker_v1('begin',(select (body->>'exportId')::uuid from ledger_export),
  (select id from ledger_attempt),(select body->>'authorityReceipt' from ledger_authority))$$,'the complete origin starts its exact registered writing attempt');
+select is(public.future_person_export_members_v1('context',(select (body->>'exportId')::uuid from ledger_export),
+ (select id from ledger_attempt),(select body->>'authorityReceipt' from ledger_authority)),
+ (select body from ledger_snapshot),
+ 'the real leased worker context preserves every captured source, membership and own-ledger field');
 create function pg_temp.ledger_page(p_after text default null) returns jsonb language sql as $$
  select public.future_person_export_members_v1('legal-audit',(select (body->>'exportId')::uuid from ledger_export),
   (select id from ledger_attempt),(select body->>'authorityReceipt' from ledger_authority),p_after);
