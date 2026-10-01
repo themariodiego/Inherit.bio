@@ -41,6 +41,7 @@ import {
   UPLOAD_H1,
   WHO_NOT_KEPT_NOTE,
   WHO_QUESTION_HEADING,
+  parentEmailLabel,
   stepStatus,
 } from "@/copy/embryos/upload";
 import { INGEST_REFUSALS } from "@/copy/upload/errors";
@@ -650,7 +651,12 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
   await expect(flow).toHaveAttribute("data-screen", "draft");
   await expect(page.getByRole("heading", { name: DRAFT_QUESTION_HEADING })).toBeFocused();
   await expect(page.getByLabel(EMBRYO_COUNT_LABEL)).toHaveAttribute("min", "2");
-  await expect(page.getByLabel("Other parent’s email")).toBeVisible();
+  // The selected third-party, two-parent basis requires both independent
+  // parent addresses; it cannot pretend the uploader is one of them.
+  await expect(page.getByLabel(parentEmailLabel(0, 2), { exact: true })).toBeVisible();
+  await expect(page.getByLabel(parentEmailLabel(1, 2), { exact: true })).toBeVisible();
+  await expect(flow.locator('input[type="email"]')).toHaveCount(2);
+  await expect(page.getByLabel("Other parent’s email", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: SAVE_DRAFT_BUTTON })).toBeEnabled();
   await expect(flow.locator('[data-slot="ingest-unavailable"]')).toHaveCount(0);
   await expect(flow.locator('[data-slot="step-status"]')).toHaveText(stepStatus(2));

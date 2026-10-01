@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Rehearse integrated current profile, controls and claimant deletion source
+
+The coordinator combines the actual failed fresh-database corrections with the
+complete current erasure graph and prospective parent profile controls. The
+current-source native Embryo signing and atomic revocation observations are
+preserved intact. The CI fixture uses the exact six declared projects and
+validates each real native listing before both permanent scheduling guards.
+Every original case, isolation boundary, refusal, time limit and retry remains.
+Earlier documentation merge markers are removed while retaining every dated
+entry. This checkpoint does not claim database, hosted, provider or user-flow
+completion; each actual verification follows on its frozen source.
+
+## 2026-10-01 — Combine complete native inventories without losing Embryo isolation
+
+The first full local combined run found the new scheduling fixture still named only the four earlier browser projects while this branch requires six. Its complete synthetic native listings now use the exact registered project set and include both genuine declared journey file groups, with one case in each separate assigned job. Every concentration, omission, duplicate and whole-file refusal remains exact. Manifest discovery explicitly validates each actual native report before the permanent balance guard and before writing its manifest; the original static assertion follows that same direct call after the discovery is stored in a local variable. No selector, browser case, time limit, retry or isolation contract is weakened. The two unchanged five-second local tests that timed out under measured memory/disk pressure remain unchanged; their failure is retained and a fresh full run follows the cache recovery.
+
+## 2026-10-01 — Preserve reviewer coverage while integrating native accessibility groups
+
+The genuine assigned Future Person reviewer page remains in the complete registered-page census. Its existing exact checked-elsewhere entry now lives in the shared accessibility helper after the six unchanged sweeps moved into standalone native files. Both the strict Embryo case partition validation and permanent whole-file/sweep placement guards execute against the same six actual native discoveries. No case, assertion, limit or route-state coverage is removed.
+
 ## 2026-10-01 — Remove the profile signature alias conflict and preserve the exact phase census
 
 The genuine fresh database rehearsal reached the profile's save authority and
@@ -194,6 +214,46 @@ refused before completion. This is a newly staged synthetic split; no historic
 receipt is inferred or backfilled. Original historical-NULL, immutable-receipt,
 source, release, privacy and refusal assertions remain unchanged. Full fresh
 SQL and hosted execution for this combined correction remain pending.
+
+## 2026-10-01 — Preserve both complete native guards after CI integration
+
+The export integration full run at `37bc5b5a513ae260b9108f5cf6e7990b1287902d` found the new scheduling fixture still named only the four earlier browser projects while this branch requires six. Its complete synthetic native listings now use the exact registered project set and include both genuine declared journey file groups, with one case in each separate assigned job. Every concentration, omission, duplicate and whole-file refusal remains exact. Manifest discovery explicitly validates each actual native report before the permanent balance guard and before writing its manifest; the original static assertion follows that same direct call after the discovery is stored in a local variable. No selector, browser case, time limit, retry or isolation contract is weakened. The two unchanged five-second local tests that timed out under measured memory/disk pressure remain unchanged; their failure is retained and a fresh full run follows the cache recovery.
+
+## 2026-10-01: Verify actual native signing receipts and atomic cohort revocation
+
+Both real embryo journeys now require every displayed artifact to produce its
+exact native 201 response and one committed signature with the displayed
+version, digest, statement set, actual signer and exact draft/cohort binding.
+Each receipt must also match the signer's current active principal, current
+declared country and revision, and the exact paired affirmed attestation where
+required. Purpose receipts bind the real grant to its signature. Pending and
+failed UI states must clear; completion no longer assumes a generic form is
+unmounted. All next-stage and full worker assertions, timeouts, retries and
+native case inventory are unchanged.
+
+Both synthetic accounts already declare GB through the common account helper,
+but the invitation forms had signed DK. The current-signature reader correctly
+refuses that mismatch, while the signing RPC returns the existing artifact
+receipt unchanged. The forms now truthfully select the same declared GB code;
+no profile, authority, signature or grant row is fabricated to advance them.
+
+The Copilot revocation case retains the exact 23514 direct-write refusal and
+unchanged base/direction rows, then uses the registered revoke POST in the
+other parent’s authenticated native browser. It requires the closed response,
+one exact shared revocation time, original grant/binding/direction revisions
+and both terminal rows. Immediate next-turn refusal, zero model calls,
+conversation purge, inaccessible history and the blocked page remain asserted.
+Full hosted execution is required; discovery and focused unit checks do not
+claim that the new native observations have already passed.
+
+## Embryo hosted journeys wait for committed signatures and preserve exact content refusals · 1 October 2026
+
+The first full hosted Embryo run reached real invitation and artifact submissions, but its tests navigated the invited parent or reloaded the owner immediately after a click while the native fetch was still pending. Both upload journeys now wait for the exact accepted receipt's real UI heading before navigation and for the signing form to leave the refreshed server stage after all sequential 201 artifact receipts. Every parent role, separate upload/analysis consent, original stage assertion, five-second UI bound, ingestion and measured QC assertion remains. No authority row, grant or UI state is inserted or bypassed.
+
+The first-two-steps test had selected a third-party uploader and two-parent basis, then demanded the one-parent-uploader label. It now requires both exact parent labels and exactly two address inputs, with no single-other-parent field; its no-request, no-storage and role-attestation assertions remain. The cohort Copilot's mandatory exact safety paragraph explicitly says it will not rank embryos or say anything about sex. The test pins that whole paragraph exactly once, excludes only that exact paragraph, and retains the original sex/ranking prohibition across every other main node, plus all model-context, selection-refusal, no-model-call, provenance and revocation cases.
+
+The existing three-mode Future claim case already displays its accepted UI but then waits on Playwright's response-body retrieval behind the isolated transport proxy. It now observes complete bytes from a clone of the real browser fetch response through the unchanged verified shared native observer. Its status is cross-checked with Playwright and all exact 202/body/cookie/panel equivalence, HttpOnly and script-read refusal assertions remain. The shared observer and real loopback HTTP/Chromium proof are copied byte-for-byte from the verified Future prerequisite, including exact 204/205 native response handling, duplicate refusal, bounded bytes and cleanup. This changes test observation only: no request replay, fake response, scanner bypass, timeout extension, retry or skip. A fresh full hosted run is still required; this source correction is not browser completion evidence.
+
 
 
 
