@@ -2,6 +2,7 @@
 -- The original narrow source fixture has no fabricated historical name. It
 -- still proves real approval/binding/current-location access above, but cannot
 -- become a complete scientific and signed-agreement archive without that proof.
+grant select on custody_ids to service_role;
 set local role service_role;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select throws_ok($$select public.export_archive_request_v1('capture',jsonb_build_object('kind','account',

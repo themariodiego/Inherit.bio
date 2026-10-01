@@ -8,6 +8,7 @@ select set_config('inherit.synthetic_signing_ciphertext',repeat('ab',64),true);
 \ir fixtures/future_person_binding_lifecycle.inc
 \ir fixtures/future_person_completed_bound_relocation.inc
 \ir fixtures/future_person_recorded_scientific_members.inc
+grant select on recorded_finding to service_role;
 create temporary table owned_archive(origin jsonb,capture jsonb,created jsonb,attempt uuid,context jsonb,source jsonb);
 insert into owned_archive(origin,attempt) values(jsonb_build_object('kind','account',
  'accountId','7b100000-0000-4000-8000-000000000001','sessionId','7b100000-0000-4000-8000-000000000002'),gen_random_uuid());

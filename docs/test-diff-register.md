@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-01 — Execute archive assertions under their real role and pin the current-source refusal
+
+The complete affected boundary run on `60e91cbc` passed actual binding,
+relocation, source reading, account audit and both documentary recovery paths.
+It exposed two test-only temporary-table reads that lacked SELECT under the
+real service role. Only the local `custody_ids` and `recorded_finding` anchors
+now grant that role SELECT so the original exact refusal and historical-byte
+assertions reach the actual producer. No product ACL or authority changes.
+
+The stale bound-source probe now pins the current authority guard's exact
+opaque `42501: not_found`, replacing a generic `55000` with no message. A new
+independent before/after snapshot also requires all durable exports, jobs and
+consumed envelopes to remain byte-identical. Every source, foreign-attempt,
+session, signing and complete-graph assertion remains. The prior failures are
+retained; corrected complete suites run before a full fresh run.
+
 
 
 ## 2026-10-01 — Reuse the claimant account's actual provisioned self identity
