@@ -1,5 +1,32 @@
 # Test diff register
 
+## 2026-10-01 — Keep the protected objection table closed during independent lock proof
+
+The actual hosted repository job on `2280e7f4` reaches the unchanged
+`future_person_claim_objections` statement probe and receives `42501` before its
+trigger runs. Migration 023 deliberately revokes every API table privilege;
+027's actual Auth/link objection entrypoints run their exact private executor
+under the table owner's authority. Native 032 cleanup preserves that boundary.
+Restoring a direct service DELETE grant would contradict those contracts.
+
+All 31 original independent-session lock probes, advisory key, waiting assertion,
+query cancellation/57014, three-second observation bound, twenty-millisecond
+poll, five-second statement bound and every other operation limit remain.
+Only this exact table's empty statement uses its verified postgres owner.
+A read-only preflight pins its owner/RLS, every API table/column denial, enabled
+statement trigger, actual trigger/advisory bodies and all three current native
+executor/entrypoint bodies, ABIs, configurations and role boundaries. Unknown
+ACL/source changes refuse; no role is selected from observed privileges.
+A new independent service session must actually receive this table's `42501`
+while the holder lock remains held, without entering an advisory wait. The
+original owner-context statement must then wait and end only by cancellation.
+
+New deterministic source/refusal tests guard that narrow role choice, native
+source ancestry and adversarial owner/ACL/trigger/body changes. No product SQL,
+table privilege, mutation authority, fixture row, timeout, retry or acceptance
+row changes. Actual concurrent execution is pending the root's owned database
+rehearsal; source checks provide no independent-backend execution credit.
+
 ## 2026-10-01 — Preserve the complete account and Future integration inventory
 
 The ordinary merge of frozen Future `2280e7f4` and account `2d0be122`

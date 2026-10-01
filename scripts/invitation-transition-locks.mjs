@@ -6,6 +6,9 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { setTimeout as delay } from "node:timers/promises";
+import { PROTECTED_OBJECTION_CATALOG_SQL, PROTECTED_OBJECTION_DELETE,
+  assertDirectServiceObjectionDenied, assertProtectedObjectionCatalog,
+  statementProbeRole } from "./invitation-lock-owner-contract.mjs";
 
 const project = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
@@ -31,12 +34,12 @@ const probes = [
   "authorize_refused_invitation_storage_v1(null,null,null)",
 ];
 const statements = [
-  ...probes.map((probe) => ({ name: probe.split("(")[0], sql: `select public.${probe}` })),
+  ...probes.map((probe) => ({ name: probe.split("(")[0], sql: `select public.${probe}`, role: "service_role" })),
   ...["legal_evidence_ingest_sessions", "legal_evidence_fragments", "legal_evidence_documents",
     "legal_evidence_review_copies", "legal_evidence_working_data", "legal_evidence_assignments",
     "reviewed_evidence", "legal_reviews", "embryo_basis_bindings", "future_person_claim_documents",
     "future_person_claim_objections", "correction_assignments", "appeal_evidence"]
-    .map((table) => ({ name: `${table} statement trigger`, sql: `delete from public.${table} where false` })),
+    .map((table) => ({ name: `${table} statement trigger`, sql: `delete from public.${table} where false`, role: statementProbeRole(table) })),
 ];
 
 function session() {
@@ -91,13 +94,31 @@ function session() {
 const holder = session();
 try {
   await holder.query("set statement_timeout='8s'; set idle_in_transaction_session_timeout='15s'");
+  assertProtectedObjectionCatalog(JSON.parse(await holder.query(PROTECTED_OBJECTION_CATALOG_SQL)));
   await holder.query("select pg_advisory_lock(1869509217,1)");
+  // The table's denial precedes its trigger. Verify that denial independently,
+  // while the same transition lock is held, before testing its native owner.
+  const deniedPeer = session();
+  try {
+    const pid = Number(await deniedPeer.query("select pg_backend_pid()"));
+    assert(Number.isSafeInteger(pid) && pid > 0);
+    await deniedPeer.query("begin; set local role service_role; set local statement_timeout='5s'; set local idle_in_transaction_session_timeout='10s'");
+    assert.equal(await deniedPeer.query("select current_user"), "service_role");
+    const result = await deniedPeer.query(PROTECTED_OBJECTION_DELETE).then(
+      () => ({ error: null }), (error) => ({ error }),
+    );
+    assertDirectServiceObjectionDenied(result.error);
+    assert.equal(await holder.query(`select exists(select 1 from pg_locks where pid=${pid}
+      and locktype='advisory' and classid=1869509217 and objid=1 and objsubid=2 and not granted)`), "f");
+    console.log("PASS direct service objection DELETE remains denied before the transition trigger");
+  } finally { await deniedPeer.close(); }
   for (const probe of statements) {
     const peer = session();
     try {
       const pid = Number(await peer.query("select pg_backend_pid()"));
       assert(Number.isSafeInteger(pid) && pid > 0);
-      await peer.query("begin; set local role service_role; set local statement_timeout='5s'; set local idle_in_transaction_session_timeout='10s'");
+      await peer.query(`begin; set local role ${probe.role}; set local statement_timeout='5s'; set local idle_in_transaction_session_timeout='10s'`);
+      assert.equal(await peer.query("select current_user"), probe.role);
       // Attach the rejection handler immediately: cancellation is expected.
       const attempt = peer.query(probe.sql).then(
         () => ({ error: null }), (error) => ({ error }),
