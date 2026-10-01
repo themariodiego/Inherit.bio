@@ -126,6 +126,10 @@ function parseMail(
   payload: unknown,
   deliveryToken?: string | null,
 ): MailTemplate {
+  if (templateId === "future-person-owner-notice") {
+    z.object({}).strict().parse(payload);
+    return { id: templateId, payload: { objectionUrl: fragmentUrl(deliveryToken) } };
+  }
   if(templateId==="future-person-release") {
     z.object({}).strict().parse(payload);
     return {id:templateId,payload:{releaseUrl:fragmentUrl(deliveryToken)}};
