@@ -95,7 +95,8 @@ select throws_ok($$select pg_temp.probe('alter table private.embryo_canonical_so
  alter table private.embryo_canonical_sources enable trigger user',
  'select public.future_person_export_source_v1(''capture'',pg_temp.h(''rights''))::text')$$,
  '55000','export_source_immutability_unproven','a legacy source remains fail-closed without an invented historical proof');
-select is((select count(*) from public.purge_target_stores),153::bigint,'all existing stores retain exact purge and credential dispositions');
+select is((select count(*) from public.purge_target_stores),155::bigint,'all existing stores retain exact purge and credential dispositions');
+\ir fixtures/purge_store_census_155.inc
 select ok(position('export_publication_not_integrated' in pg_get_functiondef('private.guard_segmented_export_publication_v1()'::regprocedure))>0,
  'the whole-account and incomplete claim archive READY hold remains exact');
 select * from finish();

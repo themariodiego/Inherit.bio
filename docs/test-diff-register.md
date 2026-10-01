@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Pin every reviewed purge pair after Path B integration
+
+The actual complete fresh database rehearsal reached 167 suites and 10,080
+assertions; only three old census expectations still required 153 stores. The
+Path B migrations deliberately add `public.other_adult_held_uploads` to
+`upload-and-ingest-working-state` (20260928150000) and
+`private.path_b_report_bindings` to `generated-artifacts` (20260930234000).
+The three Future Person fixtures now require exactly 155 physical registry
+rows. A shared literal two-column expected set independently reconciles the
+register's 117 baseline target/store pairs with all 38 reviewed later additions,
+including the existing exact contact-store reclassification. Each fixture also
+requires both Path B tables to exist and exactly their two reviewed target/store
+pairs. Equal-count replacement, omission or reclassification cannot satisfy the
+complete set comparison. The original separate exact six-private-archive-child
+assertion and every other original assertion remain intact; neither the export
+member-plan universe nor the observed catalog supplies runtime expectations.
+The failed actual rehearsal is retained. This bounded fixture correction changes
+no source, migration, permission, deletion execution or acceptance row; corrected
+SQL execution remains for the independent database rehearsal.
+
 ## 2026-10-01 — Require the existing complete-source refusal for physical size drift
 
 Actual corrected migration 026 rehearsal reached all 42 assertions and exposed
