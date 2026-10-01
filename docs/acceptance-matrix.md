@@ -3,7 +3,7 @@
 ## Current interpretation (2026-09-25)
 
 The full-resolution G1–G8 ledger below is the completion measure: **44/65
-verified**, with 22 still NO. This is the mechanical count of the YES/NO column
+verified**, with 21 still NO. This is the mechanical count of the YES/NO column
 over the 65 G-rows, and from 2026-09-21 it is checked by
 `scripts/acceptance-matrix.test.ts` rather than maintained by hand, because it
 had drifted again: this sentence read **30/65, with 35 still NO** until that

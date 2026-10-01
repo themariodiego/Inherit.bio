@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-01 — Preserve exact archive retention census and genuine deletion export history
+
+The complete integrated database rehearsal found two stale census expectations:
+the claimant deletion graph names the existing generated-artifacts retention
+target, and its six existing archive child stores are now registered under that
+target. Both assertions remain exact set equality, retaining every original
+function and store while requiring the one genuine graph helper and all six
+archive children. No bucket, provider or additional retention class is accepted.
+
+The deletion fixture now supplies the original export fixture's bounded synthetic
+signing ciphertext before the real publication signatures and custody capture.
+It does not edit historical custody or reconstruct a missing signing identity.
+The production rejection of incomplete historical agreements remains unchanged.
+The deletion writer removes an assignment to the nonexistent legacy claim_token
+column while still clearing the actual claim_token_hash and every existing
+worker lease field. All refusal, atomic rollback and retention clock assertions
+remain. The matrix headline's remaining count is corrected to its actual 21 NO
+rows without flipping any row. Earlier full failures are retained; the corrected
+source must pass its own complete checks before any draft push.
+
 ## 2026-10-01 — Preserve ordinary retention transitions in the shared deletion guard
 
 The integrated fresh database run exposed a shared trigger record-shape error:
