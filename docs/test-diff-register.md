@@ -1,5 +1,29 @@
 # Test diff register
 
+## 2026-10-01 — Consume real composite graph pages without reopening unproved export graphs
+
+Reserved038 adds only the reviewed service-only seven-kind metadata door and
+API-denied key/projector helpers; every original014/029 refusal and v1 source
+remains. New units exhaust1003 synthetic composite identities across three actual
+TypeScript consumer pages with mocked RPC and an independent exact raw-text receipt and preserved numeric revision order. Complete
+EOF/count/hash, malformed/absent/duplicate/reordered/stale/crossed/private data,
+changed membership, abandoned iteration, cancellation and the original deadline
+and thirty-second operation bounds refuse. A private projection or empty source
+receipt is never current graph permission, science content or complete account
+export. Original unsupported inventory/worker assertions are retained unchanged.
+
+Authored rollback-only SQL preserves the original real documentary/MFA/binding/
+relocation producers and actual durable request/attempt creation, complete deferred
+constraint flushing, API-role/JWT/foreign source denials and the same whole graph
+refusal. Nonvacuous private metadata uses real intake cohort/basis/participant
+rows; no authority row is planted to make a public positive. Restricted test-role
+calls use the existing extensions harness inside its caught subtransaction and
+restore the role, without a product grant or search-path change. SQL execution,
+full type/combined tests, actual complete nonempty graph/API/native/member proof
+remain pending. No previous assertion, limit, retry, store, provider or acceptance
+changes; the actual whole-account assembler/public READY remain closed to these
+unproved graphs and the unanswered provider choice.
+
 ## 2026-10-01 — Pin actual graph metadata and composite identities before a consumed export door
 
 New source tests pin seven current physical row schemas against the generated
