@@ -1,5 +1,42 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
+
+The retirement branch now merges the exact verified main release. Its earlier
+coverage-description correction is retained in the shared accessibility sweep
+where main moved it. The complete native `a11y.spec.ts` remains byte-identical
+to current main; no old sweep is duplicated or omitted. The registered rights
+key still points to the canonical session flow, and the raw-path retirement
+keeps its original exact 404 assertions. Both existing G8.5 notes and every
+test-register entry are preserved. Full qualification on the combined source
+is required before the draft push.
+
+## D-081 retirement prepared for the end of the invitation overlap · 30 September 2026
+
+This branch is held unless the read-only release check in
+`scripts/tools/d081-retirement-precheck.sql` returns true immediately before
+merge. It must not deploy while older links are usable. The public cutover is
+PR #118's successful production deployment on 13 September. The conservative
+check includes every older adult invitation regardless of status; it returned
+true on 30 September and must be repeated before merging.
+The owner's dated obligation removes the bare `/api/withdraw` endpoint,
+`/withdraw/[token]` page, their two divergence rows and the overlap browser
+case together. The pinned `/withdraw/session` and fragment entry remain.
+
+The correspondence test now requires no dated exceptions, neither retired
+route in the built surface, no form targeting the bare endpoint and no ledger
+exception for it. Its generic deadline validation remains. The two deleted
+files leave the jurisdiction exemption list, whose bidirectional check remains.
+The overlap browser case is replaced with exact 404 assertions for both retired
+paths and a 200 assertion for the fragment entry. The existing canonical adult
+accept/refuse/delete journeys and their assertions remain. The canonical
+session refusal case now titles the register's
+`/withdraw/[token] complete` pattern and explicitly visits only its pinned
+`/withdraw/session` literal. It replaces the retired shim's state proof at the
+same nine-unproven-pair ratchet. The form scan now pins the exact two remaining
+forms, files and resolved targets in both directions, replacing the old minimum
+of five that included the retired page's three forms.
+
 ## 2026-10-01 — Bind queued Path B preparation to each actual job and preserve the declared build
 
 Hosted run `36809283041` passed the repository and five browser groups but the
@@ -357,7 +394,6 @@ regressions reject false listing counts, declared skips, discovery executions,
 false passed counts and any skipped execution. No actual execution assertion,
 timeout, retry, case or gate is relaxed or removed.
 
-
 ## CI readability scan reuse · 30 September 2026
 
 The 27 repository readability assertions now share one actual gate scan of the
@@ -594,6 +630,7 @@ removed or loosened.
   - v1 left callable by the service role;
   - a spent hash accepted again;
   - no expiry bound.
+
 ## Prepared sources carry their runs of homozygosity · 28 September 2026
 
 `e2e/family-health-picture.spec.ts` ("both adults prepare their real source
@@ -1419,6 +1456,7 @@ The bound is the largest size observed to be accepted (5,242,880,000), not the
 boundary itself: 5,368,708,096 and above were refused at once with 413 by
 Cloudflare on the declared Content-Length. No consent check, retry rule,
 browser assertion or matrix row changes, and no configured ceiling moves.
+
 ## A file too large to prepare says so, and offers no retry (31a) · 20 September 2026
 
 The surface half. `src/components/uploads/preparation-recovery.test.ts` gains a
@@ -1558,6 +1596,7 @@ that reaches it, between the enqueue and the claim, where the job is `queued`:
 a frozen or published row would trip the immutable-row rule first and pass with
 the clause deleted. `throws_ok` rolls its subtransaction back, so the claim
 below is unaffected, and no existing assertion changes.
+
 ## An Overview box can no longer link Overview to itself · 20 September 2026
 
 `docs/acceptance-matrix.md` records one latent hazard against G2.4 that nothing
@@ -1585,6 +1624,7 @@ Behaviour is unchanged. This closes the hazard half of G2.4 only. The row stays
 **NO** on both of its own halves: task depth is still uninstrumented, and four
 of the nine boxes still do not arrive where the box says — which the row calls
 deliberate and defensible, and which is a decision rather than a defect.
+
 ## The reflow sweep can name an out-of-flow cause, and keeps what it finds · 20 September 2026
 
 `e2e/a11y.spec.ts`'s 320 CSS px reflow probe measures
@@ -1713,6 +1753,7 @@ product change behind them is the sentence the owner decided on 18 September
 without a source on both pages, the `file-preparing` cell state, and the two
 copy strings, with unit cases in the copy and page tests. No existing
 assertion moved; `UNPROVEN_ROUTE_STATE_PAIRS` 13 → 11.
+
 ## Every glossary definition renders (G1.11, decisions 19 and 28) · 19 September 2026
 
 `scripts/claims-gate.test.ts`: the designated-surface count the gate is held
@@ -1882,6 +1923,7 @@ redirect and kept page is alive and never 404 (an authenticated alias may send
 the reader to sign in, a kept authenticated page must, a public page answers
 200); every kept endpoint is served under each declared method, refusing as a
 handler and never as the HTML not-found page. No existing assertion moved.
+
 ## Two Family route-state pairs proven, ratchet 19 → 17 · 18 September 2026
 
 `e2e/family-health-picture.spec.ts` +1 case: `/family/[person] complete`,
@@ -3430,7 +3472,6 @@ The plain-word registry adds “birth”, “date”, “complete” and “own�
 literal account and DNA labels. No jargon entry, readability threshold,
 extractor or legal statement is removed or relaxed.
 
-
 ## Private WGS prepared-object integration · 8 September 2026
 
 - `canonical.test.ts` adds source-position duplicate/conflict, all-observation,
@@ -3467,7 +3508,6 @@ extractor or legal statement is removed or relaxed.
   exact source-working classification assertions for the two new private stores;
   all previous assertions remain. Fresh full replay remains a release requirement.
 
-
 ## Final prepared publication foundation · 8 September 2026
 
 - `materialize-canonical-rsid.test.ts` adds 31 final pointer-order, merge-terminal,
@@ -3495,7 +3535,6 @@ extractor or legal statement is removed or relaxed.
 - `v2_contracts.sql` now expects 121 stores (the previous 119 plus immutable
   manifest and final-member stores), with 24 assertions. Existing classifications
   and protections remain intact; this registration is not a cleanup executor.
-
 
 ## Published source transport and member authority · 8 September 2026
 
@@ -3620,7 +3659,6 @@ extractor or legal statement is removed or relaxed.
   Escape requirements. The old midpoint no longer named that marker after the
   resize correction. No count, density, route, test or timeout bound changes.
 
-
 ## Native viewer initialization failure cleanup · 22 September 2026
 
 - Four native Chromium cases cover the installed ESM and UMD package entries,
@@ -3648,7 +3686,6 @@ extractor or legal statement is removed or relaxed.
   it did not record which route request or transition failed. The absent hub
   waypoint is a demonstrated test gap, not a proven cause of that failure.
   No application behavior, network limit or release verdict changes here.
-
 
 ## Detached viewer mutation cleanup · 22 September 2026
 
@@ -3723,7 +3760,6 @@ extractor or legal statement is removed or relaxed.
   upload/report/ancestry/Copilot browser journey remain pending CI. No hosted
   model, database, provider, upload or cleanup measurement was made here.
 
-
 ## Complete own-genome browser journey · 23 September 2026
 
 - Two new scenarios start at Overview and My Genome, respectively. Each uploads
@@ -3780,7 +3816,6 @@ extractor or legal statement is removed or relaxed.
   pending CI. No database, provider, inference or hosted activation ran locally;
   no release acceptance row is changed by these results.
 
-
 ## Complete prepared-source browser journey · 23 September 2026
 
 - Added the actual prepared-object journey and the guarded CI-only fifth app
@@ -3813,7 +3848,6 @@ extractor or legal statement is removed or relaxed.
   intact. No executor behavior, safety bound or test is removed or relaxed.
 - The corrected database assertions require a new CI run; source review and
   focused unit checks do not substitute for their execution.
-
 
 ## Complete gzip prepared-source journey · 23 September 2026
 

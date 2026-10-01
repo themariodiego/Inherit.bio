@@ -187,14 +187,14 @@ describe("the route register and the App Router describe the same surface", () =
       .toEqual(ledger.permissiveDynamicSegment.map(known => `${known.routeId} ${known.path}`).sort());
   });
 
-  /** A divergence that exists only to finish a migration carries the date by
-   * which it must be gone. The D-081 legacy withdrawal link lives only as long
-   * as the last token #118 could have issued; after that date this fails until
-   * the route and its row are deleted, so the shim cannot outlive its reason. */
+  /** D-081 is retired after the last pre-cutover invitation expires. Any
+   * future temporary divergence still needs a valid deadline and must expire. */
   it("deletes a dated divergence by its date", () => {
     const dated = [...ledger.builtButNotRegistered, ...ledger.permissiveDynamicSegment]
       .filter(known => known.deleteAfter !== undefined);
-    expect(dated.map(known => known.path).sort()).toEqual(["/api/withdraw", "/withdraw/[token]"]);
+    expect(dated.map(known => known.path).sort()).toEqual([]);
+    expect(built.map(found => found.url)).not.toContain("/api/withdraw");
+    expect(built.map(found => found.url)).not.toContain("/withdraw/[token]");
     for (const known of dated) {
       expect(known.deleteAfter, known.path).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       const due = Date.parse(`${known.deleteAfter}T23:59:59Z`);
@@ -742,7 +742,11 @@ describe("every form posts somewhere the register describes", () => {
   const recordedPaths = new Set(ledger.builtButNotRegistered.map((known) => known.path));
 
   it("finds the forms that name a target, so a passing run is not an empty scan", () => {
-    expect(actions.length).toBeGreaterThanOrEqual(5);
+    expect(actions).toEqual([
+      { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx",
+        action: 'route("genome.browser", subjectParams)', resolved: "helper" },
+      { file: "src/components/site/app-shell.tsx", action: "/auth/sign-out", resolved: "literal" },
+    ]);
     expect(actions.some((form) => form.resolved === "literal")).toBe(true);
     expect(actions.some((form) => form.resolved === "helper")).toBe(true);
   });
@@ -755,13 +759,10 @@ describe("every form posts somewhere the register describes", () => {
     expect(stray).toEqual([]);
   });
 
-  it("records the bare /api/withdraw the legacy forms still post to", () => {
-    // Not registered and deliberately alive: D-081 keeps it until the last
-    // token mailed before 2026-09-13 expires. The ledger is what makes that a
-    // decision rather than an oversight, so this asserts the pairing directly.
-    expect(actions.some((form) => form.action === "/api/withdraw")).toBe(true);
+  it("leaves no form or ledger exception for the retired bare withdrawal endpoint", () => {
+    expect(actions.some((form) => form.action === "/api/withdraw")).toBe(false);
     expect(registeredPaths.has("/api/withdraw")).toBe(false);
-    expect(recordedPaths.has("/api/withdraw")).toBe(true);
+    expect(recordedPaths.has("/api/withdraw")).toBe(false);
   });
 
   it("accepts a computed action only when the register is what resolves it", () => {
