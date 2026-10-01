@@ -94,7 +94,7 @@ end $$;
 create function private.future_person_bound_archive_frame_v1(p_source jsonb)
 returns jsonb language sql immutable security definer set search_path=pg_catalog as $$
  select (p_source-'expiresAt'-'parts')||jsonb_build_object('parts',(select jsonb_agg(
-  (v.value-'target')||jsonb_build_object('target',v.value->'target'-'expiresAt') order by v.ordinal)
+  (v.value-'target')||jsonb_build_object('target',(v.value->'target')-'expiresAt') order by v.ordinal)
   from jsonb_array_elements(p_source->'parts') with ordinality v(value,ordinal)));
 $$;
 revoke all on function private.future_person_bound_archive_frame_v1(jsonb)
