@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Claim the synthetic owner notice once at the actual delivery boundary
+
+The independent real database rehearsal reached86 strict assertions, then the fixture failed while projecting a volatile composite-returning queue claim. PostgreSQL expands `(function()).*` into a separate function evaluation for every column: the first evaluation can claim the genuine notice, while a later evaluation finds no due row. The fixture now calls the same actual canonical mail door once in `FROM` and selects its resulting row. Every current-owner, fixed-deadline, acceptance-versus-delivery, immutable retry, terminal shred and byte-identical source assertion remains unchanged. No product guard, queue eligibility, retry limit or provider receipt is changed. The failed rehearsal is retained; the corrected complete database suite remains pending independent execution.
+
 ## 2026-10-01 — Transfer only the encrypted minimum into a closed owner-notice prerequisite
 
 The registered keyless positive determination now has an owner-only package/clock transaction for independent rehearsal. It preserves the original documentary deadline, commits the exact current-owner outbox and existing claim package atomically, gives the minimum comparison a separate random wrapped key, and erases original intake/search/duplicated decision working data. Provider acceptance cannot start the notice period: only the exact delivered attempt can commit the full immutable30-day clock within the fixed24-hour delivery deadline. Duplicate delivery cannot renew it; terminal undeliverability shreds only the claim and preserves byte-identical subject, profile, results, source, provider locations, Card and later claimability.

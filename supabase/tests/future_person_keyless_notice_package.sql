@@ -89,7 +89,9 @@ begin
   end loop;
   raise exception 'synthetic owner notice claim bound exceeded';
 end $$;
-create temporary table notice_attempt as select (pg_temp.claim_owner_notice()).*;
+-- FROM evaluates the volatile queue claim once; composite projection expands
+-- one call per column and would spend the genuine notice on its first call.
+create temporary table notice_attempt as select chosen.* from pg_temp.claim_owner_notice() chosen;
 select public.complete_mail_attempt((select id from notice_attempt),(select attempt_count from notice_attempt),true,
   pg_temp.keyless_hash('provider-message'),'accepted');
 select is(private.commit_keyless_notice_delivery_v1((select review from keyless_ids)),false,
