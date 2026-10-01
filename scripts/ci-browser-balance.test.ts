@@ -1,15 +1,23 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ACCESSIBILITY_SWEEP_FILES, verifyAccessibilitySweepPlacement, verifyNativeBrowserBalance } from "./ci-browser-balance";
+import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
 
-const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
+const projects = [...STANDARD_CI_BROWSER_PROJECTS];
+const ordinaryProjects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
 const id = (n: number) => `${n.toString(16).padStart(20, "0")}-${n.toString(16).padStart(20, "0")}`;
 function listing(numbers: number[], index: number | null = null) {
+  const journeys = [
+    { number: 120, project: "embryo-mixed-qc", file: "embryo-mixed-qc-journey.spec.ts", index: 1 },
+    { number: 121, project: "embryo-ingest", file: "embryo-ingest-journey.spec.ts", index: 6 },
+  ].filter(journey => projects.includes(journey.project) && (index === null || journey.index === index));
   return { config: { workers: 1, fullyParallel: false, shard: index === null ? null : { current: index, total: 6 },
     projects: projects.map(name => ({ name, retries: 0, repeatEach: 1 })) },
-  suites: [{ specs: numbers.map(n => ({ id: id(n), file: n <= 6 ? ACCESSIBILITY_SWEEP_FILES[n - 1] : `ordinary-${n}.spec.ts`,
-    tests: [{ projectName: n <= 6 ? "chromium" : projects[(n - 7) % 4], expectedStatus: "passed", results: [] }] })) }],
-  errors: [], stats: { expected: 0, unexpected: 0, flaky: 0, skipped: numbers.length } };
+  suites: [{ specs: [...numbers.map(n => ({ id: id(n), file: n <= 6 ? ACCESSIBILITY_SWEEP_FILES[n - 1] : `ordinary-${n}.spec.ts`,
+    tests: [{ projectName: n <= 6 ? "chromium" : ordinaryProjects[(n - 7) % 4], expectedStatus: "passed", results: [] }] })),
+    ...journeys.map(journey => ({ id: id(journey.number), file: journey.file,
+      tests: [{ projectName: journey.project, expectedStatus: "passed", results: [] }] }))] }],
+  errors: [], stats: { expected: 0, unexpected: 0, flaky: 0, skipped: numbers.length + journeys.length } };
 }
 function parts() {
   return ACCESSIBILITY_SWEEP_FILES.map((file, index) => ({ index: index + 1,

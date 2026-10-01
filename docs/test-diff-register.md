@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-01 — Preserve both complete native guards after CI integration
+
+The first full local combined run found the new scheduling fixture still named only the four earlier browser projects while this branch requires six. Its complete synthetic native listings now use the exact registered project set and include both genuine declared journey file groups, with one case in each separate assigned job. Every concentration, omission, duplicate and whole-file refusal remains exact. Manifest discovery explicitly validates each actual native report before the permanent balance guard and before writing its manifest; the original static assertion follows that same direct call after the discovery is stored in a local variable. No selector, browser case, time limit, retry or isolation contract is weakened. The two unchanged five-second local tests that timed out under measured memory/disk pressure remain unchanged; their failure is retained and a fresh full run follows the cache recovery.
+
 ## 2026-10-01: Verify actual native signing receipts and atomic cohort revocation
 
 Both real embryo journeys now require every displayed artifact to produce its
