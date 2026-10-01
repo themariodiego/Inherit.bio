@@ -135,7 +135,10 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
     await page.goto("/overview");
     await expect(page.locator("main h1")).toBeVisible();
     await startTaskSixTrace(page);
-    await page.getByRole("link", { name: PRIMARY.compareEmbryos, exact: true }).click();
+    const primaryCompare = page.locator('main a[data-slot="button"]').getByText(PRIMARY.compareEmbryos, { exact: true });
+    await expect(primaryCompare).toHaveCount(1);
+    await expect(primaryCompare).toHaveAttribute("href", "/embryos/compare");
+    await primaryCompare.click();
     await expect(page).toHaveURL(url => url.pathname === "/embryos/compare");
     await expect(page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
     for (const role of ["button", "combobox", "checkbox", "radio"] as const) {

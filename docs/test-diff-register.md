@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-01 — Preserve mixed-QC result-link refusal and target the actual Overview action
+
+Hosted run36805076949 reached genuine whole-cohort publication in both journeys.
+The mixed-QC case then caught a real renderer defect: its failed column offered
+a result link despite the existing strict no-link assertion. Comparison headers
+now retain that column, ordinal label, measured QC, reasons and quality chip,
+but offer result links only for nonfailed QC. A new composed-renderer regression
+requires exactly the two passing links and the original failed header without
+any anchor. The native assertion stays unchanged.
+
+The participant-c case reached the Overview and found both the actual primary
+action and its separate entry-box link had the same accessible name. Its native
+click now identifies the primary action's existing button slot, requires exactly
+one exact-label match and the exact comparison href, then retains the original
+one-action trace, no-ranking statement, harness read and all original journey
+assertions. No arbitrary first/nth match, case, limit, retry or skip is introduced.
+The failed hosted jobs remain recorded; full proof follows on this correction.
+
 ## 2026-10-01 — Append native parent controls after every original Embryo assertion
 
 The actual integrated journey now calls the authored native disposition/profile
