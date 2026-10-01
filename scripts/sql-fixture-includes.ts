@@ -66,7 +66,8 @@ export function inspectSqlFixtureIncludes(root: string, files = trackedSqlFiles(
   const inside = (file: string) => { const relative = path.relative(boundary, file);return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative); };
   function visit(file: string) {
     if (visited.has(file)) return;
-    active.add(file);
+    const identity = realpathSync(file);
+    active.add(identity);
     for (const include of relativeIncludes(readFileSync(file, "utf8"))) {
       const where = { file: path.relative(boundary, file), line: include.line };
       if (include.filename === null) { failures.push({ ...where, code: "literal" });continue; }
@@ -75,18 +76,18 @@ export function inspectSqlFixtureIncludes(root: string, files = trackedSqlFiles(
       if (!existsSync(target) || !statSync(target).isFile()) { failures.push({ ...where, code: "missing" });continue; }
       const exact = realpathSync(target);
       if (!inside(exact)) { failures.push({ ...where, code: "escape" });continue; }
-      edges.push({ ...where, target: path.relative(boundary, exact) });
+      edges.push({ ...where, target: path.relative(boundary, target) });
       if (active.has(exact)) failures.push({ ...where, code: "cycle" });
-      else visit(exact);
+      else visit(target);
     }
-    active.delete(file);visited.add(file);
+    active.delete(identity);visited.add(file);
   }
   for (const name of files) {
     const file = path.resolve(boundary, name);
-    if (!inside(file) || !existsSync(file) || !statSync(file).isFile() || !inside(realpathSync(file))) {
-      failures.push({ file: name, line: 1, code: !inside(file) ? "escape" : "missing" });continue;
-    }
-    visit(realpathSync(file));
+    if (!inside(file)) { failures.push({ file: name, line: 1, code: "escape" });continue; }
+    if (!existsSync(file) || !statSync(file).isFile()) { failures.push({ file: name, line: 1, code: "missing" });continue; }
+    if (!inside(realpathSync(file))) { failures.push({ file: name, line: 1, code: "escape" });continue; }
+    visit(file);
   }
   return { files: visited.size, edges, failures };
 }

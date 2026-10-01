@@ -27,7 +27,8 @@ describe("literal psql relative include closure", () => {
       { file: "tests/fixtures/parent.inc", line: 1, code: "missing" }, { file: "tests/fixtures/parent.inc", line: 2, code: "missing" }]);
   });
   it("refuses direct and indirect cycles while allowing repeated noncyclic leaves", () => {
-    for (const files of [{ "a.sql": "\\ir a.sql" }, { "a.sql": "\\ir sub/b.inc", "sub/b.inc": "\\ir ../a.sql" }]) {
+    const cases: Record<string, string>[] = [{ "a.sql": "\\ir a.sql" }, { "a.sql": "\\ir sub/b.inc", "sub/b.inc": "\\ir ../a.sql" }];
+    for (const files of cases) {
       const result = inspectSqlFixtureIncludes(plant(files), ["a.sql"]);
       expect(result.failures).toHaveLength(1);expect(result.failures[0].code).toBe("cycle");
     }
@@ -37,6 +38,7 @@ describe("literal psql relative include closure", () => {
     const root = plant({ "a.sql": `\\ir ../external.inc\n\\ir ${outside}/external.inc\n\\ir link.inc\n` });
     symlinkSync(path.join(outside, "external.inc"), path.join(root, "link.inc"));
     expect(inspectSqlFixtureIncludes(root, ["a.sql"]).failures.map(row => row.code)).toEqual(["escape", "escape", "escape"]);
+    expect(inspectSqlFixtureIncludes(root, ["link.inc"]).failures).toEqual([{ file: "link.inc", line: 1, code: "escape" }]);
   });
   it("does not mistake SQL strings, identifiers, comments or function bodies for includes, and never evaluates dynamic arguments", () => {
     const source = "-- \\ir absent.inc\n/* outer /* \\ir absent.inc */ inner */\nselect '\\ir absent.inc', E'escaped\\\' \\ir absent.inc', \"\\ir absent.inc\";\nDO $body$ begin -- body\n\\ir absent.inc\nend $body$;\n\\ir :target\n\\ir `command`\n\\ir 'escaped\\n.inc'\nselect 1; \\ir real.inc\n";
