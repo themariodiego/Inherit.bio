@@ -22,6 +22,15 @@ public gate, READY or acceptance row changes. Unit authority/provider seams
 are explicit, and complete scientific/non-self/POST/status composition and
 live database/browser/provider proof remain separate outstanding work.
 
+The first nonincremental type run found four fixture-only type seams: a
+zero-argument check mock, two probes assigning readonly source descriptors,
+and a generated UUID inferred more narrowly than a parsed historical UUID.
+The mock now names its actual AbortSignal/Promise<void> contract, the probes
+replace the immutable descriptor with the same bad values, and the UUID has
+the reader's string type. All runtime values, promise completion, assertions,
+source clocks and original source/SQL remain unchanged. The failed type receipt
+is retained and a refreshed exact-head type run is required.
+
 ## 2026-10-01 — Compare every original archive byte with the native Buffer primitive
 
 The actual full Linux run reached 8,718 passing tests and one unchanged

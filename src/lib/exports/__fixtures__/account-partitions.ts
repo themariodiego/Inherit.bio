@@ -8,7 +8,8 @@ import type {accountArchiveContextSchema} from "../bound-account-archive-worker"
 const date="2026-10-01T00:00:00.000Z";
 export async function accountPartitionFixture(total=1103,selected?:{actor:{accountId:string;sessionId:string};reference:{exportId:string;attemptId:string;authorityReceipt:string}}){
  const actor=selected?.actor??{accountId:randomUUID(),sessionId:randomUUID()},self=randomUUID(),adult=randomUUID(),foreign=randomUUID();
- const reference=selected?.reference??{exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)},abort=new AbortController(),check=vi.fn(async()=>{});
+ const reference=selected?.reference??{exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)},abort=new AbortController(),
+  check=vi.fn<(signal:AbortSignal)=>Promise<void>>(async()=>{});
  const context:z.infer<typeof accountArchiveContextSchema>={version:"account-archive-members-v1",targetKind:"account",targetId:actor.accountId,
   authorityReceipt:reference.authorityReceipt,deadline:new Date(Date.now()+600000).toISOString(),capturedAt:date,actor,fileCount:0,
   partitions:[{subjectId:self,class:"ordinary",fileCount:0,fileIds:[]},{subjectId:adult,class:"ordinary",fileCount:0,fileIds:[]}]};

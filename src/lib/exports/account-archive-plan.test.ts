@@ -121,7 +121,7 @@ describe("complete subject layout and actual ZIP byte fence",()=>{
   if(failure==="duplicate-file")f.options.files.push(file);if(failure==="false-retired")file.originalRetired=true;
   const open=vi.fn(async()=>new ReadableStream<Uint8Array>({start(c){c.enqueue(new Uint8Array([1]));c.close();}}));
   if(failure!=="missing-original")f.options.sources=[{fileId,subjectId:f.self,member:{name:`originals/${fileId}/original.vcf`,sizeBytes:1,open}}];
-  if(failure==="provider-path")f.options.sources[0].member.name=`originals/${fileId}/../private-object`;
+  if(failure==="provider-path")f.options.sources[0]={...f.options.sources[0],member:{...f.options.sources[0].member,name:`originals/${fileId}/../private-object`}};
   await expect(prepareAccountArchivePlan(f.options)).rejects.toThrow();expect(open).not.toHaveBeenCalled();
  });
  it("preserves an explicitly proved prepared-source retirement warning without pretending a missing legacy object expired",async()=>{
@@ -164,7 +164,7 @@ describe("complete subject layout and actual ZIP byte fence",()=>{
   const open=vi.fn(async()=>new ReadableStream<Uint8Array>({start(c){c.enqueue(encoder.encode("wrong"));c.close();}}));
   f.options.sources=[{fileId,subjectId:f.self,member:{name:`originals/${fileId}/canonical-part-0000.vcf`,sizeBytes:5,open}}];
   await expect(prepareAccountArchivePlan(f.options)).rejects.toThrow();expect(open).toHaveBeenCalledOnce();
-  open.mockClear();f.options.sources[0].member.sizeBytes=4;
+  open.mockClear();f.options.sources[0]={...f.options.sources[0],member:{...f.options.sources[0].member,sizeBytes:4}};
   await expect(prepareAccountArchivePlan(f.options)).rejects.toThrow();expect(open).not.toHaveBeenCalled();
  });
  it("bounds each real authority/read operation at30seconds and leaves no timer when a callback ignores cancellation",async()=>{

@@ -7,7 +7,7 @@ import type {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {exportMemberPlan} from "@/lib/export/member-plan";
 const date="2026-10-01T00:00:00.000Z",science=["embryo_figures","embryo_qc","embryo_scores","embryo_variants","embryos","report_artifacts"];
 function fixture(total=1103){
- const accountId=randomUUID(),sessionId=randomUUID(),subjectId=randomUUID(),reference={exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)};
+ const accountId=randomUUID(),sessionId=randomUUID(),subjectId:string=randomUUID(),reference={exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"a".repeat(64)};
  const context:z.infer<typeof accountArchiveContextSchema>={version:"account-archive-members-v1",targetKind:"account",targetId:accountId,
   authorityReceipt:reference.authorityReceipt,deadline:new Date(Date.now()+600000).toISOString(),capturedAt:date,actor:{accountId,sessionId},
   fileCount:0,partitions:[{subjectId,class:"ordinary",fileCount:0,fileIds:[]}]};
