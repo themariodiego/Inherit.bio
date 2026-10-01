@@ -343,6 +343,28 @@ The closed standard project census deliberately grows from five to six; native P
 
 The actual upload Client Component imported its receipt reader, which imported server-only application origin generation through the Record Key card module. Pure key/calendar validation now lives in a separate shared module; the server card producer retains its existing API and server-only origin boundary. Every former calendar, key, receipt, shape and origin assertion remains. A new installed-bundler regression follows the actual Client Component graph and refuses any server-only import; it separately proves the server producer remains forbidden in a browser bundle. No client origin configuration, authority, keys or environment access is introduced.
 
+**30 September 2026 (UTC): prevent accessibility scheduling from regressing.** The mandatory hosted inventory now discovers the actual six native assignments and refuses missing/duplicated cases, split serial project/file groups, missing/duplicated or subdivided accessibility sweeps, fewer than three sweep jobs, or more than two complete sweeps in one job. The same sweep-placement guard runs after strict exact-source final coverage. New positive and adversarial scheduling tests cover the real regression where all original checks still run once but their six long measurements land on one job. Every existing browser assertion, limit, case and strict coverage check is retained. No raw browser configuration or private diagnostic is added to artifacts.
+
+## Complete accessibility sweeps in independent native file groups · 1 October 2026
+
+The six long accessibility sweeps shared one file, so native whole-file sharding
+put all six on the same job. They now live in semantic standalone specs. Every
+original test title, test body, assertion, timeout and route/theme/viewport loop
+is preserved byte for byte; helper bodies retain their exact original tokens.
+The original fixed skip-link account and its setup remain in `a11y.spec.ts`.
+Each complete G1.13b measurement initializes its own confirmed UUID account and
+actual chosen-report upload before its full sweep. A regression refuses shared
+account or authentication-closure state between measurement fixtures.
+
+The original CI coverage guard, single worker, serial file groups, full suite,
+transport preflight, zero retries and same-attempt receipts are unchanged.
+Actual native full plus six discovery calls preserve all 565 semantic cases and
+all unmoved case IDs, cover 94 ordinary files exactly once, and place the long
+sweeps across five jobs: authenticated pages on 1, target size on 2, text
+alternatives on 3, reflow and signed-in public pages on 4, keyboard traversal on
+5. Only the six declared file moves change native case IDs. This is discovery
+proof; full hosted execution and a measured timing gain remain pending.
+
 ## Browser setup timing input survives native cleanup · 30 September 2026
 
 The first hosted run executed all 565 cases successfully across six fresh jobs
@@ -1178,6 +1200,49 @@ only when the named migration really drops the bucket. The new pgTAP file
 check was planted and failed; the details are in
 `docs/register-divergence-proposals.md` section 8. No existing assertion was
 removed or loosened.
+
+## Brief X1.5: the upload page stores no nonce while it renders · 28 September 2026
+
+**Two pgTAP files move off `issue_own_upload_nonce_v1`, which is dropped.**
+- `own_upload_account_completion.sql` still has 42 assertions.
+  - Its seven issuance assertions become the same checks on the v2 path the
+    route now takes: digest shape, the ten-minute ceiling, an expired token,
+    missing adult details, and the account-revision recheck.
+  - Two new assertions say that nothing is stored before use, and that the
+    completion records its nonce as a completion. They replace "a completion
+    screen cannot issue a deletion nonce" and "a verified service route can
+    issue the initial completion presentation".
+  - The v1 body assertions keep a stored-row fixture, now written directly as
+    the other own-upload tests already do.
+  - The service-role completion, and "the completed account can proceed to
+    its consent decision", now go through v2. The privilege check names the
+    v2 door instead of the dropped one.
+- `own_upload_consent.sql` (30) changes one call. The service-role signing
+  goes through v2 with no stored row. Every other assertion is unchanged.
+
+**New tests.**
+- `supabase/tests/own_upload_nonce_rendered.sql`, 25 assertions:
+  - both issuing doors are gone, and v1 is out of the service role's reach;
+  - the doors are invokers over private definer bodies;
+  - nothing is stored before an operation;
+  - the recorder's bounds hold, and refusals record nothing;
+  - completion and signing through v2 record one spent hash each;
+  - replay fails, including across operations;
+  - an expired spent hash is pruned.
+- `src/lib/uploads/prepare-own-upload.test.ts` (3): preparing the page makes
+  no write and no RPC other than the read-only context lookup, for both
+  token kinds.
+- The two route unit tests now expect the v2 RPCs with the token's expiry.
+- `scripts/route-register-correspondence.test.ts`: `nonceStoredBeforeUse` is
+  empty. The test that relied on finding its one site now proves the scan
+  reads shipped code and that its pattern finds both removed shapes.
+
+**Planted, each seen to fail.**
+- The page render storing its nonce: 2 tests fail.
+- A new GET route that inserts a nonce row: 3 tests fail.
+- In the database, each of these fails the new file: the issuing door
+  surviving, v1 left callable by the service role, a spent hash accepted
+  again, and no expiry bound.
 
 ## Brief X1.5: the account-deletion nonce is rendered, not fetched · 28 September 2026
 

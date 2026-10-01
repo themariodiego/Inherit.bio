@@ -103,3 +103,40 @@ timing-input correction has a real native-cleanup regression; a complete hosted
 rerun on the corrected version remains required for a green release gate and
 measured speed claims. The failure receipt is retained in the integrator review
 directory.
+
+
+### Complete accessibility measurements · 1 October 2026
+
+The six long accessibility measurements use separate semantic specs. Each file
+keeps its complete original route, theme and viewport loops and all assertions
+and limits. `accessibility-sweeps.ts` shares the read-only register/ledger/probe
+helpers; `createAccessibilitySweep` gives each G1.13b file its own UUID account
+and authentication closure, including when files share one serial worker. Its
+original real confirmed-account/upload setup runs once before that complete
+measurement. This repeats setup across four files in exchange for independent
+whole-file execution. The fixed skip-link account and original setup stay with
+that case in `a11y.spec.ts`.
+
+The CI workflow, registry and strict whole-file coverage verifier are unchanged;
+there is no parallel mode or file-group exception. Native discovery on the
+installed Playwright 1.62.1 preserves all 565 original semantic title/project
+cases, all unmoved IDs and all stateful file groups. Six explicit file moves
+change their native IDs. The complete census contains 94 ordinary files and
+partitions 95/99/109/76/95/91 cases, exactly once. The long measurements reach
+five jobs: authenticated pages (1), target size (2), text alternatives (3),
+reflow and public pages with a session (4), keyboard traversal (5). Existing
+worker-fixture groups and native contiguous case-count assignment determine
+placement; filenames describe the measurement rather than a job number.
+
+These are source and discovery receipts. Full hosted execution and timing
+comparison remain required. Individual complete measurement duration and
+repeated setup cost still bound the improvement. Future changes must keep every
+ordinary spec in the default census and every case exactly once; sanitized
+file-group timing receipts show when a different complete group becomes the
+bottleneck.
+
+## Prevent long-check concentration
+
+Six independent accessibility sweeps live in six semantic spec files. Each complete G1.13b measurement owns its own UUID account and setup closure, so sharing a serial worker cannot share its accumulated upload fixture. Their original bodies, assertions and limits are retained.
+
+The mandatory inventory discovers the actual complete suite and all six native partitions before publishing its manifest. It requires exact case equality and whole serial project/file groups, then requires all six complete Chromium accessibility sweeps across at least three jobs with no more than two sweeps per job. The required final aggregate repeats the sweep-placement guard after validating exact-source, same-run, same-attempt execution. Missing, duplicated, subdivided or concentrated sweeps fail the check even if ordinary coverage would still be complete. Scheduling changes must preserve this guard and be measured with actual full-suite timing receipts.

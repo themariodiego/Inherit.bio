@@ -26,7 +26,8 @@ describe("fresh native embryo partitions", () => {
     const run = readFileSync("scripts/run-e2e.ts", "utf8");
     expect(run.indexOf("browserReportCases(assignedDiscovery, shard, false)")).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
     const inventory = readFileSync("scripts/ci-browser-shards.run.mts", "utf8");
-    expect(inventory).toContain("browserReportCases(discoverBrowserCases(index), index, false)");
+    expect(inventory).toContain("const native = discoverBrowserCases(index)");
+    expect(inventory).toContain("browserReportCases(native, index, false)");
     expect(inventory.indexOf("discoverBrowserCases(index)")).toBeLessThan(inventory.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
   });
 });
