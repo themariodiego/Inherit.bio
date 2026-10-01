@@ -147,8 +147,8 @@ select is((select body#>>'{source,fileId}' from export_capture),(select file::te
  'capture derives the unchanged detached canonical source');
 select is((select (body#>>'{source,variantCount}')::integer from export_capture),2,'capture declares every canonical variant');
 select is((select (body#>>'{membership,qualityReports}')::integer from export_capture),1,'capture declares its complete QC membership');
-select is((select count(*) from public.purge_target_stores),155::bigint,'no new store or purge omission accompanies the source reader');
-\ir fixtures/purge_store_census_155.inc
+select is((select count(*) from public.purge_target_stores),158::bigint,'no new store or purge omission accompanies the source reader');
+\ir fixtures/purge_store_census_158.inc
 create temporary table read_before as select
  (select count(*) from public.generated_exports) exports,(select count(*) from private.export_archive_jobs) jobs,
  (select count(*) from private.export_archive_nonce_uses) nonces,(select count(*) from private.export_archive_downloads) downloads,

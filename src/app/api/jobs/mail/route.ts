@@ -39,6 +39,9 @@ const accountDeletionCancelledPayload = z
   })
   .strict();
 
+const accountDeletionAffectedPayload = z.object({ noticeEndsAt: z.iso.datetime({ offset: true }) }).strict();
+const accountDeletionAffectedCancelledPayload = z.object({ cancelledAt: z.iso.datetime({ offset: true }) }).strict();
+
 const adultSubjectInvitationPayload = z
   .object({
     // The optional note the inviter wrote (brief §5 §5.2); plain words only.
@@ -141,6 +144,12 @@ function parseMail(
   if (templateId === "future-person-owner-notice") {
     z.object({}).strict().parse(payload);
     return { id: templateId, payload: { objectionUrl: fragmentUrl(deliveryToken) } };
+  }
+  if (templateId === "account-deletion-affected") {
+    return { id: templateId, payload: accountDeletionAffectedPayload.parse(payload) };
+  }
+  if (templateId === "account-deletion-affected-cancelled") {
+    return { id: templateId, payload: accountDeletionAffectedCancelledPayload.parse(payload) };
   }
   if(templateId==="future-person-release") {
     z.object({}).strict().parse(payload);

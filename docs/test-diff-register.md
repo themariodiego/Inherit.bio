@@ -1,5 +1,138 @@
 # Test diff register
 
+## 2026-10-01 — Preserve the complete account and Future integration inventory
+
+The ordinary merge of frozen Future `2280e7f4` and account `2d0be122`
+retains every original assertion and migration body. The literal purge census
+is the independently reviewed 155 pairs plus the three actual account235
+stores: claimed ingest receipts, claimed job receipts and account cohort work.
+The complete member plan has 228 tables, preserving protected review packages,
+withheld file internals, genuine claimant audit scope and binding exclusions.
+The four existing complete-count assertions now require exactly 158; their
+three literal-set consumers use a new full 158-pair fixture. The original
+155-pair fixture remains unchanged. Native email discovery requires all 18
+exports in 16 files, 37 conditional fixtures and 74 body/subject observations,
+including both affected-account notices and the Future owner notice.
+
+Two account-only metadata fixtures predate current source contracts. The R2
+custody fixture now supplies the same explicit versioned QC receipt as the
+current split producer, refuses missing and invented receipts, captures genuine
+ordinal receipts before publication, requires exact saved QC equality and
+requires consumed ordinals to be gone. Both finalized documentary sessions now
+carry distinct independently wrapped 72-byte keys, with an additional exact
+shape assertion. Every original publication, source, part, review, scan and
+role assertion remains; the independent reviewer is still account C. These
+synthetic SQL transitions prove no scientific measurement or provider deletion.
+
+New route tests execute the composed retention path: profile/document key
+shredding precedes account preparation; an exact empty embryo inventory precedes
+Storage, database, Auth and finalization. Missing/refused embryo inventories
+and refused Storage removal preserve the claim and block later deletion. All
+existing failures, operation limits, native cases and acceptance rows remain.
+Full chronological SQL and hosted execution remain required. The245 shared
+provenance-receipt disposal gap is not filled by this integration; G5.6 stays
+open and no graph/provider completion is claimed.
+
+## 2026-10-01 — Refuse the unproved Path B graph before an account deletion can start
+
+The refreshed account chronology has152 actual registered stores. The new
+held-original and private report-binding stores have no complete account-owned,
+subject-bound and recipient disposal/ACK executor. Additive030 therefore keeps
+that graph closed before the v2 nonce recorder, hold, retention phase or notice.
+It validates the actual fresh session first and takes the same profile lock
+used by real draft/account-binding/upload issuers. The v1 request and existing
+due/finalization graph guard receive the same narrow preflight; every other
+predecessor body byte, public/private ABI, owner, configuration and ACL is pinned
+and preserved. Terminal/history rows are included; ending a normalized file or
+report is never substituted for physical original disposal acknowledgement.
+No unknown FK allowlist, source owner, provider state or deadline is widened.
+
+A new rollback-only suite uses real draft/signature, invited account binding,
+held issuance/finalization, current permission and normalization/queued-report
+producers. It checks the uploader and bound person separately at the genuine
+stages and compares every registered store plus Auth and Storage byte for byte
+around each actual service request refusal. It requires zero nonce record,
+no account hold and no changed notice/phase/source/report row. An unrelated
+ordinary account still creates its original exact seven-day phase. Foreign
+Auth and direct helper calls remain refused. These are synthetic SQL protocol
+fixtures; their Storage byte metadata is not a provider disposal proof.
+
+The exact held lifecycle census gains only the actual030 helper when installed,
+with a separate full-body/API-denial assertion; the157 earlier held assertions
+remain. No other source assertion, timeout, skip, acceptance value or152-store
+baseline is removed. Focused source checks are distinct from pending root-owned
+fresh-database/full/browser verification. Full Path B erasure remains unfinished.
+
+## 2026-10-01 — Apply the shared held-mail prerequisite without importing Future additions
+
+The refreshed account branch takes the exact unpublished025 shared bridge and
+its closed source inventory. It does not install022/023 or their unrelated
+Future tables. Its actual chronology uses only the guarded233 canonical mail
+and activation bodies. The147 original held assertions remain; nine exact
+issued-notice refusal/rollback assertions and one precise body/role/census proof
+from the reviewed bridge extend them to157. The33 original purpose assertions
+remain alongside two exact held target/action proofs (35 total). The native
+page and handlers retain every registered purpose. Database execution is still
+pending; neither this source step nor the additive request refusal proves
+complete Path B account disposal.
+
+## 2026-10-01 — Preserve both account and held-upload contracts at the exact main merge
+
+The account/cohort deletion branch is ordinarily merged with main
+`1c63e91620548629e7f7300079a3f04fade0135d`. The combined suites retain every
+existing account affected-notice, holder-mail, retention, rendering and Path B
+assertion. The native observer keeps all previous status/body/identity checks
+and main's additional genuine bodyless 204/205 proofs. The purpose page keeps
+claimant, embryo, invitation and co-parent loaders alongside the two distinct
+Path B loaders; no purpose falls through to another screen.
+
+The two actual new held-upload/report-binding stores extend the account's
+150-entry export inventory to 152. Protected fields from both plans remain
+withheld. This updates the matching embedded plan and exact database census;
+it does not claim either deferred report/source class is exportable. The actual
+combined email inventory is 17 named exports in 15 files with 36 variants,
+therefore its two strict capture receipts contain exactly 72 observations.
+These counts are derived from the preserved renderer variants, not lowered
+baselines. Both branches' dated decision and test notes are retained.
+
+This merge alone does not prove Path B account erasure. The existing closed
+whole-graph refusal remains: normalized descriptor/report cancellation is not
+physical upload-working disposal acknowledgement. The shared held-mail and
+activation arms still require their strict dispatcher bridge before the
+combined chronology is qualified. Focused local checks are separate from the
+pending complete database, browser and hosted verification; acceptance remains
+unchanged.
+
+## 2026-09-30 — Preserve the immutable-file refusal under the real service role
+
+The complete hosted run found the existing `immutable_file_identity` assertion receiving a protected custody-table permission error. The trigger remains an invoker and raises unchanged identity/role refusals before calling a narrow service-only read-only definer for the unchanged positive claimant transition. No direct custody table access is granted. Fresh pgTAP now checks invoker semantics, current transaction visibility, exact grants and the actual service-role identity refusal; all original positive and negative custody tests and browser assertions remain.
+
+## Account cancellation browser proof requires the registered fresh sign-in · 30 September 2026
+
+The first full hosted account/cohort run reached the real Welcome back page after cancellation because the transaction correctly revokes every pre-cancellation Auth session. The old browser expectation attempted to render the Delete account control without the registered normal reauthorization. The journey now requires the actual native cancellation POST to return 200 with no-store, the exact sign-in handoff back to data settings, the genuine Welcome back screen and an unauthenticated export refusal before signing in through the real password form. It then retains every original Delete account, cancelled request/timestamp, cleared hold and overview assertion. No session, confirmation or successful authority is inserted into a fixture; no application/migration bytes, assertions, time limits, retries or skips are relaxed. This source correction is not a hosted pass receipt.
+
+## Exact cohort invitations and unambiguous cleanup identifiers · 30 September 2026
+
+The supported account graph now admits invitation principal FKs only when their actual target is an exact current cohort or draft owned by the deleting account, matching the worker's existing deletion selector. Any invitation using a selected principal for another target still refuses. A new counterpart-account assertion pins this separate invitation boundary without changing the original missing, stale, ambiguous-contact or outbox rollback assertions. The cleanup executor names all seven selected ID arrays distinctly from table names, so PostgreSQL's implicit embryo/subject row names cannot shadow the intended array. Every existing runtime/cohort/draft/session/job removal, claimed byte-equality, minimal-receipt and missing-receipt refusal assertion remains unchanged. No grant, deadline, supported documentary graph or provider acceptance changes.
+
+## Fresh account rehearsal reaches the exact notice and R2 receipt boundaries · 30 September 2026
+
+Request and cancellation now qualify the current-contact status column so their returned status cannot shadow it. The supported FK census admits an embryo subject only through an exact same-owner live cohort/subject/embryo tuple; a new counterpart-account refusal pins that boundary. Every missing, stale, ambiguous-contact and mandatory-outbox rollback assertion remains unchanged. The account worker proof uses a dedicated completed R2 reserve/ACK publication fixture and the real disposal receipt/evidence verifier; it never deletes Storage rows or changes Storage guards. Six exact landed R2 fragment receipts, crossed planned-object and false tombstone-digest refusals, and zero disposed rows after refusal extend the proof. Every existing cleanup success, claimed byte equality, immutable receipt, expired claim, incomplete disposal and missing provenance assertion remains. Provider identities are synthetic SQL evidence; hosted deletion is not claimed. The retired staging-bucket check now requires zero live function bodies instead of preserving a manifest-builder exception whose literal is gone. No production or browser acceptance is introduced.
+
+## Shared rights sessions use the actual issued candidate expiry · 30 September 2026
+
+The strict Future Person session trigger now reads expiry from the issued token candidate; token hashes have no expiry column. It requires the exact issued purpose, target and revision, the current unended hash, the current matching claimant credential and the original source and 60-minute session bindings. Two added ordinary adult/co-parent identity-update assertions prove that their genuine issued sessions pass this shared trigger. Five added Future release assertions refuse pending, expired, mismatched-revision and revoked hashes and require zero forged rows. The genuine one-time claimant activation remains the positive proof. The existing exact plans increase by one each to 39 and 33; every earlier assertion and refusal remains. This account package retains its committed contact/delivery retention dependency and its exact 15-column claim-intake census.
+
+## Atomic owned-cohort notices and cancellation · 30 September 2026
+
+The supported owned-cohort request now commits every exact current affected-principal notice with its original seven-day account phase or rolls back the nonce, hold and all mail. A saved original recipient/cohort binding blocks legacy unnotified or newly crossed deadline claims. Contacts must be unique, current and authority-matched; stale, absent, ambiguous and failed outbox cases remain strict refusals. Cancellation invalidates every unsent or claimed obsolete affected deletion notice and sends one separate token-free notice per applicable principal, cancels the original unstarted phase without changing its deadline, revokes old sessions and preserves independently revoked/restricted records and consents. Unsupported documentary, draft-only, unfinished-ingest and unresolved-claim graphs remain refused. The old blanket owned-cohort request refusal is replaced with an actual missing-contact rollback refusal; every worker provenance, disposal and missing-receipt assertion remains. No browser or hosted-provider acceptance is claimed.
+
+Two real affected-recipient renderers and fixtures deliberately raise the independent inventory from 14 to 16 exports and 31 to 33 fixtures, with exactly 66 body/subject observations. They accept only one event timestamp and never receive a holder cancellation/export link, contact, identifier or genetic field. New strict mail-route and renderer cases refuse those extra fields and stale submission authority. The holder cancellation prose now states that account deletion did not start, avoiding a claim that separately withdrawn data was never deleted. The rendered-nonce regression adds an exact zero-old-session assertion and represents the later ordinary sign-in with a new synthetic session; every original spent-hash, cross-operation and pruning refusal remains unchanged under that live authority. No existing negative test, cap or timeout is relaxed.
+
+## Owned-cohort deletion worker preserves exact claimed provenance · 30 September 2026
+
+Three narrowly classified private stores increase the exact purge inventory from 147 to 150: two immutable minimum provenance receipts for an already-detached claimed source and one temporary account-deletion cohort work plan. No source, membership, canonical part or claimant genotype is rewritten. New database refusal tests pin receipt mutation, missing or crossed provenance, expired deletion claims and incomplete provider cleanup; bounded runtime tests require exact deletion/claim selection and an empty durable reread before account Storage completion. Existing assertions are retained. Public requests for an owned cohort remain closed pending the registered affected-recipient notice and cancellation envelope; the worker prerequisite does not complete the full account/cohort journey. Documentary bases, unfinished ingest/draft-only graphs and unresolved claims remain refused. No browser or hosted-provider acceptance is claimed.
+
 ## 2026-10-01 — Distinguish the quality table from its enclosing landmark
 
 The full hosted suite on `2280e7f4` refused the populated comparison page at
