@@ -625,8 +625,8 @@ begin
  perform private.assert_future_person_deletion_fk_closure_v1(p_manifest);
  -- An admitted provider operation cannot become absent by deleting its SQL
  -- reservation. Refuse the whole request before promising immediate cleanup.
- if exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50
-  and e.store_name in('public.report_artifacts','public.cloud_model_calls','public.cloud_provider_attempts',
+ if exists(select 1 from public.purge_manifest_entries candidate where candidate.manifest_id=p_manifest and candidate.entry_revision>50
+  and candidate.store_name in('public.report_artifacts','public.cloud_model_calls','public.cloud_provider_attempts',
    'public.cloud_provider_payloads','private.export_archive_attempts','private.export_archive_segments',
    'private.export_archive_downloads','private.export_archive_manifest_pages')) then
   raise exception using errcode='42501',message='claimant deletion unavailable';end if;
@@ -1208,11 +1208,11 @@ begin
     and r.retention_id='future-person.claimed-unbound-24mo')
   or exists(select 1 from public.purge_manifest_entries e where e.manifest_id=p_manifest and e.entry_revision>50 and (
     (r.target_kind='claim' and e.store_name in('public.future_person_claims','public.future_person_claim_sessions','private.future_person_claim_intakes')
-      and r.target_id=(e.row_key->>'id')::uuid)
+      and r.target_id::text=e.row_key->>'id')
     or (r.target_kind='evidence' and e.store_name in('private.claim_documents','public.legal_evidence_documents')
-      and r.target_id=(e.row_key->>'id')::uuid)
-    or (r.target_kind='export' and e.store_name='public.generated_exports' and r.target_id=(e.row_key->>'id')::uuid)
-    or (r.target_kind='upload_session' and e.store_name='public.upload_sessions' and r.target_id=(e.row_key->>'id')::uuid)))
+      and r.target_id::text=e.row_key->>'id')
+    or (r.target_kind='export' and e.store_name='public.generated_exports' and r.target_id::text=e.row_key->>'id')
+    or (r.target_kind='upload_session' and e.store_name='public.upload_sessions' and r.target_id::text=e.row_key->>'id')))
  ) order by r.id;
 end $$;
 revoke all on function private.future_person_deletion_controls_v1(uuid)

@@ -1,5 +1,19 @@
 # Test diff register
 
+## 2026-10-01 — Preserve typed retention targets and the exact provider refusal
+
+The actual claimant deletion rehearsal reached the sealed graph and exposed
+two SQL resolution errors. Retention control selection now compares the real
+UUID target's canonical text with the sealed row key after retaining every
+exact target-kind/store restriction. This avoids casting unrelated numeric
+audit-row keys when the query planner evaluates predicates in another order;
+it does not select any new control or expand custody. The provider-refusal
+query's table alias no longer collides with its declared manifest-entry record.
+The same exact provider-bearing store list still refuses the complete request.
+All prior atomicity, older-executor, current-source, signed-history and sibling
+assertions remain unchanged. These failures are retained and the full positive
+deletion rehearsal follows on the corrected source before any push.
+
 ## 2026-10-01 — Exercise a fresh Card intake and genuine immutable artifact publication
 
 The full fresh rehearsal exposed two invalid fixture transitions. Closing an
