@@ -180,7 +180,7 @@ test("Keyless positive documentary match: native owner notice, authenticated syn
         (select count(*) from private.future_person_custody_slices x where x.subject_id=s.id)
         from public.future_person_claims c join public.embryos e on e.id=c.embryo_id join public.subjects s on s.id=e.subject_id
         where c.id='${claim}'`)).toBe("active/owner_notice/true/0");
-      const observed=watchRequests(fresh);await expectAxeClean(fresh);await assertNoThirdParty(fresh,observed,"assigned native positive notice and real release hold, both themes");
+      const observed=watchRequests(fresh);await expectAxeClean(fresh);await assertNoThirdParty(fresh,observed,"assigned native positive notice and real release hold, both themes","http://localhost:3105");
       await testInfo.attach("keyless-positive-proof",{contentType:"application/json",body:JSON.stringify({
         historicalProducer:historical.evidence,providerEvidence:"authenticated-synthetic-native-delivery-fixture",
         documentaryEvidence:"actual-encrypted-uploads-scan-EOF-client-ACK-render-attestation",

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import assert from "node:assert/strict";
 import { localE2eProject } from "../scripts/local-e2e-project";
+import { LOCAL_BROWSER_ORIGINS } from "../scripts/local-storage-browser-config";
 import { paymentOrigin } from "../scripts/payment-origins";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
@@ -532,8 +533,18 @@ export async function assertNoThirdParty(
   page: Page,
   observed: ObservedRequests,
   label: string,
+  declaredAppOrigin?: string,
 ): Promise<void> {
-  const offenders = [...observed.origins].filter(origin => !ALLOWED_ORIGINS.has(origin));
+  let allowedOrigins = ALLOWED_ORIGINS;
+  if (declaredAppOrigin !== undefined) {
+    // Variant journeys declare their fixed fixture origin. Never derive an
+    // allowlist from the page or observed traffic, or allow every local port.
+    assert(LOCAL_BROWSER_ORIGINS.slice(1).some(origin => origin === declaredAppOrigin),
+      "An exact registered local app origin must be declared");
+    expect(new URL(page.url()).origin, `${label}: page must match its declared app origin`).toBe(declaredAppOrigin);
+    allowedOrigins = new Set([declaredAppOrigin, SUPABASE_URL]);
+  }
+  const offenders = [...observed.origins].filter(origin => !allowedOrigins.has(origin));
   expect(offenders, `${label}: unexpected third-party origins: ${offenders.join(", ")}\nURLs: `
     + observed.urls.filter(url => offenders.some(origin => url.startsWith(origin))).slice(0, 10).join("\n"))
     .toHaveLength(0);
