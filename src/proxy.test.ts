@@ -307,3 +307,60 @@ describe("the public Future Person claim (rights.future-person-claim)", () => {
     }
   });
 });
+
+describe("legal-evidence review-download response privacy", () => {
+  const download = "/api/legal-evidence/12345678-1234-4234-8234-000000000003/review-download";
+  const strict = (response: Response) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name)).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
+    }
+  };
+
+  it.each([download, "/api/legal-evidence/not-a-canonical-id/review-download"])(
+    "keeps all strict headers before the handler's signed-in or signed-out response: %s", async path => {
+      const signedIn = await visit(path);
+      expect(signedIn.status).toBe(200); strict(signedIn);
+      expect(signedIn.headers.get("x-middleware-next")).toBe("1");
+      mocks.user = null;
+      const signedOut = await visit(path);
+      expect(signedOut.status).toBe(200); strict(signedOut);
+      expect(signedOut.headers.get("x-middleware-next")).toBe("1");
+    },
+  );
+
+  it("keeps all strict headers when the proxy itself refuses for account deletion", async () => {
+    mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+    const response = await visit(download);
+    expect(response.status).toBe(423);
+    expect(await response.json()).toEqual({ error: "account_deletion_notice_period" }); strict(response);
+  });
+
+  it("keeps all strict headers on declared and connection location refusals", async () => {
+    mocks.profile = { deletion_requested_at: null, jurisdiction_code: "IR" };
+    const declared = await visit(download);
+    expect(declared.status).toBe(451);
+    expect(await declared.json()).toEqual({ error: "not_available_in_jurisdiction" }); strict(declared);
+    mocks.sessionReads = 0;
+    const located = await proxy(new NextRequest(`https://inherit.bio${download}`, {
+      headers: { "x-vercel-ip-country": "IR" },
+    }));
+    expect(located.status).toBe(451);
+    expect(await located.json()).toEqual({ error: "not_available_in_location" }); strict(located);
+    expect(mocks.sessionReads).toBe(0);
+  });
+
+  it.each([
+    "/api/legal-evidence-extra/12345678-1234-4234-8234-000000000003/review-download",
+    "/api/legal-evidence/12345678-1234-4234-8234-000000000003/download",
+    `${download}-extra`,
+    `${download}/chunks/0`,
+    "/api/legal-evidence//review-download",
+    "/api/legal-evidence/parent/child/review-download",
+  ])("preserves the complete original sensitive policy outside the exact route shape: %s", async path => {
+    const response = await visit(path);
+    expect(response.status).toBe(200);
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name)).toBe(value);
+    }
+  });
+});

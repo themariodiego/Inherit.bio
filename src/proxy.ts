@@ -28,10 +28,13 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
     response.headers.set(name, value);
   }
   // The proxy's response headers also reach route-handler responses. Review
-  // IDs and documentary decisions require the stricter policy on both the
-  // HTML page and its API, including refusals produced by the proxy itself.
+  // IDs, documentary decisions and document download sessions require the
+  // stricter policy, including refusals produced by the proxy itself. Next's
+  // response sender retains an already-present proxy header, so the download
+  // handler's no-referrer policy must also be set here.
   if (path?.startsWith("/reviews/future-person/claims/") ||
-      path?.startsWith("/api/reviews/future-person/claims/")) {
+      path?.startsWith("/api/reviews/future-person/claims/") ||
+      (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path))) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
   return response;

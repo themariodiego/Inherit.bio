@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-02 — Preserve no-referrer through the document download proxy
+
+Exact hosted run 37014502527 at c6b680b3 failed browser group 5 only at the first held document GET's strict no-referrer assertion (journey line 165): the opaque 404/not_found and private/no-store checks passed, but the actual response carried same-origin. The other 104 browser cases passed; the original job log is retained. The download handler already sets no-referrer, but Next 16.3.3 retains the proxy's already-present single-value response header. There are no next.config header rules; the proxy's strict review-path exception omitted the separate legal-evidence download endpoint.
+
+Add only the exact /api/legal-evidence/[single segment]/review-download route shape to that proxy exception, including malformed document IDs which the unchanged handler refuses. Ten appended cases require the complete strict header set before signed-in and signed-out handler responses and on deletion, declared-location and connection-location refusals; malformed or neighboring path shapes retain the original sensitive policy. Preserve every original proxy and browser assertion, all route authority and document-read behavior, and the existing cache/framing headers. No SQL, migration, workflow, timeout, retry, skip, acceptance or production change; full combined qualification remains required.
+
 ## 2026-10-02 — Dispose temporary archive cancellation links after every RPC
 
 Exact hosted run37014502527 on c6b680b3 again passed9,407 tests and timed out only the unchanged complete prepared-source archive case at its original5-second limit. Preserve the raw failed job log. The earlier successful cleanup-reason cache did not resolve this timeout. Focused native Linux profiling of that exact source took2,932ms, with2,145ms sampled in Node22's weak dependent-signal cleanup scan and215ms in its surrounding finalization registry. This is observed local mechanism evidence; it does not claim a measured hosted profile.
