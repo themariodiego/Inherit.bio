@@ -1,8 +1,10 @@
 # Consumed readable graph and saved Path B archive source
 
 This is an isolated NEXT-RELEASE source checkpoint after frozen037/038 and the
-consumed runtime32. It has focused protocol/ZIP unit proof, not database, full
-compiler, browser, provider, production or acceptance qualification. The default
+consumed runtime32. Corrected source afae4c9a has full nonincremental type, ten
+local gates,95 focused unit assertions and an actual111-assertion owned rollback
+rehearsal. That rehearsal appended64 pending guarded migrations; it is not a
+fresh database suite, browser, provider, production or acceptance qualification. The default
 archive provider remains absent; POST refuses before create/begin/bytes and the
 settings preparation control remains disabled. No public gate, READY or delivery
 transition is added. G5.6/G8.5 remain incomplete.
@@ -73,8 +75,8 @@ draft/principal/signature/artifact/contact rows enter the internal capture hash,
 so same-count metadata drift refuses the old request. No binding, signing session
 or grant is invented, and the complete saved report's original purpose/source/
 mitigation/insurance/current authority still runs. The original failure and
-rollback-restoration receipt are retained; this source successor needs its own
-actual replay before database qualification.
+rollback-restoration receipt are retained. The later corrected source's actual
+focused replay is recorded below; full fresh database qualification remains pending.
 
 The second actual append passed46 assertions, then exposed another real consumer
 schema gap. The final report producer stores reports, prsCount and prsCoverage,
@@ -84,7 +86,7 @@ unknown/partial fields refuse. The prs.json member preserves every actually save
 coverage/count and states coverage-only-no-personal-score-published. It never
 presents metadata as a personal score or recovers/recomputes discarded stage data.
 The publication producer and all current grant/source/capture/EOF checks remain
-unchanged. The failed append is retained; this new source still needs actual replay.
+unchanged. The failed append is retained alongside the later focused replay below.
 
 The internal immutable saved-result receipt binds binding revision, file/subject,
 purpose and completion clock; original normalized raw/decoded hashes, source/
@@ -131,9 +133,33 @@ queued report, refusal and committed-source assertions through genuine completed
 publication, then opens a real consumed account request as service_role/JWT. It
 checks nonempty pair/saved result/complete catalogue/PRS/source, exact DTO/ACL,
 original exclusion, current grant/catalogue/pair/logout refusals and unchanged
-job/attempt bytes. It is UNRUN. The exact29-mode fixture and held-function census
+job/attempt bytes. The final authority-order successor passed111 actual rollback
+assertions, as qualified below. The exact29-mode fixture and held-function census
 pin the specific new graph/result/excluded paths and exact successor fingerprints;
 no unknown function/class exception or original assertion removal is allowed.
+
+Exact source afae4c9a8d99fef5fa38fe59865365d0b718729e passes Next typegen,
+full nonincremental type,95 focused assertions across four files and scoped lint.
+All ten local gates pass; names used the approved41-byte local placeholder, not
+the private CI denylist. Root's actual64-pending append passed111/111 TAP assertions,
+including genuine revocation producer deletion, exact42501 authority refusal,
+current-grant/missing-result0A000 refusal and real owner-only consent successor CAS.
+The original39 fixture assertions remain byte-identical, with three strict additions.
+Only the new saved-result snapshot body and its exact post-body fingerprint changed;
+all218 other migrations and every original browser assertion/limit/retry remain.
+
+The earlier failures remain preserved: missing ordinary Path B binding at43,
+actual publication shape at46, collation precedence at46, incomplete revocation
+setup at69, then authorization ordering and immutable-artifact setup. Rollback
+alone did not restore sequence values. Root proved/restored precisely two owned
+fixture sequences; the entire original schema/data/ledger dump then matched the
+before SHA652f6ba27ac4cbbd0dbc9a3b4ebf985c8f031d0ba7d37231b673f09bcb481e07.
+The focused diagnostic query SHA isfa9d2e93a1163af6b8b9b4d687b8f0b4b4f60d6af3c0656b0486767192104c91,
+log SHAecea72ad6d8bef7297010daa7f3ed969734a0f72f9cf09ad4f860e17d5b88ea5.
+Receipts are retained in integration-evidence/20261001/account-export-039 and
+account-export-039-actual-refusal-order-corrected-append. This does not establish
+full chronological fresh qualification, actual SDK/browser/runtime/provider or
+complete archive delivery. No public gate, READY or acceptance row changes.
 
 Nonempty appeal/correction statements remain refused because no original
 purpose-bound plaintext writer/decryptor is proved. Nonempty ancestry_regions and
@@ -141,7 +167,7 @@ portrait_results remain refused because a persisted original-result producer is
 unproved. Existing current cohort science and foreign grant/source/partition paths
 also remain refused, as described above. This checkpoint does not claim all13
 original nonempty class gaps, all permitted account graphs, whole native POST/
-status/open-ready delivery or G5.6/G8.5 complete. Full chronological SQL, complete
-units/type/gates and native positive/refusal execution remain to qualify. The
+status/open-ready delivery or G5.6/G8.5 complete. Full fresh chronological SQL,
+complete unit suites and native positive/refusal execution remain to qualify. The
 R2 versus Supabase archive delivery choice remains an unanswered owner decision;
 no provider is implemented or called here.
