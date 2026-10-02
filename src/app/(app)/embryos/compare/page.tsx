@@ -100,6 +100,8 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
       ? admin
           .from("embryo_scores")
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
+          // Private carrier observations have a saved publication hold.
+          .is("computation_receipt", null)
           .in("embryo_id", embryoIds)
           .in("condition_id", [...registered])
       : { data: [] as never[], error: null },

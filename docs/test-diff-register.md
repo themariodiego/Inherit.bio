@@ -8379,3 +8379,25 @@ check adds no fixture grant, user data or migration ledger entry. The release
 also requires the full pending-source append rehearsal and catalog comparison
 with a fresh installation. This correction promotes no acceptance row and
 changes no browser expectation, retry or deadline.
+
+
+## Observed embryo carrier operation · 2 October 2026
+
+The frozen private carrier core’s original 65 assertions remain unchanged.
+Two schema names are exported for exact worker decoding; no scientific rule,
+expected clinical output, QC floor, timeout or original fixture is relaxed.
+The child operation adds actual-parser worker refusals for every authorization
+checkpoint, substituted source/capture/job/attempt, expired claim, late aborted
+response, and original per-ordinal 0/2 observations. A generated policy/source
+pin holds the canonical QC constants and the literal generic claim body; the
+only successor change excludes the dedicated score_embryo queue.
+
+The new rollback SQL suite includes the original mixed-QC split/publication
+fixture without edits. Its synthetic reference goes through the existing
+import/review doors, and its registry function is replaced only inside rollback.
+No synthetic reviewer, registry row, source or dose grants clinical activation
+or acceptance credit. Real service claim/save operations must prove the
+complete capture independently, reject a planted wrong dose/partial save,
+preserve truthful private covered observations with a separate disclosure hold,
+and refuse edits or old-token reads. SQL execution remains pending at this
+source checkpoint. G4.2/G4.5 and all unproved route/state pairs remain NO.

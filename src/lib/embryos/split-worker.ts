@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { createAdminClient } from "../supabase/admin";
+import { enqueueCurrentEmbryoCarrier } from "./carrier-enqueue";
 import { embryoR2WriteTargetSchema, type EmbryoFragmentRpc, type EmbryoR2WriteTarget,
   type EmbryoStoredFragment } from "./fragment-storage";
 import { EmbryoTransportError } from "./ingest-lines";
@@ -311,6 +312,7 @@ export async function runNextEmbryoSplit(options: {
     if (renewal) await renewal;
     const published = publishedSchema.parse(stopIfFailed(await call("publish_embryo_split_v1", args)));
     if (published.published !== passed || published.qcFailed !== failed) fail("integrity_mismatch");
+    await enqueueCurrentEmbryoCarrier(claim.cohortId, signal);
     return { status: "published", jobId: claim.jobId, passed, failed };
   } catch (error) {
     if (error instanceof Stop) return error.result;

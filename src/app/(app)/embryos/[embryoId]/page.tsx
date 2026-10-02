@@ -79,6 +79,8 @@ async function loadDetail(input: {
       ? admin
           .from("embryo_scores")
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
+          // Private carrier observations have a saved publication hold.
+          .is("computation_receipt", null)
           .eq("embryo_id", input.embryo.id)
           .in("condition_id", [...registered])
       : { data: [] as never[], error: null },

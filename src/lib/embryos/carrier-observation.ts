@@ -14,7 +14,7 @@ import type { CarrierFinding } from "./policy";
  * publication door is admitted by this module. The committed empty registry
  * refuses before even inspecting source, reference or genomic inputs.
  */
-const sourceSchema = z.object({
+export const embryoCarrierSourceSchema = z.object({
   cohort_id: z.uuid(), embryo_id: z.uuid(), subject_id: z.uuid(), file_id: z.uuid(),
   canonical_build: z.literal("GRCh38"),
   source_sha256: z.string().regex(/^[0-9a-f]{64}$/),
@@ -24,7 +24,7 @@ const sourceSchema = z.object({
   normalization_source_revision: z.number().int().positive().safe(),
   call_immutability_proof: z.literal("exact-staged-calls-v1"),
 }).strict();
-export type EmbryoCarrierSource = z.infer<typeof sourceSchema>;
+export type EmbryoCarrierSource = z.infer<typeof embryoCarrierSourceSchema>;
 
 const callSchema = z.object({
   fileId: z.uuid(), chrom: z.number().int().min(1).max(22),
@@ -108,7 +108,7 @@ export function observeEmbryoCarrierAllele(input: EmbryoCarrierObservationInput,
     || (alleleShape(assertion.ref, assertion.alt) === "snv" && spellings.length !== 1)) {
     return { ok: false, reason: "invalid_reference" };
   }
-  const source = sourceSchema.safeParse(input.source);
+  const source = embryoCarrierSourceSchema.safeParse(input.source);
   if (!source.success || source.data.normalization_source_revision !== source.data.upload_revision) {
     return { ok: false, reason: "invalid_source" };
   }
