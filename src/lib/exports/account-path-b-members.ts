@@ -25,13 +25,14 @@ export const accountPathBResultSchema=z.object({bindingRevision:revision,fileId:
  source:z.object({sourceRevision:revision,rawSha256:hash,decodedSha256:hash,normalizedAt:date,
   normalizationRevision:revision,sourcePublicationRevision:revision,variantCount:count,build:z.enum(["GRCh37","GRCh38"]),
   computationRevision:z.string().regex(/^path-b-reports-v1:[a-f0-9]{64}$/u),catalogSha256:hash}).strict(),
- reports:z.array(report).max(1000),prs:z.array(z.object({pgs_id:z.string().min(1).max(500),raw_score:z.number(),
-  coverage:z.number().min(0).max(1),matched:count.max(9999999)}).strict()).max(1000)}).strict()
+ reports:z.array(report).max(1000),prsCount:count.max(100),prsCoverage:z.array(z.object({pgs_id:z.string().min(1).max(500),
+  coverage:z.number().min(0).max(1),matched:count.max(9999999)}).strict()).max(100)}).strict()
  .refine(r=>r.source.sourceRevision===r.source.normalizationRevision
   &&r.source.computationRevision===`path-b-reports-v1:${r.source.catalogSha256}`
-  &&new Set(r.reports.map(p=>p.slug)).size===r.reports.length&&new Set(r.prs.map(p=>p.pgs_id)).size===r.prs.length
+  &&new Set(r.reports.map(p=>p.slug)).size===r.reports.length&&new Set(r.prsCoverage.map(p=>p.pgs_id)).size===r.prsCoverage.length
+  &&r.prsCount===r.prsCoverage.length
   &&r.reports.every(p=>p.catalogSnapshot.template.layer===(r.purpose==="reports.monogenic"?"variant_call":"estimate"))
-  &&(r.purpose!=="reports.monogenic"||r.prs.length===0));
+  &&(r.purpose!=="reports.monogenic"||r.prsCount===0));
 const record=z.object({id:uuid,subjectId:uuid,rowText:z.string().max(4000000)}).strict();
 const snapshot=z.object({subjectId:uuid,records:z.array(record),rows:count,sha256:hash,excludedHeldUploads:count}).strict();
 const envelope=z.object({version:z.literal("account-path-b-results-v1"),authorityReceipt:hash,snapshot}).strict();
@@ -46,7 +47,8 @@ export type AccountPathBSource=z.infer<typeof accountPathBSourceSchema>;
 
 /** Actual immutable saved outputs only, through the consumed writing attempt.
  * No display filter, recomputation, raw-source descriptor or caller grant exists.
- * Every original result/catalog/PRS and exact current provenance is retained;
+ * Every original result/catalog/published PGS coverage and exact current provenance is retained;
+ * the producer never publishes personal scores, calibrated risks or percentiles.
  * all records, hashes and authority are rechecked before every member read. */
 export async function prepareAccountPathBMembers(options:{context:z.infer<typeof accountArchiveContextSchema>;
  reference:{exportId:string;attemptId:string;authorityReceipt:string};rpc:AccountPathBRpc;signal:AbortSignal;
@@ -89,7 +91,8 @@ export async function prepareAccountPathBMembers(options:{context:z.infer<typeof
    chunks:async function*(signal){await check(signal);yield encoder.encode('{"schemaVersion":"subject-partitioned-archive-v1","projection":"saved-path-b-results-v1","rows":[');
     let n=0;for(const item of source.records){const row=accountPathBResultSchema.parse(JSON.parse(item.rowText));
      const value={fileId:row.fileId,subjectId:row.subjectId,purpose:row.purpose,completedAt:row.completedAt,
-      bindingRevision:row.bindingRevision,source:row.source,[kind]:row[kind]};
+      bindingRevision:row.bindingRevision,source:row.source,...(kind==="reports"?{reports:row.reports}:
+       {prsCount:row.prsCount,prsCoverage:row.prsCoverage,disposition:"coverage-only-no-personal-score-published"})};
      const bytes=encoder.encode((n++?",":"")+JSON.stringify(value));for(let at=0;at<bytes.byteLength;at+=1048576)yield bytes.subarray(at,at+1048576);
     }if(n!==source.rows)throw unavailable();await check(signal);yield encoder.encode("]}\n");}});
   const reports=source.records.reduce((n,r)=>n+accountPathBResultSchema.parse(JSON.parse(r.rowText)).reports.length,0);

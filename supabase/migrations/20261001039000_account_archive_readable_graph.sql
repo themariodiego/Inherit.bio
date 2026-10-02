@@ -211,9 +211,25 @@ begin
   if a is distinct from b.authority or a->>'direction'<>'self'
    or a->>'recipientAccountId' is distinct from p_origin->>'accountId'
    or(a->>'authorityExpiresAt')::timestamptz<=clock_timestamp()
-   or jsonb_typeof(b.result) is distinct from 'object' or b.result-array['reports','prs']<>'{}'
-   or not(b.result ?& array['reports','prs']) or jsonb_typeof(b.result->'reports') is distinct from 'array'
-   or jsonb_typeof(b.result->'prs') is distinct from 'array' then
+   or jsonb_typeof(b.result) is distinct from 'object' or b.result-array['reports','prsCount','prsCoverage']<>'{}'
+   or not(b.result ?& array['reports','prsCount','prsCoverage']) or jsonb_typeof(b.result->'reports') is distinct from 'array'
+   or jsonb_typeof(b.result->'prsCoverage') is distinct from 'array'
+   or jsonb_typeof(b.result->'prsCount') is distinct from 'number'
+   or b.result->>'prsCount'!~'^(0|[1-9][0-9]{0,2})$' then
+   raise exception using errcode='42501',message='not_found';end if;
+  -- The actual publication contract retains coverage only. Never reconstruct
+  -- raw scores, calibrated risk or percentiles from the discarded stage.
+  if (b.result->>'prsCount')::integer is distinct from jsonb_array_length(b.result->'prsCoverage')
+   or (b.result->>'prsCount')::integer>100 or(b.purpose='reports.monogenic' and(b.result->>'prsCount')::integer<>0)
+   or exists(select 1 from jsonb_array_elements(b.result->'prsCoverage')q
+    where jsonb_typeof(q) is distinct from 'object' or not(q ?& array['pgs_id','coverage','matched'])
+     or q-array['pgs_id','coverage','matched']<>'{}' or jsonb_typeof(q->'pgs_id') is distinct from 'string'
+     or length(q->>'pgs_id') not between 1 and 500 or jsonb_typeof(q->'coverage') is distinct from 'number'
+     or jsonb_typeof(q->'matched') is distinct from 'number' or q->>'matched'!~'^(0|[1-9][0-9]{0,6})$') then
+   raise exception using errcode='42501',message='not_found';end if;
+  if exists(select 1 from jsonb_array_elements(b.result->'prsCoverage')q where(q->>'coverage')::numeric not between 0 and 1)
+   or(select count(distinct q->>'pgs_id') from jsonb_array_elements(b.result->'prsCoverage')q)
+    <>jsonb_array_length(b.result->'prsCoverage') then
    raise exception using errcode='42501',message='not_found';end if;
   select * into f from public.genome_files where id=b.file_id and subject_id=s.id for share nowait;
   if f.id is null or not private.export_account_path_b_file_v1(f.id) then raise exception using errcode='42501',message='not_found';end if;
@@ -225,7 +241,7 @@ begin
     'normalizedAt',f.normalization_completed_at,'normalizationRevision',f.normalization_source_revision,
     'sourcePublicationRevision',f.source_publication_revision,'variantCount',f.variant_count,'build',f.build,
     'computationRevision',b.computation_revision,'catalogSha256',a->'catalogSha256'),
-   'reports',b.result->'reports','prs',b.result->'prs');
+   'reports',b.result->'reports','prsCount',b.result->'prsCount','prsCoverage',b.result->'prsCoverage');
   row_text:=row_value::text;total:=total+1;
   hash:=extensions.digest(hash||convert_to(b.id::text||':'||s.id::text||':'||row_text||E'\n','UTF8'),'sha256');
   records:=records||jsonb_build_array(jsonb_build_object('id',b.id,'subjectId',s.id,'rowText',row_text));
@@ -1250,7 +1266,7 @@ $create$;
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proargnames=array['p_origin','p_subject']::text[] and p.proconfig=array['search_path=""','lock_timeout=250ms','extra_float_digits=3']::text[]
-  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='8dfa29e564fc1645eb6891330b1e7566')
+  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='1d00a5aaaeb38f2fc5b66eb75b009791')
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'private.export_account_path_b_snapshot_v1(jsonb,uuid)','execute') is distinct from (role_name='service_role' and false))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a

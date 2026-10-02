@@ -50,7 +50,7 @@ current catalogue authority. Every own-recipient binding is inspected; queued,
 partial, failed, stale, revoked, missing or unmatched source/results refuse the
 whole operation. The display reader's skipped/refused rows and fixture filters
 are not reused. All completed saved reports, their original catalogue snapshots,
-outcomes/conflicts and actual PRS values are retained without recomputation.
+outcomes/conflicts and actual published PGS coverage/count are retained without recomputation.
 Current scientific correction notices accompany readable report text.
 
 The raw RLS helper `is_path_b_file_v1` intentionally requires
@@ -76,10 +76,20 @@ mitigation/insurance/current authority still runs. The original failure and
 rollback-restoration receipt are retained; this source successor needs its own
 actual replay before database qualification.
 
+The second actual append passed46 assertions, then exposed another real consumer
+schema gap. The final report producer stores reports, prsCount and prsCoverage,
+explicitly discarding raw_score. This successor requires that exact closed shape,
+full bounded unique coverage and count equality; private score/risk/percentile or
+unknown/partial fields refuse. The prs.json member preserves every actually saved
+coverage/count and states coverage-only-no-personal-score-published. It never
+presents metadata as a personal score or recovers/recomputes discarded stage data.
+The publication producer and all current grant/source/capture/EOF checks remain
+unchanged. The failed append is retained; this new source still needs actual replay.
+
 The internal immutable saved-result receipt binds binding revision, file/subject,
 purpose and completion clock; original normalized raw/decoded hashes, source/
 normalization/publication/computation revisions, variant count/build and catalogue
-hash; full reports and PRS. Grant/session/uploader/provider location/contact/key
+hash; full reports and published PGS coverage/count. Grant/session/uploader/provider location/contact/key
 and transport binding ID stay internal. Each result's full raw projected text and
 recipient partition participate in independent count/content hash receipts.
 JSON and readable text factories are rechecked at open/EOF; the whole plan again

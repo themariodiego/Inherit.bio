@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-02 — Export exact published Path B coverage without inventing personal scores
+
+The actual second039 append passed46 assertions, including the genuine binding
+proof, then refused the completed result schema. The original publication producer
+stores exactly reports, prsCount and prsCoverage; it deliberately removes raw_score
+before storage. The earlier mocked039 fixture incorrectly represented its stage
+payload as a final recoverable score. The successor consumes only that genuine
+published DTO: full reports/catalogue/outcomes plus bounded count and complete
+unique PGS coverage metadata. Count must equal actual coverage length; monogenic
+coverage must be empty; unknown fields, private score/risk/percentile, duplicates
+and partial/malformed data refuse before factories or ZIP writes. prs.json states
+coverage-only-no-personal-score-published; no missing score is filled or recomputed.
+The changed exact member expectations now pin the real complete producer output,
+add independent privacy/count proofs, and preserve every unrelated worker/source/
+EOF/hash/current-authority/assertion/deadline/retry check. No publication producer,
+grant, provider, READY or source-original contract changes. Both actual failed
+append receipts and original type failure remain; successor SQL/native/provider
+qualification is pending and G5.6/G8.5 stay incomplete.
+
 ## 2026-10-02 — Capture the genuine Path B confirmation without fabricating an ordinary binding
 
 The actual first039 owned append passed all64 pending guards and43 source

@@ -65,7 +65,7 @@ select set_eq($$select k from actual_saved_export,jsonb_object_keys(value->'snap
  $$select k from(values('subjectId'),('records'),('rows'),('sha256'),('excludedHeldUploads'))expected(k)$$,
  'the snapshot contains only the exact reviewed record/EOF/content receipt');
 select set_eq($$select k from actual_saved_export,jsonb_object_keys((value#>>'{snapshot,records,0,rowText}')::jsonb)k$$,
- $$select k from(values('bindingRevision'),('fileId'),('subjectId'),('purpose'),('completedAt'),('source'),('reports'),('prs'))expected(k)$$,
+ $$select k from(values('bindingRevision'),('fileId'),('subjectId'),('purpose'),('completedAt'),('source'),('reports'),('prsCount'),('prsCoverage'))expected(k)$$,
  'every stored result carries its full source and catalogue with no grant/session/provider/counterparty fields');
 select set_eq($$select k from actual_routed_graph,jsonb_object_keys((value#>>'{rows,0,rowText}')::jsonb)k where kind='family_pairs'$$,
  $$select k from(values('id'),('pair_revision'),('status'),('created_at'))expected(k)$$,'pair content excludes both counterpart subject identities');
@@ -74,8 +74,12 @@ select is((select value#>>'{rows,0,scope}' from actual_routed_graph where kind='
 reset role;
 select is((select ((value#>>'{snapshot,records,0,rowText}')::jsonb)->'reports' from actual_saved_export),
  (select result->'reports' from private.path_b_report_bindings), 'actual complete saved catalogue/outcomes are preserved without recomputation or display filtering');
-select is((select ((value#>>'{snapshot,records,0,rowText}')::jsonb)->'prs' from actual_saved_export),
- (select result->'prs' from private.path_b_report_bindings), 'actual stored PRS values are preserved, including genuine absence');
+select is((select ((value#>>'{snapshot,records,0,rowText}')::jsonb)->'prsCoverage' from actual_saved_export),
+ (select result->'prsCoverage' from private.path_b_report_bindings), 'all actually published PGS coverage is preserved, including genuine absence');
+select is((select ((value#>>'{snapshot,records,0,rowText}')::jsonb)->'prsCount' from actual_saved_export),
+ (select result->'prsCount' from private.path_b_report_bindings), 'the actual published count is retained alongside the complete coverage array');
+select ok(not exists(select 1 from actual_saved_export,jsonb_array_elements(((value#>>'{snapshot,records,0,rowText}')::jsonb)->'prsCoverage')q
+ where q ?| array['raw_score','calibrated_risk','percentile']), 'discarded private scores and risks are never invented or exposed');
 select is((select ((value#>>'{snapshot,records,0,rowText}')::jsonb)#>>'{source,decodedSha256}' from actual_saved_export),
  (select source_sha256 from public.genome_files where id=pg_temp.fxv('main','revision')::uuid),'the actual normalized source SHA binds the saved science');
 create temporary table unchanged_readable_job as select jsonb_build_object('export',(select to_jsonb(e) from public.generated_exports e

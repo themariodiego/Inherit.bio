@@ -10,7 +10,8 @@ export function savedPathBFixture(subjectId:string,purpose:"reports.monogenic"|"
   normalizedAt:date,normalizationRevision:2,sourcePublicationRevision:3,variantCount:1,build:"GRCh38",computationRevision:`path-b-reports-v1:${"c".repeat(64)}`,catalogSha256:"c".repeat(64)},
   reports:[{slug:template.slug,covered:true,catalogSnapshot:{schemaVersion:1,templateSha256:"d".repeat(64),template},
    variants:[{rsid:123,outcome:{status:"genotyped",genotype:"A/G",interpretation:"Original saved finding",strandFlipped:false}}],conflictingRsids:[]}],
-  prs:purpose==="reports.polygenic"?[{pgs_id:"synthetic-score",raw_score:0.9866666666666667,coverage:1,matched:1}]:[]};
+  prsCount:purpose==="reports.polygenic"?1:0,
+  prsCoverage:purpose==="reports.polygenic"?[{pgs_id:"synthetic-score",coverage:1,matched:1}]:[]};
  const record={id,subjectId,rowText:JSON.stringify(value)},digest=createHash("sha256").update("account-class-members-v1|path_b_report_bindings").digest(),
   sha256=createHash("sha256").update(digest).update(`${id}:${subjectId}:${record.rowText}\n`).digest("hex");
  return {value,record,snapshot:{subjectId,records:[record],rows:1,sha256,excludedHeldUploads:1}};

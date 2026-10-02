@@ -54,7 +54,19 @@ describe("039 source contract only; SQL compilation/execution remains independen
    "e.authority_revision=sp.principal_revision","b.subject_id=s.id and b.account_id=a and b.status='current'",
    "if binding is null then raise exception using errcode='42501',message='not_found'"]){expect(body).toContain(marker);}
   expect(body).not.toMatch(/insert into public\.(?:subject_account_bindings|subject_principals|consent_signatures|purpose_grants)/u);
-  expect(sql).toContain("md5(p.prosrc)='0d423a210e1e4972af3d11aed336b1f6'");
+ expect(sql).toContain("md5(p.prosrc)='0d423a210e1e4972af3d11aed336b1f6'");
+ });
+ it("consumes the exact final published coverage contract, never its discarded staged personal scores",()=>{
+  const producer=readFileSync("supabase/migrations/20260930234000_path_b_queued_reports.sql","utf8");
+  expect(producer).toContain("v_result:=jsonb_build_object('reports',v_result->'reports','prsCount',jsonb_array_length(v_result->'prs'),");
+  expect(producer).toContain("'prsCoverage',(select coalesce(jsonb_agg(q-'raw_score'),'[]') from jsonb_array_elements(v_result->'prs') q)");
+  const body=sql.match(/create function private\.export_account_path_b_snapshot_v1\([\s\S]*?as \$\$([\s\S]*?)\$\$/u)![1];
+  expect(body).toContain("b.result-array['reports','prsCount','prsCoverage']<>'{}'");
+  expect(body).toContain("(b.result->>'prsCount')::integer is distinct from jsonb_array_length(b.result->'prsCoverage')");
+  expect(body).toContain("q-array['pgs_id','coverage','matched']<>'{}'");
+  expect(body).toContain("count(distinct q->>'pgs_id')");
+  expect(body).toContain("'reports',b.result->'reports','prsCount',b.result->'prsCount','prsCoverage',b.result->'prsCoverage'");
+  expect(body).not.toContain("b.result->'prs'");
  });
  it("retains the exact original queued normalization/report assertions inside the new synthetic rollback fixture",()=>{
   const original=readFileSync("supabase/tests/path_b_queued_reports.sql","utf8"),marker=" 'only the exact completed queued report commits');",

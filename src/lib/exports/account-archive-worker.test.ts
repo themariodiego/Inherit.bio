@@ -134,7 +134,10 @@ describe("complete consumed-account unpublished archive executor",()=>{
   for(const d of manifest.members){const bytes=zip.readFile(d.name)!;expect(bytes.length).toBe(d.sizeBytes);expect(hash(bytes)).toBe(d.sha256);}
   expect(JSON.parse(zip.readAsText(`subjects/${f.self}/portrait.json`)).sections.find((s:{kind:string})=>s.kind==="graph-metadata").content.rows).toEqual([{kind:"family_pairs",scope:"requester-account-history",row:projection.row}]);
   const reports=JSON.parse(zip.readAsText(`subjects/${f.adult}/reports.json`));expect(reports.sections.find((s:{kind:string})=>s.kind==="path-b-results").content.rows[0].reports).toEqual(saved.value.reports);
-  expect(JSON.parse(zip.readAsText(`subjects/${f.adult}/prs.json`)).sections.find((s:{kind:string})=>s.kind==="path-b-results").content.rows[0].prs).toEqual(saved.value.prs);
+  const publishedPgs=JSON.parse(zip.readAsText(`subjects/${f.adult}/prs.json`)).sections.find((s:{kind:string})=>s.kind==="path-b-results").content.rows[0];
+  expect(publishedPgs.prsCoverage).toEqual(saved.value.prsCoverage);expect(publishedPgs.prsCount).toBe(saved.value.prsCount);
+  expect(publishedPgs.disposition).toBe("coverage-only-no-personal-score-published");
+  expect(JSON.stringify(publishedPgs)).not.toMatch(/raw_score|percentile|calibrated_risk/u);
   expect(zip.readAsText(`subjects/${f.adult}/reports.txt`)).toContain("Original saved finding");
   expect(manifest.resultSources).toEqual([{fileId:saved.value.fileId,subjectId:f.adult,purpose:saved.value.purpose,bindingRevision:1,
    projection:"saved-path-b-results-v1",rawSourceDisposition:"held-original-out-of-scope",...saved.value.source}]);
