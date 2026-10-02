@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-02: Describe the genuine sensitive-session SDK check accurately
+
+The full frozen 4c52120c unit run passed 9095 tests and failed the unchanged
+production token inventory because this helper's explanatory comment used the
+word `fixture`. Replace that comment phrase with `owner-operated check`.
+The helper still performs the same ordinary parallel `getUser` and `getSession`
+calls, and its consuming SQL still requires genuine sensitive-session authority.
+No runtime statement, detector, allowlist, assertion, secret pin or deadline
+changes. Preserve the failed full-run receipt; the focused token inventory and
+comment-free syntax comparison qualify only this narrow source correction.
+
 ## 2026-10-02: Correct the historical notice assertion's SQL syntax
 
 The actual rehearsal reached99 passing assertions, then found a surplus closing
