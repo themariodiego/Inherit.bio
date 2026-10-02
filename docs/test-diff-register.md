@@ -1,5 +1,27 @@
 # Test diff register
 
+## 2026-10-02: Preserve complete settings authority while normalizing remaining lock inversions
+
+Independent review of the qualified inventory read-lock change found that the
+profile context still acquired entity locks before account locks, its writers
+acquired subject UPDATE before profile SHARE, and the owner scope getter reused
+a mutating resolver that upgraded the session only after profile/subject locks.
+The prior actual inventory deadlock and its isolated fix receipts remain.
+No new concurrency execution is claimed for this source correction.
+
+New `settings_authority_lock_normalization.sql` tests require the complete five
+old function bodies after reversing only the approved prefix/callee changes,
+the exact unchanged eleven dependency bodies, complete strong/read validator
+algorithm equality, actual role+42501 denial for each private helper, exact
+original/read/strong live outcomes across current and refused synthetic Auth
+metadata, and unchanged captured Auth/profile rows and operation counts. All
+original tests,250ms mutation lock bounds, clock positions, authorization,
+nonce, consent, deletion, retention, delivery and provider assertions remain.
+No retry, timeout, expectation, gate or acceptance is weakened. Actual separate
+session races, fresh database, SDK and native execution remain root-owned and
+unrun for this isolated successor.
+
+
 ## 2026-10-02 — Preserve primary-source limits in plain report wording
 
 The first ten-gate run on a2b10c2f passed eight gates and failed readability
