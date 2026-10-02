@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-02 — Observe one exact Embryo carrier allele with the registry closed
+
+New private computation tests count zero, one or two literal diploid copies at
+one reviewed autosomal-recessive allele. They exercise registered indel
+equivalents, canonical VCF reference rows with ALT=NULL, disagreement and
+unreadable/missing calls, whole malformed-reference/source refusal and exact
+source separation. The original two-embryo VCF bytes pass through the original
+transport/per-ordinal parser and produce distinct zero/two-copy readings; no
+parent or sibling supplies a missing genotype. Every original test remains
+unchanged. The committed empty registry refuses before genomic input access.
+
+The first focused run passed76 and failed5 of81 tests because the newly authored
+Vitest array table spread each intended call array into callback arguments.
+Only those table parameters became named `{ calls }` cases; all five exact
+not-covered assertions remained. The next run passed81/81. Subsequent added
+strict current-condition-row and canonical-build refusals retain that failed
+record; the final focused run passes84/84 across three files with one worker.
+Scoped lint and diff checks pass. Type, full-unit, SQL and native qualification
+are pending. No limit, retry, skip, model,
+scientific approval, source guard, owner review, registry entry, clinical
+interpretation or acceptance state changes. This is private computation and
+synthetic parser evidence, not actual worker/database/native publication.
+
 ## 2026-10-02 — Native owner-notice acceptance uses the canonical submitted outbox state
 
 Actual full hosted run 36999627485 at bbd38a064e86f3a94bc389ecabcb62b4150673fe failed the new positive owner-notice journey at its exact `1/true` receipt check (received `1/false`); the other 104 cases in browser partition 5 passed. The original failed log/artifact remains recorded. The journey incorrectly required `mail_outbox.state='accepted'`: the unchanged canonical `complete_mail_attempt` records `mail_deliveries.status='accepted'` and `mail_outbox.state='submitted'`, and the owner-notice wrapper delegates to it. Correct only that new state expectation to exact `submitted` and add exact provider/outbox/attempt outcome and completed receipt checks. Keep notice delivery/deadline/provider-attempt null before the genuine signed delivery callback and every subsequent thirty-day/refusal/source/sibling assertion. No product, migration, provider, authority, test deadline, retry, skip or elapsed-time change; synthetic native provider evidence remains distinct from external provider qualification. Source/focused proof is not a successful rerun of the failed full browser suite.
