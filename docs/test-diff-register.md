@@ -1,5 +1,26 @@
 # Test diff register
 
+## 2026-10-02 — Author a separate immutable historical request prerequisite
+
+Source review of036 found that a genuine current HTTP202 request cannot be
+immediately due under its original seven-day saved notice/envelope contract.
+No runtime failure or execution pass is invented. Reviewed040 adds three
+owner-only/API-denied functions and two unchanged-contract real-time delegates.
+Its NULL-arm whole-body tests preserve the previous current request and notice
+algorithms; planted real security-clock/authority mutations must break equality.
+The historical arm creates complete notices/envelope/manifest once and retains
+actual recording clocks and current Auth/MFA/nonce/contact authority.
+
+New rollback-only SQL cases require real role refusals, exact original periods,
+one-use current nonce, ordinary immediate-due refusal, current Auth/MFA/contact
+refusals and full atomic rollback on a mandatory notice failure. Synthetic
+historical deadlines must resolve through the unchanged actual due producer.
+All new cases remain UNRUN pending root qualification; original tests, native
+HTTP202 receipt,250ms lock, deadlines, retries, assertions and acceptance values
+remain unchanged. Native page issuance plus app verification/owner SQL creation
+needs a distinct receipt and cannot be credited as original HTTP202 lineage or
+elapsed/provider/human evidence. Its future controller adapter remains held.
+
 ## 2026-10-02 — Freeze unexecuted native concurrency prerequisite with post-cancellation timing
 
 The separately authored native request, disposal producer and independent
