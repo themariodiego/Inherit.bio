@@ -108,12 +108,13 @@ figure, deadline and named authority on a legal page.
 applied or rejected on the record. Launching against a specification with known
 uncorrected errors means the acceptance matrix measures the wrong thing.
 
-### B5. The proposed ADRs are decided
+### B5. The jurisdiction and density ADRs are decided
 
 `docs/adr/0028-jurisdiction-gating-mechanism.md` and
-`docs/adr/0029-density-contract.md` are **Proposed**. Both record mechanisms that
-are already load-bearing. Launch requires each moved to Accepted or the mechanism
-changed to match a different decision.
+`docs/adr/0029-density-contract.md` are **Accepted**, as the owner recorded on
+18 September 2026 in `docs/protocol/decisions.md`. Their decision status satisfies
+this item. Signed jurisdiction reviews and evidence of the unchanged density
+budgets remain separate launch requirements; this correction closes neither.
 
 ### B6. Hosted capacity, cost and lifecycle evidence exists for the stated limits
 
