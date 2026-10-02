@@ -169,15 +169,15 @@ describe.sequential("claims reader invocation isolation", () => {
 describe("the claims gate holds the registers to the product", () => {
   it("reads every input on this repository, and no floor guard fires", () => {
     const result = runClaimsGate(REPOSITORY_ROOT);
-    expect(result.citationCount).toBe(41);
+    expect(result.citationCount).toBe(53);
     expect(result.archivedSourceCount).toBe(11);
-    expect(result.claimCount).toBe(106);
+    expect(result.claimCount).toBe(120);
     expect(result.claimEvidenceCount).toBeGreaterThan(50);
     expect(result.reportTemplateCount).toBe(162);
-    expect(result.reportProseCount).toBe(746);
-    expect(result.registeredProseCount).toBe(106);
+    expect(result.reportProseCount).toBe(750);
+    expect(result.registeredProseCount).toBe(120);
     expect(result.templateCitationCount).toBe(227);
-    expect(result.registeredTemplateCitationCount).toBe(42);
+    expect(result.registeredTemplateCitationCount).toBe(71);
     expect(result.provenanceLiteralCount).toBeGreaterThan(10);
     // Exactly three components emit a claim or figure marker in this
     // repository: <Claim>, <Figure> and <RelativeFigure>.
@@ -495,9 +495,9 @@ describe("the claims gate holds the registers to the product", () => {
   });
 
   it("fails a report body harder when one more of its prose blocks loses its registration", () => {
-    // The ledger records 31 of 63 for this file. Losing one registration
-    // makes it 32, and the gate fails twice for the one change: the 32 is
-    // unrecorded, and the recorded 31 is no longer true. A count cannot go
+    // The ledger records 30 of 63 for this file. Losing one registration
+    // makes it 31, and the gate fails twice for the one change: the 31 is
+    // unrecorded, and the recorded 30 is no longer true. A count cannot go
     // stale in either direction.
     const root = plant({
       claims: (claims) => {
@@ -508,12 +508,12 @@ describe("the claims gate holds the registers to the product", () => {
     const { failures, registeredProseCount } = runClaimsGate(root);
     const joined = failures.join("\n");
     expect(joined).toContain(
-      unrecorded("report body registration", "data/templates/basic-traits.json: 32 of 63 report-body prose blocks"),
+      unrecorded("report body registration", "data/templates/basic-traits.json: 31 of 63 report-body prose blocks"),
     );
     expect(joined).toContain(
-      stale("report body registration", "data/templates/basic-traits.json: 31 of 63 report-body prose blocks"),
+      stale("report body registration", "data/templates/basic-traits.json: 30 of 63 report-body prose blocks"),
     );
-    expect(registeredProseCount).toBe(105);
+    expect(registeredProseCount).toBe(119);
   });
 
   it("fails when a report body's registered prose no longer matches the template text", () => {
@@ -525,7 +525,7 @@ describe("the claims gate holds the registers to the product", () => {
     });
     const { failures } = runClaimsGate(root);
     // Changed prose cannot borrow the citation of the text that was reviewed.
-    expect(failures.join("\n")).toContain("data/templates/basic-traits.json: 32 of 63 report-body prose blocks");
+    expect(failures.join("\n")).toContain("data/templates/basic-traits.json: 31 of 63 report-body prose blocks");
   });
 
   it("fails when a template cites a source the citation register does not hold", () => {
@@ -538,7 +538,7 @@ describe("the claims gate holds the registers to the product", () => {
       },
     });
     const { failures } = runClaimsGate(root);
-    expect(failures.join("\n")).toContain("data/templates/basic-traits.json: 12 of 16 cited sources are absent");
+    expect(failures.join("\n")).toContain("data/templates/basic-traits.json: 10 of 16 cited sources are absent");
   });
 
   it("fails when a designated surface renders its prose outside the shared claim component", () => {
@@ -625,15 +625,15 @@ describe("the claims gate holds the registers to the product", () => {
     expect(failures).toContain(
       unrecorded(
         "report body registration",
-        "data/templates/gastrointestinal.json: 58 of 58 report-body prose blocks across 10 reports are not " +
-          "registered canonical claims (10 summaries, 33 genotype interpretations, 15 study contexts)",
+        "data/templates/gastrointestinal.json: 55 of 58 report-body prose blocks across 10 reports are not " +
+          "registered canonical claims (7 summaries, 33 genotype interpretations, 15 study contexts)",
       ),
     );
     expect(failures).toContain(
       stale(
         "report body registration",
         "data/templates/gastrointestinal.json: 57 of 58 report-body prose blocks across 10 reports are not " +
-          "registered canonical claims (10 summaries, 33 genotype interpretations, 15 study contexts)",
+          "registered canonical claims (7 summaries, 33 genotype interpretations, 15 study contexts)",
       ),
     );
   });

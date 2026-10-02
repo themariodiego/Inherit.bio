@@ -1,0 +1,441 @@
+{
+  "version": "primary-source-tranche-20261002",
+  "base": "a5588410d578ed82222d1d1de0771f69f2c7f08c",
+  "reviewedOn": "2026-10-02",
+  "reviewKind": "Actual author-abstract source/content review by Codex agent; no human clinical or licence approval",
+  "baseline": {
+    "citationCount": 41,
+    "claimCount": 106,
+    "citationsJsonSha256": "f8092137d11696a5774a8cdd6216c7541717ff2dcd5d56950aab51f8db318fbe",
+    "claimsJsonSha256": "eaaef0ef1178c915bb2b9ae97f074b2b375ff9bfad3bbdc91271d04b25e93e56"
+  },
+  "sources": [
+    {
+      "citationId": "pmid:17952075",
+      "selectedSlug": "blond-hair-kitlg-rs12821256",
+      "title": "Genetic determinants of hair, eye and skin pigmentation in Europeans.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "775d986105dcb97e366cd36217b4da1b32290472fcf2c0c05e6331cf1729b9fc",
+      "quoteWords": 4
+    },
+    {
+      "citationId": "pmid:18509540",
+      "selectedSlug": "celiac-hla-dq2-tag-rs2187668",
+      "title": "Effective detection of human leukocyte antigen risk alleles in celiac disease using tag single nucleotide polymorphisms.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "e319eb8b2ad4f1f214a1a74ab6955b38a026db05b0b1c0727a54b9d47710c2a7",
+      "quoteWords": 4
+    },
+    {
+      "citationId": "pmid:18711365",
+      "selectedSlug": "bipolar-association-ank3-rs10994336",
+      "title": "Collaborative genome-wide association analysis supports a role for ANK3 and CACNA1C in bipolar disorder.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "62c1aa860ce5ff0be45f5a4c0d7b916e2a4ad3487f0e26c8bb0ceb5d67019173",
+      "quoteWords": 5
+    },
+    {
+      "citationId": "pmid:28198005",
+      "selectedSlug": "vkorc1-rs9923231-one-position",
+      "title": "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for Pharmacogenetics-Guided Warfarin Dosing: 2017 Update.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "5d8b0ca6d6ed825ffa32f6fe694fd5f2dcdabfcfca926770c1ca2938e60644b2",
+      "quoteWords": 6
+    },
+    {
+      "citationId": "pmid:41618934",
+      "selectedSlug": "nudt15-rs116855232-one-position",
+      "title": "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for Thiopurine Dosing Based on TPMT and NUDT15 Genotypes: 2025 Update.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "77a453300ba1acc568a575f6e50b469454c01fe3018d3deeda11a402f83b5e33",
+      "quoteWords": 8
+    },
+    {
+      "citationId": "pmid:12595690",
+      "selectedSlug": "bitter-taste-tas2r38-rs713598",
+      "title": "Positional cloning of the human quantitative trait locus underlying taste sensitivity to phenylthiocarbamide.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "c852f9e0118d62763d896f1cb9291b55f90a49287c1290f1eae39a06207f784e",
+      "quoteWords": 3
+    },
+    {
+      "citationId": "pmid:12879365",
+      "selectedSlug": "sprint-power-actn3",
+      "title": "ACTN3 genotype is associated with human elite athletic performance.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "f83932c25bac2ce21e9a6e36a58aec1a0f0e9615401c2fb7a15fcfe6ba25fa72",
+      "quoteWords": 2
+    },
+    {
+      "citationId": "pmid:18193043",
+      "selectedSlug": "ldl-cholesterol-sort1-rs599839",
+      "title": "Newly identified loci that influence lipid concentrations and risk of coronary artery disease.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "7da472767b983b80332e252a3017f6880bad1536218ecb7816fa99eb0f73b853",
+      "quoteWords": 3
+    },
+    {
+      "citationId": "pmid:18199861",
+      "selectedSlug": "hemochromatosis-hfe-c282y-rs1800562",
+      "title": "Iron-overload-related disease in HFE hereditary hemochromatosis.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "08f1c18c229b42d1aba209533f7217b53b5fb9c600a960247f26ea9f231922d4",
+      "quoteWords": 7
+    },
+    {
+      "citationId": "pmid:19934046",
+      "selectedSlug": "social-sensitivity-oxtr-rs53576",
+      "title": "Oxytocin receptor genetic variation relates to empathy and stress reactivity in humans.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "0ad9ee8a95cefdf157f2feb551069f18ec4355f492de003df3a67aa468c717c3",
+      "quoteWords": 8
+    },
+    {
+      "citationId": "pmid:20541252",
+      "selectedSlug": "vitamin-d-cyp2r1-rs10741657",
+      "title": "Common genetic determinants of vitamin D insufficiency: a genome-wide association study.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "98ee65abf14b7a0ea4ef47c425e218d499a7a69953b09bd9aaaf284ef762a300",
+      "quoteWords": 6
+    },
+    {
+      "citationId": "pmid:23535734",
+      "selectedSlug": "longevity-telomere-terc-rs10936599",
+      "title": "Identification of seven loci affecting mean telomere length and their association with disease.",
+      "accessScope": "Complete author abstract in official EuropePMC MED core record; publisher full text not read",
+      "accessDate": "2026-10-02",
+      "retrievalUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28EXT_ID%3A17952075+OR+EXT_ID%3A18509540+OR+EXT_ID%3A18711365+OR+EXT_ID%3A28198005+OR+EXT_ID%3A41618934+OR+EXT_ID%3A12595690+OR+EXT_ID%3A12879365+OR+EXT_ID%3A18193043+OR+EXT_ID%3A18199861+OR+EXT_ID%3A19934046+OR+EXT_ID%3A20541252+OR+EXT_ID%3A23535734%29+AND+SRC%3AMED&format=json&resultType=core&pageSize=100",
+      "retrievedAt": "2026-10-02T06:37:45.029341+00:00",
+      "responseSha256": "f5a3d34a5e2e87f678d9c68d2a0653d62c92f000e39bf2a76a6e0d5beb726895",
+      "abstractSha256": "7ed9ce8dac7b3687d0df242fadf4b64e4a498d4cd0e5cfae1d57a71550d74934",
+      "quoteWords": 2
+    }
+  ],
+  "changes": [
+    {
+      "file": "data/templates/aesthetic-cosmetic.json",
+      "slug": "blond-hair-kitlg-rs12821256",
+      "pmid": "17952075",
+      "beforeObjectSha256": "4da5cce116be27c48e7d5a427c3e3a8c7e4b1d11662c339eda4edf321ec6a536",
+      "afterObjectSha256": "d9bc31a1557627bd263259b872f803e0e04c6fcc303219a65cd205039a3318e7",
+      "claimIds": [
+        "report.blond-hair-kitlg-rs12821256.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/basic-traits.json",
+      "slug": "sprint-power-actn3",
+      "pmid": "12879365",
+      "beforeObjectSha256": "2e9e4e2b6dc4413bcdca0bcd9a7f6f28558051a170cec094a75ad2d8981e648e",
+      "afterObjectSha256": "b0050dff36330d3d23a975eae524639ae3f752d3720f6dc0bf71a00bc763ae2b",
+      "claimIds": [
+        "report.sprint-power-actn3.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/gastrointestinal.json",
+      "slug": "hemochromatosis-hfe-c282y-rs1800562",
+      "pmid": "18199861",
+      "beforeObjectSha256": "917ec87f25b4915e5a80eafac14d37cc72948f51a3a86b3cee84b2c782876217",
+      "afterObjectSha256": "7a8cc38909cc4bb08ed5306d2b59db61fcd23d869b97f28bf6b9e7305bcf1003",
+      "claimIds": [
+        "report.hemochromatosis-hfe-c282y-rs1800562.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/gastrointestinal.json",
+      "slug": "bitter-taste-tas2r38-rs713598",
+      "pmid": "12595690",
+      "beforeObjectSha256": "bcfb940d683e5f598571b252bc7892d94ae22d8b4b4152473267c43648560cf8",
+      "afterObjectSha256": "a6b0d9fee7b35d874d889b8d2ac14ba6fc22f02d042ecb9ee3a7cfe44b2073d4",
+      "claimIds": [
+        "report.bitter-taste-tas2r38-rs713598.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/gastrointestinal.json",
+      "slug": "celiac-hla-dq2-tag-rs2187668",
+      "pmid": "18509540",
+      "beforeObjectSha256": "47ce7822029702c88f66cd10a1b5cca80082a97d9b8371cd50585842ccf6b24f",
+      "afterObjectSha256": "845d92a04109ce480beeeabd4004b78f8a7049d038605cd864ef322c97ca7be5",
+      "claimIds": [
+        "report.celiac-hla-dq2-tag-rs2187668.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/heart-cardiovascular.json",
+      "slug": "ldl-cholesterol-sort1-rs599839",
+      "pmid": "18193043",
+      "beforeObjectSha256": "b20604eaae974a3ff834fb73419c1908ca83e80161d19c162d7cd4c7b9262b13",
+      "afterObjectSha256": "b595ad3a9ea846221f5593187ca5c1102713bbb00b93da1593c874a286cbc968",
+      "claimIds": [
+        "report.ldl-cholesterol-sort1-rs599839.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/lifestyle-wellness.json",
+      "slug": "vitamin-d-cyp2r1-rs10741657",
+      "pmid": "20541252",
+      "beforeObjectSha256": "897b70fbb7e91665459668664530c7a9d059c5bde8d97d6b68f85ad48cb27da5",
+      "afterObjectSha256": "57b93216dbcf7ce8ffc111d13eddae11b3619b89313af1d014ce871670b964e0",
+      "claimIds": [
+        "report.vitamin-d-cyp2r1-rs10741657.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/longevity.json",
+      "slug": "longevity-telomere-terc-rs10936599",
+      "pmid": "23535734",
+      "beforeObjectSha256": "c9314cf1b1ed1b6d3cd2bcc212f8dc33f8edf16982e9d758f0c824141303772f",
+      "afterObjectSha256": "6a7906c5f11317479f496bcf62928bb0052517bc8da586f3f7f48b70d3d610d1",
+      "claimIds": [
+        "report.longevity-telomere-terc-rs10936599.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/medicines.json",
+      "slug": "vkorc1-rs9923231-one-position",
+      "pmid": "28198005",
+      "beforeObjectSha256": "4c8516cacf7f96fe21d5f49e5211d1feee197ac92f793d7c9758d0a107b6b9f0",
+      "afterObjectSha256": "4f9f4be13e3dd9a6dc550dfbc6e618642d454ab46f851fd83b6594701eafd052",
+      "claimIds": [
+        "report.vkorc1-rs9923231-one-position.study.28198005.measured",
+        "report.vkorc1-rs9923231-one-position.study.28198005.limitation"
+      ],
+      "summaryChanged": false,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/medicines.json",
+      "slug": "nudt15-rs116855232-one-position",
+      "pmid": "41618934",
+      "beforeObjectSha256": "69cb4805b884f299e2767d1d08a62e1df5b10e631cb982cc85c1911364331615",
+      "afterObjectSha256": "0890bdf9e871c15432eefaf54744e1cc3ad429bbc5e93eeb59694b59d1581b1f",
+      "claimIds": [
+        "report.nudt15-rs116855232-one-position.study.41618934.measured",
+        "report.nudt15-rs116855232-one-position.study.41618934.limitation"
+      ],
+      "summaryChanged": false,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/mental-health.json",
+      "slug": "social-sensitivity-oxtr-rs53576",
+      "pmid": "19934046",
+      "beforeObjectSha256": "36598a3554008724244ce96da83d85cea8eaa9a01b5421846e374e5c95aec579",
+      "afterObjectSha256": "6ab15cadac63c696169322baf7ec5925167f8820027058d84bf38e1f5c99c30b",
+      "claimIds": [
+        "report.social-sensitivity-oxtr-rs53576.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    },
+    {
+      "file": "data/templates/mental-health.json",
+      "slug": "bipolar-association-ank3-rs10994336",
+      "pmid": "18711365",
+      "beforeObjectSha256": "3eaba4afe3e1c535a4ad9f3970343379dda574370919b058ac1e5366e085f82b",
+      "afterObjectSha256": "f50937c89e3b4b7ab9aa364f0832d2e053f13f2d1f663e3fafe0260aeec02673",
+      "claimIds": [
+        "report.bipolar-association-ank3-rs10994336.summary"
+      ],
+      "summaryChanged": true,
+      "genotypeInterpretationsUnchanged": true
+    }
+  ],
+  "qualification": "UNRUN; root-owned tests/types/gates/fresh database and complete hosted browser suite are required",
+  "originalGenotypeInterpretationsChanged": false,
+  "retainedAuthoringFailure": "The first data-authoring script wrote the intended canonical/template changes, then stopped with KeyError id in its source-only debt-count comprehension. The count script was corrected to claim_id; no tests or qualification were executed or claimed.",
+  "after": {
+    "citationCount": 53,
+    "claimCount": 120,
+    "blocks": 750,
+    "boundBlocks": 120,
+    "unboundBlocks": 630,
+    "refs": 227,
+    "boundRefs": 71,
+    "missingRefs": 156,
+    "distinctMissingSources": 150
+  },
+  "addedSourceIds": [
+    "pmid:17952075",
+    "pmid:18509540",
+    "pmid:18711365",
+    "pmid:28198005",
+    "pmid:41618934",
+    "pmid:12595690",
+    "pmid:12879365",
+    "pmid:18193043",
+    "pmid:18199861",
+    "pmid:19934046",
+    "pmid:20541252",
+    "pmid:23535734"
+  ],
+  "addedClaimIds": [
+    "report.blond-hair-kitlg-rs12821256.summary",
+    "report.celiac-hla-dq2-tag-rs2187668.summary",
+    "report.bipolar-association-ank3-rs10994336.summary",
+    "report.vkorc1-rs9923231-one-position.study.28198005.measured",
+    "report.vkorc1-rs9923231-one-position.study.28198005.limitation",
+    "report.nudt15-rs116855232-one-position.study.41618934.measured",
+    "report.nudt15-rs116855232-one-position.study.41618934.limitation",
+    "report.bitter-taste-tas2r38-rs713598.summary",
+    "report.sprint-power-actn3.summary",
+    "report.ldl-cholesterol-sort1-rs599839.summary",
+    "report.hemochromatosis-hfe-c282y-rs1800562.summary",
+    "report.social-sensitivity-oxtr-rs53576.summary",
+    "report.vitamin-d-cyp2r1-rs10741657.summary",
+    "report.longevity-telomere-terc-rs10936599.summary"
+  ],
+  "quoteAllocation": [
+    {
+      "citationId": "pmid:17952075",
+      "newCanonicalWords": 4,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 4,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:18509540",
+      "newCanonicalWords": 4,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 4,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:18711365",
+      "newCanonicalWords": 5,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 5,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:28198005",
+      "newCanonicalWords": 6,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 6,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:41618934",
+      "newCanonicalWords": 8,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 8,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:12595690",
+      "newCanonicalWords": 3,
+      "existingMarkedReviewExcerptWords": 13,
+      "totalMarkedExcerptWords": 16,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:12879365",
+      "newCanonicalWords": 2,
+      "existingMarkedReviewExcerptWords": 18,
+      "totalMarkedExcerptWords": 20,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:18193043",
+      "newCanonicalWords": 3,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 3,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:18199861",
+      "newCanonicalWords": 7,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 7,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:19934046",
+      "newCanonicalWords": 8,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 8,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:20541252",
+      "newCanonicalWords": 6,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 6,
+      "limit": 25
+    },
+    {
+      "citationId": "pmid:23535734",
+      "newCanonicalWords": 2,
+      "existingMarkedReviewExcerptWords": 0,
+      "totalMarkedExcerptWords": 2,
+      "limit": 25
+    }
+  ],
+  "addedPopulations": {
+    "sourceJsonSha256": "d14d8c6fb69bbe021cf26b07ee71c4a3754e2c4030191c254db7c6710d97c41d",
+    "claimJsonSha256": "920a7f5259c344cef9f1ac9e38207462ae49c5878d87a866b9d76ce30f8a7a86",
+    "method": "SHA256 of UTF-8 JSON.stringify-equivalent compact value, source order retained; authored source freeze, not test qualification"
+  }
+}

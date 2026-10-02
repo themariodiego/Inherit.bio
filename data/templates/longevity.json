@@ -174,7 +174,7 @@
     "slug": "longevity-telomere-terc-rs10936599",
     "category": "longevity",
     "title": "Telomere length · TERC region",
-    "summary": "The TERC gene encodes the RNA template that telomerase uses to extend telomeres. rs10936599, near TERC, is one of the strongest common-variant influences on mean telomere length: the C allele is associated with longer average telomeres and the T allele with shorter. Effects are small relative to person-to-person variation.",
+    "summary": "A study of 37,684 people found seven DNA regions linked to average telomere length in white blood cells. TERC and TERT were among them. A separate group tested selected changes. One position does not measure your telomeres or how long you might live.",
     "evidence": "emerging",
     "variants": [
       {

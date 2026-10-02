@@ -1,5 +1,48 @@
 # Test diff register
 
+## 2026-10-02 — Preserve primary-source limits in plain report wording
+
+The first ten-gate run on a2b10c2f passed eight gates and failed readability
+and templates. The new NUDT15 limitation scored10.5 against the unchanged
+grade-nine target. Three new paragraphs matched the unchanged template
+blocklist: negative celiac and ANK3 prediction wording, and descriptive
+warfarin “dosing” wording. Those four new paragraphs now state the same
+one-position, no personal prediction, no full-gene and no dose-instruction
+limits in plain words. The warfarin context still names all three genes and
+the additional DNA position in the actual author abstract.
+
+Only the new canonical texts and their exact after-object/addition hashes
+change. All41 original source rows,106 original claims, genotype prose,
+abstract access receipts and baseline full-JSON hashes remain pinned. No
+detector, readability threshold, vocabulary, debt count, original assertion,
+deadline/retry or scientific/clinical acceptance changes. Both first gate
+failures remain in the independent qualification packet; corrected checks
+are still required.
+
+## 2026-10-02 — Keep exact claims-gate debt probes after the primary-source tranche
+
+The first actual single-worker focused run on frozen5c188536 preserved244 passes
+and five failures. Each failure pinned a population or per-file debt count from
+before the bounded12-source/14-claim addition. Exact current counts now require
+53 citations,120 claims,750 prose blocks and71 of227 resolved template references;
+the separate tranche fixture still pins all41 original sources and106 original
+claims by complete JSON hash. No genotype interpretation is newly accepted.
+
+Losing or changing the original earwax summary must now change the basic-traits
+debt from30 to31 of63, fail in both ledger directions and leave119 registered
+blocks. An unknown planted citation must change its exact source debt from9 of15
+to10 of16. The independently planted gastrointestinal ledger mismatch still
+requires both exact findings, against its now55 of58 blocks with seven remaining
+summaries,33 genotype interpretations and15 contexts. No floor, source/body
+refusal, gate behavior, timeout/retry or clinical/whole-catalog acceptance changes.
+
+## 2026-10-02 — Preserve the citation baseline while adding actual primary-source bindings
+
+Twelve newly read primary author abstracts resolve 29 missing template references. Ten summaries are corrected and registered within the actual abstract scope; four guideline-context paragraphs add bounded source context without certifying unreviewed medicine alleles. Original 106 claims, 41 source rows and every genotype interpretation remain unchanged. Source-only counts are now 120/750 bound prose blocks and 71/227 resolved references; 630 blocks and 156 references remain open.
+
+Every original canonical fixture assertion stays intact over its explicit historical population. The separate new fixture requires the exact additive unions 120/53 and independently pins every retained baseline row by full JSON SHA-256, rather than changing an old expected count or accepting an arbitrary larger registry. New authored negatives refuse changed-text citation borrowing, swapped source edges, future access dates and orphaned evidence. Dates, original reviewed-object hashes, channels, all browser assertions/time limits, zero retries and original acceptance rows remain. All qualification is UNRUN in this child; source review/data parsing is not a passed gate or browser/clinical receipt.
+
+
 ## 2026-10-02: Describe the genuine sensitive-session SDK check accurately
 
 The full frozen 4c52120c unit run passed 9095 tests and failed the unchanged
