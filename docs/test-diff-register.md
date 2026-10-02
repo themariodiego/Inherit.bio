@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-02: Preserve the deletion door's exact refusal for shared-pair validation
+
+The exacted78 fresh run completed186 files and12,084 assertions with one
+failure: original last-consumer test83 expected42501/`claimant deletion
+unavailable` for a running publication, but036's new internal pair validation
+raised42501/`claimed provenance unavailable` while constructing the envelope.
+The failed run and every original assertion byte remain unchanged.
+
+Only that existing envelope assignment gains a nested exception boundary.
+It catches42501 and normalizes only the exact internal validation message to
+the original deletion refusal. Any other42501 message is rethrown, and other
+SQLSTATEs remain uncaught. The helper, predicates, call position, clocks, locks,
+nonce consumption, side effects and rollback behavior are unchanged. Complete
+producer body, native catalog and guarded successor pins change together.
+A new source test reverses only this boundary and requires the complete ed78
+producer digest. Runtime SQL qualification remains root-owned and pending;
+no deadline, retry, expectation, permission or acceptance changes.
+Actual focused source tests pass10/10 across the new boundary regression and
+both unchanged provenance test files; scoped ESLint and diff checks pass.
+
 ## 2026-10-02: Keep historical Medicines dates separate from new abstract context
 
 The exact c718 full Linux unit run passed9377 tests and failed the unchanged
