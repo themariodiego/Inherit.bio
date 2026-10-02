@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-02 — Keep the Reason label stable after text is entered
+
+Hosted a558 browser3 timed out at the unchanged final exact Reason label
+lookup. Its phase receipt places the lookup at 25.216 seconds; the filled
+textarea remains in the failure DOM. A separate real pinned Chromium witness
+reproduces the implicit-label mismatch only after the textarea contains text.
+The actual ClaimReview Reason control now uses an explicit, stable React ID
+and label association. Its value, change handler, required/minimum/maximum,
+rows, disabled state and all native decision operations remain unchanged.
+
+The focused real Chromium runner renders that same application component,
+checks exact label and accessible-name lookup for empty and prefilled markup,
+refills it six times, and proves explicit unique associations and original
+constraints for two simultaneous controls. It is a bounded control DOM proof,
+not a claim of hydrated decision/API execution. Every original browser case,
+operation, assertion, retry and deadline remains byte-identical. Hosted
+journey execution and the independent positive-notice 404 remain unproven.
+
 ## 2026-10-02 — Keyless review monotonic phase diagnostics
 
 Actual hosted68fd browser3 exhausted the unchanged120000ms case budget at the
