@@ -90,6 +90,56 @@ describe("archive worker persistence boundary", () => {
     expect(f.calls.map(c => c.p_operation)).toEqual(["preflight"]);
   });
 
+  it("closes every successful transport with one immutable native cleanup reason without caching authority", async () => {
+    const f = fixture(); await f.begin();
+    expect(await f.bridge.checkAuthority(attempt, f.abort.signal)).toBe(RECEIPT);
+    expect(await f.bridge.checkAuthority(attempt, f.abort.signal)).toBe(RECEIPT);
+    expect(f.calls.map(call => call.p_operation)).toEqual(["preflight", "begin", "renew", "renew"]);
+    expect(f.signals).toHaveLength(4);
+    const native = new AbortController(); native.abort();
+    const reason = f.signals[0].reason;
+    expect(reason).toBeInstanceOf(DOMException);
+    expect(reason.name).toBe(native.signal.reason.name);
+    expect(reason.message).toBe(native.signal.reason.message);
+    expect(Object.isFrozen(reason)).toBe(true);
+    expect(f.signals.every(signal => signal.aborted && signal.reason === reason)).toBe(true);
+    expect(f.abort.signal.aborted).toBe(false);
+    const separate = fixture(); await separate.bridge.checkAuthority(attempt, separate.abort.signal);
+    expect(separate.signals[0].reason).not.toBe(reason);
+  });
+
+  it("preserves the actual caller cancellation reason after successful cleanup and admits no late value", async () => {
+    const f = fixture(); await f.begin();
+    const cleanup = f.signals[0].reason, wait = deferred<{ data: unknown; error: null }>();
+    f.respond.mockReturnValue(wait.promise);
+    const running = f.bridge.checkAuthority(attempt, f.abort.signal);
+    const rejected = expect(running).rejects.toMatchObject({ code: "aborted", cleanupRequired: true });
+    await vi.waitFor(() => expect(f.calls).toHaveLength(3));
+    const callerReason = Object.freeze({ purpose: "caller-cancelled" });
+    f.abort.abort(callerReason); await rejected;
+    expect(f.signals[2].reason).toBe(callerReason);
+    expect(f.signals[2].reason).not.toBe(cleanup);
+    wait.resolve({ data: f.reply(f.calls[2]), error: null }); await Promise.resolve();
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
+  });
+
+  it("keeps a real operation deadline's native reason distinct from successful cleanup", async () => {
+    vi.useFakeTimers(); const f = fixture(); await f.begin();
+    const cleanup = f.signals[0].reason, wait = deferred<{ data: unknown; error: null }>();
+    f.respond.mockReturnValue(wait.promise);
+    const running = f.bridge.checkAuthority(attempt, f.abort.signal);
+    const rejected = expect(running).rejects.toMatchObject({ code: "deadline", cleanupRequired: true });
+    await vi.advanceTimersByTimeAsync(30_000); await rejected;
+    expect(f.signals[2].aborted).toBe(true);
+    expect(f.signals[2].reason).toBeInstanceOf(DOMException);
+    expect(f.signals[2].reason.name).toBe("AbortError");
+    expect(f.signals[2].reason).not.toBe(cleanup);
+    wait.resolve({ data: f.reply(f.calls[2]), error: null }); await Promise.resolve();
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
+  });
+
   it("copies discovery so a caller cannot replace the receipt or extend its deadline", async () => {
     const f = fixture(), before = { ...f.job };
     f.job.authorityReceipt = "d".repeat(64); f.job.principalHash = "e".repeat(64);
