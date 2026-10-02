@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-02 — Preserve no-referrer through the document download proxy
+
+Exact hosted run 37014502527 at c6b680b3 failed browser group 5 only at the first held document GET's strict no-referrer assertion (journey line 165): the opaque 404/not_found and private/no-store checks passed, but the actual response carried same-origin. The other 104 browser cases passed; the original job log is retained. The download handler already sets no-referrer, but Next 16.3.3 retains the proxy's already-present single-value response header. There are no next.config header rules; the proxy's strict review-path exception omitted the separate legal-evidence download endpoint.
+
+Add only the exact /api/legal-evidence/[single segment]/review-download route shape to that proxy exception, including malformed document IDs which the unchanged handler refuses. Ten appended cases require the complete strict header set before signed-in and signed-out handler responses and on deletion, declared-location and connection-location refusals; malformed or neighboring path shapes retain the original sensitive policy. Preserve every original proxy and browser assertion, all route authority and document-read behavior, and the existing cache/framing headers. No SQL, migration, workflow, timeout, retry, skip, acceptance or production change; full combined qualification remains required.
+
 ## 2026-10-02 — Audit genuine first reads and genuine second-review hold refusals
 
 The full local combined02688a56 run passed9,406 tests and failed only the permanent embryo source preflight: it still demanded four PDF reads and two full-document receipt checks, including the premature second reads that the unchanged SQL authority gate correctly refuses. Retain the failed full-run log. The connected producer, audited-test binding, historical transfer, matching details, both authenticated delivery callbacks and exact isolated origin checks remain unchanged.
