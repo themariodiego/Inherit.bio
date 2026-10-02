@@ -1,5 +1,46 @@
 # Test diff register
 
+## 2026-10-02 — Freeze unexecuted native concurrency prerequisite with post-cancellation timing
+
+The separately authored native request, disposal producer and independent
+session controller remain unexecuted after a restart removed temporary
+evidence. Source review found that the new observer initially recorded query
+age before sending its cancellation. It now rechecks the exact owned
+backend/query and actual blocker at cancellation, then measures query age
+after that call and refuses any age at or above the original250ms limit.
+The new source assertions require that order and refusal; no original test,
+deadline, retry, native nonce rule or immutable seven-day envelope changes.
+All new negatives and positive controller paths require actual qualification.
+Synthetic R2 metadata ACKs do not prove physical deletion; current requests
+still refuse before their real due deadline. The durable source packet makes
+these holds explicit and contains no reconstructed execution receipt.
+
+## 2026-10-01 — Author separate native authority and original-limit pair observation
+
+The036 independent-session runner lacked its committed native deletion
+prerequisite, and its transport-separated wait/cancel loop could miss the
+claimant's original250ms lock limit. No actual race failure or execution pass
+is claimed. A separate producer records the genuine settings-page POST and
+consumed nonce through the current product. Its due consumer pins the same
+original seven-day clocks and saved affected-notice envelope, refuses before
+that real deadline and calls each real queue/request/disposal door once.
+Synthetic R2 metadata ACKs remain labelled protocol evidence; existing identity
+and original Storage absence is a prerequisite, never manufactured here.
+
+A separate controller requires a new closed native-request-bound receipt.
+Its owner observer checks the exact pair/blocker and peer backend start/name,
+refreshes statistics and cancels inside one server invocation. Actual57014 and
+query age below250ms are both required. The unchanged3s/5s/12s bounds, native
+250ms configuration and all existing source/SQL/browser assertions remain.
+Both native finishers must actually act under deferred constraints, then every
+public/private/Auth/Storage row fingerprint, entire ledger and native catalog
+must restore. New strict field, source, queue, clock, authority, backend, pair,
+cancellation and missed-window negatives are authored but unrun. No migration,
+retry, provider call, API opening or acceptance value changes. Full type, unit,
+SQL, current native request and separate-session execution remain root-owned.
+An immediate coherent synthetic due producer is explicitly still held: aging
+mutable clocks would contradict the real238 historical notice contract.
+
 ## 2026-10-01 — Read gate inputs once within each invocation
 
 The full c232 Linux suite passed 9,039 tests but exceeded the unchanged
