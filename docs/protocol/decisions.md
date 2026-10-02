@@ -4572,3 +4572,20 @@ signature, a carrier activation or a production release approval.
 The owner also asked for every further unresolved product-brief decision as
 its own clickable question. First reconcile the old proposal file with the
 dated decisions so that settled or declined choices are not asked again.
+
+## 2026-10-02 — Laboratory-confirmation text also appears on Emerging reports
+
+The owner answered the brief §12 item 4 card and selected **Include Emerging**.
+The exact report confirmation scope is now `clinical`, `established` and
+`emerging`. Each carries the existing laboratory-confirmation paragraph and
+counsellor sentence, unchanged, inside the non-collapsed "How sure we are"
+section. The current report renderer already renders both through that one
+closed evidence set; its reader, authority and page content stay unchanged.
+
+This settles the optional fork. It does not change evidence classification,
+scientific publication/reviewer requirements, condition/model activation,
+clinical acceptance or production jurisdiction access. Every original result,
+uncertainty, evidence definition, source attribution and safety statement stays.
+The 60% density rule and the declined redesign stay. Engineering records the
+brief and exact register hash together and adds real report-path assertions;
+focused source checks alone do not prove the full hosted browser result.
