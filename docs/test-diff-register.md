@@ -1,5 +1,22 @@
 # Test diff register
 
+## 2026-10-02 — Keep exact claims-gate debt probes after the primary-source tranche
+
+The first actual single-worker focused run on frozen5c188536 preserved244 passes
+and five failures. Each failure pinned a population or per-file debt count from
+before the bounded12-source/14-claim addition. Exact current counts now require
+53 citations,120 claims,750 prose blocks and71 of227 resolved template references;
+the separate tranche fixture still pins all41 original sources and106 original
+claims by complete JSON hash. No genotype interpretation is newly accepted.
+
+Losing or changing the original earwax summary must now change the basic-traits
+debt from30 to31 of63, fail in both ledger directions and leave119 registered
+blocks. An unknown planted citation must change its exact source debt from9 of15
+to10 of16. The independently planted gastrointestinal ledger mismatch still
+requires both exact findings, against its now55 of58 blocks with seven remaining
+summaries,33 genotype interpretations and15 contexts. No floor, source/body
+refusal, gate behavior, timeout/retry or clinical/whole-catalog acceptance changes.
+
 ## 2026-10-02 — Preserve the citation baseline while adding actual primary-source bindings
 
 Twelve newly read primary author abstracts resolve 29 missing template references. Ten summaries are corrected and registered within the actual abstract scope; four guideline-context paragraphs add bounded source context without certifying unreviewed medicine alleles. Original 106 claims, 41 source rows and every genotype interpretation remain unchanged. Source-only counts are now 120/750 bound prose blocks and 71/227 resolved references; 630 blocks and 156 references remain open.
