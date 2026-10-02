@@ -90,3 +90,21 @@ A local HTTPS stand-in for browser journeys, like
 `scripts/ci-browser/prepared-artifact-fixture.ts`, is still needed once an
 embryo chunk route exists. `scripts/ci-browser/embryo-fragment-fixture.ts` is the
 in-memory binding it would wrap.
+
+## Dated preview update — 2 October 2026
+
+The production runbook above remains held. The owner selected Codex setup
+through existing access, with remaining owner setup on 5 October. The lead
+created only the private preview bucket and retained its actual settings proof:
+Standard/WEUR, no object-expiry rule, no CORS configuration, no public access
+or custom domain. The default incomplete-multipart abort rule does not expire
+committed empty markers. No gateway/provider-version/marker proof is claimed.
+
+`wrangler.json` now proposes a TEST-LOCAL preview scope with the exact test
+issuer and current public app signer. Its default scope has no binding, routes,
+issuer or signing keys and no workers.dev access. Nothing deploys this gateway.
+The separate offline source guard refuses production/default targets; the
+existing global deployment switch and prepared configurations remain unchanged.
+The dated preview facts supersede only the pending preview creation/config
+steps above. See `docs/embryo-preview-service-setup.md` for the public-key
+derivation, exact settings receipt and remaining actual hosted proof.
