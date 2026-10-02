@@ -83,13 +83,19 @@ async function read(request: Request, id: string): Promise<Response> {
       ||(review.scope.operation!=="claim-release"&&!review.scope.current))return notFound();
     const release=review.scope.operation==="claim-release"&&review.scope.noticeDeadline!==null
       &&Date.parse(review.scope.noticeDeadline)<=Date.now();
+    const documentsAvailable=review.scope.operation==="claim-objection"||(release&&review.scope.current&&review.scope.objectionId===null);
+    const decisionAvailable=review.scope.operation==="claim-objection"||release;
     return sensitiveJson(review.caseBody,200,{
       [REVIEW_CSRF_HEADER]:reviewCsrf(id,account.user.id,account.sessionId),
       [REVIEW_NONCE_HEADER]:release?mintKeylessReleaseNonce(review.scope,account.user.id,account.sessionId):mintReviewNonce(id,account.user.id,account.sessionId),
       "x-inherit-review-operation":review.scope.operation,
+      "x-inherit-review-documents":documentsAvailable?"available":"held",
+      "x-inherit-review-decision":decisionAvailable?"available":"held",
       ...(review.scope.objectionId!==null?{"x-inherit-objection-review-id":review.scope.objectionId}:{}),
-      "x-inherit-photo-receipt-nonce":mintReceiptOpenNonce(review.scope.photoDocumentId,account.user.id,account.sessionId),
-      "x-inherit-birth-receipt-nonce":mintReceiptOpenNonce(review.scope.birthDocumentId,account.user.id,account.sessionId),
+      ...(documentsAvailable?{
+        "x-inherit-photo-receipt-nonce":mintReceiptOpenNonce(review.scope.photoDocumentId,account.user.id,account.sessionId),
+        "x-inherit-birth-receipt-nonce":mintReceiptOpenNonce(review.scope.birthDocumentId,account.user.id,account.sessionId),
+      }:{}),
     });
   }
   const body = reviewCaseBody(data);
@@ -97,6 +103,8 @@ async function read(request: Request, id: string): Promise<Response> {
   return sensitiveJson(body, 200, {
     [REVIEW_CSRF_HEADER]: reviewCsrf(id, account.user.id, account.sessionId),
     [REVIEW_NONCE_HEADER]: mintReviewNonce(id, account.user.id, account.sessionId),
+    "x-inherit-review-documents": "available",
+    "x-inherit-review-decision": "available",
     "x-inherit-photo-receipt-nonce": mintReceiptOpenNonce(String((body.evidence as Record<string, unknown>).photoIdentityDocumentId), account.user.id, account.sessionId),
     "x-inherit-birth-receipt-nonce": mintReceiptOpenNonce(String((body.evidence as Record<string, unknown>).birthRecordDocumentId), account.user.id, account.sessionId),
     ...(body.mode==="keyless"?{"x-inherit-keyless-lookup-nonce":mintKeylessLookupNonce(id,account.user.id,account.sessionId)}:{}),

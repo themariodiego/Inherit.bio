@@ -34,13 +34,18 @@ delivery bounds, exact delivery/provider attempt, immutable replay and the
 unchanged deadline equal to delivered time plus thirty days. This is explicitly
 synthetic software-provider evidence, not external provider qualification.
 
-A different named Auth/TOTP reviewer receives a new operation assignment and
-must repeat both full document reads and acknowledgements. The immediate native
-final-release door refuses stale and current ordinary-review nonces while
-preserving the whole effect fingerprint. The public page cannot issue a final
-release envelope before its real notice deadline. The test creates no custody
-or claimant authority. Private finite-time executor rehearsal is separate from
-this native proof and cannot supply elapsed-time, provider or human credit.
+A different named Auth/TOTP reviewer receives a new operation assignment. Its
+document reads and decision controls stay held until the genuine notice deadline;
+the early assignment cannot borrow the original documentary receipts. Both
+actual native document GETs must refuse without creating a download, receipt,
+chunk acknowledgement or document read. The immediate native final-release door
+refuses stale and current ordinary-review nonces while preserving the whole
+effect fingerprint. The public page cannot issue a final release envelope before
+its real notice deadline. The separate fresh review must repeat both full
+document reads and acknowledgements after that hold; this immediate native
+journey gives no completed second review, custody or claimant authority. Private
+finite-time executor rehearsal is separate and cannot supply elapsed-time,
+provider or human credit.
 
 All six original project identities remain intact. The new publication journey
 uses Chromium with a literal isolated 3105 origin, as the existing second-QC

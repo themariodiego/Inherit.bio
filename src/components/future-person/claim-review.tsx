@@ -8,10 +8,10 @@ import {ReviewReason} from "./review-reason";
 import {KeylessDocumentVerification} from "./keyless-verification";
 import {DOCUMENT_LABELS} from "@/copy/rights/future-person-claim";
 import {readReviewDocument} from "@/lib/future-person/read-review-document";
-import {reviewPageCase,reviewPageDecisions,type ReviewPageCase,type ReviewDecision} from "@/lib/future-person/review-page-contract";
+import {readReviewDocumentControls,reviewPageCase,reviewPageDecisions,type ReviewPageCase,type ReviewDecision} from "@/lib/future-person/review-page-contract";
 
 type DocumentKind="photo"|"birth";
-type Loaded={record:ReviewPageCase;csrf:string;nonce:string;photoNonce:string;birthNonce:string;lookupNonce:string|null;operation:"documentary"|"claim-objection"|"claim-release";objectionId:string|null};
+type Loaded={record:ReviewPageCase;csrf:string;nonce:string;documentsAvailable:boolean;decisionAvailable:boolean;photoNonce:string|null;birthNonce:string|null;lookupNonce:string|null;operation:"documentary"|"claim-objection"|"claim-release";objectionId:string|null};
 type View={url:string;type:string;ready:boolean;failed:boolean};
 const HEX=/^[0-9a-f]{64}$/u;
 const LABEL:Record<ReviewDecision,string>={reject:"Refuse claim","needs-more-information":"Ask for more information","approve-record-key":"Approve claim",
@@ -53,17 +53,19 @@ export function ClaimReview({claimId}:{claimId:string}) {
         const response=await fetch(`/api/reviews/future-person/claims/${claimId}`,{credentials:"same-origin",cache:"no-store",signal:controller.signal});
         const record=reviewPageCase.safeParse(await response.json());
         const csrf=response.headers.get("x-inherit-csrf");const nonce=response.headers.get("x-inherit-review-nonce");
-        const photoNonce=response.headers.get("x-inherit-photo-receipt-nonce");const birthNonce=response.headers.get("x-inherit-birth-receipt-nonce");
         const lookupNonce=response.headers.get("x-inherit-keyless-lookup-nonce");
         if(response.status!==200||!record.success||record.data.claimId!==claimId||!csrf||!HEX.test(csrf)
-          ||!nonce||!photoNonce||!birthNonce||[nonce,photoNonce,birthNonce].some(value=>value.length>2048))throw new Error("unavailable");
+          ||!nonce||nonce.length>2048)throw new Error("unavailable");
+        const controls=readReviewDocumentControls(response.headers,record.data.state);
+        if(!controls)throw new Error("unavailable");
+        const {photoNonce,birthNonce,documentsAvailable,decisionAvailable}=controls;
         if(record.data.mode==="keyless"&&record.data.state!=="approved_pending_owner_notice"&&(!lookupNonce||lookupNonce.length>2048))throw new Error("unavailable");
         if(controller.signal.aborted)return;
         const currentOperation=response.headers.get("x-inherit-review-operation")??"documentary";
         if(!["documentary","claim-objection","claim-release"].includes(currentOperation))throw new Error("unavailable");
         const objectionId=response.headers.get("x-inherit-objection-review-id");
         if(currentOperation==="claim-objection"&&(!objectionId||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(objectionId)))throw new Error("unavailable");
-        setLoaded({record:record.data,csrf,nonce,photoNonce,birthNonce,lookupNonce,operation:currentOperation as Loaded["operation"],objectionId});setVerificationReady(false);setMessage("");
+        setLoaded({record:record.data,csrf,nonce,documentsAvailable,decisionAvailable,photoNonce,birthNonce,lookupNonce,operation:currentOperation as Loaded["operation"],objectionId});setVerificationReady(false);setMessage("");
       } catch {if(!controller.signal.aborted)setMessage("This claim is not available. Sign in again and open the case assigned to you.");}
       finally{if(!controller.signal.aborted)setBusy(null);}
     })();
@@ -76,14 +78,16 @@ export function ClaimReview({claimId}:{claimId:string}) {
     &&(!approval||(checked.adult&&(!parentLink||checked.parent)&&fullName.trim().length>=2&&dateOfBirth.length===10))
     &&(!["approve-claimed-unbound-no-key-recovery","keyless-document-match"].includes(decision)||verificationReady);
 
-  async function openDocument(kind:DocumentKind) {
-    if(!loaded||busy)return;
+  async function handleOpenDocument(kind:DocumentKind) {
+    if(!loaded||!loaded.documentsAvailable||busy)return;
+    const receiptNonce=kind==="photo"?loaded.photoNonce:loaded.birthNonce;
+    if(!receiptNonce)return;
     const controller=new AbortController();operation.current=controller;setBusy(kind);setMessage("");
     let bytes:Uint8Array|undefined;
     try {
       // One browser download cookie: serialize reads, including every acknowledgement.
       const result=await readReviewDocument(kind==="photo"?loaded.record.evidence.photoIdentityDocumentId:loaded.record.evidence.birthRecordDocumentId,
-        kind==="photo"?loaded.photoNonce:loaded.birthNonce,loaded.csrf,controller.signal);
+        receiptNonce,loaded.csrf,controller.signal);
       bytes=result.bytes;
       const type=MIME[result.filename.split(".").at(-1)??""];
       if(!type||controller.signal.aborted)throw new Error("unavailable");
@@ -93,6 +97,8 @@ export function ClaimReview({claimId}:{claimId:string}) {
     } catch {if(!controller.signal.aborted)setMessage("The full document could not be read. Reload this page before trying again.");}
     finally {bytes?.fill(0);if(!controller.signal.aborted)setBusy(null);}
   }
+  const handlePhotoOpen=()=>{void handleOpenDocument("photo");};
+  const handleBirthOpen=()=>{void handleOpenDocument("birth");};
   async function submit(event:FormEvent) {
     event.preventDefault();if(!loaded||!canSubmit)return;
     const controller=new AbortController();operation.current=controller;setBusy("decision");setMessage("");
@@ -117,11 +123,11 @@ export function ClaimReview({claimId}:{claimId:string}) {
     {message&&<p role="status">{message}</p>}
     {loaded&&<>
       <p>Claimant: {loaded.record.claimant.fullName}. Birth date: {loaded.record.claimant.dateOfBirth}.</p>
-      <p>Read both full documents. Then record what you checked and why you made this decision.</p>
+      {loaded.documentsAvailable&&<p>Read both full documents. Then record what you checked and why you made this decision.</p>}
       {loaded.record.case.kind==="record_key"&&<p>Recorded parent names: {loaded.record.case.recordedParentLink.recordedParentNames.join(", ")}.</p>}
-      {(["photo","birth"] as const).map(kind=><section key={kind} className="space-y-3 rounded-xl border p-4">
+      {loaded.documentsAvailable&&(["photo","birth"] as const).map(kind=><section key={kind} className="space-y-3 rounded-xl border p-4">
         <h2>{DOCUMENT_LABELS[kind==="photo"?"future-photo-identity":"future-birth-record"]}</h2>
-        <button type="button" aria-label={`Open ${DOCUMENT_LABELS[kind==="photo"?"future-photo-identity":"future-birth-record"]}`} disabled={Boolean(busy)||Boolean(views[kind])} onClick={()=>void openDocument(kind)}>
+        <button type="button" aria-label={`Open ${DOCUMENT_LABELS[kind==="photo"?"future-photo-identity":"future-birth-record"]}`} disabled={Boolean(busy)||Boolean(views[kind])} onClick={kind==="photo"?handlePhotoOpen:handleBirthOpen}>
           {busy===kind?"Reading file…":"Open file"}
         </button>
         {views[kind]&&<>
@@ -144,7 +150,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
       {loaded.record.case.kind==="claimed_unbound_no_key_recovery"&&<p>The document identity matches one previously claimed record. A new rights session needs its own review.</p>}
       {loaded.record.state==="approved_pending_owner_notice"?<KeylessPendingReview claimId={claimId} record={loaded.record}
         csrf={loaded.csrf} nonce={loaded.nonce} operation={loaded.operation} objectionId={loaded.objectionId}
-        documentsRead={received&&checked.photo&&checked.birth} onSaved={()=>{clearViews();setLoaded(null);setMessage("Decision saved.");}}/>:<form onSubmit={submit} className="space-y-4">
+        operationReady={loaded.decisionAvailable} documentsRead={received&&checked.photo&&checked.birth} onSaved={()=>{clearViews();setLoaded(null);setMessage("Decision saved.");}}/>:<form onSubmit={submit} className="space-y-4">
         <div>
           <label className="block" htmlFor="claim-review-choice">Choice</label>
           <select id="claim-review-choice" value={decision} disabled={Boolean(busy)} onChange={event=>setDecision(event.target.value as ReviewDecision)}>
