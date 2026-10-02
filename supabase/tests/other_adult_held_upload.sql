@@ -459,7 +459,7 @@ select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(u
     where has_function_privilege(r,to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'),'execute'))),
  'only the exact installed account Path B refusal helper may join the lifecycle census, with every API role denied');
 select ok(to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
- or ((select md5(prosrc)='66d3fffa8f2cdcc069e89ccb25478db3' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+ or ((select md5(prosrc)='4acd95ba8f9b21a3a27ed03d50eec761' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
   and proowner=(select oid from pg_roles where rolname='postgres') from pg_proc
   where oid=to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)'))
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r

@@ -93,7 +93,7 @@ begin
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[] and p.proargnames=array['p_export_id','p_attempt_id','p_authority_receipt','p_kind','p_after_key']::text[] and p.pronargdefaults=1 and pg_catalog.pg_get_expr(p.proargdefaults,0)='NULL::jsonb'
-  and md5(p.prosrc)='f5fbb5ed60b894d722fa417f5f43b104') or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
+  and md5(p.prosrc)='9093c357b20c31d0f16af9daaa9465d3') or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'public.export_archive_account_graph_rows_v1(uuid,uuid,text,text,jsonb)','execute') is distinct from (role_name='service_role' and true))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a
    where p.oid=pg_catalog.to_regprocedure('public.export_archive_account_graph_rows_v1(uuid,uuid,text,text,jsonb)') and(a.grantee not in('postgres'::regrole,'service_role'::regrole) or a.privilege_type<>'EXECUTE' or a.grantor<>p.proowner
@@ -913,7 +913,7 @@ begin
   'embryo_disposition_proposals','embryo_disposition_confirmations','family_pairs'] loop
   digest:=extensions.digest(convert_to('account-graph-routed-v2|'||kind,'UTF8'),'sha256');n:=0;
   for item in select * from private.export_account_graph_projection_v1(p_account,subjects,kind)
-   order by projected_key->>0 collate "C",coalesce(projected_key->>1,'') collate "C",
+   order by (projected_key->>0) collate "C",coalesce(projected_key->>1,'') collate "C",
     coalesce(projected_key->>2,'') collate "C",coalesce((projected_key->>3)::bigint,0) loop
    identity:=private.export_account_graph_cursor_v1(kind,item.projected_key);
    if octet_length(item.projected_row::text)>8192 then raise exception using errcode='55000',message='export_class_projection_unavailable';end if;
@@ -1075,7 +1075,7 @@ begin
    handling:='path-b-results';
    for item in select x->>'id' id,x->>'subjectId' subject,x->>'rowText' row_text
     from jsonb_array_elements(p_capture->'pathBResults')s cross join lateral jsonb_array_elements(s->'records')x
-    order by x->>'id' collate "C" loop
+    order by (x->>'id') collate "C" loop
     n:=n+1;digest:=extensions.digest(digest||convert_to(item.id||':'||item.subject||':'||item.row_text||E'\n','UTF8'),'sha256');
    end loop;
    select coalesce(jsonb_agg(jsonb_build_object('subjectId',x->'subjectId','rows',x->'rows') order by x->>'subjectId'),'[]') into counts
@@ -1140,15 +1140,15 @@ begin
  if anchor is null or expected is null or not(anchor=any(subjects)) then raise exception using errcode='42501',message='not_found';end if;
  digest:=extensions.digest(convert_to('account-graph-routed-v2|'||p_kind,'UTF8'),'sha256');
  for item in select * from private.export_account_graph_projection_v1((permit#>>'{origin,accountId}')::uuid,subjects,p_kind)
-  order by projected_key->>0 collate "C",coalesce(projected_key->>1,'') collate "C",coalesce(projected_key->>2,'') collate "C",coalesce((projected_key->>3)::bigint,0) loop
+  order by (projected_key->>0) collate "C",coalesce(projected_key->>1,'') collate "C",coalesce(projected_key->>2,'') collate "C",coalesce((projected_key->>3)::bigint,0) loop
   identity:=private.export_account_graph_cursor_v1(p_kind,item.projected_key);
   if octet_length(item.projected_row::text)>8192 then raise exception using errcode='55000',message='export_class_projection_unavailable';end if;
   total:=total+1;
   digest:=extensions.digest(digest||convert_to(identity||':'||anchor::text||':requester-account-history:'||item.projected_row::text||E'\n','UTF8'),'sha256');
   if item.projected_key=p_after_key then exists_after:=true;end if;
   if page_count<500 and (p_after_key is null or
-   (item.projected_key->>0 collate "C",coalesce(item.projected_key->>1,'') collate "C",coalesce(item.projected_key->>2,'') collate "C",coalesce((item.projected_key->>3)::bigint,0))>
-   (p_after_key->>0 collate "C",coalesce(p_after_key->>1,'') collate "C",coalesce(p_after_key->>2,'') collate "C",coalesce((p_after_key->>3)::bigint,0))) then
+   ((item.projected_key->>0) collate "C",coalesce(item.projected_key->>1,'') collate "C",coalesce(item.projected_key->>2,'') collate "C",coalesce((item.projected_key->>3)::bigint,0))>
+   ((p_after_key->>0) collate "C",coalesce(p_after_key->>1,'') collate "C",coalesce(p_after_key->>2,'') collate "C",coalesce((p_after_key->>3)::bigint,0))) then
    rows:=rows||jsonb_build_array(jsonb_build_object('identity',identity,'subjectId',anchor,
     'scope','requester-account-history','rowText',item.projected_row::text));page_count:=page_count+1;last_key:=item.projected_key;
   end if;
@@ -1252,7 +1252,7 @@ $create$;
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proargnames=array['p_account','p_capture']::text[] and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[] and p.pronargdefaults=0
-  and p.proargdefaults is null and md5(p.prosrc)='66d3fffa8f2cdcc069e89ccb25478db3')
+  and p.proargdefaults is null and md5(p.prosrc)='4acd95ba8f9b21a3a27ed03d50eec761')
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'private.export_account_class_inventory_v1(uuid,jsonb)','execute') is distinct from(role_name='service_role' and false))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a
@@ -1292,7 +1292,7 @@ $create$;
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proargnames=array['p_account','p_capture']::text[] and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[]
-  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='37043eda8abf88ad89bb8f5f78a254f9')
+  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='6572858ea4d079066829ae3bea1af5ff')
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'private.export_account_graph_capture_v1(uuid,jsonb)','execute') is distinct from (role_name='service_role' and false))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a
@@ -1318,7 +1318,7 @@ $create$;
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proargnames=array['p_export_id','p_attempt_id','p_authority_receipt','p_kind','p_after_key']::text[] and p.proconfig=array['search_path=""','lock_timeout=250ms']::text[]
-  and p.pronargdefaults=1 and pg_catalog.pg_get_expr(p.proargdefaults,0)='NULL::jsonb' and md5(p.prosrc)='eeebef815d04fe1eceb87e586820f74c')
+  and p.pronargdefaults=1 and pg_catalog.pg_get_expr(p.proargdefaults,0)='NULL::jsonb' and md5(p.prosrc)='fb3711e8e02f504bd0711456e896df01')
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'public.export_archive_account_graph_rows_v2(uuid,uuid,text,text,jsonb)','execute') is distinct from (role_name='service_role' and true))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a

@@ -125,15 +125,15 @@ begin
  select array_agg(x::uuid order by x) into subjects from jsonb_array_elements_text(permit->'partitions')x;
  digest:=extensions.digest(convert_to('account-graph-source-v1|'||p_kind,'UTF8'),'sha256');
  for item in select * from private.export_account_graph_projection_v1((permit#>>'{origin,accountId}')::uuid,subjects,p_kind)
-  order by projected_key->>0 collate "C",coalesce(projected_key->>1,'') collate "C",coalesce(projected_key->>2,'') collate "C",coalesce((projected_key->>3)::bigint,0) loop
+  order by (projected_key->>0) collate "C",coalesce(projected_key->>1,'') collate "C",coalesce(projected_key->>2,'') collate "C",coalesce((projected_key->>3)::bigint,0) loop
   identity:=private.export_account_graph_cursor_v1(p_kind,item.projected_key);
   if octet_length(item.projected_row::text)>8192 then raise exception using errcode='55000',message='export_class_projection_unavailable';end if;
   total:=total+1;
   digest:=extensions.digest(digest||convert_to(identity||':'||item.projected_row::text||E'\n','UTF8'),'sha256');
   if item.projected_key=p_after_key then exists_after:=true;end if;
   if page_count<500 and (p_after_key is null or
-   (item.projected_key->>0 collate "C",coalesce(item.projected_key->>1,'') collate "C",coalesce(item.projected_key->>2,'') collate "C",coalesce((item.projected_key->>3)::bigint,0))>
-   (p_after_key->>0 collate "C",coalesce(p_after_key->>1,'') collate "C",coalesce(p_after_key->>2,'') collate "C",coalesce((p_after_key->>3)::bigint,0))) then
+   ((item.projected_key->>0) collate "C",coalesce(item.projected_key->>1,'') collate "C",coalesce(item.projected_key->>2,'') collate "C",coalesce((item.projected_key->>3)::bigint,0))>
+   ((p_after_key->>0) collate "C",coalesce(p_after_key->>1,'') collate "C",coalesce(p_after_key->>2,'') collate "C",coalesce((p_after_key->>3)::bigint,0))) then
    rows:=rows||jsonb_build_array(jsonb_build_object('identity',identity,'rowText',item.projected_row::text));page_count:=page_count+1;last_key:=item.projected_key;
   end if;
  end loop;

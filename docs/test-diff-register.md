@@ -1,5 +1,20 @@
 # Test diff register
 
+## 2026-10-02 — Apply C collation to extracted graph text, preserving exact composite ordering
+
+The actual a532 append passed46 assertions then reached graph capture and failed
+because bare projected_key->>0 COLLATE "C" binds COLLATE to integer0. Every direct
+JSON-text extraction before C collation in038/039 is now parenthesized: eight
+expressions across original/v2 reader ordering, composite cursor comparisons,
+current graph capture and saved-result class ordering. String components retain
+C collation; the fourth component remains bigint. No selector, key, page, output,
+assertion, timeout, retry, grant or authority predicate changes. Exact affected
+new-body postcondition fingerprints, the unchanged-ABI v1 predecessor pin and the
+strict held-function class fingerprint are updated to the same source correction.
+A source regression rejects the bare form and verifies complete function bodies
+normalize only by these exact parentheses; the actual failure/restoration receipt
+remains. Successor SQL execution and complete qualification are pending.
+
 ## 2026-10-02 — Export exact published Path B coverage without inventing personal scores
 
 The actual second039 append passed46 assertions, including the genuine binding

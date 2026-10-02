@@ -22,7 +22,7 @@ describe("039 source contract only; SQL compilation/execution remains independen
   expect(functions).toHaveLength(7);
   for(const match of functions){expect(sql).toContain(`md5(p.prosrc)='${md5(match[4])}'`);expect(sql).toContain(`revoke all on function ${match[1]}`);}
   for(const field of ["proowner","prokind","proargmodes","proallargtypes","proleakproof","provariadic","probin","prosupport","procost","prorows","prolang","prosecdef","proisstrict","provolatile","proparallel","prorettype","proretset","proargnames","proconfig","pronargdefaults","proargdefaults","aclexplode","is_grantable"])expect(sql).toContain(field);
-  expect(sql).toContain("md5(p.prosrc)='838abdf91899078e4ebd2108855fa477'");expect(sql).toContain("md5(p.prosrc)='f5fbb5ed60b894d722fa417f5f43b104'");
+  expect(sql).toContain("md5(p.prosrc)='838abdf91899078e4ebd2108855fa477'");expect(sql).toContain("md5(p.prosrc)='9093c357b20c31d0f16af9daaa9465d3'");
   expect(sql).not.toMatch(/(?:replace|alter) function public\.export_archive_account_graph_rows_v1/u);
   expect(sql.match(/grant execute on function public\.[a-z0-9_]+/gu)).toEqual(["grant execute on function public.export_archive_account_graph_rows_v2","grant execute on function public.export_archive_account_path_b_v1"]);
  });
@@ -66,7 +66,25 @@ describe("039 source contract only; SQL compilation/execution remains independen
   expect(body).toContain("q-array['pgs_id','coverage','matched']<>'{}'");
   expect(body).toContain("count(distinct q->>'pgs_id')");
   expect(body).toContain("'reports',b.result->'reports','prsCount',b.result->'prsCount','prsCoverage',b.result->'prsCoverage'");
-  expect(body).not.toContain("b.result->'prs'");
+ expect(body).not.toContain("b.result->'prs'");
+ });
+ it("collates the extracted text, preserving complete original reader/capture bodies and numeric composite ordering",()=>{
+  const source38=readFileSync("supabase/migrations/20261001038000_account_archive_graph_rows.sql","utf8");
+  const direct=/\b(?:[a-z_]+\.)?[a-z_]+->>(?:[0-9]+|'[^']+')\s+collate "C"/gu;
+  expect(source38).not.toMatch(direct);expect(sql).not.toMatch(direct);
+  const normalized=(body:string)=>body.replace(/\(((?:[a-z_]+\.)?[a-z_]+->>(?:[0-9]+|'[^']+'))\)(\s+collate "C")/gu,"$1$2");
+  const originalMd5={"public.export_archive_account_graph_rows_v1":"f5fbb5ed60b894d722fa417f5f43b104",
+   "private.export_account_graph_capture_v1":"37043eda8abf88ad89bb8f5f78a254f9",
+   "public.export_archive_account_graph_rows_v2":"eeebef815d04fe1eceb87e586820f74c"};
+  for(const [name,expected]of Object.entries(originalMd5)){
+   const source=name.endsWith("rows_v1")?source38:sql,
+    body=source.match(new RegExp(`create function ${name.replaceAll(".","\\.")}\\([\\s\\S]*?as \\$\\$([\\s\\S]*?)\\$\\$`))![1];
+   expect(md5(normalized(body))).toBe(expected);
+   expect(body).toContain("coalesce((projected_key->>3)::bigint,0)");
+  }
+  const classes=sql.match(/new_body:=\$new_classes\$([\s\S]*?)\$new_classes\$/u)![1];
+  expect(md5(normalized(classes))).toBe("66d3fffa8f2cdcc069e89ccb25478db3");
+  expect(classes).toContain("order by (x->>'id') collate \"C\"");
  });
  it("retains the exact original queued normalization/report assertions inside the new synthetic rollback fixture",()=>{
   const original=readFileSync("supabase/tests/path_b_queued_reports.sql","utf8"),marker=" 'only the exact completed queued report commits');",
