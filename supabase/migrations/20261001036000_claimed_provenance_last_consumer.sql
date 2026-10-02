@@ -4,7 +4,7 @@ begin
  for expected in select * from (values
  ('private.capture_claimed_embryo_provenance_v1(uuid,uuid)','3970b934f3165fd1e8cf2f26ce913d34','9d2ad554c7193b23e64714db6166e9f3',array['p_deletion','p_cohort']::text[],'void',array['search_path=""']::text[]),
  ('private.purge_account_owned_cohorts_v1(uuid)','cec89910d9191838a890db56e14cb18c','3fe1b53e74675885cb9f825917dc3c70',array['p_deletion']::text[],'void',array['search_path=""']::text[]),
- ('private.prepare_future_person_deletion_v1(text,text)','825d2bb042623900b71bfc516f9e8b42','f32e9ce755719d34ad802f975ff223ea',array['p_session_hash','p_nonce']::text[],'uuid',array['search_path=""','lock_timeout=250ms']::text[]),
+ ('private.prepare_future_person_deletion_v1(text,text)','825d2bb042623900b71bfc516f9e8b42','d059d03088936f868ce748772073f5db',array['p_session_hash','p_nonce']::text[],'uuid',array['search_path=""','lock_timeout=250ms']::text[]),
  ('private.assert_future_person_deletion_plan_v1(uuid)','e3d743b8f35d8f655712ec0d8f996b8f','c009f02ee0e43a661d7b70d23b5c6ba3',array['p_manifest']::text[],'public.retention_due_phases',array['search_path=""']::text[]),
  ('private.finish_future_person_deletion_v1(uuid,text)','0ac6a4d7e63942e35d4303464d2aac89','644965a2ad8adff622d7121725f40922',array['p_manifest','p_claim_token_hash']::text[],'jsonb',array['search_path=""','lock_timeout=250ms']::text[]),
  ('private.freeze_future_person_deletion_plan_v1()','815d32207dd7ab2da6218102863eed8b','79e16acea2f613885ad4d461cef1ecdf',array[]::text[],'trigger',array['search_path=""']::text[])
@@ -436,9 +436,17 @@ begin
  if (length(definition)-length(replace(definition,$anchor_2_0$'completionDeadline',v_now+interval '30 days');$anchor_2_0$,'')))/length($anchor_2_0$'completionDeadline',v_now+interval '30 days');$anchor_2_0$)<>1 then
   raise exception using errcode='55000',message='claimed provenance insertion anchor differs';end if;
  definition:=replace(definition,$anchor_2_0$'completionDeadline',v_now+interval '30 days');$anchor_2_0$,$successor_2_0$'completionDeadline',v_now+interval '30 days',
-   'sharedProvenance',private.claimed_provenance_candidate_v1(x.file_id));$successor_2_0$);
+   'sharedProvenance',private.claimed_provenance_candidate_v1(x.file_id));
+ exception when sqlstate '42501' then
+  if sqlerrm is distinct from 'claimed provenance unavailable' then raise;end if;
+  raise exception using errcode='42501',message='claimant deletion unavailable';
+ end;$successor_2_0$);
+ if (length(definition)-length(replace(definition,$anchor_2_1$ env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,$anchor_2_1$,'')))/length($anchor_2_1$ env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,$anchor_2_1$)<>1 then
+  raise exception using errcode='55000',message='claimed provenance insertion anchor differs';end if;
+ definition:=replace(definition,$anchor_2_1$ env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,$anchor_2_1$,$successor_2_1$ begin
+ env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,$successor_2_1$);
  execute definition;
- if not exists(select 1 from pg_proc where oid=target and md5(prosrc)='f32e9ce755719d34ad802f975ff223ea' and proacl is not distinct from before_acl) then
+ if not exists(select 1 from pg_proc where oid=target and md5(prosrc)='d059d03088936f868ce748772073f5db' and proacl is not distinct from before_acl) then
   raise exception using errcode='55000',message='claimed provenance successor differs';end if;
 end $patch_2$;
 do $patch_3$
@@ -500,7 +508,7 @@ begin
  for expected in select * from (values
  ('private.capture_claimed_embryo_provenance_v1(uuid,uuid)','3970b934f3165fd1e8cf2f26ce913d34','9d2ad554c7193b23e64714db6166e9f3',array['p_deletion','p_cohort']::text[],'void',array['search_path=""']::text[]),
  ('private.purge_account_owned_cohorts_v1(uuid)','cec89910d9191838a890db56e14cb18c','3fe1b53e74675885cb9f825917dc3c70',array['p_deletion']::text[],'void',array['search_path=""']::text[]),
- ('private.prepare_future_person_deletion_v1(text,text)','825d2bb042623900b71bfc516f9e8b42','f32e9ce755719d34ad802f975ff223ea',array['p_session_hash','p_nonce']::text[],'uuid',array['search_path=""','lock_timeout=250ms']::text[]),
+ ('private.prepare_future_person_deletion_v1(text,text)','825d2bb042623900b71bfc516f9e8b42','d059d03088936f868ce748772073f5db',array['p_session_hash','p_nonce']::text[],'uuid',array['search_path=""','lock_timeout=250ms']::text[]),
  ('private.assert_future_person_deletion_plan_v1(uuid)','e3d743b8f35d8f655712ec0d8f996b8f','c009f02ee0e43a661d7b70d23b5c6ba3',array['p_manifest']::text[],'public.retention_due_phases',array['search_path=""']::text[]),
  ('private.finish_future_person_deletion_v1(uuid,text)','0ac6a4d7e63942e35d4303464d2aac89','644965a2ad8adff622d7121725f40922',array['p_manifest','p_claim_token_hash']::text[],'jsonb',array['search_path=""','lock_timeout=250ms']::text[]),
  ('private.freeze_future_person_deletion_plan_v1()','815d32207dd7ab2da6218102863eed8b','79e16acea2f613885ad4d461cef1ecdf',array[]::text[],'trigger',array['search_path=""']::text[])

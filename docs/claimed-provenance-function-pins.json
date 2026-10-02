@@ -24,7 +24,7 @@
   },
   {
     "signature": "private.prepare_future_person_deletion_v1(text,text)",
-    "body": "f32e9ce755719d34ad802f975ff223ea",
+    "body": "d059d03088936f868ce748772073f5db",
     "args": [
       "p_session_hash",
       "p_nonce"
