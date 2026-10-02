@@ -37,7 +37,24 @@ describe("039 source contract only; SQL compilation/execution remains independen
   expect(sql).toContain("not exists(select 1 from private.path_b_report_bindings x where x.file_id=gf.id");
   expect(sql).toContain("b.recipient_account_id=p_account");expect(sql).toContain("handling:='excluded'");
   expect(sql.match(/private\.export_account_owned_capture_v1\(permit->'origin','account',\(permit->>'targetId'\)::uuid\) is distinct from captured/gu)).toHaveLength(2);
-  expect(sql).toContain("collate \"C\"");expect(sql).toContain("page_count<500");expect(sql).toContain("set lock_timeout='250ms'");
+ expect(sql).toContain("collate \"C\"");expect(sql).toContain("page_count<500");expect(sql).toContain("set lock_timeout='250ms'");
+ });
+ it("uses the genuine current Path B confirmation only for its exact classified source, retaining the ordinary binding predicate",()=>{
+  const body=sql.match(/create function private\.export_account_ordinary_readable_authority_v1\([\s\S]*?as \$\$([\s\S]*?)\$\$/u)![1];
+  expect(body).toContain("and private.export_account_path_b_file_v1(gf.id)) then");
+  expect(body).toContain("person:=private.path_b_person_v1(a,sess,s.id)");
+  expect(body).toContain("confirmation:=private.path_b_subject_v1(s.owner_account_id,s.id)");
+  for(const marker of ["person->>'principalId' is distinct from confirmation->>'principalId'",
+   "person->>'principalRevision' is distinct from confirmation->>'principalRevision'",
+   "(confirmation->>'subjectBindingRevision')::bigint is distinct from s.subject_binding_revision",
+   "(confirmation->>'subjectLifecycleRevision')::bigint is distinct from s.lifecycle_revision",
+   "'draft',to_jsonb(d)","'subjectPrincipal',to_jsonb(sp)","'signature',to_jsonb(cs)","'artifact',to_jsonb(ca)","'contact',to_jsonb(e)",
+   "cs.signer_account_id=a","cs.jurisdiction_revision=p.jurisdiction_revision","ca.superseded_at is null",
+   "ca.body_sha256=encode(extensions.digest(convert_to(ca.body_markdown,'UTF8'),'sha256'),'hex')",
+   "e.authority_revision=sp.principal_revision","b.subject_id=s.id and b.account_id=a and b.status='current'",
+   "if binding is null then raise exception using errcode='42501',message='not_found'"]){expect(body).toContain(marker);}
+  expect(body).not.toMatch(/insert into public\.(?:subject_account_bindings|subject_principals|consent_signatures|purpose_grants)/u);
+  expect(sql).toContain("md5(p.prosrc)='0d423a210e1e4972af3d11aed336b1f6'");
  });
  it("retains the exact original queued normalization/report assertions inside the new synthetic rollback fixture",()=>{
   const original=readFileSync("supabase/tests/path_b_queued_reports.sql","utf8"),marker=" 'only the exact completed queued report commits');",

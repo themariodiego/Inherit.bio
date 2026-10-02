@@ -61,6 +61,21 @@ instead requires the actual file/other-adult/uploader-owner and confirmed Path B
 draft tuple. This classifies a source, not authorizes it. The full person, current
 source and report authority must still pass before any result is admitted.
 
+The first actual owned SQL append on frozen88 passed the64 pending migration
+guards and43 original committed source assertions, then refused at the ordinary
+binding check. The genuine Path B confirmation producer updates its one principal
+and subject account directly; it creates no ordinary subject-account binding.
+The isolated successor retains that ordinary binding requirement and uses the
+existing current person and confirmation receipts only for an actual classified
+Path B source. Exact subject/principal/revision, current own Auth, signature,
+current published artifact and contact authority must agree. All governing
+draft/principal/signature/artifact/contact rows enter the internal capture hash,
+so same-count metadata drift refuses the old request. No binding, signing session
+or grant is invented, and the complete saved report's original purpose/source/
+mitigation/insurance/current authority still runs. The original failure and
+rollback-restoration receipt are retained; this source successor needs its own
+actual replay before database qualification.
+
 The internal immutable saved-result receipt binds binding revision, file/subject,
 purpose and completion clock; original normalized raw/decoded hashes, source/
 normalization/publication/computation revisions, variant count/build and catalogue

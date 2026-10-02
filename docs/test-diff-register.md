@@ -1,5 +1,22 @@
 # Test diff register
 
+## 2026-10-02 — Capture the genuine Path B confirmation without fabricating an ordinary binding
+
+The actual first039 owned append passed all64 pending guards and43 source
+assertions, then refused at the ordinary subject-account binding check. The real
+Path B producer binds its confirmation principal and subject account directly;
+it never creates that ordinary row. Only an exact classified Path B source now
+uses the existing current person and confirmation receipts. Subject/principal/
+revision, current own Auth, actual signer, published current artifact and contact
+authority agree; full governing rows enter the capture. Ordinary bindings remain
+mandatory and every current purpose/source/result fence remains. No binding,
+signing session, consent or grant is manufactured; API ACLs and limits are fixed.
+The original failed append/type logs remain. New authored actual-role assertions
+prove absent ordinary Path B binding, genuine signer, same-count draft drift,
+ended artifact and ordinary self-binding refusal, preserving every prior
+assertion and unchanged durable job/attempt proof. Replay is pending; there is
+no full database/browser/provider/completion or acceptance credit.
+
 ## 2026-10-02 — Preserve graph fixture checks while narrowing exact participant rows
 
 The first nonincremental type check on frozen03988df7f26 caught two fixture

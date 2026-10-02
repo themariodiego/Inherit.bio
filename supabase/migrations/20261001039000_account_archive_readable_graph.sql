@@ -157,6 +157,19 @@ begin
    where p.oid=pg_catalog.to_regprocedure('private.path_b_person_v1(uuid,uuid,uuid)') and(a.grantee not in('postgres'::regrole) or a.privilege_type<>'EXECUTE' or a.grantor<>p.proowner)) then
   raise exception using errcode='55000',message='export_readable_graph_predecessor_unavailable';end if;
  if pg_catalog.to_regprocedure('private.export_account_path_b_file_v1(uuid)') is not null then raise exception using errcode='55000',message='export_readable_graph_predecessor_unavailable';end if;
+ if not exists(select 1 from pg_catalog.pg_proc p where p.oid=pg_catalog.to_regprocedure('private.path_b_subject_v1(uuid,uuid)')
+  and p.pronargs=2 and p.proowner='postgres'::regrole and p.prokind='f' and not p.proleakproof and p.provariadic=0::oid and p.probin is null
+  and p.prosupport::oid=0::oid and p.procost=100 and p.prorows=0 and p.proargmodes is null and p.proallargtypes is null
+  and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
+  and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
+  and p.proconfig=array['search_path=pg_catalog, private']::text[] and p.proargnames=array['p_account_id','p_subject_id']::text[]
+  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='0d423a210e1e4972af3d11aed336b1f6')
+  or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
+   where has_function_privilege(role_name,'private.path_b_subject_v1(uuid,uuid)','execute') is distinct from(role_name='service_role'))
+  or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a
+   where p.oid=pg_catalog.to_regprocedure('private.path_b_subject_v1(uuid,uuid)') and(a.grantee not in('postgres'::regrole,'service_role'::regrole)
+    or a.privilege_type<>'EXECUTE' or a.grantor<>p.proowner or(a.grantee<>'postgres'::regrole and a.is_grantable))) then
+  raise exception using errcode='55000',message='export_readable_graph_predecessor_unavailable';end if;
  -- Every new door is created atomically after all exact predecessors match.
  execute $create$
 create function private.export_account_path_b_file_v1(p_file uuid)
@@ -237,7 +250,8 @@ create function private.export_account_ordinary_readable_authority_v1(p_origin j
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private as $$
 declare a uuid; sess uuid; p public.profiles%rowtype; ap public.subject_principals%rowtype;
  origin_binding text; receipt text; graph jsonb; subjects jsonb:='[]'; sources jsonb:='[]';
- s record; f record; snapshot jsonb; binding jsonb; session_revision bigint; file_ids uuid[]:='{}';
+ s record; f record; snapshot jsonb; binding jsonb; person jsonb; confirmation jsonb;
+ session_revision bigint; file_ids uuid[]:='{}';
 begin
  if p_origin is null or jsonb_typeof(p_origin)<>'object' then raise exception using errcode='22023',message='invalid_request'; end if;
  if p_origin->>'kind' is distinct from 'account' then
@@ -279,12 +293,48 @@ begin
   and (p_target_kind='account' or id=p_target_id) order by id for share loop
   if s.subject_class not in ('self','other_adult') or s.lifecycle not in ('active','restricted') then
    raise exception using errcode='0A000',message='export_partition_projection_unavailable'; end if;
+  if exists(select 1 from public.genome_files gf where gf.subject_id=s.id
+    and private.export_account_path_b_file_v1(gf.id)) then
+   -- The actual Path B producer binds its one confirmation principal directly,
+   -- not through an ordinary subject_account_bindings row. Both genuine current
+   -- receipts and all governing rows enter the capture; no binding is invented.
+   person:=private.path_b_person_v1(a,sess,s.id);
+   confirmation:=private.path_b_subject_v1(s.owner_account_id,s.id);
+   if person is null or confirmation is null or person->>'subjectId' is distinct from s.id::text
+    or (person->>'subjectBindingRevision')::bigint is distinct from s.subject_binding_revision
+    or person->>'principalId' is distinct from confirmation->>'principalId'
+    or person->>'principalRevision' is distinct from confirmation->>'principalRevision'
+    or (confirmation->>'subjectBindingRevision')::bigint is distinct from s.subject_binding_revision
+    or (confirmation->>'subjectLifecycleRevision')::bigint is distinct from s.lifecycle_revision then
+    raise exception using errcode='42501',message='not_found';end if;
+   select jsonb_build_object('kind','path-b-confirmation-v1','person',person,'confirmation',confirmation,
+    'draft',to_jsonb(d),'subjectPrincipal',to_jsonb(sp),'signature',to_jsonb(cs),
+    'artifact',to_jsonb(ca),'contact',to_jsonb(e)) into binding
+   from public.adult_subject_drafts d join public.subject_principals sp on sp.id=(person->>'principalId')::uuid
+    join public.consent_signatures cs on cs.id=(confirmation->>'confirmationSignatureId')::uuid
+    join public.consent_artifacts ca on ca.artifact_key=cs.artifact_key and ca.version=cs.artifact_version
+    join public.encrypted_contact_references e on e.id=(confirmation->>'contactReferenceId')::uuid
+   where d.subject_id=s.id and d.owner_account_id=s.owner_account_id and d.state='confirmed'
+    and d.adult_flow='path-b-subject-esignature' and d.evidence_kind='esignature'
+    and sp.subject_id=s.id and sp.account_id=a and sp.principal_kind='account_subject' and sp.status='active'
+    and sp.principal_revision=(person->>'principalRevision')::bigint
+    and cs.target_kind='subject' and cs.target_id=s.id and cs.signer_principal_id=sp.id and cs.signer_account_id=a
+    and cs.purpose='adult-subject-path-b-confirmation' and cs.subject_binding_revision=s.subject_binding_revision
+    and cs.jurisdiction_revision=p.jurisdiction_revision
+    and ca.artifact_key='consent.subject-adult-esignature' and ca.body_sha256=cs.artifact_body_sha256
+    and ca.superseded_at is null and ca.published_at<=clock_timestamp()
+    and ca.effective_on<=timezone('UTC',clock_timestamp())::date
+    and ca.body_sha256=encode(extensions.digest(convert_to(ca.body_markdown,'UTF8'),'sha256'),'hex')
+    and e.principal_id=sp.id and e.status='current' and e.contact_ciphertext is not null
+    and e.authority_revision=sp.principal_revision;
+  else
   select jsonb_build_object('binding',to_jsonb(b),'subjectPrincipal',to_jsonb(sp),'accountPrincipal',to_jsonb(ac)) into binding
    from public.subject_account_bindings b join public.subject_principals sp on sp.id=b.subject_principal_id
     join public.subject_principals ac on ac.id=b.account_principal_id
    where b.subject_id=s.id and b.account_id=a and b.status='current' and sp.subject_id=s.id and sp.account_id=a
     and sp.status='active' and sp.principal_kind='account_subject' and ac.account_id=a and ac.status='active'
     and ac.principal_kind='account_subject';
+  end if;
   if binding is null then raise exception using errcode='42501',message='not_found'; end if;
   subjects:=subjects||jsonb_build_array(jsonb_build_object('subject',to_jsonb(s),'binding',binding));
   -- Enumerate every file: the content list's exclusion filter must not silently
@@ -1213,7 +1263,7 @@ $create$;
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proargnames=array['p_origin','p_target_kind','p_target_id']::text[] and p.proconfig=array['search_path=pg_catalog, private']::text[]
-  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='485318e74e4f75b954ba99af74f28a21')
+  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='bf81f0f13c382c9d5e159acba53995e8')
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)','execute') is distinct from (role_name='service_role' and false))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a

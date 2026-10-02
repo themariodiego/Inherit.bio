@@ -6,6 +6,18 @@ select no_plan();
 \ir fixtures/account_export_saved_path_b.inc
 select lives_ok('set constraints all immediate','the actual saved Path B completion commits every real deferred invariant before account capture');
 set constraints all deferred;
+select is((select count(*) from public.subject_account_bindings where subject_id=pg_temp.sid('main')),0::bigint,
+ 'the genuine Path B producer created no ordinary subject-account binding to invent or borrow');
+select ok(exists(select 1 from public.subjects s join public.subject_principals p on p.subject_id=s.id
+ join public.consent_signatures cs on cs.target_kind='subject' and cs.target_id=s.id
+ where s.id=pg_temp.sid('main') and s.subject_account_id=pg_temp.a('2') and s.owner_account_id=pg_temp.a('1')
+ and p.account_id=pg_temp.a('2') and p.principal_kind='account_subject' and p.status='active'
+ and cs.signer_account_id=p.account_id and cs.signer_principal_id=p.id
+ and cs.purpose='adult-subject-path-b-confirmation' and cs.subject_binding_revision=s.subject_binding_revision),
+ 'the confirmed subject retains its actual own account principal and genuine current confirmation signature');
+select is((select count(*) from public.subject_account_bindings b join public.subjects s on s.id=b.subject_id
+ where b.account_id=pg_temp.a('2') and b.status='current' and s.subject_class='self' and s.subject_account_id=b.account_id),1::bigint,
+ 'the ordinary self origin still has its genuine current binding');
 -- Current ordinary relationship exists independently of source ownership.
 insert into public.family_pairs(subject_a_id,subject_b_id)
  select p.id,u.id from public.subjects p cross join public.subjects u
@@ -95,6 +107,27 @@ update public.family_pairs set pair_revision=pair_revision+1 where subject_a_id 
 set local role service_role;
 select throws_ok($$select pg_temp.routed_graph('family_pairs')$$,'42501','not_found','same-count pair source changes refuse the whole old receipt');
 reset role;rollback to pair_source_changed;
+savepoint path_b_confirmation_metadata_changed;
+update public.adult_subject_drafts set draft_revision=draft_revision+1 where subject_id=pg_temp.sid('main');
+set local role service_role;
+select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','not_found',
+ 'same-count genuine confirmation-draft metadata drift refuses the old consumed authority');
+reset role;rollback to path_b_confirmation_metadata_changed;
+savepoint path_b_confirmation_artifact_ended;
+update public.consent_artifacts set superseded_at=clock_timestamp() where artifact_key='consent.subject-adult-esignature'
+ and superseded_at is null;
+set local role service_role;
+select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','not_found',
+ 'ended actual confirmation artifact cannot authorize readable saved results');
+reset role;rollback to path_b_confirmation_artifact_ended;
+savepoint ordinary_self_binding_ended;
+update public.subject_account_bindings set status='revoked',ended_at=clock_timestamp()
+ where account_id=pg_temp.a('2') and status='current' and subject_id in(select id from public.subjects
+ where subject_class='self' and subject_account_id=pg_temp.a('2'));
+set local role service_role;
+select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','not_found',
+ 'Path B confirmation never replaces the mandatory real ordinary self-account binding');
+reset role;rollback to ordinary_self_binding_ended;
 savepoint actual_readable_logout;
 delete from auth.sessions where id=pg_temp.s('2');
 set local role service_role;
