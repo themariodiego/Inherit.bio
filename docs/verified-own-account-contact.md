@@ -54,3 +54,10 @@ deletion producer is intentionally refused by v2. Migrating that authority is
 remaining scope; it cannot be silently inferred. New schema means the old61
 production guard is ineligible and must be regenerated/qualified. No acceptance
 row, production availability or scientific/notice-delivery status is promoted.
+
+The corrected migration is one owner-only atomic DO, so a guard/postcondition
+failure rolls back its entire schema change without relying on caller transaction
+setup. It rejects new-name overloads and trigger collisions, checks every new
+function's exact body/typed metadata/owner/ACL and checks all original pg_proc
+rows unchanged. The first guarded rehearsal stopped before TAP because one
+arguments pin omitted the existing v1 defaults; its evidence is retained.

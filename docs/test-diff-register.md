@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-02 — exact verified contact guard correction
+
+Owned65-source replay of frozen768 stopped at the strict predecessor guard,
+with zero TAP assertions executed. Complete seven-function metadata capture
+proved one factual pin error: public draft v1's rendered arguments include its
+two existing `DEFAULT NULL::jsonb` declarations. Only that arguments pin is
+corrected; default count/expression, all other predecessor fields, original
+function bodies/grants, fixture algorithms/assertions and clocks remain exact.
+The independent entire original database dump matched652f6ba27ac4cbbd0dbc9a3b4ebf985c8f031d0ba7d37231b673f09bcb481e07
+after rollback without a sequence change; this failed execution is retained.
+
+The guarded migration now performs all exact DDL and full postconditions in one
+owner-only atomic DO. Any new-name overload/trigger collision refuses. Four new
+functions have exact body, typed ABI, defaults, owner, language, attributes,
+configuration, ACL and effective-role post-pins. Every original pg_proc row is
+captured before and compared byte-exact afterward. Corrected SQL execution is
+pending root; no runtime/provider/browser/acceptance credit is inferred.
+
+
 ## 2026-10-02 — verified own account contact producer
 
 Actual a558 native owner-notice Save choice returned404. The retained same-chain
