@@ -1,5 +1,30 @@
 # Test diff register
 
+## 2026-10-02: Remove the actual provenance table/record alias collision
+
+The exactc718 fresh suite reached the genuine parent due worker, then failed
+with42702 in `private.claimed_provenance_pair_state_v1`: a joined canonical
+source alias `x` collided with its declared source record `x`. The same error
+stopped both last-consumer scenarios and claimant erasure; the original failure
+and all downstream assertions are preserved. Only that join and its references
+now use `stored_source`. The full function body postcondition and exact native
+catalog pin change together; ABI, owner, ACL, clocks, locks and every predicate
+remain unchanged. A new source regression reverses only that exact alias block
+and requires the complete original body digest. Every original SQL and browser
+assertion, deadline and retry remains byte-identical. Corrected runtime SQL
+qualification is pending; no source proof is represented as cleanup execution.
+Actual one-worker focused source/contract tests pass9/9 across the original
+last-consumer file and the new alias regression; scoped ESLint passes. No heavy
+compiler, new database run or complete suite is credited to this correction.
+
+The settings documentation records the actual74-assertion rollback append,
+six strict guard probes, five completed controlled call pairs, the original
+reciprocal wait and exact57014 cancellation, and complete setup catalog/data/
+sequence restoration. The281ms controller total is distinct from the unchanged
+250ms function lock limit. The clone's later removal by the root stack reset
+and unsuccessful final backup are explicit; durable host snapshots remain.
+No fresh, SDK, native, provider, elapsed or global-purge qualification is added.
+
 ## 2026-10-02: Verified contact actual append and guard probes
 
 Root's owned rehearsal of exact primary5359 plus contact3f113 ran all 66 pending
