@@ -88,3 +88,14 @@ restored after exact non-sequence dump comparison; the entire original dump
 then matched. Initial predecessor-default, variable-alias and malformed test UUID
 failures remain recorded. Fresh whole database and SDK/browser/provider
 qualification are still pending.
+
+## Focused contact append receipt
+
+Root rehearsed primary5359 plus contact3f113 in the owned baseline transaction:
+all66 pending sources and168 contact assertions passed, including genuine own
+readiness reuse and mixed readiness/owner-notice invalidation. Rollback required
+one separately proven fixture sequence restoration before the entire original
+dump matched652f6ba27ac4cbbd0dbc9a3b4ebf985c8f031d0ba7d37231b673f09bcb481e07.
+The root packet is `integration-evidence/20261001/verified-contact-actual-readiness-abi-corrected-append`.
+This earns no fresh-database, SDK/browser/provider/delivery or acceptance credit.
+The separate guard-probe packet is authored and awaits root execution.
