@@ -4,6 +4,7 @@ import {useCallback,useEffect,useRef,useState,type FormEvent} from "react";
 import Image from "next/image";
 import {KeylessPendingReview} from "./keyless-pending-review";
 import {ReviewPdfDocument} from "./review-pdf";
+import {ReviewReason} from "./review-reason";
 import {KeylessDocumentVerification} from "./keyless-verification";
 import {DOCUMENT_LABELS} from "@/copy/rights/future-person-claim";
 import {readReviewDocument} from "@/lib/future-person/read-review-document";
@@ -157,7 +158,7 @@ export function ClaimReview({claimId}:{claimId:string}) {
           <label className="block"><input type="checkbox" checked={checked.adult} onChange={event=>setChecked(previous=>({...previous,adult:event.target.checked}))}/> This person is an adult.</label>
           {parentLink&&<label className="block"><input type="checkbox" checked={checked.parent} onChange={event=>setChecked(previous=>({...previous,parent:event.target.checked}))}/> The birth record and the parent name match.</label>}
         </fieldset>}
-        <label className="block">Reason<textarea value={reason} minLength={20} maxLength={2000} rows={5} disabled={Boolean(busy)} onChange={event=>setReason(event.target.value)} required/></label>
+        <ReviewReason value={reason} disabled={Boolean(busy)} onChange={setReason}/>
         <button type="submit" disabled={!canSubmit}>Save choice</button>
       </form>}
     </>}
