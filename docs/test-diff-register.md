@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-02 — Exercise genuine due origins without rewriting immutable exports
+
+The actual c718 fresh run passed29 account-discovery assertions, then correctly
+refused the new fixture's target-kind UPDATE with23514/export_identity_immutable.
+The subject exclusion now creates a separate genuine subject request through the
+unchanged capture/create doors, flushes deferred provenance and proves the queued
+subject/source/request tuple exists before the original exclusion assertion.
+The later deadline probes insert new, explicitly historical SQL metadata copied
+from a genuinely current account request; full non-time identity/source/version
+tuples and the original fixed24-hour lifetime are compared, and every original
+constraint is flushed. No live identity or deadline is relabeled or rewritten.
+These rows prove only SQL discovery predicates, not elapsed runtime/native expiry,
+new operation authority, provider bytes or READY. All original assertion texts,
+production readers/guards, migration bodies and limits remain; the failed fresh
+receipt is retained and this successor SQL is unexecuted until root rehearses it.
+
 ## 2026-10-02: Verified contact actual append and guard probes
 
 Root's owned rehearsal of exact primary5359 plus contact3f113 ran all 66 pending

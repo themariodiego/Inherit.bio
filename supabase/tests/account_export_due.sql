@@ -108,24 +108,88 @@ select ok(not exists(select 1 from jsonb_array_elements(public.export_archive_ac
  where v->>'exportId'=(select created->>'exportId' from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first))),'independent-rights origin is never assigned to the account worker');
 rollback to rights_origin;
 savepoint subject_target;
-update public.generated_exports set target_kind='subject' where id=(select (created->>'exportId')::uuid from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first));
+-- A subject request has its own immutable identity and genuine create nonce.
+-- Relabeling the original account request is correctly forbidden.
+create temporary table due_subject_request as select origin,(capture->'subjectPartitions'->>0)::uuid subject_id,
+ null::jsonb capture,null::jsonb created from account_due_requests
+ where created->>'exportId'=(select value->0->>'exportId' from due_first);
+grant select,update on due_subject_request to service_role;
+set local role service_role;
+update due_subject_request set capture=public.export_archive_request_v1('capture',origin,'subject',subject_id);
+update due_subject_request set created=public.export_archive_request_v1('create',origin,'subject',subject_id,
+ jsonb_build_object('exportCookieHash',repeat('d',64),'envelope',jsonb_build_object('routeId','api.subject-export',
+ 'origin','authenticated','principalId',capture->>'principalId','targetKind','subject','targetId',subject_id,
+ 'exportContract','subject-export-v1','originBinding',capture->>'originBinding','authorityReceipt',capture->>'authorityReceipt',
+ 'csrfBinding',repeat('c',64),'operation','create','nonceHash',repeat('d',64),
+ 'issuedAt',floor(extract(epoch from statement_timestamp())*1000)::bigint,
+ 'expiresAt',floor(extract(epoch from statement_timestamp())*1000)::bigint+300000)),repeat('c',64));
+select lives_ok('set constraints all immediate','the genuine subject request flushes its complete creation provenance');
+set constraints all deferred;
+reset role;
+select is((select count(*)from due_subject_request r join public.generated_exports e on e.id=(r.created->>'exportId')::uuid
+ join private.export_archive_jobs j on j.export_id=e.id where e.status='queued' and e.target_kind='subject'
+ and e.target_id=r.subject_id and e.export_kind='subject_raw' and j.route_id='api.subject-export'
+ and j.export_contract='subject-export-v1' and j.origin=r.origin and j.authority_receipt=r.capture->>'authorityReceipt'),1::bigint,
+ 'the excluded subject job actually exists with its genuine immutable source and request tuple');
 set local role service_role;
 select ok(not exists(select 1 from jsonb_array_elements(public.export_archive_account_due_v1())v
- where v->>'exportId'=(select created->>'exportId' from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first))),'subject target is not an account request');
+ where v->>'exportId'=(select created->>'exportId' from due_subject_request)),'subject target is not an account request');
 rollback to subject_target;
+-- These owner-inserted historical metadata rows test only the due predicate.
+-- They copy every source/origin/version field of a genuine current request;
+-- they do not prove an elapsed runtime or mint operation/attempt authority.
+set local role service_role;
+select lives_ok($$select public.export_archive_request_v1('check',origin,'account',(origin->>'accountId')::uuid,
+ jsonb_build_object('exportId',created->>'exportId','exportCookieHash',md5(n::text)||md5(n::text||'cookie')))
+ from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first)$$,
+ 'the historical metadata source retains actual current request and source authority');
+reset role;
 savepoint expired_job;
-update private.export_archive_jobs set created_at=clock_timestamp()-interval '2 hours',deadline=clock_timestamp()-interval '1 hour'
- where export_id=(select (created->>'exportId')::uuid from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first));
+create temporary table due_historical_request as select
+ '79d30000-0000-4000-8000-000000000001'::uuid export_id,clock_timestamp()-interval '25 hours' created_at,
+ to_jsonb(e) original_export,to_jsonb(j) original_job from account_due_requests r
+ join public.generated_exports e on e.id=(r.created->>'exportId')::uuid
+ join private.export_archive_jobs j on j.export_id=e.id where r.created->>'exportId'=(select value->0->>'exportId' from due_first);
+insert into public.generated_exports select fixture.* from due_historical_request h cross join lateral
+ jsonb_populate_record(null::public.generated_exports,h.original_export||jsonb_build_object('id',h.export_id,'requested_at',h.created_at)) fixture;
+insert into private.export_archive_jobs select fixture.* from due_historical_request h cross join lateral
+ jsonb_populate_record(null::private.export_archive_jobs,h.original_job||jsonb_build_object('export_id',h.export_id,
+ 'created_at',h.created_at,'deadline',h.created_at+interval '24 hours','export_cookie_hash',repeat('e',64))) fixture;
+select lives_ok('set constraints all immediate','expired historical metadata satisfies every original deferred constraint');
+set constraints all deferred;
+select ok((select to_jsonb(e)-'id'-'requested_at'=h.original_export-'id'-'requested_at'
+ and to_jsonb(j)-'export_id'-'created_at'-'deadline'-'export_cookie_hash'=h.original_job-'export_id'-'created_at'-'deadline'-'export_cookie_hash'
+ and j.deadline=j.created_at+interval '24 hours' and j.deadline<clock_timestamp()
+ from due_historical_request h join public.generated_exports e on e.id=h.export_id join private.export_archive_jobs j on j.export_id=e.id),
+ 'expired metadata preserves every genuine identity/source/version field and the fixed twenty-four-hour lifetime');
+grant select on due_historical_request to service_role;
 set local role service_role;
 select ok(not exists(select 1 from jsonb_array_elements(public.export_archive_account_due_v1())v
- where v->>'exportId'=(select created->>'exportId' from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first))),'expired immutable job is excluded');
+ where v->>'exportId'=(select export_id::text from due_historical_request)),'expired immutable job is excluded');
 rollback to expired_job;
 savepoint too_close_deadline;
-update private.export_archive_jobs set deadline=clock_timestamp()+interval '30 seconds'
- where export_id=(select (created->>'exportId')::uuid from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first));
+create temporary table due_historical_request as select
+ '79d30000-0000-4000-8000-000000000002'::uuid export_id,clock_timestamp()-interval '24 hours'+interval '30 seconds' created_at,
+ to_jsonb(e) original_export,to_jsonb(j) original_job from account_due_requests r
+ join public.generated_exports e on e.id=(r.created->>'exportId')::uuid
+ join private.export_archive_jobs j on j.export_id=e.id where r.created->>'exportId'=(select value->0->>'exportId' from due_first);
+insert into public.generated_exports select fixture.* from due_historical_request h cross join lateral
+ jsonb_populate_record(null::public.generated_exports,h.original_export||jsonb_build_object('id',h.export_id,'requested_at',h.created_at)) fixture;
+insert into private.export_archive_jobs select fixture.* from due_historical_request h cross join lateral
+ jsonb_populate_record(null::private.export_archive_jobs,h.original_job||jsonb_build_object('export_id',h.export_id,
+ 'created_at',h.created_at,'deadline',h.created_at+interval '24 hours','export_cookie_hash',repeat('f',64))) fixture;
+select lives_ok('set constraints all immediate','near-deadline historical metadata satisfies every original deferred constraint');
+set constraints all deferred;
+select ok((select to_jsonb(e)-'id'-'requested_at'=h.original_export-'id'-'requested_at'
+ and to_jsonb(j)-'export_id'-'created_at'-'deadline'-'export_cookie_hash'=h.original_job-'export_id'-'created_at'-'deadline'-'export_cookie_hash'
+ and j.deadline=j.created_at+interval '24 hours' and j.deadline>clock_timestamp()
+ and j.deadline<=clock_timestamp()+interval '30 seconds'
+ from due_historical_request h join public.generated_exports e on e.id=h.export_id join private.export_archive_jobs j on j.export_id=e.id),
+ 'near-deadline metadata preserves every genuine identity/source/version field and the fixed twenty-four-hour lifetime');
+grant select on due_historical_request to service_role;
 set local role service_role;
 select ok(not exists(select 1 from jsonb_array_elements(public.export_archive_account_due_v1())v
- where v->>'exportId'=(select created->>'exportId' from account_due_requests where created->>'exportId'=(select value->0->>'exportId' from due_first))),
+ where v->>'exportId'=(select export_id::text from due_historical_request)),
  'a job too near its original deadline cannot begin new generation');
 rollback to too_close_deadline;
 set local role service_role;
