@@ -106,8 +106,10 @@ test("Keyless positive documentary match: native owner notice, authenticated syn
       const accepted=await drainMailUntil(review.request,()=>messages.slice(mailStart).find(message=>[message.to].flat().includes(ownerEmail)
         &&message.subject==="A claim needs your review on Inherit"),"the actual unique claim owner notice");
       expect(await reviewFixtureSql(`select count(*)||'/'||bool_and(n.delivered_at is null and n.notice_deadline is null
-        and n.provider_attempt_id is null and m.state='accepted' and k.state='open'
-        and d.status='accepted' and a.submitted_at is not null and a.completed_at is not null and a.attempt_ordinal=m.attempt_count)
+        and n.provider_attempt_id is null and m.state='submitted' and k.state='open'
+        and d.status='accepted' and a.submitted_at is not null and a.completed_at is not null and a.attempt_ordinal=m.attempt_count
+        and a.outbox_id=m.id and a.provider='resend' and a.outcome_code='accepted'
+        and a.provider_message_id_hmac is not null and m.last_outcome_code='accepted' and m.claimed_at is null)
         from public.future_person_claim_notices n join public.mail_outbox m on m.id=n.outbox_id
         join public.future_person_claim_review_packages k on k.claim_id=n.claim_id
         join public.mail_deliveries d on d.outbox_id=m.id join public.mail_provider_attempts a on a.id=d.provider_attempt_id

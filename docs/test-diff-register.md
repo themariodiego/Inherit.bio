@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-02 — Native owner-notice acceptance uses the canonical submitted outbox state
+
+Actual full hosted run 36999627485 at bbd38a064e86f3a94bc389ecabcb62b4150673fe failed the new positive owner-notice journey at its exact `1/true` receipt check (received `1/false`); the other 104 cases in browser partition 5 passed. The original failed log/artifact remains recorded. The journey incorrectly required `mail_outbox.state='accepted'`: the unchanged canonical `complete_mail_attempt` records `mail_deliveries.status='accepted'` and `mail_outbox.state='submitted'`, and the owner-notice wrapper delegates to it. Correct only that new state expectation to exact `submitted` and add exact provider/outbox/attempt outcome and completed receipt checks. Keep notice delivery/deadline/provider-attempt null before the genuine signed delivery callback and every subsequent thirty-day/refusal/source/sibling assertion. No product, migration, provider, authority, test deadline, retry, skip or elapsed-time change; synthetic native provider evidence remains distinct from external provider qualification. Source/focused proof is not a successful rerun of the failed full browser suite.
+
 ## 2026-10-02: Preserve the deletion door's exact refusal for shared-pair validation
 
 The exacted78 fresh run completed186 files and12,084 assertions with one
