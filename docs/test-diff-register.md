@@ -15,8 +15,9 @@ existing genuine operations. Original operation arguments, results, error
 identity, assertions and eight full axe scans are retained. The entire second
 partial-read case is byte-identical. No URLs, IDs, identity, tokens, keys, bodies,
 errors or results enter diagnostics; no timer, deadline, retry, skip or trace
-changes. Four authored deterministic helper tests remain UNRUN at this source
-checkpoint. Actual phase timing and full hosted proof are still required;
+changes. Five deterministic helper tests pass, including a failing diagnostic
+sink that preserves the original operation and exact error. All 58 focused
+helper/filter/diagnostic/loader cases pass. Actual phase timing and full hosted proof are still required;
 no performance cause, fix or acceptance credit is inferred.
 
 ## 2026-10-02 — Retain closed profile diagnostics in browser CI
