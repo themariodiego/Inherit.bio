@@ -1,5 +1,29 @@
 # Test diff register
 
+## 2026-10-02: Keep verified account contact proof and deadlines bound
+
+Source review of the actual 91-assertion contact checkpoint found three gaps:
+reuse ignored an index's elapsed expiry; the readiness Auth trigger could rotate
+a shared contact before the new trigger invalidated its owner notice; and direct
+service UPDATE could move the proven row while retaining its new proof field.
+The separate successor refuses expired current indexes at statement time,
+invalidates exact proven-contact mail even after an earlier rotation, and freezes
+the proven contact/index identity and original index deadline. Exact rotation,
+NULL ciphertext shredding, status revocation and child-first deletion remain.
+Legacy NULL rows keep their existing algorithms. A NULL Auth email is explicitly
+refused rather than relying on a three-valued comparison.
+
+Every original assertion remains. New rollback probes use the real API roles
+and require exact 42501 refusals for identity moves, proof writes and terminal
+resurrection; positive terminal cleanup must restore the entire original tuple.
+The mixed-mail case uses the existing actual normalization and selected observed
+monogenic report producer to obtain a genuine readiness event on the same v2
+contact. It does not insert a readiness envelope or bypass its guard. No PRS,
+calibrated result, provider ACK, delivery or scientific admission is asserted.
+All new SQL execution remains pending root's owned rehearsal; the parent 91-test
+proof and its failures/restoration remain preserved. No deadline or acceptance
+changes and no provider operation are introduced.
+
 ## 2026-10-02 — verified account contact actual UUID probes
 
 The first owned append rehearsal of the new contact test reached 71 passing
