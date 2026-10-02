@@ -87,7 +87,7 @@ try {
       });
     }
     const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""]);
-    closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stdout.write(line+"\n")));
+    closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stderr.write(line+"\n")));
     child.stdin!.write(JSON.stringify(env) + "\n");
   } else {
     assert(process.getuid!() > 0);
@@ -168,8 +168,9 @@ try {
           detached: true, stdio: ["ignore", "pipe", "pipe"],
         }));
         // Only complete, bounded, enum-only profile diagnostics cross either
-        // launcher hop. Every other app log stays discarded.
-        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stdout.write(line+"\n")));
+        // launcher hop. Playwright retains web-server stderr; stdout is ignored.
+        // Every other app log stays discarded.
+        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
         console.log(`Started isolated production app variant ${port}`);
       })().catch(() => { console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }

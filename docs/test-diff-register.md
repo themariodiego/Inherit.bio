@@ -1,5 +1,18 @@
 # Test diff register
 
+## 2026-10-02 — Retain closed profile diagnostics in browser CI
+
+The complete 68fd browser run failed when the native profile save succeeded
+but the refreshed settings inventory refused. Another genuine keyless journey
+refused the inventory before saving. Both safe launcher hops wrote the bounded,
+enum-only profile diagnostic to stdout, which Playwright's web-server default
+discards. Those same already-filtered records now use stderr, which the runner
+retains. The two filters, shared 64-record budgets and rejection of all raw app
+logs remain unchanged. No authority, profile, error text or request is logged.
+All 53 existing filter, diagnostic and profile-loader focused tests pass.
+No browser case, assertion, retry, timeout or acceptance row changes. This
+corrects diagnostic delivery; it does not claim the profile failure is fixed.
+
 ## 2026-10-01 — Read gate inputs once within each invocation
 
 The full c232 Linux suite passed 9,039 tests but exceeded the unchanged
