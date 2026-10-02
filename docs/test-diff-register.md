@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-02 — Correct the factual existing invitation-lock privilege pin
+
+The root's actual append rehearsal of frozen59c9715 stopped at040's strict
+predecessor guard before any fixture assertion. Its independently restored
+schema/ACL, data, sequence states and155-version ledger receipt remains intact.
+An owner rollback inspection found one mismatch among17 function contracts:
+`private.lock_invitation_transitions_v1()` already has exactly postgres and
+service_role EXECUTE entries; the authored pin incorrectly said owner-only.
+Migration20260906055142 explicitly grants that service execution after the
+earlier20260906051253 revoke. All other selected metadata fields matched.
+
+Only that factual predecessor/successor pin is corrected. The existing invoker
+body, exact two-entry ACL, all other role denials and the full unknown-predecessor
+refusal remain. No privilege is added or removed. New source assertions bind
+the unchanged body/grant provenance and prohibit grant/revoke DDL for this
+helper. All original SQL assertions and periods remain unchanged; corrected
+append, fixture, unit and native execution are still UNRUN pending root review.
+
 ## 2026-10-02 — Author a separate immutable historical request prerequisite
 
 Source review of036 found that a genuine current HTTP202 request cannot be
