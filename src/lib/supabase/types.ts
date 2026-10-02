@@ -7688,6 +7688,9 @@ export type Database = {
       finish_future_person_relocation_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json; p_evidence: Json }; Returns: boolean }
       future_person_relocation_work_v1: { Args: Record<PropertyKey, never>; Returns: Json }
       export_archive_account_original_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_file_id: string; p_expected?: Json }; Returns: Json }
+      export_archive_account_graph_rows_v2: { Args: { p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind: string; p_after_key?: Json }; Returns: Json }
+      export_archive_account_path_b_v1: { Args: { p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id: string }; Returns: Json }
+      export_archive_account_graph_rows_v1: { Args: { p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind: string; p_after_key?: Json }; Returns: Json }
       export_archive_account_classes_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind?: string; p_after_id?: string }; Returns: Json }
       export_archive_account_inventory_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind?: string; p_after_id?: string }; Returns: Json }
       export_archive_account_metadata_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_after_id?: string }; Returns: Json }

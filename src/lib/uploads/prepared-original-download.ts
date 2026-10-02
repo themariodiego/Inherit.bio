@@ -33,6 +33,17 @@ export class PreparedOriginalDownloadError extends Error {
 const fail = (code: PreparedOriginalDownloadError["code"]): never => { throw new PreparedOriginalDownloadError(code); };
 const RANGE_BYTES = 1_048_576;
 
+/** Internal configured original-store transport. Permission, immutable physical
+ * identity, ranges and complete EOF remain the checked stream's responsibility.
+ * This never chooses archive delivery or accepts a caller URL. */
+export function readConfiguredOriginalRange(source:OriginalByteSource,start:number,end:number,signal:AbortSignal):Promise<Response>{
+  const config=preparedStorageConfig();
+  return fetch(`${config.origin}/storage/v1/object/authenticated/genomes/${source.objectKey}`,{
+    method:"GET",signal,cache:"no-store",redirect:"error",
+    headers:{Authorization:`Bearer ${config.key}`,apikey:config.key,"Accept-Encoding":"identity",Range:`bytes=${start}-${end}`},
+  });
+}
+
 /** Revocable streamed original bytes, never a transferable signed download URL.
  * One <=1MiB owned range at a time; no read-ahead across consumer backpressure.
  * Each response is fully drained and checked before release. Full original hash
@@ -78,14 +89,7 @@ export async function* streamVerifiedOriginalRanges<Source extends OriginalByteS
   }
   try {
     active();
-    let readRange = options.readRange;
-    if (!readRange) {
-      const config = preparedStorageConfig();
-      readRange = (captured, start, end, current) => fetch(`${config.origin}/storage/v1/object/authenticated/genomes/${captured.objectKey}`, {
-        method: "GET", signal: current, cache: "no-store", redirect: "error",
-        headers: { Authorization: `Bearer ${config.key}`, apikey: config.key, "Accept-Encoding": "identity", Range: `bytes=${start}-${end}` },
-      });
-    }
+    const readRange = options.readRange ?? readConfiguredOriginalRange;
     const hash = createHash("sha256");
     for (let start = 0; start < source.sizeBytes; start += RANGE_BYTES) {
       const end = Math.min(start + RANGE_BYTES, source.sizeBytes) - 1, count = end - start + 1;

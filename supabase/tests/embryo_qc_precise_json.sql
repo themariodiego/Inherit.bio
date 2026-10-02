@@ -36,12 +36,12 @@ select ok((select p.prosecdef and pg_get_userbyid(p.proowner)='postgres' and md5
  and not has_function_privilege('authenticated',p.oid,'execute')
  and not has_function_privilege('inherit_upload_only',p.oid,'execute')
  from pg_proc p where p.oid=x.signature::regprocedure),
- x.signature||' preserves its exact body, owner, security and ACL with one intentional local setting')
+ x.signature||' has its exact reviewed current body, owner, security and ACL with the intentional local precision setting')
  from(values
  ('private.future_person_export_snapshot_v1(text)','7ae505cb92d301a41a2a263be1702547',false),
  ('private.future_person_bound_export_snapshot_v1(jsonb,uuid)','6f202bda0cc049ed12306e4ef5916352',false),
  ('public.future_person_export_members_v1(text,uuid,uuid,text,text)','8510090f140b1680cca24da74fdc48c5',true),
- ('public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)','36f818dc8b24f0f7ff9ceb431eb7ce46',true)
+ ('public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)','1e04b020763456c3c95ca362e3cae7d2',true)
  )x(signature,body_md5,service_execute);
 
 set local role anon;
