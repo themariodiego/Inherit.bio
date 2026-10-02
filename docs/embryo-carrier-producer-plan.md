@@ -208,6 +208,29 @@ same-2000 complete-baseline/atomic-migration/seven-suite plan awaits root review
 Full native publication and mandatory disclosure presentation remain held;
 this intermediate source checkpoint does not complete the science flow.
 
+The reviewed second same-2000 follow-up committed the application migration.
+The first SQL harness stopped before assertions because the restored fresh
+platform did not include the test-only pgTAP extension. After retaining that
+failure, a default-only rollback diagnostic established the actual platform
+owner and every dependency member. The reviewed default installation committed
+only in the owned clone: all 1,087 member records and the complete application
+baseline matched before commit and again in fresh connections. Original
+application function ownership, ACLs and the 1,008/228/224 metadata inventory
+remained exact; the test extension owner is explicitly `supabase_admin`.
+
+The first strict worker suite then reached 49 contiguous checks and stopped in
+real current source capture: `public.embryos` has no `source_state` column. The
+existing publisher records a failed no-source ordinal as `status='qc_fail'`,
+retains its own measured QC, and publishes no canonical source/file/calls for
+it. The source successor changes only that native branch reference. Its strict
+failed status and absent-source/file/call conditions, all other scientific and
+authority guards, and every original test assertion remain intact. Six new
+rollback checks exercise the genuine mixed-QC publication/capture contract.
+No SQL suite has qualified; the installed dependency must not be recreated.
+A reviewed atomic replacement of only the capture function on the same clone,
+with complete before/source-derived-after metadata equality, remains required.
+The native bridge and clinical publication remain held.
+
 ## Presentation prerequisite
 
 The current carrier cell displays a three-state label but lacks the brief's

@@ -50,6 +50,10 @@ create or replace function private.embryo_carrier_registry_v1() returns jsonb la
 
 -- Every actual operation executes as service_role. Test helper selection is
 -- granted only on synthetic temporary state, never a source table/role/catalog.
+select is((select status from public.embryos where cohort_id=(select cohort from carrier_ids) and sample_ordinal=1),
+ 'qc_fail','the real publisher represents its failed no-source ordinal through the native embryo status');
+select lives_ok($$select private.capture_embryo_carrier_v1((select cohort from carrier_ids),true)$$,
+ 'the complete published mixed-QC cohort resolves through the native source and status contract');
 create temporary table carrier_queue as select public.enqueue_embryo_carrier_v1((select cohort from carrier_ids),true) body;
 select is((select body->>'status' from carrier_queue),'queued','a complete current capture enqueues one actual carrier attempt');
 create function pg_temp.carrier_token() returns text language sql as $$select repeat('d',64);$$;
@@ -64,6 +68,19 @@ create temporary table carrier_claim as select pg_temp.carrier('claim') body;
 reset role;
 select is((select body->>'version' from carrier_claim),'embryo-carrier-claim-v1','the service claimant returns the closed operation receipt');
 select is((select jsonb_array_length(body#>'{capture,embryos}') from carrier_claim),3,'capture includes every original published ordinal');
+select is((select body#>'{capture,embryos,1,source}' from carrier_claim),'null'::jsonb,
+ 'the published failed ordinal has a truthful null source in the whole capture');
+select is((select body#>'{capture,embryos,1,qc,qc_verdict}' from carrier_claim),'"fail"'::jsonb,
+ 'no-source capture preserves the failed ordinal''s own measured QC verdict');
+select is((select body#>'{capture,embryos,1,qc,qc_reasons}' from carrier_claim),'["embryo_call_rate"]'::jsonb,
+ 'no-source capture preserves the actual measured QC reason');
+select ok(not exists(select 1 from private.embryo_canonical_sources x join public.embryos e on e.id=x.embryo_id
+  where e.cohort_id=(select cohort from carrier_ids) and e.sample_ordinal=1)
+ and not exists(select 1 from public.genome_files f join public.embryos e on e.subject_id=f.subject_id
+  where e.cohort_id=(select cohort from carrier_ids) and e.sample_ordinal=1)
+ and not exists(select 1 from public.embryo_variants v join public.embryos e on e.id=v.embryo_id
+  where e.cohort_id=(select cohort from carrier_ids) and e.sample_ordinal=1),
+ 'capture does not synthesize a canonical file, genome file or call for the genuine failed ordinal');
 select is((select jsonb_array_length(body#>'{capture,authority,grants}') from carrier_claim),2,'the job binds both complete current analysis grants');
 select is((select count(*) from public.worker_jobs where kind='score_embryo' and cohort_id=(select cohort from carrier_ids)),1::bigint,
  'exact enqueue replay never creates an extra attempt');

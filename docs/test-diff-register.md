@@ -8460,3 +8460,27 @@ unchanged. The retained failure provides no SQL or native durability credit;
 another exclusive complete-baseline rehearsal awaits root review.
 The three existing source-pin tests, readability gate and SQL include gate pass
 on this source correction; no TypeScript or test expectation changed.
+
+## Native published failed-ordinal carrier capture · 2 October 2026
+
+The source migration committed in the reviewed owned 2000 clone. Its test-only
+pgTAP dependency then installed with every observed member and complete original
+application metadata verified before commit and again through fresh reads. The
+first strict suite reached 49 contiguous passing checks, then failed because the
+carrier capture read `e.source_state`, which is not a native `public.embryos`
+column. No suite completed; every actual failure and partial receipt is retained.
+
+The source successor changes only that branch selection to `e.status='qc_fail'`,
+matching the existing publisher's recorded failed no-source ordinal. The strict
+failed status and absence-of-source/file/call checks remain unchanged, as do all
+other authority, source and QC guards. Six additional rollback assertions cover
+the existing publisher's native status, real complete mixed-QC capture, truthful
+null source, original QC verdict/reason and absence of fabricated source/calls.
+Every original SQL assertion and all 65 core scientific tests remain unchanged.
+The same already-migrated clone requires a reviewed atomic one-function
+replacement with complete predecessor/successor metadata comparisons. No
+migration replay or dependency recreation is proposed; native proof, clinical
+publication and acceptance remain held.
+The 65 unchanged primitive cases and three existing policy/source-pin cases
+pass on this correction. Readability and exact SQL fixture include gates pass.
+The six new native capture assertions await the reviewed database run.

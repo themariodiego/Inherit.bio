@@ -211,7 +211,7 @@ begin
    raise exception using errcode='42501',message='embryo_carrier_unavailable'; end if;
   v_source:=null;
   select * into x from private.embryo_canonical_sources where embryo_id=e.id for share;
-  if e.source_state='qc_fail_no_source' then
+  if e.status='qc_fail' then
    if e.status is distinct from 'qc_fail' or x.file_id is not null
     or exists(select 1 from public.genome_files where subject_id=s.id)
     or exists(select 1 from public.embryo_variants where embryo_id=e.id) then
