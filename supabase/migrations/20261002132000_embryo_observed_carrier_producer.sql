@@ -96,7 +96,7 @@ declare c public.embryo_cohorts; e public.embryos; s public.subjects;
  v_basis text; v_principal uuid; v_principals uuid[]; v_grants jsonb:='[]';
  v_grant public.purpose_grants; v_direction public.directional_grants;
  v_signature public.consent_signatures; v_profile public.profiles;
- v_count integer:=0; v_lease_deadline timestamptz;
+ v_count integer:=0; v_assertion_count integer:=0; v_lease_deadline timestamptz;
 begin
  if p_test is distinct from true or not exists(select 1 from private.embryo_split_config where enabled) then
   raise exception using errcode='42501',message='embryo_carrier_unavailable'; end if;
@@ -184,7 +184,9 @@ begin
    raise exception using errcode='42501',message='embryo_carrier_unavailable'; end if;
   select jsonb_agg(to_jsonb(r) order by r.assertion_id) into v_rules
    from private.carrier_assertion_rule_v1() r where r.condition_id=v_condition.condition_id;
-  if coalesce(jsonb_array_length(v_rules),0)<>1 then
+  v_assertion_count:=v_assertion_count+coalesce(jsonb_array_length(v_rules),0);
+  if coalesce(jsonb_array_length(v_rules),0)<1 or v_assertion_count>20000
+   or (select count(distinct row->>'release_id') from jsonb_array_elements(v_rules) row)<>1 then
    -- No subset of the complete reviewed assertion rule may be selected.
    raise exception using errcode='42501',message='embryo_carrier_unavailable'; end if;
   select * into v_release from public.clinical_assertion_releases where release_id=v_rules->0->>'release_id' for share;
@@ -196,7 +198,7 @@ begin
    'condition_registry',jsonb_build_array(jsonb_build_object('condition_id',v_condition.condition_id,
     'condition_name',v_condition.condition_name,'category',v_condition.category,'active',v_condition.active)),
    'assertions',v_rules,'reference_receipt',jsonb_build_object('condition',to_jsonb(v_carrier),
-    'review',to_jsonb(v_review),'release',to_jsonb(v_release))));
+    'review',to_jsonb(v_review),'release',to_jsonb(v_release),'assertions',v_rules)));
  end loop;
  for e in select * from public.embryos where cohort_id=c.id order by sample_ordinal for share loop
   select * into s from public.subjects where id=e.subject_id;
@@ -345,7 +347,30 @@ declare a jsonb:=p_condition->'assertions'->0; qc jsonb:=p_embryo->'qc';
  v_call jsonb; v_spell jsonb; v_spelling jsonb; v_readings integer[]:='{}'; v_dose integer;
  v_alleles text[]; v_reason text; v_observation jsonb; v_unreadable boolean:=false;
  policy jsonb:=private.embryo_carrier_qc_policy_v1();
+ v_part jsonb; v_assertion_measurements jsonb:='[]'; v_covered integer:=0;
 begin
+ if jsonb_array_length(p_condition->'assertions')>1 then
+  -- Complete reviewed condition evidence, with independent per-assertion
+  -- counts. Never select a convenient subset or sum alleles into a phase,
+  -- diagnosis or disease probability. Missing calls remain named refusals.
+  for a in select value from jsonb_array_elements(p_condition->'assertions') loop
+   v_part:=private.expected_embryo_carrier_measurement_v1(p_embryo,
+    jsonb_set(p_condition,'{assertions}',jsonb_build_array(a)));
+   v_assertion_measurements:=v_assertion_measurements||jsonb_build_array(jsonb_build_object(
+    'assertion_id',a->'assertion_id','observed_copies',v_part#>'{observation,observed_copies}',
+    'reason',v_part->'reason'));
+   if v_part->'observation'<>'null'::jsonb then v_covered:=v_covered+1;end if;
+  end loop;
+  if v_covered>0 then
+   v_observation:=jsonb_build_object('version',2,'producer','embryo-reviewed-allele-observation-v1',
+    'figure_basis','{"version":1,"basis":"observed"}'::jsonb,'source',p_embryo->'source',
+    'condition_id',p_condition->'condition_id','covered_assertions',v_covered,
+    'required_assertions',jsonb_array_length(p_condition->'assertions'),
+    'assertion_measurements',v_assertion_measurements,'interpretation_status','held','confirmation_required',true);
+  else v_reason:=v_assertion_measurements->0->>'reason';end if;
+  return jsonb_build_object('embryoId',p_embryo->'embryoId','conditionId',p_condition->'condition_id',
+   'observation',v_observation,'reason',v_reason,'assertion_measurements',v_assertion_measurements);
+ end if;
  if p_embryo->'source'='null'::jsonb
   or (qc->>'call_rate')::double precision<(policy->>'callRateNoFigure')::double precision
   or (qc->>'parent_a_concordance')::double precision<(policy->>'concordanceFail')::double precision
@@ -359,6 +384,17 @@ begin
   else v_reason:='qc_review_required';end if;
  else
   for v_call in select value from jsonb_array_elements(private.embryo_carrier_calls_v1(p_embryo,p_condition)) loop
+   -- The core validates the complete bounded page before matching spellings.
+   -- Real immutable splitter rows may be haploid, multiallelic or contain N;
+   -- these yield a truthful invalid_calls result, not a transport failure or
+   -- an unrelated-allele skip. This does not broaden scientific admission.
+   v_alleles:=string_to_array(v_call->>'genotype','/');
+   if v_call->>'ref'!~'^[ACGT]+$'
+    or (v_call->'alt'<>'null'::jsonb and v_call->>'alt'!~'^[ACGT]+$')
+    or v_call->>'genotype'!~'^(?:[ACGT]+/[ACGT]+|--)$'
+    or (v_call->>'genotype'<>'--' and exists(select 1 from unnest(v_alleles) letter
+     where letter<>v_call->>'ref' and letter is distinct from v_call->>'alt')) then
+    v_reason:='invalid_calls';exit;end if;
    v_spelling:=null;
    for v_spell in select jsonb_build_array((a->>'pos')::integer,a->>'ref',a->>'alt') union all
     select value from jsonb_array_elements(a->'equivalents') loop
@@ -368,10 +404,6 @@ begin
    if v_spelling is null and not(length(a->>'ref')=1 and length(a->>'alt')=1
     and v_call->>'pos'=a->>'pos' and v_call->>'ref'=a->>'ref' and length(v_call->>'alt')=1) then continue;end if;
    if v_call->>'genotype'='--' then v_unreadable:=true;continue;end if;
-   v_alleles:=string_to_array(v_call->>'genotype','/');
-   if cardinality(v_alleles)<>2 or exists(select 1 from unnest(v_alleles) letter
-    where letter!~'^[ACGT]+$' or (letter<>v_call->>'ref' and letter is distinct from v_call->>'alt')) then
-    v_reason:='invalid_calls';exit; end if;
    if v_call->'alt'='null'::jsonb then v_dose:=0;
    elsif v_spelling is not null then select count(*) into v_dose from unnest(v_alleles) letter where letter=v_spelling->>2;
    else select count(*) into v_dose from unnest(v_alleles) letter where letter=a->>'alt'; end if;
@@ -394,12 +426,52 @@ begin
 end $measurement$;
 revoke all on function private.expected_embryo_carrier_measurement_v1(jsonb,jsonb) from public,anon,authenticated,inherit_upload_only,service_role;
 
+create function private.embryo_carrier_coverage_v1(p_measurement jsonb) returns text
+language sql immutable set search_path='' as $coverage$
+ select case when p_measurement->'observation'='null'::jsonb then
+  case when p_measurement->>'reason' in('embryo_call_rate','embryo_parent_discordant','contamination',
+   'dropout_too_high','qc_review_required') then 'quality_not_measurable' else 'not_covered' end
+  when p_measurement#>>'{observation,version}'='2'
+   and (p_measurement#>>'{observation,covered_assertions}')::integer
+    <(p_measurement#>>'{observation,required_assertions}')::integer then 'partial'
+  else 'covered' end;
+$coverage$;
+revoke all on function private.embryo_carrier_coverage_v1(jsonb) from public,anon,authenticated,inherit_upload_only,service_role;
+
+create function private.embryo_carrier_receipt_v1(p_job public.worker_jobs,p_embryo jsonb,
+ p_condition jsonb,p_measurement jsonb) returns jsonb language sql immutable set search_path='' as $saved_receipt$
+ select jsonb_build_object('version',1,'producer','embryo-reviewed-allele-observation-v1',
+  'job_id',(p_job).id,'attempt',(p_job).attempts,'capture_sha256',(p_job).file_sha256,
+  'condition_id',p_condition->'condition_id','figure_basis',case when p_measurement->'observation'='null'::jsonb
+   then 'null'::jsonb else '{"version":1,"basis":"observed"}'::jsonb end,
+  'source',p_embryo->'source','reference_receipt',p_condition->'reference_receipt',
+  'publication','held','hold_reason','scientific_disclosures_pending')
+  ||case when p_measurement ? 'assertion_measurements' then jsonb_build_object('version',2,
+   'assertion_measurements',p_measurement->'assertion_measurements','assertion_coverage',jsonb_build_object(
+    'covered',(select count(*) from jsonb_array_elements(p_measurement->'assertion_measurements') row
+     where row->'observed_copies'<>'null'::jsonb),
+    'required',jsonb_array_length(p_measurement->'assertion_measurements'))) else '{}'::jsonb end;
+$saved_receipt$;
+revoke all on function private.embryo_carrier_receipt_v1(public.worker_jobs,jsonb,jsonb,jsonb) from public,anon,authenticated,inherit_upload_only,service_role;
+
 create function private.valid_embryo_carrier_receipt_v1(p_receipt jsonb) returns boolean
 language sql immutable set search_path='' as $receipt$
  select coalesce(jsonb_typeof(p_receipt)='object'
-  and (select array_agg(k order by k) from jsonb_object_keys(p_receipt) k)=
-   array['attempt','capture_sha256','condition_id','figure_basis','hold_reason','job_id','producer','publication','reference_receipt','source','version']
-  and p_receipt->'version'='1'::jsonb and p_receipt->>'producer'='embryo-reviewed-allele-observation-v1'
+  and ((p_receipt->'version'='1'::jsonb and (select array_agg(k order by k) from jsonb_object_keys(p_receipt) k)=
+    array['attempt','capture_sha256','condition_id','figure_basis','hold_reason','job_id','producer','publication','reference_receipt','source','version'])
+   or (p_receipt->'version'='2'::jsonb and (select array_agg(k order by k) from jsonb_object_keys(p_receipt) k)=
+    array['assertion_coverage','assertion_measurements','attempt','capture_sha256','condition_id','figure_basis','hold_reason','job_id','producer','publication','reference_receipt','source','version']
+    and jsonb_typeof(p_receipt->'assertion_measurements')='array'
+    and jsonb_array_length(p_receipt->'assertion_measurements') between 2 and 20000
+    and not exists(select 1 from jsonb_array_elements(p_receipt->'assertion_measurements') row
+     where (select array_agg(k order by k) from jsonb_object_keys(row) k) is distinct from array['assertion_id','observed_copies','reason']
+      or row->>'assertion_id'!~'^[1-9][0-9]*$' or row->'observed_copies' not in('null'::jsonb,'0'::jsonb,'1'::jsonb,'2'::jsonb)
+      or not ((row->'observed_copies'='null'::jsonb and jsonb_typeof(row->'reason')='string')
+       or (row->'observed_copies' in('0'::jsonb,'1'::jsonb,'2'::jsonb) and row->'reason'='null'::jsonb)))
+    and p_receipt->'assertion_coverage'=jsonb_build_object('covered',
+     (select count(*) from jsonb_array_elements(p_receipt->'assertion_measurements') row where row->'observed_copies'<>'null'::jsonb),
+     'required',jsonb_array_length(p_receipt->'assertion_measurements'))))
+  and p_receipt->>'producer'='embryo-reviewed-allele-observation-v1'
   and p_receipt->>'publication'='held' and p_receipt->>'hold_reason'='scientific_disclosures_pending'
   and p_receipt->>'capture_sha256'~'^[0-9a-f]{64}$'
   and p_receipt->>'job_id'~'^[0-9a-f-]{36}$' and p_receipt->>'attempt'~'^([1-9]|1[0-9]|20)$'
@@ -443,18 +515,12 @@ begin
  select value into c from jsonb_array_elements(a->'conditions') where value->>'condition_id'=new.condition_id;
  if e is null or c is null then raise exception using errcode='42501',message='embryo_carrier_unavailable';end if;
  expected:=private.expected_embryo_carrier_measurement_v1(e,c);
- v_receipt:=jsonb_build_object('version',1,'producer','embryo-reviewed-allele-observation-v1',
-  'job_id',j.id,'attempt',j.attempts,'capture_sha256',j.file_sha256,'condition_id',new.condition_id,
-  'figure_basis',case when expected->'observation'='null'::jsonb then 'null'::jsonb
-   else '{"version":1,"basis":"observed"}'::jsonb end,
-  'source',e->'source','reference_receipt',c->'reference_receipt',
-  'publication','held','hold_reason','scientific_disclosures_pending');
+ v_receipt:=private.embryo_carrier_receipt_v1(j,e,c,expected);
  if new.computation_receipt is distinct from v_receipt
   or new.finding is distinct from nullif(expected->'observation','null'::jsonb)
   or new.condition_name is distinct from c#>>'{condition_registry,0,condition_name}'
   or new.not_covered_reason is distinct from expected->>'reason'
-  or new.coverage_state is distinct from case when expected->'observation'='null'::jsonb
-   then 'quality_not_measurable' else 'covered' end
+  or new.coverage_state is distinct from private.embryo_carrier_coverage_v1(expected)
   or new.source_binding_fingerprint is distinct from j.file_sha256
   or new.model_id is not null or new.model_version is not null
   or new.evidence_label is distinct from 'preliminary' or new.citation_ids is distinct from '{}'::text[] then
@@ -471,12 +537,43 @@ returns jsonb language plpgsql security definer set search_path='' set lock_time
 set extra_float_digits=3 as $worker$
 declare j public.worker_jobs; a jsonb; v_hash text; e jsonb; c jsonb; m jsonb; expected jsonb;
  v_deadline timestamptz; v_revision bigint; v_saved integer:=0; v_measurements jsonb:='[]';
+ v_after uuid; v_next uuid; v_cohort uuid; v_checked integer:=0; v_queued integer:=0;
+ v_assertion jsonb; v_pages jsonb:='[]'; v_assertion_id jsonb;
 begin
  if p_test_jurisdiction is distinct from true or p_claim_token_hash is null
   or p_claim_token_hash!~'^[0-9a-f]{64}$' or p_operation is null
-  or p_operation not in('claim','check','read','save','fail')
+  or p_operation not in('reconcile','claim','check','read','read_batch','save','fail')
   or not exists(select 1 from private.embryo_split_config where enabled) then
   raise exception using errcode='42501',message='embryo_carrier_unavailable';end if;
+ if p_operation='reconcile' then
+  if p_job_id is not null or p_attempt is not null or jsonb_typeof(p_payload) is distinct from 'object'
+   or (select array_agg(k order by k) from jsonb_object_keys(p_payload) k) is distinct from array['afterCohortId']
+   or (p_payload->'afterCohortId'<>'null'::jsonb and (jsonb_typeof(p_payload->'afterCohortId')<>'string'
+    or p_payload->>'afterCohortId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')) then
+   raise exception using errcode='22023',message='invalid_request';end if;
+  -- Recover a lost postcommit enqueue from durable current source/consent
+  -- records. Empty admission never enumerates cohorts. Every candidate goes
+  -- through the same current full capture and idempotent enqueue; the cursor
+  -- selects only a bounded inventory page, never authority or source bytes.
+  if jsonb_array_length(private.embryo_carrier_registry_v1()->'conditions')=0 then
+   return '{"status":"held","reason":"no_registered_conditions"}'::jsonb;end if;
+  v_after:=(p_payload->>'afterCohortId')::uuid;
+  for v_cohort in select id from public.embryo_cohorts where status='active'
+   and publication_revision is not null and owner_account_id is not null and uploaded_at is not null
+   and retention_expires_at>clock_timestamp() and (v_after is null or id>v_after) order by id limit 4 loop
+   v_checked:=v_checked+1;v_next:=v_cohort;
+   begin
+    a:=public.enqueue_embryo_carrier_v1(v_cohort,true);
+    if a->>'status'='queued' then v_queued:=v_queued+1;end if;
+   exception when insufficient_privilege then
+    -- Missing/revoked current authority admits no job; a later complete pass
+    -- resolves current state again. Other failures abort the bounded page.
+    null;
+   end;
+  end loop;
+  return jsonb_build_object('version','embryo-carrier-reconcile-v1','checked',v_checked,'queued',v_queued,
+   'nextCursor',case when v_checked=4 then v_next else null end);
+ end if;
  if p_operation='claim' then
   if p_job_id is not null or p_attempt is not null or p_payload is not null then
    raise exception using errcode='22023',message='invalid_request';end if;
@@ -534,18 +631,42 @@ begin
   if p_operation='check' then
    update public.worker_jobs set claim_expires_at=least(clock_timestamp()+interval '5 minutes',v_deadline)
     where id=j.id returning * into j;
+   -- Full current capture/payload equality was proved above. Avoid repeating
+   -- the entire reviewed library in every bounded source checkpoint response.
+   return jsonb_build_object('version','embryo-carrier-check-v2','jobId',j.id,'attempt',j.attempts,
+    'claimExpiresAt',j.claim_expires_at,'deadline',v_deadline,'captureSha256',v_hash);
   end if;
-  return jsonb_build_object('version',case p_operation when 'claim' then 'embryo-carrier-claim-v1' else 'embryo-carrier-check-v1' end,
+  return jsonb_build_object('version','embryo-carrier-claim-v1',
    'jobId',j.id,'attempt',j.attempts,'claimExpiresAt',j.claim_expires_at,'deadline',v_deadline,
    'captureSha256',v_hash,'capture',a);
- elsif p_operation='read' then
+ elsif p_operation in('read','read_batch') then
   if jsonb_typeof(p_payload) is distinct from 'object'
-   or (select array_agg(k order by k) from jsonb_object_keys(p_payload) k) is distinct from array['conditionId','embryoId'] then
+   or (select array_agg(k order by k) from jsonb_object_keys(p_payload) k) is distinct from
+    case when p_operation='read' then array['conditionId','embryoId'] else array['assertionIds','conditionId','embryoId'] end then
    raise exception using errcode='22023',message='invalid_request';end if;
   select value into e from jsonb_array_elements(a->'embryos') where value->>'embryoId'=p_payload->>'embryoId';
   select value into c from jsonb_array_elements(a->'conditions') where value->>'condition_id'=p_payload->>'conditionId';
   if e is null or c is null or e->'source'='null'::jsonb then
    raise exception using errcode='42501',message='embryo_carrier_unavailable';end if;
+  if p_operation='read_batch' then
+   if jsonb_typeof(p_payload->'assertionIds') is distinct from 'array'
+    or jsonb_array_length(p_payload->'assertionIds') not between 1 and 32
+    or exists(select 1 from jsonb_array_elements(p_payload->'assertionIds') row
+     where jsonb_typeof(row)<>'number' or row#>>'{}'!~'^[1-9][0-9]*$')
+    or (select count(distinct row) from jsonb_array_elements(p_payload->'assertionIds') row)
+     <>jsonb_array_length(p_payload->'assertionIds') then
+    raise exception using errcode='22023',message='invalid_request';end if;
+   for v_assertion_id in select value from jsonb_array_elements(p_payload->'assertionIds') loop
+    select value into v_assertion from jsonb_array_elements(c->'assertions') where value->'assertion_id'=v_assertion_id;
+    if v_assertion is null then raise exception using errcode='42501',message='embryo_carrier_unavailable';end if;
+    v_pages:=v_pages||jsonb_build_array(jsonb_build_object('assertionId',v_assertion_id,
+     'calls',private.embryo_carrier_calls_v1(e,jsonb_set(c,'{assertions}',jsonb_build_array(v_assertion)))));
+   end loop;
+   return jsonb_build_object('version','embryo-carrier-call-batch-v1','jobId',j.id,'attempt',j.attempts,
+    'captureSha256',v_hash,'embryoId',e->'embryoId','conditionId',c->'condition_id','pages',v_pages);
+  end if;
+  if jsonb_array_length(c->'assertions')<>1 then
+   raise exception using errcode='22023',message='invalid_request';end if;
   return jsonb_build_object('version','embryo-carrier-calls-v1','jobId',j.id,'attempt',j.attempts,
    'captureSha256',v_hash,'embryoId',e->'embryoId','conditionId',c->'condition_id',
    'calls',private.embryo_carrier_calls_v1(e,c));
@@ -576,19 +697,15 @@ begin
      coverage_state,citation_ids,not_covered_reason,source_binding_fingerprint,computation_revision,computation_receipt)
     values((e->>'embryoId')::uuid,c->>'condition_id',c#>>'{condition_registry,0,condition_name}',
      nullif(expected->'observation','null'::jsonb),'preliminary',
-     case when expected->'observation'='null'::jsonb then 'quality_not_measurable' else 'covered' end,
+     private.embryo_carrier_coverage_v1(expected),
      '{}',expected->>'reason',v_hash,v_revision,
-     jsonb_build_object('version',1,'producer','embryo-reviewed-allele-observation-v1','job_id',j.id,
-      'attempt',j.attempts,'capture_sha256',v_hash,'condition_id',c->>'condition_id',
-      'figure_basis',case when expected->'observation'='null'::jsonb then 'null'::jsonb
-       else '{"version":1,"basis":"observed"}'::jsonb end,
-      'source',e->'source','reference_receipt',c->'reference_receipt','publication','held','hold_reason','scientific_disclosures_pending'));
+     private.embryo_carrier_receipt_v1(j,e,c,expected));
     v_saved:=v_saved+1;
    end loop;
   end loop;
   update public.worker_jobs set status='done',finished_at=clock_timestamp(),claim_token_hash=null,
    claim_expires_at=null,claimed_by=null,progress=100,progress_note='complete',
-   partial=exists(select 1 from jsonb_array_elements(v_measurements) row where row->'observation'='null'::jsonb)
+   partial=exists(select 1 from jsonb_array_elements(v_measurements) row where private.embryo_carrier_coverage_v1(row)<>'covered')
    where id=j.id;
   return jsonb_build_object('status','saved_held','jobId',j.id,'attempt',j.attempts,
    'captureSha256',v_hash,'saved',v_saved,'publication','held');
@@ -637,7 +754,9 @@ begin
     or score.computation_receipt->'reference_receipt' is distinct from c->'reference_receipt' then return null;end if;
    expected:=private.expected_embryo_carrier_measurement_v1(e,c);
    if score.finding is distinct from nullif(expected->'observation','null'::jsonb)
-    or score.not_covered_reason is distinct from expected->>'reason' then return null;end if;
+    or score.not_covered_reason is distinct from expected->>'reason'
+    or score.coverage_state is distinct from private.embryo_carrier_coverage_v1(expected)
+    or score.computation_receipt is distinct from private.embryo_carrier_receipt_v1(j,e,c,expected) then return null;end if;
    v_count:=v_count+1;
   end loop;
  end loop;

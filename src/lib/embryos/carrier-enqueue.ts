@@ -26,7 +26,8 @@ export async function enqueueCurrentEmbryoCarrier(cohortId: string, signal?: Abo
     if (!queued.safeParse(result.data).success && !held.safeParse(result.data).success) return;
   } catch {
     // A failed queue capture must not misreport a committed grant or published
-    // source as failed. A later repeated grant/publication can retry admission.
+    // source as failed. The independent worker reconciliation recovers from
+    // durable current source/grant rows, including a crash before this call.
     return;
   }
 }

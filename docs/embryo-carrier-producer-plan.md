@@ -2,8 +2,9 @@
 
 Prepared 2026-10-02 from cc79be42679d0dc5f57d964a3d6216c3aed8137a.
 G4.2, G4.5 and every currently unproved route/state pair remain NO. The frozen d98 checkpoint implements the private observed-allele core. The
-separate `codex/embryo-carrier-worker` child now authors the operation-specific
-queue, bounded worker, exact private save and current saved-hold reader. These
+separate `codex/embryo-carrier-worker-v2` successor now authors the operation-specific
+queue, complete per-assertion worker, exact private save, durable intake recovery
+and the current saved-hold reader connected to both real product pages. These
 new database operations await an owned-clone rehearsal; no clinical output is
 admitted. No condition,
 review, scientific package or jurisdiction is activated.
@@ -73,7 +74,10 @@ completion claim.
    before enqueue; require current condition-registry membership and current
    active named carrier review/revision, current unretired reference release,
    its pinned source/extract/gene-validity digests, and the whole rule rows.
-   Unsupported multi-allele conditions refuse rather than choosing a subset.
+   Capture the entire reviewed condition library, with the existing 20,000-row
+   overall reference bound. Every assertion is measured independently. A
+   multi-allele condition interpretation stays held without selecting a subset,
+   summing doses, assuming phase or inferring disease probability.
 2. Capture the complete current cohort published canonical source set and
    immutable call proof `exact-staged-calls-v1`. Include each file/subject/
    embryo/cohort identity and source SHA/publication/upload/normalization
@@ -114,29 +118,59 @@ calls and refuses any worker dose or incomplete cohort that disagrees.
 
 `carrier-worker.ts` runs the original per-file allele core, and its operator
 entry point `pnpm worker:embryo-carrier --once` is awaited and TEST-LOCAL only.
-Admission is attempted after a genuine cohort purpose grant or whole-source
+Admission hints run after a genuine cohort purpose grant or whole-source
 publication commits. An incomplete analysis grant does not invalidate the
-valid grant itself. A repeated grant/publication can retry refused admission.
-There is no new daemon, credential or provider.
+valid grant itself. The awaited worker independently reconciles bounded pages
+of four published current cohorts before each claim, through the same full
+capture/idempotent enqueue. Durable source/grant records recover a lost hint
+after a process/request crash; a restart begins a fresh inventory pass. The
+private process cursor advances pages and resets after a complete pass. There
+is no new credential, provider, recovery table or user-triggered replay.
+
+For complete multi-assertion conditions, each read page contains at most 32
+captured assertion IDs and at most 256 own immutable calls per assertion.
+Every page is enclosed by full current capture checks. The original exact
+primitive counts each allele separately. The compact saved measurements retain
+every assertion ID, observed 0/1/2 or named refusal, and exact n/N coverage;
+the receipt also pins the complete reviewed assertion rows and review/release
+evidence. Condition interpretation remains held. No disease probability,
+phase, dose sum or clinical finding is derived from those independent counts.
+The actual splitter's haploid, multiallelic and literal-N calls reach the
+unchanged core's truthful refusal instead of failing the transport. Independent
+SQL validates the entire bounded call page before allele-spelling matching.
 
 A QC-passed observed dose persists as the truthful private observation with
 `coverage_state=covered` and `not_covered_reason=NULL`, keeping the complete
 original score constraint. Its separate receipt says `publication=held` and
-`hold_reason=scientific_disclosures_pending`. Genuine QC/coverage failures
-persist their named source reason. Compare, detail and Copilot explicitly
+`hold_reason=scientific_disclosures_pending`. Genuine QC failures keep quality_not_measurable; QC-passed unsupported/missing
+calls keep not_covered, and partial complete-set coverage keeps partial.
+Compare, detail and Copilot explicitly
 exclude receipt-bearing private rows. The service-only current saved reader
 re-proves the full capture and every saved observation, then returns only the
 closed disclosure hold to an authorized live account; it reveals no finding,
-DNA or other-principal capture.
+DNA or other-principal capture. A strict TypeScript caller rederives the live
+account/session after the existing page gates. Both actual detail and comparison
+pages show plain saved-review status only when this current reader proves the
+complete result. Failed or widened responses remain a read error.
 
-Local focused tests now pass 163 cases, including 65 unchanged core cases,
+Local focused tests now pass 187 cases, including 65 unchanged core cases,
 original QC/projection/Copilot/split regression tests, actual transport/parser
 ordinals through the new worker, all cancellation checkpoints, substituted
 file/locus/attempt/capture response refusals, true QC reasons and expiry/abort.
-The type check passes. The new real-role SQL test uses the original three-ordinal
+The full 781-assertion parser fixture is processed through 50 bounded batch
+reads for two embryos, preserving actual 781/781 and 774/781 coverage. The type
+check and scoped lint pass. The original real-role SQL test uses the original three-ordinal
 split/publication fixture byte-for-byte and the real synthetic importer/review
 doors inside rollback. Its owned-clone execution, independent save refusal,
 current saved-reader proof and broader revocation/stop races are still pending.
+A separate rollback suite now authors genuine source publication/grants with
+no enqueue hint, service reconciliation recovery and replay, complete reviewed
+set capture, actual unsupported-call persistence and full n/N evidence.
+Both owned rehearsals stopped before this source migration: first at a platform
+function parameter ownership difference; second at exact worker CHECK grouping
+changed by dump/restore parsing. Both partial clones are preserved unqualified.
+The next exact clone plan requires separate review, guarded grouping restoration
+and full metadata/inverse proof before source execution.
 Full native publication and mandatory disclosure presentation remain held;
 this intermediate source checkpoint does not complete the science flow.
 

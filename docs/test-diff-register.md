@@ -8401,3 +8401,33 @@ complete capture independently, reject a planted wrong dose/partial save,
 preserve truthful private covered observations with a separate disclosure hold,
 and refuse edits or old-token reads. SQL execution remains pending at this
 source checkpoint. G4.2/G4.5 and all unproved route/state pairs remain NO.
+
+
+## Complete observed embryo carrier intake and evidence · 2 October 2026
+
+Independent source review reproduced genuine parser-produced haploid and
+multiallelic calls: the original core returned invalid_calls but the transport
+rejected the whole attempt before save. The successor widens only transport to
+literal stored shapes. Original 65 primitive scientific assertions, source
+fixtures and positive output expectations remain unchanged. New actual-parser
+cases prove named refusal save, literal-N refusal, complete 781-assertion batched
+measurement with independent 781/781 and 774/781 coverage, and foreign/reordered/
+extra-assertion rejection. No multi-allele carrier state, phase or probability is
+inferred; complete per-assertion evidence retains a separate interpretation hold.
+
+Recovery tests add bounded current-cohort inventory, cursor progression and
+process restart with no user replay, TEST-LOCAL/empty-registry refusal, closed
+response and cancellation. Original operator tests preserve their expectations
+and inject the new recovery dependency only where their attempt seam was
+already synthetic. Saved-reader tests cover the live account/session, widened
+response/read failures and actual detail/comparison call placement after gates.
+The separate rollback-only complete-set SQL suite and distinct refusal fixture
+add actual service recovery without an enqueue hint, full reviewed assertion
+capture, refusal persistence, n/N, forged dose refusal and closed saved hold.
+The original published fixture and original SQL suites are not relaxed or edited.
+
+Focused source tests pass 187 cases in ten files; typecheck and scoped lint pass.
+Owned database execution remains pending: the two reviewed clone runners stopped
+before application migration and preserved their actual restore differences.
+Native runtime/database integration and complete lifecycle races remain required.
+G4.2/G4.5 and all unproved route/state pairs remain NO.

@@ -20,6 +20,7 @@ import {
   NO_RANGE_YET,
   QUALITY_CHECK_HEADING,
   REGISTRY_EMPTY_SENTENCE,
+  SAVED_SCIENTIFIC_REVIEW_SENTENCE,
   READ_FAILED_HEADING,
   READ_FAILED_SENTENCE,
   SHAPE_BLOCKED_HEADING,
@@ -51,6 +52,7 @@ import { EmbryoReadError, isCanonicalId, rowsOrThrow, selectCohort, type EmbryoC
 import { EmbryoShapeError, type ComparisonResultRow, type RscEmbryoComparison } from "@/lib/embryos/policy";
 import { projectComparison, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
+import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
 import { acknowledged } from "@/lib/embryos/tier2";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
@@ -192,7 +194,9 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
   }
 
   let comparison: RscEmbryoComparison;
+  let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
   try {
+    savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
     comparison = await loadComparison(cohort);
   } catch (error) {
     if (error instanceof EmbryoShapeError) {
@@ -235,6 +239,9 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
   return frame(
     <>
       <StandingStatement text={comparison.standing_statement} />
+      {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
+        {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
+      </p> : null}
       <ContextStrip counts={comparison.context_counts} />
       <TradeOffPanel tradeOffs={comparison.trade_offs} conditionNames={conditionNames} embryoCount={comparison.embryos.length} />
 

@@ -6,7 +6,7 @@ import { createAdminClient } from "../supabase/admin";
 import { carrierAssertionRowSchema } from "../family/carrier-assertions";
 import { isTestJurisdictionEnabled } from "../legal/jurisdictions";
 import { allowedConditionsRegistry, type AllowedConditionsFile } from "./allowed-conditions";
-import { embryoCarrierSourceSchema, observeEmbryoCarrierAllele, type EmbryoCarrierObservation } from "./carrier-observation";
+import { embryoCarrierSourceSchema, observeEmbryoCarrierAllele, type EmbryoCarrierObservation, type EmbryoCarrierSource } from "./carrier-observation";
 import { preciseEmbryoQcRowSchema } from "./qc-reader";
 import { producesFigure, qcReasons } from "./qc-policy";
 
@@ -14,8 +14,9 @@ const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const conditionSchema = z.object({ condition_id: z.string().min(1).max(80),
   condition_registry: z.array(z.object({ condition_id: z.string(), condition_name: z.string(),
     category: z.literal("Having children"), active: z.literal(true) }).strict()).length(1),
-  assertions: z.array(carrierAssertionRowSchema).length(1), reference_receipt: z.json(),
-}).strict();
+  assertions: z.array(carrierAssertionRowSchema).min(1).max(20_000), reference_receipt: z.json(),
+}).strict().refine(value => value.assertions.every((row, index) => row.condition_id === value.condition_id
+  && (index === 0 || row.assertion_id > value.assertions[index - 1].assertion_id)));
 const embryoSchema = z.object({ embryoId: uuid, sampleOrdinal: z.number().int().min(0).max(63),
   source: embryoCarrierSourceSchema.nullable(), qc: preciseEmbryoQcRowSchema,
 }).strict();
@@ -28,13 +29,27 @@ const claimSchema = z.object({ version: z.literal("embryo-carrier-claim-v1"), jo
   attempt: z.number().int().min(1).max(20), claimExpiresAt: z.iso.datetime({ offset: true }),
   deadline: z.iso.datetime({ offset: true }), captureSha256: hash, capture: captureSchema,
 }).strict();
-const checkSchema = claimSchema.extend({ version: z.literal("embryo-carrier-check-v1") });
+// The database re-resolves and compares the complete capture at every check.
+// Return its exact digest/lease rather than retransmitting the full reviewed
+// library for every bounded page. The initial closed claim retains that set.
+const checkSchema = claimSchema.omit({ capture: true }).extend({ version: z.literal("embryo-carrier-check-v2") });
+const callRowSchema = z.object({ fileId: uuid, chrom: z.number().int().min(1).max(22),
+    pos: z.number().int().positive().safe(), ref: z.string().max(100000).regex(/^[ACGTN]+$/),
+    alt: z.string().max(100000).regex(/^[ACGTN]+(?:,[ACGTN]+)*$/).nullable(),
+    // The genuine splitter also stores haploid, multiallelic and literal N
+    // calls. Transport them faithfully; the unchanged scientific core owns
+    // the stricter diploid ACGT refusal and its truthful saved reason.
+    genotype: z.string().max(200001).regex(/^(?:[ACGTN]+(?:\/[ACGTN]+)*|--)$/),
+  }).strict();
+const callPageSchema = z.array(callRowSchema).max(256);
 const callsSchema = z.object({ version: z.literal("embryo-carrier-calls-v1"), jobId: uuid,
   attempt: z.number().int().min(1).max(20), captureSha256: hash, embryoId: uuid,
-  conditionId: z.string(), calls: z.array(z.object({ fileId: uuid, chrom: z.number().int().min(1).max(22),
-    pos: z.number().int().positive().safe(), ref: z.string().regex(/^[ACGT]+$/),
-    alt: z.string().regex(/^[ACGT]+$/).nullable(), genotype: z.string().regex(/^(?:[ACGT]+\/[ACGT]+|--)$/),
-  }).strict()).max(256),
+  conditionId: z.string(), calls: callPageSchema,
+}).strict();
+const callBatchSchema = z.object({ version: z.literal("embryo-carrier-call-batch-v1"), jobId: uuid,
+  attempt: z.number().int().min(1).max(20), captureSha256: hash, embryoId: uuid,
+  conditionId: z.string(), pages: z.array(z.object({ assertionId: z.number().int().positive().safe(),
+    calls: callPageSchema }).strict()).min(1).max(32),
 }).strict();
 const cancelledSchema = z.object({ status: z.literal("cancelled") }).strict();
 const savedSchema = z.object({ status: z.literal("saved_held"), jobId: uuid,
@@ -43,7 +58,7 @@ const savedSchema = z.object({ status: z.literal("saved_held"), jobId: uuid,
 }).strict();
 
 export type EmbryoCarrierRpc = (name: "embryo_carrier_worker_v1", args: {
-  p_operation: "claim" | "check" | "read" | "save" | "fail";
+  p_operation: "reconcile" | "claim" | "check" | "read" | "read_batch" | "save" | "fail";
   p_job_id: string | null; p_attempt: number | null; p_claim_token_hash: string;
   p_payload: unknown; p_test_jurisdiction: boolean;
 }, signal: AbortSignal) => Promise<unknown>;
@@ -51,8 +66,22 @@ export type EmbryoCarrierResult = { status: "idle" | "cancelled" | "failed" | "s
   | { status: "held"; reason: "no_registered_conditions" };
 export interface EmbryoCarrierMeasurement {
   embryoId: string; conditionId: string;
-  observation: EmbryoCarrierObservation | null;
+  observation: EmbryoCarrierObservation | EmbryoCarrierConditionObservation | null;
   reason: string | null;
+  assertion_measurements?: EmbryoCarrierAssertionMeasurement[];
+}
+export interface EmbryoCarrierAssertionMeasurement {
+  assertion_id: number; observed_copies: 0 | 1 | 2 | null; reason: string | null;
+}
+/** Complete private condition evidence. Alleles are never summed into a
+ * disease probability or phased genotype. Every reviewed assertion retains
+ * its own observed copy count/refusal and the complete n/N coverage. */
+export interface EmbryoCarrierConditionObservation {
+  version: 2; producer: "embryo-reviewed-allele-observation-v1";
+  figure_basis: { version: 1; basis: "observed" }; source: EmbryoCarrierSource;
+  condition_id: string; covered_assertions: number; required_assertions: number;
+  assertion_measurements: EmbryoCarrierAssertionMeasurement[];
+  interpretation_status: "held"; confirmation_required: true;
 }
 
 export class EmbryoCarrierWorkerError extends Error {
@@ -117,6 +146,7 @@ export async function runNextEmbryoCarrier(options: {
     if (!parsed.success) refuse("invalid_response");
     claim = parsed.data;
     if (!isDeepStrictEqual(claim.capture.registry, registry)
+      || claim.capture.conditions.reduce((n, row) => n + row.assertions.length, 0) > 20_000
       || new Set(claim.capture.conditions.map(row => row.condition_id)).size !== claim.capture.conditions.length
       || !isDeepStrictEqual(claim.capture.conditions.map(row => row.condition_id),
         registry.conditions.map(row => row.condition_id).sort())
@@ -135,16 +165,56 @@ export async function runNextEmbryoCarrier(options: {
     const check = async () => {
       const current = checkSchema.safeParse(await call("check"));
       if (!current.success || current.data.jobId !== claim!.jobId || current.data.attempt !== claim!.attempt
-        || current.data.captureSha256 !== claim!.captureSha256 || current.data.deadline !== claim!.deadline
-        || !isDeepStrictEqual(current.data.capture, claim!.capture)) refuse("invalid_response");
+        || current.data.captureSha256 !== claim!.captureSha256 || current.data.deadline !== claim!.deadline) refuse("invalid_response");
       arm(current.data.claimExpiresAt);
     };
     for (const embryo of claim.capture.embryos) {
       for (const condition of claim.capture.conditions) {
         await check();
         if (embryo.source === null || !producesFigure(embryo.qc)) {
+          const reason = qcReasons(embryo.qc)[0] ?? "qc_review_required";
           measurements.push({ embryoId: embryo.embryoId, conditionId: condition.condition_id,
-            observation: null, reason: qcReasons(embryo.qc)[0] ?? "qc_review_required" });
+            observation: null, reason, ...(condition.assertions.length > 1 ? { assertion_measurements:
+              condition.assertions.map(row => ({ assertion_id: row.assertion_id, observed_copies: null, reason })) } : {}) });
+          continue;
+        }
+        if (condition.assertions.length > 1) {
+          const observed: EmbryoCarrierAssertionMeasurement[] = [];
+          for (let offset = 0; offset < condition.assertions.length; offset += 32) {
+            const assertions = condition.assertions.slice(offset, offset + 32);
+            const assertionIds = assertions.map(row => row.assertion_id);
+            await check();
+            const batch = callBatchSchema.safeParse(await call("read_batch", {
+              embryoId: embryo.embryoId, conditionId: condition.condition_id, assertionIds,
+            }));
+            if (!batch.success || batch.data.jobId !== claim.jobId || batch.data.attempt !== claim.attempt
+              || batch.data.captureSha256 !== claim.captureSha256 || batch.data.embryoId !== embryo.embryoId
+              || batch.data.conditionId !== condition.condition_id
+              || !isDeepStrictEqual(batch.data.pages.map(row => row.assertionId), assertionIds)) refuse("invalid_response");
+            await check();
+            for (const [index, assertion] of assertions.entries()) {
+              const page = batch.data.pages[index].calls;
+              const positions = new Set([assertion.pos, ...assertion.equivalents.map(row => row[0])]);
+              if (page.some(row => row.fileId !== embryo.source!.file_id
+                || row.chrom !== assertion.chrom || !positions.has(row.pos))) refuse("invalid_response");
+              const result = observeEmbryoCarrierAllele({ condition_id: condition.condition_id,
+                condition_registry: condition.condition_registry, assertions: [assertion], source: embryo.source,
+                calls: page }, registry);
+              observed.push({ assertion_id: assertion.assertion_id,
+                observed_copies: result.ok ? result.observation.observed_copies : null,
+                reason: result.ok ? null : result.reason });
+              page.length = 0;
+            }
+          }
+          const covered = observed.filter(row => row.observed_copies !== null).length;
+          const observation: EmbryoCarrierConditionObservation | null = covered === 0 ? null : {
+            version: 2, producer: "embryo-reviewed-allele-observation-v1", figure_basis: { version: 1, basis: "observed" },
+            source: embryo.source, condition_id: condition.condition_id, covered_assertions: covered,
+            required_assertions: condition.assertions.length, assertion_measurements: observed,
+            interpretation_status: "held", confirmation_required: true,
+          };
+          measurements.push({ embryoId: embryo.embryoId, conditionId: condition.condition_id, observation,
+            reason: observation ? null : observed[0].reason, assertion_measurements: observed });
           continue;
         }
         const read = callsSchema.safeParse(await call("read", { embryoId: embryo.embryoId, conditionId: condition.condition_id }));
