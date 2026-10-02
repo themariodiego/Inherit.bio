@@ -2,7 +2,7 @@
 
 Prepared 2026-10-02 from cc79be42679d0dc5f57d964a3d6216c3aed8137a.
 G4.2, G4.5 and every currently unproved route/state pair remain NO. The frozen d98 checkpoint implements the private observed-allele core. The
-separate `codex/embryo-carrier-worker-v2` successor now authors the operation-specific
+separate `codex/embryo-carrier-worker-v3` successor now authors the operation-specific
 queue, complete per-assertion worker, exact private save, durable intake recovery
 and the current saved-hold reader connected to both real product pages. These
 new database operations await an owned-clone rehearsal; no clinical output is
@@ -166,11 +166,33 @@ current saved-reader proof and broader revocation/stop races are still pending.
 A separate rollback suite now authors genuine source publication/grants with
 no enqueue hint, service reconciliation recovery and replay, complete reviewed
 set capture, actual unsupported-call persistence and full n/N evidence.
-Both owned rehearsals stopped before this source migration: first at a platform
+The first two owned rehearsals stopped before this source migration: first at a platform
 function parameter ownership difference; second at exact worker CHECK grouping
 changed by dump/restore parsing. Both partial clones are preserved unqualified.
-The next exact clone plan requires separate review, guarded grouping restoration
-and full metadata/inverse proof before source execution.
+The third reviewed clone, `inherit_embryo_carrier_20261002_2000`, passed native
+owner restoration, the exact enabled guard recreation, guarded original CHECK
+and ACL restoration, complete rollback inverse proof, and independent complete
+metadata comparison: 995 functions, 228 relations and 224 migration entries.
+The sole event object owner remains `supabase_admin`; its original executing
+function owner, source, attributes, grants, event tags and enabled state match.
+This is an application metadata proof with an explicit platform ownership
+limitation, not a byte-identical whole-platform claim.
+
+The source migration then failed atomically in its first predecessor check:
+`pg_get_userbyid` yields `name`, so its aggregated `name[]` could not be compared
+with the literal `text[]` role list. No source DDL or SQL suite ran. The private
+receipt and raw error remain retained. The successor explicitly casts the
+aggregated role names to `text`, preserving the exact owner, grantor,
+EXECUTE-only, non-grantable two-role ACL criteria and every other predecessor
+check. The rollback fixture now describes source/grant state present in its
+transaction; it makes no cross-session committed durability claim.
+
+A separately frozen follow-up plan targets only the existing 2000 clone. It
+must first recapture the complete metadata and equal the actual qualified fresh
+capture exactly, then apply this revised migration atomically and run the same
+seven strict scoped suites. Root review is required before execution; no new
+clone, replayed restoration or automatic repair is permitted. The prepared
+native TypeScript-to-database proof remains unexecuted and separately held.
 Full native publication and mandatory disclosure presentation remain held;
 this intermediate source checkpoint does not complete the science flow.
 

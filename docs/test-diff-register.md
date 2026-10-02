@@ -8431,3 +8431,19 @@ Owned database execution remains pending: the two reviewed clone runners stopped
 before application migration and preserved their actual restore differences.
 Native runtime/database integration and complete lifecycle races remain required.
 G4.2/G4.5 and all unproved route/state pairs remain NO.
+
+## Carrier predecessor type correction and evidence wording · 2 October 2026
+
+The third owned clone qualified the complete original application metadata but
+the application migration stopped atomically on a `name[]` versus `text[]`
+comparison in its first predecessor ACL guard. The successor casts only the
+aggregated role name to `text`. The exact owner, grantor, EXECUTE privilege,
+non-grantable two-role set and all other predecessor criteria stay unchanged.
+The actual failure is retained; none of the seven SQL suites has run there yet.
+
+The rollback complete-set fixture's assertion description now says source and
+grant "state present in this transaction". Its SQL condition, expected count,
+plan, fixtures, roles, bounds and every pass/failure assertion stay unchanged.
+Cross-session committed recovery is reserved for the separately prepared native
+proof, which remains held. The three existing source-pin tests, readability gate
+and SQL include gate pass. No acceptance or durability claim is added.

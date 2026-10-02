@@ -12,7 +12,7 @@ create function pg_temp.grant_carrier(account uuid,session uuid,nonce text) retu
 select pg_temp.grant_carrier('7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1','nonce-carrier-grant-a');
 select pg_temp.grant_carrier('7a000000-0000-0000-0000-000000000002','7a000000-0000-4000-8000-0000000000b1','nonce-carrier-grant-b');
 select is((select count(*) from public.worker_jobs where kind='score_embryo' and cohort_id=(select cohort from carrier_ids)),0::bigint,
- 'source publication and both grants are durably committed even when the application intake hint never ran');
+ 'source publication and both grants: state present in this transaction even when the application intake hint never ran');
 select is(public.embryo_carrier_worker_v1('reconcile',null,null,repeat('d',64),'{"afterCohortId":null}',true),
  '{"status":"held","reason":"no_registered_conditions"}'::jsonb,'empty admission reads no recovery inventory');
 

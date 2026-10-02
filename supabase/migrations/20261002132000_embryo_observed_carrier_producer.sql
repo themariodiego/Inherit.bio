@@ -16,7 +16,7 @@ begin
   or p.proargnames is distinct from array['p_worker_id','p_claim_token_hash','p_lease_seconds']
   or pg_get_expr(p.proargdefaults,0) is distinct from '60'
   or p.proconfig is distinct from array['search_path=""']
-  or (select array_agg(pg_get_userbyid(a.grantee) order by pg_get_userbyid(a.grantee))
+  or (select array_agg(pg_get_userbyid(a.grantee)::text order by pg_get_userbyid(a.grantee))
     from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
     where a.privilege_type='EXECUTE' and not a.is_grantable and a.grantor='postgres'::regrole)
       is distinct from array['postgres','service_role']
