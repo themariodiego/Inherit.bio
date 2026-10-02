@@ -2,6 +2,13 @@
 
 ## 2026-10-02 — Correct three actual focused source-test defects
 
+The first corrected run at9a5c35e8 collected all56 cases and passed55. Its one
+remaining failure was the identical passive-method false positive in the new
+historical helper's independent source prohibition. That check receives the
+same complete-property/computed-method refusal with planted direct, optional,
+bound and computed replay negatives. Both first failure logs remain; no helper,
+product, controller or SQL body changes.
+
 The first pinned single-worker qualification of frozen920cdbf9 preserved its
 actual failed log:42 assertions passed, two source assertions failed and one
 suite could not collect. The inherited040 body-hash expectations had one extra

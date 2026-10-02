@@ -24,6 +24,7 @@ const prepared = { version: "claimed-provenance-concurrency-historical-fixture-v
   accountDeletionId: input.parent.deletionId, claimantManifestId: "10000000-0000-4000-8000-000000000005",
   claimTokenHash: input.claimantLeaseHash, historicalParentRequest: input.parent, evidence: input.evidence };
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
+const forbiddenHistoricalReplay = /route\.fulfill|request\s*(?:\??\.\s*post\b|(?:\?\.\s*)?\[)|mintAccountOperationNonce|console\.|HTTP202.*assert/iu;
 
 describe("separate historical receipt and actual protected protocol integration (execution remains unqualified)", () => {
   it("refuses native HTTP202 coercion, wrong clocks, absent immutable hashes and extra authority fields", () => {
@@ -95,7 +96,14 @@ describe("separate historical receipt and actual protected protocol integration 
       'page.getByTestId("delete-account").click()', 'ownerIpc("create"', 'ownerIpc("prepare"',
       "assertHistoricalConcurrencyFixture", "Aborted issuance cannot dispatch, consume or create", "s.file_id=m.file_id"])
       expect(helper).toContain(value);
-    expect(helper).not.toMatch(/route\.fulfill|request\.post|mintAccountOperationNonce|console\.|HTTP202.*assert/iu);
+    expect(helper).not.toMatch(forbiddenHistoricalReplay);
+    for (const replay of ['request.post("/api/account/delete")', 'request?.post("/api/account/delete")',
+      'request.post?.("/api/account/delete")', 'request.post.bind(request)("/api/account/delete")',
+      'request["post"]("/api/account/delete")', 'request?.[method]("/api/account/delete")', 'request["po" + "st"]("/api/account/delete")']) {
+      const planted = helper.replace("request.postDataJSON()", replay);
+      expect(planted).not.toBe(helper);
+      expect(planted).toMatch(forbiddenHistoricalReplay);
+    }
     for (const value of ["verifyHistoricalAccountAuthority(observation, client)", "historicalAccountCreationSql(authority)",
       "historicalClaimedProvenanceProducerSql(input.input", "console.warn = console.error", "child.stdin.end(sql)", "setAll: () => { throw"])
       expect(runner).toContain(value);
