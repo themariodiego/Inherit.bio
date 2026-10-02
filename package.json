@@ -22,6 +22,7 @@
     "e2e:lighthouse": "tsx scripts/run-upload-browser.mts --lighthouse",
     "gate:catalog-drift": "tsx scripts/catalog-drift-gate.ts",
     "gate:claims": "tsx scripts/claims-gate.ts",
+    "gate:citations": "tsx scripts/citation-surface-gate.ts",
     "gate:env": "tsx scripts/env-gate.ts",
     "gate:first-glance": "tsx scripts/first-glance-gate.ts",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",

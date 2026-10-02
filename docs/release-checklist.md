@@ -38,7 +38,7 @@ runs of 30 independently meet every threshold, with raw answers and verdicts
 committed under `docs/comprehension-runs/<date>/`.
 
 **A4. No placeholder reaches a shipped surface.** `pnpm gate:legal`,
-`pnpm gate:claims` and `pnpm gate:first-glance` pass, and no legal page carries a
+`pnpm gate:claims`, `pnpm gate:citations` and `pnpm gate:first-glance` pass, and no legal page carries a
 figure counsel has not supplied.
 
 ---

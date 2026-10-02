@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-02 — Integrate the unchanged citation debt against current release source
+
+Release `587007a0` lacked the earlier non-template gate, registered surface paths
+and `docs/claim-surface-backlog.json`. Ordinarily merge the preserved `76927bd9`
+stream, keeping every original assertion, all dated notes and the current hosted
+browser policy. The original gate, marker vocabulary, source register and
+59-entry unreviewed backlog remain byte-exact. Scan current source at the actual
+2 October date: 59 candidates in 114 files, zero sourced/classified candidates,
+and 59 unresolved entries. The 11 added mail/embryo modules produce no new
+marked debt; add an actual planted uncited sentence refusal in each of them,
+plus the exact current census and unchanged worklist hash. Keep the original
+seven marker patterns and the original bidirectional ratchet assertions.
+
+The current claims gate separately measures 53 sources, 120 canonical claims,
+71/227 citation references and 120/750 prose blocks. Preserve the already
+integrated October abstract-only tranche and subsequent legacy Medicines date
+correction; do not reread or redate genotypes, fabricate reviewers/quotes or
+raise the 59 pin. Add a readable reviewer queue with null verdicts. G1.11/G4.7
+remain NO. Focused source checks are not full qualification or release proof.
+
 ## 2026-10-02 — Owner adds the unchanged confirmation block to Emerging reports
 
 The owner selected Include Emerging for brief §12 item 4. Expand only the closed confirmation set to clinical, established and emerging. Keep the exact laboratory paragraph and counsellor sentence, the real non-collapsible How sure we are rendering, every original page/reader/authority path, evidence definition, result, uncertainty, provenance, citation and safety statement. Record the dated answer and update the five relevant brief clauses and its exact register hash together. This changes a disclosure policy, not evidence quality, clinical acceptance or model/condition activation.
@@ -4482,6 +4502,21 @@ PostgreSQL's include command executes a separate input buffer, so an expression
 included in a partial surrounding insert failed to parse. The exact computation
 payload and every existing receipt, publication and refusal assertion remain
 unchanged; the fresh database suite must reach and execute those assertions.
+## Non-template citation measurement and strict access dates · 30 September 2026
+
+`scripts/citation-surface-gate.test.ts` adds planted regression checks for
+each of the five source-surface types, the closed marker vocabulary, both
+directions of the open-count ratchet, exact backlog membership, text hashes,
+duplicate entries, review metadata and canonical sentence matching. A
+registered claim now requires every evidence date to equal its resolving
+citation's valid, non-future calendar date. Missing, impossible, future and
+mismatching dates each fail; no existing assertion is weakened.
+
+The WIP count remains **59**. Main's Family Copilot adds two context modules
+to the scan (103 files total) and neither adds a candidate. No backlog entry,
+source quotation, citation date or human review verdict changes. The exact
+baseline and CI command are pinned in the new suite. G4.7 remains NO on
+the unresolved reviewer worklist and Part C source registration.
 
 ## genomes-staging drop test after D-130's embryo fix · 28 September 2026
 

@@ -87,6 +87,8 @@ jobs:
         run: pnpm gate:routes
       - name: Claims and provenance gate
         run: pnpm gate:claims
+      - name: Non-template citation surface gate
+        run: pnpm gate:citations
       - name: Environment template gate
         run: pnpm gate:env
       - name: Jurisdiction review gate
