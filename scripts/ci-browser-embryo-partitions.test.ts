@@ -72,7 +72,7 @@ describe("permanent genuine embryo audit preflight", () => {
     expect(() => assertEmbryoJourneyAudits({ ...real(), "unknown.spec.ts": "" })).toThrow("source inventory");
     const positive = EMBRYO_BROWSER_JOURNEYS["future-person-keyless"];
     for (const symbol of ["seedParticipantC", "withEmbryoJourney", "syntheticHistoricalTransfer", "saveNativeMatchingDetails",
-      "expectFullDocumentReceipts", "openSyntheticReviewPdf", "sendSyntheticDeliveredCallback"]) {
+      "expectFullDocumentReceipts", "openSyntheticReviewPdf", "sendSyntheticDeliveredCallback", "nativeReviewRequest"]) {
       const current = real();current[positive] = current[positive].replace(`await ${symbol}(`, "await unconnectedPositiveFixture(");
       expect(() => assertEmbryoJourneyAudits(current)).toThrow("connected native producer");
     }
@@ -84,5 +84,28 @@ describe("permanent genuine embryo audit preflight", () => {
     expect(run.indexOf("assertEmbryoJourneyAudits(Object.fromEntries")).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
     const inventory = readFileSync("scripts/ci-browser-shards.run.mts", "utf8");
     expect(inventory.indexOf("assertEmbryoJourneyAudits(Object.fromEntries")).toBeLessThan(inventory.indexOf("const source = ciBrowserSourceIdentity()"));
+  });
+
+  it("refuses planted gaps in the genuine first read and held second assignment", () => {
+    const positive = EMBRYO_BROWSER_JOURNEYS["future-person-keyless"];
+    const changes = [
+      { change: (text: string) => text.replace('openSyntheticReviewPdf(review,"photo")', 'openSyntheticReviewPdf(fresh,"photo")'), error: "first reviewer" },
+      { change: (text: string) => text.replace('openSyntheticReviewPdf(review,"birth")', 'openSyntheticReviewPdf(review,"photo")'), error: "first reviewer" },
+      { change: (text: string) => text.replace('expectFullDocumentReceipts(claim,reviewer,papers)', 'expectFullDocumentReceipts(claim,second,papers)'), error: "first reviewer" },
+      { change: (text: string) => text.replace('record.evidence.birthRecordDocumentId]){', 'record.evidence.photoIdentityDocumentId]){'), error: "held document GET refusals" },
+      { change: (text: string) => text.replace('nativeReviewRequest(fresh,`/api/legal-evidence/${reviewId(document)}/review-download`)', 'unconnectedHeldRequest(fresh,`/api/legal-evidence/${reviewId(document)}/review-download`)'), error: "connected native producer" },
+      { change: (text: string) => text.replace('expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});\n        expect(response.cache)', 'expect(response.status).toBe(200);expect(response.body).toEqual({error:"not_found"});\n        expect(response.cache)'), error: "held document GET refusals" },
+      { change: (text: string) => text.replace('expect(await secondDocumentProof()).toBe("0/0/0/0");\n      const hold', 'expect(await secondDocumentProof()).toBe("0/0/0/1");\n      const hold'), error: "held document GET refusals" },
+      { change: (text: string) => text.replace('private.claim_review_chunk_receipts receipt', 'private.claim_review_receipt_sessions receipt'), error: "held document GET refusals" },
+      { change: (text: string) => text.replace("reviewer_account_id='${second}' and document_id is not null", "reviewer_account_id='${reviewer}' and document_id is not null"), error: "held document GET refusals" },
+      { change: (text: string) => text.replace('expect(await secondDocumentProof()).toBe("0/0/0/0");expect(await keylessEffectProof(claim)).toBe(hold);', 'expect(await secondDocumentProof()).toBe("0/0/0/0");'), error: "held document GET refusals" },
+      { change: (text: string) => text.replace('expect(await secondDocumentProof()).toBe("0/0/0/0");expect(await keylessEffectProof(claim)).toBe(hold);', 'expect(await secondDocumentProof()).toBe("0/0/0/0"); // expect(await keylessEffectProof(claim)).toBe(hold);'), error: "held document GET refusals" },
+      { change: (text: string) => text.replace('nativeReviewRequest(fresh,`/api/legal-evidence/${reviewId(document)}/review-download`)', 'nativeReviewRequest(fresh,`/api/legal-evidence/${reviewId(document)}/review-download`,{})'), error: "held document GET refusals" },
+    ];
+    for (const {change,error} of changes) {
+      const current = real(), source = current[positive];current[positive] = change(source);
+      expect(current[positive]).not.toBe(source);
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow(error);
+    }
   });
 });
