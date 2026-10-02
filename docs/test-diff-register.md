@@ -1,5 +1,48 @@
 # Test diff register
 
+## 2026-10-02: Correct the historical notice assertion's SQL syntax
+
+The actual rehearsal reached99 passing assertions, then found a surplus closing
+parenthesis before the original historical mail-anchor assertion description.
+Remove only that surplus delimiter; every existing expiry/creation/retention
+predicate and assertion remains. Preserve the failed SQL run and independent
+exact local database restoration. No business deadline or acceptance changes.
+
+## 2026-10-02: Use a distinct current SQL session after actual cancellation
+
+The corrected040 fixture now reaches genuine current cancellation, whose actual
+`public.cancel_account_deletion_v1` deletes all owner Auth sessions. The next
+stale-session assertion previously passed because its session was missing; the
+MFA, expired-nonce, contact and successful historical-request tests then failed
+at recent reauthentication. The failed run and before/after missing-session
+inspection are preserved. No runtime validator or clock is changed.
+
+The fixture asserts the original session was revoked, inserts a distinct new
+synthetic owner SQL session at actual current time, and uses it for subsequent
+operations. The exact original refusal states/messages remain, and stale/MFA
+setup updates must find that session rather than borrowing a missing-session
+refusal. Actual SDK reauthentication and native authentication remain separate
+unqualified proofs. No existing Auth row is resurrected or made current.
+
+## 2026-10-02: Execute historical-clock denial probes under the exact API role
+
+The actual corrected040 SQL rehearsal passed its predecessor guard, then failed
+because `inherit_upload_only` deliberately has no USAGE on the `extensions`
+schema where that diagnostic installs pgTAP. The assertions could not resolve
+`throws_ok`; no application denial query was executed at that point. No schema
+or function privilege is granted to make the test run.
+
+`supabase/tests/historical_account_request.sql` now uses an owner-invoked,
+SECURITY INVOKER temporary probe to switch to each of the same four API roles,
+execute each of the same twelve private NULL queries, and restore the entire
+probe through a caught subtransaction rollback. pgTAP comparisons run as the
+owner and require the observed role as well as the same exact42501 SQLSTATE and
+permission-denial message. The original predecessor fixture, mutation/clock
+assertions, helper algorithms, migration and browser suite remain unchanged.
+The first runtime failure and exact local sequence restoration are preserved;
+this harness change gives no SDK, browser, provider or elapsed-time evidence.
+
+
 ## 2026-10-02 — Keep the Reason label stable after text is entered
 
 Hosted a558 browser3 timed out at the unchanged final exact Reason label
@@ -50,6 +93,160 @@ logs remain unchanged. No authority, profile, error text or request is logged.
 All 53 existing filter, diagnostic and profile-loader focused tests pass.
 No browser case, assertion, retry, timeout or acceptance row changes. This
 corrects diagnostic delivery; it does not claim the profile failure is fixed.
+
+## 2026-10-02 — Pin the exact non-credential historical target unit marker
+
+The first full ten-gate run at0841a473 passed nine gates and preserved the
+actual secret-gate failure: the same fixed unit marker on its unchanged source
+line was reported in frozen920 history and today's tree. It supplies only
+truthy properties to the pure local owned-target validator; no SDK, crypto,
+subprocess or provider receives it. One exact reviewed-source binding records
+that full line/path/value, with an independently pinned digest and accepted ADR.
+The detector and authored-history baseline remain unchanged. Existing reviewed
+current/historical/context/JSON mutation proofs include this binding; copied
+marker assignments and replacement literals have explicit refusal coverage.
+No historical line, original request or deadline is rewritten or aged.
+
+
+## 2026-10-02 — Correct three actual focused source-test defects
+
+The first corrected run at9a5c35e8 collected all56 cases and passed55. Its one
+remaining failure was the identical passive-method false positive in the new
+historical helper's independent source prohibition. That check receives the
+same complete-property/computed-method refusal with planted direct, optional,
+bound and computed replay negatives. Both first failure logs remain; no helper,
+product, controller or SQL body changes.
+
+The first pinned single-worker qualification of frozen920cdbf9 preserved its
+actual failed log:42 assertions passed, two source assertions failed and one
+suite could not collect. The inherited040 body-hash expectations had one extra
+closing parenthesis each; their exact expectations remain. The original current
+HTTP202 negative parser's `request.post` substring incorrectly rejected passive
+`request.postDataJSON()` observation. It now rejects the complete POST property
+token (direct/optional/alias/bind variants) and conservatively refuses computed
+request properties. Planted direct/optional/bound/computed/dynamic/concatenated
+calls and interception remain rejected; no unknown method spelling is admitted.
+The historical helper's source check now requires its actual bounded
+`requestfailed` event and joint await, matching its already authored protocol.
+
+No application/helper/controller/SQL function changes, weaker authority or
+acceptance, deadline/retry change, real SDK/browser/provider credit or discarded
+failure receipt. The original current202 helper remains byte-exact. Its new
+negative parser regression retains every other prohibited method/effect and
+proves the planted replay source is different before requiring refusal.
+The ordinary Auth unit proof also now enters the actual existing
+`getSensitiveAccountContext()` through its sole mocked client factory: both SDK
+methods must start before either resolves, preserve their method receiver and
+original result/missing-session/network/factory refusal behavior. The shared
+historical verifier and complete ordinary source-equality checks remain intact.
+The final zero-warning lint check then found that the shared-helper runtime
+binding was only used as a type after this stronger ordinary-entry test. Its
+client type now comes directly from the module type without an unused runtime
+binding. Every assertion remains unchanged; the first lint failure is preserved.
+
+## 2026-10-02 — Author a distinct verified historical native fixture adapter
+
+The frozen036 currentHTTP202 receipt cannot be due immediately without
+contradicting its immutable seven-day request/notice contract. No new runtime
+failure or execution pass is invented. A separate helper observes and aborts
+an actual page-issued POST, requires actual failure/zero responses and unchanged
+account state, then runs the shared ordinary SDK Auth calls and actual app
+CSRF/body/nonce MAC/operation/expiry verifier before owner040 creation. Current
+Auth/MFA/contact/security clocks remain real. Its closed effective/actual clock
+and immutable creation hashes identify a distinct historical receipt; it can
+never masquerade as genuine HTTP202 or elapsed/provider evidence.
+
+Fourteen new authored cases preserve the complete ordinary Auth/HTTP source,
+receiver/parallel/error semantics and original protected due/ACK/controller
+bodies; reject altered/expired/crossed signed nonces, SDK disagreements, extra
+clocks/authority, cross-origin requests, wrong target/receipt/immutable identity
+and native202 coercion; require actual consuming adapter wiring. A planted MAC
+change is deterministic and must actually alter its input. Unit Auth objects
+prove no real SDK network or browser authentication. All new cases remain
+UNRUN; original tests/assertions, public paths, exact periods,250ms/3s/5s/12s
+limits and retries remain. The factual040 predecessor correction and original
+failed/restored packet are retained separately. Root must qualify corrected
+SQL, actual SDK/native issuance, provider absence and both concurrent orders.
+
+## 2026-10-02 — Correct the factual existing invitation-lock privilege pin
+
+The root's actual append rehearsal of frozen59c9715 stopped at040's strict
+predecessor guard before any fixture assertion. Its independently restored
+schema/ACL, data, sequence states and155-version ledger receipt remains intact.
+An owner rollback inspection found one mismatch among17 function contracts:
+`private.lock_invitation_transitions_v1()` already has exactly postgres and
+service_role EXECUTE entries; the authored pin incorrectly said owner-only.
+Migration20260906055142 explicitly grants that service execution after the
+earlier20260906051253 revoke. All other selected metadata fields matched.
+
+Only that factual predecessor/successor pin is corrected. The existing invoker
+body, exact two-entry ACL, all other role denials and the full unknown-predecessor
+refusal remain. No privilege is added or removed. New source assertions bind
+the unchanged body/grant provenance and prohibit grant/revoke DDL for this
+helper. All original SQL assertions and periods remain unchanged; corrected
+append, fixture, unit and native execution are still UNRUN pending root review.
+
+## 2026-10-02 — Author a separate immutable historical request prerequisite
+
+Source review of036 found that a genuine current HTTP202 request cannot be
+immediately due under its original seven-day saved notice/envelope contract.
+No runtime failure or execution pass is invented. Reviewed040 adds three
+owner-only/API-denied functions and two unchanged-contract real-time delegates.
+Its NULL-arm whole-body tests preserve the previous current request and notice
+algorithms; planted real security-clock/authority mutations must break equality.
+The historical arm creates complete notices/envelope/manifest once and retains
+actual recording clocks and current Auth/MFA/nonce/contact authority.
+
+New rollback-only SQL cases require real role refusals, exact original periods,
+one-use current nonce, ordinary immediate-due refusal, current Auth/MFA/contact
+refusals and full atomic rollback on a mandatory notice failure. Synthetic
+historical deadlines must resolve through the unchanged actual due producer.
+All new cases remain UNRUN pending root qualification; original tests, native
+HTTP202 receipt,250ms lock, deadlines, retries, assertions and acceptance values
+remain unchanged. Native page issuance plus app verification/owner SQL creation
+needs a distinct receipt and cannot be credited as original HTTP202 lineage or
+elapsed/provider/human evidence. Its future controller adapter remains held.
+
+## 2026-10-02 — Freeze unexecuted native concurrency prerequisite with post-cancellation timing
+
+The separately authored native request, disposal producer and independent
+session controller remain unexecuted after a restart removed temporary
+evidence. Source review found that the new observer initially recorded query
+age before sending its cancellation. It now rechecks the exact owned
+backend/query and actual blocker at cancellation, then measures query age
+after that call and refuses any age at or above the original250ms limit.
+The new source assertions require that order and refusal; no original test,
+deadline, retry, native nonce rule or immutable seven-day envelope changes.
+All new negatives and positive controller paths require actual qualification.
+Synthetic R2 metadata ACKs do not prove physical deletion; current requests
+still refuse before their real due deadline. The durable source packet makes
+these holds explicit and contains no reconstructed execution receipt.
+
+## 2026-10-01 — Author separate native authority and original-limit pair observation
+
+The036 independent-session runner lacked its committed native deletion
+prerequisite, and its transport-separated wait/cancel loop could miss the
+claimant's original250ms lock limit. No actual race failure or execution pass
+is claimed. A separate producer records the genuine settings-page POST and
+consumed nonce through the current product. Its due consumer pins the same
+original seven-day clocks and saved affected-notice envelope, refuses before
+that real deadline and calls each real queue/request/disposal door once.
+Synthetic R2 metadata ACKs remain labelled protocol evidence; existing identity
+and original Storage absence is a prerequisite, never manufactured here.
+
+A separate controller requires a new closed native-request-bound receipt.
+Its owner observer checks the exact pair/blocker and peer backend start/name,
+refreshes statistics and cancels inside one server invocation. Actual57014 and
+query age below250ms are both required. The unchanged3s/5s/12s bounds, native
+250ms configuration and all existing source/SQL/browser assertions remain.
+Both native finishers must actually act under deferred constraints, then every
+public/private/Auth/Storage row fingerprint, entire ledger and native catalog
+must restore. New strict field, source, queue, clock, authority, backend, pair,
+cancellation and missed-window negatives are authored but unrun. No migration,
+retry, provider call, API opening or acceptance value changes. Full type, unit,
+SQL, current native request and separate-session execution remain root-owned.
+An immediate coherent synthetic due producer is explicitly still held: aging
+mutable clocks would contradict the real238 historical notice contract.
 
 ## 2026-10-01 — Read gate inputs once within each invocation
 
@@ -390,6 +587,40 @@ no native/provider/human or full fresh-pass credit is claimed here.
 The new claim/source census and unchanged mail route units pass56 tests across
 three files; scoped lint and the exact SQL include closure pass. No heavy type
 check, Docker/database operation or provider activity was run in this checkout.
+## 2026-10-01 — Preserve shared claimed provenance until the actual last consumer
+
+The235 account worker preserves minimum split session/job receipts for a
+surviving detached source. The245 claimant finisher previously removed its own
+source graph without collecting that shared minimum pair. Migration036 adds
+an immutable candidate inside the existing phase before fingerprinting and
+one sorted pair-lock contract used by both native paths. It adds no store,
+period, public execution grant or historical backfill. Exact predecessor body,
+ABI, configuration, owner, ACL, column/type, RLS, original guard and trigger
+pins refuse unknown source. The original receipt update/delete protections,
+provider/document/archive checks, deadlines and all235/245 assertions remain.
+
+Two additive rollback suites follow actual signed upload/publication,
+attested claimant release and native disposal producers in both finalization
+orders. They require byte-identical receipts while a source survives, exact
+sealed candidates, unchanged original clocks, missing/crossed ACK and lease
+refusals, direct role/update/delete denials, final pair absence, coded terminal
+minimization and replay refusal. The extended parent-last scenario retains
+every original245 line and assertion in order; original files are untouched.
+Synthetic acknowledgement metadata tests only the real SQL protocol and does
+not substitute for physical-provider or hosted proof. A separate prefix035
+forward rehearsal creates a real old plan with the old native producer, applies
+036 inside the same rollback and requires refusal plus byte-identical old
+phase/manifest; no immutable trigger or source guard is disabled.
+
+The bounded independent-session harness requires a real committed synthetic
+fixture with both actual authorities and current exact protocol ACKs. Both
+native finalizers must take the same pair lock, and all public/private row
+fingerprints must match after cancellation/rollback in either order. No new
+timeout, retry, skip, table grant, general collector or fabricated authority
+is added to an existing case. Full SQL/concurrency and physical-provider
+execution are root-owned and pending. G5.6 and all other acceptance values
+remain unchanged; the current public erasure/unsupported bound graph stays
+closed. Focused source/capability tests are not database execution.
 
 ## 2026-10-01 — Control only the quota fixture clock and prove the unchanged capability boundaries
 
