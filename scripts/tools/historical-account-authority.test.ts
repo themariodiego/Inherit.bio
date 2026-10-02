@@ -4,13 +4,15 @@ import { readFileSync } from "node:fs";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
-const { getSensitiveAccountContextFromClient } = await import("../../src/lib/account-deletion");
+const server = vi.hoisted(() => ({ createClient: vi.fn() }));
+vi.mock("@/lib/supabase/server", () => server);
+const { getSensitiveAccountContext, getSensitiveAccountContextFromClient } = await import("../../src/lib/account-deletion");
 const { mintAccountOperationNonce, hashOperationNonce } = {
   ...await import("../../src/lib/account-operation-nonce"), ...await import("../../src/lib/account-deletion"),
 };
 const { verifyHistoricalAccountAuthority, historicalAccountCreationSql } = await import("./historical-account-authority");
 const { decryptSecret, hmacSecret } = await import("../../src/lib/crypto");
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); server.createClient.mockReset(); });
 afterAll(() => vi.unstubAllEnvs());
 
 const accountId = "10000000-0000-4000-8000-000000000001";
@@ -89,16 +91,25 @@ describe("historical fixture verifier unit proofs do not claim SDK network or na
       getUser() { expect(this).toBe(client.auth); calls.push("user"); return new Promise(resolve => { releaseUser = resolve; }); },
       getSession() { expect(this).toBe(client.auth); calls.push("session"); return new Promise(resolve => { releaseSession = resolve; }); },
     } };
-    const pending = getSensitiveAccountContextFromClient(client as unknown as Client);
+    server.createClient.mockResolvedValue(client);
+    const pending = getSensitiveAccountContext();
+    await Promise.resolve();
+    expect(server.createClient).toHaveBeenCalledExactlyOnceWith();
     expect(calls).toEqual(["user", "session"]);
     releaseUser({ data: { user: { id: accountId } }, error: null });
     releaseSession({ data: { session: { access_token: `header.${Buffer.from(JSON.stringify({ session_id: sessionId })).toString("base64url")}.signature` } }, error: null });
     expect(await pending).toEqual({ user: { id: accountId }, sessionId });
-    expect(await getSensitiveAccountContextFromClient(sdk({ noUser: true }))).toBeNull();
-    expect(await getSensitiveAccountContextFromClient(sdk({ noSession: true }))).toBeNull();
+    server.createClient.mockResolvedValue(sdk({ noUser: true }));
+    expect(await getSensitiveAccountContext()).toBeNull();
+    server.createClient.mockResolvedValue(sdk({ noSession: true }));
+    expect(await getSensitiveAccountContext()).toBeNull();
     const networkError = new Error("Synthetic network error");
     const refusal = { auth: { getUser() { return Promise.reject(networkError); }, getSession() { return Promise.resolve({ data: { session: null } }); } } };
-    await expect(getSensitiveAccountContextFromClient(refusal as unknown as Client)).rejects.toBe(networkError);
+    server.createClient.mockResolvedValue(refusal);
+    await expect(getSensitiveAccountContext()).rejects.toBe(networkError);
+    const factoryError = new Error("Synthetic factory error");
+    server.createClient.mockRejectedValue(factoryError);
+    await expect(getSensitiveAccountContext()).rejects.toBe(factoryError);
   });
   it("mechanically reconstructs the exact ordinary source and keeps the HTTP route unchanged", () => {
     const frozen = "59c9715263c37d36e3be28f1b4557b01efdbb09e";

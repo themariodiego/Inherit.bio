@@ -26,6 +26,11 @@ acceptance, deadline/retry change, real SDK/browser/provider credit or discarded
 failure receipt. The original current202 helper remains byte-exact. Its new
 negative parser regression retains every other prohibited method/effect and
 proves the planted replay source is different before requiring refusal.
+The ordinary Auth unit proof also now enters the actual existing
+`getSensitiveAccountContext()` through its sole mocked client factory: both SDK
+methods must start before either resolves, preserve their method receiver and
+original result/missing-session/network/factory refusal behavior. The shared
+historical verifier and complete ordinary source-equality checks remain intact.
 
 ## 2026-10-02 — Author a distinct verified historical native fixture adapter
 
