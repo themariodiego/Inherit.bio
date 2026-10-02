@@ -1,5 +1,18 @@
 # Test diff register
 
+## 2026-10-02 — Record the exact focused039 correction proof without delivery credit
+
+Corrected source afae4c9a passes full nonincremental type,95 focused unit assertions,
+scoped lint and all ten local gates (names: approved41-byte placeholder only).
+Root's actual64-pending guarded append passes111/111 TAP assertions, preserving all
+39 original fixture assertions and adding three strict revocation/missing-result/
+publication proofs. Rollback alone is not exact: two proven owned fixture sequences
+were restored, after which the complete original schema/data/ledger dump matched.
+Every earlier failed append/type receipt remains. This is focused diagnostic proof,
+not fresh-full SQL, SDK/native/runtime/provider or complete archive qualification.
+All retained unsupported graph/class refusals, original browser limits/retries,
+provider-default absence and incomplete G5.6/G8.5 remain; no READY/acceptance flip.
+
 ## 2026-10-02 — Refuse ended Path B authority before projecting its discarded result
 
 The actual896 append reached the new revocation probe, whose original producer
