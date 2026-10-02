@@ -3,7 +3,7 @@
 -- All predecessor checks, exact new DDL and postconditions form one statement:
 -- a failed check rolls back the entire operation even without a caller BEGIN.
 do $verified_account_contact$
-declare item record; actual jsonb; fn regprocedure;
+declare item record; actual jsonb; v_fn regprocedure;
  v_original_procs_before jsonb; v_original_procs_after jsonb;
 begin
  if current_user<>'postgres' then
@@ -26,7 +26,7 @@ begin
 ('private.validate_sensitive_account_session_v1(uuid,uuid)','{"body_md5":"ce8813a75279262687f546121d45b4ac","owner":"postgres","language":"plpgsql","security_definer":true,"strict":false,"leakproof":false,"volatility":"v","parallel":"u","configuration":["search_path=\"\""],"kind":"f","cost":100,"rows":0,"binary":null,"returns_set":false,"argument_count":2,"default_count":0,"argument_defaults":null,"arguments":"p_account_id uuid, p_session_id uuid","result":"void","grants":["postgres=X/postgres"]}'::jsonb),
 ('public.create_embryo_cohort_draft_v1(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb)','{"body_md5":"e457e2d10d0344d370264ee4c15a86d5","owner":"postgres","language":"sql","security_definer":false,"strict":false,"leakproof":false,"volatility":"v","parallel":"u","configuration":["search_path=\"\""],"kind":"f","cost":100,"rows":1000,"binary":null,"returns_set":true,"argument_count":13,"default_count":2,"argument_defaults":"NULL::jsonb, NULL::jsonb","arguments":"p_account_id uuid, p_session_id uuid, p_upload_situation text, p_basis_case text, p_embryo_count integer, p_owner_contact_ciphertext bytea, p_owner_contact_hmac text, p_contact_ciphertexts text[], p_contact_hmacs text[], p_token_nonce text, p_test_jurisdiction boolean, p_owner_contact_hmac_set jsonb DEFAULT NULL::jsonb, p_contact_hmac_sets jsonb DEFAULT NULL::jsonb","result":"TABLE(draft_id uuid, expires_at timestamp with time zone, required_principal_slots text[])","grants":["postgres=X/postgres","service_role=X/postgres"]}'::jsonb)
  ) source(signature,expected) loop
-  fn:=to_regprocedure(item.signature);
+  v_fn:=to_regprocedure(item.signature);
   select jsonb_build_object('body_md5',md5(p.prosrc),'owner',pg_get_userbyid(p.proowner),
    'language',l.lanname,'security_definer',p.prosecdef,'strict',p.proisstrict,'leakproof',p.proleakproof,
    'volatility',p.provolatile::text,'parallel',p.proparallel::text,'configuration',to_jsonb(p.proconfig),
@@ -34,9 +34,9 @@ begin
    'argument_count',p.pronargs,'default_count',p.pronargdefaults,'argument_defaults',pg_get_expr(p.proargdefaults,0),
    'arguments',pg_get_function_arguments(p.oid),'result',pg_get_function_result(p.oid),
    'grants',(select jsonb_agg(a::text order by a::text collate "C") from unnest(coalesce(p.proacl,acldefault('f',p.proowner))) a))
-  into actual from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=fn;
+  into actual from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_fn;
   if actual is distinct from item.expected or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) role
-    where has_function_privilege(role,fn,'EXECUTE')) then
+    where has_function_privilege(role,v_fn,'EXECUTE')) then
    raise exception using errcode='55000',message='verified account contact predecessor differs';end if;
  end loop;
  if exists(select 1 from pg_attribute where attrelid='public.encrypted_contact_references'::regclass
@@ -204,7 +204,7 @@ create trigger zz_invalidate_verified_account_auth_contact after update of email
 ('public.create_embryo_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)','{"body_md5":"add22f131b382e1606b31bbe4cb770fb","owner":"postgres","language":"sql","security_definer":true,"strict":false,"leakproof":false,"volatility":"v","parallel":"u","configuration":["search_path=\"\""],"kind":"f","cost":100,"rows":1000,"binary":null,"returns_set":true,"argument_count":14,"default_count":0,"argument_defaults":null,"arguments":"p_account_id uuid, p_session_id uuid, p_upload_situation text, p_basis_case text, p_embryo_count integer, p_owner_contact_ciphertext bytea, p_owner_contact_hmac text, p_contact_ciphertexts text[], p_contact_hmacs text[], p_token_nonce text, p_test_jurisdiction boolean, p_owner_contact_hmac_set jsonb, p_contact_hmac_sets jsonb, p_verified_auth_email text","result":"TABLE(draft_id uuid, expires_at timestamp with time zone, required_principal_slots text[])","grants":["postgres=X/postgres","service_role=X/postgres"],"input_argument_types":["uuid","uuid","text","text","integer","bytea","text","text[]","text[]","text","boolean","jsonb","jsonb","text"],"all_argument_types":["uuid","uuid","text","text","integer","bytea","text","text[]","text[]","text","boolean","jsonb","jsonb","text","uuid","timestamp with time zone","text[]"],"argument_names":["p_account_id","p_session_id","p_upload_situation","p_basis_case","p_embryo_count","p_owner_contact_ciphertext","p_owner_contact_hmac","p_contact_ciphertexts","p_contact_hmacs","p_token_nonce","p_test_jurisdiction","p_owner_contact_hmac_set","p_contact_hmac_sets","p_verified_auth_email","draft_id","expires_at","required_principal_slots"],"argument_modes":["i","i","i","i","i","i","i","i","i","i","i","i","i","i","t","t","t"],"variadic_type":null,"support_function":null,"transform_types":null}'::jsonb),
 ('private.invalidate_verified_account_auth_contact_v1()','{"body_md5":"462413c384730ccf4333c0df775be225","owner":"postgres","language":"plpgsql","security_definer":true,"strict":false,"leakproof":false,"volatility":"v","parallel":"u","configuration":["search_path=\"\""],"kind":"f","cost":100,"rows":0,"binary":null,"returns_set":false,"argument_count":0,"default_count":0,"argument_defaults":null,"arguments":"","result":"trigger","grants":["postgres=X/postgres"],"input_argument_types":[],"all_argument_types":[],"argument_names":null,"argument_modes":null,"variadic_type":null,"support_function":null,"transform_types":null}'::jsonb)
  ) source(signature,expected) loop
-  fn:=to_regprocedure(item.signature);
+  v_fn:=to_regprocedure(item.signature);
   select jsonb_build_object('body_md5',md5(p.prosrc),'owner',pg_get_userbyid(p.proowner),
    'language',l.lanname,'security_definer',p.prosecdef,'strict',p.proisstrict,'leakproof',p.proleakproof,
    'volatility',p.provolatile::text,'parallel',p.proparallel::text,'configuration',to_jsonb(p.proconfig),
@@ -218,10 +218,10 @@ create trigger zz_invalidate_verified_account_auth_contact after update of email
    'variadic_type',case when p.provariadic=0 then null else format_type(p.provariadic,null) end,
    'support_function',case when p.prosupport=0 then null else p.prosupport::regprocedure::text end,
    'transform_types',to_jsonb(p.protrftypes)) into actual
-  from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=fn;
+  from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=v_fn;
   if actual is distinct from item.expected
-    or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) role where has_function_privilege(role,fn,'EXECUTE'))
-    or has_function_privilege('service_role',fn,'EXECUTE') is distinct from (item.signature like 'public.%') then
+    or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) role where has_function_privilege(role,v_fn,'EXECUTE'))
+    or has_function_privilege('service_role',v_fn,'EXECUTE') is distinct from (item.signature like 'public.%') then
    raise exception using errcode='55000',message='verified account contact function postcondition differs';end if;
  end loop;
  -- Check complete original pg_proc rows, not only the projected pins. New
