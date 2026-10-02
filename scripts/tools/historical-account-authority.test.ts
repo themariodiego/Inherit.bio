@@ -6,7 +6,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 const server = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => server);
-const { getSensitiveAccountContext, getSensitiveAccountContextFromClient } = await import("../../src/lib/account-deletion");
+const { getSensitiveAccountContext } = await import("../../src/lib/account-deletion");
 const { mintAccountOperationNonce, hashOperationNonce } = {
   ...await import("../../src/lib/account-operation-nonce"), ...await import("../../src/lib/account-deletion"),
 };
@@ -19,7 +19,7 @@ const accountId = "10000000-0000-4000-8000-000000000001";
 const sessionId = "10000000-0000-4000-8000-000000000002";
 const otherId = "10000000-0000-4000-8000-000000000003";
 const now = 1_800_000_000_000;
-type Client = Parameters<typeof getSensitiveAccountContextFromClient>[0];
+type Client = Parameters<typeof import("../../src/lib/account-deletion").getSensitiveAccountContextFromClient>[0];
 function sdk(change: { account?: string; session?: string; claimsAccount?: string; claimsSession?: string;
   role?: string; noUser?: boolean; noSession?: boolean; claimsError?: boolean } = {}): Client {
   const user = change.noUser ? null : { id: change.account ?? accountId, email: " Synthetic-Parent@example.invalid " };

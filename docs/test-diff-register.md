@@ -31,6 +31,10 @@ The ordinary Auth unit proof also now enters the actual existing
 methods must start before either resolves, preserve their method receiver and
 original result/missing-session/network/factory refusal behavior. The shared
 historical verifier and complete ordinary source-equality checks remain intact.
+The final zero-warning lint check then found that the shared-helper runtime
+binding was only used as a type after this stronger ordinary-entry test. Its
+client type now comes directly from the module type without an unused runtime
+binding. Every assertion remains unchanged; the first lint failure is preserved.
 
 ## 2026-10-02 — Author a distinct verified historical native fixture adapter
 
