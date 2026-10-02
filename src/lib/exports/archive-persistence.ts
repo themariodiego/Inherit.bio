@@ -52,6 +52,7 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
   let attempt: ArchiveAttempt | undefined, begun = false, busy = false, closed = false;
   let cleanupRequired = false, leaseDeadline = job.deadline;
   const stopped = new AbortController();
+  let completedOperationReason: DOMException | undefined;
   function fail(code: ErrorCode): never {
     closed = true; stopped.abort(); throw new ArchivePersistenceError(code, cleanupRequired);
   }
@@ -84,6 +85,7 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
     const combined = AbortSignal.any([signal, stopped.signal, timeout.signal]);
     const timer = setTimeout(() => timeout.abort(), Math.max(0, deadline - Date.now()));
     timer.unref();
+    let completed = false;
     let interrupt = () => {};
     const interrupted = new Promise<never>((_, reject) => {
       interrupt = () => reject(new ArchivePersistenceError(
@@ -108,6 +110,7 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
       if (!response || response.error !== null) fail("unavailable");
       const result = schema.safeParse(response.data);
       if (!result.success) fail("unavailable");
+      completed = true;
       return result.data;
     } catch (error) {
       closed = true; stopped.abort();
@@ -117,7 +120,14 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
       }
       throw new ArchivePersistenceError("unavailable", cleanupRequired);
     } finally {
-      clearTimeout(timer); combined.removeEventListener("abort", interrupt); timeout.abort();
+      clearTimeout(timer); combined.removeEventListener("abort", interrupt);
+      if (completed) {
+        // A completed transport still closes its signal. Reuse only its immutable
+        // native cleanup reason; actual deadlines, cancellations and failures
+        // retain their own reasons and every RPC still checks current authority.
+        timeout.abort(completedOperationReason);
+        completedOperationReason ??= Object.freeze(timeout.signal.reason as DOMException);
+      } else timeout.abort();
     }
   }
   function receipt(value: string) {
