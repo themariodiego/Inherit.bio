@@ -1,5 +1,56 @@
 # Test diff register
 
+## 2026-10-02 — verified account contact actual UUID probes
+
+The first owned append rehearsal of the new contact test reached 71 passing
+assertions but its API immutability probe caught 22P02 instead of the required
+42501, then stopped before notice preparation. Five newly authored owner UUID
+literals omitted one four-character group. They now identify the same actual
+synthetic owner used by the unchanged canonical producer. Every assertion,
+expected error, role, transaction and original fixture remains unchanged. The
+failed log is retained; this correction earns no SDK/browser/provider proof.
+
+
+## 2026-10-02 — exact verified contact guard correction
+
+Owned65-source replay of frozen768 stopped at the strict predecessor guard,
+with zero TAP assertions executed. Complete seven-function metadata capture
+proved one factual pin error: public draft v1's rendered arguments include its
+two existing `DEFAULT NULL::jsonb` declarations. Only that arguments pin is
+corrected; default count/expression, all other predecessor fields, original
+function bodies/grants, fixture algorithms/assertions and clocks remain exact.
+The independent entire original database dump matched652f6ba27ac4cbbd0dbc9a3b4ebf985c8f031d0ba7d37231b673f09bcb481e07
+after rollback without a sequence change; this failed execution is retained.
+
+The guarded migration now performs all exact DDL and full postconditions in one
+owner-only atomic DO. Any new-name overload/trigger collision refuses. Four new
+functions have exact body, typed ABI, defaults, owner, language, attributes,
+configuration, ACL and effective-role post-pins. Every original pg_proc row is
+captured before and compared byte-exact afterward. Corrected SQL execution is
+pending root; no runtime/provider/browser/acceptance credit is inferred.
+
+
+## 2026-10-02 — verified own account contact producer
+
+Actual a558 native owner-notice Save choice returned404. The retained same-chain
+SQL witness proved the original draft produced only its separate genetic-parent
+contact:74/74 assertions passed, the authenticated notice operation refused42501,
+and no account contact was fabricated. Rollback's sole synthetic sequence change
+was separately restored to its captured value; the entire baseline dump then
+matched. Original witness, v1/readiness bodies, fixture algorithms/assertions,
+native cases, deadlines and retries are retained.
+
+New service v2 calls unchanged canonical draft v1 plus independently verified
+own-Auth self-account contact establishment atomically. One nullable mail-revision
+column preserves old NULL rows. Four explicit v2 fixture variants change only
+the initial genuine producer/confirmation/held-set inputs and include links; all
+original assertions remain. New SQL tests require real API-role refusal/reuse,
+actual notice success and actual Auth email-transition invalidation, preserving
+parent contacts and immutable notice clocks. SQL execution is pending root.
+New focused route/diagnostic cases preserve opaque responses, exact native result
+and closed safe stage/SQLSTATE logs. No source-only acceptance/provider/SDK credit.
+
+
 ## 2026-10-02: Correct the historical notice assertion's SQL syntax
 
 The actual rehearsal reached99 passing assertions, then found a surplus closing
