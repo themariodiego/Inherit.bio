@@ -1,5 +1,29 @@
 # Test diff register
 
+## 2026-10-02 — Author a distinct verified historical native fixture adapter
+
+The frozen036 currentHTTP202 receipt cannot be due immediately without
+contradicting its immutable seven-day request/notice contract. No new runtime
+failure or execution pass is invented. A separate helper observes and aborts
+an actual page-issued POST, requires actual failure/zero responses and unchanged
+account state, then runs the shared ordinary SDK Auth calls and actual app
+CSRF/body/nonce MAC/operation/expiry verifier before owner040 creation. Current
+Auth/MFA/contact/security clocks remain real. Its closed effective/actual clock
+and immutable creation hashes identify a distinct historical receipt; it can
+never masquerade as genuine HTTP202 or elapsed/provider evidence.
+
+Fourteen new authored cases preserve the complete ordinary Auth/HTTP source,
+receiver/parallel/error semantics and original protected due/ACK/controller
+bodies; reject altered/expired/crossed signed nonces, SDK disagreements, extra
+clocks/authority, cross-origin requests, wrong target/receipt/immutable identity
+and native202 coercion; require actual consuming adapter wiring. A planted MAC
+change is deterministic and must actually alter its input. Unit Auth objects
+prove no real SDK network or browser authentication. All new cases remain
+UNRUN; original tests/assertions, public paths, exact periods,250ms/3s/5s/12s
+limits and retries remain. The factual040 predecessor correction and original
+failed/restored packet are retained separately. Root must qualify corrected
+SQL, actual SDK/native issuance, provider absence and both concurrent orders.
+
 ## 2026-10-02 — Correct the factual existing invitation-lock privilege pin
 
 The root's actual append rehearsal of frozen59c9715 stopped at040's strict
