@@ -36,7 +36,7 @@ select throws_ok($$select pg_temp.account_draft('account-v2-bad-count-0001',p_co
 select throws_ok($$select pg_temp.account_draft('account-v2-reuse-0001')$$,
  '23505','operation nonce already used','the actual v1 nonce is neither replaced nor consumed twice');
 select throws_ok($$update public.encrypted_contact_references set account_mail_contact_revision=account_mail_contact_revision+1
- where principal_id in(select id from public.subject_principals where account_id='7a000000-0000-0000-000000000001' and principal_kind='account_subject')$$,
+ where principal_id in(select id from public.subject_principals where account_id='7a000000-0000-0000-0000-000000000001' and principal_kind='account_subject')$$,
  '42501','verified account contact revision server only','direct API service cannot overwrite the proved mail revision');
 reset role;
 select is(jsonb_build_object('contact',(select to_jsonb(c) from public.encrypted_contact_references c where id=(select id from account_contact)),
@@ -47,8 +47,8 @@ create function pg_temp.refuse_changed_contact(p_case text) returns boolean lang
 declare result boolean;
 begin
  begin
-  if p_case='unconfirmed' then update auth.users set email_confirmed_at=null where id='7a000000-0000-0000-000000000001';
-  elsif p_case='deleted' then update auth.users set deleted_at=clock_timestamp() where id='7a000000-0000-0000-000000000001';
+  if p_case='unconfirmed' then update auth.users set email_confirmed_at=null where id='7a000000-0000-0000-0000-000000000001';
+  elsif p_case='deleted' then update auth.users set deleted_at=clock_timestamp() where id='7a000000-0000-0000-0000-000000000001';
   elsif p_case='expired' then update auth.sessions set not_after=clock_timestamp() where id='7a000000-0000-4000-8000-0000000000a1';
   elsif p_case='stale' then update public.profiles set mail_contact_revision=mail_contact_revision+1 where id='7a000000-0000-0000-0000-000000000001';
   elsif p_case='legacy' then
@@ -57,7 +57,7 @@ begin
     select principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,'current' from account_contact;
   elsif p_case='duplicate' then insert into public.encrypted_contact_references(principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,account_mail_contact_revision)
    select principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,account_mail_contact_revision from account_contact;
-  elsif p_case='hold' then update public.profiles set deletion_requested_at=clock_timestamp() where id='7a000000-0000-0000-000000000001';
+  elsif p_case='hold' then update public.profiles set deletion_requested_at=clock_timestamp() where id='7a000000-0000-0000-0000-000000000001';
   else raise exception 'unknown fixture case';end if;
   begin perform pg_temp.account_draft('v2-invalid-'||p_case||'-000001');result:=false;
   exception when insufficient_privilege then result:=true;end;
@@ -97,7 +97,7 @@ select lives_ok($$select pg_temp.account_draft('v2-new-email-after-change',p_ema
  'a fresh v2 request can independently create new current verified account authority');
 reset role;
 select is((select count(*) from public.encrypted_contact_references c join public.subject_principals sp on sp.id=c.principal_id
- where sp.principal_kind='account_subject' and sp.account_id='7a000000-0000-0000-000000000001' and c.status='current'),1::bigint,
+ where sp.principal_kind='account_subject' and sp.account_id='7a000000-0000-0000-0000-000000000001' and c.status='current'),1::bigint,
  'the successor account authority is unique and does not resurrect the old notice');
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
  cross join unnest(array['private.create_verified_account_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)',

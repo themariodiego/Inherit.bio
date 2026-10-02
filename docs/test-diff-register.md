@@ -1,5 +1,16 @@
 # Test diff register
 
+## 2026-10-02 — verified account contact actual UUID probes
+
+The first owned append rehearsal of the new contact test reached 71 passing
+assertions but its API immutability probe caught 22P02 instead of the required
+42501, then stopped before notice preparation. Five newly authored owner UUID
+literals omitted one four-character group. They now identify the same actual
+synthetic owner used by the unchanged canonical producer. Every assertion,
+expected error, role, transaction and original fixture remains unchanged. The
+failed log is retained; this correction earns no SDK/browser/provider proof.
+
+
 ## 2026-10-02 — exact verified contact guard correction
 
 Owned65-source replay of frozen768 stopped at the strict predecessor guard,
