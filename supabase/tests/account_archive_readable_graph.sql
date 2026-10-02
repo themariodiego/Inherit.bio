@@ -96,7 +96,7 @@ select throws_ok($$select public.export_archive_account_path_b_v1((created->>'ex
  '42501','export_source_unavailable','a different durable attempt cannot borrow saved results');
 reset role;
 savepoint saved_result_revoked;
-update public.purpose_grants set revoked_at=clock_timestamp() where grant_id=(select grant_id from private.path_b_report_bindings);
+update public.purpose_grants set revoked_at=clock_timestamp(),revocation_reason='withdrawn' where grant_id=(select grant_id from private.path_b_report_bindings);
 set local role service_role;
 select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','not_found','actual current purpose revocation refuses the complete result before returned bytes');
 reset role;rollback to saved_result_revoked;

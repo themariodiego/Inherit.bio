@@ -1,5 +1,17 @@
 # Test diff register
 
+## 2026-10-02 — Exercise valid purpose revocation before the strict saved-result refusal
+
+The actual039 collation-corrected append passed69 assertions, then its new fixture
+violated the original paired purpose_grants constraint by setting revoked_at alone.
+The fixture now sets revocation_reason='withdrawn' in the same statement, matching
+the ordinary own-report revocation writer. The exact grant selector, current-grant
+42501/not_found refusal assertion, savepoint rollback and unchanged durable-job
+proof remain byte-identical. Every migration, product authority and original
+assertion/deadline/retry remains unchanged. The failed actual append/restoration
+receipt is preserved; successor database execution is pending, with no archive,
+provider, READY or acceptance credit.
+
 ## 2026-10-02 — Apply C collation to extracted graph text, preserving exact composite ordering
 
 The actual a532 append passed46 assertions then reached graph capture and failed
