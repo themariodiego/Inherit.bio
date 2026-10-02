@@ -2434,5 +2434,295 @@
     "net_impression_note": "One called position and a group association, not whole-gene clearance, a personal probability, lifetime reassurance or medical advice. Source limits are in docs/sources/reviews/f5-correction-20260923.md. This changes current template wording; saved historical templates are not rewritten. Agent source review only; not clinical approval or human signoff.",
     "reviewed_on": "2026-09-23",
     "reviewer": "Codex agent; primary-source review (not human signoff)"
+  },
+  {
+    "claim_id": "report.blond-hair-kitlg-rs12821256.summary",
+    "text_verbatim": "A DNA study in Iceland and the Netherlands linked several DNA regions to hair, eye and skin colour. One region was near KITLG. This was a group finding. One position does not establish your hair shade.",
+    "surfaces": [
+      "/genome/[subject]/reports/blond-hair-kitlg-rs12821256#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:17952075",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/17952075/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract reports pigmentation associations in Icelandic discovery/replication and Dutch replication groups, including a region near KITLG. It does not identify this report’s exact position or allele direction, or establish a personal hair shade."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.celiac-hla-dq2-tag-rs2187668.summary",
+    "text_verbatim": "Researchers tested six DNA markers as stand-ins for HLA types linked to celiac disease. They compared them with lab typing in three European celiac populations. This tested a typing method. One marker does not diagnose celiac disease or tell whether you will develop it.",
+    "surfaces": [
+      "/genome/[subject]/reports/celiac-hla-dq2-tag-rs2187668#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18509540",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18509540/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract describes six HLA tag markers and validation against HLA typing in three European celiac populations. It evaluates a typing method, not a diagnosis or prospective individual disease probability."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.bipolar-association-ank3-rs10994336.summary",
+    "text_verbatim": "A combined study compared 4,387 people with bipolar disorder and 6,209 controls. It found links near ANK3 and CACNA1C. These were group associations. One position does not show whether you will develop bipolar disorder or which care you need.",
+    "surfaces": [
+      "/genome/[subject]/reports/bipolar-association-ank3-rs10994336#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18711365",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18711365/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract reports a combined analysis of 4,387 bipolar cases and 6,209 controls with associations at ANK3 and CACNA1C. It does not establish a person’s disease probability, treatment choice or allele direction in this report."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.vkorc1-rs9923231-one-position.study.28198005.measured",
+    "text_verbatim": "The 2017 CPIC guideline discusses warfarin dosing when clinical genotype results are available. It covers CYP2C9, VKORC1, CYP4F2 and another DNA position.",
+    "surfaces": [
+      "/genome/[subject]/reports/vkorc1-rs9923231-one-position#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:28198005",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/28198005/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The 2017 author abstract names CYP2C9, VKORC1, CYP4F2 and rs12777823 in genotype-guided warfarin dosing when clinical genotype results are available. No full-paper allele definitions or current-guideline approval are inferred."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.vkorc1-rs9923231-one-position.study.28198005.limitation",
+    "text_verbatim": "This is a guideline for clinical use, not a test of how warfarin works in you. This report’s one position does not supply the full information that guideline uses.",
+    "surfaces": [
+      "/genome/[subject]/reports/vkorc1-rs9923231-one-position#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:28198005",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/28198005/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract’s prerequisite and multi-gene scope define the evidence boundary. The one-position limitation comes from this actual template’s sole rs9923231 variant; it is a report limitation, not a study outcome or personal dose."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.nudt15-rs116855232-one-position.study.41618934.measured",
+    "text_verbatim": "The 2025 CPIC update covers thiopurine starting doses using TPMT and NUDT15 results. It includes people with variants in both genes.",
+    "surfaces": [
+      "/genome/[subject]/reports/nudt15-rs116855232-one-position#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:41618934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/41618934/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The 2025-update author abstract, published in 2026, describes thiopurine starting doses based on TPMT and NUDT15 and includes variants in both genes. It does not supply a complete allele-definition review or individual dose."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.nudt15-rs116855232-one-position.study.41618934.limitation",
+    "text_verbatim": "This guideline does not make this one-position report a complete gene result or a dose recommendation.",
+    "surfaces": [
+      "/genome/[subject]/reports/nudt15-rs116855232-one-position#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:41618934",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/41618934/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract describes a two-gene genotype-guided guideline. This template reads only rs116855232, so its limitation is an actual report boundary rather than a complete gene result or dosing recommendation."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.bitter-taste-tas2r38-rs713598.summary",
+    "text_verbatim": "A study linked three changes in a bitter-taste receptor gene to sensitivity to PTC, a bitter test chemical. Their combined patterns mattered. This report reads one position, which does not establish the whole pattern. A PTC test does not measure liking for vegetables.",
+    "surfaces": [
+      "/genome/[subject]/reports/bitter-taste-tas2r38-rs713598#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12595690",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12595690/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract links three coding changes and their combined haplotypes to PTC sensitivity. This template reads one position. The measured endpoint is test-chemical sensitivity, not vegetable liking or a complete three-position pattern."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.sprint-power-actn3.summary",
+    "text_verbatim": "A study compared elite sprint and endurance athletes with controls. The protein-producing ACTN3 form was more common in male and female sprint groups. Some genotype findings differed by sex. These group results do not measure your muscle power, endurance or ability to succeed in sport.",
+    "surfaces": [
+      "/genome/[subject]/reports/sprint-power-actn3#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12879365",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12879365/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract compares elite athlete and control groups, finds the protein-producing form enriched in male and female sprint athletes, and reports sex-dependent heterozygote findings. It does not establish an ordered genotype gradient or personal sport ability."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.ldl-cholesterol-sort1-rs599839.summary",
+    "text_verbatim": "Researchers combined DNA and blood-fat data from 8,816 people, then checked promising signals in another group. They found links between LDL cholesterol and changes near SORT1 and in LDLR. This study does not measure your cholesterol or establish your personal chance of heart disease.",
+    "surfaces": [
+      "/genome/[subject]/reports/ldl-cholesterol-sort1-rs599839#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18193043",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18193043/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract combines three scans with 8,816 participants and follow-up of selected signals, linking LDL cholesterol to the SORT1 region and LDLR. This is group association evidence, not a personal blood result or heart-disease probability."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.hemochromatosis-hfe-c282y-rs1800562.summary",
+    "text_verbatim": "Researchers followed adults with northern European ancestry for about twelve years. Among people with two C282Y copies, iron-related disease was found more often in men than women. Blood-iron readings and diagnosed disease are different outcomes. This group finding does not show your iron level or health.",
+    "surfaces": [
+      "/genome/[subject]/reports/hemochromatosis-hfe-c282y-rs1800562#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18199861",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18199861/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract reports adult northern-European follow-up averaging twelve years and different observed disease proportions in male and female C282Y homozygotes. It distinguishes iron measures from documented disease; neither is measured for this reader."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.social-sensitivity-oxtr-rs53576.summary",
+    "text_verbatim": "One study compared people with GG with pooled AA and AG groups at rs53576. It used empathy tasks, questionnaires and a stress-anticipation task. The group differences do not measure your empathy, personality or stress level.",
+    "surfaces": [
+      "/genome/[subject]/reports/social-sensitivity-oxtr-rs53576#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:19934046",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/19934046/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract compares GG with a pooled group carrying one or two A copies, using empathy measures and stress anticipation. It does not separate AA from AG, prove replication or measure the reader’s personality or stress."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.vitamin-d-cyp2r1-rs10741657.summary",
+    "text_verbatim": "Researchers studied vitamin D measured in blood in 33,996 people of European ancestry. They found links with DNA near GC, DHCR7 and CYP2R1. These are group links, not your vitamin D level or advice about supplements.",
+    "surfaces": [
+      "/genome/[subject]/reports/vitamin-d-cyp2r1-rs10741657#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20541252",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20541252/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract reports blood vitamin D in 33,996 participants of European descent and signals near GC, DHCR7 and CYP2R1. It does not give this reader’s level, supplement advice or this report’s allele direction."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "report.longevity-telomere-terc-rs10936599.summary",
+    "text_verbatim": "A study of 37,684 people found seven DNA regions linked to average telomere length in white blood cells. TERC and TERT were among them. A separate group tested selected changes. One position does not measure your telomeres or how long you might live.",
+    "surfaces": [
+      "/genome/[subject]/reports/longevity-telomere-terc-rs10936599#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:23535734",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/23535734/",
+        "accessed_on": "2026-10-02",
+        "what_it_supports": "The author abstract describes 37,684 participants, seven leukocyte telomere-length loci including TERC and TERT, and replication of selected variants. This endpoint is not personal telomere measurement or lifespan, and no allele direction is inferred."
+      }
+    ],
+    "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
+    "reviewed_on": "2026-10-02",
+    "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
   }
 ]

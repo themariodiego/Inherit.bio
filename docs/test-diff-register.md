@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-02 — Preserve the citation baseline while adding actual primary-source bindings
+
+Twelve newly read primary author abstracts resolve 29 missing template references. Ten summaries are corrected and registered within the actual abstract scope; four guideline-context paragraphs add bounded source context without certifying unreviewed medicine alleles. Original 106 claims, 41 source rows and every genotype interpretation remain unchanged. Source-only counts are now 120/750 bound prose blocks and 71/227 resolved references; 630 blocks and 156 references remain open.
+
+Every original canonical fixture assertion stays intact over its explicit historical population. The separate new fixture requires the exact additive unions 120/53 and independently pins every retained baseline row by full JSON SHA-256, rather than changing an old expected count or accepting an arbitrary larger registry. New authored negatives refuse changed-text citation borrowing, swapped source edges, future access dates and orphaned evidence. Dates, original reviewed-object hashes, channels, all browser assertions/time limits, zero retries and original acceptance rows remain. All qualification is UNRUN in this child; source review/data parsing is not a passed gate or browser/clinical receipt.
+
 ## 2026-10-02 — Keyless review monotonic phase diagnostics
 
 Actual hosted68fd browser3 exhausted the unchanged120000ms case budget at the
