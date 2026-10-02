@@ -1,5 +1,17 @@
 # Test diff register
 
+## 2026-10-02: Pass the actual readiness row to its strict predicate
+
+The owned 66-source contact rehearsal passed 153 assertions, including genuine
+normalization, report completion and readiness creation, then stopped with 42783:
+the new include passed a temporary table composite to a predicate whose exact
+input is `public.mail_outbox`. The assertion now joins the captured event ID to
+the actual mail row and passes that row, matching the existing canonical test.
+The one-event count, exact reused contact and current-readiness predicates remain;
+all original assertions, bodies, guards and clocks are unchanged. The initial
+failure and separately proven sequence restoration remain recorded. The mixed
+invalidation and new SQL successor execution are still pending root's rehearsal.
+
 ## 2026-10-02: Keep verified account contact proof and deadlines bound
 
 Source review of the actual 91-assertion contact checkpoint found three gaps:

@@ -77,6 +77,7 @@ select is(public.own_report_generation_with_mail_v1('complete','7a000000-0000-00
 create temporary table contact_ready_mail as select * from public.mail_outbox
  where target_id='7a0c0000-0000-4000-8000-000000000040';
 select is((select count(*) from contact_ready_mail),1::bigint,'the genuine report producer creates one exact readiness event');
-select ok((select contact_reference_id=(select id from account_contact)
- and private.file_ready_mail_current_v1(contact_ready_mail) from contact_ready_mail),
+select ok((select m.contact_reference_id=(select id from account_contact)
+ and private.file_ready_mail_current_v1(m) from public.mail_outbox m
+ join contact_ready_mail captured on captured.id=m.id),
  'genuine current readiness reuses the v2 proven contact rather than rotating it to legacy authority');
