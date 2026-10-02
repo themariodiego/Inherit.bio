@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-02 — Correct three actual focused source-test defects
+
+The first pinned single-worker qualification of frozen920cdbf9 preserved its
+actual failed log:42 assertions passed, two source assertions failed and one
+suite could not collect. The inherited040 body-hash expectations had one extra
+closing parenthesis each; their exact expectations remain. The original current
+HTTP202 negative parser's `request.post` substring incorrectly rejected passive
+`request.postDataJSON()` observation. It now rejects the complete POST property
+token (direct/optional/alias/bind variants) and conservatively refuses computed
+request properties. Planted direct/optional/bound/computed/dynamic/concatenated
+calls and interception remain rejected; no unknown method spelling is admitted.
+The historical helper's source check now requires its actual bounded
+`requestfailed` event and joint await, matching its already authored protocol.
+
+No application/helper/controller/SQL function changes, weaker authority or
+acceptance, deadline/retry change, real SDK/browser/provider credit or discarded
+failure receipt. The original current202 helper remains byte-exact. Its new
+negative parser regression retains every other prohibited method/effect and
+proves the planted replay source is different before requiring refusal.
+
 ## 2026-10-02 — Author a distinct verified historical native fixture adapter
 
 The frozen036 currentHTTP202 receipt cannot be due immediately without

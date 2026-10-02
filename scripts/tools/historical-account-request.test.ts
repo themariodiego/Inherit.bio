@@ -88,7 +88,7 @@ describe("bounded historical creation preserves the complete ordinary algorithms
       "private.enqueue_account_affected_notice_v1(uuid,jsonb,boolean,timestamptz)",
     ]);
     for (const pin of replacements) {
-      expect(md5(body(migration, pin.signature.split("(")[0])))).toBe(pin.successorBodyMd5);
+      expect(md5(body(migration, pin.signature.split("(")[0]))).toBe(pin.successorBodyMd5);
       expect(pin.serviceExecute).toBe(false);
     }
     expect(pins.predecessors.find(pin => pin.signature.startsWith("private.enqueue_embryo_principal_mail_v1("))?.bodyMd5)
@@ -101,7 +101,7 @@ describe("bounded historical creation preserves the complete ordinary algorithms
     expect(pins.newFunctions).toHaveLength(3);
     for (const pin of pins.newFunctions) {
       expect(pin.serviceExecute).toBe(false);
-      expect(md5(body(migration, pin.signature.split("(")[0])))).toBe(pin.bodyMd5);
+      expect(md5(body(migration, pin.signature.split("(")[0]))).toBe(pin.bodyMd5);
       expect(migration).toContain(`revoke all on function ${pin.signature} from public,anon,authenticated,inherit_upload_only,service_role;`);
     }
     for (const guard of ["p.proowner='postgres'::regrole", "p.proargmodes", "p.proallargtypes", "p.proacl",

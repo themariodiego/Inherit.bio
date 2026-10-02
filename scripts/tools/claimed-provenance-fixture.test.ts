@@ -15,6 +15,10 @@ const fixture: ClaimedProvenanceProducerInput = {
   evidence: "synthetic-provider-metadata-only",
 };
 const read = (name: string) => readFileSync(new URL(`../../${name}`, import.meta.url), "utf8");
+// A complete .post property token covers call/optional/alias/bind variants.
+// Computed request properties refuse conservatively; only the audited direct
+// passive .postDataJSON() observation is allowed, never a dynamic API method.
+const forbiddenNativeReplay = /page\.route|request\s*(?:\??\.\s*post\b|(?:\?\.\s*)?\[)|mintAccountOperationNonce|verifyAccountOperationNonce|console\.|claims\.amr\s*=|update public|insert into public/iu;
 
 describe("a native request never becomes a fabricated due or disposal authority", () => {
   it("accepts only the closed exact owned source, distinct authority IDs and seven-day receipt", () => {
@@ -72,7 +76,21 @@ describe("a native request never becomes a fabricated due or disposal authority"
       'page.getByTestId("delete-account").click()', "assert.equal(response.status, 202", "assert.equal(count, 1",
       "createHash(\"sha256\").update(body.nonce)", "n.consumed_at is not null", "begin read only", "page.off(\"request\", observeRequest)"])
       expect(native).toContain(text);
-    expect(native).not.toMatch(/page\.route|request\.post|mintAccountOperationNonce|verifyAccountOperationNonce|console\.|claims\.amr\s*=|update public|insert into public/iu);
+    expect(native).not.toMatch(forbiddenNativeReplay);
+  });
+  it("rejects a planted direct POST call while allowing passive original POST-body observation", () => {
+    const native = read("e2e/helpers/claimed-provenance-native-request.ts");
+    expect(native).toContain("request.postDataJSON()");
+    expect(native).not.toMatch(forbiddenNativeReplay);
+    for (const direct of ['request.post("/api/account/delete")', 'request.post ("/api/account/delete")',
+      'request?.post("/api/account/delete")', 'request.post?.("/api/account/delete")', 'request.post.bind(request)("/api/account/delete")',
+      'request["post"]("/api/account/delete")', 'request?.["post"]("/api/account/delete")',
+      'request[method]("/api/account/delete")', 'request["po" + "st"]("/api/account/delete")',
+      'page.route("/api/account/delete", handler)']) {
+      const planted = native.replace("request.postDataJSON()", direct);
+      expect(planted).not.toBe(native);
+      expect(planted).toMatch(forbiddenNativeReplay);
+    }
   });
 });
 

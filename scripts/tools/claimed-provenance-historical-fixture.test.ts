@@ -90,7 +90,8 @@ describe("separate historical receipt and actual protected protocol integration 
     const helper = read("e2e/helpers/claimed-provenance-historical-request.ts");
     const runner = read("scripts/tools/historical-account-request.run.mts");
     const authority = read("scripts/tools/historical-account-authority.ts");
-    for (const value of ['await page.route(pattern, intercept)', 'await route.abort("aborted")', 'await actualFailure',
+    for (const value of ['await page.route(pattern, intercept)', 'await route.abort("aborted")', 'page.waitForEvent("requestfailed", exact)',
+      'await Promise.all([intercepted, actualFailure,',
       'page.getByTestId("delete-account").click()', 'ownerIpc("create"', 'ownerIpc("prepare"',
       "assertHistoricalConcurrencyFixture", "Aborted issuance cannot dispatch, consume or create", "s.file_id=m.file_id"])
       expect(helper).toContain(value);
