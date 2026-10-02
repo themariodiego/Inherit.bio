@@ -27,5 +27,11 @@
     "error": "ENOENT data/mock-token-allowlist.json",
     "correction": "Read actual unchanged import path scripts/mock-token-allowlist.json; no application/test change"
   },
-  "noCompilerOrDatabaseRun": true
+  "noCompilerOrDatabaseRun": true,
+  "evidenceWhitespaceCorrection": {
+    "initialCommit": "90c33f24af4948d6242b60fc8218080002727199",
+    "initialCheck": "FAIL: extra log EOF blank and blank diff context lines",
+    "correction": "Remove only extra terminal blank log line; retain exact diff inside JSON string rather than whitespace-bearing raw context lines",
+    "runtimeSourceChange": false
+  }
 }
