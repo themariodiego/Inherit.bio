@@ -20,41 +20,63 @@ select is((select count(*) from unnest(array['anon','authenticated','inherit_upl
  'private.request_account_deletion_at_v1(uuid,uuid,text,timestamptz,bytea,text,text,timestamptz)']) door
  where has_function_privilege(api,door,'execute')),0::bigint,'all four API roles lack every historical entry and internal core');
 
-set local role anon;
-select throws_ok($$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$$,'42501','permission denied for schema private',
- 'anon cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$$,'42501','permission denied for schema private',
- 'anon cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$$,'42501','permission denied for schema private',
- 'anon cannot use an owner historical clock or its NULL core');
-reset role;
-
-set local role authenticated;
-select throws_ok($$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$$,'42501','permission denied for function request_account_deletion_at_v1',
- 'authenticated cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$$,'42501','permission denied for function request_account_deletion_clock_core_v1',
- 'authenticated cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$$,'42501','permission denied for function enqueue_account_affected_notice_clock_core_v1',
- 'authenticated cannot use an owner historical clock or its NULL core');
-reset role;
-
-set local role inherit_upload_only;
-select throws_ok($$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$$,'42501','permission denied for function request_account_deletion_at_v1',
- 'inherit_upload_only cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$$,'42501','permission denied for function request_account_deletion_clock_core_v1',
- 'inherit_upload_only cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$$,'42501','permission denied for function enqueue_account_affected_notice_clock_core_v1',
- 'inherit_upload_only cannot use an owner historical clock or its NULL core');
-reset role;
-
-set local role service_role;
-select throws_ok($$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$$,'42501','permission denied for function request_account_deletion_at_v1',
- 'service_role cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$$,'42501','permission denied for function request_account_deletion_clock_core_v1',
- 'service_role cannot use an owner historical clock or its NULL core');
-select throws_ok($$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$$,'42501','permission denied for function enqueue_account_affected_notice_clock_core_v1',
- 'service_role cannot use an owner historical clock or its NULL core');
-reset role;
+-- The upload-only role intentionally has no USAGE on the pgTAP schema.
+-- Execute the unchanged denial queries as their real API roles; only the TAP
+-- comparison runs as the owner. No grant or SECURITY DEFINER helper is added.
+create function pg_temp.historical_denied(p_role text,p_query text) returns jsonb
+language plpgsql security invoker as $$
+declare observed_role text; observed_state text:='accepted'; observed_message text;
+begin
+ if current_user<>'postgres' or p_role not in('anon','authenticated','inherit_upload_only','service_role') then
+  raise exception using errcode='42501',message='synthetic denial probe owner only';end if;
+ begin
+  execute format('set local role %I',p_role);
+  observed_role:=current_user;
+  begin
+   execute p_query;
+  exception when others then observed_state:=sqlstate;observed_message:=sqlerrm;
+  end;
+  raise exception using errcode='ZY001',message='restore synthetic denial probe';
+ exception when sqlstate 'ZY001' then null;
+ end;
+ return jsonb_build_object('role',observed_role,'state',observed_state,'message',observed_message);
+end $$;
+select is(pg_temp.historical_denied('anon',$denied$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$denied$),
+ jsonb_build_object('role','anon','state','42501','message','permission denied for schema private'),
+ 'anon cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('anon',$denied$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$denied$),
+ jsonb_build_object('role','anon','state','42501','message','permission denied for schema private'),
+ 'anon cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('anon',$denied$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$denied$),
+ jsonb_build_object('role','anon','state','42501','message','permission denied for schema private'),
+ 'anon cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('authenticated',$denied$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$denied$),
+ jsonb_build_object('role','authenticated','state','42501','message','permission denied for function request_account_deletion_at_v1'),
+ 'authenticated cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('authenticated',$denied$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$denied$),
+ jsonb_build_object('role','authenticated','state','42501','message','permission denied for function request_account_deletion_clock_core_v1'),
+ 'authenticated cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('authenticated',$denied$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$denied$),
+ jsonb_build_object('role','authenticated','state','42501','message','permission denied for function enqueue_account_affected_notice_clock_core_v1'),
+ 'authenticated cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('inherit_upload_only',$denied$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$denied$),
+ jsonb_build_object('role','inherit_upload_only','state','42501','message','permission denied for function request_account_deletion_at_v1'),
+ 'inherit_upload_only cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('inherit_upload_only',$denied$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$denied$),
+ jsonb_build_object('role','inherit_upload_only','state','42501','message','permission denied for function request_account_deletion_clock_core_v1'),
+ 'inherit_upload_only cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('inherit_upload_only',$denied$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$denied$),
+ jsonb_build_object('role','inherit_upload_only','state','42501','message','permission denied for function enqueue_account_affected_notice_clock_core_v1'),
+ 'inherit_upload_only cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('service_role',$denied$select * from private.request_account_deletion_at_v1(null,null,null,null,null,null,null,clock_timestamp())$denied$),
+ jsonb_build_object('role','service_role','state','42501','message','permission denied for function request_account_deletion_at_v1'),
+ 'service_role cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('service_role',$denied$select * from private.request_account_deletion_clock_core_v1(null,null,null,null,null,null,null)$denied$),
+ jsonb_build_object('role','service_role','state','42501','message','permission denied for function request_account_deletion_clock_core_v1'),
+ 'service_role cannot use an owner historical clock or its NULL core under the exact requested API role');
+select is(pg_temp.historical_denied('service_role',$denied$select * from private.enqueue_account_affected_notice_clock_core_v1(null,null,false,null,null)$denied$),
+ jsonb_build_object('role','service_role','state','42501','message','permission denied for function enqueue_account_affected_notice_clock_core_v1'),
+ 'service_role cannot use an owner historical clock or its NULL core under the exact requested API role');
 select throws_ok($$select pg_temp.historical_request(repeat('a',64),null)$$,'22023','invalid historical account clock',
  'the explicit owner finite_at entry refuses NULL');
 select throws_ok($$select pg_temp.historical_request(repeat('a',64),'infinity')$$,'22023','invalid historical account clock',
@@ -97,10 +119,29 @@ create temporary table original_current_rows as select jsonb_build_object('reque
  'mail',(select jsonb_agg(to_jsonb(m) order by m.id) from public.mail_outbox m where m.target_id=d.id)) value
  from public.account_deletion_requests d where d.id=(select deletion_id from ordinary_account_request);
 
+-- Actual cancellation revoked every old owner session. Start a distinct new
+-- current synthetic SQL session; this is not SDK reauthentication evidence.
+select is((select count(*) from auth.sessions where id='7a000000-0000-4000-8000-0000000000a1'),0::bigint,
+ 'genuine current cancellation revokes the original owner session before a new operation');
+insert into auth.sessions(id,user_id,created_at,updated_at,aal) values(
+ '7a000000-0000-4000-8000-0000000000a3','7a000000-0000-0000-0000-000000000001',
+ clock_timestamp(),clock_timestamp(),'aal1');
+select ok((select user_id='7a000000-0000-0000-0000-000000000001'::uuid
+ and created_at>=(select after_at from historical_account_clock) and created_at<=clock_timestamp()
+ from auth.sessions where id='7a000000-0000-4000-8000-0000000000a3'),
+ 'the distinct post-cancellation SQL session belongs to the owner and records actual current creation');
+create or replace function pg_temp.historical_request(p_hash text,p_effective timestamptz,p_session uuid default '7a000000-0000-4000-8000-0000000000a3',
+ p_expiry timestamptz default null) returns uuid language sql as $$
+ select r.deletion_id from private.request_account_deletion_at_v1(
+  '7a000000-0000-0000-0000-000000000001',p_session,p_hash,
+  coalesce(p_expiry,clock_timestamp()+interval '9 minutes'),decode('0011223344556677','hex'),repeat('2',64),
+  encode(extensions.digest('historical-holder:'||p_hash,'sha256'),'hex'),p_effective) r;
+$$;
 create function pg_temp.stale_historical_session() returns uuid language plpgsql as $$
 begin
  update auth.sessions set created_at=clock_timestamp()-interval '16 minutes'
- where id='7a000000-0000-4000-8000-0000000000a1';
+ where id='7a000000-0000-4000-8000-0000000000a3';
+ if not found then raise exception using errcode='P0001',message='synthetic current session missing';end if;
  return pg_temp.historical_request(repeat('f',64),clock_timestamp()-interval '7 days 10 minutes');
 end $$;
 select throws_ok($$select pg_temp.stale_historical_session()$$,'42501','recent_reauthentication_required',
@@ -110,7 +151,8 @@ begin
  insert into auth.mfa_factors(id,user_id,friendly_name,factor_type,status,secret,created_at,updated_at)
  values(gen_random_uuid(),'7a000000-0000-0000-0000-000000000001','Synthetic historical refusal','totp','verified',
  'synthetic-secret',clock_timestamp(),clock_timestamp());
- update auth.sessions set aal='aal1' where id='7a000000-0000-4000-8000-0000000000a1';
+ update auth.sessions set aal='aal1' where id='7a000000-0000-4000-8000-0000000000a3';
+ if not found then raise exception using errcode='P0001',message='synthetic current session missing';end if;
  return pg_temp.historical_request(repeat('f',64),clock_timestamp()-interval '7 days 10 minutes');
 end $$;
 select throws_ok($$select pg_temp.historical_without_current_mfa()$$,'42501','mfa_required',
@@ -119,10 +161,10 @@ select throws_ok($$select pg_temp.historical_request(repeat('f',64),clock_timest
  '7a000000-0000-4000-8000-0000000000b1')$$,'42501','recent_reauthentication_required',
  'the counterpart actual session cannot authorize the owner historical request');
 select throws_ok($$select pg_temp.historical_request(repeat('f',64),clock_timestamp()-interval '7 days 10 minutes',
- '7a000000-0000-4000-8000-0000000000a1',clock_timestamp()-interval '1 minute')$$,
+ '7a000000-0000-4000-8000-0000000000a3',clock_timestamp()-interval '1 minute')$$,
  '22023','invalid_operation_nonce','historical business time cannot revive a nonce expired on the real clock');
 select throws_ok($$select pg_temp.historical_request(repeat('f',64),clock_timestamp()-interval '7 days 10 minutes',
- '7a000000-0000-4000-8000-0000000000a1',clock_timestamp()+interval '11 minutes')$$,
+ '7a000000-0000-4000-8000-0000000000a3',clock_timestamp()+interval '11 minutes')$$,
  '22023','invalid_operation_nonce','historical creation retains the actual ten-minute nonce expiry ceiling');
 create function pg_temp.bad_historical_contact() returns uuid language plpgsql as $$
 begin
@@ -190,7 +232,7 @@ select ok((select r.created_at between t.before_at and t.after_at and m.created_
  'actual retention and manifest recording defaults distinguish synthetic effective history');
 select ok((select n.issued_at between t.before_at and t.after_at and n.consumed_at between n.issued_at and t.after_at
  and n.expires_at>t.after_at from public.account_operation_nonces n cross join historical_account_clock t
- where n.nonce_hash=repeat('f',64) and n.operation='account_delete' and n.session_id='7a000000-0000-4000-8000-0000000000a1'),
+ where n.nonce_hash=repeat('f',64) and n.operation='account_delete' and n.session_id='7a000000-0000-4000-8000-0000000000a3'),
  'the freshly verified nonce is recorded and consumed on actual time, never the synthetic business clock');
 select ok((select deletion_requested_at between t.before_at and t.after_at from public.profiles p
  cross join historical_account_clock t where p.id='7a000000-0000-0000-0000-000000000001'),
@@ -198,7 +240,7 @@ select ok((select deletion_requested_at between t.before_at and t.after_at from 
 select ok(not exists(select 1 from public.mail_outbox m join public.account_deletion_requests d on d.id=m.target_id
  where d.id=(select id from historical_request) and (m.created_at<>d.requested_at or m.not_before<>d.requested_at
  or m.expires_at<>d.notice_ends_at+interval '1 day' or m.expires_at<=m.created_at
- or m.expires_at>m.created_at+interval '30 days'))),
+ or m.expires_at>m.created_at+interval '30 days')),
  'every historical holder/affected notice starts with one exact effective creation/expiry anchor');
 select is((select count(*) from public.mail_outbox m where m.target_id=(select id from historical_request)
  and m.template_id='account-deletion-affected'),

@@ -1,3 +1,45 @@
+## 2026-10-02: Correct the historical notice assertion's SQL syntax
+
+The actual rehearsal reached99 passing assertions, then found a surplus closing
+parenthesis before the original historical mail-anchor assertion description.
+Remove only that surplus delimiter; every existing expiry/creation/retention
+predicate and assertion remains. Preserve the failed SQL run and independent
+exact local database restoration. No business deadline or acceptance changes.
+
+## 2026-10-02: Use a distinct current SQL session after actual cancellation
+
+The corrected040 fixture now reaches genuine current cancellation, whose actual
+`public.cancel_account_deletion_v1` deletes all owner Auth sessions. The next
+stale-session assertion previously passed because its session was missing; the
+MFA, expired-nonce, contact and successful historical-request tests then failed
+at recent reauthentication. The failed run and before/after missing-session
+inspection are preserved. No runtime validator or clock is changed.
+
+The fixture asserts the original session was revoked, inserts a distinct new
+synthetic owner SQL session at actual current time, and uses it for subsequent
+operations. The exact original refusal states/messages remain, and stale/MFA
+setup updates must find that session rather than borrowing a missing-session
+refusal. Actual SDK reauthentication and native authentication remain separate
+unqualified proofs. No existing Auth row is resurrected or made current.
+
+## 2026-10-02: Execute historical-clock denial probes under the exact API role
+
+The actual corrected040 SQL rehearsal passed its predecessor guard, then failed
+because `inherit_upload_only` deliberately has no USAGE on the `extensions`
+schema where that diagnostic installs pgTAP. The assertions could not resolve
+`throws_ok`; no application denial query was executed at that point. No schema
+or function privilege is granted to make the test run.
+
+`supabase/tests/historical_account_request.sql` now uses an owner-invoked,
+SECURITY INVOKER temporary probe to switch to each of the same four API roles,
+execute each of the same twelve private NULL queries, and restore the entire
+probe through a caught subtransaction rollback. pgTAP comparisons run as the
+owner and require the observed role as well as the same exact42501 SQLSTATE and
+permission-denial message. The original predecessor fixture, mutation/clock
+assertions, helper algorithms, migration and browser suite remain unchanged.
+The first runtime failure and exact local sequence restoration are preserved;
+this harness change gives no SDK, browser, provider or elapsed-time evidence.
+
 # Test diff register
 
 ## 2026-10-02 — Pin the exact non-credential historical target unit marker
