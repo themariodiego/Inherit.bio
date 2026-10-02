@@ -1,5 +1,33 @@
 # Test diff register
 
+## 2026-10-03 — Register the reviewed private Embryo claimant and canonical export plan
+
+The complete original combined head 13ee local unit run executed 594 files and 9,657
+tests, with 9,655 passing and two source-registration failures. The raw failed
+run is retained; no host quality check ran, and it establishes no full local
+or hosted qualification.
+
+The shared-definition audit correctly discovered the new carrier migration's
+replacement of private.claim_worker_job_v2 outside the six original Path B
+stages. Register only that exact migration/function pair in the closed outside-
+replacement list, retaining all six original stages, every prior replacement
+and every dynamic-patch expectation. Two appended cases pin the entire original
+claimant plus the one score_embryo exclusion, exact signature/default/security
+attributes, and the full literal predecessor owner/argument/default/EXECUTE ACL
+guard before either schema or claimant changes. No unknown replacement is
+ignored and no source permission or scientific rule changes.
+
+The canonical export plan already includes the reviewed own computation_receipt
+description, but its generated SQL copy retained the previous reason. Synchronize
+only that JSON literal through the existing export-member-plan generator. The
+verbatim-travel assertion and every SQL assertion, role, fixture, plan and bound
+remain unchanged. The whole SQL outside the literal remains byte-exact.
+
+The carrier migration and all scientific producer/reader code remain exact.
+These registrations confer no native rerun, fresh database, browser, clinical
+publication, activation, scientific review or acceptance credit. Full local
+qualification and the unchanged complete hosted suite remain required.
+
 ## 2026-10-02 — Observe one exact Embryo carrier allele with the registry closed
 
 New private computation tests count zero, one or two literal diploid copies at
