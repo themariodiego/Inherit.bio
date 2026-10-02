@@ -1,5 +1,42 @@
 # Test diff register
 
+## 2026-10-02: Pass the actual readiness row to its strict predicate
+
+The owned 66-source contact rehearsal passed 153 assertions, including genuine
+normalization, report completion and readiness creation, then stopped with 42783:
+the new include passed a temporary table composite to a predicate whose exact
+input is `public.mail_outbox`. The assertion now joins the captured event ID to
+the actual mail row and passes that row, matching the existing canonical test.
+The one-event count, exact reused contact and current-readiness predicates remain;
+all original assertions, bodies, guards and clocks are unchanged. The initial
+failure and separately proven sequence restoration remain recorded. The mixed
+invalidation and new SQL successor execution are still pending root's rehearsal.
+
+## 2026-10-02: Keep verified account contact proof and deadlines bound
+
+Source review of the actual 91-assertion contact checkpoint found three gaps:
+reuse ignored an index's elapsed expiry; the readiness Auth trigger could rotate
+a shared contact before the new trigger invalidated its owner notice; and direct
+service UPDATE could move the proven row while retaining its new proof field.
+The separate successor refuses expired current indexes at statement time,
+invalidates exact proven-contact mail even after an earlier rotation, and freezes
+the proven contact/index identity and original index deadline. Exact rotation,
+NULL ciphertext shredding, status revocation and child-first deletion remain.
+Legacy NULL rows keep their existing algorithms. A NULL Auth email is explicitly
+refused rather than relying on a three-valued comparison.
+
+Every original assertion remains. New rollback probes use the real API roles
+and require exact 42501 refusals for identity moves, proof writes and terminal
+resurrection; positive terminal cleanup must restore the entire original tuple.
+The mixed-mail case uses the existing actual normalization and selected observed
+monogenic report producer to obtain a genuine readiness event on the same v2
+contact. It does not insert a readiness envelope or bypass its guard. No PRS,
+calibrated result, provider ACK, delivery or scientific admission is asserted.
+All new SQL execution remains pending root's owned rehearsal; the parent 91-test
+proof and its failures/restoration remain preserved. No deadline or acceptance
+changes and no provider operation are introduced.
+
+
 ## 2026-10-02: Preserve complete settings authority while normalizing remaining lock inversions
 
 Independent review of the qualified inventory read-lock change found that the

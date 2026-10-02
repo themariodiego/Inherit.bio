@@ -62,6 +62,24 @@ function's exact body/typed metadata/owner/ACL and checks all original pg_proc
 rows unchanged. The first guarded rehearsal stopped before TAP because one
 arguments pin omitted the existing v1 defaults; its evidence is retained.
 
+The separate lifetime successor adds strict source corrections after root's
+91-assertion owned checkpoint: an elapsed current contact index cannot be reused,
+and no reuse extends its original fixed deadline. A proven contact's ID,
+principal, HMAC/key, authority revision and creation instant stay immutable.
+Its ciphertext may only change to NULL in the existing shredded state; rotated
+or shredded authority cannot return to current. Exact index identity/deadlines
+are frozen on the existing store, with status revocation/expiry and child-first
+deletion preserved. Legacy NULL rows retain their prior behavior.
+
+Auth transitions also invalidate exact proven-contact mail whose contact was
+already rotated by the unchanged readiness trigger or an earlier operation.
+They revoke any remaining current indexes for those proven contacts, without
+rewriting the historical contact or notice. The new mixed-mail fixture obtains
+its readiness event through the real own normalization/report producer and
+proves it reuses the existing v2 contact. These additional SQL probes are authored
+and unrun until root's owned rehearsal; no scientific or provider credit follows.
+
+
 The corrected owned append on 2026-10-02 passed all91 assertions across65
 exact pending migrations. It performed the real current service producer and
 authenticated notice transaction, flushed all deferred constraints, and rolled

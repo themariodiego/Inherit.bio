@@ -1,0 +1,42 @@
+{
+  "status": "PASS_SOURCE_ONLY",
+  "parent": "b8d90bab58f897571e6a6f6f7d47d1da8766a2e4",
+  "changedOriginalSupabasePaths": [
+    "supabase/migrations/20261002080931_verified_own_account_contact.sql",
+    "supabase/tests/verified_own_account_contact.sql"
+  ],
+  "originalSupabasePathCount": 434,
+  "addedSQLInclude": "supabase/tests/fixtures/verified_account_ready_mail.inc",
+  "originalSevenFullPredecessorPinsUnchanged": true,
+  "newFiveFunctionBodyMd5": {
+    "private.guard_verified_account_contact_revision_v1()": "8f32523d2fa953b1b7eff27a2009f3ac",
+    "private.guard_verified_account_contact_index_v1()": "70cb879c4dab1cc67ca8ef57820ad8c7",
+    "private.create_verified_account_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)": "1eedcbc40d3fcedfbf5595b88d375017",
+    "public.create_embryo_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)": "add22f131b382e1606b31bbe4cb770fb",
+    "private.invalidate_verified_account_auth_contact_v1()": "08745dfb49acbe424934ef09a3a25937"
+  },
+  "originalNewFunctionMetadataExceptBodiesUnchanged": true,
+  "publicV2ForwarderBodyUnchanged": true,
+  "originalReadinessMigrationSha256": "875c9e94b549783d72658905cc92b95ec90d16b51f06ac358e051741d7a4cbfa",
+  "allOriginalSrcE2eScriptsWorkerDataPathsUnchanged": true,
+  "originalTopLevelTAPExpressions": 23,
+  "byteExactPreservedTAPExpressions": 22,
+  "soleRevisedTAPExpression": "Exact complete API denial inventory adds the new index guard; expected zero and original helpers unchanged",
+  "authoredExecutionStatus": "UNRUN SQL; no SDK/browser/provider/scientific or acceptance credit",
+  "readinessAlgorithmSource": "supabase/tests/canonical_own_report_ready_mail.sql normalization/stage/complete/observed monogenic readiness; no PRS result",
+  "checks": {
+    "trackedSqlIncludeClosure": {
+      "files": 472,
+      "edges": 154,
+      "status": "PASS"
+    },
+    "includePreflightFocusedUnit": {
+      "files": 1,
+      "tests": 9,
+      "status": "PASS"
+    },
+    "compiler": "NOT RUN",
+    "database": "NOT RUN"
+  },
+  "localNameSentinel": "Recovered exact41-byte nonproduction sentinel; hosted private comparator not qualified locally"
+}
