@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-02: Verified contact actual append and guard probes
+
+Root's owned rehearsal of exact primary5359 plus contact3f113 ran all 66 pending
+sources and the expanded contact test:168/168 assertions passed. The real
+normalization/report/readiness producer reused the proven v2 contact and its
+unchanged indexes; the actual Auth transition invalidated both readiness and
+owner-notice authority. Query SHA256209ed89a12c9d88e41e326527471520a74c012a9fb2a753443e94b26d237bdc1
+and log SHA2560fc88f4c866db0b10bafb74cb9150b5ef381bfafec5e1f2faf1bd891bc149108
+are preserved in the root's verified-contact-actual-readiness-abi-corrected-append
+packet. Rollback alone changed one fixture-used sequence; after its independently
+proven restoration, the whole original database dump again matched652f6ba27ac4cbbd0dbc9a3b4ebf985c8f031d0ba7d37231b673f09bcb481e07.
+
+This is a focused append proof, not a fresh-database, SDK, browser, provider or
+delivery proof. The new source-only guard packet authors36 negative probes and
+one exact positive source control with nested rollback/catalog checks; these
+probes have not executed. No product body, assertion, deadline or acceptance
+changes accompany this documentation and evidence successor.
+
 ## 2026-10-02: Pass the actual readiness row to its strict predicate
 
 The owned 66-source contact rehearsal passed 153 assertions, including genuine
