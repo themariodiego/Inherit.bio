@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-02: Keep historical Medicines dates separate from new abstract context
+
+The exact c718 full Linux unit run passed9377 tests and failed the unchanged
+ADR0021 Medicines provenance assertion: the new tranche had redated VKORC1 and
+NUDT15 legacy citation metadata from2026-09-03 to2026-10-02. Only those two
+template fields return to their original date. Original genotypes, summaries,
+CPIC/dbSNP sources, all original assertions and READ_ON remain byte-exact.
+The four new context claims and canonical sources retain their genuine October2
+abstract-only dates, scope and retrieval receipts; no September read of those
+new paragraphs is invented.
+
+Only the two resulting object hashes in the tranche receipt are corrected, with
+superseded hashes and the failed log retained. An added strict check removes only
+the new context and recovers each entire original object hash, then requires the
+new context's exact canonical evidence/review dates to remain October2. This
+change does not register genotype interpretations, infer full-guideline review,
+change a gate or promote acceptance. This child passes the unchanged Medicines,
+canonical report and extended tranche focused suites:3files/37tests, plus scoped
+lint. Full-unit, compiler, database and hosted qualification remain root-owned.
+
 ## 2026-10-02: Verified contact actual append and guard probes
 
 Root's owned rehearsal of exact primary5359 plus contact3f113 ran all 66 pending

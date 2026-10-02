@@ -115,6 +115,27 @@ describe("bounded primary-source tranche", () => {
       }
     }
   });
+  it("preserves original medicine provenance while only new context uses the October abstract receipts", () => {
+    for (const [slug, pmid] of Object.entries(contextBindings)) {
+      const template = templates.find((row) => row.slug === slug)!;
+      const citation = template.citations.find((row) => row.pmid === pmid)!;
+      const freeze = tranche.changes.find((row) => row.slug === slug)!;
+      expect(citation.accessedOn).toBe("2026-09-03");
+      const original = structuredClone(template);
+      delete original.citations.find((row) => row.pmid === pmid)!.studyContext;
+      expect(digest(original)).toBe(freeze.beforeObjectSha256);
+      const source = sources.find((row) => row.id === `pmid:${pmid}`)!;
+      expect(source.access_date).toBe("2026-10-02");
+      expect(source.claim).toContain("no publisher full text or supplement was read");
+      for (const field of ["measured", "limitation"] as const) {
+        const context = readStudyContext(citation)!;
+        const claim = registeredStudyContext(slug, pmid, field, context[field]!.text)!;
+        expect(claim.reviewed_on).toBe("2026-10-02");
+        expect(claim.evidence.map((edge) => ({ source: edge.citation, date: edge.accessed_on })))
+          .toEqual([{ source: `pmid:${pmid}`, date: "2026-10-02" }]);
+      }
+    }
+  });
   it("refuses future/access-date drift, mismatched source URLs and orphaned evidence", () => {
     const copied = structuredClone(added);
     copied[0].evidence[0].accessed_on = "2026-10-03";

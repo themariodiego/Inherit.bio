@@ -33,7 +33,19 @@ The Kim and Yang anchors share a publication budget with marked excerpts in olde
 
 ## Exact changes and bounds
 
-The twelve source records make identity resolvable across all 29 existing template references. Runtime citation binding still requires **exact canonical text and claim ID**; an unregistered interpretation, a changed sentence or another report cannot borrow a newly registered source. Existing template access dates are preserved unless a new guideline context was actually read and authored in that citation. Earlier full-paper context is not redated as though this agent had reread that full paper.
+The twelve source records make identity resolvable across all 29 existing template references. Runtime citation binding still requires **exact canonical text and claim ID**; an unregistered interpretation, a changed sentence or another report cannot borrow a newly registered source. All existing template access dates remain preserved. The two Medicines citations retain their original2026-09-03 source-pass metadata; only the four new context claims and their canonical abstract sources carry the actual2026-10-02 access receipts. Earlier guideline, allele-definition and genotype provenance is not redated as though this abstract pass reread those sources.
+
+The first combined c718 full unit run passed9377 tests and failed the unchanged
+Medicines read-date assertion. The initial tranche had changed those two legacy
+citation dates when adding context. The correction restores only those fields
+and updates the two resulting template-object pins. The adjacent receipt retains
+their superseded hashes and the failed full-run log hash. Removing only the added
+study context from each corrected template must recover its entire original
+object hash. Canonical source/claim dates, quotes, supported scope and actual
+retrieval hashes remain unchanged; no new review or scientific approval follows.
+The source child passes3focusedfiles/37tests and scoped lint. Its original
+451 Supabase paths remain byte-exact. Full-unit and hosted qualification still
+belong to the root's final combined candidate.
 
 The corrected summaries have intended detail, account JSON/text export and public-catalog research-digest fixture surfaces, matching the existing summary contract. Context paragraphs have intended detail and account JSON export only. No context is assigned to the digest mail. These are **declared contracts**, not captured browser/export/email occurrences. Saved database report rows are not rewritten by this source change, and no production data or provider message is touched.
 

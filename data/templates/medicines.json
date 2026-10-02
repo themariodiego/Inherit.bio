@@ -27,7 +27,7 @@
       {
         "pmid": "28198005",
         "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017",
-        "accessedOn": "2026-10-02",
+        "accessedOn": "2026-09-03",
         "studyContext": {
           "measured": {
             "text": "The 2017 CPIC guideline covers warfarin care when clinical genotype results are available. It covers CYP2C9, VKORC1, CYP4F2 and another DNA position.",
@@ -433,7 +433,7 @@
       {
         "pmid": "41618934",
         "label": "CPIC guideline for TPMT and NUDT15 and thiopurine dosing, 2025 update, Clin Pharmacol Ther 2026",
-        "accessedOn": "2026-10-02",
+        "accessedOn": "2026-09-03",
         "studyContext": {
           "measured": {
             "text": "The 2025 CPIC update covers thiopurine starting doses using TPMT and NUDT15 results. It includes people with variants in both genes.",
