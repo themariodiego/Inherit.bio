@@ -1,5 +1,27 @@
 # Test diff register
 
+## 2026-10-02 — Connect consumed account export presentation and service readers
+
+The frozen037 POST/status and account-only due worker now compose with the
+current source in an isolated ordinary integration. Settings obtains the actual
+read-only create presentation and renders a distinct preparation/status control;
+the original synchronous download remains. Unconfigured archive delivery keeps
+the new control disabled without capture or nonce work. A create is attempted
+once, status is cookie-only and bounded, and exact foreign/extra/malformed/READY
+responses refuse. Actual SDK wiring preserves all eight consumed service doors,
+POST, disabled retries, current signals and the existing fixed original-store
+range transport. Archive writes remain an explicit internal capability, with
+the default provider still absent. No deadline, retry, original assertion or
+browser case changes. The first focused run passed146 tests but failed loading
+the new runtime suite because its isolated storage mock omitted an existing
+schema export. The corrected partial mock retains every real schema; that failed
+log remains. The refreshed nine-file run passed151 tests, and the separate real
+component rendering test passed two more. Scoped lint passed on all eleven
+changed TypeScript files. These tests use mocked RPC/transport and are not
+native/database/provider qualification. Full type/gates/unit qualification
+remains pending. Existing014/029 nonempty
+class refusals remain and no G5.6/G8.5 or READY/public acceptance is claimed.
+
 ## 2026-10-02 — Keyless review monotonic phase diagnostics
 
 Actual hosted68fd browser3 exhausted the unchanged120000ms case budget at the

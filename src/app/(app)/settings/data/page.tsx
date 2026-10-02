@@ -16,6 +16,8 @@ import {
 } from "@/copy/settings/data-export";
 import { deletionControlState } from "@/lib/account-deletion-state";
 import { route } from "@/lib/primary-routes";
+import {AccountExport} from "@/components/settings/account-export";
+import {accountExportControls} from "@/lib/exports/account-export-controls";
 
 export const metadata: Metadata = { title: "Data settings" };
 
@@ -25,8 +27,9 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
   const after=typeof query.profileAfter==="string"?query.profileAfter:query.profileAfter?"invalid":null;
   const dispositionAfter=typeof query.dispositionAfter==="string"?query.dispositionAfter:query.dispositionAfter?"invalid":null;
   const objectionAfter=typeof query.objectionAfter==="string"?query.objectionAfter:query.objectionAfter?"invalid":null;
-  const [deletion,profiles,dispositions,objections] = await Promise.all([
+  const [deletion,profiles,dispositions,objections,exports] = await Promise.all([
     deletionControlState(),identityProfileControls(after),embryoDispositionControls(dispositionAfter),ownerAccountObjectionControls(objectionAfter),
+    accountExportControls(),
   ]);
   return (
     <div className="page-stack mx-auto max-w-2xl space-y-8">
@@ -36,6 +39,7 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_BODY}</p>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_LEGAL_AUDIT}</p>
         <Button asChild variant="outline" className="mt-4"><a href="/api/export">{DATA_EXPORT_BUTTON}</a></Button>
+        <AccountExport control={exports}/>
       </section>
       <DangerZone deletion={deletion} />
       {objections?<section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="claim-requests-heading">

@@ -1,6 +1,7 @@
 import "server-only";
 import {z} from "zod";
 import {buildAccountArchive} from "./account-archive-worker";
+import {accountArchiveExecution} from "./account-archive-runtime";
 
 export type AccountArchiveGenerationCapability=Readonly<{
  /** Trusted provider/configuration proof, before discovery, create or begin.
@@ -12,6 +13,16 @@ export type AccountArchiveGenerationCapability=Readonly<{
 /** The owner has not selected/proved export delivery. No ambient Supabase/R2
  * writer is adopted from existing source readers or configuration variables. */
 export function approvedAccountArchiveGeneration():AccountArchiveGenerationCapability|null{return null;}
+
+/** Compose an internally approved writer with the actual consumed account
+ * readers. Calling this is neither a provider approval nor publication proof;
+ * the caller's configuration check must genuinely succeed before discovery or
+ * create and again for every job. The default above stays closed. */
+export function accountArchiveGenerationCapability(provider:{assertReady:AccountArchiveGenerationCapability["assertReady"];
+ write:Parameters<typeof accountArchiveExecution>[0]}):AccountArchiveGenerationCapability{
+ if(typeof provider.assertReady!=="function")throw new Error("account_archive_generation_unavailable");
+ return Object.freeze({assertReady:provider.assertReady,execution:accountArchiveExecution(provider.write)});
+}
 const job=z.object({exportId:z.uuid(),principalHash:z.string().regex(/^[a-f0-9]{64}$/u),
  authorityReceipt:z.string().regex(/^[a-f0-9]{64}$/u),deadline:z.iso.datetime({offset:true})}).strict();
 export type AccountArchiveDueRpc=(name:"export_archive_account_due_v1",args:{p_after:string|null},signal:AbortSignal)
