@@ -1,5 +1,14 @@
 # Test diff register
 
+## 2026-10-02 — Owner adds the unchanged confirmation block to Emerging reports
+
+The owner selected Include Emerging for brief §12 item 4. Expand only the closed confirmation set to clinical, established and emerging. Keep the exact laboratory paragraph and counsellor sentence, the real non-collapsible How sure we are rendering, every original page/reader/authority path, evidence definition, result, uncertainty, provenance, citation and safety statement. Record the dated answer and update the five relevant brief clauses and its exact register hash together. This changes a disclosure policy, not evidence quality, clinical acceptance or model/condition activation.
+
+Add strict closed-level/text/source-wiring cases, including planted wrong-level, removed, hidden and missing companion paragraphs. Add one genuine browser case on the original generated own-file Emerging report at both viewport sizes: both exact paragraphs stay visible with no control while the same headings, real genotype/subject attribution, unavailable-range explanation, full source provenance and original safety statements remain. Preserve every original copy and report-skeleton assertion byte-for-byte; no timeout, skip, retry, provider, route-state ratchet, density threshold, redesign or clinical permission changes. Focused checks are separate from complete hosted browser/accessibility qualification on the final integrated source.
+
+The first new focused copy assertion incorrectly graded the unchanged mandated paragraph with raw FK (9.93), omitting G1.10's existing registered-term handling. Preserve that failed log. The new assertion now proves both exact strings are present in the real readability corpus and uses the unchanged actual gate; it still keeps the sentence cap and exact full text. No original scorer, term register, threshold or copy assertion changes.
+
+
 ## 2026-10-02 — Register exact privacy-refusal test literals without public host aliases
 
 The combined 843c00f7 name gate retained three actual failures: an empty local private-denylist input and the two literal external hosts in the new keyless audit's tracker and rendered-payment negative cases. Preserve the original failed log. The private denylist still must contain entries; no empty-input exception is added.
