@@ -125,3 +125,17 @@ preserved; no shared history is rewritten. Key equality is tested as a boolean,
 with the other complete environment fields still compared exactly, so a failed
 unit assertion cannot dump the generated verifier. This packet awaits root's
 concrete binding review before its mechanical scanner result is release proof.
+
+### Exact historical owned-target unit marker (2026-10-02)
+
+- Secret-Allowlist-ID: historical-owned-target-unit-marker
+
+The fixed `unit-marker` string supplies two truthy environment properties only
+in the pure owned-target unit test. It is never passed to an SDK, encryption
+operation, subprocess or provider. The exact existing source line is equal in
+the frozen historical-native source and current tree; its offset changed after
+strict negative parser coverage was added. The complete line/path/value and
+independent binding digest use the existing reviewed-source mechanism. A copied
+assignment, replacement literal, changed line/context/metadata or other path
+remains refused, including historical changes when current source is restored.
+The detector, unique-value invariant and history baseline remain unchanged.

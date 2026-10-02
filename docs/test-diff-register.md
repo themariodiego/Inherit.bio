@@ -1,5 +1,19 @@
 # Test diff register
 
+## 2026-10-02 — Pin the exact non-credential historical target unit marker
+
+The first full ten-gate run at0841a473 passed nine gates and preserved the
+actual secret-gate failure: the same fixed unit marker on its unchanged source
+line was reported in frozen920 history and today's tree. It supplies only
+truthy properties to the pure local owned-target validator; no SDK, crypto,
+subprocess or provider receives it. One exact reviewed-source binding records
+that full line/path/value, with an independently pinned digest and accepted ADR.
+The detector and authored-history baseline remain unchanged. Existing reviewed
+current/historical/context/JSON mutation proofs include this binding; copied
+marker assignments and replacement literals have explicit refusal coverage.
+No historical line, original request or deadline is rewritten or aged.
+
+
 ## 2026-10-02 — Correct three actual focused source-test defects
 
 The first corrected run at9a5c35e8 collected all56 cases and passed55. Its one

@@ -9,7 +9,7 @@ import { isAllowedFinding, scanText, validateAllowlist } from "./secret-gate";
 function readAllowlist() {
   return JSON.parse(fs.readFileSync("scripts/secret-allowlist.json", "utf8")) as Parameters<typeof validateAllowlist>[0];
 }
-const reviewedIds = ["browser-origin-credential-refusal", "storage-proxy-credential-refusal",
+const reviewedIds = ["historical-owned-target-unit-marker", "browser-origin-credential-refusal", "storage-proxy-credential-refusal",
   "model-endpoint-credential-refusal", "ready-origin-credential-refusal", "chat-token-deterministic-expression",
   "prepared-storage-credential-refusal", "isolated-webhook-generated-reference",
   "isolated-webhook-malformed-reference", "isolated-webhook-cross-variant-reference"];
@@ -208,6 +208,39 @@ describe("secret gate detector", () => {
         expect(findings).toHaveLength(1);expect(findings[0].rule).toBe("secret-assignment");
         expect(isAllowedFinding(findings[0], entries, root)).toBe(false);
       }
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+  it("keeps the historical target marker bound to its exact pure unit-test context", () => {
+    const { entries } = readAllowlist();
+    const entry = entries.find(item => item.id === "historical-owned-target-unit-marker")!;
+    const source = fs.readFileSync(entry.paths[0], "utf8");
+    const original = source.split(/\r?\n/u).find(line => lineHash(line) === entry.sourceLineSha256)!;
+    expect(source).toContain("historicalAccountOwnedTarget(config, env)");
+    expect(entry.value).toBe("unit-marker");
+    expect(original).toContain(["NEXT_PUBLIC_SUPABASE", "_ANON_KEY: ", JSON.stringify(entry.value)].join(""));
+    expect(original).toContain(["BYOK", "_ENCRYPTION_KEY: ", JSON.stringify(entry.value)].join(""));
+    const frozen = "920cdbf9beb11eb677bd7fe4e30d1cad3ea5d514";
+    const historical = execFileSync("git", ["show", `${frozen}:${entry.paths[0]}`], { encoding: "utf8" });
+    const historicalFinding = reviewedFinding(historical, entry);
+    expect(historicalFinding).toBeDefined();
+    expect(isAllowedFinding({ ...historicalFinding, commit: frozen }, entries, process.cwd())).toBe(true);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "secret-gate-target-marker-"));
+    try {
+      const target = path.join(root, entry.paths[0]);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const copied = ["const unrelated = { BYOK", "_ENCRYPTION_KEY: ", JSON.stringify(entry.value), " };"].join("");
+      fs.writeFileSync(target, original + "\n" + copied);
+      const findings = scanText(fs.readFileSync(target, "utf8"), entry.paths[0]);
+      expect(findings).toHaveLength(2);
+      expect(isAllowedFinding(findings[0], entries, root)).toBe(true);
+      expect(isAllowedFinding(findings[1], entries, root)).toBe(false);
+      const replacement = original.replaceAll(entry.value, "unapproved-literal");
+      expect(replacement).not.toBe(original);
+      fs.writeFileSync(target, replacement);
+      const changed = scanText(replacement, entry.paths[0]);
+      expect(changed).toHaveLength(1);
+      expect(changed[0].rule).toBe("secret-assignment");
+      expect(isAllowedFinding(changed[0], entries, root)).toBe(false);
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   });
 });

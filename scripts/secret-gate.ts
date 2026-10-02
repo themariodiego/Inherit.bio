@@ -9,6 +9,7 @@ const GENOME_FIXTURE_ROOTS = ["data/samples", "e2e/fixtures"];
 // ADR 0006 pins [classification, detector value, paths, full source-line SHA].
 // JSON/ADR edits alone cannot approve a different credential or expression.
 const REVIEWED_FIXTURE_BINDINGS: Readonly<Record<string, string>> = {
+  "historical-owned-target-unit-marker": "0527b7ca64c0863d9dcd7502888ffa223c96f98a9ed5806ed764444d0a8a907b",
   "isolated-webhook-generated-reference": "b335bc48092b30221bb3d24f016579219124da5a5fdd991c1a88820c9d060a69",
   "isolated-webhook-malformed-reference": "2fd38aa46b7aa9b63f45c065c5f4bc83a1a8b7a7ada74cfe7ebe26c78dc7645c",
   "isolated-webhook-cross-variant-reference": "e3c40567197a25b45dc9a10ab23b1080001212617584e2af89dde1d761c2412e",
