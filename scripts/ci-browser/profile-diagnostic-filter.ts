@@ -2,6 +2,8 @@ import type {Readable} from "node:stream";
 import {PROFILE_DIAGNOSTIC_LINE_BYTES,PROFILE_DIAGNOSTIC_PREFIX,profileDiagnosticLine}
   from "../../src/lib/future-person/identity-profile-diagnostic-contract";
 
+import {REVIEW_DIAGNOSTIC_PREFIX,reviewDiagnosticLine} from "../../src/lib/future-person/review-diagnostic-contract";
+
 export const PROFILE_DIAGNOSTIC_RECORD_LIMIT=64;
 /** A complete ASCII line is required. Oversize lines are discarded through
  * their newline; their suffix cannot masquerade as a fresh diagnostic. */
@@ -22,10 +24,12 @@ export function profileDiagnosticFilter(emit:(line:string)=>void){
         }
         if(newline<0)break;
         const line=pending.toString("ascii");
-        if(!discard&&line.startsWith(PROFILE_DIAGNOSTIC_PREFIX)){
+        const prefix=line.startsWith(PROFILE_DIAGNOSTIC_PREFIX)?PROFILE_DIAGNOSTIC_PREFIX:
+          line.startsWith(REVIEW_DIAGNOSTIC_PREFIX)?REVIEW_DIAGNOSTIC_PREFIX:null;
+        if(!discard&&prefix!==null){
           try{
-            const value=JSON.parse(line.slice(PROFILE_DIAGNOSTIC_PREFIX.length));
-            const safe=profileDiagnosticLine(value);if(safe!==null&&line===safe)emit(safe);
+            const value=JSON.parse(line.slice(prefix.length));
+            const safe=prefix===PROFILE_DIAGNOSTIC_PREFIX?profileDiagnosticLine(value):reviewDiagnosticLine(value);if(safe!==null&&line===safe)emit(safe);
           }catch{/* Unknown logs and failed sinks have no diagnostic authority. */}
         }
         pending=Buffer.alloc(0);discard=false;start=newline+1;

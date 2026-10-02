@@ -3103,6 +3103,7 @@ export type Database = {
       }
       encrypted_contact_references: {
         Row: {
+          account_mail_contact_revision: number | null
           authority_revision: number
           contact_ciphertext: string | null
           contact_hmac: string
@@ -3114,6 +3115,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          account_mail_contact_revision?: number | null
           authority_revision: number
           contact_ciphertext?: string | null
           contact_hmac: string
@@ -3125,6 +3127,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          account_mail_contact_revision?: number | null
           authority_revision?: number
           contact_ciphertext?: string | null
           contact_hmac?: string
@@ -8253,6 +8256,29 @@ export type Database = {
           p_owner_contact_ciphertext: string
           p_owner_contact_hmac: string | null
           p_owner_contact_hmac_set?: Json
+          p_session_id: string
+          p_test_jurisdiction: boolean
+          p_token_nonce: string
+          p_upload_situation: string
+        }
+        Returns: {
+          draft_id: string
+          expires_at: string
+          required_principal_slots: string[]
+        }[]
+      }
+      create_embryo_cohort_draft_v2: {
+        Args: {
+          p_account_id: string
+          p_verified_auth_email: string
+          p_basis_case: string
+          p_contact_ciphertexts: string[]
+          p_contact_hmac_sets: Json
+          p_contact_hmacs: string[] | null
+          p_embryo_count: number
+          p_owner_contact_ciphertext: string
+          p_owner_contact_hmac: string | null
+          p_owner_contact_hmac_set: Json
           p_session_id: string
           p_test_jurisdiction: boolean
           p_token_nonce: string

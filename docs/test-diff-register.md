@@ -1,5 +1,26 @@
 # Test diff register
 
+## 2026-10-02 — verified own account contact producer
+
+Actual a558 native owner-notice Save choice returned404. The retained same-chain
+SQL witness proved the original draft produced only its separate genetic-parent
+contact:74/74 assertions passed, the authenticated notice operation refused42501,
+and no account contact was fabricated. Rollback's sole synthetic sequence change
+was separately restored to its captured value; the entire baseline dump then
+matched. Original witness, v1/readiness bodies, fixture algorithms/assertions,
+native cases, deadlines and retries are retained.
+
+New service v2 calls unchanged canonical draft v1 plus independently verified
+own-Auth self-account contact establishment atomically. One nullable mail-revision
+column preserves old NULL rows. Four explicit v2 fixture variants change only
+the initial genuine producer/confirmation/held-set inputs and include links; all
+original assertions remain. New SQL tests require real API-role refusal/reuse,
+actual notice success and actual Auth email-transition invalidation, preserving
+parent contacts and immutable notice clocks. SQL execution is pending root.
+New focused route/diagnostic cases preserve opaque responses, exact native result
+and closed safe stage/SQLSTATE logs. No source-only acceptance/provider/SDK credit.
+
+
 ## 2026-10-02 — Keep the Reason label stable after text is entered
 
 Hosted a558 browser3 timed out at the unchanged final exact Reason label
