@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-02 — Refuse ended Path B authority before projecting its discarded result
+
+The actual896 append reached the new revocation probe, whose original producer
+correctly deleted the saved binding/result. The export snapshot then reported
+missing projection before checking ended authority. It now establishes the exact
+current own-direction Path B grant through the original complete file/grant/person/
+signer/source/job/purpose helper before any missing/partial result classification.
+No current grant refuses42501/not_found; genuinely current authority with an absent
+result remains whole-request-refused0A000. Every unrelated file/class, member,
+privacy/output, page/hash/EOF, grant and deadline fence remains. New strict rollback
+probes prove both real producer deletion and the independent missing-result refusal;
+the original current-revocation assertion is byte-identical. The artifact negative
+uses the existing owner-only publisher's exact predecessor version/body CAS and
+immediate successor instead of an UPDATE rejected by its original immutable guard.
+Every original assertion is retained, no guard or API grant changes; exact snapshot
+post-body pin follows the correction. Both actual failures/restoration receipts
+remain; successor SQL/browser/provider execution and whole-archive completion stay
+unproved, with no READY/public/acceptance credit.
+
 ## 2026-10-02 — Exercise valid purpose revocation before the strict saved-result refusal
 
 The actual039 collation-corrected append passed69 assertions, then its new fixture

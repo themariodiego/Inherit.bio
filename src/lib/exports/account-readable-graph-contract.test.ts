@@ -56,6 +56,28 @@ describe("039 source contract only; SQL compilation/execution remains independen
   expect(body).not.toMatch(/insert into public\.(?:subject_account_bindings|subject_principals|consent_signatures|purpose_grants)/u);
  expect(sql).toContain("md5(p.prosrc)='0d423a210e1e4972af3d11aed336b1f6'");
  });
+ it("checks genuine Path B authority before missing/partial science, preserving the real revocation and publication guards",()=>{
+  const producer=readFileSync("supabase/migrations/20260930234000_path_b_queued_reports.sql","utf8"),
+   publication=readFileSync("supabase/migrations/20261001015000_immutable_consent_publication.sql","utf8"),
+   fixture=readFileSync("supabase/tests/account_archive_readable_graph.sql","utf8"),
+   body=sql.match(/create function private\.export_account_path_b_snapshot_v1\([\s\S]*?as \$\$([\s\S]*?)\$\$/u)![1];
+  expect(producer).toContain("delete from private.path_b_report_bindings where grant_id=new.grant_id");
+  const existing=body.slice(body.indexOf("for b in"),body.indexOf("end loop;"));
+  expect(existing.indexOf("a:=private.path_b_report_authority_v1")).toBeLessThan(existing.indexOf("if b.state<>"));
+  expect(existing.indexOf("if a is distinct from b.authority")).toBeLessThan(existing.indexOf("if b.state<>"));
+  const absent=body.slice(body.indexOf("for f in select gf.*"),body.indexOf("-- These original working objects"));
+  for(const marker of ["private.export_account_path_b_file_v1(gf.id)","g.target_kind='subject' and g.target_id=s.id",
+   "g.purpose in('reports.monogenic','reports.polygenic')","g.path_b_originating_session_id is not null and g.revoked_at is null",
+   "d.direction='self' and d.status='current' and d.recipient_account_id=(p_origin->>'accountId')::uuid",
+   "private.path_b_report_authority_v1(f.id,current_grant,'export-source-read')"]){expect(absent).toContain(marker);}
+  expect(absent.indexOf("if current_grant is null then raise exception using errcode='42501',message='not_found'")).toBeLessThan(absent.indexOf("errcode='0A000'"));
+  expect(absent.indexOf("private.path_b_report_authority_v1")).toBeLessThan(absent.indexOf("errcode='0A000'"));
+  expect(fixture).toContain("private.publish_consent_artifact_v1(a.artifact_key,a.version,a.body_sha256,a.version+1");
+  expect(fixture).not.toContain("update public.consent_artifacts");
+  expect(publication).toContain("raise exception using errcode='55000',message='immutable row'");
+  expect(fixture).toContain("'42501','not_found','actual current purpose revocation refuses the complete result before returned bytes'");
+  expect(fixture).toContain("'0A000','export_result_projection_unavailable',\n 'a genuine current own grant without its completed result still refuses the whole projection'");
+ });
  it("consumes the exact final published coverage contract, never its discarded staged personal scores",()=>{
   const producer=readFileSync("supabase/migrations/20260930234000_path_b_queued_reports.sql","utf8");
   expect(producer).toContain("v_result:=jsonb_build_object('reports',v_result->'reports','prsCount',jsonb_array_length(v_result->'prs'),");

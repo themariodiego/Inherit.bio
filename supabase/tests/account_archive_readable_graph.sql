@@ -97,9 +97,17 @@ select throws_ok($$select public.export_archive_account_path_b_v1((created->>'ex
 reset role;
 savepoint saved_result_revoked;
 update public.purpose_grants set revoked_at=clock_timestamp(),revocation_reason='withdrawn' where grant_id=(select grant_id from private.path_b_report_bindings);
+select is((select count(*) from private.path_b_report_bindings),0::bigint,
+ 'the genuine revocation producer removes the saved result binding before the authority refusal');
 set local role service_role;
 select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','not_found','actual current purpose revocation refuses the complete result before returned bytes');
 reset role;rollback to saved_result_revoked;
+savepoint live_grant_missing_result;
+delete from private.path_b_report_bindings where subject_id=pg_temp.sid('main') and recipient_account_id=pg_temp.a('2');
+set local role service_role;
+select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'0A000','export_result_projection_unavailable',
+ 'a genuine current own grant without its completed result still refuses the whole projection');
+reset role;rollback to live_grant_missing_result;
 savepoint result_same_count_mutated;
 -- Do not tamper with immutable result rows: change the current published catalogue through its ordinary producer seam.
 update public.report_templates set summary='Changed current catalogue after capture' where slug='synthetic-path-b-variant';
@@ -118,8 +126,11 @@ select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','
  'same-count genuine confirmation-draft metadata drift refuses the old consumed authority');
 reset role;rollback to path_b_confirmation_metadata_changed;
 savepoint path_b_confirmation_artifact_ended;
-update public.consent_artifacts set superseded_at=clock_timestamp() where artifact_key='consent.subject-adult-esignature'
- and superseded_at is null;
+select lives_ok($$select private.publish_consent_artifact_v1(a.artifact_key,a.version,a.body_sha256,a.version+1,
+ a.body_markdown||E'\nSynthetic successor confirmation terms.',a.summary_markdown,current_date,
+ 'Synthetic confirmation successor for current-authority refusal.') from public.consent_artifacts a
+ where a.artifact_key='consent.subject-adult-esignature' and a.superseded_at is null$$,
+ 'the actual owner publisher supersedes only the exact current confirmation version and body digest');
 set local role service_role;
 select throws_ok($$select pg_temp.path_b_export(pg_temp.sid('main'))$$,'42501','not_found',
  'ended actual confirmation artifact cannot authorize readable saved results');

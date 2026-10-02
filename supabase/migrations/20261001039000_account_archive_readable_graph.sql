@@ -186,7 +186,7 @@ $create$;
 create function private.export_account_path_b_snapshot_v1(p_origin jsonb,p_subject uuid)
 returns jsonb language plpgsql security definer set search_path='' set lock_timeout='250ms' set extra_float_digits=3 as $$
 declare actor jsonb;s public.subjects;b private.path_b_report_bindings;f public.genome_files;a jsonb;
- records jsonb:='[]';row_value jsonb;row_text text;total bigint:=0;held bigint;hash bytea;
+ records jsonb:='[]';row_value jsonb;row_text text;total bigint:=0;held bigint;hash bytea;current_grant uuid;
 begin
  if jsonb_typeof(p_origin) is distinct from 'object' or p_origin->>'kind' is distinct from 'account'
   or (select count(*) from jsonb_object_keys(p_origin))<>3 or not(p_origin ?& array['kind','accountId','sessionId']) then
@@ -205,13 +205,16 @@ begin
  hash:=extensions.digest(convert_to('account-class-members-v1|path_b_report_bindings','UTF8'),'sha256');
  for b in select * from private.path_b_report_bindings where subject_id=s.id
   and recipient_account_id=(p_origin->>'accountId')::uuid order by id for share nowait loop
-  if b.state<>'complete' or b.result is null or b.completed_at is null then
-   raise exception using errcode='0A000',message='export_result_projection_unavailable';end if;
+  -- Authority precedes projection: ended grants may have already removed
+  -- their saved outputs through the original revocation producer.
   a:=private.path_b_report_authority_v1(b.file_id,b.grant_id,'export-source-read');
   if a is distinct from b.authority or a->>'direction'<>'self'
    or a->>'recipientAccountId' is distinct from p_origin->>'accountId'
-   or(a->>'authorityExpiresAt')::timestamptz<=clock_timestamp()
-   or jsonb_typeof(b.result) is distinct from 'object' or b.result-array['reports','prsCount','prsCoverage']<>'{}'
+   or(a->>'authorityExpiresAt')::timestamptz<=clock_timestamp() then
+   raise exception using errcode='42501',message='not_found';end if;
+  if b.state<>'complete' or b.result is null or b.completed_at is null then
+   raise exception using errcode='0A000',message='export_result_projection_unavailable';end if;
+  if jsonb_typeof(b.result) is distinct from 'object' or b.result-array['reports','prsCount','prsCoverage']<>'{}'
    or not(b.result ?& array['reports','prsCount','prsCoverage']) or jsonb_typeof(b.result->'reports') is distinct from 'array'
    or jsonb_typeof(b.result->'prsCoverage') is distinct from 'array'
    or jsonb_typeof(b.result->'prsCount') is distinct from 'number'
@@ -249,10 +252,24 @@ begin
    raise exception using errcode='54000',message='export_result_projection_unavailable';end if;
  end loop;
  -- No file with an unproved/partial scientific source is silently omitted.
- if exists(select 1 from public.genome_files gf where gf.subject_id=s.id and private.export_account_path_b_file_v1(gf.id)
+ -- A revoked grant deletes its binding/result. Re-establish actual own-direction
+ -- authority before distinguishing a genuinely missing scientific projection.
+ for f in select gf.* from public.genome_files gf where gf.subject_id=s.id and private.export_account_path_b_file_v1(gf.id)
   and not exists(select 1 from private.path_b_report_bindings x where x.file_id=gf.id and x.subject_id=s.id
-   and x.recipient_account_id=(p_origin->>'accountId')::uuid and x.state='complete')) then
-  raise exception using errcode='0A000',message='export_result_projection_unavailable';end if;
+   and x.recipient_account_id=(p_origin->>'accountId')::uuid and x.state='complete') order by gf.id for share nowait loop
+  select g.grant_id into current_grant from public.purpose_grants g join public.directional_grants d using(grant_id)
+   where g.target_kind='subject' and g.target_id=s.id and g.purpose in('reports.monogenic','reports.polygenic')
+    and g.path_b_originating_session_id is not null and g.revoked_at is null
+    and(g.expires_at is null or g.expires_at>clock_timestamp())
+    and d.direction='self' and d.status='current' and d.recipient_account_id=(p_origin->>'accountId')::uuid
+   order by g.grant_id limit 1 for share of g,d nowait;
+  if current_grant is null then raise exception using errcode='42501',message='not_found';end if;
+  a:=private.path_b_report_authority_v1(f.id,current_grant,'export-source-read');
+  if a->>'direction' is distinct from 'self' or a->>'recipientAccountId' is distinct from p_origin->>'accountId'
+   or(a->>'authorityExpiresAt')::timestamptz<=clock_timestamp() then
+   raise exception using errcode='42501',message='not_found';end if;
+  raise exception using errcode='0A000',message='export_result_projection_unavailable';
+ end loop;
  -- These original working objects are explicitly out of subject-export scope;
  -- they do not become retired own uploads, nor grant access to the uploader.
  select count(*) into held from public.other_adult_held_uploads h where h.subject_id=s.id;
@@ -1266,7 +1283,7 @@ $create$;
   and p.prolang=(select oid from pg_catalog.pg_language where lanname='plpgsql') and p.prosecdef and not p.proisstrict
   and p.provolatile='v' and p.proparallel='u' and p.prorettype='jsonb'::regtype and not p.proretset
   and p.proargnames=array['p_origin','p_subject']::text[] and p.proconfig=array['search_path=""','lock_timeout=250ms','extra_float_digits=3']::text[]
-  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='1d00a5aaaeb38f2fc5b66eb75b009791')
+  and p.pronargdefaults=0 and p.proargdefaults is null and md5(p.prosrc)='2332c6ba9eaccedd7f7578920f253ee5')
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
    where has_function_privilege(role_name,'private.export_account_path_b_snapshot_v1(jsonb,uuid)','execute') is distinct from (role_name='service_role' and false))
   or exists(select 1 from pg_catalog.pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a
