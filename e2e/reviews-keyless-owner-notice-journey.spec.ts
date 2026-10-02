@@ -146,15 +146,32 @@ test("Keyless positive documentary match: native owner notice, authenticated syn
       expect(Boolean(current.csrf&&/^[a-f0-9]{64}$/u.test(current.csrf)&&current.nonce&&current.nonce.length<=2048)).toBe(true);
       expect(record.reviewRevision).toBe(2);expect(record.notice.state).toBe("notice_pending");
       await expect(fresh.getByRole("button",{name:"Save choice",exact:true})).toHaveCount(0);
-      await openSyntheticReviewPdf(fresh,"photo");await openSyntheticReviewPdf(fresh,"birth");
-      await expectFullDocumentReceipts(claim,second,papers);
+      await expect(fresh.getByText("This claim is waiting. Open the case again when its next review is assigned.",{exact:true})).toBeVisible();
+      await expect(fresh.getByRole("button",{name:"Open Picture ID",exact:true})).toHaveCount(0);
+      await expect(fresh.getByRole("button",{name:"Open Birth record",exact:true})).toHaveCount(0);
+      await expect(fresh.getByRole("img")).toHaveCount(0);await expect(fresh.getByRole("checkbox")).toHaveCount(0);
+      const secondDocumentProof=()=>reviewFixtureSql(`select
+        (select count(*) from private.claim_review_downloads where review_id='${claim}' and reviewer_account_id='${second}')||'/'||
+        (select count(*) from private.claim_review_receipt_sessions receipt join private.claim_review_downloads download on download.id=receipt.download_id
+          where download.review_id='${claim}' and download.reviewer_account_id='${second}')||'/'||
+        (select count(*) from private.claim_review_chunk_receipts receipt join private.claim_review_downloads download on download.id=receipt.download_id
+          where download.review_id='${claim}' and download.reviewer_account_id='${second}')||'/'||
+        (select count(*) from private.claim_review_reads where review_id='${claim}' and reviewer_account_id='${second}' and document_id is not null)`);
+      expect(await secondDocumentProof()).toBe("0/0/0/0");
       const hold=await keylessEffectProof(claim);
+      for(const document of [record.evidence.photoIdentityDocumentId,record.evidence.birthRecordDocumentId]){
+        const response=await nativeReviewRequest(fresh,`/api/legal-evidence/${reviewId(document)}/review-download`);
+        expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
+        expect(response.cache).toBe("private, no-store");expect(response.referrer).toBe("no-referrer");
+        expect(await secondDocumentProof()).toBe("0/0/0/0");expect(await keylessEffectProof(claim)).toBe(hold);
+      }
       for(const nonce of [documentary.nonce,current.nonce]){
         const response=await nativeReviewRequest(fresh,`/api/reviews/future-person/claims/${claim}/release`,{
           decision:"approve-release",reviewRevision:2,noticeRevision:2,nonce,
           reason:"A synthetic callback is not thirty days of elapsed owner notice or an issued final release scope."},current.csrf??undefined);
         expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
         expect(response.cache).toBe("private, no-store");expect(response.referrer).toBe("no-referrer");expect(await keylessEffectProof(claim)).toBe(hold);
+        expect(await secondDocumentProof()).toBe("0/0/0/0");
       }
       expect(await keylessSourceProof(seeded.cohortId)).toBe(source);
       expect(await reviewFixtureSql(`select encode(extensions.digest(convert_to(to_jsonb(e)::text,'UTF8'),'sha256'),'hex')

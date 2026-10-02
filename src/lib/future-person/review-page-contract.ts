@@ -32,6 +32,17 @@ export const reviewPageCase=z.object({claimId:z.uuid(),mode:z.enum(["record-key"
     context.addIssue({code:"custom",message:"claim review unavailable"});
 });
 export type ReviewPageCase=z.infer<typeof reviewPageCase>;
+/** A page hint grants no download authority. Unknown or contradictory hints
+ * refuse; only a fresh server response can make held controls available. */
+export function readReviewDocumentControls(headers:Pick<Headers,"get">,state:ReviewPageCase["state"]) {
+  const documents=headers.get("x-inherit-review-documents"),decision=headers.get("x-inherit-review-decision");
+  if([documents,decision].some(value=>value!=="available"&&value!=="held"))return null;
+  const documentsAvailable=documents==="available",decisionAvailable=decision==="available";
+  const photoNonce=headers.get("x-inherit-photo-receipt-nonce"),birthNonce=headers.get("x-inherit-birth-receipt-nonce");
+  if(documentsAvailable?(!decisionAvailable||!photoNonce||!birthNonce||[photoNonce,birthNonce].some(value=>value.length>2048))
+    :(photoNonce!==null||birthNonce!==null||state!=="approved_pending_owner_notice"))return null;
+  return {documentsAvailable,decisionAvailable,photoNonce,birthNonce};
+}
 export const keylessVerificationResponse=z.object({reviewCase:reviewPageCase,
   verificationProof:z.string().min(40).max(1024).regex(/^[A-Za-z0-9_-]+$/u).nullable(),
 }).strict().superRefine((value,context)=>{

@@ -55,3 +55,44 @@ describe("the named reviewer page contract",()=>{
   {...row,evidence:{...row.evidence,birthRecordDocumentId:row.evidence.photoIdentityDocumentId}},
  ])("refuses unknown secrets and unsupported closed or transferred shapes",value=>expect(reviewPageCase.safeParse(value).success).toBe(false));
 });
+
+describe("the actual client decoder for reviewer document and decision hints",()=>{
+ const headers=(documents:string|null,decision:string|null,photo:string|null=null,birth:string|null=null)=>{
+  const value=new Headers();
+  for(const [name,content] of [["x-inherit-review-documents",documents],["x-inherit-review-decision",decision],
+   ["x-inherit-photo-receipt-nonce",photo],["x-inherit-birth-receipt-nonce",birth]])if(content!==null)value.set(name!,content!);
+  return value;
+ };
+ it("preserves current document reads and independent document-free operational decisions",async()=>{
+  const {readReviewDocumentControls}=await import("./review-page-contract");
+  expect(readReviewDocumentControls(headers("available","available","photo-proof","birth-proof"),"document_review_pending"))
+   .toEqual({documentsAvailable:true,decisionAvailable:true,photoNonce:"photo-proof",birthNonce:"birth-proof"});
+  expect(readReviewDocumentControls(headers("held","available"),"approved_pending_owner_notice"))
+   .toEqual({documentsAvailable:false,decisionAvailable:true,photoNonce:null,birthNonce:null});
+  expect(readReviewDocumentControls(headers("held","held"),"approved_pending_owner_notice"))
+   .toEqual({documentsAvailable:false,decisionAvailable:false,photoNonce:null,birthNonce:null});
+ });
+ it.each([
+  {documents:null,decision:"available",photo:"photo-proof",birth:"birth-proof"},
+  {documents:"available",decision:null,photo:"photo-proof",birth:"birth-proof"},
+  {documents:"unknown",decision:"available",photo:"photo-proof",birth:"birth-proof"},
+  {documents:"available",decision:"unknown",photo:"photo-proof",birth:"birth-proof"},
+  {documents:"available",decision:"held",photo:"photo-proof",birth:"birth-proof"},
+  {documents:"available",decision:"available",photo:null,birth:"birth-proof"},
+  {documents:"available",decision:"available",photo:"photo-proof",birth:null},
+  {documents:"available",decision:"available",photo:"",birth:"birth-proof"},
+  {documents:"available",decision:"available",photo:"photo-proof",birth:""},
+  {documents:"available",decision:"available",photo:"p".repeat(2049),birth:"birth-proof"},
+  {documents:"available",decision:"available",photo:"photo-proof",birth:"b".repeat(2049)},
+  {documents:"held",decision:"held",photo:"photo-proof",birth:null},
+  {documents:"held",decision:"available",photo:null,birth:"birth-proof"},
+ ])("refuses malformed or contradictory delivered hints: %j",async value=>{
+  const {readReviewDocumentControls}=await import("./review-page-contract");
+  expect(readReviewDocumentControls(headers(value.documents,value.decision,value.photo,value.birth),"approved_pending_owner_notice")).toBeNull();
+ });
+ it.each(["document_review_pending","more_information_required"] as const)("refuses held hints for a nonpending %s case",async state=>{
+  const {readReviewDocumentControls}=await import("./review-page-contract");
+  expect(readReviewDocumentControls(headers("held","held"),state)).toBeNull();
+  expect(readReviewDocumentControls(headers("held","available"),state)).toBeNull();
+ });
+});

@@ -18,8 +18,8 @@ type Objection={record:z.infer<typeof objectionCase>;csrf:string;nonce:string};
 /** Only this newly assigned operation gets a decision. The parent's document
  * controls use new GET-issued receipt proofs and the current full EOF/ACK
  * reader; no original documentary receipt or choice survives the operation. */
-export function KeylessPendingReview({claimId,record,csrf,nonce,operation,objectionId,documentsRead,onSaved}:{claimId:string;record:ReviewPageCase;
- csrf:string;nonce:string;operation:"documentary"|"claim-objection"|"claim-release";objectionId:string|null;documentsRead:boolean;onSaved:()=>void}) {
+export function KeylessPendingReview({claimId,record,csrf,nonce,operation,objectionId,operationReady,documentsRead,onSaved}:{claimId:string;record:ReviewPageCase;
+ csrf:string;nonce:string;operation:"documentary"|"claim-objection"|"claim-release";objectionId:string|null;operationReady:boolean;documentsRead:boolean;onSaved:()=>void}) {
  const submission=useRef<AbortController|null>(null);
  useEffect(()=>()=>submission.current?.abort(),[]);
  const [openedAt]=useState(()=>Date.now());
@@ -45,7 +45,7 @@ export function KeylessPendingReview({claimId,record,csrf,nonce,operation,object
  const due=record.notice.deadline!==null&&Date.parse(record.notice.deadline)<=openedAt;
  const approval=choice==="approve-release",needsDocuments=operation==="claim-objection"||approval
   ||code==="documentary_evidence_insufficient"||code==="identity_profile_conflict";
- const canSubmit=!busy&&reason.trim().length>=20&&reason.length<=2000&&(!needsDocuments||documentsRead)
+ const canSubmit=operationReady&&!busy&&reason.trim().length>=20&&reason.length<=2000&&(!needsDocuments||documentsRead)
   &&(!approval||(adult&&parent&&identity&&due))&&(operation!=="claim-objection"||objection!==null);
  async function submit(event:FormEvent){
   event.preventDefault();if(!canSubmit||record.notice.state==="not_applicable")return;const controller=new AbortController();submission.current=controller;setBusy(true);setMessage("");
@@ -67,7 +67,7 @@ export function KeylessPendingReview({claimId,record,csrf,nonce,operation,object
    setReason("");setAdult(false);setParent(false);setIdentity(false);setObjection(null);onSaved();
   }catch{if(!controller.signal.aborted)setMessage("The decision was not saved. Reload this page and check the current case.");}finally{if(!controller.signal.aborted)setBusy(false);}
  }
- if(operation==="documentary"||operation==="claim-release"&&!due)return <section className="space-y-3 rounded-xl border p-4">
+ if(operation==="documentary"||!operationReady)return <section className="space-y-3 rounded-xl border p-4">
   <h2>Claim</h2><p>{record.notice.deadline===null?"The owner notice is waiting for delivery.":"The owner has 30 days from delivery to object. A fresh review is needed after that time."}</p>
   {record.notice.deadline!==null&&<p>Owner deadline: <time dateTime={record.notice.deadline}>{record.notice.deadline}</time>.</p>}
   <p>This claim is waiting. Open the case again when its next review is assigned.</p>

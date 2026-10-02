@@ -98,3 +98,56 @@ describe("the actual fresh keyless final native boundary",()=>{
  });
 
 });
+
+describe("current reviewer document controls follow the server operation",()=>{
+ it.each([
+  {operation:"claim-release",noticeDeadline:new Date(Date.now()+86_400_000).toISOString()},
+  {operation:"claim-release",noticeDeadline:null},
+  {operation:"documentary"},
+ ])("withholds both document receipt proofs for a held assignment: %j",async changed=>{
+  mocks.rpc.mockImplementation(async name=>name==="read_claim_review_case_v1"?{data:null,error:{code:"42501"}}:{data:{...base,...changed},error:null});
+  const response=await GET(new Request(`https://test.e2e.local/api/reviews/future-person/claims/${ID}`),{params:Promise.resolve({id:ID})});
+  expect(response.status).toBe(200);expect(response.headers.get("x-inherit-review-documents")).toBe("held");
+  expect(response.headers.get("x-inherit-review-decision")).toBe("held");
+  expect(response.headers.has("x-inherit-photo-receipt-nonce")).toBe(false);
+  expect(response.headers.has("x-inherit-birth-receipt-nonce")).toBe(false);
+  const {readKeylessReleaseNonce}=await import("./keyless-release");
+  expect(readKeylessReleaseNonce(response.headers.get("x-inherit-review-nonce")!,keylessCurrentReview({...base,...changed},ID)!.scope,ACCOUNT,SESSION)).toBeNull();
+  expect(response.headers.get("cache-control")).toBe("private, no-store");expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  expect(mocks.rpc.mock.calls.map(call=>call[0])).toEqual(["read_claim_review_case_v1","read_keyless_current_review_v1"]);
+ });
+ it.each(["claim-objection","claim-release"])("keeps the exact current %s document controls available",async operation=>{
+  mocks.rpc.mockImplementation(async name=>name==="read_claim_review_case_v1"?{data:null,error:{code:"42501"}}:{data:{...base,operation,
+   ...(operation==="claim-objection"?{objectionId:id(90),noticeDeadline:new Date(Date.now()+86_400_000).toISOString()}:{}),},error:null});
+  const response=await GET(new Request(`https://test.e2e.local/api/reviews/future-person/claims/${ID}`),{params:Promise.resolve({id:ID})});
+  expect(response.status).toBe(200);expect(response.headers.get("x-inherit-review-documents")).toBe("available");
+  expect(response.headers.get("x-inherit-review-decision")).toBe("available");
+  const {readReceiptOpenNonce}=await import("./review-receipt");
+  expect(readReceiptOpenNonce(response.headers.get("x-inherit-photo-receipt-nonce")!,id(2),ACCOUNT,SESSION)).toBeTypeOf("string");
+  expect(readReceiptOpenNonce(response.headers.get("x-inherit-birth-receipt-nonce")!,id(3),ACCOUNT,SESSION)).toBeTypeOf("string");
+  expect(readReceiptOpenNonce(response.headers.get("x-inherit-photo-receipt-nonce")!,id(3),ACCOUNT,SESSION)).toBeNull();
+  expect(readReceiptOpenNonce(response.headers.get("x-inherit-birth-receipt-nonce")!,id(2),ACCOUNT,SESSION)).toBeNull();
+  expect(mocks.rpc.mock.calls.map(call=>call[0])).toEqual(["read_claim_review_case_v1","read_keyless_current_review_v1"]);
+ });
+ it.each([{current:false},{objectionId:id(90)}])("keeps the due operational refusal separate from held documents: %j",async changed=>{
+  const raw={...base,...changed};
+  mocks.rpc.mockImplementation(async name=>name==="read_claim_review_case_v1"?{data:null,error:{code:"42501"}}:{data:raw,error:null});
+  const response=await GET(new Request(`https://test.e2e.local/api/reviews/future-person/claims/${ID}`),{params:Promise.resolve({id:ID})});
+  expect(response.status).toBe(200);expect(response.headers.get("x-inherit-review-documents")).toBe("held");
+  expect(response.headers.get("x-inherit-review-decision")).toBe("available");
+  expect(response.headers.has("x-inherit-photo-receipt-nonce")).toBe(false);expect(response.headers.has("x-inherit-birth-receipt-nonce")).toBe(false);
+  const {readKeylessReleaseNonce}=await import("./keyless-release");
+  expect(readKeylessReleaseNonce(response.headers.get("x-inherit-review-nonce")!,keylessCurrentReview(raw,ID)!.scope,ACCOUNT,SESSION)).toBeTypeOf("string");
+  mocks.rpc.mockClear();mocks.rpc.mockImplementation(async name=>({data:name==="read_keyless_current_review_v1"?raw:{claimId:ID,state:"refused",reviewRevision:4},error:null}));
+  const refused=await call(request({decision:"refuse-release",reviewRevision:3,noticeRevision:2,reason:"The current record no longer has its original release authority.",
+   nonce:response.headers.get("x-inherit-review-nonce"),refusalCode:"record_state_changed"}));
+  expect(refused.status).toBe(200);expect(await refused.json()).toEqual({claimId:ID,state:"refused",reviewRevision:4});
+  expect(mocks.rpc.mock.calls.map(call=>call[0])).toEqual(["read_keyless_current_review_v1","decide_keyless_release_v1"]);
+  const args=mocks.rpc.mock.calls[1]![1];expect(args.p_refusal_code).toBe("record_state_changed");
+  for(const field of ["p_attestation","p_verified_birth","p_identity_set","p_profile_set","p_contact","p_contact_ciphertext","p_contact_set"])expect(args[field]).toBeNull();
+  mocks.rpc.mockClear();
+  const prematureApproval=await call(request({...body(),nonce:response.headers.get("x-inherit-review-nonce")}));
+  expect(prematureApproval.status).toBe(404);expect(await prematureApproval.json()).toEqual({error:"not_found"});
+  expect(mocks.rpc.mock.calls.map(call=>call[0])).toEqual(["read_keyless_current_review_v1"]);
+ });
+});
