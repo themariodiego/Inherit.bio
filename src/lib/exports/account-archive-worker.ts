@@ -1,4 +1,7 @@
 import "server-only";
+import {prepareAccountGraphMembers} from "./account-graph-members";
+import type {AccountRoutedGraphRpc} from "./account-routed-graph-rows";
+import {prepareAccountPathBMembers,type AccountPathBRpc} from "./account-path-b-members";
 import {createArchivePersistence,type ArchiveWorkerRpc} from "./archive-persistence";
 import {storeArchiveSegments,type ArchiveSegmentationOptions,type ArchiveAttempt} from "./archive-segments";
 import {createZip64Archive,createZip64FileSpool} from "./archive-zip64";
@@ -30,7 +33,7 @@ const unavailable=()=>new Error("account_archive_unavailable");
 export async function buildAccountArchive(options:{job:{exportId:string;principalHash:string;authorityReceipt:string;deadline:string};
  workerRpc:ArchiveWorkerRpc;memberRpc:AccountMemberRpc;contentRpc:AccountContentRpc;metadataRpc:AccountMetadataRpc;
  inventoryRpc:AccountInventoryRpc;classRpc:AccountClassRpc;auditRpc:AccountAuditRpc;originalRpc:AccountOriginalRpc;
- boundSourceRpc:AccountBoundSourceRpc;readOriginalRange:NonNullable<Parameters<typeof prepareAccountOriginalSource>[0]["readRange"]>;
+ boundSourceRpc:AccountBoundSourceRpc;graphRpc:AccountRoutedGraphRpc;pathBRpc:AccountPathBRpc;readOriginalRange:NonNullable<Parameters<typeof prepareAccountOriginalSource>[0]["readRange"]>;
  write:ArchiveSegmentationOptions["write"];signal:AbortSignal}){
  const persistence=createArchivePersistence(options.job,options.workerRpc),spool=await createZip64FileSpool();
  let attempt:ArchiveAttempt|undefined,plan:Awaited<ReturnType<typeof prepareAccountArchivePlan>>|undefined;
@@ -58,6 +61,10 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   const metadata=await prepareAccountArchiveMetadata({...common,files:reader.files,rpc:options.metadataRpc});
   const history=await prepareAccountHistoryInventory({...common,rpc:options.inventoryRpc});
   const classes=await prepareAccountClassInventory({...common,rpc:options.classRpc});
+  const graph=await prepareAccountGraphMembers({...common,rpc:options.graphRpc});
+  const pathB=await prepareAccountPathBMembers({...common,rpc:options.pathBRpc});
+  await classes.acceptGraphMembership(graph.receipts,signal);
+  await classes.acceptPathBMembership(pathB.records(),pathB.excludedHeldUploads,signal);
   const partition=await prepareAccountPartitionMembers({...common,history,classes,metadata});
   const science=await prepareAccountScientificMembers({reader,metadata,signal:workingSignal,check});
   const chats=await prepareAccountChatMembers({reader,signal:workingSignal,check});
@@ -98,7 +105,7 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   await classes.acceptBoundMembership(retained.map(p=>p.snapshot),signal);await classes.assertComplete(signal);
   const factories=composeAccountMemberFactories([
    {kind:"account-metadata",factories:partition.factories},{kind:"ordinary-science",factories:science.factories},
-   {kind:"saved-chats",factories:chats.factories},{kind:"actor-audit",factories:audit},
+   {kind:"saved-chats",factories:chats.factories},{kind:"graph-metadata",factories:graph.factories},{kind:"path-b-results",factories:pathB.factories},{kind:"actor-audit",factories:audit},
    // Root indexes/global legal ledger are generated once from the actual whole
    // account scope; retained subject events keep their exact custody selector.
    {kind:"retained-custody",factories:retained.flatMap(p=>p.factories.filter(f=>f.name.startsWith("subjects/")||f.name.startsWith("variants/")||f.name.startsWith("originals/")))},
@@ -108,7 +115,7 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   // prove their content/EOF again. Repeating all factories' context reads for
   // every ZIP header/byte would multiply the same full-graph authorization.
   const current=check;
-  plan=await prepareAccountArchivePlan({context,factories:bufferAccountMemberFactories(factories),files,sources,signal,check:current});
+  plan=await prepareAccountArchivePlan({context,resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories),files,sources,signal,check:current});
  }
  try{
   const summary=await storeArchiveSegments({exportId:options.job.exportId,principalHash:options.job.principalHash,

@@ -36,5 +36,6 @@ export function accountArchiveExecution(write:Execution["write"]):Execution{
   metadataRpc:reader("export_archive_account_metadata_v1"),inventoryRpc:reader("export_archive_account_inventory_v1"),
   classRpc:reader("export_archive_account_classes_v1"),auditRpc:reader("export_archive_account_audit_v1"),
   originalRpc:reader("export_archive_account_original_v1"),boundSourceRpc:reader("export_archive_account_bound_source_v1"),
+  graphRpc:reader("export_archive_account_graph_rows_v2"),pathBRpc:reader("export_archive_account_path_b_v1"),
   readOriginalRange:readConfiguredOriginalRange,write};
 }

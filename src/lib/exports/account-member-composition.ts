@@ -5,7 +5,7 @@ const encoder=new TextEncoder(),unavailable=()=>new Error("account_archive_compo
 /** Preserve each actual producer's complete document as a named JSON section.
  * No historical row is overwritten by current account metadata, no global
  * ledger is duplicated and no missing member is replaced by an empty value. */
-export function composeAccountMemberFactories(groups:{kind:"account-metadata"|"ordinary-science"|"saved-chats"|"retained-custody"|"actor-audit";
+export function composeAccountMemberFactories(groups:{kind:"account-metadata"|"ordinary-science"|"saved-chats"|"retained-custody"|"actor-audit"|"graph-metadata"|"path-b-results";
  factories:FuturePersonMemberFactory[]}[]){
  const byName=new Map<string,{kind:string;factory:FuturePersonMemberFactory}[]>();
  for(const group of groups){const seen=new Set<string>();for(const factory of group.factories){
@@ -15,6 +15,13 @@ export function composeAccountMemberFactories(groups:{kind:"account-metadata"|"o
  const factories:FuturePersonMemberFactory[]=[];
  for(const [name,sections]of byName){
   if(sections.length===1){factories.push(sections[0].factory);continue;}
+  if(/^subjects\/[a-f0-9-]{36}\/reports\.txt$/u.test(name)&&sections.length===2
+   &&sections.some(s=>s.kind==="ordinary-science")&&sections.some(s=>s.kind==="path-b-results")){
+   const rows=sections.reduce((n,s)=>n+s.factory.rows,0);if(!Number.isSafeInteger(rows))throw unavailable();
+   factories.push({name,rows,chunks:async function*(signal){for(const section of sections){
+    if(signal.aborted)throw unavailable();yield* section.factory.chunks(signal);
+   }if(signal.aborted)throw unavailable();}});continue;
+  }
   if(!/^subjects\/[a-f0-9-]{36}\//u.test(name)||!ACCOUNT_SUBJECT_MEMBERS.includes(name.split("/").at(-1)! as (typeof ACCOUNT_SUBJECT_MEMBERS)[number])
    ||!name.endsWith(".json")||sections.some(s=>s.kind==="actor-audit")||new Set(sections.map(s=>s.kind)).size!==sections.length)throw unavailable();
   const rows=sections.reduce((n,s)=>n+s.factory.rows,0);if(!Number.isSafeInteger(rows))throw unavailable();

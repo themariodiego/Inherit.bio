@@ -2,6 +2,7 @@ import "server-only";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {ACCOUNT_GRAPH_CLASSES,type AccountGraphClass} from "./account-graph-projection";
 import {futurePersonExportSnapshot} from "./future-person-content";
 
 export const ACCOUNT_CLASS_KINDS=["ancestry_regions","appeal_intakes","attestation_contradictions","correction_requests",
@@ -34,12 +35,13 @@ export type AccountProjectedClass=keyof typeof accountClassRowSchemas;
 const scienceKinds=["embryo_figures","embryo_qc","embryo_scores","embryo_variants","embryos","report_artifacts"] as const;
 type ScienceKind=(typeof scienceKinds)[number];
 function mode(kind:AccountClassKind){return kind in accountClassRowSchemas?"metadata":(scienceKinds as readonly string[]).includes(kind)?"claimed-bound":"unsupported";}
-const entry=z.object({kind:z.enum(ACCOUNT_CLASS_KINDS),mode:z.enum(["metadata","claimed-bound","unsupported"]),rows:count,membershipSha256:hash,
+const entry=z.object({kind:z.enum(ACCOUNT_CLASS_KINDS),mode:z.enum(["metadata","claimed-bound","unsupported","graph","path-b-results","excluded"]),rows:count,membershipSha256:hash,
  partitions:z.array(z.object({subjectId:uuid,rows:count}).strict())}).strict();
 const inventory=z.object({version:z.literal("account-class-inventory-v1"),authorityReceipt:hash,classes:z.array(entry).length(ACCOUNT_CLASS_KINDS.length),
  boundSnapshots:z.array(futurePersonExportSnapshot)}).strict()
  .refine(v=>new Set(v.classes.map(e=>e.kind)).size===ACCOUNT_CLASS_KINDS.length)
- .refine(v=>v.classes.every(e=>e.mode===mode(e.kind)&&new Set(e.partitions.map(p=>p.subjectId)).size===e.partitions.length));
+ .refine(v=>v.classes.every(e=>(e.mode===mode(e.kind)||e.mode==="graph"&&(ACCOUNT_GRAPH_CLASSES as readonly string[]).includes(e.kind)
+  ||e.mode==="path-b-results"&&e.kind==="path_b_report_bindings"||e.mode==="excluded"&&e.kind==="other_adult_held_uploads")&&new Set(e.partitions.map(p=>p.subjectId)).size===e.partitions.length));
 const page=z.object({version:z.literal("account-class-page-v1"),kind:z.enum(ACCOUNT_CLASS_KINDS),
  rows:z.array(z.object({id:uuid,subjectId:uuid.nullable(),rowText:text.max(8192)}).strict()).max(500),nextAfterId:uuid.nullable()}).strict();
 export type AccountClassRpc=(name:"export_archive_account_classes_v1",args:{p_operation:"context"|"metadata";
@@ -116,7 +118,28 @@ export async function prepareAccountClassInventory(options:{reference:{exportId:
   }
   await check(signal);for(const kind of scienceKinds)proved.add(kind);
  }
- return {inventory:captured,records,acceptBoundMembership,check,assertComplete:async(signal:AbortSignal)=>{
+ async function acceptGraphMembership(receipts:{kind:AccountGraphClass;rows:number;membershipSha256:string;partitions:{subjectId:string;rows:number}[]}[],signal:AbortSignal){
+  await check(signal);
+  if(receipts.length!==ACCOUNT_GRAPH_CLASSES.length||new Set(receipts.map(r=>r.kind)).size!==receipts.length)throw unavailable();
+  for(const receipt of receipts){const expected=captured.classes.find(e=>e.kind===receipt.kind)!;
+   if(expected.mode!=="graph"||expected.rows!==receipt.rows||expected.membershipSha256!==receipt.membershipSha256
+    ||JSON.stringify(expected.partitions)!==JSON.stringify(receipt.partitions))throw unavailable();
+   proved.add(receipt.kind);
+  }await check(signal);
+ }
+ async function acceptPathBMembership(rows:{id:string;subjectId:string;rowText:string}[],excludedHeldUploads:number,signal:AbortSignal){
+  await check(signal);const expected=captured.classes.find(e=>e.kind==="path_b_report_bindings")!,excluded=captured.classes.find(e=>e.kind==="other_adult_held_uploads")!;
+  let digest=createHash("sha256").update("account-class-members-v1|path_b_report_bindings").digest(),last="";const counts=new Map<string,number>();
+  for(const row of rows){if(!subjects.has(row.subjectId)||row.id<=last)throw unavailable();
+   digest=createHash("sha256").update(digest).update(`${row.id}:${row.subjectId}:${row.rowText}\n`).digest();last=row.id;
+   counts.set(row.subjectId,(counts.get(row.subjectId)??0)+1);
+  }
+  if(expected.mode!=="path-b-results"||expected.rows!==rows.length||expected.membershipSha256!==digest.toString("hex")
+   ||expected.partitions.length!==counts.size||expected.partitions.some(p=>counts.get(p.subjectId)!==p.rows)
+   ||excluded.mode!=="excluded"||excluded.rows!==excludedHeldUploads||excluded.partitions.length!==0)throw unavailable();
+  await check(signal);proved.add("path_b_report_bindings");proved.add("other_adult_held_uploads");
+ }
+ return {inventory:captured,records,acceptBoundMembership,acceptGraphMembership,acceptPathBMembership,check,assertComplete:async(signal:AbortSignal)=>{
   if(proved.size!==ACCOUNT_CLASS_KINDS.length)throw unavailable();await check(signal);
  }};
 }

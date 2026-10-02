@@ -1,4 +1,5 @@
 import "server-only";
+import {accountPathBSourceSchema,type AccountPathBSource} from "./account-path-b-members";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
@@ -29,9 +30,13 @@ const unavailable=()=>new Error("account_archive_plan_unavailable"),encoder=new 
  * retains descriptors only, and rereads each member at ZIP open. No provider,
  * human JWT, publication/READY transition or alternate authority is created. */
 export async function prepareAccountArchivePlan(options:{context:z.infer<typeof accountArchiveContextSchema>;
- factories:FuturePersonMemberFactory[];files:AccountArchiveFile[];sources:AccountArchiveSourceMember[];
+ factories:FuturePersonMemberFactory[];files:AccountArchiveFile[];sources:AccountArchiveSourceMember[];resultSources?:AccountPathBSource[];
  signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context),files=options.files.map(f=>fileSchema.parse(f));
+ const resultSources=(options.resultSources??[]).map(value=>accountPathBSourceSchema.parse(value));
+ if(new Set(resultSources.map(r=>`${r.fileId}:${r.purpose}:${r.bindingRevision}`)).size!==resultSources.length
+  ||resultSources.some(r=>!context.partitions.some(p=>p.subjectId===r.subjectId&&p.class==="ordinary")
+   ||context.partitions.some(p=>p.fileIds.includes(r.fileId))))throw unavailable();
  const fileSubjects=new Map(context.partitions.flatMap(p=>p.fileIds.map(f=>[f,p.subjectId] as const)));
  if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||files.length!==context.fileCount
   ||new Set(files.map(f=>f.fileId)).size!==context.fileCount||files.some(f=>fileSubjects.get(f.fileId)!==f.subjectId
@@ -132,7 +137,7 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  }
  await check(options.signal);
  const manifest=encoder.encode(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",capturedAt:context.capturedAt,
-  subjectPartitions:context.partitions.map(p=>p.subjectId),files,members:descriptors})+"\n");
+  subjectPartitions:context.partitions.map(p=>p.subjectId),files,...(resultSources.length?{resultSources}:{}),members:descriptors})+"\n");
  const manifestFactory:FuturePersonMemberFactory={name:"manifest.json",rows:descriptors.length,chunks:async function*(signal){await check(signal);yield manifest;await check(signal);}};
  const manifestSha256=createHash("sha256").update(manifest).digest("hex");
  members.push({name:"manifest.json",sizeBytes:manifest.byteLength,open:async signal=>stream(verified(manifestFactory.chunks(signal),signal,

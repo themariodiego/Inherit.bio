@@ -1,5 +1,40 @@
 # Test diff register
 
+## 2026-10-02 — Consume exact routed metadata and saved own-subject Path B archive results
+
+039 adds genuine consumed capture/reader/factory composition for the seven closed
+038 graph metadata kinds and own-recipient saved Path B reports/PRS/provenance.
+Every original worker, ZIP, source, refusal, deadline and retry assertion remains.
+The exact class inventory now pins these seven kinds as graph, Path B bindings as
+path-b-results and held uploads as excluded; all29 literal classes remain. The
+held-function census adds only the API-denied saved-result projector and pins the
+exact new class body. The QC precision test pins the exact reviewed member-reader
+successor, with original owner/config/ACL and other serializer bodies intact.
+The SDK test retains its original eight doors and adds exactly two service-only
+consumed readers. Current source/grant/recipient/capture/EOF/hash checks repeat,
+and parent-cohort/foreign-source histories and missing plaintext/persisted science
+remain whole refusals. Held original bytes stay out of subject scope; no fake
+retirement, analytical grant, provider, READY or public activation is introduced.
+
+New protocol/factory tests use mocked transport, including1003 composite-key rows;
+a complete actual-generated ZIP positive preserves all twelve per-subject members,
+every member size/hash and one actor ledger alongside nonempty pair metadata and
+saved catalogue/outcomes/PRS/source receipts. The authored rollback SQL retains
+all original queued source/normalization/report assertions and adds real-role
+consumed account current/refusal/ACL proofs, but SQL execution is UNRUN. The
+original JWT-scoped RLS file predicate cannot classify a service JWT with no human
+sub; source review caught this, so a separate API-denied current file/draft predicate
+is used without changing the browser helper. Full predecessor/new-object/successor
+body/ABI/default/config/ACL guards reject drift atomically.
+
+Failed first load (template literal typo) and new fixture assumption/privacy-scope
+failures are retained. Corrected scoped source and runtime focus passes160 tests
+in nine files. The corrected privacy assertion concerns only the newly projected
+pair/result data, preserving genuine own signature history targets. Original
+assertions/timeouts/retries are untouched. Full compiler/gates/units, actual SQL,
+native/provider and release qualification remain pending; G5.6/G8.5 do not flip.
+See docs/account-export-readable-graph.md for exact scope and outstanding producers.
+
 ## 2026-10-02 — Connect consumed account export presentation and service readers
 
 The frozen037 POST/status and account-only due worker now compose with the

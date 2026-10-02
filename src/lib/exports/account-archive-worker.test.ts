@@ -1,6 +1,11 @@
+import {savedPathBFixture,savedPathBReply} from "./__fixtures__/account-path-b";
+import {projectAccountGraphRow} from "./account-graph-projection";
 import {createHash,randomUUID} from "node:crypto";
 import AdmZip from "adm-zip";
 import {afterEach,describe,expect,it,vi} from "vitest";
+import {ACCOUNT_GRAPH_CLASSES} from "./account-graph-projection";
+import type {AccountRoutedGraphRpc} from "./account-routed-graph-rows";
+import type {AccountPathBRpc} from "./account-path-b-members";
 import {buildAccountArchive} from "./account-archive-worker";
 import {ACCOUNT_SUBJECT_MEMBERS} from "./account-archive-plan";
 import {accountPartitionFixture} from "./__fixtures__/account-partitions";
@@ -94,12 +99,54 @@ async function fixture(bound=false,prepared=false){
  const readOriginalRange=vi.fn<NonNullable<Parameters<typeof buildAccountArchive>[0]["readOriginalRange"]>>(async(_source,start,end)=>new Response(new TextEncoder().encode("ABC").slice(start,end+1),{status:206,headers:{"content-range":`bytes ${start}-${end}/3`,"content-length":String(end-start+1)}}));
  const boundSourceRpc=vi.fn<AccountBoundSourceRpc>(async(_name,args,signal)=>{if(!raw)throw new Error("no bound partition");
   const {p_subject_id,...sourceArgs}=args;expect(p_subject_id).toBe(raw.manifest.subjectId);return raw.rpc("export_archive_bound_source_v1",sourceArgs,signal);});
+ for(const entry of f.classContext.classes){
+  if((ACCOUNT_GRAPH_CLASSES as readonly string[]).includes(entry.kind)){
+   entry.mode="graph";entry.membershipSha256=hash(`account-graph-routed-v2|${entry.kind}`);
+  }else if(entry.kind==="path_b_report_bindings")entry.mode="path-b-results";
+  else if(entry.kind==="other_adult_held_uploads")entry.mode="excluded";
+ }
+ const graphRpc=vi.fn<AccountRoutedGraphRpc>(async(_name,args)=>({data:{version:"account-graph-page-v2",kind:args.p_kind,
+  authorityReceipt:f.reference.authorityReceipt,membership:{rows:0,sha256:hash(`account-graph-routed-v2|${args.p_kind}`)},rows:[],nextAfterKey:null},error:null}));
+ const pathBRpc=vi.fn<AccountPathBRpc>(async(_name,args)=>({data:{version:"account-path-b-results-v1",authorityReceipt:f.reference.authorityReceipt,
+  snapshot:{subjectId:args.p_subject_id,records:[],rows:0,sha256:hash("account-class-members-v1|path_b_report_bindings"),excludedHeldUploads:0}},error:null}));
  const options={job:historical.options.job,workerRpc:historical.options.workerRpc,memberRpc,contentRpc,metadataRpc:f.metadataRpc,
-  inventoryRpc:f.inventoryRpc,classRpc:f.classRpc,auditRpc,originalRpc,boundSourceRpc,readOriginalRange,write:historical.options.write,signal:f.abort.signal};
- return {...f,options,historical,file,original,memberRpc,contentRpc,auditRpc,originalRpc,readOriginalRange,boundSourceRpc,report,event,raw,canonical,header,originalState};
+  inventoryRpc:f.inventoryRpc,classRpc:f.classRpc,auditRpc,originalRpc,boundSourceRpc,graphRpc,pathBRpc,readOriginalRange,write:historical.options.write,signal:f.abort.signal};
+ return {...f,options,historical,file,original,memberRpc,contentRpc,auditRpc,originalRpc,readOriginalRange,boundSourceRpc,report,event,raw,canonical,header,originalState,graphRpc,pathBRpc};
 }
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.useRealTimers();});
 describe("complete consumed-account unpublished archive executor",()=>{
+ it("consumes seven routed inventories and saved own-subject Path B science into the complete ZIP without held originals or counterpart history",async()=>{
+  const f=await fixture(),saved=savedPathBFixture(f.adult,"reports.polygenic");
+  const projection=projectAccountGraphRow("family_pairs",{id:randomUUID(),subject_a_id:f.self,subject_b_id:f.foreign,
+   subject_low_id:[f.self,f.foreign].sort()[0],subject_high_id:[f.self,f.foreign].sort()[1],pair_revision:2,status:"current",created_at:date},f.context.actor.accountId,[]);
+  const row={identity:projection.identity,subjectId:f.self,scope:"requester-account-history",rowText:JSON.stringify(projection.row)},
+   root=createHash("sha256").update("account-graph-routed-v2|family_pairs").digest(),digest=createHash("sha256").update(root)
+    .update(`${row.identity}:${row.subjectId}:${row.scope}:${row.rowText}\n`).digest("hex");
+  Object.assign(f.classContext.classes.find(e=>e.kind==="family_pairs")!,{rows:1,membershipSha256:digest,partitions:[{subjectId:f.self,rows:1}]});
+  Object.assign(f.classContext.classes.find(e=>e.kind==="path_b_report_bindings")!,{rows:1,membershipSha256:saved.snapshot.sha256,partitions:[{subjectId:f.adult,rows:1}]});
+  f.classContext.classes.find(e=>e.kind==="other_adult_held_uploads")!.rows=1;
+  const original=f.graphRpc.getMockImplementation()!;f.graphRpc.mockImplementation(async(...args)=>args[1].p_kind==="family_pairs"?
+   {data:{version:"account-graph-page-v2",kind:"family_pairs",authorityReceipt:f.reference.authorityReceipt,membership:{rows:1,sha256:digest},rows:[row],nextAfterKey:null},error:null}:original(...args));
+  f.pathBRpc.mockImplementation(async(_name,args)=>structuredClone(savedPathBReply(args.p_subject_id,f.reference.authorityReceipt,args.p_subject_id===f.adult?saved:undefined)));
+  const result=await buildAccountArchive(f.options),zip=new AdmZip(Buffer.concat(f.historical.writes)),manifest=JSON.parse(zip.readAsText("manifest.json"));
+  expect(result.summary.state).toBe("bytes-complete");expect(new Set(f.graphRpc.mock.calls.map(([,a])=>a.p_kind))).toEqual(new Set(ACCOUNT_GRAPH_CLASSES));
+  for(const part of f.context.partitions)for(const name of ACCOUNT_SUBJECT_MEMBERS)expect(zip.getEntry(`subjects/${part.subjectId}/${name}`)).not.toBeNull();
+  for(const d of manifest.members){const bytes=zip.readFile(d.name)!;expect(bytes.length).toBe(d.sizeBytes);expect(hash(bytes)).toBe(d.sha256);}
+  expect(JSON.parse(zip.readAsText(`subjects/${f.self}/portrait.json`)).sections.find((s:{kind:string})=>s.kind==="graph-metadata").content.rows).toEqual([{kind:"family_pairs",scope:"requester-account-history",row:projection.row}]);
+  const reports=JSON.parse(zip.readAsText(`subjects/${f.adult}/reports.json`));expect(reports.sections.find((s:{kind:string})=>s.kind==="path-b-results").content.rows[0].reports).toEqual(saved.value.reports);
+  expect(JSON.parse(zip.readAsText(`subjects/${f.adult}/prs.json`)).sections.find((s:{kind:string})=>s.kind==="path-b-results").content.rows[0].prs).toEqual(saved.value.prs);
+  expect(zip.readAsText(`subjects/${f.adult}/reports.txt`)).toContain("Original saved finding");
+  expect(manifest.resultSources).toEqual([{fileId:saved.value.fileId,subjectId:f.adult,purpose:saved.value.purpose,bindingRevision:1,
+   projection:"saved-path-b-results-v1",rawSourceDisposition:"held-original-out-of-scope",...saved.value.source}]);
+  expect(manifest.files).toHaveLength(1);expect(manifest.files[0].fileId).toBe(f.file.file.id);
+  expect(zip.getEntries().some(e=>e.entryName.includes(saved.value.fileId)&&e.entryName.startsWith("originals/"))).toBe(false);
+  expect(JSON.parse(zip.readAsText("legal-audit.json")).events).toEqual([f.event]);
+  expect(zip.readAsText(`subjects/${f.self}/portrait.json`)).not.toContain(f.foreign);
+  expect(JSON.stringify(reports.sections.find((s:{kind:string})=>s.kind==="path-b-results"))).not.toContain(f.foreign);
+  expect(Buffer.concat(f.historical.writes).includes(Buffer.from(saved.record.id))).toBe(false);
+  expect(f.historical.calls.some(c=>String(c.p_operation)==="ready")).toBe(false);
+ });
+
  it.each([false,true])("generates every actual member with retained and ordinary partitions (bound%s)",async bound=>{
   const f=await fixture(bound),result=await buildAccountArchive(f.options),zip=new AdmZip(Buffer.concat(f.historical.writes));
   const manifest=JSON.parse(zip.readAsText("manifest.json"));expect(result.summary.state).toBe("bytes-complete");

@@ -22,7 +22,7 @@ describe("real consumed account SDK composition",()=>{
   expect(capability.assertReady).toBe(check);expect(capability.execution.write).toBe(f.write);
   expect(sdk.create).not.toHaveBeenCalled();expect(sdk.rpc).not.toHaveBeenCalled();expect(f.write).not.toHaveBeenCalled();expect(check).not.toHaveBeenCalled();
  });
- it("uses all eight actual named member/source service doors with POST, disabled retry and the consumer's signal",async()=>{
+ it("uses all ten actual named member/source service doors with POST, disabled retry and the consumer's signal",async()=>{
   const f=fixture(),reference={p_export_id:randomUUID(),p_attempt_id:randomUUID(),p_authority_receipt:"a".repeat(64)};
   await f.execution.memberRpc("export_archive_account_members_v1",{...reference,p_operation:"context",p_subject_id:null,p_after_id:null},f.signal);
   await f.execution.contentRpc("export_archive_account_content_v1",{...reference,p_operation:"chats",p_payload:{}},f.signal);
@@ -32,9 +32,11 @@ describe("real consumed account SDK composition",()=>{
   await f.execution.auditRpc("export_archive_account_audit_v1",{...reference,p_operation:"context",p_subject_id:null,p_after_seq:null},f.signal);
   await f.execution.originalRpc("export_archive_account_original_v1",{...reference,p_operation:"descriptor",p_file_id:randomUUID(),p_expected:null},f.signal);
   await f.execution.boundSourceRpc("export_archive_account_bound_source_v1",{...reference,p_subject_id:randomUUID(),p_operation:"manifest",p_expected:null},f.signal);
+  await f.execution.graphRpc("export_archive_account_graph_rows_v2",{...reference,p_kind:"family_pairs",p_after_key:null},f.signal);
+  await f.execution.pathBRpc("export_archive_account_path_b_v1",{...reference,p_subject_id:randomUUID()},f.signal);
   expect(sdk.create).toHaveBeenCalledTimes(1);expect(sdk.rpc.mock.calls.map(([name])=>name)).toEqual([
    "export_archive_account_members_v1","export_archive_account_content_v1","export_archive_account_metadata_v1","export_archive_account_inventory_v1",
-   "export_archive_account_classes_v1","export_archive_account_audit_v1","export_archive_account_original_v1","export_archive_account_bound_source_v1"]);
+   "export_archive_account_classes_v1","export_archive_account_audit_v1","export_archive_account_original_v1","export_archive_account_bound_source_v1","export_archive_account_graph_rows_v2","export_archive_account_path_b_v1"]);
   expect(sdk.rpc.mock.calls.every(([,args,options])=>Object.entries(reference).every(([key,value])=>args[key]===value)
    &&JSON.stringify(options)==='{"get":false,"head":false}')).toBe(true);
   expect(sdk.retry.mock.calls.every(([enabled])=>enabled===false)).toBe(true);
