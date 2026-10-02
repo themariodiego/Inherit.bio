@@ -726,7 +726,7 @@
     },
     "public.embryo_scores": {
       "disposition": "deferred",
-      "reason": "Embryo scores. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryo scores, including nullable computation_receipt: the embryo’s own closed observed-source/reference/attempt receipt and separate public-disclosure hold, never the other principals’ complete authorization snapshot. Authorized whole-subject and own-account archive members preserve whole score rows; the public cohort projection remains deferred. Complete authority capture stays in credential-excluded worker_jobs.payload. Existing whole-row erasure removes the receipt. No production embryo ingest runs today."
     },
     "public.embryo_terminal_mail": {
       "disposition": "excluded-protected",

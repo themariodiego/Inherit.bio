@@ -80,6 +80,7 @@ export async function loadCohortContext(cohort: EmbryoCohortView, authority: Coh
     registered.size > 0
       ? admin.from('embryo_scores')
         .select('embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason')
+        .is('computation_receipt', null)
         .in('embryo_id', embryoIds).in('condition_id', [...registered])
       : { data: [] as never[], error: null },
   ]);

@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-02 — Observe one exact Embryo carrier allele with the registry closed
+
+New private computation tests count zero, one or two literal diploid copies at
+one reviewed autosomal-recessive allele. They exercise registered indel
+equivalents, canonical VCF reference rows with ALT=NULL, disagreement and
+unreadable/missing calls, whole malformed-reference/source refusal and exact
+source separation. The original two-embryo VCF bytes pass through the original
+transport/per-ordinal parser and produce distinct zero/two-copy readings; no
+parent or sibling supplies a missing genotype. Every original test remains
+unchanged. The committed empty registry refuses before genomic input access.
+
+The first focused run passed76 and failed5 of81 tests because the newly authored
+Vitest array table spread each intended call array into callback arguments.
+Only those table parameters became named `{ calls }` cases; all five exact
+not-covered assertions remained. The next run passed81/81. Subsequent added
+strict current-condition-row and canonical-build refusals retain that failed
+record; the final focused run passes84/84 across three files with one worker.
+Scoped lint and diff checks pass. Type, full-unit, SQL and native qualification
+are pending. No limit, retry, skip, model,
+scientific approval, source guard, owner review, registry entry, clinical
+interpretation or acceptance state changes. This is private computation and
+synthetic parser evidence, not actual worker/database/native publication.
+
 ## 2026-10-02 — Integrate the unchanged citation debt against current release source
 
 Release `587007a0` lacked the earlier non-template gate, registered surface paths
@@ -8457,3 +8480,152 @@ check adds no fixture grant, user data or migration ledger entry. The release
 also requires the full pending-source append rehearsal and catalog comparison
 with a fresh installation. This correction promotes no acceptance row and
 changes no browser expectation, retry or deadline.
+
+
+## Observed embryo carrier operation · 2 October 2026
+
+The frozen private carrier core’s original 65 assertions remain unchanged.
+Two schema names are exported for exact worker decoding; no scientific rule,
+expected clinical output, QC floor, timeout or original fixture is relaxed.
+The child operation adds actual-parser worker refusals for every authorization
+checkpoint, substituted source/capture/job/attempt, expired claim, late aborted
+response, and original per-ordinal 0/2 observations. A generated policy/source
+pin holds the canonical QC constants and the literal generic claim body; the
+only successor change excludes the dedicated score_embryo queue.
+
+The new rollback SQL suite includes the original mixed-QC split/publication
+fixture without edits. Its synthetic reference goes through the existing
+import/review doors, and its registry function is replaced only inside rollback.
+No synthetic reviewer, registry row, source or dose grants clinical activation
+or acceptance credit. Real service claim/save operations must prove the
+complete capture independently, reject a planted wrong dose/partial save,
+preserve truthful private covered observations with a separate disclosure hold,
+and refuse edits or old-token reads. SQL execution remains pending at this
+source checkpoint. G4.2/G4.5 and all unproved route/state pairs remain NO.
+
+
+## Complete observed embryo carrier intake and evidence · 2 October 2026
+
+Independent source review reproduced genuine parser-produced haploid and
+multiallelic calls: the original core returned invalid_calls but the transport
+rejected the whole attempt before save. The successor widens only transport to
+literal stored shapes. Original 65 primitive scientific assertions, source
+fixtures and positive output expectations remain unchanged. New actual-parser
+cases prove named refusal save, literal-N refusal, complete 781-assertion batched
+measurement with independent 781/781 and 774/781 coverage, and foreign/reordered/
+extra-assertion rejection. No multi-allele carrier state, phase or probability is
+inferred; complete per-assertion evidence retains a separate interpretation hold.
+
+Recovery tests add bounded current-cohort inventory, cursor progression and
+process restart with no user replay, TEST-LOCAL/empty-registry refusal, closed
+response and cancellation. Original operator tests preserve their expectations
+and inject the new recovery dependency only where their attempt seam was
+already synthetic. Saved-reader tests cover the live account/session, widened
+response/read failures and actual detail/comparison call placement after gates.
+The separate rollback-only complete-set SQL suite and distinct refusal fixture
+add actual service recovery without an enqueue hint, full reviewed assertion
+capture, refusal persistence, n/N, forged dose refusal and closed saved hold.
+The original published fixture and original SQL suites are not relaxed or edited.
+
+Focused source tests pass 187 cases in ten files; typecheck and scoped lint pass.
+Owned database execution remains pending: the two reviewed clone runners stopped
+before application migration and preserved their actual restore differences.
+Native runtime/database integration and complete lifecycle races remain required.
+G4.2/G4.5 and all unproved route/state pairs remain NO.
+
+## Carrier predecessor type correction and evidence wording · 2 October 2026
+
+The third owned clone qualified the complete original application metadata but
+the application migration stopped atomically on a `name[]` versus `text[]`
+comparison in its first predecessor ACL guard. The successor casts only the
+aggregated role name to `text`. The exact owner, grantor, EXECUTE privilege,
+non-grantable two-role set and all other predecessor criteria stay unchanged.
+The actual failure is retained; none of the seven SQL suites has run there yet.
+
+The rollback complete-set fixture's assertion description now says source and
+grant "state present in this transaction". Its SQL condition, expected count,
+plan, fixtures, roles, bounds and every pass/failure assertion stay unchanged.
+Cross-session committed recovery is reserved for the separately prepared native
+proof, which remains held. The three existing source-pin tests, readability gate
+and SQL include gate pass. No acceptance or durability claim is added.
+
+## Carrier worker CASE expression parsing · 2 October 2026
+
+The first same-2000 retry passed complete byte-identical metadata precheck and
+the corrected predecessor guard, then failed atomically while compiling the
+worker IF condition. The source adds only parentheses around its existing
+CASE expression; expected read/read_batch key arrays and refusal conditions are
+unchanged. All other CASE expressions were inspected for the same PL/pgSQL IF
+ambiguity. The existing source-pin tests and all SQL fixtures/assertions remain
+unchanged. The retained failure provides no SQL or native durability credit;
+another exclusive complete-baseline rehearsal awaits root review.
+The three existing source-pin tests, readability gate and SQL include gate pass
+on this source correction; no TypeScript or test expectation changed.
+
+## Native published failed-ordinal carrier capture · 2 October 2026
+
+The source migration committed in the reviewed owned 2000 clone. Its test-only
+pgTAP dependency then installed with every observed member and complete original
+application metadata verified before commit and again through fresh reads. The
+first strict suite reached 49 contiguous passing checks, then failed because the
+carrier capture read `e.source_state`, which is not a native `public.embryos`
+column. No suite completed; every actual failure and partial receipt is retained.
+
+The source successor changes only that branch selection to `e.status='qc_fail'`,
+matching the existing publisher's recorded failed no-source ordinal. The strict
+failed status and absence-of-source/file/call checks remain unchanged, as do all
+other authority, source and QC guards. Six additional rollback assertions cover
+the existing publisher's native status, real complete mixed-QC capture, truthful
+null source, original QC verdict/reason and absence of fabricated source/calls.
+Every original SQL assertion and all 65 core scientific tests remain unchanged.
+The same already-migrated clone requires a reviewed atomic one-function
+replacement with complete predecessor/successor metadata comparisons. No
+migration replay or dependency recreation is proposed; native proof, clinical
+publication and acceptance remain held.
+The 65 unchanged primitive cases and three existing policy/source-pin cases
+pass on this correction. Readability and exact SQL fixture include gates pass.
+The six new native capture assertions await the reviewed database run.
+
+## Carrier test helper temporary-namespace access · 2 October 2026
+
+The reviewed one-function update committed, and its complete actual source-derived
+successor plus all dependency records matched. The first worker suite reached
+52 contiguous passing checks, including genuine complete mixed-QC capture, then
+stopped at `GRANT USAGE ON SCHEMA pg_temp`. PostgreSQL's schema GRANT resolves a
+literal namespace name; `pg_temp` is the current session's temporary alias. The
+actual failure and every original output remain retained. No suite completed.
+
+Only the invalid schema GRANT setup statement in each of the two new carrier
+suites changes. Each now positively proves that the existing temporary namespace
+OID belongs to this session and that service_role already has USAGE. It grants
+no namespace permission and creates no permanent schema. Existing temporary
+object SELECT/EXECUTE grants, invoker helper bodies, service-role execution,
+fixtures and every existing assertion remain unchanged. Each adds one positive
+namespace assertion. pgTAP's observed plan function already grants access to its
+own temporary cache and sequences, so no test dependency or global grant changes
+are needed. The application migration remains byte exact at the qualified 228
+source. Only a new reviewed seven-suite rollback harness is proposed; there is
+no application DDL, migration replay or dependency recreation. Native proof,
+scientific disclosure presentation and acceptance remain held.
+
+## Carrier complete-set reference fixture keys · 2 October 2026
+
+The first worker suite passed all 85 contiguous assertions. The second suite
+reached 47 checks, then its synthetic reference import raised `invalid_request`.
+The fixture assigned two conditions the same gene and repeated one exact allele
+key within the same release. Both violate unchanged native importer constraints;
+the importer catches uniqueness violations under that refusal. Its full actual
+definition and relation constraints remain retained with the original failure.
+
+Only this complete-set suite's reference setup changes. A temporary condition
+map supplies `SYNTHGENE` and `SYNTHGENE2` consistently to conditions, assertions
+and registry entries. The second condition's reviewed key becomes 1:1000 A>C,
+distinct from the first condition's 1:1000 A>G. The original published haploid
+call remains ALT G and genotype G. Both the TypeScript core and independent SQL
+measurement refuse its unsupported shape before matching the reviewed ALT, so
+its existing `invalid_calls` persistence assertion keeps the same meaning.
+Every original assertion, published source fixture and all other suites remain
+byte exact. No importer, application migration, scientific guard or expected
+result changes. The new seven-suite runner must first match the complete actual
+application and installed dependency baseline. No application DDL or dependency
+recreation is proposed. Native proof, publication and acceptance remain held.

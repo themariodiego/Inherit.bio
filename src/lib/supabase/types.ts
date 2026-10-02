@@ -2880,6 +2880,7 @@ export type Database = {
       embryo_scores: {
         Row: {
           citation_ids: string[]
+          computation_receipt: Json | null
           computation_revision: number
           computed_at: string
           condition_id: string
@@ -2896,6 +2897,7 @@ export type Database = {
         }
         Insert: {
           citation_ids?: string[]
+          computation_receipt?: Json | null
           computation_revision: number
           computed_at?: string
           condition_id: string
@@ -2912,6 +2914,7 @@ export type Database = {
         }
         Update: {
           citation_ids?: string[]
+          computation_receipt?: Json | null
           computation_revision?: number
           computed_at?: string
           condition_id?: string
