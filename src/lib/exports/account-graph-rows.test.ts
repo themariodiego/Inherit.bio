@@ -1,7 +1,7 @@
 import {createHash,randomUUID} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
 import {prepareAccountGraphRows,type AccountGraphRpc} from "./account-graph-rows";
-import {projectAccountGraphRow} from "./account-graph-projection";
+import {accountGraphRowSchemas,projectAccountGraphRow} from "./account-graph-projection";
 const date="2026-10-01T00:00:00Z";
 function fixture(total=1003){
  const account=randomUUID(),principal=randomUUID(),cohort=randomUUID(),subject=randomUUID(),abort=new AbortController();
@@ -29,7 +29,7 @@ describe("actual consumed graph-page protocol prerequisites, with existing nonem
  it("exhausts1003 real composite-key rows through three numeric keyset pages, independent raw-text hash and current authority",async()=>{
   const f=fixture(),reader=await prepareAccountGraphRows(f.options);await expect(reader.assertComplete(f.abort.signal)).rejects.toThrow();
   const rows=await collect(reader.records(f.abort.signal));expect(rows).toEqual(f.source.map(value=>value.row));expect(rows).toHaveLength(1003);
-  expect(rows.map(row=>row.membership_revision)).toEqual(Array.from({length:1003},(_,i)=>i+1));
+  expect(rows.map(row=>accountGraphRowSchemas.embryo_participant_sets.parse(row).membership_revision)).toEqual(Array.from({length:1003},(_,i)=>i+1));
   await reader.assertComplete(f.abort.signal);
   expect(f.rpc.mock.calls.some(([,args])=>args.p_after_key?.[3]===500)).toBe(true);
   expect(f.rpc.mock.calls.some(([,args])=>args.p_after_key?.[3]===1000)).toBe(true);

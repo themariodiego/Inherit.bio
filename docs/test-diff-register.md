@@ -1,5 +1,15 @@
 # Test diff register
 
+## 2026-10-02 — Preserve graph fixture checks while narrowing exact participant rows
+
+The first nonincremental type check on frozen03988df7f26 caught two fixture
+accesses to membership_revision on a closed seven-kind row union. Both tests now
+parse the actual returned row through the exact participant-set schema before the
+unchanged1003-row ordered revision comparison. This adds a runtime shape check;
+no assertion, timeout, retry, source authority or SQL body changes. The original
+type failure and all ten successful local gates are retained separately; names
+used the approved local41-byte placeholder, not the private CI denylist.
+
 ## 2026-10-02 — Consume exact routed metadata and saved own-subject Path B archive results
 
 039 adds genuine consumed capture/reader/factory composition for the seven closed
