@@ -103,7 +103,9 @@ unchanged = [
       "begin\n  perform private.assert_account_owned_cohorts_v1(p_account_id);",
       "begin\n  perform private.assert_account_path_b_deletion_supported_v1(p_account_id);\n  perform private.assert_account_owned_cohorts_v1(p_account_id);")),
     metadata("supabase/migrations/20260905103317_embryo_cohort_runtime.sql", "private.embryo_cohort_set_v1", True),
-    metadata("supabase/migrations/20260906051253_invitation_refusal_transaction.sql", "private.lock_invitation_transitions_v1"),
+    # 20260906055142 explicitly restores service EXECUTE for the shared lock;
+    # pin that existing two-entry ACL without changing its invoker body/grants.
+    metadata("supabase/migrations/20260906051253_invitation_refusal_transaction.sql", "private.lock_invitation_transitions_v1", True),
     metadata("supabase/migrations/20261001035000_historical_embryo_producer_clocks.sql", "private.enqueue_embryo_principal_mail_v1", True),
     metadata("supabase/migrations/20261001035000_historical_embryo_producer_clocks.sql", "private.enqueue_embryo_principal_mail_clock_core_v1"),
     metadata("supabase/migrations/20261001035000_historical_embryo_producer_clocks.sql", "private.enqueue_embryo_principal_mail_at_v1"),

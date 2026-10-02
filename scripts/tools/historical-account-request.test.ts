@@ -93,6 +93,11 @@ describe("bounded historical creation preserves the complete ordinary algorithms
     }
     expect(pins.predecessors.find(pin => pin.signature.startsWith("private.enqueue_embryo_principal_mail_v1("))?.bodyMd5)
       .toBe("ef221766cf9a9df289468466c4077f52");
+    expect(pins.predecessors.find(pin => pin.signature === "private.lock_invitation_transitions_v1()"))
+      .toMatchObject({ bodyMd5: "8efac632f9dad73d9af1056a8d81c480", successorBodyMd5: "8efac632f9dad73d9af1056a8d81c480", serviceExecute: true });
+    const restoredGrant = read("supabase/migrations/20260906055142_refused_invitation_draft_cleanup.sql");
+    expect(restoredGrant).toMatch(/grant execute on function[\s\S]*?private\.lock_invitation_transitions_v1\(\),[\s\S]*?to service_role;/u);
+    expect(migration).not.toMatch(/(?:grant|revoke)\s+(?:execute|all)\s+on function private\.lock_invitation_transitions_v1/iu);
     expect(pins.newFunctions).toHaveLength(3);
     for (const pin of pins.newFunctions) {
       expect(pin.serviceExecute).toBe(false);

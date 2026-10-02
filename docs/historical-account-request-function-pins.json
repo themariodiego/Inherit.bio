@@ -492,7 +492,7 @@
         "search_path=\"\""
       ],
       "owner": "postgres",
-      "serviceExecute": false,
+      "serviceExecute": true,
       "sourcePath": "supabase/migrations/20260906051253_invitation_refusal_transaction.sql",
       "successorBodyMd5": "8efac632f9dad73d9af1056a8d81c480"
     },

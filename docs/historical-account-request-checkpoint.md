@@ -1,5 +1,15 @@
 # Historical account request source prerequisite
 
+The first root-owned append diagnostic of frozen59c9715 stopped at the strict
+predecessor guard before any fixture assertion. Full schema/ACL/data/sequence/
+ledger restoration passed independently. Owner metadata inspection found only
+the invitation-lock service privilege pin differed. Its original body is
+SECURITY INVOKER;20260906055142 explicitly grants service_role EXECUTE, and
+the actual ACL has exactly postgres and service_role entries. This child pins
+that unchanged existing contract, without grant/revoke DDL or weaker refusal.
+The original failed packet remains; corrected SQL and all fixture/native work
+still require root's actual qualification.
+
 This isolated child starts at982b2b3f1a11f946a1629f4e469713275a104899.
 The ordinary native HTTP202 source and its seven-day refusal stay separate.
 040 is authored source only: no database, Auth SDK, API, browser, unit, compiler,
