@@ -50,7 +50,7 @@ describe("bounded primary-source tranche", () => {
     expect(sources).toHaveLength(12);
     expect(added).toHaveLength(14);
     expect(digest(sources)).toBe("d14d8c6fb69bbe021cf26b07ee71c4a3754e2c4030191c254db7c6710d97c41d");
-    expect(digest(added)).toBe("2753d8d00b15830f800d49a2139f08cb779dc97c52d0ee97df76af324f941434");
+    expect(digest(added)).toBe("920a7f5259c344cef9f1ac9e38207462ae49c5878d87a866b9d76ce30f8a7a86");
     expect(citations).toHaveLength(53);
     expect(claims).toHaveLength(120);
     const previousSources = citations.filter((source) => !sourceIds.includes(source.id));

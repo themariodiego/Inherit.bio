@@ -2458,7 +2458,7 @@
   },
   {
     "claim_id": "report.celiac-hla-dq2-tag-rs2187668.summary",
-    "text_verbatim": "Researchers tested six DNA markers as stand-ins for HLA types linked to celiac disease. They compared them with lab typing in three European celiac populations. This tested a typing method. One marker does not diagnose celiac disease or tell whether you will develop it.",
+    "text_verbatim": "Researchers tested six DNA markers as stand-ins for HLA types linked to celiac disease. They compared them with lab typing in three European celiac populations. This tested a typing method. This one-marker report cannot identify celiac disease or predict a later case.",
     "surfaces": [
       "/genome/[subject]/reports/celiac-hla-dq2-tag-rs2187668#state=complete",
       "export:account-export-v1",
@@ -2479,7 +2479,7 @@
   },
   {
     "claim_id": "report.bipolar-association-ank3-rs10994336.summary",
-    "text_verbatim": "A combined study compared 4,387 people with bipolar disorder and 6,209 controls. It found links near ANK3 and CACNA1C. These were group associations. One position does not show whether you will develop bipolar disorder or which care you need.",
+    "text_verbatim": "A combined study compared 4,387 people with bipolar disorder and 6,209 controls. It found links near ANK3 and CACNA1C. These were group associations. One position cannot predict a later case of bipolar disorder or guide your care.",
     "surfaces": [
       "/genome/[subject]/reports/bipolar-association-ank3-rs10994336#state=complete",
       "export:account-export-v1",
@@ -2500,7 +2500,7 @@
   },
   {
     "claim_id": "report.vkorc1-rs9923231-one-position.study.28198005.measured",
-    "text_verbatim": "The 2017 CPIC guideline discusses warfarin dosing when clinical genotype results are available. It covers CYP2C9, VKORC1, CYP4F2 and another DNA position.",
+    "text_verbatim": "The 2017 CPIC guideline covers warfarin care when clinical genotype results are available. It covers CYP2C9, VKORC1, CYP4F2 and another DNA position.",
     "surfaces": [
       "/genome/[subject]/reports/vkorc1-rs9923231-one-position#state=complete",
       "export:account-export-v1"
@@ -2560,7 +2560,7 @@
   },
   {
     "claim_id": "report.nudt15-rs116855232-one-position.study.41618934.limitation",
-    "text_verbatim": "This guideline does not make this one-position report a complete gene result or a dose recommendation.",
+    "text_verbatim": "This report reads one position. It does not give a full gene result or tell you what dose to take.",
     "surfaces": [
       "/genome/[subject]/reports/nudt15-rs116855232-one-position#state=complete",
       "export:account-export-v1"

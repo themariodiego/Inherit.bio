@@ -30,7 +30,7 @@
         "accessedOn": "2026-10-02",
         "studyContext": {
           "measured": {
-            "text": "The 2017 CPIC guideline discusses warfarin dosing when clinical genotype results are available. It covers CYP2C9, VKORC1, CYP4F2 and another DNA position.",
+            "text": "The 2017 CPIC guideline covers warfarin care when clinical genotype results are available. It covers CYP2C9, VKORC1, CYP4F2 and another DNA position.",
             "locator": "Author abstract, guideline scope"
           },
           "population": null,
@@ -442,7 +442,7 @@
           "population": null,
           "comparison": null,
           "limitation": {
-            "text": "This guideline does not make this one-position report a complete gene result or a dose recommendation.",
+            "text": "This report reads one position. It does not give a full gene result or tell you what dose to take.",
             "locator": "Author abstract, genotype-based guideline scope; one-position report boundary"
           }
         }

@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-02 — Preserve primary-source limits in plain report wording
+
+The first ten-gate run on a2b10c2f passed eight gates and failed readability
+and templates. The new NUDT15 limitation scored10.5 against the unchanged
+grade-nine target. Three new paragraphs matched the unchanged template
+blocklist: negative celiac and ANK3 prediction wording, and descriptive
+warfarin “dosing” wording. Those four new paragraphs now state the same
+one-position, no personal prediction, no full-gene and no dose-instruction
+limits in plain words. The warfarin context still names all three genes and
+the additional DNA position in the actual author abstract.
+
+Only the new canonical texts and their exact after-object/addition hashes
+change. All41 original source rows,106 original claims, genotype prose,
+abstract access receipts and baseline full-JSON hashes remain pinned. No
+detector, readability threshold, vocabulary, debt count, original assertion,
+deadline/retry or scientific/clinical acceptance changes. Both first gate
+failures remain in the independent qualification packet; corrected checks
+are still required.
+
 ## 2026-10-02 — Keep exact claims-gate debt probes after the primary-source tranche
 
 The first actual single-worker focused run on frozen5c188536 preserved244 passes
