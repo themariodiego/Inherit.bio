@@ -9,6 +9,14 @@ Add strict closed-level/text/source-wiring cases, including planted wrong-level,
 The first new focused copy assertion incorrectly graded the unchanged mandated paragraph with raw FK (9.93), omitting G1.10's existing registered-term handling. Preserve that failed log. The new assertion now proves both exact strings are present in the real readability corpus and uses the unchanged actual gate; it still keeps the sentence cap and exact full text. No original scorer, term register, threshold or copy assertion changes.
 
 
+## 2026-10-02 — Prepare only the explicitly selected embryo preview service source
+
+The owner chose Codex setup through existing access and handles their remaining setup on 5 October. Add only an isolated TEST-LOCAL embryo gateway configuration and offline source guard: exact existing account, new private preview bucket, current public app signer and test issuer; default production scope stays empty, unbound and unreachable. Preserve the existing global deploy switch, prepared configurations, scanner host/worker keys, isolated callback, database, source publication and every original provider/browser assertion. No deploy, environment, database, credential, mail or paid-service mutation is performed by the source guard.
+
+New strict cases exercise the actual config and refuse production/unknown targets, account/issuer/bucket or binding mismatch, default signing admission, extra scopes/routes/services/crons, observability, private/unknown/duplicate/malformed keys and incomplete or changed JWKS identity sets. Both input objects stay unchanged. Existing fragment, full readback, current-version, replay and marker assertions remain. An authenticated public-JWKS snapshot, a bucket settings read, a local source guard and an in-memory provider remain separate evidence; none is relabelled hosted acknowledgement, complete inventory, clinical acceptance or production readiness.
+
+The first local secret gate refused the new negative fixture's service-key-shaped property with the literal dummy value "synthetic". Preserve that failure. Keep the exact forbidden property and refusal assertion, and use the secret gate's already tested `YOUR-SERVICE-ROLE-KEY` placeholder. The closed config rejects the property regardless of its value. No detector, exception register or existing test changes.
+
 ## 2026-10-02 — Register exact privacy-refusal test literals without public host aliases
 
 The combined 843c00f7 name gate retained three actual failures: an empty local private-denylist input and the two literal external hosts in the new keyless audit's tracker and rendered-payment negative cases. Preserve the original failed log. The private denylist still must contain entries; no empty-input exception is added.
