@@ -41,6 +41,20 @@ alter table public.encrypted_contact_references add column account_mail_contact_
 comment on column public.encrypted_contact_references.account_mail_contact_revision is
  'Verified own-Auth self-account mail revision. Legacy contacts remain NULL and unproven; never inferred or backfilled.';
 
+-- A proven revision is immutable. Legacy NULL cannot be promoted in place;
+-- the API service role cannot write new proof by direct contact-table access.
+create function private.guard_verified_account_contact_revision_v1()
+returns trigger language plpgsql security invoker set search_path='' as $$
+begin
+ if (tg_op='UPDATE' and new.account_mail_contact_revision is distinct from old.account_mail_contact_revision)
+  or (tg_op='INSERT' and new.account_mail_contact_revision is not null and current_user<>'postgres') then
+  raise exception using errcode='42501',message='verified account contact revision server only';end if;
+ return new;
+end $$;
+revoke all on function private.guard_verified_account_contact_revision_v1() from public,anon,authenticated,service_role,inherit_upload_only;
+create trigger verified_account_contact_revision_server_only before insert or update on public.encrypted_contact_references
+ for each row execute function private.guard_verified_account_contact_revision_v1();
+
 create function private.create_verified_account_cohort_draft_v2(
  p_account_id uuid,p_session_id uuid,p_upload_situation text,p_basis_case text,p_embryo_count integer,
  p_owner_contact_ciphertext bytea,p_owner_contact_hmac text,p_contact_ciphertexts text[],p_contact_hmacs text[],
@@ -163,7 +177,8 @@ begin
   or exists(select 1 from public.encrypted_contact_references where account_mail_contact_revision is not null)
   or exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role cross join unnest(array[
    'private.create_verified_account_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)',
-   'private.invalidate_verified_account_auth_contact_v1()']) fn where has_function_privilege(role,fn,'execute'))
+   'private.invalidate_verified_account_auth_contact_v1()',
+   'private.guard_verified_account_contact_revision_v1()']) fn where has_function_privilege(role,fn,'execute'))
   or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) role where has_function_privilege(role,
    'public.create_embryo_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)','execute'))
   or not has_function_privilege('service_role',

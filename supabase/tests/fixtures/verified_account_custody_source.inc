@@ -68,4 +68,3 @@ create temporary table source_parts as select m.part_id id, p.provider_bucket||'
   where m.file_id in (select file_id from sources);
 select is((select count(*) from sources),2::bigint,'two canonical sources exist');
 select is((select count(*) from source_parts),4::bigint,'they bind four parts');
-

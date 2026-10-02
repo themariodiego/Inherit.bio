@@ -35,6 +35,9 @@ select throws_ok($$select pg_temp.account_draft('account-v2-bad-count-0001',p_co
  '22023','invalid draft request','original canonical draft refusal remains exact');
 select throws_ok($$select pg_temp.account_draft('account-v2-reuse-0001')$$,
  '23505','operation nonce already used','the actual v1 nonce is neither replaced nor consumed twice');
+select throws_ok($$update public.encrypted_contact_references set account_mail_contact_revision=account_mail_contact_revision+1
+ where principal_id in(select id from public.subject_principals where account_id='7a000000-0000-0000-000000000001' and principal_kind='account_subject')$$,
+ '42501','verified account contact revision server only','direct API service cannot overwrite the proved mail revision');
 reset role;
 select is(jsonb_build_object('contact',(select to_jsonb(c) from public.encrypted_contact_references c where id=(select id from account_contact)),
  'indexes',(select jsonb_agg(to_jsonb(h) order by h.hmac_key_revision) from public.contact_hmac_indexes h where h.contact_reference_id=(select id from account_contact))),
@@ -47,8 +50,11 @@ begin
   if p_case='unconfirmed' then update auth.users set email_confirmed_at=null where id='7a000000-0000-0000-000000000001';
   elsif p_case='deleted' then update auth.users set deleted_at=clock_timestamp() where id='7a000000-0000-0000-000000000001';
   elsif p_case='expired' then update auth.sessions set not_after=clock_timestamp() where id='7a000000-0000-4000-8000-0000000000a1';
-  elsif p_case='stale' then update public.encrypted_contact_references set account_mail_contact_revision=account_mail_contact_revision+1 where id=(select id from account_contact);
-  elsif p_case='legacy' then update public.encrypted_contact_references set account_mail_contact_revision=null where id=(select id from account_contact);
+  elsif p_case='stale' then update public.profiles set mail_contact_revision=mail_contact_revision+1 where id='7a000000-0000-0000-0000-000000000001';
+  elsif p_case='legacy' then
+   update public.encrypted_contact_references set status='rotated',ended_at=clock_timestamp() where id=(select id from account_contact);
+   insert into public.encrypted_contact_references(principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,status)
+    select principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,'current' from account_contact;
   elsif p_case='duplicate' then insert into public.encrypted_contact_references(principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,account_mail_contact_revision)
    select principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision,account_mail_contact_revision from account_contact;
   elsif p_case='hold' then update public.profiles set deletion_requested_at=clock_timestamp() where id='7a000000-0000-0000-000000000001';
@@ -95,7 +101,7 @@ select is((select count(*) from public.encrypted_contact_references c join publi
  'the successor account authority is unique and does not resurrect the old notice');
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role
  cross join unnest(array['private.create_verified_account_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)',
- 'private.invalidate_verified_account_auth_contact_v1()']) fn where has_function_privilege(role,fn,'execute')),0::bigint,'all API roles are denied every new private helper');
+ 'private.invalidate_verified_account_auth_contact_v1()','private.guard_verified_account_contact_revision_v1()']) fn where has_function_privilege(role,fn,'execute')),0::bigint,'all API roles are denied every new private helper');
 select ok(has_function_privilege('service_role','public.create_embryo_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)','execute')
  and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) role where has_function_privilege(role,
  'public.create_embryo_cohort_draft_v2(uuid,uuid,text,text,integer,bytea,text,text[],text[],text,boolean,jsonb,jsonb,text)','execute')),

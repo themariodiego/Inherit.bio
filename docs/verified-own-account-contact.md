@@ -16,7 +16,8 @@ custody and original draft expiry are unchanged.
 
 The nullable `account_mail_contact_revision` column is on the existing contact
 store. New contacts bind the independent current profile mail revision and
-principal revision. Legacy contacts remain NULL; a current NULL, stale or
+principal revision. A server-only insert guard makes proven revisions immutable; API service cannot
+write proof through direct table access. Legacy contacts remain NULL; a current NULL, stale or
 ambiguous contact refuses rather than being promoted or duplicated. Reuse keeps
 the contact, indexes and their original expiry byte-exact. New indexes use the
 original returned draft deadline; no new retention period is introduced.
