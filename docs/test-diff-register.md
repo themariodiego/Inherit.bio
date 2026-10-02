@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-02 — Declare the isolated owner-notice journey's privacy audit origin
+
+Exact hosted run 37039144207 at 32b33170 passed repository checks and browser groups 1, 2, 3, 4 and 6. Browser group 5 passed 104 other cases and failed this journey only at its final network audit: the main-port sweep helper treated the journey's own fixed http://localhost:3105 page, local fonts and app chunks as third party. All preceding document-read, no-referrer, zero-receipt, delivery, real notice deadline, release refusal, source and sibling assertions passed. The complete original failed-job log, artifact ZIP and source hashes remain privately preserved.
+
+Keep the main sweep's existing three-argument contract and exact origin set. Add an optional declared app origin bounded by the already registered local fixture ports, require the actual page to match it, and allow only that single declared app plus the selected local Supabase API. This journey alone passes literal http://localhost:3105, independently pinned by its unchanged baseURL and guard. Never infer an allowed origin from observed traffic or admit every local port. Preserve all tracker-host, tracking-global and rendered payment-origin checks and every original browser assertion apart from this explicit audit wiring. Added negative cases refuse unknown declarations, other variant ports, external and alternate storage origins, mismatched pages, trackers, globals, payment responses, removed audits and traffic-derived declarations. No product, SQL, migration, workflow, timeout, retry, skip, provider or acceptance change; complete successor hosted qualification remains required.
+
 ## 2026-10-02 — Preserve no-referrer through the document download proxy
 
 Exact hosted run 37014502527 at c6b680b3 failed browser group 5 only at the first held document GET's strict no-referrer assertion (journey line 165): the opaque 404/not_found and private/no-store checks passed, but the actual response carried same-origin. The other 104 browser cases passed; the original job log is retained. The download handler already sets no-referrer, but Next 16.3.3 retains the proxy's already-present single-value response header. There are no next.config header rules; the proxy's strict review-path exception omitted the separate legal-evidence download endpoint.
