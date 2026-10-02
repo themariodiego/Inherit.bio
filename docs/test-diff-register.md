@@ -8447,3 +8447,16 @@ plan, fixtures, roles, bounds and every pass/failure assertion stay unchanged.
 Cross-session committed recovery is reserved for the separately prepared native
 proof, which remains held. The three existing source-pin tests, readability gate
 and SQL include gate pass. No acceptance or durability claim is added.
+
+## Carrier worker CASE expression parsing · 2 October 2026
+
+The first same-2000 retry passed complete byte-identical metadata precheck and
+the corrected predecessor guard, then failed atomically while compiling the
+worker IF condition. The source adds only parentheses around its existing
+CASE expression; expected read/read_batch key arrays and refusal conditions are
+unchanged. All other CASE expressions were inspected for the same PL/pgSQL IF
+ambiguity. The existing source-pin tests and all SQL fixtures/assertions remain
+unchanged. The retained failure provides no SQL or native durability credit;
+another exclusive complete-baseline rehearsal awaits root review.
+The three existing source-pin tests, readability gate and SQL include gate pass
+on this source correction; no TypeScript or test expectation changed.

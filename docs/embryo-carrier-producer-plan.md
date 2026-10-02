@@ -2,7 +2,7 @@
 
 Prepared 2026-10-02 from cc79be42679d0dc5f57d964a3d6216c3aed8137a.
 G4.2, G4.5 and every currently unproved route/state pair remain NO. The frozen d98 checkpoint implements the private observed-allele core. The
-separate `codex/embryo-carrier-worker-v3` successor now authors the operation-specific
+separate `codex/embryo-carrier-worker-v4` successor now authors the operation-specific
 queue, complete per-assertion worker, exact private save, durable intake recovery
 and the current saved-hold reader connected to both real product pages. These
 new database operations await an owned-clone rehearsal; no clinical output is
@@ -193,6 +193,18 @@ capture exactly, then apply this revised migration atomically and run the same
 seven strict scoped suites. Root review is required before execution; no new
 clone, replayed restoration or automatic repair is permitted. The prepared
 native TypeScript-to-database proof remains unexecuted and separately held.
+
+The reviewed first same-2000 follow-up proved that complete fresh metadata still
+matched byte-for-byte. Its corrected predecessor check passed, then migration
+compilation stopped at the worker's unparenthesized CASE inside an IF condition;
+PL/pgSQL consumed the CASE's first THEN as the IF boundary. The whole migration
+rolled back atomically again, and all seven SQL suites remained unrun. Its raw
+failure and exclusive receipt are retained. The next source change adds only
+parentheses around that CASE expression, keeping both exact payload-key arrays.
+Every other CASE in the migration was inspected: four belong to SQL-language
+expressions and one is already enclosed by a function argument list. There is
+no other unparenthesized CASE inside a PL/pgSQL IF condition. A new exclusive
+same-2000 complete-baseline/atomic-migration/seven-suite plan awaits root review.
 Full native publication and mandatory disclosure presentation remain held;
 this intermediate source checkpoint does not complete the science flow.
 

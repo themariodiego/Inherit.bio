@@ -642,7 +642,7 @@ begin
  elsif p_operation in('read','read_batch') then
   if jsonb_typeof(p_payload) is distinct from 'object'
    or (select array_agg(k order by k) from jsonb_object_keys(p_payload) k) is distinct from
-    case when p_operation='read' then array['conditionId','embryoId'] else array['assertionIds','conditionId','embryoId'] end then
+    (case when p_operation='read' then array['conditionId','embryoId'] else array['assertionIds','conditionId','embryoId'] end) then
    raise exception using errcode='22023',message='invalid_request';end if;
   select value into e from jsonb_array_elements(a->'embryos') where value->>'embryoId'=p_payload->>'embryoId';
   select value into c from jsonb_array_elements(a->'conditions') where value->>'condition_id'=p_payload->>'conditionId';
