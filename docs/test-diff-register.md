@@ -1,5 +1,25 @@
 # Test diff register
 
+## 2026-10-02 — Keyless review monotonic phase diagnostics
+
+Actual hosted68fd browser3 exhausted the unchanged120000ms case budget at the
+original final Reason fill. Its failure DOM still has the exact filled Reason
+and enabled Save choice. The themed restoration callback had already required
+both genuine rendered/read papers, the closed native no-match response and an
+enabled decision control. This does not prove a missing form control or assign
+the elapsed time to a specific component.
+
+The first case now reports only a closed phase label, per-case numeric sequence,
+monotonic relative elapsed/duration and start/complete/failed code around its
+existing genuine operations. Original operation arguments, results, error
+identity, assertions and eight full axe scans are retained. The entire second
+partial-read case is byte-identical. No URLs, IDs, identity, tokens, keys, bodies,
+errors or results enter diagnostics; no timer, deadline, retry, skip or trace
+changes. Four authored deterministic helper tests remain UNRUN at this source
+checkpoint. Actual phase timing and full hosted proof are still required;
+no performance cause, fix or acceptance credit is inferred.
+
+
 ## 2026-10-01 — Read gate inputs once within each invocation
 
 The full c232 Linux suite passed 9,039 tests but exceeded the unchanged

@@ -6,6 +6,7 @@ import {currentDocumentaryCase,expectNoUniqueKeylessResponse,keylessEffectProof,
 import {keylessReviewDocument} from "./fixtures/keyless-review-documents";
 import {randomBytes} from "node:crypto";
 import {currentClaimDocumentReadProof} from "./helpers/claim-document-read-proof";
+import {keylessReviewPhaseTiming} from "./helpers/keyless-review-phase-timing";
 
 // Real Auth/TOTP, native encrypted uploads/compose/scan, current named owner
 // assignment and actual EOF/client ACKs. No parent/source/history/notice row is
@@ -13,33 +14,34 @@ import {currentClaimDocumentReadProof} from "./helpers/claim-document-read-proof
 // software fixtures confer no human, real provider or positive release credit.
 test("Keyless documentary review: actual full papers, read-only no-match and separate refusal",async({page,context,browser,baseURL})=>{
   if(!baseURL)throw new Error("Local app origin unavailable");
+  const phase=keylessReviewPhaseTiming();
   const suffix=randomBytes(4).toString("hex"),identity={fullName:`Synthetic Claimant ${suffix}`,placeOfBirth:`Synthetic Town ${suffix}`,
     parentNames:[`Synthetic Parent One ${suffix}`,`Synthetic Parent Two ${suffix}`]};
-  const claim=await createReviewCase(page,context,{photo:{bytes:keylessReviewDocument("photo",identity),extension:"pdf",mimeType:"application/pdf"},
-    birth:{bytes:keylessReviewDocument("birth",identity),extension:"pdf",mimeType:"application/pdf"},claimant:identity});
-  const reviewer=await signInReviewer(context,baseURL);
+  const claim=await phase("claim-create",()=>createReviewCase(page,context,{photo:{bytes:keylessReviewDocument("photo",identity),extension:"pdf",mimeType:"application/pdf"},
+    birth:{bytes:keylessReviewDocument("birth",identity),extension:"pdf",mimeType:"application/pdf"},claimant:identity}));
+  const reviewer=await phase("reviewer-auth",()=>signInReviewer(context,baseURL));
   await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewId(reviewer)}'::uuid);
     select private.assign_claim_review_v1('${reviewId(claim)}'::uuid,'${reviewId(reviewer)}'::uuid);`);
   expect((await page.goto(`/reviews/future-person/claims/${claim}`))?.status()).toBe(200);
   await expect(page.getByRole("button",{name:"Open Picture ID",exact:true})).toBeEnabled();
-  const current=await currentDocumentaryCase(page,claim),unchanged=await keylessEffectProof(claim);
+  const current=await currentDocumentaryCase(page,claim),unchanged=await phase("effect-proof",()=>keylessEffectProof(claim));
   expect(unchanged).toMatch(/^[a-f0-9]{64}$/u);
   const lookup={reviewRevision:1,nonce:current.lookup,documentaryAttestation:{fullName:identity.fullName,dateOfBirth:"2000-01-31",
     photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}};
   const lookupPath=`/api/reviews/future-person/claims/${claim}/verify-documents`;
-  const expectOpaque=async(path:string,body:unknown)=>{
+  const expectOpaque=async(path:string,body:unknown)=>phase("opaque-refusal",async()=>{
     const response=await nativeReviewRequest(page,path,body,current.csrf);
     expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
     expect(response.cache).toBe("private, no-store");expect(response.referrer).toBe("no-referrer");
-    expect(await keylessEffectProof(claim)).toBe(unchanged);
-  };
+    expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
+  });
   await expect(page.getByRole("button",{name:"Check details",exact:true})).toHaveCount(0);
   await expectOpaque(lookupPath,lookup);
-  await openSyntheticReviewPdf(page,"photo");
+  await phase("initial-photo",()=>openSyntheticReviewPdf(page,"photo"));
   await expect(page.getByRole("button",{name:"Check details",exact:true})).toHaveCount(0);
   await expectOpaque(lookupPath,lookup);
   expect(await reviewFixtureSql(`select count(*) from private.claim_review_reads where review_id='${claim}'::uuid and document_id is not null and delivery_verified_at is not null`)).toBe("1");
-  await openSyntheticReviewPdf(page,"birth");
+  await phase("initial-birth",()=>openSyntheticReviewPdf(page,"birth"));
   expect(await reviewFixtureSql(`select count(*)||'/'||bool_and(r.delivery_verified_at is not null and r.document_sha256=d.sha256
     and r.assignment_revision=a.assignment_revision and r.reviewer_account_id='${reviewer}'::uuid)
     from private.claim_review_reads r join private.claim_documents d on d.id=r.document_id
@@ -58,10 +60,10 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
     const observed=await observeNativeResponses(page,{verify:`^${lookupPath}$`});
     try{
       await controls.getByRole("button",{name:"Check details",exact:true}).click();
-      const response=await observed.read("verify");expect(response.status).toBe(200);expectNoUniqueKeylessResponse(response.text,claim);
+      const response=await phase("lookup-response",()=>observed.read("verify"));expect(response.status).toBe(200);expectNoUniqueKeylessResponse(response.text,claim);
       await expect(controls.getByRole("status")).toHaveText("No single record could be found. Do not choose a record.");
     }finally{await observed.dispose();}
-    expect(await keylessEffectProof(claim)).toBe(unchanged);
+    expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
   }
   await expect(page.getByLabel("Choice",{exact:true}).locator("option")).toHaveText(["Refuse claim","Ask for more information"]);
   await expect(page.getByRole("heading",{name:"Parent details",exact:true})).toHaveCount(0);
@@ -72,16 +74,16 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
     nonce:current.nonce,reason:"The initial documentary proof cannot authorize a separate release.",now:"2099-01-01T00:00:00Z"});
   const other=await browser.newContext({baseURL});
   try{
-    const otherReviewer=await signInReviewer(other,baseURL);
+    const otherReviewer=await phase("other-reviewer-auth",()=>signInReviewer(other,baseURL));
     await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewId(otherReviewer)}'::uuid);`);
     const otherPage=await other.newPage();expect((await otherPage.goto(`/reviews/future-person/claims/${claim}`))?.status()).toBe(404);
     const denied=await nativeReviewRequest(otherPage,lookupPath,lookup,current.csrf);expect(denied.status).toBe(404);
-    expect(denied.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(unchanged);
+    expect(denied.body).toEqual({error:"not_found"});expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
   }finally{await other.close();}
-  const observed=watchRequests(page);await expectAxeClean(page,async()=>{
+  const observed=watchRequests(page);await phase("a11y-themes",()=>expectAxeClean(page,async()=>{
     // A real reload invalidates local rendered/read attestations. Re-read both
     // original papers under the fresh page authority before auditing controls.
-    await openSyntheticReviewPdf(page,"photo");await openSyntheticReviewPdf(page,"birth");
+    await phase("themed-photo",()=>openSyntheticReviewPdf(page,"photo"));await phase("themed-birth",()=>openSyntheticReviewPdf(page,"birth"));
     await expect(controls).toBeVisible();
     await controls.getByLabel("Full name",{exact:true}).fill(identity.fullName);
     await controls.getByLabel("Birth date",{exact:true}).fill("2000-01-31");
@@ -89,26 +91,28 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
     const verified=await observeNativeResponses(page,{verify:`^${lookupPath}$`});
     try{
       await controls.getByRole("button",{name:"Check details",exact:true}).click();
-      const response=await verified.read("verify");expect(response.status).toBe(200);expectNoUniqueKeylessResponse(response.text,claim);
+      const response=await phase("lookup-response",()=>verified.read("verify"));expect(response.status).toBe(200);expectNoUniqueKeylessResponse(response.text,claim);
       await expect(controls.getByRole("status")).toHaveText("No single record could be found. Do not choose a record.");
     }finally{await verified.dispose();}
-    expect(await keylessEffectProof(claim)).toBe(unchanged);
-    await page.getByLabel("Reason",{exact:true}).fill("The synthetic documentary papers match no unique eligible record. No record was chosen.");
+    expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
+    await phase("reason-fill",()=>page.getByLabel("Reason",{exact:true}).fill("The synthetic documentary papers match no unique eligible record. No record was chosen."));
     await expect(page.getByRole("button",{name:"Save choice",exact:true})).toBeEnabled();
-  });await assertNoThirdParty(page,observed,"real keyless documentary controls, both themes");
-  await page.getByLabel("Reason",{exact:true}).fill("The synthetic documentary papers match no unique eligible record. No record was chosen.");
+  }));await phase("network-audit",()=>assertNoThirdParty(page,observed,"real keyless documentary controls, both themes"));
+  await phase("reason-fill",()=>page.getByLabel("Reason",{exact:true}).fill("The synthetic documentary papers match no unique eligible record. No record was chosen."));
   const decision=await observeNativeResponses(page,{save:`^/api/reviews/future-person/claims/${claim}$`});
   try{
+    await phase("decision-response",async()=>{
     await page.getByRole("button",{name:"Save choice",exact:true}).click();
     expect(await decision.read("save")).toEqual({status:200,text:JSON.stringify({claimId:claim,state:"refused",reviewRevision:2})});
     await expect(page.getByRole("status")).toHaveText("Decision saved.");
+    });
   }finally{await decision.dispose();}
   await expect(page.getByRole("img")).toHaveCount(0);await expect(controls).toHaveCount(0);
-  const closed=await keylessEffectProof(claim);expect(closed===unchanged).toBe(false);
+  const closed=await phase("effect-proof",()=>keylessEffectProof(claim));expect(closed===unchanged).toBe(false);
   const stale=await nativeReviewRequest(page,lookupPath,lookup,current.csrf);expect(stale.status).toBe(404);expect(stale.body).toEqual({error:"not_found"});
   const replay=await nativeReviewRequest(page,`/api/reviews/future-person/claims/${claim}`,{decision:"reject",reviewRevision:1,nonce:current.nonce,
     reason:"The original documentary decision cannot be replayed after refusal."},current.csrf);
-  expect(replay.status).toBe(404);expect(replay.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(closed);
+  expect(replay.status).toBe(404);expect(replay.body).toEqual({error:"not_found"});expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(closed);
   expect(await reviewFixtureSql(`select r.state||'/'||r.review_revision||'/'||
     (i.identity_key_shredded_at is not null and octet_length(i.wrapped_data_key)=29 and octet_length(i.identity_ciphertext)=29 and i.key_hash is null)||'/'||
     (select count(*) from private.claim_review_decisions d where d.review_id=r.id)||'/'||
