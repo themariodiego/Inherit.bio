@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-02 — Dispose temporary archive cancellation links after every RPC
+
+Exact hosted run37014502527 on c6b680b3 again passed9,407 tests and timed out only the unchanged complete prepared-source archive case at its original5-second limit. Preserve the raw failed job log. The earlier successful cleanup-reason cache did not resolve this timeout. Focused native Linux profiling of that exact source took2,932ms, with2,145ms sampled in Node22's weak dependent-signal cleanup scan and215ms in its surrounding finalization registry. This is observed local mechanism evidence; it does not claim a measured hosted profile.
+
+Replace only the persistence RPC's temporary AbortSignal.any composition with native addAbortListener links that forward the same first abort reason and are always disposed after the original cleanup. Node's native listener resists stopImmediatePropagation, preserving actual cancellation. Every current-authority RPC, response validation, lease,30-second deadline, no-retry transition and failed/uncertain outcome remains unchanged. Six added cases require zero retained caller links across repeated real renewal operations, unblocked cancellation with its exact reason despite an earlier propagation-stopping listener, deadline cleanup with late-value refusal, and cleanup after schema, RPC and thrown-transport failures. Keep every original worker/persistence assertion, timeout and browser case. Linux paired measurement, native HTTP verification and full final qualification remain separate required evidence; no timeout, workflow, skip, retry or authority reduction is made.
+
 ## 2026-10-02 — Audit genuine first reads and genuine second-review hold refusals
 
 The full local combined02688a56 run passed9,406 tests and failed only the permanent embryo source preflight: it still demanded four PDF reads and two full-document receipt checks, including the premature second reads that the unchanged SQL authority gate correctly refuses. Retain the failed full-run log. The connected producer, audited-test binding, historical transfer, matching details, both authenticated delivery callbacks and exact isolated origin checks remain unchanged.
