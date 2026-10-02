@@ -55,8 +55,9 @@ export function assertEmbryoJourneyAudits(sources: Readonly<Record<string, strin
         ["withEmbryoJourney", "../scripts/ci-embryo-journey", 1],
         ["syntheticHistoricalTransfer", "./helpers/historical-embryo-transfer", 1],
         ["saveNativeMatchingDetails", "./helpers/keyless-positive-journey", 1],
-        ["expectFullDocumentReceipts", "./helpers/keyless-positive-journey", 2],
-        ["openSyntheticReviewPdf", "./helpers/keyless-review-journey", 4],
+        ["expectFullDocumentReceipts", "./helpers/keyless-positive-journey", 1],
+        ["openSyntheticReviewPdf", "./helpers/keyless-review-journey", 2],
+        ["nativeReviewRequest", "./helpers/keyless-review-journey", 4],
         ["sendSyntheticDeliveredCallback", "./helpers/keyless-positive-journey", 2],
       ] as const;
       const calls: Record<string, number> = {};
@@ -84,6 +85,50 @@ export function assertEmbryoJourneyAudits(sources: Readonly<Record<string, strin
         assert(imported && calls[symbol] === count, "Keyless notice journey requires its exact connected native producer, document and callback calls");
       }
       assert(origins === 1, "Keyless notice journey requires the exact isolated 3105 origin");
+      // Pin actual AST statements, so comments and unused helper names cannot
+      // substitute for the first full read or the separate held assignment.
+      const printer = ts.createPrinter({ removeComments: true });
+      const statementText = (node: ts.Statement, origin: ts.SourceFile) =>
+        printer.printNode(ts.EmitHint.Unspecified, node, origin);
+      const sequences: ts.Statement[][] = [];
+      function visitBlocks(node: ts.Node) {
+        if (ts.isBlock(node)) sequences.push([...node.statements]);
+        ts.forEachChild(node, visitBlocks);
+      }
+      visitBlocks(file);
+      function requireStatements(source: string, message: string) {
+        const expected = ts.createSourceFile("required-keyless.ts", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        const wanted = expected.statements.map(node => statementText(node, expected));
+        assert(sequences.some(statements => statements.some((_node, index) =>
+          wanted.every((value, offset) => statements[index + offset]
+            && statementText(statements[index + offset], file) === value))), message);
+      }
+      requireStatements(`await openSyntheticReviewPdf(review,"photo");
+        await openSyntheticReviewPdf(review,"birth");
+        await expectFullDocumentReceipts(claim,reviewer,papers);`,
+      "Keyless notice journey requires the first reviewer's connected full two-document receipts");
+      requireStatements(`      await expect(fresh.getByRole("button",{name:"Save choice",exact:true})).toHaveCount(0);
+      await expect(fresh.getByText("This claim is waiting. Open the case again when its next review is assigned.",{exact:true})).toBeVisible();
+      await expect(fresh.getByRole("button",{name:"Open Picture ID",exact:true})).toHaveCount(0);
+      await expect(fresh.getByRole("button",{name:"Open Birth record",exact:true})).toHaveCount(0);
+      await expect(fresh.getByRole("img")).toHaveCount(0);await expect(fresh.getByRole("checkbox")).toHaveCount(0);
+      const secondDocumentProof=()=>reviewFixtureSql(\`select
+        (select count(*) from private.claim_review_downloads where review_id='\${claim}' and reviewer_account_id='\${second}')||'/'||
+        (select count(*) from private.claim_review_receipt_sessions receipt join private.claim_review_downloads download on download.id=receipt.download_id
+          where download.review_id='\${claim}' and download.reviewer_account_id='\${second}')||'/'||
+        (select count(*) from private.claim_review_chunk_receipts receipt join private.claim_review_downloads download on download.id=receipt.download_id
+          where download.review_id='\${claim}' and download.reviewer_account_id='\${second}')||'/'||
+        (select count(*) from private.claim_review_reads where review_id='\${claim}' and reviewer_account_id='\${second}' and document_id is not null)\`);
+      expect(await secondDocumentProof()).toBe("0/0/0/0");
+      const hold=await keylessEffectProof(claim);
+      for(const document of [record.evidence.photoIdentityDocumentId,record.evidence.birthRecordDocumentId]){
+        const response=await nativeReviewRequest(fresh,\`/api/legal-evidence/\${reviewId(document)}/review-download\`);
+        expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
+        expect(response.cache).toBe("private, no-store");expect(response.referrer).toBe("no-referrer");
+        expect(await secondDocumentProof()).toBe("0/0/0/0");expect(await keylessEffectProof(claim)).toBe(hold);
+      }
+`,
+      "Keyless notice journey requires both real held document GET refusals, four zero counters and unchanged effects");
     }
     if (name === EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"]) {
       const exactImport = (original: string, module: string) => imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)

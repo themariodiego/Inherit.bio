@@ -1,5 +1,11 @@
 # Test diff register
 
+## 2026-10-02 — Audit genuine first reads and genuine second-review hold refusals
+
+The full local combined02688a56 run passed9,406 tests and failed only the permanent embryo source preflight: it still demanded four PDF reads and two full-document receipt checks, including the premature second reads that the unchanged SQL authority gate correctly refuses. Retain the failed full-run log. The connected producer, audited-test binding, historical transfer, matching details, both authenticated delivery callbacks and exact isolated origin checks remain unchanged.
+
+Bind the first reviewer's actual photo/birth/full-EOF-and-ACK receipt sequence and replace only the obsolete second-read count with the actual held assignment contract. AST statements must contain both exact document IDs, same-origin native GETs with opaque404/no-store/no-referrer, all four reviewer-scoped zero download/session/chunk/document-read counts, and unchanged effect hashes after both reads. Planted negative cases refuse swapped first reviewer/document/receipt arguments, removed or redirected held requests, duplicate document IDs, positive/wrong zero values, wrong counter tables or reviewer, removed or comment-only effect assertions and converting the GET to a POST. All original source-test assertions remain unchanged. No browser case, SQL migration, workflow, timeout, retry, skip or acceptance change; source preflight does not prove browser execution.
+
 ## 2026-10-02 — Keep the second release review held until the real notice deadline
 
 Exact full hosted run 37004269047 at cc79be42679d0dc5f57d964a3d6216c3aed8137a passed the first reviewer's complete two-PDF rendering and EOF/ACK receipts, accepted owner notice and authenticated synthetic delivery. It then failed at the second reviewer's premature photo read (spec line149): the database correctly refused download before the immutable delivered-at-plus-thirty-day boundary, while the page misleadingly offered Open controls beside its waiting message. The original failure log and DOM snapshot are retained. Brief §7.4 and X11.1, together with the existing assigned-claim reader require the separate fresh release review after that hold; they require no premature second document read.
