@@ -238,9 +238,9 @@ begin
  for p in select * from private.embryo_canonical_parts where session_id=s.id or worker_job_id=j.id order by id loop
   if (p.session_id,p.worker_job_id,p.attempt,p.state) is distinct from (s.id,j.id,j.attempt,'landed'::text) then
    raise exception using errcode='42501',message='claimed provenance unavailable';end if;
-  if not exists(select 1 from private.embryo_canonical_source_parts m join private.embryo_canonical_sources x on x.file_id=m.file_id
-    where m.part_id=p.id and m.sequence=p.sequence and x.session_id=s.id and x.worker_job_id=j.id
-     and x.attempt=j.attempt and x.sample_ordinal=p.sample_ordinal) then
+  if not exists(select 1 from private.embryo_canonical_source_parts m join private.embryo_canonical_sources stored_source on stored_source.file_id=m.file_id
+    where m.part_id=p.id and m.sequence=p.sequence and stored_source.session_id=s.id and stored_source.worker_job_id=j.id
+     and stored_source.attempt=j.attempt and stored_source.sample_ordinal=p.sample_ordinal) then
    if not live or not exists(select 1 from private.account_owned_cohort_purges t
     join public.account_deletion_requests d on d.id=t.deletion_id join public.embryo_cohorts c on c.id=t.cohort_id
     join public.embryo_ingest_unwinds unwind on unwind.id=t.source_unwind_id
@@ -533,7 +533,7 @@ begin
   or exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])role where has_function_privilege(role,target,'execute')) then
   raise exception using errcode='55000',message='claimed provenance helper boundary differs';end if;
  target:='private.claimed_provenance_pair_state_v1(jsonb)'::regprocedure;
- if not exists(select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=target and md5(p.prosrc)='3da68cf25c64e8e579a8d5ef17cd90a6'
+ if not exists(select 1 from pg_proc p join pg_language l on l.oid=p.prolang where p.oid=target and md5(p.prosrc)='e07c75378ae8d1c14839e604fc2dd58a'
   and l.lanname='plpgsql' and p.prosecdef and p.provolatile='v' and p.proparallel='u'
   and p.proowner=(select oid from pg_roles where rolname='postgres') and p.proconfig=array['search_path=""']::text[]
   and p.proargdefaults is null and p.proargnames=array['p_candidate']::text[] and p.pronargs=1 and not p.proretset

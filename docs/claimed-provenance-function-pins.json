@@ -92,7 +92,7 @@
   },
   {
     "signature": "private.claimed_provenance_pair_state_v1(jsonb)",
-    "body": "3da68cf25c64e8e579a8d5ef17cd90a6",
+    "body": "e07c75378ae8d1c14839e604fc2dd58a",
     "args": [
       "p_candidate"
     ],
