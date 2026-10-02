@@ -47,6 +47,9 @@ export function stepStatus(step: number): string {
 export const STILL_TO_COME_STATUS: Readonly<Record<number, string>> = {
   1: "Still to come: whose embryos these are, who signs, what you agree to, and the file.",
   2: "Still to come: who signs, what you agree to, and the file.",
+  3: "Still to come: what you agree to, and the file.",
+  4: "Still to come: the file.",
+  5: "Still to come: checking the file.",
 };
 
 // ---------------------------------------------------------------------------
@@ -180,3 +183,146 @@ export const BACK_BUTTON = "Back";
 
 /** The closing screen's one primary action and the way back, from their homes. */
 export { BACK_TO_EMBRYOS_LINK, REQUEST_DATA_BUTTON };
+
+// ---------------------------------------------------------------------------
+// Steps 2–5 where ingest is built (TEST-LOCAL only; `embryoIngestBuilt()` in
+// src/lib/embryos/upload-stage.ts). `EMBRYO_INGEST_AVAILABLE` above stays
+// false: it is the production statement, and production still says it.
+// ---------------------------------------------------------------------------
+
+/** Step 2's last screen: the record the draft route keeps. */
+export const DRAFT_QUESTION_HEADING = "Make the record";
+
+export const EMBRYO_COUNT_LABEL = "Number of embryos in the file";
+
+/** One address per parent who is not you (the basis decides how many). */
+export function parentEmailLabel(index: number, count: number): string {
+  if (count === 1) return "Other parent’s email";
+  return `Email for parent ${index + 1}`;
+}
+
+/** What the record is, stated before it is made. */
+export const DRAFT_NOTE =
+  "This record has no file. It ends after 30 days if the people who need to sign have not.";
+
+export const SAVE_DRAFT_BUTTON = "Save and continue";
+
+/** Step 3 — who signs. */
+export const OWNER_SIGN_HEADING = "Sign your statements";
+
+export const OWNER_SIGN_LEDE =
+  "Read each one in full. Your typed name signs them. This does not start any analysis.";
+
+export const INVITE_HEADING = "Invite the other parent";
+
+export const INVITE_LEDE =
+  "They sign in their own account. Type the address you gave when you made the record.";
+
+export const SEND_INVITATION_BUTTON = "Send the invitation";
+
+export const INVITATION_SENT_STATUS = "If that address is right, Inherit will send the invitation.";
+
+export const WAITING_HEADING = "Waiting for the other parent";
+
+export const WAITING_SENTENCE = "Waiting for the other parent to sign in their own account.";
+
+/** The draft's fixed deadline in words (`embryo.cohort-draft-30d`). */
+export function draftDeadlineNote(date: string): string {
+  return `This record ends on ${date} if they have not finished their part.`;
+}
+
+/** The co-parent's own screen, after they accepted the invitation. */
+export const CO_PARENT_SIGN_HEADING = "Sign to continue";
+
+export const CO_PARENT_SIGN_LEDE =
+  "You accepted the invitation. Before the files can be added, you also state your right to decide for these embryos.";
+
+export const CO_PARENT_DONE_STATUS = "You have finished your part. The other parent will add the file.";
+
+/** A basis that needs a reviewed document: that review does not exist yet. */
+export const EVIDENCE_REVIEW_UNAVAILABLE =
+  "This basis needs a document that a named person reviews. That review is not open on this site yet.";
+
+/** Step 4 — what you agree to. */
+export const ACKNOWLEDGE_HEADING = "What you agree to";
+
+export const ACKNOWLEDGE_LEDE =
+  "Read both in full. Your typed name signs both, and then the record is ready for the file.";
+
+export const FINALIZE_BUTTON = "Agree and go to the file";
+
+export const RECORD_KEY_CARDS_HEADING = "Record Key Cards";
+
+export const RECORD_KEY_CARDS_NOTE =
+  "Print or copy these now. They are shown only this one time. Keep them for the future person.";
+
+/** A card's date, which stays provisional until every embryo's file is checked. */
+export function cardDateNote(words: string, provisional: boolean): string {
+  return provisional ? `Date: ${words}, for now. It can change after the file check.` : `Date: ${words}.`;
+}
+
+/** Step 5 — the file. */
+export const FILE_QUESTION_HEADING = "Choose the file";
+
+export const FILE_NOTE =
+  "Your browser will check the file first. It does not send the name of any embryo.";
+
+export const FILE_RULES_BODY = "Anything outside chromosomes 1 to 22 stays on this device.";
+
+export const FILE_INPUT_LABEL = "File";
+
+export const SEND_FILE_BUTTON = "Send the file";
+
+export const FILE_READING_STATUS = "Reading the file in this browser…";
+
+export function fileSendingStatus(part: number): string {
+  return `Part ${part}: upload started…`;
+}
+
+export const FILE_FINISHING_STATUS = "File sent. Upload not complete yet…";
+
+/** The processing panel: stage names only, no count and no embryo (design §2.2 A.10). */
+export const PROCESSING_HEADING = "Checking the file";
+
+export const PROCESSING_SENTENCE =
+  "Nothing about any embryo shows until every embryo in the file has been checked.";
+
+/** Design §2.2 A.10, verbatim. */
+export const UPLOAD_FAILED_SENTENCE =
+  "The upload did not finish. No genetic data was kept, and every Record Key Card from this upload is now invalid.";
+
+/** A finalized record whose upload was left before the file was sent. */
+export const UPLOAD_LEFT_SENTENCE =
+  "This upload was left before the file was sent. It ends on its own within a day, and nothing about the embryos was kept.";
+
+/** The file step's refusals and the ones this page adds. */
+export const FILE_REFUSED_STATUS = "Inherit could not take this file.";
+
+export const OPEN_EMBRYOS_BUTTON = "Go to your embryos";
+
+/** The draft route refused the addresses: each must be another person's, given once. */
+export const DRAFT_CONTACTS_STATUS =
+  "Check each email. Use each only one time. It needs to be for someone else.";
+
+/** A file whose embryo count is not the record's. Nothing was sent. */
+export const FILE_COUNT_MISMATCH_STATUS =
+  "The number of embryos in this file does not match the record. Nothing was sent. Choose the right file.";
+
+/** What was wrong with the file, when the browser found it before anything was sent. */
+export const FILE_NOT_SENT_NOTE = "Nothing was sent. You can choose another file.";
+
+/** The co-parent's way from the accepted invitation to the one statement left. */
+export const SIGN_LAST_STATEMENT_LINK = "Sign to continue";
+
+export const STAGE_READ_FAILED_STATUS = "Inherit could not read this upload. Load the page again to try again.";
+
+export const UPLOAD_STOPPED_SENTENCE = "The upload stopped. No results are shown. Inherit will clear this attempt.";
+
+export const FILE_FORMAT_BODY = "For now, choose one VCF file with at least two embryos. Other file types cannot be added here yet.";
+
+export const ANALYSIS_PERMISSION_HEADING = "Agree to see results";
+export const ANALYSIS_PERMISSION_BUTTON = "Agree";
+export const ANALYSIS_PERMISSION_LEDE = "Adding the file did not allow analysis. Each parent decides this in their own account. Results show only when everyone agrees.";
+
+export const SIGN_IN_AGAIN_BUTTON = "Sign in again";
+export const SIGN_IN_AGAIN_STATUS = "Sign in again to continue. Your account may need to be checked before you can go on.";

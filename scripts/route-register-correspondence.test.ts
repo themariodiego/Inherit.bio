@@ -344,19 +344,61 @@ function codeFiles(): string[] {
  * database-selected rather than dropped, because that is exactly the case a
  * static walk would otherwise lose in silence.
  */
-function storageCallSites(): string[] {
+function storageBucketsInSource(source: string): string[] {
   const fromCall = /storage\s*\.\s*from\(\s*(?:"([A-Za-z0-9._-]+)"|'([A-Za-z0-9._-]+)')?/g;
-  const objectUrl = /\/storage\/v1\/object\/(?:authenticated\/|public\/|sign\/|upload\/sign\/)?([A-Za-z0-9._-]+)(?=[/`'"$\s)])/g;
+  // Consume a known REST operation first. Matching the bucket separately
+  // prevents optional-prefix backtracking from inventing an `info` bucket
+  // when the real bucket is a template expression.
+  const objectUrl = /\/storage\/v1\/object\/(?:upload\/sign\/|authenticated\/|public\/|sign\/|info\/)?/g;
+  const literalBucket = /^([A-Za-z0-9._-]+)(?=[/`'"$\s)])/;
+  const buckets = new Set<string>();
+  for (const match of source.matchAll(fromCall)) buckets.add(match[1] ?? match[2] ?? DATABASE_SELECTED);
+  for (const match of source.matchAll(objectUrl)) {
+    const argument = source.slice(match.index + match[0].length);
+    const literal = literalBucket.exec(argument);
+    if (literal) buckets.add(literal[1]);
+    else if (argument.startsWith("${")) buckets.add(DATABASE_SELECTED);
+  }
+  return [...buckets].sort();
+}
+
+function storageCallSites(): string[] {
   const sites = new Set<string>();
   for (const file of codeFiles()) {
-    const source = readFileSync(file, "utf8");
-    for (const match of source.matchAll(fromCall)) {
-      sites.add(`${match[1] ?? match[2] ?? DATABASE_SELECTED} ${file}`);
-    }
-    for (const match of source.matchAll(objectUrl)) sites.add(`${match[1]} ${file}`);
+    for (const bucket of storageBucketsInSource(readFileSync(file, "utf8"))) sites.add(`${bucket} ${file}`);
   }
   return [...sites].sort();
 }
+
+describe("storage call-site extraction", () => {
+  it("reads the bucket of SDK and REST metadata calls without inventing an info bucket", () => {
+    expect(storageBucketsInSource([
+      'client.storage.from("exports").info(key)',
+      '`/storage/v1/object/info/exports/${key}`',
+    ].join("\n"))).toEqual(["exports"]);
+    expect(storageBucketsInSource([
+      'client.storage.from(ARCHIVE_BUCKET).info(key)',
+      '`/storage/v1/object/info/${ARCHIVE_BUCKET}/${key}`',
+      '`/storage/v1/object/${ARCHIVE_BUCKET}/${key}`',
+    ].join("\n"))).toEqual([DATABASE_SELECTED]);
+  });
+
+  it("retains unknown literal buckets, dynamic buckets and every existing REST operation", () => {
+    expect(storageBucketsInSource('client.storage.from("unregistered-bucket").info(key)'))
+      .toEqual(["unregistered-bucket"]);
+    // A genuine SDK bucket named info still counts; only the REST operation
+    // segment is excluded from bucket classification.
+    expect(storageBucketsInSource('client.storage.from("info").download(key)')).toEqual(["info"]);
+    for (const operation of ["", "authenticated/", "public/", "sign/", "upload/sign/", "info/"]) {
+      expect(storageBucketsInSource("`/storage/v1/object/" + operation + "unregistered-bucket/${key}`"))
+        .toEqual(["unregistered-bucket"]);
+      expect(storageBucketsInSource("`/storage/v1/object/" + operation + "${bucket}/${key}`"))
+        .toEqual([DATABASE_SELECTED]);
+    }
+    expect(storageBucketsInSource('client.storage.from(bucket).remove(keys)')).toEqual([DATABASE_SELECTED]);
+    expect(storageBucketsInSource('client.info(key)')).toEqual([]);
+  });
+});
 
 /** The buckets a database row is allowed to name, from the migrations' own check constraints. */
 function databaseBucketAllowlist(): { buckets: string[]; constraints: number } {

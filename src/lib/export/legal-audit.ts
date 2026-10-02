@@ -22,7 +22,7 @@ import { z } from "zod";
 
 export const LEGAL_AUDIT_SCHEMA_VERSION = "legal-audit-v1";
 
-const eventSchema = z.object({
+export const legalAuditEventSchema = z.object({
   seq: z.number().int().positive().safe(),
   occurred_at: z.string().min(1),
   event_code: z.string().regex(/^[a-z][a-z0-9_.-]{2,79}$/),
@@ -34,11 +34,11 @@ const eventSchema = z.object({
 const pageSchema = z.object({
   version: z.literal("legal-audit-slice-v1"),
   attributionStartedAt: z.string().min(1),
-  events: z.array(eventSchema).max(500),
+  events: z.array(legalAuditEventSchema).max(500),
   nextAfterSeq: z.number().int().positive().safe().nullable(),
 }).strict();
 
-export type LegalAuditEvent = z.infer<typeof eventSchema>;
+export type LegalAuditEvent = z.infer<typeof legalAuditEventSchema>;
 export type LegalAuditSlice = { attributionStartedAt: string; events: LegalAuditEvent[] };
 
 type Actor = { accountId: string; sessionId: string };

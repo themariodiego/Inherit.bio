@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createdBuckets, droppedBuckets, exportedMethods, migrationBuckets, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
 
 /**
@@ -82,6 +82,38 @@ function plant(overrides: Overrides): string {
 
 type Route = { id: string; kind: string; methods?: string[]; stateProfile?: string };
 
+describe.sequential("route reader invocation isolation", () => {
+  const neutral = 'import { test } from "./audited-test"; test("Synthetic reader check", () => {});';
+  let root: string;
+  let file: string;
+  let before: Awaited<ReturnType<typeof runRouteGate>>;
+  beforeAll(() => {
+    root = plant({ extraSpec: neutral });
+    file = path.join(root, "e2e/planted.spec.ts");
+  });
+  it("reads the original same-root input", async () => {
+    before = await runRouteGate(root);
+    expect(before.failures).toEqual([]);
+  });
+  it("reads changed titles and audit imports again at the same repository root", async () => {
+    writeFileSync(file, 'import { test } from "@playwright/test"; test("/future-person/claim complete", () => {});');
+    try {
+      const changed = await runRouteGate(root);
+      expect(changed.failures).toEqual([
+        "network audit: e2e/planted.spec.ts proves a registered (route, state) pair but takes `test` " +
+        "from @playwright/test instead of ./audited-test, so that state is never audited " +
+        "for third-party origins, tracker hosts or tracker globals (G1.7).",
+      ]);
+      expect(changed.stateProvingSpecCount).toBe(before.stateProvingSpecCount + 1);
+    } finally {
+      writeFileSync(file, neutral);
+    }
+  });
+  it("reads the restored same-root input with an exactly equal full result", async () => {
+    expect(await runRouteGate(root)).toEqual(before);
+  });
+});
+
 describe("the route gate holds the register to the code", () => {
   it("passes on this repository, having actually read all four inputs", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
@@ -115,9 +147,15 @@ describe("the route gate holds the register to the code", () => {
     // register's jurisdiction refusal (awaiting-choice waived with its
     // reason), and the same change proves it (e2e/copilot-family.spec.ts), so
     // the unproven count does not move.
+    // 154 -> 155: Future Person intake adds its processing state on the
+    // public-rights-flow profile and proves it in future-person-claim.spec.ts.
+    // 155 -> 156: cohort Copilot renders not-covered, so its old waiver
+    // is removed; the merged Future Person processing state remains required.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(154);
+    // 156 -> 158: the named-reviewer page adds its complete and processing pairs. These
+    // authored titles are statically counted; hosted CI must execute them.
+    expect(result.requiredStateCount).toBe(158);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -479,10 +517,12 @@ describe("the route gate holds the register to the code", () => {
 
   it("fails when a method row names a file the route is not built in", async () => {
     const root = plant({
+      register: (register) => {
+        (register.routes as Route[]).find((entry) => entry.id === "api.export")!.methods = ["GET", "POST", "PUT"];
+      },
       ledger: (ledger) => {
-        for (const known of ledger.methodDivergence as Record<string, unknown>[]) {
-          if (known.routeId === "api.export") known.file = "src/app/api/export/moved/route.ts";
-        }
+        (ledger.methodDivergence as Record<string, unknown>[]).push({routeId:"api.export",
+          declared:["GET","POST","PUT"],exported:["GET","POST"],file:"src/app/api/export/moved/route.ts"});
       },
     });
     const { failures } = await runRouteGate(root);
@@ -813,7 +853,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     // since 2026-09-28, on the real path the owner chose, after the 22 September
     // decision settled its ceiling. The two that remain, T6 and T7, are bound to
     // embryo files no ingest path can produce yet.
-    expect(result.taskDepthMeasuredCount).toBe(6);
+    expect(result.taskDepthMeasuredCount).toBe(7);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -895,11 +935,11 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
   it("fails when a task gains a measurement without the ratchet coming down", async () => {
     const root = plant({
       extraSpec: 'import { test } from "@playwright/test";\n'
-        + 'test("task depth T6 stays within its registered ceiling", async () => {});\n',
+        + 'test("task depth T7 stays within its registered ceiling", async () => {});\n',
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 1 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 0 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
@@ -915,7 +955,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T7; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 1 of 7 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 0 of 7 ceilinged tasks are measured by no browser test",
     );
   });
 
@@ -940,12 +980,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("reads both shapes the register declares a required header in", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
-    // Both declared shapes still resolve to three names: the evidence chunk
-    // has a requiredHeaders map; other routes use requiredHeader prose.
-    expect(result.requiredHeaderCount).toBe(3);
+    // Both declared shapes still resolve, now to two names: the evidence chunk
+    // has a requiredHeaders map; other routes use requiredHeader prose. The
+    // owner removed `X-Inherit-Chunk-Nonce` from api.evidence-chunk on
+    // 2026-09-28 (the chunk reservation is the authority), so 3 -> 2.
+    expect(result.requiredHeaderCount).toBe(2);
     // `X-Inherit-CSRF` and `X-Inherit-Operation-Nonce` are both minted and
-    // verified in `operation-token.ts`; `X-Inherit-Chunk-Nonce` is named
-    // nowhere outside the register.
+    // verified in `operation-token.ts`, and both are read.
     expect(result.readRequiredHeaderCount).toBe(2);
   });
 
@@ -986,9 +1027,9 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails when the singular half of the register stops being read", async () => {
     const root = plant({ register: (register) => strip(register, "requiredHeader") });
     const { failures } = await runRouteGate(root);
-    // Two left: the evidence chunk route's two required headers.
+    // One left: the evidence chunk route's X-Inherit-CSRF.
     expect(failures.join("\n")).toContain(
-      "required header check found 2 declared headers across all routes, expected at least 8",
+      "required header check found 1 declared headers across all routes, expected at least 8",
     );
   });
 
@@ -1006,9 +1047,11 @@ describe("the route gate refuses a required header nothing reads", () => {
   });
 
   it("fails when the register stops declaring a header the ledger still records", async () => {
+    // The register no longer declares the chunk nonce (owner decision
+    // 2026-09-28), so a ledger row that still records it is stale.
     const root = plant({
-      register: (register) => {
-        delete headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"];
+      ledger: (ledger) => {
+        rowsOf(ledger).push({ routeId: "api.evidence-chunk", header: "X-Inherit-Chunk-Nonce" });
       },
     });
     const { failures } = await runRouteGate(root);
@@ -1019,9 +1062,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   });
 
   it("fails when a recorded row names a route that does not declare it", async () => {
+    // An unread header declared on one route and recorded against another.
     const root = plant({
+      register: (register) => {
+        headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"] = "a-token-no-module-mints";
+      },
       ledger: (ledger) => {
-        rowsOf(ledger)[0] = { ...rowsOf(ledger)[0], routeId: "api.embryo-ingest-complete" };
+        rowsOf(ledger).push({ routeId: "api.embryo-ingest-complete", header: "X-Inherit-Chunk-Nonce" });
       },
     });
     const { failures } = await runRouteGate(root);

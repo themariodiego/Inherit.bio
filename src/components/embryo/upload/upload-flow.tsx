@@ -40,6 +40,7 @@ import {
 } from "@/lib/embryos/upload-flow";
 import { route } from "@/lib/primary-routes";
 import { OptionArt } from "./option-art";
+import { DraftForm } from "./draft-form";
 
 /**
  * <UploadFlow> — the five-step flow of `/embryos/upload` (design §2.2;
@@ -60,7 +61,7 @@ import { OptionArt } from "./option-art";
  * while ingest is unavailable (design §10): the sentence, what the later
  * steps will ask, and the letter.
  */
-export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) {
+export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial?: FlowState; draftCsrfToken?: string }) {
   const [state, dispatch] = useReducer(reduceFlow, initial);
   const step = stepOf(state.screen);
   const end = flowEnd(state);
@@ -297,6 +298,9 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
             </Link>
           </p>
         </section>
+      ) : null}
+      {state.screen === "draft" && state.situation && state.basis && draftCsrfToken ? (
+        <DraftForm headingId={headingId} situation={state.situation} basis={state.basis} csrfToken={draftCsrfToken} onBack={() => send({ type: "back" })} />
       ) : null}
     </section>
   );

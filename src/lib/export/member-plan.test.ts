@@ -92,7 +92,10 @@ describe("the export member plan", () => {
 
   it("exports the legal audit ledger's own events, never the pseudonym or the chain hashes", () => {
     const ledger = exportedTable("public.legal_audit_log")!;
-    expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit"]);
+    expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit",
+      "archive:subjects/{subject_id}/audit-log.json", "archive:subjects/{subject_id}/reports.txt", "reader:claimant.legal-audit"]);
+    expect(ledger.scope).toContain("private.future_person_audit_selector_v1");
+    expect(ledger.scope).toContain("Existing NULL or unlinked actors remain unassigned");
     expect(ledger.withheld).toEqual(["audit_principal_id", "previous_hash", "row_hash"]);
     expect(ledger.reason).toContain("docs/export-legal-audit-resolver.md");
     // The account-to-pseudonym link selects the slice and never leaves.

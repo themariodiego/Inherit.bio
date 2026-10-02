@@ -159,6 +159,7 @@ export const NOT_FOUND_URLS: Record<string, string> = {
  * lands here loudly, and a page that gains a visit has to leave.
  */
 export const CHECKED_ELSEWHERE: Record<string, string> = {
+  "/reviews/future-person/claims/[id]": "e2e/future-person-review.spec.ts, the genuine assigned case in both themes",
   "/family": "e2e/family.spec.ts, the signed-in hub",
   "/withdraw/[token]": "e2e/family.spec.ts, the pinned /withdraw/session entry for its invitation",
   "/family/[person]": "e2e/family.spec.ts, past the Tier-2 gate with a shared layer showing",
@@ -166,6 +167,16 @@ export const CHECKED_ELSEWHERE: Record<string, string> = {
   "/family/portrait/[pairId]": "e2e/portrait.spec.ts, past the portrait gate",
   "/embryos/[embryoId]": "e2e/embryos.spec.ts",
 };
+
+/** The ordinary sweep keeps its empty-state visits. Populated Embryo reads
+ * require the separate real signed-parent/native worker journey; this is its
+ * closed supplemental census, checked against the actual registered routes. */
+export const POPULATED_EMBRYO_AUDITS: Readonly<Record<string, string>> = Object.freeze({
+  "/embryos": "e2e/embryo-ingest-journey.spec.ts",
+  "/embryos/upload": "e2e/embryo-ingest-journey.spec.ts",
+  "/embryos/compare": "e2e/embryo-ingest-journey.spec.ts",
+  "/embryos/[embryoId]": "e2e/embryo-ingest-journey.spec.ts",
+});
 
 export type RegisteredPage = { kind: string; auth: string; path: string; disposition: unknown };
 

@@ -17,7 +17,7 @@ import { ClaimBlock } from "@/components/figures/claim-block";
 import { EmbryoChip } from "@/components/embryo/embryo-chip";
 import { coverageSpec, rateSpec } from "@/components/embryo/qc-figures";
 import { EMBRYO_LAYER_DEFINITIONS, NO_ROWS_SENTENCE, POSITIONS_READ_TH, ROW_LABEL_TH } from "@/copy/embryos/compare";
-import { NOT_MEASURABLE_FROM_FILE, QC_FIELD_LABELS, QC_REASON_SENTENCES } from "@/copy/embryos/qc";
+import { QC_BASIS_NOT_RECORDED, NOT_MEASURABLE_FROM_FILE, QC_FIELD_LABELS, QC_REASON_SENTENCES } from "@/copy/embryos/qc";
 import { LAYER_LABELS } from "@/copy/reports/strings";
 import type { ComparisonEmbryo, ComparisonResultRow } from "@/lib/embryos/policy";
 import { mapQcReason, type QcReasonId } from "@/lib/embryos/qc-policy";
@@ -54,15 +54,17 @@ export function footerReasons(embryo: ComparisonEmbryo): QcReasonId[] {
 export function ColumnFooter({ embryo, subjectId }: { embryo: ComparisonEmbryo; subjectId: string }) {
   const qc = embryo.qc;
   const reasons = footerReasons(embryo);
-  const figures: StandaloneFigureSpec[] = [coverageSpec(qc)];
-  const callRateIndex = reasons.some((reason) => QC_REASON_SENTENCES[reason].figure === "call_rate")
-    ? figures.push(rateSpec(qc.call_rate)) - 1
+  const coverage = coverageSpec(qc);
+  const figures: StandaloneFigureSpec[] = coverage ? [coverage] : [];
+  const callRate = rateSpec(qc, "call_rate");
+  const callRateIndex = callRate && reasons.some((reason) => QC_REASON_SENTENCES[reason].figure === "call_rate")
+    ? figures.push(callRate) - 1
     : null;
   const concordances: { key: "parent_a_concordance" | "parent_b_concordance"; index: number | null }[] = [];
   if (reasons.length > 0) {
     for (const key of ["parent_a_concordance", "parent_b_concordance"] as const) {
-      const value = qc[key];
-      concordances.push({ key, index: value === null ? null : figures.push(rateSpec(value)) - 1 });
+      const spec = rateSpec(qc, key);
+      concordances.push({ key, index: spec === null ? null : figures.push(spec) - 1 });
     }
   }
   return (
@@ -72,20 +74,20 @@ export function ColumnFooter({ embryo, subjectId }: { embryo: ComparisonEmbryo; 
       className={CELL_BLOCK_CLASS}
       renderFigures={(nodes: ReactNode[]) => (
         <div className="space-y-2 text-sm text-ink">
-          <p data-slot="footer-coverage">{nodes[0]}</p>
+          <p data-slot="footer-coverage">{coverage ? nodes[0] : QC_BASIS_NOT_RECORDED}</p>
           {reasons.map((reason) => {
             const sentence = QC_REASON_SENTENCES[reason];
             return (
               <p key={reason} data-slot="footer-reason" data-reason={reason}>
-                {embryo.display_label}: {sentence.before}
+                {embryo.display_label}: {sentence.figure === "call_rate" && callRateIndex === null ? QC_BASIS_NOT_RECORDED : sentence.before}
                 {sentence.figure === "call_rate" && callRateIndex !== null ? <> {nodes[callRateIndex]} </> : " "}
-                {sentence.after}
+                {sentence.figure === "call_rate" && callRateIndex === null ? null : sentence.after}
               </p>
             );
           })}
           {concordances.map(({ key, index }) => (
             <p key={key} data-slot="footer-concordance" data-field={key}>
-              {QC_FIELD_LABELS[key]}: {index === null ? NOT_MEASURABLE_FROM_FILE : nodes[index]}
+              {QC_FIELD_LABELS[key]}: {index === null ? qc[key] === null ? NOT_MEASURABLE_FROM_FILE : QC_BASIS_NOT_RECORDED : nodes[index]}
             </p>
           ))}
         </div>
@@ -95,15 +97,16 @@ export function ColumnFooter({ embryo, subjectId }: { embryo: ComparisonEmbryo; 
 }
 
 export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableProps) {
+  const captionId = `embryo-comparison-caption-${layer}`;
   return (
-    <div data-slot="compare-scroller" className="overflow-x-auto">
+    <div data-slot="compare-scroller" className="overflow-x-auto" role="region" aria-labelledby={captionId} tabIndex={0}>
       <table
         data-compare-surface="true"
         data-card="true"
         data-layer={layer}
         className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm"
       >
-        <caption className="p-3 text-left text-sm text-ink-muted">
+        <caption id={captionId} className="p-3 text-left text-sm text-ink-muted">
           {LAYER_LABELS[layer]}. {EMBRYO_LAYER_DEFINITIONS[layer]}
         </caption>
         <thead>
@@ -122,7 +125,7 @@ export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableP
               >
                 <EmbryoChip
                   embryo={{ id: embryo.id, displayLabel: embryo.display_label }}
-                  href={route("embryos.detail", { embryoId: embryo.id })}
+                  href={embryo.qc.qc_verdict === "fail" ? undefined : route("embryos.detail", { embryoId: embryo.id })}
                   qcFailed={embryo.qc.qc_verdict === "fail"}
                 />
               </th>

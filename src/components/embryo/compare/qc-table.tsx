@@ -14,6 +14,8 @@ import { coverageSpec, depthSpec, dropoutSpec, isZeroRate, rateSpec } from "@/co
 import { formatDate } from "@/components/embryo/format";
 import {
   DROPOUT_NOT_MEASURED,
+  DROPOUT_NOT_MEASURED_NO_RANGE,
+  QC_BASIS_NOT_RECORDED,
   NONE_WORD,
   NOT_MEASURABLE_FROM_FILE,
   NOT_STATED_BY_SOURCE,
@@ -23,7 +25,7 @@ import {
   QC_PASSED,
   QC_REASON_WORDS,
 } from "@/copy/embryos/qc";
-import { QUALITY_CHECK_HEADING } from "@/copy/embryos/compare";
+import { QUALITY_CHECK_HEADING, QUALITY_CHECK_TABLE_LABEL } from "@/copy/embryos/compare";
 import type { ComparisonEmbryo, QcDto } from "@/lib/embryos/policy";
 import { mapQcReason } from "@/lib/embryos/qc-policy";
 import { sourceLabelText } from "@/lib/embryos/source-labels";
@@ -84,11 +86,13 @@ export function QcValue({
   qc,
   embryoId,
   subjectId,
+  hasRiskRanges = false,
 }: {
   row: QcTableRow;
   qc: QcDto;
   embryoId: string;
   subjectId: string;
+  hasRiskRanges?: boolean;
 }) {
   const subject = { subjectId };
   switch (row) {
@@ -98,14 +102,18 @@ export function QcValue({
     case "sites_called":
       // inherit-figure-exempt: the count of positions the file could read is a count of objects; the share read renders as the coverage figure
       return <Words>{groupNumber(qc.sites_called)}</Words>;
-    case "call_rate":
-      return <ClaimBlock subject={subject} figures={[coverageSpec(qc)]} className={CELL_BLOCK_CLASS} />;
-    case "mean_depth":
+    case "call_rate": {
+      const spec = coverageSpec(qc);
+      return spec ? <ClaimBlock subject={subject} figures={[spec]} className={CELL_BLOCK_CLASS} /> : <Words>{QC_BASIS_NOT_RECORDED}</Words>;
+    }
+    case "mean_depth": {
       if (qc.mean_depth === null) return <Words>{NOT_MEASURABLE_FROM_FILE}</Words>;
-      return <ClaimBlock subject={subject} figures={[depthSpec(qc.mean_depth)]} className={CELL_BLOCK_CLASS} />;
+      const spec = depthSpec(qc);
+      return spec ? <ClaimBlock subject={subject} figures={[spec]} className={CELL_BLOCK_CLASS} /> : <Words>{QC_BASIS_NOT_RECORDED}</Words>;
+    }
     case "allelic_dropout_estimate": {
       const spec = dropoutSpec(qc, embryoId);
-      if (!spec) return <Words>{DROPOUT_NOT_MEASURED}</Words>;
+      if (!spec) return <Words>{qc.allelic_dropout_estimate === null ? hasRiskRanges ? DROPOUT_NOT_MEASURED : DROPOUT_NOT_MEASURED_NO_RANGE : QC_BASIS_NOT_RECORDED}</Words>;
       return <ClaimBlock subject={subject} figures={[spec]} className={CELL_BLOCK_CLASS} />;
     }
     case "allelic_dropout_method":
@@ -138,8 +146,10 @@ export function QcValue({
       if (RATE_ROWS.has(row)) {
         const value = qc[row] as number | null;
         if (value === null) return <Words>{NOT_MEASURABLE_FROM_FILE}</Words>;
+        const spec = rateSpec(qc, row as "autosomal_het_rate" | "parent_a_concordance" | "parent_b_concordance" | "contamination_estimate");
+        if (!spec) return <Words>{QC_BASIS_NOT_RECORDED}</Words>;
         if (isZeroRate(value)) return <Words>{NONE_WORD}</Words>;
-        return <ClaimBlock subject={subject} figures={[rateSpec(value)]} className={CELL_BLOCK_CLASS} />;
+        return <ClaimBlock subject={subject} figures={[spec]} className={CELL_BLOCK_CLASS} />;
       }
       return null;
     }
@@ -149,12 +159,14 @@ export function QcValue({
 export function QcTable({
   embryos,
   subjectIds,
+  riskRangeEmbryoIds = new Set<string>(),
 }: {
   embryos: readonly ComparisonEmbryo[];
   subjectIds: ReadonlyMap<string, string>;
+  riskRangeEmbryoIds?: ReadonlySet<string>;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="region" aria-label={QUALITY_CHECK_TABLE_LABEL} tabIndex={0}>
       <table data-slot="qc-table" data-card="true" data-compare-surface="true" className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm">
         <thead>
           <tr>
@@ -176,7 +188,7 @@ export function QcTable({
               </th>
               {embryos.map((embryo) => (
                 <td key={embryo.id} className="border-b border-line px-3 py-2 align-top text-ink">
-                  <QcValue row={row} qc={embryo.qc} embryoId={embryo.id} subjectId={subjectIds.get(embryo.id) ?? embryo.id} />
+                  <QcValue row={row} qc={embryo.qc} embryoId={embryo.id} subjectId={subjectIds.get(embryo.id) ?? embryo.id} hasRiskRanges={riskRangeEmbryoIds.has(embryo.id)} />
                 </td>
               ))}
             </tr>

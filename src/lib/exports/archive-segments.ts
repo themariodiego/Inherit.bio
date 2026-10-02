@@ -65,6 +65,12 @@ export type ArchiveSegmentationOptions = {
   /** Durable INSERT-only attempt claim. Refuse an existing attempt, including
    * completed attempts. There is no recovery/adoption argument in this API. */
   beginAttempt: (attempt: ArchiveAttempt, signal: AbortSignal) => Promise<void>;
+  /** Orchestrate complete member planning after the bounded INSERT succeeds.
+   * Every individual source/RPC/transport must retain its existing operation
+   * limit and current-authority checks. The orchestration owns this attempt's
+   * signal and immutable whole-job deadline; it never renews source scope or
+   * writes provider bytes. Source acquisition waits for full successful proof. */
+  prepareSource?: (attempt: ArchiveAttempt, signal: AbortSignal) => Promise<void>;
   /** Created only after authority + attempt claim. Emit chunks <=4,000,000 B;
    * use a bounded producer highWaterMark. A producer error must propagate. */
   source: (signal: AbortSignal) => ReadableStream<Uint8Array>;
@@ -219,6 +225,22 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
     cleanupRequired = true; // A timed-out INSERT may still have committed.
     await operation("metadata", current => options.beginAttempt(attempt, current));
     await check();
+    if (options.prepareSource) {
+      // Planning is a sequence of separately bounded source operations, not
+      // part of the one 30-second durable beginAttempt INSERT. Cancellation or
+      // the original job deadline still closes the attempt even if a trusted
+      // planner ignores its signal; no later source or write may be admitted.
+      let abortPlanning = () => {};
+      const stopped = new Promise<never>((_, reject) => {
+        abortPlanning = () => reject(new ArchiveSegmentationError(Date.now() >= deadline ? "deadline" : "aborted", cleanupRequired));
+        signal.addEventListener("abort", abortPlanning, { once: true });
+      });
+      try {
+        active();
+        const planning = Promise.resolve().then(() => { active(); return options.prepareSource!(attempt, signal); });
+        await Promise.race([planning, stopped]); active(); await check();
+      } finally { signal.removeEventListener("abort", abortPlanning); }
+    }
     reader = options.source(signal).getReader();
     const totalHash = createHash("sha256");
     const metadata = new ArchiveManifestPages(attempt, page => mutation(current => options.appendPage(attempt, page, current)));

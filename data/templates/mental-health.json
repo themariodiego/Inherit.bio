@@ -30,7 +30,7 @@
     "slug": "social-sensitivity-oxtr-rs53576",
     "category": "mental-health",
     "title": "Social response · OXTR",
-    "summary": "OXTR makes the receptor for oxytocin, a hormone involved in social bonds. Small studies link the G copy at rs53576 to slightly higher self-reported empathy on average. They link AA to a somewhat stronger stress response. Other studies did not find the same results, and any effect is small. This is an early research clue, not a measure of personality.",
+    "summary": "One study compared people with GG with pooled AA and AG groups at rs53576. It used empathy tasks, questionnaires and a stress-anticipation task. The group differences do not measure your empathy, personality or stress level.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -155,7 +155,7 @@
     "slug": "bipolar-association-ank3-rs10994336",
     "category": "mental-health",
     "title": "Bipolar · ANK3",
-    "summary": "ANK3 makes ankyrin-G, which helps place ion channels where nerve cells fire. In a broad DNA study, the less common T copy at rs10994336 was linked to higher odds of bipolar disorder. The odds ratio was about 1.45 in the first analysis and smaller in later groups. Like other common psychiatric markers, this change explains very little of the overall likelihood.",
+    "summary": "A combined study compared 4,387 people with bipolar disorder and 6,209 controls. It found links near ANK3 and CACNA1C. These were group associations. One position cannot predict a later case of bipolar disorder or guide your care.",
     "evidence": "emerging",
     "variants": [
       {

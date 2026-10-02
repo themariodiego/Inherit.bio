@@ -54,10 +54,20 @@ import {
   EmbryoIngestAbandonedEmail,
   type EmbryoIngestAbandonedProps,
 } from "@/emails/embryo-ingest-abandoned";
+import { FuturePersonReleaseEmail,type FuturePersonReleaseProps } from "@/emails/future-person-release";
+import { FuturePersonMoreInformationEmail } from "@/emails/future-person-more-information";
+import { FuturePersonOwnerNoticeEmail, type FuturePersonOwnerNoticeProps } from "@/emails/future-person-owner-notice";
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
+import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
+  type AccountDeletionAffectedProps, type AccountDeletionAffectedCancelledProps } from "@/emails/account-deletion-affected";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
+  "account-deletion-affected": AccountDeletionAffectedProps;
+  "account-deletion-affected-cancelled": AccountDeletionAffectedCancelledProps;
+  "future-person-more-information": Record<string, never>;
+  "future-person-release":FuturePersonReleaseProps;
+  "future-person-owner-notice": FuturePersonOwnerNoticeProps;
   "report-ready": ReportReadyProps;
   "research-digest": ResearchDigestProps;
   "account-deletion-notice": AccountDeletionNoticeProps;
@@ -86,6 +96,11 @@ export type MailTemplate = {
 const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
+  "account-deletion-affected": (payload) => createElement(AccountDeletionAffectedEmail, payload),
+  "account-deletion-affected-cancelled": (payload) => createElement(AccountDeletionAffectedCancelledEmail, payload),
+  "future-person-more-information": () => createElement(FuturePersonMoreInformationEmail),
+  "future-person-release":(payload)=>createElement(FuturePersonReleaseEmail,payload),
+  "future-person-owner-notice": (payload) => createElement(FuturePersonOwnerNoticeEmail, payload),
   "report-ready": (payload) => createElement(ReportReadyEmail, payload),
   "research-digest": (payload) => createElement(ResearchDigestEmail, payload),
   "account-deletion-notice": (payload) =>
@@ -115,6 +130,11 @@ const renderers: {
 // Subjects are fixed per template. The Record Key addendum is the one
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
+  "account-deletion-affected": "Records held on Inherit will be deleted",
+  "account-deletion-affected-cancelled": "A record deletion request on Inherit was cancelled",
+  "future-person-more-information": "We need more information about your Inherit request",
+  "future-person-release":"Your Inherit request is ready",
+  "future-person-owner-notice": "A claim needs your review on Inherit",
   "report-ready": "Your Inherit reports are ready",
   "research-digest": "New reports in the Inherit research library",
   "account-deletion-notice": "Your Inherit account deletion is scheduled",
@@ -184,7 +204,7 @@ export async function submitMail(
   const html = await renderMail(mail);
 
   const { data, error } = await resend.emails.send(
-    { from: from(), to, subject, html },
+    { from: from(), to, subject, html, ...(mail.id === "future-person-more-information" ? { replyTo: "privacy@inherit.bio" } : {}) },
     { idempotencyKey },
   );
   if (error || !data?.id) throw new Error("mail_provider_rejected");

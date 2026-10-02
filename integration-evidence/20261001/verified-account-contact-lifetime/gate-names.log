@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:names /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/name-gate.ts
+
+name gate passed: 2827 files, 1728 post-baseline commits, 16 providers, 102 allowed names, 1 private denylist entries

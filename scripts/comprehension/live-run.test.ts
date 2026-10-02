@@ -42,14 +42,14 @@ describe("a live run through the shared conductor", () => {
   it("runs isolated stub processes, records every answer and skip as it completes, and never claims evidence", async () => {
     const effort = await temporary("inherit-comprehension-effort-"), records = await temporary("inherit-comprehension-records-");
     const journal = await InstrumentJournal.open(effort, 1_000_000, 0, "dry");
-    const skips = seedSkips().filter(skip => skip.taskId === "T6");
-    expect(skips[0].reason).toMatch(/^participant-c cannot be seeded: No embryo file path exists/);
+    const skips = seedSkips().filter(skip => skip.taskId === "T7");
+    expect(skips[0].reason).toMatch(/^T7 cannot be run: No approved producer/);
     const manifest = createLiveManifest(inputs, { kind: "calibration", runId: "calibration-a", revision: "a".repeat(40),
-      samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T6"], personaIds: inputs.personas.slice(0, 2).map(persona => persona.id),
+      samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T7"], personaIds: inputs.personas.slice(0, 2).map(persona => persona.id),
       inference: { label: STUB_LABEL, provider: "local-deterministic-stub" }, modelIdentity: "local-deterministic-stub", build,
       skipped: skips, blockers: [] });
     expect(manifest.qualifyingEvidence).toBe(false);
-    expect(manifest.blockers).toEqual(["T6-skipped", "calibration-is-not-a-full-run", "stub-provider-is-not-evidence"].sort());
+    expect(manifest.blockers).toEqual(["T7-skipped", "calibration-is-not-a-full-run", "stub-provider-is-not-evidence"].sort());
     const record = await RunRecord.create({ root: records, date: "2026-09-28", manifest, inputs, header, modelIdentifier: null });
     const result = await runLive({ manifest, inputs, journal, modelIdentity: "local-deterministic-stub", onSession: outcome => record.append(outcome),
       environment: { kind: "live-local-build", openBrowser: fakeBrowsers(), openProcess: isolatedProcesses({ kind: "local-deterministic-stub" }) } });
@@ -57,7 +57,7 @@ describe("a live run through the shared conductor", () => {
     await journal.close();
     expect(result).toMatchObject({ status: "completed", qualifyingEvidence: false, assessment: undefined });
     const lines = (await readFile(path.join(record.directory, "responses.jsonl"), "utf8")).trimEnd().split("\n").map(line => JSON.parse(line));
-    expect(lines.map(line => `${line.taskId}:${line.status}`)).toEqual(["T1:answered", "T1:answered", "T6:skipped", "T6:skipped"]);
+    expect(lines.map(line => `${line.taskId}:${line.status}`)).toEqual(["T1:answered", "T1:answered", "T7:skipped", "T7:skipped"]);
     const answered = lines[0];
     expect(answered).toMatchObject({ completed: true, actions: 1, path: ["/overview", "/genome/me/reports/type-2-diabetes-tcf7l2-rs7903146"],
       deterministic: { class: null, hit: null } });
@@ -165,6 +165,8 @@ describe("the stopping rule over committed full runs", () => {
     expect(status.met).toBe(false);
     expect(status.fullRuns[1].qualifying).toBe(false);
     expect(status.fullRuns[1].failures).toContain("T6: 30/30 skipped, not answered: blocked");
+    expect(status.fullRuns[1].failures).toContain("blocker: T6-skipped");
+    expect(status.fullRuns[1].failures).toContain("T7: 30/30 skipped, not answered: blocked");
     expect(status.fullRuns[1].failures).toContain("blocker: T7-skipped");
   });
 

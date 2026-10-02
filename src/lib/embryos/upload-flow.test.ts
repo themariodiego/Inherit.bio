@@ -64,7 +64,9 @@ describe("the upload flow", () => {
 
   it("holds nothing from the free-text question", () => {
     const state = run(TO_SENT);
-    expect(Object.keys(state)).toEqual(["screen", "tested", "sent", "situation", "attested", "basis"]);
+    // `ingest` is the deployment's own flag (TEST-LOCAL), set before any answer; it holds nothing typed.
+    expect(Object.keys(state)).toEqual(["screen", "tested", "sent", "situation", "attested", "basis", "ingest"]);
+    expect(typeof state.ingest).toBe("boolean");
   });
 
   it("treats the four options and the secondary link as actions: a PDF lands on its refusal, the rest go to step 2", () => {
@@ -148,6 +150,19 @@ describe("the upload flow", () => {
       expect(budget.interactives + SHELL_INTERACTIVES, screen).toBeLessThanOrEqual(MAXIMUM_INTERACTIVES_PER_SCREEN);
       expect(budget.primaries, screen).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("where ingest is built (TEST-LOCAL), continues from the named basis to the draft screen of step 2 instead", () => {
+    const named = run([...TO_BASIS, { type: "choose-basis", basis: "two-evidenced-parents" }], { ...INITIAL_FLOW, ingest: true });
+    const draft = reduceFlow(named, { type: "continue" });
+    expect(draft.screen).toBe("draft");
+    expect(stepOf(draft.screen)).toBe(2);
+    expect(canContinue(draft)).toBe(false);
+    expect(reduceFlow(draft, { type: "continue" })).toBe(draft);
+    expect(reduceFlow(draft, { type: "back" }).screen).toBe("basis-named");
+    // The production default still ends on the honest terminal.
+    expect(INITIAL_FLOW.ingest).toBe(false);
+    expect(reduceFlow({ ...named, ingest: false }, { type: "continue" }).screen).toBe("unavailable");
   });
 
   it("ends on the unavailable screen exactly while ingest is unavailable", () => {

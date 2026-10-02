@@ -87,10 +87,14 @@ jobs:
         run: pnpm gate:routes
       - name: Claims and provenance gate
         run: pnpm gate:claims
+      - name: Non-template citation surface gate
+        run: pnpm gate:citations
       - name: Environment template gate
         run: pnpm gate:env
       - name: Jurisdiction review gate
         run: pnpm gate:jurisdictions
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys
@@ -101,6 +105,10 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
       - name: Database tests (pgTAP)
         run: pnpm exec supabase test db
+      - name: Plan the actual browser claim review read proof against current schema
+        run: pnpm test:claim-review-fixture-sql
+      - name: Source file privacy under chronological and deployed migration order
+        run: pnpm test:source-file-policy-order
       - name: Invitation transition locks (independent database sessions)
         run: pnpm test:invitation-locks
       - name: Seed local Supabase
@@ -199,8 +207,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
       - name: Start this job's fresh local Supabase
         run: pnpm exec supabase start
+      - name: Plan the actual browser claim review read proof before seed and build
+        run: pnpm test:claim-review-fixture-sql
       - name: Export this job's local Supabase keys
         run: |
           eval "$(pnpm exec supabase status -o env)"
@@ -223,7 +235,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browser-case-${{ github.run_attempt }}-shard-${{ matrix.shard }}
-          path: test-results/ci-browser-shard.json
+          path: |
+            test-results/ci-browser-shard.json
+            test-results/embryo-qc-seed.json
           retention-days: 14
           if-no-files-found: error
       - name: Keep safe failing browser evidence
@@ -275,3 +289,11 @@ jobs:
           path: ci-browser-coverage
       - name: Require exact expected, assigned and executed case equality
         run: pnpm exec tsx scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage
+
+      - name: Keep only verified synthetic QC differencing evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: embryo-qc-two-seed-${{ github.run_attempt }}
+          path: test-results/embryo-qc-two-seed.json
+          if-no-files-found: error
+          retention-days: 14
