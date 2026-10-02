@@ -103,7 +103,10 @@ select is((select count(*) from public.future_person_claim_notices
   where claim_id=(select review from keyless_ids)),0::bigint,'refusal emits no owner notice');
 select is((select count(*) from public.future_person_claim_review_packages
   where claim_id=(select review from keyless_ids)),0::bigint,'refusal retains no comparison package');
-select is((select account_contacts from owner_contact_diagnostic),0::bigint,
+select is((select count(*) from public.encrypted_contact_references contact
+  join owner_contact_diagnostic scope on scope.account_principal_id=contact.principal_id
+  where contact.status='current' and contact.contact_ciphertext is not null
+    and contact.authority_revision=scope.principal_revision),0::bigint,
   'the diagnostic did not transplant or manufacture an account contact');
 select * from finish();
 rollback;
