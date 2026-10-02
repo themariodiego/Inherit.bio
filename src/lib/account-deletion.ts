@@ -33,7 +33,7 @@ export async function getSensitiveAccountContext(): Promise<
   return getSensitiveAccountContextFromClient(supabase);
 }
 
-/** Share the exact ordinary parallel SDK calls with an owner-operated fixture.
+/** Share the exact ordinary parallel SDK calls with an owner-operated check.
  * The caller must supply an actual SDK client; this does not grant authority,
  * check MFA or replace the consuming SQL's real sensitive-session checks. */
 export async function getSensitiveAccountContextFromClient(
