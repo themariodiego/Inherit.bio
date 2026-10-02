@@ -8506,3 +8506,25 @@ are needed. The application migration remains byte exact at the qualified 228
 source. Only a new reviewed seven-suite rollback harness is proposed; there is
 no application DDL, migration replay or dependency recreation. Native proof,
 scientific disclosure presentation and acceptance remain held.
+
+## Carrier complete-set reference fixture keys · 2 October 2026
+
+The first worker suite passed all 85 contiguous assertions. The second suite
+reached 47 checks, then its synthetic reference import raised `invalid_request`.
+The fixture assigned two conditions the same gene and repeated one exact allele
+key within the same release. Both violate unchanged native importer constraints;
+the importer catches uniqueness violations under that refusal. Its full actual
+definition and relation constraints remain retained with the original failure.
+
+Only this complete-set suite's reference setup changes. A temporary condition
+map supplies `SYNTHGENE` and `SYNTHGENE2` consistently to conditions, assertions
+and registry entries. The second condition's reviewed key becomes 1:1000 A>C,
+distinct from the first condition's 1:1000 A>G. The original published haploid
+call remains ALT G and genotype G. Both the TypeScript core and independent SQL
+measurement refuse its unsupported shape before matching the reviewed ALT, so
+its existing `invalid_calls` persistence assertion keeps the same meaning.
+Every original assertion, published source fixture and all other suites remain
+byte exact. No importer, application migration, scientific guard or expected
+result changes. The new seven-suite runner must first match the complete actual
+application and installed dependency baseline. No application DDL or dependency
+recreation is proposed. Native proof, publication and acceptance remain held.

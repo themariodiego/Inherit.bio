@@ -16,27 +16,31 @@ select is((select count(*) from public.worker_jobs where kind='score_embryo' and
 select is(public.embryo_carrier_worker_v1('reconcile',null,null,repeat('d',64),'{"afterCohortId":null}',true),
  '{"status":"held","reason":"no_registered_conditions"}'::jsonb,'empty admission reads no recovery inventory');
 
+-- Match the unchanged importer: one condition per gene and one exact allele
+-- key per release. Both assertions at position 1000 retain their own key.
+create temporary table reviewed_conditions(condition_id text primary key,gene_symbol text not null unique);
+insert into reviewed_conditions values('SYNTHETIC:1','SYNTHGENE'),('SYNTHETIC:2','SYNTHGENE2');
 create temporary table reviewed_alleles(condition_id text,variation_id integer,chrom integer,pos integer,ref text,alt text);
 insert into reviewed_alleles values('SYNTHETIC:1',1,1,1000,'A','G'),('SYNTHETIC:1',2,7,3000,'T','C'),
- ('SYNTHETIC:1',3,1,1001,'A','G'),('SYNTHETIC:1',4,13,4000,'A','G'),('SYNTHETIC:2',5,1,1000,'A','G');
+ ('SYNTHETIC:1',3,1,1001,'A','G'),('SYNTHETIC:1',4,13,4000,'A','G'),('SYNTHETIC:2',5,1,1000,'A','C');
 select public.import_clinical_assertion_release_v1(jsonb_build_object(
  'release',jsonb_build_object('releaseId','synthetic-embryo-worker','source','synthetic',
  'sourceUrl','https://example.invalid/carrier-worker','sourceSha256',repeat('a',64),'sourceBytes',1,
  'sourcePublishedOn','2026-10-02','retrievedAt','2026-10-02T00:00:00Z','extractSha256',repeat('b',64),
  'geneValidityUrl','https://example.invalid/synthetic-gene-validity','geneValiditySha256',repeat('c',64),'geneValidityCreatedOn','2026-10-02'),
- 'conditions',(select jsonb_agg(jsonb_build_object('conditionId',id,'conditionName','Synthetic carrier '||id,
-  'geneSymbol','SYNTHGENE','inheritanceMode','autosomal_recessive','geneValidityClassification','Definitive',
-  'geneValidityClassifiedOn','2026-10-02','geneValidityUrl','https://example.invalid/synthetic-gene-validity') order by id)
-  from (values('SYNTHETIC:1'),('SYNTHETIC:2')) condition(id)),
- 'assertions',(select jsonb_agg(jsonb_build_object('variationId',variation_id,'conditionId',condition_id,'geneSymbol','SYNTHGENE',
+ 'conditions',(select jsonb_agg(jsonb_build_object('conditionId',condition_id,'conditionName','Synthetic carrier '||condition_id,
+  'geneSymbol',gene_symbol,'inheritanceMode','autosomal_recessive','geneValidityClassification','Definitive',
+  'geneValidityClassifiedOn','2026-10-02','geneValidityUrl','https://example.invalid/synthetic-gene-validity') order by condition_id)
+  from reviewed_conditions),
+ 'assertions',(select jsonb_agg(jsonb_build_object('variationId',variation_id,'conditionId',condition_id,'geneSymbol',gene_symbol,
   'variantName','Synthetic reviewed allele '||variation_id,'classification','Pathogenic','reviewStatus','reviewed by expert panel',
   'reviewStars',3,'conflict',false,'lastEvaluated',null,'grch38',jsonb_build_array(chrom,pos,ref,alt),'grch37',null,
-  'grch38Equivalents','[]'::jsonb) order by variation_id) from reviewed_alleles)));
+  'grch38Equivalents','[]'::jsonb) order by variation_id) from reviewed_alleles join reviewed_conditions using(condition_id))));
 select public.review_carrier_condition_v1(id,1,'activate','Synthetic reviewer','Synthetic test role',
  'supabase/tests/embryo_carrier_complete_set.sql','not_serious') from (values('SYNTHETIC:1'),('SYNTHETIC:2')) condition(id);
 insert into public.condition_registry(condition_id,condition_name,category,phenotype_class,inheritance_mode,active,
- registry_revision,citation_ids,gene_symbols) select id,'Synthetic carrier '||id,'Having children',
- 'synthetic','autosomal_recessive',true,1,'{}','{SYNTHGENE}' from (values('SYNTHETIC:1'),('SYNTHETIC:2')) condition(id);
+ registry_revision,citation_ids,gene_symbols) select condition_id,'Synthetic carrier '||condition_id,'Having children',
+ 'synthetic','autosomal_recessive',true,1,'{}',array[gene_symbol] from reviewed_conditions;
 create temporary table synthetic_registry as select jsonb_set(private.embryo_carrier_registry_v1(),'{conditions}',
  (select jsonb_agg(jsonb_build_object('condition_id',id,'condition_name','Synthetic carrier '||id,'category','Having children',
  'permitted_result_kinds','["carrier_status"]'::jsonb,'risk_model_id',null,'enabled_by_default',true) order by id)

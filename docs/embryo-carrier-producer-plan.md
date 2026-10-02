@@ -247,6 +247,18 @@ reviewed seven-suite rollback runner must first compare the complete actual
 application/dependency predecessor and must issue no application DDL or replay.
 Native proof and all clinical publication remain held.
 
+The strict worker suite has now passed all 85 checks. The complete-set suite
+stopped after 47 checks while importing its synthetic reference: two conditions
+shared one gene and one release repeated an exact allele key, violating the
+native import contract. The source-only fixture successor assigns distinct
+synthetic genes consistently and uses A>C for the second condition's reviewed
+key at the existing 1:1000 locus. The genuine haploid ALT G/genotype G source
+and every assertion remain unchanged; unsupported shape still refuses before
+allele matching in both the core and SQL. The importer and application source
+remain exact. All seven suites must run again after full current application
+and installed-dependency baseline checks in the same owned clone. No migration
+replay, dependency installation, native proof or clinical publication is implied.
+
 ## Presentation prerequisite
 
 The current carrier cell displays a three-state label but lacks the brief's
