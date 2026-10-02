@@ -56,9 +56,16 @@ interface NameFixture {
   textParts: string[];
 }
 
+export interface ExternalHostFixture {
+  path: string;
+  url: string;
+  reason: string;
+}
+
 interface NameFixtures {
   schemaVersion: number;
   cases: NameFixture[];
+  externalHostFixtures?: ExternalHostFixture[];
 }
 
 export interface NameFinding {
@@ -226,6 +233,7 @@ export function scanExternalHosts(
   text: string,
   relativePath: string,
   allowed: ResolvedAllowedName[],
+  fixtures: ExternalHostFixture[] = [],
 ): NameFinding[] {
   const findings: NameFinding[] = [];
   const expression = /https?:\/\/([^\s/"'<>`)]+)/g;
@@ -247,7 +255,14 @@ export function scanExternalHosts(
       // Retain existing source-template handling; unparsed literal authorities
       // cannot borrow an allowed suffix after a backslash or invalid port.
       (!authority.includes("\\") && /[${}]/.test(authority)) ||
-      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed, lineText)))
+      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed, lineText))) ||
+      // Exact quoted negative-test literals only. Never an outbound permission
+      // or a public alias: other paths, URLs and commit messages still fail.
+      (parsed && fixtures.some(fixture =>
+        (fixture.path === relativePath || (relativePath === FIXTURES_PATH
+          && lineText.trim() === `"url": ${JSON.stringify(fixture.url)},`))
+        && text.slice((match.index ?? 0) - 1, (match.index ?? 0) + fixture.url.length + 1)
+          === JSON.stringify(fixture.url)))
     ) {
       continue;
     }
@@ -472,6 +487,47 @@ function scanCommitMessages(
   return { findings, commitCount };
 }
 
+export function validateExternalHostFixtures(value: unknown, repositoryRoot: string): {
+  fixtures: ExternalHostFixture[]; failures: string[];
+} {
+  if (value === undefined) return { fixtures: [], failures: [] };
+  if (!Array.isArray(value)) return { fixtures: [], failures: ["external-host fixtures must be an array"] };
+  const failures: string[] = [], fixtures: ExternalHostFixture[] = [], seen = new Set<string>();
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)
+      || Object.keys(entry).sort().join(",") !== "path,reason,url"
+      || typeof entry.path !== "string" || typeof entry.url !== "string" || typeof entry.reason !== "string") {
+      failures.push("external-host fixture must contain only path, url and reason strings"); continue;
+    }
+    const fixture = entry as ExternalHostFixture;
+    const key = `${fixture.path}\n${fixture.url}`;
+    const safePath = /^(?:scripts\/[a-z0-9-]+\.test\.ts|e2e\/[a-z0-9-]+\.spec\.ts)$/.test(fixture.path);
+    if (!safePath) {
+      failures.push("external-host fixture path must be one exact test file");
+    }
+    let canonical = false;
+    try {
+      const url = new URL(fixture.url);
+      canonical = url.protocol === "https:" && url.href === fixture.url && !url.username && !url.password
+        && !url.search && !url.hash && url.pathname !== "/";
+    } catch { /* malformed declarations fail below */ }
+    if (!canonical) failures.push("external-host fixture must be one canonical HTTPS URL with its exact path");
+    if (fixture.reason.trim().length < 20 || /[\r\n]/.test(fixture.reason)) {
+      failures.push("external-host fixture reason must be one substantive line");
+    }
+    if (seen.has(key)) failures.push("external-host fixtures must be unique");
+    seen.add(key);
+    const absolute = path.join(repositoryRoot, fixture.path);
+    if (safePath && (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()
+      || !fs.readFileSync(absolute, "utf8").includes(JSON.stringify(fixture.url)))) {
+      failures.push("external-host fixture must name an existing exact quoted test literal");
+    }
+    fixtures.push(fixture);
+  }
+  // An invalid register never grants even its otherwise valid entries.
+  return { fixtures: failures.length ? [] : fixtures, failures: [...new Set(failures)] };
+}
+
 function runFixtureSelfTest(fixtures: NameFixtures): string[] {
   const failures: string[] = [];
   if (fixtures.schemaVersion !== 1 || fixtures.cases.length < 2) {
@@ -505,7 +561,8 @@ export function runNameGate(repositoryRoot: string) {
   ) as NameFixtures;
   const denylist = readDenylist(repositoryRoot);
   const validation = validateAllowlist(allowlist, providers, repositoryRoot);
-  const failures = [...denylist.failures, ...validation.failures, ...runFixtureSelfTest(fixtures)];
+  const externalFixtures = validateExternalHostFixtures(fixtures.externalHostFixtures, repositoryRoot);
+  const failures = [...denylist.failures, ...validation.failures, ...runFixtureSelfTest(fixtures), ...externalFixtures.failures];
   if (evaluative.schemaVersion !== 1 || evaluative.tokens.length === 0) {
     failures.push("evaluative token register is empty or invalid");
   }
@@ -523,7 +580,7 @@ export function runNameGate(repositoryRoot: string) {
     const text = buffer.toString("utf8");
     findings.push(...scanDenylist(relativePath, relativePath, denylist.entries));
     findings.push(...scanDenylist(text, relativePath, denylist.entries));
-    findings.push(...scanExternalHosts(text, relativePath, validation.allowed));
+    findings.push(...scanExternalHosts(text, relativePath, validation.allowed, externalFixtures.fixtures));
     findings.push(...scanOrganisationShapes(text, relativePath, validation.allowed));
     findings.push(
       ...scanEvaluativeProximity(

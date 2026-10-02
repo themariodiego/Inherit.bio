@@ -1,5 +1,14 @@
 # Test diff register
 
+## 2026-10-02 — Register exact privacy-refusal test literals without public host aliases
+
+The combined 843c00f7 name gate retained three actual failures: an empty local private-denylist input and the two literal external hosts in the new keyless audit's tracker and rendered-payment negative cases. Preserve the original failed log. The private denylist still must contain entries; no empty-input exception is added.
+
+Declare only those two existing exact quoted URLs and their single test-file path in the existing synthetic fixture register. This is name classification for negative source literals, not permission to connect. Do not add either host to the public alias list. Every other file, commit message, subdomain, sibling URL, query, fragment, unquoted value and malformed declaration remains refused; the register itself may contain only its exact structured URL declarations. An invalid register grants no entries. Private-name scanning remains independent and authoritative over the original text.
+
+Keep the complete keyless origin/privacy tests, generic hostname scanner, existing provider carve-out and every original name-gate assertion. Appended policy cases prove the precise declaration boundary and private-denylist parity. No application, browser journey, origin permission, CI workflow, deadline, skip, retry or acceptance change; full qualification remains separate.
+
+
 ## 2026-10-02 — Declare the isolated owner-notice journey's privacy audit origin
 
 Exact hosted run 37039144207 at 32b33170 passed repository checks and browser groups 1, 2, 3, 4 and 6. Browser group 5 passed 104 other cases and failed this journey only at its final network audit: the main-port sweep helper treated the journey's own fixed http://localhost:3105 page, local fonts and app chunks as third party. All preceding document-read, no-referrer, zero-receipt, delivery, real notice deadline, release refusal, source and sibling assertions passed. The complete original failed-job log, artifact ZIP and source hashes remain privately preserved.
