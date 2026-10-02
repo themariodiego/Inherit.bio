@@ -61,7 +61,10 @@ create function pg_temp.carrier(op text,payload jsonb default null) returns json
  select public.embryo_carrier_worker_v1(op,case when op='claim' then null else (select (body->>'jobId')::uuid from pg_temp.carrier_queue) end,
  case when op='claim' then null else 1 end,pg_temp.carrier_token(),payload,true);$$;
 grant select on carrier_queue to service_role;
-grant usage on schema pg_temp to service_role;
+select ok(pg_catalog.pg_my_temp_schema()<>0
+ and not pg_catalog.pg_is_other_temp_schema(pg_catalog.pg_my_temp_schema())
+ and has_schema_privilege('service_role',pg_catalog.pg_my_temp_schema(),'usage'),
+ 'service test helpers use the existing own-session temporary namespace');
 grant execute on function pg_temp.carrier_token(),pg_temp.carrier(text,jsonb) to service_role;
 set local role service_role;
 create temporary table carrier_claim as select pg_temp.carrier('claim') body;

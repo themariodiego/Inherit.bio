@@ -46,7 +46,10 @@ create or replace function private.embryo_carrier_registry_v1() returns jsonb la
 
 -- No enqueue hint: the actual service worker recovers directly from durable
 -- publication/grant/source state, including a lost request/process after commit.
-grant usage on schema pg_temp to service_role;
+select ok(pg_catalog.pg_my_temp_schema()<>0
+ and not pg_catalog.pg_is_other_temp_schema(pg_catalog.pg_my_temp_schema())
+ and has_schema_privilege('service_role',pg_catalog.pg_my_temp_schema(),'usage'),
+ 'service recovery uses the existing own-session temporary namespace');
 set local role service_role;
 create temporary table recovery as select public.embryo_carrier_worker_v1('reconcile',null,null,repeat('d',64),
  '{"afterCohortId":null}',true) body;

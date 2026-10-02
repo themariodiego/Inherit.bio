@@ -8484,3 +8484,25 @@ publication and acceptance remain held.
 The 65 unchanged primitive cases and three existing policy/source-pin cases
 pass on this correction. Readability and exact SQL fixture include gates pass.
 The six new native capture assertions await the reviewed database run.
+
+## Carrier test helper temporary-namespace access · 2 October 2026
+
+The reviewed one-function update committed, and its complete actual source-derived
+successor plus all dependency records matched. The first worker suite reached
+52 contiguous passing checks, including genuine complete mixed-QC capture, then
+stopped at `GRANT USAGE ON SCHEMA pg_temp`. PostgreSQL's schema GRANT resolves a
+literal namespace name; `pg_temp` is the current session's temporary alias. The
+actual failure and every original output remain retained. No suite completed.
+
+Only the invalid schema GRANT setup statement in each of the two new carrier
+suites changes. Each now positively proves that the existing temporary namespace
+OID belongs to this session and that service_role already has USAGE. It grants
+no namespace permission and creates no permanent schema. Existing temporary
+object SELECT/EXECUTE grants, invoker helper bodies, service-role execution,
+fixtures and every existing assertion remain unchanged. Each adds one positive
+namespace assertion. pgTAP's observed plan function already grants access to its
+own temporary cache and sequences, so no test dependency or global grant changes
+are needed. The application migration remains byte exact at the qualified 228
+source. Only a new reviewed seven-suite rollback harness is proposed; there is
+no application DDL, migration replay or dependency recreation. Native proof,
+scientific disclosure presentation and acceptance remain held.

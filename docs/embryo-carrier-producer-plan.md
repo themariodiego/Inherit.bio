@@ -231,6 +231,22 @@ A reviewed atomic replacement of only the capture function on the same clone,
 with complete before/source-derived-after metadata equality, remains required.
 The native bridge and clinical publication remain held.
 
+The reviewed native-status one-function correction committed and its complete
+actual successor matched the source-derived expectation: only the full capture
+function definition/body hash changed. Independent full application and
+installed dependency reads passed. The first worker suite reached 52 contiguous
+checks, including complete real mixed-QC capture, then its setup stopped at
+`GRANT USAGE ON SCHEMA pg_temp`. This statement treats the session alias as a
+literal permanent namespace name. The test-only successor instead positively
+checks the actual current temporary namespace OID and service-role usage. No
+schema is created or granted. Existing temporary object grants and invoker
+helpers, every original assertion and fixture, and service-role execution remain
+unchanged. The application source and current database stay qualified at 228;
+all seven suites remain unqualified and the original failure is retained. A new
+reviewed seven-suite rollback runner must first compare the complete actual
+application/dependency predecessor and must issue no application DDL or replay.
+Native proof and all clinical publication remain held.
+
 ## Presentation prerequisite
 
 The current carrier cell displays a three-state label but lacks the brief's
