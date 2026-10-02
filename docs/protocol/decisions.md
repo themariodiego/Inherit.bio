@@ -4535,3 +4535,40 @@ prepared import. Every condition remains inactive. This approval does not
 activate a condition: each still requires the owner's signed condition review
 and separate activation approval. No carrier result becomes visible through
 this import alone.
+
+## 2026-10-02 — Owner review tasks and external test services
+
+The owner answered seven clickable questions in chat. These choices set the
+work order and owners. They do not supply a scientific verdict, a legal
+signature, a carrier activation or a production release approval.
+
+- **Codex sets up test services with existing access.** Configure the test
+  file store, self-hosted document scanner and email service where access
+  exists. Give the owner the exact remaining setup steps. Keep restricted
+  flows in TEST-LOCAL and keep production jurisdiction access closed.
+- **Prepare CFTR first, then one carrier condition at a time.** The owner
+  remains the carrier reviewer. Each condition needs its completed written
+  review and separate activation approval. All imported conditions remain
+  inactive until those steps are complete.
+- **Owner setup date: Monday, 5 October 2026.** The owner plans to complete
+  their remaining service setup steps and start the carrier reviews then.
+  This is not a production release date or a completed review.
+- **The owner reviews scientific sources.** This covers report claims and
+  citations. It is separate from carrier-condition reviews. Prepare the
+  source worklist; do not invent quotations or human review verdicts.
+- **Prepare the legal pack while the owner finds a lawyer.** Include the
+  consent texts, unresolved legal wording and jurisdiction review contract.
+  No lawyer has been named. This choice does not authorize contact or
+  substitute for the required professional determinations and signatures.
+- **Give the credential setup guide now.** The comprehension credential
+  belongs in the operator's own shell, never chat, project files or hosting
+  settings. The existing US$50 ceiling and one shared spending journal remain
+  binding. The fixed smoke, calibration and full-run order remains binding.
+- **Delay the human comprehension study.** No facilitator, independent
+  grader, recruitment date or completed result is supplied by this choice.
+  The human study remains a launch requirement. Continue the authorized
+  engineering and automated verification work.
+
+The owner also asked for every further unresolved product-brief decision as
+its own clickable question. First reconcile the old proposal file with the
+dated decisions so that settled or declined choices are not asked again.
