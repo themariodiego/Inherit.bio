@@ -1,5 +1,12 @@
 # Test diff register
 
+
+## 2026-10-03 — Confirmed Path B consumer-array normalization
+
+The held-upload contract already accepts all four consumer-array formats, but its confirmed-file queue admitted only VCF/gVCF and its worker validated only VCF source manifests. The additive array path uses the same current confirmed-revision authority, bounded original reads, exact-claim position ledger, private staging and final publication fence. Literal array calls retain unknown reference/alternate alleles and create no VCF quality rows.
+
+Every original VCF/gVCF worker, native SQL and browser case remains unchanged. Added source and byte-parser tests cover all four formats, build/hash/EOF refusal, duplicate conflicts, liftover limits and stale authority. Added native SQL fixtures qualify database metadata and authority plumbing only; the actual four-format browser journeys must separately exercise real uploaded bytes and the registered normalization/report operators. No array, fresh-database or hosted-browser PASS is inferred from authored tests. Full final-head unit, quality/gates, complete fresh SQL and unchanged full hosted browser qualification remain required. No ancestry, new phenotype, model, evidence level or clinical publication is added.
+
 ## 2026-10-03 — Keep upload pending copy and the rights planted census exact
 
 The complete original local run on 9db3bfdb executed 594 files and 9,661
