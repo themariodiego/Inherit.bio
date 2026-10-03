@@ -4589,3 +4589,52 @@ uncertainty, evidence definition, source attribution and safety statement stays.
 The 60% density rule and the declined redesign stay. Engineering records the
 brief and exact register hash together and adds real report-path assertions;
 focused source checks alone do not prove the full hosted browser result.
+
+
+## 2026-10-03 — Complete hosted database tests before merge
+
+- Owner decision: use the complete hosted database suite before every merge.
+- Local unit tests and quality checks must pass before a draft push. The complete hosted browser suite remains required. This extends the earlier hosted-browser policy to the complete fresh database suite.
+- The guarded production migration rehearsal, dry run, verification and exact-head merge requirements remain in force. No test may be skipped or weakened.
+
+## 2026-10-03 — Stop idle test services when needed
+
+- Owner decision: stop idle test services when local checks need more memory.
+- Preserve their data and existing volumes. Restart each service when needed. This does not authorize production service stops or volume removal.
+
+## 2026-10-03 — Complete production check time limits
+
+- Owner decision: use a 180-second SQL limit and a 190-second connection limit after full local rollback proof.
+- All predecessor, preservation and postchecks remain required. The existing 45-second candidate and its results remain recorded. The new bounded source must be reviewed and rehearsed before production use.
+
+## 2026-10-03 — Account export test file store
+
+- Owner decision: use the existing private R2 store for the account-export test flow.
+- This authorizes test implementation. It does not authorize paid setup or production activation. Current-object and deletion evidence must be established by actual provider operations; retained version history must not be assumed.
+
+## 2026-10-03 — Requester export of their own statement in tests
+
+- Owner decision: allow a requester to export only their own appeal or correction statement in the test flow.
+- Other people's data and reviewer notes remain excluded. This changes the reviewer-only test policy for the requester's own statement only.
+- Use a separately reviewed source successor. Preserve authority checks, original deadlines and legacy opaque fields. No production activation or legal approval follows from this decision.
+
+## 2026-10-03 — Human comprehension study planning
+
+- Owner decision: plan the study with 12 eligible people after the automated comprehension tests pass.
+- A separate person must grade the results. Full release requires the human study to pass.
+- This replaces the earlier instruction to delay study planning. It does not authorize contact with participants.
+
+## 2026-10-03 — Scientific and legal review target
+
+- Owner decision: target 12 October 2026 for the owner's scientific source review and the lawyer's consent review.
+- This is a planning date, not evidence of scientific or legal approval. The owner remains the scientific reviewer and will find the lawyer.
+
+## 2026-10-03 — Private comprehension credential setup target
+
+- Owner decision: complete private credential setup by 5 October 2026 using the supplied guide.
+- Keep the credential out of chat and project files. The spending limit remains US$50. Setup is not yet verified, and no paid run result is credited.
+
+## 2026-10-03 — Mac power for complete local tests
+
+- Owner decision: connect the Mac to power now and keep it connected during complete local tests.
+- Observe stable external power before the next long local run. A clicked answer is not evidence of an actual power connection.

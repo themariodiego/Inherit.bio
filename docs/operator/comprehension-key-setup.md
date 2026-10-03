@@ -58,7 +58,14 @@ The full-round launcher must accept the completed calibration and the
 remaining budget. A skipped task cannot count as a pass. The current embryo
 task holds must be removed through working user flows before qualifying runs.
 
-The human study remains delayed under your 2 October decision.
+On 3 October 2026, the owner approved planning the study with 12 eligible
+participants after the automated tests pass. A separate person must grade the
+results. Full release requires the human study to pass. This replaces the
+earlier instruction to delay study planning. It does not authorize contact
+with participants.
+
+The owner targets private credential setup by 5 October 2026. This is a
+planning date, not proof that setup is complete.
 
 ## 5. Remove the credential after use
 

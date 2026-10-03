@@ -21,9 +21,12 @@ no browser, app or database and creates no hosted execution receipt. Real
 credentials, debug hooks and optional selectors are excluded from its child
 environment. A missing import therefore fails before a hosted run starts.
 The owner approved complete hosted browser verification as the permanent
-policy on 30 September 2026: local units, type checking, lint, all ten gates
-and fresh pgTAP remain required before a draft push; the complete hosted suite
-remains required on the final version before merging or a production change.
+policy on 30 September 2026. On 3 October 2026, the owner extended this policy
+to the complete fresh database suite. Local unit tests, type checking, lint
+and all required quality gates must pass before a draft push. The complete
+hosted database and browser suites must pass on the final commit before
+merging or a production change. The guarded production migration rehearsal,
+dry run and verification remain required. No test may be skipped or weakened.
 
 GitHub increments the run attempt on a rerun. Use **Re-run all jobs** so the
 independent manifest and every shard produce fresh evidence on that attempt.
