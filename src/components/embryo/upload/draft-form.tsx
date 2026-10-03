@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BACK_BUTTON, DRAFT_CONTACTS_STATUS, DRAFT_NOTE, DRAFT_QUESTION_HEADING, EMBRYO_COUNT_LABEL, SAVE_DRAFT_BUTTON, parentEmailLabel } from "@/copy/embryos/upload";
-import { REQUEST_FAILED_STATUS } from "@/copy/embryos/signing";
+import { REQUEST_FAILED_STATUS, SIGNING_STATUS } from "@/copy/embryos/signing";
 import { EMBRYO_COUNT_MAXIMUM, requiredContactCount, type Basis, type UploadSituation } from "@/lib/embryos/basis";
 import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
 import { route } from "@/lib/primary-routes";
@@ -66,6 +66,7 @@ export function DraftForm({ headingId, situation, basis, csrfToken, onBack }: {
           <Button type="submit" size="lg">{SAVE_DRAFT_BUTTON}</Button>
         </div>
       </fieldset>
+      {status === "pending" ? <p role="status" aria-live="polite" data-state="processing" data-slot="draft-status" className="max-w-prose text-sm text-ink">{SIGNING_STATUS}</p> : null}
       {status === "failed" || status === "contacts" ? <p role="alert" className="max-w-prose text-sm text-ink">{status === "contacts" ? DRAFT_CONTACTS_STATUS : REQUEST_FAILED_STATUS}</p> : null}
     </form>
   );

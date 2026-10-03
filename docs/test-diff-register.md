@@ -1,5 +1,18 @@
 # Test diff register
 
+## 2026-10-03 — Native embryo upload pending state and truthful consent registration (proposed)
+
+The 16b17 source has passed the full local unit and quality run; its draft, artifact, invitation, finalize and file requests are present under TEST-LOCAL. Full fresh-database and hosted browser qualification of that source remains outstanding. The expired E0-not-built processing exemption is removed, and the consent exception becomes consent-is-given-here: the exact current signatures are given on this route and missing co-parent evidence keeps its waiting stage. Production remains unavailable. Draft and invitation pending controls gain polite status announcements, without changing requests, authority, outcomes or scientific publication. Two additive audited browser cases hold actual requests before allowing the native response, or abort the actual transport and recover from a fresh current page. All original cases and assertions remain. The required state count becomes 160, proven source-title pairs 151, and the nine scientifically unproven/upload-complete pairs stay nine. One strict planted regression rejects restoration of the former processing exemption. Every resulting commit requires the full local unit and quality checks, full fresh-database checks and the complete hosted browser suite on the exact final source; source titles provide no acceptance credit.
+
+Former processing rationale (retained verbatim):
+
+> TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13.
+
+Former consent rationale (retained verbatim):
+
+> TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs — `consent.upload-embryo` and `attestation.embryo-parentage` — are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.
+
+
 ## 2026-10-03 — Require the real rights-session pending choice
 
 The processing exemption on rights.withdraw still described the removed plain

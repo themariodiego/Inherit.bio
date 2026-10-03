@@ -60,6 +60,7 @@
     "/embryos/compare processing",
     "/embryos/request-data complete",
     "/embryos/request-data jurisdiction-unavailable",
+    "/embryos/upload processing",
     "/embryos/upload jurisdiction-unavailable",
     "/family complete",
     "/family empty",

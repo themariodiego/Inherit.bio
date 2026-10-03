@@ -156,13 +156,25 @@ describe("the route gate holds the register to the code", () => {
     // 156 -> 158: the named-reviewer page adds its complete and processing pairs. These
     // authored titles are statically counted; hosted CI must execute them.
     // 158 -> 159: the actual session-based adult form requires and proves its pending choice.
-    expect(result.requiredStateCount).toBe(159);
+    // 159 -> 160: E0 is built under TEST-LOCAL; the actual draft/invitation pending state is required; authored case must run in full hosted CI.
+    expect(result.requiredStateCount).toBe(160);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
     // redirects, none gone. Pinned exactly, so a route quietly leaving the
     // ledger fails here rather than reading as a cleaner product.
     expect(result.preExistingRouteCount).toBe(34);
+  });
+
+  it("fails when the retired E0 processing waiver is restored after the actual upload pending proof", async () => {
+    const root = plant({ register: register => {
+      const entry = (register.routes as Route[]).find(route => route.id === "embryos.upload")!;
+      (entry as Route & { notApplicableStates: Record<string, string> }).notApplicableStates.processing = "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13.";
+    } });
+    const result = await runRouteGate(root);
+    expect(result.failures).toEqual([
+      "proven route state: recorded in docs/route-divergence.json but no longer present: /embryos/upload processing",
+    ]);
   });
 
   /**
