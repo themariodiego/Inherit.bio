@@ -219,7 +219,7 @@ export const INVITE_LEDE =
   "They sign in their own account. Type the address you gave when you made the record.";
 
 export const SEND_INVITATION_BUTTON = "Send the invitation";
-export const SEND_INVITATION_PENDING_STATUS = "Sending the invitation…";
+export const SEND_INVITATION_PENDING_STATUS = "Saving the invitation…";
 
 export const INVITATION_SENT_STATUS = "If that address is right, Inherit will send the invitation.";
 

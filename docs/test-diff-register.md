@@ -1,5 +1,36 @@
 # Test diff register
 
+## 2026-10-03 — Keep upload pending copy and the rights planted census exact
+
+The complete original local run on 9db3bfdb executed 594 files and 9,661
+tests: 592 files and 9,659 tests passed, with exactly two failures. The raw
+failed log is retained at embryo-upload-9db3-local-complete-actual/full-unit-linux.log
+(SHA-256 07365ac673cad5a24f24d61e23bb2c7c007daebd4b664d07d7b123fbd31c5bbd).
+The unit command exited 1 after 424.603 seconds; none of the 15 host quality
+checks executed. This is no full local, fresh database or hosted qualification.
+
+The rights-session planted restoration still expected exactly 158 required
+states. The current register requires 160 after the upload processing obligation
+was added; restoring only the rights processing waiver removes one, so its
+closed expected total is exactly 159. Change only that assertion from 158 to
+159. The exact planted waiver, required 160 baseline, failure array and every
+other original assertion remain unchanged. The gate still rejects the same
+removed plain-form exemption; no route, state or browser evidence is waived.
+
+The vocabulary check rejects 'sending' in the original pending copy,
+"Sending the invitation…". Replace only that string with
+"Saving the invitation…": saving, the and invitation are already registered
+plain words. The actual pending form waits for the database invitation request
+and queued mail record, before its native 202 receipt; the new sentence claims
+no completed send or delivery. No vocabulary exemption or test assertion changes.
+The same export, pending controls, request, native receipt, fresh readback and
+all browser assertions remain exact and consume the copy from its one home.
+
+Full 594-file units with at least 9,661 actual passing cases, all 15 local
+quality checks, full fresh-database checks and the complete hosted browser suite
+on the final successor remain required. Every failed output and the owned
+failed-run lease are preserved until the separately reviewed exact handoff.
+
 ## 2026-10-03 — Native embryo upload pending state and truthful consent registration (proposed)
 
 The 16b17 source has passed the full local unit and quality run; its draft, artifact, invitation, finalize and file requests are present under TEST-LOCAL. Full fresh-database and hosted browser qualification of that source remains outstanding. The expired E0-not-built processing exemption is removed, and the consent exception becomes consent-is-given-here: the exact current signatures are given on this route and missing co-parent evidence keeps its waiting stage. Production remains unavailable. Draft and invitation pending controls gain polite status announcements, without changing requests, authority, outcomes or scientific publication. Two additive audited browser cases hold actual requests before allowing the native response, or abort the actual transport and recover from a fresh current page. All original cases and assertions remain. The required state count becomes 160, proven source-title pairs 151, and the nine scientifically unproven/upload-complete pairs stay nine. One strict planted regression rejects restoration of the former processing exemption. Every resulting commit requires the full local unit and quality checks, full fresh-database checks and the complete hosted browser suite on the exact final source; source titles provide no acceptance credit.

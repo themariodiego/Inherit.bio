@@ -1135,7 +1135,7 @@ describe("the current rights session processing contract", () => {
       };
     } });
     const result = await runRouteGate(root);
-    expect(result.requiredStateCount).toBe(158);
+    expect(result.requiredStateCount).toBe(159);
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);
