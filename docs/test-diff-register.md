@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-03 — Author verified archive readback and permanent fence checks
+
+Add 38 synthetic verified-segment writer cases and 12 synthetic permanent-fence
+callback cases. The writer checks exact immutable metadata, conditional full
+readback, EOF, hash and count, authority rechecks, and bounded cancellation.
+The fence cases cover immutable reservation binding, foreign history refusal
+before mutation, owned version inventories and deletion, marker EOF proof,
+late responses and cancellation. The existing source contracts and every
+original test assertion remain unchanged; the two files enter the original
+full Vitest discovery without selectors, skips or waivers.
+
+These 50 cases are authored but have not run on this integration. Injected
+transports and synthetic callbacks provide no live provider, conditional
+commit, permanent fence, physical deletion, native SQL or browser proof.
+Generation, segmented READY, download, mail and account erasure remain held.
+Full final-head unit, type, lint and all release checks remain required.
+The separately reviewed D-081 documentation reconciliation preserves every
+acceptance verdict and historical evidence limitation.
+
 ## 2026-10-03 — Record all four synthetic confirmed-array fixture origins
 
 The quality-first complete plan on 1599f3a4 passed type generation, type

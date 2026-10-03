@@ -1,5 +1,16 @@
 # MVP-first acceptance sequence
 
+**D-081 update, 3 October 2026.** The upcoming rights-token transport/removal
+work described in the dated snapshots below is superseded: PR #280 removed
+both legacy surfaces and their exception rows on 1 October, and the retained
+immutable production deployment is READY. Canonical fragment/session rights
+remain. Retained GET checks prove only old synthetic-token 404, fragment entry
+200 and anonymous session 404. The historical immediate pre-merge Boolean raw
+receipt was not found. The 13 October item is an evidence/documentation
+checkpoint, not a new deletion task. See
+[the reconciliation](evidence/d081-retirement-reconciliation-20261003.md).
+G2.1 and G8.5 remain NO; every other obligation and the dated history remain.
+
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-18.
 Full-plan acceptance is **30/65**, after G5.3a closed on CI run 35327691091.
 The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;

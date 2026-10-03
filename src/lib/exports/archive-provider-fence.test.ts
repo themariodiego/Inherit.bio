@@ -1,0 +1,87 @@
+import {afterEach,describe,expect,it,vi} from "vitest";
+import {fenceArchiveReservation,type ArchiveCleanupReservation,type ArchivePermanentFenceProvider,
+ type ArchiveProviderBinding} from "./archive-provider-fence";
+
+// Authored synthetic callback tests only. They do not prove a provider's CAS,
+// complete history, physical ownership, fence, deletion or an approved issuer.
+const empty="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+const exportId="10000000-0000-4000-8000-000000000001",attemptId="20000000-0000-4000-8000-000000000002";
+const physical="export/30000000-0000-4000-8000-000000000003",hash="a".repeat(64),bindingHash="b".repeat(64);
+function fixture(){
+ const locator={provider:"archive-permanent-fence-v1" as const,bucket:"inherit-export-synthetic",objectKey:physical,byteCount:7,sha256:hash};
+ const reservation:ArchiveCleanupReservation={version:"archive-cleanup-reservation-v1",exportId,attemptId,ordinal:0,
+  authorityReceipt:hash,reservationSha256:"c".repeat(64),locator,writeBindingSha256:bindingHash,
+  writeIdentity:{purpose:"inherit-export-reservation-v1",exportId,attemptId,ordinal:0,offset:0,byteCount:7,sha256:hash,
+   logicalKey:`${"d".repeat(64)}/${exportId}/${attemptId}-0.part`,reservedAt:new Date(Date.now()-60_000).toISOString(),authorityReceipt:hash,locator},
+  cleanupNotBefore:new Date(Date.now()-1).toISOString(),claimExpiresAt:new Date(Date.now()+30_000).toISOString()};
+ const marker={objectKey:physical,version:"marker-1",etag:"empty-etag",byteCount:0,sha256:empty,
+  kind:"permanent-empty-fence",expiresAt:null};
+ const inspect=vi.fn(async(_binding:ArchiveProviderBinding,_after:string|null,_signal:AbortSignal):Promise<unknown>=>({
+  expected:reservation,currentVersion:null,currentEtag:null,versions:[],nextCursor:null}));
+ const ensure=vi.fn(async(_binding:ArchiveProviderBinding,_observed:Parameters<ArchivePermanentFenceProvider["ensurePermanentMarker"]>[1],_signal:AbortSignal):Promise<unknown>=>marker);
+ const read=vi.fn(async(_binding:ArchiveProviderBinding,_marker:Parameters<ArchivePermanentFenceProvider["readExactMarker"]>[1],_signal:AbortSignal):Promise<{descriptor:unknown;body:ReadableStream<Uint8Array>}>=>({
+  descriptor:marker,body:new ReadableStream<Uint8Array>({start(c){c.close();}})}));
+ const list=vi.fn(async(_binding:ArchiveProviderBinding,_after:string|null,_signal:AbortSignal):Promise<unknown>=>({
+  versions:[{objectKey:physical,version:marker.version,deleteMarker:false,byteCount:0}],nextCursor:null}));
+ const remove=vi.fn(async(_binding:ArchiveProviderBinding,_version:string,_signal:AbortSignal):Promise<unknown>=>{throw new Error("unexpected delete");});
+ const current=vi.fn(async(_expected:Readonly<ArchiveCleanupReservation>,_signal:AbortSignal):Promise<unknown>=>reservation);
+ const provider:ArchivePermanentFenceProvider={assertReady:async()=>{},
+  serializeExactKey:async<T>(_binding:ArchiveProviderBinding,_signal:AbortSignal,work:()=>Promise<T>)=>work(),
+  inspectExactKeyBeforeMutation:inspect,ensurePermanentMarker:ensure,readExactMarker:read,listExactKeyVersions:list,deleteExactVersion:remove};
+ const stop=new AbortController();const run=()=>fenceArchiveReservation({reservation,provider,checkCurrent:current,signal:stop.signal});
+ return {reservation,marker,inspect,ensure,read,list,remove,current,provider,stop,run};
+}
+afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();});
+describe("unbound archive ownership and marker-stream source successor",()=>{
+ it("passes the complete immutable binding to all operations, inspects before mutation and retains exact empty EOF evidence",async()=>{
+  const f=fixture();const proof=await f.run();expect(proof).toMatchObject({reservationSha256:f.reservation.reservationSha256,
+   marker:f.marker,deletedVersionCount:0,disposition:"payload-tombstoned"});
+  expect(f.inspect.mock.invocationCallOrder[0]).toBeLessThan(f.ensure.mock.invocationCallOrder[0]);
+  for(const calls of [f.inspect.mock.calls,f.ensure.mock.calls,f.read.mock.calls,f.list.mock.calls])
+   for(const args of calls){expect(args[0]).toEqual(f.reservation);expect(Object.isFrozen(args[0])).toBe(true);
+    expect(Object.isFrozen(args[0].writeIdentity)).toBe(true);expect(Object.isFrozen(args[0].locator)).toBe(true);}
+  expect(f.ensure.mock.calls[0][1]).toEqual({currentVersion:null,currentEtag:null,versions:[]});
+  expect(f.remove).not.toHaveBeenCalled();expect(f.read).toHaveBeenCalledTimes(2);expect(f.list).toHaveBeenCalledTimes(2);
+ });
+ it.each(["binding","count","digest","key","delete-marker","missing-current"])("refuses %s history before any marker replacement or deletion",async fault=>{
+  const f=fixture();const row={objectKey:physical,version:"payload-1",etag:"payload-etag",deleteMarker:false,byteCount:7,
+   kind:"verified-owned-payload",writeBindingSha256:bindingHash,verifiedSha256:hash};
+  const changed={...row,...(fault==="binding"?{writeBindingSha256:"e".repeat(64)}:fault==="count"?{byteCount:8}
+   :fault==="digest"?{verifiedSha256:"e".repeat(64)}:fault==="key"?{objectKey:"export/40000000-0000-4000-8000-000000000004"}
+    :fault==="delete-marker"?{deleteMarker:true}:{})};
+  f.inspect.mockResolvedValue({expected:f.reservation,currentVersion:fault==="missing-current"?"unknown":row.version,
+   currentEtag:row.etag,versions:[changed],nextCursor:null});
+  await expect(f.run()).rejects.toThrow("archive_cleanup_unavailable");expect(f.ensure).not.toHaveBeenCalled();expect(f.remove).not.toHaveBeenCalled();
+ });
+ it("supplies the observed current CAS and stops if the adapter refuses a changed history",async()=>{
+  const f=fixture();f.ensure.mockImplementation(async(_binding,observed)=>{
+   expect(observed).toEqual({currentVersion:null,currentEtag:null,versions:[]});throw new Error("atomic changed-history refusal");});
+  await expect(f.run()).rejects.toThrow("atomic changed-history refusal");expect(f.read).not.toHaveBeenCalled();expect(f.remove).not.toHaveBeenCalled();
+ });
+ it("cancels a returned marker stream when the post-read current check fails, without awaiting cancellation",async()=>{
+  const f=fixture(),cancel=vi.fn(()=>new Promise<void>(()=>{}));let returned=false;
+  f.read.mockImplementation(async()=>{returned=true;return {descriptor:f.marker,body:new ReadableStream<Uint8Array>({cancel})};});
+  f.current.mockImplementation(async()=>{if(returned)throw new Error("stale current");return f.reservation;});
+  await expect(f.run()).rejects.toThrow("stale current");expect(cancel).toHaveBeenCalled();expect(f.remove).not.toHaveBeenCalled();
+ });
+ it("cancels a marker stream before a bad descriptor can escape, without awaiting cancellation",async()=>{
+  const f=fixture(),cancel=vi.fn(()=>new Promise<void>(()=>{}));
+  f.read.mockResolvedValue({descriptor:{...f.marker,etag:"different"},body:new ReadableStream<Uint8Array>({cancel})});
+  await expect(f.run()).rejects.toThrow("archive_cleanup_unavailable");expect(cancel).toHaveBeenCalled();expect(f.list).not.toHaveBeenCalled();
+ });
+ it("owns and cancels a read response arriving after the unchanged claim bound; no listing/deletion/evidence follows",async()=>{
+  vi.useFakeTimers();const f=fixture(),cancel=vi.fn(()=>new Promise<void>(()=>{}));
+  let resolve!:(value:{descriptor:unknown;body:ReadableStream<Uint8Array>})=>void;
+  f.read.mockImplementation(()=>new Promise(done=>{resolve=done;}));
+  const refusal=expect(f.run()).rejects.toThrow("archive_cleanup_unavailable");await vi.advanceTimersByTimeAsync(30_001);await refusal;
+  expect(f.read).toHaveBeenCalledOnce();resolve({descriptor:f.marker,body:new ReadableStream<Uint8Array>({cancel})});
+  await vi.advanceTimersByTimeAsync(1);expect(cancel).toHaveBeenCalled();expect(f.list).not.toHaveBeenCalled();expect(f.remove).not.toHaveBeenCalled();
+ });
+ it("cancels an owned stream on caller abort while a noncooperative post-read current check is held",async()=>{
+  vi.useFakeTimers();const f=fixture(),cancel=vi.fn(()=>new Promise<void>(()=>{}));let returned=false;
+  f.read.mockImplementation(async()=>{returned=true;return {descriptor:f.marker,body:new ReadableStream<Uint8Array>({cancel})};});
+  f.current.mockImplementation(async()=>returned?new Promise<unknown>(()=>{}):f.reservation);
+  const refusal=expect(f.run()).rejects.toThrow("archive_cleanup_unavailable");await vi.advanceTimersByTimeAsync(1);
+  expect(f.read).toHaveBeenCalledOnce();f.stop.abort();await refusal;expect(cancel).toHaveBeenCalled();expect(f.list).not.toHaveBeenCalled();
+ });
+});
