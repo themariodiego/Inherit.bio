@@ -79,7 +79,8 @@ describe("incremental literal array normalization", () => {
     if (count === 49) await expect(work).rejects.toThrow("liftover_loss");
     else expect(await work).toEqual({ variantCount: 49, observedCallCount: 0, attempted: 50, unmapped: 1 });
   });
-  it.each([[0, 0], [-1], [1], [0, 0, 1]])("refuses inexact accepted ordinals %j", async accepted => {
+  it.each<{ accepted: number[] }>([{ accepted: [0, 0] }, { accepted: [-1] },
+    { accepted: [1] }, { accepted: [0, 0, 1] }])("refuses inexact accepted ordinals $accepted", async ({ accepted }) => {
     const f = fixture(); f.register.mockResolvedValue({ acceptedVariantOrdinals: accepted, attempted: 0, unmapped: 0 });
     await expect(prepareIncrementalArray(lines("# Build38\nrs1\t1\t1\tAA\n"), f.options)).rejects.toThrow("unavailable");
     expect(f.stage).not.toHaveBeenCalled();

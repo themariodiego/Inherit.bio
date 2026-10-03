@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-03 — Pass complete ordinal arrays to each refusal case
+
+The complete local run on b0118a53 passed all 597 files and 9,721 tests in
+423.663 seconds. Type generation passed. The type check then exited 2 with
+two diagnostics in the incremental-array refusal fixture; lint and all release
+gates did not run. The unit log SHA-256 is
+6eac17883a55dc38c725f3bf5d9e17a9784ecc09f67e51da203e79c608fef667.
+The type-check log SHA-256 is
+1e0e61e509c952b1830c5412e60ce3c5b3032e688d70af759a23044e4a3623cd.
+
+Vitest expands an array case into callback arguments. The four intended
+ordinal arrays therefore supplied their first scalar, which checked a scalar
+receipt refusal instead of the intended duplicate, negative or out-of-range
+ordinals. Wrap each unchanged ordinal array in an explicitly typed case object.
+Each case now passes its complete number array to the same mock receipt and
+keeps both the unavailable refusal and no-stage assertion. All four cases and
+every other assertion remain. No application, migration or browser code changes.
+Full final-head unit, type, lint and all release checks remain required.
+
 ## 2026-10-03 — Register the exact confirmed-array queue replacement
 
 The complete local run on d3d1a99e executed all 597 files and 9,721 tests.
