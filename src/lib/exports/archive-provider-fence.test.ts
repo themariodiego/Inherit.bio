@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
 import {fenceArchiveReservation,type ArchiveCleanupReservation,type ArchivePermanentFenceProvider,
  type ArchiveProviderBinding} from "./archive-provider-fence";
@@ -83,5 +84,63 @@ describe("unbound archive ownership and marker-stream source successor",()=>{
   f.current.mockImplementation(async()=>returned?new Promise<unknown>(()=>{}):f.reservation);
   const refusal=expect(f.run()).rejects.toThrow("archive_cleanup_unavailable");await vi.advanceTimersByTimeAsync(1);
   expect(f.read).toHaveBeenCalledOnce();f.stop.abort();await refusal;expect(cancel).toHaveBeenCalled();expect(f.list).not.toHaveBeenCalled();
+ });
+});
+
+
+// These additive callbacks test the algorithm's nonempty deletion path only.
+// They do not supply any actual provider ownership or physical deletion proof.
+function ownedPayloadFixture(){
+ const f=fixture();
+ const owned={objectKey:physical,version:"payload-1",etag:"payload-etag",deleteMarker:false,byteCount:7,
+  kind:"verified-owned-payload",writeBindingSha256:bindingHash,verifiedSha256:hash};
+ const before=[{objectKey:physical,version:f.marker.version,deleteMarker:false,byteCount:0},
+  {objectKey:physical,version:owned.version,deleteMarker:false,byteCount:7}];
+ const after=[before[0]];
+ f.inspect.mockResolvedValue({expected:f.reservation,currentVersion:owned.version,currentEtag:owned.etag,
+  versions:[owned],nextCursor:null});
+ f.list.mockResolvedValueOnce({versions:before,nextCursor:null}).mockResolvedValueOnce({versions:after,nextCursor:null});
+ f.remove.mockResolvedValue({objectKey:physical,version:owned.version,deleted:true});
+ return {...f,owned,before,after};
+}
+describe("additive owned-payload deletion and acknowledgement refusals",()=>{
+ it("deletes only the inspected owned payload version and proves complete marker inventories and both EOF reads",async()=>{
+  const f=ownedPayloadFixture();let eofReads=0;
+  f.read.mockImplementation(async()=>({descriptor:f.marker,body:new ReadableStream<Uint8Array>({
+   pull(c){eofReads++;c.close();}}, {highWaterMark:0})}));
+  const proof=await f.run();
+  expect(proof).toEqual({version:"archive-permanent-fence-evidence-v1",reservationSha256:f.reservation.reservationSha256,
+   marker:f.marker,completeListingSha256:createHash("sha256").update(JSON.stringify(f.after)).digest("hex"),
+   deletedVersionCount:1,disposition:"payload-tombstoned"});
+  expect(Object.isFrozen(proof)).toBe(true);expect(Object.isFrozen(proof.marker)).toBe(true);
+  expect(f.inspect).toHaveBeenCalledOnce();expect(f.ensure).toHaveBeenCalledOnce();
+  expect(f.ensure.mock.calls[0][1]).toEqual({currentVersion:f.owned.version,currentEtag:f.owned.etag,versions:[f.owned]});
+  expect(f.remove).toHaveBeenCalledOnce();expect(f.remove.mock.calls[0][0]).toEqual(f.reservation);
+  expect(f.remove.mock.calls[0][1]).toBe(f.owned.version);expect(f.remove.mock.calls[0][2]).toBeInstanceOf(AbortSignal);
+  expect(f.remove.mock.calls.every(([,version])=>version!==f.marker.version)).toBe(true);
+  expect(f.list).toHaveBeenCalledTimes(2);expect(f.read).toHaveBeenCalledTimes(2);expect(eofReads).toBe(2);
+  for(const [binding,cursor]of f.list.mock.calls){expect(binding).toEqual(f.reservation);expect(cursor).toBeNull();}
+  for(const [binding,marker]of f.read.mock.calls){expect(binding).toEqual(f.reservation);expect(marker).toEqual(f.marker);}
+  const order=[f.inspect.mock.invocationCallOrder[0],f.ensure.mock.invocationCallOrder[0],f.read.mock.invocationCallOrder[0],
+   f.list.mock.invocationCallOrder[0],f.remove.mock.invocationCallOrder[0],f.list.mock.invocationCallOrder[1],f.read.mock.invocationCallOrder[1]];
+  for(let i=1;i<order.length;i++)expect(order[i-1]).toBeLessThan(order[i]);
+ });
+ it("refuses unknown post-marker history before deleting even the otherwise owned payload",async()=>{
+  const f=ownedPayloadFixture();f.list.mockReset();
+  f.list.mockResolvedValue({versions:[...f.before,{objectKey:physical,version:"unknown-2",deleteMarker:false,byteCount:7}],nextCursor:null});
+  await expect(f.run()).rejects.toThrow("archive_cleanup_unavailable");
+  expect(f.inspect).toHaveBeenCalledOnce();expect(f.ensure).toHaveBeenCalledOnce();
+  expect(f.read).toHaveBeenCalledOnce();expect(f.list).toHaveBeenCalledOnce();expect(f.remove).not.toHaveBeenCalled();
+ });
+ it.each(["key","version","deleted-false"] as const)("refuses %s deletion acknowledgement without issuing completion evidence",async fault=>{
+  const f=ownedPayloadFixture();f.remove.mockResolvedValue({
+   objectKey:fault==="key"?"export/40000000-0000-4000-8000-000000000004":physical,
+   version:fault==="version"?"foreign-version":f.owned.version,deleted:fault!=="deleted-false"});
+  const running=f.run();
+  if(fault==="deleted-false")await expect(running).rejects.toMatchObject({name:"ZodError"});
+  else await expect(running).rejects.toThrow("archive_cleanup_unavailable");
+  expect(f.remove).toHaveBeenCalledOnce();expect(f.remove.mock.calls[0][0]).toEqual(f.reservation);
+  expect(f.remove.mock.calls[0][1]).toBe(f.owned.version);
+  expect(f.list).toHaveBeenCalledOnce();expect(f.read).toHaveBeenCalledOnce();
  });
 });

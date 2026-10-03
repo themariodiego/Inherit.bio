@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-03 — Add strict nonempty archive cleanup cases
+
+Source review of the preceding 12 fence cases found that their default deletion
+callback always threw, so they did not exercise successful nonempty payload
+cleanup or deletion acknowledgement refusal. Preserve those 12 cases and all
+38 verified writer cases. Add five cases: exact owned payload deletion with
+deleted count one, complete before/after inventories and two marker EOF reads;
+unknown post-marker history refusal before any deletion; and wrong key, wrong
+version or deleted-false acknowledgement refusal before completion evidence.
+The successful case pins the inspected ownership, conditional replacement
+input, only deleted version, operation order and final inventory digest.
+
+The module and every original case/assertion remain byte-exact. All 55 new
+cases are authored and unrun. Synthetic callbacks prove no provider ownership,
+conditional commit, physical deletion or permanent fence. Default generation,
+segmented READY, download, mail and account erasure remain held. Full final-head
+599-file unit, type, lint and all release checks remain required, with no
+selector, skip, waiver or substitution by a focused check.
+
 ## 2026-10-03 — Author verified archive readback and permanent fence checks
 
 Add 38 synthetic verified-segment writer cases and 12 synthetic permanent-fence

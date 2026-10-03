@@ -55,7 +55,7 @@ backfilled.
 ## Authored checks and qualification still required
 
 The verified writer adds 38 synthetic cases using the installed SDK with an
-injected transport. The fence module adds 12 synthetic callback cases. Neither
+injected transport. The fence module adds 17 synthetic callback cases. Neither
 set has been executed for this source integration. The tests are automatically
 included by the existing `src/**/*.test.ts` Vitest rule; no selector or existing
 assertion changes. No new route, environment variable, direct Storage call site,
@@ -63,11 +63,17 @@ SQL fixture or browser fixture is introduced.
 
 Full qualification must bind this branch's final committed source. Run all 15
 existing quality commands and all 599 unit files, with the unchanged full unit
-command and at least 9,771 passed cases, no skipped or todo cases and no
+command and at least 9,776 passed cases, no skipped or todo cases and no
 unhandled errors. Verify all source, dependency, mirror and runtime pins before
 and after that separate authorized run. The existing fresh database and entire
 hosted browser requirements remain required before release; no qualification
 for new native or browser behavior is claimed here.
+
+The five additive fence cases include successful nonempty owned-payload
+cleanup, unknown post-marker history refusal before deletion, and exact key,
+version and deleted-state acknowledgement refusals. Both complete marker
+inventories and EOF reads are required by the successful synthetic case.
+These cases provide no physical provider or deletion proof.
 
 The D-081 documentation reconciliation is the exact separately reviewed
 current-source patch. It preserves all 65 acceptance verdicts, including
