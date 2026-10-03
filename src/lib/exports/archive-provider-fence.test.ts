@@ -17,15 +17,21 @@ function fixture(){
   cleanupNotBefore:new Date(Date.now()-1).toISOString(),claimExpiresAt:new Date(Date.now()+30_000).toISOString()};
  const marker={objectKey:physical,version:"marker-1",etag:"empty-etag",byteCount:0,sha256:empty,
   kind:"permanent-empty-fence",expiresAt:null};
- const inspect=vi.fn(async(_binding:ArchiveProviderBinding,_after:string|null,_signal:AbortSignal):Promise<unknown>=>({
-  expected:reservation,currentVersion:null,currentEtag:null,versions:[],nextCursor:null}));
- const ensure=vi.fn(async(_binding:ArchiveProviderBinding,_observed:Parameters<ArchivePermanentFenceProvider["ensurePermanentMarker"]>[1],_signal:AbortSignal):Promise<unknown>=>marker);
- const read=vi.fn(async(_binding:ArchiveProviderBinding,_marker:Parameters<ArchivePermanentFenceProvider["readExactMarker"]>[1],_signal:AbortSignal):Promise<{descriptor:unknown;body:ReadableStream<Uint8Array>}>=>({
-  descriptor:marker,body:new ReadableStream<Uint8Array>({start(c){c.close();}})}));
- const list=vi.fn(async(_binding:ArchiveProviderBinding,_after:string|null,_signal:AbortSignal):Promise<unknown>=>({
-  versions:[{objectKey:physical,version:marker.version,deleteMarker:false,byteCount:0}],nextCursor:null}));
- const remove=vi.fn(async(_binding:ArchiveProviderBinding,_version:string,_signal:AbortSignal):Promise<unknown>=>{throw new Error("unexpected delete");});
- const current=vi.fn(async(_expected:Readonly<ArchiveCleanupReservation>,_signal:AbortSignal):Promise<unknown>=>reservation);
+ const inspect=vi.fn(async(_binding:ArchiveProviderBinding,_after:string|null,_signal:AbortSignal):Promise<unknown>=>{
+  void _binding;void _after;void _signal;
+  return {expected:reservation,currentVersion:null,currentEtag:null,versions:[],nextCursor:null};});
+ const ensure=vi.fn(async(_binding:ArchiveProviderBinding,_observed:Parameters<ArchivePermanentFenceProvider["ensurePermanentMarker"]>[1],_signal:AbortSignal):Promise<unknown>=>{
+  void _binding;void _observed;void _signal;return marker;});
+ const read=vi.fn(async(_binding:ArchiveProviderBinding,_marker:Parameters<ArchivePermanentFenceProvider["readExactMarker"]>[1],_signal:AbortSignal):Promise<{descriptor:unknown;body:ReadableStream<Uint8Array>}>=>{
+  void _binding;void _marker;void _signal;
+  return {descriptor:marker,body:new ReadableStream<Uint8Array>({start(c){c.close();}})};});
+ const list=vi.fn(async(_binding:ArchiveProviderBinding,_after:string|null,_signal:AbortSignal):Promise<unknown>=>{
+  void _binding;void _after;void _signal;
+  return {versions:[{objectKey:physical,version:marker.version,deleteMarker:false,byteCount:0}],nextCursor:null};});
+ const remove=vi.fn(async(_binding:ArchiveProviderBinding,_version:string,_signal:AbortSignal):Promise<unknown>=>{
+  void _binding;void _version;void _signal;throw new Error("unexpected delete");});
+ const current=vi.fn(async(_expected:Readonly<ArchiveCleanupReservation>,_signal:AbortSignal):Promise<unknown>=>{
+  void _expected;void _signal;return reservation;});
  const provider:ArchivePermanentFenceProvider={assertReady:async()=>{},
   serializeExactKey:async<T>(_binding:ArchiveProviderBinding,_signal:AbortSignal,work:()=>Promise<T>)=>work(),
   inspectExactKeyBeforeMutation:inspect,ensurePermanentMarker:ensure,readExactMarker:read,listExactKeyVersions:list,deleteExactVersion:remove};

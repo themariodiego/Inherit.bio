@@ -1,5 +1,19 @@
 # Test diff register
 
+## 2026-10-03 — Consume typed archive fixture parameters
+
+The focused run on 40d9d042 passed all 55 archive cases. The separate four-file
+lint check then refused 17 unused fixture parameters under the original zero
+warning limit. Both actual results remain retained; full qualification is held.
+
+Use explicit `void` statements for the 17 parameters in six default mock
+callbacks. Preserve their typed signatures, returned objects, stream creation,
+unexpected-delete refusal, every test title and every assertion. This is a
+test-only correction. No cases, provider calls, module, compiler or lint rule
+change. Run the same 55 cases and four-file lint on the corrected source.
+These focused checks do not replace the full 599-file suite, quality gates,
+fresh database, hosted browser or actual provider qualification.
+
 ## 2026-10-03 — Add strict nonempty archive cleanup cases
 
 Source review of the preceding 12 fence cases found that their default deletion
