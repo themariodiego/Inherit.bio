@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-03 — Record all four synthetic confirmed-array fixture origins
+
+The quality-first complete plan on 1599f3a4 passed type generation, type
+checking, lint, legal, first-glance, names, templates and readability. The
+secret gate then exited 1 with exactly two fixture-provenance failures: the
+new path-b-reports-grch38-23andme.txt name and current SHA-256 were absent
+from e2e/fixtures/PROVENANCE.md. The raw gate log is retained with SHA-256
+9cfae46276c6a715bee745fd98f801ebf505ecb461227f168538230c29459b9f.
+No remaining gate or full unit command ran in that attempt.
+
+Add the origin, scope and independently computed fixed hashes for all four
+new consumer-array browser files, rather than only the detector's matching
+23andMe filename. Each retains the same two invented calls and public
+committed-catalog positions. All earlier provenance text, every fixture byte,
+all gate rules and all application, migration and browser assertions remain.
+Full final-head unit, type, lint and all release checks remain required; this
+documentation correction supplies no runtime or scientific acceptance credit.
+
 ## 2026-10-03 — Pass complete ordinal arrays to each refusal case
 
 The complete local run on b0118a53 passed all 597 files and 9,721 tests in
