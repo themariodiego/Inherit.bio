@@ -68,6 +68,7 @@ describe("archive cleanup safe extent and final coordinator authority",()=>{
   const callbackComplete=new Promise<void>(resolve=>{completed=resolve;});
   const coordinatorRelease=new Promise<void>(resolve=>{release=resolve;});
   const coordinator:ArchivePermanentFenceProvider["serializeExactKey"]=async(_binding,_signal,work)=>{
+   expect(_binding).toEqual(f.reservation);expect(_signal).toBeInstanceOf(AbortSignal);
    const result=await work();expect(result).toMatchObject({version:"archive-permanent-fence-evidence-v1",
     reservationSha256:f.reservation.reservationSha256,marker:f.marker,deletedVersionCount:0,disposition:"payload-tombstoned"});
    completed();await coordinatorRelease;return result;
@@ -88,6 +89,7 @@ describe("archive cleanup safe extent and final coordinator authority",()=>{
   const callbackComplete=new Promise<void>(resolve=>{completed=resolve;});
   const coordinatorRelease=new Promise<void>(resolve=>{release=resolve;});
   const coordinator:ArchivePermanentFenceProvider["serializeExactKey"]=async(_binding,_signal,work)=>{
+   expect(_binding).toEqual(f.reservation);expect(_signal).toBeInstanceOf(AbortSignal);
    const result=await work();expect(result).toMatchObject({version:"archive-permanent-fence-evidence-v1",
     reservationSha256:f.reservation.reservationSha256,marker:f.marker,deletedVersionCount:0,disposition:"payload-tombstoned"});
    completed();await coordinatorRelease;return result;
