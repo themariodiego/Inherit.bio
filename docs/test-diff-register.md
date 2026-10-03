@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-03 — Preserve safe extent and final cleanup authority
+
+Reject a reservation if its offset plus byte count exceeds the safe integer
+limit. Recheck the current cleanup claim, provider readiness and current claim
+after the coordinator returns. The preceding implementation checked authority
+inside the callback, which could become stale before a delayed coordinator
+returned the evidence. The original segment coordinate helper already requires
+a safe combined extent; the cleanup parser must enforce the same requirement.
+
+Preserve all 55 existing archive cases and their assertions. Add four cases:
+the exact safe end position, the next unsafe byte before any provider work,
+claim revocation after a valid callback, and lost readiness at the same point.
+The delayed coordinator cases complete valid cleanup first, then change
+authority before release while the original 30-second claim is still live.
+These synthetic checks do not qualify a physical provider or account erasure.
+The frozen source proposals and all earlier actual results remain unchanged.
+Full final-source units, quality, fresh database and hosted browser checks
+remain required. No production, selector, expiry or grant policy changes.
+
 ## 2026-10-03 — Consume typed archive fixture parameters
 
 The focused run on 40d9d042 passed all 55 archive cases. The separate four-file

@@ -39,6 +39,71 @@ function fixture(){
  return {reservation,marker,inspect,ensure,read,list,remove,current,provider,stop,run};
 }
 afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();});
+describe("archive cleanup safe extent and final coordinator authority",()=>{
+ it("accepts an extent ending exactly at the safe integer limit without allocating payload bytes",async()=>{
+  const f=fixture(),ordinal=2_251_799_813,byteCount=2_740_991;
+  f.reservation.ordinal=ordinal;f.reservation.locator.byteCount=byteCount;
+  f.reservation.writeIdentity={...f.reservation.writeIdentity,ordinal,offset:ordinal*4_000_000,byteCount,
+   logicalKey:`${"d".repeat(64)}/${exportId}/${attemptId}-${ordinal}.part`};
+  expect(f.reservation.writeIdentity.offset+byteCount).toBe(Number.MAX_SAFE_INTEGER);
+  await expect(f.run()).resolves.toMatchObject({disposition:"payload-tombstoned",marker:f.marker});
+  expect(f.ensure).toHaveBeenCalledOnce();expect(f.read).toHaveBeenCalledTimes(2);
+  expect(f.remove).not.toHaveBeenCalled();
+ });
+ it("refuses the next unsafe extent before currentness or provider work",async()=>{
+  const f=fixture(),ordinal=2_251_799_813,byteCount=2_740_992,ready=vi.fn(async()=>{});
+  f.reservation.ordinal=ordinal;f.reservation.locator.byteCount=byteCount;
+  f.reservation.writeIdentity={...f.reservation.writeIdentity,ordinal,offset:ordinal*4_000_000,byteCount,
+   logicalKey:`${"d".repeat(64)}/${exportId}/${attemptId}-${ordinal}.part`};
+  expect(f.reservation.writeIdentity.offset).toBe(9_007_199_252_000_000);
+  expect(f.reservation.writeIdentity.offset+byteCount).toBe(9_007_199_254_740_992);
+  await expect(fenceArchiveReservation({reservation:f.reservation,provider:{...f.provider,assertReady:ready},
+   checkCurrent:f.current,signal:f.stop.signal})).rejects.toMatchObject({issues:[expect.objectContaining({code:"custom",path:[]})]});
+  expect(f.current).not.toHaveBeenCalled();expect(ready).not.toHaveBeenCalled();
+  expect(f.inspect).not.toHaveBeenCalled();expect(f.ensure).not.toHaveBeenCalled();
+  expect(f.read).not.toHaveBeenCalled();expect(f.list).not.toHaveBeenCalled();expect(f.remove).not.toHaveBeenCalled();
+ });
+ it("refuses a revoked claim after a valid callback before coordinator return",async()=>{
+  const f=fixture();let completed!:()=>void,release!:()=>void;
+  const callbackComplete=new Promise<void>(resolve=>{completed=resolve;});
+  const coordinatorRelease=new Promise<void>(resolve=>{release=resolve;});
+  const coordinator:ArchivePermanentFenceProvider["serializeExactKey"]=async(_binding,_signal,work)=>{
+   const result=await work();expect(result).toMatchObject({version:"archive-permanent-fence-evidence-v1",
+    reservationSha256:f.reservation.reservationSha256,marker:f.marker,deletedVersionCount:0,disposition:"payload-tombstoned"});
+   completed();await coordinatorRelease;return result;
+  };
+  const running=fenceArchiveReservation({reservation:f.reservation,provider:{...f.provider,serializeExactKey:coordinator},
+   checkCurrent:f.current,signal:f.stop.signal});void running.catch(()=>{});
+  try{
+   await Promise.race([callbackComplete,running.then(()=>{throw new Error("synthetic_coordinator_did_not_pause");})]);
+   expect(f.ensure).toHaveBeenCalledOnce();expect(f.read).toHaveBeenCalledTimes(2);expect(f.list).toHaveBeenCalledTimes(2);
+   const currentCalls=f.current.mock.calls.length;expect(Date.now()).toBeLessThan(Date.parse(f.reservation.claimExpiresAt));
+   f.current.mockResolvedValue({...f.reservation,claimExpiresAt:new Date(Date.now()-1).toISOString()});
+   release();await expect(running).rejects.toThrow("archive_cleanup_unavailable");
+   expect(f.current.mock.calls.length).toBeGreaterThan(currentCalls);expect(f.remove).not.toHaveBeenCalled();
+  }finally{release();f.stop.abort();}
+ });
+ it("refuses lost readiness after a valid callback before coordinator return",async()=>{
+  const f=fixture(),ready=vi.fn(async()=>{});let completed!:()=>void,release!:()=>void;
+  const callbackComplete=new Promise<void>(resolve=>{completed=resolve;});
+  const coordinatorRelease=new Promise<void>(resolve=>{release=resolve;});
+  const coordinator:ArchivePermanentFenceProvider["serializeExactKey"]=async(_binding,_signal,work)=>{
+   const result=await work();expect(result).toMatchObject({version:"archive-permanent-fence-evidence-v1",
+    reservationSha256:f.reservation.reservationSha256,marker:f.marker,deletedVersionCount:0,disposition:"payload-tombstoned"});
+   completed();await coordinatorRelease;return result;
+  };
+  const running=fenceArchiveReservation({reservation:f.reservation,provider:{...f.provider,assertReady:ready,serializeExactKey:coordinator},
+   checkCurrent:f.current,signal:f.stop.signal});void running.catch(()=>{});
+  try{
+   await Promise.race([callbackComplete,running.then(()=>{throw new Error("synthetic_coordinator_did_not_pause");})]);
+   expect(f.ensure).toHaveBeenCalledOnce();expect(f.read).toHaveBeenCalledTimes(2);expect(f.list).toHaveBeenCalledTimes(2);
+   const readyCalls=ready.mock.calls.length;expect(Date.now()).toBeLessThan(Date.parse(f.reservation.claimExpiresAt));
+   ready.mockRejectedValue(new Error("synthetic_post_release_policy_unavailable"));
+   release();await expect(running).rejects.toThrow("synthetic_post_release_policy_unavailable");
+   expect(ready.mock.calls.length).toBeGreaterThan(readyCalls);expect(f.remove).not.toHaveBeenCalled();
+  }finally{release();f.stop.abort();}
+ });
+});
 describe("unbound archive ownership and marker-stream source successor",()=>{
  it("passes the complete immutable binding to all operations, inspects before mutation and retains exact empty EOF evidence",async()=>{
   const f=fixture();const proof=await f.run();expect(proof).toMatchObject({reservationSha256:f.reservation.reservationSha256,

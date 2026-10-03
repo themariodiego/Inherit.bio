@@ -33,6 +33,7 @@ const reservationSchema = z.object({
   claimExpiresAt: z.iso.datetime({ offset: true }),
 }).strict().refine(v => v.writeIdentity.exportId === v.exportId && v.writeIdentity.attemptId === v.attemptId
   && v.writeIdentity.ordinal === v.ordinal && v.writeIdentity.offset === v.ordinal * 4_000_000
+  && Number.isSafeInteger(v.writeIdentity.offset + v.writeIdentity.byteCount)
   && v.writeIdentity.byteCount === v.locator.byteCount && v.writeIdentity.sha256 === v.locator.sha256
   && v.writeIdentity.authorityReceipt === v.authorityReceipt && isDeepStrictEqual(v.writeIdentity.locator, v.locator)
   && /^[0-9a-f]{64}\//u.test(v.writeIdentity.logicalKey)
@@ -227,7 +228,7 @@ export async function fenceArchiveReservation(options: {
   }
   try {
     await current(); await bounded(() => provider.assertReady(signal));
-    return await bounded(() => provider.serializeExactKey(reservation, signal, async () => {
+    const evidence = await bounded(() => provider.serializeExactKey(reservation, signal, async () => {
       const observed = await inspectOwnership();
       const marker = markerSchema.parse(await operation(() => provider.ensurePermanentMarker(reservation, observed, signal)));
       if (marker.objectKey !== reservation.locator.objectKey) throw unavailable();
@@ -255,6 +256,8 @@ export async function fenceArchiveReservation(options: {
         completeListingSha256: createHash("sha256").update(JSON.stringify(after)).digest("hex"),
         deletedVersionCount, disposition: "payload-tombstoned" as const });
     }));
+    await current(); await bounded(() => provider.assertReady(signal)); await current();
+    return evidence;
   } finally { closed = true; clearTimeout(timer); signal.removeEventListener("abort", interrupt); stop.abort(); cancelOwned();
     signal.removeEventListener("abort", cancelOwned); }
 }
