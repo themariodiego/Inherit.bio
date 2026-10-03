@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-03 — Register the exact confirmed-array queue replacement
+
+The complete local run on d3d1a99e executed all 597 files and 9,721 tests.
+It passed 596 files and 9,720 tests. The only failure was the closed later
+Path B replacement inventory: it did not list the newly reviewed
+20261003030000_path_b_confirmed_array_normalization.sql replacement of
+private.enqueue_path_b_normalization_v1. The failed raw log is retained with
+SHA-256 b7849b332156cac591facc0060f768f73c3026e018e49c4025a48e1850e15c97.
+The original command exited 1 after 426.143 seconds; no host quality check ran.
+
+Add only that exact migration/function pair to the expected replacement list.
+Keep the full migration scan, exact list equality, all predecessor entries and
+dynamic patch inventory unchanged. The dedicated array source audit separately
+requires the one format-whitelist body inverse and both strict function guards.
+No migration, application, browser case or gate is relaxed. Full qualification
+must run again on the corrected commit; this failure is not a database or
+hosted-browser result.
+
 
 ## 2026-10-03 — Confirmed Path B consumer-array normalization
 

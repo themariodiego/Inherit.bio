@@ -180,6 +180,7 @@ it("reviews shared replacements across all six authored Path B migration stages"
     "20261001028000_future_person_keyless_human_decisions.sql|private.authorize_mail_submission_v1",
     "20261001028000_future_person_keyless_human_decisions.sql|public.claim_mail_outbox",
     "20261002132000_embryo_observed_carrier_producer.sql|private.claim_worker_job_v2",
+    "20261003030000_path_b_confirmed_array_normalization.sql|private.enqueue_path_b_normalization_v1",
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",
