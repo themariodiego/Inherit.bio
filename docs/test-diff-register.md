@@ -1,5 +1,34 @@
 # Test diff register
 
+## 2026-10-03 — Require the real rights-session pending choice
+
+The processing exemption on rights.withdraw still described the removed plain
+forms targeting /api/withdraw. Its current adult review component submits JSON
+to the pinned /api/withdraw/session, enters pending and disables each choice.
+The exemption is withdrawn, adding one required state: 158 becomes 159. Every
+existing state remains required, and the nine-unproven-pair ratchet stays nine.
+
+A conditional polite live status now names the existing saving state for every
+adult choice. The original acceptance caption, controls, operations, authority,
+nonce, receipt and error behavior remain byte-exact; signed-out refusal/deletion
+can now hear and see the in-flight choice instead of only disabled buttons.
+
+One appended audited browser case uses its own synthetic inviter and address,
+the actual mailed fragment and native activation. It holds only the real refusal
+POST, requires the polite pending message and disabled choices, and verifies
+the exact invitation/session/subject remain unchanged before release. It then
+continues the original native request and requires the closed 202 receipt,
+current refused invitation, consumed rights session and purged reserved subject.
+No pending flag, successful response or database outcome is fabricated.
+All four original adult browser cases and every original assertion remain exact.
+
+The ledger adds only the authored /withdraw/[token] processing title. This is
+static source registration, not executed browser evidence. A planted restoration
+of the exact former exemption must fail the gate's full exact ledger comparison;
+the existing closed required count strengthens from 158 to 159. Full local,
+fresh database and complete hosted browser qualification on the actual successor
+remain required. No deadline, retired route, permission or acceptance row changes.
+
 ## 2026-10-03 — Register the reviewed private Embryo claimant and canonical export plan
 
 The complete original combined head 13ee local unit run executed 594 files and 9,657

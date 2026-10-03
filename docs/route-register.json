@@ -14898,9 +14898,6 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
-      "notApplicableStates": {
-        "processing": "PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Moved here from the public-rights-flow profile on 2026-09-28. Corrections item 8, signed 2026-09-13."
-      },
       "policy": {
         "sessionMode": "requires-an-active-rights-cookie-then-resolves-the-server-owned-token-purpose-through-withdrawal-target-v1.purposeMatrix-before-any-target-read",
         "dataScope": "rights-session-bound-target-only-after-activation",
