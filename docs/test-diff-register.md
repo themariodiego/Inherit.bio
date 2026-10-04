@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-04 — Keep both embryo jobs in their dedicated queues
+
+PR 283 hosted database run 37201583001 on 7b1ae648 failed assertion 113 of
+115 in `embryo_ingest_unwind_storage.sql`. The older fixture expected the
+generic worker to claim `score_embryo`. Migration
+`20261002132000_embryo_observed_carrier_producer.sql` deliberately excludes
+that kind, as well as `split_cohort_vcf`, from the generic worker. The actual
+NULL return follows that current queue contract. No application defect or
+timing failure is established.
+
+Keep both synthetic embryo jobs and give them older creation times. Add one
+schema-valid synthetic retention-purge dispatch row as the eligible control.
+Keep all 115 original assertions, with the eligible kind and two descriptions
+updated for the current contract. Add one assertion that the score job also
+stays queued for its own worker. Claiming the synthetic cleanup row performs
+no purge and proves no storage deletion or retention disposition.
+
+No worker body, migration, access rule, claim lease, timeout, retry or skip
+policy changes. The original failed result remains retained. Source review
+only is claimed here. The corrected file, dedicated carrier worker cases and
+the complete hosted database, unit and browser suites must pass on the final
+commit before merge. This follows the owner's permanent hosted test policy.
+
 ## 2026-10-04 — Open the current array person's shared reports
 
 Run 37201583001 on 7b1ae648 passed all 9,782 unit cases and browser groups
