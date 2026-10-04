@@ -667,11 +667,7 @@ test("Path B queued reports: real confirmed source and operators, separate self/
     await reader.goto(estimateUrl);
     await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
     await page.goto(route("files.index"));
-    const sharedReportsLink = page.getByRole("link", { name: CHOICES.openShared, exact: true })
-      .and(page.locator(`a[href="${reportList}"]`));
-    await expect(sharedReportsLink).toHaveCount(1);
-    await sharedReportsLink.click();
-    await expect(page).toHaveURL(new URL(reportList, ORIGIN).href);
+    await page.getByRole("link", { name: CHOICES.openShared, exact: true }).click();
     const gate = page.locator('[data-slot="result-gate"]');
     await expect(gate).toBeVisible();
     expect(await page.content()).not.toContain('data-figure-kind="genotype"');
@@ -794,7 +790,11 @@ for (const arrayFixture of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ft
     await reader.goto(estimateUrl);
     await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
     await page.goto(route("files.index"));
-    await page.getByRole("link", { name: CHOICES.openShared, exact: true }).click();
+    const sharedReportsLink = page.getByRole("link", { name: CHOICES.openShared, exact: true })
+      .and(page.locator(`a[href="${reportList}"]`));
+    await expect(sharedReportsLink).toHaveCount(1);
+    await sharedReportsLink.click();
+    await expect(page).toHaveURL(new URL(reportList, ORIGIN).href);
     const gate = page.locator('[data-slot="result-gate"]');
     await expect(gate).toBeVisible();
     expect(await page.content()).not.toContain('data-figure-kind="genotype"');
