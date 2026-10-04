@@ -4638,3 +4638,33 @@ focused source checks alone do not prove the full hosted browser result.
 
 - Owner decision: connect the Mac to power now and keep it connected during complete local tests.
 - Observe stable external power before the next long local run. A clicked answer is not evidence of an actual power connection.
+
+## 2026-10-04 — Permanent complete hosted unit verification
+
+The owner approved complete hosted unit verification in a clickable chat
+decision. This replaces the earlier requirement to pass the complete local
+unit suite before a draft push. It extends the permanent hosted browser and
+database policies to the complete unit suite.
+
+- Before a draft push, all local type checks, lint, twelve repository quality
+  gates and the focused unit tests for each changed flow must pass. Keep all
+  assertions and test time limits.
+- Before a merge or production change, the complete hosted unit, database
+  and browser suites must pass on the final commit. Run the complete discovered
+  unit inventory and preserve its full test report. For commit `1493f4b`, that
+  inventory is 599 files and at least 9,780 tests. Require zero failures, skips
+  and retries. A missing file, test, report or job means HOLD. Future commits
+  must use their complete discovered inventory, with no reduction used to
+  conceal a test.
+- The hosted unit command remains `pnpm test`. Keep the entire current CI
+  workflow and its required checks. This policy changes when the complete
+  unit suite must run; it does not change assertions, coverage or the required
+  result.
+- Keep the first local `1493f4b` result: 15 quality checks passed; 9,778 of
+  9,780 tests passed; two failed at their original 5,000 ms limit. Those two
+  failures remain open until the complete suite passes on the final commit.
+  No local full-suite PASS is claimed.
+- The complete local migration rollback proof remains required. Production
+  then needs the exact dry-run sentinel, guarded apply and read-only
+  verification. Scientific, carrier, legal and human-study approvals remain
+  separate. Draft pushes do not authorize a merge or production action.

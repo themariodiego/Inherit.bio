@@ -22,11 +22,28 @@ credentials, debug hooks and optional selectors are excluded from its child
 environment. A missing import therefore fails before a hosted run starts.
 The owner approved complete hosted browser verification as the permanent
 policy on 30 September 2026. On 3 October 2026, the owner extended this policy
-to the complete fresh database suite. Local unit tests, type checking, lint
-and all required quality gates must pass before a draft push. The complete
-hosted database and browser suites must pass on the final commit before
-merging or a production change. The guarded production migration rehearsal,
-dry run and verification remain required. No test may be skipped or weakened.
+to the complete fresh database suite. On 4 October 2026, the owner approved
+the complete hosted unit suite as the permanent policy. Local focused unit
+tests for each changed flow, type checking, lint and all twelve repository
+quality gates must pass before a draft push. The complete hosted unit,
+database and browser suites must pass on the final commit before a merge or
+production change. Keep the entire current workflow and its required checks;
+the full hosted unit command remains `pnpm test`.
+
+The full unit run must execute the complete discovered inventory and retain
+its full report. At commit `1493f4b`, that inventory is 599 files and at least
+9,780 tests. Require zero failures, skips and retries. A missing file, test,
+report or job means HOLD. Future commits use their complete discovered
+inventory, with no reduction used to conceal a test. Keep all assertions and
+test time limits. The original local result remains FAIL: 15 quality checks
+passed, 9,778 of 9,780 tests passed, and two failed at their original 5,000 ms
+limit. Those failures remain open until the complete suite passes on the
+final commit. No local full-suite PASS is claimed.
+
+The complete local migration rollback proof remains required. Production
+then requires the exact dry-run sentinel, guarded apply and read-only
+verification. Scientific, carrier, legal and human-study approvals remain
+separate. Draft pushes do not authorize a merge or production action.
 
 GitHub increments the run attempt on a rerun. Use **Re-run all jobs** so the
 independent manifest and every shard produce fresh evidence on that attempt.
@@ -66,7 +83,7 @@ nonnegative per shard and their sum must be positive. No synthetic sentinel
 upload is added. Ordinary full runs and Lighthouse still require positive
 actual uploads directly.
 
-Repository checks retain full units, type check, lint, ten gates, fresh pgTAP,
+Repository checks retain full units, type check, lint, twelve gates, fresh pgTAP,
 invitation transition locks, seed/catalog consistency, rendered legal checks
 and Lighthouse. Lighthouse uses its repository job's independently seeded
 database, exact build and actual provider; it does not reuse another job's state.
