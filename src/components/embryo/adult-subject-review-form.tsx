@@ -101,6 +101,7 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
             sha256 {review.artifact.bodySha256}
           </p>
         </div>
+        {busy ? <p role="status" aria-live="polite" data-state="processing" className="text-sm text-ink-muted">Saving your choice…</p> : null}
         {review.acceptanceBlockedBy === "sign-in" ? (
           <Link
             href={route("auth.sign-in", { query: { next: "/withdraw/session" } })}

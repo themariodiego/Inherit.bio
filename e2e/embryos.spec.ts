@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { adminClient, createConfirmedUser, expectAxeClean, firstViewportInteractives, signIn } from "./helpers";
@@ -30,6 +31,9 @@ import {
   DRAFT_QUESTION_HEADING,
   EMBRYO_COUNT_LABEL,
   SAVE_DRAFT_BUTTON,
+  SEND_INVITATION_BUTTON,
+  SEND_INVITATION_PENDING_STATUS,
+  WAITING_SENTENCE,
   NO_TESTING_END,
   SENT_OPTIONS,
   SENT_QUESTION_HEADING,
@@ -45,6 +49,11 @@ import {
   stepStatus,
 } from "@/copy/embryos/upload";
 import { INGEST_REFUSALS } from "@/copy/upload/errors";
+import { REQUEST_FAILED_STATUS, SIGN_BUTTON, SIGNING_STATUS } from "@/copy/embryos/signing";
+import { COHORT_DRAFT_CREATED_KEYS } from "@/lib/embryos/cohort-draft-contract";
+import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
+import { signStatements } from "./embryo-signing-helpers";
+import { observeNativeResponses } from "./helpers/native-response-observer";
 
 /**
  * Embryo surfaces (design docs/design/w10-embryo-surfaces.md §6.2,
@@ -953,4 +962,217 @@ test("/embryos/[embryoId] processing: the detail page withholds everything while
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Embryo 1");
   await expectNoResults(page);
   await expectNoSexOrRank(page);
+});
+
+
+/** The actual TEST-LOCAL mutation flow; no response or stored state is substituted. */
+async function openPendingDraftForm(page: Page, parentEmail: string) {
+  await page.goto("/embryos/upload");
+  await page.getByRole("radio", { name: "Yes", exact: true }).check();
+  await page.getByRole("button", { name: CONTINUE_BUTTON, exact: true }).click();
+  await page.locator('button[data-option="one-file-columns"]').click();
+  await page.getByRole("radio", { name: "My embryos", exact: true }).check();
+  await page.locator('[data-slot="attestation"] input').check();
+  await page.getByRole("button", { name: CONTINUE_BUTTON, exact: true }).click();
+  await page.locator('button[data-option="two-evidenced-parents"]').click();
+  await page.getByRole("button", { name: CONTINUE_BUTTON, exact: true }).click();
+  await page.getByLabel(EMBRYO_COUNT_LABEL).fill("2");
+  await page.getByLabel("Other parent’s email", { exact: true }).fill(parentEmail);
+  const form = page.locator('[data-slot="draft-form"]');
+  await expect(form).toBeVisible();
+  return form;
+}
+
+test("/embryos/upload processing: real draft and invitation requests announce pending, commit only after release, and wait for the other parent's recorded consent", async ({ page }) => {
+  const id = crypto.randomUUID();
+  const owner = { email: `embryo-pending-${id}@e2e.local`, password: "embryo-pending-pw" };
+  const parentEmail = `embryo-pending-parent-${id}@e2e.local`;
+  const ownerId = await createConfirmedUser(owner.email, owner.password);
+  const admin = adminClient();
+  const ownedDrafts = async () => {
+    const read = await admin.from("embryo_cohort_drafts").select("id,owner_account_id,upload_situation,basis_case,state")
+      .eq("owner_account_id", ownerId);
+    expect(read.error).toBeNull(); return read.data!;
+  };
+  expect(await ownedDrafts()).toEqual([]);
+  await signIn(page, owner.email, owner.password);
+  const form = await openPendingDraftForm(page, parentEmail);
+  let releaseDraft!: () => void;
+  let draftEntered!: () => void;
+  const draftEnteredPromise = new Promise<void>(resolve => { draftEntered = resolve; });
+  const draftReleasePromise = new Promise<void>(resolve => { releaseDraft = resolve; });
+  let draftRequests = 0;
+  await page.route("**/api/embryo-cohort-drafts", async route => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    draftRequests++;
+    expect(route.request().postDataJSON()).toEqual({ uploadSituation: "own-embryos", basis: "two-evidenced-parents",
+      donorAttributionIntent: "none", embryoCount: 2, otherRequiredPrincipalContacts: [parentEmail] });
+    expect(route.request().headers()[UPLOAD_CSRF_HEADER]).toEqual(expect.any(String));
+    draftEntered(); await draftReleasePromise; await route.continue();
+  });
+  const observation = await observeNativeResponses(page, {
+    draft: "^/api/embryo-cohort-drafts$", invitation: "^/api/invitations$",
+  });
+  try {
+  const draftResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/embryo-cohort-drafts"
+    && response.request().method() === "POST");
+  await form.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true }).click();
+  try {
+    await draftEnteredPromise;
+    const saving = form.locator('[data-slot="draft-status"]');
+    await expect(saving).toHaveAttribute("role", "status");
+    await expect(saving).toHaveAttribute("aria-live", "polite");
+    await expect(saving).toHaveAttribute("data-state", "processing");
+    await expect(saving).toHaveText(SIGNING_STATUS);
+    await expect(form.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true })).toBeDisabled();
+    await expect(form.getByRole("button", { name: BACK_BUTTON, exact: true })).toBeDisabled();
+    await expect(form.getByLabel(EMBRYO_COUNT_LABEL)).toBeDisabled();
+    await expect(form.getByLabel("Other parent’s email", { exact: true })).toBeDisabled();
+    await form.dispatchEvent("submit");
+    expect(draftRequests).toBe(1);
+    expect(await ownedDrafts()).toEqual([]);
+  } finally { releaseDraft(); }
+  const created = await draftResponse;
+  expect(created.status()).toBe(201);
+  expect(created.headers()["cache-control"]).toContain("no-store");
+  const draftBody = await observation.read("draft");
+  expect(draftBody.status).toBe(created.status());
+  const receipt = JSON.parse(draftBody.text);
+  expect(Object.keys(receipt).sort()).toEqual([...COHORT_DRAFT_CREATED_KEYS].sort());
+  expect(receipt).toMatchObject({ state: "awaiting_uploader_artifacts", next: "sign_uploader_artifacts", optionalAttributionSlots: [] });
+  expect(receipt.cohortDraftId).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+  expect(await ownedDrafts()).toEqual([{ id: receipt.cohortDraftId, owner_account_id: ownerId,
+    upload_situation: "own_embryos", basis_case: "true_two_parent", state: "draft" }]);
+  await expect(page.locator('[data-stage="owner-sign"]')).toBeVisible();
+  await expect(page.locator('[data-slot="draft-status"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="file-form"]')).toHaveCount(0);
+  await signStatements(page, SIGN_BUTTON, ownerId);
+  await expect(page.locator('[data-stage="invite"]')).toBeVisible();
+  const nativeSignatures = await admin.from("consent_signatures")
+    .select("id,artifact_key,artifact_version,artifact_body_sha256,signer_account_id,target_kind,target_id,purpose")
+    .eq("target_kind", "cohort_draft").eq("target_id", receipt.cohortDraftId).order("artifact_key");
+  expect(nativeSignatures.error).toBeNull();
+  expect(nativeSignatures.data!.map(row => row.artifact_key)).toEqual([
+    "attestation.embryo-disposition-rights", "attestation.embryo-parentage", "consent.upload-embryo",
+  ]);
+  expect(nativeSignatures.data!.every(row => row.signer_account_id === ownerId)).toBe(true);
+  const nativeInvitations = async () => {
+    const read = await admin.from("subject_invitations").select("id,target_kind,target_id,status")
+      .eq("target_kind", "cohort_draft").eq("target_id", receipt.cohortDraftId);
+    expect(read.error).toBeNull(); return read.data!;
+  };
+  expect(await nativeInvitations()).toEqual([]);
+  const beforeInvitation = await ownedDrafts();
+  const invite = page.locator('[data-slot="invite-form"]');
+  await invite.getByLabel("Other parent’s email", { exact: true }).fill(parentEmail);
+  let releaseInvitation!: () => void;
+  let invitationEntered!: () => void;
+  const invitationEnteredPromise = new Promise<void>(resolve => { invitationEntered = resolve; });
+  const invitationReleasePromise = new Promise<void>(resolve => { releaseInvitation = resolve; });
+  let invitationRequests = 0;
+  await page.route("**/api/invitations", async route => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    invitationRequests++;
+    expect(route.request().postDataJSON()).toEqual({ targetCohortDraftId: receipt.cohortDraftId, contactEmail: parentEmail });
+    expect(route.request().headers()[UPLOAD_CSRF_HEADER]).toEqual(expect.any(String));
+    invitationEntered(); await invitationReleasePromise; await route.continue();
+  });
+  const invitationResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/invitations"
+    && response.request().method() === "POST");
+  await invite.getByRole("button", { name: SEND_INVITATION_BUTTON, exact: true }).click();
+  try {
+    await invitationEnteredPromise;
+    const sending = invite.locator('[data-slot="invitation-status"]');
+    await expect(sending).toHaveAttribute("role", "status");
+    await expect(sending).toHaveAttribute("aria-live", "polite");
+    await expect(sending).toHaveAttribute("data-state", "processing");
+    await expect(sending).toHaveText(SEND_INVITATION_PENDING_STATUS);
+    await expect(invite.getByRole("button", { name: SEND_INVITATION_BUTTON, exact: true })).toBeDisabled();
+    await expect(invite.getByLabel("Other parent’s email", { exact: true })).toBeDisabled();
+    await invite.dispatchEvent("submit");
+    expect(invitationRequests).toBe(1);
+    expect(await nativeInvitations()).toEqual([]);
+    expect(await ownedDrafts()).toEqual(beforeInvitation);
+  } finally { releaseInvitation(); }
+  const sent = await invitationResponse;
+  expect(sent.status()).toBe(202);
+  expect(sent.headers()["cache-control"]).toContain("no-store");
+  const invitationBody = await observation.read("invitation");
+  expect(invitationBody.status).toBe(sent.status());
+  expect(JSON.parse(invitationBody.text)).toEqual({ status: "received" });
+  const invitations = await nativeInvitations();
+  expect(invitations).toHaveLength(1);
+  expect(invitations[0]).toMatchObject({ target_kind: "cohort_draft", target_id: receipt.cohortDraftId, status: "pending" });
+  await expect(page.locator('[data-stage="waiting"]')).toBeVisible();
+  await expect(page.locator('[data-slot="waiting-status"]')).toHaveText(WAITING_SENTENCE);
+  await expect(page.locator('[data-slot="invitation-status"], [data-slot="file-form"], [data-stage="acknowledge"]')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('[data-stage="waiting"]')).toBeVisible();
+  const cohorts = await admin.from("embryo_cohorts").select("id").eq("owner_account_id", ownerId);
+  expect(cohorts.error).toBeNull(); expect(cohorts.data).toEqual([]);
+  expect(draftRequests).toBe(1); expect(invitationRequests).toBe(1);
+  await expectAxeClean(page);
+  } finally { await observation.dispose(); }
+});
+
+test("/embryos/upload processing: an actual failed draft request releases pending controls and a fresh current page can save", async ({ page }) => {
+  const id = crypto.randomUUID();
+  const owner = { email: `embryo-network-${id}@e2e.local`, password: "embryo-network-pw" };
+  const parentEmail = `embryo-network-parent-${id}@e2e.local`;
+  const ownerId = await createConfirmedUser(owner.email, owner.password);
+  await signIn(page, owner.email, owner.password);
+  const form = await openPendingDraftForm(page, parentEmail);
+  let release!: () => void;
+  let entered!: () => void;
+  const enteredPromise = new Promise<void>(resolve => { entered = resolve; });
+  const releasePromise = new Promise<void>(resolve => { release = resolve; });
+  let attempts = 0;
+  let spentCandidate = "";
+  await page.route("**/api/embryo-cohort-drafts", async route => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    attempts++;
+    expect(route.request().postDataJSON()).toEqual({ uploadSituation: "own-embryos", basis: "two-evidenced-parents",
+      donorAttributionIntent: "none", embryoCount: 2, otherRequiredPrincipalContacts: [parentEmail] });
+    spentCandidate = route.request().headers()[UPLOAD_CSRF_HEADER];
+    expect(spentCandidate).toEqual(expect.any(String));
+    expect(spentCandidate.length).toBeGreaterThan(0);
+    entered(); await releasePromise; await route.abort("failed");
+  });
+  const failed = page.waitForEvent("requestfailed", request => new URL(request.url()).pathname === "/api/embryo-cohort-drafts"
+    && request.method() === "POST");
+  await form.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true }).click();
+  try {
+    await enteredPromise;
+    await expect(form.locator('[data-slot="draft-status"]')).toHaveText(SIGNING_STATUS);
+    await expect(form.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true })).toBeDisabled();
+  } finally { release(); }
+  await failed;
+  await expect(form.getByRole("alert")).toHaveText(REQUEST_FAILED_STATUS);
+  await expect(form.locator('[data-slot="draft-status"]')).toHaveCount(0);
+  await expect(form.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true })).toBeEnabled();
+  const read = await adminClient().from("embryo_cohort_drafts").select("id").eq("owner_account_id", ownerId);
+  expect(read.error).toBeNull(); expect(read.data).toEqual([]);
+  expect(attempts).toBe(1);
+  await page.unroute("**/api/embryo-cohort-drafts");
+  const current = await openPendingDraftForm(page, parentEmail);
+  const observation = await observeNativeResponses(page, { draft: "^/api/embryo-cohort-drafts$" });
+  try {
+  const completed = page.waitForResponse(response => new URL(response.url()).pathname === "/api/embryo-cohort-drafts"
+    && response.request().method() === "POST");
+  await current.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true }).click();
+  const response = await completed;
+  expect(response.status()).toBe(201);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(response.request().headers()[UPLOAD_CSRF_HEADER]).not.toBe(spentCandidate);
+  const draftBody = await observation.read("draft");
+  expect(draftBody.status).toBe(response.status());
+  const receipt = JSON.parse(draftBody.text);
+  expect(Object.keys(receipt).sort()).toEqual([...COHORT_DRAFT_CREATED_KEYS].sort());
+  expect(receipt).toMatchObject({ state: "awaiting_uploader_artifacts", next: "sign_uploader_artifacts", optionalAttributionSlots: [] });
+  const saved = await adminClient().from("embryo_cohort_drafts").select("id,owner_account_id").eq("owner_account_id", ownerId);
+  expect(saved.error).toBeNull();
+  expect(saved.data).toEqual([{ id: receipt.cohortDraftId, owner_account_id: ownerId }]);
+  await expect(page.locator('[data-stage="owner-sign"]')).toBeVisible();
+  await expect(page.locator('[data-slot="draft-status"]')).toHaveCount(0);
+  } finally { await observation.dispose(); }
 });

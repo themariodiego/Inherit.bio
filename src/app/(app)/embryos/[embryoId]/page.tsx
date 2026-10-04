@@ -12,7 +12,7 @@ import { BlockingState, EmbryoErrorState, EmbryoUnavailable } from "@/components
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
-import { READ_FAILED_HEADING, READ_FAILED_SENTENCE, REGISTRY_EMPTY_SENTENCE, SHAPE_BLOCKED_HEADING, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
+import { READ_FAILED_HEADING, READ_FAILED_SENTENCE, REGISTRY_EMPTY_SENTENCE, SAVED_SCIENTIFIC_REVIEW_SENTENCE, SHAPE_BLOCKED_HEADING, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
 import {
   DETAIL_SECTION_LABEL,
   FILE_NOT_ADDED_SENTENCE,
@@ -36,6 +36,7 @@ import { EmbryoReadError, rowsOrThrow, selectEmbryo } from "@/lib/embryos/cohort
 import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
+import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -79,6 +80,8 @@ async function loadDetail(input: {
       ? admin
           .from("embryo_scores")
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
+          // Private carrier observations have a saved publication hold.
+          .is("computation_receipt", null)
           .eq("embryo_id", input.embryo.id)
           .in("condition_id", [...registered])
       : { data: [] as never[], error: null },
@@ -168,7 +171,9 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
       body = <EmbryoResultGate action={acknowledgeEmbryoGate} />;
       break;
     case "complete": {
+      let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
       try {
+        savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
         detail = await loadDetail({
           embryo: {
             id: embryo.id,
@@ -215,7 +220,12 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
                 <p className="max-w-prose text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
               </>
             }
-            yourResult={<FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />}
+            yourResult={<>
+              {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
+                {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
+              </p> : null}
+              <FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />
+            </>}
             whatThisDoesntMean={
               <ul className="max-w-prose list-disc space-y-1 pl-5 text-base leading-relaxed text-ink">
                 <li>{NOT_ABOUT_ANY_CHILD}</li>

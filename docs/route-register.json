@@ -14898,9 +14898,6 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
-      "notApplicableStates": {
-        "processing": "PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Moved here from the public-rights-flow profile on 2026-09-28. Corrections item 8, signed 2026-09-13."
-      },
       "policy": {
         "sessionMode": "requires-an-active-rights-cookie-then-resolves-the-server-owned-token-purpose-through-withdrawal-target-v1.purposeMatrix-before-any-target-read",
         "dataScope": "rights-session-bound-target-only-after-activation",
@@ -15622,11 +15619,10 @@
       "width": "64rem",
       "stateProfile": "restricted-flow",
       "consentRequiredException": {
-        "kind": "reads-no-consent"
+        "kind": "consent-is-given-here"
       },
       "notApplicableStates": {
-        "consent-required": "TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs \u2014 `consent.upload-embryo` and `attestation.embryo-parentage` \u2014 are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.",
-        "processing": "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13."
+        "consent-required": "This is where the TEST-LOCAL uploader signs consent.upload-embryo and the required parentage and disposition statements against the current draft. The current loader checks each recorded signature against its published artifact, statement set, live principal and jurisdiction. The owner-sign and co-parent-sign stages give those statements here; the waiting stage names the other parent whose current signatures are missing and never offers the file before they are complete. Production retains its unavailable terminal. This is G2.2 consent-is-given-here, not the expired E0-not-built or reads-no-consent rationale. Source review 2026-10-03."
       },
       "policy": {
         "mode": "guarded",

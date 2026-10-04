@@ -94,14 +94,37 @@ for the Playwright suite (RLS, network audit and upload/report flows). It
 requires the local stack and a production build; see the self-hosting guide
 for its prerequisites. It is not a substitute for first-run setup.
 
+Before a draft push, run the focused unit tests for each changed flow, type
+checking, lint and all twelve repository quality gates. The owner approved
+complete hosted unit verification on 4 October 2026, after the earlier hosted
+database and browser decisions. Before a merge or production change, the
+complete hosted unit, database and browser suites must pass on the final
+commit. The full hosted unit command remains `pnpm test`.
+
+Run the complete discovered unit inventory and keep the full test report.
+For commit `1493f4b`, the inventory is 599 files and at least 9,780 tests.
+Require zero failures, skips and retries. A missing file, test, report or job
+means HOLD. Future commits must use their complete discovered inventory;
+do not reduce it to conceal a test. Keep all assertions and test time limits.
+The first local full run at `1493f4b` remains FAIL: 9,778 of 9,780 tests passed,
+and two failed at their original 5,000 ms limit. Those failures remain open
+until the complete suite passes on the final commit.
+
+The complete local migration rollback proof remains required. Production
+then requires the exact dry-run sentinel, guarded apply and read-only
+verification. Scientific, carrier, legal and human-study approvals remain
+separate. A draft push does not authorize a merge or production change. See
+the [dated decisions](docs/protocol/decisions.md) for the complete policy.
+
 ## Gates
 
-Ten `pnpm gate:*` checks read the repository rather than a description of
+Twelve `pnpm gate:*` checks read the repository rather than a description of
 it: routes against the register, claims against their citations, copy against
 a plain-vocabulary list, environment variables against both the template and
 the self-hosting guide, secrets over the tracked tree *and its history*, plus
 jurisdictions, report templates, result headings, legal placeholders and
-comparator names. Two more compare a deployed database with the repository:
+comparator names, non-template citation surfaces and SQL fixture includes.
+Two more compare a deployed database with the repository:
 its migrations and its report catalog.
 
 `gate:names` is the one that cannot run from a clean checkout: its comparator
@@ -121,7 +144,7 @@ needs its classification, its generator and its current SHA-256 in
 `e2e/fixtures/PROVENANCE.md`, which is what stops a real person's file being
 committed as a synthetic one.
 
-Ten run in CI. `gate:schema-drift` deliberately does not — it compares a
+Twelve repository gates run in CI. `gate:schema-drift` deliberately does not — it compares a
 deployed database against `supabase/migrations`, and in CI that database was
 built from those same files seconds earlier, so it could only ever confirm
 itself. It belongs against a deployed environment, after a deploy, and it

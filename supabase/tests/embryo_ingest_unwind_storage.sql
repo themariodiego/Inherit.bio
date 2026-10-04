@@ -312,10 +312,10 @@ select is((select count(*) from public.embryo_ingest_unwinds where state='storag
   and id in (select unwind from attempts)),1::bigint,'only the fully proved R2 unwind was confirmed');
 
 -- ---------------------------------------------------------------------------
--- The generic worker claim never hands out a split job (20260929102000)
+-- The generic worker claim never hands out a dedicated embryo job
 -- ---------------------------------------------------------------------------
 -- Other queued rows in a development database are pushed out of reach inside
--- this transaction, so the claim below sees only the two synthetic jobs.
+-- this transaction, so the claim below sees only the three synthetic jobs.
 update public.worker_jobs set not_before=clock_timestamp()+interval '1 day' where status='queued';
 insert into public.worker_jobs(user_id,cohort_id,kind,output_kind,source_binding_kind,source_binding_id,
   source_binding_revision,file_sha256,computation_revision,idempotency_key,created_at)
@@ -323,15 +323,26 @@ insert into public.worker_jobs(user_id,cohort_id,kind,output_kind,source_binding
     repeat('a',64),'split-v1',repeat('b',64),clock_timestamp()-interval '1 hour'
   from public.embryo_ingest_sessions s where s.id=pg_temp.sid('r');
 insert into public.worker_jobs(user_id,cohort_id,kind,output_kind,source_binding_kind,source_binding_id,
-  source_binding_revision,file_sha256,computation_revision,idempotency_key)
+  source_binding_revision,file_sha256,computation_revision,idempotency_key,created_at)
   select s.account_id,s.cohort_id,'score_embryo','embryo.single-locus','cohort-source-set',s.cohort_id,1,
-    repeat('a',64),'score-v1',repeat('c',64)
+    repeat('a',64),'score-v1',repeat('c',64),clock_timestamp()-interval '30 minutes'
   from public.embryo_ingest_sessions s where s.id=pg_temp.sid('r');
-select is((private.claim_worker_job_v2('synthetic-worker',repeat('d',64),60)).kind,'score_embryo',
-  'the generic claim passes over the older split job and takes the next kind');
+-- This is synthetic dispatch metadata only. Claiming it does not run a purge
+-- or prove any retention disposition or storage deletion.
+insert into public.worker_jobs(user_id,cohort_id,kind,output_kind,source_binding_kind,source_binding_id,
+  source_binding_revision,file_sha256,computation_revision,idempotency_key)
+  select s.account_id,s.cohort_id,'retention_purge','lifecycle.retention-purge','retention-disposition',s.cohort_id,1,
+    repeat('a',64),'retention-v1',repeat('f',64)
+  from public.embryo_ingest_sessions s where s.id=pg_temp.sid('r');
+select is((private.claim_worker_job_v2('synthetic-worker',repeat('d',64),60)).kind,'retention_purge',
+  'the generic claim passes over both older dedicated embryo jobs and takes the cleanup kind');
 select ok(private.claim_worker_job_v2('synthetic-worker',repeat('e',64),60) is null,
-  'with only a split job queued, the generic claim returns nothing');
+  'with only dedicated embryo jobs queued, the generic claim returns nothing');
 select is((select status from public.worker_jobs where kind='split_cohort_vcf' and source_binding_id=pg_temp.sid('r')),
   'queued','the split job is still queued for its own worker');
+select is((select status from public.worker_jobs where kind='score_embryo'
+  and idempotency_key=repeat('c',64)
+  and source_binding_id=(select cohort_id from public.embryo_ingest_sessions where id=pg_temp.sid('r'))),
+  'queued','the score job is still queued for its own worker');
 select * from finish();
 rollback;

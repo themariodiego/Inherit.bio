@@ -114,9 +114,14 @@ function discoveredFiles(value: unknown): string[] {
   };
   visit(reportSchema.parse(value).suites); return [...files].sort();
 }
+/** Discovery-only facts have no GitHub run identity or execution credit. */
+export function browserDiscoveryInventory(value: unknown, trackedSpecs: string[]): { cases: string[]; files: string[] } {
+  return { cases: browserReportCases(value, null, false),
+    files: verifyBrowserSourceCensus(discoveredFiles(value), trackedSpecs) };
+}
 export function browserManifest(value: unknown, source: CiBrowserIdentity, trackedSpecs: string[]): CiBrowserManifest {
   return manifestSchema.parse({ ...identity.parse(source), schemaVersion: 1, total: CI_BROWSER_SHARDS,
-    cases: browserReportCases(value, null, false), files: verifyBrowserSourceCensus(discoveredFiles(value), trackedSpecs) });
+    ...browserDiscoveryInventory(value, trackedSpecs) });
 }
 export function browserShardReceipt(full: unknown, assigned: unknown, executed: unknown,
   source: CiBrowserIdentity, index: number, providerUploads: number,

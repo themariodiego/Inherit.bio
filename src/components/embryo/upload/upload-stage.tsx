@@ -38,6 +38,7 @@ import {
   RECORD_KEY_CARDS_NOTE,
   SEND_FILE_BUTTON,
   SEND_INVITATION_BUTTON,
+  SEND_INVITATION_PENDING_STATUS,
   STILL_TO_COME_STATUS,
   UPLOAD_STOPPED_SENTENCE,
   WAITING_HEADING,
@@ -176,10 +177,11 @@ function InviteForm({ draftId, csrfTokens, onSent }: { draftId: string; csrfToke
       {csrfTokens.map((_, index) => (
         <div key={index} className="space-y-2">
           <label htmlFor={ids[index]} className="block text-base font-medium text-ink">{parentEmailLabel(index, csrfTokens.length)}</label>
-          <Input id={ids[index]} name={`contact-${index}`} type="email" autoComplete="off" required maxLength={254} className="max-w-md" />
+          <Input id={ids[index]} name={`contact-${index}`} type="email" autoComplete="off" required maxLength={254} disabled={status === "pending"} className="max-w-md" />
         </div>
       ))}
       <Button type="submit" size="lg" disabled={status === "pending"}>{SEND_INVITATION_BUTTON}</Button>
+      {status === "pending" ? <p role="status" aria-live="polite" data-state="processing" data-slot="invitation-status" className="max-w-prose text-sm text-ink">{SEND_INVITATION_PENDING_STATUS}</p> : null}
       {status === "sent" ? <p role="status" className="max-w-prose text-sm text-ink">{INVITATION_SENT_STATUS}</p> : null}
       {status === "failed" ? <p role="alert" className="max-w-prose text-sm text-ink">{REQUEST_FAILED_STATUS}</p> : null}
     </form>

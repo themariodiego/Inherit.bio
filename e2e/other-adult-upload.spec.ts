@@ -706,3 +706,131 @@ test("Path B queued reports: real confirmed source and operators, separate self/
     expect(personId).not.toBe((await findUserByEmail(admin, UPLOADER.email))!.id);
   } finally { await personContext.close(); }
 });
+
+// All original VCF journeys remain exact; these add actual accepted array formats.
+for (const arrayFixture of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ftdna.csv"] as const) {
+  test(`Path B confirmed array ${arrayFixture}: real source operators, isolated saved readers and revoke/re-share`, async ({ page, browser, request }) => {
+  test.setTimeout(600_000);
+  const person = { email: `path-b-reader-${randomUUID()}@e2e.local`, name: `Synthetic Reportreader ${arrayFixture}`, password: PASSWORD };
+  const personId = await createConfirmedUser(person.email, person.password);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  const subjectId = await pathBPerson(page, request, person);
+  await signOut(page);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  const held = await addFile(page, person, path.join(process.cwd(), `e2e/fixtures/path-b-reports-grch38-${arrayFixture}`));
+  const personContext = await browser.newContext({ baseURL: ORIGIN });
+  const reader = await personContext.newPage();
+  try {
+    await signIn(reader, person.email, person.password);
+    // Real current insurance acknowledgement; no personal DNA file is added.
+    await completeOwnUploadConsent(reader);
+    const mail = await drainMailUntil(request, mailTo(person.email, "A DNA file was added for you on Inherit"), "the real report-source confirmation notice");
+    await openRightsLink(reader, mail.html);
+    await reader.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
+    await expect(reader.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+    const admin = adminClient();
+    const sourceBefore = await admin.from("genome_files").select("normalization_completed_at").eq("id", held.id).single();
+    expect(sourceBefore.error).toBeNull(); expect(sourceBefore.data?.normalization_completed_at).toBeNull();
+    const selfVariant = await choosePathBReport(reader, subjectId, "reports.monogenic", "self");
+    await choosePathBReport(reader, subjectId, "reports.polygenic", "self");
+    const sharedVariant = await choosePathBReport(reader, subjectId, "reports.monogenic", "uploader");
+    // Neither choice manufactures a result before complete byte normalization.
+    const variantsBefore = await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("subject_id", subjectId);
+    expect(variantsBefore.error).toBeNull(); expect(variantsBefore.count).toBe(0);
+    // The registered worker consumes the global queue in FIFO order. Earlier
+    // genuine confirmation journeys intentionally left their jobs queued.
+    // Process each actual queued job once and independently check its exact
+    // job/source transition; a completed different file is never a receipt
+    // that this file was normalized. No queue row is removed or fabricated.
+    const normalizationQueue = await admin.from("worker_jobs")
+      .select("id,file_id,created_at,attempts,max_attempts,not_before")
+      .eq("status", "queued").eq("kind", "annotate_vcf").eq("output_kind", "ingest.normalize")
+      .eq("computation_revision", "path-b-normalization-v1").order("created_at").order("id");
+    expect(normalizationQueue.error).toBeNull();
+    expect(normalizationQueue.data?.filter(job => job.file_id === held.id)).toHaveLength(1);
+    for (const job of normalizationQueue.data!) {
+      expect(job.attempts).toBeLessThan(job.max_attempts);
+      expect(Date.parse(job.not_before)).toBeLessThanOrEqual(Date.now());
+      await runPathBOperator("normalization");
+      const normalizedJob = await admin.from("worker_jobs").select("status,file_id,attempts")
+        .eq("id", job.id).single();
+      expect(normalizedJob.error).toBeNull();
+      expect(normalizedJob.data).toEqual({ status: "done", file_id: job.file_id, attempts: job.attempts + 1 });
+      const normalizedSource = await admin.from("genome_files").select("normalization_completed_at,status")
+        .eq("id", job.file_id!).single();
+      expect(normalizedSource.error).toBeNull();
+      expect(normalizedSource.data?.status).toBe("stored");
+      expect(normalizedSource.data?.normalization_completed_at).not.toBeNull();
+    }
+    const calls = await admin.from("user_variants").select("rsid,genotype,file_id,subject_id,ref,alt").eq("subject_id", subjectId).order("rsid");
+    expect(calls.error).toBeNull();
+    expect(calls.data).toEqual([{ rsid: 762551, genotype: "A/C", file_id: held.id, subject_id: subjectId, ref: null, alt: null },
+      { rsid: 9923231, genotype: "C/T", file_id: held.id, subject_id: subjectId, ref: null, alt: null }]);
+    const observed = await admin.from("report_observed_calls").select("file_id", { count: "exact", head: true }).eq("file_id", held.id);
+    expect(observed.error).toBeNull(); expect(observed.count).toBe(0);
+    const reportList = route("genome.reports", { subject: `s-${subjectId}` });
+    expect((await reader.request.get(reportList)).status()).toBe(404);
+    for (let job = 0; job < 3; job++) await runPathBOperator("report");
+    const jobs = await admin.from("worker_jobs").select("kind,output_kind,status").eq("subject_id", subjectId)
+      .like("computation_revision", "path-b-reports-v1:%").order("kind");
+    expect(jobs.error).toBeNull();
+    expect(jobs.data).toEqual([
+      { kind: "compute_monogenic_report", output_kind: "report.monogenic", status: "done" },
+      { kind: "compute_monogenic_report", output_kind: "report.monogenic", status: "done" },
+      { kind: "compute_polygenic_report", output_kind: "report.polygenic", status: "done" },
+    ]);
+    await reader.goto(route("files.index"));
+    await reader.getByRole("link", { name: CHOICES.readResults(CHOICES.layers["reports.monogenic"]), exact: true }).click();
+    await expect(reader).toHaveURL(/\/reports\?layer=variant_call$/);
+    const variantUrl = route("genome.report", { subject: `s-${subjectId}`, slug: "vkorc1-rs9923231-one-position" }, { query: { source: held.id } });
+    const estimateUrl = route("genome.report", { subject: `s-${subjectId}`, slug: "caffeine-metabolism-cyp1a2-rs762551" }, { query: { source: held.id } });
+    await reader.goto(variantUrl);
+    await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    await expect(reader.getByText("Your file shows C on one copy and T on the other. CPIC calls T the variant form of VKORC1. This says nothing about how any medicine works in you, and it is not a dose.", { exact: true })).toBeVisible();
+    await reader.goto(estimateUrl);
+    await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
+    await page.goto(route("files.index"));
+    const sharedReportsLink = page.getByRole("link", { name: CHOICES.openShared, exact: true })
+      .and(page.locator(`a[href="${reportList}"]`));
+    await expect(sharedReportsLink).toHaveCount(1);
+    await sharedReportsLink.click();
+    await expect(page).toHaveURL(new URL(reportList, ORIGIN).href);
+    const gate = page.locator('[data-slot="result-gate"]');
+    await expect(gate).toBeVisible();
+    expect(await page.content()).not.toContain('data-figure-kind="genotype"');
+    await gate.getByRole("checkbox", { name: GATE_CHECKBOX_LABEL, exact: true }).check();
+    await gate.getByRole("button", { name: GATE_BUTTON, exact: true }).click();
+    await expect(gate).toHaveCount(0);
+    await page.goto(variantUrl);
+    await expect(page.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    // A completed personal estimate is not implicitly a shared estimate.
+    expect((await page.request.get(estimateUrl)).status()).toBe(404);
+    for (const viewer of [page, reader]) {
+      expect((await viewer.request.get(route("genome.browser", { subject: `s-${subjectId}` }))).status()).toBe(404);
+      expect((await viewer.request.get(route("genome.ancestry", { subject: `s-${subjectId}` }))).status()).toBe(404);
+    }
+    const otherSource = route("genome.report", { subject: `s-${subjectId}`, slug: "vkorc1-rs9923231-one-position" }, { query: { source: randomUUID() } });
+    expect((await reader.request.get(otherSource)).status()).toBe(404);
+    await reader.goto(route("files.index"));
+    const row = reader.locator('[data-slot="path-b-choice"][data-purpose="reports.monogenic"][data-direction="uploader"]');
+    const observation = await observeNativeResponses(reader, { revoke: `^/api/consents/${sharedVariant}/revoke$` });
+    await row.getByRole("button", { name: `${CHOICES.turnOff}: ${CHOICES.layers["reports.monogenic"]}, ${CHOICES.forThem.toLowerCase()}`, exact: true }).click();
+    const response = await observation.read("revoke"); expect(response.status).toBe(200);
+    expect(JSON.parse(response.text)).toMatchObject({ revoked: true }); await observation.dispose();
+    expect((await page.request.get(variantUrl)).status()).toBe(404);
+    await reader.goto(variantUrl);
+    await expect(reader.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    const unchanged = await admin.from("purpose_grants").select("revoked_at").eq("grant_id", selfVariant).single();
+    expect(unchanged.error).toBeNull(); expect(unchanged.data?.revoked_at).toBeNull();
+    // A new share must queue and compute its own result; it cannot revive one.
+    await choosePathBReport(reader, subjectId, "reports.monogenic", "uploader");
+    expect((await page.request.get(variantUrl)).status()).toBe(404);
+    await runPathBOperator("report");
+    await page.goto(variantUrl);
+    await expect(page.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("C/T");
+    expect((await admin.from("genome_files").select("user_id").eq("id", held.id).single()).data?.user_id)
+      .toBe((await findUserByEmail(admin, UPLOADER.email))!.id);
+    expect(personId).not.toBe((await findUserByEmail(admin, UPLOADER.email))!.id);
+  } finally { await personContext.close(); }
+  });
+}

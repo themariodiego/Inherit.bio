@@ -5,6 +5,29 @@ public HG001 benchmark is retained with its provenance but is not an active
 browser input. Never substitute private customer, patient, or personal genome
 data. Public benchmark genotypes are also excluded from current test inputs.
 
+## Path B confirmed consumer-array fixtures
+
+- Classification: hand-written synthetic GRCh38 files in the four supported
+  consumer-array formats. No genotype came from a person, customer file or
+  public benchmark sample. The vendor-style headers identify the parser format;
+  these files are not exports from a person's vendor account.
+- The two public positions match the committed report catalog and the separate
+  `path-b-reports-grch38.vcf`: rs762551 at chr15:74749576 and rs9923231 at
+  chr16:31096368. The invented literal calls are A/C and C/T in every file.
+  Array bytes supply no reference/alternate alleles, depth or quality values.
+- The four added cases in `e2e/other-adult-upload.spec.ts` upload each complete
+  file through the real chooser and transport, confirm its current source,
+  and invoke the registered normalization and report operators. Authored cases
+  do not establish runtime, scientific accuracy or clinical validation.
+- Repository SHA-256 values:
+
+| Fixture | Repository SHA-256 |
+| --- | --- |
+| `path-b-reports-grch38-23andme.txt` | `b7bbda6136bf4076f16fcfed648628a45a1ffa3d6db795685a4902c56caedf2b` |
+| `path-b-reports-grch38-ancestry.txt` | `c6c4c3135c21807084e24904fbacbace7bd1a9cbfed1e3dff5d698b0ae4ae3ac` |
+| `path-b-reports-grch38-myheritage.csv` | `51219053ef8ace8b20558f4379f1feb622b8818beda5ddf9a24345483e1741c9` |
+| `path-b-reports-grch38-ftdna.csv` | `344ca41eaa96977968fdb5ef559b07c06c30a458b4ba3a535505ef71bd549e48` |
+
 ## synthetic-browser-grch38.vcf.gz
 
 - Classification: independently invented single-sample VCF. No genotype,

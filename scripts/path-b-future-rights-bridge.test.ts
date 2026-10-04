@@ -179,6 +179,8 @@ it("reviews shared replacements across all six authored Path B migration stages"
     ...(readdirSync(directory).includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql|public.activate_rights_session_v1"] : []),
     "20261001028000_future_person_keyless_human_decisions.sql|private.authorize_mail_submission_v1",
     "20261001028000_future_person_keyless_human_decisions.sql|public.claim_mail_outbox",
+    "20261002132000_embryo_observed_carrier_producer.sql|private.claim_worker_job_v2",
+    "20261003030000_path_b_confirmed_array_normalization.sql|private.enqueue_path_b_normalization_v1",
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",
@@ -208,4 +210,53 @@ it("preserves the entire corrected mail dispatcher behind the token-free informa
     "m.attempt_count=p_attempt", "m.expires_at=o.timely_deadline", "m.semantic_revision=r.review_revision",
     "private.keyless_owner_notice_current_v1(r.id)", "sp.status='pending'", "d.decision='needs-more-information'"])
     expect(wrapped).toContain(guard);
+});
+
+
+describe("the registered private Embryo claimant successor", () => {
+  const file = "20261002132000_embryo_observed_carrier_producer.sql";
+  const source = readFileSync(path.join(directory, file), "utf8");
+  const claimant = "private.claim_worker_job_v2";
+  const predecessor = functionBody(readFileSync(path.join(directory,
+    "20260930231000_path_b_normalization.sql"), "utf8"), claimant);
+
+  it("preserves the whole reviewed generic claimant except for the one private Embryo queue exclusion", () => {
+    const successor = functionBody(source, claimant);
+    const exclusion = "  and w.kind<>'score_embryo'\n";
+    expect(md5(predecessor)).toBe("a23d7320907f9f80433ee60d6d43c692");
+    expect(successor.split(exclusion)).toHaveLength(2);
+    expect(successor.replace(exclusion, "")).toBe(predecessor);
+    expect(source.match(/create or replace function private\.claim_worker_job_v2\(/gu)).toHaveLength(1);
+    expect(source.slice(source.indexOf("create or replace function private.claim_worker_job_v2("),
+      source.indexOf("as $generic$"))).toBe(`create or replace function private.claim_worker_job_v2(p_worker_id text,p_claim_token_hash text,p_lease_seconds integer default 60)
+returns public.worker_jobs language plpgsql security definer set search_path=''
+`);
+  });
+
+  it("retains the complete predecessor owner, attributes, arguments, defaults and exact EXECUTE ACL guard before replacement", () => {
+    const start = source.indexOf("do $predecessor$");
+    const end = source.indexOf("end $predecessor$;", start) + "end $predecessor$;".length;
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(source.slice(start, end)).toBe(`do $predecessor$
+declare p pg_proc;
+begin
+ select * into p from pg_proc where oid=to_regprocedure('private.claim_worker_job_v2(text,text,integer)');
+ if p.oid is null or md5(p.prosrc) is distinct from 'a23d7320907f9f80433ee60d6d43c692'
+  or p.proowner is distinct from 'postgres'::regrole or p.prolang is distinct from (select oid from pg_language where lanname='plpgsql')
+  or p.prokind<>'f' or p.provolatile<>'v' or p.proparallel<>'u' or p.proisstrict or not p.prosecdef or p.proleakproof
+  or p.prorettype is distinct from 'public.worker_jobs'::regtype or p.proretset or p.pronargs<>3 or p.pronargdefaults<>1
+  or p.proargnames is distinct from array['p_worker_id','p_claim_token_hash','p_lease_seconds']
+  or pg_get_expr(p.proargdefaults,0) is distinct from '60'
+  or p.proconfig is distinct from array['search_path=""']
+  or (select array_agg(pg_get_userbyid(a.grantee)::text order by pg_get_userbyid(a.grantee))
+    from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+    where a.privilege_type='EXECUTE' and not a.is_grantable and a.grantor='postgres'::regrole)
+      is distinct from array['postgres','service_role']
+  or (select count(*) from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))))<>2 then
+  raise exception using errcode='55000',message='embryo_carrier_predecessor_changed';end if;
+end $predecessor$;`);
+    expect(end).toBeLessThan(source.indexOf("alter table public.embryo_scores add column computation_receipt jsonb;"));
+    expect(end).toBeLessThan(source.indexOf("create or replace function private.claim_worker_job_v2("));
+    expect(source).not.toMatch(/(?:grant|revoke|alter function)[^;]*private\.claim_worker_job_v2/iu);
+  });
 });

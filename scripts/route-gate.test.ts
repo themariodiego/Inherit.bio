@@ -155,13 +155,26 @@ describe("the route gate holds the register to the code", () => {
     // a profile quietly losing a state fails here instead of reading as progress.
     // 156 -> 158: the named-reviewer page adds its complete and processing pairs. These
     // authored titles are statically counted; hosted CI must execute them.
-    expect(result.requiredStateCount).toBe(158);
+    // 158 -> 159: the actual session-based adult form requires and proves its pending choice.
+    // 159 -> 160: E0 is built under TEST-LOCAL; the actual draft/invitation pending state is required; authored case must run in full hosted CI.
+    expect(result.requiredStateCount).toBe(160);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
     // redirects, none gone. Pinned exactly, so a route quietly leaving the
     // ledger fails here rather than reading as a cleaner product.
     expect(result.preExistingRouteCount).toBe(34);
+  });
+
+  it("fails when the retired E0 processing waiver is restored after the actual upload pending proof", async () => {
+    const root = plant({ register: register => {
+      const entry = (register.routes as Route[]).find(route => route.id === "embryos.upload")!;
+      (entry as Route & { notApplicableStates: Record<string, string> }).notApplicableStates.processing = "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13.";
+    } });
+    const result = await runRouteGate(root);
+    expect(result.failures).toEqual([
+      "proven route state: recorded in docs/route-divergence.json but no longer present: /embryos/upload processing",
+    ]);
   });
 
   /**
@@ -1109,5 +1122,22 @@ describe("the route gate refuses a required header nothing reads", () => {
     expect(failures.join("\n")).toContain(
       "required header check found 0 declared header names, expected at least 2",
     );
+  });
+});
+
+
+describe("the current rights session processing contract", () => {
+  it("rejects restoring the removed plain-form processing exemption", async () => {
+    const root = plant({ register: (register) => {
+      const entry = (register.routes as Route[]).find(row => row.id === "rights.withdraw")!;
+      (entry as Route & { notApplicableStates: Record<string, string> }).notApplicableStates = {
+        processing: "PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Moved here from the public-rights-flow profile on 2026-09-28. Corrections item 8, signed 2026-09-13.",
+      };
+    } });
+    const result = await runRouteGate(root);
+    expect(result.requiredStateCount).toBe(159);
+    expect(result.failures).toEqual([
+      "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
+    ]);
   });
 });
