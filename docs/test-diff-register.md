@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-04 — Open the current array person's shared reports
+
+Run 37201583001 on 7b1ae648 passed all 9,782 unit cases and browser groups
+1, 2, 3, 4 and 6. Group 5 reached the first array person's completed report,
+then its strict accessible-name link matched two valid people on the shared
+uploader's Files page. The older VCF person's reports remain available.
+
+Keep the exact “Read shared reports” accessible-name requirement and intersect
+it with this array person's exact subject report URL. Require exactly one
+matching link, click that real link, and check the resulting exact URL. Preserve
+all original result-gate, genotype, personal/shared estimate isolation,
+revocation, re-share and source-owner assertions. Do not choose an arbitrary
+link, remove older data, bypass navigation, or alter application access rules.
+All four array journeys, test names, time limits, retries and skip rules stay.
+
+This source fix does not claim a browser pass. Focused local unit and quality
+checks must pass before the draft push. All complete hosted suites must pass
+on the final commit before a merge or production change.
+
 ## 2026-10-04 — Revoke the actual confirmed-array store grant
 
 The hosted database run on f8c93336 stopped at the array revocation fixture
