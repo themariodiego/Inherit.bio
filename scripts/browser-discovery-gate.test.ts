@@ -3,7 +3,7 @@ import { browserDiscoveryArguments, browserDiscoveryEnvironment } from "./browse
 
 describe("complete local browser discovery preflight", () => {
   it("never inherits credentials, provider authority, debug hooks or optional case selectors", () => {
-    const env = browserDiscoveryEnvironment({ PATH: "synthetic-path", HOME: "synthetic-home", TMPDIR: "synthetic-temp",
+    const env = browserDiscoveryEnvironment({ PATH: "synthetic-path", HOME: "synthetic-home", TMPDIR: "synthetic-temp", NODE_ENV: "production",
       NEXT_PUBLIC_SUPABASE_URL: "https://example.invalid", SUPABASE_SERVICE_ROLE_KEY: "EXAMPLE_PRIVATE_VALUE",
       NODE_OPTIONS: "--import private-hook", GITHUB_ACTIONS: "true", GITHUB_SHA: "EXAMPLE_PRIVATE_VALUE",
       INHERIT_DENSITY_CAPTURE: "1", INHERIT_COMPREHENSION_RUN: "1", PWDEBUG: "1",
@@ -11,6 +11,7 @@ describe("complete local browser discovery preflight", () => {
     expect(env.PATH).toBe("synthetic-path");
     expect(env.HOME).toBe("synthetic-home");
     expect(env.TMPDIR).toBe("synthetic-temp");
+    expect(env.NODE_ENV).toBe("test");
     expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe("http://127.0.0.1:54321");
     expect(env.SUPABASE_SERVICE_ROLE_KEY).toBe("EXAMPLE_SYNTHETIC_DISCOVERY_SERVICE_KEY");
     expect(JSON.stringify(env)).not.toMatch(/EXAMPLE_PRIVATE_VALUE|private-hook|example.invalid/);

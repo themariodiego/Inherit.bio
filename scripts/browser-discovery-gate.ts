@@ -11,10 +11,10 @@ import { browserDiscoveryInventory, CI_BROWSER_SHARDS } from "./ci-browser-shard
 
 /** A listing process receives no provider keys, optional selectors or runtime
  * authority from the caller. --list loads tests without starting their fixtures. */
-export function browserDiscoveryEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+export function browserDiscoveryEnvironment(env: Readonly<Record<string, string | undefined>>): NodeJS.ProcessEnv {
   const inherited = Object.fromEntries(["PATH", "HOME", "TMPDIR", "SystemRoot"]
     .filter(name => env[name] !== undefined).map(name => [name, env[name]]));
-  return { ...inherited, CI: "true", INHERIT_DISPOSABLE_LOCAL_E2E: "true",
+  return { ...inherited, NODE_ENV: "test", CI: "true", INHERIT_DISPOSABLE_LOCAL_E2E: "true",
     INHERIT_LOCAL_E2E_PROJECT: "sequence", INHERIT_TEST_JURISDICTION: "1",
     NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "EXAMPLE_SYNTHETIC_DISCOVERY_ANON_KEY",
