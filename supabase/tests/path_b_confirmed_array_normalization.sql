@@ -300,7 +300,19 @@ truncate array_claim;
 insert into array_claim select public.path_b_normalization_v1('claim',null,repeat('8',64),null,null,true);
 select is(pg_temp.array_norm('stage','{"kind":"variants","sequence":0,"rows":[{"rsid":762551,"chrom":15,"pos":74749576,"ref":null,"alt":null,"genotype":"A/C"}]}'),
  'true'::jsonb,'the array stages only under the current source authority');
-update public.consents set revoked_at=clock_timestamp() where subject_id=pg_temp.sid('array-revoked') and consent_type='upload_class';
+-- Revoke the exact uploader store grant used by the current claimed revision.
+-- Keep the paired revocation fields and account/subject scope authoritative.
+with revoked as (
+ update public.subject_consents sc set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
+ where sc.id=(select h.uploader_consent_id from public.other_adult_held_uploads h
+   where h.id=pg_temp.fxv('array-revoked','revision')::uuid and h.subject_id=pg_temp.sid('array-revoked')
+    and h.uploader_account_id=pg_temp.a('1'))
+  and sc.subject_id=pg_temp.sid('array-revoked') and sc.account_id=pg_temp.a('1')
+  and sc.consent_type='upload_class' and sc.scope=array['store'] and sc.revoked_at is null
+ returning sc.id
+)
+select is((select count(*) from revoked),1::bigint,
+ 'array revocation changes exactly the current uploader store grant for this subject');
 select throws_ok($$select pg_temp.array_norm('check')$$,'42501','not_found','array revocation refuses the next actual range checkpoint');
 select throws_ok($$select pg_temp.array_norm('complete',jsonb_build_object('sourceBuild','GRCh38','rawSha256',repeat('f',64),
  'decodedSha256',repeat('b',64),'variantCount',1,'observedCallCount',0,'provenance','{}'::jsonb))$$,

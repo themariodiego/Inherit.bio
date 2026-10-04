@@ -1,5 +1,23 @@
 # Test diff register
 
+## 2026-10-04 — Revoke the actual confirmed-array store grant
+
+The hosted database run on f8c93336 stopped at the array revocation fixture
+because `public.consents` does not exist. The current Path B normalization
+authority reads `public.subject_consents` for the uploader account and the
+other-adult subject. Its schema requires a revocation reason with the time.
+
+Revoke the exact current grant named by the confirmed held revision, with
+`revocation_reason='withdrawn'`, the same uploader account, subject, upload
+class and store scope. Add an exact one-row revocation assertion before the
+original negative checkpoints. Preserve every original assertion, including
+both exact `42501` / `not_found` failures, private cleanup and zero canonical
+publication. No table, consent grant, application, migration, timeout or
+access rule changes. The complete corrected file and the full hosted database
+suite must pass on the final commit before merge. This follows the owner's
+permanent hosted database policy. No local SQL check is claimed. This
+synthetic fixture correction provides no production or provider qualification.
+
 ## 2026-10-04 — Observe real browser bodies and separate array fixture people
 
 PR 283 run 37195015736 attempt 1 on f8c93336 failed in browser groups 3 and 5.
