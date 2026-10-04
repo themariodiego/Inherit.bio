@@ -94,6 +94,19 @@ for the Playwright suite (RLS, network audit and upload/report flows). It
 requires the local stack and a production build; see the self-hosting guide
 for its prerequisites. It is not a substitute for first-run setup.
 
+Before a draft push, run focused unit tests for each changed flow, type
+checks, lint and every required repository quality gate. The owner approved
+complete hosted database and unit verification, in addition to the permanent
+hosted browser policy. Before a merge or production change, all three complete
+hosted suites must pass on the final version. Use the full current inventory,
+with zero failures, skips and retries. Keep every assertion and test time limit.
+Missing test files, reports, jobs or coverage hold the change.
+
+Complete local production migration rollback checks remain required. Production
+also needs exact predecessor checks, the dry-run sentinel, guarded apply and
+read-only verification. Scientific, carrier, legal and human-study approvals
+remain separate. See the [dated decisions](docs/protocol/decisions.md).
+
 ## Gates
 
 Ten `pnpm gate:*` checks read the repository rather than a description of
