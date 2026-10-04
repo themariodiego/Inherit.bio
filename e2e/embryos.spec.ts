@@ -53,6 +53,7 @@ import { REQUEST_FAILED_STATUS, SIGN_BUTTON, SIGNING_STATUS } from "@/copy/embry
 import { COHORT_DRAFT_CREATED_KEYS } from "@/lib/embryos/cohort-draft-contract";
 import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
 import { signStatements } from "./embryo-signing-helpers";
+import { observeNativeResponses } from "./helpers/native-response-observer";
 
 /**
  * Embryo surfaces (design docs/design/w10-embryo-surfaces.md §6.2,
@@ -1009,6 +1010,10 @@ test("/embryos/upload processing: real draft and invitation requests announce pe
     expect(route.request().headers()[UPLOAD_CSRF_HEADER]).toEqual(expect.any(String));
     draftEntered(); await draftReleasePromise; await route.continue();
   });
+  const observation = await observeNativeResponses(page, {
+    draft: "^/api/embryo-cohort-drafts$", invitation: "^/api/invitations$",
+  });
+  try {
   const draftResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/embryo-cohort-drafts"
     && response.request().method() === "POST");
   await form.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true }).click();
@@ -1030,7 +1035,9 @@ test("/embryos/upload processing: real draft and invitation requests announce pe
   const created = await draftResponse;
   expect(created.status()).toBe(201);
   expect(created.headers()["cache-control"]).toContain("no-store");
-  const receipt = await created.json();
+  const draftBody = await observation.read("draft");
+  expect(draftBody.status).toBe(created.status());
+  const receipt = JSON.parse(draftBody.text);
   expect(Object.keys(receipt).sort()).toEqual([...COHORT_DRAFT_CREATED_KEYS].sort());
   expect(receipt).toMatchObject({ state: "awaiting_uploader_artifacts", next: "sign_uploader_artifacts", optionalAttributionSlots: [] });
   expect(receipt.cohortDraftId).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
@@ -1090,7 +1097,9 @@ test("/embryos/upload processing: real draft and invitation requests announce pe
   const sent = await invitationResponse;
   expect(sent.status()).toBe(202);
   expect(sent.headers()["cache-control"]).toContain("no-store");
-  expect(await sent.json()).toEqual({ status: "received" });
+  const invitationBody = await observation.read("invitation");
+  expect(invitationBody.status).toBe(sent.status());
+  expect(JSON.parse(invitationBody.text)).toEqual({ status: "received" });
   const invitations = await nativeInvitations();
   expect(invitations).toHaveLength(1);
   expect(invitations[0]).toMatchObject({ target_kind: "cohort_draft", target_id: receipt.cohortDraftId, status: "pending" });
@@ -1103,6 +1112,7 @@ test("/embryos/upload processing: real draft and invitation requests announce pe
   expect(cohorts.error).toBeNull(); expect(cohorts.data).toEqual([]);
   expect(draftRequests).toBe(1); expect(invitationRequests).toBe(1);
   await expectAxeClean(page);
+  } finally { await observation.dispose(); }
 });
 
 test("/embryos/upload processing: an actual failed draft request releases pending controls and a fresh current page can save", async ({ page }) => {
@@ -1145,6 +1155,8 @@ test("/embryos/upload processing: an actual failed draft request releases pendin
   expect(attempts).toBe(1);
   await page.unroute("**/api/embryo-cohort-drafts");
   const current = await openPendingDraftForm(page, parentEmail);
+  const observation = await observeNativeResponses(page, { draft: "^/api/embryo-cohort-drafts$" });
+  try {
   const completed = page.waitForResponse(response => new URL(response.url()).pathname === "/api/embryo-cohort-drafts"
     && response.request().method() === "POST");
   await current.getByRole("button", { name: SAVE_DRAFT_BUTTON, exact: true }).click();
@@ -1152,7 +1164,9 @@ test("/embryos/upload processing: an actual failed draft request releases pendin
   expect(response.status()).toBe(201);
   expect(response.headers()["cache-control"]).toContain("no-store");
   expect(response.request().headers()[UPLOAD_CSRF_HEADER]).not.toBe(spentCandidate);
-  const receipt = await response.json();
+  const draftBody = await observation.read("draft");
+  expect(draftBody.status).toBe(response.status());
+  const receipt = JSON.parse(draftBody.text);
   expect(Object.keys(receipt).sort()).toEqual([...COHORT_DRAFT_CREATED_KEYS].sort());
   expect(receipt).toMatchObject({ state: "awaiting_uploader_artifacts", next: "sign_uploader_artifacts", optionalAttributionSlots: [] });
   const saved = await adminClient().from("embryo_cohort_drafts").select("id,owner_account_id").eq("owner_account_id", ownerId);
@@ -1160,4 +1174,5 @@ test("/embryos/upload processing: an actual failed draft request releases pendin
   expect(saved.data).toEqual([{ id: receipt.cohortDraftId, owner_account_id: ownerId }]);
   await expect(page.locator('[data-stage="owner-sign"]')).toBeVisible();
   await expect(page.locator('[data-slot="draft-status"]')).toHaveCount(0);
+  } finally { await observation.dispose(); }
 });

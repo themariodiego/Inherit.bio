@@ -711,7 +711,7 @@ test("Path B queued reports: real confirmed source and operators, separate self/
 for (const arrayFixture of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ftdna.csv"] as const) {
   test(`Path B confirmed array ${arrayFixture}: real source operators, isolated saved readers and revoke/re-share`, async ({ page, browser, request }) => {
   test.setTimeout(600_000);
-  const person = { email: `path-b-reader-${randomUUID()}@e2e.local`, name: "Synthetic Reportreader", password: PASSWORD };
+  const person = { email: `path-b-reader-${randomUUID()}@e2e.local`, name: `Synthetic Reportreader ${arrayFixture}`, password: PASSWORD };
   const personId = await createConfirmedUser(person.email, person.password);
   await signIn(page, UPLOADER.email, UPLOADER.password);
   const subjectId = await pathBPerson(page, request, person);

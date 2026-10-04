@@ -1,5 +1,32 @@
 # Test diff register
 
+## 2026-10-04 — Observe real browser bodies and separate array fixture people
+
+PR 283 run 37195015736 attempt 1 on f8c93336 failed in browser groups 3 and 5.
+The embryo pending-request case reached HTTP 201, then Playwright Response.json
+waited until the unchanged 120-second test limit. Its retained error context
+shows the application reached “Sign your statements”, which requires that same
+real receipt. Read the three draft/invitation bodies with the existing bounded
+native-fetch observer. It clones the actual browser response, does not replay or
+replace requests, and gives the application the original response. Preserve the
+original status, header, closed receipt, native database, pending-control and
+consent assertions. Add equality between each observed and Playwright status.
+Dispose each observer in finally. The failed-request recovery case keeps its
+original failure, fresh-token and exactly-one-attempt assertions.
+
+The first confirmed-array case then found two other-adult subjects named
+“Synthetic Reportreader” for its shared uploader. The passing VCF case and each
+array case reused that display label. Both native reads and upload-card locators
+use the label. Give each array person a deterministic label with its format file
+name. Keep the VCF fixture, strict single-row read, all four array journeys and
+every original assertion. Do not discard an older subject or select an arbitrary
+row. Test names, inventory, time limits, retries and skip policy stay unchanged.
+
+The two raw job logs and original failure artifacts are retained privately.
+These changes have source review only. Complete local quality and discovery
+checks, then the complete hosted suite on the final commit, remain required.
+No browser rerun, production or release proof is claimed.
+
 ## 2026-10-03 — Preserve safe extent and final cleanup authority
 
 Reject a reservation if its offset plus byte count exceeds the safe integer
