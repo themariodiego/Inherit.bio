@@ -146,3 +146,72 @@ bottleneck.
 Six independent accessibility sweeps live in six semantic spec files. Each complete G1.13b measurement owns its own UUID account and setup closure, so sharing a serial worker cannot share its accumulated upload fixture. Their original bodies, assertions and limits are retained.
 
 The mandatory inventory discovers the actual complete suite and all six native partitions before publishing its manifest. It requires exact case equality and whole serial project/file groups, then requires all six complete Chromium accessibility sweeps across at least three jobs with no more than two sweeps per job. The required final aggregate repeats the sweep-placement guard after validating exact-source, same-run, same-attempt execution. Missing, duplicated, subdivided or concentrated sweeps fail the check even if ordinary coverage would still be complete. Scheduling changes must preserve this guard and be measured with actual full-suite timing receipts.
+
+
+## Duration profile scheduling · 4 October 2026
+
+The six jobs can now use `data/ci/browser-duration-profile.json`. It contains
+performance weights from complete successful run 37212933160, attempt 1, on
+checkout `7e068bc90148d0b80b1ebfe3fdd03d29520cd042`. Its provenance includes the
+saved sanitized manifest and six shard ZIP hashes. The 95 historical groups
+and 569 historical cases describe that run; they are never a current coverage
+baseline. Full current discovery and the tracked-source census remain required.
+The profile records its own historical project set. Every saved weight must
+match that set exactly. The current registry remains independently required in
+full native discovery. A new current project receives conservative fallback
+weights; an obsolete historical project cannot select or add a current case.
+
+Both the independent manifest job and each executing job read the same
+committed profile. The planner assigns the longest whole project/file group
+first, then the least loaded eligible job, with fixed project/file and job-index
+ties. Known file cost scales by its current case count. A new group receives at
+least the largest saved file cost and the largest saved mean per-case cost times its
+current count. Removed groups contribute no cases. Every current group is
+assigned once, with the existing complete accessibility-placement guard.
+
+Generated private test lists use only `[project] › file.spec.ts`, relative to
+the unchanged config's `./e2e` root. This is Playwright's documented whole-file
+selection format: no title or line selector is supplied. Playwright keeps
+source order within each file. Its actual report truthfully has `shard: null`.
+New allocation metadata binds the profile hash, complete plan hash and assigned
+case sets. All six official selected listings must match the independent plan
+before manifest publication. Each executing job checks its selected listing
+before running; final aggregation checks the same plan and exactly-once complete
+execution. Empty, stale, narrowed, skipped, retried or foreign evidence fails.
+
+Only an absent profile uses the original native case-based six-shard path. An
+invalid or unreadable profile fails. The workflow, six jobs, provider/bootstrap,
+worker count, four projects, tests, assertions, time limits and trace settings
+are unchanged. Local complete runs retain their current path.
+
+Refresh the profile manually after a complete exact-source hosted pass. Retain
+that run's sanitized manifest and all six same-attempt receipts, and verify them
+with the existing coverage and accessibility guards. Copy every verified
+receipt's file, project, case count and summed duration into the profile; record
+the checkout/run/attempt and actual seven ZIP hashes. Review the profile diff
+and commit it. Never update it automatically, infer missing durations, or use
+historical case identities to select current tests. A new or changed file is
+included even before a profile refresh.
+
+The saved 19m54 run supports a conservative replay model of about 16–17 minutes.
+That is an inference from one run, not a measured gain. Setup, queues, workers
+and execution order can vary; the later complete main run was 23m12. Compare
+complete runs on current source before claiming an improvement. Repository
+checks and the largest indivisible file still limit the full-run elapsed time.
+
+The four existing publication journeys also need separate fresh queues. Their
+exact filename/project/single-case mapping is a placement constraint, never a
+case source. Absent files create no tests. Each planned job, observed selected
+listing and final receipt permits at most one such journey, in addition to the
+existing accessibility capacity. The current case census and current project
+registry remain strict; timing history retains its independent saved registry.
+
+The six-project branches retain their original full-four and partial-at-most-one
+native guards. During composition, an unsharded duration subset uses the
+explicit partial predicate `index === null && !durationPartition`; complete
+discovery still requires every project and all four journeys. A permanent
+source control rejects a six-project composition that keeps the old predicate.
+Review and actual complete plus six selected listings on an isolated real
+six-project composition are required before merge. Four-project checks alone
+do not qualify that composition. Every existing native and aggregate guard,
+browser body, assertion and time limit remains required.
