@@ -1,5 +1,39 @@
 # Test diff register
 
+## 2026-10-04 — Keep current project fixtures and publication queues independent of timing history
+
+The new duration tests now derive the current project configuration from the
+real registry. Their saved timing fixture stays at four historical projects.
+When the current registry includes embryo projects, the fixture uses the exact
+four single-case journeys required by the existing native guard.
+
+A fixed placement rule permits at most one of those journeys in each fresh CI
+job. It applies to the plan, each selected listing and final receipts. New
+controls include an uneven-load collision, wrong file/project/case counts,
+missing or repeated parts, and the six-project core's truthful partial-list
+predicate. All previous assertions remain required. An isolated composition
+with the actual six-project branch must pass source review and local discovery
+controls before merge. Earlier four-project results remain evidence for their
+exact earlier source. No six-project or hosted result is claimed here.
+
+## 2026-10-04 — Schedule complete browser files from measured durations
+
+The six hosted jobs can use a reviewed duration profile to assign complete
+project/file groups through Playwright's supported test-list option. The
+current full discovery remains the coverage authority. Historical project
+provenance is separate from the current registry. New current projects receive
+conservative weights; removed historical projects cannot add cases. The manifest binds the
+profile hash, plan hash and every assigned case. Selected listings and actual
+execution must match that plan. Native case-based sharding is retained when
+the optional profile is absent; invalid history fails closed.
+
+All existing browser bodies, assertions, time limits and scheduling/timing
+guard tests are retained. New tests cover invalid weights, missing-profile
+fallback, new cases, whole-file ownership, deterministic placement, complete
+accessibility sweeps, truthful report configuration and exact plan receipts.
+No test expectation is relaxed. Full exact-source hosted qualification and a
+current-run timing comparison are required before claiming a speed gain.
+
 ## 2026-10-01 — Preserve the current accessibility sweep split during withdrawal retirement
 
 The retirement branch now merges the exact verified main release. Its earlier
