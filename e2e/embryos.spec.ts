@@ -50,7 +50,7 @@ import {
 } from "@/copy/embryos/upload";
 import { INGEST_REFUSALS } from "@/copy/upload/errors";
 import { REQUEST_FAILED_STATUS, SIGN_BUTTON, SIGNING_STATUS } from "@/copy/embryos/signing";
-import { COHORT_DRAFT_CREATED_KEYS } from "@/lib/embryos/routes";
+import { COHORT_DRAFT_CREATED_KEYS } from "@/lib/embryos/cohort-draft-contract";
 import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
 import { signStatements } from "./embryo-signing-helpers";
 

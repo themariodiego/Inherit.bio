@@ -13,6 +13,13 @@ entire browser matrix to succeed. It then requires one exact receipt from each
 of the six shards on the same checkout SHA, GitHub run ID and run attempt. A
 failed, cancelled, skipped, missing, stale or duplicate receipt cannot pass.
 Ordinary `pnpm e2e` continues running the complete local suite.
+Run `pnpm gate:browser-discovery` before every draft push. This local preflight
+loads the complete standard suite and all six native partitions with synthetic
+configuration. It requires the existing complete source census, exactly-once
+partition coverage, whole fixture groups and accessibility placement. It starts
+no browser, app or database and creates no hosted execution receipt. Real
+credentials, debug hooks and optional selectors are excluded from its child
+environment. A missing import therefore fails before a hosted run starts.
 The owner approved complete hosted browser verification as the permanent
 policy on 30 September 2026: local units, type checking, lint, all ten gates
 and fresh pgTAP remain required before a draft push; the complete hosted suite

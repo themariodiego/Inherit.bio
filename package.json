@@ -42,7 +42,8 @@
     "worker:embryo-split": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/embryo-split-worker.run.mts",
     "worker:embryo-carrier": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/embryo-carrier-worker.run.mts",
     "worker:subject-relocation": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/future-person-relocation-worker.run.mts",
-    "gate:sql-includes": "tsx scripts/sql-fixture-includes.ts"
+    "gate:sql-includes": "tsx scripts/sql-fixture-includes.ts",
+    "gate:browser-discovery": "tsx scripts/browser-discovery-gate.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",
