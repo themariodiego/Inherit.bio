@@ -19,6 +19,61 @@ buffer is cleared, with no claim of immutable-string or platform erasure.
 These cases are unrun. Source review and local and full hosted checks remain
 required; no comprehension score, native flow or release status changes.
 
+## 2026-10-05 — Preserve original job-log terminal bytes in private captures
+
+A separate actual stock job-log GET returned exit1 and zero raw bytes because
+the client refused terminal escape sequences. The reader now uses the explicit
+raw-preservation flag only on exact positive-ID job-log routes derived from
+verified metadata. Its output stays in private files. Saved readback uses the
+same exact argument builder; JSON and ZIP arguments remain unchanged.
+
+Three new controls check the permitted log route, unchanged JSON and ZIP
+routes, and refusal of malformed or widened log routes and control characters.
+All thirty prior controls and capture limits remain exact. No reader import,
+test, provider GET or CI rerun has occurred. The earlier freezes and the real
+failed transport result remain intact. Current source reviews and local
+qualification remain required.
+
+## 2026-10-05 — Bind empty tested-merge check inventories to the exact green PR
+
+The first reader source used a positive check-run count for both roles. A
+genuine tested PR merge can have zero direct check runs while its head and
+all CI jobs pass. The reader now derives the check revision from the strict
+request and explicit role, and requires its preceding exact metadata proof.
+Only a distinct tested PR merge has this empty-list exception. Head and push
+checks remain nonempty, and every nonzero inventory remains complete and
+bound to the exact revision. The empty-only pending commit-status rule stays
+unchanged.
+
+Five new controls cover the legitimate empty tested merge, empty head and
+push refusals, changed request or metadata relationships, missing jobs,
+nonzero missing checks and foreign revisions. Two existing check-control
+calls use the stricter API; their positive and refusal assertions stay exact.
+All other previous bodies, assertions and limits are unchanged. The original
+source freeze and its review correction remain intact. All new source and
+controls are unrun; two source reviews and local qualification remain required.
+
+## 2026-10-05 — Read complete hosted results with the existing coverage contract
+
+The new read-only result tool captures one stated terminal run and checks its
+saved evidence. It reads actual commit parents and ZIP member inventories,
+uses exact UTC time arithmetic, and permits skipped failure-only uploads only
+when the pinned workflow declares them. Test-case skips remain refused.
+The existing full, assigned and executed case checks, whole-file rules,
+profile hashes, accessibility spread and queue isolation remain unchanged.
+
+New focused cases use small synthetic metadata, public case identities and
+short synthetic log sections. They cover correct PR and two-parent push
+records; stale source, wrong parent relationships and missing evidence;
+foreign or corrupt ZIPs; changed counts and ambiguous summaries; time offsets;
+and real filesystem output ownership, alias and replacement refusals. One
+owned local Node fixture checks durable failed-command retention; it runs no
+GitHub client or request. No raw
+CI logs, provider metadata, credentials or personal data are added to source.
+All previous test bodies, assertions, limits, workflows and dependencies stay
+unchanged. The new cases and CLI are unrun pending two source reviews and
+focused qualification. Complete hosted checks remain required before merge.
+
 ## 2026-10-05 — Exclude CI timing history from Cloudflare deployment inputs
 
 The Cloudflare push filter keeps its product-data include and excludes only
