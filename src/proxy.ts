@@ -30,7 +30,7 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
   }
-  if(path==="/api/appeals")return applyAppealIntakeHeaders(response);
+  if(path==="/api/appeals"||path==="/api/future-person/claim/session/corrections")return applyAppealIntakeHeaders(response);
   // The proxy's response headers also reach route-handler responses. Review
   // IDs, documentary decisions and document download sessions require the
   // stricter policy, including refusals produced by the proxy itself. Next's
@@ -106,7 +106,7 @@ export async function proxy(request: NextRequest) {
     || request.nextUrl.pathname === "/api/future-person/claim"
     || request.nextUrl.pathname.startsWith("/api/future-person/claim/session/")
     || request.nextUrl.pathname.startsWith("/api/evidence/")) {
-    return withSensitiveHeaders(NextResponse.next({ request }));
+    return withSensitiveHeaders(NextResponse.next({ request }),request.nextUrl.pathname);
   }
   // The public claim page reads only what the claimant types: no account,
   // no record, no prior claim (rights.future-person-claim.policy.dataScope).
