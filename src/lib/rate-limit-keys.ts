@@ -1,6 +1,7 @@
 import "server-only";
 
-import { keyedDigestSet, type DigestSet } from "@/lib/hmac-keyring";
+import type {DigestSet} from "@/lib/hmac-keyring";
+import {appealKeyedDigests as keyedDigestSet} from "@/lib/future-person/appeal-keyed-digests";
 import { sourceNetwork } from "@/lib/source-network";
 
 /**
@@ -20,7 +21,8 @@ import { sourceNetwork } from "@/lib/source-network";
 /** The registered operations whose limits include a per-network bucket. */
 export type NetworkLimitedOperation =
   | "global-contact-refusal-bar-v1.invitation-attempt"
-  | "api.future-person-claim";
+  | "api.future-person-claim"
+  | "api.subject-access-request";
 
 export const INVITATION_ATTEMPT_OPERATION = "global-contact-refusal-bar-v1.invitation-attempt";
 export const CLAIM_START_OPERATION = "api.future-person-claim";

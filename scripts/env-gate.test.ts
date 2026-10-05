@@ -128,22 +128,32 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // `INHERIT_HMAC_KEYRING` directly as the default argument of
     // `keyedDigestSet`; all three are declared in the template and named in
     // the guide.
-    expect(result.directReadKeyCount).toBe(21);
-    expect(result.boundReadKeyCount).toBe(17);
+    // NEW appeals-open reads both TEST flags directly; the complete source
+    // census has 23 direct keys. They were already counted as bound keys.
+    expect(result.directReadKeyCount).toBe(23);
+    // V5 adds six private server settings and one harness-owned TEST flag.
+    // Four source modules add a distinct process.env binding each: requester
+    // statement policy, R2 native adapter, gateway adapter, private transport.
+    // Source-authored expected ledger; not a recorded gate execution.
+    expect(result.boundReadKeyCount).toBe(24);
     // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
     // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
-    expect(result.boundBindingCount).toBe(9);
+    // Exact scanner census: base 9 + NEW captures 5 across four modules = 14.
+    // The conservative typed-parameter heuristic also captures `expected`
+    // and `gateway`; this number is scanner bindings, not distinct env keys.
+    // Keep that detector and every other assertion unchanged.
+    expect(result.boundBindingCount).toBe(14);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(38);
-    expect(result.templateKeyCount).toBe(31);
+    expect(result.readKeyCount).toBe(45);
+    expect(result.templateKeyCount).toBe(37);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(31);
-    expect(result.guideNamedCount).toBe(41);
+    expect(result.guideDocumentedKeyCount).toBe(37);
+    expect(result.guideNamedCount).toBe(48);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
-    expect(result.runtimeInjectedKeyCount).toBe(7);
+    expect(result.runtimeInjectedKeyCount).toBe(8);
   });
 
   it("fails when a module reads a variable the template does not declare", () => {

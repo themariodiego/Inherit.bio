@@ -1,3 +1,6 @@
+import {requesterStatementsOpen} from "@/lib/future-person/requester-statement";
+import {configuredRequesterStatementGateway} from "@/lib/exports/requester-statement-private-transport";
+import {drainRequesterStatementCopies} from "@/lib/exports/requester-statement-copy-retention";
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -83,6 +86,21 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+  if(requesterStatementsOpen()){
+    try{
+      const counts=await drainRequesterStatementCopies((name,signal)=>admin.rpc(name).abortSignal(signal),
+        configuredRequesterStatementGateway(),AbortSignal.timeout(150_000));
+      processed+=counts.disposed;failed+=counts.held+counts.failed;
+    }catch{failed++;}
+  // Original fixed correction phase; no request selector or external send.
+  try {
+    const due = await admin.rpc("drain_due_new_corrections_v1");
+    const counts = z.object({ shredded: z.number().int().nonnegative(), completed: z.number().int().nonnegative(),
+      held: z.number().int().nonnegative() }).strict().safeParse(due.data);
+    if (due.error || !counts.success) failed++;
+    else { processed += counts.data.completed; failed += counts.data.held; }
+  } catch { failed++; }
+  }
   // Independent profile keys expire without a Storage or mail-provider call.
   // The database selects the exact due profiles; no request selector or clock.
   try {

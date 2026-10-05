@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), remove: vi.fn(), deleteUser: vi.fn() }));
@@ -13,6 +13,15 @@ vi.mock("@/lib/supabase/admin", () => ({
     auth: { admin: { deleteUser: mocks.deleteUser } },
     storage: { from: (bucket: string) => ({ remove: (names: string[]) => mocks.remove(bucket, names) }) },
   }),
+}));
+
+// Queue composition doubles only. They are not provider or native READY proof.
+const newStatementQueues = vi.hoisted(() => ({ gateway: vi.fn(), copies: vi.fn() }));
+vi.mock("@/lib/exports/requester-statement-private-transport", () => ({
+  configuredRequesterStatementGateway: () => newStatementQueues.gateway(),
+}));
+vi.mock("@/lib/exports/requester-statement-copy-retention", () => ({
+  drainRequesterStatementCopies: (...args: unknown[]) => newStatementQueues.copies(...args),
 }));
 
 const strandedFile = "81000000-0000-4000-8000-000000000005";
@@ -405,4 +414,55 @@ describe("composed Future and account retention", () => {
       expect(mocks.rpc.mock.calls.some(call => call[0] === name)).toBe(false);
     expect(mocks.rpc).toHaveBeenCalledWith("fail_account_deletion_attempt_v1", expect.objectContaining({ p_deletion_id: deletionId, p_error_code: "storage_delete_failed" }));
   });
+});
+
+
+describe("new correction retention stays inside explicit TEST requester scope", () => {
+  beforeEach(() => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    newStatementQueues.gateway.mockReturnValue({ compositionUnitDouble: true });
+    newStatementQueues.copies.mockResolvedValue({ disposed: 0, held: 0, failed: 0 });
+    idleExceptStranded([]);
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
+
+  it.each([
+    ["both closed", "0", "0"],
+    ["requester flag outside TEST", "0", "1"],
+    ["TEST without requester flag", "1", "0"],
+  ])("preserves no_work and calls neither new queue when %s", async (_name, jurisdiction, requester) => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", jurisdiction);
+    vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", requester);
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "no_work" });
+    expect(newStatementQueues.gateway).not.toHaveBeenCalled();
+    expect(newStatementQueues.copies).not.toHaveBeenCalled();
+    expect(mocks.rpc.mock.calls.filter(call => ["drain_due_new_corrections_v1", "drain_due_requester_statement_copies_v1"].includes(call[0] as string)))
+      .toEqual([]);
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+  });
+
+  it.each(["native error", "thrown error", "malformed counts", "held case"])(
+    "keeps %s fail-closed in explicit TEST scope while continuing independent queues", async kind => {
+      vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+      vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", "1");
+      const original = mocks.rpc.getMockImplementation()!;
+      mocks.rpc.mockImplementation(async (name: string, ...args: unknown[]) => {
+        if (name !== "drain_due_new_corrections_v1") return original(name, ...args);
+        if (kind === "thrown error") throw new Error("synthetic native boundary error");
+        if (kind === "native error") return { data: null, error: { code: "55000" } };
+        if (kind === "malformed counts") return { data: { shredded: 0, completed: 0, held: 0, unreviewed: true }, error: null };
+        return { data: { shredded: 0, completed: 0, held: 1 }, error: null };
+      });
+      expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+      expect(newStatementQueues.gateway).toHaveBeenCalledOnce();
+      expect(newStatementQueues.copies).toHaveBeenCalledOnce();
+      expect(mocks.rpc.mock.calls.filter(call => call[0] === "drain_due_new_corrections_v1"))
+        .toEqual([["drain_due_new_corrections_v1"]]);
+      expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+      expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+      const copyOrder = newStatementQueues.copies.mock.invocationCallOrder[0];
+      const correctionIndex = mocks.rpc.mock.calls.findIndex(call => call[0] === "drain_due_new_corrections_v1");
+      expect(copyOrder).toBeLessThan(mocks.rpc.mock.invocationCallOrder[correctionIndex]);
+    },
+  );
 });

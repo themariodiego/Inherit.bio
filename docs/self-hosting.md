@@ -435,6 +435,7 @@ They are read under `src/`, they are deliberately absent from
 | `CI` | The CI runner. |
 | `INHERIT_TEST_JURISDICTION` | The acceptance fixtures. `next.config.ts` throws at startup if it is `1` in a production deployment. |
 | `INHERIT_LOCAL_E2E_PROJECT` | The browser suite, to pick which local test stack it targets. |
+| `INHERIT_TEST_REQUESTER_STATEMENTS` | The private TEST acceptance harness only. Operators must not enable it; production startup refuses it. |
 
 ### Generating the upload signing key
 
@@ -469,6 +470,15 @@ dedicated workflow above records that proof for the fresh local profile;
 it does not establish a hosted project's signer configuration.
 
 ## Troubleshooting
+
+The private TEST requester-statement archive is a source proposal. It stays closed
+until the native, worker and physical-disposal proofs pass. Its server-only settings
+are `INHERIT_TEST_STATEMENT_GATEWAY_URL`, `INHERIT_TEST_STATEMENT_GATEWAY_KEY`,
+`INHERIT_TEST_STATEMENT_R2_BUCKET`, `INHERIT_TEST_STATEMENT_R2_BINDING_SHA256`,
+`INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE` and the optional public trust anchor
+`INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE_CA_CERT`. Leave them empty in ordinary
+deployments. A URL, key or configuration digest is not provider qualification.
+See `docs/requester-statement-archive-service.md` for the exact service contract.
 
 - **Fresh setup stops**: read the bounded error code and private startup log.
   Keep the generated files; do not rerun preparation, rotate keys or reset an

@@ -1,10 +1,12 @@
 import "server-only";
+import {requesterStatementsOpen} from "@/lib/future-person/requester-statement";
 import {accountPathBSourceSchema,type AccountPathBSource} from "./account-path-b-members";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import type {Zip64Member} from "./archive-zip64";
+import type {RequesterStatementRuntime} from "./requester-statement-runtime";
 
 export const ACCOUNT_SUBJECT_MEMBERS=["subject.json","consents.json","legacy-consents.json","attestations.json","audit-log.json",
  "reports.json","reports.txt","prs.json","ancestry.json","chats.json","portrait.json","embryos.json"] as const;
@@ -31,7 +33,7 @@ const unavailable=()=>new Error("account_archive_plan_unavailable"),encoder=new 
  * human JWT, publication/READY transition or alternate authority is created. */
 export async function prepareAccountArchivePlan(options:{context:z.infer<typeof accountArchiveContextSchema>;
  factories:FuturePersonMemberFactory[];files:AccountArchiveFile[];sources:AccountArchiveSourceMember[];resultSources?:AccountPathBSource[];
- signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>}){
+ signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>;sensitiveRuntime?:RequesterStatementRuntime}){
  const context=accountArchiveContextSchema.parse(options.context),files=options.files.map(f=>fileSchema.parse(f));
  const resultSources=(options.resultSources??[]).map(value=>accountPathBSourceSchema.parse(value));
  if(new Set(resultSources.map(r=>`${r.fileId}:${r.purpose}:${r.bindingRevision}`)).size!==resultSources.length
@@ -48,7 +50,14 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,remaining));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
-  try{if(current.aborted)throw unavailable();const value=await Promise.race([Promise.resolve().then(()=>operation(current)),canceled]);
+  const execute=async()=>{
+   const value=await operation(current);
+   // A late iterator/read value stays owned even when the caller lost its race.
+   if(typeof value==="object"&&value!==null&&"value" in value&&value.value instanceof Uint8Array)options.sensitiveRuntime?.own(value.value);
+   return value;
+  };
+  try{if(current.aborted)throw unavailable();const pending=options.sensitiveRuntime?.track("account-plan-read",execute)??Promise.resolve().then(execute);
+   const value=await Promise.race([pending,canceled]);
    if(current.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();return value;
   }finally{clearTimeout(timer);current.removeEventListener("abort",abort);stop.abort();}
  }
@@ -57,7 +66,9 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  const required=new Set(context.partitions.flatMap(p=>ACCOUNT_SUBJECT_MEMBERS.map(name=>`subjects/${p.subjectId}/${name}`)));
  for(const factory of options.factories){
   if(input.has(factory.name)||!Number.isSafeInteger(factory.rows)||factory.rows<0||typeof factory.chunks!=="function")throw unavailable();
-  if(factory.name!=="legal-audit.json"&&!required.has(factory.name)){
+  const own=/^subjects\/([a-f0-9-]{36})\/my-correction-statements\.json$/u.exec(factory.name);
+  if(own&&(!requesterStatementsOpen()||!context.partitions.some(p=>p.subjectId===own[1]&&p.class==="claimed-bound")))throw unavailable();
+  if(factory.name!=="legal-audit.json"&&!required.has(factory.name)&&!own){
    const match=/^(variants|canonical|observed)\/([a-f0-9-]{36})\.(csv|jsonl)$/u.exec(factory.name),file=match?fileById.get(match[2]):undefined;
    const sanitized=/^originals\/([a-f0-9-]{36})\/embryo-autosomal-source\.jsonl$/u.exec(factory.name);
    if(sanitized){if(fileById.get(sanitized[1])?.projection!=="sanitized-embryo")throw unavailable();}
@@ -87,6 +98,7 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  for(const name of indexes){
   const rows=context.partitions.map(p=>({subjectId:p.subjectId,path:name==="subjects"?`subjects/${p.subjectId}/`:`subjects/${p.subjectId}/${name}.json`}));
   const bytes=encoder.encode(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",rows})+"\n");
+  options.sensitiveRuntime?.own(bytes);
   input.set(`${name}.json`,{name:`${name}.json`,rows:rows.length,chunks:async function*(signal){await check(signal);yield bytes;await check(signal);}});
  }
  async function* verified(source:AsyncIterable<Uint8Array>,signal:AbortSignal,expected?:{sizeBytes:number;sha256:string}){
@@ -96,26 +108,47 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
     if(!(next.value instanceof Uint8Array)||next.value.byteLength<1||next.value.byteLength>4_000_000)throw unavailable();
     size+=next.value.byteLength;if(!Number.isSafeInteger(size)||(expected&&size>expected.sizeBytes))throw unavailable();
     digest.update(next.value);yield next.value;
-   }}finally{try{void iterator.return?.().catch(()=>{});}catch{/* cancellation cannot admit later bytes */}}
+   }}finally{
+    if(options.sensitiveRuntime&&iterator.return)await options.sensitiveRuntime.wait(options.sensitiveRuntime.cleanup("account-plan-iterator-return",()=>iterator.return!()),Date.parse(context.deadline));
+    else try{void iterator.return?.().catch(()=>{});}catch{/* Original unmarked path. */}
+   }
  }
  async function* sourceChunks(member:Zip64Member,signal:AbortSignal){
   const stop=new AbortController(),lifetime=AbortSignal.any([options.signal,signal,stop.signal]);let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
   try{
    const source=await bounded(signal,async current=>{
     const abort=()=>stop.abort();current.addEventListener("abort",abort,{once:true});
-    try{if(current.aborted)throw unavailable();return await member.open(lifetime);}
+    try{if(current.aborted)throw unavailable();const opened=await member.open(lifetime);
+     if(current.aborted||lifetime.aborted){
+      if(options.sensitiveRuntime)await options.sensitiveRuntime.cleanup("account-late-open-cancel",()=>opened.cancel());
+      else void opened.cancel().catch(()=>{});throw unavailable();
+     }return opened;
+    }
     finally{current.removeEventListener("abort",abort);}
    });reader=source.getReader();
-   for(;;){const next=await bounded(signal,()=>reader!.read());if(next.done)return;yield next.value;}
-  }finally{stop.abort();if(reader){void reader.cancel().catch(()=>{});try{reader.releaseLock();}catch{/* an ignored read still cannot admit bytes */}}}
+   for(;;){const next=await bounded(signal,async()=>{
+    const value=await reader!.read();if(!value.done&&value.value instanceof Uint8Array)options.sensitiveRuntime?.own(value.value);return value;
+   });if(next.done)return;yield next.value;}
+  }finally{stop.abort();if(reader){
+   const selected=reader;
+   if(options.sensitiveRuntime){try{await options.sensitiveRuntime.wait(options.sensitiveRuntime.cleanup("account-plan-reader-cancel",()=>selected.cancel()),Date.parse(context.deadline));}finally{try{selected.releaseLock();}catch{/* Tracked unresolved cleanup holds. */}}}
+   else{void selected.cancel().catch(()=>{});try{selected.releaseLock();}catch{/* Original unmarked path. */}}
+  }}
  }
  function stream(iterator:AsyncIterable<Uint8Array>,signal:AbortSignal){
   const chunks=iterator[Symbol.asyncIterator]();let closed=false;
-  return new ReadableStream<Uint8Array>({async pull(controller){try{
-   if(closed||signal.aborted)throw unavailable();const value=await chunks.next();if(signal.aborted)throw unavailable();
+  async function close(){
+   if(options.sensitiveRuntime&&chunks.return)await options.sensitiveRuntime.wait(options.sensitiveRuntime.cleanup("account-stream-iterator-return",()=>chunks.return!()),Date.parse(context.deadline));
+   else try{void chunks.return?.().catch(()=>{});}catch{/* Original unmarked path. */}
+  }
+  return new ReadableStream<Uint8Array>({async pull(controller){const actual=async()=>{try{
+   if(closed||signal.aborted)throw unavailable();
+   const next=async()=>{const value=await chunks.next();if(!value.done&&value.value instanceof Uint8Array)options.sensitiveRuntime?.own(value.value);return value;};
+   const value=await(options.sensitiveRuntime?.track("account-stream-next",next)??next());if(signal.aborted)throw unavailable();
    if(value.done){closed=true;controller.close();}else controller.enqueue(value.value);
-  }catch{closed=true;controller.error(unavailable());try{void chunks.return?.().catch(()=>{});}catch{/* no further bytes */}}},
-  cancel(){closed=true;try{void chunks.return?.().catch(()=>{});}catch{/* no further bytes */}}},{highWaterMark:0});
+  }catch{closed=true;controller.error(unavailable());await close();}};
+  await(options.sensitiveRuntime?.track("account-stream-pull-callback",actual)??actual());},
+  async cancel(){const actual=async()=>{closed=true;await close();};await(options.sensitiveRuntime?.cleanup("account-stream-cancel-callback",actual)??actual());}},{highWaterMark:0});
  }
  const descriptors:{name:string;sizeBytes:number;sha256:string;rows:number;subjectId:string|null;fileId:string|null}[]=[],members:Zip64Member[]=[];
  let payloadBytes=0;
@@ -138,6 +171,7 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  await check(options.signal);
  const manifest=encoder.encode(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",capturedAt:context.capturedAt,
   subjectPartitions:context.partitions.map(p=>p.subjectId),files,...(resultSources.length?{resultSources}:{}),members:descriptors})+"\n");
+ options.sensitiveRuntime?.own(manifest);
  const manifestFactory:FuturePersonMemberFactory={name:"manifest.json",rows:descriptors.length,chunks:async function*(signal){await check(signal);yield manifest;await check(signal);}};
  const manifestSha256=createHash("sha256").update(manifest).digest("hex");
  members.push({name:"manifest.json",sizeBytes:manifest.byteLength,open:async signal=>stream(verified(manifestFactory.chunks(signal),signal,

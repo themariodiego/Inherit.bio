@@ -44,6 +44,9 @@ yarn-error.log*
 next-env.d.ts
 e2e/fixtures/tiny.bam
 worker/node_modules
+# Generated from the exact closed Worker configuration before each typecheck.
+/workers/requester-statement-archive/worker-configuration.d.ts
+/workers/requester-statement-archive/.wrangler/
 
 # playwright
 /test-results

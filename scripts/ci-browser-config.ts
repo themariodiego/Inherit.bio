@@ -36,7 +36,7 @@ export function checkedGateway(value: unknown): { address: string; network: stri
 }
 export const APP_ENV_NAMES = ["INHERIT_UPLOAD_SIGNING_JWK", "INHERIT_CANONICAL_UPLOADS_PAUSED", "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "BYOK_ENCRYPTION_KEY", "JOBS_SECRET", "CRON_SECRET",
-  "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION"] as const;
+  "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION", "INHERIT_TEST_REQUESTER_STATEMENTS"] as const;
 /** Fixed app variants: main, jurisdiction-off, paused, local-model, and prepared-source. */
 export const APP_PORTS = [3100, 3101, 3102, 3103, 3104, 3105] as const;
 export const EMBRYO_APP_PORT = 3105;
@@ -87,6 +87,7 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
     && env.RESEND_BASE_URL === "http://127.0.0.1:8124"
     && env.NEXT_PUBLIC_APP_URL === `http://localhost:${port}` && env.NEXT_PUBLIC_SITE_URL === `http://localhost:${port}`
     && env.INHERIT_TEST_JURISDICTION === (port === 3101 ? "" : "1")
+    && env.INHERIT_TEST_REQUESTER_STATEMENTS === (port === 3102 ? "1" : "")
     && env.INHERIT_CANONICAL_UPLOADS_PAUSED === (port === 3102 ? "true" : "false"), "App scope differs from its fixed CI variant");
   if (port === LOCAL_MODEL_PORT) {
     for (const name of LOCAL_MODEL_ENV_NAMES) assert(env[name] === LOCAL_MODEL_ENV[name], "Local-model variant differs from its fixed attestation");
