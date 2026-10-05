@@ -1,5 +1,20 @@
 # Test diff register
 
+## 2026-10-05 — Exclude CI timing history from Cloudflare deployment inputs
+
+The Cloudflare push filter keeps its product-data include and excludes only
+`data/ci/**`. Timing-profile changes alone no longer select a production Worker
+deployment. Changes to product data, source, Worker configuration and existing
+deployment inputs still select it, including pushes that also change timing
+history. Manual deployment and complete CI checks remain unchanged.
+
+Nineteen new cases parse the actual deployment YAML with the existing installed
+YAML and glob libraries. They check both current profiles, future nested timing
+data, every existing deployment-input category, a nearby product-data filename,
+and mixed product/timing changes in both file orders. All prior tests and
+assertions remain unchanged. These cases are source-only and unrun; focused
+local checks and the complete hosted suites remain required before merge.
+
 ## 2026-10-05 — offline duration ZIP refusal correction
 
 The first focused run preserved 116 passes and two failures. The foreign-member
