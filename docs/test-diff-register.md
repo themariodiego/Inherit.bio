@@ -1,5 +1,73 @@
 # Test diff register
 
+## 2026-10-05 — Register only the official scanner instructions after the name gate stops
+
+The corrected scanner source passed all 149 focused cases in eight files,
+genuine Next type generation, full app types, strict lint, the legal gate and
+the first-glance gate. The name gate then stopped on the official ClamAV
+Docker guide linked by the new proof document. The complete original gate
+failure and source records are retained. No later gate ran in that sequence.
+
+The public dependency register now names ClamAV with only the reviewed
+manual/Installing/Docker.html path. It points to the proof document, workflow
+and runner as evidence. The gate code, private denylist rules and every old
+entry stay unchanged. One new check uses the actual register to admit that
+link, reject the bare host, unrelated paths and a lookalike host, and keep
+private-name rejection independent of the documentation permission. Every
+existing test body, assertion, retry and time limit is retained.
+
+Checks for this new source are pending. The local synthetic comparator file
+cannot prove the hosted private-name scan. The real scanner, complete hosted
+suites and complete user flows remain unproved.
+
+## 2026-10-05 — Retain the first scanner checks and fix the TEST command helper
+
+The first local check passed all 147 collected cases but could not load one
+unchanged local browser configuration test. The external check plan had set a
+hosted-environment hint on the Mac. That hint was removed from the local plan;
+the dedicated hosted scanner workflow keeps its original settings. The second
+focused run passed all 149 cases in eight files, with no failed or skipped case.
+Genuine Next type generation also passed. The full type check then stopped on
+four errors in the new command helper: a missing NODE_ENV and three nullable
+child references. Both original check failures and their raw reports are kept.
+
+The helper now sets NODE_ENV to test for its isolated child commands and keeps
+the returned child handle in a non-null local variable. The original command
+outcome, process cleanup and raw-file checks keep the same order and limits.
+No scanner protocol, image, signature rule, timeout, retry or test assertion
+changes. All eight focused files will run again on this corrected source, then
+full types, strict lint and all ten static main gates. These checks are pending.
+The real scanner, full hosted suites and complete user flows remain unproved.
+
+## 2026-10-05 — Isolated real ClamAV proof and exact scanner environment census
+
+The disposable hosted proof uses the actual ClamAV adapter with a pinned
+official image and current official signatures. It requires four separate
+results: a clean synthetic PDF, EICAR, the unchanged 20,000,000-byte refusal
+boundary, and a stopped scanner. It uses no claim worker, database, personal
+document, external storage or mail. All old scanner unit files are copied
+whole from the reviewed candidate. They remain stand-in evidence, not live
+scanner proof. New wrapper tests plant ownership, public-port, real-engine,
+byte-hash and freshness defects and preserve an actual failed child outcome.
+
+The original clamd unit file imports the exact scanner factory, so that factory
+and its original tests are also preserved. The complete source census has
+1,014 base modules and 1,019 candidate modules. The only new bound environment
+key is INHERIT_CLAMD_ADDRESS, read by that factory. Direct keys stay 21; bound
+keys move 16 to 17; bindings 7 to 8; the existing dynamic site stays 1. The complete
+registered read count moves 37 to 38, template keys 30 to 31 and documented guide
+keys 30 to 31 (all guide names 40 to 41). All six count assertions stay exact; the
+remaining assertions and all cases are unchanged. The new template setting is
+commented and empty, and the guide says to leave it unset. No product or worker
+starts. This is a source-derived census correction, not a change after a failed
+test. Source, local and hosted checks are pending.
+
+All existing time limits, retries, assertions, CI suites and quality gates stay
+required. A live scanner pass establishes this adapter scope only. Local guest
+memory is below the official minimum; no unrelated service is stopped and no
+Colima setting is changed. The prior Cloudflare workflow entry below is retained
+whole. No production or release readiness is claimed.
+
 ## 2026-10-05 — Exclude CI timing history from Cloudflare deployment inputs
 
 The Cloudflare push filter keeps its product-data include and excludes only

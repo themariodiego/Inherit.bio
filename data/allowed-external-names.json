@@ -1147,6 +1147,19 @@
       "evidence": [
         "docs/adr/0033-copilot-through-own-assistant-connector.md"
       ]
+    },
+    {
+      "name": "ClamAV",
+      "category": "dependency-platform",
+      "aliases": [
+        "docs.clamav.net/manual/Installing/Docker.html"
+      ],
+      "reason": "Official Docker instructions for the pinned ClamAV dependency used only by the isolated hosted scanner proof; only this reviewed documentation path is registered, not runtime network authority or product activation.",
+      "evidence": [
+        "docs/claim-scanner-real-proof.md",
+        ".github/workflows/claim-scanner-real-proof.yml",
+        "scripts/claim-scanner-real-proof.run.mts"
+      ]
     }
   ]
 }
