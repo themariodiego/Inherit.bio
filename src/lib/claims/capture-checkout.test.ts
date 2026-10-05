@@ -12,7 +12,7 @@ async function checkout() {
   await mkdir(join(root, "src/lib/claims"), { recursive: true });
   await writeFile(join(root, "src/lib/claims/email-fixtures.ts"), "export const fixture = 'synthetic';\n");
   await writeFile(join(root, "src/lib/claims/corpus.ts"), "export const policy = 'synthetic';\n");
-  await writeFile(join(root, ".gitignore"), "node_modules/\n.next/\n*.local\n.env*\n");
+  await writeFile(join(root, ".gitignore"), "node_modules/\n.next/\n*.local\n.env*\n/workers/requester-statement-archive/worker-configuration.d.ts\n/workers/requester-statement-archive/.wrangler/\n");
   const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
   git("init", "--quiet");
   git("add", ".");
@@ -27,6 +27,19 @@ describe("complete capture checkout binding", () => {
     await writeFile(join(f.root, "node_modules/synthetic/index.js"), "// synthetic installation\n");
     await mkdir(join(f.root, ".next"));
     await writeFile(join(f.root, ".next/build.txt"), "synthetic build\n");
+    expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).not.toThrow();
+  });
+
+  it("allows the exact requester archive type and cache outputs created before CI capture", async () => {
+    const f = await checkout();
+    const worker = join(f.root, "workers/requester-statement-archive");
+    await mkdir(join(worker, ".wrangler/cache"), { recursive: true });
+    await writeFile(join(worker, "worker-configuration.d.ts"), "// synthetic generated runtime types\n");
+    await writeFile(join(worker, ".wrangler/cache/cf.json"), "{\"synthetic\":true}\n");
+    expect(f.git("ls-files", "--others", "--ignored", "--exclude-standard").split("\n").sort()).toEqual([
+      "workers/requester-statement-archive/.wrangler/cache/cf.json",
+      "workers/requester-statement-archive/worker-configuration.d.ts",
+    ]);
     expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).not.toThrow();
   });
 
@@ -46,8 +59,16 @@ describe("complete capture checkout binding", () => {
     expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).toThrow("uncommitted-renderer-inputs");
   });
 
-  it.each(["src/lib/claims/source.local", ".env.local"])("refuses ignored untracked input %s", async (file) => {
+  it.each(["src/lib/claims/source.local", ".env.local",
+    "workers/requester-statement-archive/source.local",
+    "workers/requester-statement-archive/.env.local",
+    "workers/requester-statement-archive/worker-configuration.d.ts.local",
+    "workers/requester-statement-archive/.wrangler.local",
+    "workers/requester-statement-archive/.wrangler/source.local",
+    "workers/requester-statement-archive/.wrangler/cache/.env.local",
+  ])("refuses ignored untracked input %s", async (file) => {
     const f = await checkout();
+    await mkdir(join(f.root, file, ".."), { recursive: true });
     await writeFile(join(f.root, file), "synthetic-input\n");
     expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).toThrow("untracked-ignored-inputs");
   });

@@ -1,3 +1,29 @@
+## 2026-10-05 — Bind email capture after requester archive type generation
+
+The first complete hosted unit suite on PR287 stopped in the email capture
+setup. The preceding type check writes the ignored requester archive
+worker-configuration.d.ts file. The capture checkout guard did not recognize
+that output. The qualified local type generation also created exactly one
+Wrangler cache file, .wrangler/cache/cf.json. Permit only those two exact paths.
+Preserve all existing checkout, source, HEAD, output,
+renderer, receipt and network assertions. No email is sent.
+
+Add a disposable Git fixture that proves both generated paths are ignored
+and accepted. Add refusal cases for ignored Worker source, local environment
+files, nested cache source and environment files, and names that resemble
+either generated output. Existing ignored
+source and environment refusal cases stay required. No test is skipped,
+removed, retried or given a longer limit. Keep the original hosted failure.
+Complete hosted unit, database and browser checks on the final commit remain
+required. Native database, service, full-flow and production holds stay closed.
+
+The same first hosted run found both appeal UI cases waiting for the exact
+Request type label. The label contained the select and all option texts, so
+Playwright's exact label matcher could not find it. Give the visible label an
+explicit htmlFor association and the select a matching id. Keep all options,
+form behavior, exact browser selectors, assertions and 120-second limits.
+The retained snapshots show the real form; no route or provider is bypassed.
+
 ## 2026-10-04 - Keep the actual export contract separate from its future proposal (source only)
 
 The current export plan and its full pgTAP file retain the authentic cc64

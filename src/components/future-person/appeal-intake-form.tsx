@@ -16,9 +16,10 @@ export function AppealIntakeForm({formToken}:{formToken:string}){
  return <section aria-labelledby="test-appeal-intake-title"><h2 id="test-appeal-intake-title">Send a request</h2>
   <p>This form is for the test service. Do not send DNA or identity documents here.</p>
   <form onSubmit={submit} hidden={status==="received"}>
-   <label>Request type<select name="kind" value={kind} onChange={event=>setKind(event.target.value)}>
+   <label htmlFor="appeal-request-type">Request type</label>
+   <select id="appeal-request-type" name="kind" value={kind} onChange={event=>setKind(event.target.value)}>
     <option value="subject-objection">My DNA was used without my consent</option><option value="genetic-parent-objection">Genetic parent objection</option>
-    <option value="access-or-review-appeal">Review a decision</option></select></label>
+    <option value="access-or-review-appeal">Review a decision</option></select>
    <label>Your name<input name="claimantName" autoComplete="name" required minLength={2} maxLength={240}/></label>
    <label>Your email address<input name="contactEmail" type="email" autoComplete="email" required maxLength={254}/></label>
    <label>Request or record reference, if available<input name="reference" maxLength={240}/></label>
