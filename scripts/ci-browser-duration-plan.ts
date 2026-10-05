@@ -5,6 +5,7 @@ import { ACCESSIBILITY_SWEEP_FILES, verifyAccessibilitySweepPlacement } from "./
 import { browserAllocationHash, browserReportCases, CI_BROWSER_SHARDS, type CiBrowserAllocation } from "./ci-browser-shards";
 import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
 import { assertBrowserQueueGroups, assertBrowserQueuePartition, isQueueExclusiveBrowserFile, verifyBrowserQueueIsolation } from "./ci-browser-queue-isolation";
+import { multiRunDurationEstimator, optionalMultiRunBrowserDurationProfile, type MultiRunDurationProfile } from "./ci-browser-duration-history";
 
 const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const file = z.string().regex(/^[a-z0-9][a-z0-9._/-]*\.spec\.ts$/).refine(value => !value.includes(".."));
@@ -22,6 +23,7 @@ const profileSchema = z.object({ schemaVersion: z.literal(1), source: z.object({
 type Profile = z.infer<typeof profileSchema>;
 type Group = { file: string; project: string; cases: string[] };
 export type BrowserDurationProfile = { value: Profile; sha256: string };
+export type SelectedBrowserDurationProfile = BrowserDurationProfile | MultiRunDurationProfile;
 export type BrowserDurationPlan = { allocation: CiBrowserAllocation;
   parts: { index: number; files: Group[]; estimatedMs: number }[] };
 const key = (group: { file: string; project: string }) => `${group.project}:${group.file}`;
@@ -52,6 +54,30 @@ export function optionalBrowserDurationProfile(read: () => string): BrowserDurat
   return parseBrowserDurationProfile(raw);
 }
 
+/** Fixed expected-version inputs are BOTH checked. Only ENOENT is absence. */
+export function selectBrowserDurationProfile(readV1: () => string, readV2: () => string): SelectedBrowserDurationProfile | null {
+  const legacy = optionalBrowserDurationProfile(readV1);
+  const current = optionalMultiRunBrowserDurationProfile(readV2);
+  return current ?? legacy;
+}
+
+/** Preserve the original V1 numerical path; V2 uses an exact rational maximum. */
+export function browserDurationEstimator(profile: SelectedBrowserDurationProfile): (group: { file: string; project: string; count: number }) => number {
+  if (profile.value.schemaVersion === 2) return multiRunDurationEstimator({ value: profile.value, sha256: profile.sha256 });
+  const history = profileSchema.parse(profile.value); digest.parse(profile.sha256); validateHistory(history);
+  const weights = new Map(history.files.map(row => [key(row), row]));
+  const maximumFileMs = Math.max(1, ...history.files.map(row => row.durationMs));
+  const maximumCaseMs = Math.max(1, ...history.files.map(row => row.durationMs / row.baselineCaseCount));
+  return group => {
+    const previous = weights.get(key(group));
+    const estimatedMs = previous
+      ? Math.max(1, Math.ceil(previous.durationMs * group.count / previous.baselineCaseCount))
+      : Math.ceil(Math.max(maximumFileMs, maximumCaseMs * group.count));
+    assert(Number.isSafeInteger(estimatedMs), "Duration weight overflow");
+    return estimatedMs;
+  };
+}
+
 function groups(value: unknown): Group[] {
   const report = z.object({ suites: z.array(z.unknown()) }).parse(value);
   const suite = z.object({ specs: z.array(z.object({ id: z.string(), file,
@@ -75,21 +101,13 @@ function groups(value: unknown): Group[] {
 /** Longest whole file first, with deterministic ties, intact accessibility sweeps and isolated publication queues.
  * Known groups scale by CURRENT case count; new groups get at least the largest
  * saved file cost and the largest saved mean per-case cost. Removed groups add no cases. */
-export function browserDurationPlan(full: unknown, profile: BrowserDurationProfile): BrowserDurationPlan {
+export function browserDurationPlan(full: unknown, profile: SelectedBrowserDurationProfile): BrowserDurationPlan {
   const currentCases = browserReportCases(full, null, false);
   // Revalidate callers' input; a mutable object cannot bypass the closed schema.
-  const history = profileSchema.parse(profile.value);
-  digest.parse(profile.sha256);
-  validateHistory(history);
-  const weights = new Map(history.files.map(row => [key(row), row]));
-  const maximumFileMs = Math.max(1, ...history.files.map(row => row.durationMs));
-  const maximumCaseMs = Math.max(1, ...history.files.map(row => row.durationMs / row.baselineCaseCount));
+  const estimate = browserDurationEstimator(profile);
   const currentGroups = groups(full); assertBrowserQueueGroups(currentGroups);
   const weighted = currentGroups.map(group => {
-    const previous = weights.get(key(group));
-    const estimatedMs = previous
-      ? Math.max(1, Math.ceil(previous.durationMs * group.cases.length / previous.baselineCaseCount))
-      : Math.ceil(Math.max(maximumFileMs, maximumCaseMs * group.cases.length));
+    const estimatedMs = estimate({ ...group, count: group.cases.length });
     assert(Number.isSafeInteger(estimatedMs), "Duration weight overflow");
     return { ...group, estimatedMs };
   }).sort((a, b) => b.estimatedMs - a.estimatedMs || compare(key(a), key(b)));

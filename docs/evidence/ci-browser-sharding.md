@@ -215,3 +215,45 @@ Review and actual complete plus six selected listings on an isolated real
 six-project composition are required before merge. Four-project checks alone
 do not qualify that composition. Every existing native and aggregate guard,
 browser body, assertion and time limit remains required.
+
+### Proposed manual two-run calibration
+
+The proposed V2 history retains run 37212933160 and run 37226288862 as separate
+actual sources. Each source keeps all 95 raw file/project costs, its original
+case counts, historical projects, checkout/tree/run/attempt, seven ZIP digests
+and saved metadata/capture hashes. Current case discovery remains independent.
+Known costs use the maximum observed per-case ratio, with exact rational
+ceiling after current-count scaling. Unknown groups receive at least the
+largest saved file cost and a per-case cost of one millisecond before scaling.
+
+Both fixed paths are checked: `data/ci/browser-duration-profile.json` must be
+genuine V1, and `data/ci/browser-duration-profile-v2.json` must be closed V2.
+Any present malformed or unreadable input refuses execution. Valid V2 takes
+precedence; V1 is used only when V2 is absent. Native sharding is used only when
+both files are absent. There is no selection flag or environment switch.
+Allocation metadata binds the SHA256 of the bytes actually selected.
+
+After all aggregate coverage, source, provider, accessibility and queue checks
+pass, public timing fields compare estimates with actual body and browser time.
+A body cost above 1.5 times its estimate produces an informational refresh
+suggestion. It does not change qualification, collection, retries or limits.
+
+Manual offline refresh uses the existing stock ZIP reader on Node22:
+
+```text
+pnpm exec tsx scripts/ci-browser-duration-history.run.mts saved-capture1 saved-capture2 [saved-capture3] fresh-output-directory
+```
+
+The helper reads already retained successful metadata and seven sanitized ZIPs
+per run. It checks API digests, capture closure and complete historical case/file
+coverage through a separate pure historical validator. It never invokes current
+GitHub identity or discovery, fetches data, extracts ZIP files or accepts a
+baseline. ZIP member size and CRC are checked. Source/evidence aliases and
+existing outputs are rejected. Its private proposal and audit need ordinary
+source review before a manual profile update. Use at most three explicitly
+reviewed runs. No profile update runs automatically.
+
+This candidate is unqualified source. The two green runs support an in-sample
+calibration model, with no held-out speed proof. PR285 passed in 19m09 and the
+same-tree main run passed in 18m16; neither qualifies this new estimator. Current
+repository checks, setup variance and indivisible file groups remain limits.
