@@ -1,5 +1,21 @@
 # Test diff register
 
+## 2026-10-05 — offline duration ZIP refusal correction
+
+The first focused run preserved 116 passes and two failures. The foreign-member
+fixture passed a parent path through the stock writer, which removed that path
+before serialization. It now writes a genuinely foreign basename and retains
+the same refusal assertion. The original central-only CRC corruption case is
+unchanged. The reader requires equal local and central flags and, when no data
+descriptor is present, equal CRC fields after the stock payload CRC check.
+
+Three additional cases corrupt both header CRCs without changing payload bytes
+and set the data-descriptor flag in only one header, in each direction. They
+require refusal. Existing member, size, encryption, method and output-ownership
+assertions and all time, retry and worker limits remain unchanged. The two old
+worktrees and the first failed result remain intact. This source correction has
+not run; local and hosted qualification remain required.
+
 ## 2026-10-04 — Keep current project fixtures and publication queues independent of timing history
 
 The new duration tests now derive the current project configuration from the
@@ -4307,3 +4323,20 @@ unresolved policy for publishing the model identity. The owner decided it on 25
 September (`docs/protocol/decisions.md`), so on landing, 27 September, the
 blocker was renamed to the run record that must carry the identifier; no test
 changed with it.
+
+## 2026-10-04 — proposed multi-run browser duration history
+
+Source proposal only; qualification has not run. The original 26 browser guards
+and 15 duration/queue controls retain their complete files, bodies, assertions
+and limits. New separate suites check strict versioned history, both fixed input
+paths, per-case maximum and exact count scaling, zero-history unknown-file cost,
+saved metadata/artifact binding, complete historical coverage, bounded ZIP
+decoding, safe output aliases, true current registry and informational variance.
+
+The original successful V1 profile remains byte-for-byte intact. The separate
+V2 file contains both genuine successful runs, each with its own 95 raw measured
+groups and 569 cases. No combined measurement is labelled as one actual run.
+Fresh full and six official selected listings are required on main and the real
+six-project composition, followed by normal local quality checks and the complete
+hosted suites on the final commit. Existing cases, skips, retries, time limits,
+workflow jobs, provider actions and release gates are unchanged.

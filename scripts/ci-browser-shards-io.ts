@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { browserDurationTestList, optionalBrowserDurationProfile, type BrowserDurationPlan, type BrowserDurationProfile } from "./ci-browser-duration-plan";
+import { browserDurationTestList, selectBrowserDurationProfile, type BrowserDurationPlan, type SelectedBrowserDurationProfile } from "./ci-browser-duration-plan";
 import { assertCiRuntime } from "./ci-browser-config";
 import { CI_BROWSER_SHARDS, type CiBrowserIdentity } from "./ci-browser-shards";
 
@@ -24,8 +24,10 @@ export function ciBrowserSourceIdentity(): CiBrowserIdentity {
   return { head, runId, runAttempt };
 }
 /** Absence keeps native sharding; malformed history always fails closed. */
-export function loadBrowserDurationProfile(): BrowserDurationProfile | null {
-  return optionalBrowserDurationProfile(() => readFileSync("data/ci/browser-duration-profile.json", "utf8"));
+export function loadBrowserDurationProfile(): SelectedBrowserDurationProfile | null {
+  return selectBrowserDurationProfile(
+    () => readFileSync("data/ci/browser-duration-profile.json", "utf8"),
+    () => readFileSync("data/ci/browser-duration-profile-v2.json", "utf8"));
 }
 export function createBrowserDurationList(plan: BrowserDurationPlan, index: number): { path: string; cleanup(): void } {
   const content = browserDurationTestList(plan, index);

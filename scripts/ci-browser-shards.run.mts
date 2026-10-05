@@ -7,6 +7,7 @@ import { browserManifest, CI_BROWSER_SHARDS, verifyBrowserShards, type CiBrowser
 import { verifyAccessibilitySweepPlacement, verifyNativeBrowserBalance } from "./ci-browser-balance";
 import { browserDurationPlan, verifyBrowserDurationListings } from "./ci-browser-duration-plan";
 import { verifyBrowserQueueIsolation } from "./ci-browser-queue-isolation";
+import { browserDurationVariance } from "./ci-browser-duration-variance";
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === path.resolve("scripts/ci-browser-shards.run.mts");
 if (invoked) {
@@ -53,11 +54,14 @@ if (invoked) {
     const rows = clean.sort((a, b) => a.index - b.index).map(receipt =>
       `| ${receipt.index} | ${receipt.executedCases.length} | ${seconds(receipt.timings.setupMs)} | ${seconds(receipt.timings.buildMs)} | ${seconds(receipt.timings.bootstrapMs)} | ${seconds(receipt.timings.browserMs)} | ${receipt.providerUploads} |`);
     const files = clean.flatMap(receipt => receipt.files).sort((a, b) => b.durationMs - a.durationMs).slice(0, 10);
+    const variance = profile ? browserDurationVariance(clean, profile) : null;
     const summary = `Browser source: ${source.head}; run ${source.runId}, attempt ${source.runAttempt}.\n\n`
       + `${count} discovered and executed cases, exactly once. Zero skips/retries.\n\n`
       + "| Shard | Cases | Setup s | Build s | Bootstrap s | Browser s | Actual provider uploads |\n|---|---|---|---|---|---|---|\n"
       + rows.join("\n") + "\n\nLongest file groups (sum of actual test durations):\n\n"
-      + files.map(file => `- ${file.project}/${file.file}: ${file.cases.length} cases, ${seconds(file.durationMs)} s`).join("\n") + "\n";
+      + files.map(file => `- ${file.project}/${file.file}: ${file.cases.length} cases, ${seconds(file.durationMs)} s`).join("\n") + "\n"
+      + (variance ? `\nInformational duration variance (estimates are not execution proof):\n\n\`\`\`json\n${JSON.stringify(variance)}\n\`\`\`\n`
+        : "\nNative fallback: no saved duration profile.\n");
     assert(process.env.GITHUB_STEP_SUMMARY, "Actual GitHub summary destination required");
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
   }
