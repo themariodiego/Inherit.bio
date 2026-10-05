@@ -1,5 +1,24 @@
 # Test diff register
 
+## 2026-10-06 — Enforce the private comprehension configuration boundary
+
+The ordinary runner now reads only an owned regular `0600` single-link file
+through its absolute canonical path, outside every Git checkout. It binds the
+named file to the open descriptor, rechecks file and parent identities, reads at
+most 64 KiB and returns generic refusals before any journal or child starts.
+The configuration schema, token and spending limits, calibration checks, model
+identity rules, task skips and stopping rule remain unchanged.
+
+New source-only controls use real temporary files for links, modes, checkout
+markers, byte limits, malformed text, replacement and permission changes during
+reads, and uncertain descriptor closure. Two credential-free stub CLI controls
+check the plan and early refusal with no effort ledger or run record. Only the
+existing plan-output fixture gains an explicit canonical path and `0600` mode;
+all original assertion lines and time limits stay unchanged. The mutable read
+buffer is cleared, with no claim of immutable-string or platform erasure.
+These cases are unrun. Source review and local and full hosted checks remain
+required; no comprehension score, native flow or release status changes.
+
 ## 2026-10-05 — Exclude CI timing history from Cloudflare deployment inputs
 
 The Cloudflare push filter keeps its product-data include and excludes only
