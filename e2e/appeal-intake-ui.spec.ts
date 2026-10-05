@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import type { Page, Request, Route } from "@playwright/test";
+import type { Browser, BrowserContext, Page } from "@playwright/test";
+import { APPEAL_UI_ORIGIN, createAppealUiWireProxy } from "./helpers/appeal-ui-wire-proxy";
 import { expect, test } from "./audited-test";
 
 /**
@@ -9,7 +10,7 @@ import { expect, test } from "./audited-test";
  * mail, archive and every full-flow hold are outside this controlled reply.
  * No private person or genetic values enter the request or the test output.
  */
-const origin = "http://localhost:3102";
+const origin = APPEAL_UI_ORIGIN;
 const endpoint = `${origin}/api/appeals`;
 const submitted = {
   kind: "subject-objection", claimantName: "Synthetic UI requester",
@@ -28,30 +29,14 @@ async function fillForm(page: Page) {
   await form.getByRole("checkbox", { name: "These details match what I know.", exact: true }).check();
 }
 
-async function checkControlledReply(page: Page, outcome: "received" | "invalid") {
-  let release!: () => void;
-  const held = new Promise<void>(resolve => { release = resolve; });
-  let entered!: (request: Request) => void;
-  const incoming = new Promise<Request>(resolve => { entered = resolve; });
-  const pending = new Set<Promise<void>>();
-  let intercepted = 0, originalFailed = false, routeError: unknown;
-  const handler = (route: Route) => {
-    intercepted += 1;
-    entered(route.request());
-    const operation = (async () => {
-    try {
-      await held;
-      await route.fulfill({ status: outcome === "received" ? 202 : 422,
-        headers: { "content-type": "application/json", "cache-control": "private, no-store", "referrer-policy": "no-referrer" },
-        body: outcome === "received" ? '{"status":"received"}' : '{"error":"invalid_request","issues":["request"]}' });
-    } catch (error) { routeError ??= error; }
-    })();
-    pending.add(operation);
-    void operation.then(() => pending.delete(operation), error => { routeError ??= error; pending.delete(operation); });
-    return operation;
-  };
-  await page.route(endpoint, handler);
+async function checkControlledReply(browser: Browser, outcome: "received" | "invalid") {
+  const proxy = await createAppealUiWireProxy(outcome);
+  let context: BrowserContext | undefined;
+  let originalFailed = false, cleanupError: unknown;
   try {
+    // The audited factory observes this context. The displayed page origin stays fixed.
+    context = await browser.newContext({ proxy: { server: proxy.server } });
+    const page = await context.newPage();
     await page.context().clearCookies();
     const response = await page.goto(`${origin}/legal/appeals`);
     expect(response?.status()).toBe(200);
@@ -67,7 +52,7 @@ async function checkControlledReply(page: Page, outcome: "received" | "invalid")
     await fillForm(page);
     const form = page.locator("main form");
     await form.getByRole("button", { name: "Send request", exact: true }).click();
-    const request = await incoming;
+    const request = await proxy.incoming;
     expect(request.url()).toBe(endpoint);
     expect(request.method()).toBe("POST");
     const headers = await request.allHeaders();
@@ -98,9 +83,9 @@ async function checkControlledReply(page: Page, outcome: "received" | "invalid")
     await expect(form.getByRole("button", { name: "Send request", exact: true })).toHaveCount(0);
     await expect(form).toBeVisible();
     await expect(page.locator("main").getByRole("status")).toBeEmpty();
-    expect(intercepted).toBe(1);
+    expect(proxy.count()).toBe(1);
     const answered = page.waitForResponse(endpoint);
-    release();
+    proxy.release();
     const reply = await answered;
     expect(reply.status()).toBe(outcome === "received" ? 202 : 422);
     expect(await reply.text()).toBe(outcome === "received" ? '{"status":"received"}' : '{"error":"invalid_request","issues":["request"]}');
@@ -115,22 +100,22 @@ async function checkControlledReply(page: Page, outcome: "received" | "invalid")
       await expect(form.getByLabel("Your email address", { exact: true })).toHaveValue(submitted.contactEmail);
       await expect(form.getByLabel("Why do you want to make this request? Use 20 to 8,000 characters.", { exact: true })).toHaveValue(submitted.statement);
     }
-    expect(intercepted, "one actual submit sends one request").toBe(1);
+    expect(proxy.count(), "one actual submit sends one request").toBe(1);
   } catch (error) { originalFailed = true; throw error; }
   finally {
-    release();
-    // Settle every actual handler, including a duplicate from a defective app.
-    while (pending.size > 0) await Promise.all([...pending]);
-    try { await page.unroute(endpoint, handler); }
-    catch (error) { routeError ??= error; }
-    if (routeError && !originalFailed) throw routeError;
-    if (routeError && originalFailed) console.error(JSON.stringify({ event: "appeal-ui-secondary-cleanup-failure", errorName: routeError instanceof Error ? routeError.name : "unknown" }));
+    proxy.release();
+    try { await context?.close(); }
+    catch (error) { cleanupError ??= error; }
+    try { await proxy.close(); }
+    catch (error) { cleanupError ??= error; }
+    if (cleanupError && !originalFailed) throw cleanupError;
+    if (cleanupError && originalFailed) console.error(JSON.stringify({ event: "appeal-ui-secondary-cleanup-failure", errorName: cleanupError instanceof Error ? cleanupError.name : "unknown" }));
   }
 }
 
-test("/legal/appeals processing: the real form waits once, then shows the controlled received reply (UI only)", async ({ page }) => {
-  await checkControlledReply(page, "received");
+test("/legal/appeals processing: the real form waits once, then shows the controlled received reply (UI only)", async ({ browser }) => {
+  await checkControlledReply(browser, "received");
 });
-test("/legal/appeals processing: the real form waits once, then retains its fields after the controlled invalid reply (UI only)", async ({ page }) => {
-  await checkControlledReply(page, "invalid");
+test("/legal/appeals processing: the real form waits once, then retains its fields after the controlled invalid reply (UI only)", async ({ browser }) => {
+  await checkControlledReply(browser, "invalid");
 });

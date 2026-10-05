@@ -1,3 +1,24 @@
+## 2026-10-05 — Read appeal UI request headers at the actual browser wire
+
+The revised complete hosted browser suite retained two appeal UI failures.
+The paused Playwright request omitted Sec-Fetch-Site. A bounded stock browser
+diagnostic found the header on the actual loopback wire. Keep the same-origin
+header assertion. Read the actual request through one owned context proxy.
+The audited browser context still displays the fixed localhost:3102 page.
+The Node fixture binds only 127.0.0.1.
+Only GETs reach that same TEST app. Copy its complete body and raw response
+header pairs. Hold the exact appeal POST and give the same controlled reply;
+never forward a native POST. Refuse other origins, methods and CONNECT.
+
+Keep both case titles, every form, cookie, token, body, header, pending-state,
+reply, retained-field and single-submit assertion. Preserve the original
+120-second limit and zero retries. Close the owned context, handlers, sockets
+and proxy in finally. Tokens and cookies remain in memory. The earlier actual
+failures remain recorded. This fixture proves the controlled UI states only.
+Native intake, persistence, nonce consumption, R2, scanner, email, disposal,
+source binding, full user flows and release remain on hold. Local focused and
+quality checks and the complete hosted suite on the final commit are required.
+
 ## 2026-10-05 — Bind email capture after requester archive type generation
 
 The first complete hosted unit suite on PR287 stopped in the email capture
