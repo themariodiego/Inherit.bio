@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "workers/requester-statement-archive/worker-configuration.d.ts",
   ]),
   // Figure contract (brief X4): every numeric or genotypic value on a result
   // surface renders through Figure / RelativeFigure / ClaimBlock. Scope is

@@ -34,6 +34,7 @@ describe("isolated standard CI runtime boundaries", () => {
     JOBS_SECRET: "EXAMPLE_SYNTHETIC", CRON_SECRET: "EXAMPLE_SYNTHETIC", EMAIL_FROM: "EXAMPLE_SYNTHETIC", RESEND_API_KEY: "EXAMPLE_SYNTHETIC",
     RESEND_BASE_URL: "http://127.0.0.1:8124", NEXT_PUBLIC_SITE_URL: `http://localhost:${port}`, NEXT_PUBLIC_APP_URL: `http://localhost:${port}`,
     INHERIT_TEST_JURISDICTION: port === 3101 ? "" : "1", INHERIT_CANONICAL_UPLOADS_PAUSED: port === 3102 ? "true" : "false",
+    INHERIT_TEST_REQUESTER_STATEMENTS: port === 3102 ? "1" : "",
     ...(port === 3103 ? LOCAL_MODEL_ENV : {}),
     ...(port === 3105 ? {...EMBRYO_APP_ENV,RESEND_WEBHOOK_SECRET:expectedVariantVerifier} : {}), ...(port === 3104 ? PREPARED_APP_ENV : {}) });
   it("preserves all five variants and refuses provider destinations, bypasses, missing signers and arbitrary environments", () => {
@@ -107,6 +108,19 @@ describe("isolated standard CI runtime boundaries", () => {
       expect(()=>checkedAppEnvironment({...app(3105),RESEND_WEBHOOK_SECRET:malformedWebhookVerifier},3105)).toThrow();
     for(const port of [3100,3101,3102,3103,3104])
       expect(()=>checkedAppEnvironment({...app(port),RESEND_WEBHOOK_SECRET:refusedOtherVariantVerifier},port)).toThrow();
+  });
+  it("admits the existing requester statement TEST flag only on the fixed paused server", () => {
+    for (const port of [3100, 3101, 3102, 3103, 3104, 3105]) {
+      const current = app(port);
+      expect(checkedAppEnvironment(current, port).INHERIT_TEST_REQUESTER_STATEMENTS).toBe(port === 3102 ? "1" : "");
+      const omitted = Object.fromEntries(Object.entries(current).filter(([name]) => name !== "INHERIT_TEST_REQUESTER_STATEMENTS"));
+      expect(() => checkedAppEnvironment(omitted, port)).toThrow();
+      for (const value of [undefined, "0", "true", "other", port === 3102 ? "" : "1"])
+        expect(() => checkedAppEnvironment({ ...current, INHERIT_TEST_REQUESTER_STATEMENTS: value }, port)).toThrow();
+      const launcher = { ...ci, ...current, INHERIT_CI_BROWSER_RUNTIME: "ready" };
+      expect(checkedCiLauncherEnvironment(launcher, port, "linux").INHERIT_TEST_REQUESTER_STATEMENTS).toBe(port === 3102 ? "1" : "");
+      expect(() => checkedCiLauncherEnvironment({ ...launcher, INHERIT_TEST_REQUESTER_STATEMENTS: port === 3102 ? "" : "1" }, port, "linux")).toThrow();
+    }
   });
   it("requires actual firewall drop counters, not just failed network attempts", () => {
     const ipv4 = "Chain OUTPUT (policy DROP 3 packets, 180 bytes)\n1 60 DROP all -- * * 0.0.0.0/0 127.0.0.11\n";

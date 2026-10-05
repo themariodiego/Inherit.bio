@@ -136,6 +136,7 @@
     "/legal/[artifact]/diff/[from]/[to] complete",
     "/legal/[artifact]/versions/[version] complete",
     "/legal/appeals complete",
+    "/legal/appeals processing",
     "/legal/consent/[key] complete",
     "/legal/consent/[key]/diff/[from]/[to] complete",
     "/legal/consent/[key]/v/[version] complete",

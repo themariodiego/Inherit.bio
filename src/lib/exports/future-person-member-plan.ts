@@ -17,7 +17,7 @@ const variant=z.object({id:z.string().regex(/^[1-9][0-9]*$/u).refine(v=>BigInt(v
   referenceAllele:z.string().nullable(),alternateAllele:z.string().nullable(),genotype:z.string()}).strict();
 const score=historicalClaimantScore;
 const page=z.object({rows:z.array(z.unknown()).max(500),nextAfterId:z.string().nullable(),count:z.number().int().min(0).max(500)}).strict();
-export type FuturePersonMemberOperation="context"|"agreements"|"quality"|"scores"|"figures"|"reports"|"variants"|"legal-audit";
+export type FuturePersonMemberOperation="context"|"agreements"|"quality"|"scores"|"figures"|"reports"|"variants"|"legal-audit"|"own-statements";
 export type FuturePersonMemberFactory={name:string;rows:number;chunks:(signal:AbortSignal)=>AsyncIterable<Uint8Array>};
 const encoder=new TextEncoder();const bytes=(value:string)=>encoder.encode(value);
 /** Complete historical claimed-subject member factories shared by the

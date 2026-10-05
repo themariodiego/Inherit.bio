@@ -7,7 +7,7 @@
     "build": "tsx scripts/prepare-review-pdf-assets.mts && next build",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "node scripts/typecheck-requester-statement-worker.mjs && next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "worker:prepared": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/prepared-worker.run.mts",

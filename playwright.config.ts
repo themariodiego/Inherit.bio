@@ -67,6 +67,8 @@ const comprehensionRun = process.env.INHERIT_COMPREHENSION_RUN === "1";
 
 const localProject = localE2eProject(process.env);
 const SERVER_ENV = {
+  // Every server starts closed; only the existing paused TEST server overrides this flag.
+  INHERIT_TEST_REQUESTER_STATEMENTS: "",
   INHERIT_UPLOAD_SIGNING_JWK: signer ?? "",
   INHERIT_CANONICAL_UPLOADS_PAUSED: "false",
   NEXT_PUBLIC_SUPABASE_URL: localProject.apiOrigin,
@@ -185,6 +187,7 @@ const config = defineConfig({
         NEXT_PUBLIC_APP_URL: `http://localhost:${PAUSE_PORT}`,
         INHERIT_TEST_JURISDICTION: "1",
         INHERIT_CANONICAL_UPLOADS_PAUSED: "true",
+        INHERIT_TEST_REQUESTER_STATEMENTS: "1",
       },
     },
     {

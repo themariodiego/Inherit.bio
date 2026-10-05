@@ -1,4 +1,192 @@
+## 2026-10-04 - Keep the actual export contract separate from its future proposal (source only)
+
+The current export plan and its full pgTAP file retain the authentic cc64
+228-table contract. The complete reviewed 250-table future proposal is kept
+as separate inert source data. Existing table, column, member, privacy and
+228-table assertions remain unchanged. New provenance and runtime import
+boundary tests use real filesystem fixtures with planted promotion paths.
+They are authored and unrun. No new schema, producer, authority, flag or
+provider is activated. All original native fences and transaction bytes stay.
+Complete local focused and quality checks, then complete hosted unit, database
+and browser suites on the final commit, remain required. The correction nonce
+and POST, suspension origin, appeal export and full native/provider flow stay
+on hold. Prior 380-case evidence covers its recorded scope only.
+
+## 2026-10-04 — Cover the appeal form waiting state on the existing paused TEST server (authored, unrun)
+
+The first actual V4 route gate found 10 unproven pairs where its ratchet is 9.
+The extra required pair is /legal/appeals processing. The new request form can
+wait for its POST reply, so the former static-page exception was removed.
+Keep that required pair and the ratchet. Add two audited browser cases that
+open the real form on the existing paused test server, port 3102. Use the
+actual page token and HttpOnly form cookie. Hold the actual browser POST and
+check the same-origin headers, closed synthetic body, one request, disabled
+submit control and exact waiting text. Then send a controlled 202 reply in
+one case and a controlled 422 reply in the other. Check the exact success or
+error state. Always release the held request and keep the first failure.
+
+Use only the existing INHERIT_TEST_REQUESTER_STATEMENTS flag. The closed CI
+configuration requires 1 on port 3102 and an empty value on every other
+existing port. The app environment builder fixes this value by port and
+ignores any job value. Add rejection tests for an omitted or wrong value and
+for a value of 1 on every other port. Keep all previous cases, assertions,
+limits and retry counts. Add no project, port, product flag or provider.
+
+The route-state source ledger gains the one authored processing title pair.
+A title in this static ledger is not an executed browser result. These cases
+have not run. Controlled replies test the page UI and bypass native POST.
+They cannot prove nonce consumption, case storage, reviewer assignment,
+evidence, mail, archive, deletion, or a complete flow. The native TEST and R2
+configurations stay disabled. All 14 SQL files stay unbound. Production flags,
+app authority predicates, READY guards and all ten full-flow holds stay closed.
+The four archive timeouts and every earlier raw failure remain. No local
+focused PASS, full static PASS, push readiness or release credit is claimed.
+Preserve all previous test-register bytes below and every frozen packet.
+
+## 2026-10-04 — Correct the complete direct-read census and separate intake test setup declarations
+
+The first actual V8 focused run passed 370 of 373 collected cases. Seven
+planned intake cases did not load: the installed Vitest transform rejects two
+vi.hoisted calls in one comma-separated const declaration. Split that setup
+into two const declarations. Keep each callback, fixture, case, assertion,
+byte bound, native-result seam and request clock unchanged.
+
+The first run also found directReadKeyCount 23 where the test expected 21.
+Run the actual unchanged environment scanner against every source module in
+both qualified V6 and current V8. The complete scan reads 1,316 modules in V6
+and 1,332 in V8. V6 has 21 distinct direct keys; V8 has 23. The two additional
+direct keys are INHERIT_TEST_JURISDICTION and INHERIT_TEST_REQUESTER_STATEMENTS.
+The real appeals-open.ts module reads both directly. Both keys were already
+present among the bound reads; the total distinct key count stays 45. The
+bound key count stays 24, scanner bindings 14, dynamic sites 1, template keys
+37, guide names 48, guide documented keys 37, and runtime injected keys 8.
+The scanner reports no findings in either complete tree.
+
+Change only the exact directReadKeyCount assertion from 21 to 23 and add its
+source explanation. Keep all 30 environment cases, every other assertion,
+planted defect, scanner, exception, vocabulary rule and gate unchanged. This
+change follows the complete source census, not only the failing number. Keep
+the whole original expectation and ledger in the successor's inverse files.
+
+The first run retains two existing archive case failures at the unchanged
+5-second test limit and the environment cleanup failure at the unchanged
+10-second hook limit. The same archive source passed in the earlier V6 run.
+After-run host snapshots show competing CPU load and 3.82 GB of used swap;
+they do not establish the exact load during the failing cases or prove a
+cause. Prepare a new qualification with one test worker to reduce concurrent
+local load. Keep every test and hook limit, assertion and retry count exact.
+This is a change to resource use, not a timeout exemption. Keep all first raw
+failures and compare the same archive cases in the new actual run.
+
+This preserved source successor has not run. Worker types, app types, lint,
+and all 12 quality gates stopped before execution in the first run. A new
+exact source graph must pass the required local checks. Native SQL, real
+provider flows, complete hosted checks and all ten full-flow holds remain.
+The 17 new runtime and response cases passed in the first run; this does not
+qualify the complete appeal flow or release. Preserve every preceding ledger
+byte and all frozen V6, V7, V8 and caller-adaptation packets unchanged.
+
+## 2026-10-04 — Shared appeal request clock, real cancellation and strict response policy (authored, unrun)
+
+Compose the reviewed V6 compiler, environment census, dated ledger and named
+Worker default corrections, plus the authorized plain form-label corrections,
+into this new V8 source packet. Final root copy/graph review remains required. The frozen V6 and V7 packets remain unchanged. Preserve the
+complete preceding V7 ledger below, including its authored unrun test entry.
+Preserve the reviewed V6 binding-census entry verbatim below. The composed
+static source census still has 14 scanner bindings; no further expectation,
+scanner, gate, vocabulary rule or existing assertion changes.
+
+The three findings in the complete V7 source review require one fixed request
+clock before body ingestion. The source now tracks real stream reads,
+cancellation and lock release before they start. It zeros consumed mutable
+chunks and the whole buffer before a cancellation wait. A late actual read
+transfers ownership and clears its chunk after abort or caller return. Pending
+cleanup and late commit uncertainty remain HOLD; timeout, cancellation and
+response completion never mean native rollback or a buffers-zeroed ACK.
+
+The same original request deadline and AbortSignal cover the real own-JWT
+suspension prepare and the two public prepare/commit transports. Each cold RPC
+is memoized and assimilated once with retry(false); no operation gets a new
+clock. The original native scope, HMAC prepare, atomic commit, current reviewer,
+nonce, opaque responses, 64 KiB limit, original 30-day case deadline and closed
+TEST/READY guards remain unchanged. Suspension still refuses while its actual
+originating contradiction producer is absent.
+
+Add authored tests with real ReadableStreams and the actual installed
+Supabase/PostgREST cold builder behind a synthetic fetch seam. They check
+oversize clearing before pending cancellation, cancellation failure, late read
+ownership, a shared prepare/commit deadline, request abort, one operation with
+no retry, and retained late commit uncertainty. The original appeal intake
+fixtures and every original assertion remain exact; its replaced transport
+mock executes the actual client builder without a database or provider.
+
+An appeal-specific helper and the exact /api/appeals proxy branch apply the
+registered authOrRecovery and sensitive-data header union to successes and
+refusals, with no-referrer and a fresh response nonce CSP. Shared embryo headers
+and the route register remain unchanged. Add authored checks of the actual
+helper, route export and proxy forward/location-refusal responses against the
+actual register. These test sources have not run. Full source review, native
+rollback, whole flow, provider evidence and exact-head hosted tests remain
+required. All ten full-scope holds stay in force. No release credit follows.
+
+## 2026-10-04 — Correct the strict environment scanner binding census
+
+The first actual V6 environment run passed 29 of 30 cases. Its exact
+boundBindingCount assertion expected 13. An independent whole-source census
+finds 9 bindings in the 1493 base and 5 added scanner captures in four NEW
+modules, for 14. The four modules are requester-statement.ts,
+requester-statement-r2.ts, requester-statement-r2-gateway.ts, and
+requester-statement-private-transport.ts. The existing conservative parameter
+heuristic captures `expected` and `gateway` as well as actual environment
+holders. This is the scanner-defined count, not 14 distinct environment keys.
+
+Change only the exact boundBindingCount expectation from 13 to 14. Preserve
+all 30 test cases, every other assertion, planted defect, floor, detector,
+timeout and failure rule. Keep the first failing run and its raw report.
+The source census and both source reviews support this exact count correction;
+a later actual run must test the integrated successor.
+
+The reviewed source also keeps the real synchronous retry(false)/abortSignal
+request chain inside the tracked export task and sets ignoreBOM:false with
+fatal:true in both Worker copies. These repairs do not qualify a native RPC,
+provider or complete export flow. Restore the withdrawal page to exact 1493
+bytes while the real correction nonce and correction POST producer are absent.
+This missing producer remains an explicit full-flow hold.
+
+The original frozen V6/V7 packets and the complete preceding ledger remain
+unchanged. The new integrated graph has six reviewed source repairs plus this
+ledger entry. Its focused units, genuine generated Worker types, full app
+types, lint and required gates must pass on those exact bytes. Native SQL,
+provider, hosted browser and complete release checks remain separate and
+unpassed by this entry. No test waiver, weaker assertion, default flag, READY
+rule, currentness check, original deadline or production policy changes.
+
+## 2026-10-04 — NEW appeal intake source candidate (unrun)
+
+Adds tests for the real closed four-body parser, exact native prepare/commit RPC arguments, original scoped AES envelope, public opaque 202, TEST refusal, versioned digest compatibility and clearing of NEW decoded key buffers. The suspension test requires its own authenticated client and zero public case creation when the genuine contradiction origin is absent. No existing assertion, timeout, retry or expected result is removed or weakened. The tests are authored source, not an execution receipt. Native transaction/ownership/evidence/mail/archive/disposal qualification is still required.
+
 # Test diff register
+
+## 2026-10-04 - Preserve closed retention and local setup; correct the exact route census
+
+The first focused run retained 12 failures across three files. The exact current
+route set has 161 required pairs. The sole added pair is `/legal/appeals processing`.
+The planted withdrawal waiver removes only `/withdraw/[token] processing`, so its
+strict count is 160. The two assertions change from 160/159 to 161/160; every other
+assertion, failure list and the route ratchet of 9 stays. These source counts do
+not claim that the controlled browser cases have run or that native intake works.
+
+The local setup contract omits exactly the five disabled external TEST archive
+provider settings. Unknown settings, duplicates, unsafe values and missing
+reviewed values still fail. Two added omission/refusal cases are unrun. No TEST
+flag value or provider authority is invented.
+
+The new correction queue now runs only under the existing TEST jurisdiction and
+requester flag. Its entire try/catch, count/error checks and position after the
+copy queue stay. All seven failed old response assertions and every other old
+retention case remain unchanged. Seven added closed-scope/native-error controls
+are unrun. Their queue doubles prove orchestration only, never provider or native
+READY. All 13 source SQL files, two unbound fences and real lifecycle holds remain.
 
 ## 2026-10-04 — Keep both embryo jobs in their dedicated queues
 
@@ -86,6 +274,33 @@ The two raw job logs and original failure artifacts are retained privately.
 These changes have source review only. Complete local quality and discovery
 checks, then the complete hosted suite on the final commit, remain required.
 No browser rerun, production or release proof is claimed.
+
+## 2026-10-04 — Track unopened statement body cancellation and NEW crypto copies
+
+V6 source review found an unopened response body could reject cancellation
+outside the actual cleanup registry. Register the real pre-reader cancellation,
+retain its original deadline and latch failures as disposal HOLD. Add source
+cases that call the actual whole-object read owner and a real ReadableStream
+whose cancel rejects or finishes after the original deadline. Preserve the
+existing runtime and ZIP assertions. These cases assert settlement refusal;
+no fake native ACK callback proves disposal.
+
+The closed TEST requester-statement flag is the eighth RUNTIME_INJECTED entry.
+Change the exact runtimeInjectedKeyCount assertion from seven to eight. Keep
+all other exact V5 source count assertions and all planted-refusal cases. This
+is an authored expected ledger change, not an environment gate run.
+
+NEW correction encryption uses owned AES update/final buffers and explicit
+mutable key/package/cipher/nonce cleanup. Preserve the original envelope layout,
+72-byte wrapper, AAD and HMAC context. Add tests using actual native AES and the
+original wrapper, including GCM failure and noncanonical key packages. Original
+legacy crypto/document helper source remains unchanged. Immutable strings and
+platform/provider copies retain their separate qualification requirement.
+
+All changes and tests in this successor are source-authored and unrun. Complete
+native, compiler, quality, fresh database, provider and hosted browser checks
+remain required before any release credit. No deadline, authority or production
+policy changes.
 
 ## 2026-10-03 — Preserve safe extent and final cleanup authority
 

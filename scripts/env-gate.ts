@@ -95,6 +95,11 @@ export interface RuntimeInjectedVariable {
 
 export const RUNTIME_INJECTED: readonly RuntimeInjectedVariable[] = [
   {
+    key: "INHERIT_TEST_REQUESTER_STATEMENTS",
+    reason: "Set only by the private acceptance harness for the TEST own-statement flow. " +
+      "next.config.ts refuses production startup; this is not operator production configuration.",
+  },
+  {
     key: "CI",
     reason:
       "Set by the CI runner itself. src/lib/uploads/normalization-database.ts reads it only to " +
@@ -190,6 +195,11 @@ export interface GuideForeignName {
 }
 
 export const GUIDE_FOREIGN_NAMES: readonly GuideForeignName[] = [
+  {
+    name: "INHERIT_TEST_REQUESTER_STATEMENTS",
+    reason: "Recorded in RUNTIME_INJECTED. The private acceptance harness sets it; " +
+      "the guide tells operators not to enable it, and production startup refuses it.",
+  },
   {
     name: "ANON_KEY",
     reason:

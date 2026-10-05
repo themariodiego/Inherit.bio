@@ -7651,6 +7651,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      prepare_new_public_appeal_v1: { Args: { p_kind:string; p_payload_digest:string; p_form_nonce_hash:string; p_contact_digests:Json; p_identifier_digests:Json; p_network_digests:Json }; Returns: Json };
+      commit_new_public_appeal_v1: { Args: { p_expected:Json; p_payload_digest:string; p_nonce_hash:string; p_wrapped_key:string; p_statement:string; p_working:string; p_contact:string; p_quota_keys:Json }; Returns: boolean };
+      prepare_new_suspension_appeal_v1: { Args: { p_notice_hash:string; p_nonce:string; p_payload_digest:string }; Returns: Json };
+      read_new_appeal_for_reviewer_v1: { Args: { p_id:string }; Returns: Json };
+      check_new_appeal_for_reviewer_v1: { Args: { p_id:string; p_expected:Json }; Returns: boolean };
+      read_new_appeal_own_statement_v1: { Args: { p_hash:string }; Returns: Json };
+      check_new_appeal_own_statement_v1: { Args: { p_hash:string; p_expected:Json }; Returns: boolean };
+      // V5 source-authored exact public RPC ABI additions. Not generated from
+      // a qualified native catalog; compilation and native ABI proof are held.
+      read_requester_correction_statement_v1: { Args: { p_hash: string; p_id: string }; Returns: Json }
+      check_requester_correction_statement_v1: { Args: { p_hash: string; p_id: string; p_expected: Json }; Returns: boolean }
+      begin_requester_statement_archive_run_v1: { Args: { p_export: string; p_attempt: string; p_receipt: string; p_nonce: string }; Returns: string }
+      finish_requester_statement_archive_run_v1: { Args: { p_run: string; p_nonce: string }; Returns: boolean }
+      drain_due_requester_statement_copies_v1: { Args: Record<PropertyKey, never>; Returns: Json }
+      drain_due_new_corrections_v1: { Args: Record<PropertyKey, never>; Returns: Json }
+      read_new_correction_intake_contact_v1: { Args: { p_session_hash: string; p_nonce: string; p_expected: Json }; Returns: Json }
+      check_new_correction_review_nonce_v1: { Args: { p_id: string; p_expected_read: Json; p_token: string }; Returns: string }
+      prepare_new_correction_v1: { Args: { p_session_hash: string; p_nonce: string; p_field: string }; Returns: Json }
+      commit_new_correction_v1: { Args: { p_session_hash: string; p_nonce: string; p_expected: Json; p_statement: string;
+        p_working: string; p_wrapped_key: string; p_contact_cipher: string; p_contact_hmac_set: Json }; Returns: Json }
+      read_new_correction_statement_v1: { Args: { p_id: string }; Returns: Json }
+      check_new_correction_read_v1: { Args: { p_id: string; p_expected: Json }; Returns: boolean }
+      reject_new_correction_row_v1: { Args: { p_id: string; p_expected_read: Json; p_revision: number; p_nonce: string; p_reason: string }; Returns: Json }
+      withdraw_new_correction_row_v1: { Args: { p_session_hash: string; p_id: string; p_nonce: string }; Returns: Json }
+      execute_new_correction_due_close_v1: { Args: { p_retention: string; p_phase_revision: number; p_claim_hash: string }; Returns: boolean }
       embryo_disposition_controls_v1: {
         Args: { p_account: string; p_session: string; p_after?: string | null }
         Returns: Json

@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { decryptSecret } from "@/lib/crypto";
+import { ownStatementCapture } from "./requester-statement-members";
 import { claimantAuditMetadata } from "./claimant-legal-audit";
 
 const uuid=z.uuid(),hash=z.string().regex(/^[0-9a-f]{64}$/u),revision=z.number().int().positive().safe();
@@ -15,6 +16,7 @@ export const futurePersonExportSnapshot=z.object({
     membershipSha256:hash,publicationRevision:revision,variantCount:count,publishedAt:date}).strict(),
   membership:z.object({variants:count,qualityReports:count,scores:count,figures:count,reports:count,agreements:count,legalAuditEvents:count}).strict(),
   legalAudit:claimantAuditMetadata,
+  ownStatements:ownStatementCapture.optional(),
 }).strict().refine(value=>value.authority.subjectId===value.source.subjectId&&value.source.variantCount===value.membership.variants)
   .refine(value=>value.legalAudit.attribution!=="unrecorded"||value.membership.legalAuditEvents===0);
 export type FuturePersonExportSnapshot=z.infer<typeof futurePersonExportSnapshot>;

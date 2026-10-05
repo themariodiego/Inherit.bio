@@ -4,6 +4,9 @@ import { LOCATION_UNAVAILABLE_BODY, LOCATION_UNAVAILABLE_TITLE } from "@/copy/av
 import { isEmbargoedCountry, isEmbargoedLocation } from "@/lib/legal/service-restrictions";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { CLAIM_FORM_TOKEN_HEADER, claimFormSecret, mintClaimForm } from "@/lib/future-person/claim-session";
+import {APPEAL_FORM_TOKEN_HEADER,appealFormSecret,mintAppealForm} from "@/lib/future-person/appeal-form";
+import {testAppealIntakeOpen} from "@/lib/future-person/appeals-open";
+import {applyAppealIntakeHeaders} from "@/lib/future-person/appeal-intake-response";
 
 /**
  * Response headers every page or endpoint that can read or write user,
@@ -27,6 +30,7 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
   }
+  if(path==="/api/appeals")return applyAppealIntakeHeaders(response);
   // The proxy's response headers also reach route-handler responses. Review
   // IDs, documentary decisions and document download sessions require the
   // stricter policy, including refusals produced by the proxy itself. Next's
@@ -85,6 +89,10 @@ export async function proxy(request: NextRequest) {
     return locationUnavailable(request.nextUrl.pathname);
   }
 
+  if(request.nextUrl.pathname==="/legal/appeals")return appealPage(request);
+  // Public intake is account-free. A suspension POST performs its separate
+  // native own-JWT account/current-session check inside its exact branch.
+  if(request.nextUrl.pathname==="/api/appeals")return withSensitiveHeaders(NextResponse.next({request}),request.nextUrl.pathname);
   // This generic document must not look up an account or an invitation.
   // Its handler sets its own nonce CSP and non-authorizing candidate cookie.
   if (request.nextUrl.pathname === "/withdraw/request") {
@@ -247,3 +255,12 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };
+
+function appealPage(request:NextRequest):NextResponse{
+ const headers=new Headers(request.headers);headers.delete(APPEAL_FORM_TOKEN_HEADER);
+ if(request.method!=="GET"||!testAppealIntakeOpen())return withSensitiveHeaders(NextResponse.next({request:{headers}}));
+ try{const form=mintAppealForm(Date.now(),appealFormSecret(request));headers.set(APPEAL_FORM_TOKEN_HEADER,form.formToken);
+  const response=withSensitiveHeaders(NextResponse.next({request:{headers}}));response.headers.append("Set-Cookie",form.setCookie);
+  response.headers.set("Referrer-Policy","no-referrer");return response;}
+ catch{return withSensitiveHeaders(NextResponse.next({request:{headers}}));}
+}

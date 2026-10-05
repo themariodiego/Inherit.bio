@@ -1,11 +1,12 @@
 import "server-only";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import {ACCOUNT_SUBJECT_MEMBERS} from "./account-archive-plan";
+import type {RequesterStatementRuntime} from "./requester-statement-runtime";
 const encoder=new TextEncoder(),unavailable=()=>new Error("account_archive_composition_unavailable");
 /** Preserve each actual producer's complete document as a named JSON section.
  * No historical row is overwritten by current account metadata, no global
  * ledger is duplicated and no missing member is replaced by an empty value. */
-export function composeAccountMemberFactories(groups:{kind:"account-metadata"|"ordinary-science"|"saved-chats"|"retained-custody"|"actor-audit"|"graph-metadata"|"path-b-results";
+export function composeAccountMemberFactories(groups:{kind:"account-metadata"|"ordinary-science"|"saved-chats"|"retained-custody"|"actor-audit"|"graph-metadata"|"path-b-results"|"requester-statements";
  factories:FuturePersonMemberFactory[]}[]){
  const byName=new Map<string,{kind:string;factory:FuturePersonMemberFactory}[]>();
  for(const group of groups){const seen=new Set<string>();for(const factory of group.factories){
@@ -39,17 +40,18 @@ export function composeAccountMemberFactories(groups:{kind:"account-metadata"|"o
  * factories retain their exact row/EOF/current checks; the outer member plan
  * verifies complete byte identity and current authority before each emitted
  * block. This changes neither source bytes nor original provider-range reads. */
-export function bufferAccountMemberFactories(factories:FuturePersonMemberFactory[]){
+export function bufferAccountMemberFactories(factories:FuturePersonMemberFactory[],sensitive=false,runtime?:RequesterStatementRuntime){
  return factories.map(factory=>({...factory,chunks:async function*(signal:AbortSignal){
-  let buffer=new Uint8Array(32_768),filled=0;if(signal.aborted)throw unavailable();
-  for await(const bytes of factory.chunks(signal)){
+  let buffer=new Uint8Array(32_768),filled=0;if(sensitive)runtime?.own(buffer);if(signal.aborted)throw unavailable();
+  try{for await(const bytes of factory.chunks(signal)){
    if(signal.aborted||!(bytes instanceof Uint8Array)||bytes.byteLength<1||bytes.byteLength>4_000_000)throw unavailable();
    for(let offset=0;offset<bytes.byteLength;){
     if(signal.aborted)throw unavailable();const length=Math.min(buffer.byteLength-filled,bytes.byteLength-offset);
     buffer.set(bytes.subarray(offset,offset+length),filled);filled+=length;offset+=length;
-    if(filled===buffer.byteLength){yield buffer;if(signal.aborted)throw unavailable();buffer=new Uint8Array(32_768);filled=0;}
+    if(filled===buffer.byteLength){yield buffer;if(sensitive){if(runtime)runtime.clear(buffer);else buffer.fill(0);}if(signal.aborted)throw unavailable();buffer=new Uint8Array(32_768);if(sensitive)runtime?.own(buffer);filled=0;}
    }
   }
   if(signal.aborted)throw unavailable();if(filled)yield buffer.subarray(0,filled);
+  }finally{if(sensitive){if(runtime)runtime.clear(buffer);else buffer.fill(0);}}
  }}));
 }

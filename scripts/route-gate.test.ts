@@ -157,7 +157,9 @@ describe("the route gate holds the register to the code", () => {
     // authored titles are statically counted; hosted CI must execute them.
     // 158 -> 159: the actual session-based adult form requires and proves its pending choice.
     // 159 -> 160: E0 is built under TEST-LOCAL; the actual draft/invitation pending state is required; authored case must run in full hosted CI.
-    expect(result.requiredStateCount).toBe(160);
+    // 160 -> 161: the actual /legal/appeals TEST form adds only its processing pair.
+    // Source census is exact; the controlled browser cases are UI-only and unrun here.
+    expect(result.requiredStateCount).toBe(161);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -1135,7 +1137,8 @@ describe("the current rights session processing contract", () => {
       };
     } });
     const result = await runRouteGate(root);
-    expect(result.requiredStateCount).toBe(159);
+    // Exact current161 minus only the deliberately waived /withdraw/[token] processing pair.
+    expect(result.requiredStateCount).toBe(160);
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);

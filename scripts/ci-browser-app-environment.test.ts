@@ -32,6 +32,15 @@ describe("app server configuration for the fixed local variants", () => {
       for (const name of LOCAL_MODEL_ENV_NAMES) expect(leaking[name]).toBe(port === 3103 ? LOCAL_MODEL_ENV[name] : undefined);
     }
   });
+  it("fixes the existing requester statement flag by port and refuses ambient flag leakage", () => {
+    for (const port of [3100, 3101, 3102, 3103, 3104] as const) {
+      for (const value of [undefined, "", "1", "true", "arbitrary"]) {
+        const env = appServerEnvironment({ ...job, INHERIT_TEST_REQUESTER_STATEMENTS: value }, port);
+        expect(env.INHERIT_TEST_REQUESTER_STATEMENTS).toBe(port === 3102 ? "1" : "");
+        expect(checkedAppEnvironment(env, port)).toEqual(env);
+      }
+    }
+  });
   it("refuses to describe an app without its ephemeral signer or keys rather than inventing them", () => {
     for (const name of ["INHERIT_UPLOAD_SIGNING_JWK", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "JOBS_SECRET"]) {
       expect(() => appServerEnvironment({ ...job, [name]: "" }, 3100)).toThrow(name);
