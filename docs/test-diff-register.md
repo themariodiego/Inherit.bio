@@ -1,3 +1,30 @@
+## 2026-10-05 — Restore the TEST correction intake producer
+
+Reuse the preserved correction producer on the current appeal source parent.
+The accountless rights page may offer the form only when both existing TEST
+flags are open and its actual native read permits correction. GET creates only
+a stateless operation/session token. POST keeps the existing five fields,
+20–4,000-character statement and 32 KiB body bound. Refuse duplicate JSON keys,
+invalid Unicode, selectors, crossed cookies, CSRF, origin and purpose.
+
+Use one original 30-second caller clock for body reads and all native calls.
+Keep actual late tasks owned, clear consumed mutable bytes before cancellation,
+and assimilate each installed cold RPC once with retries disabled. Preserve the
+exact prepare, selected-contact and commit ABI. Only the exact committed case
+receipt permits 202. Give the POST and its proxy refusals the closed private
+headers with a fresh nonce CSP. Preserve all other rights branches and forms.
+
+New nonce, stream, installed-client, route, rights-read and proxy cases are
+authored but unrun. Every existing assertion, timeout and retry rule is exact.
+No SQL, migration, default flag, readiness or production change is included.
+The native prepare has no cancellation ABI. Failed or unknown preparations
+remain a cleanup hold; expiry and transport abort are not native ACKs. All
+ten complete-flow holds, immutable strings, inherited contact helper copies,
+platform disposal, real storage/scanner/mail and native source binding remain.
+Focused tests, full types, lint, every quality gate and browser discovery must
+pass before a draft push. Full hosted unit/database/browser checks remain
+required on the final commit before merge or production work.
+
 ## 2026-10-05 — Read appeal UI request headers at the actual browser wire
 
 The revised complete hosted browser suite retained two appeal UI failures.

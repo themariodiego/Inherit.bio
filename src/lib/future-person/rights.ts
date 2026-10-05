@@ -7,6 +7,9 @@ import { mintPublicFormToken,readPublicFormToken } from "@/lib/embryos/operation
 import { readRightsSessionHash,RIGHTS_COOKIE_NAME } from "@/lib/embryos/rights-session";
 import { notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
+import { requesterStatementsOpen } from "./requester-statement";
+import { createCorrectionIntakeRuntime } from "./correction-intake-runtime";
+import { mintCorrectionIntakeNonce } from "./correction-intake-nonce";
 
 /** Claimant credentials and one-time keys use the registered closed headers. */
 export function claimantNotFound():Response {
@@ -27,10 +30,25 @@ export function claimantSessionHash(request:Request):string|null {
 export function claimantCsrf(sessionHash:string):string{return hmacSecret(sessionHash,"future-person-rights-csrf-v1");}
 export async function loadClaimantRights(request:Request) {
   const hash=claimantSessionHash(request);if(!hash)return null;
+  if(requesterStatementsOpen()){
+    const owner=createCorrectionIntakeRuntime(request.signal);
+    let view:z.infer<typeof claimantRightsView>|null=null;
+    try{
+      const {data,error}=await owner.wait(owner.rpc("rights-view",()=>createAdminClient()
+        .rpc("future_person_rights_view_v1",{p_session_hash:hash}).retry(false).abortSignal(owner.signal)));
+      const parsed=claimantRightsView.safeParse(data);if(!error&&parsed.success)view=parsed.data;
+    }catch{/* Refuse unavailable or unsettled authority without minting a token. */}
+    finally{await owner.finish();}
+    const settled=owner.disposition();
+    if(!view||settled.cleanupHeld||settled.pendingActualTasks!==0||settled.ownedMutableBuffers!==0)return null;
+    return {view,csrf:claimantCsrf(hash),recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
+      analysisNonce:mintPublicFormToken("future-person-analysis-stop",Date.now(),hash),
+      correctionNonce:view.allowedActionIds.includes("correct")?mintCorrectionIntakeNonce(hash):null};
+  }
   const {data,error}=await createAdminClient().rpc("future_person_rights_view_v1",{p_session_hash:hash});
   const parsed=claimantRightsView.safeParse(data);if(error||!parsed.success)return null;
   return {view:parsed.data,csrf:claimantCsrf(hash),recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
-    analysisNonce:mintPublicFormToken("future-person-analysis-stop",Date.now(),hash)};
+    analysisNonce:mintPublicFormToken("future-person-analysis-stop",Date.now(),hash),correctionNonce:null};
 }
 export function claimantMutation(request:Request,token:string,operation:"future-person-recovery-key"|"future-person-analysis-stop") {
   const url=new URL(request.url);const hash=claimantSessionHash(request);const csrf=request.headers.get("x-inherit-csrf");
