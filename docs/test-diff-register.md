@@ -1,5 +1,55 @@
 # Test diff register
 
+## 2026-10-08 — Proposed percentage grounding preserves text units
+
+The saved browser refusal check on PR #295 received no unsupported-number
+header. Its original log and error context do not retain the response body or
+tool receipt, so the cause of that run is not established. Separately, the
+guard converts all string numerals to numbers: fractional timestamp seconds
+can thereby authorize an unrelated percentage after rounding.
+
+This candidate requires percentage support from numeric JSON leaves or from
+tool text that actually carries a percent marker. String markers may be
+adjacent or separated by tabs or Unicode space separators (category Zs),
+including nonbreaking and narrow nonbreaking spaces. Vertical tab, form feed,
+line/paragraph separators, CR and LF are excluded as tool unit boundaries.
+Percentage-bearing tool text uses NFKC to accept
+fullwidth digits, decimal points and percent markers. Response numeral tokens
+retain the brief's original grammar; ASCII numerals followed by spaced or
+fullwidth percent markers use the percentage support set. Written-out units
+such as "percent" are not added. The existing allowed-integer rule, including
+the deliberately pinned "5 %" case, remains unchanged.
+
+New controls reject fractional-second, bare-string and vertical-separated
+percentage support, preserve exact date/time repetition, genuine rounded
+numeric and percentage facts, ordinary string numerals and the exported
+toolJsonNumbers result.
+Every earlier expectation and the complete browser refusal test, its 37.5%
+constant, exact completion and stored-data assertions remain unchanged.
+
+The first focused run passed the percentage-origin controls but stopped on an
+old relative-risk diagnostic expectation: the stronger numeral refusal ran
+before that phrase could be reported. The candidate now retains unsupported
+numeral tokens and the unchanged relative-risk phrase when both checks fail.
+Refusal priority and all old assertions remain intact. A new exact diagnostic
+control also preserves the relative-only refusal for a genuine numeric fact.
+The failed run and its thirteen unrun quality commands remain preserved.
+
+The next focused run preserved all earlier cases but caught an authored
+omission in the new exact-array expectation: the existing guard also emits
+"your risk is 15% higher than average". Both new arrays now require that full
+fragment in its original order. Production behavior and every old assertion
+remain unchanged; the original failed run is preserved. Only the changed
+guard test file needs a fresh focused run, alongside the thirteen unrun
+quality commands; the other twenty-three passed files retain their actual
+earlier scope.
+
+The brief defines coarse rounded equality exactly (current line 2292). This
+stronger text-unit admission is proposed for owner review; this entry records
+no policy decision, merge approval or original-run causal proof. The current
+exact-array correction and thirteen quality commands are unrun at authoring;
+earlier focused results retain their original scope.
+
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
 A separate actual stock job-log GET returned exit1 and zero raw bytes because
