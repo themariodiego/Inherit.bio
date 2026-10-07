@@ -34,6 +34,8 @@ CONFIG_KEYS = LEAVES + tuple('Binary::apt-get::' + key for key in LEAVES)
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
 MAX_FILE = 4 * 1024 * 1024
 COMPONENTS = ('main', 'restricted', 'universe', 'multiverse')
+PREFLIGHT_DIRECTORIES = ('/etc/apt/sources.list.d', '/etc/apt/trusted.gpg.d', '/etc/apt/keyrings',
+                         '/usr/share/keyrings', '/etc/apt/apt.conf.d')
 
 
 def require(ok, reason):
@@ -152,6 +154,41 @@ def fingerprint(info):
     return {key: getattr(info, 'st_' + key) for key in ('dev', 'ino', 'uid', 'gid', 'mode', 'nlink', 'size')}
 
 
+def fixed_directory_diagnostics():
+    # Observe every closed public path before the first refusal; never list members or alter permissions.
+    result = []
+    for literal in PREFLIGHT_DIRECTORIES:
+        row = {'path': literal, 'observation': 'unavailable', 'type': 'unknown', 'uid': None,
+               'gid': None, 'mode': None, 'canonical': False, 'identityStable': False}
+        try:
+            before = os.lstat(literal)
+        except FileNotFoundError:
+            row.update(observation='missing', type='missing')
+            result.append(row)
+            continue
+        except OSError:
+            result.append(row)
+            continue
+        row.update(observation='observed',
+                   type='directory' if stat.S_ISDIR(before.st_mode) else
+                        'symlink' if stat.S_ISLNK(before.st_mode) else
+                        'regular' if stat.S_ISREG(before.st_mode) else 'other',
+                   mode=oct(stat.S_IMODE(before.st_mode)))
+        for name in ('uid', 'gid'):
+            value = getattr(before, 'st_' + name)
+            row[name] = value if type(value) is int and 0 <= value <= 4294967295 else None
+        try:
+            row['canonical'] = Path(literal).resolve(strict=True) == Path(literal)
+        except (OSError, RuntimeError):
+            pass
+        try:
+            row['identityStable'] = fingerprint(os.lstat(literal)) == fingerprint(before)
+        except OSError:
+            pass
+        result.append(row)
+    return result
+
+
 def safe_read(path, uid=0):
     path = Path(path)
     require(path.is_absolute() and path.resolve(strict=True) == path, 'Canonical input path required')
@@ -265,6 +302,7 @@ def main(argv):
     apt_version = admit_apt_version(version_result.stdout)
     observe = lambda item: print(json.dumps(item, sort_keys=True), flush=True)
     observe({'event': 'APT_VERSION_OBSERVED', 'installedAptVersion': apt_version})
+    observe({'event': 'PUBLIC_APT_DIRECTORY_METADATA', 'directories': fixed_directory_diagnostics()})
     original, mirror_identity = safe_read(MIRROR)
     candidate = mirror_candidate(original)
     source, _ = safe_read(SOURCES)

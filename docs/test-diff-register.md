@@ -1,5 +1,13 @@
 # Test diff register
 
+## 2026-10-08 — observe fixed public APT directory metadata before refusal
+
+**Trigger and preserved result.** Draft PR296 successor head `d34204be8f65ff03e3e614922138ab79140cb4f4`, run `37696895989` attempt1, refused `Root-owned source/trust directory required` before any APT write. Complete repository/browser6 originals observe APT2.8.3 and both stock component paragraphs ordered main/universe/restricted/multiverse. The rejected directory path, UID and mode were not emitted and remain UNKNOWN. The exact runner-image tag's configure-system.sh contains a recursive chmod777 on /usr/share; that primary source comparison does not establish the actual rejected path or permissions.
+
+**Narrow source change.** One pre-mutation metadata pass reports all five fixed public source/trust/config directory literals with bounded UID/GID/mode/type/canonical/identity-stability fields. It lists no members, emits no arbitrary target/error text, reads no auth values and changes no permissions. Every original ownership, non-writable, source/key/trust, config, signed-update and full-installer gate stays unchanged.
+
+**Meaningful controls and remaining proof.** Five synthetic methods cover the closed five-path/read-only scope, completion after unsafe/missing/symlink/unavailable observations, identity drift and bounded IDs, continued refusal of non-root/group/world-writable source/trust directories, and the Python3.12 resolution-loop RuntimeError completion/masking case. All17 previous methods, all24 component permutations and unchanged workflow/test/job caps remain exact. All22 current pure methods and the same14 local commands are UNRUN at source freeze. The original failed run is retained without rerun; fresh hosted metadata and successful signed update/complete installer remain required.
+
 ## 2026-10-08 — preserve Ubuntu source components without an order assumption
 
 The first APT draft head `62218b56f85c0091cf9e0d5361cfca15600e9b0b` failed its

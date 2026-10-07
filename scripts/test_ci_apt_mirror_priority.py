@@ -1,12 +1,13 @@
 """Pure synthetic admission/custody controls; never invoke APT or require root."""
 import os
 import itertools
+import stat
 from pathlib import Path
 import tempfile
 import unittest
 from ci_apt_mirror_priority import (STOCK, URIS, BOUNDS, SECURITY, admit_platform, admit_apt_version,
     mirror_candidate, admit_sources, parse_config, admit_config, safe_read, replace_original,
-    component_diagnostics, config_diagnostics)
+    component_diagnostics, config_diagnostics, PREFLIGHT_DIRECTORIES, fixed_directory_diagnostics)
 
 SOURCE = '''Types: deb
 URIs: mirror+file:/etc/apt/apt-mirrors.txt
@@ -23,6 +24,98 @@ Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 
 class AdmissionTests(unittest.TestCase):
+    def test_directory_diagnostics_complete_after_resolution_loop(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        info = SimpleNamespace(st_uid=0, st_gid=0, st_mode=stat.S_IFDIR | 0o755,
+                               st_dev=1, st_ino=2, st_nlink=2, st_size=4096)
+        def resolve(path, **kw):
+            if str(path) == PREFLIGHT_DIRECTORIES[0]:
+                raise RuntimeError('private_fixture_text')
+            return path
+        with patch('ci_apt_mirror_priority.os.lstat', return_value=info), \
+                patch.object(Path, 'resolve', resolve):
+            rows = fixed_directory_diagnostics()
+        self.assertEqual([row['path'] for row in rows], list(PREFLIGHT_DIRECTORIES))
+        self.assertFalse(rows[0]['canonical'])
+        self.assertTrue(all(row['canonical'] for row in rows[1:]))
+        self.assertTrue(all(row['identityStable'] for row in rows))
+        self.assertNotIn('private_fixture_text', repr(rows))
+
+    def test_fixed_directory_diagnostics_emit_all_five_closed_paths(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        info = SimpleNamespace(st_uid=0, st_gid=0, st_mode=stat.S_IFDIR | 0o755,
+                               st_dev=1, st_ino=2, st_nlink=2, st_size=4096)
+        self.assertEqual(PREFLIGHT_DIRECTORIES, ('/etc/apt/sources.list.d', '/etc/apt/trusted.gpg.d',
+                         '/etc/apt/keyrings', '/usr/share/keyrings', '/etc/apt/apt.conf.d'))
+        with patch('ci_apt_mirror_priority.os.lstat', return_value=info), \
+                patch.object(Path, 'resolve', lambda path, **kw: path), \
+                patch.object(Path, 'iterdir', side_effect=AssertionError('must not list members')), \
+                patch('ci_apt_mirror_priority.os.chmod') as chmod, \
+                patch('ci_apt_mirror_priority.os.chown') as chown:
+            rows = fixed_directory_diagnostics()
+        self.assertEqual([row['path'] for row in rows], list(PREFLIGHT_DIRECTORIES))
+        self.assertTrue(all(row['uid'] == 0 and row['mode'] == '0o755' and row['canonical']
+                            and row['identityStable'] and row['type'] == 'directory' for row in rows))
+        self.assertTrue(all(set(row) == {'path', 'observation', 'type', 'uid', 'gid', 'mode',
+                                        'canonical', 'identityStable'} for row in rows))
+        chmod.assert_not_called(); chown.assert_not_called()
+
+    def test_directory_diagnostics_complete_after_unsafe_missing_and_symlink(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        def info(mode, uid=0):
+            return SimpleNamespace(st_uid=uid, st_gid=0, st_mode=mode,
+                                   st_dev=1, st_ino=2, st_nlink=2, st_size=4096)
+        values = {PREFLIGHT_DIRECTORIES[0]: info(stat.S_IFDIR | 0o755),
+                  PREFLIGHT_DIRECTORIES[1]: info(stat.S_IFDIR | 0o777, 1001),
+                  PREFLIGHT_DIRECTORIES[2]: FileNotFoundError('private_fixture_text'),
+                  PREFLIGHT_DIRECTORIES[3]: info(stat.S_IFLNK | 0o777),
+                  PREFLIGHT_DIRECTORIES[4]: PermissionError('private_fixture_text')}
+        def observe(path):
+            value = values[str(path)]
+            if isinstance(value, OSError):
+                raise value
+            return value
+        def resolve(path, **kw):
+            return Path('/private_fixture_text') if str(path) == PREFLIGHT_DIRECTORIES[3] else path
+        with patch('ci_apt_mirror_priority.os.lstat', side_effect=observe), \
+                patch.object(Path, 'resolve', resolve):
+            rows = fixed_directory_diagnostics()
+        self.assertEqual(len(rows), 5)
+        self.assertEqual((rows[1]['uid'], rows[1]['mode']), (1001, '0o777'))
+        self.assertEqual(rows[2]['observation'], 'missing')
+        self.assertEqual(rows[3]['type'], 'symlink'); self.assertFalse(rows[3]['canonical'])
+        self.assertEqual(rows[4]['observation'], 'unavailable')
+        self.assertNotIn('private_fixture_text', repr(rows))
+
+    def test_directory_diagnostics_observe_identity_drift_and_bound_ids(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        calls = {}
+        def observe(path):
+            calls[path] = calls.get(path, 0) + 1
+            return SimpleNamespace(st_uid=4294967296, st_gid=-1, st_mode=stat.S_IFDIR | 0o755,
+                                   st_dev=1, st_ino=calls[path], st_nlink=2, st_size=4096)
+        with patch('ci_apt_mirror_priority.os.lstat', side_effect=observe), \
+                patch.object(Path, 'resolve', lambda path, **kw: path):
+            rows = fixed_directory_diagnostics()
+        self.assertTrue(all(row['uid'] is None and row['gid'] is None and not row['identityStable']
+                            for row in rows))
+        self.assertEqual(set(calls), set(PREFLIGHT_DIRECTORIES))
+
+    def test_unsafe_source_trust_permissions_remain_refused(self):
+        from unittest.mock import patch, Mock
+        from ci_apt_mirror_priority import input_namespace
+        for uid, mode in ((1001, 0o40755), (0, 0o40777), (0, 0o40775)):
+            with self.subTest(uid=uid, mode=mode), \
+                    patch.object(Path, 'exists', return_value=True), \
+                    patch.object(Path, 'resolve', lambda path, **kw: path), \
+                    patch.object(Path, 'stat', return_value=Mock(st_uid=uid, st_mode=mode)), \
+                    self.assertRaisesRegex(RuntimeError, 'Root-owned source/trust directory required'):
+                input_namespace()
+
     def test_only_three_priority_tokens_change(self):
         expected = ''.join(f'{uri}\tpriority:{n}\n' for uri, n in zip(URIS, (3, 1, 2))).encode()
         self.assertEqual(mirror_candidate(STOCK), expected)
