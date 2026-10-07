@@ -1,10 +1,12 @@
 """Pure synthetic admission/custody controls; never invoke APT or require root."""
 import os
+import itertools
 from pathlib import Path
 import tempfile
 import unittest
 from ci_apt_mirror_priority import (STOCK, URIS, BOUNDS, SECURITY, admit_platform, admit_apt_version,
-    mirror_candidate, admit_sources, parse_config, admit_config, safe_read, replace_original)
+    mirror_candidate, admit_sources, parse_config, admit_config, safe_read, replace_original,
+    component_diagnostics, config_diagnostics)
 
 SOURCE = '''Types: deb
 URIs: mirror+file:/etc/apt/apt-mirrors.txt
@@ -44,6 +46,48 @@ class AdmissionTests(unittest.TestCase):
                     SOURCE.replace(b'Suites: noble-security', b'Suites: noble noble-security')):
             with self.subTest(raw=raw), self.assertRaises(RuntimeError):
                 admit_sources(raw)
+
+    def test_all_24_component_permutations_are_admitted(self):
+        original = b'main restricted universe multiverse'
+        for permutation in itertools.permutations(original.split()):
+            actual = SOURCE.replace(original, b' '.join(permutation))
+            observations = []
+            with self.subTest(permutation=permutation):
+                admit_sources(actual, observations.append)
+                self.assertEqual([row['componentOrder'] for row in observations],
+                                 [[word.decode() for word in permutation]] * 2)
+
+    def test_missing_duplicate_extra_components_are_refused(self):
+        for value in (b'main restricted universe', b'main main universe multiverse',
+                      b'main restricted universe multiverse extra', b''):
+            observations = []
+            with self.subTest(value=value), self.assertRaisesRegex(RuntimeError, 'Stock Ubuntu components required'):
+                admit_sources(SOURCE.replace(b'main restricted universe multiverse', value), observations.append)
+            self.assertEqual(observations[0]['componentCount'], len(value.split()))
+
+    def test_component_diagnostics_are_masked_and_bounded(self):
+        values = ['main', 'private_fixture_text'] + ['universe'] * 20
+        observed = component_diagnostics(values)
+        self.assertEqual(observed['componentOrder'][:2], ['main', 'unsupported'])
+        self.assertEqual(len(observed['componentOrder']), 16)
+        self.assertEqual(observed['componentCount'], 22)
+        self.assertTrue(observed['truncated'])
+        self.assertNotIn('private_fixture_text', repr(observed))
+
+    def test_config_diagnostics_are_typed_whitelisted_and_masked(self):
+        values = {'Acquire::Retries': '1', 'Acquire::http::Timeout': '15',
+                  'Acquire::https::Timeout': 'private_fixture_text', 'APT::Update::Error-Mode': 'any',
+                  'Acquire::https::Verify-Peer': 'true', 'APT::Get::AllowUnauthenticated': 'false',
+                  'Binary::apt-get::Acquire::Retries': '9999999', 'Acquire::http::Proxy': 'private_fixture_text'}
+        self.assertEqual(config_diagnostics(values), {'Acquire::Retries': 1, 'Acquire::http::Timeout': 15,
+                         'Acquire::https::Timeout': 'unsupported', 'APT::Update::Error-Mode': 'any',
+                         'Acquire::https::Verify-Peer': True, 'APT::Get::AllowUnauthenticated': False,
+                         'Binary::apt-get::Acquire::Retries': 'unsupported'})
+        self.assertNotIn('private_fixture_text', repr(config_diagnostics(values)))
+
+    def test_observed_version_text_is_bounded(self):
+        with self.assertRaises(RuntimeError):
+            admit_apt_version(b'apt 2.8.3' + b'a' * 65 + b' (amd64)\n')
 
     def test_platform_requires_actual_hosted_ubuntu_root(self):
         args = ['Linux', 'x86_64', 0, {'ID': 'ubuntu', 'VERSION_ID': '24.04'}, 'ubuntu24', '20261004.327.1', 'true', 'github-hosted']

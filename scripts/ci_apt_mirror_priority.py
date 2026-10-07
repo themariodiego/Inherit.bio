@@ -33,6 +33,7 @@ LEAVES = tuple(BOUNDS) + tuple(SECURITY)
 CONFIG_KEYS = LEAVES + tuple('Binary::apt-get::' + key for key in LEAVES)
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
 MAX_FILE = 4 * 1024 * 1024
+COMPONENTS = ('main', 'restricted', 'universe', 'multiverse')
 
 
 def require(ok, reason):
@@ -51,7 +52,7 @@ def admit_platform(system, machine, uid, release, image_os, image_version, actio
 def admit_apt_version(raw):
     require(raw.isascii() and bool(raw.splitlines()), 'Installed APT version text required')
     first = raw.decode('ascii', errors='strict').splitlines()[0]
-    match = re.fullmatch(r'apt (2\.8\.[0-9]+(?:[A-Za-z0-9.+~_-]*)) \(amd64\)', first)
+    match = re.fullmatch(r'apt (2\.8\.[0-9]+(?:[A-Za-z0-9.+~_-]{0,64})) \(amd64\)', first)
     require(match is not None, 'Supported installed Noble APT 2.8 family required')
     return match.group(1)
 
@@ -67,7 +68,29 @@ def mirror_candidate(original):
     return prefix + b'\n' + security.replace(b'priority:3', b'priority:2') + b'\n'
 
 
-def admit_sources(raw):
+def component_diagnostics(tokens):
+    return {'componentOrder': [token if token in COMPONENTS else 'unsupported' for token in tokens[:16]],
+            'componentCount': len(tokens), 'truncated': len(tokens) > 16}
+
+
+def config_diagnostics(values):
+    # Fixed public keys and typed values only; never expose arbitrary value text or unrelated keys.
+    result = {}
+    for key in CONFIG_KEYS:
+        if key not in values:
+            continue
+        base = key.removeprefix('Binary::apt-get::')
+        value = values[key]
+        if base in ('Acquire::Retries', 'Acquire::http::Timeout', 'Acquire::https::Timeout'):
+            result[key] = int(value) if re.fullmatch(r'[0-9]{1,6}', value) else 'unsupported'
+        elif base == 'APT::Update::Error-Mode':
+            result[key] = value if value in ('any', 'persistent') else 'unsupported'
+        else:
+            result[key] = {'true': True, 'false': False, '1': True, '0': False}.get(value, 'unsupported')
+    return result
+
+
+def admit_sources(raw, observe=None):
     text = raw.decode('utf-8', errors='strict')
     records = []
     for paragraph in re.split(r'\n\s*\n', text.strip()):
@@ -83,12 +106,15 @@ def admit_sources(raw):
             records.append(fields)
     require(len(records) == 2, 'Two stock Ubuntu source paragraphs required')
     seen = set()
-    for record in records:
+    for ordinal, record in enumerate(records, 1):
         require(set(record) == {'Types', 'URIs', 'Suites', 'Components', 'Signed-By'},
                 'Unsupported Ubuntu source or trust override')
         require(record['Types'] == 'deb' and record['URIs'] == 'mirror+file:/etc/apt/apt-mirrors.txt',
                 'Stock mirror route required')
-        require(record['Components'].split() == ['main', 'restricted', 'universe', 'multiverse'],
+        components = record['Components'].split()
+        if observe is not None:
+            observe({'event': 'COMPONENTS_OBSERVED', 'paragraph': ordinal, **component_diagnostics(components)})
+        require(len(components) == 4 and set(components) == set(COMPONENTS),
                 'Stock Ubuntu components required')
         require(record['Signed-By'] == '/usr/share/keyrings/ubuntu-archive-keyring.gpg', 'Stock archive key required')
         suites = record['Suites'].split()
@@ -212,13 +238,15 @@ def replace_original(path, original, identity, candidate, uid=0):
             'Mirror readback differs')
 
 
-def limited_config():
+def limited_config(observe=None):
     # apt-config 2.8.3 DoDump accepts named subtrees. Never dump unrelated proxy/auth configuration.
     argv = ['/usr/bin/apt-config', 'dump', *CONFIG_KEYS]
     result = subprocess.run(argv, env=ENV, capture_output=True, timeout=10, check=False)
     require(result.returncode == 0 and len(result.stdout) <= 32768 and not result.stderr,
             'Limited original APT config command failed')
     values = parse_config(result.stdout)
+    if observe is not None:
+        observe({'event': 'LIMITED_APT_CONFIG_OBSERVED', 'typedValues': config_diagnostics(values)})
     admit_config(values)
     return result.stdout, values
 
@@ -235,12 +263,14 @@ def main(argv):
     require(version_result.returncode == 0 and 0 < len(version_result.stdout) <= 16384
             and not version_result.stderr, 'Installed APT version observation failed')
     apt_version = admit_apt_version(version_result.stdout)
+    observe = lambda item: print(json.dumps(item, sort_keys=True), flush=True)
+    observe({'event': 'APT_VERSION_OBSERVED', 'installedAptVersion': apt_version})
     original, mirror_identity = safe_read(MIRROR)
     candidate = mirror_candidate(original)
     source, _ = safe_read(SOURCES)
-    admit_sources(source)
+    admit_sources(source, observe)
     before = source_snapshot()
-    config_raw, config = limited_config()
+    config_raw, config = limited_config(observe)
     require(not STRICT.exists() and not STRICT.is_symlink(), 'Strict config already exists')
     require(not Path('/etc/apt/apt.conf').exists() and not Path('/etc/apt/apt.conf').is_symlink(),
             'Unsupported main APT config override')
@@ -267,7 +297,7 @@ def main(argv):
     strict_raw, strict_identity = safe_read(STRICT)
     require(strict_raw == NETWORK, 'Strict config custody differs')
     replace_original(MIRROR, original, mirror_identity, candidate)
-    after_raw, after_config = limited_config()
+    after_raw, after_config = limited_config(observe)
     admit_config(after_config, after=True)
     write_owned(output / 'limited-config.after', after_raw)
     require(source_snapshot() == before, 'Source/key/trust drift before signed update')
@@ -289,7 +319,7 @@ def main(argv):
     require(source_snapshot() == before, 'Source/key/trust drift after signed update')
     require(safe_read(MIRROR)[0] == candidate and safe_read(STRICT) == (strict_raw, strict_identity),
             'Mirror/config drift after signed update')
-    _, final_config = limited_config()
+    _, final_config = limited_config(observe)
     admit_config(final_config, after=True)
     print(json.dumps({'decision': 'PASS', 'freshSignedMetadata': True,
                       'fullPlaywrightInstallStillRequired': True, 'originalDirectory': str(output)}), flush=True)

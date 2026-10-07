@@ -1,5 +1,28 @@
 # Test diff register
 
+## 2026-10-08 — preserve Ubuntu source components without an order assumption
+
+The first APT draft head `62218b56f85c0091cf9e0d5361cfca15600e9b0b` failed its
+hosted admission at `Stock Ubuntu components required`, before any APT-file
+mutation or full installer. The original component content/order and exact
+installed APT version were not logged and remain unknown. The retained original
+run is 37693169629, attempt 1; this correction does not rerun that head.
+
+Admission now requires exactly `main`, `restricted`, `universe` and `multiverse`
+once each, while retaining the complete original source bytes and order. The
+previous fixed list order was outside the intended source/key/trust preservation
+constraint. This does not assert that component order can never matter to APT.
+No source paragraph, suite, route, key, trust option or installer is rewritten.
+
+Separate pure controls exercise all 24 component permutations, reject missing,
+duplicate and extra components, and check bounded public diagnostics. Accepted
+observed APT versions and known component order are logged before a later
+refusal; unknown component/config tokens become the fixed label `unsupported`.
+Config diagnostics expose only whitelisted typed network/security leaves. All
+12 previous pure methods, installer/workflow controls and time limits remain.
+Current hosted settings, signed metadata, full installer and full CI success
+still require original successor evidence.
+
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
 A separate actual stock job-log GET returned exit1 and zero raw bytes because
