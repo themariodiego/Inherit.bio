@@ -7,7 +7,8 @@ import tempfile
 import unittest
 from ci_apt_mirror_priority import (STOCK, URIS, BOUNDS, SECURITY, admit_platform, admit_apt_version,
     mirror_candidate, admit_sources, parse_config, admit_config, safe_read, replace_original,
-    component_diagnostics, config_diagnostics, PREFLIGHT_DIRECTORIES, fixed_directory_diagnostics)
+    component_diagnostics, config_diagnostics, PREFLIGHT_DIRECTORIES, fixed_directory_diagnostics,
+    KEYRING_PERMISSION_CHAIN, harden_original_keyring_permissions)
 
 SOURCE = '''Types: deb
 URIs: mirror+file:/etc/apt/apt-mirrors.txt
@@ -23,7 +24,222 @@ Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 '''.encode()
 
 
+from contextlib import contextmanager
+
+
+@contextmanager
+def keyring_fixture(safe=False):
+    # All actual filesystem effects are confined to the owned synthetic temporary tree.
+    from unittest.mock import patch
+    from types import SimpleNamespace
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory).resolve()
+        usr = root / 'usr'; share = usr / 'share'; keyrings = share / 'keyrings'
+        keyrings.mkdir(parents=True)
+        output = root / 'owned-output'; output.mkdir(mode=0o700)
+        keys = [keyrings / 'ubuntu-archive-keyring.gpg', keyrings / 'other-public.asc']
+        for index, key in enumerate(keys):
+            key.write_bytes(f'synthetic-public-key-{index}'.encode())
+            key.chmod(0o644 if safe else 0o777)
+        share.chmod(0o755 if safe else 0o777); keyrings.chmod(0o755 if safe else 0o777)
+        overrides = {}
+        original_fstat, original_lstat, original_stat, original_open, original_fchmod = os.fstat, os.lstat, os.stat, os.open, os.fchmod
+        def admitted_stat(info):
+            values = {name: getattr(info, name) for name in dir(info) if name.startswith('st_')}
+            values.update(st_uid=0, st_gid=0)
+            values.update(overrides.get(info.st_ino, {}))
+            return SimpleNamespace(**values)
+        held = []
+        def opened(*args, **kwargs):
+            fd = original_open(*args, **kwargs)
+            if args[1] & os.O_DIRECTORY or kwargs.get('dir_fd') is not None:
+                held.append(fd)
+            return fd
+        with patch('ci_apt_mirror_priority.KEYRING_PERMISSION_CHAIN',
+                   tuple(map(str, (root, usr, share, keyrings)))),                 patch('ci_apt_mirror_priority.os.fstat', side_effect=lambda fd: admitted_stat(original_fstat(fd))),                 patch('ci_apt_mirror_priority.os.lstat', side_effect=lambda *a, **kw: admitted_stat(original_lstat(*a, **kw))),                 patch('ci_apt_mirror_priority.os.stat', side_effect=lambda *a, **kw: admitted_stat(original_stat(*a, **kw))),                 patch('ci_apt_mirror_priority.os.open', side_effect=opened),                 patch('ci_apt_mirror_priority.os.fchmod', wraps=os.fchmod) as fchmod:
+            yield SimpleNamespace(root=root, share=share, keyrings=keyrings, output=output,
+                                  keys=keys, overrides=overrides, fchmod=fchmod, held=held, original_fchmod=original_fchmod)
+
+
 class AdmissionTests(unittest.TestCase):
+    def test_fifo_member_refuses_before_open_or_permission_write(self):
+        from unittest.mock import patch
+        with keyring_fixture() as fixture:
+            fifo = fixture.keyrings / 'fifo.gpg'; os.mkfifo(fifo)
+            with patch('ci_apt_mirror_priority.os.open', wraps=os.open) as opened,                     self.assertRaisesRegex(RuntimeError, 'Root-owned admitted original public key required'):
+                harden_original_keyring_permissions(fixture.output)
+            self.assertFalse(any(call.args[0] == 'fifo.gpg' for call in opened.call_args_list))
+            fixture.fchmod.assert_not_called()
+
+    def test_member_open_is_nonblocking_and_named_prestat_drift_is_refused(self):
+        from unittest.mock import patch
+        with keyring_fixture() as fixture:
+            original = os.open
+            observed = []
+            def replaced(name, flags, **kwargs):
+                if name == 'other-public.asc':
+                    observed.append(flags)
+                    path = fixture.keyrings / name
+                    path.unlink(); os.mkfifo(path)
+                return original(name, flags, **kwargs)
+            with patch('ci_apt_mirror_priority.os.open', side_effect=replaced), self.assertRaises(RuntimeError):
+                harden_original_keyring_permissions(fixture.output)
+            self.assertTrue(observed and all(flags & os.O_NONBLOCK and flags & os.O_NOFOLLOW for flags in observed))
+            fixture.fchmod.assert_not_called()
+
+    def test_post_close_reopened_original_key_replacement_is_refused(self):
+        from unittest.mock import patch
+        with keyring_fixture() as fixture:
+            original_close = os.close
+            changed = []
+            def closed(fd):
+                original_close(fd)
+                if fixture.held and fd == fixture.held[0] and not changed:
+                    changed.append(True)
+                    replacement = fixture.root / 'closed-replacement'
+                    replacement.write_bytes(fixture.keys[0].read_bytes()); replacement.chmod(0o644)
+                    os.replace(replacement, fixture.keys[0])
+            with patch('ci_apt_mirror_priority.os.close', side_effect=closed), self.assertRaises(RuntimeError):
+                harden_original_keyring_permissions(fixture.output)
+            self.assertTrue(changed)
+            self.assertFalse((fixture.output / 'keyring-permissions.result.json').exists())
+
+    def test_post_close_reopened_key_bytes_and_members_are_compared(self):
+        from unittest.mock import patch
+        for fault in ('bytes', 'member'):
+            with self.subTest(fault=fault), keyring_fixture() as fixture:
+                original_close = os.close
+                changed = []
+                def closed(fd):
+                    original_close(fd)
+                    if fixture.held and fd == fixture.held[0] and not changed:
+                        changed.append(True)
+                        if fault == 'bytes': fixture.keys[0].write_bytes(b'x' * len(fixture.keys[0].read_bytes()))
+                        else: (fixture.keyrings / 'added.gpg').write_bytes(b'added-public-fixture')
+                with patch('ci_apt_mirror_priority.os.close', side_effect=closed), self.assertRaises(RuntimeError):
+                    harden_original_keyring_permissions(fixture.output)
+                self.assertTrue(changed)
+                self.assertFalse((fixture.output / 'keyring-permissions.result.json').exists())
+
+    def test_hardening_scope_is_closed_root_usr_share_keyrings_chain(self):
+        self.assertEqual(KEYRING_PERMISSION_CHAIN, ('/', '/usr', '/usr/share', '/usr/share/keyrings'))
+
+    def test_original_fd_permission_hardening_preserves_bytes_and_custody(self):
+        import json
+        with keyring_fixture() as fixture:
+            originals = {path: (path.read_bytes(), path.stat().st_ino) for path in fixture.keys}
+            result = harden_original_keyring_permissions(fixture.output)
+            self.assertEqual(result['changedOriginalModes'], 4)
+            self.assertEqual(result['existingPublicKeyFiles'], 2)
+            self.assertEqual(result['originalContentAuthenticity'], 'NOT_ESTABLISHED_BY_PERMISSION_REPAIR')
+            self.assertEqual([call.args[1] for call in fixture.fchmod.call_args_list], [0o755, 0o755, 0o644, 0o644])
+            for path, original in originals.items():
+                self.assertEqual((path.read_bytes(), path.stat().st_ino), original)
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o644)
+                self.assertEqual(safe_read(path)[0], original[0])
+            self.assertEqual(stat.S_IMODE(fixture.share.stat().st_mode), 0o755)
+            self.assertEqual(stat.S_IMODE(fixture.keyrings.stat().st_mode), 0o755)
+            plan = json.loads((fixture.output / 'keyring-permissions.original.json').read_bytes())
+            self.assertEqual(len(plan), 6)
+            self.assertEqual(len(list(fixture.output.glob('public-key-*.original'))), 2)
+            self.assertTrue((fixture.output / 'keyring-permissions.result.json').exists())
+            for fd in fixture.held:
+                with self.assertRaises(OSError): os.fstat(fd)
+
+    def test_already_safe_keyring_modes_do_not_change(self):
+        with keyring_fixture(safe=True) as fixture:
+            result = harden_original_keyring_permissions(fixture.output)
+            self.assertEqual(result['changedOriginalModes'], 0)
+            fixture.fchmod.assert_not_called()
+
+    def test_every_unadmitted_member_refuses_before_first_permission_write(self):
+        for fault in ('owner', 'mode', 'symlink', 'hardlink', 'name'):
+            with self.subTest(fault=fault), keyring_fixture() as fixture:
+                key = fixture.keys[-1]
+                if fault == 'owner': fixture.overrides[key.stat().st_ino] = {'st_uid': 1001}
+                elif fault == 'mode': key.chmod(0o775)
+                elif fault == 'symlink': key.unlink(); key.symlink_to(fixture.keys[0])
+                elif fault == 'hardlink': os.link(key, fixture.keyrings / 'linked.gpg')
+                else: (fixture.keyrings / 'unsupported.txt').write_bytes(b'public-fixture')
+                with self.assertRaises((RuntimeError, OSError)):
+                    harden_original_keyring_permissions(fixture.output)
+                fixture.fchmod.assert_not_called()
+                self.assertFalse((fixture.output / 'keyring-permissions.original.json').exists())
+
+    def test_nonroot_or_writable_root_ancestor_cannot_be_repaired(self):
+        for fault in ('owner', 'writable'):
+            with self.subTest(fault=fault), keyring_fixture() as fixture:
+                if fault == 'owner': fixture.overrides[fixture.root.stat().st_ino] = {'st_uid': 1001}
+                else: fixture.root.chmod(0o777)
+                with self.assertRaisesRegex(RuntimeError, 'Root-owned admitted keyring directory required'):
+                    harden_original_keyring_permissions(fixture.output)
+                fixture.fchmod.assert_not_called()
+
+    def test_public_key_byte_drift_after_private_custody_refuses_before_write(self):
+        from unittest.mock import patch
+        from ci_apt_mirror_priority import write_owned
+        with keyring_fixture() as fixture:
+            def custody(path, raw):
+                write_owned(path, raw)
+                if path.name == 'keyring-permissions.original.json': fixture.keys[0].write_bytes(b'changed')
+            with patch('ci_apt_mirror_priority.write_owned', side_effect=custody),                     self.assertRaisesRegex(RuntimeError, 'drift after custody before hardening'):
+                harden_original_keyring_permissions(fixture.output)
+            fixture.fchmod.assert_not_called()
+            self.assertTrue((fixture.output / 'keyring-permissions.original.json').exists())
+
+    def test_original_named_fd_replacement_after_custody_refuses_before_write(self):
+        from unittest.mock import patch
+        from ci_apt_mirror_priority import write_owned
+        with keyring_fixture() as fixture:
+            def custody(path, raw):
+                write_owned(path, raw)
+                if path.name == 'keyring-permissions.original.json':
+                    replacement = fixture.root / 'replacement'
+                    replacement.write_bytes(fixture.keys[0].read_bytes()); replacement.chmod(0o777)
+                    os.replace(replacement, fixture.keys[0])
+            with patch('ci_apt_mirror_priority.write_owned', side_effect=custody), self.assertRaises(RuntimeError):
+                harden_original_keyring_permissions(fixture.output)
+            fixture.fchmod.assert_not_called()
+
+    def test_partial_permission_failure_never_reopens_hardened_parent(self):
+        with keyring_fixture() as fixture:
+            original = fixture.original_fchmod
+            calls = []
+            def fail_second(fd, mode):
+                calls.append((fd, mode))
+                if len(calls) == 2: raise PermissionError('synthetic second change failure')
+                original(fd, mode)
+            fixture.fchmod.side_effect = fail_second
+            with self.assertRaises(PermissionError): harden_original_keyring_permissions(fixture.output)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(stat.S_IMODE(fixture.share.stat().st_mode), 0o755)
+            self.assertEqual(stat.S_IMODE(fixture.keyrings.stat().st_mode), 0o777)
+            self.assertTrue((fixture.output / 'keyring-permissions.original.json').exists())
+            self.assertFalse((fixture.output / 'keyring-permissions.result.json').exists())
+
+    def test_unsupported_directory_mode_and_symlink_refuse_before_write(self):
+        for fault in ('mode', 'symlink'):
+            with self.subTest(fault=fault), keyring_fixture() as fixture:
+                if fault == 'mode': fixture.share.chmod(0o775)
+                else:
+                    fixture.keyrings.rename(fixture.share / 'moved-original')
+                    fixture.keyrings.symlink_to(fixture.share / 'moved-original')
+                with self.assertRaises((RuntimeError, OSError)):
+                    harden_original_keyring_permissions(fixture.output)
+                fixture.fchmod.assert_not_called()
+
+    def test_failed_first_fchmod_preserves_originals_and_closes_fds_without_retry(self):
+        with keyring_fixture() as fixture:
+            fixture.fchmod.side_effect = PermissionError('synthetic permission failure')
+            with self.assertRaises(PermissionError): harden_original_keyring_permissions(fixture.output)
+            self.assertEqual(fixture.fchmod.call_count, 1)
+            self.assertTrue((fixture.output / 'keyring-permissions.original.json').exists())
+            self.assertFalse((fixture.output / 'keyring-permissions.result.json').exists())
+            self.assertEqual(stat.S_IMODE(fixture.share.stat().st_mode), 0o777)
+            for fd in fixture.held:
+                with self.assertRaises(OSError): os.fstat(fd)
+
+
     def test_directory_diagnostics_complete_after_resolution_loop(self):
         from unittest.mock import patch
         from types import SimpleNamespace

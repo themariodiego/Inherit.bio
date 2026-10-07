@@ -34,6 +34,7 @@ CONFIG_KEYS = LEAVES + tuple('Binary::apt-get::' + key for key in LEAVES)
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
 MAX_FILE = 4 * 1024 * 1024
 COMPONENTS = ('main', 'restricted', 'universe', 'multiverse')
+KEYRING_PERMISSION_CHAIN = ('/', '/usr', '/usr/share', '/usr/share/keyrings')
 PREFLIGHT_DIRECTORIES = ('/etc/apt/sources.list.d', '/etc/apt/trusted.gpg.d', '/etc/apt/keyrings',
                          '/usr/share/keyrings', '/etc/apt/apt.conf.d')
 
@@ -275,6 +276,174 @@ def replace_original(path, original, identity, candidate, uid=0):
             'Mirror readback differs')
 
 
+def harden_original_keyring_permissions(output, observe=None):
+    """Tighten only observed image777 modes; retain original byte custody, not authenticity."""
+    descriptors = []
+    directories = []
+    files = []
+    def named_matches(item):
+        return fingerprint(os.lstat(item['path'])) == fingerprint(os.fstat(item['fd']))
+    def read_original(item):
+        os.lseek(item['fd'], 0, os.SEEK_SET)
+        data = bytearray()
+        while True:
+            part = os.read(item['fd'], 65536)
+            if not part:
+                break
+            data.extend(part)
+            require(len(data) <= MAX_FILE, 'Original public key exceeds bound')
+        return bytes(data)
+    try:
+        parent = None
+        for ordinal, literal in enumerate(KEYRING_PERMISSION_CHAIN):
+            path = Path(literal)
+            try:
+                canonical = path.resolve(strict=True) == path
+            except (OSError, RuntimeError):
+                canonical = False
+            require(canonical, 'Canonical stock keyring permission path required')
+            name = literal if ordinal == 0 else path.name
+            fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+            descriptors.append(fd)
+            info = os.fstat(fd)
+            mode = stat.S_IMODE(info.st_mode)
+            if observe is not None:
+                observe({'event': 'KEYRING_CHAIN_METADATA', 'path': literal, 'uid': info.st_uid,
+                         'gid': info.st_gid, 'mode': oct(mode), 'originalNamedFd':
+                         fingerprint(os.lstat(path)) == fingerprint(info)})
+            require(stat.S_ISDIR(info.st_mode) and info.st_uid == 0 and
+                    (mode & 0o022 == 0 or ordinal >= 2 and mode == 0o777),
+                    'Root-owned admitted keyring directory required')
+            item = {'path': literal, 'fd': fd, 'before': fingerprint(info),
+                    'targetMode': 0o755 if mode == 0o777 else mode}
+            require(named_matches(item), 'Original keyring directory FD differs')
+            directories.append(item)
+            parent = fd
+        members = sorted(os.listdir(parent))
+        require(0 < len(members) <= 128, 'Original public key namespace exceeds bound')
+        for ordinal, name in enumerate(members, 1):
+            require(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._+-]{0,127}\.(gpg|asc)', name) is not None,
+                    'Unsupported original public key member')
+            path = Path(KEYRING_PERMISSION_CHAIN[-1]) / name
+            named_before = os.stat(name, dir_fd=parent, follow_symlinks=False)
+            named_mode = stat.S_IMODE(named_before.st_mode)
+            require(stat.S_ISREG(named_before.st_mode) and named_before.st_uid == 0
+                    and named_before.st_nlink == 1 and named_before.st_size <= MAX_FILE
+                    and (named_mode & 0o022 == 0 or named_mode == 0o777),
+                    'Root-owned admitted original public key required')
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+            descriptors.append(fd)
+            info = os.fstat(fd)
+            require(fingerprint(info) == fingerprint(named_before), 'Original public key pre-open drift')
+            mode = stat.S_IMODE(info.st_mode)
+            require(stat.S_ISREG(info.st_mode) and info.st_uid == 0 and info.st_nlink == 1
+                    and info.st_size <= MAX_FILE and (mode & 0o022 == 0 or mode == 0o777),
+                    'Root-owned admitted original public key required')
+            item = {'path': str(path), 'fd': fd, 'before': fingerprint(info),
+                    'targetMode': 0o644 if mode == 0o777 else mode, 'ordinal': ordinal}
+            require(named_matches(item), 'Original public key named FD differs')
+            item['bytes'] = read_original(item)
+            require(len(item['bytes']) == info.st_size and named_matches(item)
+                    and fingerprint(os.fstat(fd)) == item['before'], 'Original public key changed')
+            files.append(item)
+        require('ubuntu-archive-keyring.gpg' in members, 'Original stock archive key required')
+        all_items = directories + files
+        require(sorted(os.listdir(parent)) == members and all(named_matches(item)
+                and fingerprint(os.fstat(item['fd'])) == item['before'] for item in all_items),
+                'Original keyring namespace drift before hardening')
+        # Preserve all original public key bytes and metadata before the first permission write.
+        for item in files:
+            write_owned(output / f"public-key-{item['ordinal']:03}.original", item['bytes'])
+        plan = [{'path': item['path'], 'before': item['before'], 'targetMode': oct(item['targetMode']),
+                 **({'sha256': hashlib.sha256(item['bytes']).hexdigest()} if 'bytes' in item else {})}
+                for item in all_items]
+        write_owned(output / 'keyring-permissions.original.json',
+                    (json.dumps(plan, sort_keys=True) + '\n').encode())
+        require(sorted(os.listdir(parent)) == members and all(named_matches(item)
+                and fingerprint(os.fstat(item['fd'])) == item['before'] for item in all_items)
+                and all(read_original(item) == item['bytes'] for item in files),
+                'Original keyring drift after custody before hardening')
+        changed = 0
+        expected_after = []
+        for item in all_items:
+            require(named_matches(item) and fingerprint(os.fstat(item['fd'])) == item['before'],
+                    'Original keyring FD drift before its permission write')
+            expected = dict(item['before'])
+            if stat.S_IMODE(expected['mode']) != item['targetMode']:
+                os.fchmod(item['fd'], item['targetMode'])
+                changed += 1
+                expected['mode'] = stat.S_IFMT(expected['mode']) | item['targetMode']
+            require(fingerprint(os.fstat(item['fd'])) == expected and named_matches(item),
+                    'Original keyring identity drift during hardening')
+            expected_after.append(expected)
+        require(sorted(os.listdir(parent)) == members and all(named_matches(item)
+                and fingerprint(os.fstat(item['fd'])) == expected
+                for item, expected in zip(all_items, expected_after))
+                and all(read_original(item) == item['bytes'] for item in files),
+                'Original public key bytes/namespace changed during hardening')
+        result = {'decision': 'PERMISSIONS_HARDENED', 'changedOriginalModes': changed,
+                  'existingPublicKeyFiles': len(files), 'contentUnchanged': True,
+                  'originalContentAuthenticity': 'NOT_ESTABLISHED_BY_PERMISSION_REPAIR',
+                  'directoryModesBefore': [{'path': item['path'], 'mode': oct(stat.S_IMODE(item['before']['mode']))}
+                                           for item in directories]}
+    finally:
+        for fd in reversed(descriptors):
+            os.close(fd)
+    # Every original handle is closed. Reopen and compare the admitted post-mode vector before success.
+    result['admittedKeyringInputs'] = reopen_hardened_keyrings(directories, files, members, expected_after)
+    write_owned(output / 'keyring-permissions.result.json',
+                (json.dumps(result, sort_keys=True) + '\n').encode())
+    return result
+
+
+def reopen_hardened_keyrings(directories, files, members, expected_after):
+    descriptors = []
+    try:
+        parent = None
+        for ordinal, (item, expected) in enumerate(zip(directories, expected_after[:4])):
+            path = Path(KEYRING_PERMISSION_CHAIN[ordinal])
+            try:
+                canonical = path.resolve(strict=True) == path
+            except (OSError, RuntimeError):
+                canonical = False
+            require(canonical and str(path) == item['path'], 'Canonical reopened keyring chain required')
+            fd = os.open(str(path) if ordinal == 0 else path.name,
+                         os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+            descriptors.append(fd)
+            info = os.fstat(fd)
+            require(stat.S_ISDIR(info.st_mode) and info.st_uid == 0 and info.st_mode & 0o022 == 0
+                    and fingerprint(info) == expected
+                    and fingerprint(os.lstat(path)) == expected, 'Reopened original keyring directory differs')
+            parent = fd
+        require(sorted(os.listdir(parent)) == members, 'Reopened original public key namespace differs')
+        result = []
+        for item, expected in zip(files, expected_after[4:]):
+            path = Path(item['path'])
+            named = os.stat(path.name, dir_fd=parent, follow_symlinks=False)
+            require(stat.S_ISREG(named.st_mode) and named.st_uid == 0 and named.st_nlink == 1
+                    and named.st_mode & 0o022 == 0 and named.st_size <= MAX_FILE
+                    and fingerprint(named) == expected, 'Reopened original public key metadata differs')
+            fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+            descriptors.append(fd)
+            require(fingerprint(os.fstat(fd)) == expected, 'Reopened original public key FD differs')
+            data = bytearray()
+            while True:
+                part = os.read(fd, 65536)
+                if not part: break
+                data.extend(part)
+                require(len(data) <= MAX_FILE, 'Reopened original public key exceeds bound')
+            require(bytes(data) == item['bytes'] and fingerprint(os.fstat(fd)) == expected
+                    and fingerprint(os.lstat(path)) == expected, 'Reopened original public key bytes/identity differ')
+            result.append({'path': item['path'], 'sha256': hashlib.sha256(data).hexdigest(), **expected})
+        require(sorted(os.listdir(parent)) == members, 'Reopened keyring namespace changed during verification')
+        for item, expected, fd in zip(directories, expected_after[:4], descriptors[:4]):
+            require(fingerprint(os.fstat(fd)) == expected and fingerprint(os.lstat(item['path'])) == expected,
+                    'Reopened keyring chain changed during verification')
+        return sorted(result, key=lambda item: item['path'])
+    finally:
+        for fd in reversed(descriptors): os.close(fd)
+
+
 def limited_config(observe=None):
     # apt-config 2.8.3 DoDump accepts named subtrees. Never dump unrelated proxy/auth configuration.
     argv = ['/usr/bin/apt-config', 'dump', *CONFIG_KEYS]
@@ -307,7 +476,6 @@ def main(argv):
     candidate = mirror_candidate(original)
     source, _ = safe_read(SOURCES)
     admit_sources(source, observe)
-    before = source_snapshot()
     config_raw, config = limited_config(observe)
     require(not STRICT.exists() and not STRICT.is_symlink(), 'Strict config already exists')
     require(not Path('/etc/apt/apt.conf').exists() and not Path('/etc/apt/apt.conf').is_symlink(),
@@ -317,12 +485,18 @@ def main(argv):
             and config_dir.stat().st_mode & 0o022 == 0, 'Root-owned config directory required')
     require(all(item.name < STRICT.name for item in config_dir.iterdir()),
             'Strict config must be the last original fragment')
-    # Every admission above precedes mutation. Preserve originals on this disposable root-owned runner.
+    # Source/mirror/config admission precedes bounded permission repair; strict census then precedes APT mutation.
     output = Path(tempfile.mkdtemp(prefix='inherit-ci-apt-', dir='/var/tmp'))
     os.chmod(output, 0o700)
     write_owned(output / 'mirror.original', original)
     write_owned(output / 'limited-config.original', config_raw)
     write_owned(output / 'apt-version.original', version_result.stdout)
+    hardening = harden_original_keyring_permissions(output, observe)
+    observe({key: value for key, value in hardening.items() if key != 'admittedKeyringInputs'})
+    before = source_snapshot()
+    key_prefix = KEYRING_PERMISSION_CHAIN[-1] + '/'
+    require([item for item in before if item['path'].startswith(key_prefix)] == hardening['admittedKeyringInputs'],
+            'Strict keyring census differs from admitted post-close original vector')
     admission = {'decision': 'ADMITTED', 'imageOS': argv[0], 'imageVersion': argv[1],
                  'runnerEnvironment': argv[3], 'installedAptVersion': apt_version,
                  'aptVersionOriginalSha256': hashlib.sha256(version_result.stdout).hexdigest(),
