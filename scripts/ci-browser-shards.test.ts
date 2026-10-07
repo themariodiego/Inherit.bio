@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import { browserManifest, browserReportCases, browserShardReceipt, ciBrowserShard, verifyBrowserShards, verifyBrowserSourceCensus } from "./ci-browser-shards";
+import { hostedWorkflowContract } from "./hosted-ci-result";
 
 const source = { head: "a".repeat(40), runId: "12345", runAttempt: "2" };
 const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
@@ -139,7 +140,12 @@ describe("mandatory browser coverage across isolated jobs", () => {
     expect(workflow).toContain("shard: [1, 2, 3, 4, 5, 6]");
     expect(workflow).toContain("fail-fast: false");
     expect(workflow).toContain("scripts/run-upload-browser.mts --ci-shard=${{ matrix.shard }}/6");
-    expect(workflow).not.toMatch(/continue-on-error|--grep|--project|--retries|merge-multiple:|path:.*results\.json/);
+    expect(workflow).not.toMatch(/--grep|--project|--retries|merge-multiple:|path:.*results\.json/);
+    const require = createRequire(import.meta.url);
+    const yaml = createRequire(require.resolve("eslint"))("js-yaml") as { load(value: string): unknown };
+    // Only exact reviewed cache maintenance may tolerate errors; every required
+    // job and ordinary step remains fail-closed, including false flag declarations.
+    expect(() => hostedWorkflowContract(yaml.load(workflow))).not.toThrow();
     for (const unsafe of ["            test-results/\n", "            playwright-report/\n"])
       expect(workflow).not.toContain(unsafe);
   });

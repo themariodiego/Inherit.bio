@@ -1,5 +1,31 @@
 # Test diff register
 
+## 2026-10-07 — Keep required CI work fail-closed around optional font maintenance
+
+The genuine cold PR295 unit run exposed the shard workflow guard's blanket `continue-on-error` text ban. All 17 shard controls and every other banned narrowing/artifact pattern remain. The guard now parses the actual YAML through the source-bound hosted contract: every job and ordinary mandatory step must omit the flag entirely, including `false`; only the exact reviewed optional cache maintenance shapes may declare `true`. Three additional reader controls mutate every ordinary job/step with both flag values and disguise a unit step as a cache action. Full unit/database/browser requirements, discovery, coverage, retries and time limits stay unchanged. Original failed run and log remain recorded separately; this note does not claim later validation.
+
+## 2026-10-07 — Publish font archives before adopting active CI restores
+
+The publisher-only precursor retains the seven complete installation/test jobs
+and the final coverage aggregate. It publishes only after those seven jobs and
+the aggregate step succeed; the eighth `checks` job finishes after optional
+publication. PRs never publish, and installation jobs execute no cache restores
+or warm seeding in this precursor.
+
+The seventeen archive integrity/version/provenance controls remain exact. All
+thirty-seven consumer reader controls remain, including refusal of prefix
+restores and skipped/failed warm validation. Tests that require consumer steps
+now use an explicit synthetic three-step fixture matching the reviewed consumer
+workflow; the actual publisher workflow supplies the main-only publication
+fixtures. No assertion is removed or loosened. Two additional controls prove
+the real publisher has exactly eight jobs and no active restore/seed, and prove
+synthetic consumer validation remains mandatory before the full installer.
+
+The precursor seeds a genuine protected-main key before a separate consumer
+can prove real exact-key warm hits. Complete local and exact-head hosted checks
+remain required; the consumer draft and prior evidence are preserved. This
+entry records a source change, with no execution or speed claim.
+
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
 A separate actual stock job-log GET returned exit1 and zero raw bytes because
