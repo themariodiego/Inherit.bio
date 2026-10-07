@@ -40,10 +40,52 @@ const same = (actual: string[], expected: string[], message: string) => {
 };
 
 const step = z.object({ name: z.string().optional(), if: z.string().optional(), uses: z.string().optional(),
-  run: z.string().optional(), with: z.record(z.string(), z.unknown()).optional() });
+  run: z.string().optional(), with: z.record(z.string(), z.unknown()).optional(), id: z.string().optional(),
+  env: z.record(z.string(), z.unknown()).optional(),
+  "continue-on-error": z.boolean().optional(), "timeout-minutes": id.optional() });
 const workflowJob = z.object({ steps: z.array(step).min(1), strategy: z.object({
   matrix: z.object({ shard: z.array(id) }) }).optional() });
 export type HostedWorkflowContract = ReturnType<typeof hostedWorkflowContract>;
+const mainFontCondition = "github.event_name == 'push' && github.ref == 'refs/heads/main'";
+const cacheAction = "actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25";
+const fontRun = "pnpm exec tsx scripts/ci-browser-font-cache.run.mts";
+// This is a closed maintenance allowance, not a general optional-step rule.
+function fontCacheStep(family: string, item: z.infer<typeof step>) {
+  if (item.name === "Validate cached fonts against fresh authenticated Ubuntu metadata") {
+    assert(["repository-checks", "browser"].includes(family) && item.if === undefined
+      && item.run === `${fontRun} warm` && !item.uses && !item["continue-on-error"]
+      && item["timeout-minutes"] === 4 && item.env?.FONT_CACHE_EXACT_HIT === "${{ steps.font-cache-restore.outputs.cache-hit }}", "Unsupported exact-hit font cache admission");
+    return { skip: null, failure: false } as const;
+  }
+  if (item.name === "Restore only the exact Ubuntu font archives") {
+    assert(["repository-checks", "browser"].includes(family) && item.if === undefined
+      && item.uses === cacheAction && !item.run && item["continue-on-error"] === true
+      && item.id === "font-cache-restore"
+      && item["timeout-minutes"] === 1 && item.with?.path === "${{ steps.fonts.outputs.path }}"
+      && item.with?.key === "${{ steps.fonts.outputs.key }}"
+      && JSON.stringify(Object.keys(item.with).sort()) === JSON.stringify(["key", "path"]), "Unsupported font cache restore");
+    return { skip: null, failure: true } as const;
+  }
+  const rules = [
+    { name: "Prepare main-only font archive publication", id: "fonts", condition: mainFontCondition, run: `${fontRun} prepare`, skip: "pr" },
+    { name: "Look up the exact font archive key without downloading", id: "font-cache-lookup", condition: mainFontCondition, uses: cacheAction, skip: "pr" },
+    { name: "Download and authenticate the pinned official font archives", id: "font-publication", condition: `${mainFontCondition} && steps.font-cache-lookup.outputs.cache-hit != 'true'`, run: `${fontRun} populate`, skip: "conditional" },
+    { name: "Publish verified font archives after all checks passed", condition: `${mainFontCondition} && steps.font-publication.outputs.save-ready == 'true'`, uses: "actions/cache/save@caa296126883cff596d87d8935842f9db880ef25", skip: "conditional" },
+  ] as const;
+  const rule = rules.find(rule => rule.name === item.name);
+  if (!rule) return null;
+  assert(family === "checks" && item.if === rule.condition, "Unsupported font publication condition");
+  if ("run" in rule) assert(item.run === rule.run && !item.uses
+    && item.id === rule.id && (rule.id === "font-publication" ? item["continue-on-error"] === true : !item["continue-on-error"])
+    && (rule.id === "fonts" || item["timeout-minutes"] === 4), "Unsupported font publication command");
+  else assert(item.uses === rule.uses && !item.run && item["continue-on-error"] === true
+    && item["timeout-minutes"] === 1 && item.with?.path === "${{ steps.fonts.outputs.path }}"
+    && item.with?.key === "${{ steps.fonts.outputs.key }}"
+    && JSON.stringify(Object.keys(item.with).sort()) === JSON.stringify(rule.name === "Look up the exact font archive key without downloading" ? ["key", "lookup-only", "path"] : ["key", "path"])
+    && (rule.name !== "Look up the exact font archive key without downloading"
+      || item.id === "font-cache-lookup" && item.with?.["lookup-only"] === true), "Unsupported font publication action");
+  return { skip: rule.skip, failure: "uses" in rule || "id" in rule && rule.id === "font-publication" };
+}
 /** Only the existing job family and producer format. New shapes require review. */
 export function hostedWorkflowContract(value: unknown) {
   const workflow = z.object({ jobs: z.record(z.string(), workflowJob) }).parse(value);
@@ -54,17 +96,25 @@ export function hostedWorkflowContract(value: unknown) {
     const named = job.steps.map(item => item.name ?? `Run ${item.uses ?? item.run?.split("\n")[0]}`);
     unique(named, "Duplicate source step name");
     const failureUploads: string[] = [];
+    const fontCache: { name: string; skip: string | null; failure: boolean }[] = [];
     for (const item of job.steps) {
       assert((item.run === undefined) !== (item.uses === undefined), "Each source step needs one run or action");
-      assert(item.if === undefined || item.if === "always()" || item.if === "failure()", "Unsupported step condition");
+      const cache = fontCacheStep(family, item);
+      if (cache) fontCache.push({ name: item.name!, ...cache });
+      assert(cache || item.if === undefined || item.if === "always()" || item.if === "failure()", "Unsupported step condition");
       if (item.if === "failure()") {
         assert(item.name && item.uses === "actions/upload-artifact@v4" && !item.run,
           "Only a named failure-only artifact upload may be skipped");
         failureUploads.push(item.name);
       }
     }
+    if (family === "checks" && fontCache.length) {
+      const aggregate = job.steps.findIndex(item => item.run === "pnpm exec tsx scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage");
+      assert.deepEqual(fontCache.map(item => item.name), ["Prepare main-only font archive publication", "Look up the exact font archive key without downloading", "Download and authenticate the pinned official font archives", "Publish verified font archives after all checks passed"], "Incomplete or reordered font publication");
+      assert(aggregate >= 0 && aggregate < job.steps.findIndex(item => item.name === fontCache[0].name), "Font publication must follow the complete aggregate");
+    }
     return { family, names: family === "browser"
-      ? Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`) : [family], named, failureUploads };
+      ? Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`) : [family], named, failureUploads, fontCache };
   });
   const producer = (family: string, name: string, member: string) => {
     const matches = workflow.jobs[family].steps.filter(item => item.uses === "actions/upload-artifact@v4"
@@ -89,7 +139,7 @@ const runSchema = z.object({ id, run_attempt: id, head_sha: sha, status: z.liter
 const jobSchema = z.object({ id, name: z.string(), run_id: id, run_attempt: id, head_sha: sha,
   status: z.literal("completed"), conclusion: z.literal("success"), started_at: time, completed_at: time,
   steps: z.array(z.object({ name: z.string(), number: id, status: z.literal("completed"),
-    conclusion: z.enum(["success", "skipped"]) })).min(1) });
+    conclusion: z.enum(["success", "skipped", "failure"]) })).min(1) });
 export function verifyHostedMetadata(request: HostedResultRequest, contract: HostedWorkflowContract,
   rawRun: unknown, rawJobs: unknown, rawCommit: unknown, rawCurrentContext: unknown) {
   const run = runSchema.parse(rawRun), jobs = z.object({ total_count: id, jobs: z.array(jobSchema) }).parse(rawJobs);
@@ -119,8 +169,13 @@ export function verifyHostedMetadata(request: HostedResultRequest, contract: Hos
     unique(job.steps.map(item => item.number), "Duplicate step number");
     for (const name of source.named) assert(job.steps.filter(item => item.name === name).length === 1,
       "A source-declared step is missing or duplicated");
-    for (const item of job.steps) assert(item.conclusion === "success"
-      || item.conclusion === "skipped" && source.failureUploads.includes(item.name), "Mandatory step did not succeed");
+    for (const item of job.steps) {
+      const cache = source.fontCache.find(cache => cache.name === item.name);
+      if (cache?.skip && request.event === "pull_request") assert(item.conclusion === "skipped", "Main-only font publication ran on a PR");
+      else assert(item.conclusion === "success"
+        || item.conclusion === "skipped" && (source.failureUploads.includes(item.name) || cache?.skip === "conditional")
+        || item.conclusion === "failure" && cache?.failure, "Mandatory step did not succeed");
+    }
     elapsedMilliseconds(job.started_at, job.completed_at);
     assert(Date.parse(job.started_at) >= Date.parse(run.created_at) && Date.parse(job.completed_at) <= Date.parse(run.updated_at),
       "Job timing lies outside its run");

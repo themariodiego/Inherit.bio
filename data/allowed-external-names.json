@@ -247,6 +247,24 @@
       ]
     },
     {
+      "name": "Ubuntu",
+      "category": "dependency-platform",
+      "aliases": [
+        "ubuntu",
+        "packages.ubuntu.com",
+        "manpages.ubuntu.com",
+        "archive.ubuntu.com",
+        "azure.archive.ubuntu.com",
+        "security.ubuntu.com"
+      ],
+      "reason": "CI operating system and official authenticated font package sources; exact-version archive provenance and APT documentation are cited for the font archive cache.",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        "data/ci/browser-font-packages.json",
+        "docs/ci-font-archive-cache.md"
+      ]
+    },
+    {
       "name": "Playwright",
       "category": "dependency-platform",
       "aliases": [

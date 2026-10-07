@@ -28,7 +28,7 @@ function metadata(req = request()) {
     id: source.names.indexOf(name) + 10, name, run_id: req.runId, run_attempt: req.runAttempt, head_sha: req.head,
     status: "completed", conclusion: "success", started_at: "2026-10-05T12:00:05Z", completed_at: "2026-10-05T12:02:00Z",
     steps: family.named.map((step, n) => ({ name: step, number: n + 1, status: "completed",
-      conclusion: family.failureUploads.includes(step) ? "skipped" : "success" })), fixtureIndex: i,
+      conclusion: family.failureUploads.includes(step) || req.event === "pull_request" && family.fontCache.some(item => item.name === step && item.skip) ? "skipped" : "success" })), fixtureIndex: i,
   }))) };
   const commit = { sha: req.testedHead, tree: { sha: req.tree }, parents: [{ sha: oid("b") }, { sha: oid("c") }] };
   const context = { name: "main", commit: { sha: req.head } };
@@ -117,6 +117,55 @@ describe("source-bound hosted result readback", () => {
     const v = metadata(); expect(verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).toBeDefined();
     v.jobs.jobs[0].steps.push({ name: "Unknown upload", number: 100, status: "completed", conclusion: "skipped" });
     expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).toThrow();
+  });
+  it("accepts main cache-hit publication skips while keeping lookup and the aggregate mandatory", () => {
+    const v = metadata();
+    const checks = v.jobs.jobs.find(job => job.name === "checks")!;
+    for (const name of ["Download and authenticate the pinned official font archives", "Publish verified font archives after all checks passed"]) checks.steps.find(step => step.name === name)!.conclusion = "skipped";
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
+    for (const name of ["Look up the exact font archive key without downloading", "Require exact expected, assigned and executed case equality"]) {
+      const w = metadata(); w.jobs.jobs.find(job => job.name === "checks")!.steps.find(step => step.name === name)!.conclusion = "skipped";
+      expect(() => verifyHostedMetadata(request(), w.source, w.run, w.jobs, w.commit, w.context)).toThrow(/Mandatory step/);
+    }
+  });
+  it("requires all four main-only cache maintenance steps to skip on a PR", () => {
+    const value: Record<string, unknown> = { ...request(), event: "pull_request", pullRequest: 7, base: oid("b"), head: oid("c"), testedHead: oid("a") }; delete value.branch;
+    const req = hostedResultRequestSchema.parse(value);
+    if (req.event !== "pull_request") throw new Error("Synthetic PR shape differs");
+    const v = metadata(req);
+    const context = { number: 7, state: "open", head: { sha: req.head }, base: { sha: req.base }, merge_commit_sha: req.testedHead };
+    expect(() => verifyHostedMetadata(req, v.source, v.run, v.jobs, v.commit, context)).not.toThrow();
+    const checks = v.jobs.jobs.find(job => job.name === "checks")!;
+    for (const cache of v.source.jobs.find(job => job.family === "checks")!.fontCache) {
+      const item = checks.steps.find(step => step.name === cache.name)!; item.conclusion = "success";
+      expect(() => verifyHostedMetadata(req, v.source, v.run, v.jobs, v.commit, context)).toThrow(/ran on a PR/);
+      item.conclusion = "skipped";
+    }
+  });
+  it("permits only the explicitly optional cache actions to fail", () => {
+    const v = metadata();
+    for (const job of v.jobs.jobs) {
+      const source = v.source.jobs.find(source => source.names.includes(job.name))!;
+      for (const cache of source.fontCache.filter(cache => cache.failure)) job.steps.find(step => step.name === cache.name)!.conclusion = "failure";
+    }
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
+    for (const name of ["Install Playwright Chromium", "Validate cached fonts against fresh authenticated Ubuntu metadata", "Unit tests", "Typecheck"]) {
+      const w = metadata(); w.jobs.jobs[0].steps.find(step => step.name === name)!.conclusion = "failure";
+      expect(() => verifyHostedMetadata(request(), w.source, w.run, w.jobs, w.commit, w.context)).toThrow(/Mandatory step/);
+    }
+  });
+  it("refuses changed cache commands, prefix restores, relocated publication and a ninth job", () => {
+    const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, { steps: { name?: string; run?: string; if?: string; uses?: string; with?: Record<string, unknown> }[] }> };
+    const wrongCommand = source(); wrongCommand.jobs.checks.steps.find(step => step.name === "Download and authenticate the pinned official font archives")!.run += " --unreviewed";
+    expect(() => hostedWorkflowContract(wrongCommand)).toThrow();
+    const prefix = source(); prefix.jobs.browser.steps.find(step => step.name === "Restore only the exact Ubuntu font archives")!.with!["restore-keys"] = "font-debs-v1-";
+    expect(() => hostedWorkflowContract(prefix)).toThrow();
+    const relocated = source(); const at = relocated.jobs.checks.steps.findIndex(step => step.name === "Prepare main-only font archive publication"); relocated.jobs.checks.steps.unshift(...relocated.jobs.checks.steps.splice(at));
+    expect(() => hostedWorkflowContract(relocated)).toThrow(/complete aggregate/);
+    const wrongCondition = source(); wrongCondition.jobs.checks.steps.find(step => step.name === "Publish verified font archives after all checks passed")!.if = "always()";
+    expect(() => hostedWorkflowContract(wrongCondition)).toThrow();
+    const extra = source(); extra.jobs["font-cache"] = extra.jobs.checks;
+    expect(() => hostedWorkflowContract(extra)).toThrow(/job family/);
   });
   it("discovers exact producer members and refuses missing/foreign/mixed-attempt artifacts", () => {
     const v = artifactInventory(); expect(coverageArtifacts(request(), v).map(row => row.member)).toEqual([

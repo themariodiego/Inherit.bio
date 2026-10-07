@@ -19,6 +19,7 @@ const require = createRequire(import.meta.url), localRequire = createRequire(req
 const yaml = localRequire("js-yaml") as { load(value: string): unknown };
 const maxJson = 16 * 1024 ** 2, maxLog = 32 * 1024 ** 2, maxZip = 10_000_000;
 const contractFiles = [".github/workflows/ci.yml", "scripts/ci-browser-shards.ts", "scripts/ci-browser-project-registry.ts",
+  "data/ci/browser-font-packages.json", "scripts/ci-browser-font-cache.ts", "scripts/ci-browser-font-cache.run.mts",
   "scripts/ci-browser-balance.ts", "scripts/ci-browser-queue-isolation.ts", "scripts/ci-browser-duration-plan.ts",
   "scripts/ci-browser-duration-history.ts", "scripts/ci-browser-duration-history-io.ts",
   "scripts/ci-browser-duration-variance.ts",
