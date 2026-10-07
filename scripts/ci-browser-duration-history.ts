@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { verifyBrowserQueueIsolation } from "./ci-browser-queue-isolation";
+import { currentCaptureContext, type CurrentCaptureAdmission } from "./current-capture-adapter";
 
 const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const head = z.string().regex(/^[0-9a-f]{40}$/);
@@ -109,8 +110,11 @@ const historicalReceiptSchema = identity.extend({ schemaVersion: z.literal(1), t
   files: z.array(measuredFile).min(1), allocation: allocationIdentity.optional(),
 }).strict();
 export type DecodedHistoricalZip = { bytes: Buffer; value: unknown };
-export type HistoricalCaptureInput = { run: Buffer; jobs: Buffer; artifacts: Buffer; testedCommit: Buffer;
+type HistoricalCaptureBuffers = { run: Buffer; jobs: Buffer; artifacts: Buffer; testedCommit: Buffer;
   captureReceipt: Buffer; manifest: DecodedHistoricalZip; shards: DecodedHistoricalZip[] };
+export type HistoricalCaptureInput = HistoricalCaptureBuffers & (
+  { captureFormat?: "legacy-v1"; captureAdmission?: never } |
+  { captureFormat: "hosted-reader-raw-v1"; captureAdmission: CurrentCaptureAdmission });
 function readJson(bytes: Buffer): unknown { return JSON.parse(bytes.toString("utf8")); }
 const capturePin = z.object({ path: z.string(), bytes: z.number().int().nonnegative().safe(), sha256: digest });
 function capturedPins(value: unknown): z.infer<typeof capturePin>[] {
@@ -131,6 +135,10 @@ const historicalSweeps = ["accessible-authenticated-pages.spec.ts", "control-tar
   "page-reflow-accessibility.spec.ts", "public-pages-session-accessibility.spec.ts", "viewport-keyboard-accessibility.spec.ts"];
 /** Pure validation of one genuine captured source; IO/ZIP decoding belongs to the explicit offline helper. */
 export function historicalDurationSource(input: HistoricalCaptureInput): MultiRunDurationSource {
+  assert(input.captureFormat === undefined || input.captureFormat === "legacy-v1"
+    || input.captureFormat === "hosted-reader-raw-v1", "Unknown historical capture format");
+  assert(input.captureFormat === "hosted-reader-raw-v1" ? input.captureAdmission !== undefined
+    : !("captureAdmission" in input), "Explicit raw admission only; legacy cannot carry an override");
   const run = z.object({ id: positive, run_attempt: positive, head_sha: head, status: z.literal("completed"),
     conclusion: z.literal("success"), event: z.enum(["pull_request", "push"]), path: z.literal(".github/workflows/ci.yml") }).parse(readJson(input.run));
   const jobs = z.object({ total_count: z.literal(8), jobs: z.array(z.object({ id: positive, name: z.string(), run_id: positive, run_attempt: positive,
@@ -141,11 +149,13 @@ export function historicalDurationSource(input: HistoricalCaptureInput): MultiRu
   for (const job of jobs.jobs) assert(job.run_id === run.id && job.run_attempt === run.run_attempt && job.head_sha === run.head_sha,
     "Job belongs to another source/run/attempt");
   const commit = z.object({ sha: head, tree: z.object({ sha: head }) }).parse(readJson(input.testedCommit));
-  const capture = z.object({ runId: positive, runAttempt: positive, prHead: head, testedMerge: head }).parse(readJson(input.captureReceipt));
-  assert(capture.runId === run.id && capture.runAttempt === run.run_attempt && capture.prHead === run.head_sha
-    && capture.testedMerge === commit.sha, "Retained capture source differs");
-  const pins = capturedPins(readJson(input.captureReceipt));
-  for (const bytes of [input.run, input.jobs, input.artifacts, input.testedCommit, input.manifest.bytes, ...input.shards.map(zip => zip.bytes)]) binding(pins, bytes);
+  if (input.captureFormat !== "hosted-reader-raw-v1") {
+    const capture = z.object({ runId: positive, runAttempt: positive, prHead: head, testedMerge: head }).parse(readJson(input.captureReceipt));
+    assert(capture.runId === run.id && capture.runAttempt === run.run_attempt && capture.prHead === run.head_sha
+      && capture.testedMerge === commit.sha, "Retained capture source differs");
+    const pins = capturedPins(readJson(input.captureReceipt));
+    for (const bytes of [input.run, input.jobs, input.artifacts, input.testedCommit, input.manifest.bytes, ...input.shards.map(zip => zip.bytes)]) binding(pins, bytes);
+  }
   const artifacts = z.object({ total_count: z.number().int().nonnegative(), artifacts: z.array(apiArtifact) }).parse(readJson(input.artifacts));
   assert.equal(artifacts.total_count, artifacts.artifacts.length, "Incomplete artifact metadata");
   const prefix = `browser-case-${run.run_attempt}-`;
@@ -153,6 +163,19 @@ export function historicalDurationSource(input: HistoricalCaptureInput): MultiRu
   const selected = artifacts.artifacts.filter(row => row.name.startsWith(prefix));
   same(selected.map(row => row.name), names, "Seven exact same-attempt case artifacts required");
   unique(selected.map(row => row.id), "Distinct actual artifacts required");
+  if (input.captureFormat === "hosted-reader-raw-v1") {
+    // Stock run/jobs/commit/artifact schemas and exact complete inventories above
+    // validate metadata before the pure original-receipt adapter enters here.
+    const capture = currentCaptureContext(input.captureReceipt, input.captureAdmission, {
+      runId: run.id, runAttempt: run.run_attempt, workflowHead: run.head_sha,
+      testedHead: commit.sha, tree: commit.tree.sha, event: run.event,
+      jobIds: jobs.jobs.map(job => job.id), artifacts: selected.map(item => ({ id: item.id, name: item.name })),
+    });
+    assert(capture.runId === run.id && capture.runAttempt === run.run_attempt && capture.prHead === run.head_sha
+      && capture.testedMerge === commit.sha, "Retained capture source differs");
+    const pins = capture.pins;
+    for (const bytes of [input.run, input.jobs, input.artifacts, input.testedCommit, input.manifest.bytes, ...input.shards.map(zip => zip.bytes)]) binding(pins, bytes);
+  }
   assert.equal(input.shards.length, 6, "Six historical decoded shards required");
   for (const [index, zip] of [input.manifest, ...input.shards].entries()) {
     const artifact = selected.find(row => row.name === names[index]); assert(artifact, "Artifact is absent");
