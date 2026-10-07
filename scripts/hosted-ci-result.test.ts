@@ -82,6 +82,30 @@ describe("source-bound hosted result readback", () => {
     const wrongCondition = source(); wrongCondition.jobs["repository-checks"].steps[0].if = "cancelled()";
     expect(() => hostedWorkflowContract(wrongCondition)).toThrow();
   });
+  it.each([false, true])("refuses ordinary job and step error-tolerance declarations %s", flag => {
+    const workflow = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, { "continue-on-error"?: boolean;
+      steps: { name?: string; "continue-on-error"?: boolean }[] }> };
+    const source = hostedWorkflowContract(workflow);
+    for (const [family, job] of Object.entries(workflow.jobs)) {
+      const changedJob = structuredClone(workflow); changedJob.jobs[family]["continue-on-error"] = flag;
+      expect(() => hostedWorkflowContract(changedJob)).toThrow(/Required jobs/);
+      const allowed = source.jobs.find(item => item.family === family)!.fontCache.filter(item => item.failure).map(item => item.name);
+      for (const [index, step] of job.steps.entries()) if (!allowed.includes(step.name ?? "")) {
+        const changedStep = structuredClone(workflow); changedStep.jobs[family].steps[index]["continue-on-error"] = flag;
+        expect(() => hostedWorkflowContract(changedStep)).toThrow();
+      }
+    }
+  });
+  it("refuses a mandatory step disguised as an optional font cache action", () => {
+    const workflow = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, { steps: {
+      name?: string; run?: string; "continue-on-error"?: boolean }[] }> };
+    // Remove the legitimate cache step from this negative fixture so the forged
+    // unit reaches shape validation rather than the duplicate-name guard.
+    workflow.jobs["repository-checks"].steps = workflow.jobs["repository-checks"].steps.filter(step => step.name !== "Restore only the exact Ubuntu font archives");
+    const unit = workflow.jobs["repository-checks"].steps.find(step => step.name === "Unit tests")!;
+    unit.name = "Restore only the exact Ubuntu font archives"; unit["continue-on-error"] = true;
+    expect(() => hostedWorkflowContract(workflow)).toThrow(/Unsupported font cache restore/);
+  });
   it("accepts a two-parent main push and derives separate wall/API-update times", () => {
     const v = metadata(); const result = verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context);
     expect(result.actualParents).toEqual([oid("b"), oid("c")]);

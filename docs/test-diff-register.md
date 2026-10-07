@@ -1,5 +1,9 @@
 # Test diff register
 
+## 2026-10-07 — Keep required CI work fail-closed around optional font maintenance
+
+The genuine cold PR295 unit run exposed the shard workflow guard's blanket `continue-on-error` text ban. All 17 shard controls and every other banned narrowing/artifact pattern remain. The guard now parses the actual YAML through the source-bound hosted contract: every job and ordinary mandatory step must omit the flag entirely, including `false`; only the exact reviewed optional cache maintenance shapes may declare `true`. Three additional reader controls mutate every ordinary job/step with both flag values and disguise a unit step as a cache action. Full unit/database/browser requirements, discovery, coverage, retries and time limits stay unchanged. Original failed run and log remain recorded separately; this note does not claim later validation.
+
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
 A separate actual stock job-log GET returned exit1 and zero raw bytes because

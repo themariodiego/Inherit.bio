@@ -43,7 +43,7 @@ const step = z.object({ name: z.string().optional(), if: z.string().optional(), 
   run: z.string().optional(), with: z.record(z.string(), z.unknown()).optional(), id: z.string().optional(),
   env: z.record(z.string(), z.unknown()).optional(),
   "continue-on-error": z.boolean().optional(), "timeout-minutes": id.optional() });
-const workflowJob = z.object({ steps: z.array(step).min(1), strategy: z.object({
+const workflowJob = z.object({ steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
   matrix: z.object({ shard: z.array(id) }) }).optional() });
 export type HostedWorkflowContract = ReturnType<typeof hostedWorkflowContract>;
 const mainFontCondition = "github.event_name == 'push' && github.ref == 'refs/heads/main'";
@@ -93,6 +93,7 @@ export function hostedWorkflowContract(value: unknown) {
   assert.deepEqual(workflow.jobs.browser.strategy?.matrix.shard,
     Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => i + 1), "Unsupported browser matrix");
   const jobs = Object.entries(workflow.jobs).map(([family, job]) => {
+    assert(!("continue-on-error" in job), "Required jobs may not declare continue-on-error");
     const named = job.steps.map(item => item.name ?? `Run ${item.uses ?? item.run?.split("\n")[0]}`);
     unique(named, "Duplicate source step name");
     const failureUploads: string[] = [];
@@ -101,6 +102,7 @@ export function hostedWorkflowContract(value: unknown) {
       assert((item.run === undefined) !== (item.uses === undefined), "Each source step needs one run or action");
       const cache = fontCacheStep(family, item);
       if (cache) fontCache.push({ name: item.name!, ...cache });
+      assert(cache?.failure || !("continue-on-error" in item), "Mandatory steps may not declare continue-on-error");
       assert(cache || item.if === undefined || item.if === "always()" || item.if === "failure()", "Unsupported step condition");
       if (item.if === "failure()") {
         assert(item.name && item.uses === "actions/upload-artifact@v4" && !item.run,
