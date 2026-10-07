@@ -247,6 +247,24 @@
       ]
     },
     {
+      "name": "Ubuntu",
+      "category": "dependency-platform",
+      "aliases": [
+        "ubuntu",
+        "packages.ubuntu.com",
+        "manpages.ubuntu.com",
+        "archive.ubuntu.com",
+        "azure.archive.ubuntu.com",
+        "security.ubuntu.com"
+      ],
+      "reason": "CI operating system and existing official authenticated APT mirrors; archive priority and APT documentation are cited for signed metadata admission.",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        "scripts/ci_apt_mirror_priority.py",
+        "docs/ci-apt-mirror-priority.md"
+      ]
+    },
+    {
       "name": "Playwright",
       "category": "dependency-platform",
       "aliases": [

@@ -40,7 +40,7 @@ const same = (actual: string[], expected: string[], message: string) => {
 };
 
 const step = z.object({ name: z.string().optional(), if: z.string().optional(), uses: z.string().optional(),
-  run: z.string().optional(), with: z.record(z.string(), z.unknown()).optional() });
+  run: z.string().optional(), "continue-on-error": z.boolean().optional(), with: z.record(z.string(), z.unknown()).optional() });
 const workflowJob = z.object({ steps: z.array(step).min(1), strategy: z.object({
   matrix: z.object({ shard: z.array(id) }) }).optional() });
 export type HostedWorkflowContract = ReturnType<typeof hostedWorkflowContract>;
@@ -50,6 +50,18 @@ export function hostedWorkflowContract(value: unknown) {
   same(Object.keys(workflow.jobs), ["repository-checks", "browser", "checks"], "Unsupported workflow job family");
   assert.deepEqual(workflow.jobs.browser.strategy?.matrix.shard,
     Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => i + 1), "Unsupported browser matrix");
+  for (const family of ["repository-checks", "browser"]) {
+    const steps = workflow.jobs[family].steps;
+    const admission = steps.filter(item => item.name === "Admit signed Ubuntu APT mirror fallback");
+    assert(admission.length === 1 && admission[0].if === undefined
+      && admission[0]["continue-on-error"] !== true && admission[0].uses === undefined
+      && admission[0].run === 'sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"',
+    "Mandatory exact Ubuntu APT admission differs");
+    const installer = steps.filter(item => item.name === "Install Playwright Chromium");
+    assert(installer.length === 1 && installer[0].if === undefined && installer[0]["continue-on-error"] !== true
+      && installer[0].run === "pnpm exec playwright install --with-deps chromium"
+      && steps.indexOf(admission[0]) < steps.indexOf(installer[0]), "Complete mandatory installer differs");
+  }
   const jobs = Object.entries(workflow.jobs).map(([family, job]) => {
     const named = job.steps.map(item => item.name ?? `Run ${item.uses ?? item.run?.split("\n")[0]}`);
     unique(named, "Duplicate source step name");
