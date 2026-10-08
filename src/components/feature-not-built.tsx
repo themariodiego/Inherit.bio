@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Terrain } from "@/components/site/terrain";
 
 /**
  * A page whose feature has not been written yet.
@@ -31,25 +32,30 @@ export function FeatureNotBuilt({
   whatItWouldDo: string;
 }) {
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <header className="space-y-3">
+    <div className="quiet-column page-stack mx-auto max-w-2xl">
+      <div aria-hidden="true" className="quiet-band">
+        <Terrain variant="band" seed={11} />
+      </div>
+      <header>
         <p className="eyebrow">{eyebrow}</p>
-        <h1 className="display text-3xl">{title}</h1>
+        <h1 className="display mt-4">{title}</h1>
       </header>
       <section
         role="status"
         data-slot="not-built"
-        className="space-y-4 rounded-2xl border border-line bg-card p-6"
+        className="surface surface-pad mt-block"
       >
-        <h2 className="font-medium">Not built yet</h2>
-        <p className="text-base leading-relaxed text-ink-muted">{whatItWouldDo}</p>
-        <p className="text-base leading-relaxed text-ink-muted">
+        <h2 className="title">Not built yet</h2>
+        <p className="body-lg mt-4 max-w-measure text-ink">{whatItWouldDo}</p>
+        <p className="mt-4 max-w-measure text-ink-muted">
           Inherit has not written this page yet. No law and nothing about you is
           holding it back, and no record was made when you opened it.
         </p>
-        <Button asChild variant="outline">
-          <Link href={backHref}>Go back</Link>
-        </Button>
+        <p className="mt-6">
+          <Button asChild variant="outline">
+            <Link href={backHref}>Go back</Link>
+          </Button>
+        </p>
       </section>
     </div>
   );

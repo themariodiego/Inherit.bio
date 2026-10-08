@@ -1,8 +1,8 @@
 import { EntryBoxGrid, type EntryBox } from "./entry-box";
 
 // One of the three domain sections: an h2 (identical to the nav label),
-// ≥ 80 characters of non-heading content (the lede or the state lines),
-// then exactly three entry boxes.
+// ≥ 80 characters of non-heading content (the lede or the state lines) at
+// the 68ch measure, then exactly three entry boxes one block-rhythm below.
 
 export function DomainSection({
   id,
@@ -23,11 +23,13 @@ export function DomainSection({
       data-density-top-level-section
       className="scroll-mt-24"
     >
-      <h2 id={headingId} className="display text-3xl">
+      <h2 id={headingId} className="display">
         {heading}
       </h2>
-      <div className="mt-3 max-w-prose space-y-2">{children}</div>
-      <EntryBoxGrid boxes={boxes} />
+      <div className="stack-blocks mt-4">
+        <div className="max-w-measure space-y-3">{children}</div>
+        <EntryBoxGrid boxes={boxes} />
+      </div>
     </section>
   );
 }

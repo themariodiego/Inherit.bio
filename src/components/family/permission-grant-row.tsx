@@ -16,7 +16,8 @@ import { submitFamilyPermission, type PermissionAction } from "@/lib/family/perm
 /**
  * <PermissionGrantRow> — one purpose, one direction, one control (brief §3
  * §4.2, §5 §5.3). Permission state carries no colour: a glyph and one of the
- * three words. There is no master switch, and nothing is pre-ticked.
+ * three words, both in the ink. There is no master switch, and nothing is
+ * pre-ticked.
  *
  * A row in the column this session may not set renders disabled with the
  * sentence naming who can. A row this session may set carries either the
@@ -61,22 +62,20 @@ export function PermissionGrantRow({
   );
 
   return (
-    <li
-      data-slot="permission-row"
-      data-permission-state={state}
-      className="flex flex-wrap items-start justify-between gap-3 border-t border-line py-4 first:border-t-0"
-    >
-      <div className="min-w-0 space-y-1">
-        <p className="flex items-center gap-2 font-medium text-ink">
+    <li data-slot="permission-row" data-permission-state={state} className="fam-permission">
+      <div className="space-y-1">
+        <p className="flex flex-wrap items-center gap-x-2 text-base text-ink">
           <span aria-hidden="true" data-slot="permission-glyph">
             {GLYPHS[state]}
           </span>
-          <span data-slot="permission-label">{label}</span>
-          <span data-slot="permission-state" className="text-sm font-normal text-ink-muted">
+          <span data-slot="permission-label" className="font-medium">
+            {label}
+          </span>
+          <span data-slot="permission-state" className="text-ink">
             {PERMISSION_STATES[state]}
           </span>
         </p>
-        <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{consequence}</p>
+        <p className="caption max-w-measure">{consequence}</p>
         {failed ? (
           <p role="alert" className="text-sm text-danger">
             {SHARING_ERROR_STATUS}
@@ -110,7 +109,7 @@ export function PermissionGrantRow({
           {action.kind === "grant" ? TURN_ON_BUTTON : TURN_OFF_BUTTON}
         </Button>
       ) : (
-        <p data-slot="permission-locked" className="text-sm text-ink-muted">
+        <p data-slot="permission-locked" className="caption max-w-xs">
           {disabledReason}
         </p>
       )}

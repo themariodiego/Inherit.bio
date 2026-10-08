@@ -1,8 +1,8 @@
 /**
- * <SubjectBar> — the 44px identity bar rendered directly under the app
+ * <SubjectBar> — the 56px identity plate rendered directly under the app
  * header on every subject-derived route (brief §2 §2.3). Server component.
  *
- * (a) a 24px disc in the subject colour with the initial as text;
+ * (a) a 28px disc in the subject colour with the initial as text;
  * (b) the display name;
  * (c) the kind chip — exactly one of the KIND_CHIPS words;
  * (d) the file count as text, linking to /files;
@@ -107,7 +107,7 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
       data-subject-id={subject.id}
       data-subject-kind={kind ?? undefined}
       className={cn(
-        "flex h-11 min-w-0 items-center gap-3 border-b border-line text-sm",
+        "surface-inset flex min-h-row min-w-0 items-center gap-3 px-3 text-sm sm:px-4",
         className,
       )}
     >
@@ -115,19 +115,19 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
         aria-hidden="true"
         data-slot="subject-disc"
         className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
-          colour === null ? "border border-line bg-tint text-ink" : `text-paper ${DISC_CLASSES[colour]}`,
+          "flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
+          colour === null ? "border border-line-strong bg-card text-ink" : `text-paper ${DISC_CLASSES[colour]}`,
         )}
       >
         {subjectInitial(subject.displayLabel)}
       </span>
-      <span data-slot="subject-name" className="truncate font-medium text-ink">
+      <span data-slot="subject-name" className="label truncate text-ink">
         {subject.displayLabel}
       </span>
       {kind ? (
         <span
           data-slot="subject-kind"
-          className="shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
+          className="inline-flex shrink-0 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium leading-5 text-ink"
         >
           {KIND_CHIPS[kind]}
         </span>
@@ -138,10 +138,9 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
           data-slot="subject-files"
           // "2 files" measured 29×20: a tap target on every genome surface and
           // the narrowest link in the bar, so it needs the width step as well
-          // as the height one (brief line 553; line 1053). Free vertically —
-          // the bar is already `h-11`, so a 44px child fills the row it is
-          // centred in and the bar's height does not move.
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-muted underline-offset-2 hover:underline"
+          // as the height one (brief line 553; line 1053). The row is already
+          // 56px, so a 44px child does not move it.
+          className="quiet-link flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1"
         >
           {fileCount(files)}
         </Link>
