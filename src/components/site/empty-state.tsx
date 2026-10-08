@@ -21,7 +21,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div data-slot="empty-state" className={cn("surface-inset surface-pad max-w-measure", className)}>
+    <div data-slot="empty-state" className={cn("surface-inset max-w-measure p-4 min-[360px]:p-6", className)}>
       <div className="max-w-measure space-y-3">
         {title ? <div className="title text-ink">{title}</div> : null}
         <div className="text-ink">{children}</div>
