@@ -1,3 +1,48 @@
 /* marketing surface styles. Owned by one surface agent; tokens come from globals.css.
    Rules here are unlayered and beat Tailwind utilities: use them for shared
    patterns, and Tailwind classes in JSX for one-offs. */
+
+/* ---------------------------------------------------------------------------
+ * Landing hero: the one terrain on the public surface. The ground is an
+ * absolutely placed layer (glow, then hills) under relative content.
+ * ------------------------------------------------------------------------- */
+.hero { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; }
+@media (min-width: 1024px) { .hero { min-height: 78svh; } }
+.hero-ground { position: absolute; inset: 0; pointer-events: none; }
+.hero-ground .terrain-glow { position: absolute; inset: 0; }
+.hero-ground [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 46%; }
+@media (min-width: 768px) { .hero-ground [data-slot="terrain"] { height: 56%; } }
+.hero-content { position: relative; }
+
+/* ---------------------------------------------------------------------------
+ * How it works: a ruled sequence. Each step opens with a hairline and an
+ * ordinal; the grid is 1 / 2 / 4 across.
+ * ------------------------------------------------------------------------- */
+.step { border-top: 1px solid var(--line); padding-top: 1.25rem; }
+.step .ordinal { display: block; font-size: 2rem; }
+
+/* ---------------------------------------------------------------------------
+ * Plain terms: a ruled list with a 10px forest disc. Rows sit on the control
+ * scale so each line has air; the list stays on the measure.
+ * ------------------------------------------------------------------------- */
+.candor { max-width: var(--measure); }
+.candor > li {
+  display: flex; align-items: flex-start; gap: 0.875rem;
+  min-height: var(--size-control); padding-block: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.candor > li::before {
+  content: ""; flex: none; width: 10px; height: 10px; margin-top: 0.5rem;
+  border-radius: var(--radius-pill); background: var(--forest);
+}
+
+/* ---------------------------------------------------------------------------
+ * Site chrome shared by every public page: the header row and the footer's
+ * standalone links, both on the control scale.
+ * ------------------------------------------------------------------------- */
+.site-header-row { min-height: var(--size-navbar); }
+.site-footer-link {
+  display: flex; align-items: center; min-height: var(--size-control);
+  color: var(--ink-muted); transition: color var(--motion-feedback);
+}
+.site-footer-link:hover { color: var(--ink); }
