@@ -156,7 +156,6 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
 
 /* A screen's heading takes focus when the flow advances: the one ring, held
    off the words so it reads as a cue, not a box around a sentence. */
-[data-slot="upload-flow"] [tabindex="-1"]:focus-visible { outline-offset: 0.5rem; border-radius: var(--radius-sm); }
 
 /* Upload flow options: one column of rows, the whole row the control. */
 .fam-options { list-style: none; margin: 0; padding: 0; }
