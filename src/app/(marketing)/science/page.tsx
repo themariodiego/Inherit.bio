@@ -20,7 +20,7 @@ export default function SciencePage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Science</p>
-        <h1 className="display display-lg">What Inherit <span className="whitespace-nowrap">can—and</span> cannot—say.</h1>
+        <h1 className="display display-lg">What Inherit <span className="whitespace-nowrap">can—and</span> <span className="whitespace-nowrap">cannot—say.</span></h1>
         <p className="lede reading-intro">Reports use only the DNA positions found in your file and public sources with version numbers. Inherit does not guess missing results or treat a link found in a study as a diagnosis.</p>
       </header>
       <div className="mt-section stack-sections">

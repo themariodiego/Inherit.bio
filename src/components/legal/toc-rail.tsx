@@ -12,8 +12,10 @@ export interface TocEntry {
  * the reading line carries `aria-current="location"`. The line is the page's
  * one anchor offset (`html { scroll-padding-top }`), so the section a link
  * scrolls to is the section the rail then marks. An IntersectionObserver with
- * a one-pixel band at that line reports the section under it; the hash wins
- * on a jump, because a short last section may never reach the line.
+ * a one-pixel band at that line reports the section under it; when none is
+ * (between sections, or above the first) the last section whose top has
+ * passed the line is current, and the hash wins on a jump, because a short
+ * last section may never reach the line.
  */
 export function LegalTocRail({ entries }: { entries: TocEntry[] }) {
   const [current, setCurrent] = useState<string | null>(null);
@@ -28,24 +30,37 @@ export function LegalTocRail({ entries }: { entries: TocEntry[] }) {
     const line = () =>
       parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 96;
 
+    let pinnedUntil = 0;
+    const settle = (records: IntersectionObserverEntry[]) => {
+      if (performance.now() < pinnedUntil) return;
+      const hit = records.find((record) => record.isIntersecting);
+      if (hit) {
+        setCurrent(hit.target.id);
+        return;
+      }
+      const y = line();
+      let found: string | null = null;
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= y) found = section.id;
+      }
+      setCurrent(found);
+    };
+
     let observer: IntersectionObserver | null = null;
     const observe = () => {
       observer?.disconnect();
       const top = Math.round(line());
-      observer = new IntersectionObserver(
-        (records) => {
-          for (const record of records) {
-            if (record.isIntersecting) setCurrent(record.target.id);
-          }
-        },
-        { rootMargin: `-${top}px 0px -${Math.max(0, window.innerHeight - top - 1)}px 0px` },
-      );
+      observer = new IntersectionObserver(settle, {
+        rootMargin: `-${top}px 0px -${Math.max(0, window.innerHeight - top - 1)}px 0px`,
+      });
       sections.forEach((section) => observer?.observe(section));
     };
 
     const onHash = () => {
       const id = decodeURIComponent(location.hash.slice(1));
-      if (ids.includes(id)) setCurrent(id);
+      if (!ids.includes(id)) return;
+      pinnedUntil = performance.now() + 500;
+      setCurrent(id);
     };
     let frame = 0;
     const onResize = () => {

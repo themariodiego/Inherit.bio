@@ -103,8 +103,9 @@
    above the form moves and the reserve keeps the footer still. */
 .auth-surface { width: 100%; max-width: 26rem; min-height: 24rem; }
 /* The h1 follows the card's text column (the viewport less the page and card
-   padding, capped at 2.125rem) so "Create your account" sets on one line. */
-.auth-surface h1.display { font-size: clamp(1.5rem, (100vw - 6rem) / 9.6, 2.125rem); }
+   padding), capped at 2rem so the longest one, "Choose a new password", sets
+   on one line in the 26rem card. */
+.auth-surface h1.display { font-size: clamp(1.5rem, (100vw - 6rem) / 10.2, 2rem); }
 .auth-note { display: flex; align-items: center; min-height: var(--size-control); padding: 0.625rem 1rem; border-radius: var(--radius-sm); background: var(--surface-inset); font-size: 0.9375rem; line-height: 1.5; }
 
 /* ---------------------------------------------------------------------------

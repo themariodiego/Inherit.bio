@@ -118,7 +118,7 @@ export function AncestryRegions({
 function NoResult({ shapes }: { shapes: MapShapes }) {
   return (
     <EmptyState>
-      <div className="space-y-4">
+      <div className="space-y-6">
         <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} quiet />
         <p data-slot="nothing-read">{NOTHING_READ}</p>
       </div>

@@ -69,7 +69,7 @@ export function AncestryAbsent({ shapes, absence, reportsHref }: AncestryAbsentP
           ) : undefined
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           <AncestryMap shapes={shapes} rows={[]} mode="grey" label={REGIONAL_MAP_LABEL} caption={REGIONAL_MAP_CAPTION} quiet />
           {step ? (
             <p data-slot={step.slot}>{step.sentence}</p>
