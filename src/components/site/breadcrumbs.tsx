@@ -32,7 +32,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
             // width whatever the labels' lengths (round-2 N3). The text node
             // keeps " / " for the accessible string "A / B / C".
             <li key={`${item.label}-${index}`} className="flex items-center">
-              {index === 0 ? null : <span aria-hidden="true" className="mx-2 select-none">{" / "}</span>}
+              {index === 0 ? null : <span aria-hidden="true" className="mr-2 select-none">{" / "}</span>}
               {current ? (
                 <span aria-current="page" className="font-medium text-ink">
                   {item.label}

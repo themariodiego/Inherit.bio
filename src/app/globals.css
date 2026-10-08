@@ -360,7 +360,7 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 .stack-blocks { display: flex; flex-direction: column; gap: var(--rhythm-block); }
 .page-stack > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
 .page-stack > [data-slot="breadcrumbs"] { margin-bottom: 0; }
-[data-slot="breadcrumbs"] ol { column-gap: 0; row-gap: 0; }
+[data-slot="breadcrumbs"] ol { column-gap: 0.5rem; row-gap: 0; }
 [data-subject-bar] { min-height: 3.5rem; height: auto; padding-block: 0.25rem; }
 
 /* ---------------------------------------------------------------------------
