@@ -26,7 +26,13 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
         {items.map((item, index) => {
           const current = index === last;
           return (
+            // The separator belongs to the crumb it introduces, so a wrap
+            // carries the slash with its crumb and never leaves it dangling,
+            // and every gap is the separator's own margins: the same at every
+            // width whatever the labels' lengths (round-2 N3). The text node
+            // keeps " / " for the accessible string "A / B / C".
             <li key={`${item.label}-${index}`} className="flex items-center">
+              {index === 0 ? null : <span aria-hidden="true" className="mx-2 select-none">{" / "}</span>}
               {current ? (
                 <span aria-current="page" className="font-medium text-ink">
                   {item.label}
@@ -34,24 +40,18 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
               ) : item.href ? (
                 // A crumb is a link on its own line, never inside a sentence,
                 // so SC 2.5.8's Inline exception does not reach it and the
-                // 44px control scale does, in both dimensions: the measured
-                // smallest crumb was 30×20. inline-flex keeps the crumb
-                // hugging its label so the " / " separators stay beside it.
+                // 44px control scale does, in both dimensions. Symmetric
+                // padding, not centring in a minimum width, keeps the gap to
+                // the slash the same for "You" and for "My Genome"; the
+                // minimum width only ever catches a two-letter crumb.
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center px-1 underline-offset-[0.2em] transition-colors hover:text-ink hover:underline"
+                  className="-mx-2.5 inline-flex min-h-11 min-w-11 items-center justify-center px-2.5 underline-offset-[0.2em] transition-colors hover:text-ink hover:underline"
                 >
                   {item.label}
                 </Link>
               ) : (
                 <span>{item.label}</span>
-              )}
-              {current ? null : (
-                // The separator is its own box with 8px either side: inside a
-                // flex row the spaces in " / " are trimmed, so the margin, not
-                // the whitespace, sets the rhythm (round-1 M6). The text node
-                // keeps the spaces for the accessible string "A / B / C".
-                <span aria-hidden="true" className="mx-2 text-ink-muted">{" / "}</span>
               )}
             </li>
           );

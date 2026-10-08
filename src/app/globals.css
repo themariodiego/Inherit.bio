@@ -425,6 +425,9 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
   background: var(--surface-inset); color: var(--ink-muted);
   box-shadow: inset 0 0 0 1px var(--line); opacity: 1;
 }
+.dark [data-slot="button"][data-variant="default"]:disabled {
+  background: color-mix(in oklab, var(--surface-inset) 72%, var(--line));
+}
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 /* Focus moved to a heading by script (a step change) is announced by the
    status line; it does not draw a box around a sentence. */
