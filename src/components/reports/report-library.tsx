@@ -100,65 +100,69 @@ function CardLink({ card, subject }: { card: LibraryCard; subject: string }) {
     <Link
       href={route("genome.report", { subject, slug: card.slug })}
       aria-label={`${card.title}, ${card.evidenceLabel}`}
-      className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+      className="after:absolute after:inset-0"
     >
       {card.title}
     </Link>
   );
 }
 
-/** Estimate cards: two columns (title | evidence), summary, coverage pill. */
+/** Estimate cards: a linked surface; title and evidence on the first row, then the summary or preview, then the coverage line. */
 function EstimateCard({ card, subject }: { card: LibraryCard; subject: string }) {
   return (
     <li
       data-card="estimate"
-      className="link-surface relative h-full rounded-xl border border-line bg-card p-4 transition-colors focus-within:border-forest hover:border-forest"
+      className="surface surface-pad-sm link-surface relative flex flex-col gap-3"
     >
-      <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-        <h3 className="text-sm font-medium">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="title text-ink">
           <CardLink card={card} subject={subject} />
         </h3>
         {/* Evidence is already in the link's accessible name; the visible
             badge is hidden from AT so it announces once. */}
-        <Badge variant="secondary" aria-hidden="true" className="shrink-0 text-sm">
+        <Badge variant="secondary" aria-hidden="true">
           {card.evidenceLabel}
         </Badge>
       </div>
       {card.preview ? (
-        <div data-personal-preview={card.slug} aria-describedby={`preview-input-${card.slug}`} className="mt-2 space-y-2 text-sm">
-          <p className="font-medium text-ink">{PERSONAL_RESULT_LABEL}</p>
+        <div data-personal-preview={card.slug} aria-describedby={`preview-input-${card.slug}`} className="space-y-2 text-sm">
+          <p className="eyebrow">{PERSONAL_RESULT_LABEL}</p>
           <p className="leading-relaxed text-ink">{card.preview.text}</p>
           <p className="leading-relaxed text-ink-muted">{card.preview.qualifier}</p>
         </div>
       ) : (
-        <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{card.summary}</p>
+        <p className="line-clamp-2 text-sm text-ink-muted">{card.summary}</p>
       )}
       {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
-      <p className="mt-2">
+      <p className="mt-auto">
         <StatusPill status={card.status} />
       </p>
     </li>
   );
 }
 
-/** Variant-call rows: single column on paper with a line border and a status pill. */
+/** Variant-call rows: a ruled row; title and summary left, evidence and coverage right, stacked on a phone. */
 function VariantCallRow({ card, subject }: { card: LibraryCard; subject: string }) {
   return (
     <li
       data-card="variant-call"
-      className="link-surface relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-paper px-4 py-3 transition-colors focus-within:border-forest hover:border-forest"
+      className="report-row flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
     >
-      <h3 className="text-sm font-medium">
-        <CardLink card={card} subject={subject} />
-      </h3>
-      <Badge variant="secondary" aria-hidden="true" className="shrink-0 text-sm">
-        {card.evidenceLabel}
-      </Badge>
-      <p className="w-full text-sm text-ink-muted">{card.summary}</p>
-      {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
-      <p>
-        <StatusPill status={card.status} />
-      </p>
+      <div className="min-w-0 flex-1 space-y-1">
+        <h3 className="font-medium text-ink">
+          <CardLink card={card} subject={subject} />
+        </h3>
+        <p className="max-w-measure text-sm text-ink-muted">{card.summary}</p>
+        {card.scientificCorrection ? <ScientificCorrectionNotice /> : null}
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 sm:flex-col sm:items-end sm:text-right">
+        <Badge variant="secondary" aria-hidden="true">
+          {card.evidenceLabel}
+        </Badge>
+        <p>
+          <StatusPill status={card.status} />
+        </p>
+      </div>
     </li>
   );
 }
@@ -229,45 +233,49 @@ export function ReportLibrary({
   const Card = layerClass === "estimate" ? EstimateCard : VariantCallRow;
 
   return (
-    <div data-library-layer={layerClass} className="space-y-8">
-      <div className="space-y-1">
-        <label htmlFor={searchId} className="block text-sm text-ink-muted">
-          {SEARCH_REPORTS_LABEL}
-        </label>
-        <Input
-          ref={searchInput}
-          id={searchId}
-          type="search"
-          value={query}
-          autoComplete="off"
-          maxLength={MAX_REPORT_QUERY_LENGTH}
-          onChange={(event) => updateFilters({ query: event.target.value, withResults })}
-          className="max-w-md bg-card"
-        />
+    <div data-library-layer={layerClass} className="space-y-block">
+      {/* The toolbar is one labelled plate: the search field under its label,
+          the results filter and, once a filter is active, the clear action. */}
+      <div className="plate">
+        <div className="plate-head">
+          <label htmlFor={searchId} className="label text-ink">
+            {SEARCH_REPORTS_LABEL}
+          </label>
+        </div>
+        <div className="plate-body flex flex-wrap items-center gap-x-6 gap-y-3">
+          <Input
+            ref={searchInput}
+            id={searchId}
+            type="search"
+            value={query}
+            autoComplete="off"
+            maxLength={MAX_REPORT_QUERY_LENGTH}
+            onChange={(event) => updateFilters({ query: event.target.value, withResults })}
+            className="max-w-md"
+          />
+          <label className="flex min-h-control w-fit cursor-pointer items-center gap-3 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={withResults}
+              onChange={(event) => updateFilters({ query, withResults: event.target.checked })}
+              className="size-5 accent-forest"
+            />
+            {WITH_RESULTS_LABEL}
+          </label>
+          {query !== "" || withResults ? (
+            <Button type="button" variant="outline" onClick={clearFilters}>
+              {CLEAR_REPORT_FILTERS}
+            </Button>
+          ) : null}
+        </div>
       </div>
-
-      <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-ink">
-        <input
-          type="checkbox"
-          checked={withResults}
-          onChange={(event) => updateFilters({ query, withResults: event.target.checked })}
-          className="size-4 accent-forest"
-        />
-        {WITH_RESULTS_LABEL}
-      </label>
-
-      {query !== "" || withResults ? (
-        <Button type="button" variant="outline" onClick={clearFilters}>
-          {CLEAR_REPORT_FILTERS}
-        </Button>
-      ) : null}
 
       {/* The category strip stays a collapsed disclosure at EVERY width: the
           first-viewport interactive budget (≤12, docs/density-baseline.json)
           cannot hold the subject bar (2) + "Why?" (1) + the search box (1) +
           eight category chips + the first row of three cards. */}
       <details className="sticky top-0 z-10 -mx-1 border-b border-line bg-paper px-1 py-2">
-        <summary className="cursor-pointer text-sm text-ink-muted">{FILTER_REPORTS}</summary>
+        <summary className="w-fit text-sm font-medium text-ink">{FILTER_REPORTS}</summary>
         <nav aria-label={FILTER_REPORTS} className="mt-2 flex flex-wrap gap-2 pb-1">
           {visibleGroups.map((g) => (
             <a
@@ -275,7 +283,7 @@ export function ReportLibrary({
               href={`#${g.id}`}
               aria-describedby={describedBy}
               onClick={(e) => jumpTo(e, g.id)}
-              className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 py-1 text-sm text-ink-muted transition-colors hover:border-forest hover:text-ink"
+              className="inline-flex min-h-control items-center rounded-full border border-line bg-card px-4 text-sm text-ink-muted transition-colors hover:border-forest hover:text-ink"
             >
               {g.label}
             </a>
@@ -289,9 +297,9 @@ export function ReportLibrary({
         </p>
       ) : null}
 
-      {/* Adjacent top-level sections keep the baseline gap
-          (docs/density-baseline.json adjacentTopLevelSectionGapPx). */}
-      <div className="space-y-16 md:space-y-20 lg:space-y-24">
+      {/* Adjacent top-level sections keep the baseline gap: the section
+          rhythm (docs/density-baseline.json adjacentTopLevelSectionGapPx). */}
+      <div className="stack-sections">
         {visibleGroups.map((g) => {
           const open = expanded.has(g.id);
           // "Show all {n}" counts and reveals the filtered list, never the unfiltered one.
@@ -302,16 +310,17 @@ export function ReportLibrary({
               id={g.id}
               aria-labelledby={`${g.id}-heading`}
               data-density-top-level-section="true"
-              className="scroll-mt-24 space-y-3"
+              className="scroll-mt-24 space-y-4"
             >
-              <h2 id={`${g.id}-heading`} tabIndex={-1} className="text-lg font-semibold text-ink">
+              {/* The category label sits under a hairline: the heading itself
+                  carries the rule, so no text is added above it. */}
+              <h2 id={`${g.id}-heading`} tabIndex={-1} className="title rule pt-5 text-ink">
                 {g.label}
               </h2>
-              <p className="max-w-prose text-sm text-ink-muted">{g.description}</p>
+              <p className="max-w-measure text-sm text-ink-muted">{g.description}</p>
               <ul
                 className={cn(
-                  "gap-3",
-                  layerClass === "estimate" ? "grid lg:grid-cols-2 xl:grid-cols-3" : "flex flex-col",
+                  layerClass === "estimate" ? "grid gap-4 md:grid-cols-2 xl:grid-cols-3" : "report-rows",
                 )}
               >
                 {visibleCards.map((c) => (
