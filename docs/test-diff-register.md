@@ -1,5 +1,54 @@
 # Test diff register
 
+## 2026-10-08 — admit closed equivalent APT security boolean representations
+
+**Preserved first result.** PR296 head f3b06f6f3f31fe048b4eef3c4b4f7261f082cfeb, run37704326980 attempt1, refused `APT authentication or freshness weakened` before keyring hardening or any APT-file mutation. Both complete originals report only three security leaves as typed false, with retry1 and HTTP/HTTPS15. The previous diagnostic intentionally mapped both false and0 to false, so exact per-leaf raw spellings are unknown; the refusal implies at least one numeric0 representation. This is a bounded inference, not a claim that raw spellings were logged.
+
+**Primary semantics and narrow correction.** The official Ubuntu APT2.8.3 source initializes those three leaves with false through an integer serializer that emits0. Configuration::FindB uses StringToBool, which accepts complete0/1 and false/true as equivalent boolean polarities. Admission now accepts only the matching closed pair false/0 or true/1, or the existing absent default, for each fixed security leaf at root and Binary::apt-get scopes. Opposite polarity, unknown/malformed text and unsafe binary overrides still refuse. Bounds, strict update, trust, source/key custody, permission checks, full installer, eight jobs and all time caps stay exact.
+
+**Meaningful controls and diagnostics.** Five added pure methods cover numeric false defaults, every security leaf/scope and both admission phases, opposite/malformed/unknown values, safe-root/unsafe-binary conflicts, and closed key/spelling masking. All36 previous method bodies stay exact. The existing typed diagnostic now also emits only fixed security keys and the known raw spellings false/0/true/1; all other text becomes `unsupported`. All41 controls are unrun at this source freeze. No privileged APT runs on Mac, unchanged hosted rerun, signed-metadata or full-suite credit is claimed.
+
+## 2026-10-08 — harden only original public keyring permission modes
+
+**Trigger and original refusal.** Draft PR296 head af830d2d75c5906b625e72d691138b4c06dc8860, run37700502102 attempt1, correctly refused root-owned source/trust directory admission before any APT mutation. Complete repository/browser6 originals actually show /usr/share/keyrings UID0/GID0 canonical/stable directory mode0777; the other four fixed public directories were0755. Ancestor and keyfile modes were not observed there and remain unknown. The exact image tag's recursive /usr/share chmod777 is source provenance, not proof of their current state.
+
+**Narrow restoration and preserved security.** On admitted hosted Ubuntu24 only, follow the original root→usr→share→keyrings directory FD chain with O_NOFOLLOW. Preflight the complete bounded flat original public-key inventory before any fchmod: canonical named FDs, UID0, regular NL1/max4MiB files, already-safe modes or exactly the observed image777 mode. Root/usr must already be safe. Any unsupported member, ownership, mode, link, drift or custody failure refuses before the first write. Retain original public bytes and metadata privately, then tighten only original777 share/keyring directory FDs to0755 and original777 keyfile FDs to0644; all already-safe modes remain. No recursive walk, chown, byte/key/route addition or trust predicate relaxation occurs. Recheck exact original bytes/identities and run the unchanged strict no022 source/key census before mirror/config/APT mutation. A later failure never automatically reopens unsafe permissions; the disposable runner can be discarded and the source change reverted.
+
+**Pre-execution review correction.** The first source-only hardening proposal V7 was held without execution: opening a member before its regular-file check could block on FIFO, and post-close fresh census equality was missing. The successor admits through-parent nofollow metadata before O_NONBLOCK/O_NOFOLLOW opens, then closes all original handles and reopens the full chain/flat inventory to compare post-mode identities and unchanged bytes. The caller compares the strict keyring census to that admitted vector before trusting it. FIFO/replacement and close-time identity/content/member drift controls cover those failures; all earlier32 test bodies are retained.
+
+**Proof scope.** Permission repair preserves existing byte custody and does not establish prior key authenticity. Fresh signed metadata, unchanged complete Playwright installer, all eight mandatory jobs and original deadlines/assertions remain required. New pure fixture controls exercise full preflight/no-write negatives, original-FD tightening/custody, safe-mode no-op, drift and failure cleanup. Prior22 method bodies remain exact; all current controls are UNRUN at this source freeze. No privileged helper/APT runs on Mac and no failed hosted head is rerun.
+
+## 2026-10-08 — observe fixed public APT directory metadata before refusal
+
+**Trigger and preserved result.** Draft PR296 successor head `d34204be8f65ff03e3e614922138ab79140cb4f4`, run `37696895989` attempt1, refused `Root-owned source/trust directory required` before any APT write. Complete repository/browser6 originals observe APT2.8.3 and both stock component paragraphs ordered main/universe/restricted/multiverse. The rejected directory path, UID and mode were not emitted and remain UNKNOWN. The exact runner-image tag's configure-system.sh contains a recursive chmod777 on /usr/share; that primary source comparison does not establish the actual rejected path or permissions.
+
+**Narrow source change.** One pre-mutation metadata pass reports all five fixed public source/trust/config directory literals with bounded UID/GID/mode/type/canonical/identity-stability fields. It lists no members, emits no arbitrary target/error text, reads no auth values and changes no permissions. Every original ownership, non-writable, source/key/trust, config, signed-update and full-installer gate stays unchanged.
+
+**Meaningful controls and remaining proof.** Five synthetic methods cover the closed five-path/read-only scope, completion after unsafe/missing/symlink/unavailable observations, identity drift and bounded IDs, continued refusal of non-root/group/world-writable source/trust directories, and the Python3.12 resolution-loop RuntimeError completion/masking case. All17 previous methods, all24 component permutations and unchanged workflow/test/job caps remain exact. All22 current pure methods and the same14 local commands are UNRUN at source freeze. The original failed run is retained without rerun; fresh hosted metadata and successful signed update/complete installer remain required.
+
+## 2026-10-08 — preserve Ubuntu source components without an order assumption
+
+The first APT draft head `62218b56f85c0091cf9e0d5361cfca15600e9b0b` failed its
+hosted admission at `Stock Ubuntu components required`, before any APT-file
+mutation or full installer. The original component content/order and exact
+installed APT version were not logged and remain unknown. The retained original
+run is 37693169629, attempt 1; this correction does not rerun that head.
+
+Admission now requires exactly `main`, `restricted`, `universe` and `multiverse`
+once each, while retaining the complete original source bytes and order. The
+previous fixed list order was outside the intended source/key/trust preservation
+constraint. This does not assert that component order can never matter to APT.
+No source paragraph, suite, route, key, trust option or installer is rewritten.
+
+Separate pure controls exercise all 24 component permutations, reject missing,
+duplicate and extra components, and check bounded public diagnostics. Accepted
+observed APT versions and known component order are logged before a later
+refusal; unknown component/config tokens become the fixed label `unsupported`.
+Config diagnostics expose only whitelisted typed network/security leaves. All
+12 previous pure methods, installer/workflow controls and time limits remain.
+Current hosted settings, signed metadata, full installer and full CI success
+still require original successor evidence.
+
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
 A separate actual stock job-log GET returned exit1 and zero raw bytes because

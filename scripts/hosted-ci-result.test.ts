@@ -70,6 +70,28 @@ function repositoryLog(unitCases = 9) {
     + header("pnpm e2e:lighthouse") + rows.join("\n") + "\nLighthouse G1.14 passed: fixture\n";
 }
 
+describe("mandatory signed APT setup", () => {
+  it("refuses missing, optional, reordered or altered admission and incomplete installs", () => {
+    const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
+      jobs: Record<string, { steps: { name?: string; run?: string; if?: string; "continue-on-error"?: boolean }[] }>
+    };
+    for (const family of ["repository-checks", "browser"]) {
+      for (const mutation of ["missing", "conditional", "optional", "command", "order", "installer"]) {
+        const changed = source(), steps = changed.jobs[family].steps;
+        const index = steps.findIndex(item => item.name === "Admit signed Ubuntu APT mirror fallback");
+        expect(index).toBeGreaterThanOrEqual(0);
+        if (mutation === "missing") steps.splice(index, 1);
+        if (mutation === "conditional") steps[index].if = "always()";
+        if (mutation === "optional") steps[index]["continue-on-error"] = true;
+        if (mutation === "command") steps[index].run += " || true";
+        if (mutation === "order") [steps[index], steps[index + 1]] = [steps[index + 1], steps[index]];
+        if (mutation === "installer") steps[index + 1].run = "pnpm exec playwright install chromium";
+        expect(() => hostedWorkflowContract(changed)).toThrow();
+      }
+    }
+  });
+});
+
 describe("source-bound hosted result readback", () => {
   it("refuses an unreviewed producer member or source step condition", () => {
     const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
