@@ -87,6 +87,12 @@ export function AppNav({
               aria-hidden="true"
               data-slot="nav-glide"
               className="pointer-events-none absolute inset-x-0 -z-10 h-11 rounded-sm bg-tint transition-transform duration-200 ease-settle motion-reduce:transition-none"
+              // The server cannot measure rows, so the first position comes
+              // from the row rhythm (44px rows, 12px gaps): the highlight is
+              // already on the current item at first paint and never slides
+              // in on load. The layout effect then corrects for wrapped
+              // labels and moves it on hover, focus and route change.
+              style={{ transform: `translateY(${highlightIndex * 56}px)` }}
             />
           ) : null}
           {NAV_ITEMS.map((item, index) => {
