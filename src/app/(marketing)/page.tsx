@@ -103,7 +103,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="plate-body">
-                <p className="text-sm text-ink">{g.body}</p>
+                <p className="max-w-measure text-sm text-ink">{g.body}</p>
               </div>
             </div>
           ))}
@@ -118,7 +118,7 @@ export default function LandingPage() {
               <li key={s.n} className="step">
                 <span className="ordinal">{s.n}</span>
                 <h2 className="title mt-5">{s.title}</h2>
-                <p className="mt-2 text-sm text-ink-muted">{s.body}</p>
+                <p className="mt-2 max-w-measure text-sm text-ink-muted">{s.body}</p>
               </li>
             ))}
           </ol>
@@ -169,7 +169,7 @@ export default function LandingPage() {
                   </dd>
                 </div>
               </dl>
-              <p className="caption rule mt-5 pt-4">
+              <p className="caption rule mt-5 max-w-measure pt-4">
                 Informational, not medical advice. Every report carries its
                 citations and an honest coverage state for your file.
               </p>

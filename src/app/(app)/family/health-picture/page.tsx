@@ -340,21 +340,23 @@ export default async function FamilyHealthPicturePage() {
   }));
 
   return (
-    <div data-surface="wide-data" className="page-stack mx-auto max-w-[90rem] space-y-10">
-      <Breadcrumbs
-        items={[
-          { label: NAV_LABELS.family, href: route("family.index") },
-          { label: HEALTH_PICTURE_H1 },
-        ]}
-      />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{HEALTH_PICTURE_H1}</h1>
-      </header>
+    <div data-surface="wide-data" className="page-stack stack-blocks mx-auto max-w-[90rem]">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: NAV_LABELS.family, href: route("family.index") },
+            { label: HEALTH_PICTURE_H1 },
+          ]}
+        />
+        <header>
+          <h1 className="display">{HEALTH_PICTURE_H1}</h1>
+        </header>
+      </div>
 
       {!allowed ? (
         <section
           role="status"
-          className="max-w-prose space-y-3 rounded-2xl border border-line bg-card p-6"
+          className="surface-inset surface-pad max-w-measure"
         >
           <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
         </section>
@@ -363,14 +365,14 @@ export default async function FamilyHealthPicturePage() {
           role="status"
           data-slot="health-picture-blocking"
           data-state="consent-required"
-          className="max-w-prose space-y-3"
+          className="surface-inset surface-pad max-w-measure space-y-3"
         >
           {pausedBoth.map((person) => (
             <p key={person.handle.routeSegment} className="text-base leading-relaxed text-ink">
               {pausedWith(person.displayLabel)}{" "}
               <Link
                 href={route("family.permissions", { person: person.handle.routeSegment })}
-                className="link-target underline underline-offset-2"
+                className="link-target quiet-link"
               >
                 {OPEN_PERMISSIONS_LINK}
               </Link>
@@ -382,30 +384,32 @@ export default async function FamilyHealthPicturePage() {
           role="status"
           data-slot="health-picture-blocking"
           data-state="empty"
-          className="max-w-prose space-y-3"
+          className="surface-inset surface-pad max-w-measure space-y-3"
         >
-          <p className="text-base leading-relaxed text-ink">
+          <p className="body-lg text-ink">
             {/* inherit-figure-exempt: a count of the people who agreed, not a result */}
             {needsTwoPeople(columnCount)}
           </p>
-          <p className="text-base leading-relaxed text-ink-muted">{EACH_TURNS_IT_ON}</p>
+          <p className="text-base leading-relaxed text-ink">{EACH_TURNS_IT_ON}</p>
         </section>
       ) : gated ? (
         <ResultGate />
       ) : !snapshotAvailable ? (
-        <p role="status" className="max-w-prose text-base leading-relaxed">{HEALTH_PICTURE_UNAVAILABLE}</p>
+        <p role="status" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">{HEALTH_PICTURE_UNAVAILABLE}</p>
       ) : (
         <>
-          <p
-            data-slot="comparison-banner"
-            data-density-required-accuracy
-            className="max-w-prose text-base leading-relaxed text-ink"
-          >
-            {COMPARISON_BANNER}
-          </p>
-          <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
-            <TermDefinition term="baseline" text={BASELINE_TERM_TEXT} />
-          </p>
+          <div className="space-y-3">
+            <p
+              data-slot="comparison-banner"
+              data-density-required-accuracy
+              className="body-lg max-w-measure text-ink"
+            >
+              {COMPARISON_BANNER}
+            </p>
+            <p className="caption max-w-measure">
+              <TermDefinition term="baseline" text={BASELINE_TERM_TEXT} />
+            </p>
+          </div>
 
           <TradeOffPanel rows={tradeOffRows} />
 
@@ -430,7 +434,7 @@ export default async function FamilyHealthPicturePage() {
           />
 
           <section aria-labelledby="side-by-side-heading" className="space-y-6">
-            <h2 id="side-by-side-heading" className="text-lg font-semibold">
+            <h2 id="side-by-side-heading" className="title text-ink">
               {SIDE_BY_SIDE_HEADING}
             </h2>
             {LAYER_ORDER.map(
@@ -448,13 +452,13 @@ export default async function FamilyHealthPicturePage() {
           </section>
 
           <section aria-labelledby="how-sure-heading" className="space-y-4">
-            <h2 id="how-sure-heading" className="text-lg font-semibold">
+            <h2 id="how-sure-heading" className="title text-ink">
               {HOW_SURE_HEADING}
             </h2>
-            <p className="max-w-prose text-base leading-relaxed text-ink">{HOW_SURE_LEAD}</p>
+            <p className="body-lg max-w-measure text-ink">{HOW_SURE_LEAD}</p>
             {sources.filter(source => source.inputSources.length > 0).map(source => (
-              <div key={source.column.dataSubjectId} className="max-w-prose space-y-2">
-                <p className="text-sm leading-relaxed text-ink-muted">{coverageLead(source.column.displayLabel)}</p>
+              <div key={source.column.dataSubjectId} className="max-w-measure space-y-2 border-t border-line pt-4">
+                <p className="label text-ink">{coverageLead(source.column.displayLabel)}</p>
                 <InputProvenance nested sources={source.inputSources} subject={{ subjectId: source.column.dataSubjectId }}
                   state={[...source.legacy.values()].some(read => read.conflicts.size) ? "conflict" : source.resultInputs.some(result => result.fileIds.length > 0) ? "recorded" : "absent"} />
                 <ul data-slot="family-result-inputs" className="space-y-1 text-sm text-ink-muted">
@@ -471,21 +475,18 @@ export default async function FamilyHealthPicturePage() {
             {pairs.filter((pair) => pair.summary.classifiedPositions > 0).map((pair) => <CarrierInputProvenance key={pair.key}
               summary={pair.summary} sources={pair.inputSources}
               subjects={{ a: { id: sources[0].column.dataSubjectId, label: sources[0].column.displayLabel }, b: { id: pair.person.dataSubjectId, label: pair.person.displayLabel } }} />)}
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{NO_RANGE_YET}</p>
-            <p
-              data-density-required-accuracy
-              className="max-w-prose text-sm leading-relaxed text-ink-muted"
-            >
+            <p className="caption max-w-measure">{NO_RANGE_YET}</p>
+            <p data-density-required-accuracy className="caption max-w-measure">
               {NOT_DIAGNOSTIC}
             </p>
           </section>
 
           <section aria-labelledby="where-from-heading" className="space-y-3">
-            <h2 id="where-from-heading" className="text-lg font-semibold">
+            <h2 id="where-from-heading" className="title text-ink">
               {WHERE_FROM_HEADING}
             </h2>
-            <p className="max-w-prose text-base leading-relaxed text-ink">{WHERE_FROM_LEAD}</p>
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{PROVENANCE_LINE}</p>
+            <p className="body-lg max-w-measure text-ink">{WHERE_FROM_LEAD}</p>
+            <p className="caption max-w-measure">{PROVENANCE_LINE}</p>
           </section>
         </>
       )}
