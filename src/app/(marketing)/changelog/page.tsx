@@ -135,7 +135,7 @@ export default async function ChangelogPage() {
           ),
         )}
         {items.length === 0 ? (
-          <li>
+          <li className="max-w-measure">
             <EmptyState>
               No published entries yet — the pipeline is young. Check back soon.
             </EmptyState>

@@ -125,6 +125,13 @@ export default async function GenomePage(
       >
         {preparing ? (
           <p role="status" className="body-lg max-w-measure text-ink">{HUB_PREPARING}</p>
+        ) : mine && empty ? (
+          // The record's state in one sentence — the same sentence the files
+          // page says — so the head answers "what is here" before "what next".
+          <p className="body-lg max-w-measure text-ink">
+            No files yet. Upload a raw data export to get started — or grab a
+            provider from the directory first.
+          </p>
         ) : null}
       </RecordHead>
       <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">

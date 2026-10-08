@@ -69,7 +69,8 @@ export default function SciencePage() {
         <section id="sources" aria-labelledby="sources-heading" className="border-t border-line pt-block">
           <h2 id="sources-heading" className="display">Sources checked for these reports</h2>
           <p className="lede mt-4 mb-8">This list covers linked explanations in selected reports, including taste, smell, earwax and sneezing in bright light. Other reports still list their sources on their own pages. This is not a complete review of the report library.</p>
-          <div className="max-w-measure">
+          {/* The list is 14px, so the measure is stated at that size. */}
+          <div className="max-w-measure text-sm">
             <ClaimSources sourceIds={presentationCitations.map((source) => source.id)} scienceIndex />
           </div>
         </section>

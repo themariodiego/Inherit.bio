@@ -43,7 +43,7 @@ export default function AuthLayout({
       >
         {children}
       </main>
-      <footer className="flex flex-col items-center gap-1 text-center">
+      <footer className="flex flex-col items-center gap-2 text-center">
         <Attribution className="caption" />
         <p className="text-sm">
           <Link href="/" className="link-target quiet-link">
