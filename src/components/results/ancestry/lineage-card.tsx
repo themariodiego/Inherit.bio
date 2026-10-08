@@ -14,8 +14,8 @@
  * has been processed yet, Ancestry is off, or Ancestry is on and no result
  * has been generated yet (the last two with a link to the Reports page,
  * where that step is taken) — unless the page's regions section already
- * says so (`absenceStated`), in which case the card is the "not yet"
- * surface with its heading alone, so one sentence is not read three times.
+ * says so (`absenceStated`), in which case the card is one ruled row under
+ * that empty state: its heading, then its own state text, no box.
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { TermDefinition } from "@/components/figures/term-definition";
@@ -81,18 +81,23 @@ const XX_NOTE = "XX genomes";
 export function LineageCard(props: LineageCardProps) {
   const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord, absenceStated = false } = props;
   const headingId = `${TEST_IDS[parent]}-heading`;
-  // Nothing read yet and the regions section has said so: the card is the
-  // quiet "not yet" surface, its heading with the sentence as a caption, so
-  // each panel still states its own absence (the empty-state spec reads it
-  // on all three) without three full-weight lines. The permission-off and
-  // not-generated absences keep their full note and its Reports link.
-  if (call === null && absenceStated && (props.absence === undefined || props.absence === "nothing-read")) {
+  // Nothing read yet and the regions section has said so: the line is one
+  // row of the ruled list under that empty state, its heading beside its
+  // own state sentence, so each panel still states its absence (the
+  // empty-state spec reads it on all three) without a box or a third
+  // full-weight line. The permission-off and not-generated absences keep
+  // their full note and its Reports link as the row's state text.
+  if (call === null && absenceStated) {
     return (
-      <section data-testid={TEST_IDS[parent]} aria-labelledby={headingId} className="surface-dashed surface-pad-sm space-y-1">
-        <h2 id={headingId} className="title text-ink-muted">
+      <section data-testid={TEST_IDS[parent]} aria-labelledby={headingId} className="fam-line">
+        <h2 id={headingId} className="title text-ink">
           {HEADINGS[parent]}
         </h2>
-        <p className="caption">{NOTHING_READ}</p>
+        {props.absence === "permission-off" || props.absence === "not-generated" ? (
+          <AncestryReportsNote step={props.absence} reportsHref={props.reportsHref} quiet />
+        ) : (
+          <p className="text-sm leading-relaxed text-ink-muted">{NOTHING_READ}</p>
+        )}
       </section>
     );
   }

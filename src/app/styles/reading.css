@@ -95,8 +95,11 @@
 .auth-shell { position: relative; overflow: hidden; isolation: isolate; }
 .auth-terrain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.55; }
 .auth-terrain [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 62%; }
-.auth-band { width: 100%; max-width: 26rem; height: 7rem; margin-bottom: -0.75rem; }
-/* Stated with the shell so it beats the quiet-band rule below it. */
+/* The band meets the card: no rule of its own, and the negative margin eats
+   the shell's 2rem gap so the card's top edge is the horizon. */
+.auth-band { width: 100%; max-width: 26rem; height: 7rem; margin-bottom: -2rem; }
+/* Stated with the shell so they beat the quiet-band rules below. */
+.auth-shell .auth-band { border-bottom: 0; }
 .auth-shell .auth-band [data-slot="terrain"] { bottom: -2.25rem; height: 16rem; }
 @media (max-width: 639px) { .auth-terrain { display: none; } }
 /* Top-anchored with a reserved height: the sign-in form arrives after
@@ -121,3 +124,14 @@
 .quiet-column > .quiet-band + * { margin-top: 2rem; }
 .quiet-links { display: flex; flex-direction: column; gap: 0.5rem; }
 .quiet-links a { display: inline-flex; align-items: center; min-height: var(--size-control); }
+/* The floor phones (320–375): a 4.5rem band (the far ridge, which ends at
+   256 of 600 units, drops out whole; one full ridge and the near crest stay)
+   and a tighter stack, so the first action lands well inside an 844px
+   viewport. `.quiet-shell` is the root 404/error page around the column. */
+@media (max-width: 389px) {
+  .quiet-shell { gap: 1.5rem; padding-block: 2rem; }
+  .quiet-column { padding-block: 2rem; }
+  .quiet-column > .quiet-band { height: 4.5rem; }
+  .quiet-column > .quiet-band + * { margin-top: 1.5rem; }
+  .quiet-links { margin-top: 1.5rem; padding-top: 0.75rem; }
+}

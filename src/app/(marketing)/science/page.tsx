@@ -5,6 +5,7 @@ import { EVIDENCE_DEFINITIONS, EVIDENCE_PUBLIC_LABELS } from "@/copy/reports/evi
 import { EVIDENCE_LEVELS } from "@/lib/genome/taxonomy";
 import { ClaimSources } from "@/components/claims/sources";
 import { presentationCitations } from "@/lib/claims/presentation";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Science" };
 
@@ -44,9 +45,17 @@ export default function SciencePage() {
         <section id="evidence" aria-labelledby="evidence-heading" className="border-t border-line pt-block">
           <h2 id="evidence-heading" className="display">How sure we are</h2>
           <p className="lede mt-4">Every report carries one of these words. Each word says how well the science behind the report has been checked.</p>
+          {/* Two across from md; an odd last level takes the whole row so no
+              cell stands alone. */}
           <dl className="mt-8 grid gap-4 md:grid-cols-2">
-            {EVIDENCE_LEVELS.map((level) => (
-              <div key={level} className="surface surface-pad-sm">
+            {EVIDENCE_LEVELS.map((level, i) => (
+              <div
+                key={level}
+                className={cn(
+                  "surface surface-pad-sm",
+                  EVIDENCE_LEVELS.length % 2 === 1 && i === EVIDENCE_LEVELS.length - 1 && "md:col-span-2",
+                )}
+              >
                 <dt className="title">{EVIDENCE_PUBLIC_LABELS[level]}</dt>
                 <dd className="mt-2 max-w-measure text-ink">{EVIDENCE_DEFINITIONS[level]}</dd>
               </div>

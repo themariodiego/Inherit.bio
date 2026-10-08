@@ -13,8 +13,11 @@
    between rows, the label in the title role beside its description, the
    arrow at the end; the whole row is one link and, as a linked surface, it
    takes the inset ground on hover. The row bleeds 12px past the column so
-   the text stays on the column's edge while the ground has a margin. */
+   the text stays on the column's edge while the ground has a margin. Each
+   item insets its link 4px from the hairlines, so adjacent targets are 9px
+   apart while the list still reads as one ruled list (round-2 N2). */
 .entry-rows { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.entry-rows > li { padding-block: 0.25rem; }
 .entry-rows > li + li { border-top: 1px solid var(--line); }
 .entry-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; row-gap: 0.125rem;

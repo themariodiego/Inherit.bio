@@ -85,7 +85,7 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
     }).format(new Date(deletion.noticeEndsAt));
     return (
       <div className="surface rec-danger surface-pad rec-stack">
-        <h3 className="title">Account deletion scheduled</h3>
+        <h2 className="title">Account deletion scheduled</h2>
         <p className="max-w-measure text-sm leading-relaxed text-ink-muted">
           Your account is scheduled for deletion on {deadline}. No physical
           deletion begins before then. You can still export your data, revoke
@@ -108,7 +108,7 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
 
   return (
     <div className="surface rec-danger surface-pad rec-stack">
-      <h3 className="title">Delete account</h3>
+      <h2 className="title">Delete account</h2>
       <p className="max-w-measure text-sm leading-relaxed text-ink-muted">
         Your account, files, results, and chats will be deleted after seven
         days. You may export your data or cancel before then. Records required
@@ -116,7 +116,9 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
         time.
       </p>
       <div className="rec-field">
-        <Label htmlFor="delete-confirm">
+        {/* A sentence, not a flex row: the bold phrase stays inline with single
+            spaces around it and wraps as text at 320px (round-2 N4). */}
+        <Label htmlFor="delete-confirm" className="block leading-normal">
           Type <strong>delete my genome</strong> to confirm
         </Label>
         <Input

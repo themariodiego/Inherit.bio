@@ -108,16 +108,19 @@ export default async function GenomePage(
   // forest action; the tiles are dashed and muted, with no arrow, so a
   // cropped screenshot never reads as "reports available" (round-1 M2).
   const empty = fileCount === 0;
+  // The head's forest "Add a file" is the page's one button: the bar's
+  // becomes a quiet link to the same place (round-2 M2).
+  const headAction = mine;
 
   return (
     <div className="page-stack stack-blocks max-w-5xl">
       <RecordHead
         crumbs={<Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />}
-        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
         title={domain.label}
         empty={empty}
         seed={3}
-        action={mine ? (
+        action={headAction ? (
           <Button asChild size="lg">
             <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
           </Button>

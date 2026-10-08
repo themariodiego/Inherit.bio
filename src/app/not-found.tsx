@@ -18,7 +18,7 @@ import { NotFoundContent } from "@/components/site/not-found-content";
  */
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12">
+    <div className="quiet-shell flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12">
       <header>
         <Wordmark />
       </header>

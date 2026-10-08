@@ -7,15 +7,20 @@
  * under the whole hero; the hills are a band below the content, so the
  * action row sits on clean paper and the ridges never cross it.
  * ------------------------------------------------------------------------- */
-.hero { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; }
-@media (min-width: 1024px) { .hero { min-height: 78svh; } }
+.hero { position: relative; overflow: hidden; }
 .hero-ground { position: absolute; inset: 0; pointer-events: none; }
 .hero-ground .terrain-glow { position: absolute; inset: 0; }
 .hero-content { position: relative; }
-/* The hills are drawn 1600×600 and sliced bottom-up, so 26vw shows every
-   ridge at any width without a line cut at the band's top edge; the band
-   also takes whatever height the 78svh minimum leaves over. */
-.hero-band { position: relative; flex: 1 0 auto; min-height: max(26vw, 9rem); pointer-events: none; }
+/* The hills are drawn 1600×600, 5% wider than the hero for the drift, and
+   sliced bottom-up, so 26vw shows every ridge at any width without a line
+   cut at the band's top edge. From lg the band is 19.4vw: the bottom 296 of
+   the 600 units, whose top edge falls in the clear gap between the second
+   ridge (ends at 296) and the third (starts at 314), so the two far ridges
+   drop out whole, the five near ones stay, and the hero ends near the fold
+   of a 1280×800 window. The height is fixed (not a flex minimum): a taller
+   window must not grow the band back into a ridge. */
+.hero-band { position: relative; height: max(26vw, 9rem); pointer-events: none; }
+@media (min-width: 1024px) { .hero-band { height: 19.4vw; } }
 .hero-band [data-slot="terrain"] { position: absolute; inset: 0; }
 
 /* ---------------------------------------------------------------------------
@@ -24,6 +29,9 @@
  * ------------------------------------------------------------------------- */
 .step { max-width: var(--measure); border-top: 1px solid var(--line); padding-top: 1.25rem; }
 .step .ordinal { display: block; font-size: 2rem; }
+/* Four across: the titles get a two-line box so the bodies start on one line
+   whether a title wraps or not. */
+@media (min-width: 1024px) { .step .title { min-height: 2.8em; } }
 
 /* ---------------------------------------------------------------------------
  * Plain terms: a ruled list with a 10px forest disc. Rows sit on the control

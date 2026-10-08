@@ -6,7 +6,9 @@
  * (b) the display name;
  * (c) the kind chip — exactly one of the KIND_CHIPS words;
  * (d) the file count as text, linking to /files;
- * (e) the persistent secondary action "Add a file" on self and adult bars.
+ * (e) the persistent secondary action "Add a file" on self and adult bars:
+ *     an outline button, or a quiet link where the page's record head already
+ *     carries the forest action (round-2 M2).
  *
  * Colour never carries identity alone (X2.4): the initial and the name are
  * text. The bar root carries data-subject-id.
@@ -87,10 +89,16 @@ export interface SubjectBarProps {
   fileCount: number | null;
   /** The signed-in account; decides whether an adult record is the viewer's own. */
   viewerAccountId?: string | null;
+  /**
+   * How "Add a file" renders: the outline button, or a quiet link (same href,
+   * same label) on a page whose record head carries the forest action, so the
+   * page has one button.
+   */
+  action?: "outline" | "quiet";
   className?: string;
 }
 
-export function SubjectBar({ subject, fileCount: files, viewerAccountId, className }: SubjectBarProps) {
+export function SubjectBar({ subject, fileCount: files, viewerAccountId, action = "outline", className }: SubjectBarProps) {
   const kind = subjectKind(subject, viewerAccountId);
   // An embryo carries no subject colour (X2.4; brief line 689): every
   // embryo's disc is identical, on the neutral ground, so no colour can read
@@ -150,13 +158,21 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
           {fileCount(files)}
         </Link>
       )}
-      {canAddFile ? (
+      {!canAddFile ? null : action === "quiet" ? (
+        <Link
+          href={route("files.upload", { query: { subject: subject.routeSegment } })}
+          data-slot="subject-add-file"
+          className="quiet-link ml-auto flex min-h-11 shrink-0 items-center px-1"
+        >
+          {ADD_A_FILE}
+        </Link>
+      ) : (
         <Button asChild variant="outline" size="sm" className="ml-auto shrink-0">
           <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>
             {ADD_A_FILE}
           </Link>
         </Button>
-      ) : null}
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { SiteNavLink } from "./site-nav";
 import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
 import { createClient } from "@/lib/supabase/server";
@@ -37,19 +38,21 @@ export async function SiteHeader() {
           </span>
         </div>
         {/* The md+ twin of the mobile row below, on the same control scale:
-            every entry is a 44×44 target with 8px or more between them. */}
+            every entry is a 44×44 target with 8px or more between them. Each
+            entry marks the current route (aria-current, underlined). */}
         <nav aria-label="Main" className="hidden items-center gap-6 md:flex">
           {nav.map((l) => (
-            <Link
+            <SiteNavLink
               key={l.href}
               href={l.href}
               className="site-nav-link flex min-h-11 min-w-11 items-center justify-center text-sm text-ink-muted transition-colors hover:text-ink"
             >
               {l.label}
-            </Link>
+            </SiteNavLink>
           ))}
         </nav>
-        <div className="flex items-center gap-2 md:justify-self-end">
+        {/* 12px between the toggle and the pill: clear of the 8px floor at 320. */}
+        <div className="flex items-center gap-3 md:justify-self-end">
           <ThemeToggle />
           {user ? (
             <Button asChild size="sm">
@@ -79,13 +82,13 @@ export async function SiteHeader() {
           className="flex flex-wrap gap-x-3 gap-y-1 min-[360px]:gap-x-5"
         >
           {nav.map((l) => (
-            <Link
+            <SiteNavLink
               key={l.href}
               href={l.href}
               className="site-nav-link flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm text-ink-muted hover:text-ink"
             >
               {l.label}
-            </Link>
+            </SiteNavLink>
           ))}
         </nav>
         {user ? null : (

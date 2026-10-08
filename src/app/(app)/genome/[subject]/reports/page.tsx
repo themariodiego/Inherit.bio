@@ -255,6 +255,9 @@ export default async function ReportsPage(
   // caption beneath it, not the page's second line.
   const empty = fileCount === 0;
   const canAddFile = !person && !context.pathB && subject.subjectClass === "self";
+  // One button on the page: where the head carries the forest action, the
+  // bar's "Add a file" is a quiet link to the same place (round-2 M2).
+  const headAction = empty && canAddFile;
 
   return (
     <div className="page-stack max-w-5xl space-y-block">
@@ -273,11 +276,11 @@ export default async function ReportsPage(
             ]}
           />
         }
-        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
         title={REPORTS_TITLE}
         empty={empty}
         seed={5}
-        action={empty && canAddFile ? (
+        action={headAction ? (
           <Button asChild size="lg">
             <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
           </Button>

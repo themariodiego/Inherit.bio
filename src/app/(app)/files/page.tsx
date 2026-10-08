@@ -5,24 +5,33 @@ import { HeldForYouRows, OtherAdultHeldRows, PathBChoicesSection } from "@/compo
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { RecordHead } from "@/components/records/record-head";
-import { Button } from "@/components/ui/button";
-import { ADD_A_FILE } from "@/copy/reports/strings";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { NAV_LABELS } from "@/copy/navigation";
 import { route } from "@/lib/primary-routes";
+import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fileStatusLabel } from "@/lib/uploads/file-status";
 
-export const metadata: Metadata = { title: "My files" };
+const FILES_TITLE = "My files";
+
+export const metadata: Metadata = { title: FILES_TITLE };
 
 export default async function UploadsPage() {
   const supabase = await createClient();
-  const { data: files } = await supabase
-    .from("genome_files")
-    .select(
-      "id, original_name, file_type, tier, size_bytes, sha256, status, build, variant_count, error, created_at, processing_started_at, processing_finished_at, single_logical_sample_verified_at, normalization_completed_at",
-    )
-    .order("created_at", { ascending: false });
+  const [{ data: files }, { data: { user } }] = await Promise.all([
+    supabase
+      .from("genome_files")
+      .select(
+        "id, original_name, file_type, tier, size_bytes, sha256, status, build, variant_count, error, created_at, processing_started_at, processing_finished_at, single_logical_sample_verified_at, normalization_completed_at",
+      )
+      .order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
+  // The crumbs name the record these files belong to: the account's own
+  // subject, read only for its label (round-2 M8).
+  const self = user ? await resolveSubjectForAccount(user.id, "me") : null;
 
   const { data: stats } = await createAdminClient().rpc("processing_time_stats");
   const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
@@ -51,18 +60,24 @@ export default async function UploadsPage() {
     <div className="page-stack rec-column-wide stack-sections">
       <AutoRefresh active={inFlight} />
       {/* The head (round-1 M7): with no file it carries the index's one
-          sentence, the one forest action and the hills. The sentence is the
-          file list's only item, so the index still states its absence in
-          words inside the list, as it always has. */}
+          sentence and the hills. The sentence is the file list's only item,
+          so the index still states its absence in words inside the list, as
+          it always has. No action here: the consent plate below is the
+          action on this page, and its Continue turns forest once the
+          disclosure is read (round-2 N1). */}
       <RecordHead
-        title="My files"
+        crumbs={self ? (
+          <Breadcrumbs
+            items={[
+              { label: NAV_LABELS["my-genome"], href: route("genome.subject", { subject: self.routeSegment }) },
+              { label: self.displayLabel },
+              { label: FILES_TITLE },
+            ]}
+          />
+        ) : undefined}
+        title={FILES_TITLE}
         empty={rows.length === 0}
         seed={11}
-        action={rows.length === 0 ? (
-          <Button asChild size="lg">
-            <Link href={route("files.upload")}>{ADD_A_FILE}</Link>
-          </Button>
-        ) : undefined}
       >
         {rows.length === 0 ? (
           <ul className="rec-record-list">

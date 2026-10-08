@@ -73,6 +73,13 @@ describe("SubjectBar", () => {
     expect(html).not.toContain('data-variant="default"');
   });
 
+  it("renders the add-a-file action as a quiet link, same href and label, when asked", () => {
+    const html = renderToStaticMarkup(h(SubjectBar, { subject: subject(), fileCount: 0, action: "quiet" }));
+    expect(html).toMatch(/<a href="\/files\/upload\?subject=me"[^>]*quiet-link[^>]*>Add a file</);
+    expect(html).not.toContain('data-slot="button"');
+    expect(html).not.toContain('data-variant="outline"');
+  });
+
   it("pluralises the file count and hides the add-a-file action on embryo bars", () => {
     const html = renderToStaticMarkup(
       h(SubjectBar, {

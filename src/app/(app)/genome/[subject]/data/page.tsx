@@ -121,6 +121,9 @@ export default async function GenomeDataPage(
   // already say where the reader is.
   const noFile = files.length === 0;
   const canAddFile = person === null && subject.subjectClass === "self";
+  // One button on the page: where the head carries the forest action, the
+  // bar's "Add a file" is a quiet link to the same place (round-2 M2).
+  const headAction = fileCount === 0 && canAddFile;
 
   return (
     <div data-surface="standard" className="page-stack rec-sheet stack-sections">
@@ -134,11 +137,11 @@ export default async function GenomeDataPage(
             ]}
           />
         }
-        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
         title={DATA_H1}
         empty={fileCount === 0}
         seed={7}
-        action={fileCount === 0 && canAddFile ? (
+        action={headAction ? (
           <Button asChild size="lg">
             <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
           </Button>

@@ -14,8 +14,8 @@ import type { InputSourceView } from "@/lib/genome/input-sources";
  * processed and the Ancestry choice is off, or it is on and no result has
  * been generated yet. The last two are read from the same "Choose your
  * reports" section the subject's Reports page renders, never inferred here.
- * The two line cards then carry their headings alone rather than the same
- * sentence a third time.
+ * The two lines are then one ruled list under that empty state, each row
+ * its heading and its own state text, rather than two cards.
  *
  * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
  * Neanderthals, where this comes from). No segmented control renders while
@@ -214,6 +214,9 @@ export default async function AncestryPage(
   const regions = historical ? admixtureView(admix.result, admix.support_note ?? "") : null;
   const subjectParams = { subject: subject.routeSegment };
   const reportsHref = route("genome.reports", subjectParams);
+  // No result at all: the regions section states the absence and the two
+  // lines are one ruled list under it. With any stored row, the cards render.
+  const lineageRows = !admix && !mt && !y;
 
   return (
     <div className="page-stack stack-blocks max-w-5xl">
@@ -274,7 +277,7 @@ export default async function AncestryPage(
         {admix ? <p className="caption max-w-measure">{storedModelLine(admix.model_id, admix.model_version)}</p> : null}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className={lineageRows ? "fam-lines max-w-measure" : "grid gap-6 lg:grid-cols-2"}>
         <LineageCard
           parent="mother"
           subjectId={dataSubjectId}
@@ -285,7 +288,7 @@ export default async function AncestryPage(
           modelRecord={mt ? { id: mt.model_id, version: mt.model_version } : undefined}
           absence={absence}
           reportsHref={reportsHref}
-          absenceStated={!admix}
+          absenceStated={lineageRows}
         />
         <LineageCard
           parent="father"
@@ -297,7 +300,7 @@ export default async function AncestryPage(
           modelRecord={y ? { id: y.model_id, version: y.model_version } : undefined}
           absence={absence}
           reportsHref={reportsHref}
-          absenceStated={!admix}
+          absenceStated={lineageRows}
         />
       </div>
 

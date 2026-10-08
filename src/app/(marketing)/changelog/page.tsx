@@ -90,58 +90,61 @@ export default async function ChangelogPage() {
           You can turn on email updates in Settings.
         </p>
       </header>
-      <ol className="mt-section max-w-3xl space-y-block border-l border-line pl-8">
-        {items.map((item) =>
-          item.type === "entry" ? (
-            <li key={item.entry.id} className="relative">
-              <span
-                aria-hidden
-                className="absolute -left-[2.3rem] top-1 size-2.5 rounded-full bg-forest"
-              />
-              <time
-                dateTime={item.entry.published_at}
-                className="eyebrow"
-              >
-                {formatDate(item.entry.published_at)}
-              </time>
-              <h2 className="title mt-2">{item.entry.title}</h2>
-              <p className="mt-2 max-w-measure text-ink-muted">{item.entry.body}</p>
-            </li>
-          ) : (
-            <li key={`relabel-${item.day}`} className="relative">
-              <span
-                aria-hidden
-                className="absolute -left-[2.3rem] top-1 size-2.5 rounded-full bg-forest"
-              />
-              <time dateTime={item.at} className="eyebrow">
-                {formatDate(item.at)}
-              </time>
-              <details className="mt-2">
-                <summary className="title">
-                  {REPORTS_RELABELLED}
-                </summary>
-                <ul className="mt-2 max-w-measure space-y-2 text-sm text-ink-muted">
-                  {item.entries.map((entry) => (
-                    <li key={entry.id}>
-                      {entry.title}{" "}
-                      <span className="mono text-xs">
-                        {entry.evidence_before} → {entry.evidence_after}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            </li>
-          ),
-        )}
-        {items.length === 0 ? (
-          <li className="max-w-measure">
-            <EmptyState>
-              No published entries yet — the pipeline is young. Check back soon.
-            </EmptyState>
-          </li>
-        ) : null}
-      </ol>
+      {/* The timeline rail belongs to the entries: with none, the one empty
+          state stands on the page alone. */}
+      {items.length === 0 ? (
+        <div className="mt-section">
+          <EmptyState>
+            No published entries yet — the pipeline is young. Check back soon.
+          </EmptyState>
+        </div>
+      ) : (
+        <ol className="mt-section max-w-3xl space-y-block border-l border-line pl-8">
+          {items.map((item) =>
+            item.type === "entry" ? (
+              <li key={item.entry.id} className="relative">
+                <span
+                  aria-hidden
+                  className="absolute -left-[2.3rem] top-1 size-2.5 rounded-full bg-forest"
+                />
+                <time
+                  dateTime={item.entry.published_at}
+                  className="eyebrow"
+                >
+                  {formatDate(item.entry.published_at)}
+                </time>
+                <h2 className="title mt-2">{item.entry.title}</h2>
+                <p className="mt-2 max-w-measure text-ink-muted">{item.entry.body}</p>
+              </li>
+            ) : (
+              <li key={`relabel-${item.day}`} className="relative">
+                <span
+                  aria-hidden
+                  className="absolute -left-[2.3rem] top-1 size-2.5 rounded-full bg-forest"
+                />
+                <time dateTime={item.at} className="eyebrow">
+                  {formatDate(item.at)}
+                </time>
+                <details className="mt-2">
+                  <summary className="title">
+                    {REPORTS_RELABELLED}
+                  </summary>
+                  <ul className="mt-2 max-w-measure space-y-2 text-sm text-ink-muted">
+                    {item.entries.map((entry) => (
+                      <li key={entry.id}>
+                        {entry.title}{" "}
+                        <span className="mono text-xs">
+                          {entry.evidence_before} → {entry.evidence_after}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </li>
+            ),
+          )}
+        </ol>
+      )}
     </div>
   );
 }

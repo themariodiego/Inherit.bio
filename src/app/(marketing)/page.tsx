@@ -1,10 +1,11 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Fingerprint, LockKeyhole } from "lucide-react";
+import { BookOpen, Fingerprint, LockKeyhole } from "lucide-react";
 import { Terrain } from "@/components/site/terrain";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { route } from "@/lib/primary-routes";
+import { cn } from "@/lib/utils";
 
 const guide = [
   {
@@ -64,7 +65,7 @@ export default function LandingPage() {
         <div aria-hidden="true" className="hero-ground">
           <div className="terrain-glow" />
         </div>
-        <div className="hero-content mx-auto w-full max-w-6xl px-6 pt-12 pb-8 md:pt-20 md:pb-10 lg:pt-24 lg:pb-12">
+        <div className="hero-content mx-auto w-full max-w-6xl px-6 pt-12 pb-8 md:pt-20 md:pb-10">
           <p className="eyebrow rise" style={stagger(0)}>
             Open-source consumer genomics
           </p>
@@ -81,7 +82,7 @@ export default function LandingPage() {
           </p>
           <div className="rise mt-10 flex flex-wrap gap-3" style={stagger(4)}>
             <Button asChild size="lg">
-              <Link href="/auth/sign-up">Start with your raw data <ArrowUpRight aria-hidden="true" /></Link>
+              <Link href="/auth/sign-up">Start with your raw data</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href={route("marketing.providers")}>Find a sequencing provider</Link>
@@ -97,9 +98,10 @@ export default function LandingPage() {
 
       <aside aria-label="About Inherit" className="mx-auto max-w-6xl px-6 pt-section">
         <p className="eyebrow eyebrow-rule">A guide to your DNA</p>
+        {/* Three plates: 2-up at md with the third across the row, 3-up at lg. */}
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {guide.map((g) => (
-            <div key={g.label} className="plate">
+          {guide.map((g, i) => (
+            <div key={g.label} className={cn("plate", i === guide.length - 1 && "md:col-span-2 lg:col-span-1")}>
               <div className="plate-head">
                 <p className="flex items-center gap-2.5">
                   <g.icon aria-hidden="true" className="size-5 shrink-0 text-forest" />

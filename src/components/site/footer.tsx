@@ -61,9 +61,10 @@ export function SiteFooter() {
             <Attribution />
           </div>
         </div>
-        {/* Two columns from 360px so a phone is not mostly footer; four
-            from lg. Every entry stays a 44px target. */}
-        <div className="rule grid gap-x-6 gap-y-8 py-10 min-[360px]:grid-cols-2 md:py-12 lg:grid-cols-4">
+        {/* Two columns from 320px so a phone is not mostly footer (the longest
+            labels wrap to two or three lines in a 124px column); four from
+            lg. Every entry stays a 44px target. */}
+        <div className="rule grid grid-cols-2 gap-x-6 gap-y-8 py-10 md:py-12 lg:grid-cols-4">
           {columns.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
               <h2 className="eyebrow mb-4">{col.heading}</h2>

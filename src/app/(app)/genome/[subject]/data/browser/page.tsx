@@ -135,6 +135,9 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   const inputState = hits.some((hit) => hit.conflict) ? "conflict"
     : hits.some((hit) => hit.genotype === "--") ? "noCall"
     : outcome.inputFileIds.length ? "recorded" : "absent";
+  // One button on the page: where the head carries the forest action, the
+  // bar's "Add a file" is a quiet link to the same place (round-2 M2).
+  const headAction = fileCount === 0 && subject.subjectClass === "self";
 
   return (
     <div
@@ -157,11 +160,11 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
             ]}
           />
         }
-        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
         title={BROWSER_H1}
         empty={fileCount === 0}
         seed={9}
-        action={fileCount === 0 && subject.subjectClass === "self" ? (
+        action={headAction ? (
           <Button asChild size="lg">
             <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
           </Button>

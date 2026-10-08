@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { ChatPanel, type ChatProviderInfo } from "@/components/chat/chat-panel";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";
 import { CohortCopilotPage, FamilyCopilotPage } from "@/components/chat/group-scope-pages";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
+import { NAV_LABELS } from "@/copy/navigation";
 import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
@@ -39,9 +41,19 @@ export default async function ChatPage(
   const subject = await resolveSubjectForAccount(user.id, scope);
   if (!subject) notFound();
   const ownChat = subject.subjectClass === "self" ? await prepareOwnCopilotChat(subject.id) : null;
+  // Crumbs say where this is (round-2 M8): the record, then the page by its
+  // own h1, the way the record routes do.
+  const title = `Ask about ${subject.displayLabel}`;
   const header = (
     <header className="rec-head">
-      <h1 className="display">Ask about {subject.displayLabel}</h1>
+      <Breadcrumbs
+        items={[
+          { label: NAV_LABELS["my-genome"], href: route("genome.subject", { subject: subject.routeSegment }) },
+          { label: subject.displayLabel },
+          { label: title },
+        ]}
+      />
+      <h1 className="display">{title}</h1>
     </header>
   );
   if (ownChat?.kind === "ready") {
