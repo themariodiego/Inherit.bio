@@ -882,7 +882,7 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "8dcca90eb9444fa99ad954852df12f5fb406f62847a04d1280561befe9b7093b" },
   { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
   { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
-  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "f8bb0a4e29788d2d2d355ca6d8ce386c33bea44f1030c8596097c3275d6d97a2" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
   { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
   { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
   { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },

@@ -7,6 +7,7 @@ import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { NAV_LABELS } from "@/copy/navigation";
+import { ADD_A_FILE } from "@/copy/reports/strings";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
@@ -62,10 +63,13 @@ export default async function UploadsPage() {
       {/* The head (round-1 M7): with no file it carries the index's one
           sentence and the hills. The sentence is the file list's only item,
           so the index still states its absence in words inside the list, as
-          it always has. No action here: the consent plate below is the
+          it always has. No button here: the consent plate below is the
           action on this page, and its Continue turns forest once the
-          disclosure is read (round-2 N1). */}
+          disclosure is read (round-2 N1). A quiet link lands on that plate,
+          so a phone's first viewport has something to act on, and the hills
+          give up height on this route (round-3 R1). */}
       <RecordHead
+        className="rec-record-head-compact"
         crumbs={self ? (
           <Breadcrumbs
             items={[
@@ -80,17 +84,26 @@ export default async function UploadsPage() {
         seed={11}
       >
         {rows.length === 0 ? (
-          <ul className="rec-record-list">
-            <li className="body-lg max-w-measure text-ink">
-              No files yet. Upload a raw data export to get started — or grab a
-              provider from the directory first.
-            </li>
-          </ul>
+          <>
+            <ul className="rec-record-list">
+              <li className="body-lg max-w-measure text-ink">
+                No files yet. Upload a raw data export to get started — or grab a
+                provider from the directory first.
+              </li>
+            </ul>
+            <p>
+              <a href="#own-upload" className="link-target quiet-link">{ADD_A_FILE}</a>
+            </p>
+          </>
         ) : null}
       </RecordHead>
 
       <div className="rec-stack">
-        <OwnUploadEntry />
+        {/* The anchor the head's quiet link lands on: focus moves here, and
+            the next Tab is the plate's checkbox. */}
+        <div id="own-upload" tabIndex={-1}>
+          <OwnUploadEntry />
+        </div>
         <div className="caption rec-stack-sm max-w-measure">
           <p>
             Your own DNA only — files from children or relatives aren&rsquo;t

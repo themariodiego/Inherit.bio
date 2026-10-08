@@ -43,6 +43,11 @@ import { route } from "@/lib/primary-routes";
  * A country with committed states (today only the United States) also asks
  * for the state, in a second required list shown only once that country is
  * chosen (ADR 0032, 27 Sep 2026). Like the country, it starts empty.
+ *
+ * With a country already recorded, "Save country" is the quiet disabled
+ * primary until the choice differs from the recorded answer (the country, or
+ * its state where one applies): the page's one forest button then means a
+ * change, not a repeat of what is saved (round-3 M4, N15).
  */
 export function JurisdictionForm({
   choices,
@@ -62,7 +67,16 @@ export function JurisdictionForm({
   const router = useRouter();
   const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [country, setCountry] = useState("");
+  const [subdivision, setSubdivision] = useState("");
   const stateChoices = states[country] ?? [];
+  // Nothing chosen is not a new answer, and neither is the recorded country
+  // again unless its state differs; without a recorded country every choice
+  // is new and the browser's own `required` checks do the rest.
+  const unchanged =
+    current !== null &&
+    (country === "" ||
+      (country === current.code &&
+        (stateChoices.length === 0 || subdivision === "" || subdivision === (current.state?.code ?? ""))));
 
   async function save(form: HTMLFormElement) {
     const data = new FormData(form);
@@ -88,6 +102,7 @@ export function JurisdictionForm({
       setState("saved");
       form.reset();
       setCountry("");
+      setSubdivision("");
       // The first sign-in continues with a full page load. A client-side push
       // reuses the redirect the router cached for `next` while no country was
       // recorded (the sidebar prefetches Overview), and leaves the person
@@ -103,17 +118,21 @@ export function JurisdictionForm({
     <section id="jurisdiction" data-slot="jurisdiction" className="plate">
       <div className="plate-head"><h2 className="eyebrow">{JURISDICTION_HEADING}</h2></div>
       <div className="plate-body rec-stack">
-        {current ? null : <p className="max-w-measure text-sm text-ink">{JURISDICTION_REQUIRED}</p>}
-        <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_BODY}</p>
-        <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_OWN_RESULTS}</p>
-        {current ? (
-          <p className="max-w-measure text-sm text-ink" data-slot="jurisdiction-current" data-jurisdiction-code={current.code}>
-            {jurisdictionCurrent(current.name, current.state?.name ?? null)}
-          </p>
-        ) : null}
-        {current && isEmbargoedCountry(current.code) ? (
-          <p className="max-w-measure text-sm text-ink" data-slot="jurisdiction-not-served">{jurisdictionNotServed(current.name)}</p>
-        ) : null}
+        {/* The explanation is one block of short paragraphs; the recorded
+            answer closes it (round-3 R3). */}
+        <div className="rec-stack-sm">
+          {current ? null : <p className="max-w-measure text-sm text-ink">{JURISDICTION_REQUIRED}</p>}
+          <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_BODY}</p>
+          <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_OWN_RESULTS}</p>
+          {current ? (
+            <p className="max-w-measure text-sm text-ink" data-slot="jurisdiction-current" data-jurisdiction-code={current.code}>
+              {jurisdictionCurrent(current.name, current.state?.name ?? null)}
+            </p>
+          ) : null}
+          {current && isEmbargoedCountry(current.code) ? (
+            <p className="max-w-measure text-sm text-ink" data-slot="jurisdiction-not-served">{jurisdictionNotServed(current.name)}</p>
+          ) : null}
+        </div>
         <form
           className="rec-stack"
           onSubmit={(event) => {
@@ -128,7 +147,10 @@ export function JurisdictionForm({
                 required
                 name="jurisdictionCode"
                 value={country}
-                onChange={(event) => setCountry(event.currentTarget.value)}
+                onChange={(event) => {
+                  setCountry(event.currentTarget.value);
+                  setSubdivision("");
+                }}
                 className="rec-select"
               >
                 <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
@@ -142,9 +164,9 @@ export function JurisdictionForm({
                 <span className="label">{JURISDICTION_STATE_LABEL}</span>
                 <select
                   required
-                  key={country}
                   name="jurisdictionSubdivision"
-                  defaultValue=""
+                  value={subdivision}
+                  onChange={(event) => setSubdivision(event.currentTarget.value)}
                   className="rec-select"
                 >
                   <option value="" disabled>{JURISDICTION_STATE_PLACEHOLDER}</option>
@@ -154,23 +176,25 @@ export function JurisdictionForm({
                 </select>
               </label>
             ) : null}
-            <p className="max-w-measure text-sm text-ink-muted" data-slot="jurisdiction-withheld">
-              {JURISDICTION_WITHHELD}{" "}
-              <Link href={route("legal.where-inherit-works")} className="prose-link">
-                {JURISDICTION_WITHHELD_LINK}
-              </Link>
-            </p>
-            <p className="max-w-measure text-sm text-ink-muted">{attestation.summary}</p>
-            <details className="max-w-measure text-sm text-ink-muted">
-              <summary className="quiet-link">{JURISDICTION_READ_ATTESTATION}</summary>
-              <div className="mt-2 whitespace-pre-line">{attestation.body}</div>
-            </details>
+            <div className="rec-stack-sm">
+              <p className="max-w-measure text-sm text-ink-muted" data-slot="jurisdiction-withheld">
+                {JURISDICTION_WITHHELD}{" "}
+                <Link href={route("legal.where-inherit-works")} className="prose-link">
+                  {JURISDICTION_WITHHELD_LINK}
+                </Link>
+              </p>
+              <p className="max-w-measure text-sm text-ink-muted">{attestation.summary}</p>
+              <details className="max-w-measure text-sm text-ink-muted">
+                <summary className="quiet-link">{JURISDICTION_READ_ATTESTATION}</summary>
+                <div className="mt-2 whitespace-pre-line">{attestation.body}</div>
+              </details>
+            </div>
             <label className="rec-choice text-sm text-ink">
               <input type="checkbox" name="affirmed" required className="size-5 accent-forest" />
               <span>{JURISDICTION_AFFIRM}</span>
             </label>
             {current ? <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_CHANGE_WARNING}</p> : null}
-            <div><Button type="submit" data-slot="jurisdiction-save">{JURISDICTION_SAVE}</Button></div>
+            <div><Button type="submit" data-slot="jurisdiction-save" disabled={unchanged}>{JURISDICTION_SAVE}</Button></div>
           </fieldset>
           <p role="status" aria-live="polite" className="text-sm text-ink">
             {state === "saved" ? JURISDICTION_SAVED : null}

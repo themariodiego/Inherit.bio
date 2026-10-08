@@ -420,9 +420,9 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                         <col />
                         <col className="w-44" />
                         <col className="w-28" />
-                        <col className="w-32" />
                         <col className="w-36" />
-                        <col className="w-28" />
+                        <col className="w-40" />
+                        <col className="w-32" />
                       </colgroup>
                       <thead>
                         <tr className="border-b border-line">

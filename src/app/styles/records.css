@@ -48,8 +48,15 @@
    hides nothing. The negative bottom margin lets the card's edge crop the
    nearest slope, 8px to 40px with the width: ~200px of hills at 1280 and
    four ridges at 320. */
-.rec-record-terrain { position: relative; aspect-ratio: 1600 / 600; min-height: 13rem; margin-top: calc(4.125rem - max(4.125rem, 11.9%)); margin-bottom: clamp(-2.5rem, -4.25%, -0.5rem); pointer-events: none; }
+.rec-record-terrain { position: relative; width: 100%; aspect-ratio: 1600 / 600; min-height: 13rem; margin-top: calc(4.125rem - max(4.125rem, 11.9%)); margin-bottom: clamp(-2.5rem, -4.25%, -0.5rem); pointer-events: none; }
+/* `width: 100%` keeps the box the card's width: with an auto width the
+   13rem min-height transferred through the aspect ratio to a 555px min-width,
+   and a phone card showed the left of a clipped drawing. Now the SVG's
+   `slice` scales the hills to the 13rem box (round-3 R4). */
 .rec-record-terrain > [data-slot="terrain"] { position: absolute; inset: 0; }
+/* /files on a phone: the consent plate below is the page's action, so the
+   hills give up 46px there — three ridges, the same clear band (round-3 R1). */
+@media (max-width: 767px) { .rec-record-head-compact .rec-record-terrain { margin-bottom: -3.75rem; } }
 /* On /files the one state sentence is also the file list's only item, so the
    index still states its absence in words; the list draws nothing of its own. */
 .rec-record-list { list-style: none; margin: 0; padding: 0; }
