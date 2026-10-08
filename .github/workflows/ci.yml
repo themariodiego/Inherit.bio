@@ -52,6 +52,10 @@ jobs:
           denylist_path="$RUNNER_TEMP/inherit-name-denylist.txt"
           printf '%s\n' "$PRIVATE_NAME_DENYLIST" > "$denylist_path"
           echo "NAME_DENYLIST_FILE=$denylist_path" >> "$GITHUB_ENV"
+      - name: APT admission unit tests
+        run: python3 -B -m unittest discover -s scripts -p test_ci_apt_mirror_priority.py
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Typecheck
@@ -197,6 +201,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Start this job's fresh local Supabase
