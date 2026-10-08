@@ -54,7 +54,7 @@ const candor = [
   "No data sharing with anyone — including Plus Bio. Separate service, separate accounts, no data flow.",
 ];
 
-/** Stagger index for `.rise`: each hero block lands 70ms after the last. */
+/** Stagger index for `.rise`: each hero block lands 40ms after the last. */
 const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 
 export default function LandingPage() {
@@ -63,9 +63,8 @@ export default function LandingPage() {
       <section className="hero">
         <div aria-hidden="true" className="hero-ground">
           <div className="terrain-glow" />
-          <Terrain variant="hero" />
         </div>
-        <div className="hero-content mx-auto w-full max-w-6xl px-6 pt-12 pb-36 md:pt-20 md:pb-48 lg:pt-24 lg:pb-56">
+        <div className="hero-content mx-auto w-full max-w-6xl px-6 pt-12 pb-8 md:pt-20 md:pb-10 lg:pt-24 lg:pb-12">
           <p className="eyebrow rise" style={stagger(0)}>
             Open-source consumer genomics
           </p>
@@ -89,11 +88,16 @@ export default function LandingPage() {
             </Button>
           </div>
         </div>
+        {/* The hills start below the action row (the content's bottom padding
+            is the clear paper between them), so no ridge crosses a button. */}
+        <div aria-hidden="true" className="hero-band">
+          <Terrain variant="hero" />
+        </div>
       </section>
 
       <aside aria-label="About Inherit" className="mx-auto max-w-6xl px-6 pt-section">
         <p className="eyebrow eyebrow-rule">A guide to your DNA</p>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {guide.map((g) => (
             <div key={g.label} className="plate">
               <div className="plate-head">
@@ -110,10 +114,10 @@ export default function LandingPage() {
         </div>
       </aside>
 
-      <section className="reveal mt-section border-y border-line bg-card">
+      <section className="mt-section border-y border-line bg-card">
         <div className="mx-auto max-w-6xl px-6 py-section">
           <p className="eyebrow eyebrow-rule">How it works</p>
-          <ol className="mt-10 grid gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-10 grid items-start gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((s) => (
               <li key={s.n} className="step">
                 <span className="ordinal">{s.n}</span>
@@ -152,11 +156,11 @@ export default function LandingPage() {
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
                   <dt className="text-ink-muted">Variant</dt>
-                  <dd className="mono tabular">rs762551</dd>
+                  <dd className="tabular text-ink">rs762551</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-ink-muted">Your genotype</dt>
-                  <dd className="mono tabular">A/A</dd>
+                  <dd className="tabular text-ink">A/A</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-ink-muted">Interpretation</dt>
@@ -165,7 +169,7 @@ export default function LandingPage() {
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-ink-muted">Evidence</dt>
                   <dd>
-                    <Badge variant="secondary">Moderate · 2 studies</Badge>
+                    <Badge variant="outline">Moderate · 2 studies</Badge>
                   </dd>
                 </div>
               </dl>

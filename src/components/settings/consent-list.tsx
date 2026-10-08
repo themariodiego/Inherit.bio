@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { providerDisplayName } from "@/lib/llm";
 
@@ -33,9 +34,9 @@ export function ConsentList({
 
   if (grants.length === 0) {
     return (
-      <p className="surface-inset surface-pad-sm max-w-measure text-sm text-ink">
+      <EmptyState>
         No cloud-LLM consent grants. None are needed for local models.
-      </p>
+      </EmptyState>
     );
   }
 

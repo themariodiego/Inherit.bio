@@ -16,7 +16,9 @@ import { Attribution, Wordmark } from "@/components/site/wordmark";
  * wordmark, so a skip control would add a focus stop rather than remove one.
  *
  * The terrain is a quiet ground under the column: lines on paper, behind a
- * form that sits on its own surface, so no text crosses a hill.
+ * form that sits on its own surface, so no text crosses a hill. Below sm the
+ * card would cover it, so a short band above the card stands in (reading.css
+ * hides the ground there).
  */
 export default function AuthLayout({
   children,
@@ -31,6 +33,9 @@ export default function AuthLayout({
       <header>
         <Wordmark />
       </header>
+      <div aria-hidden="true" className="auth-band quiet-band sm:hidden">
+        <Terrain variant="band" seed={11} />
+      </div>
       <main
         id="main"
         tabIndex={-1}

@@ -3,9 +3,11 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { NAV_LABELS } from "@/copy/navigation";
 import { ADD_A_FILE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
@@ -102,33 +104,49 @@ export default async function GenomePage(
       : []),
   ];
 
+  // No file in the record: the head draws the hills and carries the one
+  // forest action; the tiles are dashed and muted, with no arrow, so a
+  // cropped screenshot never reads as "reports available" (round-1 M2).
+  const empty = fileCount === 0;
+
   return (
-    <div className="page-stack stack-blocks mx-auto max-w-5xl">
-      <div className="page-head">
-        <Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />
-        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-        <h1 className="display">{domain.label}</h1>
+    <div className="page-stack stack-blocks max-w-5xl">
+      <RecordHead
+        crumbs={<Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />}
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        title={domain.label}
+        empty={empty}
+        seed={3}
+        action={mine ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
         {preparing ? (
           <p role="status" className="body-lg max-w-measure text-ink">{HUB_PREPARING}</p>
         ) : null}
-      </div>
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Genome tools">
+      </RecordHead>
+      <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">
         {tiles.map((tile) => (
           <article key={tile.href} className="flex">
-            <Link href={tile.href} aria-label={`Open ${tile.title}`} className="surface link-surface flex w-full flex-col p-5 text-ink sm:p-6">
-              <h2 className="title flex items-start justify-between gap-4">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow mt-1 size-4 shrink-0 text-forest" /></h2>
+            <Link
+              href={tile.href}
+              aria-label={`Open ${tile.title}`}
+              className={cn(
+                "link-surface flex w-full flex-col p-5 text-ink sm:p-6",
+                empty ? "surface-dashed" : "surface",
+              )}
+            >
+              <h2 className={cn("title flex items-start justify-between gap-4", empty && "text-ink-muted")}>
+                {tile.title}
+                {empty ? null : <ArrowUpRight aria-hidden="true" className="link-arrow mt-1 size-4 shrink-0 text-forest" />}
+              </h2>
               <p className="mt-2 flex-1 text-sm text-ink-muted">{tile.copy}</p>
             </Link>
           </article>
         ))}
       </section>
-      {mine ? (
-        <div>
-          <Button asChild size="lg">
-            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
-          </Button>
-        </div>
-      ) : null}
       <p className="caption max-w-measure">{NOT_DIAGNOSTIC}</p>
     </div>
   );

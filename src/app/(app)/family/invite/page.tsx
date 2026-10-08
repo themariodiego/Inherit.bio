@@ -38,7 +38,7 @@ export default async function FamilyInvitePage() {
   }
 
   return (
-    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-3xl">
+    <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
       <div className="fam-head">
         <Breadcrumbs
           items={[
@@ -47,7 +47,6 @@ export default async function FamilyInvitePage() {
           ]}
         />
         <header>
-          <p className="eyebrow">{NAV_LABELS.family}</p>
           <h1 className="display">{INVITE_H1}</h1>
           <p
             data-slot="pre-consent-statement"

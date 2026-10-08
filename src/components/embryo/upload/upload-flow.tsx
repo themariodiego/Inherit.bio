@@ -70,12 +70,15 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
   const heading = useRef<HTMLHeadingElement>(null);
   const terminal = useRef<HTMLParagraphElement>(null);
   const ending = useRef<HTMLParagraphElement>(null);
-  const mounted = useRef(false);
+  const shownScreen = useRef(state.screen);
 
   // A new screen: focus its heading (or, on the terminal, its sentence).
+  // Keyed on the screen last shown, not on a mount flag, so a repeated run
+  // on the same screen (StrictMode) moves nothing on load.
   useEffect(() => {
-    if (mounted.current) (heading.current ?? terminal.current)?.focus();
-    mounted.current = true;
+    if (shownScreen.current === state.screen) return;
+    shownScreen.current = state.screen;
+    (heading.current ?? terminal.current)?.focus();
   }, [state.screen]);
   // "No" ends the first screen in place: focus the ending so it is read.
   useEffect(() => {

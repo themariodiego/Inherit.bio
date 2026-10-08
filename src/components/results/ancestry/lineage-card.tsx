@@ -13,7 +13,9 @@
  * (`defineTerm`), never in a heading. A card with no row says why: nothing
  * has been processed yet, Ancestry is off, or Ancestry is on and no result
  * has been generated yet (the last two with a link to the Reports page,
- * where that step is taken).
+ * where that step is taken) — unless the page's regions section already
+ * says so (`absenceStated`), in which case the card is the "not yet"
+ * surface with its heading alone, so one sentence is not read three times.
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { TermDefinition } from "@/components/figures/term-definition";
@@ -55,6 +57,8 @@ interface LineageCardBaseProps {
   defineTerm: boolean;
   knownTree?: boolean;
   modelRecord?: { id: string | null; version: string | null };
+  /** The regions section above already states the absence; with no call, render the heading only. */
+  absenceStated?: boolean;
 }
 
 /**
@@ -75,8 +79,17 @@ const HEADINGS = { mother: MOTHER_LINE_HEADING, father: FATHER_LINE_HEADING } as
 const XX_NOTE = "XX genomes";
 
 export function LineageCard(props: LineageCardProps) {
-  const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord } = props;
+  const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord, absenceStated = false } = props;
   const headingId = `${TEST_IDS[parent]}-heading`;
+  if (call === null && absenceStated) {
+    return (
+      <section data-testid={TEST_IDS[parent]} aria-labelledby={headingId} className="surface-dashed surface-pad-sm">
+        <h2 id={headingId} className="title text-ink-muted">
+          {HEADINGS[parent]}
+        </h2>
+      </section>
+    );
+  }
   const hasCall = call !== null && call.haplogroup !== null;
   // `classify()` always reports tested markers; the no-chromosome row has none.
   const noChromosome = call !== null && call.haplogroup === null && call.tested === undefined;

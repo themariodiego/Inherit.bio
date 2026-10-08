@@ -38,7 +38,7 @@ export function Attribution({ className }: { className?: string }) {
         href="https://www.plus.bio"
         target="_blank"
         rel="noopener noreferrer"
-        className="prose-link"
+        className="prose-link whitespace-nowrap"
       >
         Plus Bio
       </a>{" "}

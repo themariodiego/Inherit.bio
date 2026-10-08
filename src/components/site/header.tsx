@@ -22,11 +22,10 @@ export async function SiteHeader() {
     // header must never bleed through, especially at high zoom levels.
     <header className="sticky top-0 z-40 border-b border-line bg-paper">
       {/* One 64px row (--size-navbar). From md it is a three-track grid so
-          the nav sits on the true centre; below md it wraps rather than
-          scrolls. At a 320 CSS px viewport the wordmark, the theme toggle
-          and the two auth controls need more than the row, so wrapping is
-          what keeps every destination reachable without hiding one
-          (WCAG 2.1 SC 1.4.10). */}
+          the nav sits on the true centre; below md the row holds the
+          wordmark, the theme toggle and the one primary pill (the quiet
+          sign-in moves to the nav row), and it still wraps rather than
+          scrolls at high zoom so no destination hides (WCAG 2.1 SC 1.4.10). */}
       <div className="site-header-row mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-2 md:grid md:grid-cols-[1fr_auto_1fr]">
         <div className="flex items-baseline gap-3">
           <Wordmark />
@@ -58,7 +57,7 @@ export async function SiteHeader() {
             </Button>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
                 <Link href="/auth/sign-in">Sign in</Link>
               </Button>
               <Button asChild size="sm">
@@ -68,25 +67,36 @@ export async function SiteHeader() {
           )}
         </div>
       </div>
-      {/* Mobile nav: the primary links move to a wrapping row below md —
+      {/* Mobile row: the primary links move to a wrapping row below md —
           wrap rather than scroll so no destination hides off-screen. This is
           the phone's primary navigation, so every entry is a full 44×44
           target: "About" is only ~37px of text at 14px, so `min-w-11` does
-          the work `min-h-11` cannot. */}
-      <nav
-        aria-label="Main (mobile)"
-        className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line px-6 md:hidden"
-      >
-        {nav.map((l) => (
+          the work `min-h-11` cannot. The quiet sign-in sits at the row's
+          end, outside the nav, so the first row keeps to one line at 320. */}
+      <div className="site-header-nav-row px-6 md:hidden">
+        <nav
+          aria-label="Main (mobile)"
+          className="flex flex-wrap gap-x-3 gap-y-1 min-[360px]:gap-x-5"
+        >
+          {nav.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="site-nav-link flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm text-ink-muted hover:text-ink"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+        {user ? null : (
           <Link
-            key={l.href}
-            href={l.href}
-            className="site-nav-link flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm text-ink-muted hover:text-ink"
+            href="/auth/sign-in"
+            className="site-nav-link flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium text-ink"
           >
-            {l.label}
+            Sign in
           </Link>
-        ))}
-      </nav>
+        )}
+      </div>
     </header>
   );
 }

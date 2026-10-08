@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EntryBoxGrid } from "@/components/overview/entry-box";
 import { ChromosomalSexControl } from "@/components/settings/chromosomal-sex-control";
 import { DigestToggle } from "@/components/settings/digest-toggle";
 import { JurisdictionForm } from "@/components/settings/jurisdiction-form";
@@ -22,11 +23,13 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Settings" };
 
+// The four sections as entry rows (round-1 M4, M10): the same ruled form
+// Overview's secondary domains use, each row one link named by its label.
 const sections = [
-  { href: route("settings.data"), title: "Data", copy: "Export or delete account data." },
-  { href: route("settings.copilot"), title: "Copilot", copy: "Choose a local or cloud model endpoint." },
-  { href: route("settings.people"), title: "People", copy: "Subject records and relationship authority." },
-  { href: route("settings.consents"), title: "Consents", copy: "Review and revoke grants by purpose." },
+  { id: "settings-data", href: route("settings.data"), label: "Data", description: "Export or delete account data." },
+  { id: "settings-copilot", href: route("settings.copilot"), label: "Copilot", description: "Choose a local or cloud model endpoint." },
+  { id: "settings-people", href: route("settings.people"), label: "People", description: "Subject records and relationship authority." },
+  { id: "settings-consents", href: route("settings.consents"), label: "Consents", description: "Review and revoke grants by purpose." },
 ] as const;
 
 export default async function SettingsPage({
@@ -72,6 +75,11 @@ export default async function SettingsPage({
         <h1 className="display">Settings</h1>
         <p className="caption">{user?.email}</p>
       </header>
+      {/* The sections people come for lead; the declaration, a form most
+          people never touch again, follows them (round-1 M4). */}
+      <nav aria-label="Settings sections">
+        <EntryBoxGrid variant="rows" boxes={sections} />
+      </nav>
       {user && attestation ? (
         <JurisdictionForm
           choices={declarationChoices(declaredCode)}
@@ -87,15 +95,6 @@ export default async function SettingsPage({
           next={next}
         />
       ) : null}
-      <nav aria-label="Settings sections" className="grid gap-4 sm:grid-cols-2">
-        {sections.map((section) => (
-          <Link key={section.href} href={section.href} className="surface link-surface rec-tile">
-            <h2 className="title">{section.title}</h2>
-            <p className="mt-1 text-sm text-ink-muted">{section.copy}</p>
-            <span aria-hidden="true" className="link-arrow">→</span>
-          </Link>
-        ))}
-      </nav>
       {user ? (
         <section className="rec-stack">
           <h2 className="eyebrow">Email</h2>

@@ -41,10 +41,16 @@ a.fam-row:hover { background: var(--surface-inset); }
 }
 
 /* A permission row: glyph, label and the state word on one line; the
-   consequence under it; the control at the right. */
+   consequence under it; the control at the right. The glyphs are the two
+   geometric rings Inter carries; "expired" is the empty ring struck through
+   here, so no glyph falls back to another face. */
 .fam-permission { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1rem; min-height: var(--size-row); padding: 0.875rem 0; }
 .fam-permission > div { flex: 1 1 18rem; min-width: 0; }
-.fam-permission [data-slot="permission-glyph"] { display: inline-block; width: 1rem; text-align: center; }
+.fam-permission [data-slot="permission-glyph"] { position: relative; display: inline-block; width: 1rem; text-align: center; }
+.fam-permission[data-permission-state="expired"] [data-slot="permission-glyph"]::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 0.9em; height: 1px;
+  background: currentColor; transform: translate(-50%, -50%) rotate(-45deg);
+}
 
 /* ---------------------------------------------------------------------------
  * A strip: a plate head standing alone (the pair bar, the context strip).
@@ -89,18 +95,18 @@ a.fam-row:hover { background: var(--surface-inset); }
 .fam-regions thead th { height: auto; padding-block: 0.5rem; }
 
 /* ---------------------------------------------------------------------------
- * The map plate: the label in the head, the map full width in the body,
- * 4:5 on a phone with the map centred on paper.
+ * The map plate: the label in the head, the map full width in the body at
+ * its own aspect at every width (a 2:1 figure is never forced to 4:5).
+ * The quiet map is the same figure without the plate, for an empty state's
+ * inset ground.
  * ------------------------------------------------------------------------- */
 .fam-map > .plate-body { padding: 0; }
-.fam-map-body { display: grid; place-items: center; background: var(--paper); overflow: hidden; }
-.fam-map [data-slot="ancestry-map"] { display: block; width: 100%; height: auto; }
-@media (max-width: 767px) {
-  .fam-map-body { aspect-ratio: 4 / 5; }
-  .fam-map [data-slot="ancestry-map"] { height: 100%; }
-}
+.fam-map-body { background: var(--paper); overflow: hidden; }
+.fam-map [data-slot="ancestry-map"], .fam-map-quiet [data-slot="ancestry-map"] { display: block; width: 100%; height: auto; }
 .fam-map figcaption { padding: 0.75rem 1.25rem 1rem; border-top: 1px solid var(--line); }
 @media (min-width: 768px) { .fam-map figcaption { padding-inline: 1.5rem; } }
+.fam-map-quiet { margin: 0; }
+.fam-map-quiet figcaption { margin-top: 0.75rem; }
 
 /* ---------------------------------------------------------------------------
  * Disclosure rows: a 44px summary with a turning chevron, no dotted link.

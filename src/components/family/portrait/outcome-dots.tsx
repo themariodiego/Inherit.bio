@@ -9,7 +9,9 @@
  * treatments differ by fill AND border (solid ink, half ink with a dashed
  * border, empty with a dotted border), so colour never carries the meaning
  * alone and the grid reads in greyscale; the dots and the bar are decorative
- * (`aria-hidden`), and the words beside them are the accessible content.
+ * (`aria-hidden`, no tooltip), the bar is exactly as wide as the grid so the
+ * two readings of one distribution share one width, and the words beside
+ * them are the accessible content.
  * The sub-1-in-100 category, when one ever exists, is the single outlined
  * dot the distribution gives it.
  *
@@ -21,9 +23,7 @@
  */
 import type { ReactNode } from "react";
 import {
-  BAR_LABEL,
   DOTS_CAPTION,
-  DOTS_LABEL,
   DOTS_LEGEND_LABEL,
   DOTS_TABLE_LABELS,
   SEE_AS_TABLE_BUTTON,
@@ -96,37 +96,37 @@ export function OutcomeDots<K extends string>({
 
   return (
     <figure data-slot="outcome-dots" aria-labelledby={captionId}>
-      <div
-        aria-hidden="true"
-        data-slot="outcome-dot-grid"
-        title={DOTS_LABEL}
-        className="grid w-fit grid-cols-10 gap-1.5"
-      >
-        {dots.map((dot) => (
-          <span
-            key={dot.key}
-            data-slot="outcome-dot"
-            data-outcome={dot.category}
-            data-treatment={dot.treatment.swatch}
-            className={cn("block size-4 rounded-full border-2", dot.treatment.dot)}
-          />
-        ))}
-      </div>
-      <div
-        aria-hidden="true"
-        data-slot="outcome-bar"
-        title={BAR_LABEL}
-        className="flex h-4 w-full max-w-md overflow-hidden rounded-full border-2 border-ink"
-      >
-        {segments.map((segment) => (
-          <span
-            key={segment.key}
-            data-slot="outcome-bar-segment"
-            data-outcome={segment.key}
-            style={{ width: segment.width }}
-            className={cn("block h-full border-r-2 border-ink last:border-r-0", segment.treatment)}
-          />
-        ))}
+      <div className="flex w-fit max-w-full flex-col gap-4">
+        <div
+          aria-hidden="true"
+          data-slot="outcome-dot-grid"
+          className="grid w-fit grid-cols-10 gap-1.5"
+        >
+          {dots.map((dot) => (
+            <span
+              key={dot.key}
+              data-slot="outcome-dot"
+              data-outcome={dot.category}
+              data-treatment={dot.treatment.swatch}
+              className={cn("block size-4 rounded-full border-2", dot.treatment.dot)}
+            />
+          ))}
+        </div>
+        <div
+          aria-hidden="true"
+          data-slot="outcome-bar"
+          className="flex h-4 w-full overflow-hidden rounded-full border-2 border-ink"
+        >
+          {segments.map((segment) => (
+            <span
+              key={segment.key}
+              data-slot="outcome-bar-segment"
+              data-outcome={segment.key}
+              style={{ width: segment.width }}
+              className={cn("block h-full border-r-2 border-ink last:border-r-0", segment.treatment)}
+            />
+          ))}
+        </div>
       </div>
       <ul data-slot="outcome-legend" aria-label={DOTS_LEGEND_LABEL} className="space-y-2">
         {distribution.categories.map((category, index) => (

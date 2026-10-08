@@ -16,6 +16,8 @@ import { TradeOffPanel, type TradeOffRow } from "@/components/family/trade-off-p
 import { TermDefinition } from "@/components/figures/term-definition";
 import { isFixtureSlug } from "@/components/reports/library";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { EmptyState } from "@/components/site/empty-state";
+import { Button } from "@/components/ui/button";
 import {
   BASELINE_TERM_TEXT,
   COMPARISON_BANNER,
@@ -35,6 +37,7 @@ import {
   needsTwoPeople,
   pausedWith,
 } from "@/copy/family/health-picture";
+import { ADD_ANOTHER_ADULT_BUTTON } from "@/copy/family/index";
 import { NAV_LABELS } from "@/copy/navigation";
 import { LAYER_PURPOSES, familyCapability, permits, viewerMaySee } from "@/lib/family/access";
 import {
@@ -76,7 +79,9 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Who appears: the viewer, and every person who has turned this on from
  * their own account while the viewer has turned it on toward them. Under two
- * columns the page says so and fetches nothing. Nothing derived is read
+ * columns the page says so and fetches nothing; the one way forward it
+ * offers is the invite route, outside the status region, because nobody
+ * can turn this on for anyone else. Nothing derived is read
  * before the one Tier-2 gate of the domain, so a gated response carries no
  * result in its markup or in its RSC payload.
  *
@@ -340,7 +345,7 @@ export default async function FamilyHealthPicturePage() {
   }));
 
   return (
-    <div data-surface="wide-data" className="page-stack stack-blocks mx-auto max-w-[90rem]">
+    <div data-surface="wide-data" className="page-stack stack-blocks max-w-[90rem]">
       <div className="fam-head">
         <Breadcrumbs
           items={[
@@ -354,48 +359,58 @@ export default async function FamilyHealthPicturePage() {
       </div>
 
       {!allowed ? (
-        <section
-          role="status"
-          className="surface-inset surface-pad max-w-measure"
-        >
-          <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
+        <section role="status">
+          <EmptyState>{decision.userFacingCopy}</EmptyState>
         </section>
       ) : columnCount < 2 && pausedBoth.length > 0 ? (
         <section
           role="status"
           data-slot="health-picture-blocking"
           data-state="consent-required"
-          className="surface-inset surface-pad max-w-measure space-y-3"
         >
-          {pausedBoth.map((person) => (
-            <p key={person.handle.routeSegment} className="text-base leading-relaxed text-ink">
-              {pausedWith(person.displayLabel)}{" "}
-              <Link
-                href={route("family.permissions", { person: person.handle.routeSegment })}
-                className="link-target quiet-link"
-              >
-                {OPEN_PERMISSIONS_LINK}
-              </Link>
-            </p>
-          ))}
+          <EmptyState>
+            <div className="space-y-3">
+              {pausedBoth.map((person) => (
+                <p key={person.handle.routeSegment}>
+                  {pausedWith(person.displayLabel)}{" "}
+                  <Link
+                    href={route("family.permissions", { person: person.handle.routeSegment })}
+                    className="link-target quiet-link"
+                  >
+                    {OPEN_PERMISSIONS_LINK}
+                  </Link>
+                </p>
+              ))}
+            </div>
+          </EmptyState>
         </section>
       ) : columnCount < 2 ? (
-        <section
-          role="status"
-          data-slot="health-picture-blocking"
-          data-state="empty"
-          className="surface-inset surface-pad max-w-measure space-y-3"
+        <EmptyState
+          action={
+            <Button asChild variant="outline" size="lg">
+              <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
+            </Button>
+          }
         >
-          <p className="body-lg text-ink">
-            {/* inherit-figure-exempt: a count of the people who agreed, not a result */}
-            {needsTwoPeople(columnCount)}
-          </p>
-          <p className="text-base leading-relaxed text-ink">{EACH_TURNS_IT_ON}</p>
-        </section>
+          <section
+            role="status"
+            data-slot="health-picture-blocking"
+            data-state="empty"
+            className="space-y-3"
+          >
+            <p>
+              {/* inherit-figure-exempt: a count of the people who agreed, not a result */}
+              {needsTwoPeople(columnCount)}
+            </p>
+            <p>{EACH_TURNS_IT_ON}</p>
+          </section>
+        </EmptyState>
       ) : gated ? (
         <ResultGate />
       ) : !snapshotAvailable ? (
-        <p role="status" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">{HEALTH_PICTURE_UNAVAILABLE}</p>
+        <EmptyState>
+          <p role="status">{HEALTH_PICTURE_UNAVAILABLE}</p>
+        </EmptyState>
       ) : (
         <>
           <div className="space-y-3">

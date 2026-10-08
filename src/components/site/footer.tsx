@@ -49,9 +49,10 @@ export function SiteFooter() {
     <footer className="border-t border-line bg-paper">
       <div className="mx-auto max-w-6xl px-6">
         {/* Top band: the mark at display size, the one sentence, the
-            attribution. Hairlines separate the three bands; no fills. */}
-        <div className="grid gap-8 py-14 md:py-16 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-16">
-          <Wordmark className="text-4xl md:text-5xl" />
+            attribution. Hairlines separate the three bands; no fills. From
+            lg the mark shares the attribution's baseline. */}
+        <div className="grid gap-6 py-10 md:py-16 lg:grid-cols-[auto_1fr] lg:items-baseline-last lg:gap-16">
+          <Wordmark className="text-3xl md:text-5xl" />
           <div className="space-y-4">
             <p className="lede">
               Your genome, on your terms. Inherit never sells sequencing, never
@@ -60,7 +61,9 @@ export function SiteFooter() {
             <Attribution />
           </div>
         </div>
-        <div className="rule grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Two columns from 360px so a phone is not mostly footer; four
+            from lg. Every entry stays a 44px target. */}
+        <div className="rule grid gap-x-6 gap-y-8 py-10 min-[360px]:grid-cols-2 md:py-12 lg:grid-cols-4">
           {columns.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
               <h2 className="eyebrow mb-4">{col.heading}</h2>

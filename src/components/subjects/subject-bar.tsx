@@ -125,9 +125,14 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
         {subject.displayLabel}
       </span>
       {kind ? (
+        // A chip that repeats the name ("You" beside "You") stays in the DOM
+        // for the slot's readers and leaves the row visually (round-1 m9).
         <span
           data-slot="subject-kind"
-          className="inline-flex shrink-0 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium leading-5 text-ink"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium leading-5 text-ink",
+            KIND_CHIPS[kind] === subject.displayLabel && "sr-only",
+          )}
         >
           {KIND_CHIPS[kind]}
         </span>

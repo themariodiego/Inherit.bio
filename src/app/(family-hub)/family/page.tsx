@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PeopleList, type PersonListEntry } from "@/components/family/people-list";
 import type { PersonCardState } from "@/components/family/person-card";
+import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   ADD_ANOTHER_ADULT_BUTTON,
@@ -34,8 +35,10 @@ export const metadata: Metadata = { title: FAMILY_H1 };
  * `/family` — the domain landing (design §2.1; register family.index,
  * `public-or-authenticated`, surface "hub", 64rem).
  *
- * Signed out it renders the two required panels and fetches no user data.
- * Signed in it renders the hub: the people list, one primary action, the
+ * Signed out it renders the two required panels and fetches no user data,
+ * on the same column as the other reading pages (the 72rem container with
+ * the reading head), with the one action in the head. Signed in it renders
+ * the hub: the people list or the empty state, one primary action, the
  * three entry tiles and the not-diagnostic line, with the availability line
  * below rather than above (the sign-in state changes the chrome, never the
  * panels' precedence).
@@ -55,12 +58,17 @@ function jurisdictionCopy(): string[] {
 
 function PublicPanels() {
   return (
-    <div className="page-stack stack-blocks mx-auto max-w-4xl px-6 py-16 md:py-20">
-      <header className="space-y-5">
-        <p className="eyebrow">{FAMILY_H1}</p>
+    <div className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head space-y-5">
         <h1 className="display display-lg">{FAMILY_H1}</h1>
         <p className="lede">{FAMILY_LEDE}</p>
+        <div className="pt-1">
+          <Button asChild size="lg">
+            <Link href={route("app.overview")}>{OPEN_INHERIT_BUTTON}</Link>
+          </Button>
+        </div>
       </header>
+      <div className="stack-blocks mt-section">
       <section data-slot="jurisdiction-panel" className="plate">
         <div className="plate-head">
           <h2 className="title text-ink">{JURISDICTION_HEADING}</h2>
@@ -81,10 +89,6 @@ function PublicPanels() {
           {FUTURE_PERSON_LINK}
         </Link>
       </section>
-      <div>
-        <Button asChild variant="outline" size="lg">
-          <Link href={route("app.overview")}>{OPEN_INHERIT_BUTTON}</Link>
-        </Button>
       </div>
     </div>
   );
@@ -201,7 +205,7 @@ export default async function FamilyPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="page-stack stack-sections mx-auto max-w-4xl"
+      className="page-stack stack-sections max-w-4xl"
     >
       <header className="fam-head">
         <h1 className="display">{FAMILY_H1}</h1>
@@ -209,15 +213,25 @@ export default async function FamilyPage() {
 
       <section data-density-top-level-section className="space-y-6">
         {entries.length > 0 ? (
-          <PeopleList entries={entries} viewerAccountId={user.id} />
+          <>
+            <PeopleList entries={entries} viewerAccountId={user.id} />
+            <div>
+              <Button asChild size="lg">
+                <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
+              </Button>
+            </div>
+          </>
         ) : (
-          <p className="body-lg max-w-measure text-ink">{NOBODY_YET}</p>
+          <EmptyState
+            action={
+              <Button asChild size="lg">
+                <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
+              </Button>
+            }
+          >
+            {NOBODY_YET}
+          </EmptyState>
         )}
-        <div>
-          <Button asChild size="lg">
-            <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
-          </Button>
-        </div>
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -228,9 +242,9 @@ export default async function FamilyPage() {
               key={tile.id}
               data-slot="family-tile"
               data-tile={tile.id}
-              className={cn("surface surface-pad-sm", href && "link-surface fam-tile")}
+              className={cn("surface-pad-sm", href ? "surface link-surface fam-tile" : "surface-dashed")}
             >
-              <h2 className="title -my-3 pr-8">
+              <h2 className={cn("title -my-3", href ? "pr-8 text-ink" : "text-ink-muted")}>
                 {href ? (
                   <Link href={href} className="link-target">
                     {tile.label}

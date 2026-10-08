@@ -21,6 +21,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GenomeBrowser } from "@/components/browse/genome-browser";
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { RecordHead } from "@/components/records/record-head";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
@@ -51,7 +52,7 @@ import {
   resultsTruncated,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
-import { COVERAGE_PILLS, FILES_DISAGREE } from "@/copy/reports/strings";
+import { ADD_A_FILE, COVERAGE_PILLS, FILES_DISAGREE } from "@/copy/reports/strings";
 import {
   EMPTY,
   REGION_ROW_LIMIT,
@@ -141,38 +142,48 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
       data-density-primary-content="true"
       className="page-stack rec-sheet stack-sections"
     >
-      {/* The sheet's head: crumbs, the subject bar, the h1 and the one
-          search. No eyebrow on this page. */}
-      <div className="rec-sheet-head">
-        <Breadcrumbs
-          items={[
-            { label: domain.label, href: domain.href },
-            { label: displayLabel },
-            { label: DATA_CRUMB, href: route("genome.data", subjectParams) },
-            { label: BROWSER_H1 },
-          ]}
-        />
-        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-        <header>
-          <h1 className="display">{BROWSER_H1}</h1>
-          {active ? (
-            <form className="surface-inset rec-search max-w-measure" action={route("genome.browser", subjectParams)} method="get">
-              <Input
-                name="q"
-                defaultValue={q}
-                placeholder={SEARCH_PLACEHOLDER}
-                aria-label={SEARCH_LABEL}
-                className="font-mono"
-              />
-              <Button type="submit">{SEARCH_BUTTON}</Button>
-            </form>
-          ) : (
-            <p className="max-w-measure text-sm text-ink-muted">
-              {preparing ? BROWSER_PREPARING : BROWSER_NO_FILE}
-            </p>
-          )}
-        </header>
-      </div>
+      {/* The head: crumbs, the subject bar, the h1 and the one search; with
+          no prepared file, the sentence that says why, the one forest action
+          on an own record and the hills (round-1 M3). No eyebrow, no search
+          form, on this page while there is nothing to search. */}
+      <RecordHead
+        crumbs={
+          <Breadcrumbs
+            items={[
+              { label: domain.label, href: domain.href },
+              { label: displayLabel },
+              { label: DATA_CRUMB, href: route("genome.data", subjectParams) },
+              { label: BROWSER_H1 },
+            ]}
+          />
+        }
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        title={BROWSER_H1}
+        empty={fileCount === 0}
+        seed={9}
+        action={fileCount === 0 && subject.subjectClass === "self" ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
+        {active ? (
+          <form className="surface-inset rec-search max-w-measure" action={route("genome.browser", subjectParams)} method="get">
+            <Input
+              name="q"
+              defaultValue={q}
+              placeholder={SEARCH_PLACEHOLDER}
+              aria-label={SEARCH_LABEL}
+              className="font-mono"
+            />
+            <Button type="submit">{SEARCH_BUTTON}</Button>
+          </form>
+        ) : (
+          <p className="body-lg max-w-measure text-ink">
+            {preparing ? BROWSER_PREPARING : BROWSER_NO_FILE}
+          </p>
+        )}
+      </RecordHead>
 
       {clinicalGene ? (
         <div role="status" className="surface-inset surface-pad-sm text-sm text-ink">

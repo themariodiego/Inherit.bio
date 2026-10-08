@@ -20,7 +20,7 @@ export default function SciencePage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Science</p>
-        <h1 className="display display-lg">What Inherit can—and cannot—say.</h1>
+        <h1 className="display display-lg">What Inherit <span className="whitespace-nowrap">can—and</span> cannot—say.</h1>
         <p className="lede reading-intro">Reports use only the DNA positions found in your file and public sources with version numbers. Inherit does not guess missing results or treat a link found in a study as a diagnosis.</p>
       </header>
       <div className="mt-section stack-sections">
@@ -41,7 +41,7 @@ export default function SciencePage() {
           </Link>
         </div>
 
-        <section id="evidence" aria-labelledby="evidence-heading" className="scroll-mt-24 border-t border-line pt-block">
+        <section id="evidence" aria-labelledby="evidence-heading" className="border-t border-line pt-block">
           <h2 id="evidence-heading" className="display">How sure we are</h2>
           <p className="lede mt-4">Every report carries one of these words. Each word says how well the science behind the report has been checked.</p>
           <dl className="mt-8 grid gap-4 md:grid-cols-2">
@@ -58,7 +58,7 @@ export default function SciencePage() {
             are stated here, once, with the reason. The third (Denisovan
             ancestry) is stated on the ancestry surface beside the Neanderthal
             card. docs/capability-register.md is the authority. */}
-        <section id="not-offered" aria-labelledby="not-offered-heading" className="scroll-mt-24 border-t border-line pt-block">
+        <section id="not-offered" aria-labelledby="not-offered-heading" className="border-t border-line pt-block">
           <h2 id="not-offered-heading" className="display">What Inherit does not do</h2>
           <div className="legal-prose mt-6">
             <p>Inherit does not match you with relatives. It does not work out how much DNA two people share. Your file is compared with public reference data, not with another person’s file.</p>
@@ -66,13 +66,15 @@ export default function SciencePage() {
           </div>
         </section>
 
-        <section id="sources" aria-labelledby="sources-heading" className="scroll-mt-24 border-t border-line pt-block">
+        <section id="sources" aria-labelledby="sources-heading" className="border-t border-line pt-block">
           <h2 id="sources-heading" className="display">Sources checked for these reports</h2>
           <p className="lede mt-4 mb-8">This list covers linked explanations in selected reports, including taste, smell, earwax and sneezing in bright light. Other reports still list their sources on their own pages. This is not a complete review of the report library.</p>
-          <ClaimSources sourceIds={presentationCitations.map((source) => source.id)} scienceIndex />
+          <div className="max-w-measure">
+            <ClaimSources sourceIds={presentationCitations.map((source) => source.id)} scienceIndex />
+          </div>
         </section>
 
-        <section id="polygenic" aria-labelledby="polygenic-heading" className="scroll-mt-24 border-t border-line pt-block">
+        <section id="polygenic" aria-labelledby="polygenic-heading" className="border-t border-line pt-block">
           <h2 id="polygenic-heading" className="display">Why a report may show no number yet</h2>
           <div className="legal-prose mt-6">
             <p>Some reports add up many small effects into one estimate. Scientists call these polygenic scores.</p>

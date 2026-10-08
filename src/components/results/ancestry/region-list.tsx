@@ -3,7 +3,8 @@
  * §8.3, A.8): the non-visual equivalent, reachable in zero activations and
  * never hidden from assistive technology. One row per region in descending
  * share order; a row the toggle hides carries `hidden`; the selected row
- * carries `aria-selected`. The share cell is the row's `ancestry-share`
+ * carries `data-selected` (a plain table row allows no `aria-selected`).
+ * The share cell is the row's `ancestry-share`
  * figure node, rendered by the parent's <ClaimBlock> and handed in here so
  * every figure keeps exactly one attributed ancestor.
  */
@@ -48,7 +49,7 @@ export function RegionList({ rows, figures, visibleCodes, selectedCode }: Region
               key={row.code}
               data-slot="region-row"
               data-region={row.code}
-              aria-selected={selected}
+              data-selected={selected}
               hidden={!visibleCodes.has(row.code)}
               className={cn("border-b border-line", selected && "bg-surface-inset")}
             >

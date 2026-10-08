@@ -23,7 +23,9 @@ export function StartHere() {
       <div className="plate-body">
         <ul className="divide-y divide-line">
           {items.map((item, index) => (
-            <li key={item.id} className="max-w-measure py-5 first:pt-0 last:pb-0">
+            // The text is capped at the measure, not the row: the hairline
+            // spans the plate (round-1 m4).
+            <li key={item.id} className="py-5 first:pt-0 last:pb-0">
               {index === 0 ? (
                 <Button asChild size="lg">
                   <Link href={item.href}>{item.label}</Link>
@@ -36,7 +38,7 @@ export function StartHere() {
                   {item.label}
                 </Link>
               )}
-              <p className="mt-2 text-sm text-ink-muted">{item.description}</p>
+              <p className="mt-2 max-w-measure text-sm text-ink-muted">{item.description}</p>
             </li>
           ))}
         </ul>

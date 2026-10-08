@@ -285,7 +285,7 @@ export default async function OverviewPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="page-stack stack-sections mx-auto max-w-6xl"
+      className="page-stack stack-sections max-w-6xl"
     >
       <header className="page-head">
         <h1 className="display">{OVERVIEW_H1}</h1>
@@ -316,12 +316,16 @@ export default async function OverviewPage() {
         />
       ) : null}
 
-      {DOMAIN_SECTIONS.flatMap((section) => [
+      {DOMAIN_SECTIONS.flatMap((section, index) => [
+        // My Genome keeps its cards; the two domains beneath it are ruled
+        // rows, so the hub is not one card template nine times (round-1 M10).
         <DomainSection
           key={section.id}
           id={section.id}
+          index={index}
           heading={section.heading}
           boxes={boxesFor(section.id)}
+          variant={section.id === "my-genome" ? "cards" : "rows"}
         >
           {section.id === "my-genome" ? (
             hasReports ? (

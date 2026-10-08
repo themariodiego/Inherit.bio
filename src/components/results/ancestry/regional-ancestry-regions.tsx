@@ -135,7 +135,7 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
           </tr></thead>
           <tbody>{rows.map((row, index) => <Fragment key={row.code}>
             <tr data-slot="region-row" data-region={row.code} hidden={wellSupportedOnly && !row.wellSupported}
-              aria-selected={row.code === openCode} className={row.code === openCode ? "border-b border-line bg-surface-inset" : "border-b border-line"}>
+              data-selected={row.code === openCode} className={row.code === openCode ? "border-b border-line bg-surface-inset" : "border-b border-line"}>
               <th scope="row" data-slot="region-name" className="pr-3 text-base font-medium text-ink">{row.name}</th>
               <td className="pr-3">{nodes[index]}</td><td data-slot="region-band" className="text-ink-muted">{row.band}</td>
             </tr>

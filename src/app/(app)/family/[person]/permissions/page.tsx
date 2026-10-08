@@ -289,7 +289,7 @@ export default async function FamilyPermissionsPage(
   );
 
   return (
-    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-4xl">
+    <div data-surface="flow" className="page-stack stack-blocks max-w-4xl">
       <div className="fam-head">
         <Breadcrumbs
           items={[

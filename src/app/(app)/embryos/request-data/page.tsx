@@ -24,7 +24,8 @@ export const metadata: Metadata = { title: `${REQUEST_DATA_H1} · ${EMBRYOS_H1}`
  * `/embryos/request-data` — the letter to the laboratory (design §2.2;
  * register embryos.request-data, flow, `restricted-flow`). The letter is
  * static copy, so it renders for an account with no cohort; the one primary
- * action copies it; the closed list of formats and the next step follow.
+ * action copies it and sits above the letter, in the first phone viewport;
+ * the closed list of formats and the next step follow.
  * The route is guarded by `embryo_analysis` like every Embryo page.
  */
 export default async function EmbryoRequestDataPage() {
@@ -33,7 +34,7 @@ export default async function EmbryoRequestDataPage() {
   const { decision } = viewer;
 
   return (
-    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-3xl">
+    <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
       <div className="fam-head">
         <Breadcrumbs
           items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: REQUEST_DATA_H1 }]}
@@ -54,13 +55,13 @@ export default async function EmbryoRequestDataPage() {
               {EMAIL_HEADING}
             </h2>
             <p className="lede">{LEDE}</p>
+            <CopyEmailButton text={LETTER} />
             <blockquote
               data-slot="request-letter"
               className="surface surface-pad max-w-measure text-base leading-relaxed text-ink"
             >
               {LETTER}
             </blockquote>
-            <CopyEmailButton text={LETTER} />
           </section>
           <div className="space-y-3">
             <p data-slot="formats" className="max-w-measure text-base leading-relaxed text-ink">

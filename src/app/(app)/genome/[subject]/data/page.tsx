@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { RecordHead } from "@/components/records/record-head";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { ScorePanelResult } from "@/components/results/polygenic/score-panel-result";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -19,6 +20,7 @@ import {
   scoreInputLabel,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
+import { ADD_A_FILE } from "@/copy/reports/strings";
 import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
 import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { scorePanel } from "@/lib/genome/prs-panel";
@@ -112,43 +114,58 @@ export default async function GenomeDataPage(
   const inputSources = await loadInputSources(admin, dataSubjectId, scores.map(({ row }) => row.file_id),
     { kind: "report", purpose: "reports.polygenic" });
 
+  // No prepared file: the head carries the coverage sentence and, on an own
+  // record, the one forest action, with the hills along its edge (round-1
+  // M3). The coverage section then has nothing to list and is absent rather
+  // than an empty heading. No eyebrow on this page: the crumb and the bar
+  // already say where the reader is.
+  const noFile = files.length === 0;
+  const canAddFile = person === null && subject.subjectClass === "self";
+
   return (
     <div data-surface="standard" className="page-stack rec-sheet stack-sections">
-      {/* The sheet's head: crumbs, the subject bar, then the one display h1.
-          No eyebrow on this page: the crumb and the bar already say where
-          the reader is. */}
-      <div className="rec-sheet-head">
-        <Breadcrumbs
-          items={[
-            { label: domain.label, href: domain.href },
-            { label: displayLabel },
-            { label: DATA_CRUMB },
-          ]}
-        />
-        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-        <header>
-          <h1 className="display">{DATA_H1}</h1>
-          <p className="lede">{DATA_LEDE}</p>
-        </header>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Button asChild variant="outline" className="h-auto min-h-16 text-base">
+      <RecordHead
+        crumbs={
+          <Breadcrumbs
+            items={[
+              { label: domain.label, href: domain.href },
+              { label: displayLabel },
+              { label: DATA_CRUMB },
+            ]}
+          />
+        }
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />}
+        title={DATA_H1}
+        empty={fileCount === 0}
+        seed={7}
+        action={fileCount === 0 && canAddFile ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
+        <p className="lede">{DATA_LEDE}</p>
+        {noFile ? (
+          <p className="body-lg max-w-measure text-ink">
+            {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
+          </p>
+        ) : null}
+      </RecordHead>
+      {/* Two navigation actions on the control scale (round-1 m11). */}
+      <div className="flex flex-wrap gap-3">
+        <Button asChild variant="outline">
           <Link href={route("genome.browser", subjectParams)}>{BROWSE_VARIANTS}</Link>
         </Button>
-        <Button asChild variant="outline" className="h-auto min-h-16 text-base">
+        <Button asChild variant="outline">
           <Link href={route("files.index")}>{MANAGE_FILES}</Link>
         </Button>
       </div>
 
-      <section aria-labelledby="score-panel-coverage" className="rec-stack">
+      {noFile ? null : <section aria-labelledby="score-panel-coverage" className="rec-stack">
         <h2 id="score-panel-coverage" className="title">
           {SCORE_COVERAGE_HEADING}
         </h2>
-        {files.length === 0 ? (
-          <p className="max-w-measure text-sm text-ink-muted">
-            {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
-          </p>
-        ) : scores.length === 0 ? (
+        {scores.length === 0 ? (
           <p className="max-w-measure text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
         ) : (
           <ul className="rec-list">
@@ -170,7 +187,7 @@ export default async function GenomeDataPage(
             ))}
           </ul>
         )}
-      </section>
+      </section>}
       {scores.length ? <div data-slot="score-input-provenance">
         <InputProvenance sources={inputSources} subject={{ subjectId: dataSubjectId }} />
       </div> : null}

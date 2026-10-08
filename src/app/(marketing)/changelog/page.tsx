@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/site/empty-state";
 import { REPORTS_RELABELLED } from "@/copy/reports/strings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -134,8 +135,10 @@ export default async function ChangelogPage() {
           ),
         )}
         {items.length === 0 ? (
-          <li className="max-w-measure text-ink-muted">
-            No published entries yet — the pipeline is young. Check back soon.
+          <li>
+            <EmptyState>
+              No published entries yet — the pipeline is young. Check back soon.
+            </EmptyState>
           </li>
         ) : null}
       </ol>

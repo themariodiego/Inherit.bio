@@ -14,7 +14,8 @@
  * Shown mode: one focusable `<path>` per visible region in descending share
  * order, named as A.8 asks; hover and focus report to the parent, Enter,
  * Space and click activate. Grey mode: every region as a grey outline,
- * nothing focusable, no gradient.
+ * nothing focusable, no gradient. `quiet` draws the map without the plate
+ * (no label head, the caption under it) for an empty state's ground.
  *
  * The SVG carries `data-density-pixel-exclusion="map-tile"`: the density
  * measurement treats it as a map, not as ink.
@@ -48,10 +49,12 @@ export interface AncestryMapProps {
   onHover?: (code: string) => void;
   /** Click, Enter or Space: opens the panel and moves focus to its Close button. */
   onActivate?: (code: string) => void;
+  /** No plate chrome: the map and its caption alone, inside an empty state. */
+  quiet?: boolean;
 }
 
 export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover, onActivate,
-  label, caption }: AncestryMapProps) {
+  label, caption, quiet = false }: AncestryMapProps) {
   const shapeByCode = new Map(shapes.regions.map((shape) => [shape.code, shape]));
   const shown = mode === "shown";
   const stopStyle = { stopColor: "var(--forest)" };
@@ -63,14 +66,7 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
     }
   }
 
-  return (
-    <figure data-slot="ancestry-figure" className="plate fam-map m-0">
-      {/* The plate's label repeats the map's accessible name for the eye only. */}
-      <p aria-hidden="true" className="plate-head">
-        <span className="eyebrow">{label}</span>
-      </p>
-      <div className="plate-body">
-      <div className="fam-map-body">
+  const svg = (
       <svg
         viewBox={VIEWBOX}
         role="group"
@@ -150,10 +146,30 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
               />
             ))}
       </svg>
-      </div>
-      <figcaption data-slot="map-caption" className="caption">
-        {caption}
-      </figcaption>
+  );
+  const figcaption = (
+    <figcaption data-slot="map-caption" className="caption">
+      {caption}
+    </figcaption>
+  );
+
+  if (quiet) {
+    return (
+      <figure data-slot="ancestry-figure" className="fam-map-quiet">
+        {svg}
+        {figcaption}
+      </figure>
+    );
+  }
+  return (
+    <figure data-slot="ancestry-figure" className="plate fam-map m-0">
+      {/* The plate's label repeats the map's accessible name for the eye only. */}
+      <p aria-hidden="true" className="plate-head">
+        <span className="eyebrow">{label}</span>
+      </p>
+      <div className="plate-body">
+        <div className="fam-map-body">{svg}</div>
+        {figcaption}
       </div>
     </figure>
   );

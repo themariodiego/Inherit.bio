@@ -14,8 +14,15 @@
  * The grey map is the seven-region one, with its own count-free words. A new
  * result is always a seven-region result, and the historical five-region map
  * and caption belong only to the historical results that still carry them.
+ *
+ * The section is the product's one <EmptyState>: the grey map on the inset
+ * ground at its natural aspect (no plate chrome, never forced to 4:5), the
+ * sentence once for the page, and the Reports link as its one action where
+ * a step exists.
  */
 import Link from "next/link";
+import { EmptyState } from "@/components/site/empty-state";
+import { Button } from "@/components/ui/button";
 import { ANCESTRY_NOT_GENERATED, ANCESTRY_OFF, ANCESTRY_REPORTS_LINK, NOTHING_READ } from "@/copy/ancestry";
 import { REGIONAL_MAP_CAPTION, REGIONAL_MAP_LABEL } from "@/copy/regional-ancestry";
 import type { AncestryAbsence, AncestryReportsStep } from "@/lib/ancestry/absence";
@@ -50,16 +57,27 @@ export interface AncestryAbsentProps {
 }
 
 export function AncestryAbsent({ shapes, absence, reportsHref }: AncestryAbsentProps) {
+  const step = absence === "nothing-read" ? null : STEP_NOTES[absence];
   return (
-    <div data-slot="ancestry-absent" data-absence={absence} className="space-y-4">
-      <AncestryMap shapes={shapes} rows={[]} mode="grey" label={REGIONAL_MAP_LABEL} caption={REGIONAL_MAP_CAPTION} />
-      {absence === "nothing-read" ? (
-        <p data-slot="nothing-read" className="surface-inset surface-pad-sm max-w-measure text-base leading-relaxed text-ink">
-          {NOTHING_READ}
-        </p>
-      ) : (
-        <AncestryReportsNote step={absence} reportsHref={reportsHref} />
-      )}
+    <div data-slot="ancestry-absent" data-absence={absence}>
+      <EmptyState
+        action={
+          step ? (
+            <Button asChild variant="outline" size="lg">
+              <Link href={reportsHref}>{ANCESTRY_REPORTS_LINK}</Link>
+            </Button>
+          ) : undefined
+        }
+      >
+        <div className="space-y-4">
+          <AncestryMap shapes={shapes} rows={[]} mode="grey" label={REGIONAL_MAP_LABEL} caption={REGIONAL_MAP_CAPTION} quiet />
+          {step ? (
+            <p data-slot={step.slot}>{step.sentence}</p>
+          ) : (
+            <p data-slot="nothing-read">{NOTHING_READ}</p>
+          )}
+        </div>
+      </EmptyState>
     </div>
   );
 }

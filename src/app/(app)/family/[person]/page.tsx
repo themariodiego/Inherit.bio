@@ -6,6 +6,7 @@ import { cache } from "react";
 import { ResultGate } from "@/components/family/result-gate";
 import { isFixtureSlug } from "@/components/reports/library";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { EmptyState } from "@/components/site/empty-state";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { TermDefinition } from "@/components/figures/term-definition";
 import { NAV_LABELS } from "@/copy/navigation";
@@ -157,7 +158,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
   const subject = { ...person.handle, displayLabel: person.displayLabel };
 
   return (
-    <div data-surface="standard" className="page-stack stack-blocks mx-auto max-w-4xl">
+    <div data-surface="standard" className="page-stack stack-blocks max-w-4xl">
       <div className="fam-head">
         <Breadcrumbs
           items={[
@@ -176,8 +177,8 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
           nothing shared, or with sharing paused, there is nothing to gate
           and a wall would say less than the sentence does. */}
       {!allowed ? (
-        <section role="status" className="surface-inset surface-pad max-w-measure">
-          <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
+        <section role="status">
+          <EmptyState>{decision.userFacingCopy}</EmptyState>
         </section>
       ) : person.sharing === "paused" ? (
         // Two no-output branches one line apart, and they mean opposite
@@ -185,23 +186,17 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
         // below never consented at all. They are marked so a reader of the
         // DOM — and a browser test naming the state — can tell which is on
         // screen, exactly as `/family/portrait/[pairId]` marks its four.
-        <p
-          role="status"
-          data-slot="person-blocking"
-          data-state="consent-required"
-          className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink"
-        >
-          {PAUSED_BODY}
-        </p>
+        <EmptyState>
+          <p role="status" data-slot="person-blocking" data-state="consent-required">
+            {PAUSED_BODY}
+          </p>
+        </EmptyState>
       ) : layers.length === 0 && !hasAncestry ? (
-        <p
-          role="status"
-          data-slot="person-blocking"
-          data-state="empty"
-          className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink"
-        >
-          {nothingSharedYet(person.displayLabel)}
-        </p>
+        <EmptyState>
+          <p role="status" data-slot="person-blocking" data-state="empty">
+            {nothingSharedYet(person.displayLabel)}
+          </p>
+        </EmptyState>
       ) : gated ? (
         <ResultGate />
       ) : (
@@ -214,9 +209,9 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
               {reportsLede(person.displayLabel)}
             </p>
             {!hasFile ? (
-              <p className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
+              <EmptyState>
                 {hasCanonicalAccess ? "No completed result is shared yet." : noFileYet(person.displayLabel)}
-              </p>
+              </EmptyState>
             ) : (
               (["variant_call", "estimate"] as const).map((layer) =>
                 layers.includes(layer) ? (

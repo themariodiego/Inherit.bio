@@ -18,9 +18,10 @@ export const metadata: Metadata = { title: `${UPLOAD_H1} · ${EMBRYOS_H1}` };
  * `embryo_analysis` like every Embryo page: a refused jurisdiction renders
  * the register's copy and no form. Where it permits, the flow renders its
  * first two steps; while `EMBRYO_INGEST_AVAILABLE` is false the page says
- * so above step 1 and the flow ends on the honest terminal rather than a
- * control that goes nowhere. No cohort row is read here: the flow persists
- * nothing until the draft route (E0) exists.
+ * so under the step card (so the first question and Continue sit in the
+ * first phone viewport) and the flow ends on the honest terminal rather
+ * than a control that goes nowhere. No cohort row is read here: the flow
+ * persists nothing until the draft route (E0) exists.
  */
 export default async function EmbryoUploadPage() {
   const viewer = await loadViewer();
@@ -28,7 +29,7 @@ export default async function EmbryoUploadPage() {
   const { decision } = viewer;
 
   return (
-    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-3xl">
+    <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
       <div className="fam-head">
         <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: UPLOAD_H1 }]} />
         <header>
@@ -39,13 +40,15 @@ export default async function EmbryoUploadPage() {
         <EmbryoUnavailable decision={decision} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }} />
       ) : (
         <>
+          <UploadFlow />
           {EMBRYO_INGEST_AVAILABLE ? null : (
-            <div role="status" data-slot="ingest-availability" className="surface-inset surface-pad-sm max-w-measure space-y-1 text-sm leading-relaxed">
-              <p className="text-base font-medium text-ink">{INGEST_UNAVAILABLE_SENTENCE}</p>
-              <p className="text-ink">{INGEST_UNAVAILABLE_LEDE}</p>
+            <div role="status" data-slot="ingest-availability" className="surface-inset surface-pad-sm">
+              <div className="max-w-measure space-y-1 text-sm leading-relaxed">
+                <p className="text-base font-medium text-ink">{INGEST_UNAVAILABLE_SENTENCE}</p>
+                <p className="text-ink">{INGEST_UNAVAILABLE_LEDE}</p>
+              </div>
             </div>
           )}
-          <UploadFlow />
         </>
       )}
     </div>

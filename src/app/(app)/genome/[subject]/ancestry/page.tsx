@@ -9,11 +9,13 @@ import type { InputSourceView } from "@/lib/genome/input-sources";
  * the historical or seven-region presentation. Geometry is decoded on the
  * server and passed as plain data; nothing here recomputes an estimate.
  *
- * With no stored result, the page says why, in each panel: nothing has been
- * processed yet, or (own records only) a file has been processed and the
- * Ancestry choice is off, or it is on and no result has been generated yet.
- * The last two are read from the same "Choose your reports" section the
- * subject's Reports page renders, never inferred here.
+ * With no stored result, the page says why once, in the regions section:
+ * nothing has been processed yet, or (own records only) a file has been
+ * processed and the Ancestry choice is off, or it is on and no result has
+ * been generated yet. The last two are read from the same "Choose your
+ * reports" section the subject's Reports page renders, never inferred here.
+ * The two line cards then carry their headings alone rather than the same
+ * sentence a third time.
  *
  * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
  * Neanderthals, where this comes from). No segmented control renders while
@@ -214,7 +216,7 @@ export default async function AncestryPage(
   const reportsHref = route("genome.reports", subjectParams);
 
   return (
-    <div className="page-stack stack-blocks mx-auto max-w-5xl">
+    <div className="page-stack stack-blocks max-w-5xl">
       <div className="fam-head">
         <Breadcrumbs
           items={[
@@ -283,6 +285,7 @@ export default async function AncestryPage(
           modelRecord={mt ? { id: mt.model_id, version: mt.model_version } : undefined}
           absence={absence}
           reportsHref={reportsHref}
+          absenceStated={!admix}
         />
         <LineageCard
           parent="father"
@@ -294,6 +297,7 @@ export default async function AncestryPage(
           modelRecord={y ? { id: y.model_id, version: y.model_version } : undefined}
           absence={absence}
           reportsHref={reportsHref}
+          absenceStated={!admix}
         />
       </div>
 

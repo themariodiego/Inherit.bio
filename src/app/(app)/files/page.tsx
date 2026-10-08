@@ -4,7 +4,10 @@ import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 import { HeldForYouRows, OtherAdultHeldRows, PathBChoicesSection } from "@/components/uploads/other-adult-upload-section";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
-import { Terrain } from "@/components/site/terrain";
+import { RecordHead } from "@/components/records/record-head";
+import { Button } from "@/components/ui/button";
+import { ADD_A_FILE } from "@/copy/reports/strings";
+import { route } from "@/lib/primary-routes";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -29,25 +32,47 @@ export default async function UploadsPage() {
   );
   const rows = files ?? [];
 
+  // The measured-or-withheld timing sentence is a caption beside the list,
+  // not the lede under the h1 (round-1 m7).
+  const timing = tier1 && tier1.p50_seconds != null ? (
+    <p className="caption max-w-measure">
+      Measured processing time on this deployment (last 90 days,{" "}
+      {tier1.n} file{tier1.n === 1 ? "" : "s"}): median{" "}
+      {tier1.p50_seconds}s, 95th percentile {tier1.p95_seconds}s.
+    </p>
+  ) : (
+    <p className="caption max-w-measure">
+      Processing times are measured and shown here once this deployment
+      has processed files — no marketing estimates.
+    </p>
+  );
+
   return (
     <div className="page-stack rec-column-wide stack-sections">
       <AutoRefresh active={inFlight} />
-      <header className="rec-head">
-        <p className="eyebrow">Ingestion</p>
-        <h1 className="display">My files</h1>
-        {tier1 && tier1.p50_seconds != null ? (
-          <p className="lede">
-            Measured processing time on this deployment (last 90 days,{" "}
-            {tier1.n} file{tier1.n === 1 ? "" : "s"}): median{" "}
-            {tier1.p50_seconds}s, 95th percentile {tier1.p95_seconds}s.
-          </p>
-        ) : (
-          <p className="lede">
-            Processing times are measured and shown here once this deployment
-            has processed files — no marketing estimates.
-          </p>
-        )}
-      </header>
+      {/* The head (round-1 M7): with no file it carries the index's one
+          sentence, the one forest action and the hills. The sentence is the
+          file list's only item, so the index still states its absence in
+          words inside the list, as it always has. */}
+      <RecordHead
+        title="My files"
+        empty={rows.length === 0}
+        seed={11}
+        action={rows.length === 0 ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload")}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
+        {rows.length === 0 ? (
+          <ul className="rec-record-list">
+            <li className="body-lg max-w-measure text-ink">
+              No files yet. Upload a raw data export to get started — or grab a
+              provider from the directory first.
+            </li>
+          </ul>
+        ) : null}
+      </RecordHead>
 
       <div className="rec-stack">
         <OwnUploadEntry />
@@ -75,75 +100,70 @@ export default async function UploadsPage() {
       <HeldForYouRows />
       <PathBChoicesSection />
 
-      <ul className={rows.length ? "rec-list" : undefined}>
-        {rows.map((f) => (
-          <li key={f.id} className="rec-row">
-            <div className="rec-main">
-              <p className="rec-name">{f.original_name}</p>
-              <p className="caption">
-                {f.file_type.replace("array_", "array · ")} ·{" "}
-                {formatBytes(f.size_bytes)}
-                {f.build ? ` · ${f.build}` : ""}
-                {f.variant_count
-                  ? ` · ${f.variant_count.toLocaleString()} variants`
-                  : ""}
-              </p>
-              {f.sha256 ? (
-                <p className="caption">
-                  <span className="mono">sha256 {f.sha256.slice(0, 32)}…</span>
-                </p>
-              ) : null}
-              {f.status === "failed" && f.error ? (
-                <p className="max-w-measure text-xs text-danger">{f.error}</p>
-              ) : null}
-            </div>
-            {/* Wraps at the 320px support floor: the status, the reports link
-                and the row actions need 370px side by side, which scrolled
-                the whole page sideways (WCAG 2.1 SC 1.4.10). */}
-            <div className="rec-actions">
-              <span
-                data-slot="file-status"
-                className={f.status === "failed" ? "text-sm text-danger" : "text-sm text-ink-muted"}
-              >
-                {fileStatusLabel(f)}
-              </span>
-              {f.status === "annotated" ? (
-                <Link
-                  href="/genome/me/reports"
-                  className="link-target prose-link whitespace-nowrap text-sm"
-                >
-                  See your reports →
-                </Link>
-              ) : f.status === "stored" && f.tier === 1 && f.normalization_completed_at !== null ? (
-                <Link
-                  href="/genome/me/reports"
-                  className="link-target prose-link whitespace-nowrap text-sm"
-                >
-                  Choose reports →
-                </Link>
-              ) : null}
-              <FileRowActions
-                fileId={f.id}
-                status={f.status}
-                tier={f.tier}
-                preparationOnly={f.single_logical_sample_verified_at !== null}
-              />
-            </div>
-          </li>
-        ))}
-        {rows.length === 0 ? (
-          <li className="surface relative overflow-hidden">
-            {/* The empty state's ground: the hills, decorative only. */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-              <Terrain variant="band" seed={11} className="absolute inset-0" />
-            </div>
-            <p className="relative max-w-measure px-6 py-14 text-base text-ink md:px-8">
-              No files yet. Upload a raw data export to get started — or grab a
-              provider from the directory first.
-            </p>
-          </li>
-        ) : null}
-      </ul>
+      {rows.length ? (
+        <div className="rec-stack">
+          {timing}
+          <ul className="rec-list">
+            {rows.map((f) => (
+              <li key={f.id} className="rec-row">
+                <div className="rec-main">
+                  <p className="rec-name">{f.original_name}</p>
+                  <p className="caption">
+                    {f.file_type.replace("array_", "array · ")} ·{" "}
+                    {formatBytes(f.size_bytes)}
+                    {f.build ? ` · ${f.build}` : ""}
+                    {f.variant_count
+                      ? ` · ${f.variant_count.toLocaleString()} variants`
+                      : ""}
+                  </p>
+                  {f.sha256 ? (
+                    <p className="caption">
+                      <span className="mono">sha256 {f.sha256.slice(0, 32)}…</span>
+                    </p>
+                  ) : null}
+                  {f.status === "failed" && f.error ? (
+                    <p className="max-w-measure text-xs text-danger">{f.error}</p>
+                  ) : null}
+                </div>
+                {/* Wraps at the 320px support floor: the status, the reports link
+                    and the row actions need 370px side by side, which scrolled
+                    the whole page sideways (WCAG 2.1 SC 1.4.10). */}
+                <div className="rec-actions">
+                  <span
+                    data-slot="file-status"
+                    className={f.status === "failed" ? "text-sm text-danger" : "text-sm text-ink-muted"}
+                  >
+                    {fileStatusLabel(f)}
+                  </span>
+                  {f.status === "annotated" ? (
+                    <Link
+                      href="/genome/me/reports"
+                      className="link-target prose-link whitespace-nowrap text-sm"
+                    >
+                      See your reports →
+                    </Link>
+                  ) : f.status === "stored" && f.tier === 1 && f.normalization_completed_at !== null ? (
+                    <Link
+                      href="/genome/me/reports"
+                      className="link-target prose-link whitespace-nowrap text-sm"
+                    >
+                      Choose reports →
+                    </Link>
+                  ) : null}
+                  <FileRowActions
+                    fileId={f.id}
+                    status={f.status}
+                    tier={f.tier}
+                    preparationOnly={f.single_logical_sample_verified_at !== null}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        timing
+      )}
     </div>
   );
 }

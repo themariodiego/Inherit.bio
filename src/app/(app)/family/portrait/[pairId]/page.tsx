@@ -14,6 +14,7 @@ import { TraitCard } from "@/components/family/portrait/trait-card";
 import { ResultGate } from "@/components/family/result-gate";
 import type { HealthPictureColumn } from "@/components/family/health-picture-table";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { EmptyState } from "@/components/site/empty-state";
 import { SELF_PLACEHOLDER_LABEL } from "@/copy/family/index";
 import {
   DATA_AND_METHODS,
@@ -286,7 +287,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   if (sourceSnapshot && !await sourceSnapshot.confirm()) notFound();
 
   return (
-    <div data-surface="standard" className="page-stack stack-blocks mx-auto max-w-5xl">
+    <div data-surface="standard" className="page-stack stack-blocks max-w-5xl">
       <div className="fam-head">
         <Breadcrumbs
           items={[
@@ -309,13 +310,15 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
       <PortraitBanner />
 
       {!allowed ? (
-        <section role="status" className="surface-inset surface-pad max-w-measure">
-          <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
+        <section role="status">
+          <EmptyState>{decision.userFacingCopy}</EmptyState>
         </section>
       ) : preconditions.kind === "paused" ? (
-        <p role="status" data-state="paused" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
-          {PAUSED_BODY}
-        </p>
+        <EmptyState>
+          <p role="status" data-state="paused">
+            {PAUSED_BODY}
+          </p>
+        </EmptyState>
       ) : preconditions.kind === "missing" ? (
         <PortraitBlocking
           people={blockingPeople}
@@ -352,34 +355,37 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
             {noFile.length > 0 || preparing.length > 0 ? (
               <>
                 {preparing.length > 0 ? (
-                  <div role="status" data-state="processing" data-slot="portrait-preparing" className="surface-inset surface-pad max-w-measure space-y-2">
-                    {preparing.map((sentence) => (
-                      <p key={sentence} className="text-base leading-relaxed text-ink">
-                        {sentence}
-                      </p>
-                    ))}
-                  </div>
+                  <EmptyState>
+                    <div role="status" data-state="processing" data-slot="portrait-preparing" className="space-y-2">
+                      {preparing.map((sentence) => (
+                        <p key={sentence}>{sentence}</p>
+                      ))}
+                    </div>
+                  </EmptyState>
                 ) : null}
                 {noFile.length > 0 ? (
-                  <div role="status" data-state="empty" className="surface-inset surface-pad max-w-measure space-y-2">
-                    {noFile.map((sentence) => (
-                      <p key={sentence} className="text-base leading-relaxed text-ink">
-                        {sentence}
-                      </p>
-                    ))}
-                  </div>
+                  <EmptyState>
+                    <div role="status" data-state="empty" className="space-y-2">
+                      {noFile.map((sentence) => (
+                        <p key={sentence}>{sentence}</p>
+                      ))}
+                    </div>
+                  </EmptyState>
                 ) : null}
               </>
             ) : !carrierAllowed ? (
-              <p role="status" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
-                {carrierDecision.userFacingCopy}
-              </p>
+              <EmptyState>
+                <p role="status">{carrierDecision.userFacingCopy}</p>
+              </EmptyState>
             ) : canonicalSources && !output ? (
-              <p role="status" data-state="unavailable" data-slot="portrait-empty" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
-                {NO_CLASSIFIED_POSITIONS}
-              </p>
+              <EmptyState>
+                <p role="status" data-state="unavailable" data-slot="portrait-empty">
+                  {NO_CLASSIFIED_POSITIONS}
+                </p>
+              </EmptyState>
             ) : output && outputCount === 0 ? (
-              <p role="status" data-state={output.summary.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="portrait-empty" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
+              <EmptyState>
+              <p role="status" data-state={output.summary.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="portrait-empty">
                 {output.summary.classifiedPositions === 0
                   ? NO_CLASSIFIED_POSITIONS
                   : output.summary.positionsBothCover === 0
@@ -387,6 +393,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
                     : // inherit-figure-exempt: a count of positions both files cover, not a result
                       noCarrierMatches(output.summary.positionsBothCover)}
               </p>
+              </EmptyState>
             ) : output ? (
               <ul data-slot="portrait-outputs" className="space-y-6">
                 {matches.map((match) => (

@@ -16,18 +16,30 @@
 
 /* ---------------------------------------------------------------------------
  * The table of contents. Desktop: a 14rem sticky rail with an eyebrow title
- * and 44px links, no current-section tracking. Phone: a plate that opens.
+ * and 44px links; the current section's entry is forest with a 2px marker
+ * (`aria-current="location"`, set by legal/toc-rail.tsx). Phone: a plate
+ * that opens.
  * ------------------------------------------------------------------------- */
 .legal-toc { position: sticky; top: calc(var(--size-navbar) + 2rem); }
+/* 4px down puts the eyebrow's cap line on the first h2's cap line. */
+.legal-toc > .eyebrow { padding-top: 0.25rem; }
 .legal-toc ol { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border-left: 1px solid var(--line); }
 .legal-toc a {
+  position: relative;
   display: flex; align-items: center; min-height: var(--size-control);
   padding: 0.25rem 0 0.25rem 1rem; margin-left: -1px;
   border-left: 1px solid transparent;
   font-size: 0.875rem; line-height: 1.4; color: var(--ink-muted);
   transition: color var(--motion-feedback), border-color var(--motion-feedback);
 }
+.legal-toc a::before {
+  content: ""; position: absolute; inset: 10px auto 10px -1px; width: 2px;
+  border-radius: var(--radius-pill); background: var(--forest); opacity: 0;
+  transform: scaleY(0.4); transition: opacity var(--motion-feedback), transform var(--motion-reveal) var(--easing-settle);
+}
 .legal-toc a:hover { color: var(--ink); border-left-color: var(--line-strong); }
+.legal-toc a[aria-current="location"] { color: var(--forest); }
+.legal-toc a[aria-current="location"]::before { opacity: 1; transform: none; }
 .legal-toc-plate > summary {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   min-height: var(--size-control); padding: 0.5rem 1.25rem;
@@ -76,17 +88,23 @@
 
 /* ---------------------------------------------------------------------------
  * The auth shell: a quiet ground of hills behind a centred 26rem column.
- * The form sits on a surface, so the terrain never crosses text.
+ * The form sits on a surface, so the terrain never crosses text. Below sm
+ * the card covers the ground, so a short band of hills above the card takes
+ * its place (the 404's horizon) and the ground is not drawn at all.
  * ------------------------------------------------------------------------- */
 .auth-shell { position: relative; overflow: hidden; isolation: isolate; }
 .auth-terrain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.55; }
 .auth-terrain [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 62%; }
+.auth-band { width: 100%; max-width: 26rem; margin-bottom: -0.5rem; }
+@media (max-width: 639px) { .auth-terrain { display: none; } }
 /* Top-anchored with a reserved height: the sign-in form arrives after
    hydration (its search-params boundary), so a centred column would move the
    wordmark and footer when the form filled in. Anchored at the top, nothing
    above the form moves and the reserve keeps the footer still. */
 .auth-surface { width: 100%; max-width: 26rem; min-height: 24rem; }
-.auth-surface h1.display { font-size: clamp(1.875rem, 1.3rem + 2vw, 2.5rem); }
+/* The h1 follows the card's text column (the viewport less the page and card
+   padding, capped at 2.125rem) so "Create your account" sets on one line. */
+.auth-surface h1.display { font-size: clamp(1.5rem, (100vw - 6rem) / 9.6, 2.125rem); }
 .auth-note { display: flex; align-items: center; min-height: var(--size-control); padding: 0.625rem 1rem; border-radius: var(--radius-sm); background: var(--surface-inset); font-size: 0.9375rem; line-height: 1.5; }
 
 /* ---------------------------------------------------------------------------

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { ChatPanel, type ChatProviderInfo } from "@/components/chat/chat-panel";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";
 import { CohortCopilotPage, FamilyCopilotPage } from "@/components/chat/group-scope-pages";
+import { EmptyState } from "@/components/site/empty-state";
+import { Button } from "@/components/ui/button";
 import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
@@ -39,7 +41,6 @@ export default async function ChatPage(
   const ownChat = subject.subjectClass === "self" ? await prepareOwnCopilotChat(subject.id) : null;
   const header = (
     <header className="rec-head">
-      <p className="eyebrow">Copilot</p>
       <h1 className="display">Ask about {subject.displayLabel}</h1>
     </header>
   );
@@ -107,34 +108,43 @@ export default async function ChatPage(
     <div className="page-stack rec-column stack-blocks">
       {header}
       {!info.configured ? (
-        <div
-          data-testid="local-mode-instructions"
-          className="surface surface-pad rec-stack text-sm"
-        >
-          <div className="rec-stack-sm">
-            <p className="body-lg max-w-measure text-ink">
-              Ask questions about your own reports in plain language —{" "}
-              <em>&ldquo;What does my caffeine result mean?&rdquo;</em> — and
-              get answers grounded in your data.
-            </p>
-            <ul aria-label="Example questions" className="rec-stack-sm mt-2">
-              {EXAMPLE_QUESTIONS.map((q) => (
-                <li
-                  key={q}
-                  className="caption border-l-2 border-line pl-3 italic"
-                >
-                  &ldquo;{q}&rdquo;
-                </li>
-              ))}
-            </ul>
-            <p className="caption max-w-measure">
-              Questions like these become askable as soon as an AI is
-              connected.
-            </p>
-          </div>
+        // The empty state (round-1 m13): one inset surface with the sentence,
+        // the example questions as quiet lines and "Open Settings" as the
+        // page's one forest action; the setup notes follow as plain text,
+        // and the settings page is linked once.
+        <div data-testid="local-mode-instructions" className="stack-blocks text-sm">
+          <EmptyState
+            action={
+              <Button asChild size="lg">
+                <Link href={route("settings.copilot")}>Open Settings →</Link>
+              </Button>
+            }
+          >
+            <div className="rec-stack-sm">
+              <p className="body-lg text-ink">
+                Ask questions about your own reports in plain language —{" "}
+                <em>&ldquo;What does my caffeine result mean?&rdquo;</em> — and
+                get answers grounded in your data.
+              </p>
+              <ul aria-label="Example questions" className="rec-stack-sm mt-2">
+                {EXAMPLE_QUESTIONS.map((q) => (
+                  <li
+                    key={q}
+                    className="caption border-l-2 border-line-strong pl-3 italic"
+                  >
+                    &ldquo;{q}&rdquo;
+                  </li>
+                ))}
+              </ul>
+              <p className="caption">
+                Questions like these become askable as soon as an AI is
+                connected.
+              </p>
+            </div>
+          </EmptyState>
 
-          <div className="rec-stack border-t border-line pt-5">
-            <p className="max-w-measure">
+          <div className="rec-stack max-w-measure">
+            <p>
               To answer, the copilot needs an AI — Inherit doesn&rsquo;t
               bundle one, so you decide which AI (if any) ever sees your
               questions. <strong>Connecting an AI is a one-time technical
@@ -157,13 +167,7 @@ export default async function ChatPage(
                   .
                 </li>
                 <li>
-                  Paste it in{" "}
-                  <Link
-                    href={route("settings.copilot")}
-                    className="prose-link"
-                  >
-                    Settings → Copilot provider
-                  </Link>{" "}
+                  Paste it in <span className="font-medium">Settings → Copilot provider</span>{" "}
                   and save. Then review and allow the information Copilot may use.
                 </li>
               </ol>
@@ -208,12 +212,6 @@ export default async function ChatPage(
               </p>
             </details>
           </div>
-
-          <p>
-            <Link href={route("settings.copilot")} className="link-target quiet-link">
-              Open Settings →
-            </Link>
-          </p>
         </div>
       ) : (
         <ChatPanel info={info} scope={subject.routeSegment} />

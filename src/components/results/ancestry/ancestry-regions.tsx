@@ -27,6 +27,7 @@
  */
 import { useState, type ReactNode } from "react";
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { EmptyState } from "@/components/site/empty-state";
 import {
   CHIP_LABELS,
   IDENTITY,
@@ -116,12 +117,12 @@ export function AncestryRegions({
 
 function NoResult({ shapes }: { shapes: MapShapes }) {
   return (
-    <div className="space-y-4">
-      <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} />
-      <p data-slot="nothing-read" className="surface-inset surface-pad-sm max-w-measure text-base leading-relaxed text-ink">
-        {NOTHING_READ}
-      </p>
-    </div>
+    <EmptyState>
+      <div className="space-y-4">
+        <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} quiet />
+        <p data-slot="nothing-read">{NOTHING_READ}</p>
+      </div>
+    </EmptyState>
   );
 }
 

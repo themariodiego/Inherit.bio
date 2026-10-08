@@ -9,6 +9,33 @@
 .page-head > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
 .page-head > [data-subject-bar] + h1 { margin-top: 1.5rem; }
 
+/* Entry rows (round-1 M10): the ruled form of the entry box. Hairlines
+   between rows, the label in the title role beside its description, the
+   arrow at the end; the whole row is one link and, as a linked surface, it
+   takes the inset ground on hover. The row bleeds 12px past the column so
+   the text stays on the column's edge while the ground has a margin. */
+.entry-rows { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.entry-rows > li + li { border-top: 1px solid var(--line); }
+.entry-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; row-gap: 0.125rem;
+  align-items: baseline; width: calc(100% + 1.5rem); margin-inline: -0.75rem;
+  min-height: var(--size-row); padding: 0.875rem 0.75rem; border-radius: var(--radius-sm);
+}
+.entry-row > .title { grid-column: 1; }
+.entry-row > .link-arrow { grid-column: 2; grid-row: 1; align-self: center; }
+.entry-row > .entry-row-copy { grid-column: 1; }
+@media (min-width: 640px) {
+  .entry-row { grid-template-columns: 13rem minmax(0, 1fr) auto; column-gap: 1.5rem; }
+  .entry-row > .entry-row-copy { grid-column: 2; grid-row: 1; }
+  .entry-row > .link-arrow { grid-column: 3; }
+}
+
+/* The domain ordinal: a Fraunces "01" beside the section h2, the table of
+   contents of a field guide. Outside the heading, so the h2 text stays the
+   nav label. */
+.domain-head { display: flex; align-items: baseline; gap: 1rem; }
+.domain-head > .ordinal { flex: none; font-size: 1.25rem; }
+
 /* A ruled row that is a link: the whole row is the target, the text turns
    forest and the arrow moves, exactly as a linked surface does. */
 .link-row { transition: color var(--motion-feedback); }

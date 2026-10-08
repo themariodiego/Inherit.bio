@@ -25,10 +25,11 @@ import { submitFamilyPermission, type PermissionAction } from "@/lib/family/perm
  * grant id to revoke — never both.
  */
 
+/** Geometric shapes Inter carries; "expired" is the empty ring struck through in CSS (family.css). */
 const GLYPHS: Record<PermissionState, string> = {
   on: "●",
   off: "○",
-  expired: "⊘",
+  expired: "○",
 };
 
 /** The exact closed operation the server built for this one endpoint. */

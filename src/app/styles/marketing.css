@@ -3,16 +3,20 @@
    patterns, and Tailwind classes in JSX for one-offs. */
 
 /* ---------------------------------------------------------------------------
- * Landing hero: the one terrain on the public surface. The ground is an
- * absolutely placed layer (glow, then hills) under relative content.
+ * Landing hero: the one terrain on the public surface. The glow is a layer
+ * under the whole hero; the hills are a band below the content, so the
+ * action row sits on clean paper and the ridges never cross it.
  * ------------------------------------------------------------------------- */
 .hero { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; }
 @media (min-width: 1024px) { .hero { min-height: 78svh; } }
 .hero-ground { position: absolute; inset: 0; pointer-events: none; }
 .hero-ground .terrain-glow { position: absolute; inset: 0; }
-.hero-ground [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 46%; }
-@media (min-width: 768px) { .hero-ground [data-slot="terrain"] { height: 56%; } }
 .hero-content { position: relative; }
+/* The hills are drawn 1600×600 and sliced bottom-up, so 26vw shows every
+   ridge at any width without a line cut at the band's top edge; the band
+   also takes whatever height the 78svh minimum leaves over. */
+.hero-band { position: relative; flex: 1 0 auto; min-height: max(26vw, 9rem); pointer-events: none; }
+.hero-band [data-slot="terrain"] { position: absolute; inset: 0; }
 
 /* ---------------------------------------------------------------------------
  * How it works: a ruled sequence. Each step opens with a hairline and an
@@ -37,10 +41,13 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Site chrome shared by every public page: the header row and the footer's
- * standalone links, both on the control scale.
+ * Site chrome shared by every public page: the header rows and the footer's
+ * standalone links, both on the control scale. Below md the header is two
+ * rows: wordmark, theme and the one primary pill; then the nav with the
+ * quiet sign-in at its end.
  * ------------------------------------------------------------------------- */
 .site-header-row { min-height: var(--size-navbar); }
+.site-header-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: var(--size-control); border-top: 1px solid var(--line); }
 .site-footer-link {
   display: flex; align-items: center; min-height: var(--size-control);
   color: var(--ink-muted); transition: color var(--motion-feedback);

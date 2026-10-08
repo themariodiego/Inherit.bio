@@ -134,7 +134,7 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
     </header>
   );
   const frame = (children: React.ReactNode, surface: "wide-data" | "standard" = "standard") => (
-    <div data-surface={surface} className={surface === "wide-data" ? "page-stack stack-blocks mx-auto max-w-[90rem]" : "page-stack stack-blocks mx-auto max-w-4xl"}>
+    <div data-surface={surface} className={surface === "wide-data" ? "page-stack stack-blocks max-w-[90rem]" : "page-stack stack-blocks max-w-4xl"}>
       <div className="fam-head">
         {crumbs}
         {heading}

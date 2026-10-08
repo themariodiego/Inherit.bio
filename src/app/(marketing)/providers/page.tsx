@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ProviderDirectory } from "@/components/providers/directory";
+import { EmptyState } from "@/components/site/empty-state";
 import type { Provider } from "@/lib/providers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,13 +42,17 @@ export default async function ProvidersPage() {
         {providers.length > 0 ? (
           <ProviderDirectory providers={providers} />
         ) : (
-          <p className="surface-dashed surface-pad max-w-measure text-ink-muted">
-            The directory has not been seeded on this deployment yet — run{" "}
-            <code className="mono rounded-sm bg-tint px-1.5 py-0.5 text-ink">
-              pnpm seed
-            </code>{" "}
-            (see the self-hosting guide).
-          </p>
+          <EmptyState>
+            <p>
+              The directory has not been seeded on this deployment yet — run{" "}
+              <code className="mono">pnpm seed</code>{" "}
+              (see the{" "}
+              <Link href="/legal/self-hosting" className="prose-link">
+                self-hosting guide
+              </Link>
+              ).
+            </p>
+          </EmptyState>
         )}
       </div>
     </div>
