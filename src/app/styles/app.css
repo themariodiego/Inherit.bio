@@ -1,3 +1,47 @@
 /* app surface styles. Owned by one surface agent; tokens come from globals.css.
    Rules here are unlayered and beat Tailwind utilities: use them for shared
    patterns, and Tailwind classes in JSX for one-offs. */
+
+/* The page head: breadcrumbs → subject bar → h1 → lede, used by Overview
+   and the genome hub. The crumbs hug the bar; the headline gets its air. */
+.page-head > * + * { margin-top: 1rem; }
+.page-head > [data-slot="breadcrumbs"] { margin-bottom: 0; }
+.page-head > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
+.page-head > [data-subject-bar] + h1 { margin-top: 1.5rem; }
+
+/* A ruled row that is a link: the whole row is the target, the text turns
+   forest and the arrow moves, exactly as a linked surface does. */
+.link-row { transition: color var(--motion-feedback); }
+.link-row .link-arrow { transition: transform var(--motion-reveal) var(--easing-settle); }
+.link-row:hover, .link-row:focus-visible { color: var(--forest); }
+.link-row:hover .link-arrow, .link-row:focus-visible .link-arrow { transform: translate(3px, -3px); }
+
+/* The processing sequence: ruled steps numbered "01" by a CSS counter, so
+   the ordinal is decoration — outside each item's text and, where the
+   alternative-text syntax is supported, outside the accessibility tree.
+   The ordinal is Fraunces (the `.ordinal` role), forest while reached. */
+.processing-steps { counter-reset: step; }
+.processing-steps > li {
+  counter-increment: step;
+  display: flex; align-items: baseline; gap: 1rem;
+  min-height: var(--size-control); padding-block: 0.625rem;
+  border-top: 1px solid var(--line);
+}
+.processing-steps > li:first-child { border-top: 0; padding-top: 0; }
+.processing-steps > li::before {
+  content: counter(step, decimal-leading-zero);
+  flex: 0 0 2rem;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 400; font-size: 1.25rem; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  color: var(--forest);
+}
+@supports (content: "a" / "b") {
+  .processing-steps > li::before { content: counter(step, decimal-leading-zero) / ""; }
+}
+.processing-steps > li[data-step="upcoming"]::before { color: var(--ink-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .link-row .link-arrow { transform: none; }
+}

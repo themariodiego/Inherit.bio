@@ -107,7 +107,7 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
       data-subject-id={subject.id}
       data-subject-kind={kind ?? undefined}
       className={cn(
-        "surface-inset flex min-h-row min-w-0 items-center gap-3 px-3 text-sm sm:px-4",
+        "flex min-h-row min-w-0 items-center gap-3 rounded-sm bg-surface-inset px-3 text-sm sm:px-4",
         className,
       )}
     >
