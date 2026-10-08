@@ -22,8 +22,8 @@ export const metadata: Metadata = { title: `${UPLOAD_H1} · ${EMBRYOS_H1}` };
  * short enough that the first question and Continue still sit in the first
  * phone viewport), keeps the rest of that notice under the step card, and
  * the flow ends on the honest terminal rather than a control that goes
- * nowhere. No cohort row is read here: the flow
- * persists nothing until the draft route (E0) exists.
+ * nowhere. No cohort row is read here: the flow persists nothing until the
+ * draft route (E0) exists.
  */
 export default async function EmbryoUploadPage() {
   const viewer = await loadViewer();
