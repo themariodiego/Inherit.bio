@@ -25,12 +25,12 @@ export default function NotFound() {
       <main
         id="main"
         tabIndex={-1}
-        className="w-full max-w-prose rounded-2xl border border-line bg-card shadow-sm focus:outline-none"
+        className="surface w-full max-w-2xl focus:outline-none"
       >
         <NotFoundContent />
       </main>
-      <footer className="space-y-2 text-center">
-        <Attribution />
+      <footer className="text-center">
+        <Attribution className="caption" />
       </footer>
     </div>
   );

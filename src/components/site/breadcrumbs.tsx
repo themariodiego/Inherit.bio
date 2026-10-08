@@ -28,20 +28,18 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
           return (
             <li key={`${item.label}-${index}`} className="flex items-center">
               {current ? (
-                <span aria-current="page" className="text-ink">
+                <span aria-current="page" className="font-medium text-ink">
                   {item.label}
                 </span>
               ) : item.href ? (
                 // A crumb is a link on its own line, never inside a sentence,
                 // so SC 2.5.8's Inline exception does not reach it and the
-                // brief's control scale does (line 553; line 1053 "Minimum
-                // target 44×44 CSS px"). Both dimensions: the measured
-                // smallest crumb was 30×20, so min-w-11 matters as much as
-                // min-h-11. inline-flex keeps the crumb hugging its label so
-                // the " / " separators stay beside the words.
+                // 44px control scale does, in both dimensions: the measured
+                // smallest crumb was 30×20. inline-flex keeps the crumb
+                // hugging its label so the " / " separators stay beside it.
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-2 hover:underline"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-[0.2em] transition-colors hover:text-ink hover:underline"
                 >
                   {item.label}
                 </Link>

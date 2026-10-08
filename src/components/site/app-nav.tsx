@@ -29,10 +29,11 @@ function isActive(pathname: string, href: string) {
  * and label weight on the item matching the route (nested routes count,
  * e.g. /genome/me/reports marks "My Genome").
  *
- * - `sidebar`: vertical pill list for the md+ side rail (≥ 16px text,
- *   ≥ 12px gaps). `leading` renders inside the landmark before the list
- *   (the wordmark), so the whole rail is one navigation landmark.
- * - `mobile`: fixed 64px bottom bar below md — five icon-plus-label items,
+ * - `sidebar`: vertical list for the md+ side rail (16px text, 44px rows,
+ *   12px gaps). A tint highlight glides to the hovered or focused row and
+ *   rests on the current one. `leading` renders inside the landmark before
+ *   the list (the wordmark), so the whole rail is one navigation landmark.
+ * - `mobile`: fixed 64px bottom bar below md — five icon-plus-label cells,
  *   each ≥ 44px tall, labels always visible (≥ 13px). No hamburger, never
  *   icon-only. Hidden by CSS at md+, so only one "App" landmark is ever
  *   rendered at a given width.
@@ -85,7 +86,7 @@ export function AppNav({
               ref={glideRef}
               aria-hidden="true"
               data-slot="nav-glide"
-              className="pointer-events-none absolute inset-x-0 -z-10 h-11 rounded-xl bg-tint transition-transform duration-200 ease-out motion-reduce:transition-none"
+              className="pointer-events-none absolute inset-x-0 -z-10 h-11 rounded-sm bg-tint transition-transform duration-200 ease-settle motion-reduce:transition-none"
             />
           ) : null}
           {NAV_ITEMS.map((item, index) => {
@@ -101,7 +102,7 @@ export function AppNav({
                 onFocus={() => setHighlighted(index)}
                 onBlur={() => setHighlighted(null)}
                 className={cn(
-                  "app-nav-link rounded-xl px-3 py-2 text-base transition-colors",
+                  "app-nav-link min-h-11 rounded-sm px-3 py-2 text-base transition-colors",
                   active
                     ? "font-medium text-ink"
                     : "text-ink-muted hover:text-ink",
@@ -122,7 +123,10 @@ export function AppNav({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <nav aria-label={NAV_LANDMARK_LABEL} className="grid h-16 grid-cols-5">
+      <nav
+        aria-label={NAV_LANDMARK_LABEL}
+        className="grid h-navbar grid-cols-5 gap-1 px-1 py-1"
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = ICONS[item.id];
           const active = isActive(pathname, item.href);
@@ -132,7 +136,7 @@ export function AppNav({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-11 flex-col items-center justify-center gap-1 px-1 text-center text-sm leading-tight transition-colors",
+                "flex h-full min-h-11 flex-col items-center justify-center gap-1 rounded-sm px-1 text-center text-sm leading-tight transition-colors",
                 active
                   ? "bg-tint font-medium text-ink"
                   : "text-ink-muted hover:text-ink",

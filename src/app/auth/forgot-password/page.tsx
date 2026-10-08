@@ -9,9 +9,9 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="space-y-3 text-sm">
-        <h1 className="display text-2xl">Check your email</h1>
-        <p className="text-ink-muted">
+      <div className="space-y-4">
+        <h1 className="display">Check your email</h1>
+        <p className="max-w-measure text-ink">
           If that address has an account, a password-reset link is on its way.
         </p>
       </div>
@@ -19,10 +19,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h1 className="display text-2xl">Reset your password</h1>
-        <p className="mt-1 text-sm text-ink-muted">
+        <h1 className="display">Reset your password</h1>
+        <p className="mt-3 text-sm text-ink-muted">
           We&apos;ll email you a reset link.
         </p>
       </div>
