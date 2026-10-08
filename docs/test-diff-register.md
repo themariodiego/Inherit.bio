@@ -1,5 +1,13 @@
 # Test diff register
 
+## 2026-10-08 — Exercise Path B's fixed 30-day held-source expiry in the browser
+
+Add the missing expiry journey after the four existing serial Path B cases. All original cases, assertions, helpers, trace restrictions and time limits remain unchanged. The new case uses the same real signature/upload/mail/rights screens and unchanged retention endpoint, with the existing 360-second journey and bounded ten-drain convention.
+
+The initial upload, registered adult.unconfirmed-30d row and service-retention phase must share the fixed upload-plus-30-day deadline. Mail delivery and rights-session activation must not renew it, and a real sweep before the deadline must preserve the held revision. The existing local Docker/psql temporal-fixture convention then ages only that synthetic revision's held clock and its two registered retention clocks together, with a 10-second subprocess cap and exact one-row checks. This does not add a production bypass, database grant, direct expiry RPC or caller-selected retention target.
+
+The unchanged executor must complete adult_unconfirmed_source_expired, remove the upload session and held Storage source while keeping its already-removed staging key absent, invalidate notice credentials and revoke the previously active rights session. Privileged re-queries and the browser's unavailable session verify the result. A separate unexpired revision must retain its exact source tuple and actual bytes. This temporal fixture is not 30 days of hosted observation. All current local and full hosted checks are UNRUN; no retention or production proof is claimed by this source preparation.
+
 ## 2026-10-08 — Bound publisher-only signed APT refresh and preserve consumer admission
 
 The publisher's fresh `checks` runner now reuses the admitted APT driver inside one fresh transient root service, after the seven execution prerequisites and strict coverage aggregate. The existing four main-only maintenance steps, eight required jobs, exact font key and nine official package pins remain. Publisher lookup hits skip maintenance; this is separate from consumer warm admission, whose original signed refresh and post-copy fatal checks remain unchanged.
