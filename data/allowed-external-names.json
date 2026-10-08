@@ -257,11 +257,13 @@
         "azure.archive.ubuntu.com",
         "security.ubuntu.com"
       ],
-      "reason": "CI operating system and existing official authenticated APT mirrors; archive priority and APT documentation are cited for signed metadata admission.",
+      "reason": "CI operating system and official authenticated APT mirrors and font package sources; signed metadata admission and exact-version archive provenance cite the official APT documentation.",
       "evidence": [
         ".github/workflows/ci.yml",
         "scripts/ci_apt_mirror_priority.py",
-        "docs/ci-apt-mirror-priority.md"
+        "docs/ci-apt-mirror-priority.md",
+        "data/ci/browser-font-packages.json",
+        "docs/ci-font-archive-cache.md"
       ]
     },
     {
