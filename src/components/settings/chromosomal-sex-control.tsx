@@ -84,43 +84,49 @@ export function ChromosomalSexControl({
   }
 
   return (
-    <section data-slot="chromosomal-sex" className="space-y-4">
+    <section data-slot="chromosomal-sex" className="rec-stack">
       <h2 className="eyebrow">{CHROMOSOMAL_SEX_HEADING}</h2>
-      <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_BODY}</p>
-      <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_NOT_DERIVED}</p>
-      <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_SHARING}</p>
-      <fieldset className="space-y-2" disabled={busy}>
+      <div className="rec-stack-sm max-w-measure">
+        <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_BODY}</p>
+        <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_NOT_DERIVED}</p>
+        <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_SHARING}</p>
+      </div>
+      {/* One 56px row per choice, the radio at the right; the legend is for
+          assistive technology, the surface is the group's edge. */}
+      <fieldset className="surface rec-settings-rows" disabled={busy}>
         <legend className="sr-only">{CHROMOSOMAL_SEX_LEGEND}</legend>
         {CHROMOSOMAL_SEX_CHOICES.map((choice) => (
           <label
             key={choice.value}
             data-slot="chromosomal-sex-choice"
-            className="flex min-h-[var(--size-control)] items-center gap-3 text-sm text-ink"
+            className="rec-settings-row text-sm text-ink"
           >
+            <span>{choice.label}</span>
             <input
               type="radio"
               name="chromosomal-sex"
               value={choice.value}
               checked={chosen === choice.value}
               onChange={() => void declare(choice.value)}
-              className="size-4"
+              className="size-5 accent-forest"
             />
-            {choice.label}
           </label>
         ))}
       </fieldset>
-      <p className="text-sm text-ink-muted">{CHROMOSOMAL_SEX_OTHER_NOTE}</p>
+      <p className="caption max-w-measure">{CHROMOSOMAL_SEX_OTHER_NOTE}</p>
       {chosen === null ? null : (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          data-slot="chromosomal-sex-remove"
-          onClick={() => void declare(null)}
-        >
-          {CHROMOSOMAL_SEX_REMOVE}
-        </Button>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            data-slot="chromosomal-sex-remove"
+            onClick={() => void declare(null)}
+          >
+            {CHROMOSOMAL_SEX_REMOVE}
+          </Button>
+        </div>
       )}
       {failed ? (
         <p role="status" data-slot="chromosomal-sex-error" className="text-sm text-ink">

@@ -84,36 +84,38 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
       timeStyle: "short",
     }).format(new Date(deletion.noticeEndsAt));
     return (
-      <div className="space-y-3 rounded-2xl border border-danger/40 p-5">
-        <h3 className="font-medium">Account deletion scheduled</h3>
-        <p className="text-sm leading-relaxed text-ink-muted">
+      <div className="surface rec-danger surface-pad rec-stack">
+        <h3 className="title">Account deletion scheduled</h3>
+        <p className="max-w-measure text-sm leading-relaxed text-ink-muted">
           Your account is scheduled for deletion on {deadline}. No physical
           deletion begins before then. You can still export your data, revoke
           consent, transfer eligible ownership, or cancel this request.
         </p>
         {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-        <Button
-          variant="outline"
-          disabled={busy}
-          data-testid="cancel-account-deletion"
-          onClick={cancelDeletion}
-        >
-          {busy ? "Cancelling…" : "Cancel deletion request"}
-        </Button>
+        <div>
+          <Button
+            variant="outline"
+            disabled={busy}
+            data-testid="cancel-account-deletion"
+            onClick={cancelDeletion}
+          >
+            {busy ? "Cancelling…" : "Cancel deletion request"}
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-danger/40 p-5">
-      <h3 className="font-medium">Delete account</h3>
-      <p className="text-sm leading-relaxed text-ink-muted">
+    <div className="surface rec-danger surface-pad rec-stack">
+      <h3 className="title">Delete account</h3>
+      <p className="max-w-measure text-sm leading-relaxed text-ink-muted">
         Your account, files, results, and chats will be deleted after seven
         days. You may export your data or cancel before then. Records required
         by law stay only without your name or account link, for their required
         time.
       </p>
-      <div className="space-y-1.5">
+      <div className="rec-field">
         <Label htmlFor="delete-confirm">
           Type <strong>delete my genome</strong> to confirm
         </Label>
@@ -125,14 +127,16 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
         />
       </div>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-      <Button
-        variant="destructive"
-        disabled={confirm !== "delete my genome" || busy || !deletion}
-        data-testid="delete-account"
-        onClick={requestDeletion}
-      >
-        {busy ? "Scheduling…" : "Schedule account deletion"}
-      </Button>
+      <div>
+        <Button
+          variant="destructive"
+          disabled={confirm !== "delete my genome" || busy || !deletion}
+          data-testid="delete-account"
+          onClick={requestDeletion}
+        >
+          {busy ? "Scheduling…" : "Schedule account deletion"}
+        </Button>
+      </div>
     </div>
   );
 }

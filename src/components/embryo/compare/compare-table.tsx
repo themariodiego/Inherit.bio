@@ -26,7 +26,7 @@ import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 import { route } from "@/lib/primary-routes";
 import { CompareCell } from "./compare-cell";
 
-const HEADER_CELL = "h-14 min-w-[12rem] border-b border-line px-3 py-2 text-left align-top font-medium text-ink";
+const HEADER_CELL = "min-w-[12rem] text-left font-medium text-ink";
 const STICKY = "sticky left-0 z-10 bg-card";
 const CELL_BLOCK_CLASS = "rounded-none border-0 bg-transparent p-0";
 
@@ -96,14 +96,14 @@ export function ColumnFooter({ embryo, subjectId }: { embryo: ComparisonEmbryo; 
 
 export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableProps) {
   return (
-    <div data-slot="compare-scroller" className="overflow-x-auto">
+    <div data-slot="compare-scroller" className="surface overflow-x-auto">
       <table
         data-compare-surface="true"
         data-card="true"
         data-layer={layer}
-        className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm"
+        className="fam-table text-sm"
       >
-        <caption className="p-3 text-left text-sm text-ink-muted">
+        <caption className="caption max-w-measure">
           {LAYER_LABELS[layer]}. {EMBRYO_LAYER_DEFINITIONS[layer]}
         </caption>
         <thead>
@@ -132,18 +132,18 @@ export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableP
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={embryos.length + 1} data-slot="no-rows" className="h-14 px-3 py-3 text-base leading-relaxed text-ink">
+              <td colSpan={embryos.length + 1} data-slot="no-rows" className="text-base leading-relaxed text-ink">
                 {NO_ROWS_SENTENCE}
               </td>
             </tr>
           ) : (
             rows.map((row) => (
               <tr key={row.findings[0].condition_id} data-condition-id={row.findings[0].condition_id}>
-                <th scope="row" className={`h-14 border-b border-line px-3 py-2 text-left align-top font-medium text-ink ${STICKY}`}>
+                <th scope="row" className={`text-left font-medium text-ink ${STICKY}`}>
                   {row.findings[0].condition_name}
                 </th>
                 {row.findings.map((finding, index) => (
-                  <td key={embryos[index].id} className="h-14 border-b border-line px-3 py-2 align-top">
+                  <td key={embryos[index].id}>
                     <CompareCell finding={finding} subjectId={subjectIds.get(embryos[index].id) ?? embryos[index].id} />
                   </td>
                 ))}
@@ -153,11 +153,11 @@ export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableP
         </tbody>
         <tfoot>
           <tr>
-            <th scope="row" className={`h-14 px-3 py-2 text-left align-top font-medium text-ink ${STICKY}`}>
+            <th scope="row" className={`text-left font-medium text-ink ${STICKY}`}>
               {POSITIONS_READ_TH}
             </th>
             {embryos.map((embryo) => (
-              <td key={embryo.id} data-slot="column-footer" data-embryo-id={embryo.id} className="h-14 px-3 py-2 align-top">
+              <td key={embryo.id} data-slot="column-footer" data-embryo-id={embryo.id}>
                 <ColumnFooter embryo={embryo} subjectId={subjectIds.get(embryo.id) ?? embryo.id} />
               </td>
             ))}

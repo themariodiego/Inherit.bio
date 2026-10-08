@@ -40,14 +40,14 @@ export function AcknowledgeForm({
     <section
       data-slot="portrait-acknowledge"
       aria-label={ACKNOWLEDGE_CHECKBOX_LABEL}
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
+      className="surface surface-pad max-w-measure space-y-4"
     >
-      <p className="text-base leading-relaxed text-ink">{ACKNOWLEDGE_LEAD}</p>
-      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+      <p className="body-lg text-ink">{ACKNOWLEDGE_LEAD}</p>
+      <label className="flex min-h-11 items-start gap-3 text-base leading-relaxed text-ink">
         <input
           type="checkbox"
           name="portrait-acknowledged"
-          className="mt-1 size-4"
+          className="mt-1.5 size-4 shrink-0 accent-forest"
           checked={read}
           onChange={(event) => setRead(event.currentTarget.checked)}
         />

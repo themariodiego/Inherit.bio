@@ -33,13 +33,15 @@ export default async function EmbryoRequestDataPage() {
   const { decision } = viewer;
 
   return (
-    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
-      <Breadcrumbs
-        items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: REQUEST_DATA_H1 }]}
-      />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{REQUEST_DATA_H1}</h1>
-      </header>
+    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-3xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: REQUEST_DATA_H1 }]}
+        />
+        <header>
+          <h1 className="display">{REQUEST_DATA_H1}</h1>
+        </header>
+      </div>
       {!permits(decision) ? (
         <EmbryoUnavailable
           decision={decision}
@@ -47,33 +49,32 @@ export default async function EmbryoRequestDataPage() {
         />
       ) : (
         <>
-          <section aria-labelledby="request-letter-heading" className="space-y-4">
-            <h2 id="request-letter-heading" className="text-lg font-semibold text-ink">
+          <section aria-labelledby="request-letter-heading" className="space-y-5">
+            <h2 id="request-letter-heading" className="title text-ink">
               {EMAIL_HEADING}
             </h2>
-            <p className="max-w-prose text-base leading-relaxed text-ink">{LEDE}</p>
+            <p className="lede">{LEDE}</p>
             <blockquote
               data-slot="request-letter"
-              className="max-w-prose rounded-2xl border border-line bg-card p-5 text-base leading-relaxed text-ink"
+              className="surface surface-pad max-w-measure text-base leading-relaxed text-ink"
             >
               {LETTER}
             </blockquote>
             <CopyEmailButton text={LETTER} />
           </section>
-          <p data-slot="formats" className="max-w-prose text-sm leading-relaxed text-ink">
-            {FORMATS_SENTENCE}
-          </p>
-          <p data-slot="next-step" className="max-w-prose text-sm leading-relaxed text-ink-muted">
-            {NEXT_STEP_SENTENCE}
-          </p>
-          <p className="text-sm">
-            <Link
-              href={route("embryos.index")}
-              className="inline-flex min-h-11 items-center underline underline-offset-2"
-            >
-              {BACK_TO_EMBRYOS_LINK}
-            </Link>
-          </p>
+          <div className="space-y-3">
+            <p data-slot="formats" className="max-w-measure text-base leading-relaxed text-ink">
+              {FORMATS_SENTENCE}
+            </p>
+            <p data-slot="next-step" className="max-w-measure text-base leading-relaxed text-ink-muted">
+              {NEXT_STEP_SENTENCE}
+            </p>
+            <p className="text-sm">
+              <Link href={route("embryos.index")} className="link-target quiet-link">
+                {BACK_TO_EMBRYOS_LINK}
+              </Link>
+            </p>
+          </div>
         </>
       )}
     </div>

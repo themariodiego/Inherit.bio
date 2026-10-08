@@ -66,11 +66,11 @@ export default async function SettingsPage({
       : null;
 
   return (
-    <div className="page-stack mx-auto max-w-3xl space-y-10">
-      <header className="space-y-2">
+    <div className="page-stack rec-column stack-sections">
+      <header className="rec-head">
         <p className="eyebrow">Account</p>
-        <h1 className="display text-3xl">Settings</h1>
-        <p className="text-base text-ink-muted">{user?.email}</p>
+        <h1 className="display">Settings</h1>
+        <p className="caption">{user?.email}</p>
       </header>
       {user && attestation ? (
         <JurisdictionForm
@@ -89,24 +89,25 @@ export default async function SettingsPage({
       ) : null}
       <nav aria-label="Settings sections" className="grid gap-4 sm:grid-cols-2">
         {sections.map((section) => (
-          <Link key={section.href} href={section.href} className="link-surface rounded-2xl border border-line bg-card p-6 hover:border-forest">
-            <h2 className="font-medium">{section.title}</h2>
-            <p className="mt-2 text-sm text-ink-muted">{section.copy}</p>
+          <Link key={section.href} href={section.href} className="surface link-surface rec-tile">
+            <h2 className="title">{section.title}</h2>
+            <p className="mt-1 text-sm text-ink-muted">{section.copy}</p>
+            <span aria-hidden="true" className="link-arrow">→</span>
           </Link>
         ))}
       </nav>
       {user ? (
-        <section className="space-y-4">
+        <section className="rec-stack">
           <h2 className="eyebrow">Email</h2>
           <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
         </section>
       ) : null}
       {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
-      <footer className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-sm text-ink-muted">
-        <Link href="/about#accessibility" className="link-target underline underline-offset-4 hover:text-ink">Accessibility</Link>
+      <footer className="rule flex flex-wrap gap-x-6 gap-y-2 pt-4 text-sm">
+        <Link href="/about#accessibility" className="link-target quiet-link">Accessibility</Link>
         {/* The third of the expert path's three entry points (brief §7.3); the
             other two are every report footer and the ancestry page. */}
-        <Link href={route("genome.data", { subject: "me" })} className="link-target underline underline-offset-4 hover:text-ink">
+        <Link href={route("genome.data", { subject: "me" })} className="link-target quiet-link">
           {DATA_AND_METHODS}
         </Link>
       </footer>

@@ -19,10 +19,10 @@ export function DigestToggle({
   // Same fix and same day as the revoke control in `consent-list.tsx`.
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <Label htmlFor="digest-toggle">Research digest emails</Label>
-        <p className="text-sm text-ink-muted">
+    <div className="surface rec-settings-row">
+      <div className="rec-settings-text">
+        <Label htmlFor="digest-toggle" className="text-base">Research digest emails</Label>
+        <p className="mt-1 max-w-measure text-sm text-ink-muted">
           We may email you when we add reports from new research. This is off
           by default. Emails contain public report details, never your data.
         </p>

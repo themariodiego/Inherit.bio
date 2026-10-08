@@ -10,7 +10,7 @@ export function StandingStatement({ text = STANDING_STATEMENT }: { text?: string
     <p
       data-slot="standing-statement"
       data-density-required-accuracy="true"
-      className="max-w-prose text-base leading-relaxed text-ink"
+      className="body-lg max-w-measure text-ink"
     >
       {text}
     </p>

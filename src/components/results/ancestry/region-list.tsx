@@ -24,18 +24,18 @@ export interface RegionListProps {
 
 export function RegionList({ rows, figures, visibleCodes, selectedCode }: RegionListProps) {
   return (
-    <table data-slot="region-table" className="w-full border-collapse text-sm">
+    <table data-slot="region-table" className="fam-regions w-full border-collapse text-sm">
       {/* The same sentence as the map's caption, for readers who reach the table without the map. */}
       <caption className="sr-only">{MAP_CAPTION}</caption>
       <thead>
         <tr className="border-b border-line text-left text-ink-muted">
-          <th scope="col" className="py-2 pr-3 font-medium">
+          <th scope="col" className="eyebrow pr-3">
             {COLUMN_LABELS.region}
           </th>
-          <th scope="col" className="py-2 pr-3 font-medium">
+          <th scope="col" className="eyebrow pr-3">
             {COLUMN_LABELS.share}
           </th>
-          <th scope="col" className="py-2 font-medium">
+          <th scope="col" className="eyebrow">
             {COLUMN_LABELS.band}
           </th>
         </tr>
@@ -50,13 +50,13 @@ export function RegionList({ rows, figures, visibleCodes, selectedCode }: Region
               data-region={row.code}
               aria-selected={selected}
               hidden={!visibleCodes.has(row.code)}
-              className={cn("border-b border-line align-baseline", selected && "bg-tint")}
+              className={cn("border-b border-line", selected && "bg-surface-inset")}
             >
-              <th scope="row" data-slot="region-name" className="py-2 pr-3 text-left font-medium text-ink">
+              <th scope="row" data-slot="region-name" className="pr-3 text-left text-base font-medium text-ink">
                 {row.name}
               </th>
-              <td className="py-2 pr-3">{figures[index]}</td>
-              <td data-slot="region-band" className="py-2 text-ink-muted">
+              <td className="pr-3">{figures[index]}</td>
+              <td data-slot="region-band" className="text-ink-muted">
                 {row.band}
               </td>
             </tr>

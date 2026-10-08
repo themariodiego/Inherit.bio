@@ -96,9 +96,9 @@ export function LineageCard(props: LineageCardProps) {
     <section
       data-testid={TEST_IDS[parent]}
       aria-labelledby={headingId}
-      className="space-y-3 rounded-2xl border border-line bg-card p-5"
+      className="surface surface-pad-sm space-y-3"
     >
-      <h2 id={headingId} className="text-lg font-semibold text-ink">
+      <h2 id={headingId} className="title text-ink">
         {HEADINGS[parent]}
       </h2>
       {defineTerm ? (
@@ -109,19 +109,19 @@ export function LineageCard(props: LineageCardProps) {
       {call === null && (props.absence === "permission-off" || props.absence === "not-generated") ? (
         <AncestryReportsNote step={props.absence} reportsHref={props.reportsHref} />
       ) : call === null ? (
-        <p className="text-sm text-ink-muted">{supportNote ?? NOTHING_READ}</p>
+        <p className="surface-inset surface-pad-sm text-base leading-relaxed text-ink">{supportNote ?? NOTHING_READ}</p>
       ) : hasCall ? (
         <>
-          <p data-slot="haplogroup" className="font-display text-3xl text-forest">
+          <p data-slot="haplogroup" className="display-figure text-forest">
             {call.haplogroup}
           </p>
           {call.path && call.path.length > 0 ? (
-            <p data-slot="haplogroup-path" className="font-mono text-sm text-ink-muted">
+            <p data-slot="haplogroup-path" className="mono text-ink-muted">
               {call.path.join(" → ")}
             </p>
           ) : null}
           {coverage ? <ClaimBlock subject={{ subjectId }} figures={[coverage]} className="p-3" /> : null}
-          <div data-slot="lineage-provenance" className="space-y-1 text-sm text-ink-muted">
+          <div data-slot="lineage-provenance" className="max-w-measure space-y-1 text-sm text-ink-muted">
             <p>{knownTree ? treeLine(LINEAGE_TREES[parent]) : UNKNOWN_REFERENCE_TREE}</p>
             {modelRecord ? <p>{storedModelLine(modelRecord.id, modelRecord.version)}</p> : null}
             <p>{LINEAGE_NO_RANGE}</p>

@@ -118,7 +118,7 @@ function NoResult({ shapes }: { shapes: MapShapes }) {
   return (
     <div className="space-y-4">
       <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} />
-      <p data-slot="nothing-read" className="text-sm text-ink-muted">
+      <p data-slot="nothing-read" className="surface-inset surface-pad-sm max-w-measure text-base leading-relaxed text-ink">
         {NOTHING_READ}
       </p>
     </div>
@@ -142,14 +142,16 @@ function GreyRegions({
     <div className="space-y-4">
       <AncestryMap shapes={shapes} rows={[]} mode="grey" label={MAP_LABEL} caption={MAP_CAPTION} />
       {/* inherit-figure-exempt: mandated §4.6 grey-state sentence; a count of positions, not a result figure */}
-      <p data-slot="grey-state" className="text-base text-ink">
+      <p data-slot="grey-state" className="surface-inset surface-pad-sm max-w-measure text-base leading-relaxed text-ink">
         {greyState(result.markersUsed, panel)}
       </p>
-      <p className="text-sm text-ink-muted">{MARKER_GLOSS}</p>
-      <p className="text-sm text-ink-muted">{panelLine(panel)}</p>
-      <p className="text-sm text-ink-muted">{IDENTITY}</p>
-      <details data-slot="raw-numbers">
-        <summary className="cursor-pointer text-sm text-ink-muted underline decoration-dotted underline-offset-2">
+      <div className="max-w-measure space-y-2 text-sm text-ink-muted">
+        <p>{MARKER_GLOSS}</p>
+        <p>{panelLine(panel)}</p>
+        <p className="text-ink">{IDENTITY}</p>
+      </div>
+      <details data-slot="raw-numbers" className="fam-disclosure max-w-measure">
+        <summary className="text-sm">
           {RAW_NUMBERS_SUMMARY}
         </summary>
         <ClaimBlock
@@ -244,15 +246,14 @@ function ShownRegions({
               data-slot="well-supported-toggle"
               onClick={() => setWellSupportedOnly((value) => !value)}
               className={cn(
-                "inline-flex min-h-11 items-center gap-3 rounded-full border border-line bg-card px-4 text-sm text-ink",
-                "outline-none focus-visible:ring-[3px] focus-visible:ring-forest/50",
+                "inline-flex min-h-11 items-center gap-3 rounded-full border border-line-strong bg-card px-4 text-sm text-ink",
               )}
             >
               <span
                 aria-hidden="true"
                 className={cn(
                   "relative inline-block h-5 w-9 shrink-0 rounded-full transition-colors",
-                  wellSupportedOnly ? "bg-forest" : "bg-line",
+                  wellSupportedOnly ? "bg-forest" : "bg-line-strong",
                 )}
               >
                 <span
@@ -287,7 +288,7 @@ function ShownRegions({
             visibleCodes={visibleCodes}
             selectedCode={openCode}
           />
-          <div className="space-y-2 text-sm text-ink-muted">
+          <div className="max-w-measure space-y-2 text-sm text-ink-muted">
             {/* Three cases, and the middle one is why this is not a ternary on
                 one sentence: a result may carry intervals for some regions and
                 none for others, and a page that showed only the first sentence

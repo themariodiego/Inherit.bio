@@ -100,82 +100,84 @@ export function JurisdictionForm({
   }
 
   return (
-    <section id="jurisdiction" data-slot="jurisdiction" className="space-y-4 rounded-2xl border border-line bg-card p-6">
-      <h2 className="font-medium">{JURISDICTION_HEADING}</h2>
-      {current ? null : <p className="text-sm text-ink">{JURISDICTION_REQUIRED}</p>}
-      <p className="text-sm text-ink-muted">{JURISDICTION_BODY}</p>
-      <p className="text-sm text-ink-muted">{JURISDICTION_OWN_RESULTS}</p>
-      {current ? (
-        <p className="text-sm text-ink" data-slot="jurisdiction-current" data-jurisdiction-code={current.code}>
-          {jurisdictionCurrent(current.name, current.state?.name ?? null)}
-        </p>
-      ) : null}
-      {current && isEmbargoedCountry(current.code) ? (
-        <p className="text-sm text-ink" data-slot="jurisdiction-not-served">{jurisdictionNotServed(current.name)}</p>
-      ) : null}
-      <form
-        className="space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void save(event.currentTarget);
-        }}
-      >
-        <fieldset className="space-y-4" disabled={state === "saving"}>
-          <label className="block text-sm text-ink">
-            {JURISDICTION_SELECT_LABEL}
-            <select
-              required
-              name="jurisdictionCode"
-              value={country}
-              onChange={(event) => setCountry(event.currentTarget.value)}
-              className="mt-2 block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3"
-            >
-              <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
-              {choices.map((choice) => (
-                <option key={choice.code} value={choice.code}>{choice.name}</option>
-              ))}
-            </select>
-          </label>
-          {stateChoices.length > 0 ? (
-            <label className="block text-sm text-ink" data-slot="jurisdiction-state">
-              {JURISDICTION_STATE_LABEL}
+    <section id="jurisdiction" data-slot="jurisdiction" className="plate">
+      <div className="plate-head"><h2 className="eyebrow">{JURISDICTION_HEADING}</h2></div>
+      <div className="plate-body rec-stack">
+        {current ? null : <p className="max-w-measure text-sm text-ink">{JURISDICTION_REQUIRED}</p>}
+        <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_BODY}</p>
+        <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_OWN_RESULTS}</p>
+        {current ? (
+          <p className="max-w-measure text-sm text-ink" data-slot="jurisdiction-current" data-jurisdiction-code={current.code}>
+            {jurisdictionCurrent(current.name, current.state?.name ?? null)}
+          </p>
+        ) : null}
+        {current && isEmbargoedCountry(current.code) ? (
+          <p className="max-w-measure text-sm text-ink" data-slot="jurisdiction-not-served">{jurisdictionNotServed(current.name)}</p>
+        ) : null}
+        <form
+          className="rec-stack"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save(event.currentTarget);
+          }}
+        >
+          <fieldset className="rec-stack" disabled={state === "saving"}>
+            <label className="rec-field text-sm text-ink">
+              <span className="label">{JURISDICTION_SELECT_LABEL}</span>
               <select
                 required
-                key={country}
-                name="jurisdictionSubdivision"
-                defaultValue=""
-                className="mt-2 block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3"
+                name="jurisdictionCode"
+                value={country}
+                onChange={(event) => setCountry(event.currentTarget.value)}
+                className="rec-select"
               >
-                <option value="" disabled>{JURISDICTION_STATE_PLACEHOLDER}</option>
-                {stateChoices.map((choice) => (
+                <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
+                {choices.map((choice) => (
                   <option key={choice.code} value={choice.code}>{choice.name}</option>
                 ))}
               </select>
             </label>
-          ) : null}
-          <p className="max-w-prose text-sm text-ink-muted" data-slot="jurisdiction-withheld">
-            {JURISDICTION_WITHHELD}{" "}
-            <Link href={route("legal.where-inherit-works")} className="link-target underline underline-offset-4 hover:text-ink">
-              {JURISDICTION_WITHHELD_LINK}
-            </Link>
+            {stateChoices.length > 0 ? (
+              <label className="rec-field text-sm text-ink" data-slot="jurisdiction-state">
+                <span className="label">{JURISDICTION_STATE_LABEL}</span>
+                <select
+                  required
+                  key={country}
+                  name="jurisdictionSubdivision"
+                  defaultValue=""
+                  className="rec-select"
+                >
+                  <option value="" disabled>{JURISDICTION_STATE_PLACEHOLDER}</option>
+                  {stateChoices.map((choice) => (
+                    <option key={choice.code} value={choice.code}>{choice.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <p className="max-w-measure text-sm text-ink-muted" data-slot="jurisdiction-withheld">
+              {JURISDICTION_WITHHELD}{" "}
+              <Link href={route("legal.where-inherit-works")} className="prose-link">
+                {JURISDICTION_WITHHELD_LINK}
+              </Link>
+            </p>
+            <p className="max-w-measure text-sm text-ink-muted">{attestation.summary}</p>
+            <details className="max-w-measure text-sm text-ink-muted">
+              <summary className="quiet-link">{JURISDICTION_READ_ATTESTATION}</summary>
+              <div className="mt-2 whitespace-pre-line">{attestation.body}</div>
+            </details>
+            <label className="rec-choice text-sm text-ink">
+              <input type="checkbox" name="affirmed" required className="size-5 accent-forest" />
+              <span>{JURISDICTION_AFFIRM}</span>
+            </label>
+            {current ? <p className="max-w-measure text-sm text-ink-muted">{JURISDICTION_CHANGE_WARNING}</p> : null}
+            <div><Button type="submit" data-slot="jurisdiction-save">{JURISDICTION_SAVE}</Button></div>
+          </fieldset>
+          <p role="status" aria-live="polite" className="text-sm text-ink">
+            {state === "saved" ? JURISDICTION_SAVED : null}
           </p>
-          <p className="max-w-prose text-sm text-ink-muted">{attestation.summary}</p>
-          <details className="max-w-prose text-sm text-ink-muted">
-            <summary className="link-target cursor-pointer underline underline-offset-4">{JURISDICTION_READ_ATTESTATION}</summary>
-            <div className="mt-2 whitespace-pre-line">{attestation.body}</div>
-          </details>
-          <label className="flex min-h-[var(--size-control)] items-center gap-3 text-sm text-ink">
-            <input type="checkbox" name="affirmed" required className="size-4" />
-            {JURISDICTION_AFFIRM}
-          </label>
-          {current ? <p className="max-w-prose text-sm text-ink-muted">{JURISDICTION_CHANGE_WARNING}</p> : null}
-          <Button type="submit" data-slot="jurisdiction-save">{JURISDICTION_SAVE}</Button>
-        </fieldset>
-        <p role="status" aria-live="polite" className="text-sm text-ink">
-          {state === "saved" ? JURISDICTION_SAVED : null}
-        </p>
-        {state === "failed" ? <p role="alert" className="text-sm text-ink">{JURISDICTION_SAVE_FAILED}</p> : null}
-      </form>
+          {state === "failed" ? <p role="alert" className="text-sm text-ink">{JURISDICTION_SAVE_FAILED}</p> : null}
+        </form>
+      </div>
     </section>
   );
 }

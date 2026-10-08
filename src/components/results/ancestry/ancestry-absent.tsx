@@ -30,10 +30,10 @@ const STEP_NOTES: Readonly<Record<AncestryReportsStep, { slot: string; sentence:
 export function AncestryReportsNote({ step, reportsHref }: { step: AncestryReportsStep; reportsHref: string }) {
   const { slot, sentence } = STEP_NOTES[step];
   return (
-    <div data-slot={slot} className="space-y-1 text-sm">
-      <p className="text-ink">{sentence}</p>
+    <div data-slot={slot} className="surface-inset surface-pad-sm max-w-measure space-y-1 text-sm">
+      <p className="text-base leading-relaxed text-ink">{sentence}</p>
       <p>
-        <Link href={reportsHref} className="inline-flex min-h-11 items-center underline underline-offset-2">
+        <Link href={reportsHref} className="link-target quiet-link">
           {ANCESTRY_REPORTS_LINK}
         </Link>
       </p>
@@ -54,7 +54,7 @@ export function AncestryAbsent({ shapes, absence, reportsHref }: AncestryAbsentP
     <div data-slot="ancestry-absent" data-absence={absence} className="space-y-4">
       <AncestryMap shapes={shapes} rows={[]} mode="grey" label={REGIONAL_MAP_LABEL} caption={REGIONAL_MAP_CAPTION} />
       {absence === "nothing-read" ? (
-        <p data-slot="nothing-read" className="text-sm text-ink-muted">
+        <p data-slot="nothing-read" className="surface-inset surface-pad-sm max-w-measure text-base leading-relaxed text-ink">
           {NOTHING_READ}
         </p>
       ) : (

@@ -18,7 +18,7 @@ export function TraitCard({ entry }: { entry: TraitEntry }) {
       data-trait={entry.key}
       data-trait-status={entry.status}
       aria-label={TRAIT_HEADINGS[entry.key]}
-      className="space-y-2 rounded-2xl border border-line bg-card p-4"
+      className="surface surface-pad-sm space-y-2"
     >
       <p className="font-medium text-ink">{TRAIT_HEADINGS[entry.key]}</p>
       <p data-slot="trait-status" className="text-sm leading-relaxed text-ink">

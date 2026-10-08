@@ -32,8 +32,8 @@ export function DeletePortrait({ grantId }: { grantId: string }) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <section data-slot="portrait-delete" aria-label={DELETE_BUTTON} className="max-w-prose space-y-3">
-      <p className="text-sm leading-relaxed text-ink-muted">{DELETE_LEAD}</p>
+    <section data-slot="portrait-delete" aria-label={DELETE_BUTTON} className="max-w-measure space-y-3 border-t border-line pt-6">
+      <p className="text-base leading-relaxed text-ink-muted">{DELETE_LEAD}</p>
       {failed ? (
         <p role="alert" className="text-sm text-danger">
           {DELETE_ERROR_STATUS}
@@ -45,12 +45,12 @@ export function DeletePortrait({ grantId }: { grantId: string }) {
           aria-labelledby="portrait-delete-heading"
           aria-describedby="portrait-delete-body"
           data-slot="portrait-delete-dialog"
-          className="space-y-3 rounded-2xl border border-danger bg-card p-6"
+          className="surface surface-pad space-y-3 border-danger"
         >
-          <p id="portrait-delete-heading" className="font-medium text-ink">
+          <p id="portrait-delete-heading" className="title text-ink">
             {DELETE_DIALOG_HEADING}
           </p>
-          <p id="portrait-delete-body" className="text-sm leading-relaxed text-ink">
+          <p id="portrait-delete-body" className="text-base leading-relaxed text-ink">
             {DELETE_DIALOG_BODY}
           </p>
           <div className="flex flex-wrap gap-3">
@@ -84,7 +84,7 @@ export function DeletePortrait({ grantId }: { grantId: string }) {
           </div>
         </div>
       ) : (
-        <Button type="button" variant="destructive" onClick={() => setConfirming(true)}>
+        <Button type="button" variant="outline" onClick={() => setConfirming(true)}>
           {DELETE_BUTTON}
         </Button>
       )}

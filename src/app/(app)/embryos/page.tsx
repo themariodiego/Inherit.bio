@@ -19,6 +19,7 @@ import {
 import { cohortScopeSegment, copilotGroupScopes } from "@/lib/copilot/group-scopes";
 import { EMBRYO_ANALYSIS, cohortCapability, permits } from "@/lib/embryos/access";
 import { route } from "@/lib/primary-routes";
+import { cn } from "@/lib/utils";
 import { loadCohorts, loadViewer } from "./context";
 
 export const metadata: Metadata = { title: EMBRYOS_H1 };
@@ -66,32 +67,33 @@ export default async function EmbryosPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="page-stack mx-auto max-w-4xl space-y-12 md:space-y-16"
+      className="page-stack stack-sections mx-auto max-w-4xl"
     >
-      {allowed ? (
-        <p data-slot="availability-line" className="text-sm leading-relaxed text-ink-muted">
-          <Link href={route("legal.where-inherit-works")} className="link-target underline underline-offset-2">
-            {WHERE_THIS_WORKS_LINK}
-          </Link>
-        </p>
-      ) : (
-        <div role="status" data-slot="jurisdiction-line" className="max-w-prose space-y-2 text-sm leading-relaxed">
-          <p className="text-ink">{decision.userFacingCopy}</p>
-          <p>
-            <Link href={route("legal.future-person")} className="link-target underline underline-offset-2">
-              {FUTURE_PERSON_LINK}
+      <div className="fam-head">
+        {allowed ? (
+          <p data-slot="availability-line" className="caption">
+            <Link href={route("legal.where-inherit-works")} className="link-target quiet-link">
+              {WHERE_THIS_WORKS_LINK}
             </Link>
           </p>
-        </div>
-      )}
-
-      <header className="space-y-3">
-        <h1 className="display text-4xl">{EMBRYOS_H1}</h1>
-      </header>
+        ) : (
+          <div role="status" data-slot="jurisdiction-line" className="surface-inset surface-pad-sm max-w-measure space-y-2 text-sm leading-relaxed">
+            <p className="text-base text-ink">{decision.userFacingCopy}</p>
+            <p>
+              <Link href={route("legal.future-person")} className="link-target quiet-link">
+                {FUTURE_PERSON_LINK}
+              </Link>
+            </p>
+          </div>
+        )}
+        <header>
+          <h1 className="display">{EMBRYOS_H1}</h1>
+        </header>
+      </div>
 
       {!allowed ? null : cohorts.length > 0 ? (
-        <section data-density-top-level-section className="space-y-5">
-          <h2 className="text-lg font-semibold text-ink">{YOUR_EMBRYOS_HEADING}</h2>
+        <section data-density-top-level-section className="space-y-6">
+          <h2 className="display">{YOUR_EMBRYOS_HEADING}</h2>
           <ul data-slot="cohort-list" className="space-y-4">
             {cohorts.map((cohort) => {
               const cohortDecision = cohortDecisions.get(cohort.id)!;
@@ -114,7 +116,7 @@ export default async function EmbryosPage() {
         />
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {HUB_TILES.map((tile) => {
           const href = tileHref[tile.id];
           return (
@@ -122,17 +124,18 @@ export default async function EmbryosPage() {
               key={tile.id}
               data-slot="embryo-tile"
               data-tile={tile.id}
-              className="rounded-2xl border border-line bg-card p-5"
+              className={cn("surface surface-pad-sm", href && "link-surface fam-tile")}
             >
-              <p className="font-medium text-ink">
+              <p className="title pr-8 text-ink">
                 {href ? (
-                  <Link href={href} className="link-target underline-offset-4 hover:underline">
+                  <Link href={href} className="link-target">
                     {tile.label}
                   </Link>
                 ) : (
                   tile.label
                 )}
               </p>
+              {href ? <span aria-hidden="true" className="link-arrow" /> : null}
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">{tile.description}</p>
               {href ? null : (
                 <p data-slot="tile-blocked" className="mt-2 text-sm leading-relaxed text-ink">
@@ -144,11 +147,12 @@ export default async function EmbryosPage() {
         })}
       </div>
 
-      <StandingStatement />
-
-      <p data-density-required-accuracy className="max-w-prose text-sm leading-relaxed text-ink-muted">
-        {NOT_DIAGNOSTIC}
-      </p>
+      <div className="space-y-4">
+        <StandingStatement />
+        <p data-density-required-accuracy className="caption max-w-measure">
+          {NOT_DIAGNOSTIC}
+        </p>
+      </div>
     </div>
   );
 }

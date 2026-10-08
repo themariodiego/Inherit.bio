@@ -21,13 +21,13 @@ export default function LegalIndexPage() {
         <p className="eyebrow">Trust</p>
         <h1 className="display display-lg">Legal and policy library</h1>
       </header>
+      {/* Each row is the surface and the link is stretched over it, so the
+          anchor carries only its label text. */}
       <ul className="mt-section grid gap-4 sm:grid-cols-2">
         {links.map(([href, label]) => (
-          <li key={href}>
-            <Link href={href} className="surface link-surface flex min-h-row items-center justify-between gap-4 px-5 py-3 text-ink">
-              <span className="label">{label}</span>
-              <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
-            </Link>
+          <li key={href} className="surface link-surface relative flex min-h-row items-center justify-between gap-4 px-5 py-3">
+            <Link href={href} className="link-target label text-ink after:absolute after:inset-0 after:content-['']">{label}</Link>
+            <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
           </li>
         ))}
       </ul>

@@ -151,11 +151,11 @@ export function OutcomeDots<K extends string>({
           </li>
         ))}
       </ul>
-      <figcaption id={captionId} className="text-sm leading-relaxed text-ink-muted">
+      <figcaption id={captionId} className="caption max-w-measure">
         {DOTS_CAPTION}
       </figcaption>
-      <details data-slot="outcome-table">
-        <summary className="cursor-pointer text-sm text-ink-muted underline decoration-dotted underline-offset-2">
+      <details data-slot="outcome-table" className="fam-disclosure">
+        <summary className="text-sm">
           {SEE_AS_TABLE_BUTTON}
         </summary>
         <table className="mt-3 w-full max-w-md border-collapse text-left text-sm">

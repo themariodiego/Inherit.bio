@@ -15,9 +15,9 @@ export function PortraitBanner() {
       data-slot="portrait-banner"
       data-density-required-accuracy
       aria-label={BANNER_LABEL}
-      className="max-w-prose space-y-2 rounded-2xl bg-tint p-6 text-ink"
+      className="surface-tint surface-pad max-w-measure space-y-2 text-ink"
     >
-      <p data-slot="portrait-banner-first" className="text-base leading-relaxed">
+      <p data-slot="portrait-banner-first" className="body-lg font-medium">
         {BANNER_FIRST}
       </p>
       <p data-slot="portrait-banner-second" className="text-base leading-relaxed">

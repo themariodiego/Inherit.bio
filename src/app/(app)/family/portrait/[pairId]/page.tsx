@@ -286,33 +286,34 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   if (sourceSnapshot && !await sourceSnapshot.confirm()) notFound();
 
   return (
-    <div data-surface="standard" className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: NAV_LABELS.family, href: route("family.index") },
-          counterpart
-            ? {
-                label: otherLabel,
-                href: route("family.person", { person: counterpart.handle.routeSegment }),
-              }
-            : { label: otherLabel },
-          { label: PORTRAIT_H1 },
-        ]}
-      />
-      <PairBar people={columns} viewerAccountId={user.id} />
-
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{PORTRAIT_H1}</h1>
-      </header>
+    <div data-surface="standard" className="page-stack stack-blocks mx-auto max-w-5xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: NAV_LABELS.family, href: route("family.index") },
+            counterpart
+              ? {
+                  label: otherLabel,
+                  href: route("family.person", { person: counterpart.handle.routeSegment }),
+                }
+              : { label: otherLabel },
+            { label: PORTRAIT_H1 },
+          ]}
+        />
+        <PairBar people={columns} viewerAccountId={user.id} />
+        <header>
+          <h1 className="display">{PORTRAIT_H1}</h1>
+        </header>
+      </div>
 
       <PortraitBanner />
 
       {!allowed ? (
-        <section role="status" className="max-w-prose space-y-3 rounded-2xl border border-line bg-card p-6">
+        <section role="status" className="surface-inset surface-pad max-w-measure">
           <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
         </section>
       ) : preconditions.kind === "paused" ? (
-        <p role="status" data-state="paused" className="max-w-prose text-base leading-relaxed text-ink">
+        <p role="status" data-state="paused" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
           {PAUSED_BODY}
         </p>
       ) : preconditions.kind === "missing" ? (
@@ -325,31 +326,33 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
         <ResultGate />
       ) : (
         <>
-          <p data-slot="portrait-header-sentence" data-density-required-accuracy className="max-w-prose text-base leading-relaxed text-ink">
-            {HEADER_SENTENCE}
-          </p>
-          <p data-slot="distinguishing-principle" className="max-w-prose text-sm leading-relaxed text-ink-muted">
-            {DISTINGUISHING_PRINCIPLE}
-          </p>
+          <div className="space-y-4">
+            <p data-slot="portrait-header-sentence" data-density-required-accuracy className="body-lg max-w-measure text-ink">
+              {HEADER_SENTENCE}
+            </p>
+            <p data-slot="distinguishing-principle" className="max-w-measure text-base leading-relaxed text-ink-muted">
+              {DISTINGUISHING_PRINCIPLE}
+            </p>
+          </div>
 
           {sourceSnapshot?.state?.kind === "legacy-only" && counterpart ? (
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+            <p className="max-w-measure text-sm leading-relaxed text-ink-muted">
               To include newer files, each person needs to turn Portrait off and on again in their own{" "}
-              <Link className="underline underline-offset-2" href={`/family/${counterpart.handle.routeSegment}/permissions`}>Permissions</Link>.
+              <Link className="prose-link" href={`/family/${counterpart.handle.routeSegment}/permissions`}>Permissions</Link>.
               {" "}Existing shared files keep their current access.
             </p>
           ) : null}
 
           <section aria-labelledby="portrait-outputs-heading" className="space-y-6">
-            <h2 id="portrait-outputs-heading" className="text-lg font-semibold">
+            <h2 id="portrait-outputs-heading" className="title text-ink">
               {OUTPUTS_HEADING}
             </h2>
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{OUTPUTS_LEDE}</p>
+            <p className="lede">{OUTPUTS_LEDE}</p>
 
             {noFile.length > 0 || preparing.length > 0 ? (
               <>
                 {preparing.length > 0 ? (
-                  <div role="status" data-state="processing" data-slot="portrait-preparing" className="max-w-prose space-y-2">
+                  <div role="status" data-state="processing" data-slot="portrait-preparing" className="surface-inset surface-pad max-w-measure space-y-2">
                     {preparing.map((sentence) => (
                       <p key={sentence} className="text-base leading-relaxed text-ink">
                         {sentence}
@@ -358,7 +361,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
                   </div>
                 ) : null}
                 {noFile.length > 0 ? (
-                  <div role="status" data-state="empty" className="max-w-prose space-y-2">
+                  <div role="status" data-state="empty" className="surface-inset surface-pad max-w-measure space-y-2">
                     {noFile.map((sentence) => (
                       <p key={sentence} className="text-base leading-relaxed text-ink">
                         {sentence}
@@ -368,15 +371,15 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
                 ) : null}
               </>
             ) : !carrierAllowed ? (
-              <p role="status" className="max-w-prose text-base leading-relaxed text-ink">
+              <p role="status" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
                 {carrierDecision.userFacingCopy}
               </p>
             ) : canonicalSources && !output ? (
-              <p role="status" data-state="unavailable" data-slot="portrait-empty" className="max-w-prose text-base leading-relaxed text-ink">
+              <p role="status" data-state="unavailable" data-slot="portrait-empty" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
                 {NO_CLASSIFIED_POSITIONS}
               </p>
             ) : output && outputCount === 0 ? (
-              <p role="status" data-state={output.summary.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="portrait-empty" className="max-w-prose text-base leading-relaxed text-ink">
+              <p role="status" data-state={output.summary.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="portrait-empty" className="surface-inset surface-pad max-w-measure text-base leading-relaxed text-ink">
                 {output.summary.classifiedPositions === 0
                   ? NO_CLASSIFIED_POSITIONS
                   : output.summary.positionsBothCover === 0
@@ -407,12 +410,12 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
             ) : null}
 
             {canonicalSources && legacyOutput && output ? (
-              <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+              <p className="caption max-w-measure">
                 This view uses your previously supported files. Clinical results from newer files are not available yet.
               </p>
             ) : null}
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{TRAITS_LEDE}</p>
-            <div data-slot="trait-cards" className="grid gap-4 sm:grid-cols-2">
+            <p className="lede border-t border-line pt-6">{TRAITS_LEDE}</p>
+            <div data-slot="trait-cards" className="grid gap-4 md:grid-cols-2">
               {listTraitEntries().map((entry) => (
                 <TraitCard key={entry.key} entry={entry} />
               ))}
@@ -427,14 +430,16 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
 
           {grantId ? <DeletePortrait grantId={grantId} /> : null}
 
-          <p data-density-required-accuracy className="max-w-prose text-sm leading-relaxed text-ink-muted">
-            {NOT_DIAGNOSTIC}
-          </p>
-          <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <Link href={route("genome.data", { subject: "me" })} className="underline underline-offset-2">
-              {DATA_AND_METHODS}
-            </Link>
-          </footer>
+          <div className="space-y-2">
+            <p data-density-required-accuracy className="caption max-w-measure">
+              {NOT_DIAGNOSTIC}
+            </p>
+            <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <Link href={route("genome.data", { subject: "me" })} className="link-target quiet-link">
+                {DATA_AND_METHODS}
+              </Link>
+            </footer>
+          </div>
         </>
       )}
     </div>

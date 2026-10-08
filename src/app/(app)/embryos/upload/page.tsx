@@ -28,19 +28,21 @@ export default async function EmbryoUploadPage() {
   const { decision } = viewer;
 
   return (
-    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
-      <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: UPLOAD_H1 }]} />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{UPLOAD_H1}</h1>
-      </header>
+    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-3xl">
+      <div className="fam-head">
+        <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: UPLOAD_H1 }]} />
+        <header>
+          <h1 className="display">{UPLOAD_H1}</h1>
+        </header>
+      </div>
       {!permits(decision) ? (
         <EmbryoUnavailable decision={decision} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }} />
       ) : (
         <>
           {EMBRYO_INGEST_AVAILABLE ? null : (
-            <div role="status" data-slot="ingest-availability" className="max-w-prose space-y-1 text-sm leading-relaxed">
-              <p className="font-medium text-ink">{INGEST_UNAVAILABLE_SENTENCE}</p>
-              <p className="text-ink-muted">{INGEST_UNAVAILABLE_LEDE}</p>
+            <div role="status" data-slot="ingest-availability" className="surface-inset surface-pad-sm max-w-measure space-y-1 text-sm leading-relaxed">
+              <p className="text-base font-medium text-ink">{INGEST_UNAVAILABLE_SENTENCE}</p>
+              <p className="text-ink">{INGEST_UNAVAILABLE_LEDE}</p>
             </div>
           )}
           <UploadFlow />

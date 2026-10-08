@@ -14,11 +14,14 @@ export default async function CopilotSettingsPage() {
   const { data: llm } = await supabase.from("llm_settings").select("provider, base_url, model, key_last4").maybeSingle();
   const permission = await prepareOwnCopilotPermission();
   return (
-    <div className="page-stack mx-auto max-w-2xl space-y-8">
-      <header className="space-y-2"><p className="eyebrow">Settings</p><h1 className="display text-3xl">Copilot model</h1></header>
+    <div className="page-stack rec-column stack-sections">
+      <header className="rec-head">
+        <p className="eyebrow">Settings</p>
+        <h1 className="display">Copilot model</h1>
+      </header>
       <LlmSettingsForm localAvailable={modelRuntime().localAllowed} current={llm ? { provider: llm.provider as "anthropic" | "openai_compatible", base_url: llm.base_url, model: llm.model, key_last4: llm.key_last4 } : null} />
       <OwnCopilotPermission view={permission} />
-      <Link href={route("settings.index")} className="text-sm underline underline-offset-2">← Settings</Link>
+      <p className="text-sm"><Link href={route("settings.index")} className="link-target quiet-link">← Settings</Link></p>
     </div>
   );
 }

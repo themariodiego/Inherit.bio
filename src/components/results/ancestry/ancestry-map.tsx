@@ -23,7 +23,6 @@ import type { KeyboardEvent } from "react";
 import type { MapShapes } from "@/lib/ancestry/geometry";
 import type { RegionRowView } from "@/lib/ancestry/view";
 import { VIEWBOX } from "@/lib/geo/project";
-import { cn } from "@/lib/utils";
 
 /** Where the feather starts, as a share of the gradient radius: the outer 30% fades. */
 export const FEATHER_START = 0.7;
@@ -65,7 +64,13 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
   }
 
   return (
-    <figure data-slot="ancestry-figure" className="m-0">
+    <figure data-slot="ancestry-figure" className="plate fam-map m-0">
+      {/* The plate's label repeats the map's accessible name for the eye only. */}
+      <p aria-hidden="true" className="plate-head">
+        <span className="eyebrow">{label}</span>
+      </p>
+      <div className="plate-body">
+      <div className="fam-map-body">
       <svg
         viewBox={VIEWBOX}
         role="group"
@@ -73,7 +78,6 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
         data-slot="ancestry-map"
         data-mode={mode}
         data-density-pixel-exclusion="map-tile"
-        className="h-auto w-full rounded-2xl border border-line bg-paper"
       >
         {shown ? (
           <defs>
@@ -122,10 +126,7 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
                   aria-label={row.accessibleName}
                   aria-haspopup="dialog"
                   aria-expanded={selected}
-                  className={cn(
-                    "cursor-pointer outline-none",
-                    "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-forest",
-                  )}
+                  className="cursor-pointer"
                   // Scrolling back from Close can put this path under a still
                   // pointer. Only actual pointer movement should reopen it.
                   onPointerMove={(event) => { if (event.pointerType === "mouse") onHover?.(row.code); }}
@@ -149,9 +150,11 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
               />
             ))}
       </svg>
-      <figcaption data-slot="map-caption" className="mt-2 text-sm text-ink-muted">
+      </div>
+      <figcaption data-slot="map-caption" className="caption">
         {caption}
       </figcaption>
+      </div>
     </figure>
   );
 }

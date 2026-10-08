@@ -46,11 +46,11 @@ export function EmbryoUnavailable({
       role="status"
       data-slot="jurisdiction-unavailable"
       data-jurisdiction-source={decision.source}
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
+      className="surface-inset surface-pad max-w-measure space-y-4"
     >
-      <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
+      <p className="body-lg text-ink">{decision.userFacingCopy}</p>
       <p className="text-sm leading-relaxed">
-        <Link href={route("legal.future-person")} className="underline underline-offset-2">
+        <Link href={route("legal.future-person")} className="link-target quiet-link">
           {FUTURE_PERSON_LINK}
         </Link>
       </p>
@@ -74,9 +74,9 @@ export function BlockingState({
       role="status"
       data-slot="blocking-state"
       data-state={state}
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
+      className="surface-inset surface-pad max-w-measure space-y-4"
     >
-      <p className="text-base leading-relaxed text-ink">{children}</p>
+      <p className="body-lg text-ink">{children}</p>
       {action ? <ActionLink action={action} /> : null}
     </section>
   );
@@ -95,9 +95,9 @@ export function EmbryoErrorState({
     <section
       role="alert"
       data-slot="error-state"
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
+      className="surface surface-pad max-w-measure space-y-4"
     >
-      <h2 className="font-medium">{heading}</h2>
+      <h2 className="title text-ink">{heading}</h2>
       <p className="text-base leading-relaxed text-ink">{children}</p>
       <ActionLink action={action} />
     </section>
@@ -116,12 +116,12 @@ export function EmbryoEmptyState({
   action: StateAction;
 }) {
   return (
-    <section data-slot="empty-state" data-density-top-level-section className="max-w-prose space-y-4">
-      <h2 data-slot="empty-state-heading" className="text-lg font-semibold text-ink">
+    <section data-slot="empty-state" data-density-top-level-section className="max-w-measure space-y-5">
+      <h2 data-slot="empty-state-heading" className="display">
         {heading}
       </h2>
-      <p className="text-base leading-relaxed text-ink">{whatAppears}</p>
-      <p className="text-base leading-relaxed text-ink">{howToMakeItAppear}</p>
+      <p className="body-lg text-ink">{whatAppears}</p>
+      <p className="body-lg text-ink">{howToMakeItAppear}</p>
       <ActionLink action={{ ...action, primary: true }} />
     </section>
   );

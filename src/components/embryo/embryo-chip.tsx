@@ -26,14 +26,14 @@ export interface EmbryoChipProps {
 
 /** The disc every embryo shares: the inset ground with the standard line, in the ink colour. */
 export const EMBRYO_DISC_CLASS =
-  "flex size-6 shrink-0 items-center justify-center rounded-full border border-line bg-tint text-sm font-semibold leading-none text-ink";
+  "flex size-6 shrink-0 items-center justify-center rounded-full border border-line bg-surface-inset text-sm font-semibold leading-none text-ink";
 
 export function EmbryoChip({ embryo, href, qcFailed, className }: EmbryoChipProps) {
   const label = href ? (
     <Link
       href={href}
       data-slot="embryo-label"
-      className="font-medium text-ink underline-offset-4 hover:underline"
+      className="link-target font-medium text-ink underline-offset-4 hover:underline"
     >
       {embryo.displayLabel}
     </Link>
