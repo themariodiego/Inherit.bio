@@ -127,6 +127,11 @@ export default function TermsPage() {
         {
           id: "open-source",
           heading: "5. Open source (AGPL-3.0)",
+          headingDisplay: (
+            <>
+              5. Open <span className="whitespace-nowrap">source (AGPL-3.0)</span>
+            </>
+          ),
           body: (
             <>
               <p>

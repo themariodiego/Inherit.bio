@@ -4,6 +4,8 @@ import { LegalTocRail } from "./toc-rail";
 export interface LegalSection {
   id: string;
   heading: string;
+  /** The h2's markup when the heading needs a no-wrap span; same words. */
+  headingDisplay?: ReactNode;
   body: ReactNode;
 }
 
@@ -78,7 +80,7 @@ export function LegalPage({
           {sections.map((s) => (
             <section key={s.id} id={s.id} className="legal-section">
               <h2 id={`${s.id}-heading`} className="display">
-                {s.heading}
+                {s.headingDisplay ?? s.heading}
               </h2>
               <div className="legal-prose">{s.body}</div>
             </section>

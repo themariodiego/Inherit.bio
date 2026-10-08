@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -99,6 +99,18 @@ function depthTip(depth: string): string {
   return "";
 }
 
+// A product name set for reading: the space before an em dash becomes a
+// no-break space, so a narrow line never opens with the dash. The data is
+// untouched (accessible names keep the plain string).
+function noBreakDash(name: string): string {
+  return name.replace(/ — /g, "\u00a0— ");
+}
+
+// A gating note of a word or two is a badge; a sentence is a caption.
+function isBadgeLength(text: string): boolean {
+  return text.trim().split(/\s+/).length <= 3;
+}
+
 // Horizontal-scroll wrapper for the product tables: the table scrolls inside
 // this container (the page body never scrolls horizontally), and a right-edge
 // fade appears only while there is more table to the right — a swipe
@@ -112,15 +124,17 @@ function ScrollableTable({
   labelledBy: string;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canScroll, setCanScroll] = useState(false);
   const [fade, setFade] = useState(false);
 
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     const update = () => {
-      const canScroll = el.scrollWidth > el.clientWidth + 1;
+      const scrollable = el.scrollWidth > el.clientWidth + 1;
       const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
-      setFade(canScroll && !atEnd);
+      setCanScroll(scrollable);
+      setFade(scrollable && !atEnd);
     };
     update();
     const ro = new ResizeObserver(update);
@@ -134,17 +148,17 @@ function ScrollableTable({
 
   return (
     <div className="relative">
-      {/* Focusable and named: the table is wider than a phone, and a
+      {/* Named, and focusable only while there is something to scroll: a
           scrolling container nothing can focus is unreachable by keyboard
-          (axe `scrollable-region-focusable`, sixteen of them on this page at
-          320x568 and 390x844). It borrows the provider heading above it
-          rather than carrying a second copy of the name. */}
+          (axe `scrollable-region-focusable`), and one that cannot scroll is
+          a tab stop that does nothing. It borrows the provider heading above
+          it rather than carrying a second copy of the name. */}
       <div
         ref={scrollerRef}
         className="overflow-x-auto rounded-sm"
         role="region"
         aria-labelledby={labelledBy}
-        tabIndex={0}
+        tabIndex={canScroll ? 0 : -1}
       >
         {children}
       </div>
@@ -199,44 +213,11 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
 
   return (
     <div className="stack-blocks">
-      {/* One plate: the explainer under its labelled edge, then the filters
-          under a hairline. The explainer keeps its own region and heading. */}
+      {/* One plate: the filters are its labelled edge (the three controls
+          and their note on the inset ground), then the explainer under the
+          head's hairline. The explainer keeps its own region and heading. */}
       <div className="plate">
-        <section aria-labelledby="test-types-heading">
-          <div className="plate-head">
-            <h2 id="test-types-heading" className="eyebrow py-1">
-              New to this? What the three test types mean
-            </h2>
-          </div>
-          <div className="plate-body">
-            <ul className="max-w-measure space-y-3 text-ink">
-              <li>
-                <strong className="font-semibold">
-                  Genotyping array (~$30–120):
-                </strong>{" "}
-                tests a set of common variants. Inherit can prepare supported array
-                text files; each report depends on the positions covered.
-              </li>
-              <li>
-                <strong className="font-semibold">
-                  Whole genome 30x (~$200–1,000):
-                </strong>{" "}
-                aims to read across the genome. Some positions may be missing or
-                unclear; a VCF/gVCF file is needed for upload.
-              </li>
-              <li>
-                <strong className="font-semibold">Exome/other:</strong> reads
-                protein-coding regions; coverage varies.
-              </li>
-            </ul>
-            <p className="mt-4 max-w-measure text-ink">
-              Check which raw files the lab provides before you buy. Choose reports
-              after your file is prepared; no test type covers every finding.
-            </p>
-          </div>
-        </section>
-
-        <div className="plate-body border-t border-line">
+        <div className="plate-head filter-head">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="country-select">Your country</Label>
@@ -292,12 +273,45 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
               </Select>
             </div>
           </div>
-          <p className="caption mt-4 max-w-measure">
+          {/* Ink, not muted: 13px on the inset ground. */}
+          <p className="caption mt-4 max-w-measure text-ink">
             Location is used only to filter this list, in your browser. Inherit
             never asks for a street address and never takes payment — you buy from
             the provider directly.
           </p>
         </div>
+
+        <section className="plate-body" aria-labelledby="test-types-heading">
+          <h2 id="test-types-heading" className="eyebrow">
+            New to this? What the three test types mean
+          </h2>
+          <div className="mt-4">
+            <ul className="max-w-measure space-y-3 text-ink">
+              <li>
+                <strong className="font-semibold">
+                  Genotyping array (~$30–120):
+                </strong>{" "}
+                tests a set of common variants. Inherit can prepare supported array
+                text files; each report depends on the positions covered.
+              </li>
+              <li>
+                <strong className="font-semibold">
+                  Whole genome 30x (~$200–1,000):
+                </strong>{" "}
+                aims to read across the genome. Some positions may be missing or
+                unclear; a VCF/gVCF file is needed for upload.
+              </li>
+              <li>
+                <strong className="font-semibold">Exome/other:</strong> reads
+                protein-coding regions; coverage varies.
+              </li>
+            </ul>
+            <p className="mt-4 max-w-measure text-ink">
+              Check which raw files the lab provides before you buy. Choose reports
+              after your file is prepared; no test type covers every finding.
+            </p>
+          </div>
+        </section>
       </div>
 
       <ul className="space-y-6">
@@ -311,22 +325,24 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             <li
               key={p.slug}
               data-testid={`provider-${p.slug}`}
-              className={`surface overflow-hidden ${availability.available ? "" : "opacity-60"}`}
+              className="surface overflow-hidden"
             >
               {/* The labelled edge: name, where it ships, and availability
-                  as plain text when the provider cannot serve this place. */}
+                  as plain text when the provider cannot serve this place.
+                  An unavailable card is never dimmed: the reason is stated
+                  in words here, in ink, and the Buy action is withheld. */}
               <div className="plate-head items-start py-3 sm:items-center">
                 <div className="min-w-0">
                   <h2 id={`provider-${p.slug}-name`} className="title">
                     {p.name}
                   </h2>
-                  <p className="caption mt-0.5">
+                  <p className="caption mt-0.5 max-w-measure text-ink">
                     Ships to: {p.ships_to}
                     {p.shipping.note ? ` (${p.shipping.note})` : ""}
                   </p>
                 </div>
                 {!availability.available ? (
-                  <p className="max-w-[18rem] shrink-0 text-sm text-ink sm:text-right">
+                  <p className="label max-w-[18rem] shrink-0 text-ink sm:text-right">
                     {availability.reason}
                   </p>
                 ) : null}
@@ -353,30 +369,36 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                         className="surface-inset surface-pad-sm"
                         aria-label={prod.name}
                       >
-                        <h3 className="title">{prod.name}</h3>
-                        <p
-                          className={`label mt-2 ${compat.kind === "full" ? "text-forest" : "text-ink"}`}
+                        <h3 className="title">{noBreakDash(prod.name)}</h3>
+                        {/* The status wears the outline badge the desktop
+                            table uses, in ink: forest means "link". */}
+                        <Badge
+                          asChild
+                          variant="outline"
+                          className="mt-2 whitespace-normal rounded-sm py-1 text-left"
                         >
-                          {compat.label}
-                        </p>
-                        <p className="mt-1 text-sm text-ink">
+                          <p>{compat.label}</p>
+                        </Badge>
+                        <p className="mt-2 text-sm text-ink">
                           {compat.detail}
                         </p>
+                        {/* Labels and the capture date in ink: 13–14px on
+                            the inset ground. */}
                         <dl className="mt-4 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-4 gap-y-3 text-sm">
-                          <dt className="text-ink-muted">Price</dt>
+                          <dt className="text-ink">Price</dt>
                           <dd className="text-ink">
                             {prod.price}
-                            <span className="caption mt-1 block">
+                            <span className="caption mt-1 block text-ink">
                               Captured {p.last_verified_at}
                             </span>
                           </dd>
-                          <dt className="text-ink-muted">Raw files you get</dt>
+                          <dt className="text-ink">Raw files you get</dt>
                           <dd className="text-ink">
                             {(prod.formats_returned ?? []).join(", ") || "—"}
                           </dd>
-                          <dt className="text-ink-muted">Depth</dt>
+                          <dt className="text-ink">Depth</dt>
                           <dd className="text-ink">{prod.depth}</dd>
-                          <dt className="text-ink-muted">
+                          <dt className="text-ink">
                             Advertised turnaround
                           </dt>
                           <dd className="text-ink">{prod.turnaround || "—"}</dd>
@@ -389,11 +411,23 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   {/* Desktop comparison keeps compatibility next to the product.
                   Narrow screens use the labelled product summaries above. */}
                   <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
-                    <table className="w-full min-w-[44rem] text-left text-sm">
+                    {/* Fixed layout with shared column widths, so the sixteen
+                        tables read as one list: every column starts at the
+                        same x in every card, and the product column takes
+                        the slack. */}
+                    <table className="w-full min-w-[44rem] table-fixed text-left text-sm">
+                      <colgroup>
+                        <col />
+                        <col className="w-44" />
+                        <col className="w-28" />
+                        <col className="w-32" />
+                        <col className="w-36" />
+                        <col className="w-28" />
+                      </colgroup>
                       <thead>
                         <tr className="border-b border-line">
                           <th className={TH}>Product</th>
-                          <th className={`${TH} min-w-[11rem]`}>
+                          <th className={TH}>
                             Works with Inherit
                           </th>
                           <th className={TH}>Depth</th>
@@ -417,7 +451,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                               key={i}
                               className="h-row border-t border-line first:border-t-0"
                             >
-                              <td className={`${TD} font-medium text-ink`}>{prod.name}</td>
+                              <td className={`${TD} font-medium text-ink`}>{noBreakDash(prod.name)}</td>
                               <td className={TD}>
                                 <Badge
                                   variant="outline"
@@ -438,11 +472,11 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                               >
                                 {prod.depth}
                               </td>
-                              <td className={TD}>{prod.price}</td>
-                              <td className={`${TD} text-xs text-ink-muted`}>
+                              <td className={`${TD} break-words`}>{prod.price}</td>
+                              <td className={`${TD} break-words text-xs text-ink-muted`}>
                                 {(prod.formats_returned ?? []).join(", ") || "—"}
                               </td>
-                              <td className="py-4 align-top text-xs text-ink-muted">
+                              <td className="break-words py-4 align-top text-xs text-ink-muted">
                                 {prod.turnaround || "—"}
                               </td>
                             </tr>
@@ -454,15 +488,19 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                 </div>
 
                 {/* The outbound action comes after the comparison, never
-                    before it; gating text wraps beside it inside the card. */}
+                    before it; the gating note sits beside it on the measure
+                    (a sentence is a caption; a word or two is a badge). */}
                 <div className="mt-6 flex min-w-0 max-w-full flex-wrap items-center justify-end gap-3">
                   {p.gating ? (
-                    <Badge
-                      variant="outline"
-                      className="max-w-full shrink whitespace-normal rounded-sm py-1 text-left"
-                    >
-                      {p.gating}
-                    </Badge>
+                    isBadgeLength(p.gating) ? (
+                      <Badge variant="outline" className="rounded-sm py-1">
+                        {p.gating}
+                      </Badge>
+                    ) : (
+                      <p className="caption min-w-0 max-w-measure flex-1 basis-64">
+                        {p.gating}
+                      </p>
+                    )
                   ) : null}
                   {availability.available ? (
                     <Button
@@ -505,16 +543,18 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   <p>
                     Verified {p.last_verified_at} ·{" "}
                     {p.source_urls.slice(0, 3).map((u, i) => (
-                      <a
-                        key={u}
-                        href={u}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="prose-link"
-                      >
-                        source {i + 1}{" "}
-                      </a>
-                    ))}
+                      <Fragment key={u}>
+                        {i > 0 ? " · " : null}
+                        <a
+                          href={u}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="prose-link"
+                        >
+                          source {i + 1}
+                        </a>
+                      </Fragment>
+                    ))}{" "}
                     {p.affiliate
                       ? "· Inherit may earn a commission if you buy through this affiliate link. We show this here so you can see it."
                       : "· No affiliate relationship."}

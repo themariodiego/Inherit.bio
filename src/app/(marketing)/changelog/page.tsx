@@ -94,7 +94,8 @@ export default async function ChangelogPage() {
           state stands on the page alone. */}
       {items.length === 0 ? (
         <div className="mt-section">
-          <EmptyState>
+          {/* The box takes the lede's measure, so the two end on one edge. */}
+          <EmptyState className="reading-empty">
             No published entries yet — the pipeline is young. Check back soon.
           </EmptyState>
         </div>

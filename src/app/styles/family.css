@@ -198,3 +198,5 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
 [data-surface="hub"] [data-slot="empty-state"][data-ground],
 [data-surface="hub"] .fam-ground > [data-slot="empty-state"] { max-width: none; }
 [data-slot="empty-state-ground"] [data-slot="terrain"] { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; }
+/* On the inset ground the far hills are hairlines only; the near two keep their tint. */
+[data-slot="empty-state-ground"] [data-slot="terrain"] .terrain-fill { fill: var(--surface-inset); }

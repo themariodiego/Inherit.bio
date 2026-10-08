@@ -224,7 +224,7 @@ export default async function FamilyPage() {
           </>
         ) : (
           <EmptyState
-            ground={<Terrain variant="ground" seed={5} />}
+            ground={<Terrain variant="ground" seed={2} />}
             action={
               <Button asChild size="lg">
                 <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>

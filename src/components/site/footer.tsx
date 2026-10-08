@@ -63,8 +63,10 @@ export function SiteFooter() {
         </div>
         {/* Two columns from 320px so a phone is not mostly footer (the longest
             labels wrap to two or three lines in a 124px column); four from
-            lg. Every entry stays a 44px target. */}
-        <div className="rule grid grid-cols-2 gap-x-6 gap-y-8 py-10 md:py-12 lg:grid-cols-4">
+            md, where a 162px column wraps the longest label to two lines, so
+            a tablet is not mostly footer either. Every entry stays a 44px
+            target. */}
+        <div className="rule grid grid-cols-2 gap-x-6 gap-y-8 py-10 md:grid-cols-4 md:py-12">
           {columns.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
               <h2 className="eyebrow mb-4">{col.heading}</h2>

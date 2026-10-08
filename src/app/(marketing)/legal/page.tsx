@@ -15,9 +15,9 @@ const policies = [
   ["/legal/where-inherit-works", "Where Inherit works"], ["/legal/self-hosting", "Self-hosting"],
 ] as const;
 
-function LegalRow({ href, label }: { href: string; label: string }) {
+function LegalRow({ href, label, className }: { href: string; label: string; className?: string }) {
   return (
-    <li className="surface link-surface relative flex min-h-row items-center gap-4 pr-4 pl-5">
+    <li className={`surface link-surface relative flex min-h-row items-center gap-4 pr-4 pl-5${className ? ` ${className}` : ""}`}>
       <Link href={href} className="link-target label flex-1 self-stretch text-ink after:absolute after:inset-0 after:content-['']">{label}</Link>
       <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
     </li>
@@ -40,9 +40,15 @@ export default function LegalIndexPage() {
             <LegalRow key={href} href={href} label={label} />
           ))}
         </ul>
+        {/* An odd last entry spans both columns, so no row holds one alone. */}
         <ul className="rule mt-8 grid gap-4 pt-8 sm:grid-cols-2">
-          {policies.map(([href, label]) => (
-            <LegalRow key={href} href={href} label={label} />
+          {policies.map(([href, label], i) => (
+            <LegalRow
+              key={href}
+              href={href}
+              label={label}
+              className={policies.length % 2 === 1 && i === policies.length - 1 ? "sm:col-span-2" : undefined}
+            />
           ))}
         </ul>
       </div>

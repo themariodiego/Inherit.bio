@@ -28,8 +28,13 @@ export default async function ProvidersPage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Provider directory</p>
+        {/* "from a real" holds together so no phone line is "from a" alone. */}
         <h1 className="display display-lg">
-          Buy sequencing from a <span className="accent">real provider.</span>
+          Buy sequencing{" "}
+          <span className="whitespace-nowrap">
+            from a <span className="accent">real</span>
+          </span>{" "}
+          <span className="accent">provider.</span>
         </h1>
         <p className="lede reading-intro">
           Inherit doesn&apos;t sell sequencing — ever. This directory lists
@@ -42,7 +47,7 @@ export default async function ProvidersPage() {
         {providers.length > 0 ? (
           <ProviderDirectory providers={providers} />
         ) : (
-          <EmptyState>
+          <EmptyState className="reading-empty">
             <p>
               The directory has not been seeded on this deployment yet — run{" "}
               <code className="mono">pnpm seed</code>{" "}
