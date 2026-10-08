@@ -92,6 +92,18 @@ export function hostedWorkflowContract(value: unknown) {
   same(Object.keys(workflow.jobs), ["repository-checks", "browser", "checks"], "Unsupported workflow job family");
   assert.deepEqual(workflow.jobs.browser.strategy?.matrix.shard,
     Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => i + 1), "Unsupported browser matrix");
+  for (const family of ["repository-checks", "browser"]) {
+    const steps = workflow.jobs[family].steps;
+    const admission = steps.filter(item => item.name === "Admit signed Ubuntu APT mirror fallback");
+    assert(admission.length === 1 && admission[0].if === undefined
+      && admission[0]["continue-on-error"] !== true && admission[0].uses === undefined
+      && admission[0].run === 'sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"',
+    "Mandatory exact Ubuntu APT admission differs");
+    const installer = steps.filter(item => item.name === "Install Playwright Chromium");
+    assert(installer.length === 1 && installer[0].if === undefined && installer[0]["continue-on-error"] !== true
+      && installer[0].run === "pnpm exec playwright install --with-deps chromium"
+      && steps.indexOf(admission[0]) < steps.indexOf(installer[0]), "Complete mandatory installer differs");
+  }
   const jobs = Object.entries(workflow.jobs).map(([family, job]) => {
     assert(!("continue-on-error" in job), "Required jobs may not declare continue-on-error");
     const named = job.steps.map(item => item.name ?? `Run ${item.uses ?? item.run?.split("\n")[0]}`);
