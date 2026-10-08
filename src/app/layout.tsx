@@ -1,28 +1,34 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-// Fraunces carries its optical size and its SOFT warmth, and ships its true
-// italic: the display voice of the product, at headline sizes only
-// (globals.css `.display`). Inter stays the one text face. No third family,
-// no icon font.
+// Fraunces carries its optical size (the one axis a display face needs; the
+// SOFT axis doubled the file for a warmth no reader could name) and is the
+// display voice of the product, at headline sizes only (globals.css
+// `.display`). Inter stays the one text face. No third family, no icon font.
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT"],
+  axes: ["opsz"],
   display: "swap",
 });
 
-// The italic is its own face so it is not preloaded on every page: only a
-// page that sets an accent phrase in italic fetches it, after first paint.
-const frauncesItalic = Fraunces({
+// The italic accent ("on your terms.") is its own face, self-hosted from the
+// Google Fonts build of Fraunces Italic (SIL Open Font License) subset to
+// lower-case letters and sentence punctuation — 26 KB instead of 82 — and
+// never preloaded: only a page that sets an accent phrase fetches it. An
+// accent phrase is lower case by design; a capital falls through to the
+// upright face and would show, so widen the subset before setting one.
+const frauncesItalic = localFont({
+  src: "./fonts/fraunces-italic-accent.woff2",
   variable: "--font-fraunces-italic",
-  subsets: ["latin"],
-  style: ["italic"],
-  axes: ["opsz", "SOFT"],
+  style: "italic",
+  weight: "100 900",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
 const inter = Inter({

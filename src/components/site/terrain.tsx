@@ -35,7 +35,9 @@ function seeded(seed: number) {
 
 /** Catmull-Rom through the points, emitted as cubic Béziers, one decimal. */
 function smoothPath(points: [number, number][]): string {
-  const f = (n: number) => Math.round(n * 10) / 10;
+  // Whole-pixel coordinates: at 1600 units wide the eye cannot tell, and the
+  // inline path data is half the size on every page that draws the hills.
+  const f = (n: number) => Math.round(n);
   let d = `M${f(points[0][0])} ${f(points[0][1])}`;
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i - 1] ?? points[i];

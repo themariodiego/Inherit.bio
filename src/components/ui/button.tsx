@@ -15,7 +15,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-forest text-on-forest hover:bg-forest-deep",
         destructive:
-          "bg-danger text-paper hover:bg-danger/90 dark:text-ink",
+          "bg-danger text-paper hover:bg-danger/90",
         outline:
           "border border-line-strong bg-card text-ink hover:border-forest hover:bg-surface-inset",
         secondary:

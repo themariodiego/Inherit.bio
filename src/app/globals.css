@@ -75,7 +75,7 @@
   --motion-feedback: 120ms;
   --motion-reveal: 200ms;
   --motion-overlay: 260ms;
-  --motion-rise: 400ms;
+  --motion-rise: 240ms; /* with four 40ms stagger steps the hero lands in 400ms */
   /* The terrain: Inherit's hills, drawn from the forest ink at low strength
      so they sit behind text without competing with it. */
   --terrain-line: color-mix(in oklab, var(--forest) 34%, transparent);
@@ -107,9 +107,9 @@
   --line-strong: #6c7b73;
   --surface-inset: #1b241e;
   --overlay-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
-  --terrain-line: color-mix(in oklab, var(--forest) 38%, transparent);
-  --terrain-fill: color-mix(in oklab, var(--tint) 40%, var(--paper));
-  --terrain-glow: color-mix(in oklab, var(--tint) 60%, transparent);
+  --terrain-line: color-mix(in oklab, var(--forest) 58%, transparent);
+  --terrain-fill: color-mix(in oklab, var(--tint) 55%, var(--paper));
+  --terrain-glow: color-mix(in oklab, var(--tint) 85%, transparent);
 }
 
 @media (min-width: 768px) {
@@ -192,7 +192,9 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-html { scroll-padding-top: 10rem; }
+/* One anchor offset for the whole product: the 64px header plus 32px of air.
+   Targets add no scroll-margin of their own (round-1 F1). */
+html { scroll-padding-top: 6rem; }
 ::selection { background: var(--tint); color: var(--ink); }
 main { overflow-wrap: break-word; }
 
@@ -220,15 +222,14 @@ p, li, dd, figcaption { text-wrap: pretty; }
  * Type roles (brief §2). Two families, Fraunces on headlines and figures only.
  * ------------------------------------------------------------------------- */
 
-/* Fraunces display: optical size follows the rendered size; a little SOFT
-   warms the big sizes without turning them into a different face. */
+/* Fraunces display: the optical size follows the rendered size, so the big
+   sizes stay fine and the small ones sturdy; one axis, one face. */
 .display {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1.05;
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 40;
 }
 .display .accent { color: var(--forest); }
 /* The italic accent: Fraunces's true italic, loaded only where it is used,
@@ -239,7 +240,6 @@ p, li, dd, figcaption { text-wrap: pretty; }
   font-family: var(--font-fraunces-italic), var(--font-fraunces), ui-serif, Georgia, serif;
   font-style: italic;
   font-weight: 400;
-  font-variation-settings: "SOFT" 60;
 }
 
 /* display-1: every page h1. display-2: section h2 on hub and marketing
@@ -261,7 +261,6 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 .ordinal {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1;
-  font-variation-settings: "SOFT" 60, "WONK" 0;
   color: var(--forest);
 }
 
@@ -274,6 +273,10 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
   line-height: 1.2;
   color: var(--ink-muted);
 }
+/* On the inset and tint grounds the muted eyebrow is the product's lowest
+   pair (6.3:1 at 13px), so there it reads in ink. */
+.plate-head .eyebrow, .surface-inset .eyebrow, .surface-tint .eyebrow,
+.plate-head > summary, summary.eyebrow, .legal-toc-plate > summary { color: var(--ink); }
 .eyebrow-rule { display: flex; align-items: center; gap: 1rem; }
 .eyebrow-rule::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
@@ -309,6 +312,11 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 }
 .plate-body { padding: 1.25rem; }
 @media (min-width: 768px) { .plate-head { padding-inline: 1.5rem; } .plate-body { padding: 1.5rem; } }
+/* In dark the inset ground sits only 1.06:1 above card, so inside a card it
+   takes one more step of lift (derived from the frozen tokens, no new hue). */
+.dark .plate-head, .dark .plate .surface-inset, .dark .surface .surface-inset {
+  background: color-mix(in oklab, var(--surface-inset) 72%, var(--line));
+}
 
 /* Hairlines. `.rule-forest` is the one emphatic rule, for a section lead. */
 .rule { border: 0; border-top: 1px solid var(--line); }
@@ -318,7 +326,11 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 /* A linked surface: the outline wakes, the ground lifts, the arrow moves 3px.
    Never a shadow, never a scale. */
 .link-surface { position: relative; transition: border-color var(--motion-feedback), background-color var(--motion-feedback); }
-.link-surface:hover, .link-surface:focus-within { border-color: var(--forest); background: var(--surface-inset); }
+.link-surface:hover { border-color: var(--forest); background: var(--surface-inset); }
+/* Keyboard focus: one ring around the whole surface, never a second one on the
+   label inside it (round-1 F8 / m6). */
+.link-surface:focus-within { border-color: var(--forest); outline: 3px solid var(--forest); outline-offset: 2px; }
+.link-surface :is(a, button):focus-visible { outline: none; }
 .link-surface .link-arrow { transition: transform var(--motion-reveal) var(--easing-settle); }
 .link-surface:hover .link-arrow, .link-surface:focus-within .link-arrow { transform: translate(3px, -3px); }
 
@@ -349,12 +361,18 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 /* ---------------------------------------------------------------------------
  * Terrain: the hills behind a headline, an empty state's ground.
  * ------------------------------------------------------------------------- */
-[data-slot="terrain"] { display: block; width: 100%; height: 100%; overflow: hidden; }
+/* The hills are 5% wider than their ground and drift 2.5% over a minute, so
+   the slow movement never shows an edge. The drift animates the <svg> box,
+   not a group inside it: a transform on SVG content repaints the whole
+   drawing on the main thread every frame, while the box is composited. */
+[data-slot="terrain"] {
+  display: block; width: 105%; height: 100%; margin-left: -2.5%; overflow: hidden;
+  animation: terrain-drift 60s var(--easing-out) infinite alternate; will-change: transform;
+}
 [data-slot="terrain"] .terrain-line { fill: none; stroke: var(--terrain-line); stroke-width: 1.25; vector-effect: non-scaling-stroke; opacity: calc(0.45 + 0.55 * var(--depth, 1)); }
 [data-slot="terrain"] .terrain-fill { fill: var(--paper); }
 [data-slot="terrain"] .terrain-drift > g:last-child .terrain-fill, [data-slot="terrain"] .terrain-drift > g:nth-last-child(2) .terrain-fill { fill: var(--terrain-fill); }
-.terrain-drift { animation: terrain-drift 60s var(--easing-out) infinite alternate; transform-origin: 50% 100%; }
-@keyframes terrain-drift { from { transform: translateX(0) } to { transform: translateX(-2.5%) } }
+@keyframes terrain-drift { from { transform: translateX(0) } to { transform: translateX(-2.4%) } }
 /* A glow behind the headline, the hill at golden hour; pure decoration. */
 .terrain-glow { background: radial-gradient(60% 55% at 70% 60%, var(--terrain-glow), transparent 70%); }
 
@@ -363,7 +381,7 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
  * ------------------------------------------------------------------------- */
 /* Entrance on load: rise 12px and fade, 400ms, staggered by --i. Used on the
    landing hero only; the app never animates in. */
-.rise { animation: rise var(--motion-rise) var(--easing-settle) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.rise { animation: rise var(--motion-rise) var(--easing-settle) both; animation-delay: calc(var(--i, 0) * 40ms); }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 /* No scroll-driven reveal: a block that fades in as it enters the viewport
    stays invisible in any capture whose viewport never scrolls (full-page
@@ -396,12 +414,25 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
     color var(--motion-feedback), transform var(--motion-feedback) var(--easing-settle);
 }
 [data-slot="button"]:active:not(:disabled) { transform: scale(0.98); }
+/* A primary that is not yet available is a quiet inset button, not a faded
+   forest one: the page's one action turns forest the moment it can be taken. */
+[data-slot="button"][data-variant="default"]:disabled {
+  background: var(--surface-inset); color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--line); opacity: 1;
+}
+input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+/* Focus moved to a heading by script (a step change) is announced by the
+   status line; it does not draw a box around a sentence. */
+h1[tabindex="-1"]:focus-visible, h2[tabindex="-1"]:focus-visible, h3[tabindex="-1"]:focus-visible { outline: none; }
+.app-nav-link[aria-current="page"]:focus-visible::before { opacity: 0; }
 [data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"] {
   transition: border-color var(--motion-feedback), background-color var(--motion-feedback);
 }
 details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) var(--easing-settle); }
 @keyframes disclosure-in { from { opacity: 0.5; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-.theme-toggle svg { animation: theme-turn 220ms var(--easing-settle); }
+/* The icon turns only when a person toggles the theme (data-turned is set by
+   the click), never on load. */
+.theme-toggle[data-turned] svg { animation: theme-turn 220ms var(--easing-settle); }
 @keyframes theme-turn { from { opacity: 0; transform: rotate(-25deg) scale(0.8); } to { opacity: 1; transform: none; } }
 [data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="global-search"] {
   box-shadow: var(--overlay-shadow);
@@ -411,7 +442,6 @@ details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) va
  * Legacy hooks still read by older surfaces; the partials refine them.
  * ------------------------------------------------------------------------- */
 .legal-body { font-size: 1rem; line-height: 1.75; }
-.legal-section { scroll-margin-top: 11rem; }
 .legal-section:target > h2 { color: var(--forest); }
 .app-content h1.display { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); }
 .app-content h2.display { line-height: 1.15; }
@@ -435,4 +465,14 @@ details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) va
   .app-nav-link[aria-current="page"] { outline: 1px solid Highlight; }
   [data-slot="button"], input, textarea, select { border: 1px solid ButtonText; }
   [data-slot="terrain"] { display: none; }
+}
+
+/* Tailwind's transition-colors includes outline-color, which makes the focus
+   ring fade in over the element's colour transition; the ring must be
+   instant, so the utility is redefined without it. */
+@layer utilities {
+  .transition-colors {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke,
+      --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+  }
 }

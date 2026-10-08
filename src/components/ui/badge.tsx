@@ -16,7 +16,7 @@ const badgeVariants = cva(
         secondary:
           "border-transparent bg-tint text-ink [a&]:hover:bg-surface-inset",
         destructive:
-          "border-transparent bg-danger text-paper dark:text-ink [a&]:hover:bg-danger/90",
+          "border-transparent bg-danger text-paper [a&]:hover:bg-danger/90",
         outline:
           "border-line-strong text-ink [a&]:hover:bg-surface-inset",
         ghost: "border-transparent text-ink-muted [a&]:hover:bg-surface-inset",

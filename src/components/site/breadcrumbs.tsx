@@ -39,14 +39,20 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
                 // hugging its label so the " / " separators stay beside it.
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-[0.2em] transition-colors hover:text-ink hover:underline"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center px-1 underline-offset-[0.2em] transition-colors hover:text-ink hover:underline"
                 >
                   {item.label}
                 </Link>
               ) : (
                 <span>{item.label}</span>
               )}
-              {current ? null : <span aria-hidden="true">{" / "}</span>}
+              {current ? null : (
+                // The separator is its own box with 8px either side: inside a
+                // flex row the spaces in " / " are trimmed, so the margin, not
+                // the whitespace, sets the rhythm (round-1 M6). The text node
+                // keeps the spaces for the accessible string "A / B / C".
+                <span aria-hidden="true" className="mx-2 text-ink-muted">{" / "}</span>
+              )}
             </li>
           );
         })}
