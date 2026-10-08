@@ -1,0 +1,3 @@
+/* records surface styles. Owned by one surface agent; tokens come from globals.css.
+   Rules here are unlayered and beat Tailwind utilities: use them for shared
+   patterns, and Tailwind classes in JSX for one-offs. */

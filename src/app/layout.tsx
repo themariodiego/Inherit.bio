@@ -3,15 +3,22 @@ import { Fraunces, Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
+// Fraunces carries its optical size, its SOFT warmth and its WONK letterforms,
+// and ships its true italic: the display voice of the product uses all four,
+// at headline sizes only (globals.css `.display`). Inter stays the one text
+// face. No third family, no icon font.
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  axes: ["opsz"],
+  style: ["normal", "italic"],
+  axes: ["opsz", "SOFT", "WONK"],
+  display: "swap",
 });
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
