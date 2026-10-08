@@ -654,7 +654,7 @@ export default async function ReportDetailPage(
               </div>
             ) : null}
             {CONFIRMATION_LEVELS.has(template.evidence) ? (
-              <div data-confirmation-block="true" className="max-w-measure space-y-1">
+              <div data-confirmation-block="true" className="space-y-1">
                 <p {...REQUIRED_ACCURACY}>{CONFIRMATION_BLOCK}</p>
                 <p>{COUNSELLOR_NO_ROUTE}</p>
               </div>
