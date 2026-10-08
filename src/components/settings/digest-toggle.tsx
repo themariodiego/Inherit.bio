@@ -19,7 +19,9 @@ export function DigestToggle({
   // Same fix and same day as the revoke control in `consent-list.tsx`.
   const [busy, setBusy] = useState(false);
   return (
-    <div className="surface rec-settings-row">
+    // The row inside the "Email" plate on /settings (round-3 R3): the plate is
+    // the box, so the row draws none of its own.
+    <div className="rec-settings-row">
       <div className="rec-settings-text">
         <Label htmlFor="digest-toggle" className="text-base">Research digest emails</Label>
         <p className="mt-1 max-w-measure text-sm text-ink-muted">

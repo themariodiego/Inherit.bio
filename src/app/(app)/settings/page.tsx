@@ -80,28 +80,34 @@ export default async function SettingsPage({
       <nav aria-label="Settings sections">
         <EntryBoxGrid variant="rows" boxes={sections} />
       </nav>
-      {user && attestation ? (
-        <JurisdictionForm
-          choices={declarationChoices(declaredCode)}
-          states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
-          current={declaredCode ? {
-            code: declaredCode,
-            name: jurisdictionName(declaredCode),
-            state: declaration.subdivision
-              ? { code: declaration.subdivision, name: subdivisionName(declaration.subdivision) }
-              : null,
-          } : null}
-          attestation={attestation}
-          next={next}
-        />
-      ) : null}
-      {user ? (
-        <section className="rec-stack">
-          <h2 className="eyebrow">Email</h2>
-          <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
-        </section>
-      ) : null}
-      {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
+      {/* One form for every preference after the rows: a plate with its
+          label in the head, the plates 48px apart (round-3 R3). */}
+      <div className="stack-blocks">
+        {user && attestation ? (
+          <JurisdictionForm
+            choices={declarationChoices(declaredCode)}
+            states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
+            current={declaredCode ? {
+              code: declaredCode,
+              name: jurisdictionName(declaredCode),
+              state: declaration.subdivision
+                ? { code: declaration.subdivision, name: subdivisionName(declaration.subdivision) }
+                : null,
+            } : null}
+            attestation={attestation}
+            next={next}
+          />
+        ) : null}
+        {user ? (
+          <section className="plate">
+            <div className="plate-head"><h2 className="eyebrow">Email</h2></div>
+            <div className="plate-body">
+              <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
+            </div>
+          </section>
+        ) : null}
+        {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
+      </div>
       <footer className="rule flex flex-wrap gap-x-6 gap-y-2 pt-4 text-sm">
         <Link href="/about#accessibility" className="link-target quiet-link">Accessibility</Link>
         {/* The third of the expert path's three entry points (brief §7.3); the

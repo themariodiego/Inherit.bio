@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { RecordHead } from "@/components/records/record-head";
 import { InputProvenance } from "@/components/reports/input-provenance";
@@ -147,22 +148,35 @@ export default async function GenomeDataPage(
           </Button>
         ) : undefined}
       >
-        <p className="lede">{DATA_LEDE}</p>
+        {/* One voice in the head (round-3 N7): with no prepared file the
+            state sentence speaks and the lede is its caption; with one, the
+            lede alone. */}
         {noFile ? (
-          <p className="body-lg max-w-measure text-ink">
-            {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
-          </p>
-        ) : null}
+          <>
+            <p className="body-lg max-w-measure text-ink">
+              {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
+            </p>
+            <p className="caption max-w-measure">{DATA_LEDE}</p>
+          </>
+        ) : (
+          <p className="lede">{DATA_LEDE}</p>
+        )}
       </RecordHead>
-      {/* Two navigation actions on the control scale (round-1 m11). */}
-      <div className="flex flex-wrap gap-3">
-        <Button asChild variant="outline">
-          <Link href={route("genome.browser", subjectParams)}>{BROWSE_VARIANTS}</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href={route("files.index")}>{MANAGE_FILES}</Link>
-        </Button>
-      </div>
+      {/* The two navigations as ruled entry rows, the form Overview and
+          Settings use for secondary destinations (round-1 m11, round-3 N7). */}
+      <ul className="entry-rows">
+        {[
+          { href: route("genome.browser", subjectParams), label: BROWSE_VARIANTS },
+          { href: route("files.index"), label: MANAGE_FILES },
+        ].map((item) => (
+          <li key={item.href}>
+            <Link href={item.href} data-form="label" className="link-surface link-target entry-row text-ink">
+              <span className="title">{item.label}</span>
+              <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
+            </Link>
+          </li>
+        ))}
+      </ul>
 
       {noFile ? null : <section aria-labelledby="score-panel-coverage" className="rec-stack">
         <h2 id="score-panel-coverage" className="title">

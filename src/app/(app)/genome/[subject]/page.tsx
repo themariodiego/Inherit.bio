@@ -7,7 +7,6 @@ import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { NAV_LABELS } from "@/copy/navigation";
 import { ADD_A_FILE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
@@ -105,8 +104,9 @@ export default async function GenomePage(
   ];
 
   // No file in the record: the head draws the hills and carries the one
-  // forest action; the tiles are dashed and muted, with no arrow, so a
-  // cropped screenshot never reads as "reports available" (round-1 M2).
+  // forest action; the rows below are dashed and muted, with the record's
+  // state in the arrow's place, so a cropped screenshot never reads as
+  // "reports available" (round-1 M2, round-3 N12).
   const empty = fileCount === 0;
   // The head's forest "Add a file" is the page's one button: the bar's
   // becomes a quiet link to the same place (round-2 M2).
@@ -137,25 +137,32 @@ export default async function GenomePage(
           </p>
         ) : null}
       </RecordHead>
-      <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">
-        {tiles.map((tile) => (
-          <article key={tile.href} className="flex">
-            <Link
-              href={tile.href}
-              aria-label={`Open ${tile.title}`}
-              className={cn(
-                "link-surface flex w-full flex-col p-5 text-ink sm:p-6",
-                empty ? "surface-dashed" : "surface",
-              )}
-            >
-              <h2 className={cn("title flex items-start justify-between gap-4", empty && "text-ink-muted")}>
-                {tile.title}
-                {empty ? null : <ArrowUpRight aria-hidden="true" className="link-arrow mt-1 size-4 shrink-0 text-forest" />}
-              </h2>
-              <p className="mt-2 flex-1 text-sm text-ink-muted">{tile.copy}</p>
-            </Link>
-          </article>
-        ))}
+      {/* The three destinations as ruled entry rows (app.css `.entry-rows`),
+          each row one link named "Open …"; the h2 inside stays the row's
+          label. */}
+      <section aria-label="Genome tools">
+        <ul className="entry-rows" data-state={empty ? "empty" : "ready"}>
+          {tiles.map((tile) => (
+            <li key={tile.href}>
+              <article>
+                <Link
+                  href={tile.href}
+                  aria-label={`Open ${tile.title}`}
+                  className="link-surface link-target entry-row text-ink"
+                >
+                  <h2 className="title">{tile.title}</h2>
+                  <p className="entry-row-copy text-sm text-ink-muted">{tile.copy}</p>
+                  {empty ? (
+                    // The state the head already states, in the arrow's place.
+                    <span className="entry-row-state caption">No files yet.</span>
+                  ) : (
+                    <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
+                  )}
+                </Link>
+              </article>
+            </li>
+          ))}
+        </ul>
       </section>
       <p className="caption max-w-measure">{NOT_DIAGNOSTIC}</p>
     </div>

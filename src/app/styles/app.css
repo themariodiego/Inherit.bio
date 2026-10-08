@@ -32,6 +32,18 @@
   .entry-row > .entry-row-copy { grid-column: 2; grid-row: 1; }
   .entry-row > .link-arrow { grid-column: 3; }
 }
+/* A row that is only its label (the two navigations on Data and methods):
+   the label takes the row, the arrow at its end. */
+.entry-row[data-form="label"] { grid-template-columns: minmax(0, 1fr) auto; }
+.entry-row[data-form="label"] > .link-arrow { grid-column: 2; }
+/* An empty record (the genome hub with no file): the rows read as the
+   state, not a promise — dashed rules, muted labels and the record's state
+   in the arrow's place. Each row is still the link (round-3 N12). */
+.entry-rows[data-state="empty"] { border-style: dashed; border-color: var(--line-strong); }
+.entry-rows[data-state="empty"] > li + li { border-top-style: dashed; border-top-color: var(--line-strong); }
+.entry-rows[data-state="empty"] .entry-row > .title { color: var(--ink-muted); }
+.entry-row > .entry-row-state { grid-column: 2; grid-row: 1; align-self: center; white-space: nowrap; }
+@media (min-width: 640px) { .entry-row > .entry-row-state { grid-column: 3; } }
 
 /* The domain ordinal: a Fraunces "01" beside the section h2, the table of
    contents of a field guide. Outside the heading, so the h2 text stays the

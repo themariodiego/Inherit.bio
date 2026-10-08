@@ -60,7 +60,9 @@ export function AppShell({
           >
             <ThemeToggle />
             {userEmail ? (
-              <span className="hidden max-w-64 truncate text-sm text-ink-muted lg:inline">
+              // 12px of its own before "Sign out": the address is text, and 8px
+              // put it at the controls' separation floor at 1024 (round-3 R8).
+              <span className="mr-3 hidden max-w-64 truncate text-sm text-ink-muted lg:inline">
                 {userEmail}
               </span>
             ) : null}

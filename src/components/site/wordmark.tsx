@@ -33,7 +33,10 @@ export function Wordmark({ className }: { className?: string }) {
 export function Attribution({ className }: { className?: string }) {
   return (
     <p className={cn("caption", className)}>
-      Inherit · an open-source project created by{" "}
+      {/* "open-source" and "created by" never break at the hyphen or between
+          their words in the 13rem rail (round-3 N14). */}
+      Inherit · an <span className="whitespace-nowrap">open-source</span> project{" "}
+      <span className="whitespace-nowrap">created by</span>{" "}
       <a
         href="https://www.plus.bio"
         target="_blank"

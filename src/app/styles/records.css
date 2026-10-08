@@ -120,6 +120,12 @@
 }
 /* Inside a form, an inset note shares the fields' 28rem right edge. */
 form.rec-stack .surface-inset { max-width: 28rem; }
+/* Rows inside a plate body (round-3 R3): the plate is the box, so a single
+   row draws no padding of its own and a ruled group keeps hairlines only,
+   flush with the body's text. */
+.plate-body > .rec-settings-row { padding: 0; min-height: 0; }
+.plate-body > .rec-settings-rows { border-block: 1px solid var(--line); }
+.plate-body > .rec-settings-rows > .rec-settings-row { padding-inline: 0; }
 
 /* ---------------------------------------------------------------------------
  * Upload: the dropzone inside a plate, the progress panel beneath it. The
