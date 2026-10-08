@@ -13,14 +13,16 @@
 .hero-content { position: relative; }
 /* The hills are drawn 1600×600, 5% wider than the hero for the drift, and
    sliced bottom-up, so 26vw shows every ridge at any width without a line
-   cut at the band's top edge. From lg the band is 19.4vw: the bottom 296 of
+   cut at the band's top edge. From md the band is 19.4vw: the bottom 296 of
    the 600 units, whose top edge falls in the clear gap between the second
    ridge (ends at 296) and the third (starts at 314), so the two far ridges
    drop out whole, the five near ones stay, and the hero ends near the fold
-   of a 1280×800 window. The height is fixed (not a flex minimum): a taller
-   window must not grow the band back into a ridge. */
+   of a 1280×800 window. One rule from md to the widest desktop, so the band
+   never steps at lg; the one step sits at md with the hero's own padding
+   change. The height is fixed (not a flex minimum): a taller window must not
+   grow the band back into a ridge. */
 .hero-band { position: relative; height: max(26vw, 9rem); pointer-events: none; }
-@media (min-width: 1024px) { .hero-band { height: 19.4vw; } }
+@media (min-width: 768px) { .hero-band { height: max(19.4vw, 9rem); } }
 .hero-band [data-slot="terrain"] { position: absolute; inset: 0; }
 
 /* ---------------------------------------------------------------------------
@@ -61,3 +63,8 @@
   color: var(--ink-muted); transition: color var(--motion-feedback);
 }
 .site-footer-link:hover { color: var(--ink); }
+
+/* The provider directory's filter bar: a plate head that stacks the three
+   labelled controls and their note instead of the one-line eyebrow row. */
+.filter-head { flex-direction: column; align-items: stretch; padding-block: 1rem; }
+@media (min-width: 768px) { .filter-head { padding-block: 1.25rem; } }

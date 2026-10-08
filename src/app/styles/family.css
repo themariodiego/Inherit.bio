@@ -185,3 +185,16 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
 @media (prefers-reduced-motion: reduce) {
   .fam-disclosure > summary::before, details[data-slot="raw-numbers"] > summary::before, details[data-slot="regional-split"] > summary::before { transition: none; }
 }
+
+/* ---------------------------------------------------------------------------
+ * The hubs' empty state stands on the terrain: the hills are a layer under
+ * the sentence and the pill, clipped to the box and never adding height.
+ * The box spans the hub's column so it ends where the tiles end; the
+ * sentence keeps the measure inside it. /embryos cannot pass the layer
+ * through its pinned wrapper, so there the layer sits behind a clear box.
+ * ------------------------------------------------------------------------- */
+.fam-ground { position: relative; }
+.fam-ground > [data-slot="empty-state"] { position: relative; background: transparent; }
+[data-surface="hub"] [data-slot="empty-state"][data-ground],
+[data-surface="hub"] .fam-ground > [data-slot="empty-state"] { max-width: none; }
+[data-slot="empty-state-ground"] [data-slot="terrain"] { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; }

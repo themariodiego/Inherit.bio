@@ -13,6 +13,10 @@
 .reading-intro a { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
 .reading-intro a:hover { text-decoration-thickness: 2px; }
 .reading-intro strong { color: var(--ink); font-weight: 600; }
+/* The empty state under a reading head: the lede's 68ch resolves at 17px and
+   the box's at 16px, so the box takes the lede's width (68ch × 17/16) and the
+   two end on one right edge. */
+.reading-empty { max-width: calc(var(--measure) * 1.0625); }
 
 /* ---------------------------------------------------------------------------
  * The table of contents. Desktop: a 14rem sticky rail with an eyebrow title
@@ -20,7 +24,16 @@
  * (`aria-current="location"`, set by legal/toc-rail.tsx). Phone: a plate
  * that opens.
  * ------------------------------------------------------------------------- */
-.legal-toc { position: sticky; top: calc(var(--size-navbar) + 2rem); }
+/* Capped to the window: taller than the viewport it scrolls inside itself, so
+   every entry stays reachable and focus never parks off-screen. The 6px
+   negative margin and padding keep the content where it was while giving the
+   scroll box room for the entries' ring (3px, 2px offset, 1px over the ol's
+   line); the sticky top and the cap are stated for the content, not the box. */
+.legal-toc {
+  position: sticky; top: calc(var(--size-navbar) + 2rem - 0.375rem);
+  max-height: calc(100dvh - var(--size-navbar) - 2rem);
+  overflow-y: auto; margin: -0.375rem; padding: 0.375rem;
+}
 /* 4px down puts the eyebrow's cap line on the first h2's cap line. */
 .legal-toc > .eyebrow { padding-top: 0.25rem; }
 .legal-toc ol { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border-left: 1px solid var(--line); }
@@ -101,7 +114,17 @@
 /* Stated with the shell so they beat the quiet-band rules below. */
 .auth-shell .auth-band { border-bottom: 0; }
 .auth-shell .auth-band [data-slot="terrain"] { bottom: -2.25rem; height: 16rem; }
-@media (max-width: 639px) { .auth-terrain { display: none; } }
+@media (max-width: 639px) {
+  .auth-terrain { display: none; }
+  /* The band is the card's cap: it wears the card's border and top radius,
+     and the card's own top corners square off under it, so the near slope
+     meets the card edge with no notch of paper at the corners. */
+  .auth-shell .auth-band {
+    border: 1px solid var(--line); border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0; background: var(--card);
+  }
+  .auth-shell .auth-surface { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+}
 /* Top-anchored with a reserved height: the sign-in form arrives after
    hydration (its search-params boundary), so a centred column would move the
    wordmark and footer when the form filled in. Anchored at the top, nothing

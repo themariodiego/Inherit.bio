@@ -5,6 +5,7 @@ import { CohortCard } from "@/components/embryo/cohort-card";
 import { StandingStatement } from "@/components/embryo/compare/standing-statement";
 import { EmbryoEmptyState } from "@/components/embryo/states";
 import { EmptyState } from "@/components/site/empty-state";
+import { Terrain } from "@/components/site/terrain";
 import {
   EMBRYOS_H1,
   EMPTY_HEADING,
@@ -107,12 +108,20 @@ export default async function EmbryosPage() {
           </ul>
         </section>
       ) : (
-        <EmbryoEmptyState
-          heading={EMPTY_HEADING}
-          whatAppears={EMPTY_WHAT_APPEARS}
-          howToMakeItAppear={EMPTY_HOW_TO_MAKE_IT_APPEAR}
-          action={{ label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") }}
-        />
+        // The hub's empty state stands on the terrain. <EmbryoEmptyState>
+        // takes strings only (src/components/embryo is pinned), so the
+        // ground is a layer behind it and the box goes clear (family.css).
+        <div data-slot="empty-state-ground-wrap" className="fam-ground">
+          <div aria-hidden="true" data-slot="empty-state-ground" className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
+            <Terrain variant="ground" seed={9} />
+          </div>
+          <EmbryoEmptyState
+            heading={EMPTY_HEADING}
+            whatAppears={EMPTY_WHAT_APPEARS}
+            howToMakeItAppear={EMPTY_HOW_TO_MAKE_IT_APPEAR}
+            action={{ label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") }}
+          />
+        </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PeopleList, type PersonListEntry } from "@/components/family/people-list";
 import type { PersonCardState } from "@/components/family/person-card";
 import { EmptyState } from "@/components/site/empty-state";
+import { Terrain } from "@/components/site/terrain";
 import { Button } from "@/components/ui/button";
 import {
   ADD_ANOTHER_ADULT_BUTTON,
@@ -223,6 +224,7 @@ export default async function FamilyPage() {
           </>
         ) : (
           <EmptyState
+            ground={<Terrain variant="ground" seed={5} />}
             action={
               <Button asChild size="lg">
                 <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>

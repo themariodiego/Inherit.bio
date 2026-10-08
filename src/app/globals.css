@@ -398,6 +398,8 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
   transition: transform var(--motion-reveal) var(--easing-settle);
 }
 .site-nav-link:hover::after, .site-nav-link:focus-visible::after, .site-nav-link[aria-current="page"]::after { transform: scaleX(1); }
+/* The current entry reads in ink, so no hovered sibling outranks it. */
+.site-nav-link[aria-current="page"] { color: var(--ink); }
 
 /* App rail navigation: a 2px forest marker glides to the current row. */
 .app-rail { position: sticky; top: 0; height: 100dvh; overflow-y: auto; gap: 2rem; }
