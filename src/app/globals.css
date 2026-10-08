@@ -421,6 +421,9 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
     color var(--motion-feedback), transform var(--motion-feedback) var(--easing-settle);
 }
 [data-slot="button"]:active:not(:disabled) { transform: scale(0.98); }
+/* The bordered variant keeps the same 44px box: its 1px edge comes out of
+   the padding, not added to it (round-4 N4). */
+[data-slot="button"][data-variant="outline"] { padding-block: calc(0.625rem - 1px); }
 /* A primary that is not yet available is a quiet inset button, not a faded
    forest one: the page's one action turns forest the moment it can be taken. */
 [data-slot="button"][data-variant="default"]:disabled {
