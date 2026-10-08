@@ -417,23 +417,23 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 .app-nav-link svg { stroke-width: 1.6; }
 
 /* Controls: every button is 44px tall and gives a 120ms press. */
-[data-slot="button"] {
+[data-control="button"] {
   max-width: 100%; min-height: 44px; height: auto; padding-block: 0.625rem;
   white-space: normal; text-align: center;
   transition: background-color var(--motion-feedback), border-color var(--motion-feedback),
     color var(--motion-feedback), transform var(--motion-feedback) var(--easing-settle);
 }
-[data-slot="button"]:active:not(:disabled) { transform: scale(0.98); }
+[data-control="button"]:active:not(:disabled) { transform: scale(0.98); }
 /* The bordered variant keeps the same 44px box: its 1px edge comes out of
    the padding, not added to it (round-4 N4). */
-[data-slot="button"][data-variant="outline"] { padding-block: calc(0.625rem - 1px); }
+[data-control="button"][data-variant="outline"] { padding-block: calc(0.625rem - 1px); }
 /* A primary that is not yet available is a quiet inset button, not a faded
    forest one: the page's one action turns forest the moment it can be taken. */
-[data-slot="button"][data-variant="default"]:disabled {
+[data-control="button"][data-variant="default"]:disabled {
   background: var(--surface-inset); color: var(--ink-muted);
   box-shadow: inset 0 0 0 1px var(--line); opacity: 1;
 }
-.dark [data-slot="button"][data-variant="default"]:disabled {
+.dark [data-control="button"][data-variant="default"]:disabled {
   background: color-mix(in oklab, var(--surface-inset) 72%, var(--line));
 }
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
@@ -473,13 +473,13 @@ details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) va
     scroll-behavior: auto !important;
   }
   .rise, .reveal { opacity: 1; transform: none; }
-  [data-slot="button"]:active:not(:disabled), .link-surface .link-arrow,
+  [data-control="button"]:active:not(:disabled), .link-surface .link-arrow,
   .app-nav-link::before { transform: none; }
 }
 @media (forced-colors: active) {
   :focus-visible { outline: 3px solid Highlight; }
   .app-nav-link[aria-current="page"] { outline: 1px solid Highlight; }
-  [data-slot="button"], input, textarea, select { border: 1px solid ButtonText; }
+  [data-control="button"], input, textarea, select { border: 1px solid ButtonText; }
   [data-slot="terrain"] { display: none; }
 }
 
