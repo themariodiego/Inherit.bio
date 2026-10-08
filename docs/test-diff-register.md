@@ -1,3 +1,27 @@
+## 8 October 2026 — Three-source browser timing calibration
+
+The committed V2 timing profile adds only accepted protected-main run
+`37725805440` attempt 1, exact head `575d9191227bae67323022cc3d46b6e4b3a8cd8b`
+and tree `c75aa59249346e9e8fcee1c006107e4079122318`. Its six original receipts
+cover the same 569 cases and 95 whole project/file groups. Both prior source
+objects and the exact maximum-per-case estimator remain unchanged. This source
+preparation is unqualified until the existing opt-in raw-history CLI reproduces
+it from separately reviewed genuine Node-visible original input admission.
+
+The original two-source profile bytes are retained as an explicit regression
+fixture. Existing raw append positives, custody/overwrite/duplicate refusals,
+conservative-cost checks and fourth-source refusal use that unchanged fixture.
+The selected-profile test still checks both original 95/569 histories, and adds
+exact third-run/head/tree/metadata/ZIP provenance and 95/569 expectations. A
+new control verifies conservative old/current costs and the observed Family
+Health Picture weight. No old assertion, browser test, case identity, queue or
+accessibility sweep guard, retry limit, time cap or worker count is removed.
+
+The existing six-job scheduler is unchanged. A read-only same-sample calculation
+suggests lower maximum assigned case duration; it is not an observed speedup.
+Current-source local qualification and complete exact-final-head hosted suites
+remain required before merge. No active font cache or product policy changes.
+
 # Test diff register
 
 ## 2026-10-08 — Exercise Path B's fixed 30-day held-source expiry in the browser
