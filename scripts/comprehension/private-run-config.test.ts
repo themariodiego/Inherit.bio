@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import type { BigIntStats, Stats } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -9,10 +10,21 @@ import { repositoryRoot } from "./conductor-inputs";
 import { loadPrivateRunConfig, PRIVATE_CONFIG_MAX_BYTES, PRIVATE_CONFIG_REFUSAL } from "./private-run-config";
 
 const controls = vi.hoisted(() => ({ duringRead: undefined as (() => void) | undefined,
-  buffers: [] as Buffer[], rejectClose: false }));
+  buffers: [] as Buffer[], rejectClose: false,
+  statProjection: undefined as ((value: Stats | BigIntStats, file?: unknown) => Stats | BigIntStats) | undefined }));
 vi.mock("node:fs", async importOriginal => {
   const actual = await importOriginal<typeof import("node:fs")>();
+  function projected(value: Stats | BigIntStats, file?: unknown): Stats | BigIntStats {
+    return controls.statProjection?.(value, file) ?? value;
+  }
   return { ...actual,
+    lstatSync(...args: Parameters<typeof actual.lstatSync>) {
+      const value = actual.lstatSync(...args);
+      return value === undefined ? value : projected(value, args[0]);
+    },
+    fstatSync(...args: Parameters<typeof actual.fstatSync>) {
+      return projected(actual.fstatSync(...args));
+    },
     readSync(fd: number, bytes: Buffer, offset: number, length: number, position: number | null) {
       controls.buffers.push(bytes);
       const count = actual.readSync(fd, bytes, offset, length, position);
@@ -28,7 +40,7 @@ vi.mock("node:fs", async importOriginal => {
 
 const roots: string[] = [];
 afterEach(() => {
-  controls.duringRead = undefined; controls.buffers = []; controls.rejectClose = false;
+  controls.duringRead = undefined; controls.buffers = []; controls.rejectClose = false; controls.statProjection = undefined;
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 function directory(): string {
@@ -178,6 +190,48 @@ describe("private comprehension configuration admission", () => {
       expect(String(error.stderr)).toContain(PRIVATE_CONFIG_REFUSAL);
       expect(String(error.stdout) + String(error.stderr)).not.toContain(marker);
     }
+    expect(existsSync(path.join(root, "effort"))).toBe(false);
+    expect(existsSync(path.join(root, "records"))).toBe(false);
+  });
+
+  it.each(["ino", "mtimeNs", "ctimeNs", "gid"] as const)("refuses an exact %s change while clearing consumed bytes", field => {
+    const input = file();
+    const base = field === "gid" ? BigInt(20) : field === "ino" ? BigInt("9007199254740992") : BigInt("1700000000000000000");
+    let changed = false;
+    const observations: bigint[] = [];
+    controls.statProjection = value => {
+      if (!value.isFile() || typeof value.ino !== "bigint") return value;
+      const exact = value as BigIntStats;
+      const identity = base + (changed ? BigInt(1) : BigInt(0));
+      observations.push(identity);
+      return Object.assign(Object.create(Object.getPrototypeOf(exact)), exact, { [field]: identity });
+    };
+    controls.duringRead = () => { changed = true; };
+    privateError(input);
+    clearedReadBytes();
+    expect(observations).toContain(base);
+    expect(observations).toContain(base + BigInt(1));
+    if (field !== "gid") expect(Number(base)).toBe(Number(base + BigInt(1)));
+    expect(existsSync(path.join(path.dirname(input), "effort"))).toBe(false);
+    expect(existsSync(path.join(path.dirname(input), "records"))).toBe(false);
+  });
+
+  it("refuses adjacent parent inode values that collide as Numbers", () => {
+    const root = directory(), input = file(root), base = BigInt("9007199254740992");
+    let changed = false;
+    const observations: bigint[] = [];
+    controls.statProjection = (value, name) => {
+      if (name !== root || !value.isDirectory() || typeof value.ino !== "bigint") return value;
+      const exact = value as BigIntStats, identity = base + (changed ? BigInt(1) : BigInt(0));
+      observations.push(identity);
+      return Object.assign(Object.create(Object.getPrototypeOf(exact)), exact, { ino: identity });
+    };
+    controls.duringRead = () => { changed = true; };
+    privateError(input);
+    clearedReadBytes();
+    expect(Number(base)).toBe(Number(base + BigInt(1)));
+    expect(observations).toContain(base);
+    expect(observations).toContain(base + BigInt(1));
     expect(existsSync(path.join(root, "effort"))).toBe(false);
     expect(existsSync(path.join(root, "records"))).toBe(false);
   });

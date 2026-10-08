@@ -1,3 +1,20 @@
+## 2026-10-09 — Keep exact private comprehension file identities
+
+Private configuration admission uses BigInt file and directory identities.
+File checks retain the complete device, inode, UID, GID, mode, link count,
+size and nanosecond modification/change times. Parent identities use exact
+decimal fields. The file size becomes a Number only after the unchanged
+1-to-65536-byte bound proves the conversion exact. Schema validation,
+generic refusal, input zeroing and uncertain-close refusal stay unchanged.
+
+Five added controls use actual temporary files and controlled metadata
+observations. They refuse adjacent inode and nanosecond values that Numbers
+would alias, a changed GID and an adjacent parent inode. Every original
+26 case, assertion and CLI time limit remains intact. The passing current
+main integration is preserved as historical; all new cases and the new
+source remain unrun pending source review and current qualification. No
+paid comprehension, human-study or release requirement changes.
+
 ## 8 October 2026 — Three-source browser timing calibration
 
 The committed V2 timing profile adds only accepted protected-main run
