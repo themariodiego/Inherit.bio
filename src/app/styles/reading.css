@@ -1,3 +1,96 @@
 /* reading surface styles. Owned by one surface agent; tokens come from globals.css.
    Rules here are unlayered and beat Tailwind utilities: use them for shared
    patterns, and Tailwind classes in JSX for one-offs. */
+
+/* ---------------------------------------------------------------------------
+ * Reading page head: eyebrow, display-lg title, caption date, lede intro.
+ * ------------------------------------------------------------------------- */
+.reading-head { max-width: 56rem; }
+.reading-head > .display { margin-top: 1rem; }
+.reading-head > .caption { margin-top: 1.25rem; }
+.reading-intro { margin-top: 1.5rem; }
+.reading-intro > * + *, .reading-intro section > * + * { margin-top: 1rem; }
+.reading-intro a { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+.reading-intro a:hover { text-decoration-thickness: 2px; }
+.reading-intro strong { color: var(--ink); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+ * The table of contents. Desktop: a 14rem sticky rail with an eyebrow title
+ * and 44px links, no current-section tracking. Phone: a plate that opens.
+ * ------------------------------------------------------------------------- */
+.legal-toc { position: sticky; top: calc(var(--size-navbar) + 2rem); }
+.legal-toc ol { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border-left: 1px solid var(--line); }
+.legal-toc a {
+  display: flex; align-items: center; min-height: var(--size-control);
+  padding: 0.25rem 0 0.25rem 1rem; margin-left: -1px;
+  border-left: 1px solid transparent;
+  font-size: 0.875rem; line-height: 1.4; color: var(--ink-muted);
+  transition: color var(--motion-feedback), border-color var(--motion-feedback);
+}
+.legal-toc a:hover { color: var(--ink); border-left-color: var(--line-strong); }
+.legal-toc-plate > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: var(--size-control); padding: 0.5rem 1.25rem;
+  background: var(--surface-inset); border-radius: 0;
+  list-style: none;
+}
+.legal-toc-plate > summary::-webkit-details-marker { display: none; }
+.legal-toc-plate > summary::after {
+  content: ""; width: 0.5rem; height: 0.5rem; flex: none;
+  border-right: 1.5px solid var(--ink-muted); border-bottom: 1.5px solid var(--ink-muted);
+  transform: translateY(-2px) rotate(45deg); transition: transform var(--motion-reveal) var(--easing-settle);
+}
+.legal-toc-plate[open] > summary { border-bottom: 1px solid var(--line); }
+.legal-toc-plate[open] > summary::after { transform: translateY(2px) rotate(225deg); }
+.legal-toc-plate ol { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem 1.25rem; }
+.legal-toc-plate a { display: flex; align-items: center; min-height: var(--size-control); font-size: 0.875rem; color: var(--ink); }
+
+/* ---------------------------------------------------------------------------
+ * Sections: the responsive rhythm split around a hairline. The h2 is the
+ * display-2 size; the prose below it sits on the 68ch measure.
+ * ------------------------------------------------------------------------- */
+.legal-sections > .legal-section + .legal-section {
+  margin-top: calc(var(--rhythm-section) / 2);
+  padding-top: calc(var(--rhythm-section) / 2);
+  border-top: 1px solid var(--line);
+}
+.legal-section > .display + .legal-prose { margin-top: 1.5rem; }
+
+/* Legal prose: 17px ink on the measure, forest prose links, ink emphasis,
+   plain lists and quiet sub-headings. Links stay inline (SC 2.5.8). */
+.legal-prose { max-width: var(--measure); font-size: 1.0625rem; line-height: 1.65; color: var(--ink); }
+.legal-prose > * + *, .legal-prose section > * + * { margin-top: 1rem; }
+.legal-prose a { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+.legal-prose a:hover { text-decoration-thickness: 2px; }
+.legal-prose strong { font-weight: 600; color: var(--ink); }
+.legal-prose h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; margin-top: 2rem; }
+.legal-prose ul, .legal-prose ol { padding-left: 1.5rem; display: flex; flex-direction: column; gap: 0.625rem; }
+.legal-prose ul { list-style: disc; }
+.legal-prose ol { list-style: decimal; }
+.legal-prose li { padding-left: 0.25rem; }
+.legal-prose li::marker { color: var(--ink-muted); }
+.legal-prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+.legal-prose table { width: 100%; font-size: 0.9375rem; }
+.legal-prose th, .legal-prose td { padding-block: 0.75rem; }
+.legal-prose .caption { font-size: 0.8125rem; line-height: 1.5; }
+
+/* ---------------------------------------------------------------------------
+ * The auth shell: a quiet ground of hills behind a centred 26rem column.
+ * The form sits on a surface, so the terrain never crosses text.
+ * ------------------------------------------------------------------------- */
+.auth-shell { position: relative; overflow: hidden; isolation: isolate; }
+.auth-terrain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.7; }
+.auth-terrain [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 62%; }
+.auth-surface { width: 100%; max-width: 26rem; }
+.auth-surface h1.display { font-size: clamp(1.875rem, 1.3rem + 2vw, 2.5rem); }
+.auth-note { display: flex; align-items: center; min-height: var(--size-control); padding: 0.625rem 1rem; border-radius: var(--radius-sm); background: var(--surface-inset); font-size: 0.9375rem; line-height: 1.5; }
+
+/* ---------------------------------------------------------------------------
+ * Quiet column: not-found, error, capability unavailable, feature not built.
+ * A short band of hills sits above the heading like a horizon.
+ * ------------------------------------------------------------------------- */
+.quiet-band { position: relative; height: 6.5rem; overflow: hidden; border-bottom: 1px solid var(--line); }
+.quiet-band [data-slot="terrain"] { position: absolute; inset: 0; }
+.quiet-column > .quiet-band + * { margin-top: 2rem; }
+.quiet-links { display: flex; flex-direction: column; gap: 0.5rem; }
+.quiet-links a { display: inline-flex; align-items: center; min-height: var(--size-control); }

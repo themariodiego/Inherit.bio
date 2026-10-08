@@ -47,60 +47,57 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
 export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-paper">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="space-y-4">
-          <Wordmark />
-          <p className="max-w-xs text-sm text-ink-muted">
-            Your genome, on your terms. Inherit never sells sequencing, never
-            sells your data, and runs on code you can read.
-          </p>
-          <Attribution />
+      <div className="mx-auto max-w-6xl px-6">
+        {/* Top band: the mark at display size, the one sentence, the
+            attribution. Hairlines separate the three bands; no fills. */}
+        <div className="grid gap-8 py-14 md:py-16 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-16">
+          <Wordmark className="text-4xl md:text-5xl" />
+          <div className="space-y-4">
+            <p className="lede">
+              Your genome, on your terms. Inherit never sells sequencing, never
+              sells your data, and runs on code you can read.
+            </p>
+            <Attribution />
+          </div>
         </div>
-        {columns.map((col) => (
-          <nav key={col.heading} aria-label={col.heading}>
-            <h2 className="eyebrow mb-4">{col.heading}</h2>
-            {/* Each entry is a tap target, not a line of prose: SC 2.5.8's
-                Inline exception covers a link inside a sentence, and a footer
-                column is a stack of links with no sentence around them. So
-                every one carries the control scale (`--size-control`, brief
-                line 553; line 1053 "Minimum target 44×44 CSS px with ≥ 8px
-                separation"). `flex` rather than `inline-flex` so the target is
-                the whole column row and not just the glyphs — the widest
-                reading of "tap target" on a phone. `space-y-2` is the 8px
-                separation the same line asks for, and unlike the 10px it
-                replaces it is on the brief's layout scale (§1.1). */}
-            <ul className="space-y-2 text-sm">
-              {col.links.map((l) => (
-                <li key={l.href}>
-                  {l.href.startsWith("http") ? (
-                    <a
-                      href={l.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex min-h-11 items-center text-ink-muted hover:text-ink"
-                    >
-                      {l.label}
-                    </a>
-                  ) : (
-                    <Link
-                      href={l.href}
-                      className="flex min-h-11 items-center text-ink-muted hover:text-ink"
-                    >
-                      {l.label}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </nav>
-        ))}
-      </div>
-      <div className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-5 text-xs text-ink-muted">
-          <p>
+        <div className="rule grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
+          {columns.map((col) => (
+            <nav key={col.heading} aria-label={col.heading}>
+              <h2 className="eyebrow mb-4">{col.heading}</h2>
+              {/* Each entry is a tap target, not a line of prose: SC 2.5.8's
+                  Inline exception covers a link inside a sentence, and a
+                  footer column is a stack of links with no sentence around
+                  them. So every one carries the control scale (44px tall,
+                  the whole column row wide) and `space-y-2` is the 8px
+                  separation. */}
+              <ul className="space-y-2 text-sm">
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    {l.href.startsWith("http") ? (
+                      <a
+                        href={l.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="site-footer-link"
+                      >
+                        {l.label}
+                      </a>
+                    ) : (
+                      <Link href={l.href} className="site-footer-link">
+                        {l.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+        <div className="rule flex flex-wrap items-center justify-between gap-x-8 gap-y-2 py-6">
+          <p className="caption">
             Informational only — not medical advice, not a diagnostic service.
           </p>
-          <p>AGPL-3.0 · no trackers, no ad pixels, no third-party analytics</p>
+          <p className="caption">AGPL-3.0 · no trackers, no ad pixels, no third-party analytics</p>
         </div>
       </div>
     </footer>
