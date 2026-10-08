@@ -48,6 +48,14 @@ the unchanged actual two-form inventory and meaningful positive/negative
 fixtures for these cases. No acceptance verdict changes. Current checks are
 unrun at source freeze; local and final hosted qualification remain required.
 
+## 2026-10-08 — Bound publisher-only signed APT refresh and preserve consumer admission
+
+The publisher's fresh `checks` runner now reuses the admitted APT driver inside one fresh transient root service, after the seven execution prerequisites and strict coverage aggregate. The existing four main-only maintenance steps, eight required jobs, exact font key and nine official package pins remain. Publisher lookup hits skip maintenance; this is separate from consumer warm admission, whose original signed refresh and post-copy fatal checks remain unchanged.
+
+The service uses the documented 255 family, `Type=exec`, a runtime bound, control-group termination and five-second stop settlement. Its work is at most155 seconds inside the unchanged210-second shared/180-second command/four-minute step bounds, with explicit startup and closure/catch reserves. Only exact transient root ownership permits failure cleanup. Original driver output, the successful signed-refresh terminal receipt, current versions and an absent owned cgroup are required before publication; unavailable, failed, timed-out or unclosed supervision never enables a cache save.
+
+All prior archive, reader, shard and synthetic consumer expectations remain unchanged. Eight added pure controls cover argument/path ownership, budget boundaries, documented version admission, pre-existing/active/ambiguous unit refusal, cleanup ownership, missing/forged/nonterminal signed receipts and populate-only refresh selection. These tests do not establish Linux descendant settlement. Three separate tiny, fresh-unit Linux controls are planned for normal/failure/timeout service paths with TERM-resistant children in another session; actual hosted image/driver/full-suite and later protected-main publication remain distinct requirements. No current execution, cache hit, speed or release result is claimed.
+
 ## 2026-10-08 — admit closed equivalent APT security boolean representations
 
 **Preserved first result.** PR296 head f3b06f6f3f31fe048b4eef3c4b4f7261f082cfeb, run37704326980 attempt1, refused `APT authentication or freshness weakened` before keyring hardening or any APT-file mutation. Both complete originals report only three security leaves as typed false, with retry1 and HTTP/HTTPS15. The previous diagnostic intentionally mapped both false and0 to false, so exact per-leaf raw spellings are unknown; the refusal implies at least one numeric0 representation. This is a bounded inference, not a claim that raw spellings were logged.
@@ -96,6 +104,32 @@ Config diagnostics expose only whitelisted typed network/security leaves. All
 12 previous pure methods, installer/workflow controls and time limits remain.
 Current hosted settings, signed metadata, full installer and full CI success
 still require original successor evidence.
+
+## 2026-10-07 — Keep required CI work fail-closed around optional font maintenance
+
+The genuine cold PR295 unit run exposed the shard workflow guard's blanket `continue-on-error` text ban. All 17 shard controls and every other banned narrowing/artifact pattern remain. The guard now parses the actual YAML through the source-bound hosted contract: every job and ordinary mandatory step must omit the flag entirely, including `false`; only the exact reviewed optional cache maintenance shapes may declare `true`. Three additional reader controls mutate every ordinary job/step with both flag values and disguise a unit step as a cache action. Full unit/database/browser requirements, discovery, coverage, retries and time limits stay unchanged. Original failed run and log remain recorded separately; this note does not claim later validation.
+
+## 2026-10-07 — Publish font archives before adopting active CI restores
+
+The publisher-only precursor retains the seven complete installation/test jobs
+and the final coverage aggregate. It publishes only after those seven jobs and
+the aggregate step succeed; the eighth `checks` job finishes after optional
+publication. PRs never publish, and installation jobs execute no cache restores
+or warm seeding in this precursor.
+
+The seventeen archive integrity/version/provenance controls remain exact. All
+thirty-seven consumer reader controls remain, including refusal of prefix
+restores and skipped/failed warm validation. Tests that require consumer steps
+now use an explicit synthetic three-step fixture matching the reviewed consumer
+workflow; the actual publisher workflow supplies the main-only publication
+fixtures. No assertion is removed or loosened. Two additional controls prove
+the real publisher has exactly eight jobs and no active restore/seed, and prove
+synthetic consumer validation remains mandatory before the full installer.
+
+The precursor seeds a genuine protected-main key before a separate consumer
+can prove real exact-key warm hits. Complete local and exact-head hosted checks
+remain required; the consumer draft and prior evidence are preserved. This
+entry records a source change, with no execution or speed claim.
 
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
