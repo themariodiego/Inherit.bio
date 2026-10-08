@@ -146,20 +146,18 @@ function ScrollableTable({
     };
   }, []);
 
+  // A named, focusable region only while there is something to scroll: a
+  // scrolling container nothing can focus is unreachable by keyboard (axe
+  // `scrollable-region-focusable`); one that cannot scroll would be a tab
+  // stop that does nothing and a landmark that names nothing. It borrows the
+  // provider heading above it rather than carrying a second copy of the name.
+  const region = canScroll
+    ? { role: "region", "aria-labelledby": labelledBy, tabIndex: 0 }
+    : {};
+
   return (
     <div className="relative">
-      {/* Named, and focusable only while there is something to scroll: a
-          scrolling container nothing can focus is unreachable by keyboard
-          (axe `scrollable-region-focusable`), and one that cannot scroll is
-          a tab stop that does nothing. It borrows the provider heading above
-          it rather than carrying a second copy of the name. */}
-      <div
-        ref={scrollerRef}
-        className="overflow-x-auto rounded-sm"
-        role="region"
-        aria-labelledby={labelledBy}
-        tabIndex={canScroll ? 0 : -1}
-      >
+      <div ref={scrollerRef} className="overflow-x-auto rounded-sm" {...region}>
         {children}
       </div>
       {fade ? (
@@ -213,9 +211,8 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
 
   return (
     <div className="provider-directory stack-blocks">
-      {/* One plate: the filters are its labelled edge (the three controls
-          and their note on the inset ground), then the explainer under the
-          head's hairline. The explainer keeps its own region and heading. */}
+      {/* The filters plate: the three controls and their note are its
+          labelled edge on the inset ground, and nothing follows them. */}
       <div className="plate">
         <div className="plate-head filter-head">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -280,39 +277,48 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             the provider directly.
           </p>
         </div>
+      </div>
 
-        <section className="plate-body" aria-labelledby="test-types-heading">
+      {/* The explainer: its own plate, with its heading as the label. It is
+          read after the filters (DOM order: filters, explainer, list) and on
+          phones it is shown after the list (flex order), so the first
+          provider follows the filters instead of a screen of explanation. */}
+      <section
+        className="plate order-last md:order-none"
+        aria-labelledby="test-types-heading"
+      >
+        <div className="plate-head">
           <h2 id="test-types-heading" className="eyebrow">
             New to this? What the three test types mean
           </h2>
-          <div className="mt-4">
-            <ul className="max-w-measure space-y-3 text-ink">
-              <li>
-                <strong className="font-semibold">
-                  Genotyping array (~$30–120):
-                </strong>{" "}
-                tests a set of common variants. Inherit can prepare supported array
-                text files; each report depends on the positions covered.
-              </li>
-              <li>
-                <strong className="font-semibold">
-                  Whole genome 30x (~$200–1,000):
-                </strong>{" "}
-                aims to read across the genome. Some positions may be missing or
-                unclear; a VCF/gVCF file is needed for upload.
-              </li>
-              <li>
-                <strong className="font-semibold">Exome/other:</strong> reads
-                protein-coding regions; coverage varies.
-              </li>
-            </ul>
-            <p className="mt-4 max-w-measure text-ink">
-              Check which raw files the lab provides before you buy. Choose reports
-              after your file is prepared; no test type covers every finding.
-            </p>
-          </div>
-        </section>
-      </div>
+        </div>
+        <div className="plate-body">
+          <ul className="max-w-measure space-y-3 text-ink">
+            <li>
+              <strong className="font-semibold">
+                Genotyping array (~$30–120):
+              </strong>{" "}
+              tests a set of common variants. Inherit can prepare supported array
+              text files; each report depends on the positions covered.
+            </li>
+            <li>
+              <strong className="font-semibold">
+                Whole genome 30x (~$200–1,000):
+              </strong>{" "}
+              aims to read across the genome. Some positions may be missing or
+              unclear; a VCF/gVCF file is needed for upload.
+            </li>
+            <li>
+              <strong className="font-semibold">Exome/other:</strong> reads
+              protein-coding regions; coverage varies.
+            </li>
+          </ul>
+          <p className="mt-4 max-w-measure text-ink">
+            Check which raw files the lab provides before you buy. Choose reports
+            after your file is prepared; no test type covers every finding.
+          </p>
+        </div>
+      </section>
 
       <ul className="space-y-6">
         {rows.map(({ provider: p, availability }) => {
@@ -330,8 +336,11 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
               {/* The labelled edge: name, where it ships, and availability
                   as plain text when the provider cannot serve this place.
                   An unavailable card is never dimmed: the reason is stated
-                  in words here, in ink, and the Buy action is withheld. */}
-              <div className="plate-head items-start py-3 sm:items-center">
+                  in words here, in ink, and the Buy action is withheld.
+                  Below sm the head stacks (marketing.css `.provider-head`),
+                  so the name and "Ships to" keep the full column and the
+                  reason sits under them. */}
+              <div className="plate-head provider-head py-3">
                 <div className="min-w-0">
                   <h2 id={`provider-${p.slug}-name`} className="title">
                     {p.name}
@@ -342,7 +351,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   </p>
                 </div>
                 {!availability.available ? (
-                  <p className="label max-w-[18rem] shrink-0 text-ink sm:text-right">
+                  <p className="label max-w-[18rem] text-ink sm:shrink-0 sm:text-right">
                     {availability.reason}
                   </p>
                 ) : null}
@@ -388,8 +397,12 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                           <dt className="text-ink">Price</dt>
                           <dd className="text-ink">
                             {prod.price}
+                            {/* The date never breaks after its year. */}
                             <span className="caption mt-1 block">
-                              Captured {p.last_verified_at}
+                              Captured{" "}
+                              <span className="whitespace-nowrap">
+                                {p.last_verified_at}
+                              </span>
                             </span>
                           </dd>
                           <dt className="text-ink">Raw files you get</dt>
@@ -413,16 +426,19 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
                     {/* Fixed layout with shared column widths, so the sixteen
                         tables read as one list: every column starts at the
-                        same x in every card, and the product column takes
-                        the slack. */}
-                    <table className="w-full min-w-[44rem] table-fixed text-left text-sm">
+                        same x in every card. The budget (10.5 / 9 / 12 / 14 /
+                        9 rem) is sized so no price token or domain splits
+                        mid-word and no row passes 120px; Product takes the
+                        slack and the min-width keeps it at 11rem or more,
+                        so below that the wrapper scrolls instead. */}
+                    <table className="w-full min-w-[65.5rem] table-fixed text-left text-sm">
                       <colgroup>
                         <col />
-                        <col className="w-44" />
-                        <col className="w-28" />
+                        <col className="w-42" />
                         <col className="w-36" />
-                        <col className="w-40" />
-                        <col className="w-32" />
+                        <col className="w-48" />
+                        <col className="w-56" />
+                        <col className="w-36" />
                       </colgroup>
                       <thead>
                         <tr className="border-b border-line">
@@ -432,7 +448,11 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                           </th>
                           <th className={TH}>Depth</th>
                           <th className={TH}>
-                            Price (captured {p.last_verified_at})
+                            Price (captured{" "}
+                            <span className="whitespace-nowrap">
+                              {p.last_verified_at}
+                            </span>
+                            )
                           </th>
                           <th className={TH}>
                             Raw files you get
@@ -453,12 +473,12 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                             >
                               <td className={`${TD} font-medium text-ink`}>{noBreakDash(prod.name)}</td>
                               <td className={TD}>
+                                {/* One status, one colour: ink, as in the
+                                    phone blocks. */}
                                 <Badge
                                   variant="outline"
                                   title={compat.detail}
-                                  className={`max-w-[13rem] whitespace-normal rounded-sm py-1 text-left ${
-                                    compat.kind === "none" ? "text-ink-muted" : ""
-                                  }`}
+                                  className="max-w-[13rem] whitespace-normal rounded-sm py-1 text-left"
                                 >
                                   {compat.label}
                                 </Badge>
@@ -472,11 +492,14 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                               >
                                 {prod.depth}
                               </td>
-                              <td className={`${TD} break-words`}>{prod.price}</td>
-                              <td className={`${TD} break-words text-xs text-ink-muted`}>
+                              {/* A price is never split inside a token; a
+                                  raw-file cell may carry a file name or a
+                                  URL, so only there a token may break. */}
+                              <td className={`${TD} wrap-normal`}>{prod.price}</td>
+                              <td className={`${TD} wrap-anywhere text-xs text-ink-muted`}>
                                 {(prod.formats_returned ?? []).join(", ") || "—"}
                               </td>
-                              <td className="break-words py-4 align-top text-xs text-ink-muted">
+                              <td className="py-4 align-top text-xs text-ink-muted">
                                 {prod.turnaround || "—"}
                               </td>
                             </tr>
