@@ -32,7 +32,7 @@ export function FeatureNotBuilt({
   whatItWouldDo: string;
 }) {
   return (
-    <div className="quiet-column page-stack mx-auto max-w-2xl">
+    <div className="quiet-column mx-auto max-w-2xl">
       <div aria-hidden="true" className="quiet-band">
         <Terrain variant="band" seed={11} />
       </div>

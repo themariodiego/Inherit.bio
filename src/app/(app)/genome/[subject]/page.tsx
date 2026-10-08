@@ -103,29 +103,33 @@ export default async function GenomePage(
   ];
 
   return (
-    <div className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-      <h1 className="display text-3xl">{domain.label}</h1>
-      {preparing ? (
-        <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{HUB_PREPARING}</p>
-      ) : null}
-      <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">
+    <div className="page-stack stack-blocks mx-auto max-w-5xl">
+      <div className="page-head">
+        <Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />
+        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+        <h1 className="display">{domain.label}</h1>
+        {preparing ? (
+          <p role="status" className="body-lg max-w-measure text-ink">{HUB_PREPARING}</p>
+        ) : null}
+      </div>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Genome tools">
         {tiles.map((tile) => (
           <article key={tile.href} className="flex">
-            <Link href={tile.href} aria-label={`Open ${tile.title}`} className="link-surface flex w-full flex-col rounded-2xl border border-line bg-card p-6">
-              <h2 className="flex items-center justify-between gap-4 text-lg font-semibold">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow size-5 shrink-0 text-forest" /></h2>
-              <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{tile.copy}</p>
+            <Link href={tile.href} aria-label={`Open ${tile.title}`} className="surface link-surface flex w-full flex-col p-5 text-ink sm:p-6">
+              <h2 className="title flex items-start justify-between gap-4">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow mt-1 size-4 shrink-0 text-forest" /></h2>
+              <p className="mt-2 flex-1 text-sm text-ink-muted">{tile.copy}</p>
             </Link>
           </article>
         ))}
       </section>
       {mine ? (
-        <Button asChild>
-          <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
-        </Button>
+        <div>
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        </div>
       ) : null}
-      <p className="max-w-prose text-sm text-ink-muted">{NOT_DIAGNOSTIC}</p>
+      <p className="caption max-w-measure">{NOT_DIAGNOSTIC}</p>
     </div>
   );
 }

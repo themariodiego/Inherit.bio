@@ -133,7 +133,7 @@ function ScrollableTable({
   }, []);
 
   return (
-    <div className="relative mt-4">
+    <div className="relative">
       {/* Focusable and named: the table is wider than a phone, and a
           scrolling container nothing can focus is unreachable by keyboard
           (axe `scrollable-region-focusable`, sixteen of them on this page at
@@ -141,7 +141,7 @@ function ScrollableTable({
           rather than carrying a second copy of the name. */}
       <div
         ref={scrollerRef}
-        className="overflow-x-auto"
+        className="overflow-x-auto rounded-sm"
         role="region"
         aria-labelledby={labelledBy}
         tabIndex={0}
@@ -172,6 +172,9 @@ function depthClass(p: Provider): Set<string> {
   return classes;
 }
 
+const TH = "h-row pr-4 align-middle text-xs font-medium text-ink-muted";
+const TD = "py-4 pr-4 align-top";
+
 export function ProviderDirectory({ providers }: { providers: Provider[] }) {
   const [country, setCountry] = useState("US");
   const [usState, setUsState] = useState<string>("");
@@ -195,102 +198,109 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
   }, [providers, country, usState, depth]);
 
   return (
-    <div className="space-y-6">
-      <section
-        aria-labelledby="test-types-heading"
-        className="rounded-2xl border border-line bg-card p-4"
-      >
-        <h2 id="test-types-heading" className="text-sm font-medium">
-          New to this? What the three test types mean
-        </h2>
-        <ul className="mt-2 space-y-1.5 text-sm text-ink-muted">
-          <li>
-            <strong className="font-medium text-ink">
-              Genotyping array (~$30–120):
-            </strong>{" "}
-            tests a set of common variants. Inherit can prepare supported array
-            text files; each report depends on the positions covered.
-          </li>
-          <li>
-            <strong className="font-medium text-ink">
-              Whole genome 30x (~$200–1,000):
-            </strong>{" "}
-            aims to read across the genome. Some positions may be missing or
-            unclear; a VCF/gVCF file is needed for upload.
-          </li>
-          <li>
-            <strong className="font-medium text-ink">Exome/other:</strong> reads
-            protein-coding regions; coverage varies.
-          </li>
-        </ul>
-        <p className="mt-2 text-sm">
-          Check which raw files the lab provides before you buy. Choose reports
-          after your file is prepared; no test type covers every finding.
-        </p>
-      </section>
-
-      <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-line bg-card p-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="country-select">Your country</Label>
-          <Select
-            value={country}
-            onValueChange={(v) => {
-              setCountry(v);
-              if (v !== "US") setUsState("");
-            }}
-          >
-            <SelectTrigger id="country-select" className="w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map((c) => (
-                <SelectItem key={c.code} value={c.code}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {country === "US" ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="state-select">State</Label>
-            <Select value={usState} onValueChange={setUsState}>
-              <SelectTrigger id="state-select" className="w-52">
-                <SelectValue placeholder="Choose a state" />
-              </SelectTrigger>
-              <SelectContent>
-                {US_STATES.map((s) => (
-                  <SelectItem key={s.code} value={s.code}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="stack-blocks">
+      {/* One plate: the explainer under its labelled edge, then the filters
+          under a hairline. The explainer keeps its own region and heading. */}
+      <div className="plate">
+        <section aria-labelledby="test-types-heading">
+          <div className="plate-head">
+            <h2 id="test-types-heading" className="eyebrow py-1">
+              New to this? What the three test types mean
+            </h2>
           </div>
-        ) : null}
-        <div className="space-y-1.5">
-          <Label htmlFor="depth-select">Test type</Label>
-          <Select value={depth} onValueChange={setDepth}>
-            <SelectTrigger id="depth-select" className="w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DEPTH_FILTERS.map((d) => (
-                <SelectItem key={d.key} value={d.key}>
-                  {d.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="plate-body">
+            <ul className="max-w-measure space-y-3 text-ink">
+              <li>
+                <strong className="font-semibold">
+                  Genotyping array (~$30–120):
+                </strong>{" "}
+                tests a set of common variants. Inherit can prepare supported array
+                text files; each report depends on the positions covered.
+              </li>
+              <li>
+                <strong className="font-semibold">
+                  Whole genome 30x (~$200–1,000):
+                </strong>{" "}
+                aims to read across the genome. Some positions may be missing or
+                unclear; a VCF/gVCF file is needed for upload.
+              </li>
+              <li>
+                <strong className="font-semibold">Exome/other:</strong> reads
+                protein-coding regions; coverage varies.
+              </li>
+            </ul>
+            <p className="mt-4 max-w-measure text-ink">
+              Check which raw files the lab provides before you buy. Choose reports
+              after your file is prepared; no test type covers every finding.
+            </p>
+          </div>
+        </section>
+
+        <div className="plate-body border-t border-line">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="country-select">Your country</Label>
+              <Select
+                value={country}
+                onValueChange={(v) => {
+                  setCountry(v);
+                  if (v !== "US") setUsState("");
+                }}
+              >
+                <SelectTrigger id="country-select" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {country === "US" ? (
+              <div className="space-y-2">
+                <Label htmlFor="state-select">State</Label>
+                <Select value={usState} onValueChange={setUsState}>
+                  <SelectTrigger id="state-select" className="w-full">
+                    <SelectValue placeholder="Choose a state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {US_STATES.map((s) => (
+                      <SelectItem key={s.code} value={s.code}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="depth-select">Test type</Label>
+              <Select value={depth} onValueChange={setDepth}>
+                <SelectTrigger id="depth-select" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPTH_FILTERS.map((d) => (
+                    <SelectItem key={d.key} value={d.key}>
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="caption mt-4 max-w-measure">
+            Location is used only to filter this list, in your browser. Inherit
+            never asks for a street address and never takes payment — you buy from
+            the provider directly.
+          </p>
         </div>
-        <p className="basis-full text-xs text-ink-muted">
-          Location is used only to filter this list, in your browser. Inherit
-          never asks for a street address and never takes payment — you buy from
-          the provider directly.
-        </p>
       </div>
 
-      <ul className="space-y-4">
+      <ul className="space-y-6">
         {rows.map(({ provider: p, availability }) => {
           // A provider where every product is "Not usable" still gets a buy
           // link (people may want it for other reasons) but a quiet one.
@@ -301,151 +311,155 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             <li
               key={p.slug}
               data-testid={`provider-${p.slug}`}
-              className={`rounded-2xl border border-line bg-card p-6 ${availability.available ? "" : "opacity-60"}`}
+              className={`surface overflow-hidden ${availability.available ? "" : "opacity-60"}`}
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              {/* The labelled edge: name, where it ships, and availability
+                  as plain text when the provider cannot serve this place. */}
+              <div className="plate-head items-start py-3 sm:items-center">
                 <div className="min-w-0">
-                  <h2 id={`provider-${p.slug}-name`} className="font-medium">
+                  <h2 id={`provider-${p.slug}-name`} className="title">
                     {p.name}
                   </h2>
-                  <p className="mt-0.5 text-xs text-ink-muted">
+                  <p className="caption mt-0.5">
                     Ships to: {p.ships_to}
                     {p.shipping.note ? ` (${p.shipping.note})` : ""}
                   </p>
                 </div>
+                {!availability.available ? (
+                  <p className="max-w-[18rem] shrink-0 text-sm text-ink sm:text-right">
+                    {availability.reason}
+                  </p>
+                ) : null}
               </div>
 
-              {availability.available && availability.stateFlag ? (
-                <p
-                  data-testid="state-exclusion-flag"
-                  className="mt-3 rounded-lg bg-tint px-3 py-2 text-xs"
-                >
-                  ⚠ {availability.stateFlag}
-                </p>
-              ) : null}
+              <div className="surface-pad-sm">
+                {availability.available && availability.stateFlag ? (
+                  <p
+                    data-testid="state-exclusion-flag"
+                    className="surface-tint mb-4 px-4 py-3 text-sm text-ink"
+                  >
+                    ⚠ {availability.stateFlag}
+                  </p>
+                ) : null}
 
-              <div className="mt-6 space-y-6 lg:hidden">
-                {p.products.map((prod, index) => {
-                  const compat = compatFor(prod);
-                  return (
-                    <section
-                      key={index}
-                      className="border-t border-line pt-4"
-                      aria-label={prod.name}
-                    >
-                      <h3 className="font-medium">{prod.name}</h3>
-                      <p
-                        className={`mt-2 text-sm font-medium ${compat.kind === "full" ? "text-forest" : "text-ink-muted"}`}
+                {/* Phone and tablet: each product is an inset block that
+                    states everything a buyer compares before the Buy action. */}
+                <div className="space-y-4 lg:hidden">
+                  {p.products.map((prod, index) => {
+                    const compat = compatFor(prod);
+                    return (
+                      <section
+                        key={index}
+                        className="surface-inset surface-pad-sm"
+                        aria-label={prod.name}
                       >
-                        {compat.label}
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-ink-muted">
-                        {compat.detail}
-                      </p>
-                      <dl className="mt-4 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-4 gap-y-3 text-sm">
-                        <dt className="text-ink-muted">Price</dt>
-                        <dd>
-                          {prod.price}
-                          <span className="mt-1 block text-xs text-ink-muted">
-                            Captured {p.last_verified_at}
-                          </span>
-                        </dd>
-                        <dt className="text-ink-muted">Raw files you get</dt>
-                        <dd>
-                          {(prod.formats_returned ?? []).join(", ") || "—"}
-                        </dd>
-                        <dt className="text-ink-muted">Depth</dt>
-                        <dd>{prod.depth}</dd>
-                        <dt className="text-ink-muted">
-                          Advertised turnaround
-                        </dt>
-                        <dd>{prod.turnaround || "—"}</dd>
-                      </dl>
-                    </section>
-                  );
-                })}
-              </div>
-              <div className="hidden lg:block">
-                {/* Desktop comparison keeps compatibility next to the product.
-                Narrow screens use the labelled product summaries above. */}
-                <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
-                  <table className="w-full min-w-[44rem] text-left text-sm">
-                    <thead>
-                      <tr className="text-xs text-ink-muted">
-                        <th className="pb-1 pr-4 font-normal">Product</th>
-                        <th className="pb-1 pr-4 font-normal">
-                          Works with Inherit
-                        </th>
-                        <th className="pb-1 pr-4 font-normal">Depth</th>
-                        <th className="pb-1 pr-4 font-normal">
-                          Price (captured {p.last_verified_at})
-                        </th>
-                        <th className="pb-1 pr-4 font-normal">
-                          Raw files you get
-                        </th>
-                        <th className="pb-1 font-normal">
-                          Advertised turnaround
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {p.products.map((prod, i) => {
-                        const tip = depthTip(prod.depth);
-                        const compat = compatFor(prod);
-                        return (
-                          <tr
-                            key={i}
-                            className="border-t border-line align-top"
-                          >
-                            <td className="py-1.5 pr-4">{prod.name}</td>
-                            <td className="py-1.5 pr-4">
-                              <Badge
-                                variant={
-                                  compat.kind === "full"
-                                    ? "secondary"
-                                    : "outline"
-                                }
-                                title={compat.detail}
-                                className={`max-w-[13rem] whitespace-normal rounded-lg text-left text-xs leading-4 ${
-                                  compat.kind === "none" ? "text-ink-muted" : ""
-                                }`}
-                              >
-                                {compat.label}
-                              </Badge>
-                            </td>
-                            <td
-                              className={`py-1.5 pr-4 ${tip ? "cursor-help" : ""}`}
-                              title={tip || undefined}
-                              aria-label={
-                                tip ? `${prod.depth} — ${tip}` : undefined
-                              }
+                        <h3 className="title">{prod.name}</h3>
+                        <p
+                          className={`label mt-2 ${compat.kind === "full" ? "text-forest" : "text-ink"}`}
+                        >
+                          {compat.label}
+                        </p>
+                        <p className="mt-1 text-sm text-ink">
+                          {compat.detail}
+                        </p>
+                        <dl className="mt-4 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-4 gap-y-3 text-sm">
+                          <dt className="text-ink-muted">Price</dt>
+                          <dd className="text-ink">
+                            {prod.price}
+                            <span className="caption mt-1 block">
+                              Captured {p.last_verified_at}
+                            </span>
+                          </dd>
+                          <dt className="text-ink-muted">Raw files you get</dt>
+                          <dd className="text-ink">
+                            {(prod.formats_returned ?? []).join(", ") || "—"}
+                          </dd>
+                          <dt className="text-ink-muted">Depth</dt>
+                          <dd className="text-ink">{prod.depth}</dd>
+                          <dt className="text-ink-muted">
+                            Advertised turnaround
+                          </dt>
+                          <dd className="text-ink">{prod.turnaround || "—"}</dd>
+                        </dl>
+                      </section>
+                    );
+                  })}
+                </div>
+                <div className="hidden lg:block">
+                  {/* Desktop comparison keeps compatibility next to the product.
+                  Narrow screens use the labelled product summaries above. */}
+                  <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
+                    <table className="w-full min-w-[44rem] text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-line">
+                          <th className={TH}>Product</th>
+                          <th className={TH}>
+                            Works with Inherit
+                          </th>
+                          <th className={TH}>Depth</th>
+                          <th className={TH}>
+                            Price (captured {p.last_verified_at})
+                          </th>
+                          <th className={TH}>
+                            Raw files you get
+                          </th>
+                          <th className={`${TH} pr-0`}>
+                            Advertised turnaround
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {p.products.map((prod, i) => {
+                          const tip = depthTip(prod.depth);
+                          const compat = compatFor(prod);
+                          return (
+                            <tr
+                              key={i}
+                              className="h-row border-t border-line first:border-t-0"
                             >
-                              {prod.depth}
-                            </td>
-                            <td className="py-1.5 pr-4">{prod.price}</td>
-                            <td className="py-1.5 pr-4 text-xs">
-                              {(prod.formats_returned ?? []).join(", ") || "—"}
-                            </td>
-                            <td className="py-1.5 text-xs">
-                              {prod.turnaround || "—"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </ScrollableTable>
-              </div>
+                              <td className={`${TD} font-medium text-ink`}>{prod.name}</td>
+                              <td className={TD}>
+                                <Badge
+                                  variant="outline"
+                                  title={compat.detail}
+                                  className={`max-w-[13rem] whitespace-normal rounded-sm py-1 text-left ${
+                                    compat.kind === "none" ? "text-ink-muted" : ""
+                                  }`}
+                                >
+                                  {compat.label}
+                                </Badge>
+                              </td>
+                              <td
+                                className={`${TD} ${tip ? "cursor-help" : ""}`}
+                                title={tip || undefined}
+                                aria-label={
+                                  tip ? `${prod.depth} — ${tip}` : undefined
+                                }
+                              >
+                                {prod.depth}
+                              </td>
+                              <td className={TD}>{prod.price}</td>
+                              <td className={`${TD} text-xs text-ink-muted`}>
+                                {(prod.formats_returned ?? []).join(", ") || "—"}
+                              </td>
+                              <td className="py-4 align-top text-xs text-ink-muted">
+                                {prod.turnaround || "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </ScrollableTable>
+                </div>
 
-              <div className="mt-6">
-                {/* min-w-0 + flex-wrap + wrapping badges: long gating text
-                  wraps inside the card instead of forcing the page wider
-                  and pushing the buy button off-screen. */}
-                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+                {/* The outbound action comes after the comparison, never
+                    before it; gating text wraps beside it inside the card. */}
+                <div className="mt-6 flex min-w-0 max-w-full flex-wrap items-center justify-end gap-3">
                   {p.gating ? (
                     <Badge
-                      variant="secondary"
-                      className="max-w-full shrink whitespace-normal rounded-lg text-left"
+                      variant="outline"
+                      className="max-w-full shrink whitespace-normal rounded-sm py-1 text-left"
                     >
                       {p.gating}
                     </Badge>
@@ -453,8 +467,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   {availability.available ? (
                     <Button
                       asChild
-                      size="sm"
-                      variant={anyUsable ? "default" : "outline"}
+                      variant="outline"
                       className={anyUsable ? undefined : "text-ink-muted"}
                     >
                       <a
@@ -470,50 +483,43 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                         Buy through provider ↗
                       </a>
                     </Button>
-                  ) : (
-                    <Badge
-                      variant="secondary"
-                      className="max-w-full shrink whitespace-normal rounded-lg text-left"
-                    >
-                      {availability.reason}
-                    </Badge>
-                  )}
+                  ) : null}
                 </div>
-              </div>
 
-              <div className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-muted">
-                {p.data_practices_note ? (
+                <div className="caption mt-6 space-y-1 border-t border-line pt-4">
+                  {p.data_practices_note ? (
+                    <p>
+                      <strong className="font-semibold text-ink">Data practices:</strong> {p.data_practices_note}{" "}
+                      {p.privacy_policy_url ? (
+                        <a
+                          href={p.privacy_policy_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="prose-link"
+                        >
+                          Privacy policy ↗
+                        </a>
+                      ) : null}
+                    </p>
+                  ) : null}
                   <p>
-                    <strong>Data practices:</strong> {p.data_practices_note}{" "}
-                    {p.privacy_policy_url ? (
+                    Verified {p.last_verified_at} ·{" "}
+                    {p.source_urls.slice(0, 3).map((u, i) => (
                       <a
-                        href={p.privacy_policy_url}
+                        key={u}
+                        href={u}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="underline underline-offset-2"
+                        className="prose-link"
                       >
-                        Privacy policy ↗
+                        source {i + 1}{" "}
                       </a>
-                    ) : null}
+                    ))}
+                    {p.affiliate
+                      ? "· Inherit may earn a commission if you buy through this affiliate link. We show this here so you can see it."
+                      : "· No affiliate relationship."}
                   </p>
-                ) : null}
-                <p>
-                  Verified {p.last_verified_at} ·{" "}
-                  {p.source_urls.slice(0, 3).map((u, i) => (
-                    <a
-                      key={u}
-                      href={u}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline underline-offset-2"
-                    >
-                      source {i + 1}{" "}
-                    </a>
-                  ))}
-                  {p.affiliate
-                    ? "· Inherit may earn a commission if you buy through this affiliate link. We show this here so you can see it."
-                    : "· No affiliate relationship."}
-                </p>
+                </div>
               </div>
             </li>
           );
