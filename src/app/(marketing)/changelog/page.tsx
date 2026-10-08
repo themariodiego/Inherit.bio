@@ -77,23 +77,25 @@ export default async function ChangelogPage() {
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <p className="eyebrow mb-4">Research library</p>
-      <h1 className="display text-4xl">
-        New reports, <span className="accent">continuously.</span>
-      </h1>
-      <p className="mt-4 max-w-xl text-ink-muted">
-        Inherit checks GWAS Catalog, PGS Catalog, and ClinVar on a schedule. New
-        report drafts go to people for review before they are published here.
-        You can turn on email updates in Settings.
-      </p>
-      <ol className="mt-10 space-y-8 border-l border-line pl-6">
+    <div className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head">
+        <p className="eyebrow">Research library</p>
+        <h1 className="display display-lg">
+          New reports, <span className="accent">continuously.</span>
+        </h1>
+        <p className="lede reading-intro">
+          Inherit checks GWAS Catalog, PGS Catalog, and ClinVar on a schedule. New
+          report drafts go to people for review before they are published here.
+          You can turn on email updates in Settings.
+        </p>
+      </header>
+      <ol className="mt-section max-w-3xl space-y-block border-l border-line pl-8">
         {items.map((item) =>
           item.type === "entry" ? (
             <li key={item.entry.id} className="relative">
               <span
                 aria-hidden
-                className="absolute -left-[1.85rem] top-1.5 size-2.5 rounded-full bg-forest"
+                className="absolute -left-[2.3rem] top-1 size-2.5 rounded-full bg-forest"
               />
               <time
                 dateTime={item.entry.published_at}
@@ -101,27 +103,27 @@ export default async function ChangelogPage() {
               >
                 {formatDate(item.entry.published_at)}
               </time>
-              <h2 className="mt-1 font-medium">{item.entry.title}</h2>
-              <p className="mt-1 text-sm text-ink-muted">{item.entry.body}</p>
+              <h2 className="title mt-2">{item.entry.title}</h2>
+              <p className="mt-2 max-w-measure text-ink-muted">{item.entry.body}</p>
             </li>
           ) : (
             <li key={`relabel-${item.day}`} className="relative">
               <span
                 aria-hidden
-                className="absolute -left-[1.85rem] top-1.5 size-2.5 rounded-full bg-forest"
+                className="absolute -left-[2.3rem] top-1 size-2.5 rounded-full bg-forest"
               />
               <time dateTime={item.at} className="eyebrow">
                 {formatDate(item.at)}
               </time>
-              <details className="mt-1">
-                <summary className="cursor-pointer font-medium">
+              <details className="mt-2">
+                <summary className="title">
                   {REPORTS_RELABELLED}
                 </summary>
-                <ul className="mt-2 space-y-1 text-sm text-ink-muted">
+                <ul className="mt-2 max-w-measure space-y-2 text-sm text-ink-muted">
                   {item.entries.map((entry) => (
                     <li key={entry.id}>
                       {entry.title}{" "}
-                      <span className="font-mono text-xs">
+                      <span className="mono text-xs">
                         {entry.evidence_before} → {entry.evidence_after}
                       </span>
                     </li>
@@ -132,7 +134,7 @@ export default async function ChangelogPage() {
           ),
         )}
         {items.length === 0 ? (
-          <li className="text-sm text-ink-muted">
+          <li className="max-w-measure text-ink-muted">
             No published entries yet — the pipeline is young. Check back soon.
           </li>
         ) : null}
