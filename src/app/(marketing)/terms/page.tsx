@@ -63,7 +63,7 @@ export default function TermsPage() {
                 clinical laboratory.
               </p>
               <p>
-                Do not make medical decisions — starting, stopping, or changing
+                Do not make medical decisions&nbsp;— starting, stopping, or changing
                 any treatment, medication, or screening — based on Inherit
                 alone. Consult a physician, pharmacist, or licensed genetic
                 counselor, who can order clinical-grade confirmation of any

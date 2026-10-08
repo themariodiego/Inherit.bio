@@ -198,7 +198,21 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
 .fam-ground > [data-slot="empty-state"] { position: relative; background: transparent; }
 [data-surface="hub"] [data-slot="empty-state"][data-ground],
 [data-surface="hub"] .fam-ground > [data-slot="empty-state"] { max-width: none; }
-[data-slot="empty-state-ground"] [data-slot="terrain"] { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; }
+/* The layer carries the ground itself: the terrain's sky is transparent, so
+   on /embryos (a clear box) the sage would otherwise stop at the far ridge
+   and the heading would stand on paper at phone widths. */
+[data-slot="empty-state-ground"] { background: var(--surface-inset); }
+/* The hills stay under the reading band: the drawing fades out from the
+   pill's top (pad + 44px from the box's foot) so no ridge line crosses the
+   sentence above it. The fade is on the svg, not the layer, so the ground
+   stays solid; it is vertical, so the drift never moves it. */
+[data-slot="empty-state-ground"] [data-slot="terrain"] {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 100%;
+  --fam-horizon: 60px;
+  -webkit-mask-image: linear-gradient(to top, #000 calc(var(--fam-horizon) - 28px), transparent var(--fam-horizon));
+  mask-image: linear-gradient(to top, #000 calc(var(--fam-horizon) - 28px), transparent var(--fam-horizon));
+}
+@media (min-width: 360px) { [data-slot="empty-state-ground"] [data-slot="terrain"] { --fam-horizon: 68px; } }
 /* On the inset ground the far hills are hairlines only; the near two keep their tint. */
 [data-slot="empty-state-ground"] [data-slot="terrain"] .terrain-fill { fill: var(--surface-inset); }
 /* Dark: the ridge lines are drawn for the page ground; under body text on

@@ -254,6 +254,9 @@ p, li, dd, figcaption { text-wrap: pretty; }
 h1.display, .display-1 { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); line-height: 1.05; letter-spacing: -0.02em; }
 h2.display, h3.display, .display-2 { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem); line-height: 1.15; letter-spacing: -0.015em; }
 h1.display-lg, .display-lg { font-size: clamp(2.5rem, 1.5rem + 3.8vw, 4.5rem); line-height: 1.02; letter-spacing: -0.025em; }
+/* The floor phones (320–359): one step down, so a five-word title sets on
+   three lines instead of leaving one word alone on the last. */
+@media (max-width: 359px) { h1.display-lg, .display-lg { font-size: 2.25rem; } }
 h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25rem); line-height: 0.98; letter-spacing: -0.03em; }
 .display-figure {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;

@@ -144,11 +144,12 @@ export function AppNav({
     >
       <nav
         aria-label={NAV_LANDMARK_LABEL}
-        // Five cells 8px apart (the separation rule) to the bar's edges, so
-        // at 390 the longest 13px label fits one line; every label gets the
-        // same two-line box, so a label that wraps at 320 keeps the icon
-        // and the first line level with the other four.
-        className="grid h-navbar grid-cols-5 gap-2 py-1"
+        // Five cells 8px apart (the separation rule) and 4px from the glass,
+        // so no ring or tint is cut by the viewport. At 390 the longest 13px
+        // label fits one line and the label box is one line, so the group
+        // centres in the cell; below 390 "My Genome" can wrap, so every cell
+        // keeps the same two-line box and the icons and first lines stay level.
+        className="app-bar grid h-navbar grid-cols-5 gap-2 px-1 py-1"
       >
         {NAV_ITEMS.map((item) => {
           const Icon = ICONS[item.id];
@@ -159,14 +160,14 @@ export function AppNav({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-full min-h-11 flex-col items-center justify-center gap-0.5 rounded-sm px-0 text-center text-[13px] leading-4 tracking-[-0.04em] transition-colors",
+                "flex h-full min-h-11 flex-col items-center justify-center gap-0.5 rounded-sm px-0 text-center text-[13px] leading-4 tracking-[-0.05em] transition-colors",
                 active
                   ? "bg-tint font-medium text-ink"
                   : "text-ink-muted hover:text-ink",
               )}
             >
               <Icon aria-hidden="true" className="size-5 shrink-0" />
-              <span className="h-8">{item.label}</span>
+              <span className="h-4 max-[390px]:h-8">{item.label}</span>
             </Link>
           );
         })}

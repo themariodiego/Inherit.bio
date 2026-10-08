@@ -91,8 +91,10 @@ export function LegalTocRail({ entries }: { entries: TocEntry[] }) {
 
   return (
     <nav aria-label="On this page" className="hidden lg:block">
+      {/* The eyebrow stays with the page; only the list sticks and, when the
+          window is shorter than the list, scrolls inside itself. */}
+      <p className="eyebrow legal-toc-head">On this page</p>
       <div className="legal-toc">
-        <p className="eyebrow">On this page</p>
         <ol>
           {entries.map((entry) => (
             <li key={entry.id}>

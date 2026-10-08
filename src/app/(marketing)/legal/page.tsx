@@ -40,14 +40,16 @@ export default function LegalIndexPage() {
             <LegalRow key={href} href={href} label={label} />
           ))}
         </ul>
-        {/* An odd last entry spans both columns, so no row holds one alone. */}
+        {/* An odd last entry sits centred under the two columns, one column
+            wide, so no row holds one alone at the edge and its arrow stays
+            where every other row keeps it. */}
         <ul className="rule mt-8 grid gap-4 pt-8 sm:grid-cols-2">
           {policies.map(([href, label], i) => (
             <LegalRow
               key={href}
               href={href}
               label={label}
-              className={policies.length % 2 === 1 && i === policies.length - 1 ? "sm:col-span-2" : undefined}
+              className={policies.length % 2 === 1 && i === policies.length - 1 ? "sm:col-span-2 sm:w-[calc(50%-0.5rem)] sm:justify-self-center" : undefined}
             />
           ))}
         </ul>

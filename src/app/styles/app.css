@@ -84,6 +84,11 @@
 }
 .processing-steps > li[data-step="upcoming"]::before { color: var(--ink-muted); }
 
+/* The bottom bar: the ring draws inside its cell, so the first and last
+   cells' rings are never cut by the glass. Unlayered, so it beats the global
+   2px offset. */
+.app-bar > a:focus-visible { outline-offset: -3px; }
+
 @media (prefers-reduced-motion: reduce) {
   .link-row .link-arrow { transform: none; }
 }

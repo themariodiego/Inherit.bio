@@ -16,12 +16,13 @@
  * Space and click activate. Grey mode: every region as a grey outline,
  * nothing focusable, no gradient. `quiet` draws the map without the plate
  * for an empty state's ground: the caption sits under it, or, while the
- * map is grey, the label does, since there is no shading to explain.
+ * map is grey, the label does, since there is no shading to explain; that
+ * figcaption then names the svg (`aria-labelledby`), so the name is said once.
  *
  * The SVG carries `data-density-pixel-exclusion="map-tile"`: the density
  * measurement treats it as a map, not as ink.
  */
-import type { KeyboardEvent } from "react";
+import { useId, type KeyboardEvent } from "react";
 import type { MapShapes } from "@/lib/ancestry/geometry";
 import type { RegionRowView } from "@/lib/ancestry/view";
 import { VIEWBOX } from "@/lib/geo/project";
@@ -59,6 +60,10 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
   const shapeByCode = new Map(shapes.regions.map((shape) => [shape.code, shape]));
   const shown = mode === "shown";
   const stopStyle = { stopColor: "var(--forest)" };
+  // The quiet grey figure's caption is the map's name, so the svg is named
+  // by that one element instead of repeating it in an aria-label.
+  const captionId = useId();
+  const namedByCaption = quiet && !shown;
 
   function onKeyDown(event: KeyboardEvent<SVGPathElement>, code: string) {
     if (event.key === "Enter" || event.key === " ") {
@@ -71,7 +76,8 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
       <svg
         viewBox={VIEWBOX}
         role="group"
-        aria-label={label}
+        aria-label={namedByCaption ? undefined : label}
+        aria-labelledby={namedByCaption ? captionId : undefined}
         data-slot="ancestry-map"
         data-mode={mode}
         data-density-pixel-exclusion="map-tile"
@@ -149,9 +155,9 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
       </svg>
   );
   const figcaption = (
-    <figcaption data-slot="map-caption" className="caption">
+    <figcaption id={namedByCaption ? captionId : undefined} data-slot="map-caption" className="caption">
       {/* A grey map draws no shading, so the quiet figure carries the map's name, not the shading caption. */}
-      {quiet && !shown ? label : caption}
+      {namedByCaption ? label : caption}
     </figcaption>
   );
 
