@@ -7,6 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { cache, type ReactNode } from "react";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { Badge } from "@/components/ui/badge";
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { CitationItem, ReportCallCoverage } from "@/components/reports/report-evidence";
 import { GlossedText } from "@/components/ui/glossed-text";
@@ -93,8 +94,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const VCF_TYPES = new Set<string>(["vcf", "gvcf"]);
 const VISIBLE_CITATIONS = 3;
-const CHIP =
-  "inline-flex items-center rounded-full border border-line px-2 py-0.5 text-sm text-ink";
 const REQUIRED_ACCURACY = { "data-density-required-accuracy": "true" } as const;
 
 /** A template with an unmapped legacy category still renders; "Not now" then returns to the list top. */
@@ -219,8 +218,8 @@ export async function generateMetadata(
 function TechnicalNote({ children }: { children: ReactNode }) {
   return (
     <details className="mt-2 text-sm">
-      <summary className="cursor-pointer text-ink-muted">{TECHNICAL_NOTE}</summary>
-      <p className="mt-1 text-ink-muted">{children}</p>
+      <summary className="w-fit font-medium text-ink">{TECHNICAL_NOTE}</summary>
+      <p className="mt-1 max-w-measure text-ink-muted">{children}</p>
     </details>
   );
 }
@@ -257,7 +256,7 @@ function VariantResult({
   let body: ReactNode;
   if (conflict) {
     body = (
-      <p {...REQUIRED_ACCURACY} className="text-sm text-ink">
+      <p {...REQUIRED_ACCURACY} className="max-w-measure text-base leading-relaxed text-ink">
         {FILES_DISAGREE}
       </p>
     );
@@ -276,11 +275,12 @@ function VariantResult({
         figures={[figure]}
         aria-label={locusLabel}
         densityPrimaryClaim={densityPrimaryClaim}
+        className="border-0 bg-transparent p-0"
       >
         <ReportInterpretation slug={reportSlug} rsid={variant.rsid} genotype={outcome.genotype}
           text={outcome.interpretation} sourceIds={sourceIds} />
         {layer === "estimate" ? (
-          <p {...REQUIRED_ACCURACY} className="mt-2 text-sm text-ink">
+          <p {...REQUIRED_ACCURACY} className="mt-2 max-w-measure text-base leading-relaxed text-ink">
             {NO_RANGE_YET}
           </p>
         ) : null}
@@ -289,7 +289,7 @@ function VariantResult({
     );
   } else if (outcome.status === "not-covered") {
     body = (
-      <div data-outcome="not-covered" className="space-y-1 text-sm leading-relaxed text-ink">
+      <div data-outcome="not-covered" className="max-w-measure space-y-1 text-base leading-relaxed text-ink">
         {/* The sentence a beginner is most likely to misread, so it is the one
             that gets glosses: it explains an ABSENCE, and leans on "variant",
             "genotype" and "reference" to do it. A term naming a disease, a
@@ -308,7 +308,7 @@ function VariantResult({
     // no-call, and unrecognized treated as no-call for display (A14): the
     // mismatch is noted, never reinterpreted, and the letters are not shown.
     body = (
-      <div data-outcome={outcome.status} className="space-y-1 text-sm leading-relaxed text-ink">
+      <div data-outcome={outcome.status} className="max-w-measure space-y-1 text-base leading-relaxed text-ink">
         <p {...REQUIRED_ACCURACY}>{NO_CALL}</p>
         <p {...REQUIRED_ACCURACY}>{LIMIT_OF_FILE}</p>
         {outcome.status === "unrecognized" ? (
@@ -318,14 +318,18 @@ function VariantResult({
     );
   }
 
+  // One plate per position: the locus line, where a report has more than
+  // one, is the plate's label; the result is its body.
   return (
-    <div data-variant-result={variant.rsid} className="space-y-2">
+    <div data-variant-result={variant.rsid} className="plate">
       {showLocus ? (
-        <p data-slot="variant-locus" className="font-mono text-sm text-ink-muted">
-          {variant.gene} · rs{variant.rsid}
-        </p>
+        <div className="plate-head">
+          <p data-slot="variant-locus" className="mono text-ink">
+            {variant.gene} · rs{variant.rsid}
+          </p>
+        </div>
       ) : null}
-      {body}
+      <div className="plate-body">{body}</div>
     </div>
   );
 }
@@ -343,12 +347,12 @@ export default async function ReportDetailPage(
   const sourceParam = searchParams.source;
   const context = await loadReport(subjectSegment, slug, sourceParam);
   if (context.kind === "not-found") notFound();
-  if (context.kind === "path-b-gate") return <section className="page-stack mx-auto max-w-prose space-y-4"><h1 className="display text-3xl">{REPORTS_TITLE}</h1><ResultGate /></section>;
+  if (context.kind === "path-b-gate") return <section className="page-stack mx-auto max-w-measure space-y-block"><h1 className="display">{REPORTS_TITLE}</h1><ResultGate /></section>;
   if (context.kind === "shared-unavailable") {
-    return <section role="status" className="page-stack mx-auto max-w-prose space-y-4">
-      <h1 className="display text-3xl">Saved result unavailable</h1>
-      <p>This saved result is missing the source details needed to show it.</p>
-      <Link className="underline" href={route("family.person", { person: subjectSegment })}>Back to shared results</Link>
+    return <section role="status" className="page-stack mx-auto max-w-measure space-y-6">
+      <h1 className="display">Saved result unavailable</h1>
+      <p className="text-ink">This saved result is missing the source details needed to show it.</p>
+      <Link className="link-target prose-link" href={route("family.person", { person: subjectSegment })}>Back to shared results</Link>
     </section>;
   }
   // The Family domain has one gate, on the person page; a report reached
@@ -481,8 +485,8 @@ export default async function ReportDetailPage(
         ))}
       </div>
     ) : (
-      <p className="text-sm text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : preparing ? REPORT_PREPARING : (
-        <>Choose this result type in <Link className="underline" href={reportsHref}>Reports</Link> to see what your file supports.</>
+      <p className="max-w-measure text-base leading-relaxed text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : preparing ? REPORT_PREPARING : (
+        <>Choose this result type in <Link className="prose-link" href={reportsHref}>Reports</Link> to see what your file supports.</>
       )}</p>
     );
   } else {
@@ -530,7 +534,7 @@ export default async function ReportDetailPage(
     <article
       data-surface="reading"
       data-density-primary-content="true"
-      className="page-stack mx-auto max-w-[44rem] space-y-8"
+      className="page-stack mx-auto max-w-[44rem] space-y-block"
     >
       <Breadcrumbs
         items={[
@@ -547,24 +551,24 @@ export default async function ReportDetailPage(
       />
       <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
 
-      <header className="space-y-4">
-        <div className="space-y-1">
+      <header className="space-y-5">
+        <div className="space-y-2">
           {categoryId ? (
             // The nine-category label, never the legacy one; utility classes,
             // not the `.eyebrow` class (D31).
-            <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">
               {categoryLabel(categoryId)}
             </p>
           ) : null}
-          <h1 className="display text-3xl">{reportName}</h1>
+          <h1 className="display">{reportName}</h1>
         </div>
-        {sharedChoices.length + Number(sharedLegacyAvailable) > 1 ? <nav aria-label="Saved result source" className="flex flex-wrap gap-3 text-sm">
+        {sharedChoices.length + Number(sharedLegacyAvailable) > 1 ? <nav aria-label="Saved result source" className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
           {sharedChoices.map((row, index) => <Link key={row.fileId}
             href={route("genome.report", { ...subjectParams, slug }, { query: {
               source: row.fileId, ...(revealParam === "1" ? { reveal: "1" } : {}),
             } })}
             aria-current={sharedReport?.fileId === row.fileId ? "page" : undefined}
-            className="inline-flex min-h-11 items-center underline underline-offset-2">
+            className="link-target prose-link aria-[current=page]:font-medium">
             <span data-ui-chrome-kind="item-count">Saved result {index + 1}</span>
           </Link>)}
           {sharedLegacyAvailable ? <Link
@@ -572,34 +576,36 @@ export default async function ReportDetailPage(
               source: "legacy", ...(revealParam === "1" ? { reveal: "1" } : {}),
             } })}
             aria-current={!sharedReport ? "page" : undefined}
-            className="inline-flex min-h-11 items-center underline underline-offset-2">Other files</Link> : null}
+            className="link-target prose-link aria-[current=page]:font-medium">Other files</Link> : null}
         </nav> : null}
-        {sharedReport ? <p className="text-sm text-ink-muted">Saved on <time dateTime={sharedReport.completedAt}>
+        {sharedReport ? <p className="caption">Saved on <time dateTime={sharedReport.completedAt}>
           {sharedReport.completedAt.slice(0, 10)}</time>. Each saved result uses one source file.</p> : null}
         {reportScientificCorrections(template).length > 0 ? <ScientificCorrectionNotice /> : null}
+        {/* Provenance chips: the layer, the evidence grade and the subject the
+            computation used, each with its one-sentence definition beside it. */}
         <ul data-slot="chip-row" className="space-y-2 text-sm">
-          <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span data-chip="layer" className={CHIP}>
+          <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Badge variant="outline" data-chip="layer">
               {LAYER_LABELS[layer]}
-            </span>
-            <span className="text-ink-muted">{LAYER_DEFINITIONS[layer]}</span>
+            </Badge>
+            <span className="max-w-measure text-ink-muted">{LAYER_DEFINITIONS[layer]}</span>
           </li>
-          <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Link
               href={route("science.index", { hash: "evidence" })}
               data-chip="evidence"
-              className={`link-target ${CHIP} underline-offset-2 hover:underline`}
+              className="link-target underline-offset-2 hover:underline"
             >
-              {evidenceLabel}
+              <Badge variant="outline">{evidenceLabel}</Badge>
             </Link>
-            <span className="text-ink-muted">{evidenceDefinition}</span>
+            <span className="max-w-measure text-ink-muted">{evidenceDefinition}</span>
           </li>
           <li>
             {/* X4: the chip names the subject the computation used, which is
                 the counterpart's own record on a Family route. */}
-            <span data-chip="subject" data-subject-id={dataSubjectId} className={CHIP}>
+            <Badge variant="outline" data-chip="subject" data-subject-id={dataSubjectId} className="max-w-full whitespace-normal">
               {subject.displayLabel}
-            </span>
+            </Badge>
           </li>
         </ul>
       </header>
@@ -608,12 +614,12 @@ export default async function ReportDetailPage(
         whatThisIs={
           <div className="space-y-3">
             <ReportSummary slug={template.slug} text={template.summary} sourceIds={summarySourceIds} />
-            <p data-slot="report-method" className="text-sm leading-relaxed text-ink-muted">{REPORT_METHOD_COPY[reportMethod(template)]}</p>
+            <p data-slot="report-method" className="max-w-measure text-sm leading-relaxed text-ink-muted">{REPORT_METHOD_COPY[reportMethod(template)]}</p>
           </div>
         }
         yourResult={yourResult}
         whatThisDoesntMean={
-          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
+          <ul className="max-w-measure list-disc space-y-2 pl-5 text-base leading-relaxed text-ink">
             {/* Glossed on first use (brief line 829): a technical term that has
                 to survive here gets its definition in place, never hover-only.
                 Below the first viewport, so no gloss counts against the page's
@@ -624,23 +630,31 @@ export default async function ReportDetailPage(
           </ul>
         }
         howSureWeAre={
-          <div className="space-y-3 text-sm leading-relaxed text-ink">
-            <p>
-              <span className="font-medium">{evidenceLabel}</span>
-              <span className="text-ink-muted">{` — ${evidenceDefinition}`}</span>
-            </p>
-            {/* inherit-figure-exempt: a count of the template's citations, not a result figure */}
-            <p>{citedSources(template.citations.length)}</p>
-            <p className="text-ink-muted">{REPORT_SOURCES_SCOPE}</p>
+          <div className="space-y-4 text-sm leading-relaxed text-ink">
+            {/* The evidence panel, then the coverage panel, each on the inset
+                ground; the confirmation statement stays as prose. */}
+            <div className="surface-inset surface-pad-sm space-y-2">
+              <p>
+                <span className="font-semibold">{evidenceLabel}</span>
+                <span>{` — ${evidenceDefinition}`}</span>
+              </p>
+              {/* inherit-figure-exempt: a count of the template's citations, not a result figure */}
+              <p>{citedSources(template.citations.length)}</p>
+              <p className="text-ink-muted">{REPORT_SOURCES_SCOPE}</p>
+            </div>
             {/* inherit-figure-exempt: counts of template positions read from the file, not a result figure.
                 Left unglossed on purpose: this is the one glossed report block that renders in the shown
                 state the G1.13b target-size sweep visits (e2e/a11y.spec.ts), and that sweep's SC 2.5.8
                 Inline exception did not clear the inline gloss control there. The not-covered accuracy
                 sentences above stay glossed; the corpus decision (every definition renders) is unchanged. */}
-            {coverageLine ? <p>{coverageLine}</p> : null}
-            {callSummary ? <ReportCallCoverage summary={callSummary} /> : null}
+            {coverageLine || callSummary ? (
+              <div className="surface-inset surface-pad-sm space-y-3">
+                {coverageLine ? <p>{coverageLine}</p> : null}
+                {callSummary ? <ReportCallCoverage summary={callSummary} /> : null}
+              </div>
+            ) : null}
             {CONFIRMATION_LEVELS.has(template.evidence) ? (
-              <div data-confirmation-block="true" className="space-y-1">
+              <div data-confirmation-block="true" className="max-w-measure space-y-1">
                 <p {...REQUIRED_ACCURACY}>{CONFIRMATION_BLOCK}</p>
                 <p>{COUNSELLOR_NO_ROUTE}</p>
               </div>
@@ -650,29 +664,31 @@ export default async function ReportDetailPage(
         whatYouCanDo={
           // Brief line 630 is conditional; reviewed exceptions offer a
           // discussion option without treatment or intake advice.
-          <p {...REQUIRED_ACCURACY} className="text-sm leading-relaxed text-ink">
+          <p {...REQUIRED_ACCURACY} className="max-w-measure text-base leading-relaxed text-ink">
             {whatYouCanDo(categoryId, template.slug)}
           </p>
         }
         whereThisComesFrom={
-          <div className="space-y-3 text-sm leading-relaxed">
-            <h3 className="font-medium text-ink">{SOURCES_HEADING}</h3>
-            <p className="text-ink-muted">{SOURCE_READ_SCOPE}</p>
-            <ul className="space-y-1">
+          <div className="space-y-4 text-sm leading-relaxed">
+            <h3 className="font-semibold text-ink">{SOURCES_HEADING}</h3>
+            <p className="max-w-measure text-ink-muted">{SOURCE_READ_SCOPE}</p>
+            {/* A ruled, numbered list: the ordinal is decorative; the citation
+                beside it carries the record. */}
+            <ul className="source-list">
               {visibleCitations.map(({ citation, anchor, number }, index) => (
                 <li key={`${citation.label}-${index}`} id={anchor}>
-                  {number ? <span data-ui-chrome-kind="item-count" className="font-medium">{number}. </span> : null}
+                  {number ? <span data-ui-chrome-kind="item-count" className="ordinal">{number}. </span> : null}
                   <CitationItem citation={citation} reportClaim={summarySourceIds.length ? { slug: template.slug, sourceIds: summarySourceIds } : undefined} />
                 </li>
               ))}
             </ul>
             {moreCitations.length > 0 ? (
               <details>
-                <summary className="cursor-pointer text-ink-muted">{MORE_SOURCES}</summary>
-                <ul className="mt-2 space-y-1">
+                <summary className="w-fit font-medium text-ink">{MORE_SOURCES}</summary>
+                <ul className="source-list mt-2">
                   {moreCitations.map(({ citation, anchor, number }, index) => (
                     <li key={`${citation.label}-${index}`} id={anchor}>
-                      {number ? <span data-ui-chrome-kind="item-count" className="font-medium">{number}. </span> : null}
+                      {number ? <span data-ui-chrome-kind="item-count" className="ordinal">{number}. </span> : null}
                       <CitationItem citation={citation} reportClaim={summarySourceIds.length ? { slug: template.slug, sourceIds: summarySourceIds } : undefined} />
                     </li>
                   ))}
@@ -680,17 +696,17 @@ export default async function ReportDetailPage(
               </details>
             ) : null}
             <ReportSummarySources sourceIds={summarySourceIds} existingIds={existingSourceIds} />
-            {summarySourceIds.length > 0 ? <Link href={route("science.index", { hash: "sources" })} className="underline underline-offset-2">About these sources</Link> : null}
+            {summarySourceIds.length > 0 ? <Link href={route("science.index", { hash: "sources" })} className="link-target prose-link">About these sources</Link> : null}
             {reportMethod(template) === "polygenic-score" ? (
               <p data-slot="score-method-source">
                 {SCORE_METHOD_LABEL}: {" "}
-                <a href={`https://www.pgscatalog.org/score/${template.pgs_id}/`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                <a href={`https://www.pgscatalog.org/score/${template.pgs_id}/`} target="_blank" rel="noopener noreferrer" className="prose-link">
                   {template.pgs_id}
                 </a>
               </p>
             ) : null}
             {/* The template's variants: gene, dbSNP record and GRCh38 locus. */}
-            <ul data-slot="variant-provenance" className="space-y-1 font-mono text-ink-muted">
+            <ul data-slot="variant-provenance" className="mono space-y-1 text-ink-muted">
               {template.variants.map((variant) => (
                 <li key={variant.rsid}>
                   {variant.gene} ·{" "}
@@ -698,7 +714,7 @@ export default async function ReportDetailPage(
                     href={`https://www.ncbi.nlm.nih.gov/snp/rs${variant.rsid}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline underline-offset-2"
+                    className="prose-link"
                   >
                     rs{variant.rsid}
                   </a>
@@ -707,7 +723,7 @@ export default async function ReportDetailPage(
                 </li>
               ))}
             </ul>
-            <p className="text-ink-muted">{PROVENANCE_LINE}</p>
+            <p className="max-w-measure text-ink-muted">{PROVENANCE_LINE}</p>
             {showResults ? <InputProvenance sources={inputSources} subject={{ subjectId: dataSubjectId }}
               state={inputState} coverage={coverage} /> : null}
           </div>
@@ -716,8 +732,8 @@ export default async function ReportDetailPage(
 
       {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
 
-      <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <Link href={route("genome.data", subjectParams)} className="link-target underline underline-offset-2">
+      <footer className="rule flex flex-wrap gap-x-6 gap-y-2 pt-6 text-sm">
+        <Link href={route("genome.data", subjectParams)} className="link-target prose-link">
           {DATA_AND_METHODS}
         </Link>
         <Link
@@ -726,11 +742,11 @@ export default async function ReportDetailPage(
             { scope: subject.routeSegment },
             { query: { report: template.slug } },
           )}
-          className="link-target underline underline-offset-2"
+          className="link-target prose-link"
         >
           {ASK_ABOUT_THIS}
         </Link>
-        <Link href={reportsHref} className="link-target underline underline-offset-2">
+        <Link href={reportsHref} className="link-target prose-link">
           {ALL_REPORTS}
         </Link>
       </footer>

@@ -63,9 +63,9 @@ function Section({
       aria-labelledby={id}
       data-report-section={id}
       data-density-top-level-section="true"
-      className="space-y-3"
+      className="space-y-4"
     >
-      <h2 id={id} className="text-lg font-semibold text-ink">
+      <h2 id={id} className="display text-ink">
         {headingText(heading, variant)}
       </h2>
       {children}
@@ -75,7 +75,7 @@ function Section({
 
 export function ReportSkeleton({ variant = "adult", ...slots }: ReportSkeletonProps) {
   return (
-    <div data-slot="report-skeleton" className="space-y-16 md:space-y-20 lg:space-y-24">
+    <div data-slot="report-skeleton" className="stack-sections">
       {REPORT_HEADINGS.map((heading) => (
         <Section key={heading} heading={heading} variant={variant}>
           {slots[SLOT_KEYS[heading]]}
@@ -84,7 +84,7 @@ export function ReportSkeleton({ variant = "adult", ...slots }: ReportSkeletonPr
               data-testid="report-disclaimer"
               data-not-diagnostic="true"
               data-density-required-accuracy="true"
-              className="text-sm leading-relaxed text-ink"
+              className="max-w-measure text-sm leading-relaxed text-ink"
             >
               {NOT_DIAGNOSTIC}
             </p>

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PATH_B_REQUEST_COPY as COPY } from "@/copy/upload/other-adult";
 import {
   JURISDICTION_AFFIRM,
@@ -66,10 +67,10 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   if (status === "confirm" || status === "refuse" || status === "delete") {
     const receipt = status === "confirm" && review.account ? COPY.receipts.confirmAccount : COPY.receipts[status];
     return (
-      <section className="mx-auto max-w-3xl px-6 py-16" role="status">
+      <section className="rec-column rec-head px-6 py-16" role="status">
         <p className="eyebrow">Your rights</p>
-        <h1 className="display mt-4 text-4xl">{receipt.title}</h1>
-        <p className="mt-5 max-w-prose text-ink-muted">{receipt.body}</p>
+        <h1 className="display">{receipt.title}</h1>
+        <p className="lede">{receipt.body}</p>
       </section>
     );
   }
@@ -78,59 +79,61 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   const ready = review.artifact.statements.every(statement => checked[statement.key])
     && typedName.trim().length > 0 && (review.account !== null || (country !== "" && affirmed));
   return (
-    <section className="mx-auto max-w-3xl px-6 py-16" data-slot="path-b-request">
-      <p className="eyebrow">Your rights</p>
-      <h1 className="display mt-4 text-4xl">{COPY.heading}</h1>
-      <p className="mt-5 max-w-prose">{COPY.detail(review.label)}</p>
-      <p role="note" className="mt-3 text-sm">{COPY.testNote}</p>
-      <form onSubmit={sign} className="mt-8 space-y-5 rounded-2xl border border-line bg-card p-6">
-        <p className="text-sm text-ink-muted">Version {review.artifact.version} · effective {review.artifact.effectiveOn}</p>
-        <p data-legal-summary className="whitespace-pre-wrap text-sm leading-relaxed">{review.artifact.summary}</p>
-        <div className="whitespace-pre-wrap border-t border-line pt-4 text-sm leading-relaxed">{review.artifact.body}</div>
-        <fieldset disabled={busy} className="space-y-3">
-          <legend className="font-medium">{COPY.statementsHeading}</legend>
+    <section className="rec-column px-6 py-16" data-slot="path-b-request">
+      <header className="rec-head">
+        <p className="eyebrow">Your rights</p>
+        <h1 className="display">{COPY.heading}</h1>
+        <p className="max-w-measure">{COPY.detail(review.label)}</p>
+        <p role="note" className="max-w-measure text-sm">{COPY.testNote}</p>
+      </header>
+      <form onSubmit={sign} className="surface surface-pad rec-stack mt-10">
+        <p className="caption">Version {review.artifact.version} · effective {review.artifact.effectiveOn}</p>
+        <p data-legal-summary className="max-w-measure whitespace-pre-wrap text-sm leading-relaxed">{review.artifact.summary}</p>
+        <div className="max-w-measure whitespace-pre-wrap border-t border-line pt-4 text-sm leading-relaxed">{review.artifact.body}</div>
+        <fieldset disabled={busy} className="rec-stack">
+          <legend className="label">{COPY.statementsHeading}</legend>
           {review.artifact.statements.map(statement => (
-            <label key={statement.key} className="flex min-h-11 items-start gap-3">
+            <label key={statement.key} className="rec-choice">
               <input type="checkbox" name={statement.key} checked={Boolean(checked[statement.key])}
                 onChange={event => setChecked(current => ({ ...current, [statement.key]: event.target.checked }))}
-                className="mt-1 size-5 shrink-0 accent-forest" />
+                className="size-5 accent-forest" />
               <span>{statement.text}</span>
             </label>
           ))}
         </fieldset>
-        <fieldset disabled={busy} className="space-y-4">
+        <fieldset disabled={busy} className="rec-stack">
           {review.account ? (
-            <p role="note" className="text-sm" data-slot="path-b-account">{COPY.accountNote(review.account.country)}</p>
+            <p role="note" className="max-w-measure text-sm" data-slot="path-b-account">{COPY.accountNote(review.account.country)}</p>
           ) : (
             <>
-              <label className="block space-y-2">
-                <span>{JURISDICTION_SELECT_LABEL}</span>
+              <label className="rec-field">
+                <span className="label">{JURISDICTION_SELECT_LABEL}</span>
                 <select name="jurisdictionCode" required value={country} onChange={event => setCountry(event.target.value)}
-                  className="block min-h-11 w-full max-w-md rounded-lg border border-line bg-card p-3">
+                  className="rec-select">
                   <option value="" disabled>{JURISDICTION_PLACEHOLDER}</option>
                   {review.countries.map(choice => <option key={choice.code} value={choice.code}>{choice.name}</option>)}
                 </select>
               </label>
-              <details className="text-sm">
-                <summary className="min-h-11 cursor-pointer underline underline-offset-2">{JURISDICTION_READ_ATTESTATION}</summary>
+              <details className="max-w-measure text-sm">
+                <summary className="quiet-link">{JURISDICTION_READ_ATTESTATION}</summary>
                 <p className="mt-2 whitespace-pre-wrap">{review.attestation.summary}</p>
               </details>
-              <label className="flex min-h-11 items-start gap-3">
+              <label className="rec-choice">
                 <input type="checkbox" name="jurisdictionAffirmed" checked={affirmed}
-                  onChange={event => setAffirmed(event.target.checked)} className="mt-1 size-5 shrink-0 accent-forest" />
+                  onChange={event => setAffirmed(event.target.checked)} className="size-5 accent-forest" />
                 <span>{JURISDICTION_AFFIRM}</span>
               </label>
             </>
           )}
-          <label className="block space-y-2">
-            <span>{COPY.typedNameLabel}</span>
-            <Input name="typedName" autoComplete="name" maxLength={200} value={typedName}
+          <div className="rec-field">
+            <Label htmlFor="path-b-typed-name">{COPY.typedNameLabel}</Label>
+            <Input id="path-b-typed-name" name="typedName" autoComplete="name" maxLength={200} value={typedName}
               aria-invalid={nameError} aria-describedby={nameError ? "path-b-name-error" : undefined}
               onChange={event => { setTypedName(event.target.value); setNameError(false); }} />
-          </label>
+          </div>
           {nameError ? <p id="path-b-name-error" role="alert" className="text-sm text-danger">{COPY.typedNameError}</p> : null}
         </fieldset>
-        <Button type="submit" disabled={!ready || busy}>{busy ? COPY.saving : COPY.signButton}</Button>
+        <div><Button type="submit" disabled={!ready || busy}>{busy ? COPY.saving : COPY.signButton}</Button></div>
         <div className="flex flex-wrap gap-3 border-t border-line pt-5">
           <Button type="button" variant="outline" disabled={busy} onClick={() => void send("refuse", {})}>{COPY.refuseButton}</Button>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void send("delete", {})}>{COPY.deleteButton}</Button>

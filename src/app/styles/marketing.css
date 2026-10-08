@@ -18,7 +18,7 @@
  * How it works: a ruled sequence. Each step opens with a hairline and an
  * ordinal; the grid is 1 / 2 / 4 across.
  * ------------------------------------------------------------------------- */
-.step { border-top: 1px solid var(--line); padding-top: 1.25rem; }
+.step { max-width: var(--measure); border-top: 1px solid var(--line); padding-top: 1.25rem; }
 .step .ordinal { display: block; font-size: 2rem; }
 
 /* ---------------------------------------------------------------------------
