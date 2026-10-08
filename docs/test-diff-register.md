@@ -1,5 +1,13 @@
 # Test diff register
 
+## 2026-10-08 — Bound publisher-only signed APT refresh and preserve consumer admission
+
+The publisher's fresh `checks` runner now reuses the admitted APT driver inside one fresh transient root service, after the seven execution prerequisites and strict coverage aggregate. The existing four main-only maintenance steps, eight required jobs, exact font key and nine official package pins remain. Publisher lookup hits skip maintenance; this is separate from consumer warm admission, whose original signed refresh and post-copy fatal checks remain unchanged.
+
+The service uses the documented 255 family, `Type=exec`, a runtime bound, control-group termination and five-second stop settlement. Its work is at most155 seconds inside the unchanged210-second shared/180-second command/four-minute step bounds, with explicit startup and closure/catch reserves. Only exact transient root ownership permits failure cleanup. Original driver output, the successful signed-refresh terminal receipt, current versions and an absent owned cgroup are required before publication; unavailable, failed, timed-out or unclosed supervision never enables a cache save.
+
+All prior archive, reader, shard and synthetic consumer expectations remain unchanged. Eight added pure controls cover argument/path ownership, budget boundaries, documented version admission, pre-existing/active/ambiguous unit refusal, cleanup ownership, missing/forged/nonterminal signed receipts and populate-only refresh selection. These tests do not establish Linux descendant settlement. Three separate tiny, fresh-unit Linux controls are planned for normal/failure/timeout service paths with TERM-resistant children in another session; actual hosted image/driver/full-suite and later protected-main publication remain distinct requirements. No current execution, cache hit, speed or release result is claimed.
+
 ## 2026-10-08 — admit closed equivalent APT security boolean representations
 
 **Preserved first result.** PR296 head f3b06f6f3f31fe048b4eef3c4b4f7261f082cfeb, run37704326980 attempt1, refused `APT authentication or freshness weakened` before keyring hardening or any APT-file mutation. Both complete originals report only three security leaves as typed false, with retry1 and HTTP/HTTPS15. The previous diagnostic intentionally mapped both false and0 to false, so exact per-leaf raw spellings are unknown; the refusal implies at least one numeric0 representation. This is a bounded inference, not a claim that raw spellings were logged.

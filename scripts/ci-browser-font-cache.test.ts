@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { linkSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, sha256, validateManifest, verifyAptMetadata, verifyCache, type FontManifest, type FontPackage } from "./ci-browser-font-cache";
+import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, publicationAptService, sha256, validateManifest, verifyAptMetadata, verifyCache, type FontManifest, type FontPackage } from "./ci-browser-font-cache";
 
 const original = readFileSync(new URL("../data/ci/browser-font-packages.json", import.meta.url));
 const manifest = JSON.parse(original.toString()) as FontManifest;
@@ -148,5 +148,80 @@ describe("font archive cache admission", () => {
     for (const text of [uris().split("\n").slice(1).join("\n"), `${uris()}\n${uris().split("\n")[0]}`, uris().replace("azure.archive.ubuntu.com", "attacker.invalid"), uris().replace("fonts-freefont-ttf_20211204+svn4273-2_all.deb 5640794", "../font.deb 5640794")]) {
       expect(() => aptArchiveNames(manifest, text)).toThrow();
     }
+  });
+});
+
+describe("bounded publisher signed refresh", () => {
+  const unit = `inherit-font-apt-${"a".repeat(32)}.service`;
+  const runner = ["ubuntu24", "20261004.327.1", "true", "github-hosted"];
+  const absent = "LoadState=not-found\nActiveState=inactive\nSubState=dead\n";
+  const owned = `Description=${unit}\nTransient=yes\nUser=root\nGroup=root\nSlice=system.slice\n`;
+  const receipt = { decision: "PASS", freshSignedMetadata: true, fullPlaywrightInstallStillRequired: true, originalDirectory: "/var/tmp/inherit-ci-apt-synthetic" };
+
+  it("owns one root service and caps its work below the unchanged command/shared deadlines", () => {
+    const service = publicationAptService("/home/runner/source", unit, 210_000, runner);
+    expect(service.workSeconds).toBe(155);
+    expect(service.timeoutMs).toBe(180_000);
+    for (const argument of ["--wait", "--pipe", "--collect", "--expand-environment=no", "--service-type=exec",
+      "--property=KillMode=control-group", "--property=TimeoutStopSec=5s", "--property=SendSIGKILL=yes",
+      "--property=Restart=no", "--property=User=root", "--property=Group=root", "--property=Delegate=no"])
+      expect(service.args).toContain(argument);
+    expect(service.args.slice(-6)).toEqual(["/usr/bin/python3", "/home/runner/source/scripts/ci_apt_mirror_priority.py", ...runner]);
+    expect(service.args).not.toContain("--scope");
+    expect(service.args).not.toContain("--remain-after-exit");
+  });
+  it("reserves start, five-second root-group settlement and the closed catch path at budget boundaries", () => {
+    for (const remaining of [0, 25_000, 210_001, Number.NaN, Number.POSITIVE_INFINITY, 100_000.5])
+      expect(() => publicationAptService("/source", unit, remaining, runner)).toThrow(/budget/);
+    const near = publicationAptService("/source", unit, 26_000, runner);
+    expect(near.workSeconds).toBe(1);
+    expect(near.timeoutMs).toBe(11_000);
+    expect(near.workSeconds * 1_000 + 10_000 + 15_000).toBe(26_000);
+  });
+  it("refuses noncanonical or expandable paths, foreign unit names and non-hosted public arguments", () => {
+    for (const root of ["relative", "/source/../other", "/source/$HOME", "/source/%n", "/source\nother"])
+      expect(() => publicationAptService(root, unit, 210_000, runner)).toThrow(/arguments/);
+    for (const name of ["ssh.service", unit.replace("a", "A"), `${unit};other`])
+      expect(() => publicationAptService("/source", name, 210_000, runner)).toThrow(/arguments/);
+    for (const values of [["ubuntu22", ...runner.slice(1)], [runner[0], "unknown", ...runner.slice(2)],
+      [...runner.slice(0, 2), "false", runner[3]], [...runner.slice(0, 3), "self-hosted"], [...runner, "extra"]])
+      expect(() => publicationAptService("/source", unit, 210_000, values)).toThrow(/arguments/);
+  });
+  it("admits only the observed documented supervisor family and retains its complete public version line", () => {
+    expect(admitAptSupervisorVersion("systemd 255 (255.4-1ubuntu8.15)\n+PAM\n")).toBe("systemd 255 (255.4-1ubuntu8.15)");
+    for (const text of ["systemd 254", "systemd 256", "systemd 255forged", "unknown", `systemd 255\n${"x".repeat(16_384)}`])
+      expect(() => admitAptSupervisorVersion(text)).toThrow(/version/);
+  });
+  it("requires a genuinely absent fresh unit before creation and no cgroup after deactivation", () => {
+    expect(() => admitClosedAptUnit(absent, true, true)).not.toThrow();
+    expect(() => admitClosedAptUnit(absent.replace("not-found", "loaded"), true)).not.toThrow();
+    expect(() => admitClosedAptUnit(absent.replace("not-found", "loaded"), true, true)).toThrow(/closed/);
+    for (const text of [absent.replace("inactive", "active"), absent.replace("dead", "running"), `${absent}ActiveState=inactive\n`, absent.replace("SubState=dead\n", "")])
+      expect(() => admitClosedAptUnit(text, true)).toThrow();
+    expect(() => admitClosedAptUnit(absent, false)).toThrow(/closed/);
+  });
+  it("permits failure cleanup only for the exact fresh transient root unit", () => {
+    expect(() => admitOwnedAptUnit(owned, unit)).not.toThrow();
+    for (const text of [owned.replace(unit, "ssh.service"), owned.replace("yes", "no"), owned.replace("User=root", "User=runner"),
+      owned.replace("Group=root", "Group=runner"), owned.replace("system.slice", "user.slice"), `${owned}Transient=yes\n`])
+      expect(() => admitOwnedAptUnit(text, unit)).toThrow();
+  });
+  it("requires the exact successful signed-update terminal receipt before archive publication", () => {
+    expect(() => admitFreshAptRefresh(`original update log\n${JSON.stringify(receipt)}\n`)).not.toThrow();
+    for (const value of [{ ...receipt, decision: "HOLD" }, { ...receipt, freshSignedMetadata: false },
+      { ...receipt, fullPlaywrightInstallStillRequired: false }, { ...receipt, originalDirectory: "/etc/apt" },
+      { ...receipt, unreviewed: true }, { decision: "PASS" }, null])
+      expect(() => admitFreshAptRefresh(JSON.stringify(value))).toThrow();
+    expect(() => admitFreshAptRefresh(`${JSON.stringify(receipt)}\nlater non-receipt output`)).toThrow();
+    expect(() => admitFreshAptRefresh(JSON.stringify(receipt).replace('"decision":"PASS"', '"decision":"HOLD","decision":"PASS"'))).toThrow();
+  });
+  it("keeps consumer warm refresh separate from fresh-runner publisher admission", () => {
+    const cli = readFileSync(new URL("./ci-browser-font-cache.run.mts", import.meta.url), "utf8");
+    const warm = cli.slice(cli.indexOf('command === "warm"'), cli.indexOf('command === "populate"'));
+    const populate = cli.slice(cli.indexOf('command === "populate"'));
+    expect(warm).toContain("authenticate();");
+    expect(warm).not.toContain("authenticate(publicationRefresh)");
+    expect(populate).toContain("authenticate(publicationRefresh);");
+    expect(populate.indexOf("authenticate(publicationRefresh);")).toBeLessThan(populate.indexOf('output("save-ready", "true")'));
   });
 });

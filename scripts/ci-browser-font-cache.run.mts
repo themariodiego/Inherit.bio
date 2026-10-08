@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
-import { admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, verifyAptMetadata, verifyArchive, verifyCache, type FontManifest } from "./ci-browser-font-cache.js";
+import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, publicationAptService, verifyAptMetadata, verifyArchive, verifyCache, type FontManifest } from "./ci-browser-font-cache.js";
 
 const start = Date.now();
 const command = process.argv[2];
@@ -27,9 +28,66 @@ const platform = () => {
   const playwright = JSON.parse(readFileSync(path.join(root, "node_modules/@playwright/test/package.json"), "utf8")) as { version: string };
   if (process.platform !== "linux" || process.arch !== "x64" || !/^ID=ubuntu$/m.test(os) || !/^VERSION_ID="24\.04"$/m.test(os) || playwright.version !== manifest.playwrightVersion) throw new Error("font cache platform or Playwright version drift");
 };
-const authenticate = () => {
+const publicationRefresh = () => {
+  if (realpathSync(root) !== root) throw new Error("canonical publication checkout required");
+  const serviceRun = (program: string, args: string[], timeoutMs: number) => {
+    const remaining = 210_000 - (Date.now() - start);
+    if (remaining <= 0) throw new Error("font publication budget exhausted");
+    return execFileSync(program, args, { cwd: root, encoding: "utf8", timeout: Math.min(timeoutMs, remaining),
+      killSignal: "SIGKILL", maxBuffer: 4 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+  };
+  const version = admitAptSupervisorVersion(serviceRun("/usr/bin/systemd-run", ["--version"], 2_000));
+  console.log(JSON.stringify({ fontAptSupervisorVersion: version }));
+  const unit = `inherit-font-apt-${randomBytes(16).toString("hex")}.service`;
+  const cgroup = path.join("/sys/fs/cgroup/system.slice", unit);
+  const cgroupAbsent = () => {
+    const parent = path.dirname(cgroup), stat = lstatSync(parent);
+    if (!stat.isDirectory() || stat.uid !== 0 || stat.mode & 0o022 || realpathSync(parent) !== parent) throw new Error("unexpected publication cgroup parent");
+    try { lstatSync(cgroup); return false; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; return true; }
+  };
+  const observeClosed = (before = false) => {
+    const original = serviceRun("/usr/bin/systemctl", ["show", "--property=LoadState", "--property=ActiveState", "--property=SubState", "--", unit], 2_000);
+    const absent = cgroupAbsent();
+    console.log(JSON.stringify({ fontAptUnit: unit, phase: before ? "before" : "after", original, cgroupAbsent: absent }));
+    admitClosedAptUnit(original, absent, before);
+  };
+  observeClosed(true);
+  const service = publicationAptService(root, unit, 210_000 - (Date.now() - start),
+    [process.env.ImageOS ?? "", process.env.ImageVersion ?? "", process.env.GITHUB_ACTIONS ?? "", process.env.RUNNER_ENVIRONMENT ?? ""]);
+  let refreshed: string;
+  try {
+    refreshed = serviceRun("/usr/bin/sudo", service.args, service.timeoutMs);
+    process.stdout.write(refreshed);
+    observeClosed();
+    admitFreshAptRefresh(refreshed);
+  }
+  catch (error) {
+    const emit = (original: unknown, target: NodeJS.WriteStream) => {
+      if (typeof original === "string" || Buffer.isBuffer(original)) target.write(original);
+    };
+    if (error && typeof error === "object") {
+      if ("stdout" in error) emit(error.stdout, process.stdout);
+      if ("stderr" in error) emit(error.stderr, process.stderr);
+    }
+    // A broken client is not evidence that its root service stopped. Stop only
+    // this fresh unit after verifying its exact transient ownership sentinel.
+    try { observeClosed(); }
+    catch {
+      const original = serviceRun("/usr/bin/systemctl", ["show", "--property=Description", "--property=Transient",
+        "--property=User", "--property=Group", "--property=Slice", "--", unit], 2_000);
+      console.log(JSON.stringify({ fontAptUnit: unit, phase: "cleanup-owner", original }));
+      admitOwnedAptUnit(original, unit);
+      serviceRun("/usr/bin/sudo", ["--non-interactive", "--", "/usr/bin/systemctl", "stop", "--", unit], 5_000);
+      observeClosed();
+    }
+    throw error;
+  }
+  return refreshed;
+};
+const authenticate = (refresh = () => run("sudo", ["apt-get", "update", "--error-on=any"])) => {
   platform();
-  run("sudo", ["apt-get", "update", "--error-on=any"]);
+  refresh();
   for (const p of manifest.packages) verifyAptMetadata(p, run("apt-cache", ["show", `${p.name}=${p.version}`]), run("apt-cache", ["policy", p.name]));
 };
 
@@ -68,7 +126,7 @@ if (command === "prepare") {
 } else if (command === "populate") {
   if (process.env.GITHUB_EVENT_NAME !== "push" || process.env.GITHUB_REF !== "refs/heads/main") throw new Error("font archive publication is restricted to main pushes");
   try {
-    authenticate();
+    authenticate(publicationRefresh);
     if (existsSync(cache)) throw new Error("publication requires a fresh archive directory");
     mkdirSync(cache, { mode: 0o700 });
     run("apt-get", ["download", ...manifest.packages.map((p) => `${p.name}=${p.version}`)], cache);
