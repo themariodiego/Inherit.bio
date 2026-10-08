@@ -59,7 +59,7 @@ function RawRegionalRows({ subjectId, result, minMarkers }: {
   subjectId: string; result: RegionalAdmixtureResult; minMarkers: number;
 }) {
   const { rows, split } = presentRegionalShares(result);
-  return <details data-slot="raw-numbers" className="fam-disclosure max-w-measure">
+  return <details data-slot="raw-numbers">
     <summary className="text-sm">{RAW_NUMBERS_SUMMARY}</summary>
     <ClaimBlock subject={{ subjectId }} figures={[...rows, ...split].map(row => shareSpec(row.share))}
       renderFigures={nodes => <div className="space-y-3 text-sm text-ink-muted">
@@ -68,7 +68,7 @@ function RawRegionalRows({ subjectId, result, minMarkers }: {
         <p>{result.note}</p><p data-slot="regional-caveat">{result.reporting.caveat}</p>
         <ul data-slot="raw-numbers-list" className="space-y-2">{rows.map((row, index) =>
           <li key={row.code} data-region={row.code} className="flex flex-wrap items-baseline gap-x-3"><span>{row.name}</span>{nodes[index]}</li>)}</ul>
-        {split.length ? <details data-slot="regional-split" className="fam-disclosure">
+        {split.length ? <details data-slot="regional-split">
           <summary>{REGIONAL_SPLIT_SUMMARY}</summary>
           <p data-slot="regional-split-caveat" className="mb-3">{result.reporting.caveat}</p>
           <div className="space-y-2">{split.map((row, index) => <p key={row.code} data-split-region={row.code}
@@ -140,7 +140,7 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
               <td className="pr-3">{nodes[index]}</td><td data-slot="region-band" className="text-ink-muted">{row.band}</td>
             </tr>
             {row.code === REGIONAL_COMBINED_CODE ? <tr><td colSpan={3} className="fam-regions-split">
-              <details data-slot="regional-split" className="fam-disclosure">
+              <details data-slot="regional-split">
                 <summary>
                   {REGIONAL_SPLIT_SUMMARY}
                 </summary>

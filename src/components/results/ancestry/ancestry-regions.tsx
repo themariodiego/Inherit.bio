@@ -150,7 +150,7 @@ function GreyRegions({
         <p>{panelLine(panel)}</p>
         <p className="text-ink">{IDENTITY}</p>
       </div>
-      <details data-slot="raw-numbers" className="fam-disclosure max-w-measure">
+      <details data-slot="raw-numbers">
         <summary className="text-sm">
           {RAW_NUMBERS_SUMMARY}
         </summary>

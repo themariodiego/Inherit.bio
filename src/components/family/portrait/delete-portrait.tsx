@@ -84,7 +84,7 @@ export function DeletePortrait({ grantId }: { grantId: string }) {
           </div>
         </div>
       ) : (
-        <Button type="button" variant="outline" onClick={() => setConfirming(true)}>
+        <Button type="button" variant="destructive" onClick={() => setConfirming(true)}>
           {DELETE_BUTTON}
         </Button>
       )}

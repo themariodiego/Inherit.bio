@@ -105,19 +105,34 @@ a.fam-row:hover { background: var(--surface-inset); }
 /* ---------------------------------------------------------------------------
  * Disclosure rows: a 44px summary with a turning chevron, no dotted link.
  * ------------------------------------------------------------------------- */
-.fam-disclosure > summary {
+.fam-disclosure > summary,
+details[data-slot="raw-numbers"] > summary,
+details[data-slot="regional-split"] > summary {
   display: flex; align-items: center; gap: 0.625rem; min-height: var(--size-control);
   padding: 0.5rem 0; color: var(--ink); font-weight: 500; list-style: none; cursor: pointer;
 }
-.fam-disclosure > summary::-webkit-details-marker { display: none; }
-.fam-disclosure > summary::before {
+.fam-disclosure > summary::-webkit-details-marker,
+details[data-slot="raw-numbers"] > summary::-webkit-details-marker,
+details[data-slot="regional-split"] > summary::-webkit-details-marker { display: none; }
+.fam-disclosure > summary::before,
+details[data-slot="raw-numbers"] > summary::before,
+details[data-slot="regional-split"] > summary::before {
   content: ""; flex: none; width: 0.5rem; height: 0.5rem; margin-top: -0.125rem;
   border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg); transition: transform var(--motion-reveal) var(--easing-settle);
 }
-.fam-disclosure[open] > summary::before { transform: rotate(45deg); }
-.fam-disclosure > summary:hover { color: var(--forest); }
-.fam-disclosure > :not(summary) { padding-bottom: 0.75rem; }
+.fam-disclosure[open] > summary::before,
+details[data-slot="raw-numbers"][open] > summary::before,
+details[data-slot="regional-split"][open] > summary::before { transform: rotate(45deg); }
+.fam-disclosure > summary:hover,
+details[data-slot="raw-numbers"] > summary:hover,
+details[data-slot="regional-split"] > summary:hover { color: var(--forest); }
+.fam-disclosure > :not(summary),
+details[data-slot="raw-numbers"] > :not(summary),
+details[data-slot="regional-split"] > :not(summary) { padding-bottom: 0.75rem; }
+details[data-slot="raw-numbers"] { max-width: var(--measure); }
+/* The split row sits inside the region table: its summary is the row. */
+.fam-regions-split { height: auto; padding: 0 0 0.5rem; }
 
 /* ---------------------------------------------------------------------------
  * Entry tiles: a linked surface whose whole box is the target, and a
@@ -141,5 +156,5 @@ a.fam-row:hover { background: var(--surface-inset); }
 .fam-options button:hover svg { color: var(--forest); }
 
 @media (prefers-reduced-motion: reduce) {
-  .fam-disclosure > summary::before { transition: none; }
+  .fam-disclosure > summary::before, details[data-slot="raw-numbers"] > summary::before, details[data-slot="regional-split"] > summary::before { transition: none; }
 }

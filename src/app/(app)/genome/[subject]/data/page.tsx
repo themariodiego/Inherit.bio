@@ -113,40 +113,45 @@ export default async function GenomeDataPage(
     { kind: "report", purpose: "reports.polygenic" });
 
   return (
-    <div data-surface="standard" className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: domain.label, href: domain.href },
-          { label: displayLabel },
-          { label: DATA_CRUMB },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{DATA_H1}</h1>
-        <p className="max-w-prose text-base leading-relaxed text-ink-muted">{DATA_LEDE}</p>
-      </header>
+    <div data-surface="standard" className="page-stack rec-sheet stack-sections">
+      {/* The sheet's head: crumbs, the subject bar, then the one display h1.
+          No eyebrow on this page: the crumb and the bar already say where
+          the reader is. */}
+      <div className="rec-sheet-head">
+        <Breadcrumbs
+          items={[
+            { label: domain.label, href: domain.href },
+            { label: displayLabel },
+            { label: DATA_CRUMB },
+          ]}
+        />
+        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+        <header>
+          <h1 className="display">{DATA_H1}</h1>
+          <p className="lede">{DATA_LEDE}</p>
+        </header>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Button asChild variant="outline" className="h-auto min-h-20">
+        <Button asChild variant="outline" className="h-auto min-h-16 text-base">
           <Link href={route("genome.browser", subjectParams)}>{BROWSE_VARIANTS}</Link>
         </Button>
-        <Button asChild variant="outline" className="h-auto min-h-20">
+        <Button asChild variant="outline" className="h-auto min-h-16 text-base">
           <Link href={route("files.index")}>{MANAGE_FILES}</Link>
         </Button>
       </div>
 
-      <section aria-labelledby="score-panel-coverage" className="space-y-3">
-        <h2 id="score-panel-coverage" className="text-lg font-semibold text-ink">
+      <section aria-labelledby="score-panel-coverage" className="rec-stack">
+        <h2 id="score-panel-coverage" className="title">
           {SCORE_COVERAGE_HEADING}
         </h2>
         {files.length === 0 ? (
-          <p className="max-w-prose text-sm text-ink-muted">
+          <p className="max-w-measure text-sm text-ink-muted">
             {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
           </p>
         ) : scores.length === 0 ? (
-          <p className="max-w-prose text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
+          <p className="max-w-measure text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="rec-list">
             {scores.map(({ row, meta }) => (
               <li key={`${row.file_id}:${row.pgs_id}`} data-slot="score-panel-result">
                 <ScorePanelResult
@@ -158,7 +163,7 @@ export default async function GenomeDataPage(
                   needed={meta.n_variants}
                 />
                 {/* inherit-figure-exempt: a source-record label, not a genetic quantity */}
-                <p data-slot="score-input-label" className="mt-2 text-sm text-ink-muted">
+                <p data-slot="score-input-label" className="caption mt-2">
                   {scoreInputLabel(inputSources.findIndex((source) => source.fileId === row.file_id) + 1)}
                 </p>
               </li>
