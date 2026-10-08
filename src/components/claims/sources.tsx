@@ -13,7 +13,7 @@ export function ClaimSources({ sourceIds, scienceIndex = false, start = 1 }: {
       {sourceIds.map((id) => {
         const source = presentationSource(id);
         return (
-          <li key={id} id={claimSourceAnchor(id)} data-source-id={id} className="scroll-mt-24">
+          <li key={id} id={claimSourceAnchor(id)} data-source-id={id}>
             <a href={source.url} target="_blank" rel="noopener noreferrer" className="prose-link">
               {source.type === "pmid" ? `PMID ${source.identifier}` : source.identifier}
             </a>

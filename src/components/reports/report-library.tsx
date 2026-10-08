@@ -205,7 +205,7 @@ export function ReportLibrary({
     if (!section) return; // fall back to default anchor behaviour
     e.preventDefault();
     window.history.replaceState(window.history.state, "", `#${id}`);
-    section.scrollIntoView(); // respects the section's scroll-mt
+    section.scrollIntoView(); // lands under the header: html sets scroll-padding-top
     const heading = document.getElementById(`${id}-heading`);
     (heading ?? section).focus({ preventScroll: true });
   };
@@ -310,7 +310,7 @@ export function ReportLibrary({
               id={g.id}
               aria-labelledby={`${g.id}-heading`}
               data-density-top-level-section="true"
-              className="scroll-mt-24 space-y-4"
+              className="space-y-4"
             >
               {/* The category label sits under a hairline: the heading itself
                   carries the rule, so no text is added above it. */}
