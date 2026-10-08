@@ -73,7 +73,7 @@ export async function SiteHeader() {
           target: "About" is only ~37px of text at 14px, so `min-w-11` does
           the work `min-h-11` cannot. The quiet sign-in sits at the row's
           end, outside the nav, so the first row keeps to one line at 320. */}
-      <div className="site-header-nav-row px-6 md:hidden">
+      <div className="site-header-nav-row flex items-center justify-between gap-3 border-t border-line px-6 md:hidden">
         <nav
           aria-label="Main (mobile)"
           className="flex flex-wrap gap-x-3 gap-y-1 min-[360px]:gap-x-5"

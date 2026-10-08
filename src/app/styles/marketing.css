@@ -47,7 +47,7 @@
  * quiet sign-in at its end.
  * ------------------------------------------------------------------------- */
 .site-header-row { min-height: var(--size-navbar); }
-.site-header-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: var(--size-control); border-top: 1px solid var(--line); }
+.site-header-nav-row { min-height: var(--size-control); }
 .site-footer-link {
   display: flex; align-items: center; min-height: var(--size-control);
   color: var(--ink-muted); transition: color var(--motion-feedback);
