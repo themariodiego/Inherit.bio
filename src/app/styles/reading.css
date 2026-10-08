@@ -7,6 +7,9 @@
  * ------------------------------------------------------------------------- */
 .reading-head { max-width: 56rem; }
 .reading-head > .display { margin-top: 1rem; }
+/* `h1.display` in globals outranks `.display-lg`; the reading title is the
+   larger scale, so it is restated here at the specificity that wins. */
+.reading-head > h1.display.display-lg { font-size: clamp(2.5rem, 1.5rem + 3.8vw, 4.5rem); line-height: 1.02; letter-spacing: -0.025em; }
 .reading-head > .caption { margin-top: 1.25rem; }
 .reading-intro { margin-top: 1.5rem; }
 .reading-intro > * + *, .reading-intro section > * + * { margin-top: 1rem; }
@@ -79,7 +82,7 @@
  * The form sits on a surface, so the terrain never crosses text.
  * ------------------------------------------------------------------------- */
 .auth-shell { position: relative; overflow: hidden; isolation: isolate; }
-.auth-terrain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.7; }
+.auth-terrain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.55; }
 .auth-terrain [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 62%; }
 .auth-surface { width: 100%; max-width: 26rem; }
 .auth-surface h1.display { font-size: clamp(1.875rem, 1.3rem + 2vw, 2.5rem); }
@@ -90,7 +93,9 @@
  * A short band of hills sits above the heading like a horizon.
  * ------------------------------------------------------------------------- */
 .quiet-band { position: relative; height: 6.5rem; overflow: hidden; border-bottom: 1px solid var(--line); }
-.quiet-band [data-slot="terrain"] { position: absolute; inset: 0; }
+/* The hills are drawn taller than the strip and anchored below it, so the
+   strip shows the far ridges on paper with one near slope at the horizon. */
+.quiet-band [data-slot="terrain"] { position: absolute; left: 0; right: 0; bottom: -3.5rem; height: 15rem; }
 .quiet-column > .quiet-band + * { margin-top: 2rem; }
 .quiet-links { display: flex; flex-direction: column; gap: 0.5rem; }
 .quiet-links a { display: inline-flex; align-items: center; min-height: var(--size-control); }

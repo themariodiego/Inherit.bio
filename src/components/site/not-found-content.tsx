@@ -29,7 +29,7 @@ import { Terrain } from "@/components/site/terrain";
  */
 export function NotFoundContent() {
   return (
-    <div className="quiet-column mx-auto max-w-2xl px-6 py-section">
+    <div className="quiet-column mx-auto max-w-2xl px-6 py-block">
       <div aria-hidden="true" className="quiet-band">
         <Terrain variant="band" seed={11} />
       </div>
