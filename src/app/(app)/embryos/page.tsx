@@ -113,7 +113,7 @@ export default async function EmbryosPage() {
         // ground is a layer behind it and the box goes clear (family.css).
         <div data-slot="empty-state-ground-wrap" className="fam-ground">
           <div aria-hidden="true" data-slot="empty-state-ground" className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
-            <Terrain variant="ground" seed={11} />
+            <Terrain variant="ground" seed={7} />
           </div>
           <EmbryoEmptyState
             heading={EMPTY_HEADING}

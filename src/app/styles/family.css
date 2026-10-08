@@ -115,8 +115,9 @@ a.fam-row:hover { background: var(--surface-inset); }
 @media (min-width: 768px) { .fam-map figcaption { padding-inline: 1.5rem; } }
 .fam-map-quiet { margin: 0; }
 /* Under the empty state's sentence the map is the ground, not the point:
-   its own aspect, no taller than ~260px, the caption 8px beneath. */
-.fam-map-quiet [data-slot="ancestry-map"] { max-width: 29rem; }
+   its own aspect, no taller than ~260px, the caption 8px beneath and no
+   wider than the map (the figure is capped, so the caption takes its width). */
+.fam-map-quiet { max-width: 29rem; }
 .fam-map-quiet figcaption { margin-top: 0.5rem; }
 
 /* ---------------------------------------------------------------------------
@@ -173,10 +174,10 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
 .fam-options button svg { color: var(--ink-muted); }
 .fam-options button:hover svg { color: var(--forest); }
 
-/* The health picture's "needs two people" sentence balances its lines so
-   the count never stands alone on the last one (paragraphs elsewhere wrap
-   pretty, which lets "is 1." fall). */
-[data-slot="health-picture-blocking"][data-state="empty"] > p:first-child { text-wrap: balance; }
+/* The health picture's two "needs two people" paragraphs wrap the same way:
+   pretty, which keeps a count off a line of its own without balancing one
+   paragraph against the other's measure. */
+[data-slot="health-picture-blocking"][data-state="empty"] > p { text-wrap: pretty; }
 
 /* The invite form's two fields share one right edge, the measure. The form's
    own markup is pinned; the email field is reached by its id. */

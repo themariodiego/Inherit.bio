@@ -15,7 +15,8 @@
  * order, named as A.8 asks; hover and focus report to the parent, Enter,
  * Space and click activate. Grey mode: every region as a grey outline,
  * nothing focusable, no gradient. `quiet` draws the map without the plate
- * (no label head, the caption under it) for an empty state's ground.
+ * for an empty state's ground: the caption sits under it, or, while the
+ * map is grey, the label does, since there is no shading to explain.
  *
  * The SVG carries `data-density-pixel-exclusion="map-tile"`: the density
  * measurement treats it as a map, not as ink.
@@ -149,7 +150,8 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
   );
   const figcaption = (
     <figcaption data-slot="map-caption" className="caption">
-      {caption}
+      {/* A grey map draws no shading, so the quiet figure carries the map's name, not the shading caption. */}
+      {quiet && !shown ? label : caption}
     </figcaption>
   );
 

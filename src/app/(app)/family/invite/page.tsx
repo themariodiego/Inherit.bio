@@ -19,6 +19,17 @@ export const metadata: Metadata = { title: INVITE_H1 };
  * and before anything is entered: comparing two people's DNA can say
  * something neither of them asked to know, and that cannot be taken back.
  */
+/**
+ * The frozen statement rendered character for character, with one hyphenated
+ * word held on a line: a hyphen is a legal break, and at 390px it fell
+ * between "un-" and "see".
+ */
+function unbreakable(text: string, word: string): React.ReactNode[] {
+  return text.split(word).flatMap((part, index) =>
+    index === 0 ? [part] : [<span key={index} className="whitespace-nowrap">{word}</span>, part],
+  );
+}
+
 export default async function FamilyInvitePage() {
   const supabase = await createClient();
   const {
@@ -52,7 +63,7 @@ export default async function FamilyInvitePage() {
             data-slot="pre-consent-statement"
             className="body-lg max-w-measure text-ink"
           >
-            {PRE_CONSENT_STATEMENT}
+            {unbreakable(PRE_CONSENT_STATEMENT, "un-see")}
           </p>
         </header>
       </div>

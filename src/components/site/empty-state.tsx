@@ -39,7 +39,8 @@ export function EmptyState({
       <div className={cn("max-w-measure space-y-3", ground && "relative")}>
         {title ? <div className="title text-ink">{title}</div> : null}
         <div className="text-ink">{children}</div>
-        {action ? <div className="pt-2">{action}</div> : null}
+        {/* Under 360px the one action takes the box's inner width, so a long label stays on one line. */}
+        {action ? <div className="pt-2 max-[360px]:*:w-full max-[360px]:*:px-3">{action}</div> : null}
       </div>
     </div>
   );
