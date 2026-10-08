@@ -228,17 +228,18 @@ p, li, dd, figcaption { text-wrap: pretty; }
   letter-spacing: -0.02em;
   line-height: 1.05;
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 40, "WONK" 0;
+  font-variation-settings: "SOFT" 40;
 }
 .display .accent { color: var(--forest); }
-/* The italic accent: Fraunces's true italic, with its wonky letterforms on,
+/* The italic accent: Fraunces's true italic, loaded only where it is used,
    for the one phrase a headline leans into. Opt-in by class. */
 .display .accent-italic,
 .display em {
   color: var(--forest);
+  font-family: var(--font-fraunces-italic), var(--font-fraunces), ui-serif, Georgia, serif;
   font-style: italic;
   font-weight: 400;
-  font-variation-settings: "SOFT" 60, "WONK" 1;
+  font-variation-settings: "SOFT" 60;
 }
 
 /* display-1: every page h1. display-2: section h2 on hub and marketing

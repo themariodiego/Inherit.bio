@@ -3,16 +3,26 @@ import { Fraunces, Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-// Fraunces carries its optical size, its SOFT warmth and its WONK letterforms,
-// and ships its true italic: the display voice of the product uses all four,
-// at headline sizes only (globals.css `.display`). Inter stays the one text
-// face. No third family, no icon font.
+// Fraunces carries its optical size and its SOFT warmth, and ships its true
+// italic: the display voice of the product, at headline sizes only
+// (globals.css `.display`). Inter stays the one text face. No third family,
+// no icon font.
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  style: ["normal", "italic"],
-  axes: ["opsz", "SOFT", "WONK"],
+  axes: ["opsz", "SOFT"],
   display: "swap",
+});
+
+// The italic is its own face so it is not preloaded on every page: only a
+// page that sets an accent phrase in italic fetches it, after first paint.
+const frauncesItalic = Fraunces({
+  variable: "--font-fraunces-italic",
+  subsets: ["latin"],
+  style: ["italic"],
+  axes: ["opsz", "SOFT"],
+  display: "swap",
+  preload: false,
 });
 
 const inter = Inter({
@@ -34,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${frauncesItalic.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

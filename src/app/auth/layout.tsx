@@ -24,7 +24,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="auth-shell flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12 md:py-20">
+    <div className="auth-shell flex min-h-screen flex-col items-center justify-start gap-8 bg-paper px-6 py-12 md:py-20">
       <div aria-hidden="true" className="auth-terrain">
         <Terrain variant="ground" seed={3} />
       </div>
