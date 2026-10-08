@@ -241,7 +241,7 @@ export function GenomeBrowser({
     return (
       <div
         role="alert"
-        className="flex min-h-64 items-center justify-center rounded-xl border border-line bg-card p-6 text-center text-sm text-ink-muted"
+        className="surface-inset flex min-h-64 items-center justify-center p-6 text-center text-sm text-ink"
       >
         {BROWSER_FAILED}
       </div>
@@ -249,12 +249,12 @@ export function GenomeBrowser({
   }
 
   return (
-    <figure data-slot="genome-track-figure" aria-labelledby={captionId} className="space-y-3">
-      <figcaption id={captionId} className="text-sm font-medium">{TRACK_TEXT_CAPTION}</figcaption>
+    <figure data-slot="genome-track-figure" aria-labelledby={captionId} className="rec-stack-sm">
+      <figcaption id={captionId} className="label">{TRACK_TEXT_CAPTION}</figcaption>
       {/* Before the region in reading order, so a keyboard reader meets the
           escape before the thing it escapes; `aria-describedby` on the region
           repeats it on entry for a reader who arrives by Tab. */}
-      <p id={ESCAPE_HINT_ID} className="mb-2 text-xs text-ink-muted">
+      <p id={ESCAPE_HINT_ID} className="caption max-w-measure">
         {BROWSER_KEYBOARD_ESCAPE}
       </p>
       <div className="relative">
@@ -274,11 +274,11 @@ export function GenomeBrowser({
           // this container keeps the page itself reflowed; the container needs
           // no tabindex because igv's own controls are focusable, so a
           // keyboard reaches its contents already.
-          className="min-h-64 overflow-x-auto rounded-xl border border-line bg-white p-2 dark:bg-card"
+          className="min-h-64 overflow-x-auto rounded-sm border border-line bg-card p-2"
         />
         {status === "loading" ? (
           <div
-            className="absolute inset-0 flex items-center justify-center rounded-xl"
+            className="absolute inset-0 flex items-center justify-center rounded-sm"
             aria-live="polite"
           >
             <p className="text-sm text-ink-muted">{BROWSER_LOADING}</p>
@@ -304,7 +304,7 @@ export function GenomeBrowser({
         snapshot={text?.snapshot ?? { status: "loading", views: [] }} />
       {status === "ready" && variantCount === 0 && text?.snapshot.status === "ready"
         && text.snapshot.views.every(view => !view.outsideLoadedRange) ? (
-        <p className="mt-2 max-w-prose rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
+        <p className="surface-inset max-w-measure px-3 py-2 text-xs text-ink">
           {BROWSER_EMPTY_REGION}
         </p>
       ) : null}

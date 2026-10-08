@@ -126,13 +126,13 @@ export default async function EmbryosPage() {
               data-tile={tile.id}
               className={cn("surface surface-pad-sm", href && "link-surface fam-tile")}
             >
-              <p className="title pr-8 text-ink">
+              <p className="title -my-3 pr-8 text-ink">
                 {href ? (
                   <Link href={href} className="link-target">
                     {tile.label}
                   </Link>
                 ) : (
-                  tile.label
+                  <span className="link-target">{tile.label}</span>
                 )}
               </p>
               {href ? <span aria-hidden="true" className="link-arrow" /> : null}

@@ -140,7 +140,8 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
  * ------------------------------------------------------------------------- */
 .fam-tile { position: relative; }
 .fam-tile h2 a::after, .fam-tile p a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.fam-tile .link-arrow { position: absolute; top: 1rem; right: 1.25rem; color: var(--forest); font-size: 1.125rem; line-height: 1; }
+.fam-tile .link-arrow { position: absolute; top: 1.125rem; right: 1.125rem; color: var(--forest); font-size: 1.125rem; line-height: 1; }
+@media (min-width: 768px) { .fam-tile .link-arrow { top: 1.375rem; right: 1.5rem; } }
 .fam-tile .link-arrow::after { content: "\2197"; }
 
 /* Outcome dots: the container only; the dots and the bar keep their markup. */

@@ -588,7 +588,7 @@ export default async function ReportDetailPage(
             <Badge variant="outline" data-chip="layer">
               {LAYER_LABELS[layer]}
             </Badge>
-            <span className="max-w-measure text-ink-muted">{LAYER_DEFINITIONS[layer]}</span>
+            <span className="min-w-0 max-w-measure flex-1 basis-64 text-ink-muted">{LAYER_DEFINITIONS[layer]}</span>
           </li>
           <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Link
@@ -598,7 +598,7 @@ export default async function ReportDetailPage(
             >
               <Badge variant="outline">{evidenceLabel}</Badge>
             </Link>
-            <span className="max-w-measure text-ink-muted">{evidenceDefinition}</span>
+            <span className="min-w-0 max-w-measure flex-1 basis-64 text-ink-muted">{evidenceDefinition}</span>
           </li>
           <li>
             {/* X4: the chip names the subject the computation used, which is

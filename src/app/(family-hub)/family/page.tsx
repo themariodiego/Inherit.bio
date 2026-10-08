@@ -230,13 +230,13 @@ export default async function FamilyPage() {
               data-tile={tile.id}
               className={cn("surface surface-pad-sm", href && "link-surface fam-tile")}
             >
-              <h2 className="title pr-8">
+              <h2 className="title -my-3 pr-8">
                 {href ? (
                   <Link href={href} className="link-target">
                     {tile.label}
                   </Link>
                 ) : (
-                  tile.label
+                  <span className="link-target">{tile.label}</span>
                 )}
               </h2>
               {href ? <span aria-hidden="true" className="link-arrow" /> : null}
