@@ -37,9 +37,13 @@
    >= 96px between the last line and the first ridge at 320px and up. */
 .rec-record-card[data-state="empty"] > .rec-record-body { padding-bottom: 4rem; }
 @media (min-width: 768px) { .rec-record-card[data-state="empty"] > .rec-record-body { padding-bottom: 3rem; } }
-/* The hills at their drawn aspect (1600:600, the top third empty by design);
-   the negative margin lets the card's bottom edge crop the nearest slopes. */
-.rec-record-terrain { position: relative; aspect-ratio: 1600 / 600; min-height: 10rem; margin-bottom: -11.25%; pointer-events: none; }
+/* The hills at their drawn aspect (1600:600): the first ridge's crest sits
+   about 31% down the box, i.e. 11.6% of the width below its top. From md the
+   box rides up by that amount less 4rem, so the band measures ~112px at every
+   width; below md the box is 10rem tall and the body's padding carries it.
+   The negative bottom margin lets the card's edge crop the nearest slopes. */
+.rec-record-terrain { position: relative; aspect-ratio: 1600 / 600; min-height: 10rem; margin-bottom: -6%; pointer-events: none; }
+@media (min-width: 768px) { .rec-record-terrain { margin-top: calc(4rem - 11.6%); } }
 .rec-record-terrain > [data-slot="terrain"] { position: absolute; inset: 0; }
 /* On /files the one state sentence is also the file list's only item, so the
    index still states its absence in words; the list draws nothing of its own. */
@@ -96,7 +100,7 @@
 .rec-settings-rows > .rec-settings-row + .rec-settings-row { border-top: 1px solid var(--line); }
 /* The danger zone is told apart from the export card before its button: a
    2px danger rule along the top edge (round-1 m18). */
-.rec-danger { border-top: 2px solid var(--danger); }
+.surface.rec-danger { border-top: 2px solid var(--danger); }
 /* Inside a form, an inset note shares the fields' 28rem right edge. */
 form.rec-stack .surface-inset { max-width: 28rem; }
 
