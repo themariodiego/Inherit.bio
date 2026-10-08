@@ -1,5 +1,53 @@
 # Test diff register
 
+## 2026-10-08 — account for implicit form targets and ambiguous owners
+
+The first method-reader source was held without execution: it omitted forms
+without an explicit action and could resolve a form id shared with a non-form
+node. Every native form opening is now represented. An implicit current-page
+target remains unresolved, and a duplicated id or non-form owner requires
+review regardless of source order. Even a valid explicit submitter override
+does not erase the unresolved base form.
+
+The existing source has twelve actionless GET/default openings in eleven client
+files whose attached handlers cancel default submission. Their review is sealed
+to complete unchanged file SHA256 values and exact opening counts. Adding an
+onSubmit prop alone is never an exemption: a new form, changed method, changed
+handler bytes or missing inventory row fails. The actual two resolved native
+forms remain the genome GET and sign-out POST. No component or register changes
+are made. JavaScript-disabled/pre-hydration current-page submission and dynamic
+component interiors remain outside this static review and need runtime evidence.
+
+All 35 original test bodies and expectations are retained. The first new inventory
+expectation now accounts for all 14 openings, with the twelve explicitly reviewed
+clients and two resolved native forms. Three additional methods cover implicit
+actions, non-form id collisions, and exact client-review bytes/counts. All 48 cases
+remain UNRUN at this source freeze; no acceptance or release verdict changes.
+
+## 2026-10-08 — check native form methods against the route register
+
+The form correspondence tests previously checked destinations without reading
+the request method. A GET form could therefore point at the POST-only sign-out
+endpoint and still pass the static destination check. The existing genome
+browser GET form, sign-out POST form, components and register remain unchanged.
+
+The added reader uses JSX attributes and the same route-register entries. An
+omitted native method defaults to GET; an endpoint must declare the submitted
+method, and a page accepts GET. Unsupported methods, unresolved expressions,
+duplicate attributes and spreads require review rather than an assumed request.
+Explicit submitter action/method overrides and literal same-file form ownership
+are checked together, including unknown or duplicate owners. This is static
+correspondence, not a claim about rendered callbacks or runtime authorization.
+Spread-only forms and native button/input or existing Button/Input wrapper
+spreads inside a resolved target form also refuse; unresolved props cannot hide
+the method from this check. Dynamically rendered component interiors remain
+outside the static JSX inventory and still require runtime evidence.
+
+All previous test bodies and expectations are retained. Ten added methods cover
+the unchanged actual two-form inventory and meaningful positive/negative
+fixtures for these cases. No acceptance verdict changes. Current checks are
+unrun at source freeze; local and final hosted qualification remain required.
+
 ## 2026-10-08 — Bound publisher-only signed APT refresh and preserve consumer admission
 
 The publisher's fresh `checks` runner now reuses the admitted APT driver inside one fresh transient root service, after the seven execution prerequisites and strict coverage aggregate. The existing four main-only maintenance steps, eight required jobs, exact font key and nine official package pins remain. Publisher lookup hits skip maintenance; this is separate from consumer warm admission, whose original signed refresh and post-copy fatal checks remain unchanged.
