@@ -41,8 +41,9 @@ export function evidenceDefinitionFor(level: EvidenceLevel, layer: FindingLayer)
   return layer === "variant_call" ? VARIANT_CALL_EVIDENCE_DEFINITION : EVIDENCE_DEFINITIONS[level];
 }
 
-/** The levels that carry the confirmation block (X5.3: clinical and established). */
+/** Owner decision 2026-10-02, X5.3: all three levels carry the unchanged confirmation and counsellor block. */
 export const CONFIRMATION_LEVELS: ReadonlySet<EvidenceLevel> = new Set<EvidenceLevel>([
   "clinical",
   "established",
+  "emerging",
 ]);
