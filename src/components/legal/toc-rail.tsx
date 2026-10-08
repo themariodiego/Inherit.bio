@@ -30,9 +30,18 @@ export function LegalTocRail({ entries }: { entries: TocEntry[] }) {
     const line = () =>
       parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 96;
 
-    let pinnedUntil = 0;
+    // After a jump, the target stays current while the page is pinned at
+    // its end and the target sits below the line (it could not reach it).
+    let pinned: HTMLElement | null = null;
     const settle = (records: IntersectionObserverEntry[]) => {
-      if (performance.now() < pinnedUntil) return;
+      if (pinned) {
+        const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1;
+        if (atEnd && pinned.getBoundingClientRect().top > line()) {
+          setCurrent(pinned.id);
+          return;
+        }
+        pinned = null;
+      }
       const hit = records.find((record) => record.isIntersecting);
       if (hit) {
         setCurrent(hit.target.id);
@@ -59,7 +68,7 @@ export function LegalTocRail({ entries }: { entries: TocEntry[] }) {
     const onHash = () => {
       const id = decodeURIComponent(location.hash.slice(1));
       if (!ids.includes(id)) return;
-      pinnedUntil = performance.now() + 500;
+      pinned = document.getElementById(id);
       setCurrent(id);
     };
     let frame = 0;

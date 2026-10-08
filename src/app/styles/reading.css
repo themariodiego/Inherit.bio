@@ -95,7 +95,9 @@
 .auth-shell { position: relative; overflow: hidden; isolation: isolate; }
 .auth-terrain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.55; }
 .auth-terrain [data-slot="terrain"] { position: absolute; inset: auto 0 0 0; height: 62%; }
-.auth-band { width: 100%; max-width: 26rem; margin-bottom: -0.5rem; }
+.auth-band { width: 100%; max-width: 26rem; height: 7rem; margin-bottom: -0.75rem; }
+/* Stated with the shell so it beats the quiet-band rule below it. */
+.auth-shell .auth-band [data-slot="terrain"] { bottom: -2.25rem; height: 16rem; }
 @media (max-width: 639px) { .auth-terrain { display: none; } }
 /* Top-anchored with a reserved height: the sign-in form arrives after
    hydration (its search-params boundary), so a centred column would move the
