@@ -48,7 +48,7 @@ export default async function ChatPage(
     <header className="rec-head">
       <Breadcrumbs
         items={[
-          { label: NAV_LABELS["my-genome"], href: route("genome.subject", { subject: subject.routeSegment }) },
+          { label: NAV_LABELS["my-genome"], href: route("genome.subject", { subject: scope }) },
           { label: subject.displayLabel },
           { label: title },
         ]}
