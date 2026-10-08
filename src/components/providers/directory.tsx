@@ -393,7 +393,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                       <thead>
                         <tr className="border-b border-line">
                           <th className={TH}>Product</th>
-                          <th className={TH}>
+                          <th className={`${TH} min-w-[11rem]`}>
                             Works with Inherit
                           </th>
                           <th className={TH}>Depth</th>
