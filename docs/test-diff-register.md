@@ -1,5 +1,13 @@
 # Test diff register
 
+## 2026-10-08 — admit closed equivalent APT security boolean representations
+
+**Preserved first result.** PR296 head f3b06f6f3f31fe048b4eef3c4b4f7261f082cfeb, run37704326980 attempt1, refused `APT authentication or freshness weakened` before keyring hardening or any APT-file mutation. Both complete originals report only three security leaves as typed false, with retry1 and HTTP/HTTPS15. The previous diagnostic intentionally mapped both false and0 to false, so exact per-leaf raw spellings are unknown; the refusal implies at least one numeric0 representation. This is a bounded inference, not a claim that raw spellings were logged.
+
+**Primary semantics and narrow correction.** The official Ubuntu APT2.8.3 source initializes those three leaves with false through an integer serializer that emits0. Configuration::FindB uses StringToBool, which accepts complete0/1 and false/true as equivalent boolean polarities. Admission now accepts only the matching closed pair false/0 or true/1, or the existing absent default, for each fixed security leaf at root and Binary::apt-get scopes. Opposite polarity, unknown/malformed text and unsafe binary overrides still refuse. Bounds, strict update, trust, source/key custody, permission checks, full installer, eight jobs and all time caps stay exact.
+
+**Meaningful controls and diagnostics.** Five added pure methods cover numeric false defaults, every security leaf/scope and both admission phases, opposite/malformed/unknown values, safe-root/unsafe-binary conflicts, and closed key/spelling masking. All36 previous method bodies stay exact. The existing typed diagnostic now also emits only fixed security keys and the known raw spellings false/0/true/1; all other text becomes `unsupported`. All41 controls are unrun at this source freeze. No privileged APT runs on Mac, unchanged hosted rerun, signed-metadata or full-suite credit is claimed.
+
 ## 2026-10-08 — harden only original public keyring permission modes
 
 **Trigger and original refusal.** Draft PR296 head af830d2d75c5906b625e72d691138b4c06dc8860, run37700502102 attempt1, correctly refused root-owned source/trust directory admission before any APT mutation. Complete repository/browser6 originals actually show /usr/share/keyrings UID0/GID0 canonical/stable directory mode0777; the other four fixed public directories were0755. Ancestor and keyfile modes were not observed there and remain unknown. The exact image tag's recursive /usr/share chmod777 is source provenance, not proof of their current state.

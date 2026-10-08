@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from ci_apt_mirror_priority import (STOCK, URIS, BOUNDS, SECURITY, admit_platform, admit_apt_version,
     mirror_candidate, admit_sources, parse_config, admit_config, safe_read, replace_original,
-    component_diagnostics, config_diagnostics, PREFLIGHT_DIRECTORIES, fixed_directory_diagnostics,
+    component_diagnostics, config_diagnostics, security_representations, PREFLIGHT_DIRECTORIES, fixed_directory_diagnostics,
     KEYRING_PERMISSION_CHAIN, harden_original_keyring_permissions)
 
 SOURCE = '''Types: deb
@@ -62,6 +62,54 @@ def keyring_fixture(safe=False):
 
 
 class AdmissionTests(unittest.TestCase):
+    def test_numeric_false_defaults_are_admitted_without_changing_raw_config(self):
+        raw = (b'Acquire::AllowInsecureRepositories "0";\n'
+               b'Acquire::AllowWeakRepositories "0";\n'
+               b'Acquire::AllowDowngradeToInsecureRepositories "0";\n')
+        values = parse_config(raw)
+        for after in (False, True):
+            admit_config({**BOUNDS, **values}, after=after)
+        self.assertEqual(set(values.values()), {'0'})
+        self.assertEqual(security_representations(values), dict.fromkeys(values, '0'))
+        self.assertEqual(set(config_diagnostics(values).values()), {False})
+
+    def test_same_boolean_polarity_is_admitted_for_every_root_and_binary_security_leaf(self):
+        for key, expected in SECURITY.items():
+            numeric = '1' if expected == 'true' else '0'
+            for spelling in (expected, numeric):
+                for prefix in ('', 'Binary::apt-get::'):
+                    for after in (False, True):
+                        with self.subTest(key=key, spelling=spelling, prefix=prefix, after=after):
+                            admit_config({**BOUNDS, prefix + key: spelling}, after=after)
+        admit_config(dict(BOUNDS), after=True)
+
+    def test_opposite_and_unknown_security_spellings_remain_refused_at_both_scopes(self):
+        for key, expected in SECURITY.items():
+            opposite = ('false', '0') if expected == 'true' else ('true', '1')
+            for spelling in opposite + ('', '00', '01', 'TRUE', 'FALSE', 'yes', 'no', '1junk', 'private_fixture_text'):
+                for prefix in ('', 'Binary::apt-get::'):
+                    for after in (False, True):
+                        with self.subTest(key=key, spelling=spelling, prefix=prefix, after=after), self.assertRaises(RuntimeError):
+                            admit_config({**BOUNDS, prefix + key: spelling}, after=after)
+
+    def test_safe_numeric_root_never_masks_an_unsafe_binary_override(self):
+        for key, expected in SECURITY.items():
+            numeric = '1' if expected == 'true' else '0'
+            opposite = '0' if expected == 'true' else '1'
+            with self.subTest(key=key), self.assertRaisesRegex(RuntimeError, 'apt-get authentication override'):
+                admit_config({**BOUNDS, key: numeric, 'Binary::apt-get::' + key: opposite})
+
+    def test_raw_security_diagnostics_have_closed_keys_and_spellings(self):
+        values = {'Acquire::AllowInsecureRepositories': '0', 'Acquire::AllowWeakRepositories': 'false',
+                  'Acquire::https::Verify-Peer': '1', 'Acquire::https::Verify-Host': 'true',
+                  'Binary::apt-get::Acquire::Check-Date': 'private_fixture_text',
+                  'Acquire::http::Proxy': 'private_fixture_text', 'Acquire::Retries': '1'}
+        self.assertEqual(security_representations(values),
+                         {'Acquire::AllowInsecureRepositories': '0', 'Acquire::AllowWeakRepositories': 'false',
+                          'Acquire::https::Verify-Peer': '1', 'Acquire::https::Verify-Host': 'true',
+                          'Binary::apt-get::Acquire::Check-Date': 'unsupported'})
+        self.assertNotIn('private_fixture_text', repr(security_representations(values)))
+
     def test_fifo_member_refuses_before_open_or_permission_write(self):
         from unittest.mock import patch
         with keyring_fixture() as fixture:

@@ -93,6 +93,13 @@ def config_diagnostics(values):
     return result
 
 
+def security_representations(values):
+    # Closed public boolean spellings distinguish APT's numeric defaults without leaking arbitrary text.
+    keys = tuple(SECURITY) + tuple('Binary::apt-get::' + key for key in SECURITY)
+    return {key: values[key] if values[key] in ('false', '0', 'true', '1') else 'unsupported'
+            for key in keys if key in values}
+
+
 def admit_sources(raw, observe=None):
     text = raw.decode('utf-8', errors='strict')
     records = []
@@ -147,8 +154,10 @@ def admit_config(values, after=False):
         binary = values.get('Binary::apt-get::' + key)
         require(binary is None or binary == expected, 'Conflicting apt-get binary network override')
     for key, expected in SECURITY.items():
-        require(values.get(key) in (None, expected), 'APT authentication or freshness weakened')
-        require(values.get('Binary::apt-get::' + key) in (None, expected), 'apt-get authentication override')
+        # APT 2.8 FindB/StringToBool treats complete 0/1 and false/true as the same boolean polarity.
+        accepted = (None, expected, '1' if expected == 'true' else '0')
+        require(values.get(key) in accepted, 'APT authentication or freshness weakened')
+        require(values.get('Binary::apt-get::' + key) in accepted, 'apt-get authentication override')
 
 
 def fingerprint(info):
@@ -452,7 +461,8 @@ def limited_config(observe=None):
             'Limited original APT config command failed')
     values = parse_config(result.stdout)
     if observe is not None:
-        observe({'event': 'LIMITED_APT_CONFIG_OBSERVED', 'typedValues': config_diagnostics(values)})
+        observe({'event': 'LIMITED_APT_CONFIG_OBSERVED', 'typedValues': config_diagnostics(values),
+                 'securityRepresentations': security_representations(values)})
     admit_config(values)
     return result.stdout, values
 
