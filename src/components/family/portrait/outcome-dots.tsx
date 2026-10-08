@@ -95,7 +95,7 @@ export function OutcomeDots<K extends string>({
   );
 
   return (
-    <figure data-slot="outcome-dots" aria-labelledby={captionId} className="space-y-4">
+    <figure data-slot="outcome-dots" aria-labelledby={captionId}>
       <div
         aria-hidden="true"
         data-slot="outcome-dot-grid"
