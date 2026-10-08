@@ -14,7 +14,7 @@ const fixture = (event: "push" | "pull_request" = "push") => {
   const f = syntheticRawCapture(event); parents.push(f.parent); return f;
 };
 const hash = (raw: Buffer | string) => createHash("sha256").update(raw).digest("hex");
-const originalProfile = () => readFileSync("data/ci/browser-duration-profile-v2.json", "utf8");
+const originalProfile = () => readFileSync("scripts/fixtures/browser-duration-profile-two-source.json", "utf8");
 function privateFile(parent: string, name: string, value: string) {
   const file = path.join(parent, name); writeFileSync(file, value, { mode: 0o600, flag: "wx" });
   return { path: file, bytes: Buffer.byteLength(value), sha256: hash(value) };
