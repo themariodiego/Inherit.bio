@@ -28,9 +28,11 @@ export default async function ProvidersPage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Provider directory</p>
-        {/* "a real provider." holds together, so no phone line is one word. */}
+        {/* "sequencing from" and "a real provider." each hold together, so a
+            phone sets "Buy / sequencing from / a real provider." and no line
+            is one word. */}
         <h1 className="display display-lg">
-          Buy sequencing from{" "}
+          Buy <span className="whitespace-nowrap">sequencing from</span>{" "}
           <span className="whitespace-nowrap">
             a <span className="accent">real provider.</span>
           </span>
