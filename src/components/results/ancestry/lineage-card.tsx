@@ -81,12 +81,18 @@ const XX_NOTE = "XX genomes";
 export function LineageCard(props: LineageCardProps) {
   const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord, absenceStated = false } = props;
   const headingId = `${TEST_IDS[parent]}-heading`;
-  if (call === null && absenceStated) {
+  // Nothing read yet and the regions section has said so: the card is the
+  // quiet "not yet" surface, its heading with the sentence as a caption, so
+  // each panel still states its own absence (the empty-state spec reads it
+  // on all three) without three full-weight lines. The permission-off and
+  // not-generated absences keep their full note and its Reports link.
+  if (call === null && absenceStated && (props.absence === undefined || props.absence === "nothing-read")) {
     return (
-      <section data-testid={TEST_IDS[parent]} aria-labelledby={headingId} className="surface-dashed surface-pad-sm">
+      <section data-testid={TEST_IDS[parent]} aria-labelledby={headingId} className="surface-dashed surface-pad-sm space-y-1">
         <h2 id={headingId} className="title text-ink-muted">
           {HEADINGS[parent]}
         </h2>
+        <p className="caption">{NOTHING_READ}</p>
       </section>
     );
   }

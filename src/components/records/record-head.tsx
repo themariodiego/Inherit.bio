@@ -42,7 +42,10 @@ export function RecordHead({
     <div className={cn("rec-record-head", className)}>
       {crumbs}
       {bar}
-      <div
+      {/* The card is the page's header element: the count lines and the
+          layer disclosure a page passes as children stay inside `main header`,
+          which the report specs read. */}
+      <header
         data-slot="record-head"
         data-state={empty ? "empty" : "ready"}
         className="surface rec-record-card"
@@ -57,7 +60,7 @@ export function RecordHead({
             <Terrain variant="band" seed={seed} />
           </div>
         ) : null}
-      </div>
+      </header>
     </div>
   );
 }
