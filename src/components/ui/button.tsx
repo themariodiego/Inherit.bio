@@ -56,11 +56,14 @@ function Button({
 
   return (
     <Comp
-      data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      // Always the button slot, after the spread: a caller's own data-slot
+      // would otherwise detach it from the control rules (44px, press, the
+      // quiet disabled pill) keyed on this slot (round-4 S1).
+      data-slot="button"
     />
   )
 }

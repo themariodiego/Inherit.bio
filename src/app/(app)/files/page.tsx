@@ -66,10 +66,9 @@ export default async function UploadsPage() {
           it always has. No button here: the consent plate below is the
           action on this page, and its Continue turns forest once the
           disclosure is read (round-2 N1). A quiet link lands on that plate,
-          so a phone's first viewport has something to act on, and the hills
-          give up height on this route (round-3 R1). */}
+          so a phone's first viewport has something to act on (round-3 R1);
+          the hills keep the height every record head has (round-4 S3). */}
       <RecordHead
-        className="rec-record-head-compact"
         crumbs={self ? (
           <Breadcrumbs
             items={[
