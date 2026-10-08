@@ -212,7 +212,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
   }, [providers, country, usState, depth]);
 
   return (
-    <div className="stack-blocks">
+    <div className="provider-directory stack-blocks">
       {/* One plate: the filters are its labelled edge (the three controls
           and their note on the inset ground), then the explainer under the
           head's hairline. The explainer keeps its own region and heading. */}
@@ -273,8 +273,8 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
               </Select>
             </div>
           </div>
-          {/* Ink, not muted: 13px on the inset ground. */}
-          <p className="caption mt-4 max-w-measure text-ink">
+          {/* Ink, not muted (marketing.css): 13px on the inset ground. */}
+          <p className="caption mt-4 max-w-measure">
             Location is used only to filter this list, in your browser. Inherit
             never asks for a street address and never takes payment — you buy from
             the provider directly.
@@ -336,7 +336,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   <h2 id={`provider-${p.slug}-name`} className="title">
                     {p.name}
                   </h2>
-                  <p className="caption mt-0.5 max-w-measure text-ink">
+                  <p className="caption mt-0.5 max-w-measure">
                     Ships to: {p.ships_to}
                     {p.shipping.note ? ` (${p.shipping.note})` : ""}
                   </p>
@@ -383,12 +383,12 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                           {compat.detail}
                         </p>
                         {/* Labels and the capture date in ink: 13–14px on
-                            the inset ground. */}
+                            the inset ground (the caption via marketing.css). */}
                         <dl className="mt-4 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-4 gap-y-3 text-sm">
                           <dt className="text-ink">Price</dt>
                           <dd className="text-ink">
                             {prod.price}
-                            <span className="caption mt-1 block text-ink">
+                            <span className="caption mt-1 block">
                               Captured {p.last_verified_at}
                             </span>
                           </dd>
@@ -526,7 +526,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
 
                 <div className="caption mt-6 space-y-1 border-t border-line pt-4">
                   {p.data_practices_note ? (
-                    <p>
+                    <p className="max-w-measure">
                       <strong className="font-semibold text-ink">Data practices:</strong> {p.data_practices_note}{" "}
                       {p.privacy_policy_url ? (
                         <a
@@ -540,7 +540,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                       ) : null}
                     </p>
                   ) : null}
-                  <p>
+                  <p className="max-w-measure">
                     Verified {p.last_verified_at} ·{" "}
                     {p.source_urls.slice(0, 3).map((u, i) => (
                       <Fragment key={u}>
@@ -549,7 +549,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                           href={u}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="prose-link"
+                          className="prose-link whitespace-nowrap"
                         >
                           source {i + 1}
                         </a>

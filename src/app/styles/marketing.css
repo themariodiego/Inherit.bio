@@ -68,3 +68,7 @@
    labelled controls and their note instead of the one-line eyebrow row. */
 .filter-head { flex-direction: column; align-items: stretch; padding-block: 1rem; }
 @media (min-width: 768px) { .filter-head { padding-block: 1.25rem; } }
+/* The directory's captions on the inset grounds (plate heads, product blocks)
+   read in ink: muted 13px on inset is the product's lowest pair at 6.3:1, and
+   `.caption` sets its own colour, so a utility cannot lift it. */
+.provider-directory .plate-head .caption, .provider-directory .surface-inset .caption { color: var(--ink); }
