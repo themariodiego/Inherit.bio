@@ -195,6 +195,11 @@ body {
 /* One anchor offset for the whole product: the 64px header plus 32px of air.
    Targets add no scroll-margin of their own (round-1 F1). */
 html { scroll-padding-top: 6rem; }
+/* The marketing header wraps to two rows (110px) on phones, so anchors there
+   land with the same 32px of air under it. */
+@media (max-width: 767px) {
+  html:has([data-surface="marketing"]) { scroll-padding-top: calc(110px + 2rem); }
+}
 ::selection { background: var(--tint); color: var(--ink); }
 main { overflow-wrap: break-word; }
 
@@ -329,7 +334,7 @@ h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25re
 .link-surface:hover { border-color: var(--forest); background: var(--surface-inset); }
 /* Keyboard focus: one ring around the whole surface, never a second one on the
    label inside it (round-1 F8 / m6). */
-.link-surface:focus-within { border-color: var(--forest); outline: 3px solid var(--forest); outline-offset: 2px; }
+.link-surface:focus-within { outline: 3px solid var(--forest); outline-offset: 2px; }
 .link-surface :is(a, button):focus-visible { outline: none; }
 .link-surface .link-arrow { transition: transform var(--motion-reveal) var(--easing-settle); }
 .link-surface:hover .link-arrow, .link-surface:focus-within .link-arrow { transform: translate(3px, -3px); }

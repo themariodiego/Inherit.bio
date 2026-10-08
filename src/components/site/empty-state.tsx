@@ -23,7 +23,7 @@ export function EmptyState({
     <div data-slot="empty-state" className={cn("surface-inset surface-pad", className)}>
       <div className="max-w-measure space-y-3">
         {title ? <div className="title text-ink">{title}</div> : null}
-        <div className="text-ink-muted">{children}</div>
+        <div className="text-ink">{children}</div>
         {action ? <div className="pt-2">{action}</div> : null}
       </div>
     </div>
