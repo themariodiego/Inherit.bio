@@ -64,7 +64,9 @@
  * Settings: 56px rows with the control on the right; section tiles.
  * ------------------------------------------------------------------------- */
 .rec-settings-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; min-height: var(--size-row); padding: 0.75rem 1.25rem; }
-.rec-settings-text { flex: 1 1 18rem; min-width: 0; }
+.rec-settings-text { flex: 1 1 12rem; min-width: 0; }
+/* A plate head's meta ("Version 1"): never wraps, never squeezed. */
+.rec-plate-meta { flex: none; white-space: nowrap; }
 .rec-settings-rows { min-inline-size: 0; }
 .rec-settings-rows > .rec-settings-row + .rec-settings-row { border-top: 1px solid var(--line); }
 .rec-tile { display: block; padding: 1.25rem 3rem 1.25rem 1.5rem; min-height: var(--size-control); }

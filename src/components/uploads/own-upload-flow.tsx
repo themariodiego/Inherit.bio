@@ -91,7 +91,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
   return <section className="plate">
     <div className="plate-head">
       <h2 className="eyebrow">{own ? COPY.ownHeading : COPY.insuranceHeading}</h2>
-      <p className="caption">Version {view.artifact.version}</p>
+      <p className="caption rec-plate-meta">Version {view.artifact.version}</p>
     </div>
     <div className="plate-body rec-stack">
       <p data-legal-summary className="max-w-measure text-sm">{view.artifact.summary}</p>
