@@ -1,4 +1,180 @@
+## 8 October 2026 — Three-source browser timing calibration
+
+The committed V2 timing profile adds only accepted protected-main run
+`37725805440` attempt 1, exact head `575d9191227bae67323022cc3d46b6e4b3a8cd8b`
+and tree `c75aa59249346e9e8fcee1c006107e4079122318`. Its six original receipts
+cover the same 569 cases and 95 whole project/file groups. Both prior source
+objects and the exact maximum-per-case estimator remain unchanged. This source
+preparation is unqualified until the existing opt-in raw-history CLI reproduces
+it from separately reviewed genuine Node-visible original input admission.
+
+The original two-source profile bytes are retained as an explicit regression
+fixture. Existing raw append positives, custody/overwrite/duplicate refusals,
+conservative-cost checks and fourth-source refusal use that unchanged fixture.
+The selected-profile test still checks both original 95/569 histories, and adds
+exact third-run/head/tree/metadata/ZIP provenance and 95/569 expectations. A
+new control verifies conservative old/current costs and the observed Family
+Health Picture weight. No old assertion, browser test, case identity, queue or
+accessibility sweep guard, retry limit, time cap or worker count is removed.
+
+The existing six-job scheduler is unchanged. A read-only same-sample calculation
+suggests lower maximum assigned case duration; it is not an observed speedup.
+Current-source local qualification and complete exact-final-head hosted suites
+remain required before merge. No active font cache or product policy changes.
+
 # Test diff register
+
+## 2026-10-08 — Integrate only the owner-approved Emerging confirmation change on current main
+
+Reuse the exact eight-path commit 2b36e720 delta against f2837f69 on accepted main 575d9191. Keep the original Emerging browser case, all 114 lines of the meaningful policy/source test, every original report-skeleton assertion, the report page and mandated warning strings unchanged. Preserve all current decisions and test-register history; repin only the route register brief hash. The older branch contains unrelated unmerged work and is not integrated. Its historical 122 focused passes do not qualify this current-main source. Current focused, type, lint, ten quality gates and complete final-head hosted unit/database/browser results are UNRUN here and remain required. No source, selector, timeout, retry, coverage or activation rule is weakened.
+
+## 2026-10-02 — Owner adds the unchanged confirmation block to Emerging reports
+
+The owner selected Include Emerging for brief §12 item 4. Expand only the closed confirmation set to clinical, established and emerging. Keep the exact laboratory paragraph and counsellor sentence, the real non-collapsible How sure we are rendering, every original page/reader/authority path, evidence definition, result, uncertainty, provenance, citation and safety statement. Record the dated answer and update the five relevant brief clauses and its exact register hash together. This changes a disclosure policy, not evidence quality, clinical acceptance or model/condition activation.
+
+Add strict closed-level/text/source-wiring cases, including planted wrong-level, removed, hidden and missing companion paragraphs. Add one genuine browser case on the original generated own-file Emerging report at both viewport sizes: both exact paragraphs stay visible with no control while the same headings, real genotype/subject attribution, unavailable-range explanation, full source provenance and original safety statements remain. Preserve every original copy and report-skeleton assertion byte-for-byte; no timeout, skip, retry, provider, route-state ratchet, density threshold, redesign or clinical permission changes. Focused checks are separate from complete hosted browser/accessibility qualification on the final integrated source.
+
+The first new focused copy assertion incorrectly graded the unchanged mandated paragraph with raw FK (9.93), omitting G1.10's existing registered-term handling. Preserve that failed log. The new assertion now proves both exact strings are present in the real readability corpus and uses the unchanged actual gate; it still keeps the sentence cap and exact full text. No original scorer, term register, threshold or copy assertion changes.
+
+
+## 2026-10-08 — Exercise Path B's fixed 30-day held-source expiry in the browser
+
+Add the missing expiry journey after the four existing serial Path B cases. All original cases, assertions, helpers, trace restrictions and time limits remain unchanged. The new case uses the same real signature/upload/mail/rights screens and unchanged retention endpoint, with the existing 360-second journey and bounded ten-drain convention.
+
+The initial upload, registered adult.unconfirmed-30d row and service-retention phase must share the fixed upload-plus-30-day deadline. Mail delivery and rights-session activation must not renew it, and a real sweep before the deadline must preserve the held revision. The existing local Docker/psql temporal-fixture convention then ages only that synthetic revision's held clock and its two registered retention clocks together, with a 10-second subprocess cap and exact one-row checks. This does not add a production bypass, database grant, direct expiry RPC or caller-selected retention target.
+
+The unchanged executor must complete adult_unconfirmed_source_expired, remove the upload session and held Storage source while keeping its already-removed staging key absent, invalidate notice credentials and revoke the previously active rights session. Privileged re-queries and the browser's unavailable session verify the result. A separate unexpired revision must retain its exact source tuple and actual bytes. This temporal fixture is not 30 days of hosted observation. All current local and full hosted checks are UNRUN; no retention or production proof is claimed by this source preparation.
+
+## 2026-10-08 — account for implicit form targets and ambiguous owners
+
+The first method-reader source was held without execution: it omitted forms
+without an explicit action and could resolve a form id shared with a non-form
+node. Every native form opening is now represented. An implicit current-page
+target remains unresolved, and a duplicated id or non-form owner requires
+review regardless of source order. Even a valid explicit submitter override
+does not erase the unresolved base form.
+
+The existing source has twelve actionless GET/default openings in eleven client
+files whose attached handlers cancel default submission. Their review is sealed
+to complete unchanged file SHA256 values and exact opening counts. Adding an
+onSubmit prop alone is never an exemption: a new form, changed method, changed
+handler bytes or missing inventory row fails. The actual two resolved native
+forms remain the genome GET and sign-out POST. No component or register changes
+are made. JavaScript-disabled/pre-hydration current-page submission and dynamic
+component interiors remain outside this static review and need runtime evidence.
+
+All 35 original test bodies and expectations are retained. The first new inventory
+expectation now accounts for all 14 openings, with the twelve explicitly reviewed
+clients and two resolved native forms. Three additional methods cover implicit
+actions, non-form id collisions, and exact client-review bytes/counts. All 48 cases
+remain UNRUN at this source freeze; no acceptance or release verdict changes.
+
+## 2026-10-08 — check native form methods against the route register
+
+The form correspondence tests previously checked destinations without reading
+the request method. A GET form could therefore point at the POST-only sign-out
+endpoint and still pass the static destination check. The existing genome
+browser GET form, sign-out POST form, components and register remain unchanged.
+
+The added reader uses JSX attributes and the same route-register entries. An
+omitted native method defaults to GET; an endpoint must declare the submitted
+method, and a page accepts GET. Unsupported methods, unresolved expressions,
+duplicate attributes and spreads require review rather than an assumed request.
+Explicit submitter action/method overrides and literal same-file form ownership
+are checked together, including unknown or duplicate owners. This is static
+correspondence, not a claim about rendered callbacks or runtime authorization.
+Spread-only forms and native button/input or existing Button/Input wrapper
+spreads inside a resolved target form also refuse; unresolved props cannot hide
+the method from this check. Dynamically rendered component interiors remain
+outside the static JSX inventory and still require runtime evidence.
+
+All previous test bodies and expectations are retained. Ten added methods cover
+the unchanged actual two-form inventory and meaningful positive/negative
+fixtures for these cases. No acceptance verdict changes. Current checks are
+unrun at source freeze; local and final hosted qualification remain required.
+
+## 2026-10-08 — Bound publisher-only signed APT refresh and preserve consumer admission
+
+The publisher's fresh `checks` runner now reuses the admitted APT driver inside one fresh transient root service, after the seven execution prerequisites and strict coverage aggregate. The existing four main-only maintenance steps, eight required jobs, exact font key and nine official package pins remain. Publisher lookup hits skip maintenance; this is separate from consumer warm admission, whose original signed refresh and post-copy fatal checks remain unchanged.
+
+The service uses the documented 255 family, `Type=exec`, a runtime bound, control-group termination and five-second stop settlement. Its work is at most155 seconds inside the unchanged210-second shared/180-second command/four-minute step bounds, with explicit startup and closure/catch reserves. Only exact transient root ownership permits failure cleanup. Original driver output, the successful signed-refresh terminal receipt, current versions and an absent owned cgroup are required before publication; unavailable, failed, timed-out or unclosed supervision never enables a cache save.
+
+All prior archive, reader, shard and synthetic consumer expectations remain unchanged. Eight added pure controls cover argument/path ownership, budget boundaries, documented version admission, pre-existing/active/ambiguous unit refusal, cleanup ownership, missing/forged/nonterminal signed receipts and populate-only refresh selection. These tests do not establish Linux descendant settlement. Three separate tiny, fresh-unit Linux controls are planned for normal/failure/timeout service paths with TERM-resistant children in another session; actual hosted image/driver/full-suite and later protected-main publication remain distinct requirements. No current execution, cache hit, speed or release result is claimed.
+
+## 2026-10-08 — admit closed equivalent APT security boolean representations
+
+**Preserved first result.** PR296 head f3b06f6f3f31fe048b4eef3c4b4f7261f082cfeb, run37704326980 attempt1, refused `APT authentication or freshness weakened` before keyring hardening or any APT-file mutation. Both complete originals report only three security leaves as typed false, with retry1 and HTTP/HTTPS15. The previous diagnostic intentionally mapped both false and0 to false, so exact per-leaf raw spellings are unknown; the refusal implies at least one numeric0 representation. This is a bounded inference, not a claim that raw spellings were logged.
+
+**Primary semantics and narrow correction.** The official Ubuntu APT2.8.3 source initializes those three leaves with false through an integer serializer that emits0. Configuration::FindB uses StringToBool, which accepts complete0/1 and false/true as equivalent boolean polarities. Admission now accepts only the matching closed pair false/0 or true/1, or the existing absent default, for each fixed security leaf at root and Binary::apt-get scopes. Opposite polarity, unknown/malformed text and unsafe binary overrides still refuse. Bounds, strict update, trust, source/key custody, permission checks, full installer, eight jobs and all time caps stay exact.
+
+**Meaningful controls and diagnostics.** Five added pure methods cover numeric false defaults, every security leaf/scope and both admission phases, opposite/malformed/unknown values, safe-root/unsafe-binary conflicts, and closed key/spelling masking. All36 previous method bodies stay exact. The existing typed diagnostic now also emits only fixed security keys and the known raw spellings false/0/true/1; all other text becomes `unsupported`. All41 controls are unrun at this source freeze. No privileged APT runs on Mac, unchanged hosted rerun, signed-metadata or full-suite credit is claimed.
+
+## 2026-10-08 — harden only original public keyring permission modes
+
+**Trigger and original refusal.** Draft PR296 head af830d2d75c5906b625e72d691138b4c06dc8860, run37700502102 attempt1, correctly refused root-owned source/trust directory admission before any APT mutation. Complete repository/browser6 originals actually show /usr/share/keyrings UID0/GID0 canonical/stable directory mode0777; the other four fixed public directories were0755. Ancestor and keyfile modes were not observed there and remain unknown. The exact image tag's recursive /usr/share chmod777 is source provenance, not proof of their current state.
+
+**Narrow restoration and preserved security.** On admitted hosted Ubuntu24 only, follow the original root→usr→share→keyrings directory FD chain with O_NOFOLLOW. Preflight the complete bounded flat original public-key inventory before any fchmod: canonical named FDs, UID0, regular NL1/max4MiB files, already-safe modes or exactly the observed image777 mode. Root/usr must already be safe. Any unsupported member, ownership, mode, link, drift or custody failure refuses before the first write. Retain original public bytes and metadata privately, then tighten only original777 share/keyring directory FDs to0755 and original777 keyfile FDs to0644; all already-safe modes remain. No recursive walk, chown, byte/key/route addition or trust predicate relaxation occurs. Recheck exact original bytes/identities and run the unchanged strict no022 source/key census before mirror/config/APT mutation. A later failure never automatically reopens unsafe permissions; the disposable runner can be discarded and the source change reverted.
+
+**Pre-execution review correction.** The first source-only hardening proposal V7 was held without execution: opening a member before its regular-file check could block on FIFO, and post-close fresh census equality was missing. The successor admits through-parent nofollow metadata before O_NONBLOCK/O_NOFOLLOW opens, then closes all original handles and reopens the full chain/flat inventory to compare post-mode identities and unchanged bytes. The caller compares the strict keyring census to that admitted vector before trusting it. FIFO/replacement and close-time identity/content/member drift controls cover those failures; all earlier32 test bodies are retained.
+
+**Proof scope.** Permission repair preserves existing byte custody and does not establish prior key authenticity. Fresh signed metadata, unchanged complete Playwright installer, all eight mandatory jobs and original deadlines/assertions remain required. New pure fixture controls exercise full preflight/no-write negatives, original-FD tightening/custody, safe-mode no-op, drift and failure cleanup. Prior22 method bodies remain exact; all current controls are UNRUN at this source freeze. No privileged helper/APT runs on Mac and no failed hosted head is rerun.
+
+## 2026-10-08 — observe fixed public APT directory metadata before refusal
+
+**Trigger and preserved result.** Draft PR296 successor head `d34204be8f65ff03e3e614922138ab79140cb4f4`, run `37696895989` attempt1, refused `Root-owned source/trust directory required` before any APT write. Complete repository/browser6 originals observe APT2.8.3 and both stock component paragraphs ordered main/universe/restricted/multiverse. The rejected directory path, UID and mode were not emitted and remain UNKNOWN. The exact runner-image tag's configure-system.sh contains a recursive chmod777 on /usr/share; that primary source comparison does not establish the actual rejected path or permissions.
+
+**Narrow source change.** One pre-mutation metadata pass reports all five fixed public source/trust/config directory literals with bounded UID/GID/mode/type/canonical/identity-stability fields. It lists no members, emits no arbitrary target/error text, reads no auth values and changes no permissions. Every original ownership, non-writable, source/key/trust, config, signed-update and full-installer gate stays unchanged.
+
+**Meaningful controls and remaining proof.** Five synthetic methods cover the closed five-path/read-only scope, completion after unsafe/missing/symlink/unavailable observations, identity drift and bounded IDs, continued refusal of non-root/group/world-writable source/trust directories, and the Python3.12 resolution-loop RuntimeError completion/masking case. All17 previous methods, all24 component permutations and unchanged workflow/test/job caps remain exact. All22 current pure methods and the same14 local commands are UNRUN at source freeze. The original failed run is retained without rerun; fresh hosted metadata and successful signed update/complete installer remain required.
+
+## 2026-10-08 — preserve Ubuntu source components without an order assumption
+
+The first APT draft head `62218b56f85c0091cf9e0d5361cfca15600e9b0b` failed its
+hosted admission at `Stock Ubuntu components required`, before any APT-file
+mutation or full installer. The original component content/order and exact
+installed APT version were not logged and remain unknown. The retained original
+run is 37693169629, attempt 1; this correction does not rerun that head.
+
+Admission now requires exactly `main`, `restricted`, `universe` and `multiverse`
+once each, while retaining the complete original source bytes and order. The
+previous fixed list order was outside the intended source/key/trust preservation
+constraint. This does not assert that component order can never matter to APT.
+No source paragraph, suite, route, key, trust option or installer is rewritten.
+
+Separate pure controls exercise all 24 component permutations, reject missing,
+duplicate and extra components, and check bounded public diagnostics. Accepted
+observed APT versions and known component order are logged before a later
+refusal; unknown component/config tokens become the fixed label `unsupported`.
+Config diagnostics expose only whitelisted typed network/security leaves. All
+12 previous pure methods, installer/workflow controls and time limits remain.
+Current hosted settings, signed metadata, full installer and full CI success
+still require original successor evidence.
+
+## 2026-10-07 — Keep required CI work fail-closed around optional font maintenance
+
+The genuine cold PR295 unit run exposed the shard workflow guard's blanket `continue-on-error` text ban. All 17 shard controls and every other banned narrowing/artifact pattern remain. The guard now parses the actual YAML through the source-bound hosted contract: every job and ordinary mandatory step must omit the flag entirely, including `false`; only the exact reviewed optional cache maintenance shapes may declare `true`. Three additional reader controls mutate every ordinary job/step with both flag values and disguise a unit step as a cache action. Full unit/database/browser requirements, discovery, coverage, retries and time limits stay unchanged. Original failed run and log remain recorded separately; this note does not claim later validation.
+
+## 2026-10-07 — Publish font archives before adopting active CI restores
+
+The publisher-only precursor retains the seven complete installation/test jobs
+and the final coverage aggregate. It publishes only after those seven jobs and
+the aggregate step succeed; the eighth `checks` job finishes after optional
+publication. PRs never publish, and installation jobs execute no cache restores
+or warm seeding in this precursor.
+
+The seventeen archive integrity/version/provenance controls remain exact. All
+thirty-seven consumer reader controls remain, including refusal of prefix
+restores and skipped/failed warm validation. Tests that require consumer steps
+now use an explicit synthetic three-step fixture matching the reviewed consumer
+workflow; the actual publisher workflow supplies the main-only publication
+fixtures. No assertion is removed or loosened. Two additional controls prove
+the real publisher has exactly eight jobs and no active restore/seed, and prove
+synthetic consumer validation remains mandatory before the full installer.
+
+The precursor seeds a genuine protected-main key before a separate consumer
+can prove real exact-key warm hits. Complete local and exact-head hosted checks
+remain required; the consumer draft and prior evidence are preserved. This
+entry records a source change, with no execution or speed claim.
 
 ## 2026-10-06 — Enforce the private comprehension configuration boundary
 

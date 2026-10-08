@@ -253,6 +253,31 @@ existing outputs are rejected. Its private proposal and audit need ordinary
 source review before a manual profile update. Use at most three explicitly
 reviewed runs. No profile update runs automatically.
 
+For the hosted result reader's original `.raw` layout, use the explicit append
+path after the original capture pins and Node file identities have been reviewed:
+
+```text
+pnpm exec tsx scripts/ci-browser-duration-history.run.mts --raw-append /absolute/raw-append-plan.json exact-plan-sha256 /absolute/fresh-output-directory
+```
+
+The closed plan has `schemaVersion: 1`, `format: "hosted-reader-raw-v1"` and
+three `{path, bytes, sha256}` pins: `existingHistory`, `inputAdmission` and
+`captureAdmission`. The plan and admission files must be owned private files.
+`observeCurrentRawInput` records genuine Node file identities from the original
+directory and twelve independently pinned inputs; it does not confer approval.
+The semantic admission retains the original capture receipt pin, exact request,
+collector source vector and request input pin. The raw path checks original
+owned file descriptors, the complete directory inventory, all eight successful
+jobs, seven same-attempt authenticated archives, historical coverage, queues
+and sweeps. It never constructs a legacy capture receipt.
+
+Append requires exactly two existing sources and one distinct new run. It keeps
+both complete source objects and the exact maximum-per-case estimator. Only a
+fresh private proposal and audit are written; the tracked profiles remain
+unchanged. Review the complete proposal and qualify it on the current source
+before any manual profile update. A saved historical run supplies timing data,
+not current test discovery, current CI approval or measured speed improvement.
+
 This candidate is unqualified source. The two green runs support an in-sample
 calibration model, with no held-out speed proof. PR285 passed in 19m09 and the
 same-tree main run passed in 18m16; neither qualifies this new estimator. Current

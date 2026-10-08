@@ -14,21 +14,36 @@ import { reserveResultOutput, captureHostedGet } from "./hosted-ci-result.run.mj
 
 const require = createRequire(import.meta.url), localRequire = createRequire(require.resolve("eslint"));
 const yaml = localRequire("js-yaml") as { load(value: string): unknown };
-const contract = () => hostedWorkflowContract(yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")));
+type WorkflowFixture = { jobs: Record<string, { steps: { name?: string; uses?: string; run?: string; if?: string; with?: Record<string, unknown> }[] }> };
+const actualWorkflow = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as WorkflowFixture;
+// These source-declared consumer steps are synthetic test inputs only. The
+// publisher workflow executes neither restore nor warm, while their mandatory
+// validation and exact-key refusals remain covered before later adoption.
+function consumerWorkflow() {
+  const value = actualWorkflow();
+  const steps = JSON.parse(readFileSync(new URL("./fixtures/ci-font-consumer-steps.json", import.meta.url), "utf8")) as WorkflowFixture["jobs"][string]["steps"];
+  for (const family of ["repository-checks", "browser"]) {
+    const at = value.jobs[family].steps.findIndex(step => step.name === "Install Playwright Chromium");
+    if (at < 0) throw new Error("Complete official installer is missing from the synthetic consumer fixture");
+    value.jobs[family].steps.splice(at, 0, ...structuredClone(steps));
+  }
+  return value;
+}
+const contract = (consumer = false) => hostedWorkflowContract(consumer ? consumerWorkflow() : actualWorkflow());
 const oid = (value: string) => value.repeat(40);
 function request(): HostedResultRequest {
   return hostedResultRequestSchema.parse({ schemaVersion: 1, repository: "example/ci-fixture", runId: 123,
     runAttempt: 1, workflow: ".github/workflows/ci.yml", head: oid("a"), testedHead: oid("a"), tree: oid("d"), event: "push", branch: "main" });
 }
-function metadata(req = request()) {
-  const source = contract(), run = { id: req.runId, run_attempt: req.runAttempt, head_sha: req.head,
+function metadata(req = request(), consumer = false) {
+  const source = contract(consumer), run = { id: req.runId, run_attempt: req.runAttempt, head_sha: req.head,
     status: "completed", conclusion: "success", event: req.event, path: req.workflow,
     created_at: "2026-10-05T12:00:00Z", updated_at: "2026-10-05T12:02:01Z", repository: { full_name: req.repository } };
   const jobs = { total_count: source.names.length, jobs: source.jobs.flatMap(family => family.names.map((name, i) => ({
     id: source.names.indexOf(name) + 10, name, run_id: req.runId, run_attempt: req.runAttempt, head_sha: req.head,
     status: "completed", conclusion: "success", started_at: "2026-10-05T12:00:05Z", completed_at: "2026-10-05T12:02:00Z",
     steps: family.named.map((step, n) => ({ name: step, number: n + 1, status: "completed",
-      conclusion: family.failureUploads.includes(step) ? "skipped" : "success" })), fixtureIndex: i,
+      conclusion: family.failureUploads.includes(step) || req.event === "pull_request" && family.fontCache.some(item => item.name === step && item.skip) ? "skipped" : "success" })), fixtureIndex: i,
   }))) };
   const commit = { sha: req.testedHead, tree: { sha: req.tree }, parents: [{ sha: oid("b") }, { sha: oid("c") }] };
   const context = { name: "main", commit: { sha: req.head } };
@@ -70,7 +85,52 @@ function repositoryLog(unitCases = 9) {
     + header("pnpm e2e:lighthouse") + rows.join("\n") + "\nLighthouse G1.14 passed: fixture\n";
 }
 
+describe("mandatory signed APT setup", () => {
+  it("refuses missing, optional, reordered or altered admission and incomplete installs", () => {
+    const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
+      jobs: Record<string, { steps: { name?: string; run?: string; if?: string; "continue-on-error"?: boolean }[] }>
+    };
+    for (const family of ["repository-checks", "browser"]) {
+      for (const mutation of ["missing", "conditional", "optional", "command", "order", "installer"]) {
+        const changed = source(), steps = changed.jobs[family].steps;
+        const index = steps.findIndex(item => item.name === "Admit signed Ubuntu APT mirror fallback");
+        expect(index).toBeGreaterThanOrEqual(0);
+        if (mutation === "missing") steps.splice(index, 1);
+        if (mutation === "conditional") steps[index].if = "always()";
+        if (mutation === "optional") steps[index]["continue-on-error"] = true;
+        if (mutation === "command") steps[index].run += " || true";
+        if (mutation === "order") [steps[index], steps[index + 1]] = [steps[index + 1], steps[index]];
+        if (mutation === "installer") steps[index + 1].run = "pnpm exec playwright install chromium";
+        expect(() => hostedWorkflowContract(changed)).toThrow();
+      }
+    }
+  });
+});
+
 describe("source-bound hosted result readback", () => {
+  it("keeps the actual publisher workflow free of active restores and warm seeding", () => {
+    const workflow = actualWorkflow(), source = hostedWorkflowContract(workflow);
+    expect(source.names).toEqual(expect.arrayContaining(["repository-checks", "checks", ...Array.from({ length: 6 }, (_, i) => `browser (${i + 1})`)]));
+    expect(source.names).toHaveLength(8);
+    for (const family of ["repository-checks", "browser"]) {
+      expect(workflow.jobs[family].steps.filter(step => step.uses?.startsWith("actions/cache/"))).toEqual([]);
+      expect(workflow.jobs[family].steps.filter(step => step.run?.includes("ci-browser-font-cache"))).toEqual([]);
+      expect(workflow.jobs[family].steps.find(step => step.name === "Install Playwright Chromium")).toEqual({ name: "Install Playwright Chromium", run: "pnpm exec playwright install --with-deps chromium" });
+      expect(source.jobs.find(job => job.family === family)!.fontCache).toEqual([]);
+    }
+    expect(source.jobs.find(job => job.family === "checks")!.fontCache).toHaveLength(4);
+  });
+  it("keeps synthetic consumer validation mandatory before the unchanged complete installer", () => {
+    const workflow = consumerWorkflow();
+    for (const family of ["repository-checks", "browser"]) {
+      const steps = workflow.jobs[family].steps;
+      expect(steps.findIndex(step => step.name === "Validate cached fonts against fresh authenticated Ubuntu metadata")).toBeLessThan(steps.findIndex(step => step.name === "Install Playwright Chromium"));
+    }
+    const v = metadata(request(), true);
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
+    v.jobs.jobs[0].steps.find(step => step.name === "Validate cached fonts against fresh authenticated Ubuntu metadata")!.conclusion = "skipped";
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).toThrow(/Mandatory step/);
+  });
   it("refuses an unreviewed producer member or source step condition", () => {
     const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
       jobs: Record<string, { steps: { uses?: string; if?: string; with?: Record<string, unknown> }[] }> };
@@ -81,6 +141,30 @@ describe("source-bound hosted result readback", () => {
     expect(() => hostedWorkflowContract(wrongMember)).toThrow();
     const wrongCondition = source(); wrongCondition.jobs["repository-checks"].steps[0].if = "cancelled()";
     expect(() => hostedWorkflowContract(wrongCondition)).toThrow();
+  });
+  it.each([false, true])("refuses ordinary job and step error-tolerance declarations %s", flag => {
+    const workflow = consumerWorkflow() as { jobs: Record<string, { "continue-on-error"?: boolean;
+      steps: { name?: string; "continue-on-error"?: boolean }[] }> };
+    const source = hostedWorkflowContract(workflow);
+    for (const [family, job] of Object.entries(workflow.jobs)) {
+      const changedJob = structuredClone(workflow); changedJob.jobs[family]["continue-on-error"] = flag;
+      expect(() => hostedWorkflowContract(changedJob)).toThrow(/Required jobs/);
+      const allowed = source.jobs.find(item => item.family === family)!.fontCache.filter(item => item.failure).map(item => item.name);
+      for (const [index, step] of job.steps.entries()) if (!allowed.includes(step.name ?? "")) {
+        const changedStep = structuredClone(workflow); changedStep.jobs[family].steps[index]["continue-on-error"] = flag;
+        expect(() => hostedWorkflowContract(changedStep)).toThrow();
+      }
+    }
+  });
+  it("refuses a mandatory step disguised as an optional font cache action", () => {
+    const workflow = consumerWorkflow() as { jobs: Record<string, { steps: {
+      name?: string; run?: string; "continue-on-error"?: boolean }[] }> };
+    // Remove the legitimate cache step from this negative fixture so the forged
+    // unit reaches shape validation rather than the duplicate-name guard.
+    workflow.jobs["repository-checks"].steps = workflow.jobs["repository-checks"].steps.filter(step => step.name !== "Restore only the exact Ubuntu font archives");
+    const unit = workflow.jobs["repository-checks"].steps.find(step => step.name === "Unit tests")!;
+    unit.name = "Restore only the exact Ubuntu font archives"; unit["continue-on-error"] = true;
+    expect(() => hostedWorkflowContract(workflow)).toThrow(/Unsupported font cache restore/);
   });
   it("accepts a two-parent main push and derives separate wall/API-update times", () => {
     const v = metadata(); const result = verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context);
@@ -117,6 +201,55 @@ describe("source-bound hosted result readback", () => {
     const v = metadata(); expect(verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).toBeDefined();
     v.jobs.jobs[0].steps.push({ name: "Unknown upload", number: 100, status: "completed", conclusion: "skipped" });
     expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).toThrow();
+  });
+  it("accepts main cache-hit publication skips while keeping lookup and the aggregate mandatory", () => {
+    const v = metadata();
+    const checks = v.jobs.jobs.find(job => job.name === "checks")!;
+    for (const name of ["Download and authenticate the pinned official font archives", "Publish verified font archives after all checks passed"]) checks.steps.find(step => step.name === name)!.conclusion = "skipped";
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
+    for (const name of ["Look up the exact font archive key without downloading", "Require exact expected, assigned and executed case equality"]) {
+      const w = metadata(); w.jobs.jobs.find(job => job.name === "checks")!.steps.find(step => step.name === name)!.conclusion = "skipped";
+      expect(() => verifyHostedMetadata(request(), w.source, w.run, w.jobs, w.commit, w.context)).toThrow(/Mandatory step/);
+    }
+  });
+  it("requires all four main-only cache maintenance steps to skip on a PR", () => {
+    const value: Record<string, unknown> = { ...request(), event: "pull_request", pullRequest: 7, base: oid("b"), head: oid("c"), testedHead: oid("a") }; delete value.branch;
+    const req = hostedResultRequestSchema.parse(value);
+    if (req.event !== "pull_request") throw new Error("Synthetic PR shape differs");
+    const v = metadata(req);
+    const context = { number: 7, state: "open", head: { sha: req.head }, base: { sha: req.base }, merge_commit_sha: req.testedHead };
+    expect(() => verifyHostedMetadata(req, v.source, v.run, v.jobs, v.commit, context)).not.toThrow();
+    const checks = v.jobs.jobs.find(job => job.name === "checks")!;
+    for (const cache of v.source.jobs.find(job => job.family === "checks")!.fontCache) {
+      const item = checks.steps.find(step => step.name === cache.name)!; item.conclusion = "success";
+      expect(() => verifyHostedMetadata(req, v.source, v.run, v.jobs, v.commit, context)).toThrow(/ran on a PR/);
+      item.conclusion = "skipped";
+    }
+  });
+  it("permits only the explicitly optional cache actions to fail", () => {
+    const v = metadata(request(), true);
+    for (const job of v.jobs.jobs) {
+      const source = v.source.jobs.find(source => source.names.includes(job.name))!;
+      for (const cache of source.fontCache.filter(cache => cache.failure)) job.steps.find(step => step.name === cache.name)!.conclusion = "failure";
+    }
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
+    for (const name of ["Install Playwright Chromium", "Validate cached fonts against fresh authenticated Ubuntu metadata", "Unit tests", "Typecheck"]) {
+      const w = metadata(request(), true); w.jobs.jobs[0].steps.find(step => step.name === name)!.conclusion = "failure";
+      expect(() => verifyHostedMetadata(request(), w.source, w.run, w.jobs, w.commit, w.context)).toThrow(/Mandatory step/);
+    }
+  });
+  it("refuses changed cache commands, prefix restores, relocated publication and a ninth job", () => {
+    const source = consumerWorkflow;
+    const wrongCommand = source(); wrongCommand.jobs.checks.steps.find(step => step.name === "Download and authenticate the pinned official font archives")!.run += " --unreviewed";
+    expect(() => hostedWorkflowContract(wrongCommand)).toThrow();
+    const prefix = source(); prefix.jobs.browser.steps.find(step => step.name === "Restore only the exact Ubuntu font archives")!.with!["restore-keys"] = "font-debs-v1-";
+    expect(() => hostedWorkflowContract(prefix)).toThrow();
+    const relocated = source(); const at = relocated.jobs.checks.steps.findIndex(step => step.name === "Prepare main-only font archive publication"); relocated.jobs.checks.steps.unshift(...relocated.jobs.checks.steps.splice(at));
+    expect(() => hostedWorkflowContract(relocated)).toThrow(/complete aggregate/);
+    const wrongCondition = source(); wrongCondition.jobs.checks.steps.find(step => step.name === "Publish verified font archives after all checks passed")!.if = "always()";
+    expect(() => hostedWorkflowContract(wrongCondition)).toThrow();
+    const extra = source(); extra.jobs["font-cache"] = extra.jobs.checks;
+    expect(() => hostedWorkflowContract(extra)).toThrow(/job family/);
   });
   it("discovers exact producer members and refuses missing/foreign/mixed-attempt artifacts", () => {
     const v = artifactInventory(); expect(coverageArtifacts(request(), v).map(row => row.member)).toEqual([

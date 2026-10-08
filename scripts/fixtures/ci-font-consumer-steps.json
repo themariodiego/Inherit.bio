@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Prepare exact font archive cache key",
+    "id": "fonts",
+    "run": "pnpm exec tsx scripts/ci-browser-font-cache.run.mts prepare"
+  },
+  {
+    "name": "Restore only the exact Ubuntu font archives",
+    "id": "font-cache-restore",
+    "uses": "actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25",
+    "continue-on-error": true,
+    "timeout-minutes": 1,
+    "env": { "SEGMENT_DOWNLOAD_TIMEOUT_MINS": "1" },
+    "with": {
+      "path": "${{ steps.fonts.outputs.path }}",
+      "key": "${{ steps.fonts.outputs.key }}"
+    }
+  },
+  {
+    "name": "Validate cached fonts against fresh authenticated Ubuntu metadata",
+    "timeout-minutes": 4,
+    "env": { "FONT_CACHE_EXACT_HIT": "${{ steps.font-cache-restore.outputs.cache-hit }}" },
+    "run": "pnpm exec tsx scripts/ci-browser-font-cache.run.mts warm"
+  }
+]

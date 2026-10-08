@@ -52,6 +52,10 @@ jobs:
           denylist_path="$RUNNER_TEMP/inherit-name-denylist.txt"
           printf '%s\n' "$PRIVATE_NAME_DENYLIST" > "$denylist_path"
           echo "NAME_DENYLIST_FILE=$denylist_path" >> "$GITHUB_ENV"
+      - name: APT admission unit tests
+        run: python3 -B -m unittest discover -s scripts -p test_ci_apt_mirror_priority.py
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Typecheck
@@ -197,6 +201,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Start this job's fresh local Supabase
@@ -275,3 +281,35 @@ jobs:
           path: ci-browser-coverage
       - name: Require exact expected, assigned and executed case equality
         run: pnpm exec tsx scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage
+
+      # Publication follows the complete aggregate and never runs on a PR.
+      # It downloads the same official packages itself; no shard artifacts,
+      # installed OS state or browser binaries are copied into this cache.
+      - name: Prepare main-only font archive publication
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: fonts
+        run: pnpm exec tsx scripts/ci-browser-font-cache.run.mts prepare
+      - name: Look up the exact font archive key without downloading
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: font-cache-lookup
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        continue-on-error: true
+        timeout-minutes: 1
+        with:
+          path: ${{ steps.fonts.outputs.path }}
+          key: ${{ steps.fonts.outputs.key }}
+          lookup-only: true
+      - name: Download and authenticate the pinned official font archives
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.font-cache-lookup.outputs.cache-hit != 'true'
+        id: font-publication
+        continue-on-error: true
+        timeout-minutes: 4
+        run: pnpm exec tsx scripts/ci-browser-font-cache.run.mts populate
+      - name: Publish verified font archives after all checks passed
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.font-publication.outputs.save-ready == 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        continue-on-error: true
+        timeout-minutes: 1
+        with:
+          path: ${{ steps.fonts.outputs.path }}
+          key: ${{ steps.fonts.outputs.key }}
