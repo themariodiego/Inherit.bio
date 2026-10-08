@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { RecordHead } from "@/components/records/record-head";
 import { InputProvenance } from "@/components/reports/input-provenance";
@@ -161,22 +160,18 @@ export default async function GenomeDataPage(
         ) : (
           <p className="lede">{DATA_LEDE}</p>
         )}
+        {/* The two quiet navigations stay in the card, under the sentence
+            they follow from, as the outline pair the data spec reads
+            (round-3 N7: no longer a pair of orphans a section below). */}
+        <div className="flex flex-wrap gap-3 pt-2">
+          <Button asChild variant="outline">
+            <Link href={route("genome.browser", subjectParams)}>{BROWSE_VARIANTS}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={route("files.index")}>{MANAGE_FILES}</Link>
+          </Button>
+        </div>
       </RecordHead>
-      {/* The two navigations as ruled entry rows, the form Overview and
-          Settings use for secondary destinations (round-1 m11, round-3 N7). */}
-      <ul className="entry-rows">
-        {[
-          { href: route("genome.browser", subjectParams), label: BROWSE_VARIANTS },
-          { href: route("files.index"), label: MANAGE_FILES },
-        ].map((item) => (
-          <li key={item.href}>
-            <Link href={item.href} data-form="label" className="link-surface link-target entry-row text-ink">
-              <span className="title">{item.label}</span>
-              <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
-            </Link>
-          </li>
-        ))}
-      </ul>
 
       {noFile ? null : <section aria-labelledby="score-panel-coverage" className="rec-stack">
         <h2 id="score-panel-coverage" className="title">
