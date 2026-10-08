@@ -7,6 +7,7 @@ import { parseBrowserDurationProfile, selectBrowserDurationProfile } from "./ci-
 
 const rawV1 = () => readFileSync("data/ci/browser-duration-profile.json", "utf8");
 const rawV2 = () => readFileSync("data/ci/browser-duration-profile-v2.json", "utf8");
+const twoSourceRegression = () => readFileSync("scripts/fixtures/browser-duration-profile-two-source.json", "utf8");
 const missing = () => { throw Object.assign(new Error("missing"), { code: "ENOENT" }); };
 const hash = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
 const json = (value: unknown) => Buffer.from(JSON.stringify(value));
@@ -52,9 +53,49 @@ describe("closed multi-run history and fixed selection", () => {
     expect(selected.sha256).toBe(hash(rawV2()));
     expect(selected.value.schemaVersion).toBe(2);
     const value = parseMultiRunBrowserDurationProfile(rawV2()).value;
-    expect(value.sources.map(source => [source.runId, source.files.length, source.files.reduce((sum, row) => sum + row.baselineCaseCount, 0)]))
+    expect(value.sources.slice(0, 2).map(source => [source.runId, source.files.length, source.files.reduce((sum, row) => sum + row.baselineCaseCount, 0)]))
       .toEqual([["37212933160", 95, 569], ["37226288862", 95, 569]]);
+    expect(value.sources.slice(0, 2)).toEqual(parseMultiRunBrowserDurationProfile(twoSourceRegression()).value.sources);
+    expect(value.sources).toHaveLength(3);
+    const third = value.sources[2];
+    expect([third.runId, third.runAttempt, third.files.length, third.files.reduce((sum, row) => sum + row.baselineCaseCount, 0)])
+      .toEqual(["37725805440", "1", 95, 569]);
+    expect([third.head, third.workflowHead, third.tree]).toEqual([
+      "575d9191227bae67323022cc3d46b6e4b3a8cd8b", "575d9191227bae67323022cc3d46b6e4b3a8cd8b",
+      "c75aa59249346e9e8fcee1c006107e4079122318",
+    ]);
+    expect(third.projects).toEqual(["chromium", "copilot-local", "jurisdiction-off", "prepared-source"]);
+    expect(third.manifestSha256).toBe("90b0f47a6c33fbef6d4707e13431b5abf2b55e8c7e5fa662e7f2fd1e4753a527");
+    expect(third.shards).toEqual([
+      { index: 1, sha256: "8ff3411a04eaf2eb2b77e53b1efe66ff263ab08a38ad9bec60144f02035e7c1d" },
+      { index: 2, sha256: "9b5f8dcf29da71293d2d657e1f223f0a849d63fe741c2229d29f0703581db28c" },
+      { index: 3, sha256: "e0cfd65adb892da79a65457ffb131453c85f0cf9e732a73f5b6cc7ebbc733da4" },
+      { index: 4, sha256: "247356705cad459eed3ecaad6c02a93d7c3231df2e1bc3e12bffe4c0388da674" },
+      { index: 5, sha256: "0ffe81154197fae3db251494efd9ce3487a2b48e96e8113e6febbe3cd4fb3f76" },
+      { index: 6, sha256: "10c744a835d2aeb0d6f280a83dafbfb14e3f4e22e16214e89610ee88e6f7fb33" },
+    ]);
+    expect(third.metadata).toEqual({
+      runSha256: "1e7bd429cf00759fd0130a85fcfd397ab50a9249e141baba28ee9dd7018f48ce",
+      jobsSha256: "45316bb527634817bdc923a2e2df3d805ce934f7bfaa7c2fbe6d53d35605d4d3",
+      testedCommitSha256: "96a8f4beaba6225a2253a551f8426143896d085e5ded404370ad27767d2e376f",
+      artifactsSha256: "c20c693f77b16cbcf73f24b88391b9473786be7ece2978ea3031099da13f1b3c",
+      captureReceiptSha256: "262d86cf1c8398f9293a71bc6e5593c1434a2f1bf8beb63288f99171a249a8e3",
+    });
     expect(parseBrowserDurationProfile(rawV1()).value.source.runId).toBe("37212933160");
+  });
+  it("retains conservative old costs when the genuine third source refreshes the selected profile", () => {
+    const baseline = parseMultiRunBrowserDurationProfile(twoSourceRegression());
+    const current = parseMultiRunBrowserDurationProfile(rawV2());
+    const oldCost = multiRunDurationEstimator(baseline), newCost = multiRunDurationEstimator(current);
+    for (const row of current.value.sources[2].files) {
+      const group = { file: row.file, project: row.project, count: row.baselineCaseCount };
+      expect(newCost(group)).toBeGreaterThanOrEqual(oldCost(group));
+      expect(newCost(group)).toBeGreaterThanOrEqual(row.durationMs);
+    }
+    const family = { file: "family-health-picture.spec.ts", project: "chromium", count: 15 };
+    expect(oldCost(family)).toBe(279772); expect(newCost(family)).toBe(340082);
+    const unknown = { file: "not-in-history.spec.ts", project: "chromium", count: 7 };
+    expect(newCost(unknown)).toBeGreaterThanOrEqual(oldCost(unknown));
   });
   it("accepts V1 only when V2 is absent, and native only when both are absent", () => {
     expect(selectBrowserDurationProfile(rawV1, missing)?.sha256).toBe(hash(rawV1()));

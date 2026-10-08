@@ -327,6 +327,40 @@ test("/genome/[subject]/reports/[slug] complete: a covered estimate report rende
   );
 });
 
+
+test("Emerging own-file reports keep the full result and visible confirmation at both viewport sizes", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto(CAFFEINE);
+  await expect(page.locator('[data-chip="evidence"]')).toHaveText("Emerging");
+  const warning = page.locator('section[aria-labelledby="how-sure-we-are"] [data-confirmation-block="true"]');
+  const paragraphs = [
+    "This is a reading of a file you uploaded, not a clinical test. Before acting on it, ask a doctor or genetic counsellor to confirm it in an accredited laboratory.",
+    "We don’t have a counsellor to point you to where you are. Your doctor can refer you.",
+  ];
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    await page.setViewportSize(viewport);
+    await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
+    await expect(page.locator(SKELETON_H2)).toHaveCount(6);
+    await expect(page.getByTestId("report-disclaimer")).toHaveText(NOT_DIAGNOSTIC);
+    await expect(page.getByText(NO_RANGE_YET)).toBeVisible();
+    await expect(page.locator('section[aria-labelledby="your-result"] [data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
+    await expect(page.locator('section[aria-labelledby="your-result"] [data-claim-block][data-subject-id]')).toHaveCount(1);
+    await expect(page.locator('section[aria-labelledby="what-this-doesnt-mean"] li')).toHaveText([DOESNT_MEAN_GENERIC]);
+    await expect(page.locator('section[aria-labelledby="what-you-can-do"] p')).toHaveText(NOTHING_TO_DO);
+    await expect(page.locator('section[aria-labelledby="where-this-comes-from"] [data-slot="input-provenance"]')).toBeVisible();
+    await expect(warning).toHaveCount(1);
+    await expect(warning.locator("p")).toHaveText(paragraphs);
+    await warning.scrollIntoViewIfNeeded();
+    await expect(warning).toBeVisible();
+    expect(await warning.evaluate(element => element.closest('details, [hidden], [aria-hidden="true"], dialog'))).toBeNull();
+    await expect(warning.locator('button, input, details, [hidden], [aria-hidden="true"]')).toHaveCount(0);
+    for (const paragraph of await warning.locator("p").all()) {
+      await expect(paragraph).toBeVisible();
+      expect(await paragraph.evaluate(element => getComputedStyle(element).opacity)).toBe("1");
+    }
+  }
+});
+
 /**
  * `/genome/[subject]/reports/[slug] partial-coverage`, the coverage reading
  * (register `stateDefinitions.partial-coverage`): the file does not carry
