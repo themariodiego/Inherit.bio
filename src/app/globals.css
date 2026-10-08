@@ -247,8 +247,8 @@ p, li, dd, figcaption { text-wrap: pretty; }
    an older page may still carry, so one scale holds across the product. */
 h1.display, .display-1 { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); line-height: 1.05; letter-spacing: -0.02em; }
 h2.display, h3.display, .display-2 { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem); line-height: 1.15; letter-spacing: -0.015em; }
-.display-lg { font-size: clamp(2.5rem, 1.5rem + 3.8vw, 4.5rem); line-height: 1.02; letter-spacing: -0.025em; }
-.display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25rem); line-height: 0.98; letter-spacing: -0.03em; }
+h1.display-lg, .display-lg { font-size: clamp(2.5rem, 1.5rem + 3.8vw, 4.5rem); line-height: 1.02; letter-spacing: -0.025em; }
+h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25rem); line-height: 0.98; letter-spacing: -0.03em; }
 .display-figure {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
@@ -351,7 +351,7 @@ h2.display, h3.display, .display-2 { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2r
 [data-slot="terrain"] { display: block; width: 100%; height: 100%; overflow: hidden; }
 [data-slot="terrain"] .terrain-line { fill: none; stroke: var(--terrain-line); stroke-width: 1.25; vector-effect: non-scaling-stroke; opacity: calc(0.45 + 0.55 * var(--depth, 1)); }
 [data-slot="terrain"] .terrain-fill { fill: var(--paper); }
-[data-slot="terrain"] g:last-child .terrain-fill, [data-slot="terrain"] g:nth-last-child(2) .terrain-fill { fill: var(--terrain-fill); }
+[data-slot="terrain"] .terrain-drift > g:last-child .terrain-fill, [data-slot="terrain"] .terrain-drift > g:nth-last-child(2) .terrain-fill { fill: var(--terrain-fill); }
 .terrain-drift { animation: terrain-drift 60s var(--easing-out) infinite alternate; transform-origin: 50% 100%; }
 @keyframes terrain-drift { from { transform: translateX(0) } to { transform: translateX(-2.5%) } }
 /* A glow behind the headline, the hill at golden hour; pure decoration. */
@@ -364,11 +364,9 @@ h2.display, h3.display, .display-2 { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2r
    landing hero only; the app never animates in. */
 .rise { animation: rise var(--motion-rise) var(--easing-settle) both; animation-delay: calc(var(--i, 0) * 70ms); }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-/* Scroll reveal, progressive: where scroll-driven animations exist a block
-   fades up as it enters the viewport; elsewhere it is simply there. */
-@supports (animation-timeline: view()) {
-  .reveal { animation: rise both var(--easing-settle); animation-timeline: view(); animation-range: entry 0% entry 35%; }
-}
+/* No scroll-driven reveal: a block that fades in as it enters the viewport
+   stays invisible in any capture whose viewport never scrolls (full-page
+   screenshots, the density evidence), and the motion explained nothing. */
 .site-nav-link { position: relative; }
 .site-nav-link::after {
   content: ""; position: absolute; bottom: 6px; left: 0; right: 0; height: 1px;
