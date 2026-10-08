@@ -38,23 +38,25 @@ export default async function FamilyInvitePage() {
   }
 
   return (
-    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: NAV_LABELS.family, href: route("family.index") },
-          { label: INVITE_H1 },
-        ]}
-      />
-      <header className="space-y-3">
-        <p className="eyebrow">{NAV_LABELS.family}</p>
-        <h1 className="display text-3xl">{INVITE_H1}</h1>
-        <p
-          data-slot="pre-consent-statement"
-          className="max-w-2xl text-base leading-relaxed text-ink"
-        >
-          {PRE_CONSENT_STATEMENT}
-        </p>
-      </header>
+    <div data-surface="flow" className="page-stack stack-blocks mx-auto max-w-3xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: NAV_LABELS.family, href: route("family.index") },
+            { label: INVITE_H1 },
+          ]}
+        />
+        <header>
+          <p className="eyebrow">{NAV_LABELS.family}</p>
+          <h1 className="display">{INVITE_H1}</h1>
+          <p
+            data-slot="pre-consent-statement"
+            className="body-lg max-w-measure text-ink"
+          >
+            {PRE_CONSENT_STATEMENT}
+          </p>
+        </header>
+      </div>
       <InviteAdultForm />
     </div>
   );
