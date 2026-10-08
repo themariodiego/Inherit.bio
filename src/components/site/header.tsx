@@ -26,8 +26,14 @@ export async function SiteHeader() {
           the nav sits on the true centre; below md the row holds the
           wordmark, the theme toggle and the one primary pill (the quiet
           sign-in moves to the nav row), and it still wraps rather than
-          scrolls at high zoom so no destination hides (WCAG 2.1 SC 1.4.10). */}
-      <div className="site-header-row mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-2 md:grid md:grid-cols-[1fr_auto_1fr]">
+          scrolls at high zoom so no destination hides (WCAG 2.1 SC 1.4.10).
+          The side tracks are minmax(max-content, 1fr), not a bare 1fr: a bare
+          1fr pair is sized from the leftover space alone, and at 768 that
+          left the control cluster (toggle, sign-in, pill: 259px) a 230px
+          track, so the pill ran 6px past the viewport. With the content
+          floor the two tracks stay equal, and the nav centred, from about
+          830px, and below that the wordmark side gives way first. */}
+      <div className="site-header-row mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-2 md:grid md:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)]">
         <div className="flex items-baseline gap-3">
           <Wordmark />
           {/* Tagline only when there is genuinely room for one line: at
