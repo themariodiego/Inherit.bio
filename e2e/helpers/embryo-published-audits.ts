@@ -5,7 +5,7 @@ import { POPULATED_EMBRYO_AUDITS } from "../accessibility-sweeps";
 import { participantCPublication } from "../../scripts/comprehension/participant-c-seed";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
 import { REGISTRY_EMPTY_SENTENCE, STANDING_STATEMENT } from "@/copy/embryos/compare";
-import { TESTED_QUESTION_HEADING } from "@/copy/embryos/upload";
+import { ADD_MORE_EMBRYOS_BUTTON, TESTED_QUESTION_HEADING, UPLOAD_COMPLETE_HEADING, UPLOAD_COMPLETE_SENTENCE } from "@/copy/embryos/upload";
 import { QC_PASSED } from "@/copy/embryos/qc";
 
 /** Read-only supplemental sweep in the same authenticated native journey.
@@ -43,8 +43,15 @@ export async function auditPublishedEmbryoSurfaces(input: { page: Page; ownerId:
         await expect(card.locator('[data-slot="analysis-state"]')).toHaveCount(0);
         await expect(card.locator('[data-slot="compare-link"]')).toHaveAttribute("href", `/embryos/compare?cohort=${cohortId}`);
       } else if (target.kind === "upload") {
-        await expect(page.locator('[data-slot="upload-flow"]')).toHaveAttribute("data-screen", "tested");
-        await expect(page.getByRole("heading", { name: TESTED_QUESTION_HEADING, exact: true })).toBeVisible();
+        const complete = page.locator('[data-slot="upload-complete"]');
+        await expect(complete).toHaveAttribute("data-state", "complete");
+        await expect(complete).toHaveAttribute("data-cohort-id", cohortId);
+        await expect(complete.getByRole("heading", { name: UPLOAD_COMPLETE_HEADING, exact: true })).toBeVisible();
+        await expect(complete.getByRole("status")).toHaveText(UPLOAD_COMPLETE_SENTENCE);
+        await expect(complete.locator(`a[href="/embryos/compare?cohort=${cohortId}"]`)).toHaveCount(1);
+        await expect(complete.locator('a[href="/embryos"]')).toHaveCount(1);
+        await expect(page.locator('[data-slot="upload-flow"], [data-slot="file-form"]')).toHaveCount(0);
+        await expect(complete.getByRole("button", { name: ADD_MORE_EMBRYOS_BUTTON, exact: true })).toBeEnabled();
         await expect(page.locator('[data-slot="ingest-availability"], [data-slot="ingest-unavailable"], [data-stage="processing"]')).toHaveCount(0);
       } else {
         await expect(page.locator('[data-slot="standing-statement"]')).toHaveText(STANDING_STATEMENT);
@@ -66,6 +73,13 @@ export async function auditPublishedEmbryoSurfaces(input: { page: Page; ownerId:
       expect(await axeViolations(page, theme), `${target.route} populated (${theme})`).toEqual([]);
       await auditContext(page.context(), observed, `${target.route} populated (${theme})`);
       receipts.push({ route: target.route, url: target.url, theme });
+      if (target.kind === "upload") {
+        await page.getByRole("button", { name: ADD_MORE_EMBRYOS_BUTTON, exact: true }).click();
+        await expect(page.locator('[data-slot="upload-flow"]')).toHaveAttribute("data-screen", "tested");
+        await expect(page.getByRole("heading", { name: TESTED_QUESTION_HEADING, exact: true })).toBeVisible();
+        await expect(page.locator('[data-slot="file-form"]')).toHaveCount(0);
+        expect(await current()).toEqual(original);
+      }
     }
     expect(await current()).toEqual(original);
   }

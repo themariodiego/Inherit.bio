@@ -160,6 +160,9 @@ describe("the route gate holds the register to the code", () => {
     // 160 -> 161: the actual /legal/appeals TEST form adds only its processing pair.
     // Source census is exact; the controlled browser cases are UI-only and unrun here.
     expect(result.requiredStateCount).toBe(161);
+    // Three native complete steps are authored, not a hosted-result claim;
+    // all six scientific partial/not-covered gaps remain required.
+    expect(result.provenStateCount).toBe(155);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -1142,5 +1145,26 @@ describe("the current rights session processing contract", () => {
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);
+  });
+});
+
+
+describe("native embryo completion leaves scientific coverage obligations intact", () => {
+  it("names only the three completed native surfaces and still requires the exact six scientific pairs", () => {
+    const spec = readFileSync(path.join(REPOSITORY_ROOT, "e2e/embryo-ingest-journey.spec.ts"), "utf8");
+    const step = "/embryos/upload complete; /embryos/compare complete; /embryos/[embryoId] complete from native parent-authorized publication";
+    expect(spec).toContain(`test.step("${step}"`);
+    expect(spec).toContain("await auditPublishedEmbryoSurfaces({ page, ownerId: owner, cohortId, read: readPublication })");
+    expect(takesAuditedTest(spec)).toBe(true);
+    for (const route of ["/embryos/upload", "/embryos/compare", "/embryos/[embryoId]"]) expect(titleProves(step, route, "complete")).toBe(true);
+    const register = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-register.json"), "utf8"));
+    const ledger = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-divergence.json"), "utf8"));
+    const authored = new Set<string>(ledger.provenRouteStates);
+    const pending: string[] = [];
+    for (const entry of register.routes) for (const state of register.stateProfiles[entry.stateProfile]?.supported ?? []) {
+      if (!(state in (entry.notApplicableStates ?? {})) && !authored.has(`${entry.path} ${state}`)) pending.push(`${entry.path} ${state}`);
+    }
+    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage"]);
+    for (const state of ["not-covered", "partial-coverage"]) expect(titleProves(step, "/embryos/compare", state)).toBe(false);
   });
 });

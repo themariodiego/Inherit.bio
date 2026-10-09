@@ -60,7 +60,8 @@ export type UploadStageView =
       signed: Partial<Record<Acknowledgement, string>>;
       finalizeNonce: string;
     }
-  | { kind: "processing"; cohortId: string };
+  | { kind: "processing"; cohortId: string }
+  | { kind: "complete"; cohortId: string; draftCsrfToken: string };
 
 type Admin = ReturnType<typeof createAdminClient>;
 const OPEN_DRAFT_STATES = ["draft", "evidence_pending", "ready"];
@@ -136,7 +137,7 @@ async function stageFacts(admin: Admin, accountId: string, sessionId: string, no
       .in("state", OPEN_DRAFT_STATES).gt("fixed_expires_at", live).order("created_at", { ascending: false }).limit(1),
     admin.from("subject_principals").select("id").eq("account_id", accountId)
       .eq("principal_kind", "genetic_parent").eq("status", "active"),
-    admin.from("embryo_cohorts").select("id, status, created_at").eq("owner_account_id", accountId)
+    admin.from("embryo_cohorts").select("id, status, created_at, publication_revision").eq("owner_account_id", accountId)
       .order("created_at", { ascending: false }).limit(1),
   ]);
   const ownedRow = (rows(owned) as DraftRow[])[0] ?? null;
@@ -152,12 +153,12 @@ async function stageFacts(admin: Admin, accountId: string, sessionId: string, no
         .neq("owner_account_id", accountId).in("state", OPEN_DRAFT_STATES).gt("fixed_expires_at", live)) as DraftRow[];
     }
   }
-  const cohortRow = (rows(cohorts) as { id: string; status: string; created_at: string }[])[0] ?? null;
+  const cohortRow = (rows(cohorts) as { id: string; status: string; created_at: string; publication_revision: number }[])[0] ?? null;
   let latestCohort: CohortFacts | null = null;
   if (cohortRow) {
     const sessions = rows(await admin.from("embryo_ingest_sessions").select("status").eq("cohort_id", cohortRow.id).eq("account_id", accountId).eq("originating_session_id", sessionId)
       .order("created_at", { ascending: false }).limit(1)) as { status: string }[];
-    latestCohort = { id: cohortRow.id, createdAt: new Date(cohortRow.created_at).toISOString(), status: cohortRow.status,
+    latestCohort = { id: cohortRow.id, createdAt: new Date(cohortRow.created_at).toISOString(), status: cohortRow.status, publicationRevision: cohortRow.publication_revision,
       sessionStatus: sessions[0]?.status ?? null };
   }
   return {
@@ -261,5 +262,10 @@ export async function loadUploadStage(
     }
     case "processing":
       return { kind: "processing", cohortId: stage.cohortId };
+    case "complete":
+      return { kind: "complete", cohortId: stage.cohortId, draftCsrfToken: mintEmbryoOperation({
+        accountId: account.accountId, sessionId: account.sessionId, operation: "cohort_draft_create",
+        targetKind: "account", targetId: account.accountId,
+      }, now) };
   }
 }

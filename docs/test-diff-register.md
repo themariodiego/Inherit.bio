@@ -528,6 +528,13 @@ remain required before merge. No active font cache or product policy changes.
 
 # Test diff register
 
+## 2026-10-09 — Native embryo completion and exact route-state scope
+
+The upload stage previously returned to a new-upload form after real native publication. An active record with a positive native publication revision now shows “Files added”, links to its comparison and the embryo hub, and an explicit action to add another file. The existing both-parent journey tests this real completed screen, the permitted comparison and both individual reports in both themes, with native publication unchanged before/after, network/accessibility audits and all original QC/source/no-ranking assertions. No browser runtime has executed this new source yet.
+
+The route source contract adds only those three executable `complete` pairs (161 required, 155 authored, six remaining). Scientific `partial-coverage` and `not-covered` remain pending on all three embryo result routes: no approved result condition/producer exists, and file quality or absent registry copy does not replace a genuine scientific partial/failure finding. The existing exact full-source form census rebinds the upload-stage component hash after ordinary review; its two existing form handlers and complete 14/24/2/26 inventory stay unchanged. No register state, refusal, timeout, six-job queue isolation, matrix YES, clinical model or production capability changes.
+
+
 ## 2026-10-09 — Preserve the core form census beside the two published future intake forms
 
 The current core merge adds its exact-source native-form review to the published
