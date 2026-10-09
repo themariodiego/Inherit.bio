@@ -63,7 +63,7 @@ const noticeRow = z.object({ scope: appealCaseScope, wrappedCaseKeyHex: hex.leng
  decision: z.enum(["approved", "rejected"]), nonceHash: z.string().regex(/^[0-9a-f]{64}$/u),
  referenceCiphertextHex: hex.length(152), referenceHash: z.string().regex(/^[0-9a-f]{64}$/u),
  }).strict()).max(30) }).strict();
-/** Only after the native original verified case-session read. No reviewer
+/** Only after the native original verified case-session or separate notice-purpose read. No reviewer
  * notes, contact match or target metadata enter the requester notice. */
 export function openAppealDecisionNotice(raw: unknown) {
  const parsed = noticeRow.safeParse(raw); if (!parsed.success) return null;

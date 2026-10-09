@@ -13,6 +13,29 @@ The exact unbuilt route count is now 27 after the appeal reviewer and original-s
 ## 2026-10-09 — Keep the browser scheduling guard tied to the actual planner
 
 Hosted run 37994748537 passed 10,457 unit cases and failed one stale manifest-wiring expectation that still named the previous native scheduling call. The regression now requires the actual whole-file plan and six official listings to be checked before manifest publication, and strict final coverage before accessibility placement. A real queue-v1 listing case rejects mixed native selectors and missing accessibility sweeps. All original native placement, omission, duplication and whole-file refusal cases remain. The source-inventory pre-push command selects the complete cheap `scripts/ci-browser` contract namespace instead of a fixed handful of filenames; its one worker and 5,000 ms default assertion timeout remain unchanged. No browser case, runtime scheduling guard or hosted assertion is removed.
+## 10 October 2026 — atomic current parent card authority
+
+The settings read returns only current own unconsumed card counts. Delivery
+now rechecks and locks the same complete basis, recipient and per-embryo
+authority after consuming the original operation nonce, before writing keys.
+Native rollback probes cover stale authority after the read with complete
+rights, hash and nonce preservation, independent parents, and valid untouched
+initial rights after another embryo's transfer. Reused nonce 23505 and fresh
+no-right 42501 remain distinct. These native assertions are authored and unrun;
+source review and a typed RPC declaration do not prove native delivery.
+
+## 10 October 2026 — separate original-recipient appeal notice continuation
+
+A native document-decision event atomically queues a distinct one-use read-only
+notice candidate to the already verified case contact. New focused tests cover
+real sealed notice/reference bytes, native refusal, foreign scope, notes
+exclusion, old case clocks and a page without upload or target controls. Native
+transaction assertions cover separate purpose, one-use activation, fresh
+recipient checks and complete terminal disposal; they remain unrun locally.
+The full rights matrix reader includes later additive seeds; strict Path B
+replacement lists explicitly name the three delegated notice wrappers and the
+already reviewed matched-review mitigation wrapper. No old assertion, time
+cap, provider flag, case deadline or final target decision is weakened.
 
 ## 2026-10-09 — Bind provisional public appeal holds and native documentary decisions
 

@@ -283,6 +283,45 @@ select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select ok(public.read_public_appeal_decision_notice_v1(repeat('1',64)) is not null,'the original verified consumed session reads only its own notice without renewal');
 select is((select status from public.rights_sessions where session_hash=repeat('1',64)),'consumed','notice read does not reactivate upload authority');
 select is(public.read_public_appeal_decision_notice_v1(repeat('f',64)),null::jsonb,'foreign session cannot read a decision/reference');
+-- These are real native decision-event/candidate/session functions. Ciphertext
+-- and the provider are synthetic; this does not establish physical delivery.
+select is((select count(*) from private.public_appeal_decision_notices),2::bigint,
+ 'each immutable native document decision atomically queued exactly one deduplicated notice');
+select ok((select bool_and(mail.contact_reference_id=intake.case_contact_id and mail.recipient_principal_id=intake.author_principal_id
+ and candidate.purpose='appeal-decision-notice' and candidate.token_revision=decision.review_revision
+ and notice.expires_at=least(notice.created_at+interval '7 days',intake.deadline))
+ from private.public_appeal_decision_notices notice join private.new_public_appeal_intakes intake on intake.id=notice.case_id
+ join private.public_appeal_document_decisions decision on decision.id=notice.decision_id
+ join public.mail_outbox mail on mail.id=notice.outbox_id join public.token_candidates candidate on candidate.id=notice.candidate_id),
+ 'notice recipients are only the exact previously verified case contact, with separate bounded credentials');
+create temporary table public_appeal_notice_claim as select * from public.claim_mail_outbox();
+select ok(public.authorize_mail_submission_v1((select outbox_id from public_appeal_notice_claim),
+ (select attempt_ordinal from public_appeal_notice_claim)),'notice mail requires fresh same-recipient native currentness');
+select is((public.read_new_public_appeal_mail_contact_v1((select outbox_id from public_appeal_notice_claim),
+ (select attempt_ordinal from public_appeal_notice_claim))->>'contactCiphertextHex'),repeat('de',48),
+ 'notice delivery uses the original case envelope, not a generic account contact reader');
+create temporary table public_appeal_notice_activation as select * from public.activate_rights_session_v1(
+ encode(extensions.digest(convert_to((select delivery_token from public_appeal_notice_claim),'UTF8'),'sha256'),'hex'),repeat('6',64),repeat('N',32));
+select is((select purpose from public_appeal_notice_activation),'appeal-decision-notice','new activation has only a notice purpose');
+select is((select count(*) from public.activate_rights_session_v1(
+ encode(extensions.digest(convert_to((select delivery_token from public_appeal_notice_claim),'UTF8'),'sha256'),'hex'),repeat('7',64),repeat('M',32))),0::bigint,
+ 'the notice token is one-use, and replay creates no second session');
+select is(jsonb_array_length(public.read_public_appeal_decision_notice_v1(repeat('6',64))->'decisions'),1,
+ 'recipient continuation reads exactly its immutable decision without notes or target data');
+select is(public.new_public_appeal_evidence_view_v1(repeat('6',64)),null::jsonb,'notice purpose cannot reopen intake/evidence collection');
+select ok(not private.rights_action_permitted_v1('appeal-decision-notice','create-kind-bound-document-session','api.appeal-document-session')
+ and not private.rights_action_permitted_v1('appeal-decision-notice','complete-evidence-set','api.appeal-complete'),
+ 'notice session has no upload, completion or target actions');
+select is((select status from public.rights_sessions where session_hash=repeat('1',64)),'consumed',
+ 'new continuation leaves the original intake session consumed');
+select is(pg_temp.deletion_probe('update public.rights_sessions set status=''expired'',ended_at=clock_timestamp() where session_hash=repeat(''6'',64)',
+ 'select public.read_public_appeal_decision_notice_v1(repeat(''6'',64))'),null::text,'expired notice sessions expose no result');
+select is(pg_temp.deletion_probe('update public.encrypted_contact_references set status=''rotated'' where id=(select case_contact_id from private.new_public_appeal_intakes limit 1)',
+ 'select public.read_public_appeal_decision_notice_v1(repeat(''6'',64))'),null::text,'rotated original recipient refuses without adopting an account contact');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
+ where has_table_privilege(role_name,'private.public_appeal_decision_notices','select,insert,update,delete')
+ or has_function_privilege(role_name,'private.queue_public_appeal_decision_notice_v1()','execute')),0::bigint,
+ 'API roles cannot manufacture a recipient, notice or native event');
 select ok(private.public_appeal_underlying_binding_v1(encode(extensions.digest(convert_to(repeat('d',64),'UTF8'),'sha256'),'hex'),jsonb_build_object('1',repeat('c',64))) is not null,
  'only actual source rejection plus approved photo and same current verified recipient binds underlying access review');
 select is(private.public_appeal_underlying_binding_v1(encode(extensions.digest(convert_to(repeat('d',64),'UTF8'),'sha256'),'hex'),jsonb_build_object('1',repeat('9',64))),null::jsonb,
@@ -295,6 +334,9 @@ select is((select count(*) from private.appeal_document_sessions where wrapped_d
  'terminal case shreds every independent evidence key');
 select is((select count(*) from private.new_public_appeal_intakes where wrapped_case_key is not null),0::bigint,
  'original case key, contact and working package are disposed separately');
+select is((select count(*) from private.public_appeal_decision_notices),0::bigint,'terminal disposal removes every late notice and separate credential');
+select is((select count(*) from public.mail_outbox where purpose='appeal-decision-notice'),0::bigint,'terminal disposal removes the neutral pending notice delivery rows');
+select is((select count(*) from public.rights_sessions where purpose='appeal-decision-notice'),0::bigint,'terminal disposal invalidates notice sessions before the original case key disappears');
 select is((select count(*) from private.appeal_documents),2::bigint,'native object locators remain until real physical deletion acknowledgement');
 select ok(not has_table_privilege('service_role','private.public_appeal_pending_reviews','insert,update,delete')
  and not has_function_privilege('authenticated','public.complete_new_public_appeal_evidence_v1(text,text,jsonb,boolean)','execute'),
