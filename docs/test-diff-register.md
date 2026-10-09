@@ -1,3 +1,15 @@
+## 2026-10-09 — Bind T7 to the genuine unavailable comparison state
+
+The original G3.2 brief allows a result or an honest not-covered state. T7 now
+binds the actual no-calibrated-model comparison copy and native zero-score
+publication, rather than requiring an invented personal-risk producer. Native
+surface controls reject absent notices, condition rows and risk-class figures;
+the blind rubric rejects invented risk and file-quality numbers called risk.
+The prompt, exhaustive relative-only prohibited class, 30-persona thresholds,
+independent re-grading and two-run rule remain. Existing refusal-text tests now
+require fresh per-persona native read/action proof: ordinary skipped or unrun
+T7 tasks stay unqualified, and the separate launcher still runs T6 only.
+
 ## 2026-10-09 — Read the complete name-check history in one Git batch
 
 Two preserved local name checks reached the unchanged 120 s limit. The history

@@ -36,7 +36,7 @@ async function main() {
   if (argv.includes("--plan")) {
     console.log(JSON.stringify({ tasks: ["T6"], personas: run.personas ?? 30, freshStacks: (run.personas ?? 30) + 1,
       infrastructureReservationMicroDollars: infrastructureReservation(run.personas ?? 30, config.maximumInfrastructureCostPerStackMicroDollars, run.limitMicroDollars - run.otherCostsMicroDollars),
-      qualifyingEvidence: false, hostedOwnershipRequired: true, T7: "held: no approved personal absolute-risk producer" })); return;
+      qualifyingEvidence: false, hostedOwnershipRequired: true, T7: "unrun: fresh native no-model read/action not enabled in this T6-only launcher" })); return;
   }
   assertCiRuntime(process.env);
   assert(process.env.GITHUB_JOB === "fresh-t6", "Separate fresh-t6 hosted job required; standard CI cannot launch inference");
@@ -65,7 +65,7 @@ async function main() {
       revision, samplingSeed: run.samplingSeed, settings: run.settings, taskIds: ["T6"], personaIds: inputs.personas.slice(0, run.personas ?? 30).map(persona => persona.id),
       t6Variant: "standard", inference: inferenceOf(run), modelIdentity: modelIdentityOf(run),
       build: { baseUrl: "http://localhost:3105", buildId, jurisdiction: "TEST-LOCAL" }, skipped: [],
-      blockers: ["T6-only-partial-round", "T7-approved-personal-risk-producer-unavailable", "fresh-runtime-lifecycle-not-yet-hosted-verified"] });
+      blockers: ["T6-only-partial-round", "T7-fresh-native-read-not-yet-enabled", "fresh-runtime-lifecycle-not-yet-hosted-verified"] });
     const record = await RunRecord.create({ root: run.provider.kind === "local-deterministic-stub" ? run.stubRecordRoot! : path.join(repositoryRoot, RECORD_ROOT),
       date: new Date().toISOString().slice(0, 10), manifest, inputs, modelIdentifier: modelIdentifierOf(run),
       header: { startedAt: new Date().toISOString(), isolation,

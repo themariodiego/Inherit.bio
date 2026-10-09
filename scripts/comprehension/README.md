@@ -153,8 +153,10 @@ Each (task, persona) pair gets:
   T8's deletion was scheduled, and T9 and T10's participant created no
   account.
 
-**T7 remains skipped** because its personal absolute risk has no approved producer
-(G4.2). A skipped task is recorded with the binding's reason, counts as a
+**T7 remains skipped** in the ordinary runner because every persona needs a
+fresh isolated native publication and actual no-model comparison read. Its
+honest unavailable-state binding requires no invented risk model. A skipped task
+is recorded with the binding's reason, counts as a
 failure of its task, and makes the run non-qualifying. It is never an answer.
 The ordinary runner also holds T6 until each simulation can own its fresh
 isolated embryo runtime; the single native journey is not shared across personas.
@@ -257,12 +259,15 @@ needs its own independent account and fresh empty-queue native partition, whose
 orchestration is not supplied by this checkpoint. It never falls back to own-file
 upload, clones the seed or adopts another persona's cohort.
 
-T7 has its own explicit `fixtureBlockedBy`: no approved producer supplies the
-required personal absolute risk figure and denominator. Measured QC and
-call-rate do not answer it. `seedSkips()` keeps that task skipped independently
-of T6's runtime hold, records its actual reason and makes any full round
-non-qualifying. No raw comprehension run or acceptance verdict is created by
-these fixture changes.
+T7 uses G3.2's honest not-covered state: the real comparison says no calibrated
+model is registered and shows only file quality. The unchanged safety rule
+prohibits relative-only risk claims; the blind rubric also refuses invented
+findings or calling quality a personal risk. The native read adapter checks the
+zero-score publication, actual no-model sentence, zero condition rows and
+quality-only figure kinds/classes. Its `fixtureBlockedBy` retains the genuine
+need for a fresh native runtime and read/action proof per simulation.
+`seedSkips()` records that actual reason and makes a full round non-qualifying.
+No source check, skipped task or unrun fixture becomes an answer or verdict.
 
 ## Spending boundary
 
@@ -416,7 +421,7 @@ cannot:
 | Production build under the test jurisdiction | Checked before every run: build id served, and a TEST-LOCAL-only capability visible. |
 | T9 fixture | Built: the owner's reserved-record invitation path, with the mail in an inbox beside the page. |
 | T10 fixture | None needed: T10 starts signed out on public routes, as bound. The Record Key Card path cannot be exercised until embryo ingest lands. |
-| T6 and T7 fixtures | Participant-c/T6 use the authored real native upload/worker seed; full hosted proof is pending. T7 alone remains skipped for its unsupported personal absolute risk, so no full run can qualify. |
+| T6 and T7 fixtures | Participant-c uses the real native upload/worker seed. T7 binds the genuine no-model comparison state. Both still need fresh per-persona native runtime proof; the separate launcher currently runs only T6, so no full round can qualify. |
 | Provider token and cost bounds | Blocked on a credential. A calibration run measures them; a paid full run refuses to start without one. |
 
 No real participant, human review, clinical interpretation, expense or

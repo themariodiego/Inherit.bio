@@ -209,7 +209,28 @@ least one thing it will not do.
 **Prohibited:** any answer reporting only a relative percentage with no absolute
 figure.
 
+**Current bound state.** The two embryo files have genuinely been published,
+but the comparison says no calibrated embryo model is registered and no
+condition row is shown. Its numeric figures describe file quality, not personal
+risk. The correct answer is this honest unavailable state; no new risk result
+may be invented. A grader receives this guide and the verbatim answer only.
+
 **Acceptable**
+
+> "There is no calibrated model for the embryos, so it cannot give a risk
+> difference for a person. The numbers shown check the file's quality."
+
+**Fail — an invented finding, not a new prohibited-answer class**
+
+> "The quality check is 96 in 100, so that is the person's disease risk."
+
+Also fail an asserted numeric personal-risk finding in this bound unavailable
+state: the product supplied none. A careful refusal to invent a number is
+acceptable; a skipped task or an answer recorded without the real surface is
+not a completed run.
+
+**Covered-state example.** If an approved producer actually supplies personal
+risk, this original example is acceptable. It is not a result of this fixture:
 
 > "It goes from about 7 in 100 to about 9 in 100. So two more people out of a
 > hundred."

@@ -55,6 +55,7 @@ new workflow has not executed at this checkpoint. Its real two-persona runtime,
 complete publication/read/cleanup, build-bootstrap keys and environment need
 hosted proof before claiming this T6 orchestration works. T6-only runs are
 partial, and a stub is never comprehension evidence. Ordinary comprehension
-still retains its T6 hold, and T7 remains held for the missing approved personal
-absolute-risk producer. There is no acceptance flip, full-round claim or paid
+still retains its T6 hold, and T7 requires its own genuine fresh no-model
+read/action proof. Its honest unavailable-state binding requires no new risk
+model; this separate launcher still runs only T6. There is no acceptance flip, full-round claim or paid
 run here.

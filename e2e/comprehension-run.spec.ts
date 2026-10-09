@@ -45,8 +45,8 @@ import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-r
  * inbox beside the browser. Opening it is an entry, never a counted action.
  * T6 is held in this ordinary runner until every simulation can own a fresh
  * isolated embryo runtime. Its native single-journey read adapter is genuine
- * but cannot be shared between personas. T7 separately lacks its approved
- * personal absolute risk producer. Neither hold becomes an answered task.
+ * but cannot be shared between personas. T7's genuine no-model comparison also
+ * requires this fresh native read/action proof. Neither hold becomes an answered task.
  *
  * The pinned model identifier is written only into the run record's
  * `manifest.json` (owner decision, 25 September 2026). Nothing here logs it,

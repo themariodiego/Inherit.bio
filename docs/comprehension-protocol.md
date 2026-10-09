@@ -15,9 +15,10 @@ launch-blocking. Where a round has been run, its per-task results belong in
 build only with a deterministic stub, which is never evidence. No model
 credential exists, so `docs/comprehension-runs/` holds no run. The existing
 isolated native embryo journey now authors a genuine participant-c
-seed and T6 action measurement. Full hosted execution is still pending. T7
-remains explicitly blocked: no approved producer supplies its personal absolute
-risk figure, so no complete round can qualify yet.
+seed and T6 action measurement. Full fresh-persona hosted execution is still
+pending. T7 is bound to the genuine no-calibrated-model comparison state, not
+to an invented personal risk. It remains unrun until each simulation has its
+own native publication and actual unavailable-state read/action proof.
 This document completes G3.4's own half, and G3.4 remains NO on the other
 half. That is recorded in `docs/acceptance-matrix.md` rather than smoothed
 over here.
@@ -164,18 +165,23 @@ credentials and current worker/source proof. The ordinary multi-persona runner
 still holds T6 until each simulation can own its fresh isolated embryo runtime;
 this single native rehearsal is never shared across personas.
 
-**T7 carries a constraint worth reading before the round.** Measured
-2026-09-11: the My Genome report detail page renders exactly one figure kind —
-`genotype` — and no percentage at all. The only surface in the product that
-can render a personal absolute figure is the embryo comparison cell. No approved
-producer currently supplies that figure. QC and call-rate are not substitutes.
-The task-level refusal remains even after participant-c is seeded. T7 is bound
-there, and **outside an environment where `embryo_analysis` is permitted, T7 has
-no bound surface at all.** `TEST-LOCAL` permits the capability, but the missing
-approved personal risk producer still prevents T7 from running. In production it
-cannot, because no real jurisdiction has a signed review. This is recorded
-rather than worked around: binding T7 to a surface that shows no number would
-make every answer prohibited by construction, which would measure nothing.
+**T7 uses the brief's honest not-covered contract (G3.2).** Its original prompt
+is unchanged. On the current participant-c comparison, no calibrated model is
+registered and no condition row is shown; the visible numbers are file quality.
+The correct answer says a personal risk difference cannot be supplied. It must
+not invent a risk or call QC/call-rate a personal risk. A relative-only risk
+claim remains prohibited, exactly as before; absence of a numeric risk is not
+itself prohibited. The blind grader receives the shared rubric and the T7
+section, not the participant's page or account metadata.
+
+This binding requires the same genuine signed-parent upload/worker publication,
+its zero-score native read, the actual no-model sentence and quality-only
+figure classes, and a fresh read/action session for each persona. The ordinary
+runner still skips T7 because it cannot supply that isolated native runtime.
+Such a skip, a source test or an unrun task is never qualifying evidence. No
+risk model or scientific approval is inferred. Outside a permitted
+`embryo_analysis` environment the capability remains unavailable; only the
+existing T6 withheld variant is implemented at this checkpoint.
 
 **Withheld variants.** Where a capability a task depends on is withheld, the
 task is replaced by its variant. Only T6 has one, and it is in `bindings.json`
