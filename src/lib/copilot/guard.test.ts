@@ -328,6 +328,58 @@ describe("checkResponseNumerals", () => {
     expect(checkResponseNumerals("Coverage 0.88.", toolJson, ALLOWED).ok).toBe(false);
   });
 
+  it("does not ground a percentage with fractional seconds, while keeping the timestamp repeatable", () => {
+    const completedAt = "2026-10-07T21:58:37.499Z";
+    const receipt = { sources: [{ completed_at: completedAt }] };
+    const before = structuredClone(receipt);
+    expect(toolJsonNumbers(receipt)).toContain(37.499);
+    expect(checkResponseNumerals(`Completed at ${completedAt}.`, receipt, ALLOWED)).toEqual({ ok: true, unsupported: [] });
+    expect(checkResponse("About 37.5% of people share your genotype.", receipt, ALLOWED)).toEqual({
+      ok: false, violation: "unsupported-number", unsupported: ["37.5%"],
+    });
+    expect(receipt).toEqual(before);
+  });
+
+  it.each(["37.5%", "37.5 %", "37.5\u00a0%", "37.5％"])(
+    "does not turn a bare tool string into the percentage %s", (percentage) => {
+      const receipt = { sources: [{ completed_at: "2026-10-07T21:58:37.5+00:00", label: "37.499" }] };
+      expect(checkResponseNumerals(`About ${percentage} of people.`, receipt, ALLOWED).ok).toBe(false);
+    },
+  );
+
+  it.each(["37.499%", "37.499 %", "37.499\t%", "37.499\u00a0%", "37.499\u202f%", "37.499％", "３７．４９９％"])(
+    "keeps genuine rounded percentage tool text %s", (percentage) => {
+      expect(checkResponseNumerals("About 37.5% of people.", { results: [{ summary: percentage }] }, ALLOWED)).toEqual({
+        ok: true, unsupported: [],
+      });
+    },
+  );
+
+  it("keeps rounded numeric JSON facts and ordinary string numerals", () => {
+    expect(checkResponseNumerals("About 37.5% of people.", { results: [{ percentage: 37.499 }] }, ALLOWED).ok).toBe(true);
+    expect(checkResponseNumerals("About 37.5 % of people.", { percentage: 37.499 }, ALLOWED).ok).toBe(true);
+    expect(checkResponseNumerals("About 37.5％ of people.", { percentage: "37.499％" }, ALLOWED).ok).toBe(true);
+    expect(checkResponseNumerals("An effect of 1.4 at rs762551.", { effect: "1.37", rsid: "rs762551" }, ALLOWED).ok).toBe(true);
+  });
+
+  it.each(["\v", "\f", "\u2028", "\u2029", "\n", "\r"])(
+    "does not accept a vertical separator %j as a percentage unit boundary in tool text", (separator) => {
+      expect(checkResponseNumerals("About 37.5% of people.", { summary: `37.499${separator}%` }, ALLOWED)).toEqual({
+        ok: false, unsupported: ["37.5%"],
+      });
+    },
+  );
+
+  it("retains numeral evidence and the relative-risk phrase when both checks refuse", () => {
+    const answer = "At rs762551 on chromosome 15 your risk is 15% higher than average.";
+    expect(checkResponse(answer, { rsid: "rs762551", chrom: "15" }, ALLOWED)).toEqual({
+      ok: false, violation: "unsupported-number", unsupported: ["15%", "15% higher", "your risk is 15% higher than average"],
+    });
+    expect(checkResponse(answer, { rsid: "rs762551", chrom: 15 }, ALLOWED)).toEqual({
+      ok: false, violation: "unsupported-number", unsupported: ["15% higher", "your risk is 15% higher than average"],
+    });
+  });
+
   it("rounds half away from zero at the token's precision", () => {
     expect(roundTo(0.3842, 2)).toBe(0.38);
     expect(roundTo(42.35, 1)).toBe(42.4);

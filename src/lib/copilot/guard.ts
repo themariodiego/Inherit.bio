@@ -675,12 +675,29 @@ export function numeralTokens(text: string): string[] {
  * tools said and nothing more.
  */
 export function toolJsonNumbers(toolJson: unknown): number[] {
+  return collectToolNumbers(toolJson, false);
+}
+
+/** A percent marker may follow horizontal whitespace or use its fullwidth form. */
+function isPercentageToken(text: string, match: RegExpExecArray): boolean {
+  return match[0].endsWith("%") || /^[\t\p{Zs}]*[%％]/u.test(text.slice(match.index + match[0].length));
+}
+
+/** Keep numeric JSON facts, but do not turn bare string metadata into percentages. */
+function collectToolNumbers(toolJson: unknown, percentagesOnly: boolean): number[] {
   const found: number[] = [];
   const visit = (value: unknown) => {
     if (typeof value === "number") {
       if (Number.isFinite(value)) found.push(value);
     } else if (typeof value === "string") {
-      for (const token of numeralTokens(value)) found.push(Number(token.replace("%", "")));
+      // Normalization is restricted to percentage-bearing tool text; the
+      // exported ordinary numeral collection retains its original results.
+      const text = percentagesOnly ? value.normalize("NFKC") : value;
+      for (const match of text.matchAll(NUMERAL_PATTERN)) {
+        if (!percentagesOnly || isPercentageToken(text, match)) {
+          found.push(Number(match[0].replace("%", "")));
+        }
+      }
     } else if (Array.isArray(value)) {
       value.forEach(visit);
     } else if (value && typeof value === "object") {
@@ -733,9 +750,12 @@ export function checkResponseNumerals(
   context: { cohortSize?: number } = {},
 ): NumeralVerdict {
   const values = toolJsonNumbers(toolJson);
-  const unsupported = numeralTokens(text).filter(
-    (token) => !matchesToolJson(token, values) && !matchesAllowedRange(token, allowed, context.cohortSize),
-  );
+  const percentages = collectToolNumbers(toolJson, true);
+  const unsupported = [...text.matchAll(NUMERAL_PATTERN)].filter((match) => {
+    const token = match[0];
+    const support = isPercentageToken(text, match) ? percentages : values;
+    return !matchesToolJson(token, support) && !matchesAllowedRange(token, allowed, context.cohortSize);
+  }).map((match) => match[0]);
   return { ok: unsupported.length === 0, unsupported };
 }
 
@@ -1025,8 +1045,8 @@ export function checkResponse(
   const policy = checkResponsePolicy(text, context.scope, context.people);
   if (policy.intent !== "allowed") return { ok: false, violation: policy.intent, unsupported: [policy.rule!] };
   const numerals = checkResponseNumerals(text, toolJson, allowed, context);
-  if (!numerals.ok) return { ok: false, violation: "unsupported-number", unsupported: numerals.unsupported };
   const relative = checkRelativeRisk(text);
+  if (!numerals.ok) return { ok: false, violation: "unsupported-number", unsupported: [...numerals.unsupported, ...relative.unsupported] };
   if (!relative.ok) return { ok: false, violation: "unsupported-number", unsupported: relative.unsupported };
   const citations = checkCitations(text, permittedCitationsFromToolJson(toolJson));
   if (!citations.ok) return { ok: false, violation: "unsupported-citation", unsupported: citations.unsupported };
