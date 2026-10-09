@@ -1,3 +1,11 @@
+## 2026-10-09 — G3.2 follows the actual native fixture proof
+
+The acceptance matrix changes G3.2 from NO to YES and recounts 44/65 to 45/65. Complete hosted run 37980880275 on 44395942 passed all 18 machine-resolved binding assertions, both participant-a/b product-path seeds and the real both-parent participant-c upload, worker publication and analysis permission. The previous remaining blocker, missing participant-c ingest, is now resolved by that complete run. No test assertion, task binding, risk threshold, timeout or refusal changes. G3.1, G3.3 and the human study remain open.
+
+## 2026-10-09 — Keep official image bytes while removing Docker Hub pull admission
+
+The prepared-worker image check failed before its first build instruction when Docker Hub returned HTTP 429 on the official Node 24 manifest. Both Dockerfiles now use Docker’s verified official-image publisher on Amazon ECR Public with explicit content digests. Live manifest reads from Docker Hub and ECR Public returned identical complete index bytes for the Node 24 and Node 22 bookworm-slim tags. The Node 24 digest also equals the preceding successful prepared image run 37987895731. The prepared-image unit expectation now requires that exact official Node 24 image, and a new assertion preserves the exact official Node 22 browser image. The runtime versions, image content, unprivileged worker, complete test suites, public credential-free build, build limits and deployment flags do not change. No Docker or AWS account is needed. A full hosted image build remains required.
+
 ## 2026-10-09 — Use the complete queue-aware browser plan for discovery
 
 The new third-party embryo journey exposed a native fallback collision: two
