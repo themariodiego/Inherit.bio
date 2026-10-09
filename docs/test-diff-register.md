@@ -1,3 +1,12 @@
+## 2026-10-10 — Same-recipient prior appeal choice (source checkpoint)
+
+- The independent named MFA reviewer can keep an earlier native documentary rejection only after the exact current source decision and verified recipient bind this access appeal and all three current files have native full-read acknowledgement and documentary approval. It closes this appeal with a coded prior-decision reference; it neither changes the prior case nor grants target access.
+- Added focused context, route and UI cases for the optional branch, incomplete/unread/refused documents, stale revisions, foreign source/recipient, unsupported reversal/access choices and unchanged default closure. All existing rejection assertions remain.
+- The native rollback fixture uses the original genuine source rejection, a separate current reviewer, actual prepare/commit/token activation, three native compose/scan/read/ACK/approval doors, and complete source/target comparisons. Synthetic ciphertext and callbacks do not establish Storage, mail provider or browser acceptance; this new native extension is not yet executed.
+- Added the same-account/different-principal native negative after ordinary review identified that principal IDs alone do not prove an independent human. The immutable source outcome account is now compared with the current own-MFA account.
+- Scoped 74 cases across four affected files, type generation, app type check, affected-file lint and SQL includes passed. Full readability stopped only on inherited `public-appeal-documents.tsx` wording already corrected in the current integration; that original HOLD remains separate. The new native extension is unrun.
+- Approval, reversal, contradiction and new-information credential rotation remain closed. Production configuration remains disabled.
+
 ## 10 October 2026 — registered final public appeal rejection
 
 The exact registered POST body is implemented only for final rejection. A

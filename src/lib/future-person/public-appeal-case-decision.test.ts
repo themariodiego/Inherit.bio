@@ -38,6 +38,49 @@ describe("separate native final-rejection context", () => {
   expect(publicAppealCaseReviewBody({ ...current(), wrappedCaseKeyHex: "e".repeat(144) })).toBeNull();
  });
 });
+describe("a genuine prior decision's separate uphold branch", () => {
+ function prior() {
+  const nextScope = { ...scope, intakeKind: "access-or-review-appeal" };
+  const { format, ...encrypted } = sealNewAppeal(nextScope, { kind: "access-or-review-appeal", claimantName: "Synthetic Claimant",
+   contactEmail: "synthetic@example.test", decisionReference: "synthetic genuine prior reference",
+   statement: "This complete original request asks for a human review of the earlier documentary choice.", affirmed: true }); void format;
+  return { ...current(), caseKind: "access-or-review-appeal", scope: nextScope, ...encrypted,
+   documentDecisionsAvailable: true, allowedDecisions: ["reject", "uphold"],
+   priorDecision: { decisionId: id(11), sourceCaseId: id(12), decisionRevision: 3, evidenceRevision: 1,
+    sourceReviewerPrincipalId: id(13), decisionReferenceHash: "c".repeat(64), requiredAuthorityKind: "appeal-subject-source-control",
+    decisionKind: "subject-source-control-review-rejection", sourceDeadline: scope.originalDeadline },
+   documents: ["appeal-photo-identity", "appeal-decision-notice", "appeal-subject-source-control"].map((kind, index) => ({
+    documentId: id(index + 5), documentKind: kind, sha256: "a".repeat(64), decision: "approved" })) };
+ }
+ it("admits the native-bound complete approved set while serializing no prior/source actor or credential", () => {
+  const raw = prior(); expect(appealCaseContext.safeParse(raw).success).toBe(true);
+  const body = publicAppealCaseReviewBody(raw)!; expect(body.kind).toBe("access-or-review-appeal");
+  expect(body.evidence).toHaveLength(3); expect(body.targetBinding.state).toBe("unresolved");
+  expect(JSON.stringify(body)).not.toContain(raw.priorDecision.decisionId);
+  expect(JSON.stringify(body)).not.toContain(raw.priorDecision.sourceReviewerPrincipalId);
+  expect(JSON.stringify(body)).not.toContain(raw.wrappedCaseKeyHex);
+ });
+ it.each(["missing-prior", "current-case-as-source", "missing-document", "pending", "rejected", "wrong-authority", "wrong-decision-kind", "not-current", "unknown-kind"])(
+  "refuses to offer uphold for %s", state => {
+   const raw = prior();
+   const changed = state === "missing-prior" ? { ...raw, priorDecision: null }
+    : state === "current-case-as-source" ? { ...raw, priorDecision: { ...raw.priorDecision, sourceCaseId: raw.caseId } }
+    : state === "missing-document" ? { ...raw, documents: raw.documents.slice(0, 2) }
+    : state === "pending" || state === "rejected" ? { ...raw, documents: [{ ...raw.documents[0], decision: state === "pending" ? null : "rejected" }, ...raw.documents.slice(1)] }
+    : state === "wrong-authority" ? { ...raw, priorDecision: { ...raw.priorDecision, requiredAuthorityKind: "appeal-genetic-parent-authority" } }
+    : state === "wrong-decision-kind" ? { ...raw, priorDecision: { ...raw.priorDecision, decisionKind: "genetic-parent-authority-review-rejection" } }
+    : state === "not-current" ? { ...raw, documentDecisionsAvailable: false }
+    : { ...raw, priorDecision: { ...raw.priorDecision, decisionKind: "account-control" } };
+   expect(publicAppealCaseReviewBody(changed)).toBeNull();
+  });
+ it("keeps approval, reversal and needs-more closed in this body while admitting only the registered uphold grammar", () => {
+  const body = { decision: "uphold", reviewRevision: 1, reason: "The complete current record supports keeping the earlier documentary choice.", nonce: "synthetic-uphold-form" };
+  expect(appealCaseDecisionBody.safeParse(body).success).toBe(true);
+  for (const extra of [{ targetId: id(9) }, { priorDecisionId: id(11) }, { priorDecisionRevision: 3 },
+   { decision: "reverse-prior-decision" }, { decision: "approve-access" }, { decision: "needs-more-information" }])
+   expect(appealCaseDecisionBody.safeParse({ ...body, ...extra }).success).toBe(false);
+ });
+});
 describe("exact current final-case operation", () => {
  it("binds the form to own account, own session, exact case and both native revisions", () => {
   const token = mintAppealCaseReviewNonce(binding, 1000); expect(readAppealCaseReviewNonce(token, binding, 1001)).toMatch(/^[A-Za-z0-9_-]+$/u);

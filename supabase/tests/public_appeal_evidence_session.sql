@@ -378,6 +378,210 @@ select is(private.public_appeal_underlying_binding_v1(encode(extensions.digest(c
  'foreign recipient cannot borrow a real decision reference');
 select is(private.public_appeal_underlying_binding_v1(repeat('8',64),jsonb_build_object('1',repeat('c',64))),null::jsonb,
  'arbitrary/legacy decision references remain unbound');
+-- Genuine source rejection above, followed by a separate same-recipient
+-- access appeal and a different named reviewer. These are real native doors;
+-- ciphertext/Storage callbacks are synthetic, so this is not provider proof.
+create function pg_temp.prior_appeal_reviewer_jwt(p_same_account boolean default false) returns void language plpgsql as $test$
+ begin
+ if p_same_account then perform pg_temp.appeal_reviewer_jwt();return;end if;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub','7a000000-0000-0000-0000-000000000002',
+ 'role','authenticated','session_id','7a000000-0000-4000-8000-0000000000b1','aal','aal2',
+ 'iss','http://127.0.0.1:54321/auth/v1','aud','authenticated','exp',extract(epoch from clock_timestamp())::bigint+3600,
+ 'amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from clock_timestamp())::bigint-60)))::text,true);
+end $test$;
+create function pg_temp.prior_appeal_read_and_approve(p_document uuid,p_cookie text,p_nonce text,p_same_account boolean default false) returns void
+language plpgsql as $test$
+declare opened jsonb;receipt jsonb;proof text;revision bigint;doc private.appeal_documents;
+begin
+ perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+ select source.* into strict doc from private.appeal_documents source where source.id=p_document;
+ select pending.review_revision into strict revision from private.public_appeal_pending_reviews pending where pending.case_id=doc.intake_id;
+ opened:=public.open_claim_review_download_v1(doc.id,p_cookie);
+ receipt:=public.open_claim_review_receipt_v1((opened->>'session')::uuid,p_cookie,p_nonce);
+ perform public.authorize_claim_review_chunk_v1((opened->>'session')::uuid,p_cookie,0);
+ begin
+  perform public.decide_public_appeal_document_v1(doc.id,doc.sha256,revision,'approved',p_nonce,
+   decode(repeat('ab',48),'hex'),repeat('f',64),decode(repeat('cd',76),'hex'));
+  raise exception 'uphold evidence approved before native whole delivery ACK';
+ exception when insufficient_privilege then null;end;
+ proof:=encode(extensions.digest(decode(receipt#>>'{chunks,0,challenge}','hex')||convert_to('%PDF-1.7 synthetic','UTF8'),'sha256'),'hex');
+ perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+ perform public.prepare_claim_review_chunk_receipt_v1((opened->>'session')::uuid,p_cookie,0,proof);
+ perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+ perform public.acknowledge_claim_review_chunk_v1((opened->>'session')::uuid,p_cookie,0,proof,p_nonce);
+ perform public.decide_public_appeal_document_v1(doc.id,doc.sha256,revision,'approved',p_nonce,
+  decode(repeat('ab',48),'hex'),encode(extensions.digest(convert_to(p_nonce,'UTF8'),'sha256'),'hex'),decode(repeat('cd',76),'hex'));
+end $test$;
+create function pg_temp.prior_appeal_uphold_probe(p_same_account boolean default false) returns jsonb language plpgsql as $test$
+declare prepared jsonb;v_case uuid;source_case uuid;source_before jsonb;target_before jsonb;
+ claim record;activated record;kind text;ordinal integer:=0;opened jsonb;plan jsonb;scan jsonb;cookie text;nonce text;
+ sha text:=encode(extensions.digest(convert_to('%PDF-1.7 synthetic','UTF8'),'sha256'),'hex');
+ documents jsonb:='{}';v_document uuid;context jsonb;result jsonb;flags jsonb:='{}';receipt jsonb;
+begin
+ begin
+  select (value#>>'{frame,scope,caseId}')::uuid into source_case from public_appeal_prepared;
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  perform private.grant_claim_reviewer_v1('7a000000-0000-0000-0000-000000000002');
+  insert into public.subject_principals(id,account_id,principal_kind) values
+   ('86000000-0000-4000-8000-000000000002',case when p_same_account then '7a000000-0000-0000-0000-000000000001'::uuid else '7a000000-0000-0000-0000-000000000002'::uuid end,'reviewer');
+  insert into private.new_public_appeal_reviewers(principal_id,principal_revision,purpose_revision)
+   values('86000000-0000-4000-8000-000000000002',1,1);
+  prepared:=public.prepare_new_public_appeal_v1('access-or-review-appeal',pg_temp.h('uphold-payload'),pg_temp.h('uphold-form'),
+   jsonb_build_object('1',repeat('c',64)),jsonb_build_object('1',pg_temp.h('uphold-identifier')),
+   jsonb_build_object('1',pg_temp.h('uphold-network')),encode(extensions.digest(convert_to(repeat('d',64),'UTF8'),'sha256'),'hex'));
+  if prepared is null then raise exception 'real same-recipient access preparation unavailable';end if;
+  v_case:=(prepared#>>'{frame,scope,caseId}')::uuid;
+  flags:=flags||jsonb_build_object('distinctPrincipalNativeBinding',prepared#>>'{frame,reviewer,principalId}'='86000000-0000-4000-8000-000000000002'
+   and prepared#>>'{frame,underlyingDecision,sourceCaseId}'=source_case::text);
+  perform public.commit_new_public_appeal_v1(prepared,pg_temp.h('uphold-payload'),pg_temp.h('uphold-form'),
+   decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),decode(repeat('cd',48),'hex'),decode(repeat('de',48),'hex'),
+   jsonb_build_object('1',jsonb_build_object('normalized-identifier',pg_temp.h('uphold-identifier'),
+    'source-network',pg_temp.h('uphold-network'),'global-capacity',encode(extensions.digest(convert_to('api.subject-access-request|global-capacity','UTF8'),'sha256'),'hex'))));
+  -- The actual public queue may first issue the older documentary notice.
+  -- Every token is native; only this exact candidate may activate this case.
+  for ordinal in 1..4 loop
+   select * into claim from public.claim_mail_outbox();
+   exit when claim.outbox_id=(select source.outbox_id from private.new_public_appeal_intakes source where source.id=v_case);
+  end loop;
+  if claim.outbox_id is distinct from (select source.outbox_id from private.new_public_appeal_intakes source where source.id=v_case)
+   or not public.authorize_mail_submission_v1(claim.outbox_id,claim.attempt_ordinal) then raise exception 'access candidate not owned';end if;
+  select * into activated from public.activate_rights_session_v1(
+   encode(extensions.digest(convert_to(claim.delivery_token,'UTF8'),'sha256'),'hex'),pg_temp.h('uphold-rights'),repeat('U',32));
+  if activated.target_id<>v_case or activated.purpose<>'appeal-evidence' then raise exception 'wrong access session';end if;
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  flags:=flags||jsonb_build_object('incompleteClosed',context->'allowedDecisions'='["reject"]'::jsonb);
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'incomplete evidence admitted uphold';
+  exception when insufficient_privilege then null;end;
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  ordinal:=0;
+  for kind in select unnest(array['appeal-photo-identity','appeal-subject-source-control','appeal-decision-notice']) loop
+   ordinal:=ordinal+1;cookie:=pg_temp.h('uphold-upload:'||kind);nonce:=pg_temp.h('uphold-compose:'||kind);
+   opened:=public.open_public_appeal_document_v1(pg_temp.h('uphold-rights'),repeat(chr(85+ordinal),32),kind,
+    'application/pdf',octet_length('%PDF-1.7 synthetic'),sha,cookie,decode(repeat('12',72),'hex'));
+   perform public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length('%PDF-1.7 synthetic'),sha);
+   perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
+   plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,1);
+   perform public.finish_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,'composed',plan->>'objectKey');
+   scan:=public.claim_next_appeal_document_scan_v1(pg_temp.h('uphold-scan:'||kind));
+   if scan->>'documentId' is distinct from plan->>'documentId' then raise exception 'foreign access scan';end if;
+   perform public.record_appeal_document_scan_v1((scan->>'documentId')::uuid,pg_temp.h('uphold-scan:'||kind),'OK',sha,
+    'synthetic native test',1,clock_timestamp());
+   documents:=documents||jsonb_build_object(case kind when 'appeal-photo-identity' then 'photoIdentityDocumentId'
+    when 'appeal-subject-source-control' then 'subjectSourceControlDocumentId' else 'decisionNoticeDocumentId' end,plan->>'documentId');
+  end loop;
+  perform public.complete_new_public_appeal_evidence_v1(pg_temp.h('uphold-rights'),repeat('Z',32),documents,true);
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  flags:=flags||jsonb_build_object('pendingClosed',context->'allowedDecisions'='["reject"]'::jsonb);
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'unread pending evidence admitted uphold';
+  exception when insufficient_privilege then null;end;
+  for kind,v_document in select doc.document_kind,doc.id from private.appeal_documents doc where doc.intake_id=v_case order by doc.document_kind loop
+   perform pg_temp.prior_appeal_read_and_approve(v_document,pg_temp.h('uphold-read:'||kind),pg_temp.h('uphold-review:'||kind),p_same_account);
+  end loop;
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  if p_same_account then
+   if context->'allowedDecisions' is distinct from '["reject"]'::jsonb then
+    raise exception 'two principals disguised the original reviewer account';end if;
+   begin
+    perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+     (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+    raise exception 'same original reviewer account admitted uphold';
+   exception when insufficient_privilege then null;end;
+   flags:=flags||jsonb_build_object('sameAccountRefused',
+    context->'allowedDecisions'='["reject"]'::jsonb and jsonb_array_length(context->'documents')=3
+    and not exists(select 1 from jsonb_array_elements(context->'documents') doc where doc->>'decision'<>'approved')
+    and not exists(select 1 from private.public_appeal_case_decisions));
+   raise exception using errcode='PZ002',message='restore same-account synthetic case';
+  end if;
+  flags:=flags||jsonb_build_object('wholeApprovedNativeSet',context->'allowedDecisions'='["reject","uphold"]'::jsonb
+   and jsonb_array_length(context->'documents')=3 and not exists(select 1 from jsonb_array_elements(context->'documents') doc
+    where doc->>'decision'<>'approved'));
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint+1,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale review admitted uphold';
+  exception when insufficient_privilege then null;end;
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint+1,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale evidence admitted uphold';
+  exception when insufficient_privilege then null;end;
+  perform pg_temp.appeal_reviewer_jwt();
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'original source reviewer replaced independent review';
+  exception when insufficient_privilege then null;end;
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  begin
+   update public.encrypted_contact_references set status='rotated' where id=(select source.case_contact_id from private.new_public_appeal_intakes source where source.id=source_case);
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale source recipient admitted uphold';
+  exception when insufficient_privilege then null;end;
+  flags:=flags||jsonb_build_object('refusalsAtomic',not exists(select 1 from private.public_appeal_case_decisions));
+  select jsonb_build_object('intake',to_jsonb(source),'appeal',(select to_jsonb(appeal) from public.appeal_intakes appeal where appeal.id=source_case),
+   'decisions',(select jsonb_agg(to_jsonb(outcome) order by outcome.id) from private.public_appeal_document_decisions outcome where outcome.case_id=source_case),
+   'documents',(select jsonb_agg(to_jsonb(doc) order by doc.id) from private.appeal_documents doc where doc.intake_id=source_case))
+   into source_before from private.new_public_appeal_intakes source where source.id=source_case;
+  select jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort)) into target_before;
+  receipt:=public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+   (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+  flags:=flags||jsonb_build_object('nativeUpheld',receipt=jsonb_build_object('caseId',v_case,'state','resolved','outcome','upheld',
+    'reviewRevision',(context->>'reviewRevision')::bigint+1)
+   and exists(select 1 from private.public_appeal_case_decisions outcome where outcome.case_id=v_case and outcome.decision='uphold'
+    and outcome.prior_decision_id=(context#>>'{priorDecision,decisionId}')::uuid
+    and outcome.prior_decision_revision=(context#>>'{priorDecision,decisionRevision}')::bigint
+    and outcome.prior_evidence_revision=(context#>>'{priorDecision,evidenceRevision}')::bigint and outcome.reason_ciphertext is null
+    and outcome.reviewer_account_id='7a000000-0000-0000-0000-000000000002'),
+   'terminalDisposal',exists(select 1 from private.new_public_appeal_intakes source where source.id=v_case and source.state='closed'
+    and source.wrapped_case_key is null and source.working_ciphertext is null and source.case_contact_id is null)
+    and not exists(select 1 from public.rights_sessions rights where rights.target_kind='appeal-case' and rights.target_id=v_case)
+    and not exists(select 1 from private.public_appeal_provisional_targets hold where hold.case_id=v_case)
+    and not exists(select 1 from private.appeal_document_sessions session where session.intake_id=v_case and session.wrapped_document_key is not null));
+  select jsonb_build_object('intake',to_jsonb(source),'appeal',(select to_jsonb(appeal) from public.appeal_intakes appeal where appeal.id=source_case),
+   'decisions',(select jsonb_agg(to_jsonb(outcome) order by outcome.id) from private.public_appeal_document_decisions outcome where outcome.case_id=source_case),
+   'documents',(select jsonb_agg(to_jsonb(doc) order by doc.id) from private.appeal_documents doc where doc.intake_id=source_case))
+   into result from private.new_public_appeal_intakes source where source.id=source_case;
+  flags:=flags||jsonb_build_object('sourceUnchanged',result=source_before,'targetsUnchanged',target_before=jsonb_build_object(
+   'subjects',(select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort)));
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'closed uphold replay admitted';
+  exception when insufficient_privilege then null;end;
+  raise exception using errcode='PZ002',message='restore synthetic upheld case';
+ exception when sqlstate 'PZ002' then null;
+ end;
+ return flags;
+end $test$;
+create temporary table prior_appeal_uphold_result as select pg_temp.prior_appeal_uphold_probe() value;
+select ok((value->>'distinctPrincipalNativeBinding')::boolean,'real prior source and same recipient select a genuinely different current named reviewer') from prior_appeal_uphold_result;
+select ok((value->>'incompleteClosed')::boolean and (value->>'pendingClosed')::boolean,
+ 'incomplete, pending and not-yet-delivered evidence cannot enable uphold') from prior_appeal_uphold_result;
+select ok((value->>'wholeApprovedNativeSet')::boolean,'all three real native full-read ACK and documentary approval doors enable only registered uphold') from prior_appeal_uphold_result;
+select ok((value->>'refusalsAtomic')::boolean,'foreign reviewer, stale source recipient and either stale revision record no outcome or nonce') from prior_appeal_uphold_result;
+select ok((value->>'nativeUpheld')::boolean,'same-recipient independent MFA uphold records only exact prior outcome provenance') from prior_appeal_uphold_result;
+select ok((value->>'terminalDisposal')::boolean,'uphold closes this case and shreds its keys, contacts, sessions and provisional hold') from prior_appeal_uphold_result;
+select ok((value->>'sourceUnchanged')::boolean and (value->>'targetsUnchanged')::boolean,
+ 'uphold preserves the complete original documentary outcome, source case and all subject/cohort rows') from prior_appeal_uphold_result;
+select ok((pg_temp.prior_appeal_uphold_probe(true)->>'sameAccountRefused')::boolean,
+ 'a second principal of the original Auth account cannot uphold even after all three native full-read approvals');
+select is((select count(*) from private.public_appeal_case_decisions),0::bigint,'uphold rollback restores every outcome/nonce row and the original ongoing case');
+select is((select count(*) from private.new_public_appeal_intakes),1::bigint,'the independent access-case test leaves no case, principal or account adoption behind');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role_name
+ where has_function_privilege(role_name,'private.public_appeal_uphold_binding_v1(uuid)','execute')
+ or has_function_privilege(role_name,'public.decide_public_appeal_case_before_uphold_v1(uuid,text,bigint,bigint,text,bytea)','execute')),
+ 0::bigint,'no API role can bypass the native optional branch or call the preserved rejection implementation');
 select pg_temp.final_case_reviewer_jwt();
 create temporary table final_case_context as select public.read_public_appeal_case_context_v1(
  (select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)) value;
