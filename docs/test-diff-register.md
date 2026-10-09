@@ -80,6 +80,26 @@ Existing provider/generation and READY/download/mail activation stay closed.
 Native tests are authored here and remain unrun. Focused source validation is
 pending; no prior assertions or timeouts are removed.
 
+## 2026-10-09 — Read the complete name-check history in one Git batch
+
+Two preserved local name checks reached the unchanged 120 s limit. The history
+reader now obtains every HEAD commit, committer timestamp and complete message
+in one NUL-framed batch, then applies the same strict baseline cutoff and
+message trimming. All denylist, external-host and organisation detectors and
+counts remain; malformed or duplicate framing is refused. Regressions cover
+multiline messages, the exact cutoff and merge ancestry behind an old timestamp.
+No commit is omitted by a date traversal filter, and no limit is extended.
+
+## 2026-10-09 — Wait for report refresh readiness without requiring streamed RSC EOF
+
+The preserved browser-1 original reached its unchanged 300 s setup limit while
+waiting for the newly added streamed RSC response EOF. The helper now retains
+the exact non-prefetch GET/RSC response and HTTP 200, visible ready status and
+enabled Generate control, then continues without that EOF wait. Every original
+native source, grant and journal assertion, navigation timeout and retry zero
+remains. This does not claim React transition completion. The failed hosted run
+is preserved; this correction still requires qualification on its final source.
+
 ## 2026-10-09 — Isolate the two-person Path B expiry fixture from report invitation quotas
 
 The full hosted future-flow run reached the native ten-per-hour invitation

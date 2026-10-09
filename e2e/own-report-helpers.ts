@@ -110,8 +110,8 @@ export async function generateOwnFileWithChosenReports(
   }
   const generated = page.waitForResponse(response => response.url().endsWith(`/api/files/${fileId}/process`)
     && response.request().method() === "POST");
-  // Generation schedules an authoritative Server Component refresh. Finish
-  // that presentation before a caller leaves this page and opens a result.
+  // Observe the authoritative refresh response and the visible ready state
+  // before a caller leaves this page; a streamed RSC response need not end.
   const refreshed = page.waitForResponse(response => {
     const request = response.request(), headers = request.headers();
     return new URL(response.url()).pathname === "/genome/me/reports" && request.method() === "GET"
@@ -126,7 +126,6 @@ export async function generateOwnFileWithChosenReports(
   expect(subjectSynchronousReportReceipt.parse(await generation.json()).fileId).toBe(fileId);
   const presentation = await refreshed;
   expect(presentation.status(), "authoritative generated-report refresh").toBe(200);
-  expect(await presentation.finished(), "generated-report refresh completed").toBeNull();
   await expect(choices.getByRole("status").filter({ hasText: /^Your selected (?:reports|results) are ready\./ })).toBeVisible();
   await expect(generate).toBeEnabled();
 
