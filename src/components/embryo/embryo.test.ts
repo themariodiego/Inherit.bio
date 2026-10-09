@@ -26,7 +26,7 @@ import {
   QC_FAILED_CHIP,
 } from "@/copy/embryos/qc";
 import { NO_RANKING_STATEMENT, TRADEOFFS_EXISTS, TRADEOFFS_NONE_MEASURABLE } from "@/copy/embryos/tradeoffs";
-import { BASIS_OPTIONS, PDF_REFUSAL } from "@/copy/embryos/upload";
+import { BASIS_OPTIONS, PDF_REFUSAL, UPLOAD_COMPLETE_HEADING, UPLOAD_COMPLETE_SENTENCE, ADD_MORE_EMBRYOS_BUTTON } from "@/copy/embryos/upload";
 import type { FlowState } from "@/lib/embryos/upload-flow";
 import { MODELLED_MARKER } from "@/lib/figures/contract";
 import type { EmbryoCohortView } from "@/lib/embryos/cohorts";
@@ -51,6 +51,7 @@ const { QcTable } = await import("./compare/qc-table");
 const { QcBlock } = await import("./detail/qc-block");
 const { FindingsSection } = await import("./detail/findings-section");
 const { UploadFlow } = await import("./upload/upload-flow");
+const { UploadComplete } = await import("./upload/upload-stage");
 const { INITIAL_FLOW, MAXIMUM_INTERACTIVES_PER_SCREEN, SCREEN_BUDGET, SHELL_INTERACTIVES } = await import("@/lib/embryos/upload-flow");
 
 /**
@@ -615,5 +616,25 @@ describe("<UploadFlow>", () => {
     );
     expect(donor).toContain(BASIS_OPTIONS[1].sentence);
     expect(donor).toContain(`>${BASIS_OPTIONS[1].label}<`);
+  });
+});
+
+
+describe("completed real upload presentation", () => {
+  it("shows completion, real cohort navigation and an explicit new-upload action without another file form", () => {
+    const html = renderToStaticMarkup(h(UploadComplete, { view: { kind: "complete", cohortId: E(1), draftCsrfToken: "synthetic-bound-new-draft" } }));
+    expect(html).toContain('data-state="complete"');
+    expect(html).toContain(`data-cohort-id="${E(1)}"`);
+    expect(html).toContain(UPLOAD_COMPLETE_HEADING);
+    expect(html).toContain(UPLOAD_COMPLETE_SENTENCE);
+    expect(html).toContain(`href="/embryos/compare?cohort=${E(1)}"`);
+    expect(html).toContain('href="/embryos"');
+    expect(html).toContain(ADD_MORE_EMBRYOS_BUTTON);
+    expect(html.match(/<a /g)).toHaveLength(2);
+    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html).not.toContain('data-slot="upload-flow"');
+    expect(html).not.toContain('data-slot="file-form"');
+    expect(html).not.toContain('data-figure-kind');
+    expect(html).not.toContain("synthetic-bound-new-draft");
   });
 });

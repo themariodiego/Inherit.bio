@@ -64,6 +64,7 @@ export interface CohortFacts {
   createdAt: string;
   status: string;
   sessionStatus: string | null;
+  publicationRevision: number;
 }
 
 export type UploadStage =
@@ -80,7 +81,8 @@ export type UploadStage =
       /** Acknowledgements this owner already signed on this draft, by artifact. */
       signed: Partial<Record<Acknowledgement, string>>;
     }
-  | { kind: "processing"; cohortId: string };
+  | { kind: "processing"; cohortId: string }
+  | { kind: "complete"; cohortId: string };
 
 /** A notice shown above the start of a new upload. */
 export type UploadNotice = "co-parent-done" | "upload-failed" | "upload-left" | null;
@@ -199,8 +201,11 @@ export function ownerStage(draft: DraftFacts): UploadStage {
 }
 
 /** The upload's latest record, once finalized: still checking, failed, left, or done. */
-export function cohortOutcome(cohort: CohortFacts | null): "processing" | "upload-failed" | "upload-left" | null {
+export function cohortOutcome(cohort: CohortFacts | null): "processing" | "complete" | "upload-failed" | "upload-left" | null {
   if (!cohort) return null;
+  // Active alone also describes historical seeded records. Only a real
+  // positive native publication revision establishes completed ingestion.
+  if (cohort.status === "active" && Number.isSafeInteger(cohort.publicationRevision) && cohort.publicationRevision > 0) return "complete";
   if (cohort.status === "ingesting" || (cohort.status === "upload_pending" && cohort.sessionStatus !== null && PROCESSING_SESSIONS.has(cohort.sessionStatus))) {
     return "processing";
   }
@@ -215,8 +220,8 @@ export function cohortOutcome(cohort: CohortFacts | null): "processing" | "uploa
  * The one stage this account sees. A co-parent with a statement left signs
  * first, since nothing on the owner's side can move until they do; then the
  * account's own open draft; then its latest finalized record, when that is
- * still being checked. Everything else starts a new upload, with a notice
- * for what the account last left behind.
+ * still being checked or has a genuine publication. Everything else starts
+ * a new upload, with a notice for what the account last left behind.
  */
 export function resolveUploadStage(input: {
   accountId: string;
@@ -238,7 +243,7 @@ export function resolveUploadStage(input: {
   if (input.ownedDraft && (draftIsNewer || outcome !== "processing")) {
     return { stage: ownerStage(input.ownedDraft), notice: null };
   }
-  if (outcome === "processing") return { stage: { kind: "processing", cohortId: input.latestCohort!.id }, notice: null };
+  if (outcome === "processing" || outcome === "complete") return { stage: { kind: outcome, cohortId: input.latestCohort!.id }, notice: null };
   if (outcome === "upload-failed" || outcome === "upload-left") return { stage: { kind: "start" }, notice: outcome };
   return { stage: { kind: "start" }, notice: coParent.length > 0 ? "co-parent-done" : null };
 }

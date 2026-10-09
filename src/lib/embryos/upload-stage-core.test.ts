@@ -149,8 +149,8 @@ describe("the co-parent", () => {
 });
 
 describe("after finalizing", () => {
-  const cohort = (status: string, sessionStatus: string | null) =>
-    ({ id: "c0000000-0000-4000-8000-00000000000c", createdAt: "2026-09-28T12:00:00.000Z", status, sessionStatus });
+  const cohort = (status: string, sessionStatus: string | null, publicationRevision = 0) =>
+    ({ id: "c0000000-0000-4000-8000-00000000000c", createdAt: "2026-09-28T12:00:00.000Z", status, sessionStatus, publicationRevision });
 
   it("reads the record's outcome from the cohort and its latest upload session", () => {
     expect(cohortOutcome(cohort("upload_pending", "open"))).toBe("upload-left");
@@ -160,6 +160,9 @@ describe("after finalizing", () => {
     expect(cohortOutcome(cohort("restricted", "failed"))).toBe("upload-failed");
     expect(cohortOutcome(cohort("active", "published"))).toBeNull();
     expect(cohortOutcome(cohort("active", "complete"))).toBeNull();
+    expect(cohortOutcome(cohort("active", "published", 1))).toBe("complete");
+    for (const revision of [-1, 0, 0.5, Number.NaN]) expect(cohortOutcome(cohort("active", "published", revision))).toBeNull();
+    for (const status of ["restricted", "purged", "claimed_bound"]) expect(cohortOutcome(cohort(status, "published", 1))).toBeNull();
   });
 
   it("shows the checking panel while the latest record is processing, and a notice above a new start otherwise", () => {
@@ -167,6 +170,16 @@ describe("after finalizing", () => {
     expect(resolveUploadStage({ ...base, latestCohort: cohort("ingesting", "processing") }).stage).toMatchObject({ kind: "processing" });
     expect(resolveUploadStage({ ...base, latestCohort: cohort("upload_pending", "open") })).toEqual({ stage: { kind: "start" }, notice: "upload-left" });
     expect(resolveUploadStage({ ...base, latestCohort: cohort("active", "published") })).toEqual({ stage: { kind: "start" }, notice: null });
+  });
+
+  it("returns complete only for a real active publication, preserving new-draft and co-parent priority", () => {
+    const published = cohort("active", "published", 1);
+    expect(resolveUploadStage({ accountId: OWNER, ownedDraft: null, coParentDrafts: [], latestCohort: published }))
+      .toEqual({ stage: { kind: "complete", cohortId: published.id }, notice: null });
+    const newer = draft({ createdAt: "2026-09-28T13:00:00.000Z" });
+    expect(resolveUploadStage({ accountId: OWNER, ownedDraft: newer, coParentDrafts: [], latestCohort: published }).stage.kind).toBe("owner-sign");
+    const joined = accepted(draft({ signatures: ownerSigned }));
+    expect(resolveUploadStage({ accountId: OTHER, ownedDraft: null, coParentDrafts: [joined], latestCohort: published }).stage.kind).toBe("co-parent-sign");
   });
 
   it("a newer open draft wins over an older record's outcome", () => {

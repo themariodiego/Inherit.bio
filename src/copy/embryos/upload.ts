@@ -327,3 +327,8 @@ export const ANALYSIS_PERMISSION_LEDE = "Adding the file did not allow analysis.
 
 export const SIGN_IN_AGAIN_BUTTON = "Sign in again";
 export const SIGN_IN_AGAIN_STATUS = "Sign in again to continue. Your account may need to be checked before you can go on.";
+
+/** A real published upload; this does not imply approved health results. */
+export const UPLOAD_COMPLETE_HEADING = "Files added";
+export const UPLOAD_COMPLETE_SENTENCE = "The file check is done. Go to your embryos to see each file and what could be read. Every required parent must agree before results can be shown.";
+export const ADD_MORE_EMBRYOS_BUTTON = "Add more embryo files";

@@ -108,8 +108,8 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
         await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
         await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
       }
-      const auditedSurfaces = await auditPublishedEmbryoSurfaces({ page, ownerId: owner, cohortId,
-        read: readPublication });
+      const auditedSurfaces = await test.step("/embryos/upload complete; /embryos/compare complete; /embryos/[embryoId] complete from native parent-authorized publication", async () =>
+        await auditPublishedEmbryoSurfaces({ page, ownerId: owner, cohortId, read: readPublication }));
       await testInfo.attach("published-embryo-surface-audits", { contentType: "application/json",
         body: JSON.stringify({ source: "actual-native-signed-parent-publication", cohortId,
           surfaces: auditedSurfaces, scientificCoverageStates: "held: no eligible result producer" }) });

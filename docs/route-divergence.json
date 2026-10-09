@@ -28,7 +28,7 @@
       "closing": "Created with the declared policies and the document-specific data key when evidence ingest is built."
     }
   ],
-  "provenRouteStatesNote": "The (route, state) pairs a browser test title proves today, out of the 288 the register requires. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction, and UNPROVEN_ROUTE_STATE_PAIRS in that script holds the remainder. A title proves a pair when it names the registered route path and the state id as separate, non-overlapping, whole tokens, so \"empty-history\" does not prove \"empty\" and a state id appearing only inside the path proves nothing.",
+  "provenRouteStatesNote": "The executable (route, state) pairs named in current audited browser test titles, out of the 161 the register requires. This is a static source contract, not a record of a successful run. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction; UNPROVEN_ROUTE_STATE_PAIRS holds the remaining source gaps. A title names the registered route path and state id as separate non-overlapping whole tokens. The three native embryo complete steps added on 2026-10-09 are prepared and still require full hosted execution on this exact source before acceptance. No partial/not-covered embryo pair is added: the empty approved registry cannot produce the required scientific finding states.",
   "provenRouteStates": [
     "/ complete",
     "/about complete",
@@ -50,16 +50,19 @@
     "/embryos empty",
     "/embryos jurisdiction-unavailable",
     "/embryos processing",
+    "/embryos/[embryoId] complete",
     "/embryos/[embryoId] consent-required",
     "/embryos/[embryoId] empty",
     "/embryos/[embryoId] jurisdiction-unavailable",
     "/embryos/[embryoId] processing",
+    "/embryos/compare complete",
     "/embryos/compare consent-required",
     "/embryos/compare empty",
     "/embryos/compare jurisdiction-unavailable",
     "/embryos/compare processing",
     "/embryos/request-data complete",
     "/embryos/request-data jurisdiction-unavailable",
+    "/embryos/upload complete",
     "/embryos/upload processing",
     "/embryos/upload jurisdiction-unavailable",
     "/family complete",

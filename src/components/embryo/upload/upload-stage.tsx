@@ -9,6 +9,9 @@ import { formatDate } from "@/components/embryo/format";
 import { INGEST_REFUSALS } from "@/copy/upload/errors";
 import { REQUEST_FAILED_STATUS, SIGN_BUTTON } from "@/copy/embryos/signing";
 import {
+  ADD_MORE_EMBRYOS_BUTTON,
+  UPLOAD_COMPLETE_HEADING,
+  UPLOAD_COMPLETE_SENTENCE,
   ACKNOWLEDGE_HEADING,
   ACKNOWLEDGE_LEDE,
   BACK_TO_EMBRYOS_LINK,
@@ -55,6 +58,9 @@ import { EMBRYO_INGEST_SESSION_LIMITS } from "@/lib/genome/ingest-limits";
 import { UPLOAD_CSRF_HEADER, UploadTransportError, sendEmbryoFile, type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
 import { readUploadReceipt } from "@/lib/embryos/upload-receipt";
 import { route } from "@/lib/primary-routes";
+import { INITIAL_FLOW } from "@/lib/embryos/upload-flow";
+import { COMPARE_THESE_LINK } from "@/copy/embryos/index";
+import { UploadFlow } from "./upload-flow";
 import { ArtifactSigningForm } from "./signing-form";
 
 /**
@@ -114,7 +120,25 @@ export function UploadStage({ view }: { view: Exclude<UploadStageView, { kind: "
       return <FinalizeAndSend view={view} />;
     case "processing":
       return <ProcessingPanel />;
+    case "complete":
+      return <UploadComplete view={view} />;
   }
+}
+
+/** The existing upload token starts another real draft only on an explicit
+ * action. The complete screen itself reads or creates no derived result. */
+export function UploadComplete({ view }: { view: Extract<UploadStageView, { kind: "complete" }> }) {
+  const [adding, setAdding] = useState(false);
+  if (adding) return <UploadFlow initial={{ ...INITIAL_FLOW, ingest: true }} draftCsrfToken={view.draftCsrfToken} />;
+  return (
+    <section data-slot="upload-complete" data-state="complete" data-cohort-id={view.cohortId} className="space-y-4">
+      <h2 className="title text-ink">{UPLOAD_COMPLETE_HEADING}</h2>
+      <p role="status" className="max-w-prose text-base leading-relaxed text-ink">{UPLOAD_COMPLETE_SENTENCE}</p>
+      <p className="text-sm"><Link href={route("embryos.compare", { query: { cohort: view.cohortId } })} className="link-target quiet-link">{COMPARE_THESE_LINK}</Link></p>
+      <BackToEmbryos />
+      <Button type="button" onClick={() => setAdding(true)}>{ADD_MORE_EMBRYOS_BUTTON}</Button>
+    </section>
+  );
 }
 
 function StageFrame({ step, slot, heading, headingId, lede, children }: {

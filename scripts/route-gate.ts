@@ -617,7 +617,10 @@ const TASK_BINDINGS = "scripts/comprehension/bindings.json";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 9;
+// Three genuine native complete proofs are prepared in the all-pass journey.
+// The six scientific partial/not-covered pairs remain unconstructible while
+// no eligible finding producer is approved; file QC is not their substitute.
+const UNPROVEN_ROUTE_STATE_PAIRS = 6;
 
 /**
  * The register's task-depth ceilings, unmeasured. This is a ratchet in the
