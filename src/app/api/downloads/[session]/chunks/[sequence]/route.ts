@@ -1,9 +1,11 @@
 import crypto from "node:crypto";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { SENSITIVE_HEADERS, notFound, unavailable } from "@/lib/embryos/api";
-import { supabaseClaimObjectStore } from "@/lib/future-person/claim-objects";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
+import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimDataKey, openDocumentBytes } from "@/lib/future-person/document-envelope";
+import { unwrapNewCaseKey } from "@/lib/future-person/new-case-envelope-crypto";
 import { CHUNK_BYTES, downloadCookieHash, isCanonicalId } from "@/lib/future-person/review";
 import { chunkReceiptProof } from "@/lib/future-person/review-receipt";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -34,7 +36,7 @@ export async function GET(request: Request, context: { params: Promise<{ session
 }
 
 async function chunk(request: Request, session: string, sequence: string): Promise<Response> {
-  if (!futurePersonClaimsOpen() || !isCanonicalId(session) || !SEQUENCE.test(sequence)
+  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen()) || !isCanonicalId(session) || !SEQUENCE.test(sequence)
     || new URL(request.url).search !== "" || request.headers.get("range") !== null
     || request.headers.get("sec-fetch-site") !== "same-origin") {
     return notFound();
@@ -47,22 +49,23 @@ async function chunk(request: Request, session: string, sequence: string): Promi
     p_session_id: session, p_cookie_hash: cookieHash, p_sequence: Number(sequence),
   });
   if (error) return error.code === "42501" ? notFound() : unavailable();
-  const grant = data as { objectKey?: unknown; sha256?: unknown; byteCount?: unknown; wrappedDataKey?: unknown; receiptChallenge?: unknown } | null;
+  const grant = data as { objectKey?: unknown; sha256?: unknown; byteCount?: unknown; wrappedDataKey?: unknown; receiptChallenge?: unknown; transport?: unknown } | null;
   if (!grant || typeof grant.objectKey !== "string" || typeof grant.sha256 !== "string"
     || typeof grant.byteCount !== "number" || typeof grant.wrappedDataKey !== "string") {
     return unavailable();
   }
+  if ((grant.transport !== undefined && grant.transport !== "appeal") || (grant.transport === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen())) return notFound();
 
   let sealed: Uint8Array;
   try {
-    sealed = await supabaseClaimObjectStore(createAdminClient()).read(grant.objectKey);
+    sealed = await (grant.transport === "appeal" ? supabaseAppealObjectStore(createAdminClient()) : supabaseClaimObjectStore(createAdminClient())).read(grant.objectKey);
   } catch {
     return unavailable();
   }
   let bytes: Buffer | null;
   let key: Buffer | undefined;
   try {
-    key = claimDataKey(grant.wrappedDataKey);
+    key = grant.transport === "appeal" ? unwrapNewCaseKey(grant.wrappedDataKey) : claimDataKey(grant.wrappedDataKey);
     bytes = openDocumentBytes(key, grant.objectKey, sealed);
   } catch {
     return unavailable();
@@ -89,7 +92,8 @@ async function chunk(request: Request, session: string, sequence: string): Promi
     const { data: current, error: revoked } = await supabase.rpc("authorize_claim_review_chunk_v1", {
       p_session_id:session,p_cookie_hash:cookieHash,p_sequence:Number(sequence),
     });
-    if (revoked || (current as { sha256?: unknown } | null)?.sha256 !== grant.sha256) {
+    if (revoked || (current as { sha256?: unknown } | null)?.sha256 !== grant.sha256
+      || (current as { transport?: unknown } | null)?.transport !== grant.transport) {
       part.fill(0);
       return revoked?.code === "42501" ? notFound() : unavailable();
     }

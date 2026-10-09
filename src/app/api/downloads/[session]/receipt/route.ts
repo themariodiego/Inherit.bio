@@ -3,6 +3,7 @@ import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { sha256Hex } from "@/lib/future-person/claim-session";
+import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { downloadCookieHash, isCanonicalId, reviewCsrfMatches } from "@/lib/future-person/review";
 import { mintReceiptAckNonce, readReceiptOpenNonce, receiptCsrf } from "@/lib/future-person/review-receipt";
@@ -17,7 +18,7 @@ const receipt = z.object({ session: z.uuid(), chunks: z.array(z.object({
 export async function POST(request: Request, context: { params: Promise<{ session: string }> }) {
   const { session } = await context.params;
   const url = new URL(request.url);
-  if (!futurePersonClaimsOpen() || !isCanonicalId(session) || url.search !== ""
+  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen()) || !isCanonicalId(session) || url.search !== ""
     || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
     || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return notFound();
   const cookie = downloadCookieHash(request);
@@ -30,8 +31,9 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
     p_session_id: session,p_cookie_hash:cookie,p_sequence:0,
   });
   if (denied) return denied.code === "42501" ? notFound() : unavailable();
-  const target = grant as { documentId?: unknown; reviewId?: unknown } | null;
+  const target = grant as { documentId?: unknown; reviewId?: unknown; transport?: unknown } | null;
   if (!target || typeof target.documentId !== "string" || typeof target.reviewId !== "string") return unavailable();
+  if ((target.transport !== undefined && target.transport !== "appeal") || (target.transport === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen())) return notFound();
   const nonce = readReceiptOpenNonce(parsed.data.nonce,target.documentId,account.user.id,account.sessionId);
   if (!nonce || !reviewCsrfMatches(request.headers.get("x-inherit-csrf"),target.reviewId,account.user.id,account.sessionId)) return notFound();
   const { data,error } = await client.rpc("open_claim_review_receipt_v1",{

@@ -13697,6 +13697,48 @@
         "workingCiphertextHex",
         "statementCiphertextHex"
       ]
+    },
+    "appeal-decision-notice-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "closed": true,
+      "headers": "private-no-store-no-referrer",
+      "allowedKeys": [
+        "deadline",
+        "decisions"
+      ],
+      "schema": {
+        "deadline": "original-case-deadline",
+        "decisions": {
+          "each": {
+            "closed": true,
+            "allowedKeys": [
+              "documentKind",
+              "decision",
+              "decisionReference"
+            ],
+            "documentKind": [
+              "appeal-photo-identity",
+              "appeal-subject-source-control",
+              "appeal-genetic-parent-authority",
+              "appeal-decision-notice"
+            ],
+            "decision": [
+              "approved",
+              "rejected"
+            ],
+            "decisionReference": "null-or-exact-native-source-rejection-reference-decrypted-after-own-verified-case-session-currentness"
+          }
+        }
+      },
+      "forbidden": [
+        "reviewer-notes",
+        "matched-contact",
+        "target-id",
+        "account-id",
+        "ciphertext",
+        "wrapped-key"
+      ]
     }
   },
   "responseContractBindings": {
@@ -21697,6 +21739,26 @@
       "expectedStatus": 200
     },
     {
+      "id": "reviews.appeal",
+      "path": "/reviews/appeals/[id]",
+      "kind": "page",
+      "domain": "rights",
+      "auth": "reviewer",
+      "surface": "standard",
+      "width": "64rem",
+      "stateProfile": "auth-flow",
+      "policy": {
+        "mode": "named-human-appeal-review",
+        "resolver": "reviewer-api-v1",
+        "jurisdictionBypass": true,
+        "requires": "current-named-human-reviewer-assignment-own-JWT-live-session-and-recent-MFA-before-render-and-at-every-document-receipt-or-decision",
+        "byteRead": "complete-exact-size-and-SHA256-verified-document-before-any-acknowledgement-separate-explicit-human-attestation-no-local-storage-or-download",
+        "approvalScope": "document-only-approval-without-target-or-access-disposition"
+      },
+      "disposition": "kept",
+      "expectedStatus": 200
+    },
+    {
       "id": "api.future-person-own-correction-statement",
       "path": "/api/future-person/claim/session/corrections/[id]/statement",
       "kind": "endpoint",
@@ -21728,6 +21790,37 @@
         ]
       },
       "successResponseContract": "test-requester-own-correction-statement-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.appeal-decision-notice",
+      "path": "/api/appeals/session/decision",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "token",
+      "authRequirements": [
+        "original-verified-case-session-hash-cookie-even-after-evidence-consumption-read-only-with-original-sixty-minute-expiry-and-fifteen-minute-idle"
+      ],
+      "methods": [
+        "GET"
+      ],
+      "stateProfile": "endpoint",
+      "requestContract": {
+        "query": "none",
+        "body": "none",
+        "lookup": "native-session-hash-only-no-case-contact-or-target-input"
+      },
+      "policy": {
+        "mode": "appeal-case-decision-notice",
+        "jurisdictionBypass": true,
+        "authority": "appeal-authority-v1",
+        "operation": "read-original-case-document-notice",
+        "contracts": [
+          "appeal-authority-v1"
+        ],
+        "sideEffects": "none-no-session-renewal-no-account-adoption-no-notes-no-new-rights"
+      },
+      "successResponseContract": "appeal-decision-notice-v1",
       "disposition": "kept"
     }
   ],

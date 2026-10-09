@@ -3,6 +3,7 @@ import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { SENSITIVE_HEADERS, notFound, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { sha256Hex } from "@/lib/future-person/claim-session";
+import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { downloadCookieHash,isCanonicalId } from "@/lib/future-person/review";
 import { readReceiptAckNonce,receiptCsrfMatches } from "@/lib/future-person/review-receipt";
@@ -13,7 +14,7 @@ const body=z.object({ proof:z.string().regex(/^[0-9a-f]{64}$/u),nonce:z.string()
 export async function POST(request:Request,context:{ params:Promise<{session:string;sequence:string}> }) {
   const {session,sequence}=await context.params;
   const url=new URL(request.url);
-  if (!futurePersonClaimsOpen() || !isCanonicalId(session) || !/^(0|[1-4])$/u.test(sequence) || url.search!==""
+  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen()) || !isCanonicalId(session) || !/^(0|[1-4])$/u.test(sequence) || url.search!==""
     || request.headers.get("origin")!==url.origin || request.headers.get("sec-fetch-site")!=="same-origin"
     || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()!=="application/json") return notFound();
   const cookie=downloadCookieHash(request);
@@ -23,7 +24,12 @@ export async function POST(request:Request,context:{ params:Promise<{session:str
   if (!parsed.success) return notFound();
   const nonce=readReceiptAckNonce(parsed.data.nonce,session,Number(sequence),cookie,account.user.id,account.sessionId);
   if (!nonce) return notFound();
-  const { error }=await (await createClient()).rpc("acknowledge_claim_review_chunk_v1",{
+  const own=await createClient();
+  const {data:grant,error:denied}=await own.rpc("authorize_claim_review_chunk_v1",{p_session_id:session,p_cookie_hash:cookie,p_sequence:Number(sequence)}).retry(false).abortSignal(request.signal);
+  if(denied)return denied.code==="42501"?notFound():unavailable();
+  const transport=(grant as {transport?:unknown}|null)?.transport;
+  if(!grant || (transport!==undefined&&transport!=="appeal") || (transport==="appeal"?!testAppealIntakeOpen():!futurePersonClaimsOpen()))return notFound();
+  const { error }=await own.rpc("acknowledge_claim_review_chunk_v1",{
     p_session_id:session,p_cookie_hash:cookie,p_sequence:Number(sequence),p_proof:parsed.data.proof,p_nonce_hash:sha256Hex(nonce),
   });
   if (error) return ["42501","23505","22023"].includes(error.code ?? "")?notFound():unavailable();

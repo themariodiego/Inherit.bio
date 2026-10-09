@@ -9,6 +9,8 @@ const common = { photoIdentityDocumentId: z.uuid(), affirmed: z.literal(true), n
 export const publicAppealCompletionBody = z.union([
  z.object({ ...common, subjectSourceControlDocumentId: z.uuid() }).strict(),
  z.object({ ...common, geneticParentAuthorityDocumentId: z.uuid() }).strict(),
+ z.object({ ...common, decisionNoticeDocumentId: z.uuid(), subjectSourceControlDocumentId: z.uuid() }).strict(),
+ z.object({ ...common, decisionNoticeDocumentId: z.uuid(), geneticParentAuthorityDocumentId: z.uuid() }).strict(),
 ]);
 const receipt = z.object({ status: z.literal("review_pending"), deadline: z.iso.datetime({ offset: true }) }).strict();
 /** Native case kind chooses the exact two documents. A handle does not grant
@@ -22,8 +24,9 @@ export async function POST(request: Request) {
   const documents = "subjectSourceControlDocumentId" in parsed.data
    ? { photoIdentityDocumentId: parsed.data.photoIdentityDocumentId, subjectSourceControlDocumentId: parsed.data.subjectSourceControlDocumentId }
    : { photoIdentityDocumentId: parsed.data.photoIdentityDocumentId, geneticParentAuthorityDocumentId: parsed.data.geneticParentAuthorityDocumentId };
+  const completeDocuments = "decisionNoticeDocumentId" in parsed.data ? { ...documents, decisionNoticeDocumentId: parsed.data.decisionNoticeDocumentId } : documents;
   const { data, error } = await owner.wait(owner.rpc("public-commit", () => createAdminClient()
-   .rpc("complete_new_public_appeal_evidence_v1", { p_session_hash: proof.sessionHash, p_nonce: proof.nonce, p_documents: documents, p_affirmed: true })
+   .rpc("complete_new_public_appeal_evidence_v1", { p_session_hash: proof.sessionHash, p_nonce: proof.nonce, p_documents: completeDocuments, p_affirmed: true })
    .retry(false).abortSignal(owner.signal)));
   if (error) refused = ["42501", "23505", "22023"].includes(error.code ?? "");
   else { const parsedReceipt = receipt.safeParse(data); if (parsedReceipt.success) result = parsedReceipt.data; }

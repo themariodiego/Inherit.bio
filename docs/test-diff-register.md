@@ -1,3 +1,30 @@
+## 2026-10-09 — Keep the browser scheduling guard tied to the actual planner
+
+Hosted run 37994748537 passed 10,457 unit cases and failed one stale manifest-wiring expectation that still named the previous native scheduling call. The regression now requires the actual whole-file plan and six official listings to be checked before manifest publication, and strict final coverage before accessibility placement. A real queue-v1 listing case rejects mixed native selectors and missing accessibility sweeps. All original native placement, omission, duplication and whole-file refusal cases remain. The source-inventory pre-push command selects the complete cheap `scripts/ci-browser` contract namespace instead of a fixed handful of filenames; its one worker and 5,000 ms default assertion timeout remain unchanged. No browser case, runtime scheduling guard or hosted assertion is removed.
+
+## 2026-10-09 — Bind provisional public appeal holds and native documentary decisions
+
+The new disabled TEST slice binds an exact current contact HMAC only through a
+native confirmed adult or a complete current evidenced parent set. No account
+is adopted. Ambiguous and stale contacts remain unresolved and place no hold.
+The earlier potential-match test now checks that explicit unresolved state and
+zero holds instead of refusing the whole evidence submission; every no-match,
+wrong-kind, nonce, clock and disposal assertion remains.
+
+A named own-MFA reviewer must receive, render and acknowledge every challenged
+chunk before recording the current full-hash documentary approval or rejection.
+Only a real source-control or genetic-parent-authority rejection, with approved
+photo identity, current original recipient and a different reviewer, can bind
+an access-review intake. The access proof set now names the two possible exact
+server-selected authority handles rather than an unbound generic handle.
+
+Decision references are encrypted under the original case key. A read-only
+notice uses the original verified consumed session without renewing its clock
+or upload authority. Unit tests cover closed fields, scope/revision substitution,
+reference/hash/ciphertext substitution and foreign authority; native tests are
+written but unrun. Late notice/replacement, final target disposition and genuine
+native/provider proof remain activation limits. No production flag is opened.
+
 ## 2026-10-09 — G3.2 follows the actual native fixture proof
 
 The acceptance matrix changes G3.2 from NO to YES and recounts 44/65 to 45/65. Complete hosted run 37980880275 on 44395942 passed all 18 machine-resolved binding assertions, both participant-a/b product-path seeds and the real both-parent participant-c upload, worker publication and analysis permission. The previous remaining blocker, missing participant-c ingest, is now resolved by that complete run. No test assertion, task binding, risk threshold, timeout or refusal changes. G3.1, G3.3 and the human study remain open.
@@ -10153,6 +10180,3 @@ byte exact. No importer, application migration, scientific guard or expected
 result changes. The new seven-suite runner must first match the complete actual
 application and installed dependency baseline. No application DDL or dependency
 recreation is proposed. Native proof, publication and acceptance remain held.
-## 2026-10-09 — Keep the browser scheduling guard tied to the actual planner
-
-Hosted run 37994748537 passed 10,457 unit cases and failed one stale manifest-wiring expectation that still named the previous native scheduling call. The regression now requires the actual whole-file plan and six official listings to be checked before manifest publication, and strict final coverage before accessibility placement. A real queue-v1 listing case rejects mixed native selectors and missing accessibility sweeps. All original native placement, omission, duplication and whole-file refusal cases remain. The source-inventory pre-push command selects the complete cheap `scripts/ci-browser` contract namespace instead of a fixed handful of filenames; its one worker and 5,000 ms default assertion timeout remain unchanged. No browser case, runtime scheduling guard or hosted assertion is removed.
