@@ -43,7 +43,7 @@ jobs:
         run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Create private deterministic smoke configuration
         run: pnpm exec tsx scripts/comprehension/fresh-t6-smoke-config.mts
-      - name: Build once and create two separate genuine T6 runtimes
+      - name: Build once and create four separate genuine T6/T7 runtimes
         run: pnpm exec tsx scripts/comprehension/run-fresh-t6.mts "$RUNNER_TEMP/inherit-t6-smoke.json" --prepare
       - name: Retain synthetic instrument record
         if: always()

@@ -32,12 +32,13 @@ export function assertEmptyHost(resources: Resource[]) {
 export function assertSameResources(expected: Resource[], actual: Resource[]) {
   assert.deepEqual(ownedStack(actual), ownedStack(expected), "Owned resource identity changed; cleanup refused");
 }
-export function infrastructureReservation(personas: number, ceiling: number, available: number) {
+export function infrastructureReservation(personas: number, ceiling: number, available: number, tasks = 1) {
   assert(Number.isSafeInteger(personas) && personas > 0 && personas <= 30
+    && Number.isSafeInteger(tasks) && tasks >= 1 && tasks <= 10
     && Number.isSafeInteger(ceiling) && ceiling > 0 && Number.isSafeInteger(available), "Invalid fresh runtime budget");
-  // One build bootstrap, then one fresh stack for every persona. This maximum
+  // One build bootstrap, then one fresh stack for every (task, persona). This maximum
   // remains reserved even if setup/cleanup fails, separately from model tokens.
-  const total = (personas + 1) * ceiling;
+  const total = (personas * tasks + 1) * ceiling;
   assert(Number.isSafeInteger(total) && available >= total, "Runtime cost ceiling must fit the shared journal");
   return total;
 }

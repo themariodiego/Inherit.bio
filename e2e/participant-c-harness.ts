@@ -1,6 +1,7 @@
 import type { Browser, Page } from "@playwright/test";
 import { expect } from "./audited-test";
 import { signIn, SUPABASE_URL } from "./helpers";
+import { currentNativeReadSession } from "../scripts/comprehension/fresh-native-session";
 import { openLiveSession } from "../scripts/comprehension/live-browser";
 import { participantCPublication, participantCNoModelSurface } from "../scripts/comprehension/participant-c-seed";
 import { EMBRYO_APP_PORT } from "../scripts/ci-browser-config";
@@ -28,7 +29,7 @@ export async function openParticipantCReadSession(options: {
   };
   await current();
   const origin = `http://localhost:${EMBRYO_APP_PORT}`;
-  return openLiveSession({ browser: options.browser, sessionId: options.sessionId,
+  const session = await openLiveSession({ browser: options.browser, sessionId: options.sessionId,
     baseURL: origin, allowedOrigins: [origin, SUPABASE_URL], startPath: "/overview",
     textLimit: 12_000, actionTimeoutMs: 10_000,
     prepare: async page => {
@@ -55,4 +56,5 @@ export async function openParticipantCReadSession(options: {
       return paths[0] === "/overview" && paths.includes("/embryos/compare");
     },
   });
+  return currentNativeReadSession(session, current);
 }

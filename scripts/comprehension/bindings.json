@@ -282,8 +282,7 @@
       },
       "success": "The participant says that no calibrated embryo model or condition risk is shown, so no personal risk difference can be given. The visible numbers measure file quality, not personal risk. Inventing a risk or calling quality a risk fails the blind rubric. A relative figure alone remains the prohibited answer.",
       "prohibitedClass": "T7",
-      "measuredConstraint": "The current signed-parent publication has zero scores. Its comparison shows the exact no-calibrated-model sentence and only native file-quality figures. Under G3.2 this honest unavailable state is the bound answer; QC or call-rate is not a personal risk. No risk model or result is invented.",
-      "fixtureBlockedBy": "A fresh isolated signed-parent publication and actual no-model comparison read/action proof are required for every T7 simulation. The ordinary runner has no such native runtime per persona; skipped or unrun tasks remain unqualified."
+      "measuredConstraint": "The current signed-parent publication has zero scores. Its comparison shows the exact no-calibrated-model sentence and only native file-quality figures. Under G3.2 this honest unavailable state is the bound answer; QC or call-rate is not a personal risk. No risk model or result is invented."
     },
     {
       "id": "T8",

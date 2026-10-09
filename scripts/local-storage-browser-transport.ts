@@ -8,7 +8,7 @@ import http from "node:http";
 import { chromium, request as playwrightRequest } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./local-storage-browser-config";
 
-export async function verifyBrowserTransport(proxy: string, forwarded: () => number): Promise<void> {
+export async function verifyBrowserTransport(proxy: string, forwarded: () => number, environment?: Record<string, string>): Promise<void> {
   const origin = "http://localhost:3100";
   const marker = "Bearer synthetic-local-transport";
   const server = http.createServer(async (request, response) => {
@@ -30,7 +30,7 @@ export async function verifyBrowserTransport(proxy: string, forwarded: () => num
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   let standalone: Awaited<ReturnType<typeof playwrightRequest.newContext>> | undefined;
   try {
-    browser = await chromium.launch({ args: chromiumStorageProxyArgs(proxy) });
+    browser = await chromium.launch({ args: chromiumStorageProxyArgs(proxy), env: environment });
     for (const name of ["regular", "manual-context"]) {
       const context = await browser.newContext({ baseURL: origin });
       await context.addCookies([{ name: "inherit_transport", value: "synthetic", url: origin }]);

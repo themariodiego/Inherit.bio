@@ -153,13 +153,9 @@ Each (task, persona) pair gets:
   T8's deletion was scheduled, and T9 and T10's participant created no
   account.
 
-**T7 remains skipped** in the ordinary runner because every persona needs a
-fresh isolated native publication and actual no-model comparison read. Its
-honest unavailable-state binding requires no invented risk model. A skipped task
-is recorded with the binding's reason, counts as a
-failure of its task, and makes the run non-qualifying. It is never an answer.
-The ordinary runner also holds T6 until each simulation can own its fresh
-isolated embryo runtime; the single native journey is not shared across personas.
+The ordinary `pnpm comprehension:run` entrypoint owns one shared active stack
+and therefore still refuses T6/T7 there. Use `pnpm comprehension:fresh` for the
+exclusive all-task lifecycle below. A shared-stack skip never becomes an answer.
 
 ### Model identity
 
@@ -192,15 +188,11 @@ participant calls, one grading call and, for a sampled answer or in a partial
 run, one re-grading call. A calibration run re-grades every session so that
 all three roles are priced.
 
-Planning arithmetic, not a measurement: a participant call carries about
-12,000 characters of page (roughly 3,000 tokens) plus the persona and
-instructions, so about 3,500 input tokens; a simulation of about eight steps
-and one grading call is then about 30,000 input and 1,000 output tokens. Two
-full runs of the 240 runnable sessions are about 15 million input tokens.
-At US$1 per million input tokens and US$5 per million output tokens that is
-about US$17 for two runs; at three times those prices two runs alone reach
-the cap, with nothing left to repeat a failed run. The calibration run
-replaces this arithmetic with a measured figure before any full run.
+A complete ten-task round has 300 independent simulations. A measured
+calibration replaces planning estimates before a paid full run, and the
+exclusive launcher also reserves every fresh native stack in that same shared
+journal. Neither a source plan nor a synthetic control establishes real
+hosting cost, model cost or elapsed time.
 
 ## Seeding the participant accounts
 
@@ -253,21 +245,63 @@ model call. It refuses crossed identities, dirty or noncurrent parts, failed
 siblings, later publication revisions and any unsupported score. No password
 or browser storage state is written to its attachments.
 
-This bounded adapter supplies one genuine native rehearsal. The ordinary
-multi-persona runner still records T6's explicit runtime hold: every simulation
-needs its own independent account and fresh empty-queue native partition, whose
-orchestration is not supplied by this checkpoint. It never falls back to own-file
-upload, clones the seed or adopts another persona's cohort.
+The native read adapter checks current publication before and after each
+observation, action and completion read. T7 uses G3.2's honest unavailable state:
+the real comparison says no calibrated model is registered and shows only file
+quality. The unchanged relative-only prohibition and blind rubric refuse risk
+invention or relabelling quality as personal risk.
 
-T7 uses G3.2's honest not-covered state: the real comparison says no calibrated
-model is registered and shows only file quality. The unchanged safety rule
-prohibits relative-only risk claims; the blind rubric also refuses invented
-findings or calling quality a personal risk. The native read adapter checks the
-zero-score publication, actual no-model sentence, zero condition rows and
-quality-only figure kinds/classes. Its `fixtureBlockedBy` retains the genuine
-need for a fresh native runtime and read/action proof per simulation.
-`seedSkips()` records that actual reason and makes a full round non-qualifying.
-No source check, skipped task or unrun fixture becomes an answer or verdict.
+### Exclusive complete-round launcher (authored; native execution pending)
+
+`pnpm comprehension:fresh /absolute/private/run.json --plan` accepts the same
+private run settings nested as `run`, plus the existing
+`maximumInfrastructureCostPerStackMicroDollars` ceiling. Omitting `run.tasks`
+and `run.personas` plans all ten original tasks and thirty personas. The private
+file uses the same protected-file reader as the ordinary launcher; planning
+opens no stack, journal, key or model process.
+
+`--prepare` builds once. Every subsequent task/persona pair acquires a distinct
+empty disposable Supabase stack, exact owned runtime container and browser,
+reusing the source/build/image read-only, with an owned bounded per-container
+Next cache. It seeds a/b through the original
+product upload/report choices, T9 through the real separate reserver invitation,
+and c through both genuine parent signatures, upload and isolated worker. A
+fresh read/action context follows setup; T6 and T7 never share an account or
+publication with another simulation. The original provider proxy also checks
+real denial/CORS/transport and a's actual successful uploads. Close disposes the
+read context, browser, owned app children, provider and exact stack before the
+next acquisition. Changed authority/currentness, cancellation or uncertain
+cleanup stops the run; no adoption, reset, row cloning or model fallback exists.
+
+A complete plan has 300 fresh simulation stacks plus one build bootstrap,
+**not 300 builds**. All 301 infrastructure ceilings must fit the existing shared
+journal, and every attempted stack's maximum remains reserved even on failure.
+For a paid full run, the same completed calibration, model/settings match and
+25% projected-cost margin remain required, now alongside all remaining stack
+ceilings. These are conservative cost ceilings, not observed hosting cost or
+elapsed-time claims. The original 30-persona, regrade, two-run, stopping and
+budget policies are unchanged.
+
+The existing manual credential-free workflow now prepares two T6 and two T7
+sessions. Standard six-job CI still does not run this stochastic instrument.
+Its signed hosted workflow/checkout/run ownership fence, existing 45-minute job
+limit and all command/setup/inference limits remain unchanged. Full native
+execution, a measured calibration and actual authorized inference are still
+unrun. A supplied full configuration is callable by the same exclusive launcher;
+completion and qualification require every actual session/cleanup and the
+original thresholds, never a source check or stub answer. No G3.1/G3.3 YES is
+claimed, and a full round's fit inside the unchanged job limit is unmeasured.
+
+**The paid operator path is not configured.** The current checked-in manual
+workflow runs the deterministic stub only; it has no paid secret/configuration
+input. A private key kept in the owner's Mac shell cannot be inherited by a
+GitHub-hosted Linux process, and this launcher requires genuine signed ownership
+of that hosted job. No authorized key/configuration transport to that job has
+been established. The complete factory is therefore callable source, not an
+executable paid round. Before calibration, a private execution and credential
+mechanism consistent with the ownership fence and shared US$50 ceiling must be
+explicitly established. Do not upload a private key to GitHub/hosting, fake CI
+ownership or relax the fence to make a run start.
 
 ## Spending boundary
 
@@ -421,7 +455,7 @@ cannot:
 | Production build under the test jurisdiction | Checked before every run: build id served, and a TEST-LOCAL-only capability visible. |
 | T9 fixture | Built: the owner's reserved-record invitation path, with the mail in an inbox beside the page. |
 | T10 fixture | None needed: T10 starts signed out on public routes, as bound. The Record Key Card path cannot be exercised until embryo ingest lands. |
-| T6 and T7 fixtures | Participant-c uses the real native upload/worker seed. T7 binds the genuine no-model comparison state. Both still need fresh per-persona native runtime proof; the separate launcher currently runs only T6, so no full round can qualify. |
+| T6 and T7 fixtures | The exclusive all-task launcher authors fresh per-simulation native publication and read/action lifetimes for both tasks. The ordinary shared-stack path still refuses them. Native full-round execution and inference qualification remain unrun. |
 | Provider token and cost bounds | Blocked on a credential. A calibration run measures them; a paid full run refuses to start without one. |
 
 No real participant, human review, clinical interpretation, expense or

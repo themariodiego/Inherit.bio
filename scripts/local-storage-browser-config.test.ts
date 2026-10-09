@@ -88,7 +88,9 @@ describe("local provider runner safety boundaries", () => {
   it("wires the upstream timeout selector and preserves the actual process route budget", () => {
     const route = readFileSync("src/app/api/files/[id]/process/route.ts", "utf8");
     expect(route).toMatch(/export const maxDuration = 300;/);
-    const runner = readFileSync("scripts/run-upload-browser.mts", "utf8");
+    const bootstrap = readFileSync("scripts/run-upload-browser.mts", "utf8");
+    expect(bootstrap).toContain("await startLocalStorageProxy(project, publicJwk)");
+    const runner = readFileSync("scripts/local-storage-browser-proxy.ts", "utf8");
     expect(runner).toContain('const upstreamTimeout = localBrowserUpstreamTimeout(request.url ?? "", request.method, request.headers.origin);');
     expect(runner).toContain("upstream.setTimeout(upstreamTimeout, () => upstream.destroy());");
     expect(runner).toContain("if (upstreamTimeout === 300_000)");
