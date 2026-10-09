@@ -104,6 +104,24 @@ is retained; the strict repeated-state correction requires new exact-head hosted
 warm admission before adoption and supplies no speed or cache-seeding credit by
 itself.
 
+Run 37879756625 passed all complete suites. Its seven exact-key restores each
+completed a new owned signed refresh, then refused archive resolution. Those
+originals did not retain APT's `--print-uris` output, so they do not establish the
+specific route shape that caused refusal. The resolver now retains its exact
+public stdout/stderr bytes as base64 with the fixed command arguments, exit,
+signal, error code, command cap and output bound before parsing or refusing.
+The 210-second shared budget, 180-second command cap, 4 MiB process output bound,
+all nine package checks and every route/refusal rule remain. This observation
+change admits no cache, and successful warm admission is still required.
+
+A separate PR-path-scoped font-cache diagnostic job copies the same Ubuntu,
+checkout, locked dependency, signed-admission, key, exact-restore and warm steps.
+It ends after warm admission, so its original bounded public resolver record is
+available in that job's completed log without waiting for the full test jobs.
+It restores no prefix key and publishes no cache. A miss, refusal or diagnostic
+success supplies no complete-installer, release, warm-adoption or speed proof;
+the unchanged eight-job CI and genuine cold/warm acceptance remain required.
+
 Primary references:
 
 - [Ubuntu package download records](https://packages.ubuntu.com/noble/)

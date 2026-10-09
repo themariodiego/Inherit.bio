@@ -3,7 +3,7 @@ import { linkSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, 
 import os from "node:os";
 import path from "node:path";
 import ts from "typescript";
-import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, publicationAptService, sha256, validateManifest, verifyAptMetadata, verifyCache, type FontManifest, type FontPackage } from "./ci-browser-font-cache";
+import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, aptResolverOutput, cacheKey, normalizeAptDownloads, publicationAptService, sha256, validateManifest, verifyAptMetadata, verifyCache, type FontManifest, type FontPackage } from "./ci-browser-font-cache";
 
 const original = readFileSync(new URL("../data/ci/browser-font-packages.json", import.meta.url));
 const manifest = JSON.parse(original.toString()) as FontManifest;
@@ -127,6 +127,32 @@ describe("font archive cache admission", () => {
     const pin = manifest.packages[0];
     expect(() => verifyAptMetadata(pin, `${metadata(pin)}\n${metadata(pin)}`, policy(pin))).not.toThrow();
     expect(() => verifyAptMetadata(pin, `${metadata(pin)}\n${metadata({ ...pin, sha256: "a".repeat(64) })}`, policy(pin))).toThrow(/metadata differs/);
+  });
+  it("records original public resolver bytes and outcome before success or refusal", () => {
+    const stdout = Buffer.from(uris()), stderr = Buffer.from("public APT warning\n");
+    const successful = { stdout, stderr, status: 0, signal: null, errorCode: null };
+    const captured: Parameters<typeof aptResolverOutput>[0][] = [];
+    const text = aptResolverOutput(successful, (original) => captured.push(original));
+    expect(captured).toEqual([successful]);
+    expect(captured[0].stdout).toBe(stdout);
+    expect(captured[0].stderr).toBe(stderr);
+    expect(aptArchiveNames(manifest, text).size).toBe(9);
+    for (const failed of [{ ...successful, status: 100 }, { ...successful, status: null, signal: "SIGTERM" },
+      { ...successful, status: null, errorCode: "ETIMEDOUT" }, { ...successful, status: null, errorCode: "ENOENT", stdout: null, stderr: null }]) {
+      let recorded = false;
+      expect(() => aptResolverOutput(failed, (original) => {
+        recorded = true;
+        expect(original).toBe(failed);
+      })).toThrow("APT archive resolution command failed");
+      expect(recorded).toBe(true);
+    }
+    let incompleteOriginal: Buffer | undefined;
+    const incomplete = { ...successful, stdout: Buffer.from(uris().split("\n").slice(1).join("\n")) };
+    expect(() => aptArchiveNames(manifest, aptResolverOutput(incomplete, (original) => { incompleteOriginal = original.stdout!; })))
+      .toThrow("APT did not resolve all nine pinned font archives");
+    expect(incompleteOriginal).toBe(incomplete.stdout);
+    expect(() => aptResolverOutput(successful, () => { throw new Error("original recording unavailable"); }))
+      .toThrow("original recording unavailable");
   });
   it("uses APT's actual epoch-encoded filenames and leaves dependency rows untouched", () => {
     const names = aptArchiveNames(manifest, `${uris()}\n'http://archive.ubuntu.com/ubuntu/pool/main/u/unrelated/unrelated.deb' unrelated.deb 42 MD5Sum:unused`);

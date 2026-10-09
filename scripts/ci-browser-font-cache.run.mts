@@ -1,8 +1,8 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
-import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, publicationAptService, verifyAptMetadata, verifyArchive, verifyCache, type FontManifest } from "./ci-browser-font-cache.js";
+import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, aptResolverOutput, cacheKey, normalizeAptDownloads, publicationAptService, verifyAptMetadata, verifyArchive, verifyCache, type FontManifest } from "./ci-browser-font-cache.js";
 
 const start = Date.now();
 const command = process.argv[2];
@@ -22,6 +22,18 @@ const run = (program: string, args: string[], cwd = root) => {
   const remaining = 210_000 - (Date.now() - start);
   if (remaining <= 0) throw new Error("font cache command budget exhausted");
   return execFileSync(program, args, { cwd, encoding: "utf8", timeout: Math.min(180_000, remaining), maxBuffer: 4 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+};
+const resolveAptArchives = () => {
+  const remaining = 210_000 - (Date.now() - start);
+  if (remaining <= 0) throw new Error("font cache command budget exhausted");
+  const args = ["apt-get", "--print-uris", "--download-only", "--reinstall", "--yes", "install", ...manifest.packages.map((p) => `${p.name}=${p.version}`)];
+  const timeoutMs = Math.min(180_000, remaining), maxBufferBytes = 4 * 1024 * 1024;
+  const result = spawnSync("sudo", args, { cwd: root, timeout: timeoutMs, maxBuffer: maxBufferBytes, stdio: ["ignore", "pipe", "pipe"] });
+  const original = { stdout: result.stdout ?? null, stderr: result.stderr ?? null, status: result.status, signal: result.signal,
+    errorCode: result.error ? (result.error as NodeJS.ErrnoException).code ?? "unknown" : null };
+  return aptResolverOutput(original, (captured) => console.log(JSON.stringify({ fontAptResolverOriginal: true,
+    program: "sudo", args, cwd: root, timeoutMs, maxBufferBytes, status: captured.status, signal: captured.signal, errorCode: captured.errorCode,
+    stdoutBase64: captured.stdout?.toString("base64") ?? null, stderrBase64: captured.stderr?.toString("base64") ?? null })));
 };
 const platform = () => {
   const os = readFileSync("/etc/os-release", "utf8");
@@ -100,7 +112,7 @@ if (command === "prepare") {
   // stale or unavailable cache. The original full installer follows every time.
   const admission = admitRestoredCache(cache, manifest, process.env.FONT_CACHE_EXACT_HIT, () => {
     authenticate(publicationRefresh);
-    const names = aptArchiveNames(manifest, run("sudo", ["apt-get", "--print-uris", "--download-only", "--reinstall", "--yes", "install", ...manifest.packages.map((p) => `${p.name}=${p.version}`)]));
+    const names = aptArchiveNames(manifest, resolveAptArchives());
     const archives = "/var/cache/apt/archives";
     if (realpathSync(archives) !== archives || !lstatSync(archives).isDirectory() || lstatSync(archives).uid !== 0) throw new Error("unexpected APT archive directory");
     for (const p of manifest.packages) {

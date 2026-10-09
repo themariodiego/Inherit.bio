@@ -95,6 +95,23 @@ export function verifyAptMetadata(pin: FontPackage, show: string, policy: string
   if (!records.length || records.some((p) => p.Filename !== pin.filename || p.Size !== String(pin.bytes) || p.SHA256 !== pin.sha256)) throw new Error(`authenticated Ubuntu metadata differs: ${pin.name}`);
 }
 
+export interface AptResolverOriginal {
+  stdout: Buffer | null;
+  stderr: Buffer | null;
+  status: number | null;
+  signal: string | null;
+  errorCode: string | null;
+}
+
+// Retain the bounded public command's original streams and outcome before any
+// parser or failed-command refusal. This is observation, not archive admission.
+export function aptResolverOutput(original: AptResolverOriginal, record: (original: AptResolverOriginal) => void): string {
+  record(original);
+  if (original.errorCode !== null || original.status !== 0 || original.signal !== null
+    || !Buffer.isBuffer(original.stdout) || !Buffer.isBuffer(original.stderr)) throw new Error("APT archive resolution command failed");
+  return original.stdout.toString("utf8");
+}
+
 // Ask APT for its actual archive name (including percent-encoded epochs).
 // Dependency rows are left to the unchanged complete Playwright installer.
 export function aptArchiveNames(manifest: FontManifest, printUris: string): Map<string, string> {

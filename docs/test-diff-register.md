@@ -1,3 +1,21 @@
+## 2026-10-09 — Retain the original bounded public font resolver output
+
+PR295 run 37879756625 passed all complete suites, but every genuine warm restore
+refused archive resolution after its fresh signed update. The original resolver
+stdout was not recorded, so no particular URI shape is accepted or blamed.
+The unchanged fixed APT command now records original stdout/stderr bytes and
+exit/signal/error provenance before parsing, including failed-command paths.
+Its shared/command/output limits and every nine-package, URI, metadata, archive,
+hash, candidate and installer requirement remain. New controls retain original
+byte identity before success, nonzero exit, timeout/spawn failure and incomplete
+nine-row refusal; recording failure also refuses. All old cases, assertions,
+5000 ms limits and zero retries remain. This change supplies no warm
+adoption or speed credit and runs no APT command in local tests. A separate
+PR-path-scoped diagnostic workflow copies the existing font setup/admission
+steps and ends at warm admission, retaining its original log independently of
+the complete CI. No new literal implementation-mirroring test is added. The full
+eight-job workflow and all original assertions/limits remain unchanged.
+
 ## 2026-10-09 — Re-admit only the exact owned APT priority result
 
 PR295 run 37876404789 passed all suites, but all seven genuine exact-key font

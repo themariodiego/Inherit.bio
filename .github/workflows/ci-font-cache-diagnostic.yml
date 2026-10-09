@@ -1,0 +1,59 @@
+name: Font cache diagnostic
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ci-font-cache-diagnostic.yml'
+      - '.github/workflows/ci.yml'
+      - 'scripts/ci-browser-font-cache*'
+      - 'scripts/ci_apt_mirror_priority.py'
+      - 'scripts/test_ci_apt_mirror_priority.py'
+      - 'data/ci/browser-font-packages.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: font-cache-diagnostic-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# This job retains the original public resolver record in its own completed
+# job log. A cache miss/refusal is an observation, never release or speed proof.
+# The full eight-job CI and its complete official installers remain mandatory.
+jobs:
+  font-cache-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
+      - name: Prepare exact font archive cache key
+        id: fonts
+        run: pnpm exec tsx scripts/ci-browser-font-cache.run.mts prepare
+      - name: Restore only the exact Ubuntu font archives
+        id: font-cache-restore
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: "1"
+        with:
+          path: ${{ steps.fonts.outputs.path }}
+          key: ${{ steps.fonts.outputs.key }}
+      - name: Validate cached fonts against fresh authenticated Ubuntu metadata
+        timeout-minutes: 4
+        env:
+          FONT_CACHE_EXACT_HIT: ${{ steps.font-cache-restore.outputs.cache-hit }}
+        run: pnpm exec tsx scripts/ci-browser-font-cache.run.mts warm
