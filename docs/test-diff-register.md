@@ -1,3 +1,71 @@
+## 2026-10-09 — Admit the exact observed authenticated Ubuntu mirror transport
+
+The original hosted diagnostic resolver returned all nine pinned fonts through `mirror+file:/etc/apt/apt-mirrors.txt/pool/...`, plus two unchanged installer dependencies. Three URI filenames encode `+` as `%2b`. The direct-only parser refused this approved stock transport before seeding. The parser now admits only that fixed mirror file and decodes the URI filename once before the exact pinned filename comparison. All nine-package/version/size/uniqueness, signed metadata/candidate/hash and actual archive checks remain required. Every prior test and assertion remains. Three new behavioral cases cover the literal eleven-row original, all approved direct HTTP(S) hosts, and altered mirror authority, malformed/double/separator/control encodings, traversal, missing/duplicate rows and size changes. No time limit, retry, cache adoption or full-suite requirement changes.
+
+## 2026-10-09 — Retain the original bounded public font resolver output
+
+PR295 run 37879756625 passed all complete suites, but every genuine warm restore
+refused archive resolution after its fresh signed update. The original resolver
+stdout was not recorded, so no particular URI shape is accepted or blamed.
+The unchanged fixed APT command now records original stdout/stderr bytes and
+exit/signal/error provenance before parsing, including failed-command paths.
+Its shared/command/output limits and every nine-package, URI, metadata, archive,
+hash, candidate and installer requirement remain. New controls retain original
+byte identity before success, nonzero exit, timeout/spawn failure and incomplete
+nine-row refusal; recording failure also refuses. All old cases, assertions,
+5000 ms limits and zero retries remain. This change supplies no warm
+adoption or speed credit and runs no APT command in local tests. A separate
+PR-path-scoped diagnostic workflow copies the existing font setup/admission
+steps and ends at warm admission, retaining its original log independently of
+the complete CI. No new literal implementation-mirroring test is added. The full
+eight-job workflow and all original assertions/limits remain unchanged.
+
+## 2026-10-09 — Re-admit only the exact owned APT priority result
+
+PR295 run 37876404789 passed all suites, but all seven genuine exact-key font
+restores refused the owned second APT refresh after the mandatory first refresh
+had already rewritten the mirror. The priority operation now permits exactly
+its approved result paired with the exact strict configuration; every other
+URI, priority, format, partial-state and trust refusal stays. Both invocations
+still perform full source/key/configuration checks and a new signed update.
+The existing stock mutation and all previous assertions remain. New controls
+apply the operation twice to real synthetic files and require unchanged bytes
+and original identities, then reject malformed, spoofed and mismatched pairs.
+Original time limits, retries, supervisor closure and full installers remain.
+These local controls run no APT command and grant no hosted warm or speed credit.
+
+## 2026-10-09 — Integrate the font archive consumer with current protected main
+
+The consumer draft retains current signed APT admission before its exact-key
+restore and mandatory fresh-metadata validation. The current publisher, full
+installer, archive authentication, private comparator, eight jobs and complete
+unit/database/browser gates remain unchanged. All current UI changes remain.
+
+Hosted-reader controls now use the actual combined consumer workflow. The
+publisher-only fixture removes only the three exact source-declared consumer
+steps, preserving every previous publisher assertion. Mandatory APT negative
+controls target the actual installer and move admission after it, so intervening
+consumer steps cannot make an order mutation vacuous. One additional control
+pins both real consumers and their unchanged mandatory APT/full-install order.
+Every original behavioral case, archive/authentication assertion, timeout,
+retry and browser refusal stays. The source-selection assertion for the former
+dormant warm path is superseded: both active authenticated callers now use the
+already reviewed transient-root-service refresh, with all original caps and
+closure checks. The unsafe default callback is removed. A new parsed-source
+control covers both actual branches and refuses missing/foreign callbacks or a
+restored default. No privileged APT command runs in these local controls.
+
+The first current-main focused run passed 85 cases and failed only the new
+cache-descriptor count assertion: preparation is an ordinary mandatory step,
+while restore and warm are the two cache descriptors. The correction requires
+those exact two names; all three source-step assertions remain. That failed
+original remains recorded.
+
+The original PR295 failure remains: one unsupported-number Copilot browser
+assertion in run 37691992821. No percent policy is changed. Current local and
+complete exact-final-head hosted checks, then genuine cold/warm evidence, remain
+required; this entry claims no execution or speed improvement.
+
 ## 2026-10-09 — Retain sampled clamd startup originals inside the readiness window
 
 The preserved hosted scanner run reached official signatures and closed its

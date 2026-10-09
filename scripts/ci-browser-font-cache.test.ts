@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { linkSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, cacheKey, normalizeAptDownloads, publicationAptService, sha256, validateManifest, verifyAptMetadata, verifyCache, type FontManifest, type FontPackage } from "./ci-browser-font-cache";
+import ts from "typescript";
+import { admitAptSupervisorVersion, admitClosedAptUnit, admitFreshAptRefresh, admitOwnedAptUnit, admitRestoredCache, aptArchiveNames, aptResolverOutput, cacheKey, normalizeAptDownloads, publicationAptService, sha256, validateManifest, verifyAptMetadata, verifyCache, type FontManifest, type FontPackage } from "./ci-browser-font-cache";
 
 const original = readFileSync(new URL("../data/ci/browser-font-packages.json", import.meta.url));
 const manifest = JSON.parse(original.toString()) as FontManifest;
@@ -127,6 +128,83 @@ describe("font archive cache admission", () => {
     expect(() => verifyAptMetadata(pin, `${metadata(pin)}\n${metadata(pin)}`, policy(pin))).not.toThrow();
     expect(() => verifyAptMetadata(pin, `${metadata(pin)}\n${metadata({ ...pin, sha256: "a".repeat(64) })}`, policy(pin))).toThrow(/metadata differs/);
   });
+  it("records original public resolver bytes and outcome before success or refusal", () => {
+    const stdout = Buffer.from(uris()), stderr = Buffer.from("public APT warning\n");
+    const successful = { stdout, stderr, status: 0, signal: null, errorCode: null };
+    const captured: Parameters<typeof aptResolverOutput>[0][] = [];
+    const text = aptResolverOutput(successful, (original) => captured.push(original));
+    expect(captured).toEqual([successful]);
+    expect(captured[0].stdout).toBe(stdout);
+    expect(captured[0].stderr).toBe(stderr);
+    expect(aptArchiveNames(manifest, text).size).toBe(9);
+    for (const failed of [{ ...successful, status: 100 }, { ...successful, status: null, signal: "SIGTERM" },
+      { ...successful, status: null, errorCode: "ETIMEDOUT" }, { ...successful, status: null, errorCode: "ENOENT", stdout: null, stderr: null }]) {
+      let recorded = false;
+      expect(() => aptResolverOutput(failed, (original) => {
+        recorded = true;
+        expect(original).toBe(failed);
+      })).toThrow("APT archive resolution command failed");
+      expect(recorded).toBe(true);
+    }
+    let incompleteOriginal: Buffer | undefined;
+    const incomplete = { ...successful, stdout: Buffer.from(uris().split("\n").slice(1).join("\n")) };
+    expect(() => aptArchiveNames(manifest, aptResolverOutput(incomplete, (original) => { incompleteOriginal = original.stdout!; })))
+      .toThrow("APT did not resolve all nine pinned font archives");
+    expect(incompleteOriginal).toBe(incomplete.stdout);
+    expect(() => aptResolverOutput(successful, () => { throw new Error("original recording unavailable"); }))
+      .toThrow("original recording unavailable");
+  });
+  it("admits the literal hosted mirror resolver rows with all nine fonts and unchanged dependencies", () => {
+    // Original diagnostic run 37885106841/a1, job 113673241670; public resolver stdout.
+    const captured = `'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-ipafont/fonts-ipafont-gothic_00303-21ubuntu1_all.deb' fonts-ipafont-gothic_00303-21ubuntu1_all.deb 3513360 MD5Sum:e55a9bae06be908db5c9bd471b011caf
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-ipafont/fonts-ipafont-mincho_00303-21ubuntu1_all.deb' fonts-ipafont-mincho_00303-21ubuntu1_all.deb 4723808 MD5Sum:2abaf43a330644ab620d882c66ea4c93
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/f/fonts-freefont/fonts-freefont-ttf_20211204%2bsvn4273-2_all.deb' fonts-freefont-ttf_20211204+svn4273-2_all.deb 5640794 MD5Sum:958074efbb58c46ead23be615e1c3502
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-tlwg/fonts-tlwg-loma-otf_0.7.3-1_all.deb' fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb 106786 MD5Sum:89b3ba8a40532ddf97a49c6d402f7054
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/f/fonts-tlwg/fonts-tlwg-loma_0.7.3-1_all.deb' fonts-tlwg-loma_1%3a0.7.3-1_all.deb 4102 MD5Sum:dfc40ffcd01f43749c311fe33613fa23
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/u/unifont/fonts-unifont_15.1.01-1build1_all.deb' fonts-unifont_1%3a15.1.01-1build1_all.deb 2993066 MD5Sum:74f019fdce045563f769a97c507b8108
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-wqy-zenhei/fonts-wqy-zenhei_0.9.45-8_all.deb' fonts-wqy-zenhei_0.9.45-8_all.deb 7471624 MD5Sum:63fcb8701d2a908e8e00842dbb317037
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/x/xfonts-encodings/xfonts-encodings_1.0.5-0ubuntu2_all.deb' xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb 578092 MD5Sum:b7e27ff04dca332645f9acfcc8492237
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/x/xfonts-utils/xfonts-utils_7.7%2b6build3_amd64.deb' xfonts-utils_1%3a7.7+6build3_amd64.deb 94438 MD5Sum:13b0675cc33bcd650f3e169c049cf670
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/x/xfonts-cyrillic/xfonts-cyrillic_1.0.5%2bnmu1_all.deb' xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb 384312 MD5Sum:0638903c3bc4fad8019615e21d0e5b76
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/x/xfonts-scalable/xfonts-scalable_1.0.3-1.3_all.deb' xfonts-scalable_1%3a1.0.3-1.3_all.deb 304118 MD5Sum:20641f16466ef2a37741e11bdcbfaad4`;
+    const names = aptArchiveNames(manifest, captured);
+    expect(names.size).toBe(9);
+    for (const pin of manifest.packages) {
+      expect(decodeURIComponent(names.get(pin.name)!)).toBe(`${pin.name}_${pin.version}_${pin.architecture}.deb`);
+    }
+    expect(names.has("fonts-ipafont-mincho")).toBe(false);
+    expect(names.has("fonts-tlwg-loma")).toBe(false);
+  });
+  it("keeps every approved direct HTTP(S) host and decodes its URI filename once", () => {
+    for (const protocol of ["http", "https"]) {
+      for (const host of ["archive.ubuntu.com", "azure.archive.ubuntu.com", "security.ubuntu.com"]) {
+        const direct = uris().replaceAll("http://azure.archive.ubuntu.com", `${protocol}://${host}`)
+          .replace("fonts-freefont-ttf_20211204+svn4273-2_all.deb'", "fonts-freefont-ttf_20211204%2bsvn4273-2_all.deb'");
+        expect(aptArchiveNames(manifest, direct).size).toBe(9);
+      }
+    }
+  });
+  it("refuses altered mirror authority, unsafe encodings and incomplete or duplicate pinned rows", () => {
+    const mirror = uris().replaceAll("http://azure.archive.ubuntu.com/ubuntu/", "mirror+file:/etc/apt/apt-mirrors.txt/");
+    for (const invalid of [
+      mirror.replace("/etc/apt/apt-mirrors.txt/", "/etc/apt/other-mirrors.txt/"),
+      mirror.replace("mirror+file:/etc/", "mirror+file://attacker.invalid/etc/"),
+      mirror.replace("mirror+file:/etc/", "mirror+file:///etc/"),
+      mirror.replace("apt-mirrors.txt/pool/", "apt-mirrors.txt/../apt-mirrors.txt/pool/"),
+      mirror.replace("apt-mirrors.txt/pool/", "apt-mirrors.txt/%2e%2e/apt-mirrors.txt/pool/"),
+      mirror.replace("20211204+svn4273", "20211204%svn4273"),
+      mirror.replace("20211204+svn4273", "20211204%252bsvn4273"),
+      mirror.replace("20211204+svn4273", "20211204%2fsvn4273"),
+      mirror.replace("20211204+svn4273", "20211204%5csvn4273"),
+      mirror.replace("20211204+svn4273", "20211204%00svn4273"),
+      mirror.replace("apt-mirrors.txt/pool/", "apt-mirrors.txt/pool%2f"),
+      mirror.replace("_all.deb'", "_all.deb?route=other'"),
+      mirror.replace("_all.deb'", "_all.deb#other'"),
+      mirror.replace("5640794 MD5Sum", "5640795 MD5Sum"),
+      mirror.split("\n").slice(1).join("\n"),
+      `${mirror}\n${mirror.split("\n")[0]}`,
+    ]) expect(() => aptArchiveNames(manifest, invalid)).toThrow();
+  });
   it("uses APT's actual epoch-encoded filenames and leaves dependency rows untouched", () => {
     const names = aptArchiveNames(manifest, `${uris()}\n'http://archive.ubuntu.com/ubuntu/pool/main/u/unrelated/unrelated.deb' unrelated.deb 42 MD5Sum:unused`);
     expect(names.size).toBe(9);
@@ -215,12 +293,45 @@ describe("bounded publisher signed refresh", () => {
     expect(() => admitFreshAptRefresh(`${JSON.stringify(receipt)}\nlater non-receipt output`)).toThrow();
     expect(() => admitFreshAptRefresh(JSON.stringify(receipt).replace('"decision":"PASS"', '"decision":"HOLD","decision":"PASS"'))).toThrow();
   });
-  it("keeps consumer warm refresh separate from fresh-runner publisher admission", () => {
+  it("refuses omitted, substituted or default refresh ownership at the source boundary", () => {
+    const cli = readFileSync(new URL("./ci-browser-font-cache.run.mts", import.meta.url), "utf8");
+    const assertOwnedRefresh = (text: string) => {
+      const source = ts.createSourceFile("font-cache.run.mts", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+      const calls: ts.CallExpression[] = [];
+      let declaration: ts.ArrowFunction | undefined;
+      const visit = (node: ts.Node) => {
+        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "authenticate"
+          && node.initializer && ts.isArrowFunction(node.initializer)) declaration = node.initializer;
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "authenticate") calls.push(node);
+        ts.forEachChild(node, visit);
+      };
+      visit(source);
+      if (!declaration || declaration.parameters.length !== 1 || declaration.parameters[0].initializer
+        || declaration.parameters[0].questionToken || calls.length !== 2) throw new Error("Refresh ownership is not explicit");
+      const warm = text.indexOf('command === "warm"'), populate = text.indexOf('command === "populate"');
+      if (warm < 0 || populate <= warm || calls[0].getStart(source) <= warm || calls[0].getStart(source) >= populate
+        || calls[1].getStart(source) <= populate) throw new Error("Both active refresh branches must be covered");
+      for (const call of calls) if (call.arguments.length !== 1 || !ts.isIdentifier(call.arguments[0])
+        || call.arguments[0].text !== "publicationRefresh") throw new Error("Unowned refresh selection");
+    };
+    expect(() => assertOwnedRefresh(cli)).not.toThrow();
+    for (const target of ['command === "warm"', 'command === "populate"']) {
+      const at = cli.indexOf(target), call = cli.indexOf("authenticate(publicationRefresh)", at);
+      expect(call).toBeGreaterThan(at);
+      for (const substitute of ["authenticate()", "authenticate(() => '')"]) {
+        const changed = cli.slice(0, call) + cli.slice(call).replace("authenticate(publicationRefresh)", substitute);
+        expect(() => assertOwnedRefresh(changed)).toThrow();
+      }
+    }
+    expect(() => assertOwnedRefresh(cli.replace("refresh: () => string", "refresh = () => ''"))).toThrow();
+  });
+  it("requires actual owned refresh before consumer seeding and publisher admission", () => {
     const cli = readFileSync(new URL("./ci-browser-font-cache.run.mts", import.meta.url), "utf8");
     const warm = cli.slice(cli.indexOf('command === "warm"'), cli.indexOf('command === "populate"'));
     const populate = cli.slice(cli.indexOf('command === "populate"'));
-    expect(warm).toContain("authenticate();");
-    expect(warm).not.toContain("authenticate(publicationRefresh)");
+    expect(warm).toContain("authenticate(publicationRefresh);");
+    expect(warm).not.toContain("authenticate();");
+    expect(warm.indexOf("authenticate(publicationRefresh);")).toBeLessThan(warm.indexOf("verifyCache(cache, manifest)"));
     expect(populate).toContain("authenticate(publicationRefresh);");
     expect(populate.indexOf("authenticate(publicationRefresh);")).toBeLessThan(populate.indexOf('output("save-ready", "true")'));
   });
