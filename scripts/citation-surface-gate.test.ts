@@ -277,7 +277,7 @@ describe("the 2 October release integration preserves measured debt", () => {
   it("reads the current source without assigning a human review", () => {
     const result = runRepositoryGate(ROOT, "2026-10-02");
     expect(result.failures).toEqual([]);
-    expect(result.fileCount).toBe(114);
+    expect(result.fileCount).toBe(115);
     expect(result.candidates).toHaveLength(59);
     expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);

@@ -37,6 +37,7 @@ const strandedPlan = {
 function idleExceptStranded(claims: unknown[]) {
   const remaining = [...claims];
   mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
     if (name === "claim_due_genome_file_deletion_v1") return { data: remaining.shift() ?? null, error: null };
     if (name === "prepare_own_prepared_file_cleanup_claimed_v1") return { data: strandedPlan, error: null };
     if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
@@ -126,6 +127,7 @@ describe("independent retention queues", () => {
   it("continues invitation, draft and account retention when terminal-contact expiry fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
       if (name === "claim_own_original_retirement_v1") return { data: null, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "claim_own_prepared_cleanup_v1") return { data: null, error: null };
@@ -151,6 +153,7 @@ describe("independent retention queues", () => {
   it("reaps interrupted preparation even when the upload provider queue fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
       if (name === "claim_own_original_retirement_v1") return { data: null, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "claim_own_prepared_cleanup_v1") return { data: null, error: null };
@@ -172,6 +175,7 @@ describe("independent retention queues", () => {
   it("purges expired quota buckets as independent due work", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
       if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
@@ -188,6 +192,7 @@ describe("independent retention queues", () => {
   it("keeps draining other queues when the quota bucket purge fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
       if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
@@ -203,6 +208,7 @@ describe("independent retention queues", () => {
   it("reports an idle sweep as no_work, not as a completed one", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
       if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
@@ -285,6 +291,7 @@ describe("Future Person claim document objects", () => {
   const KEY = "11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/33333333-3333-4333-8333-333333333333";
   function claimObjects(due: unknown) {
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
       if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
@@ -465,4 +472,35 @@ describe("new correction retention stays inside explicit TEST requester scope", 
       expect(copyOrder).toBeLessThan(mocks.rpc.mock.invocationCallOrder[correctionIndex]);
     },
   );
+});
+
+
+describe("independent anonymous appeal expiry", () => {
+  beforeEach(() => { vi.stubEnv("JOBS_SECRET", "test-job-secret"); idleExceptStranded([]); });
+  afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
+
+  it("uses only the native due selector and includes its complete disposition count", async () => {
+    const baseline = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...args: unknown[]) => name === "drain_due_new_public_appeals_v1"
+      ? { data: { completed: 2, shredded: 2, held: 0 }, error: null } : baseline(name, ...args));
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.rpc.mock.calls.filter(([name]) => name === "drain_due_new_public_appeals_v1"))
+      .toEqual([["drain_due_new_public_appeals_v1"]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+
+  it.each(["returned", "thrown", "malformed", "held"])("continues other queues after %s appeal expiry", async kind => {
+    const baseline = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...args: unknown[]) => {
+      if (name !== "drain_due_new_public_appeals_v1") return baseline(name, ...args);
+      if (kind === "thrown") throw new Error("synthetic native failure");
+      if (kind === "returned") return { data: null, error: { code: "55000" } };
+      if (kind === "malformed") return { data: { completed: 0, shredded: 0, held: 0, clock: "caller" }, error: null };
+      return { data: { completed: 0, shredded: 0, held: 1 }, error: null };
+    });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
 });

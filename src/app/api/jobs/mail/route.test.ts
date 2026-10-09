@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), terminal: vi.fn(), invitationTerminal: vi.fn(), submit: vi.fn(), from: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), terminal: vi.fn(), invitationTerminal: vi.fn(), submit: vi.fn(), from: vi.fn(), appealContact:vi.fn() }));
 vi.mock("@/lib/embryo/terminal-mail", () => ({ drainEmbryoTerminalMail: mocks.terminal }));
 vi.mock("@/lib/embryos/invitation-terminal-mail", () => ({ drainInvitationTerminalMail: mocks.invitationTerminal }));
 vi.mock("@/lib/email", () => ({ submitMail: mocks.submit }));
+vi.mock("@/lib/future-person/new-public-appeal-mail",()=>({readNewPublicAppealMailContact:mocks.appealContact}));
 vi.mock("@/lib/crypto", () => ({ decryptSecret: () => "synthetic@example.test", hmacSecret: () => "provider-id-hash" }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
@@ -360,4 +361,45 @@ describe("independent mail queues", () => {
     expect(mocks.submit).not.toHaveBeenCalled();
     expect(mocks.rpc.mock.calls.filter(call => call[0] === "complete_mail_attempt")).toHaveLength(0);
   });
+});
+
+
+describe("dedicated anonymous appeal mail",()=>{
+ beforeEach(()=>{
+  vi.resetAllMocks();vi.stubEnv("JOBS_SECRET","test-job-secret");vi.stubEnv("NEXT_PUBLIC_APP_URL","http://localhost:3000");
+  mocks.terminal.mockResolvedValue({processed:0,failed:0});mocks.invitationTerminal.mockResolvedValue({processed:0,failed:0});
+  mocks.appealContact.mockResolvedValue("synthetic@example.test");mocks.submit.mockResolvedValue("synthetic-provider-id");
+ });
+ afterEach(()=>vi.unstubAllEnvs());
+ const appealRow={outbox_id:"86000000-0000-4000-8000-000000000004",attempt_ordinal:1,
+  contact_ciphertext:"\\x"+"ab".repeat(48),template_id:"appeal-evidence",template_payload:{},
+  delivery_token:"a".repeat(43),idempotency_key:"synthetic-appeal-mail-key"};
+ function setup(row=appealRow,authorized=true){let claimed=false;
+  mocks.rpc.mockImplementation(async(name:string)=>{
+   if(name==="claim_mail_outbox"){const data=claimed?[]:[row];claimed=true;return {data,error:null};}
+   if(name==="authorize_mail_submission_v1")return {data:authorized,error:null};
+   if(name==="complete_mail_attempt")return {data:null,error:null};
+   throw new Error("unexpected native door");
+  });
+ }
+ const request=()=>new Request("http://localhost/api/jobs/mail",{method:"POST",headers:{authorization:"Bearer test-job-secret"}});
+ it("reads only the dedicated current contact then rechecks submission before generic fragment mail",async()=>{
+  setup();const response=await POST(request());expect(await response.json()).toEqual({status:"complete",outcome:"completed"});
+  expect(mocks.appealContact).toHaveBeenCalledWith(expect.any(Object),appealRow.outbox_id,1,"ab".repeat(48),expect.any(AbortSignal));
+  expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test",{id:"appeal-evidence",
+   payload:{continueUrl:`http://localhost:3000/withdraw/request#${appealRow.delivery_token}`}},appealRow.idempotency_key);
+  const auth=mocks.rpc.mock.calls.findIndex(([name])=>name==="authorize_mail_submission_v1");
+  expect(mocks.rpc.mock.invocationCallOrder[auth]).toBeLessThan(mocks.submit.mock.invocationCallOrder[0]);
+  expect(mocks.rpc).toHaveBeenCalledWith("complete_mail_attempt",expect.objectContaining({p_success:true,p_outcome_code:"accepted"}));
+  // A mocked provider acceptance is neither delivered nor external purge proof.
+  expect(mocks.rpc.mock.calls.filter(([name])=>name==="record_resend_mail_event")).toEqual([]);
+ });
+ it("refuses currentness changes without submitting or falling back to the generic contact reader",async()=>{
+  setup(appealRow,false);await POST(request());expect(mocks.appealContact).toHaveBeenCalledOnce();expect(mocks.submit).not.toHaveBeenCalled();
+ });
+ it("does not send a missing fragment token or an unopenable native contact",async()=>{
+  setup({...appealRow,delivery_token:""});await POST(request());expect(mocks.submit).not.toHaveBeenCalled();
+  vi.clearAllMocks();setup();mocks.appealContact.mockRejectedValue(new Error("unavailable"));await POST(request());
+  expect(mocks.submit).not.toHaveBeenCalled();
+ });
 });

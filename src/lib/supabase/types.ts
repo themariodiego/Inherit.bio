@@ -7651,6 +7651,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      read_new_public_appeal_mail_contact_v1: {
+        Args: { p_outbox_id: string; p_attempt_ordinal: number };
+        Returns: Json;
+      };
+      drain_due_new_public_appeals_v1: { Args: Record<string, never>; Returns: Json };
       prepare_new_public_appeal_v1: { Args: { p_kind:string; p_payload_digest:string; p_form_nonce_hash:string; p_contact_digests:Json; p_identifier_digests:Json; p_network_digests:Json }; Returns: Json };
       commit_new_public_appeal_v1: { Args: { p_expected:Json; p_payload_digest:string; p_nonce_hash:string; p_wrapped_key:string; p_statement:string; p_working:string; p_contact:string; p_quota_keys:Json }; Returns: boolean };
       prepare_new_suspension_appeal_v1: { Args: { p_notice_hash:string; p_nonce:string; p_payload_digest:string }; Returns: Json };

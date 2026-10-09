@@ -20,6 +20,104 @@ function reviewedFinding(text: string, entry: ReturnType<typeof readAllowlist>["
 }
 
 describe("secret gate detector", () => {
+  it("keeps both T6 ambient-refusal inputs bound in current and committed history", () => {
+    const { entries } = readAllowlist();
+    const entry = entries.find(item => item.id === "fresh-t6-ambient-verifier-refusal")!;
+    expect(entry.sourceLineSha256).toBeUndefined();
+    expect(entry.sourceLineSha256s).toHaveLength(2);
+    expect(validateAllowlist(readAllowlist(), process.cwd())).toEqual([]);
+    for (const commit of [undefined, "2549ed14b93f7ed0503a34319137f288bcf6a1b8"]) {
+      const source = commit
+        ? execFileSync("git", ["show", `${commit}:${entry.paths[0]}`], { encoding: "utf8" })
+        : fs.readFileSync(entry.paths[0], "utf8");
+      const findings = scanText(source, entry.paths[0]).filter(item => item.value === entry.value);
+      expect(findings).toHaveLength(2); // Both assignments remain detected.
+      for (const finding of findings) {
+        const actual = { ...finding, ...(commit ? { commit } : {}) };
+        expect(isAllowedFinding(actual, entries, process.cwd())).toBe(true);
+        expect(isAllowedFinding({ ...actual, path: "unreviewed.test.ts" }, entries, process.cwd())).toBe(false);
+        expect(isAllowedFinding({ ...actual, value: entry.value + "changed" }, entries, process.cwd())).toBe(false);
+      }
+    }
+  });
+
+  it.each(["value", "path", "line", "duplicate", "order", "extra", "singleton"])(
+    "rejects a changed T6 marker binding: %s", field => {
+      const allowlist = readAllowlist();
+      const entry = allowlist.entries.find(item => item.id === "fresh-t6-ambient-verifier-refusal")!;
+      if (field === "value") entry.value += "changed";
+      if (field === "path") entry.paths = ["scripts/secret-gate.test.ts"];
+      if (field === "line") entry.sourceLineSha256s![0] = "a".repeat(64);
+      if (field === "duplicate") entry.sourceLineSha256s![1] = entry.sourceLineSha256s![0];
+      if (field === "order") entry.sourceLineSha256s!.reverse();
+      if (field === "extra") entry.sourceLineSha256s!.push("b".repeat(64));
+      if (field === "singleton") entry.sourceLineSha256 = entry.sourceLineSha256s![0];
+      expect(validateAllowlist(allowlist, process.cwd()))
+        .toContain(`${entry.id}: unverified reviewed fixture binding`);
+    },
+  );
+
+  it("refuses an identical extra source assignment in both current and historical files", () => {
+    const allowlist = readAllowlist();
+    const entry = allowlist.entries.find(item => item.id === "fresh-t6-ambient-verifier-refusal")!;
+    const source = fs.readFileSync(entry.paths[0], "utf8");
+    const originalLines = source.split(/\r?\n/u).filter(line => entry.sourceLineSha256s!.includes(lineHash(line)));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "secret-gate-t6-duplicate-"));
+    const git = (...args: string[]) => execFileSync("git", ["-C", root,
+      "-c", "user.name=Secret gate fixture", "-c", "user.email=fixture@synthetic.invalid", ...args],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+    try {
+      const target = path.join(root, entry.paths[0]);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const duplicate = "// Synthetic complete source fixture\n" + [...originalLines, originalLines[0]].join("\n");
+      fs.writeFileSync(target, duplicate);
+      const adr = path.join(root, entry.adr);
+      fs.mkdirSync(path.dirname(adr), { recursive: true });
+      fs.copyFileSync(entry.adr, adr);
+      expect(validateAllowlist({ ...allowlist, entries: [entry] }, root))
+        .toContain(`${entry.id}: reviewed source lines must each occur once`);
+      git("init"); git("add", "."); git("commit", "-m", "Duplicated synthetic assignment");
+      const changed = git("rev-parse", "HEAD");
+      const findings = scanText(duplicate, entry.paths[0]);
+      expect(findings).toHaveLength(3);
+      fs.writeFileSync(target, "// Synthetic complete source fixture\n" + originalLines.join("\n"));
+      expect(findings.every(finding => !isAllowedFinding({ ...finding, commit: changed }, [entry], root))).toBe(true);
+      fs.writeFileSync(target, duplicate);
+      expect(findings.every(finding => !isAllowedFinding(finding, [entry], root))).toBe(true);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("refuses copied T6 marker assignments and altered historical lines", () => {
+    const { entries } = readAllowlist();
+    const entry = entries.find(item => item.id === "fresh-t6-ambient-verifier-refusal")!;
+    const source = fs.readFileSync(entry.paths[0], "utf8");
+    const originalLines = source.split(/\r?\n/u).filter(line => entry.sourceLineSha256s!.includes(lineHash(line)));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "secret-gate-t6-"));
+    const git = (...args: string[]) => execFileSync("git", ["-C", root,
+      "-c", "user.name=Secret gate fixture", "-c", "user.email=fixture@synthetic.invalid", ...args],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+    try {
+      const target = path.join(root, entry.paths[0]);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, "// Synthetic complete source fixture\n" + originalLines.join("\n") + "\n");
+      git("init"); git("add", "."); git("commit", "-m", "Reviewed synthetic input lines");
+      const approved = git("rev-parse", "HEAD");
+      const changedLines = originalLines.map(line => line + " // altered context");
+      fs.writeFileSync(target, "// Synthetic complete source fixture\n" + changedLines.join("\n") + "\n");
+      git("add", "."); git("commit", "-m", "Altered input context");
+      const changed = git("rev-parse", "HEAD");
+      fs.writeFileSync(target, "// Synthetic complete source fixture\n" + [...originalLines, ...changedLines].join("\n"));
+      const findings = scanText(fs.readFileSync(target, "utf8"), entry.paths[0]);
+      expect(findings).toHaveLength(4);
+      for (const finding of findings.slice(0, 2)) {
+        expect(isAllowedFinding(finding, entries, root)).toBe(true);
+        expect(isAllowedFinding({ ...finding, commit: approved }, entries, root)).toBe(true);
+        expect(isAllowedFinding({ ...finding, commit: changed }, entries, root)).toBe(false);
+      }
+      for (const finding of findings.slice(2)) expect(isAllowedFinding(finding, entries, root)).toBe(false);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+
   it("detects provider keys, JWTs, private keys, and contextual assignments", () => {
     const hostedSupabase = `sb_${"publishable"}_${"A".repeat(24)}`;
     const githubToken = `gh${"p"}_${"B".repeat(24)}`;

@@ -97,3 +97,20 @@ export function openNewAppealOwnStatement(rawScope:unknown,rawEnvelope:unknown){
 }
 export function appealIntakeDigest(raw:unknown){const intake=appealIntakeBody.parse(raw);
  return newCaseHmac(JSON.stringify(intake),"new-appeal-intake-payload-v1");}
+
+/** Dedicated delivery-contact projection, only after the owner worker's exact
+ * current native claimed-outbox/attempt read. It cannot open review working
+ * data or create account authority. All mutable key/contact copies are zeroed.
+ * The caller must recheck native submission authority immediately before send. */
+export function openNewAppealDeliveryContact(rawScope:unknown,wrappedHex:string,contactHex:string){
+ const scope=appealCaseScope.parse(rawScope);
+ if(scope.intakeKind==="contradiction-suspension-appeal"||!/^[0-9a-f]{144}$/u.test(wrappedHex)
+  ||!/^(?:[0-9a-f]{2}){29,282}$/u.test(contactHex))throw new Error("appeal_mail_unavailable");
+ let key:Buffer|undefined,bytes:Buffer|null=null;
+ try{
+  key=unwrapNewCaseKey(wrappedHex);bytes=openHex(key,contactAad(scope),contactHex);
+  if(!bytes)throw new Error("appeal_mail_unavailable");
+  const raw=new TextDecoder("utf8",{fatal:true}).decode(bytes),parsed=contact.parse(raw);
+  if(parsed!==raw)throw new Error("appeal_mail_unavailable");return parsed;
+ }finally{key?.fill(0);bytes?.fill(0);}
+}

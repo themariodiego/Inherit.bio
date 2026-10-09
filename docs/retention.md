@@ -204,3 +204,21 @@ complete claimant-erasure graph disposes of its registered private row. Native
 cleanup supplies no remote-copy/history deletion proof or purge completion.
 The owner-only intake configuration is disabled by default; the server TEST
 requester gate and independent native opt-in must both be enabled separately.
+
+
+### Anonymous public appeal intake package
+
+The disabled-by-default native public intake reserves an original ten-minute
+preparation and a thirty-day case deadline. Its random `case_requester` has no
+account or subject; contact matching never supplies ownership. Terminal
+outcomes and due expiry erase the wrapped case key, working ciphertext, contact,
+local token/session and local delivery copies, leaving only coded case metadata.
+The expiry transition occurs before ciphertext erasure so the immutable
+statement guard permits only terminal blanking. A spent form nonce survives
+immediate closure until its original signed-form lifetime ends.
+
+This source slice creates an atomic evidence-mail candidate and a dedicated
+current-contact reader. Generic provider acceptance is not delivery or remote
+history/purge proof. The candidate grants no account or target authority.
+Appeal activation, evidence/session UI, reviewer completion and genuine provider
+delivery remain unqualified; native intake configuration stays disabled.

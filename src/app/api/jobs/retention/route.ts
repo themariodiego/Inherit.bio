@@ -101,6 +101,13 @@ export async function POST(request: Request) {
     else { processed += counts.data.completed; failed += counts.data.held; }
   } catch { failed++; }
   }
+  // Anonymous intake has its own immutable clocks and no account identity.
+  try{
+    const due=await admin.rpc("drain_due_new_public_appeals_v1");
+    const counts=z.object({shredded:z.number().int().nonnegative(),completed:z.number().int().nonnegative(),
+      held:z.number().int().nonnegative()}).strict().safeParse(due.data);
+    if(due.error||!counts.success)failed++;else{processed+=counts.data.completed;failed+=counts.data.held;}
+  }catch{failed++;}
   // Independent profile keys expire without a Storage or mail-provider call.
   // The database selects the exact due profiles; no request selector or clock.
   try {

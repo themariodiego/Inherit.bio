@@ -9,6 +9,7 @@ const GENOME_FIXTURE_ROOTS = ["data/samples", "e2e/fixtures"];
 // ADR 0006 pins [classification, detector value, paths, full source-line SHA].
 // JSON/ADR edits alone cannot approve a different credential or expression.
 const REVIEWED_FIXTURE_BINDINGS: Readonly<Record<string, string>> = {
+  "fresh-t6-ambient-verifier-refusal": "26d03f2d2372364866ac63135048137df9801f88e9bff64a3be7f07497c5166d",
   "historical-owned-target-unit-marker": "0527b7ca64c0863d9dcd7502888ffa223c96f98a9ed5806ed764444d0a8a907b",
   "isolated-webhook-generated-reference": "b335bc48092b30221bb3d24f016579219124da5a5fdd991c1a88820c9d060a69",
   "isolated-webhook-malformed-reference": "2fd38aa46b7aa9b63f45c065c5f4bc83a1a8b7a7ada74cfe7ebe26c78dc7645c",
@@ -58,6 +59,7 @@ interface AllowlistEntry {
     | "non-secret-code-expression";
   sourceDeclaration?: string;
   sourceLineSha256?: string;
+  sourceLineSha256s?: string[];
   value: string;
   paths: string[];
   historyOnly?: boolean;
@@ -80,12 +82,22 @@ function sha256(text: string): string {
   return crypto.createHash("sha256").update(text).digest("hex");
 }
 
+function reviewedLineHashes(entry: AllowlistEntry): string[] {
+  return entry.sourceLineSha256s ?? [entry.sourceLineSha256 ?? ""];
+}
+
 function hasReviewedBinding(entry: AllowlistEntry): boolean {
+  const lines = reviewedLineHashes(entry);
+  const exactLines = entry.sourceLineSha256s === undefined
+    ? /^[0-9a-f]{64}$/.test(entry.sourceLineSha256 ?? "")
+    : entry.sourceLineSha256 === undefined && lines.length === 2
+      && lines.every(line => /^[0-9a-f]{64}$/.test(line))
+      && JSON.stringify(lines) === JSON.stringify([...new Set(lines)].sort());
   return entry.historyOnly !== true && entry.paths.length === 1
-    && /^[0-9a-f]{64}$/.test(entry.sourceLineSha256 ?? "")
+    && exactLines
     && Object.hasOwn(REVIEWED_FIXTURE_BINDINGS, entry.id)
     && REVIEWED_FIXTURE_BINDINGS[entry.id] === sha256(JSON.stringify([
-      entry.classification, entry.value, entry.paths, entry.sourceLineSha256,
+      entry.classification, entry.value, entry.paths, entry.sourceLineSha256s ?? entry.sourceLineSha256,
     ]));
 }
 
@@ -256,8 +268,12 @@ export function validateAllowlist(
         failures.push(`${entry.id}: unverified reviewed fixture binding`);
       } else {
         const sourcePath = path.join(repositoryRoot, entry.paths[0]);
-        if (!fs.existsSync(sourcePath) || !fs.readFileSync(sourcePath, "utf8")
-          .split(/\r?\n/u).some(line => sha256(line) === entry.sourceLineSha256)) {
+        const sourceLines = fs.existsSync(sourcePath) ? fs.readFileSync(sourcePath, "utf8").split(/\r?\n/u) : [];
+        if (entry.sourceLineSha256s !== undefined) {
+          if (!entry.sourceLineSha256s.every(hash => sourceLines.filter(line => sha256(line) === hash).length === 1)) {
+            failures.push(`${entry.id}: reviewed source lines must each occur once`);
+          }
+        } else if (!sourceLines.some(line => sha256(line) === entry.sourceLineSha256)) {
           failures.push(`${entry.id}: reviewed source line is absent`);
         }
       }
@@ -483,8 +499,12 @@ export function isAllowedFinding(
       const text = finding.commit
         ? git(repositoryRoot, "show", `${finding.commit}:${finding.path}`)
         : fs.readFileSync(path.join(repositoryRoot, finding.path), "utf8");
-      const line = text.split(/\r?\n/u)[finding.line - 1];
-      return line !== undefined && sha256(line) === entry.sourceLineSha256;
+      const sourceLines = text.split(/\r?\n/u);
+      if (entry.sourceLineSha256s !== undefined && !entry.sourceLineSha256s.every(
+        hash => sourceLines.filter(line => sha256(line) === hash).length === 1,
+      )) return false;
+      const line = sourceLines[finding.line - 1];
+      return line !== undefined && reviewedLineHashes(entry).includes(sha256(line));
     } catch { return false; }
   }
   return Boolean(

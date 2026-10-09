@@ -139,3 +139,16 @@ independent binding digest use the existing reviewed-source mechanism. A copied
 assignment, replacement literal, changed line/context/metadata or other path
 remains refused, including historical changes when current source is restored.
 The detector, unique-value invariant and history baseline remain unchanged.
+
+### Exact T6 ambient-verifier rejection marker (2026-10-09)
+
+- Secret-Allowlist-ID: fresh-t6-ambient-verifier-refusal
+
+The fixed `untrusted-ambient-verifier` marker is passed only to the pure T6
+configuration test as two ambient inputs that must be discarded. No provider,
+SDK, cryptographic operation or child process uses this marker. One unique
+value and one test path bind exactly two complete source-line hashes, with the
+whole binding independently pinned in the scanner. Every existing singleton
+binding remains byte-exact. Current and historical findings must match one of
+those two lines; a changed value, path, line, metadata or extra line refuses.
+Detectors, the unique-value rule and the complete history baseline remain intact.

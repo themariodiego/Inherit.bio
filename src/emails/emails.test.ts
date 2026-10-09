@@ -493,3 +493,19 @@ describe("Path B mails", () => {
       expectSafeBody(html);
     });
 });
+
+
+describe("anonymous appeal evidence mail", () => {
+  it("renders the fixed generic fragment link without account, case or genetic authority", async () => {
+    const mail = { id: "appeal-evidence", payload: { continueUrl: invitationUrl } } as const;
+    const html = stripMarkers(await renderMail(mail));
+    expect(mailSubject(mail)).toBe("Continue your Inherit request");
+    expect(html).toContain("Continue your request");
+    expect(html).toContain("Opening the link does not confirm an account or access to any record.");
+    expect(html).toContain("If you did not make this request, you can ignore this message.");
+    expect(html).toContain(`href="${invitationUrl}"`);
+    expect(html.match(/href="/g)).toHaveLength(1);
+    expect(html).not.toMatch(/caseId|reviewer|statement|subjectId|genotype|genome|rs[0-9]/u);
+    expectSafeBody(html);
+  });
+});

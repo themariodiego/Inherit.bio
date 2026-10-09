@@ -1,3 +1,38 @@
+## 2026-10-09 — Bind only the two rejected T6 ambient-verifier inputs
+
+The secret gate still detects the exact synthetic ambient verifier in both
+current and committed T6 unit-test lines. One unique marker and one test path
+now bind exactly two independently reviewed full-line hashes; every existing
+single-line binding stays unchanged. New regression cases reject changed
+values, paths, lines, hash metadata and historical context, even with the
+approved current source restored. No detector, complete history range or
+credential rule is waived. The failed original secrets result is preserved.
+
+## 2026-10-09 — Keep anonymous appeal intake separate from account authority
+
+The disabled-by-default native public intake now binds a random no-account,
+no-subject case principal, the original named reviewer, clocks, one-use nonce
+and complete sealed preparation. Its original statement cannot be rewritten,
+reauthored or adopted by an account. The same commit creates the independent
+contact, evidence-mail candidate and outbox. A dedicated contact reader opens
+only that claimed case envelope; submission rechecks native currentness.
+Terminal cleanup and due expiry destroy the local key/contact/delivery copies.
+The committed-expiry regression fixes terminal-transition ordering without
+bypassing immutable guards. The evidence credential and mail outbox expire seven
+days after the original submission while the immutable case deadline stays
+thirty days; native regressions retain both clocks and expired-delivery refusal. New crypto, mail-worker, renderer and independent
+retention-queue cases retain all previous assertions and time limits.
+The current citation-source census rises from 114 to 115 because the generic
+appeal email is one new source file. Its measured count is updated; all 59
+unreviewed candidates, original backlog hash, citations, claims and human-review
+refusals remain exact. The failed original count check is preserved.
+
+Native database tests are authored and await the complete fresh hosted suite.
+Appeal activation, evidence/session pages, reviewer completion and genuine
+provider delivery remain missing or unqualified. The candidate confers no
+account or source-target authority; no complete appeal flow, remote-history
+purge or production activation is claimed.
+
 ## 2026-10-09 — Bind T7 to the genuine unavailable comparison state
 
 The original G3.2 brief allows a result or an honest not-covered state. T7 now

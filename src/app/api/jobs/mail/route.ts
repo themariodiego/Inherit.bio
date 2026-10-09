@@ -3,6 +3,7 @@ import { z } from "zod";
 import { applicationOrigin } from "@/lib/app-origin";
 import { hmacSecret } from "@/lib/crypto";
 import { openMailContact } from "@/lib/future-person/claimant-contact";
+import { readNewPublicAppealMailContact } from "@/lib/future-person/new-public-appeal-mail";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
@@ -141,6 +142,10 @@ function parseMail(
   payload: unknown,
   deliveryToken?: string | null,
 ): MailTemplate {
+  if (templateId === "appeal-evidence") {
+    z.object({}).strict().parse(payload);
+    return {id:templateId,payload:{continueUrl:fragmentUrl(deliveryToken)}};
+  }
   if (templateId === "future-person-more-information") {
     z.object({}).strict().parse(payload);
     if (deliveryToken != null) throw new Error("mail_token_forbidden");
@@ -327,7 +332,12 @@ async function drainMail() {
     let accepted = false;
     try {
       const ciphertextHex = row.contact_ciphertext.replace(/^\\x/, "");
-      recipient = openMailContact(Buffer.from(ciphertextHex, "hex"));
+      if(row.template_id==="appeal-evidence") {
+        recipient=await readNewPublicAppealMailContact(admin,row.outbox_id,row.attempt_ordinal,ciphertextHex,AbortSignal.timeout(30_000));
+      } else {
+        const ciphertext=Buffer.from(ciphertextHex,"hex");
+        try{recipient=openMailContact(ciphertext);}finally{ciphertext.fill(0);}
+      }
       const mail = parseMail(
         row.template_id,
         row.template_payload,

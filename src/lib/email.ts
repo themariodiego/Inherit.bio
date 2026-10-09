@@ -4,6 +4,7 @@
 // genotype data is never logged and never included: the digest carries only
 // public template info.
 import { createElement, type ReactElement } from "react";
+import { AppealEvidenceEmail,type AppealEvidenceProps } from "@/emails/appeal-evidence";
 import crypto from "node:crypto";
 import { render } from "@react-email/components";
 import { Resend } from "resend";
@@ -63,6 +64,7 @@ import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
+  "appeal-evidence": AppealEvidenceProps;
   "account-deletion-affected": AccountDeletionAffectedProps;
   "account-deletion-affected-cancelled": AccountDeletionAffectedCancelledProps;
   "future-person-more-information": Record<string, never>;
@@ -96,6 +98,7 @@ export type MailTemplate = {
 const renderers: {
   [K in MailTemplateId]: (payload: MailPayloads[K]) => ReactElement;
 } = {
+  "appeal-evidence":(payload)=>createElement(AppealEvidenceEmail,payload),
   "account-deletion-affected": (payload) => createElement(AccountDeletionAffectedEmail, payload),
   "account-deletion-affected-cancelled": (payload) => createElement(AccountDeletionAffectedCancelledEmail, payload),
   "future-person-more-information": () => createElement(FuturePersonMoreInformationEmail),
@@ -130,6 +133,7 @@ const renderers: {
 // Subjects are fixed per template. The Record Key addendum is the one
 // exception: its subject follows the kind of change it announces.
 const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string } = {
+  "appeal-evidence":"Continue your Inherit request",
   "account-deletion-affected": "Records held on Inherit will be deleted",
   "account-deletion-affected-cancelled": "A record deletion request on Inherit was cancelled",
   "future-person-more-information": "We need more information about your Inherit request",
