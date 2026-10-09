@@ -3,10 +3,9 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import http from "node:http";
 import { chromium, type Browser } from "@playwright/test";
-import { appServerEnvironment } from "../ci-browser-app-environment";
-import { EMBRYO_APP_ENV } from "../ci-browser-config";
 import { startCiBrowserRuntime } from "../ci-browser-runtime";
 import { withEmbryoJourney } from "../ci-embryo-journey";
+import { freshT6AppEnvironments } from "./fresh-t6-app-environment";
 import { acquireFreshStack, actualResourceIO, infrastructureChildEnvironment } from "./fresh-t6-resources";
 import { repositoryRoot } from "./conductor-inputs";
 import type { LiveEnvironment } from "./conductor-contract";
@@ -14,9 +13,8 @@ import type { LiveSession } from "./live-browser";
 import { openParticipantCReadSession } from "../../e2e/participant-c-harness";
 import { seedParticipantC, participantCPassword, type ParticipantCMail } from "../../e2e/participant-c-journey";
 
-function startApp(port: 3100 | 3105, runtime: Record<string, string>, signer: string) {
-  const env = { ...infrastructureChildEnvironment(process.env), ...appServerEnvironment({ ...process.env,
-    INHERIT_UPLOAD_SIGNING_JWK: signer }, port), ...runtime, ...(port === 3105 ? EMBRYO_APP_ENV : {}) };
+function startApp(port: 3100 | 3105, runtime: Record<string, string>, app: Record<string, string>) {
+  const env = { ...infrastructureChildEnvironment(process.env), ...app, ...runtime };
   const child = spawn(process.execPath, ["--import", "tsx", "scripts/ci-browser/server.mts", "host", String(port)],
     { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
   child.stdout.resume(); child.stderr.resume(); // No credential-bearing app diagnostics.
@@ -94,8 +92,9 @@ export const openFreshParticipantCBrowser: LiveEnvironment["openBrowser"] = asyn
     runtime = await startCiBrowserRuntime();
     const pair = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
     const signer = JSON.stringify({ ...pair.privateKey.export({ format: "jwk" }), kid: randomUUID() });
+    const appEnvironments = freshT6AppEnvironments(process.env, signer);
     mail = await mailCapture();
-    for (const port of [3100, 3105] as const) { const app = startApp(port, runtime.env, signer); apps.push(app); await ready(app, port, signal); }
+    for (const port of [3100, 3105] as const) { const app = startApp(port, runtime.env, appEnvironments[port]); apps.push(app); await ready(app, port, signal); }
     browser = await chromium.launch({ env: infrastructureChildEnvironment(process.env) });
     const context = await browser.newContext({ baseURL: "http://localhost:3105", serviceWorkers: "block" });
     await context.route("**/*", route => {

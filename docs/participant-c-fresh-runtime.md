@@ -37,6 +37,12 @@ only after the inventory is empty. An uncertain start or disposal retains its
 receipt and stops the run; there is no reset, prune, cleanup adoption or reuse.
 App/container/infrastructure child environments omit inference credentials.
 
+The fresh persona bootstrap gives only its embryo app on 3105 a newly generated
+32-byte webhook verifier in process memory, matching the strict server launcher.
+The main app on 3100 receives none. This corrects a missing configuration field;
+it creates no delivery callback, provider acknowledgement or native result. The
+focused configuration regression does not qualify the hosted stack lifecycle.
+
 The private configuration wraps the existing run configuration as `run` and
 adds `maximumInfrastructureCostPerStackMicroDollars`. Only explicit standard T6
 smoke/calibration is supported. `--plan` reads that configuration without
