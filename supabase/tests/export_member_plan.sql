@@ -52,6 +52,10 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-internal",
       "reason": "Exact current account-deletion cohort work plan and original deadline. It is worker control state, removed after cleanup, not a person\u2019s record."
     },
+    "private.public_appeal_case_decisions": {
+      "disposition": "excluded-protected",
+      "reason": "Final appeal review workflow holds coded outcomes, reviewer/session and nonce bindings, and a sealed professional basis erased at terminal closure. Private reviewer reasons, credentials and other case data never leave in member exports; requester own statements use only their separately authorized original-statement reader."
+    },
     "private.claim_document_fragments": {
       "disposition": "excluded-protected",
       "reason": "Sealed pieces of an identity document in upload, deleted once composed or refused. The export contracts always exclude identity documents and evidence bytes."

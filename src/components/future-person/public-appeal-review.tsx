@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ReviewPdfDocument } from "./review-pdf";
 import { readReviewDocument } from "@/lib/future-person/read-review-document";
+import { PublicAppealCaseRejection } from "./public-appeal-case-rejection";
 import { z } from "zod";
 const document = z.object({ documentId: z.uuid(), kind: z.enum(["appeal-photo-identity", "appeal-subject-source-control", "appeal-genetic-parent-authority", "appeal-decision-notice"]),
  reviewState: z.enum(["pending", "approved", "rejected"]), evidenceRevision: z.number().int().positive() }).strict();
@@ -12,7 +13,7 @@ const row = z.object({ caseId: z.uuid(), kind: z.enum(["subject-objection", "gen
  targetBinding: z.object({ state: z.literal("unresolved"), kind: z.literal("none"), safeReference: z.null(), targetRevision: z.null(), principalRevision: z.null(),
   contradictionRevision: z.null(), suspensionRevision: z.null(), nonOverturnedCountRevision: z.null(), counterevidenceRevision: z.null() }).strict(),
  contradictionOverturnPackage: z.object({ state: z.literal("not_applicable"), allowedGround: z.literal("none"), originalTriggerProvenanceLocked: z.literal(false), counterevidenceRevision: z.null() }).strict(),
- evidence: z.array(document).min(2).max(3), reviewRevision: z.number().int().positive(), deadline: z.iso.datetime({ offset: true }),
+ evidence: z.array(document).max(3), reviewRevision: z.number().int().positive(), deadline: z.iso.datetime({ offset: true }),
 }).strict();
 const controls = z.record(z.uuid(), z.object({ receipt: z.string().min(1).max(2048), decision: z.string().min(1).max(2048) }).strict());
 const names = { "appeal-photo-identity": "Photo identity document", "appeal-subject-source-control": "Evidence that the source is yours",
@@ -21,7 +22,7 @@ type View = { documentId: string; url: string; media: string; sha256: string; re
 /** The assigned reviewer reads a whole hash-verified document and explicitly
  * judges that document. This UI has no automatic target or access approval. */
 export function PublicAppealReview({ caseId }: { caseId: string }) {
- const [loaded, setLoaded] = useState<{ value: z.infer<typeof row>; csrf: string; controls: z.infer<typeof controls> } | null>(null);
+ const [loaded, setLoaded] = useState<{ value: z.infer<typeof row>; csrf: string; controls: z.infer<typeof controls>; caseNonce: string } | null>(null);
  const [view, setView] = useState<View | null>(null); const [checked, setChecked] = useState(false);
  const [decision, setDecision] = useState<"approved" | "rejected">("rejected"); const [reason, setReason] = useState("");
  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [revision, setRevision] = useState(0);
@@ -36,8 +37,12 @@ export function PublicAppealReview({ caseId }: { caseId: string }) {
    const response = await fetch(`/api/reviews/appeals/${caseId}`, { credentials: "same-origin", cache: "no-store", signal: abort.signal });
    const value = row.safeParse(await response.json()); const csrf = response.headers.get("x-inherit-csrf");
    const tokens = controls.safeParse(JSON.parse(response.headers.get("x-inherit-document-nonces") ?? "null"));
-   if (response.status !== 200 || !value.success || value.data.caseId !== caseId || !csrf || !/^[0-9a-f]{64}$/u.test(csrf) || !tokens.success) throw new Error("unavailable");
-   if (!abort.signal.aborted) { setLoaded({ value: value.data, csrf, controls: tokens.data }); setMessage(""); }
+   const caseNonce = response.headers.get("x-inherit-case-review-nonce");
+   const decisions = z.tuple([z.literal("reject")]).safeParse(JSON.parse(response.headers.get("x-inherit-case-decisions") ?? "null"));
+   if (response.status !== 200 || !value.success || value.data.caseId !== caseId || !csrf || !/^[0-9a-f]{64}$/u.test(csrf)
+    || !tokens.success || !caseNonce || caseNonce.length > 2048 || !decisions.success
+    || Object.keys(tokens.data).some(id => !value.data.evidence.some(doc => doc.documentId === id && doc.reviewState === "pending"))) throw new Error("unavailable");
+   if (!abort.signal.aborted) { setLoaded({ value: value.data, csrf, controls: tokens.data, caseNonce }); setMessage(""); }
   } catch { if (!abort.signal.aborted) { setLoaded(null); setMessage("This request is not available. Sign in again and open the case assigned to you."); } } })();
   return () => { abort.abort(); operation.current?.abort(); if (objectUrl.current) URL.revokeObjectURL(objectUrl.current); objectUrl.current = null; };
  }, [caseId, revision]);
@@ -72,18 +77,20 @@ export function PublicAppealReview({ caseId }: { caseId: string }) {
   {loaded && <><p>Claimant: {loaded.value.claimantName}.</p><p>{loaded.value.statement}</p>
    <p>Read each full document. A document decision does not grant access or decide the outcome of this request.</p>
    {loaded.value.evidence.map(doc => <section key={doc.documentId} className="space-y-3 rounded-xl border p-4"><h2>{names[doc.kind]}</h2>
-    <p>Review: {doc.reviewState}.</p><button type="button" disabled={busy || doc.reviewState !== "pending"} onClick={() => void open(doc)}>Open file</button></section>)}
+    <p>Review: {doc.reviewState}.</p><button type="button" disabled={busy || doc.reviewState !== "pending" || !loaded.controls[doc.documentId]} onClick={() => void open(doc)}>Open file</button></section>)}
    {view && <section className="space-y-4">
-    {view.media === "application/pdf" ? <ReviewPdfDocument url={view.url} title="Review document" onRendered={rendered} onPending={pending} onFailure={failed} />
-     : <Image src={view.url} alt="Review document" width={500} height={600} unoptimized referrerPolicy="no-referrer" className="max-h-96 w-full object-contain"
+    {view.media === "application/pdf" ? <ReviewPdfDocument url={view.url} title="Review file" onRendered={rendered} onPending={pending} onFailure={failed} />
+     : <Image src={view.url} alt="Review file" width={500} height={600} unoptimized referrerPolicy="no-referrer" className="max-h-96 w-full object-contain"
       onLoad={event => { if (event.currentTarget.complete && event.currentTarget.naturalWidth > 0) setView(old => old ? { ...old, rendered: true } : null); }} onError={() => clear()} />}
     <label className="block"><input type="checkbox" checked={checked} disabled={!view.rendered || busy} onChange={event => setChecked(event.target.checked)} /> I read this file.</label>
-    <label className="block">Document decision<select value={decision} disabled={busy} onChange={event => setDecision(event.target.value as "approved" | "rejected")}>
-     <option value="approved">Approve document</option><option value="rejected">Refuse document</option></select></label>
+    <label className="block">File choice<select value={decision} disabled={busy} onChange={event => setDecision(event.target.value as "approved" | "rejected")}>
+     <option value="approved">Accept file</option><option value="rejected">Refuse file</option></select></label>
     <label className="block">Reason<textarea value={reason} maxLength={2000} disabled={busy} onChange={event => setReason(event.target.value)} /></label>
     <p>Record what you checked. Do not copy document content into the reason.</p>
-    <button type="button" onClick={() => void save()} disabled={busy || !view.rendered || !checked || reason.trim().length < 20}>Save decision</button>
+    <button type="button" onClick={() => void save()} disabled={busy || !view.rendered || !checked || reason.trim().length < 20}>Save choice</button>
    </section>}
+   <PublicAppealCaseRejection key={loaded.value.reviewRevision} caseId={caseId} reviewRevision={loaded.value.reviewRevision}
+    csrf={loaded.csrf} nonce={loaded.caseNonce} disabled={busy} onResolved={() => { operation.current?.abort(); clear(); setReason(""); setLoaded(null); setMessage("This request was closed."); }} />
   </>}
  </section>;
 }

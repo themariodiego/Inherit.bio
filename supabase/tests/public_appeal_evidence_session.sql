@@ -104,6 +104,56 @@ select is((select principal.account_id from public.subject_principals principal 
 select is((select count(*) from public.activate_rights_session_v1(
  encode(extensions.digest(convert_to((select delivery_token from public_appeal_claim),'UTF8'),'sha256'),'hex'),repeat('2',64),repeat('B',32))),0::bigint,
  'the native activation token is consumed once');
+-- Final rejection has its own current-case/MFA path. It does not fabricate
+-- a complete document set or change the original documentary approval gate.
+create function pg_temp.final_case_reviewer_jwt() returns void language sql as $test$
+ select set_config('request.jwt.claims',jsonb_build_object('sub','7a000000-0000-0000-0000-000000000001',
+ 'role','authenticated','session_id','7a000000-0000-4000-8000-0000000000a1','aal','aal2',
+ 'iss','http://127.0.0.1:54321/auth/v1','aud','authenticated','exp',extract(epoch from clock_timestamp())::bigint+3600,
+ 'amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from clock_timestamp())::bigint-60)))::text,true);
+$test$;
+create function pg_temp.final_case_rejection_probe() returns boolean language plpgsql as $test$
+declare v_case uuid; context jsonb; result jsonb; target_before jsonb; ok boolean:=false;
+begin
+ begin
+  select (value#>>'{frame,scope,caseId}')::uuid into v_case from public_appeal_prepared;
+  select jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(s) order by s.id),'[]') from public.subjects s),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(c) order by c.id),'[]') from public.embryo_cohorts c)) into target_before;
+  perform pg_temp.final_case_reviewer_jwt();
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  result:=public.decide_public_appeal_case_v1(v_case,'reject',(context->>'reviewRevision')::bigint,
+   (context->>'evidenceRevision')::bigint,repeat('8',64),decode(repeat('ab',48),'hex'));
+  ok:=result->>'outcome'='rejected' and result->>'state'='resolved'
+   and exists(select 1 from private.new_public_appeal_intakes source where source.id=v_case and source.state='closed'
+    and source.wrapped_case_key is null and source.working_ciphertext is null and source.case_contact_id is null)
+   and exists(select 1 from private.public_appeal_case_decisions outcome where outcome.case_id=v_case
+    and outcome.reason_ciphertext is null and outcome.reviewer_account_id='7a000000-0000-0000-0000-000000000001'
+    and outcome.auth_session_id='7a000000-0000-4000-8000-0000000000a1')
+   and not exists(select 1 from public.rights_sessions rights where rights.target_kind='appeal-case' and rights.target_id=v_case)
+   and not exists(select 1 from private.appeal_document_sessions source where source.intake_id=v_case and source.wrapped_document_key is not null)
+   and not exists(select 1 from private.public_appeal_provisional_targets source where source.case_id=v_case)
+   and target_before=jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(s) order by s.id),'[]') from public.subjects s),
+    'cohorts',(select coalesce(jsonb_agg(to_jsonb(c) order by c.id),'[]') from public.embryo_cohorts c));
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'reject',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,repeat('8',64),decode(repeat('ab',48),'hex'));
+   ok:=false;
+  exception when insufficient_privilege then null; end;
+  raise exception using errcode='PZ001',message='restore synthetic case';
+ exception when sqlstate 'PZ001' then null;
+ end;
+ return ok;
+end $test$;
+select throws_ok($$select public.read_public_appeal_case_context_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared))$$,
+ '42501','appeal unavailable','service authority cannot read even an incomplete case in place of the named own-MFA reviewer');
+select pg_temp.final_case_reviewer_jwt();
+select is(jsonb_array_length(public.read_public_appeal_case_context_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared))->'documents'),0,
+ 'separate final-case context admits zero documents without fabricating evidence approval');
+select throws_ok($$select public.read_public_appeal_review_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared))$$,
+ '42501','appeal unavailable','original complete documentary review still refuses incomplete evidence');
+select ok(pg_temp.final_case_rejection_probe(),'own-MFA incomplete rejection is terminal, clears case authority and preserves all target rows');
+select is((select count(*) from private.public_appeal_case_decisions),0::bigint,'synthetic rollback preserves the original ongoing case and all final nonce rows');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select ok((public.new_public_appeal_evidence_view_v1(repeat('1',64))->'documentKinds')=
  '["appeal-photo-identity","appeal-subject-source-control"]'::jsonb,'server case kind selects the exact evidence set');
 select throws_ok($$select public.open_public_appeal_document_v1(repeat('1',64),repeat('C',32),'appeal-genetic-parent-authority',
@@ -328,6 +378,37 @@ select is(private.public_appeal_underlying_binding_v1(encode(extensions.digest(c
  'foreign recipient cannot borrow a real decision reference');
 select is(private.public_appeal_underlying_binding_v1(repeat('8',64),jsonb_build_object('1',repeat('c',64))),null::jsonb,
  'arbitrary/legacy decision references remain unbound');
+select pg_temp.final_case_reviewer_jwt();
+create temporary table final_case_context as select public.read_public_appeal_case_context_v1(
+ (select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)) value;
+select throws_ok($$select public.decide_public_appeal_case_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared),
+ 'approve-access',(select (value->>'reviewRevision')::bigint from final_case_context),
+ (select (value->>'evidenceRevision')::bigint from final_case_context),repeat('8',64),decode(repeat('ab',48),'hex'))$$,
+ '42501','appeal unavailable','final rejection cannot be used to approve access or infer target authority');
+select throws_ok($$select public.decide_public_appeal_case_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared),
+ 'reject',(select (value->>'reviewRevision')::bigint+1 from final_case_context),
+ (select (value->>'evidenceRevision')::bigint from final_case_context),repeat('8',64),decode(repeat('ab',48),'hex'))$$,
+ '42501','appeal unavailable','stale final review revision records no outcome or nonce');
+select throws_ok($$select public.decide_public_appeal_case_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared),
+ 'reject',(select (value->>'reviewRevision')::bigint from final_case_context),
+ (select (value->>'evidenceRevision')::bigint+1 from final_case_context),repeat('8',64),decode(repeat('ab',48),'hex'))$$,
+ '42501','appeal unavailable','stale final evidence revision records no outcome or nonce');
+select throws_ok($$select pg_temp.deletion_probe('update private.new_public_appeal_reviewers set active=false',
+ 'select public.decide_public_appeal_case_v1((select (value#>>''{frame,scope,caseId}'')::uuid from public_appeal_prepared),''reject'',
+ (select (value->>''reviewRevision'')::bigint from final_case_context),(select (value->>''evidenceRevision'')::bigint from final_case_context),
+ repeat(''8'',64),decode(repeat(''ab'',48),''hex''))')$$,'42501','appeal unavailable','revoked final named assignment refuses atomically');
+select is((select count(*) from private.public_appeal_case_decisions),0::bigint,'all refused final branches leave complete outcome and nonce rows empty');
+select ok(pg_temp.final_case_rejection_probe(),'final rejection after real documentary decisions clears credentials, keys and hold with zero target effects');
+select ok((select bool_and(intake.state='committed' and intake.wrapped_case_key is not null) from private.new_public_appeal_intakes intake),
+ 'full-case rejection subtransaction restores the unchanged original native source');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role_name
+ where has_table_privilege(role_name,'private.public_appeal_case_decisions','select,insert,update,delete')
+ or has_function_privilege(role_name,'private.public_appeal_case_review_at_v1(uuid)','execute')),0::bigint,
+ 'API roles cannot forge a final reviewer outcome or bypass native currentness');
+select ok(has_function_privilege('authenticated','public.decide_public_appeal_case_v1(uuid,text,bigint,bigint,text,bytea)','execute')
+ and not has_function_privilege('service_role','public.decide_public_appeal_case_v1(uuid,text,bigint,bigint,text,bytea)','execute'),
+ 'only the own-JWT review route has a final native door; server owner callbacks cannot replace the human');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
 update public.appeal_intakes set state='withdrawn',decided_at=clock_timestamp() where target_kind='public_case';
 select is((select count(*) from private.public_appeal_pending_reviews),0::bigint,'terminal disposition disposes the live assignment and document links');
 select is((select count(*) from private.appeal_document_sessions where wrapped_document_key is not null),0::bigint,
