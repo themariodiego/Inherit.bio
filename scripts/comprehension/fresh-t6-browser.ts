@@ -6,7 +6,9 @@ import { chromium, expect, type Browser } from "@playwright/test";
 import { startCiBrowserRuntime } from "../ci-browser-runtime";
 import { withEmbryoJourney } from "../ci-embryo-journey";
 import { freshT6AppEnvironments } from "./fresh-t6-app-environment";
-import { acquireFreshStack, actualResourceIO, infrastructureChildEnvironment } from "./fresh-t6-resources";
+import { acquireFreshStack, actualResourceIO, createResourceIO, infrastructureChildEnvironment } from "./fresh-t6-resources";
+import { ownedLinuxChildProof, type OwnedLinuxCapability } from "../owned-linux-runtime";
+import type { Writable } from "node:stream";
 import { repositoryRoot } from "./conductor-inputs";
 import type { LiveEnvironment } from "./conductor-contract";
 import { freshComprehensionSessions, type FreshComprehensionSimulation, type ParticipantCInput } from "./fresh-native-session";
@@ -20,11 +22,15 @@ import { chromiumStorageProxyArgs } from "../local-storage-browser-config";
 import { openParticipantCReadSession } from "../../e2e/participant-c-harness";
 import { seedParticipantC, participantCPassword } from "../../e2e/participant-c-journey";
 
-function startApp(port: 3100 | 3105, runtime: Record<string, string>, app: Record<string, string>) {
-  const env = { ...infrastructureChildEnvironment(process.env), ...app, ...runtime };
+function startApp(port: 3100 | 3105, runtime: Record<string, string>, app: Record<string, string>, operator?: OwnedLinuxCapability) {
+  const env = { ...infrastructureChildEnvironment(process.env, operator), ...app, ...runtime,
+    ...(operator ? { INHERIT_OWNED_LINUX_RUNTIME_FD: "3" } : {}) };
   const child = spawn(process.execPath, ["--import", "tsx", "scripts/ci-browser/server.mts", "host", String(port)],
-    { cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"] });
-  child.stdout.resume(); child.stderr.resume(); // No credential-bearing app diagnostics.
+    { cwd: repositoryRoot, env, stdio: operator ? ["ignore", "pipe", "pipe", "pipe"] : ["ignore", "pipe", "pipe"] });
+  if (operator) {
+    const pipe = child.stdio[3] as Writable; pipe.on("error", () => {}); pipe.end(ownedLinuxChildProof(operator) + "\n");
+  }
+  child.stdout!.resume(); child.stderr!.resume(); // No credential-bearing app diagnostics.
   return child;
 }
 async function stopApp(child: ChildProcess) {
@@ -72,8 +78,10 @@ async function mailCapture() {
 /** No optional inference process is started here. The existing conductor opens
  * it only after this genuine publication is ready. Each call owns a full fresh
  * stack; its returned close disposes it before the next persona can begin. */
-async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal): Promise<FreshComprehensionSimulation> {
-  const stack = await acquireFreshStack(signal);
+async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, operator?: OwnedLinuxCapability): Promise<FreshComprehensionSimulation> {
+  const io = operator ? createResourceIO(operator) : actualResourceIO;
+  const environment = () => infrastructureChildEnvironment(process.env, operator);
+  const stack = await acquireFreshStack(signal, io, operator);
   let runtime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
   let browser: Browser | undefined;
   let storageProxy: Awaited<ReturnType<typeof startLocalStorageProxy>> | undefined;
@@ -89,19 +97,19 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal):
   })();
   try {
     assert(Object.entries(stack.keys).every(([name, value]) => process.env[name] === value), "Actual fresh bootstrap must match the built public configuration");
-    await actualResourceIO.command(process.execPath, ["--import", "tsx", "scripts/seed.ts"], { signal,
-      env: { ...infrastructureChildEnvironment(process.env), ...stack.keys }, timeout: 120_000 });
+    await io.command(process.execPath, ["--import", "tsx", "scripts/seed.ts"], { signal,
+      env: { ...environment(), ...stack.keys }, timeout: 120_000 });
     const capacity = "insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,maximum_account_bytes,maximum_active_uploads) values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32) on conflict(singleton) do nothing;";
-    await actualResourceIO.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", capacity], { signal });
-    runtime = await startCiBrowserRuntime(infrastructureChildEnvironment(process.env), true);
+    await io.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", capacity], { signal });
+    runtime = await startCiBrowserRuntime(environment(), true, operator);
     const pair = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
     const signer = JSON.stringify({ ...pair.privateKey.export({ format: "jwk" }), kid: randomUUID() });
     const publicJwk = { ...pair.publicKey.export({ format: "jwk" }), kid: JSON.parse(signer).kid, alg: "ES256", use: "sig" };
-    storageProxy = await startLocalStorageProxy("sequence", publicJwk, infrastructureChildEnvironment(process.env));
+    storageProxy = await startLocalStorageProxy("sequence", publicJwk, environment());
     const appEnvironments = freshT6AppEnvironments(process.env, signer);
     mail = await mailCapture();
-    for (const port of [3100, 3105] as const) { const app = startApp(port, runtime.env, appEnvironments[port]); apps.push(app); await ready(app, port, signal); }
-    browser = await chromium.launch({ args: chromiumStorageProxyArgs(storageProxy.url), env: infrastructureChildEnvironment(process.env) });
+    for (const port of [3100, 3105] as const) { const app = startApp(port, runtime.env, appEnvironments[port], operator); apps.push(app); await ready(app, port, signal); }
+    browser = await chromium.launch({ args: chromiumStorageProxyArgs(storageProxy.url), env: environment() });
     // This build receipt was checked against source and public configuration
     // by startCiBrowserRuntime. Verify the actual served build and TEST-LOCAL
     // capability before a simulation or optional inference can begin.
@@ -143,7 +151,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal):
           password: participantCPassword, messages: mail!.messages, runtime: { proof: fixture.proof, runWorker: async id => { signal.throwIfAborted(); await fixture.runWorker(id); } } });
         await seeded.closeCoParent();
         return seeded;
-      });
+      }, undefined, process.platform, operator);
       signal.throwIfAborted();
       return { publication: { ownerId: seeded.owner, cohortId: seeded.cohortId }, close,
         openReadSession: async (sessionInput, sessionSignal) => {
@@ -157,7 +165,10 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal):
     throw new Error("Fresh comprehension setup refused; no inference was started");
   }
 }
-export const openFreshComprehensionBrowser: LiveEnvironment["openBrowser"] = freshComprehensionSessions(acquireSimulation);
+export function createFreshComprehensionBrowser(operator?: OwnedLinuxCapability): LiveEnvironment["openBrowser"] {
+  return freshComprehensionSessions((input, signal) => acquireSimulation(input, signal, operator));
+}
+export const openFreshComprehensionBrowser = createFreshComprehensionBrowser();
 /** Kept for the original native instrument caller, never ordinary-stack adoption. */
 export const openFreshParticipantCBrowser: LiveEnvironment["openBrowser"] = (input, signal) => {
   assert(input.account === "participant-c" && (input.taskId === "T6" || input.taskId === "T7"), "Participant-c task required");

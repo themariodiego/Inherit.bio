@@ -8,6 +8,7 @@ import path from "node:path";
 import { assertCiRuntime, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
 import { attestFreshT6Workflow } from "./fresh-t6-attestation";
 import { repositoryRoot } from "./conductor-inputs";
+import { assertOwnedLinuxSource, ownedLinuxEnvironment, ownedLinuxSourceIdentity, type OwnedLinuxCapability } from "../owned-linux-runtime";
 
 export type Resource = { kind: "container" | "volume" | "network"; name: string; identity: string; project: string };
 export type ResourceIO = {
@@ -42,15 +43,17 @@ export function infrastructureReservation(personas: number, ceiling: number, ava
   assert(Number.isSafeInteger(total) && available >= total, "Runtime cost ceiling must fit the shared journal");
   return total;
 }
-export function infrastructureChildEnvironment(parent: Readonly<Record<string, string | undefined>>): Record<string, string> & { NODE_ENV: "production" } {
+export function infrastructureChildEnvironment(parent: Readonly<Record<string, string | undefined>>, operator?: OwnedLinuxCapability): Record<string, string> & { NODE_ENV: "production" } {
   const names = ["PATH", "HOME", "LANG", "CI", "GITHUB_ACTIONS", "RUNNER_ENVIRONMENT", "RUNNER_TEMP", "GITHUB_WORKSPACE",
     "GITHUB_JOB", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "INHERIT_DISPOSABLE_LOCAL_E2E"];
-  return { NODE_ENV: "production", ...Object.fromEntries(names.flatMap(name => parent[name] ? [[name, parent[name]!]] : [])) };
+  return { NODE_ENV: "production", ...Object.fromEntries(names.flatMap(name => parent[name] ? [[name, parent[name]!]] : [])),
+    ...(operator ? ownedLinuxEnvironment(operator) : {}) };
 }
-export const actualResourceIO: ResourceIO = {
+export function createResourceIO(operator?: OwnedLinuxCapability): ResourceIO {
+ const io: ResourceIO = {
   async command(file, args, options = {}) {
     return new Promise((resolve, reject) => {
-      const child = spawn(file, args, { cwd: repositoryRoot, env: { ...(options.env ?? infrastructureChildEnvironment(process.env)), NODE_ENV: "production" },
+      const child = spawn(file, args, { cwd: repositoryRoot, env: { ...(options.env ?? infrastructureChildEnvironment(process.env, operator)), NODE_ENV: "production" },
         stdio: ["ignore", "pipe", "pipe"], signal: options.signal });
       let output = "", failed = false;
       const timer = setTimeout(() => { failed = true; child.kill("SIGKILL"); }, options.timeout ?? 60_000);
@@ -64,12 +67,12 @@ export const actualResourceIO: ResourceIO = {
     const out: Resource[] = [];
     for (const kind of ["container", "volume", "network"] as const) {
       const args = kind === "container" ? ["ps", "-aq"] : [kind, "ls", "-q"];
-      const names = (await actualResourceIO.command("docker", args)).split(/\s+/).filter(Boolean);
+      const names = (await io.command("docker", args)).split(/\s+/).filter(Boolean);
       for (const id of names) {
         const format = kind === "container" ? '{"name":{{json .Name}},"identity":{{json .Id}},"project":{{json (index .Config.Labels "com.supabase.cli.project")}}}'
           : kind === "network" ? '{"name":{{json .Name}},"identity":{{json .Id}},"project":{{json (index .Labels "com.supabase.cli.project")}}}'
           : '{"name":{{json .Name}},"identity":{{json .CreatedAt}},"project":{{json (index .Labels "com.supabase.cli.project")}}}';
-        const item = JSON.parse(await actualResourceIO.command("docker", [kind === "container" ? "inspect" : kind, ...(kind === "container" ? [] : ["inspect"]), "--format", format, id]));
+        const item = JSON.parse(await io.command("docker", [kind === "container" ? "inspect" : kind, ...(kind === "container" ? [] : ["inspect"]), "--format", format, id]));
         const name = String(item.name).replace(/^\//, "");
         if (name.startsWith("supabase_") || name === CI_RUNTIME_CONTAINER || item.project) {
           // CLI volumes may omit the project label; exact name plus creation
@@ -81,7 +84,10 @@ export const actualResourceIO: ResourceIO = {
     }
     return out;
   },
-};
+ };
+ return io;
+}
+export const actualResourceIO = createResourceIO();
 
 const usedResourceIdentities = new Set<string>();
 export async function disposeOwnedStack(expected: Resource[], io: ResourceIO, stop: () => Promise<unknown>, release: () => Promise<void>) {
@@ -91,9 +97,11 @@ export async function disposeOwnedStack(expected: Resource[], io: ResourceIO, st
   await release();
 }
 
-export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = actualResourceIO) {
-  assertCiRuntime(process.env); // Unchanged genuine hosted-only fence.
-  assert(process.env.GITHUB_WORKSPACE && await realpath(process.env.GITHUB_WORKSPACE) === repositoryRoot
+export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = actualResourceIO, operator?: OwnedLinuxCapability) {
+  assertCiRuntime(process.env, process.platform, operator);
+  if (operator) assert(operator.proof.root === repositoryRoot && operator.proof.scratch === process.env.RUNNER_TEMP,
+    "Exact owning operator checkout and scratch required");
+  else assert(process.env.GITHUB_WORKSPACE && await realpath(process.env.GITHUB_WORKSPACE) === repositoryRoot
     && process.env.GITHUB_JOB && process.env.GITHUB_RUN_ID && process.env.GITHUB_RUN_ATTEMPT,
   "Actual owning checkout and job identity required");
   const scratch = process.env.RUNNER_TEMP!;
@@ -105,10 +113,11 @@ export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = ac
   const directory = path.join(lock, randomUUID());
   try {
     assertEmptyHost(await io.inventory());
-    assert(!(await io.command("git", ["status", "--porcelain", "--untracked-files=no"])), "Fresh stack requires clean tracked source");
+    if (operator) assertOwnedLinuxSource(operator, infrastructureChildEnvironment(process.env, operator));
+    else assert(!(await io.command("git", ["status", "--porcelain", "--untracked-files=no"])), "Fresh stack requires clean tracked source");
     const head = await io.command("git", ["rev-parse", "HEAD"]);
     assert(/^[a-f0-9]{40}$/.test(head), "Exact source head required");
-    const attestation = await attestFreshT6Workflow({ head, ref: process.env.GITHUB_REF!,
+    const attestation = operator ? ownedLinuxSourceIdentity(operator) : await attestFreshT6Workflow({ head, ref: process.env.GITHUB_REF!,
       runId: process.env.GITHUB_RUN_ID!, attempt: process.env.GITHUB_RUN_ATTEMPT! });
     await mkdir(path.join(directory, "supabase"), { recursive: true, mode: 0o700 });
     await cp(path.join(repositoryRoot, "supabase/config.toml"), path.join(directory, "supabase/config.toml"));

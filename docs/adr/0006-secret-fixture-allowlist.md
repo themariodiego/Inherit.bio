@@ -103,6 +103,14 @@ remain intact. This adds no hosted key, new credential value or global path
 exemption. The newly required GitHub OIDC request bearer stays in host memory;
 its signed identity is checked, and it is omitted from every child environment.
 
+### Existing local mail fixture in the owned Linux operator (2026-10-10)
+
+The existing `e2e-resend-key` value is also permitted in the exact path
+`scripts/comprehension/run-owned-linux.mts`. It configures only the disposable
+loopback mail server at `http://127.0.0.1:8124`. Generated local app secrets remain
+ephemeral; the operator's model credential never enters this configuration.
+The fixture value, classification, detectors and historical baseline are unchanged.
+
 ### Exact isolated webhook source-expression review packet (2026-10-01)
 
 - Secret-Allowlist-ID: isolated-webhook-generated-reference
