@@ -1,5 +1,11 @@
 ## 2026-10-09 — Connect the closed anonymous appeal no-match evidence journey
 
+The first local readability check refused eight unregistered short-copy words.
+The five labels now use the existing plain vocabulary; the confirmation still
+states that the files support the request and the outcome remains review only.
+The component's exact label assertions follow that copy change. No readability
+score, vocabulary allowance, test timeout or native authority check changed.
+
 The native TEST path now consumes the seven-day credential into a purpose-bound
 browser session, opens independently keyed documents and requires both complete
 current clean scan records before creating the named pending review. Contact

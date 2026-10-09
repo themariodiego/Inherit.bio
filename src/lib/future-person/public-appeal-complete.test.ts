@@ -19,6 +19,9 @@ import { mintPublicFormToken } from "@/lib/embryos/operation-token";
 const secret = "A".repeat(43), hash = rightsSessionHash(secret);
 const photo = "44444444-4444-4444-8444-444444444441", authority = "44444444-4444-4444-8444-444444444442";
 const deadline = new Date(Date.now() + 30 * 86_400_000).toISOString();
+const foreignHeaders: Record<string, string>[] = [
+ { origin: "https://foreign.example" }, { "sec-fetch-site": "cross-site" }, { cookie: `${RIGHTS_COOKIE_NAME}=${secret};${RIGHTS_COOKIE_NAME}=${secret}` },
+];
 function request(extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
  return new Request("https://inherit.bio/api/appeals/session/complete", { method: "POST", headers: {
   cookie: `${RIGHTS_COOKIE_NAME}=${secret}`, origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
@@ -45,7 +48,7 @@ describe("public appeal evidence submission", () => {
   const response = await POST(request({ decisionNoticeDocumentId: authority, underlyingRightsDocumentId: photo }));
   expect(response.status).toBe(404);expect(rpc).not.toHaveBeenCalled();
  });
- it.each([{ origin: "https://foreign.example" }, { "sec-fetch-site": "cross-site" }, { cookie: `${RIGHTS_COOKIE_NAME}=${secret};${RIGHTS_COOKIE_NAME}=${secret}` }])(
+ it.each(foreignHeaders)(
   "refuses a foreign or ambiguous credential %j", async headers => {
    expect((await POST(request({}, headers))).status).toBe(404);expect(rpc).not.toHaveBeenCalled();
   });

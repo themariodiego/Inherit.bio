@@ -18,11 +18,11 @@ describe("purpose-bound public appeal evidence page", () => {
   expect(html).not.toMatch(/name="(?:subjectId|cohortId|accountId|reviewer)"/u);
  });
  it("keeps completion unavailable without both received documents and affirmation", () => {
-  expect(render()).toMatch(/disabled=""[^>]*>Submit evidence for review/u);
+  expect(render()).toMatch(/disabled=""[^>]*>Send for review/u);
  });
  it("keeps a genuinely unbound access-review producer closed", () => {
   const html = render({ caseKind: "access-or-review-appeal", documentKinds: ["appeal-photo-identity", "appeal-decision-notice"], completionAvailable: false });
-  expect(html).toContain("underlying decision must be identified");expect(html).not.toContain("Submit evidence for review");
+  expect(html).toContain("underlying decision must be identified");expect(html).not.toContain("Send for review");
  });
  it("uses the server-selected genetic-parent proof and never substitutes subject control", () => {
   const html = render({ caseKind: "genetic-parent-objection", documentKinds: ["appeal-photo-identity", "appeal-genetic-parent-authority"] });

@@ -14,7 +14,7 @@ function fixture() {
  const row = { documentId: "44444444-4444-4444-8444-444444444441", objectKey, sha256: digest(bytes), byteCount: bytes.length,
   mediaType: "application/pdf", wrappedDataKey: encryptSecret(key.toString("base64")).toString("hex") };
  const sealed = sealDocumentBytes(key, objectKey, bytes); key.fill(0);bytes.fill(0);
- const rpc = vi.fn(async (name: string) => name === "claim_next_appeal_document_scan_v1"
+ const rpc = vi.fn(async (name: string): Promise<{ data: unknown; error: { code?: string } | null }> => name === "claim_next_appeal_document_scan_v1"
   ? { data: row, error: null } : { data: name === "record_appeal_document_scan_v1" ? "clean" : null, error: null });
  const store = { create: vi.fn(), read: vi.fn(async () => new Uint8Array(sealed)), remove: vi.fn(async () => {}) };
  let scanned: Uint8Array | null = null;

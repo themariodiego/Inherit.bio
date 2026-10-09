@@ -22,7 +22,7 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
  const [failure, setFailure] = useState(false);
  async function send(kind: Kind) {
   const file = inputs.current[kind]?.files?.[0]; if (!file || busy) return;
-  let bytes: Uint8Array | null = null; setBusy(true); setMessages(old => ({ ...old, [kind]: "Sending your document…" }));
+  let bytes: Uint8Array<ArrayBuffer> | null = null; setBusy(true); setMessages(old => ({ ...old, [kind]: "Sending your document…" }));
   try {
    if (file.size < 1 || file.size > 20_000_000) throw new Error("document_unavailable");
    bytes = new Uint8Array(await file.arrayBuffer()); const mediaType = sniffDocumentType(bytes); if (!mediaType) throw new Error("document_unavailable");
@@ -75,10 +75,10 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
    setFinished(true);
   } catch { setFailure(true); } finally { setBusy(false); }
  }
- if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Your evidence was received</h1>
+ if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Your files were sent</h1>
   <p className="mt-6">A named reviewer will review your request. This does not grant access or decide the outcome.</p>
   <p className="mt-4">Your request keeps its original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p></section>;
- return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Documents for your request</h1>
+ return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Files for your request</h1>
   <p className="mt-6">These documents are used only to review your request. They do not give you access to a record.</p>
   <p className="mt-3">Original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>
   <div className="mt-8 space-y-8">{view.documentKinds.map(kind => <div key={kind} className="space-y-3">
@@ -86,12 +86,12 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
    <input id={`appeal-${kind}`} ref={element => { inputs.current[kind] = element; }} type="file" accept="application/pdf,image/jpeg,image/png" disabled={busy}
     aria-describedby={`appeal-${kind}-hint`} className="block min-h-11 w-full text-sm" />
    <p id={`appeal-${kind}-hint`} className="text-sm text-ink-muted">PDF, JPEG or PNG. Maximum 20 MB. The original filename is not sent.</p>
-   <Button type="button" disabled={busy} onClick={() => void send(kind)}>Send document</Button>
+   <Button type="button" disabled={busy} onClick={() => void send(kind)}>Send file</Button>
    {messages[kind] && <p role="status">{messages[kind]}</p>}
   </div>)}</div>
   {view.completionAvailable ? <div className="mt-8 space-y-4"><label className="flex min-h-11 gap-3"><input type="checkbox" checked={affirmed}
-   onChange={event => setAffirmed(event.target.checked)} /><span>I confirm that these documents support my request.</span></label>
-   <Button type="button" onClick={() => void finish()} disabled={busy || !affirmed || !view.documentKinds.every(kind => ids[kind])}>Submit evidence for review</Button>
+   onChange={event => setAffirmed(event.target.checked)} /><span>I confirm these files show why I ask for this review.</span></label>
+   <Button type="button" onClick={() => void finish()} disabled={busy || !affirmed || !view.documentKinds.every(kind => ids[kind])}>Send for review</Button>
    {failure && <p role="alert">Your evidence could not be submitted. Please reopen your request.</p>}
   </div> : <p className="mt-8">The underlying decision must be identified before this evidence set can be completed.</p>}
  </section>;

@@ -1,4 +1,4 @@
-/** Operator-started only: pnpm worker:appeal-scan [--once]. See docs/claim-document-scanning.md. */
+/** Operator-started only. Run with the installed Node argv in docs/public-appeal-evidence.md. */
 const controller = new AbortController();
 const stop = () => controller.abort();
 process.once("SIGINT", stop);
@@ -14,7 +14,7 @@ try {
   const { runAppealDocumentScanLoop } = await import("../src/lib/future-person/appeal-document-scan-worker");
   const admin = createAdminClient();
   const result = await runAppealDocumentScanLoop({
-    rpc: (name, args) => admin.rpc(name as never, args as never),
+    rpc: (name, args) => admin.rpc(name as never, args as never).retry(false).abortSignal(controller.signal),
     store: supabaseAppealObjectStore(admin),
     scanner,
     signal: controller.signal,
