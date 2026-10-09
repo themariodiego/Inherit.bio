@@ -167,7 +167,7 @@ export function AppNav({
               )}
             >
               <Icon aria-hidden="true" className="size-5 shrink-0" />
-              <span className="h-4 max-[390px]:h-8">{item.label}</span>
+              <span className="min-h-4 max-[390px]:h-8">{item.label}</span>
             </Link>
           );
         })}

@@ -84,10 +84,11 @@
 }
 .processing-steps > li[data-step="upcoming"]::before { color: var(--ink-muted); }
 
-/* The bottom bar: the ring draws inside its cell, so the first and last
-   cells' rings are never cut by the glass. Unlayered, so it beats the global
-   2px offset. */
-.app-bar > a:focus-visible { outline-offset: -3px; }
+/* The bottom bar: the ring hugs its cell's edge, in the 8px between cells
+   and the bar's 4px side padding, so it never crosses a label that fills its
+   cell and the first and last rings are never cut by the glass (round-5 T1).
+   Unlayered, so it beats the global 2px offset. */
+.app-bar > a:focus-visible { outline-offset: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .link-row .link-arrow { transform: none; }
