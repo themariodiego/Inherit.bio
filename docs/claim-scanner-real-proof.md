@@ -34,7 +34,15 @@ health command is not scheduled. No repository assertion is removed.
 
 One container has a 4 GiB memory limit, no extra swap, one CPU, a read-only root,
 no capabilities and no public port. Only its new signature store and bounded
-temporary files are writable. The host port is exactly `127.0.0.1:45310`.
+temporary files are writable. The configured host binding remains exactly
+`127.0.0.1:45310`, but Docker exposes no active published mapping once only the
+internal network remains. On the hosted Linux runner, readiness and the real
+TCP adapter instead use the same native owned internal IPv4 address on port
+3310. Both container and network inspections must agree on the created network
+ID, unique label, sole member, endpoint ID and address. External networks,
+gateways, IPv6, published ports or a changed address refuse. The binding is
+checked again before each running scanner case and before the owned stop.
+No environment or arbitrary host can select the endpoint.
 FreshClam runs once against the official database service, with one attempt per
 mirror. Its signature validation and database load test stay enabled. Egress
 is removed before scans. A CDN cooldown or failure stops the job. There is no
@@ -65,4 +73,5 @@ containers remain outside this task.
 Primary sources: [ClamAV Docker guide](https://docs.clamav.net/manual/Installing/Docker.html),
 [official image source](https://github.com/Cisco-Talos/clamav-docker/blob/main/clamav/1.5/debian/Dockerfile),
 [FreshClam config](https://github.com/Cisco-Talos/clamav/blob/clamav-1.5.4/etc/freshclam.conf.sample),
+[Docker internal network host access](https://docs.docker.com/reference/cli/docker/network/create/#network-internal-mode---internal),
 and [GitHub runner resources](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).

@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import net from "node:net";
 import { clamdScanner } from "../src/lib/scan/clamd";
 import { MAXIMUM_SCANNED_BYTES } from "../src/lib/scan/malware-scanner";
-import { CLAMAV_IMAGE, PROOF_LABEL, assertOwnedContainer, assertRealVerdict, boundedCommand,
+import { CLAMAV_IMAGE, PROOF_LABEL, assertOwnedContainer, ownedInternalScannerAddress, assertRealVerdict, boundedCommand,
   clamdDiagnosticCommands, parseClamdWaitStatus, eicarBytes, netBytes, saveJson, sha256, signatureAllocatedBytes, signatureAllocationCommand, syntheticPdf } from "./claim-scanner-real-proof";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,14 +28,14 @@ async function sourceSnapshot() {
   return rows;
 }
 
-async function portOpen(timeoutMs = 1000, observe?: (value: Record<string, unknown>) => void): Promise<boolean> {
+async function portOpen(address: { host: string; port: number }, timeoutMs = 1000, observe?: (value: Record<string, unknown>) => void): Promise<boolean> {
   return new Promise((resolve) => {
     const startedAt = new Date().toISOString(), started = performance.now();
-    const socket = net.createConnection({ host: "127.0.0.1", port: 45310 });
+    const socket = net.createConnection(address);
     let settled = false;
     const done = (value: boolean, response: string, error?: string) => {
       if (settled) return; settled = true;
-      observe?.({ command: "TCP_CONNECT", host: "127.0.0.1", port: 45310, startedAt, endedAt: new Date().toISOString(),
+      observe?.({ command: "TCP_CONNECT", host: address.host, port: address.port, startedAt, endedAt: new Date().toISOString(),
         elapsedMs: performance.now() - started, capMilliseconds: timeoutMs, connected: value, response, error: error ?? null });
       socket.destroy(); resolve(value);
     };
@@ -66,7 +66,7 @@ async function main(): Promise<void> {
     || ["SUPABASE_SERVICE_ROLE_KEY", "DATABASE_URL", "SUPABASE_DB_URL", "RESEND_API_KEY", "BYOK_ENCRYPTION_KEY"]
       .some((key) => process.env[key])) throw new Error("isolated_hosted_context_required");
   const temporary = process.env.RUNNER_TEMP;
-  if (!temporary || !path.isAbsolute(temporary) || await portOpen()) throw new Error("temporary_or_port_refused");
+  if (!temporary || !path.isAbsolute(temporary) || await portOpen({ host: "127.0.0.1", port: 45310 })) throw new Error("temporary_or_port_refused");
   const available = /MemAvailable:\s+(\d+) kB/u.exec(await readFile("/proc/meminfo", "utf8"));
   const disk = await statfs(temporary);
   if (!available || Number(available[1]) * 1024 < 4.5 * 1024 ** 3 || disk.bavail * disk.bsize < 6 * 1024 ** 3)
@@ -76,7 +76,7 @@ async function main(): Promise<void> {
   if (process.env.GITHUB_OUTPUT) await writeFile(process.env.GITHUB_OUTPUT, `proof-output=${output}\n`, { flag: "a" });
   const nonce = crypto.randomUUID(), name = `inherit-real-scanner-${nonce}`, network = `inherit-scanner-${nonce}`;
   const signatures = path.join(output, "signatures"), config = path.join(output, "config");
-  let ordinal = 0, id: string | null = null, networkCreated = false;
+  let ordinal = 0, endpointOrdinal = 0, id: string | null = null, networkId: string | null = null, networkCreated = false;
   let before: Awaited<ReturnType<typeof sourceSnapshot>> | null = null;
   let originalIds: string | null = null, originalVolumes: string | null = null;
   let signatureIdentity: { dev: number; ino: number } | null = null;
@@ -94,6 +94,17 @@ async function main(): Promise<void> {
   };
   const own = async () => {
     if (!id) throw new Error("owned_id_missing"); const info = await inspect(id); assertOwnedContainer(info, id, nonce); return info;
+  };
+  const sealedAddress = async () => {
+    if (!id || !networkId) throw new Error("owned_network_id_missing");
+    const info = await own(), containerOrdinal = ordinal;
+    const native = JSON.parse(await docker(["network", "inspect", networkId])) as unknown[];
+    if (!Array.isArray(native) || native.length !== 1) throw new Error("native_network_shape_refused");
+    const address = ownedInternalScannerAddress(info, native[0], id, nonce, network, networkId);
+    await saveJson(`${output}/scanner-endpoint-${++endpointOrdinal}-original.json`, { id, nonce, network, networkId, address,
+      containerOriginal: `command-${containerOrdinal}.original-result.json`, containerRawReadback: `command-${containerOrdinal}.raw-readback.json`,
+      networkOriginal: `command-${ordinal}.original-result.json`, networkRawReadback: `command-${ordinal}.raw-readback.json` });
+    return address;
   };
   try {
     before = await sourceSnapshot(); await saveJson(`${output}/source-before.json`, before);
@@ -118,7 +129,8 @@ async function main(): Promise<void> {
     await command(["sudo", "chown", "1000:1000", "--", signatures]);
     const sigAfter = await lstat(signatures);
     if (sigAfter.dev !== sigIdentity.dev || sigAfter.ino !== sigIdentity.ino || sigAfter.uid !== 1000 || sigAfter.gid !== 1000) throw new Error("signature_owner_refused");
-    await docker(["network", "create", "--internal", "--label", `${PROOF_LABEL}=${nonce}`, network]); networkCreated = true;
+    networkId = await docker(["network", "create", "--internal", "--label", `${PROOF_LABEL}=${nonce}`, network]); networkCreated = true;
+    if (!/^[a-f0-9]{64}$/u.test(networkId)) throw new Error("owned_network_id_refused");
     id = await docker(["create", "--name", name, "--label", `${PROOF_LABEL}=${nonce}`, "--pull", "never",
       "--platform", "linux/amd64", "--user", "clamav:clamav", "--read-only", "--cap-drop", "ALL",
       "--security-opt", "no-new-privileges", "--memory", "4g", "--memory-swap", "4g", "--cpus", "1", "--pids-limit", "64",
@@ -139,8 +151,7 @@ async function main(): Promise<void> {
     };
     await docker(["exec", id, "/usr/bin/freshclam", "--config-file=/proof/freshclam.conf", "--stdout"], 300, bootstrapGuard);
     await bootstrapGuard(); await docker(["network", "disconnect", "bridge", id]);
-    const readyInfo = await own() as { NetworkSettings?: { Networks?: Record<string, unknown> } };
-    if (Object.keys(readyInfo.NetworkSettings?.Networks ?? {}).join(",") !== network) throw new Error("scanner_egress_not_closed");
+    const address = await sealedAddress();
     const readyUntil = performance.now() + 120_000;
     readinessOriginal = { capSeconds: 120, diagnosticSnapshotLimit: 3, diagnosticSnapshotMinimumIntervalMs: 40_000, startedAt: new Date().toISOString(), probes: [], snapshots: [] };
     const remaining = () => {
@@ -168,16 +179,18 @@ async function main(): Promise<void> {
           completeDaemonOutput: waitStatus !== null });
         if (waitStatus !== null) throw new Error("real_clamd_exited_before_ready");
       }
-      const connected = await portOpen(Math.min(1000, remaining() * 1000), (probe) => readinessOriginal!.probes.push(probe));
+      const connected = await portOpen(address, Math.min(1000, remaining() * 1000), (probe) => readinessOriginal!.probes.push(probe));
       remaining(); // A delayed callback cannot earn readiness after the original deadline.
       if (connected) break;
       await new Promise((resolve) => setTimeout(resolve, Math.min(500, remaining() * 1000)));
     }
     readinessOriginal.endedAt = new Date().toISOString();
     await saveJson(`${output}/readiness-original.json`, readinessOriginal);
-    const scanner = clamdScanner({ address: { kind: "tcp", host: "127.0.0.1", port: 45310 } });
+    const scanner = clamdScanner({ address });
     const clean = syntheticPdf(), eicar = eicarBytes();
     const observe = async (caseName: string, bytes: Uint8Array) => {
+      if (caseName !== "stopped" && JSON.stringify(await sealedAddress()) !== JSON.stringify(address))
+        throw new Error("scanner_native_endpoint_changed");
       const startedAt = new Date().toISOString(), started = performance.now();
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 90_000);
@@ -203,9 +216,10 @@ async function main(): Promise<void> {
     const oversize = await observe("oversize", large);
     if (oversize.verdict !== "OVERSIZE" || oversize.sha256 !== sha256(large)) throw new Error("oversize_refusal_failed");
     observations.oversize = oversize;
-    await own(); await docker(["stop", "--time", "10", id]);
+    if (JSON.stringify(await sealedAddress()) !== JSON.stringify(address)) throw new Error("scanner_native_endpoint_changed");
+    await docker(["stop", "--time", "10", id]);
     const stopped = await own() as { State?: { Running?: boolean; OOMKilled?: boolean } };
-    if (stopped.State?.Running !== false || stopped.State.OOMKilled || await portOpen()) throw new Error("owned_scanner_stop_unproved");
+    if (stopped.State?.Running !== false || stopped.State.OOMKilled || await portOpen(address)) throw new Error("owned_scanner_stop_unproved");
     const unavailable = await observe("stopped", clean);
     if (unavailable.verdict !== "UNAVAILABLE" || unavailable.reason !== "unreachable") throw new Error("stopped_scanner_not_closed");
     observations.stopped = unavailable;

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { isIP } from "node:net";
 import { spawn } from "node:child_process";
 import { open, lstat } from "node:fs/promises";
 import { constants } from "node:fs";
@@ -53,6 +54,37 @@ export function assertOwnedContainer(info: unknown, id: string, nonce: string): 
     || value.HostConfig.ReadonlyRootfs !== true || !port || Object.keys(port).join(",") !== "3310/tcp"
     || !Array.isArray(port["3310/tcp"]) || port["3310/tcp"].length !== 1 || port["3310/tcp"][0].HostIp !== "127.0.0.1"
     || port["3310/tcp"][0].HostPort !== "45310") throw new Error("container_ownership_or_boundary_refused");
+}
+
+/** Only the native endpoint of the current sole member of this owned internal network. */
+export function ownedInternalScannerAddress(info: unknown, networkInfo: unknown, id: string, nonce: string,
+  network: string, networkId: string): { kind: "tcp"; host: string; port: 3310 } {
+  assertOwnedContainer(info, id, nonce);
+  const record = (value: unknown): Record<string, unknown> => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("scanner_native_endpoint_refused");
+    return value as Record<string, unknown>;
+  };
+  const container = record(info), state = record(container.State), settings = record(container.NetworkSettings);
+  const ports = record(settings.Ports), networks = record(settings.Networks), native = record(networkInfo);
+  const labels = record(native.Labels), options = record(native.Options), members = record(native.Containers);
+  const endpoint = record(networks[network]), member = record(members[id]);
+  const host = endpoint.IPAddress, prefix = endpoint.IPPrefixLen;
+  if (typeof nonce !== "string" || !/^[a-zA-Z0-9-]{1,64}$/u.test(nonce)
+    || !/^[a-f0-9]{64}$/u.test(networkId) || network !== `inherit-scanner-${nonce}`
+    || container.Name !== `/inherit-real-scanner-${nonce}` || state.Running !== true
+    || state.Paused !== false || state.Restarting !== false || state.OOMKilled !== false || state.Dead !== false
+    || native.Id !== networkId || native.Name !== network || native.Driver !== "bridge" || native.Scope !== "local"
+    || native.Internal !== true || native.EnableIPv6 !== false || labels[PROOF_LABEL] !== nonce || Object.keys(options).length
+    || Object.keys(ports).length || Object.keys(networks).join(",") !== network || Object.keys(members).join(",") !== id
+    || endpoint.NetworkID !== networkId || typeof endpoint.EndpointID !== "string" || !/^[a-f0-9]{64}$/u.test(endpoint.EndpointID)
+    || member.EndpointID !== endpoint.EndpointID || member.Name !== `inherit-real-scanner-${nonce}`
+    || endpoint.Gateway !== "" || endpoint.IPv6Gateway !== "" || endpoint.GlobalIPv6Address !== "" || member.IPv6Address !== ""
+    || typeof host !== "string" || isIP(host) !== 4 || typeof prefix !== "number" || !Number.isInteger(prefix) || prefix < 1 || prefix > 30
+    || member.IPv4Address !== `${host}/${prefix}`) throw new Error("scanner_native_endpoint_refused");
+  const octets = host.split(".").map(Number);
+  if (!(octets[0] === 10 || octets[0] === 172 && octets[1]! >= 16 && octets[1]! <= 31
+    || octets[0] === 192 && octets[1] === 168)) throw new Error("scanner_native_endpoint_refused");
+  return Object.freeze({ kind: "tcp", host, port: 3310 });
 }
 
 export function netBytes(value: string): number {

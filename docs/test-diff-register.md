@@ -1,3 +1,34 @@
+## 2026-10-09 — Bind the real scanner to its native owned internal endpoint
+
+The preserved run 37901491886 completed FreshClam and detached the external
+bootstrap bridge. Its native Docker records then showed an empty actual
+published-port map, although the configured localhost mapping remained. All
+241 probes to that inactive host route were refused. The three saved daemon
+snapshots contain no observed wait status; no daemon exit or scanner case is
+credited, and no OOM cause is inferred.
+
+The proposed transport uses only the exact current owned internal IPv4 on
+port 3310, cross-bound between container and network inspection. Created
+network ID, nonce/name, sole membership, endpoint ID, canonical private IPv4
+and CIDR must agree. Missing, foreign or malformed native records, external
+networks, gateways, IPv6 and active published ports refuse. Readiness and the
+actual clamd adapter share that address; running cases and the owned stop
+recheck the binding and refuse drift. There is no arbitrary host or environment
+override. Docker's documented host access to an internal network leaves the
+original external bridge detached and scan egress closed.
+
+All previous tests and four real-case assertions remain exact. This entry is
+frozen before adding 31 unrun behavioral endpoint controls: three private IPv4
+bindings and 28 ownership, isolation, malformed-record or address refusals.
+The pinned ClamAV image, daemon and FreshClam configs, 4 GiB/no-extra-swap/one-CPU
+resources, 120-second absolute readiness window, three sampled diagnostics,
+command and case limits, 5000 ms test limits and zero retries stay unchanged.
+The full artifact member/byte refusals and existing source/UI/CI/register
+history stay intact. No worktree change or test/daemon execution is claimed.
+Current local focused checks, complete final-head hosted CI and all four genuine
+scanner outcomes remain required before merge. Activation, paid use,
+production and real documents remain off.
+
 ## 2026-10-09 — Admit the exact observed authenticated Ubuntu mirror transport
 
 The original hosted diagnostic resolver returned all nine pinned fonts through `mirror+file:/etc/apt/apt-mirrors.txt/pool/...`, plus two unchanged installer dependencies. Three URI filenames encode `+` as `%2b`. The direct-only parser refused this approved stock transport before seeding. The parser now admits only that fixed mirror file and decodes the URI filename once before the exact pinned filename comparison. All nine-package/version/size/uniqueness, signed metadata/candidate/hash and actual archive checks remain required. Every prior test and assertion remains. Three new behavioral cases cover the literal eleven-row original, all approved direct HTTP(S) hosts, and altered mirror authority, malformed/double/separator/control encodings, traversal, missing/duplicate rows and size changes. No time limit, retry, cache adoption or full-suite requirement changes.

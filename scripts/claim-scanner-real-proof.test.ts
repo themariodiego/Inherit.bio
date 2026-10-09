@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { assertOwnedContainer, assertRealVerdict, boundedCommand, eicarBytes, netBytes, signatureAllocatedBytes, signatureAllocationCommand,
+import { assertOwnedContainer, ownedInternalScannerAddress, assertRealVerdict, boundedCommand, eicarBytes, netBytes, signatureAllocatedBytes, signatureAllocationCommand,
   clamdDiagnosticCommands, parseClamdWaitStatus, PROOF_LABEL, sha256, syntheticPdf } from "./claim-scanner-real-proof";
 
 const temporary: string[] = [];
@@ -12,6 +12,16 @@ const owned = () => ({ Id: id, Config: { Labels: { [PROOF_LABEL]: nonce } }, Hos
   Memory: 4 * 1024 ** 3, MemorySwap: 4 * 1024 ** 3, ReadonlyRootfs: true,
   PortBindings: { "3310/tcp": [{ HostIp: "127.0.0.1", HostPort: "45310" }] },
 } });
+const network = `inherit-scanner-${nonce}`, networkId = "b".repeat(64), endpointId = "c".repeat(64);
+const sealed = (host = "172.18.0.2", prefix = 16) => ({
+  container: { ...owned(), Name: `/inherit-real-scanner-${nonce}`,
+    State: { Running: true, Paused: false, Restarting: false, OOMKilled: false, Dead: false },
+    NetworkSettings: { Ports: {}, Networks: { [network]: { NetworkID: networkId, EndpointID: endpointId,
+      IPAddress: host, IPPrefixLen: prefix, Gateway: "", IPv6Gateway: "", GlobalIPv6Address: "" } } } },
+  network: { Id: networkId, Name: network, Driver: "bridge", Scope: "local", Internal: true, EnableIPv6: false,
+    Labels: { [PROOF_LABEL]: nonce }, Options: {}, Containers: { [id]: { Name: `inherit-real-scanner-${nonce}`,
+      EndpointID: endpointId, IPv4Address: `${host}/${prefix}`, IPv6Address: "" } } },
+});
 const bytes = syntheticPdf(), now = Date.UTC(2026, 9, 5, 12);
 const valid = () => ({ verdict: "OK" as const, sha256: sha256(bytes),
   signatures: { engine: "ClamAV 1.5.4", version: 1, publishedAt: new Date(now) } });
@@ -40,6 +50,50 @@ describe("real scanner proof boundary controls (not a real scanner verdict)", ()
     if (kind === "public") value.HostConfig.PortBindings["3310/tcp"][0].HostIp = "0.0.0.0";
     if (kind === "extra-port") Object.assign(value.HostConfig.PortBindings, { "7357/tcp": [] });
     expect(() => assertOwnedContainer(value, id, nonce)).toThrow();
+  });
+  it.each([["10.23.0.2", 24], ["172.18.0.2", 16], ["192.168.45.2", 24]] as const)(
+    "binds only the current owned internal IPv4 %s to the real TCP port", (host, prefix) => {
+      const value = sealed(host, prefix);
+      expect(ownedInternalScannerAddress(value.container, value.network, id, nonce, network, networkId))
+        .toEqual({ kind: "tcp", host, port: 3310 });
+      expect(value.container.NetworkSettings.Ports).toEqual({});
+    });
+  it.each([
+    "container-id", "container-nonce", "container-name", "not-running", "network-id", "container-network-id",
+    "network-name", "network-nonce", "driver", "scope", "not-internal", "ipv6-network", "network-option",
+    "extra-network", "extra-member", "member-name", "endpoint-id", "IP-disagreement", "public-IP", "noncanonical-IP",
+    "invalid-prefix", "gateway", "IPv6-endpoint", "published-port", "missing-ports", "missing-networks", "missing-members", "malformed-network",
+  ])("refuses %s drift instead of scanning an arbitrary endpoint", (kind) => {
+    const value = sealed(), endpoint = value.container.NetworkSettings.Networks[network]!, member = value.network.Containers[id]!;
+    if (kind === "container-id") value.container.Id = "d".repeat(64);
+    if (kind === "container-nonce") value.container.Config.Labels[PROOF_LABEL] = "foreign-proof";
+    if (kind === "container-name") value.container.Name = "/foreign-scanner";
+    if (kind === "not-running") value.container.State.Running = false;
+    if (kind === "network-id") value.network.Id = "d".repeat(64);
+    if (kind === "container-network-id") endpoint.NetworkID = "d".repeat(64);
+    if (kind === "network-name") value.network.Name = "foreign-network";
+    if (kind === "network-nonce") value.network.Labels[PROOF_LABEL] = "foreign-proof";
+    if (kind === "driver") value.network.Driver = "overlay";
+    if (kind === "scope") value.network.Scope = "swarm";
+    if (kind === "not-internal") value.network.Internal = false;
+    if (kind === "ipv6-network") value.network.EnableIPv6 = true;
+    if (kind === "network-option") Object.assign(value.network.Options, { "com.docker.network.bridge.gateway_mode_ipv4": "isolated" });
+    if (kind === "extra-network") Object.assign(value.container.NetworkSettings.Networks, { bridge: {} });
+    if (kind === "extra-member") Object.assign(value.network.Containers, { ["d".repeat(64)]: member });
+    if (kind === "member-name") member.Name = "foreign-scanner";
+    if (kind === "endpoint-id") member.EndpointID = "d".repeat(64);
+    if (kind === "IP-disagreement") member.IPv4Address = "172.18.0.3/16";
+    if (kind === "public-IP") { endpoint.IPAddress = "203.0.113.2"; member.IPv4Address = "203.0.113.2/16"; }
+    if (kind === "noncanonical-IP") { endpoint.IPAddress = "172.018.0.2"; member.IPv4Address = "172.018.0.2/16"; }
+    if (kind === "invalid-prefix") { endpoint.IPPrefixLen = 33; member.IPv4Address = "172.18.0.2/33"; }
+    if (kind === "gateway") endpoint.Gateway = "172.18.0.1";
+    if (kind === "IPv6-endpoint") endpoint.GlobalIPv6Address = "fd00::2";
+    if (kind === "published-port") Object.assign(value.container.NetworkSettings.Ports, { "3310/tcp": [{ HostIp: "0.0.0.0", HostPort: "45310" }] });
+    if (kind === "missing-ports") Reflect.deleteProperty(value.container.NetworkSettings, "Ports");
+    if (kind === "missing-networks") Reflect.deleteProperty(value.container.NetworkSettings, "Networks");
+    if (kind === "missing-members") Reflect.deleteProperty(value.network, "Containers");
+    expect(() => ownedInternalScannerAddress(value.container, kind === "malformed-network" ? [] : value.network,
+      id, nonce, network, networkId)).toThrow();
   });
   it("admits only a byte-bound current real-engine verdict", () => expect(() => assertRealVerdict(valid(), "OK", bytes, now)).not.toThrow());
   it.each(["hash", "engine", "stale", "future", "extra-key"])("refuses planted %s verdict evidence", (kind) => {
