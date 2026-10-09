@@ -13,7 +13,7 @@ export async function OwnUploadEntry() {
     readOwnUploadLimits(),
   ]);
   if (canonicalUploadsPaused() && view.kind !== "unavailable" && view.kind !== "underage") {
-    return <p role="status">{OWN_UPLOAD_COPY.uploadsPaused}</p>;
+    return <p role="status" className="surface-inset surface-pad-sm max-w-measure text-ink">{OWN_UPLOAD_COPY.uploadsPaused}</p>;
   }
   return <OwnUploadFlow key={"token" in view ? view.token : view.kind} view={view} limits={limits} />;
 }

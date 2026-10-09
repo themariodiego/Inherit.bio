@@ -27,7 +27,7 @@ export function AuthForm({
 
   return (
     <form
-      className="space-y-4"
+      className="space-y-5"
       onSubmit={async (e) => {
         e.preventDefault();
         setError(null);
@@ -43,7 +43,7 @@ export function AuthForm({
       }}
     >
       {fields.map((f) => (
-        <div key={f.name} className="space-y-1.5">
+        <div key={f.name} className="space-y-2">
           <Label htmlFor={f.name}>{f.label}</Label>
           <Input
             id={f.name}
@@ -56,7 +56,7 @@ export function AuthForm({
         </div>
       ))}
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="auth-note text-danger">
           {error}
         </p>
       ) : null}

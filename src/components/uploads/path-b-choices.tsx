@@ -45,28 +45,28 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-line p-3" data-slot="path-b-choice"
+    <div className="surface-inset rec-stack-sm p-4 text-ink" data-slot="path-b-choice"
       data-purpose={choice.purpose} data-direction={choice.direction}>
-      <p className="text-sm font-medium">{who} <span className="text-ink-muted">· {granted ? COPY.on : COPY.off}</span></p>
-      {!granted && !open ? <p role="note" className="text-sm text-ink-muted">{COPY.shareClosed}</p> : null}
+      <p className="text-sm font-medium">{who} <span className="font-normal">· {granted ? COPY.on : COPY.off}</span></p>
+      {!granted && !open ? <p role="note" className="text-sm">{COPY.shareClosed}</p> : null}
       {!granted && choice.offer ? (
         <>
           <details className="text-sm">
-            <summary className="min-h-11 cursor-pointer py-3 underline underline-offset-2">{COPY.details(choice.offer.artifactVersion)}</summary>
+            <summary className="quiet-link py-3">{COPY.details(choice.offer.artifactVersion)}</summary>
             <div className="whitespace-pre-wrap leading-relaxed">{choice.offer.artifactBody}</div>
           </details>
-          <label className="flex min-h-11 items-center gap-3 text-sm">
-            <input type="checkbox" className="size-5" checked={affirmed} disabled={pending}
+          <label className="rec-choice text-sm">
+            <input type="checkbox" className="size-5 accent-forest" checked={affirmed} disabled={pending}
               aria-label={`${layer}: ${who}`} onChange={event => setAffirmed(event.target.checked)} />
             <span>{choice.direction === "self" ? COPY.affirmSelf : COPY.affirmShare}</span>
           </label>
         </>
       ) : null}
       {granted || choice.offer ? (
-        <Button type="button" variant="outline" className="h-auto min-h-11 whitespace-normal text-left"
+        <div><Button type="button" variant="outline" className="h-auto min-h-11 whitespace-normal text-left"
           disabled={pending || (!granted && !affirmed)} onClick={() => void save()}>
           {pending ? COPY.saving : `${granted ? COPY.turnOff : COPY.turnOn}: ${layer}, ${who.toLowerCase()}`}
-        </Button>
+        </Button></div>
       ) : null}
       {failed ? <p role="alert" className="text-sm text-danger">{COPY.failed}</p> : null}
     </div>
@@ -77,17 +77,17 @@ export function PathBChoices({ people }: { people: PathBChoicesView[] }) {
   const router = useRouter();
   if (people.length === 0) return null;
   return (
-    <section aria-labelledby="path-b-choices-heading" className="space-y-4" data-slot="path-b-choices">
-      <h2 id="path-b-choices-heading" className="display text-2xl">{COPY.heading}</h2>
-      <p className="max-w-prose text-sm text-ink-muted">{COPY.detail}</p>
+    <section aria-labelledby="path-b-choices-heading" className="rec-stack" data-slot="path-b-choices">
+      <h2 id="path-b-choices-heading" className="title">{COPY.heading}</h2>
+      <p className="max-w-measure text-sm text-ink-muted">{COPY.detail}</p>
       {people.map(person => (
-        <div key={person.subjectId} className="space-y-3 rounded-2xl border border-line bg-card p-4">
-          <p className="text-sm text-ink-muted">{person.label}</p>
+        <div key={person.subjectId} className="surface surface-pad-sm rec-stack">
+          <p className="caption">{person.label}</p>
           {(Object.keys(COPY.layers) as PathBChoice["purpose"][]).map(purpose => (
-            <div key={purpose} className="space-y-2">
-              <h3 className="font-medium">{COPY.layers[purpose]}</h3>
+            <div key={purpose} className="rec-stack-sm">
+              <h3 className="text-base font-medium">{COPY.layers[purpose]}</h3>
               {purpose !== "ancestry" && person.readGate?.[purpose] === "ready" ?
-                <Link className="inline-flex min-h-11 items-center underline" href={route("genome.reports", { subject: `s-${person.subjectId}` },
+                <Link className="link-target quiet-link text-sm" href={route("genome.reports", { subject: `s-${person.subjectId}` },
                   { query: { layer: purpose === "reports.monogenic" ? "variant_call" : "estimate" } })}>{COPY.readResults(COPY.layers[purpose])}</Link> : null}
               <div className="grid gap-3 sm:grid-cols-2">
                 {person.choices.filter(choice => choice.purpose === purpose).map(choice => (

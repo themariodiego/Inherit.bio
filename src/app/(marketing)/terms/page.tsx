@@ -63,7 +63,7 @@ export default function TermsPage() {
                 clinical laboratory.
               </p>
               <p>
-                Do not make medical decisions — starting, stopping, or changing
+                Do not make medical decisions&nbsp;— starting, stopping, or changing
                 any treatment, medication, or screening — based on Inherit
                 alone. Consult a physician, pharmacist, or licensed genetic
                 counselor, who can order clinical-grade confirmation of any
@@ -127,6 +127,11 @@ export default function TermsPage() {
         {
           id: "open-source",
           heading: "5. Open source (AGPL-3.0)",
+          headingDisplay: (
+            <>
+              5. Open <span className="whitespace-nowrap">source (AGPL-3.0)</span>
+            </>
+          ),
           body: (
             <>
               <p>

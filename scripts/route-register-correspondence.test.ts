@@ -876,17 +876,17 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
  * and dynamically rendered interiors still need their own runtime evidence.
  */
 const CLIENT_FORM_REVIEW: ClientFormReview[] = [
-  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "a69fe44dfe97fa8e047c85932937497e6e1c3e3a17871aff13714f620f0e3d71" },
-  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "18f5c5cd449a5c4e7f38c1c9e857951bae582d41d73368968b06e12aa767ee00" },
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "f0bd38b97e051d582daf12b84ef47a9b41b2a1d66eba2e51761baa2adf58bc39" },
-  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "ed3c04e1a060ad65389c5850c70ac6db24e314f5a97469d8bcf463eb11cdf9a5" },
-  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "5cb204185ae4ade7959c68637ed23b42ab86a304a301e0000b7aa24a90f6cb7c" },
-  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "5cd5d6666d23fadafa3decd8dab315963016d98ee050d57a5731b25dac4ca71d" },
-  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "c945dcdb8fcdfc6ddc5bdbdee81295b9181b35fbe73ff2ead9747803a3bdbb86" },
-  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "ef3a12f8459868736a9f20a85a5cc037407514234c40e153f17b4c10716641b5" },
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "0c666bfb65b7d1309c7168f37f691927e7069952737347c5602466b8dc90f981" },
-  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "8e89fca3baab9dc43a66ec6922cf45818fe5968ba11974820541fe9b835ed994" },
-  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "0047fd7b9ab00c11e9658f23e1d5e1d9ec332fb4cbe4d7cc5a6177ff0f9fb565" },
+  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "70b4566533287cedb070f9f4eda26c65132ef69b446e40dbdb687e83a2e875b5" },
+  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "77759a6b209673bef9ea9c5ca46e031a03e1cfb7a73f7e9e437ca519eb1dfdd1" },
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "ac2fc16c32ab1cb0bf127422937df7753d8408e2ee233badb38b599c9c5bc882" },
+  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "8dcca90eb9444fa99ad954852df12f5fb406f62847a04d1280561befe9b7093b" },
+  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
+  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
+  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "0002fe0e675e8f4634b43bd92476f6d5672d62139f7b11924b31d099d2e2e280" },
 ];
 
 function clientFormReviewIssues(submissions: FormSubmission[], reviews: ClientFormReview[], source: (file: string) => string): string[] {

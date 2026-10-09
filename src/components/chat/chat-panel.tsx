@@ -57,11 +57,11 @@ export function ChatPanel({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="rec-stack">
       {/* Data-flow indicator: always visible, names where data goes. */}
       <div
         data-testid="data-flow-indicator"
-        className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card px-4 py-2.5 text-xs"
+        className="surface flex flex-wrap items-center gap-2 px-4 py-3 text-sm"
       >
         <span
           aria-hidden
@@ -78,7 +78,7 @@ export function ChatPanel({
             <strong>Cloud mode:</strong> genome-derived answers are sent to{" "}
             {providerDisplayName(info.providerKey ?? "")} ({info.model}) under
             your consent grant —{" "}
-            <Link href={route("settings.copilot")} className="underline underline-offset-2">
+            <Link href={route("settings.copilot")} className="prose-link">
               revoke in Settings
             </Link>
             .
@@ -88,15 +88,15 @@ export function ChatPanel({
         )}
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+      <div className="rec-thread">
         {messages.length === 0 ? (
-          <div className="rounded-2xl border border-line bg-card p-5 text-sm text-ink-muted">
+          <div className="surface-inset surface-pad-sm rec-stack-sm max-w-measure text-sm text-ink">
             <p>
               Ask about your own genome. Try: &ldquo;What does my file say about
               caffeine?&rdquo; &ldquo;Do I carry the alcohol-flush
               variant?&rdquo; &ldquo;Summarize my heart reports.&rdquo;
             </p>
-            <p className="mt-2">
+            <p>
               Answers are grounded in your reports and variants via tools, and
               cite their sources. The copilot is informational — never a
               diagnosis.
@@ -106,17 +106,13 @@ export function ChatPanel({
         {messages.map((m) => (
           <div
             key={m.id}
-            className={
-              m.role === "user"
-                ? "ml-auto max-w-[85%] rounded-2xl bg-forest px-4 py-2.5 text-sm text-on-forest"
-                : "max-w-[85%] rounded-2xl border border-line bg-card px-4 py-2.5 text-sm"
-            }
+            data-role={m.role === "user" ? "user" : "assistant"}
+            className="rec-message"
           >
-            {m.role !== "user" ? <p data-slot="chat-not-diagnostic" className="mb-2 text-xs text-ink-muted">{NOT_DIAGNOSTIC}</p> : null}
             {m.parts.map((part, i) => {
               if (part.type === "text") {
                 return (
-                  <p key={i} className="whitespace-pre-wrap leading-relaxed">
+                  <p key={i} className="whitespace-pre-wrap">
                     {part.text}
                   </p>
                 );
@@ -126,7 +122,7 @@ export function ChatPanel({
                 return (
                   <p
                     key={i}
-                    className="my-1 font-mono text-xs text-ink-muted"
+                    className="caption my-1 font-mono"
                   >
                     ⚙ {label}
                     {"state" in part && part.state === "output-available"
@@ -137,37 +133,43 @@ export function ChatPanel({
               }
               return null;
             })}
+            {m.role !== "user" ? <p data-slot="chat-not-diagnostic" className="caption mt-3">{NOT_DIAGNOSTIC}</p> : null}
           </div>
         ))}
         {status === "submitted" ? (
-          <p className="text-xs text-ink-muted">Thinking…</p>
+          <p className="caption">Thinking…</p>
         ) : null}
       </div>
 
       {errorCode?.code === "consent_required" ? (
-        <div className="rounded-xl border border-line bg-tint p-4 text-sm">
-          <p>
-            Before sending data from your genome to a cloud service, Copilot
-            needs your clear consent.
-          </p>
-          <Button
-            size="sm"
-            className="mt-2"
-            onClick={() => setConsentFor(errorCode.providerKey ?? "")}
-          >
-            Review what would be shared
-          </Button>
+        <div className="plate">
+          <div className="plate-head">
+            <p className="text-sm text-ink">
+              Before sending data from your genome to a cloud service, Copilot
+              needs your clear consent.
+            </p>
+          </div>
+          <div className="plate-body">
+            <Button
+              size="sm"
+              onClick={() => setConsentFor(errorCode.providerKey ?? "")}
+            >
+              Review what would be shared
+            </Button>
+          </div>
         </div>
       ) : errorCode?.code === "no_provider" || errorCode?.code === "no_key" ? (
-        <div className="rounded-xl border border-line bg-tint p-4 text-sm">
-          <p>
-            Configure a provider in{" "}
-            <Link href={route("settings.copilot")} className="underline underline-offset-2">
-              Settings
-            </Link>
-            {". "}Add your own Anthropic key, or connect a model that runs on
-            your computer for more privacy.
-          </p>
+        <div className="plate">
+          <div className="plate-head">
+            <p className="text-sm text-ink">
+              Configure a provider in{" "}
+              <Link href={route("settings.copilot")} className="prose-link">
+                Settings
+              </Link>
+              {". "}Add your own Anthropic key, or connect a model that runs on
+              your computer for more privacy.
+            </p>
+          </div>
         </div>
       ) : error ? (
         <p role="alert" className="text-sm text-danger">
@@ -177,7 +179,7 @@ export function ChatPanel({
       ) : null}
 
       <form
-        className="flex items-end gap-2"
+        className="rec-composer"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -194,8 +196,7 @@ export function ChatPanel({
           }}
           placeholder="Ask about your genome…"
           aria-label="Message the copilot"
-          rows={2}
-          className="min-h-0 resize-none"
+          rows={1}
         />
         <Button
           type="submit"

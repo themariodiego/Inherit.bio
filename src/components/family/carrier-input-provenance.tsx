@@ -11,7 +11,7 @@ export function CarrierInputProvenance({ summary, sources, subjects }: {
   const labels = (side: "a" | "b", ids: readonly string[]) => ids.map((id) => `File ${sources[side].findIndex((source) => source.fileId === id) + 1}`).join(", ");
   return <div data-slot="carrier-input-provenance" className="space-y-6">
     {(["a", "b"] as const).map((side) => <div key={side} className="space-y-3">
-      <p className="font-medium text-ink">{subjects[side].label}</p>
+      <p className="label text-ink">{subjects[side].label}</p>
       <InputProvenance nested sources={sources[side].map((source) => ({ ...source, hasResultRecord: summary.inputFileIds?.[side].includes(source.fileId) ?? false }))}
         subject={{ subjectId: subjects[side].id }} state={summary.inputFileIds?.[side].length ? "recorded" : "absent"} />
       <ul data-slot="carrier-gene-inputs" className="space-y-1 text-sm text-ink-muted">
@@ -25,6 +25,6 @@ export function CarrierInputProvenance({ summary, sources, subjects }: {
         {summary.runsInputFileIds[side].length ? `${COPY.runsInputs}: ${labels(side, summary.runsInputFileIds[side])}.` : COPY.noRunsInputs}
       </p> : null}
     </div>)}
-    <p className="text-sm text-ink-muted">{COPY.noRelatedness}</p>
+    <p className="caption max-w-measure">{COPY.noRelatedness}</p>
   </div>;
 }

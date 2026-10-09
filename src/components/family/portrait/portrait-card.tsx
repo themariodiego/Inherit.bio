@@ -165,7 +165,7 @@ function variantLineFor(person: PersonRef, reading: CarrierVariantReading, gene:
 
 function Title({ gene }: { gene: string }) {
   return (
-    <p data-slot="portrait-output-title" className="font-medium text-ink">
+    <p data-slot="portrait-output-title" className="title text-ink">
       {outputHeading(gene)}
     </p>
   );
@@ -175,13 +175,13 @@ function Title({ gene }: { gene: string }) {
 function Closing() {
   return (
     <>
-      <p data-slot="segregation" className="text-sm leading-relaxed text-ink">
+      <p data-slot="segregation" className="max-w-measure text-sm leading-relaxed text-ink">
         {SEGREGATION_SENTENCE}
       </p>
-      <p data-slot="chance-not-prediction" data-density-required-accuracy className="text-sm font-medium text-ink">
+      <p data-slot="chance-not-prediction" data-density-required-accuracy className="label max-w-measure text-ink">
         {CHANCE_NOT_PREDICTION}
       </p>
-      <p data-slot="counsellor-route" className="text-sm leading-relaxed text-ink-muted">
+      <p data-slot="counsellor-route" className="caption max-w-measure">
         {COUNSELLOR_NO_ROUTE}
       </p>
     </>
@@ -237,7 +237,7 @@ export function CarrierPairCard({
         figures={figures}
         denominator={100}
         aria-label={outputHeading(match.gene)}
-        className="space-y-4"
+        className="space-y-4 md:p-6"
         renderFigures={(nodes) => (
           <article data-slot="portrait-output" data-output-kind="carrier-pair" data-gene={match.gene} className="space-y-4">
             <Title gene={match.gene} />
@@ -302,7 +302,7 @@ export function CarrierPairCard({
       subject={{ subjectPair: [match.a.dataSubjectId, match.b.dataSubjectId] }}
       figures={statuses}
       aria-label={outputHeading(match.gene)}
-      className="space-y-4"
+      className="space-y-4 md:p-6"
       renderFigures={(nodes) => (
         <article
           data-slot="portrait-output"
@@ -364,7 +364,7 @@ export function OneSidedCard({ reading, people, viewerAccountId }: OneSidedCardP
       subject={{ subjectPair: [people[0].dataSubjectId, people[1].dataSubjectId] }}
       figures={ordered}
       aria-label={outputHeading(reading.gene)}
-      className="space-y-4"
+      className="space-y-4 md:p-6"
       renderFigures={(nodes) => (
         <article
           data-slot="portrait-output"

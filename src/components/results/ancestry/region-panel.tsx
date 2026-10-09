@@ -34,9 +34,9 @@ export function RegionPanel({ row, figure, markersLine, closeRef, onClose, known
       role="dialog"
       aria-modal="false"
       aria-labelledby={REGION_PANEL_TITLE_ID}
-      className="space-y-3 self-start rounded-2xl border border-line bg-card p-4 text-sm text-ink"
+      className="surface surface-pad-sm space-y-3 self-start text-sm text-ink"
     >
-      <p id={REGION_PANEL_TITLE_ID} data-slot="region-title" className="font-display text-xl">
+      <p id={REGION_PANEL_TITLE_ID} data-slot="region-title" className="title">
         {row.name}
       </p>
       <p className="flex flex-wrap items-baseline gap-x-2">
@@ -53,7 +53,7 @@ export function RegionPanel({ row, figure, markersLine, closeRef, onClose, known
       </ul> : null}
       {knownPanel ? <p>{SIMILAR_NEIGHBOURS}</p> : null}
       <p className="text-ink-muted">{IDENTITY}</p>
-      <Button ref={closeRef} type="button" variant="outline" onClick={onClose} className="h-11 px-5">
+      <Button ref={closeRef} type="button" variant="outline" onClick={onClose}>
         {CLOSE_BUTTON}
       </Button>
     </aside>

@@ -5,10 +5,12 @@ import { PRIMARY, STATE_B } from "@/copy/overview";
 import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 
-// State B (brief §2 §3.3): a determinate step list for the newest file in
-// flight and the measured p50/p95 for its tier — or the honest "not enough
-// files" sentence. Never a marketing estimate. The panel re-fetches every
-// five seconds so the steps advance without a manual reload.
+// State B (brief §2 §3.3): a labelled plate with a determinate step list for
+// the newest file in flight and the measured p50/p95 for its tier — or the
+// honest "not enough files" sentence. Never a marketing estimate. The panel
+// re-fetches every five seconds so the steps advance without a manual reload.
+// The steps are a ruled sequence; the "01" ordinals are CSS counters
+// (app.css `.processing-steps`), so each item's text stays the step alone.
 
 export interface ProcessingTiming {
   /** Formatted durations, only when the tier has ≥ 20 measured files. */
@@ -30,45 +32,41 @@ export function ProcessingPanel({
     <section
       aria-labelledby="processing-title"
       data-density-top-level-section
-      className="rounded-2xl border border-line bg-card p-5 sm:p-6"
+      className="plate"
     >
       <AutoRefresh active />
-      <p id="processing-title" className="text-lg font-semibold">
-        {STATE_B.processing(fileName)}
-      </p>
-      <ol className="mt-4 space-y-2">
-        {STATE_B.steps.map((step, index) => {
-          const done = index < currentStep;
-          const current = index === currentStep;
-          return (
-            <li
-              key={step}
-              aria-current={current ? "step" : undefined}
-              className={cn(
-                "flex items-center gap-3 text-base",
-                current ? "font-medium text-ink" : done ? "text-ink" : "text-ink-muted",
-              )}
-            >
-              <span
-                aria-hidden="true"
+      <div className="plate-head">
+        <p id="processing-title" className="title text-ink">
+          {STATE_B.processing(fileName)}
+        </p>
+      </div>
+      <div className="plate-body">
+        <ol className="processing-steps max-w-measure">
+          {STATE_B.steps.map((step, index) => {
+            const done = index < currentStep;
+            const current = index === currentStep;
+            return (
+              <li
+                key={step}
+                aria-current={current ? "step" : undefined}
+                data-step={current ? "current" : done ? "done" : "upcoming"}
                 className={cn(
-                  "size-2.5 shrink-0 rounded-full border-2",
-                  done && "border-forest bg-forest",
-                  current && "border-forest bg-tint",
-                  !done && !current && "border-line",
+                  "text-base",
+                  current ? "font-medium text-ink" : done ? "text-ink" : "text-ink-muted",
                 )}
-              />
-              {step}
-            </li>
-          );
-        })}
-      </ol>
-      <p className="mt-4 max-w-prose text-sm leading-relaxed text-ink-muted">
-        {timing ? STATE_B.timing(timing.p50, timing.p95) : STATE_B.notEnough}
-      </p>
-      <Button asChild size="lg" className="mt-5">
-        <Link href={route("files.upload")}>{PRIMARY.addFile}</Link>
-      </Button>
+              >
+                {step}
+              </li>
+            );
+          })}
+        </ol>
+        <p className="mt-5 max-w-measure text-sm text-ink-muted">
+          {timing ? STATE_B.timing(timing.p50, timing.p95) : STATE_B.notEnough}
+        </p>
+        <Button asChild size="lg" className="mt-6">
+          <Link href={route("files.upload")}>{PRIMARY.addFile}</Link>
+        </Button>
+      </div>
     </section>
   );
 }

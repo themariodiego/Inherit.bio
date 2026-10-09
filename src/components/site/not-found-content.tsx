@@ -6,6 +6,7 @@ import {
   NOT_FOUND_NEXT,
   NOT_FOUND_WITHHELD,
 } from "@/copy/not-found";
+import { Terrain } from "@/components/site/terrain";
 
 /**
  * The body of the not-found surface, with **no landmark of its own**.
@@ -28,18 +29,18 @@ import {
  */
 export function NotFoundContent() {
   return (
-    <div className="mx-auto max-w-prose space-y-4 px-6 py-12">
-      <h1 className="font-display text-2xl text-ink">{NOT_FOUND_HEADING}</h1>
-      <p className="text-sm text-ink">{NOT_FOUND_LEAD}</p>
-      <p className="text-sm text-ink-muted">{NOT_FOUND_WITHHELD}</p>
-      <p className="text-sm text-ink-muted">{NOT_FOUND_NEXT}</p>
-      <ul className="space-y-1 pt-2">
+    <div className="quiet-column mx-auto max-w-2xl px-6 py-block">
+      <div aria-hidden="true" className="quiet-band">
+        <Terrain variant="band" seed={11} />
+      </div>
+      <h1 className="display">{NOT_FOUND_HEADING}</h1>
+      <p className="body-lg mt-6 max-w-measure text-ink">{NOT_FOUND_LEAD}</p>
+      <p className="mt-4 max-w-measure text-ink-muted">{NOT_FOUND_WITHHELD}</p>
+      <p className="mt-4 max-w-measure text-ink-muted">{NOT_FOUND_NEXT}</p>
+      <ul className="quiet-links mt-8 border-t border-line pt-4">
         {NOT_FOUND_LINKS.map(link => (
           <li key={link.href}>
-            <Link
-              href={link.href}
-              className="inline-flex min-h-11 items-center text-sm text-ink underline underline-offset-2"
-            >
+            <Link href={link.href} className="quiet-link">
               {link.label}
             </Link>
           </li>

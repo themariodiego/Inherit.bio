@@ -92,10 +92,10 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
       subject={{ subjectPair: [match.a.dataSubjectId, match.b.dataSubjectId] }}
       figures={figures}
       denominator={match.kind === "probability" ? 100 : undefined}
-      className="space-y-3"
+      className="plate fam-plate-claim"
       renderFigures={(nodes) => (
         <>
-          <div data-slot="carrier-chips" className="flex flex-wrap gap-x-6 gap-y-3">
+          <div data-slot="carrier-chips">
             {people.map((person, index) => (
               <span
                 key={person.dataSubjectId}
@@ -112,7 +112,7 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
           </div>
           {recessive !== null ? (
             // inherit-figure-exempt: the "1 in 4" fragment restates this block's own figure as a fraction
-            <p data-slot="carrier-sentence" className="text-base leading-relaxed text-ink">
+            <p data-slot="carrier-sentence" className="body-lg max-w-measure text-ink">
               {CARRIER_SENTENCE_LEAD} {nodes[2]} {CARRIER_SENTENCE_TAIL}
             </p>
           ) : split && match.kind === "probability" ? (
@@ -148,7 +148,7 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
               </ul>
             </>
           ) : match.kind === "no-probability" ? (
-            <p data-slot="carrier-sentence" className="text-base leading-relaxed text-ink">
+            <p data-slot="carrier-sentence" className="body-lg max-w-measure text-ink">
               {carrierNoProbabilitySentence(match.gene, match.reason)}
             </p>
           ) : null}
@@ -170,7 +170,7 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
         ))}
       </ul>
       <AssertionNotes evidence={readings.map((person) => person.variant.evidence)} />
-      <p data-slot="counsellor-route" className="text-sm leading-relaxed text-ink-muted">
+      <p data-slot="counsellor-route" className="caption max-w-measure">
         {COUNSELLOR_NO_ROUTE}
       </p>
     </ClaimBlock>

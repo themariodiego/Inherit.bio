@@ -4,7 +4,8 @@
  *
  * A 24px disc with the initial as text on the neutral ground, identical for
  * every embryo in colour, weight and size; the server-generated label
- * ("Embryo 3"), derived only from the ordinal; the kind chip "Embryo"; and,
+ * ("Embryo 3"), derived only from the ordinal; the kind chip "Embryo"
+ * (omitted on a column header, where the label already says it); and,
  * on the compare header only, the quality chip when the check was not
  * passed. No subject colour, no laboratory label, no rank, no ordinal
  * badge: nothing here can encode a verdict.
@@ -21,19 +22,21 @@ export interface EmbryoChipProps {
   href?: string;
   /** Renders the "Quality check not passed" chip (compare header only). */
   qcFailed?: boolean;
+  /** The "Embryo" kind chip; a column header whose label already reads "Embryo N" leaves it out. */
+  kindChip?: boolean;
   className?: string;
 }
 
 /** The disc every embryo shares: the inset ground with the standard line, in the ink colour. */
 export const EMBRYO_DISC_CLASS =
-  "flex size-6 shrink-0 items-center justify-center rounded-full border border-line bg-tint text-sm font-semibold leading-none text-ink";
+  "flex size-6 shrink-0 items-center justify-center rounded-full border border-line bg-surface-inset text-sm font-semibold leading-none text-ink";
 
-export function EmbryoChip({ embryo, href, qcFailed, className }: EmbryoChipProps) {
+export function EmbryoChip({ embryo, href, qcFailed, kindChip = true, className }: EmbryoChipProps) {
   const label = href ? (
     <Link
       href={href}
       data-slot="embryo-label"
-      className="font-medium text-ink underline-offset-4 hover:underline"
+      className="link-target font-medium text-ink underline-offset-4 hover:underline"
     >
       {embryo.displayLabel}
     </Link>
@@ -52,12 +55,14 @@ export function EmbryoChip({ embryo, href, qcFailed, className }: EmbryoChipProp
         {subjectInitial(embryo.displayLabel)}
       </span>
       {label}
-      <span
-        data-slot="subject-kind"
-        className="shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
-      >
-        {EMBRYO_KIND_CHIP}
-      </span>
+      {kindChip ? (
+        <span
+          data-slot="subject-kind"
+          className="shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
+        >
+          {EMBRYO_KIND_CHIP}
+        </span>
+      ) : null}
       {qcFailed ? (
         <span
           data-slot="qc-chip"

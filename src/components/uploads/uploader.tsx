@@ -53,8 +53,13 @@ function uploadError(error: unknown, limits: OwnUploadLimits | null): Extract<Ph
   return { step: "error", message: messages[code], stagedUploadId };
 }
 
-export function Uploader({ disabled = false, subjectId = "me", limits = null }:
-  { disabled?: boolean; subjectId?: string; limits?: OwnUploadLimits | null }) {
+/**
+ * `framed` draws the uploader as its own plate, the heading in the plate's
+ * head. Inside the consent plate it renders unframed: the dashed dropzone
+ * and the progress panel only, with the heading inside the dropzone.
+ */
+export function Uploader({ disabled = false, subjectId = "me", limits = null, framed = true }:
+  { disabled?: boolean; subjectId?: string; limits?: OwnUploadLimits | null; framed?: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
@@ -148,22 +153,24 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
       if (inputRef.current) inputRef.current.value = "";
     }
   }
-  return <div className="rounded-2xl border border-dashed border-line bg-card p-6">
+  const subjectSegment = subjectId === "me" ? "me" : "s-" + subjectId;
+  const heading = <h2 className={framed ? "eyebrow" : "title"}>Upload raw DNA data</h2>;
+  const body = <>
     <input ref={inputRef} type="file" disabled={disabled || busy} className="sr-only"
       aria-hidden tabIndex={-1} aria-label="Choose a raw DNA file"
       onChange={event => { const file = event.target.files?.[0]; if (file) void handleFile(file); }} />
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h2 className="font-medium">Upload raw DNA data</h2>
-        <p className="mt-1 max-w-md text-sm text-ink-muted">
+    <div className="surface-dashed rec-dropzone">
+      <div className="rec-dropzone-text">
+        {framed ? null : heading}
+        <p className="text-sm text-ink-muted">
           Upload a raw file from 23andMe, AncestryDNA, MyHeritage or FamilyTreeDNA,
           or a VCF, VCF.GZ or gVCF file. Files go directly to private storage.
           We check the complete file before saving it. You choose separately which results to make.
         </p>
-        <p className="mt-2 max-w-md text-sm text-ink-muted">
+        <p className="text-sm text-ink-muted">
           {OWN_UPLOAD_COPY.zipStatement(megabytesOf(MAXIMUM_LOCAL_ZIP_BYTES))}
         </p>
-        {limits ? <p className="mt-2 max-w-md text-sm text-ink-muted">
+        {limits ? <p className="text-sm text-ink-muted">
           {OWN_UPLOAD_COPY.limitStatement(
             megabytesOf(uploadCeilingBytes("consumer-array-text-v1", limits)),
             megabytesOf(uploadCeilingBytes("VCF", limits)),
@@ -176,7 +183,7 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
     {/* The app shell carries its own polite live region for global search, so
         this one is named: a test that meant the uploader's phase must not be
         able to resolve to the other region, or to both. */}
-    <div data-slot="upload-progress" aria-live="polite" className="mt-3 text-sm">
+    <div data-slot="upload-progress" aria-live="polite" className="rec-progress">
       {phase.step === "checking" ? <p>Checking the file format…</p>
         : phase.step === "hashing" ? <p>Checking your file locally… {phase.pct}%</p>
         : phase.step === "uploading" ? <p>Uploading to private storage… {phase.pct}%</p>
@@ -186,15 +193,15 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
         : phase.step === "prepared" || phase.step === "results-ready" ? <p className="text-ok">
           {phase.step === "results-ready" ? "Your file is stored and your selected reports are ready."
             : "Your file is stored and prepared. Reports have not been generated yet."}{" "}
-          <Link href={route("genome.reports", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
+          <Link href={route("genome.reports", { subject: subjectSegment })}
             className="underline underline-offset-2">{phase.step === "results-ready" ? "Explore your reports" : "Choose your reports"}</Link>{" · "}
-          <Link href={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
+          <Link href={route("genome.data", { subject: subjectSegment })}
             className="underline underline-offset-2">View your file</Link>
         </p>
         : phase.step === "preparation-error" ? <PreparationRecovery code={phase.code} disabled={disabled}
           onRetry={() => void retryPreparation(phase.fileId, phase.code === "report_generation_unavailable")}
-          reportsHref={route("genome.reports", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
-          fileHref={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })} />
+          reportsHref={route("genome.reports", { subject: subjectSegment })}
+          fileHref={route("genome.data", { subject: subjectSegment })} />
         : phase.step === "error" && phase.stagedUploadId
           ? <StagedUploadRecovery message={phase.message} disabled={disabled || busy}
             retrying={autoFinishPending}
@@ -203,5 +210,10 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
           {phase.action ? <> <Link href={phase.action.href} className="underline underline-offset-2">{phase.action.label}</Link></> : null}
         </p> : null}
     </div>
-  </div>;
+  </>;
+  if (!framed) return <div>{body}</div>;
+  return <section className="plate">
+    <div className="plate-head">{heading}</div>
+    <div className="plate-body">{body}</div>
+  </section>;
 }

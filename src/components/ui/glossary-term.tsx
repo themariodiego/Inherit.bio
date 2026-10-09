@@ -66,8 +66,8 @@ export function GlossaryTerm({
           // right to fail it. This is the element declaring what it actually
           // is, not an exemption bought: a gloss cannot be given a 44px box
           // without destroying the line height of every sentence holding one.
-          "inline",
-          "rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+          // Focus is the product's one global ring; no second one here.
+          "inline rounded-sm",
           className,
         )}
       >
@@ -92,7 +92,7 @@ export function GlossaryTerm({
         id={`${id}-definition`}
         data-slot="glossary-definition"
         hidden={!open}
-        className="mt-1 block max-w-prose text-sm text-ink-muted"
+        className="surface-inset mt-2 block max-w-measure px-4 py-3 text-sm leading-relaxed text-ink"
       >
         {open ? entry.definition : null}
       </span>
