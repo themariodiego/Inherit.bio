@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { chmod, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -139,12 +139,12 @@ describe("the pinned model identifier stays in the run record", () => {
 
   it("is never printed by the plan command", async () => {
     const directory = await temporary("inherit-comprehension-config-");
-    const file = path.join(directory, "run.json");
+    const file = path.join(await realpath(directory), "run.json");
     await mkdir(path.join(directory, "effort"), { mode: 0o700 });
     await writeFile(file, JSON.stringify({ schemaVersion: 1, kind: "calibration", effortDirectory: path.join(directory, "effort"),
       tasks: ["T1"], personas: 5, samplingSeed: "d".repeat(64), settings, limitMicroDollars: 50_000_000, otherCostsMicroDollars: 0,
       provider: { kind: "openai-compatible-chat", label: "provider-a/config-1", endpoint: "https://gateway.invalid/v1",
-        modelIdentifier: IDENTIFIER, apiKeyVariable: KEY } }));
+        modelIdentifier: IDENTIFIER, apiKeyVariable: KEY } }), { mode: 0o600 });
     const { stdout, stderr } = await promisify(execFile)(process.execPath, ["--import", "tsx", "scripts/comprehension/run.mts", file, "--plan"],
       { cwd: repositoryRoot, env: { PATH: process.env.PATH, [KEY]: "synthetic-test-credential" } as unknown as NodeJS.ProcessEnv });
     expect(stdout).toContain("provider-a/config-1");

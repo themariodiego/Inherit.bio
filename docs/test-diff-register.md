@@ -1,3 +1,20 @@
+## 2026-10-09 — Keep exact private comprehension file identities
+
+Private configuration admission uses BigInt file and directory identities.
+File checks retain the complete device, inode, UID, GID, mode, link count,
+size and nanosecond modification/change times. Parent identities use exact
+decimal fields. The file size becomes a Number only after the unchanged
+1-to-65536-byte bound proves the conversion exact. Schema validation,
+generic refusal, input zeroing and uncertain-close refusal stay unchanged.
+
+Five added controls use actual temporary files and controlled metadata
+observations. They refuse adjacent inode and nanosecond values that Numbers
+would alias, a changed GID and an adjacent parent inode. Every original
+26 case, assertion and CLI time limit remains intact. The passing current
+main integration is preserved as historical; all new cases and the new
+source remain unrun pending source review and current qualification. No
+paid comprehension, human-study or release requirement changes.
+
 ## 8 October 2026 — Three-source browser timing calibration
 
 The committed V2 timing profile adds only accepted protected-main run
@@ -175,6 +192,25 @@ The precursor seeds a genuine protected-main key before a separate consumer
 can prove real exact-key warm hits. Complete local and exact-head hosted checks
 remain required; the consumer draft and prior evidence are preserved. This
 entry records a source change, with no execution or speed claim.
+
+## 2026-10-06 — Enforce the private comprehension configuration boundary
+
+The ordinary runner now reads only an owned regular `0600` single-link file
+through its absolute canonical path, outside every Git checkout. It binds the
+named file to the open descriptor, rechecks file and parent identities, reads at
+most 64 KiB and returns generic refusals before any journal or child starts.
+The configuration schema, token and spending limits, calibration checks, model
+identity rules, task skips and stopping rule remain unchanged.
+
+New source-only controls use real temporary files for links, modes, checkout
+markers, byte limits, malformed text, replacement and permission changes during
+reads, and uncertain descriptor closure. Two credential-free stub CLI controls
+check the plan and early refusal with no effort ledger or run record. Only the
+existing plan-output fixture gains an explicit canonical path and `0600` mode;
+all original assertion lines and time limits stay unchanged. The mutable read
+buffer is cleared, with no claim of immutable-string or platform erasure.
+These cases are unrun. Source review and local and full hosted checks remain
+required; no comprehension score, native flow or release status changes.
 
 ## 2026-10-05 — Preserve original job-log terminal bytes in private captures
 
