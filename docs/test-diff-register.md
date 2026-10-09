@@ -1,3 +1,26 @@
+## 2026-10-09 — Bind provisional public appeal holds and native documentary decisions
+
+The new disabled TEST slice binds an exact current contact HMAC only through a
+native confirmed adult or a complete current evidenced parent set. No account
+is adopted. Ambiguous and stale contacts remain unresolved and place no hold.
+The earlier potential-match test now checks that explicit unresolved state and
+zero holds instead of refusing the whole evidence submission; every no-match,
+wrong-kind, nonce, clock and disposal assertion remains.
+
+A named own-MFA reviewer must receive, render and acknowledge every challenged
+chunk before recording the current full-hash documentary approval or rejection.
+Only a real source-control or genetic-parent-authority rejection, with approved
+photo identity, current original recipient and a different reviewer, can bind
+an access-review intake. The access proof set now names the two possible exact
+server-selected authority handles rather than an unbound generic handle.
+
+Decision references are encrypted under the original case key. A read-only
+notice uses the original verified consumed session without renewing its clock
+or upload authority. Unit tests cover closed fields, scope/revision substitution,
+reference/hash/ciphertext substitution and foreign authority; native tests are
+written but unrun. Late notice/replacement, final target disposition and genuine
+native/provider proof remain activation limits. No production flag is opened.
+
 ## 2026-10-09 — Connect the closed anonymous appeal no-match evidence journey
 
 The first local readability check refused eight unregistered short-copy words.

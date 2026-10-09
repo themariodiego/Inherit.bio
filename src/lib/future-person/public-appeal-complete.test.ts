@@ -48,6 +48,14 @@ describe("public appeal evidence submission", () => {
   const response = await POST(request({ decisionNoticeDocumentId: authority, underlyingRightsDocumentId: photo }));
   expect(response.status).toBe(404);expect(rpc).not.toHaveBeenCalled();
  });
+ it("passes the exact three access-proof handles without choosing authority from a reference",async()=>{
+  rpc.mockResolvedValue({data:{status:"review_pending",deadline},error:null});const notice="44444444-4444-4444-8444-444444444443";
+  expect((await POST(request({decisionNoticeDocumentId:notice}))).status).toBe(202);
+  expect(rpc.mock.calls[0]![1].p_documents).toEqual({photoIdentityDocumentId:photo,subjectSourceControlDocumentId:authority,decisionNoticeDocumentId:notice});
+ });
+ it("refuses both authority kinds instead of allowing a requester to choose a different underlying decision",async()=>{
+  expect((await POST(request({decisionNoticeDocumentId:photo,geneticParentAuthorityDocumentId:authority}))).status).toBe(404);expect(rpc).not.toHaveBeenCalled();
+ });
  it.each(foreignHeaders)(
   "refuses a foreign or ambiguous credential %j", async headers => {
    expect((await POST(request({}, headers))).status).toBe(404);expect(rpc).not.toHaveBeenCalled();

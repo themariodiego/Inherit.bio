@@ -7651,6 +7651,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      // Source-authored public matched-review RPC ABI; native migration tests
+      // remain required before this disabled TEST slice is activated.
+      read_public_appeal_decision_notice_v1: { Args: { p_session_hash:string }; Returns: Json };
+      read_public_appeal_review_v1: { Args: { p_case:string }; Returns: Json };
+      read_public_appeal_document_context_v1: { Args: { p_document:string }; Returns: Json };
+      review_document_domain_v1: { Args: { p_document:string }; Returns: string };
+      decide_public_appeal_document_v1: { Args: { p_document:string; p_sha256:string; p_review_revision:number; p_decision:string; p_nonce_hash:string; p_reason_ciphertext:string; p_reference_hash:string; p_reference_ciphertext:string }; Returns: Json };
       new_public_appeal_evidence_view_v1: { Args: { p_session_hash:string }; Returns: Json };
       complete_new_public_appeal_evidence_v1: { Args: { p_session_hash:string; p_nonce:string; p_documents:Json; p_affirmed:boolean }; Returns: Json };
       open_public_appeal_document_v1: { Args: { p_session_hash:string; p_nonce:string; p_document_kind:string; p_media_type:string; p_size_bytes:number; p_sha256:string; p_cookie_hash:string; p_wrapped_document_key:string }; Returns: Json };
@@ -7663,7 +7670,7 @@ export type Database = {
         Returns: Json;
       };
       drain_due_new_public_appeals_v1: { Args: Record<string, never>; Returns: Json };
-      prepare_new_public_appeal_v1: { Args: { p_kind:string; p_payload_digest:string; p_form_nonce_hash:string; p_contact_digests:Json; p_identifier_digests:Json; p_network_digests:Json }; Returns: Json };
+      prepare_new_public_appeal_v1: { Args: { p_kind:string; p_payload_digest:string; p_form_nonce_hash:string; p_contact_digests:Json; p_identifier_digests:Json; p_network_digests:Json; p_decision_reference_hash?:string|null }; Returns: Json };
       commit_new_public_appeal_v1: { Args: { p_expected:Json; p_payload_digest:string; p_nonce_hash:string; p_wrapped_key:string; p_statement:string; p_working:string; p_contact:string; p_quota_keys:Json }; Returns: boolean };
       prepare_new_suspension_appeal_v1: { Args: { p_notice_hash:string; p_nonce:string; p_payload_digest:string }; Returns: Json };
       read_new_appeal_for_reviewer_v1: { Args: { p_id:string }; Returns: Json };

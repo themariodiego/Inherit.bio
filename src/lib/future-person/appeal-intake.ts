@@ -15,7 +15,9 @@ const digest=z.string().regex(/^[0-9a-f]{64}$/u),digests=z.record(z.string().reg
 const prepared=z.object({frame:z.object({version:z.literal("new-appeal-public-intake-native-v1"),scope:appealCaseScope,
  reviewer:z.object({principalId:z.uuid(),principalRevision:z.number().int().positive().safe(),purposeRevision:z.number().int().positive().safe()}).strict(),
  assignmentRevision:z.literal(1),prepareExpiresAt:z.iso.datetime({offset:true}),caseContactId:z.uuid(),payloadDigest:digest,formNonceHash:digest,
- contactDigests:digests,identifierDigests:digests,networkDigests:digests}).strict(),signature:digest}).strict();
+ contactDigests:digests,identifierDigests:digests,networkDigests:digests,underlyingDecision:z.object({decisionId:z.uuid(),sourceCaseId:z.uuid(),decisionRevision:z.number().int().positive().safe(),
+  evidenceRevision:z.number().int().positive().safe(),sourceReviewerPrincipalId:z.uuid(),decisionReferenceHash:digest,requiredAuthorityKind:z.enum(["appeal-subject-source-control","appeal-genetic-parent-authority"]),
+  decisionKind:z.enum(["subject-source-control-review-rejection","genetic-parent-authority-review-rejection"]),sourceDeadline:z.iso.datetime({offset:true})}).strict().optional()}).strict(),signature:digest}).strict();
 const generic=()=>appealIntakeJson({status:"received"},202);
 /** Runtime qualification must prove the whole public timing envelope. The
  * minimum suppresses a quick local lookup distinction but is not that proof. */
@@ -50,10 +52,18 @@ async function postOwnedAppeal(request:Request,nonceHash:string,owner:AppealInta
   const identifierSet=appealKeyedDigests("rate-limit",`api.subject-access-request|normalized-identifier|${intake.contactEmail}`);
   const networkSet=networkBucketDigests("api.subject-access-request",request.headers);
   const {data,error}=await owner.wait(owner.rpc("public-prepare",()=>client.rpc("prepare_new_public_appeal_v1",{p_kind:intake.kind,p_payload_digest:payloadDigest,
-   p_form_nonce_hash:nonceHash,p_contact_digests:contactSet,p_identifier_digests:identifierSet,p_network_digests:networkSet}).retry(false).abortSignal(owner.signal)));
+   p_form_nonce_hash:nonceHash,p_contact_digests:contactSet,p_identifier_digests:identifierSet,p_network_digests:networkSet,
+   ...(intake.kind==="access-or-review-appeal"?{p_decision_reference_hash:intake.decisionReference?crypto.createHash("sha256").update(intake.decisionReference,"utf8").digest("hex"):null}:{})}).retry(false).abortSignal(owner.signal)));
   const preparation=prepared.safeParse(data);if(error||!preparation.success)return genericAfter(owner);
   const frame=preparation.data;if(frame.frame.scope.intakeKind!==intake.kind||frame.frame.payloadDigest!==payloadDigest
-   ||frame.frame.formNonceHash!==nonceHash)return genericAfter(owner);
+   ||frame.frame.formNonceHash!==nonceHash
+   ||(intake.kind==="access-or-review-appeal")!==Boolean(frame.frame.underlyingDecision))return genericAfter(owner);
+  const underlying=frame.frame.underlyingDecision;
+  if(underlying && (intake.kind!=="access-or-review-appeal" || !intake.decisionReference
+   || underlying.decisionReferenceHash!==crypto.createHash("sha256").update(intake.decisionReference,"utf8").digest("hex")
+   || underlying.sourceReviewerPrincipalId===frame.frame.reviewer.principalId
+   || Date.parse(underlying.sourceDeadline)<=Date.now()
+   || (underlying.requiredAuthorityKind==="appeal-subject-source-control")!==(underlying.decisionKind==="subject-source-control-review-rejection")))return genericAfter(owner);
   owner.assertOpen();
   const envelope=sealNewAppeal(frame.frame.scope,intake);
   wrapped=owner.own(Buffer.from(envelope.wrappedCaseKeyHex,"hex"));statement=owner.own(Buffer.from(envelope.statementCiphertextHex,"hex"));

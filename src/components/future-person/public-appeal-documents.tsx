@@ -20,6 +20,19 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
  const [ids, setIds] = useState<Partial<Record<Kind, string>>>(() => Object.fromEntries(view.documents.map(document => [document.documentKind, document.documentId]))); const [messages, setMessages] = useState<Partial<Record<Kind, string>>>({});
  const [busy, setBusy] = useState(false); const [affirmed, setAffirmed] = useState(false); const [finished, setFinished] = useState(false);
  const [failure, setFailure] = useState(false);
+ const [notices, setNotices] = useState<{ documentKind: string; decision: string; decisionReference: string | null }[]>([]);
+ async function readNotice() {
+  setBusy(true); setFailure(false);
+  try { const answer = await fetch("/api/appeals/session/decision", { credentials: "same-origin", cache: "no-store" });
+   if (answer.status !== 200) throw new Error("unavailable"); const raw: unknown = await answer.json();
+   if (!raw || typeof raw !== "object" || !("decisions" in raw) || !Array.isArray(raw.decisions)) throw new Error("unavailable");
+   const rows = raw.decisions as Record<string, unknown>[];
+   if (rows.some(row => !row || Object.keys(row).sort().join("|") !== "decision|decisionReference|documentKind"
+    || typeof row.documentKind !== "string" || !view.documentKinds.includes(row.documentKind as Kind) || !["approved", "rejected"].includes(String(row.decision))
+    || !(row.decisionReference === null || typeof row.decisionReference === "string" && /^[0-9a-f]{48}$/u.test(row.decisionReference)))) throw new Error("unavailable");
+   setNotices(rows as typeof notices);
+  } catch { setFailure(true); } finally { setBusy(false); }
+ }
  async function send(kind: Kind) {
   const file = inputs.current[kind]?.files?.[0]; if (!file || busy) return;
   let bytes: Uint8Array<ArrayBuffer> | null = null; setBusy(true); setMessages(old => ({ ...old, [kind]: "Sending your document…" }));
@@ -63,12 +76,12 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
  async function finish() {
   if (!view.completionAvailable || !affirmed || !view.documentKinds.every(kind => ids[kind]) || busy) return;
   setBusy(true); setFailure(false);
-  const authority = view.caseKind === "subject-objection"
+  const authority = view.documentKinds.includes("appeal-subject-source-control")
    ? { subjectSourceControlDocumentId: ids["appeal-subject-source-control"] }
    : { geneticParentAuthorityDocumentId: ids["appeal-genetic-parent-authority"] };
   try { const answer = await fetch("/api/appeals/session/complete", { method: "POST", credentials: "same-origin",
    headers: { "content-type": "application/json", "x-inherit-csrf": completeCsrf },
-   body: JSON.stringify({ photoIdentityDocumentId: ids["appeal-photo-identity"], ...authority, affirmed: true, nonce: completeNonce }) });
+   body: JSON.stringify({ photoIdentityDocumentId: ids["appeal-photo-identity"], ...authority, ...(view.caseKind === "access-or-review-appeal" ? { decisionNoticeDocumentId: ids["appeal-decision-notice"] } : {}), affirmed: true, nonce: completeNonce }) });
    if (answer.status !== 202) throw new Error("appeal_unavailable");
    const result: unknown = await answer.json();
    if (typeof result !== "object" || result === null || !("status" in result) || result.status !== "review_pending") throw new Error("appeal_unavailable");
@@ -77,7 +90,13 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
  }
  if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Your files were sent</h1>
   <p className="mt-6">A named reviewer will review your request. This does not grant access or decide the outcome.</p>
-  <p className="mt-4">Your request keeps its original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p></section>;
+  <p className="mt-4">Your request keeps its original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>
+  <Button type="button" onClick={() => void readNotice()} disabled={busy}>Check review</Button>
+  {notices.map((notice, index) => <div key={index} className="mt-4"><p>{LABELS[notice.documentKind as Kind]}: {notice.decision === "approved" ? "approved" : "refused"}.</p>
+   {notice.decisionReference && <><p>Keep this reference if you ask for a review of this decision:</p><code>{notice.decisionReference}</code></>}
+  </div>)}
+  {failure && <p role="status">This private session is not available. No new link or access has been created.</p>}
+ </section>;
  return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Files for your request</h1>
   <p className="mt-6">These documents are used only to review your request. They do not give you access to a record.</p>
   <p className="mt-3">Original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>

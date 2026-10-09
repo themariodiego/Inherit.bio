@@ -2,6 +2,8 @@ begin;
 set local search_path=public,extensions;
 select no_plan();
 \ir fixtures/future_person_deletion_authority.inc
+\ir fixtures/invitation_quota_keys.inc
+\ir fixtures/path_b_source_setup.inc
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select is(public.prepare_new_public_appeal_v1('subject-objection',repeat('a',64),repeat('b',64),
  jsonb_build_object('1',repeat('c',64)),jsonb_build_object('1',repeat('d',64)),jsonb_build_object('1',repeat('e',64))),
@@ -150,15 +152,39 @@ select throws_ok($$select pg_temp.deletion_probe('update private.new_public_appe
  (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true)')$$,'42501','appeal unavailable',
  'named reviewer revocation refuses completion atomically');
 -- A same-revision potential match is never silently downgraded to no-match.
-select throws_ok($$select pg_temp.deletion_probe(
+select lives_ok($$select pg_temp.deletion_probe(
  'insert into public.encrypted_contact_references(id,principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision)
  values(''86000000-0000-4000-8000-000000000101'',''86000000-0000-4000-8000-000000000001'',decode(repeat(''ab'',48),''hex''),repeat(''c'',64),1,1);
  insert into public.contact_hmac_indexes(contact_reference_id,contact_hmac,hmac_key_revision,status,expires_at)
  values(''86000000-0000-4000-8000-000000000101'',repeat(''c'',64),1,''current'',clock_timestamp()+interval ''1 day'')',
  'select public.complete_new_public_appeal_evidence_v1(repeat(''1'',64),repeat(''Q'',32),jsonb_build_object(''photoIdentityDocumentId'',
  (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
- (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true)')$$,'42501','appeal unavailable',
- 'a potential contact match cannot manufacture a target or silently omit its required typed hold');
+ (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true); do $probe$ begin if (select match_state from private.public_appeal_pending_reviews limit 1)<>''unresolved-potential''
+  or exists(select 1 from private.public_appeal_provisional_targets) then raise exception ''unresolved match gained authority'';end if;end $probe$')$$,
+ 'an unbound potential match remains privately unresolved and creates no target hold or account authority');
+-- Real Path B invitation/confirmation supplies the typed target; no account is inferred from contact.
+select lives_ok($$select pg_temp.deletion_probe(
+ 'select pg_temp.requested(''appeal-match'',''a'',repeat(''c'',64));
+ select pg_temp.account_confirms(''a'',''synthetic-match-confirm-aaaaaaaa'',''2'',repeat(''c'',64))',
+ 'select public.complete_new_public_appeal_evidence_v1(repeat(''1'',64),repeat(''Q'',32),jsonb_build_object(''photoIdentityDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true);
+ do $probe$ begin if not exists(select 1 from private.public_appeal_provisional_targets where target_kind=''subject'' and target_id=pg_temp.sid(''appeal-match''))
+ or not private.public_appeal_target_held_v1(''subject'',pg_temp.sid(''appeal-match''))
+ or (select match_state from private.public_appeal_pending_reviews limit 1)<>''unique-current''
+ or exists(select 1 from private.new_public_appeal_intakes i join public.subject_principals actor on actor.id=i.author_principal_id where actor.account_id is not null)
+ then raise exception ''exact current target not held or case adopted an account'';end if;end $probe$')$$,
+ 'genuine current subject confirmation places only an original-deadline provisional hold without account adoption');
+select lives_ok($$select pg_temp.deletion_probe(
+ 'select pg_temp.requested(''appeal-stale'',''a'',repeat(''c'',64));
+ select pg_temp.account_confirms(''a'',''synthetic-stale-confirm-aaaaaaaa'',''2'',repeat(''c'',64));
+ update public.subject_principals set principal_revision=principal_revision+1 where subject_id=pg_temp.sid(''appeal-stale'')',
+ 'select public.complete_new_public_appeal_evidence_v1(repeat(''1'',64),repeat(''Q'',32),jsonb_build_object(''photoIdentityDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true);
+ do $probe$ begin if exists(select 1 from private.public_appeal_provisional_targets)
+ or (select match_state from private.public_appeal_pending_reviews limit 1)<>''unresolved-potential'' then raise exception ''stale match became no-match or hold'';end if;end $probe$')$$,
+ 'stale contact authority is retained as unresolved and never becomes no-match or a hold');
 create temporary table appeal_target_before as select
  (select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject)subjects,
  (select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort)cohorts;
@@ -201,6 +227,63 @@ begin
 end $test$;
 select ok(pg_temp.stale_appeal_review_cleanup(),'revoked reviewer cleanup shreds keys first then confirms removal without a pending-review FK or current clean row');
 select is((select count(*) from private.public_appeal_pending_reviews),1::bigint,'the separate synthetic cleanup subtransaction restores the original pending review');
+-- Native receipt callback simulates Storage delivery only, not physical provider acceptance.
+create function pg_temp.appeal_reviewer_jwt() returns void language sql as $test$
+ select set_config('request.jwt.claims',jsonb_build_object('sub','7a000000-0000-0000-0000-000000000001',
+ 'role','authenticated','session_id','7a000000-0000-4000-8000-0000000000a1','aal','aal2',
+ 'iss','http://127.0.0.1:54321/auth/v1','aud','authenticated','exp',extract(epoch from clock_timestamp())::bigint+3600,
+ 'amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from clock_timestamp())::bigint-60)))::text,true);
+$test$;
+select throws_ok($$select public.read_public_appeal_review_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared))$$,
+ '42501','appeal unavailable','service authority cannot replace the named reviewer own MFA session');
+select pg_temp.appeal_reviewer_jwt();
+select ok(public.read_public_appeal_review_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)) is not null,
+ 'own current named MFA reviewer reads only the assigned case');
+select is(public.review_document_domain_v1((select id from private.appeal_documents where document_kind='appeal-photo-identity')),'appeal',
+ 'native domain classification requires the current own-MFA assigned complete document');
+select is((select count(*) from private.public_appeal_review_downloads),0::bigint,'classification cannot mint a download session');
+select throws_ok($$select public.review_document_domain_v1('86000000-0000-4000-8000-999999999999')$$,
+ '42501','review unavailable','native document classification refuses a foreign or absent document');
+create function pg_temp.appeal_read_and_decide(p_kind text,p_decision text,p_cookie text,p_nonce text) returns jsonb language plpgsql as $test$
+declare doc private.appeal_documents;opened jsonb;receipt jsonb;proof text;review_revision bigint;
+begin
+ perform pg_temp.appeal_reviewer_jwt();
+ select d.* into doc from private.appeal_documents d where d.document_kind=p_kind;
+ select pending.review_revision into review_revision from private.public_appeal_pending_reviews pending where pending.case_id=doc.intake_id;
+ opened:=public.open_claim_review_download_v1(doc.id,p_cookie);
+ receipt:=public.open_claim_review_receipt_v1((opened->>'session')::uuid,p_cookie,p_nonce);
+ begin
+  perform public.decide_public_appeal_document_v1(doc.id,doc.sha256,review_revision,p_decision,p_nonce,
+   decode(repeat('ab',48),'hex'),repeat('f',64),decode(repeat('cd',76),'hex'));
+  raise exception 'decision accepted before native receipt ACK';
+ exception when insufficient_privilege then null;end;
+ proof:=encode(extensions.digest(decode(receipt#>>'{chunks,0,challenge}','hex')||convert_to('%PDF-1.7 synthetic','UTF8'),'sha256'),'hex');
+ perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+ perform public.prepare_claim_review_chunk_receipt_v1((opened->>'session')::uuid,p_cookie,0,proof);
+ perform pg_temp.appeal_reviewer_jwt();
+ perform public.acknowledge_claim_review_chunk_v1((opened->>'session')::uuid,p_cookie,0,proof,p_nonce);
+ return public.decide_public_appeal_document_v1(doc.id,doc.sha256,review_revision,p_decision,p_nonce,
+  decode(repeat('ab',48),'hex'),encode(extensions.digest(convert_to(p_nonce,'UTF8'),'sha256'),'hex'),decode(repeat('cd',76),'hex'));
+end $test$;
+select is(pg_temp.appeal_read_and_decide('appeal-photo-identity','approved',repeat('a',64),repeat('b',64))->>'decision','approved',
+ 'whole native challenged delivery and own ACK permit only a documentary approval');
+select is(pg_temp.appeal_read_and_decide('appeal-subject-source-control','rejected',repeat('c',64),repeat('d',64))->>'decision','rejected',
+ 'whole native delivery binds the real source-control rejection producer');
+select is((select count(*) from private.public_appeal_document_decisions),2::bigint,'each exact current document has one immutable native decision');
+select ok((select reason_ciphertext is not null and reference_ciphertext is not null from private.public_appeal_document_decisions where decision='rejected'),
+ 'private reason/reference are retained encrypted until original case disposition');
+select is((select count(*) from private.appeal_document_sessions ds join private.public_appeal_document_decisions decision on decision.document_id=ds.document_id
+ where decision.decision='rejected' and ds.wrapped_document_key is not null),0::bigint,'rejection shreds the unusable document key before any physical cleanup');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select ok(public.read_public_appeal_decision_notice_v1(repeat('1',64)) is not null,'the original verified consumed session reads only its own notice without renewal');
+select is((select status from public.rights_sessions where session_hash=repeat('1',64)),'consumed','notice read does not reactivate upload authority');
+select is(public.read_public_appeal_decision_notice_v1(repeat('f',64)),null::jsonb,'foreign session cannot read a decision/reference');
+select ok(private.public_appeal_underlying_binding_v1(encode(extensions.digest(convert_to(repeat('d',64),'UTF8'),'sha256'),'hex'),jsonb_build_object('1',repeat('c',64))) is not null,
+ 'only actual source rejection plus approved photo and same current verified recipient binds underlying access review');
+select is(private.public_appeal_underlying_binding_v1(encode(extensions.digest(convert_to(repeat('d',64),'UTF8'),'sha256'),'hex'),jsonb_build_object('1',repeat('9',64))),null::jsonb,
+ 'foreign recipient cannot borrow a real decision reference');
+select is(private.public_appeal_underlying_binding_v1(repeat('8',64),jsonb_build_object('1',repeat('c',64))),null::jsonb,
+ 'arbitrary/legacy decision references remain unbound');
 update public.appeal_intakes set state='withdrawn',decided_at=clock_timestamp() where target_kind='public_case';
 select is((select count(*) from private.public_appeal_pending_reviews),0::bigint,'terminal disposition disposes the live assignment and document links');
 select is((select count(*) from private.appeal_document_sessions where wrapped_document_key is not null),0::bigint,
