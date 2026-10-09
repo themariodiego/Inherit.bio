@@ -1,3 +1,9 @@
+## 2026-10-10 — Same-case appeal information request
+
+A current named own-MFA reviewer can now ask the original verified random case recipient for a new evidence round through the registered review POST. The original intake, recipient and 30-day deadline stay fixed. A separate seven-day/case-clamped candidate revokes earlier upload authority and independent document keys, then activates once into the existing 60-minute/15-minute-idle evidence flow. It creates no target effect or hold and carries no reviewer reason in mail or requester output. Final rejection and independent prior uphold remain unchanged; approval and reversal remain closed.
+
+Affected helper/route/UI tests cover native-admitted incomplete/rejected states, current/stale revisions, foreign selectors, original deadline, opaque native replay/failure and strict nonfinal receipts. Native tests add rollback-only same-recipient rotation, reserved/composed/scanned new files, current named pending review, terminal child cleanup, and an initially past/live clock fixture pair. The native/provider/browser tests remain unrun; synthetic provider callbacks are not delivery or physical scan proof. The new protected workflow table is classified and the native export inventory regenerated.
+
 ## 2026-10-10 — Same-recipient prior appeal choice (source checkpoint)
 
 - The independent named MFA reviewer can keep an earlier native documentary rejection only after the exact current source decision and verified recipient bind this access appeal and all three current files have native full-read acknowledgement and documentary approval. It closes this appeal with a coded prior-decision reference; it neither changes the prior case nor grants target access.

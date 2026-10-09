@@ -73,11 +73,12 @@ describe("a genuine prior decision's separate uphold branch", () => {
     : { ...raw, priorDecision: { ...raw.priorDecision, decisionKind: "account-control" } };
    expect(publicAppealCaseReviewBody(changed)).toBeNull();
   });
- it("keeps approval, reversal and needs-more closed in this body while admitting only the registered uphold grammar", () => {
+ it("keeps approval and reversal closed while admitting the registered nonfinal information grammar", () => {
   const body = { decision: "uphold", reviewRevision: 1, reason: "The complete current record supports keeping the earlier documentary choice.", nonce: "synthetic-uphold-form" };
   expect(appealCaseDecisionBody.safeParse(body).success).toBe(true);
+  expect(appealCaseDecisionBody.safeParse({ ...body, decision: "needs-more-information" }).success).toBe(true);
   for (const extra of [{ targetId: id(9) }, { priorDecisionId: id(11) }, { priorDecisionRevision: 3 },
-   { decision: "reverse-prior-decision" }, { decision: "approve-access" }, { decision: "needs-more-information" }])
+   { decision: "reverse-prior-decision" }, { decision: "approve-access" }])
    expect(appealCaseDecisionBody.safeParse({ ...body, ...extra }).success).toBe(false);
  });
 });
@@ -92,7 +93,7 @@ describe("exact current final-case operation", () => {
  const body = { decision: "reject", reviewRevision: 1, reason: "The available record does not prove the stated source control.", nonce: "synthetic-case-form" };
  it("accepts only the registered reason and reject branch with no target selector", () => {
   expect(appealCaseDecisionBody.parse(body).reason).toBe(body.reason);
-  for (const extra of [{ decision: "approve-access" }, { decision: "needs-more-information" }, { targetId: id(8) }, { evidenceRevision: 1 }, { reason: "short" }, { reason: "\u0000" + body.reason }])
+  for (const extra of [{ decision: "approve-access" }, { targetId: id(8) }, { evidenceRevision: 1 }, { reason: "short" }, { reason: "\u0000" + body.reason }])
    expect(appealCaseDecisionBody.safeParse({ ...body, ...extra }).success).toBe(false);
  });
  it("encrypts a professional reason only for this exact case and consumed operation", () => {
@@ -104,5 +105,17 @@ describe("exact current final-case operation", () => {
    expect(openNewCaseBytes(key, appealCaseReasonAad(id(1), "b".repeat(64)), sealed)).toBeNull();
    expect(sealed.includes(Buffer.from(body.reason))).toBe(false);
   } finally { plain?.fill(0); key.fill(0); sealed.fill(0); }
+ });
+});
+
+describe("native-admitted information request", () => {
+ it("admits incomplete/rejected evidence without adding an uphold or target approval", () => {
+  const raw = { ...current(), allowedDecisions: ["reject", "needs-more-information"], documents: [
+   { documentId: id(9), documentKind: "appeal-photo-identity", sha256: "b".repeat(64), decision: "rejected" }] };
+  expect(appealCaseContext.safeParse(raw).success).toBe(true);
+  expect(publicAppealCaseReviewBody(raw)?.targetBinding.state).toBe("unresolved");
+  for (const allowedDecisions of [["needs-more-information"], ["reject", "needs-more-information", "uphold"],
+   ["reject", "needs-more-information", "needs-more-information"], ["reject", "approve-access", "needs-more-information"]])
+   expect(appealCaseContext.safeParse({ ...raw, allowedDecisions }).success).toBe(false);
  });
 });

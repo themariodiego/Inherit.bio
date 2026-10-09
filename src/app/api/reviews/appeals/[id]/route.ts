@@ -30,7 +30,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   "x-inherit-case-decisions": JSON.stringify(row.data.allowedDecisions) });
 }
 
-/** Registered rejection and genuine prior uphold have no target effects. Other final
+/** Registered rejection, prior uphold and nonfinal information requests have no target effects. Other final
  * branches remain opaque until their native authority producers exist. */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
  const { id } = await context.params; const url = new URL(request.url);
@@ -57,7 +57,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
  }).retry(false).abortSignal(request.signal);
  if (result.error) return ["42501", "23505", "22023"].includes(result.error.code ?? "") ? notFound() : unavailable();
  const value = result.data as Record<string, unknown> | null;
- if (!value || value.caseId !== id || value.state !== "resolved" || value.outcome !== (parsed.data.decision === "uphold" ? "upheld" : "rejected")
+ if (!value || value.caseId !== id || value.state !== (parsed.data.decision === "needs-more-information" ? "more_information_required" : "resolved")
+  || value.outcome !== (parsed.data.decision === "needs-more-information" ? "more_information_required" : parsed.data.decision === "uphold" ? "upheld" : "rejected")
   || value.reviewRevision !== row.data.reviewRevision + 1 || Object.keys(value).sort().join("|") !== "caseId|outcome|reviewRevision|state") return unavailable();
  const response = await closedResponse("api.appeal-review", ["caseId", "state", "outcome", "reviewRevision"], value, 200);
  response.headers.set("Referrer-Policy", "no-referrer"); return response;

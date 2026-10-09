@@ -20,3 +20,13 @@ describe("separate final-case rejection control", () => {
   expect(html).not.toContain('name="priorDecisionId"');
  });
 });
+
+it("offers a nonfinal request only when the native header admits it, with no client recipient or new deadline", () => {
+ const props = { caseId: "87000000-0000-4000-8000-000000000001", reviewRevision: 2, csrf: "a".repeat(64),
+  nonce: "synthetic-current-information-form", disabled: false, onResolved: vi.fn(), onMoreInformation: vi.fn() };
+ expect(renderToStaticMarkup(createElement(PublicAppealCaseRejection, props))).not.toContain("Ask for more files");
+ const html = renderToStaticMarkup(createElement(PublicAppealCaseRejection, { ...props, allowMoreInformation: true }));
+ expect(html).toMatch(/disabled=""[^>]*>Ask for more files/u);
+ expect(html).toContain("keeps the same deadline and gives no access");
+ expect(html).not.toMatch(/name="(?:recipient|email|deadline|targetId)"/u);
+});

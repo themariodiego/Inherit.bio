@@ -98,6 +98,7 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
   {failure && <p role="status">This private session is not available. No new link or access has been created.</p>}
  </section>;
  return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Files for your request</h1>
+  {view.informationRequested && <p className="mt-4">You were asked for more files for this same request. Its original deadline has not changed.</p>}
   <p className="mt-6">These documents are used only to review your request. They do not give you access to a record.</p>
   <p className="mt-3">Original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>
   <div className="mt-8 space-y-8">{view.documentKinds.map(kind => <div key={kind} className="space-y-3">

@@ -2,18 +2,20 @@
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-const receipt = z.object({ caseId: z.uuid(), state: z.literal("resolved"), outcome: z.enum(["rejected", "upheld"]),
- reviewRevision: z.number().int().positive().safe() }).strict();
-export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce, disabled, allowUphold = false, onResolved }: {
- caseId: string; reviewRevision: number; csrf: string; nonce: string; disabled: boolean; allowUphold?: boolean; onResolved: () => void;
+const receipt = z.union([z.object({ caseId: z.uuid(), state: z.literal("resolved"), outcome: z.enum(["rejected", "upheld"]),
+ reviewRevision: z.number().int().positive().safe() }).strict(), z.object({ caseId: z.uuid(), state: z.literal("more_information_required"),
+ outcome: z.literal("more_information_required"), reviewRevision: z.number().int().positive().safe() }).strict()]);
+export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce, disabled, allowUphold = false, allowMoreInformation = false, onMoreInformation, onResolved }: {
+ caseId: string; reviewRevision: number; csrf: string; nonce: string; disabled: boolean; allowUphold?: boolean; allowMoreInformation?: boolean; onMoreInformation?: () => void; onResolved: () => void;
 }) {
  const [reason, setReason] = useState(""); const [checked, setChecked] = useState(false);
  const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
  const [unconfirmed, setUnconfirmed] = useState(false); const inFlight = useRef(false);
  const operation = useRef<AbortController | null>(null); const mounted = useRef(true);
  useEffect(() => { mounted.current = true; return () => { mounted.current = false; operation.current?.abort(); }; }, []);
- async function close(decision: "reject" | "uphold") {
+ async function close(decision: "reject" | "uphold" | "needs-more-information") {
   if (disabled || busy || unconfirmed || inFlight.current || decision === "uphold" && !allowUphold
+   || decision === "needs-more-information" && (!allowMoreInformation || !onMoreInformation)
    || !checked || [...reason.trim()].length < 20 || [...reason].length > 2000) return;
   inFlight.current = true;
   const abort = new AbortController(); operation.current = abort; setBusy(true);
@@ -24,9 +26,10 @@ export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce,
     body: JSON.stringify({ decision, reviewRevision, reason, nonce }) });
    const value = receipt.safeParse(await response.json());
    if (abort.signal.aborted || response.status !== 200 || !value.success || value.data.caseId !== caseId
-    || value.data.outcome !== (decision === "uphold" ? "upheld" : "rejected") || value.data.reviewRevision !== reviewRevision + 1) throw new Error("unavailable");
-   if (!abort.signal.aborted) { setReason(""); setChecked(false); onResolved(); }
-  } catch { if (mounted.current) { setUnconfirmed(true); setMessage("We could not confirm whether this request was closed. Reload this page and check the current case before trying again."); } }
+    || value.data.state !== (decision === "needs-more-information" ? "more_information_required" : "resolved")
+    || value.data.outcome !== (decision === "needs-more-information" ? "more_information_required" : decision === "uphold" ? "upheld" : "rejected") || value.data.reviewRevision !== reviewRevision + 1) throw new Error("unavailable");
+   if (!abort.signal.aborted) { setReason(""); setChecked(false); if (decision === "needs-more-information") onMoreInformation?.(); else onResolved(); }
+  } catch { if (mounted.current) { setUnconfirmed(true); setMessage("We could not confirm whether this request changed. Reload this page and check the current case before trying again."); } }
   finally { clearTimeout(timeout); inFlight.current = false; if (mounted.current) setBusy(false); }
  }
  return <section className="space-y-3 rounded-xl border p-4" aria-busy={busy}>
@@ -42,6 +45,9 @@ export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce,
   {allowUphold && <><p>The full files were checked. You can keep the same choice. This does not give access.</p>
    <button type="button" disabled={disabled || busy || unconfirmed || !checked || [...reason.trim()].length < 20}
     onClick={() => void close("uphold")}>Keep the same choice</button></>}
+  {allowMoreInformation && <><p>You can ask for more files. This keeps the same deadline and gives no access.</p>
+   <button type="button" disabled={disabled || busy || unconfirmed || !checked || [...reason.trim()].length < 20 || !onMoreInformation}
+    onClick={() => void close("needs-more-information")}>Ask for more files</button></>}
   {message && <p role="status">{message}</p>}
  </section>;
 }

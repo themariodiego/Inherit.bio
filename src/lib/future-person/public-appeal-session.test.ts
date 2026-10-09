@@ -44,3 +44,14 @@ describe("public appeal case session", () => {
   expect(await loadPublicAppealSession(request("unused"))).toBeNull();
  });
 });
+
+it("projects only the native round marker and never a professional reason or new recipient", async () => {
+ vi.stubEnv("INHERIT_TEST_JURISDICTION", "1"); vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", "1");
+ const raw = { caseKind: "subject-objection", deadline: "2026-11-01T00:00:00Z", documentKinds: ["appeal-photo-identity", "appeal-subject-source-control"],
+  evidenceState: "collecting", completionAvailable: true, informationRequested: true, documents: [] };
+ rpc.mockResolvedValue({ data: raw, error: null });
+ expect((await loadPublicAppealSession(request("unused")))?.view.informationRequested).toBe(true);
+ for (const extra of [{ informationRequested: "true" }, { reason: "private reviewer note" }, { recipient: "foreign@example.test" }]) {
+  rpc.mockResolvedValue({ data: { ...raw, ...extra }, error: null });expect(await loadPublicAppealSession(request("unused"))).toBeNull();
+ }
+});

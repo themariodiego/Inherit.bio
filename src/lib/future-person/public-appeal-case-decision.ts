@@ -16,9 +16,10 @@ const priorDecision = z.object({ decisionId: z.uuid(), sourceCaseId: z.uuid(), d
   decisionKind: z.enum(["subject-source-control-review-rejection", "genetic-parent-authority-review-rejection"]),
   sourceDeadline: z.iso.datetime({ offset: true }),
 }).strict();
-export const appealCaseAllowedDecisions = z.union([z.tuple([z.literal("reject")]), z.tuple([z.literal("reject"), z.literal("uphold")])]);
-/** This distinct native context admits incomplete evidence only for case
- * rejection. It does not relax the existing complete documentary decoder. */
+export const appealCaseAllowedDecisions = z.union([z.tuple([z.literal("reject")]), z.tuple([z.literal("reject"), z.literal("uphold")]),
+ z.tuple([z.literal("reject"), z.literal("needs-more-information")]),
+ z.tuple([z.literal("reject"), z.literal("uphold"), z.literal("needs-more-information")])]);
+/** This distinct native context admits incomplete evidence for rejection or a nonfinal information request. It does not relax the existing complete documentary decoder. */
 export const appealCaseContext = z.object({ contextVersion: z.literal("appeal-case-final-context-v1"), caseId: z.uuid(),
   caseKind: z.enum(["subject-objection", "genetic-parent-objection", "access-or-review-appeal"]),
   reviewRevision: z.number().int().positive().safe(), evidenceRevision: z.number().int().positive().safe(),
@@ -77,7 +78,7 @@ export function currentPublicAppealCaseReviewBody(raw: unknown, caseId: string, 
   return body && body.caseId === caseId && Date.parse(body.deadline) > now ? body : null;
 }
 
-export const appealCaseDecisionBody = z.object({ decision: z.enum(["reject", "uphold"]), reviewRevision: z.number().int().positive().safe(),
+export const appealCaseDecisionBody = z.object({ decision: z.enum(["reject", "uphold", "needs-more-information"]), reviewRevision: z.number().int().positive().safe(),
   reason: z.string().max(8000).transform(value => value.normalize("NFC").trim()).refine(value => [...value].length >= 20
     && [...value].length <= 2000 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(value)),
   nonce: z.string().min(1).max(2048),

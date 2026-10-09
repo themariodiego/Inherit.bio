@@ -450,7 +450,7 @@ begin
   if activated.target_id<>v_case or activated.purpose<>'appeal-evidence' then raise exception 'wrong access session';end if;
   perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
   context:=public.read_public_appeal_case_context_v1(v_case);
-  flags:=flags||jsonb_build_object('incompleteClosed',context->'allowedDecisions'='["reject"]'::jsonb);
+  flags:=flags||jsonb_build_object('incompleteClosed',context->'allowedDecisions'='["reject","needs-more-information"]'::jsonb);
   begin
    perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
     (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
@@ -476,7 +476,7 @@ begin
   perform public.complete_new_public_appeal_evidence_v1(pg_temp.h('uphold-rights'),repeat('Z',32),documents,true);
   perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
   context:=public.read_public_appeal_case_context_v1(v_case);
-  flags:=flags||jsonb_build_object('pendingClosed',context->'allowedDecisions'='["reject"]'::jsonb);
+  flags:=flags||jsonb_build_object('pendingClosed',context->'allowedDecisions'='["reject","needs-more-information"]'::jsonb);
   begin
    perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
     (context->>'evidenceRevision')::bigint,pg_temp.h('uphold-outcome'),decode(repeat('ab',48),'hex'));
@@ -487,7 +487,7 @@ begin
   end loop;
   context:=public.read_public_appeal_case_context_v1(v_case);
   if p_same_account then
-   if context->'allowedDecisions' is distinct from '["reject"]'::jsonb then
+   if context->'allowedDecisions' is distinct from '["reject","needs-more-information"]'::jsonb then
     raise exception 'two principals disguised the original reviewer account';end if;
    begin
     perform public.decide_public_appeal_case_v1(v_case,'uphold',(context->>'reviewRevision')::bigint,
@@ -495,12 +495,12 @@ begin
     raise exception 'same original reviewer account admitted uphold';
    exception when insufficient_privilege then null;end;
    flags:=flags||jsonb_build_object('sameAccountRefused',
-    context->'allowedDecisions'='["reject"]'::jsonb and jsonb_array_length(context->'documents')=3
+    context->'allowedDecisions'='["reject","needs-more-information"]'::jsonb and jsonb_array_length(context->'documents')=3
     and not exists(select 1 from jsonb_array_elements(context->'documents') doc where doc->>'decision'<>'approved')
     and not exists(select 1 from private.public_appeal_case_decisions));
    raise exception using errcode='PZ002',message='restore same-account synthetic case';
   end if;
-  flags:=flags||jsonb_build_object('wholeApprovedNativeSet',context->'allowedDecisions'='["reject","uphold"]'::jsonb
+  flags:=flags||jsonb_build_object('wholeApprovedNativeSet',context->'allowedDecisions'='["reject","uphold","needs-more-information"]'::jsonb
    and jsonb_array_length(context->'documents')=3 and not exists(select 1 from jsonb_array_elements(context->'documents') doc
     where doc->>'decision'<>'approved'));
   begin
@@ -582,6 +582,213 @@ select is((select count(*) from unnest(array['anon','authenticated','service_rol
  where has_function_privilege(role_name,'private.public_appeal_uphold_binding_v1(uuid)','execute')
  or has_function_privilege(role_name,'public.decide_public_appeal_case_before_uphold_v1(uuid,text,bigint,bigint,text,bytea)','execute')),
  0::bigint,'no API role can bypass the native optional branch or call the preserved rejection implementation');
+-- This probe uses the original genuinely prepared/committed/activated case.
+-- Storage/provider callbacks remain explicitly synthetic. Every change is
+-- rolled back; no test adopts an account or a foreign mailbox.
+create function pg_temp.appeal_information_probe() returns jsonb language plpgsql as $information_test$
+declare v_case uuid;before_intake jsonb;before_holds jsonb;before_targets jsonb;context jsonb;after_context jsonb;
+ request private.public_appeal_information_requests;mail record;activated record;fresh_hash text:=repeat('d',64);
+ flags jsonb:='{}';result jsonb;nonce_hash text:=repeat('5',64);
+ kind text;ordinal integer:=0;cookie text;compose_nonce text;opened jsonb;plan jsonb;scan jsonb;documents jsonb:='{}';
+ sha text:=encode(extensions.digest(convert_to('%PDF-1.7 information fixture','UTF8'),'sha256'),'hex');
+begin
+ select (value#>>'{frame,scope,caseId}')::uuid into v_case from public_appeal_prepared;
+ begin
+  perform pg_temp.final_case_reviewer_jwt();
+  select to_jsonb(source) into before_intake from private.new_public_appeal_intakes source where source.id=v_case;
+  select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') into before_holds from private.public_appeal_provisional_targets source;
+  before_targets:=jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.subjects source),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.cohorts source));
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  if not(context->'allowedDecisions' ? 'needs-more-information') then raise exception 'information option absent';end if;
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'needs-more-information',(context->>'reviewRevision')::bigint+1,
+    (context->>'evidenceRevision')::bigint,nonce_hash,decode(repeat('ab',48),'hex'));
+   raise exception 'stale information request accepted';exception when insufficient_privilege then null;end;
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'needs-more-information',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint+1,nonce_hash,decode(repeat('ab',48),'hex'));
+   raise exception 'stale evidence information request accepted';exception when insufficient_privilege then null;end;
+  result:=public.decide_public_appeal_case_v1(v_case,'needs-more-information',(context->>'reviewRevision')::bigint,
+   (context->>'evidenceRevision')::bigint,nonce_hash,decode(repeat('ab',48),'hex'));
+  select source.* into request from private.public_appeal_information_requests source where source.case_id=v_case;
+  if result->>'state'<>'more_information_required' or result->>'outcome'<>'more_information_required'
+   or (result->>'reviewRevision')::bigint<>(context->>'reviewRevision')::bigint+1
+   or request.original_deadline<>(before_intake->>'deadline')::timestamptz
+   or request.expires_at<>least(request.created_at+interval '7 days',request.original_deadline)
+   or exists(select 1 from private.public_appeal_case_decisions outcome where outcome.case_id=v_case)
+   or exists(select 1 from private.appeal_document_sessions session where session.intake_id=v_case and session.wrapped_document_key is not null)
+   or exists(select 1 from public.rights_sessions rights where rights.target_kind='appeal-case' and rights.target_id=v_case and rights.purpose='appeal-evidence' and rights.status='active')
+   then raise exception 'information request did not rotate only its own evidence';end if;
+  flags:=flags||jsonb_build_object('nativeRotation',true);
+  after_context:=public.read_public_appeal_case_context_v1(v_case);
+  if after_context->'documents'<>'[]'::jsonb or (after_context->>'documentDecisionsAvailable')::boolean
+   or (after_context->>'reviewRevision')::bigint<>(context->>'reviewRevision')::bigint+1 then raise exception 'old documents leaked into new set';end if;
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'needs-more-information',(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,nonce_hash,decode(repeat('ab',48),'hex'));
+   raise exception 'stale replay accepted';exception when insufficient_privilege then null;end;
+  begin
+   perform public.decide_public_appeal_case_v1(v_case,'needs-more-information',(after_context->>'reviewRevision')::bigint,
+    (after_context->>'evidenceRevision')::bigint,nonce_hash,decode(repeat('ab',48),'hex'));
+   raise exception 'spent nonce accepted for fresh revisions';exception when unique_violation then null;end;
+  if (select count(*) from private.public_appeal_information_requests source where source.case_id=v_case)<>1 then raise exception 'replay created a second request';end if;
+  flags:=flags||jsonb_build_object('staleReplayAtomic',true);
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  select * into mail from public.claim_mail_outbox();
+  if mail.outbox_id is distinct from request.outbox_id or not public.authorize_mail_submission_v1(mail.outbox_id,mail.attempt_ordinal)
+   or public.read_new_public_appeal_mail_contact_v1(mail.outbox_id,mail.attempt_ordinal)->>'caseContactId' is distinct from before_intake->>'case_contact_id'
+   then raise exception 'request did not use original recipient';end if;
+  begin
+   update public.mail_outbox source set recipient_principal_id='86000000-0000-4000-8000-000000000001' where source.id=mail.outbox_id;
+   if public.authorize_mail_submission_v1(mail.outbox_id,mail.attempt_ordinal) then raise exception 'foreign recipient submission accepted';end if;
+   raise exception using errcode='PZ003',message='restore wrong recipient';exception when sqlstate 'PZ003' then null;end;
+  begin
+   update private.new_public_appeal_reviewers set active=false where principal_id=(before_intake->>'reviewer_principal_id')::uuid;
+   if public.authorize_mail_submission_v1(mail.outbox_id,mail.attempt_ordinal) then raise exception 'revoked reviewer submission accepted';end if;
+   raise exception using errcode='PZ003',message='restore assignment';exception when sqlstate 'PZ003' then null;end;
+  flags:=flags||jsonb_build_object('originalRecipientOnly',true);
+  select * into activated from public.activate_rights_session_v1(encode(extensions.digest(convert_to(mail.delivery_token,'UTF8'),'sha256'),'hex'),fresh_hash,repeat('j',32));
+  if activated.purpose is distinct from 'appeal-evidence' or activated.target_id is distinct from v_case
+   or activated.expires_at>request.expires_at or activated.expires_at>clock_timestamp()+interval '60 minutes'
+   then raise exception 'new evidence credential did not activate';end if;
+  if exists(select 1 from public.activate_rights_session_v1(encode(extensions.digest(convert_to(mail.delivery_token,'UTF8'),'sha256'),'hex'),repeat('e',64),repeat('k',32)))
+   then raise exception 'rotated credential replay accepted';end if;
+  if (private.new_public_appeal_rights_at_v1(fresh_hash,false)).id is null
+   or public.new_public_appeal_evidence_view_v1(fresh_hash)->>'informationRequested' is distinct from 'true'
+   or public.new_public_appeal_evidence_view_v1(fresh_hash)->'documents'<>'[]'::jsonb
+   then raise exception 'new evidence view not isolated';end if;
+  if (private.new_public_appeal_rights_at_v1(repeat('1',64),false)).id is not null then raise exception 'old upload authority revived';end if;
+  flags:=flags||jsonb_build_object('oneUseContinuation',true);
+  -- Existing native byte reservation/composition and scan callbacks, rather
+  -- than direct document inserts, produce this new round's current set.
+  for kind in select unnest(array['appeal-photo-identity','appeal-subject-source-control']) loop
+   ordinal:=ordinal+1;cookie:=pg_temp.h('information-upload:'||kind);compose_nonce:=pg_temp.h('information-compose:'||kind);
+   opened:=public.open_public_appeal_document_v1(fresh_hash,repeat(chr(105+ordinal),32),kind,
+    'application/pdf',octet_length('%PDF-1.7 information fixture'),sha,cookie,decode(repeat('13',72),'hex'));
+   perform public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length('%PDF-1.7 information fixture'),sha);
+   perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
+   plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,compose_nonce,1);
+   perform public.finish_claim_document_completion_v1((opened->>'session')::uuid,cookie,compose_nonce,'composed',plan->>'objectKey');
+   scan:=public.claim_next_appeal_document_scan_v1(pg_temp.h('information-scan:'||kind));
+   if scan->>'documentId' is distinct from plan->>'documentId' then raise exception 'wrong new-round scan';end if;
+   perform public.record_appeal_document_scan_v1((scan->>'documentId')::uuid,pg_temp.h('information-scan:'||kind),'OK',sha,
+    'synthetic native test',1,clock_timestamp());
+   documents:=documents||jsonb_build_object(case kind when 'appeal-photo-identity' then 'photoIdentityDocumentId' else 'subjectSourceControlDocumentId' end,plan->>'documentId');
+  end loop;
+  result:=public.complete_new_public_appeal_evidence_v1(fresh_hash,repeat('m',32),documents,true);
+  perform pg_temp.final_case_reviewer_jwt();context:=public.read_public_appeal_case_context_v1(v_case);
+  if result->>'status'<>'review_pending' or jsonb_array_length(context->'documents')<>2
+   or not(context->>'documentDecisionsAvailable')::boolean
+   or (context->>'reviewRevision')::bigint<>request.review_revision
+   or (context->>'evidenceRevision')::bigint<>request.evidence_revision
+   or (select pending.evidence_revision from private.public_appeal_pending_reviews pending where pending.case_id=v_case)<>request.evidence_revision
+   or exists(select 1 from jsonb_array_elements(context->'documents') document where document->>'documentId' not in
+    (documents->>'photoIdentityDocumentId',documents->>'subjectSourceControlDocumentId')) then
+   raise exception 'new round not current named pending review';end if;
+  flags:=flags||jsonb_build_object('newRoundPendingReview',true);
+
+  -- Whole terminal cleanup is exercised inside this rollback: child token/
+  -- delivery FKs must not prevent original key/contact disposal.
+  perform pg_temp.final_case_reviewer_jwt();context:=public.read_public_appeal_case_context_v1(v_case);
+  result:=public.decide_public_appeal_case_v1(v_case,'reject',(context->>'reviewRevision')::bigint,
+   (context->>'evidenceRevision')::bigint,repeat('6',64),decode(repeat('ab',48),'hex'));
+  if result->>'state'<>'resolved' or exists(select 1 from private.public_appeal_information_requests source where source.case_id=v_case)
+   or exists(select 1 from public.token_candidates source where source.id=request.candidate_id)
+   or exists(select 1 from public.mail_outbox source where source.id=request.outbox_id)
+   or exists(select 1 from public.rights_sessions source where source.target_kind='appeal-case' and source.target_id=v_case)
+   then raise exception 'information child cleanup failed';end if;
+  flags:=flags||jsonb_build_object('terminalChildDisposal',true);
+  raise exception using errcode='PZ003',message='restore complete original case';
+ exception when sqlstate 'PZ003' then null;end;
+ if (select to_jsonb(source) from private.new_public_appeal_intakes source where source.id=v_case) is distinct from before_intake
+  or (select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') from private.public_appeal_provisional_targets source) is distinct from before_holds
+  or jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.subjects source),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.cohorts source)) is distinct from before_targets
+  then raise exception 'request changed original intake, holds or target rows';end if;
+ flags:=flags||jsonb_build_object('originalAndTargetsRestored',true);
+ return flags;
+end $information_test$;
+create temporary table appeal_information_result as select pg_temp.appeal_information_probe() value;
+select ok((value->>'nativeRotation')::boolean,'current own-MFA request creates one nonfinal case-only candidate with immutable deadline and revokes old keys/authority') from appeal_information_result;
+select ok((value->>'staleReplayAtomic')::boolean,'both stale revisions and spent nonce change no request, clock or evidence set') from appeal_information_result;
+select ok((value->>'originalRecipientOnly')::boolean,'actual worker rejects foreign recipient and revoked reviewer without a delivered claim') from appeal_information_result;
+select ok((value->>'oneUseContinuation')::boolean,'same verified recipient activates only once and sees only the new evidence set') from appeal_information_result;
+select ok((value->>'newRoundPendingReview')::boolean,'new same-case reserved/composed/scanned files submit through the original complete gate to current named review') from appeal_information_result;
+select ok((value->>'terminalChildDisposal')::boolean,'final refusal removes rotated child delivery/credentials before original case/contact disposal') from appeal_information_result;
+select ok((value->>'originalAndTargetsRestored')::boolean,'rollback keeps complete original intake, existing holds and whole subjects/cohorts unchanged') from appeal_information_result;
+select is((select count(*) from private.public_appeal_information_requests),0::bigint,'rollback leaves no information request or nonce');
+
+-- An owner-only initially past/live pair isolates the fixed-clock predicate.
+-- It is not a new producer/recipient-verification claim: real activation was
+-- tested above. No immutable clock is rewritten and no trigger is disabled.
+create function pg_temp.appeal_information_clock_fixture(p_past boolean) returns uuid language plpgsql as $clock_fixture$
+declare original private.new_public_appeal_intakes;row_data jsonb;v_case uuid:=gen_random_uuid();author_id uuid:=gen_random_uuid();
+ contact_id uuid:=gen_random_uuid();mail_id uuid:=gen_random_uuid();candidate_id uuid:=gen_random_uuid();token_id uuid:=gen_random_uuid();
+ created timestamptz:=case when p_past then clock_timestamp()-interval '31 days' else clock_timestamp() end;
+ token_time timestamptz;source_rights public.rights_sessions;
+begin
+ select source.* into original from private.new_public_appeal_intakes source where source.id=(select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared);
+ select source.* into source_rights from public.rights_sessions source where source.session_hash=repeat('1',64);
+ token_time:=created+interval '1 second';
+ insert into public.subject_principals(id,principal_kind,principal_revision,status) values(author_id,'case_requester',1,'active');
+ select to_jsonb(source) into row_data from public.encrypted_contact_references source where source.id=original.case_contact_id;
+ row_data:=row_data||jsonb_build_object('id',contact_id,'principal_id',author_id,'created_at',created);
+ insert into public.encrypted_contact_references select (jsonb_populate_record(null::public.encrypted_contact_references,row_data)).*;
+ select to_jsonb(source) into row_data from public.mail_outbox source where source.id=original.outbox_id;
+ row_data:=row_data||jsonb_build_object('id',mail_id,'target_id',v_case,'token_target_id',v_case,'recipient_principal_id',author_id,
+  'contact_reference_id',contact_id,'created_at',created,'expires_at',created+interval '7 days',
+  'idempotency_key',encode(extensions.digest(convert_to('clock-fixture|'||v_case,'UTF8'),'sha256'),'hex'));
+ insert into public.mail_outbox select (jsonb_populate_record(null::public.mail_outbox,row_data)).*;
+ select to_jsonb(source) into row_data from public.token_candidates source where source.id=original.candidate_id;
+ row_data:=row_data||jsonb_build_object('id',candidate_id,'outbox_id',mail_id,'target_id',v_case,'expires_at',created+interval '7 days');
+ insert into public.token_candidates select (jsonb_populate_record(null::public.token_candidates,row_data)).*;
+ select to_jsonb(source) into row_data from public.token_hashes source where source.id=source_rights.token_hash_id;
+ row_data:=row_data||jsonb_build_object('id',token_id,'candidate_id',candidate_id,'created_at',token_time,'ended_at',token_time+interval '1 second',
+  'token_hash',encode(extensions.digest(convert_to('clock-token|'||v_case,'UTF8'),'sha256'),'hex'));
+ insert into public.token_hashes select (jsonb_populate_record(null::public.token_hashes,row_data)).*;
+ row_data:=to_jsonb(source_rights)||jsonb_build_object('id',gen_random_uuid(),'target_id',v_case,'principal_id',author_id,
+  'token_hash_id',token_id,'created_at',token_time+interval '1 second','last_activity_at',token_time+interval '2 seconds',
+  'expires_at',token_time+interval '60 minutes','ended_at',token_time+interval '2 seconds',
+  'session_hash',encode(extensions.digest(convert_to('clock-rights|'||v_case,'UTF8'),'sha256'),'hex'));
+ insert into public.rights_sessions select (jsonb_populate_record(null::public.rights_sessions,row_data)).*;
+ row_data:=to_jsonb(original)||jsonb_build_object('id',v_case,'author_principal_id',author_id,'case_contact_id',contact_id,
+  'outbox_id',mail_id,'candidate_id',candidate_id,'submitted_at',created,'prepare_expires_at',created+interval '10 minutes','deadline',created+interval '30 days',
+  'form_nonce_hash',encode(extensions.digest(convert_to('clock-form|'||v_case,'UTF8'),'sha256'),'hex'),
+  'frame',jsonb_set(jsonb_set(jsonb_set(jsonb_set(original.frame,'{scope,caseId}',to_jsonb(v_case)),
+    '{scope,originalAuthorPrincipalId}',to_jsonb(author_id)),'{scope,originalSubmittedAt}',to_jsonb(created)),
+    '{scope,originalDeadline}',to_jsonb(created+interval '30 days')));
+ insert into private.new_public_appeal_intakes select (jsonb_populate_record(null::private.new_public_appeal_intakes,row_data)).*;
+ select to_jsonb(source) into row_data from public.appeal_intakes source where source.id=original.id;
+ row_data:=row_data||jsonb_build_object('id',v_case,'target_id',v_case,'appellant_principal_id',author_id);
+ insert into public.appeal_intakes select (jsonb_populate_record(null::public.appeal_intakes,row_data)).*;
+ return v_case;
+end $clock_fixture$;
+create function pg_temp.appeal_information_deadline_probe() returns boolean language plpgsql as $clock_probe$
+declare live_id uuid;expired_id uuid;context jsonb;passed boolean:=false;
+begin
+ begin
+  live_id:=pg_temp.appeal_information_clock_fixture(false);expired_id:=pg_temp.appeal_information_clock_fixture(true);
+  perform pg_temp.final_case_reviewer_jwt();
+  context:=public.read_public_appeal_case_context_v1(live_id);
+  if context->>'caseId' is distinct from live_id::text then raise exception 'live control shape unavailable';end if;
+  begin
+   perform public.decide_public_appeal_case_v1(expired_id,'needs-more-information',1,1,repeat('7',64),decode(repeat('ab',48),'hex'));
+   raise exception 'past original clock renewed';exception when insufficient_privilege then null;end;
+  if exists(select 1 from private.public_appeal_information_requests request where request.case_id=expired_id)
+   or exists(select 1 from public.mail_outbox mail where mail.target_id=expired_id and mail.semantic_revision>1)
+   then raise exception 'expired fixture received new authority';end if;
+  passed:=true;raise exception using errcode='PZ004',message='restore initially expired clock fixtures';
+ exception when sqlstate 'PZ004' then null;end;
+ return passed;
+end $clock_probe$;
+select ok(pg_temp.appeal_information_deadline_probe(),'same-shaped live control admits review while an initially past immutable case refuses rotation with no new candidate');
+
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role_name
+ where has_table_privilege(role_name,'private.public_appeal_information_requests','select,insert,update,delete')
+  or has_function_privilege(role_name,'public.decide_public_appeal_case_before_information_v1(uuid,text,bigint,bigint,text,bytea)','execute')),
+ 0::bigint,'API roles cannot choose a recipient/deadline or bypass the current native dispatcher');
+
 select pg_temp.final_case_reviewer_jwt();
 create temporary table final_case_context as select public.read_public_appeal_case_context_v1(
  (select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)) value;

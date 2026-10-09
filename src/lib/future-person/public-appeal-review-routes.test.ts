@@ -176,3 +176,44 @@ describe("verified case notice route",()=>{
  expect((await noticeGET(request())).status).toBe(503);
  });
 });
+
+describe("nonfinal information request through own current review authority", () => {
+ function request(extra: Record<string, unknown> = {}) {
+  return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
+   origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
+   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)), }, body: JSON.stringify({ decision: "needs-more-information", reviewRevision: 1,
+    reason: "The available files do not yet show the required original source control.", nonce: mintAppealCaseReviewNonce({ caseId: id(1),
+     accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
+ }
+ const current = () => ({ ...caseRow(), documents: [], documentDecisionsAvailable: false, allowedDecisions: ["reject", "needs-more-information"] });
+ const receipt = () => ({ caseId: id(1), state: "more_information_required", outcome: "more_information_required", reviewRevision: 2 });
+ it("uses the same native case/revisions and seals the reason without sending recipient/target/deadline selectors", async () => {
+  calls.own.mockResolvedValueOnce({ data: current(), error: null }).mockResolvedValueOnce({ data: receipt(), error: null });
+  const response = await casePOST(request(), { params: Promise.resolve({ id: id(1) }) });expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(receipt());expect(calls.admin).not.toHaveBeenCalled();
+  const [name, args] = calls.own.mock.calls[1]!;expect(name).toBe("decide_public_appeal_case_v1");
+  expect(Object.keys(args).sort()).toEqual(["p_case", "p_decision", "p_evidence_revision", "p_nonce_hash", "p_reason_ciphertext", "p_review_revision"]);
+  expect(args.p_decision).toBe("needs-more-information");expect(args.p_reason_ciphertext).toMatch(/^\\x[0-9a-f]+$/u);
+  expect(JSON.stringify(args)).not.toContain("available files");
+ });
+ it.each([{ reviewRevision: 2 }, { nonce: "foreign-current-form" }, { recipient: "foreign@example.test" }, { deadline: scope.originalDeadline }, { targetId: id(5) }])(
+  "refuses stale or client-selected authority %j before native mutation", async extra => {
+   calls.own.mockResolvedValue({ data: current(), error: null });
+   expect((await casePOST(request(extra), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+   expect(calls.own.mock.calls.some(call => call[0] === "decide_public_appeal_case_v1")).toBe(false);
+  });
+ it("refuses an expired original case even when a request form was just rendered", async () => {
+  const expired = new Date(Date.now() - 1000).toISOString();
+  calls.own.mockResolvedValue({ data: { ...current(), deadline: expired, scope: { ...scope, originalDeadline: expired } }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+  expect(calls.own.mock.calls.some(call => call[0] === "decide_public_appeal_case_v1")).toBe(false);
+ });
+ it.each(["42501", "23505"])("retains native %s failure with no retry or issued receipt", async code => {
+  calls.own.mockResolvedValueOnce({ data: current(), error: null }).mockResolvedValueOnce({ data: null, error: { code } });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);expect(calls.own).toHaveBeenCalledTimes(2);
+ });
+ it("does not adopt a final/expanded or wrong-state receipt for this nonfinal branch", async () => {
+  calls.own.mockResolvedValueOnce({ data: current(), error: null }).mockResolvedValueOnce({ data: { ...receipt(), state: "resolved" }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(503);
+ });
+});
