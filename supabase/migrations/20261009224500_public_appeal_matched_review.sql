@@ -330,6 +330,7 @@ begin
  review:=private.assigned_public_appeal_review_v1(p_case,reviewer.account_id);
  if review.case_id is null then raise exception using errcode='42501',message='appeal unavailable';end if;
  select source.* into intake from private.new_public_appeal_intakes source where source.id=p_case;
+ perform private.append_legal_audit_event('appeal.review.read',null,'api.appeal-review','accepted','{}');
  return jsonb_build_object('caseId',p_case,'caseKind',intake.kind,'reviewRevision',review.review_revision,
   'evidenceRevision',review.evidence_revision,'deadline',intake.deadline,'scope',intake.frame->'scope',
   'wrappedCaseKeyHex',encode(intake.wrapped_case_key,'hex'),'workingCiphertextHex',encode(intake.working_ciphertext,'hex'),
@@ -394,6 +395,7 @@ begin
  if download.id is null then raise exception using errcode='42501',message='appeal unavailable';end if;
  select document.* into doc from private.appeal_documents document where document.id=download.document_id;
  update private.public_appeal_review_downloads set last_activity_at=clock_timestamp() where id=download.id;
+ perform private.append_legal_audit_event('appeal.document.chunk.read',null,'api.download-chunk','accepted','{}');
  return jsonb_build_object('documentId',doc.id,'reviewId',doc.intake_id,'objectKey',doc.object_key,'sha256',doc.sha256,
   'byteCount',doc.byte_count,'wrappedDataKey',(select encode(ds.wrapped_document_key,'hex') from private.appeal_document_sessions ds where ds.id=doc.session_id),
   'receiptChallenge',case when download.challenge is null then null else encode(extensions.digest(download.challenge||convert_to(p_sequence::text,'UTF8'),'sha256'),'hex') end);
@@ -807,8 +809,8 @@ begin
  kinds:=case intake.kind
   when 'subject-objection' then '["appeal-photo-identity","appeal-subject-source-control"]'::jsonb
   when 'genetic-parent-objection' then '["appeal-photo-identity","appeal-genetic-parent-authority"]'::jsonb
-  -- The intake does not bind an underlying decision kind. Never guess the
-  -- third authority document from the request or the submitted statement.
+  -- Only the exact native underlying decision chooses this authority kind.
+  -- Never guess it from the request or the submitted statement.
   when 'access-or-review-appeal' then jsonb_build_array('appeal-photo-identity','appeal-decision-notice',intake.frame#>>'{underlyingDecision,requiredAuthorityKind}') end;
  return jsonb_build_object('caseKind',intake.kind,'deadline',intake.deadline,'documentKinds',kinds,
   'evidenceState','collecting','completionAvailable',(intake.kind in('subject-objection','genetic-parent-objection') or (intake.kind='access-or-review-appeal' and private.public_appeal_underlying_current_v1(intake.id))),
