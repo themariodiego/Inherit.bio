@@ -1,3 +1,27 @@
+## 2026-10-09 — Isolate the two-person Path B expiry fixture from report invitation quotas
+
+The full hosted future-flow run reached the native ten-per-hour invitation
+limit: the serial uploader had sent one Path A request and nine Path B requests
+before the surviving expiry fixture tried the eleventh. The endpoint correctly
+kept the opaque receipt and created no invitation. The independent 30-day
+expiry scenario now creates and consents its own synthetic uploader; the shared
+person helper resolves provenance against that exact actor. Both actual
+requests, source deletion, surviving-source preservation, notice/session
+invalidation and every existing assertion remain. No quota, retry or timeout
+changes. The original failed hosted result remains preserved; qualification of
+this source correction is pending.
+
+## 2026-10-09 — Complete the authoritative own-report generation refresh before opening results
+
+The preserved browser-6 failure remained on /genome/me after Open Reports
+despite the correct signed-in hub/link; the saved artifact does not prove a
+specific router cause. The shared own-report generation helper now waits for
+the exact non-prefetch RSC refresh, HTTP 200, completed response, visible ready
+status and enabled Generate control before continuing. The original 5 s
+navigation expectation, genotype/source/grant assertions, all timeouts and
+retry zero remain unchanged. Qualification of both browser corrections is
+pending; the original failed hosted run remains preserved.
+
 ## 2026-10-09 — Keep both core release and real scanner controls after integration
 
 The current main merge retains all release privacy-name refusal cases and all

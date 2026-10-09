@@ -110,10 +110,25 @@ export async function generateOwnFileWithChosenReports(
   }
   const generated = page.waitForResponse(response => response.url().endsWith(`/api/files/${fileId}/process`)
     && response.request().method() === "POST");
-  await choices.getByRole("button", { name: "Generate selected reports", exact: true }).click();
+  // Generation schedules an authoritative Server Component refresh. Finish
+  // that presentation before a caller leaves this page and opens a result.
+  const refreshed = page.waitForResponse(response => {
+    const request = response.request(), headers = request.headers();
+    return new URL(response.url()).pathname === "/genome/me/reports" && request.method() === "GET"
+      && headers.rsc === "1" && !headers["next-router-prefetch"]
+      && !headers["next-router-segment-prefetch"] && headers.purpose !== "prefetch";
+  });
+  void refreshed.catch(() => {});
+  const generate = choices.getByRole("button", { name: "Generate selected reports", exact: true });
+  await generate.click();
   const generation = await generated;
   expect(generation.status()).toBe(200);
   expect(subjectSynchronousReportReceipt.parse(await generation.json()).fileId).toBe(fileId);
+  const presentation = await refreshed;
+  expect(presentation.status(), "authoritative generated-report refresh").toBe(200);
+  expect(await presentation.finished(), "generated-report refresh completed").toBeNull();
+  await expect(choices.getByRole("status").filter({ hasText: /^Your selected (?:reports|results) are ready\./ })).toBeVisible();
+  await expect(generate).toBeEnabled();
 
   // This journal is intentionally private. Read only the canonical fixture's
   // purpose/state/source/grant flags in the exact local Docker database; no

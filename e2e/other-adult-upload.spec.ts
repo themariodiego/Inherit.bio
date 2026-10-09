@@ -145,7 +145,7 @@ async function openPathB(page: Page) {
  * account. Returns the person's subject id.
  */
 async function pathBPerson(page: Page, request: APIRequestContext,
-  person: { email: string; name: string; password?: string }) {
+  person: { email: string; name: string; password?: string }, uploader = UPLOADER) {
   const section = await openPathB(page);
   const form = section.locator('[data-slot="other-adult-new"]');
   await form.getByLabel(COPY.nameLabel).fill(person.name);
@@ -210,7 +210,7 @@ async function pathBPerson(page: Page, request: APIRequestContext,
   // An uploader-owned other_adult subject: with no account of its own, or
   // bound to the person's own account.
   const admin = adminClient();
-  const uploaderId = (await findUserByEmail(admin, UPLOADER.email))!.id;
+  const uploaderId = (await findUserByEmail(admin, uploader.email))!.id;
   const personId = person.password ? (await findUserByEmail(admin, person.email))!.id : null;
   const subject = await admin.from("subjects").select("id, lifecycle, subject_account_id")
     .eq("owner_account_id", uploaderId).eq("display_label", person.name).eq("subject_class", "other_adult").single();
@@ -838,14 +838,20 @@ for (const arrayFixture of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ft
 test("another adult's file under Path B: fixed 30-day expiry removes only the due held source and ends its notice/session authority", async ({ page, request }) => {
   test.setTimeout(360_000);
   const admin = adminClient();
+  // This independent expiry scenario must not consume the serial report
+  // journeys' ten-per-hour invitation allowance for their shared uploader.
+  const uploader = { email: `path-b-expiry-uploader-${randomUUID()}@e2e.local`, password: PASSWORD };
+  await createConfirmedUser(uploader.email, uploader.password);
+  await signIn(page, uploader.email, uploader.password);
+  await completeOwnUploadConsent(page);
   const expiredPerson = { email: `path-b-expiry-${randomUUID()}@e2e.local`, name: "Synthetic Expiry" };
   const survivingPerson = { email: `path-b-survivor-${randomUUID()}@e2e.local`, name: "Synthetic Survivor" };
   const heldFiles: Awaited<ReturnType<typeof addFile>>[] = [];
   for (const person of [expiredPerson, survivingPerson]) {
-    await signIn(page, UPLOADER.email, UPLOADER.password);
-    await pathBPerson(page, request, person);
+    await signIn(page, uploader.email, uploader.password);
+    await pathBPerson(page, request, person, uploader);
     await signOut(page);
-    await signIn(page, UPLOADER.email, UPLOADER.password);
+    await signIn(page, uploader.email, uploader.password);
     heldFiles.push(await addFile(page, person));
   }
   const [held, survivor] = heldFiles;
