@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PeopleList, type PersonListEntry } from "@/components/family/people-list";
 import type { PersonCardState } from "@/components/family/person-card";
+import { EmptyState } from "@/components/site/empty-state";
+import { Terrain } from "@/components/site/terrain";
 import { Button } from "@/components/ui/button";
 import {
   ADD_ANOTHER_ADULT_BUTTON,
@@ -26,6 +28,7 @@ import { resolveCapability } from "@/lib/legal/jurisdictions";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: FAMILY_H1 };
 
@@ -33,8 +36,10 @@ export const metadata: Metadata = { title: FAMILY_H1 };
  * `/family` — the domain landing (design §2.1; register family.index,
  * `public-or-authenticated`, surface "hub", 64rem).
  *
- * Signed out it renders the two required panels and fetches no user data.
- * Signed in it renders the hub: the people list, one primary action, the
+ * Signed out it renders the two required panels and fetches no user data,
+ * on the same column as the other reading pages (the 72rem container with
+ * the reading head), with the one action in the head. Signed in it renders
+ * the hub: the people list or the empty state, one primary action, the
  * three entry tiles and the not-diagnostic line, with the availability line
  * below rather than above (the sign-in state changes the chrome, never the
  * panels' precedence).
@@ -54,32 +59,38 @@ function jurisdictionCopy(): string[] {
 
 function PublicPanels() {
   return (
-    <div className="page-stack mx-auto max-w-4xl px-6 py-16">
-      <p className="eyebrow">{FAMILY_H1}</p>
-      <h1 className="display mt-4 text-4xl sm:text-5xl">{FAMILY_H1}</h1>
-      <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">{FAMILY_LEDE}</p>
-      <section data-slot="jurisdiction-panel" className="mt-10 rounded-2xl border border-line bg-card p-6">
-        <h2 className="font-medium">{JURISDICTION_HEADING}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">{JURISDICTION_PANEL_BODY}</p>
-        {jurisdictionCopy().map((copy) => (
-          <p key={copy} className="mt-3 text-sm leading-relaxed text-ink-muted">
-            {copy}
-          </p>
-        ))}
+    <div className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head space-y-5">
+        <h1 className="display display-lg">{FAMILY_H1}</h1>
+        <p className="lede">{FAMILY_LEDE}</p>
+        <div className="pt-1">
+          <Button asChild size="lg">
+            <Link href={route("app.overview")}>{OPEN_INHERIT_BUTTON}</Link>
+          </Button>
+        </div>
+      </header>
+      <div className="stack-blocks mt-section">
+      <section data-slot="jurisdiction-panel" className="plate">
+        <div className="plate-head">
+          <h2 className="title text-ink">{JURISDICTION_HEADING}</h2>
+        </div>
+        <div className="plate-body space-y-3 text-base leading-relaxed text-ink">
+          <p className="max-w-measure">{JURISDICTION_PANEL_BODY}</p>
+          {jurisdictionCopy().map((copy) => (
+            <p key={copy} className="max-w-measure">
+              {copy}
+            </p>
+          ))}
+        </div>
       </section>
-      <section data-slot="future-person-panel" className="mt-6 rounded-2xl bg-tint p-6">
-        <h2 className="font-medium">{FUTURE_PERSON_HEADING}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">{FUTURE_PERSON_BODY}</p>
-        <Link
-          href={route("legal.future-person")}
-          className="mt-3 inline-block text-sm underline underline-offset-2"
-        >
+      <section data-slot="future-person-panel" className="surface-tint surface-pad space-y-3 text-ink">
+        <h2 className="title">{FUTURE_PERSON_HEADING}</h2>
+        <p className="max-w-measure text-base leading-relaxed">{FUTURE_PERSON_BODY}</p>
+        <Link href={route("legal.future-person")} className="link-target quiet-link text-sm">
           {FUTURE_PERSON_LINK}
         </Link>
       </section>
-      <Button asChild variant="outline" className="mt-8">
-        <Link href={route("app.overview")}>{OPEN_INHERIT_BUTTON}</Link>
-      </Button>
+      </div>
     </div>
   );
 }
@@ -195,24 +206,37 @@ export default async function FamilyPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="page-stack mx-auto max-w-4xl space-y-12 md:space-y-16"
+      className="page-stack stack-sections max-w-4xl"
     >
-      <header className="space-y-3">
-        <h1 className="display text-4xl">{FAMILY_H1}</h1>
+      <header className="fam-head">
+        <h1 className="display">{FAMILY_H1}</h1>
       </header>
 
-      <section data-density-top-level-section className="space-y-5">
+      <section data-density-top-level-section className="space-y-6">
         {entries.length > 0 ? (
-          <PeopleList entries={entries} viewerAccountId={user.id} />
+          <>
+            <PeopleList entries={entries} viewerAccountId={user.id} />
+            <div>
+              <Button asChild size="lg">
+                <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
+              </Button>
+            </div>
+          </>
         ) : (
-          <p className="text-base leading-relaxed text-ink">{NOBODY_YET}</p>
+          <EmptyState
+            ground={<Terrain variant="ground" seed={1} />}
+            action={
+              <Button asChild size="lg">
+                <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
+              </Button>
+            }
+          >
+            {NOBODY_YET}
+          </EmptyState>
         )}
-        <Button asChild size="lg" className="min-h-11">
-          <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
-        </Button>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {HUB_TILES.map((tile) => {
           const href = allowed ? tileHref[tile.id] : null;
           return (
@@ -220,17 +244,18 @@ export default async function FamilyPage() {
               key={tile.id}
               data-slot="family-tile"
               data-tile={tile.id}
-              className="rounded-2xl border border-line bg-card p-5"
+              className={cn("surface-pad-sm", href ? "surface link-surface fam-tile" : "surface-dashed")}
             >
-              <h2 className="font-medium">
+              <h2 className={cn("title -my-3", href ? "pr-8 text-ink" : "text-ink-muted")}>
                 {href ? (
-                  <Link href={href} className="underline-offset-4 hover:underline">
+                  <Link href={href} className="link-target">
                     {tile.label}
                   </Link>
                 ) : (
-                  tile.label
+                  <span className="link-target">{tile.label}</span>
                 )}
               </h2>
+              {href ? <span aria-hidden="true" className="link-arrow" /> : null}
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">{tile.description}</p>
               {href ? null : (
                 <p data-slot="tile-blocked" className="mt-2 text-sm leading-relaxed text-ink">
@@ -242,21 +267,16 @@ export default async function FamilyPage() {
         })}
       </div>
 
-      <p className="text-sm leading-relaxed text-ink-muted">
-        <Link
-          href={route("legal.where-inherit-works")}
-          className="underline underline-offset-2"
-        >
-          {WHERE_THIS_WORKS_LINK}
-        </Link>
-      </p>
-
-      <p
-        data-density-required-accuracy
-        className="max-w-prose text-sm leading-relaxed text-ink-muted"
-      >
-        {NOT_DIAGNOSTIC}
-      </p>
+      <div className="space-y-2">
+        <p className="caption">
+          <Link href={route("legal.where-inherit-works")} className="link-target quiet-link">
+            {WHERE_THIS_WORKS_LINK}
+          </Link>
+        </p>
+        <p data-density-required-accuracy className="caption max-w-measure">
+          {NOT_DIAGNOSTIC}
+        </p>
+      </div>
     </div>
   );
 }

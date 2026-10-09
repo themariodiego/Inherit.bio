@@ -36,35 +36,37 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
   }
 
   if (status === "confirm" || status === "refuse" || status === "delete") return (
-    <section className="mx-auto max-w-3xl px-6 py-16" role="status">
+    <section className="rec-column rec-head px-6 py-16" role="status">
       <p className="eyebrow">Your rights</p>
-      <h1 className="display mt-4 text-4xl">{COPY.receipts[status].title}</h1>
-      <p className="mt-5 max-w-prose text-ink-muted">{COPY.receipts[status].body}</p>
+      <h1 className="display">{COPY.receipts[status].title}</h1>
+      <p className="lede">{COPY.receipts[status].body}</p>
     </section>
   );
 
   const busy = status === "pending";
   return (
-    <section className="mx-auto max-w-3xl px-6 py-16" data-slot="adult-upload-revision">
-      <p className="eyebrow">Your rights</p>
-      <h1 className="display mt-4 text-4xl">{COPY.heading}</h1>
-      <div className="mt-8 space-y-5 rounded-2xl border border-line bg-card p-6">
-        <p>{COPY.added(day(revision.addedOn), revision.fileKind)}</p>
+    <section className="rec-column px-6 py-16" data-slot="adult-upload-revision">
+      <header className="rec-head">
+        <p className="eyebrow">Your rights</p>
+        <h1 className="display">{COPY.heading}</h1>
+      </header>
+      <div className="surface surface-pad rec-stack mt-10">
+        <p className="max-w-measure">{COPY.added(day(revision.addedOn), revision.fileKind)}</p>
         <div>
-          <h2 className="font-medium">{COPY.seeHeading}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-ink-muted">{COPY.see(revision.label)}</p>
+          <h2 className="title">{COPY.seeHeading}</h2>
+          <p className="mt-2 max-w-measure text-sm leading-relaxed text-ink-muted">{COPY.see(revision.label)}</p>
         </div>
         {revision.state === "pending" ? <>
-          <p className="text-sm leading-relaxed">{COPY.nothingYet}</p>
-          <p className="text-sm leading-relaxed text-ink-muted">{COPY.deadline(day(revision.deleteBy))}</p>
-          <Button type="button" disabled={busy} onClick={() => void answer("confirm")}>
-            {busy ? COPY.saving : COPY.confirmButton}</Button>
-        </> : <p role="status" className="text-sm leading-relaxed">{COPY.confirmedOn(day(revision.confirmedOn))}</p>}
+          <p className="max-w-measure text-sm leading-relaxed">{COPY.nothingYet}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{COPY.deadline(day(revision.deleteBy))}</p>
+          <div><Button type="button" disabled={busy} onClick={() => void answer("confirm")}>
+            {busy ? COPY.saving : COPY.confirmButton}</Button></div>
+        </> : <p role="status" className="max-w-measure text-sm leading-relaxed">{COPY.confirmedOn(day(revision.confirmedOn))}</p>}
         <div className="flex flex-wrap gap-3 border-t border-line pt-5">
           <Button type="button" variant="outline" disabled={busy} onClick={() => void answer("refuse")}>{COPY.refuseButton}</Button>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void answer("delete")}>{COPY.deleteButton}</Button>
         </div>
-        <p className="text-sm text-ink-muted">{COPY.deleteDetail}</p>
+        <p className="max-w-measure text-sm text-ink-muted">{COPY.deleteDetail}</p>
         {status === "failed" ? <p role="alert" className="text-sm">{COPY.failed}</p> : null}
       </div>
     </section>

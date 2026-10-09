@@ -24,6 +24,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SEARCH } from "@/copy/search";
 import type { SearchGroup } from "@/lib/search/match";
 import { cn } from "@/lib/utils";
@@ -176,14 +177,14 @@ export function GlobalSearch() {
         aria-haspopup="dialog"
         aria-keyshortcuts={SEARCH.ariaKeyShortcuts}
         data-slot="global-search-button"
-        className="h-11 min-w-11 justify-start gap-2 px-3 text-ink-muted hover:text-ink sm:min-w-52"
+        className="h-11 min-w-11 justify-start gap-2 border-line px-3 font-normal text-ink-muted hover:text-ink sm:w-64"
         onClick={open}
       >
         <SearchIcon aria-hidden="true" />
         <span>{SEARCH.button}</span>
         <kbd
           aria-hidden="true"
-          className="ml-auto hidden rounded-md border border-line bg-tint px-1.5 py-0.5 font-sans text-sm text-ink-muted sm:inline"
+          className="ml-auto hidden rounded-sm border border-line bg-surface-inset px-1.5 py-0.5 font-sans text-xs text-ink-muted sm:inline"
         >
           {shortcutHint}
         </kbd>
@@ -197,13 +198,13 @@ export function GlobalSearch() {
         onClose={onClosed}
         onKeyDown={onDialogKeyDown}
         className={cn(
-          "m-auto mt-[10vh] w-[min(40rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-0 text-ink shadow-lg",
+          "m-auto mt-[10vh] w-[min(40rem,calc(100vw-2rem))] rounded-lg border border-line bg-card p-0 text-ink",
           "backdrop:bg-ink/40",
         )}
       >
         <div className="flex flex-col gap-4 p-4 sm:p-6">
           <div className="flex items-center justify-between gap-3">
-            <p id={titleId} className="text-base font-medium text-ink">
+            <p id={titleId} className="title text-ink">
               {SEARCH.title}
             </p>
             <Button type="button" variant="ghost" className="h-11 px-3" onClick={close}>
@@ -215,7 +216,7 @@ export function GlobalSearch() {
             <label htmlFor={inputId} className="text-sm text-ink-muted">
               {SEARCH.inputLabel}
             </label>
-            <input
+            <Input
               ref={inputRef}
               id={inputId}
               type="search"
@@ -225,7 +226,6 @@ export function GlobalSearch() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onInputKeyDown}
-              className="h-11 w-full rounded-xl border border-line bg-paper px-3 text-base text-ink outline-none placeholder:text-ink-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           </div>
 
@@ -244,13 +244,13 @@ export function GlobalSearch() {
                         <Link
                           href={result.href}
                           onClick={close}
-                          className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm text-ink outline-none hover:bg-tint focus-visible:bg-tint focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                          className="flex min-h-11 items-center gap-3 rounded-sm px-3 py-2 text-sm text-ink transition-colors hover:bg-tint focus-visible:bg-tint"
                         >
                           <span className="min-w-0 truncate">{result.label}</span>
                           {result.chip ? (
                             <span
                               data-slot="search-chip"
-                              className="ml-auto shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
+                              className="ml-auto shrink-0 rounded-full border border-line-strong px-2.5 text-xs font-medium leading-5 text-ink"
                             >
                               {result.chip}
                             </span>

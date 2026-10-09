@@ -8,6 +8,7 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
       href="/"
+      data-slot="wordmark"
       // The wordmark is a link home on every layout, so it is a tap target
       // under brief line 553. `leading-none` made it exactly as tall as its
       // glyphs (24px at text-2xl, 20px at the sidebar's text-xl); min-h-11
@@ -31,13 +32,16 @@ export function Wordmark({ className }: { className?: string }) {
 
 export function Attribution({ className }: { className?: string }) {
   return (
-    <p className={cn("text-xs text-ink-muted", className)}>
-      Inherit · an open-source project created by{" "}
+    <p className={cn("caption", className)}>
+      {/* "open-source" and "created by" never break at the hyphen or between
+          their words in the 13rem rail (round-3 N14). */}
+      Inherit · an <span className="whitespace-nowrap">open-source</span> project{" "}
+      <span className="whitespace-nowrap">created by</span>{" "}
       <a
         href="https://www.plus.bio"
         target="_blank"
         rel="noopener noreferrer"
-        className="underline underline-offset-2 hover:text-ink"
+        className="prose-link whitespace-nowrap"
       >
         Plus Bio
       </a>{" "}

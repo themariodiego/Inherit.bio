@@ -24,7 +24,7 @@ export function PreparationRecovery({ code, disabled, onRetry, reportsHref, file
   // every ceiling it was measured against — naming one would send someone to
   // shrink a file against a number that was never the problem.
   const tooLarge = code === "preparation_file_too_large";
-  return <div>
+  return <div className="max-w-measure">
     <p role="alert" className="text-danger">{code === "build_unknown"
       ? "We could not identify the reference genome used in this file. Ask its provider for a VCF or raw DNA file that states GRCh37 or GRCh38."
       : capacity

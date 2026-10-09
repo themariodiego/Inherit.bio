@@ -10,11 +10,11 @@ import { REPORT_CALL_LABELS, REPORT_CALLS_HEADING, REPORT_CALLS_SCOPE, SOURCE_RE
 export function ReportCallCoverage({ summary }: { summary: ReportCallSummary }) {
   return (
     <div data-slot="report-call-coverage" className="space-y-2">
-      <h3 className="font-medium text-ink">{REPORT_CALLS_HEADING}</h3>
+      <h3 className="font-semibold text-ink">{REPORT_CALLS_HEADING}</h3>
       {/* inherit-figure-exempt: counts of resolver states, not a clinical or statistical result figure */}
-      <dl className="space-y-1">
+      <dl className="divide-y divide-line">
         {REPORT_CALL_STATES.filter((state) => summary[state] > 0).map((state) => (
-          <div key={state} data-call-state={state} className="flex justify-between gap-4">
+          <div key={state} data-call-state={state} className="flex justify-between gap-4 py-1.5">
             <dt>{REPORT_CALL_LABELS[state]}</dt>
             <dd className="tabular-nums">{summary[state]}</dd>
           </div>
@@ -37,15 +37,15 @@ export function CitationItem({ citation, reportClaim }: { citation: Citation;
   return (
     <div className="space-y-1">
       {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+        <a href={href} target="_blank" rel="noopener noreferrer" className="prose-link">
           {citation.label}{identifier}
         </a>
       ) : <span>{citation.label}</span>}
-      <p className="text-ink-muted">
+      <p className="caption">
         {readDate ? <>{SOURCE_READ_LABEL}: <time dateTime={readDate}>{readDate}</time></> : SOURCE_READ_UNKNOWN}
       </p>
       {context ? (
-        <div data-slot="study-context" className="space-y-2 pt-2">
+        <div data-slot="study-context" className="surface-inset surface-pad-sm mt-2 space-y-2 text-ink">
           <p className="text-ink-muted">{STUDY_CONTEXT_SCOPE}</p>
           <dl className="space-y-3">
             {STUDY_CONTEXT_FIELDS.map((field) => {
@@ -56,7 +56,7 @@ export function CitationItem({ citation, reportClaim }: { citation: Citation;
                 <dt className="font-medium text-ink">{STUDY_CONTEXT_LABELS[field]}</dt>
                 <dd>{claim && reportClaim ? <Claim id={claim.claim_id} citationId={claim.evidence[0].citation}
                   sourceIds={reportClaim.sourceIds} /> : fact?.text ?? STUDY_CONTEXT_UNKNOWN}</dd>
-                {context[field] ? <dd className="text-ink-muted text-xs">{context[field].locator}</dd> : null}
+                {context[field] ? <dd className="caption">{context[field].locator}</dd> : null}
               </div>
               );
             })}

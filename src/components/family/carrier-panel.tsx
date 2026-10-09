@@ -66,20 +66,23 @@ export function CarrierPanel({
       id={CARRIER_MATCHES_ID}
       data-slot="carrier-panel"
       aria-labelledby="carrier-matches-heading"
-      className="space-y-4"
+      className="plate"
     >
-      <h2 id="carrier-matches-heading" className="text-lg font-semibold">
-        {CARRIER_MATCHES_HEADING}
-      </h2>
+      <div className="plate-head">
+        <h2 id="carrier-matches-heading" className="title text-ink">
+          {CARRIER_MATCHES_HEADING}
+        </h2>
+      </div>
+      <div className="plate-body space-y-4">
       {unavailableCopy ? (
-        <p role="status" className="max-w-prose text-base leading-relaxed text-ink">
+        <p role="status" className="max-w-measure text-base leading-relaxed text-ink">
           {unavailableCopy}
         </p>
       ) : null}
       {(unavailableCopy ? [] : groups).map((group) => (
         <div key={group.key} data-slot="carrier-group" className="space-y-4">
           {group.matches.length === 0 ? (
-            <p role="status" data-state={group.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="carrier-empty" className="max-w-prose text-base leading-relaxed text-ink">
+            <p role="status" data-state={group.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="carrier-empty" className="max-w-measure text-base leading-relaxed text-ink">
               {group.classifiedPositions === 0
                 ? NO_CLASSIFIED_POSITIONS
                 : // inherit-figure-exempt: a count of positions both files cover, not a result
@@ -101,8 +104,8 @@ export function CarrierPanel({
         </div>
       ))}
       {anyResult ? (
-        <div data-slot="carrier-limits" className="max-w-prose space-y-2">
-          <h3 className="text-base font-medium">{CARRIER_LIMITS_HEADING}</h3>
+        <div data-slot="carrier-limits" className="max-w-measure space-y-2 border-t border-line pt-4">
+          <h3 className="label text-ink">{CARRIER_LIMITS_HEADING}</h3>
           <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink-muted">
             {CARRIER_LIMITS.map((limit) => (
               <li key={limit}>{limit}</li>
@@ -111,18 +114,19 @@ export function CarrierPanel({
         </div>
       ) : null}
       {anyBlock ? (
-        <p data-slot="runs-provenance" className="max-w-prose text-sm leading-relaxed text-ink-muted">
+        <p data-slot="runs-provenance" className="caption max-w-measure">
           {RUNS_PROVENANCE}{" "}
           <a
             href={RUNS_SOURCE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+            className="prose-link"
           >
             {RUNS_SOURCE_DOI}
           </a>
         </p>
       ) : null}
+      </div>
     </section>
   );
 }

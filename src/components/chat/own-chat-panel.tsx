@@ -145,49 +145,47 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div data-testid="data-flow-indicator" className="rounded-xl border border-line bg-card px-4 py-3 text-sm">
+    <div className="rec-stack">
+      <div data-testid="data-flow-indicator" className="surface rec-stack-sm px-4 py-3 text-sm">
         <p>{info.local ? <><strong>Local mode:</strong> questions and permitted data go to your own endpoint ({info.providerKey}).</>
           : <><strong>Cloud mode:</strong> questions and permitted data go to {providerDisplayName(info.providerKey ?? "")} ({info.model}).</>}</p>
-        <Link href={route("settings.copilot")} className="underline underline-offset-2">Review or withdraw permission</Link>
+        <Link href={route("settings.copilot")} className="link-target quiet-link">Review or withdraw permission</Link>
       </div>
       <div className="flex flex-wrap items-start gap-3 text-sm">
         <Button type="button" variant="outline" disabled={busy || correction} onClick={() => {
           setChatId(null); setMessages([]); setInput(""); setError(null); router.refresh();
         }}>New conversation</Button>
         {chats.length > 0 ? <details>
-          <summary className="cursor-pointer py-2">Past conversations</summary>
-          <ul className="space-y-2 py-2">{chats.map(chat => <li key={chat.id}>
+          <summary className="quiet-link py-2">Past conversations</summary>
+          <ul className="rec-stack-sm py-2">{chats.map(chat => <li key={chat.id}>
             <Button type="button" variant="outline" disabled={busy} onClick={() => { void openConversation(chat.id); }}>
               Conversation from <time dateTime={chat.createdAt}>{new Date(chat.createdAt).toISOString().slice(0, 16).replace("T", " ")} UTC</time>
             </Button>
           </li>)}</ul>
         </details> : null}
       </div>
-      {correction ? <p role="status" data-slot="chat-scientific-correction" className="rounded-xl border border-line bg-card p-4 text-sm">
+      {correction ? <p role="status" data-slot="chat-scientific-correction" className="surface-inset surface-pad-sm max-w-measure text-sm text-ink">
         {OWN_CHAT_CORRECTION_NOTICE}
       </p> : null}
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-live="polite" aria-busy={busy}>
-        {messages.length === 0 ? <p className="rounded-xl border border-line bg-card p-5 text-sm text-ink-muted">
+      <div className="rec-thread" aria-live="polite" aria-busy={busy}>
+        {messages.length === 0 ? <p className="surface-inset surface-pad-sm max-w-measure text-sm text-ink">
           {threadHint}
         </p> : null}
-        {messages.map(message => <div key={message.id} className={message.role === "user"
-          ? "ml-auto max-w-[85%] rounded-2xl bg-forest px-4 py-3 text-sm text-on-forest"
-          : "max-w-[85%] rounded-2xl border border-line bg-card px-4 py-3 text-sm"}>
-          <p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
-          {message.citations.length > 0 ? <ul aria-label="Sources" className="mt-3 space-y-2">{message.citations.map(source =>
-            <li key={source.id}><a href={source.href} rel="noreferrer" className="break-words underline underline-offset-2">{source.label}</a></li>)}</ul> : null}
-          {message.role === "assistant" ? <p data-slot="chat-not-diagnostic" className="mt-3 text-xs text-ink-muted">{NOT_DIAGNOSTIC}</p> : null}
+        {messages.map(message => <div key={message.id} data-role={message.role} className="rec-message">
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          {message.citations.length > 0 ? <ul aria-label="Sources" className="rec-stack-sm mt-3 text-sm">{message.citations.map(source =>
+            <li key={source.id}><a href={source.href} rel="noreferrer" className="link-target prose-link break-words">{source.label}</a></li>)}</ul> : null}
+          {message.role === "assistant" ? <p data-slot="chat-not-diagnostic" className="caption mt-3">{NOT_DIAGNOSTIC}</p> : null}
         </div>)}
-        {busy ? <p className="text-sm text-ink-muted">Checking your question…</p> : null}
+        {busy ? <p className="caption">Checking your question…</p> : null}
       </div>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-      {awaitingContext && !busy ? <p role="status" className="text-sm text-ink-muted">Checking your permission…</p> : null}
-      <form className="flex items-end gap-2" onSubmit={event => { event.preventDefault(); void submit(); }}>
+      {awaitingContext && !busy ? <p role="status" className="caption">Checking your permission…</p> : null}
+      <form className="rec-composer" onSubmit={event => { event.preventDefault(); void submit(); }}>
         <Textarea value={input} onChange={event => setInput(event.target.value)} maxLength={8000} disabled={busy || correction || awaitingContext}
           onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault(); void submit();
-          } }} placeholder={placeholder} aria-label="Message the copilot" rows={2} className="min-h-0 resize-none" />
+          } }} placeholder={placeholder} aria-label="Message the copilot" rows={1} />
         <Button type="submit" disabled={busy || correction || awaitingContext || !input.trim()}>Send</Button>
       </form>
     </div>

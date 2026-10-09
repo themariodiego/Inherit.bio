@@ -136,12 +136,12 @@ export function HealthPictureCell({
 }: HealthPictureCellProps) {
   if (state.kind === "sources") return <td data-slot="health-picture-cell" data-cell={cellId} className="min-w-80 align-top p-2">
     {state.entries.map(entry => <div key={entry.fileId} data-source-file-id={entry.fileId} className="space-y-2 py-2">
-      <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figuresFor(entry.state, layer, personName)} className="space-y-2 p-3">
-        <p data-slot="saved-result-person" className="text-sm font-medium text-ink">{personName}</p>
+      <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figuresFor(entry.state, layer, personName)} className="space-y-2">
+        <p data-slot="saved-result-person" className="label text-ink">{personName}</p>
         {absenceWord(entry.state, personName) ? <p data-slot="cell-absence">{absenceWord(entry.state, personName)}</p> : null}
         {entry.conflictingCalls && entry.state.kind !== "conflicting-calls" ? <p>{CELL_CONFLICTING_CALLS}</p> : null}
         {entry.state.kind === "letters" ? <p data-chip="layer" aria-describedby={captionId} className="text-sm text-ink-muted">{LAYER_CHIP_LABELS[layer]}</p> : null}
-        <Link href={entry.href} aria-label={`${openReportLabel(reportTitle, personName)} · ${entry.sourceLabel}`} className="inline-flex min-h-11 items-center text-sm underline">{SAVED_SOURCE_LINK}</Link>
+        <Link href={entry.href} aria-label={`${openReportLabel(reportTitle, personName)} · ${entry.sourceLabel}`} className="link-target quiet-link text-sm">{SAVED_SOURCE_LINK}</Link>
       </ClaimBlock>
       <InputProvenance nested sources={[entry.source]} sourceLabels={{ [entry.fileId]: entry.sourceLabel }} subject={{ subjectId: dataSubjectId }} coverage={entry.coverage}
         state={entry.conflictingCalls ? "conflict" : entry.state.kind === "no-call" ? "noCall" : entry.state.kind === "not-covered" ? "absent" : "recorded"} />
@@ -151,7 +151,7 @@ export function HealthPictureCell({
   const absent = absenceWord(state, personName);
   return (
     <td data-slot="health-picture-cell" data-cell={cellId} className="min-w-80 align-top p-2">
-      <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figures} className="space-y-2 p-3">
+      <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figures} className="space-y-2">
         {absent ? (
           <p data-slot="cell-absence" className="text-sm leading-relaxed text-ink">
             {absent}
@@ -170,7 +170,7 @@ export function HealthPictureCell({
           <Link
             href={href}
             aria-label={openReportLabel(reportTitle, personName)}
-            className="inline-flex min-h-11 items-center text-sm text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+            className="link-target quiet-link text-sm"
           >
             {OPEN_LINK}
           </Link>

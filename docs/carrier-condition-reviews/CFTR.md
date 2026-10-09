@@ -498,8 +498,9 @@ Overview, only when a pair has at least one finding (with the count of findings)
 
 ## Owner sign-off
 
-The owner ticks every box, then records the review through the activation. The activation's
-reference is this file, `docs/carrier-condition-reviews/CFTR.md`.
+The owner completes every review check below, then signs this scientific review.
+The signature approves this written review only. It does not activate the condition.
+The review reference is this file, `docs/carrier-condition-reviews/CFTR.md`.
 
 - [ ] I opened the ClinGen record above. It rates CFTR and cystic fibrosis Definitive
       for autosomal recessive inheritance, dated 2022-06-01.
@@ -511,7 +512,13 @@ reference is this file, `docs/carrier-condition-reviews/CFTR.md`.
 - [ ] I accept the known limits above for this condition.
 - [ ] Severity to record (ADR 0034 asks for this judgement; for a recessive condition it gates
       nothing): `serious` or `not_serious`: ____________
-- [ ] I activate Cystic fibrosis (MONDO:0009061) at registry revision 1, from release
-      `clinvar-2026-09`.
+- [ ] I sign the scientific review for Cystic fibrosis (MONDO:0009061) at registry revision 1,
+      from release `clinvar-2026-09`.
 
 Reviewer: <OWNER NAME> · Role: <ROLE> · Date: ____________
+
+## Separate activation approval
+
+The condition stays inactive until the owner signs this review file and gives separate
+approval to activate it. A review signature, this checklist or the inactive import
+does not supply that approval. Activation must use this file as its review reference.

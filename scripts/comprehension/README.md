@@ -91,7 +91,23 @@ For a real provider, `provider` becomes:
   uses the live one, and neither opens the other.
 - `label` must not contain the identifier or any word of it, because the
   label travels where the identifier may not: the journal, traces and logs.
-- Keep this file outside the checkout; it names the exact identifier.
+- Keep this file outside every Git checkout; it names the exact identifier.
+  Supply its absolute canonical path. The file must be owned by your user,
+  have mode `0600`, have only one link and contain at most 64 KiB. File and
+  directory aliases are refused. Set the mode before use:
+
+  ```sh
+  chmod 600 /absolute/private/run.json
+  pnpm comprehension:run /absolute/private/run.json --plan
+  ```
+
+  The runner checks the named file and its open descriptor before and after
+  reading. A changed file, Git boundary, invalid text or invalid configuration
+  stops before a journal, credential check or browser starts. Refusal messages
+  do not print the configuration. `--plan` with the local stub needs no key and
+  creates no effort ledger or run record. A real provider still needs the named
+  key in the operator's shell. These checks do not prove a scored run or erase
+  private strings from memory.
 - The credential is read from the named variable in your shell and handed
   only to each inference child. It is never deployment configuration, never
   in `.env.example` and never under `src/`, which keeps the commitment that

@@ -71,12 +71,15 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
   const heading = useRef<HTMLHeadingElement>(null);
   const terminal = useRef<HTMLParagraphElement>(null);
   const ending = useRef<HTMLParagraphElement>(null);
-  const mounted = useRef(false);
+  const shownScreen = useRef(state.screen);
 
   // A new screen: focus its heading (or, on the terminal, its sentence).
+  // Keyed on the screen last shown, not on a mount flag, so a repeated run
+  // on the same screen (StrictMode) moves nothing on load.
   useEffect(() => {
-    if (mounted.current) (heading.current ?? terminal.current)?.focus();
-    mounted.current = true;
+    if (shownScreen.current === state.screen) return;
+    shownScreen.current = state.screen;
+    (heading.current ?? terminal.current)?.focus();
   }, [state.screen]);
   // "No" ends the first screen in place: focus the ending so it is read.
   useEffect(() => {
@@ -107,17 +110,17 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
     >
       {step === null ? null : (
         <div className="space-y-1">
-          <p role="status" data-slot="step-status" className="text-sm font-medium text-ink">
+          <p role="status" data-slot="step-status" className="label text-ink">
             {stepStatus(step)}
           </p>
-          <p data-slot="still-to-come" className="text-sm leading-relaxed text-ink-muted">
+          <p data-slot="still-to-come" className="caption max-w-measure">
             {STILL_TO_COME_STATUS[step]}
           </p>
         </div>
       )}
 
       {state.screen === "tested" ? (
-        <div className="space-y-6">
+        <div className="surface surface-pad space-y-6">
           <RadioGroup
             headingId={headingId}
             headingRef={heading}
@@ -129,7 +132,7 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
           />
           {asksWho(state) ? (
             <div data-slot="who-question" className="space-y-4">
-              <h2 id={whoId} className="text-lg font-semibold text-ink">
+              <h2 id={whoId} className="title text-ink">
                 {WHO_QUESTION_HEADING}
               </h2>
               <Input
@@ -143,13 +146,13 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
                   if (event.key === "Enter") send({ type: "continue" });
                 }}
               />
-              <p id={noteId} data-slot="not-kept-note" className="text-sm text-ink-muted">
+              <p id={noteId} data-slot="not-kept-note" className="caption max-w-measure">
                 {WHO_NOT_KEPT_NOTE}
               </p>
             </div>
           ) : null}
           {end === "no-testing" ? (
-            <FlowEnd end="no-testing" sentenceRef={ending} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
+            <FlowEnd end="no-testing" sentenceRef={ending} inset action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
               {NO_TESTING_END}
             </FlowEnd>
           ) : (
@@ -159,17 +162,17 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
       ) : null}
 
       {state.screen === "sent" ? (
-        <div className="space-y-4">
-          <h2 id={headingId} ref={heading} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
+        <div className="surface surface-pad space-y-4">
+          <h2 id={headingId} ref={heading} tabIndex={-1} className="title text-ink outline-none">
             {SENT_QUESTION_HEADING}
           </h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="fam-options border-t border-line">
             {SENT_OPTIONS.map((option) => (
               <li key={option.id}>
                 <button
                   type="button"
                   data-option={option.id}
-                  className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-2xl border border-line bg-card p-4 text-left text-base leading-snug text-ink hover:border-ink"
+                  className="text-base leading-snug"
                   onClick={() => send({ type: "answer-sent", answer: option.id })}
                 >
                   <OptionArt option={option.id} />
@@ -182,7 +185,7 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
             <button
               type="button"
               data-slot="sent-unknown"
-              className="min-h-11 text-left underline underline-offset-2"
+              className="link-target quiet-link cursor-pointer text-left"
               onClick={() => send({ type: "answer-sent", answer: "unknown" })}
             >
               {SENT_UNKNOWN_LINK}
@@ -205,7 +208,7 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
       ) : null}
 
       {state.screen === "situation" ? (
-        <div className="space-y-4">
+        <div className="surface surface-pad space-y-4">
           <RadioGroup
             headingId={headingId}
             headingRef={heading}
@@ -221,13 +224,13 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
                 <input
                   type="checkbox"
                   name="attestation"
-                  className="mt-1 size-4 shrink-0"
+                  className="mt-1.5 size-4 shrink-0 accent-forest"
                   checked={state.attested}
                   onChange={(event) => send({ type: "attest", attested: event.currentTarget.checked })}
                 />
                 <span>{chosenSituation.attestation}</span>
               </label>
-              <p data-slot="nothing-kept-note" className="text-sm text-ink-muted">
+              <p data-slot="nothing-kept-note" className="caption max-w-measure">
                 {NOTHING_KEPT_YET_NOTE}
               </p>
             </div>
@@ -240,17 +243,17 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
       ) : null}
 
       {state.screen === "basis" ? (
-        <div className="space-y-4">
-          <h2 id={headingId} ref={heading} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
+        <div className="surface surface-pad space-y-4">
+          <h2 id={headingId} ref={heading} tabIndex={-1} className="title text-ink outline-none">
             {BASIS_QUESTION_HEADING}
           </h2>
-          <ul className="space-y-2">
+          <ul className="fam-options border-t border-line">
             {BASIS_OPTIONS.map((option) => (
               <li key={option.id}>
                 <button
                   type="button"
                   data-option={option.id}
-                  className="flex min-h-11 w-full cursor-pointer items-center rounded-2xl border border-line bg-card px-4 py-3 text-left text-base leading-relaxed text-ink hover:border-ink"
+                  className="text-base leading-relaxed"
                   onClick={() => send({ type: "choose-basis", basis: option.id })}
                 >
                   {option.label}
@@ -263,11 +266,11 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
       ) : null}
 
       {state.screen === "basis-named" && chosenBasis ? (
-        <div className="space-y-4">
-          <h2 id={headingId} ref={heading} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
+        <div className="surface surface-pad space-y-4">
+          <h2 id={headingId} ref={heading} tabIndex={-1} className="title text-ink outline-none">
             {chosenBasis.label}
           </h2>
-          <p data-slot="basis-sentence" className="max-w-prose text-base leading-relaxed text-ink">
+          <p data-slot="basis-sentence" className="body-lg max-w-measure text-ink">
             {chosenBasis.sentence}
           </p>
           <div className="flex flex-wrap gap-3">
@@ -280,12 +283,12 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
       {state.screen === "unavailable" ? (
         <section
           data-slot="ingest-unavailable"
-          className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
+          className="surface surface-pad space-y-4"
         >
-          <p id={headingId} ref={terminal} tabIndex={-1} className="font-medium text-ink outline-none">
+          <p id={headingId} ref={terminal} tabIndex={-1} className="title max-w-measure text-ink outline-none">
             {INGEST_UNAVAILABLE_SENTENCE}
           </p>
-          <p className="text-base leading-relaxed text-ink">{INGEST_NEXT_STEPS}</p>
+          <p className="max-w-measure text-base leading-relaxed text-ink">{INGEST_NEXT_STEPS}</p>
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link href={route("embryos.request-data")}>{REQUEST_DATA_BUTTON}</Link>
@@ -293,7 +296,7 @@ export function UploadFlow({ initial = INITIAL_FLOW, draftCsrfToken }: { initial
             {backButton}
           </div>
           <p className="text-sm">
-            <Link href={route("embryos.index")} className="inline-flex min-h-11 items-center underline underline-offset-2">
+            <Link href={route("embryos.index")} className="link-target quiet-link">
               {BACK_TO_EMBRYOS_LINK}
             </Link>
           </p>
@@ -326,7 +329,7 @@ function RadioGroup<Id extends string>({
   return (
     <fieldset className="space-y-4">
       <legend className="contents">
-        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
+        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="title text-ink outline-none">
           {heading}
         </h2>
       </legend>
@@ -338,7 +341,7 @@ function RadioGroup<Id extends string>({
                 type="radio"
                 name={name}
                 value={option.id}
-                className="size-4 shrink-0"
+                className="size-4 shrink-0 accent-forest"
                 checked={value === option.id}
                 onChange={() => onChange(option.id)}
               />
@@ -364,6 +367,7 @@ function FlowEnd({
   headingId,
   headingRef,
   sentenceRef,
+  inset = false,
   action,
   back,
   children,
@@ -373,18 +377,20 @@ function FlowEnd({
   headingId?: string;
   headingRef?: React.RefObject<HTMLHeadingElement | null>;
   sentenceRef?: React.RefObject<HTMLParagraphElement | null>;
+  /** Rendered inside a screen's own surface: the inset ground, not a second box. */
+  inset?: boolean;
   action: { label: string; href: string };
   back?: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <section data-slot="flow-end" data-end={end} className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-5">
+    <section data-slot="flow-end" data-end={end} className={inset ? "surface-inset surface-pad-sm space-y-4" : "surface surface-pad space-y-4"}>
       {heading ? (
-        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
+        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="title text-ink outline-none">
           {heading}
         </h2>
       ) : null}
-      <p ref={sentenceRef} tabIndex={sentenceRef ? -1 : undefined} className="text-base leading-relaxed text-ink outline-none">
+      <p ref={sentenceRef} tabIndex={sentenceRef ? -1 : undefined} className="body-lg max-w-measure text-ink outline-none">
         {children}
       </p>
       <div className="flex flex-wrap gap-3">
@@ -399,7 +405,7 @@ function FlowEnd({
       </div>
       {back ? (
         <p className="text-sm">
-          <Link href={route("embryos.index")} className="inline-flex min-h-11 items-center underline underline-offset-2">
+          <Link href={route("embryos.index")} className="link-target quiet-link">
             {BACK_TO_EMBRYOS_LINK}
           </Link>
         </p>

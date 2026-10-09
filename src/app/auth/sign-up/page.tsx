@@ -13,9 +13,9 @@ export default function SignUpPage() {
 
   if (sent) {
     return (
-      <div className="space-y-3 text-sm">
-        <h1 className="display text-2xl">Check your email</h1>
-        <p className="text-ink-muted">
+      <div className="space-y-4">
+        <h1 className="display">Check your email</h1>
+        <p className="max-w-measure text-ink">
           We sent a verification link to <strong>{sent}</strong>. Open it to
           activate your account.
         </p>
@@ -24,15 +24,15 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h1 className="display text-2xl">Create your account</h1>
-        <p className="mt-1 text-sm text-ink-muted">
+        <h1 className="display">Create your account</h1>
+        <p className="mt-3 text-sm text-ink-muted">
           Inherit is for adults (18+) and only for your own DNA. You
           can&rsquo;t upload a child&rsquo;s or relative&rsquo;s file (
           <Link
             href="/terms#eligibility"
-            className="underline underline-offset-2"
+            className="prose-link"
           >
             why?
           </Link>
@@ -73,20 +73,20 @@ export default function SignUpPage() {
           return null;
         }}
       />
-      <p className="text-center text-xs text-ink-muted">
+      <p className="caption text-center">
         By creating an account you agree to the{" "}
-        <Link href="/terms" className="underline underline-offset-2">
+        <Link href="/terms" className="prose-link">
           Terms
         </Link>{" "}
         and{" "}
-        <Link href="/privacy" className="underline underline-offset-2">
+        <Link href="/privacy" className="prose-link">
           Privacy Policy
         </Link>
         .
       </p>
-      <p className="text-center text-sm text-ink-muted">
+      <p className="border-t border-line py-4 text-center text-sm text-ink-muted">
         Already have an account?{" "}
-        <Link href={route("auth.sign-in")} className="text-forest underline underline-offset-2">
+        <Link href={route("auth.sign-in")} className="quiet-link">
           Sign in
         </Link>
       </p>

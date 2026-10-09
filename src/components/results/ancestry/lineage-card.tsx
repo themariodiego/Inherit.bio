@@ -13,7 +13,9 @@
  * (`defineTerm`), never in a heading. A card with no row says why: nothing
  * has been processed yet, Ancestry is off, or Ancestry is on and no result
  * has been generated yet (the last two with a link to the Reports page,
- * where that step is taken).
+ * where that step is taken) — unless the page's regions section already
+ * says so (`absenceStated`), in which case the card is one ruled row under
+ * that empty state: its heading, then its own state text, no box.
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { TermDefinition } from "@/components/figures/term-definition";
@@ -55,6 +57,8 @@ interface LineageCardBaseProps {
   defineTerm: boolean;
   knownTree?: boolean;
   modelRecord?: { id: string | null; version: string | null };
+  /** The regions section above already states the absence; with no call, render the heading only. */
+  absenceStated?: boolean;
 }
 
 /**
@@ -75,8 +79,28 @@ const HEADINGS = { mother: MOTHER_LINE_HEADING, father: FATHER_LINE_HEADING } as
 const XX_NOTE = "XX genomes";
 
 export function LineageCard(props: LineageCardProps) {
-  const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord } = props;
+  const { parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord, absenceStated = false } = props;
   const headingId = `${TEST_IDS[parent]}-heading`;
+  // Nothing read yet and the regions section has said so: the line is one
+  // row of the ruled list under that empty state, its heading beside its
+  // own state sentence, so each panel still states its absence (the
+  // empty-state spec reads it on all three) without a box or a third
+  // full-weight line. The permission-off and not-generated absences keep
+  // their full note and its Reports link as the row's state text.
+  if (call === null && absenceStated) {
+    return (
+      <section data-testid={TEST_IDS[parent]} aria-labelledby={headingId} className="fam-line">
+        <h2 id={headingId} className="title text-ink">
+          {HEADINGS[parent]}
+        </h2>
+        {props.absence === "permission-off" || props.absence === "not-generated" ? (
+          <AncestryReportsNote step={props.absence} reportsHref={props.reportsHref} quiet />
+        ) : (
+          <p className="text-sm leading-relaxed text-ink-muted">{NOTHING_READ}</p>
+        )}
+      </section>
+    );
+  }
   const hasCall = call !== null && call.haplogroup !== null;
   // `classify()` always reports tested markers; the no-chromosome row has none.
   const noChromosome = call !== null && call.haplogroup === null && call.tested === undefined;
@@ -96,9 +120,9 @@ export function LineageCard(props: LineageCardProps) {
     <section
       data-testid={TEST_IDS[parent]}
       aria-labelledby={headingId}
-      className="space-y-3 rounded-2xl border border-line bg-card p-5"
+      className="surface surface-pad-sm space-y-3"
     >
-      <h2 id={headingId} className="text-lg font-semibold text-ink">
+      <h2 id={headingId} className="title text-ink">
         {HEADINGS[parent]}
       </h2>
       {defineTerm ? (
@@ -109,19 +133,19 @@ export function LineageCard(props: LineageCardProps) {
       {call === null && (props.absence === "permission-off" || props.absence === "not-generated") ? (
         <AncestryReportsNote step={props.absence} reportsHref={props.reportsHref} />
       ) : call === null ? (
-        <p className="text-sm text-ink-muted">{supportNote ?? NOTHING_READ}</p>
+        <p className="surface-inset surface-pad-sm text-base leading-relaxed text-ink">{supportNote ?? NOTHING_READ}</p>
       ) : hasCall ? (
         <>
-          <p data-slot="haplogroup" className="font-display text-3xl text-forest">
+          <p data-slot="haplogroup" className="display-figure text-forest">
             {call.haplogroup}
           </p>
           {call.path && call.path.length > 0 ? (
-            <p data-slot="haplogroup-path" className="font-mono text-sm text-ink-muted">
+            <p data-slot="haplogroup-path" className="mono text-ink-muted">
               {call.path.join(" → ")}
             </p>
           ) : null}
           {coverage ? <ClaimBlock subject={{ subjectId }} figures={[coverage]} className="p-3" /> : null}
-          <div data-slot="lineage-provenance" className="space-y-1 text-sm text-ink-muted">
+          <div data-slot="lineage-provenance" className="max-w-measure space-y-1 text-sm text-ink-muted">
             <p>{knownTree ? treeLine(LINEAGE_TREES[parent]) : UNKNOWN_REFERENCE_TREE}</p>
             {modelRecord ? <p>{storedModelLine(modelRecord.id, modelRecord.version)}</p> : null}
             <p>{LINEAGE_NO_RANGE}</p>

@@ -1,0 +1,42 @@
+/* reports surface styles. Owned by one surface agent; tokens come from globals.css.
+   Rules here are unlayered and beat Tailwind utilities: use them for shared
+   patterns, and Tailwind classes in JSX for one-offs. */
+
+/* The library's variant-call layer: a ruled list. Each row is at least the
+   row scale tall, the title link covers the row (see CardLink), and hover or
+   focus lifts the row onto the inset ground, as a linked surface does. */
+.report-rows { border-top: 1px solid var(--line); }
+.report-row {
+  position: relative;
+  min-height: var(--size-row);
+  padding: 0.875rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  transition: background-color var(--motion-feedback);
+}
+.report-row:hover, .report-row:focus-within { background: var(--surface-inset); }
+
+/* Sources: a ruled list whose ordinal is Fraunces in forest. The number is
+   decorative; the citation beside it carries the record. */
+.source-list { border-top: 1px solid var(--line); }
+.source-list > li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.source-list > li > .ordinal { flex: none; min-width: 1.5rem; font-size: 1.0625rem; }
+.source-list > li > :last-child { flex: 1 1 0; min-width: 0; }
+
+/* The canonical source list (claims/sources.tsx) keeps the browser's own
+   numbering, so `start` still holds; only the marker is styled. */
+[data-slot="claim-sources"] { list-style: decimal inside; border-top: 1px solid var(--line); }
+[data-slot="claim-sources"] > li { padding-block: 0.75rem; border-bottom: 1px solid var(--line); }
+[data-slot="claim-sources"] > li::marker {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--forest);
+}
+
+/* Input provenance: one ruled row per source file. */
+[data-slot="input-provenance"] > [data-slot="input-source"] { border-top: 1px solid var(--line); padding-top: 0.75rem; }

@@ -7,9 +7,10 @@ import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { browserDurationPlan, verifyBrowserDurationPartitionListing } from "./ci-browser-duration-plan";
 import { verifyE2EReport } from "./e2e-report-contract";
-import { browserReportCases, browserShardReceipt, ciBrowserShard } from "./ci-browser-shards";
-import { ciBrowserSourceIdentity, discoverBrowserCases, trackedBrowserSpecs } from "./ci-browser-shards-io";
+import { browserManifest, browserReportCases, browserShardReceipt, ciBrowserShard, type CiBrowserAllocation } from "./ci-browser-shards";
+import { ciBrowserSourceIdentity, createBrowserDurationList, discoverBrowserCases, loadBrowserDurationProfile, trackedBrowserSpecs } from "./ci-browser-shards-io";
 
 assert(process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY && process.env.INHERIT_UPLOAD_SIGNING_JWK,
   "Run pnpm e2e through the real local provider bootstrap");
@@ -27,31 +28,47 @@ let fullDiscovery: unknown, assignedDiscovery: unknown;
 // This run's verifier exists only in inherited process memory. The fixed
 // TEST-LOCAL variant alone receives it; no file, log or production secret.
 if (process.env.CI) process.env.INHERIT_CI_SYNTHETIC_WEBHOOK_SECRET = `whsec_${randomBytes(32).toString("base64")}`;
+let allocation: CiBrowserAllocation | undefined, durationList: ReturnType<typeof createBrowserDurationList> | undefined;
 if (shard !== null) {
   assert(args.length === 2 && args[0] === "--config=playwright.config.ts"
     && process.env.INHERIT_CI_BROWSER_RUNTIME === "ready", "Only the preflighted standard CI shard is accepted");
   ciBrowserSourceIdentity();
   rmSync("test-results/ci-browser-shard.json", { force: true });
   rmSync("test-results/ci-browser-shard-pending.json", { force: true });
-  fullDiscovery = discoverBrowserCases(); assignedDiscovery = discoverBrowserCases(shard);
+  fullDiscovery = discoverBrowserCases();
   browserReportCases(fullDiscovery, null, false);
-  browserReportCases(assignedDiscovery, shard, false);
-  args[1] = `--shard=${shard}/6`;
+  const profile = loadBrowserDurationProfile();
+  if (profile) {
+    const plan = browserDurationPlan(fullDiscovery, profile); allocation = plan.allocation;
+    durationList = createBrowserDurationList(plan, shard);
+    try {
+      assignedDiscovery = discoverBrowserCases(null, durationList.path);
+      verifyBrowserDurationPartitionListing(assignedDiscovery, plan, shard);
+    } catch (error) { durationList.cleanup(); throw error; }
+    args[1] = `--test-list=${durationList.path}`;
+  } else {
+    assignedDiscovery = discoverBrowserCases(shard);
+    browserReportCases(assignedDiscovery, shard, false);
+    args[1] = `--shard=${shard}/6`;
+  }
+  // Validate the current whole-source census before executing any selected case.
+  try { browserManifest(fullDiscovery, ciBrowserSourceIdentity(), trackedBrowserSpecs(), allocation); }
+  catch (error) { durationList?.cleanup(); throw error; }
 }
 // A crashed run must not reuse an earlier successful report.
 rmSync(reportPath, { force: true });
 const command = process.platform === "win32" ? "playwright.cmd" : "playwright";
-const run = spawnSync(command, ["test", ...args], {
-  env: process.env,
-  stdio: "inherit",
-});
+const run = (() => {
+  try { return spawnSync(command, ["test", ...args], { env: process.env, stdio: "inherit" }); }
+  finally { durationList?.cleanup(); }
+})();
 if (run.error) throw new Error("Playwright did not start");
 if (run.status !== 0) process.exit(run.status ?? 1);
 const report = JSON.parse(readFileSync(reportPath, "utf8"));
 const count = verifyE2EReport(report);
 if (shard !== null) {
   const receipt = browserShardReceipt(fullDiscovery, assignedDiscovery, report, ciBrowserSourceIdentity(), shard, 1,
-    { setupMs: 0, buildMs: 0, bootstrapMs: 0, browserMs: Math.round(performance.now() - browserStarted) }, trackedBrowserSpecs());
+    { setupMs: 0, buildMs: 0, bootstrapMs: 0, browserMs: Math.round(performance.now() - browserStarted) }, trackedBrowserSpecs(), allocation);
   const pending = { ...receipt }; delete (pending as Partial<typeof pending>).providerUploads;
   writeFileSync("test-results/ci-browser-shard-pending.json", JSON.stringify(pending) + "\n", { mode: 0o600, flag: "wx" });
 }

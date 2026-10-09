@@ -21,6 +21,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GenomeBrowser } from "@/components/browse/genome-browser";
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { RecordHead } from "@/components/records/record-head";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
@@ -51,7 +52,7 @@ import {
   resultsTruncated,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
-import { COVERAGE_PILLS, FILES_DISAGREE } from "@/copy/reports/strings";
+import { ADD_A_FILE, COVERAGE_PILLS, FILES_DISAGREE } from "@/copy/reports/strings";
 import {
   EMPTY,
   REGION_ROW_LIMIT,
@@ -134,66 +135,82 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   const inputState = hits.some((hit) => hit.conflict) ? "conflict"
     : hits.some((hit) => hit.genotype === "--") ? "noCall"
     : outcome.inputFileIds.length ? "recorded" : "absent";
+  // One button on the page: where the head carries the forest action, the
+  // bar's "Add a file" is a quiet link to the same place (round-2 M2).
+  const headAction = fileCount === 0 && subject.subjectClass === "self";
 
   return (
     <div
       data-surface="standard"
       data-density-primary-content="true"
-      className="page-stack mx-auto max-w-5xl space-y-8"
+      className="page-stack rec-sheet stack-sections"
     >
-      <Breadcrumbs
-        items={[
-          { label: domain.label, href: domain.href },
-          { label: displayLabel },
-          { label: DATA_CRUMB, href: route("genome.data", subjectParams) },
-          { label: BROWSER_H1 },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-
-      <header className="space-y-4">
-        <h1 className="display text-3xl">{BROWSER_H1}</h1>
+      {/* The head: crumbs, the subject bar, the h1 and the one search; with
+          no prepared file, the sentence that says why, the one forest action
+          on an own record and the hills (round-1 M3). No eyebrow, no search
+          form, on this page while there is nothing to search. */}
+      <RecordHead
+        crumbs={
+          <Breadcrumbs
+            items={[
+              { label: domain.label, href: domain.href },
+              { label: displayLabel },
+              { label: DATA_CRUMB, href: route("genome.data", subjectParams) },
+              { label: BROWSER_H1 },
+            ]}
+          />
+        }
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
+        title={BROWSER_H1}
+        empty={fileCount === 0}
+        seed={9}
+        action={headAction ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
         {active ? (
-          <form className="flex gap-2" action={route("genome.browser", subjectParams)} method="get">
+          <form className="surface-inset rec-search max-w-measure" action={route("genome.browser", subjectParams)} method="get">
             <Input
               name="q"
               defaultValue={q}
               placeholder={SEARCH_PLACEHOLDER}
               aria-label={SEARCH_LABEL}
-              className="max-w-md font-mono text-sm"
+              className="font-mono"
             />
             <Button type="submit">{SEARCH_BUTTON}</Button>
           </form>
         ) : (
-          <p className="max-w-prose text-sm text-ink-muted">
+          <p className="body-lg max-w-measure text-ink">
             {preparing ? BROWSER_PREPARING : BROWSER_NO_FILE}
           </p>
         )}
-      </header>
+      </RecordHead>
 
       {clinicalGene ? (
-        <div role="status" className="rounded-xl border border-line bg-card p-4 text-sm">
-          <p className="max-w-prose">{clinicalGeneStatus(clinicalGene)}</p>
+        <div role="status" className="surface-inset surface-pad-sm text-sm text-ink">
+          <p className="max-w-measure">{clinicalGeneStatus(clinicalGene)}</p>
         </div>
       ) : null}
 
       {trait ? (
-        <div className="rounded-xl border border-line bg-card p-4 text-sm">
-          <p className="max-w-prose">{lookingFor(TRAIT_TOPICS[trait.topic])}</p>
-          <ul className="mt-2 space-y-1">
+        <div className="surface surface-pad-sm rec-stack-sm text-sm">
+          <p className="max-w-measure">{lookingFor(TRAIT_TOPICS[trait.topic])}</p>
+          <ul className="rec-stack-sm">
             {trait.reports.map((report) => (
               <li key={report.slug}>
                 <Link
                   href={route("genome.report", { subject: subject.routeSegment, slug: report.slug })}
-                  className="underline underline-offset-2 hover:text-forest"
+                  className="link-target prose-link"
                 >
                   {report.name}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-3 max-w-prose text-xs text-ink-muted">
-            <Link href={route("genome.reports", subjectParams)} className="underline underline-offset-2">
+          <p className="caption">
+            <Link href={route("genome.reports", subjectParams)} className="link-target prose-link">
               {FULL_LIBRARY}
             </Link>
           </p>
@@ -201,12 +218,12 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
       ) : null}
 
       {message ? (
-        <p className="max-w-prose rounded-xl border border-line bg-card p-4 text-sm text-ink-muted">
+        <p className="surface-inset surface-pad-sm max-w-measure text-sm text-ink">
           {message}
           {showReportsLink ? (
             <>
               {" "}
-              <Link href={route("genome.reports", subjectParams)} className="underline underline-offset-2">
+              <Link href={route("genome.reports", subjectParams)} className="prose-link">
                 {OR_START_FROM_REPORTS}
               </Link>
             </>
@@ -215,18 +232,18 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
       ) : null}
 
       {showResults || showRegion ? (
-        <div className="space-y-16 md:space-y-20 lg:space-y-24">
+        <div className="stack-sections">
           {showResults ? (
             <section
               id="results"
               aria-labelledby="results-heading"
               data-density-top-level-section="true"
-              className="space-y-4"
+              className="rec-stack"
             >
-              <h2 id="results-heading" className="text-lg font-semibold text-ink">
+              <h2 id="results-heading" className="title">
                 {RESULTS_HEADING}
               </h2>
-              <p className="max-w-prose text-sm text-ink-muted">{POSITIONS_BUILD}</p>
+              <p className="max-w-measure text-sm text-ink-muted">{POSITIONS_BUILD}</p>
               <ClaimBlock
                 subject={{ subjectId: dataSubjectId }}
                 figures={specs}
@@ -236,17 +253,17 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
                 renderFigures={(nodes) => (
                   <table className="w-full min-w-[36rem] text-left text-sm">
                     <thead>
-                      <tr className="border-b border-line text-ink-muted">
-                        <th scope="col" className="px-4 py-2 font-normal">
+                      <tr className="border-b border-line">
+                        <th scope="col" className="caption px-4 py-3 font-medium">
                           {TABLE_HEADINGS.variant}
                         </th>
-                        <th scope="col" className="px-4 py-2 font-normal">
+                        <th scope="col" className="caption px-4 py-3 font-medium">
                           {TABLE_HEADINGS.position}
                         </th>
-                        <th scope="col" className="px-4 py-2 font-normal">
+                        <th scope="col" className="caption px-4 py-3 font-medium">
                           {TABLE_HEADINGS.gene}
                         </th>
-                        <th scope="col" className="px-4 py-2 font-normal">
+                        <th scope="col" className="caption px-4 py-3 font-medium">
                           {TABLE_HEADINGS.genotype}
                         </th>
                       </tr>
@@ -257,19 +274,19 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
                         return (
                           <tr
                             key={`${hit.chrom}:${hit.pos ?? "none"}:${hit.rsid ?? "none"}:${index}`}
-                            className="border-b border-line last:border-0"
+                            className="h-row border-b border-line last:border-0"
                           >
-                            <td className="px-4 py-2 font-mono">
+                            <td className="px-4 py-3 font-mono">
                               {hit.rsid !== null ? `rs${hit.rsid}` : "—"}
                             </td>
-                            <td className="px-4 py-2 font-mono text-xs">
+                            <td className="px-4 py-3 font-mono text-xs">
                               {/* inherit-figure-exempt: genomic coordinates and the reference/alternate letters are the position’s identity, not a result figure */}
                               {hit.pos === null
                                 ? "—"
                                 : `chr${chromToName(hit.chrom)}:${hit.pos}${hit.ref && hit.alt ? ` ${hit.ref}→${hit.alt}` : ""}`}
                             </td>
-                            <td className="px-4 py-2">{hit.gene ?? "—"}</td>
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-3">{hit.gene ?? "—"}</td>
+                            <td className="px-4 py-3">
                               {figure !== null ? (
                                 nodes[figure]
                               ) : hit.conflict ? (
@@ -286,7 +303,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
                 )}
               >
                 {truncated ? (
-                  <p className="max-w-prose px-4 py-3 text-sm text-ink-muted">
+                  <p className="max-w-measure px-4 py-3 text-sm text-ink-muted">
                     {/* inherit-figure-exempt: a row limit, not a result figure */}
                     {resultsTruncated(REGION_ROW_LIMIT)}
                   </p>
@@ -299,30 +316,32 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
             <section
               aria-labelledby="region-heading"
               data-density-top-level-section="true"
-              className="space-y-4"
+              className="rec-stack"
             >
-              <h2 id="region-heading" className="text-lg font-semibold text-ink">
+              <h2 id="region-heading" className="title">
                 {REGION_HEADING}
               </h2>
-              <p className="max-w-prose font-mono text-sm text-ink-muted">
+              <p className="mono max-w-measure text-ink-muted">
                 {/* inherit-figure-exempt: the region shown is a coordinate range, not a result figure */}
                 {formatLocus(locus)}
               </p>
-              <GenomeBrowser fileId={active.id} locus={locus} subjectId={dataSubjectId} />
-              <p className="max-w-prose text-sm text-ink-muted">{FIRST_PARTY_NOTE}</p>
+              <div className="surface surface-pad-sm">
+                <GenomeBrowser fileId={active.id} locus={locus} subjectId={dataSubjectId} />
+              </div>
+              <p className="caption max-w-measure">{FIRST_PARTY_NOTE}</p>
             </section>
           ) : null}
         </div>
       ) : null}
-      {outcome.inputScope || showRegion ? <div data-slot="browser-input-provenance" className="space-y-8">
-        {outcome.inputScope ? <div data-slot="table-input-provenance" className="space-y-3">
-          <p className="text-sm text-ink-muted">{TABLE_INPUT_NOTE}</p>
-          {showResults ? <p className="text-sm text-ink-muted">{TABLE_COVERAGE_NOTE}</p> : null}
+      {outcome.inputScope || showRegion ? <div data-slot="browser-input-provenance" className="stack-blocks">
+        {outcome.inputScope ? <div data-slot="table-input-provenance" className="rec-stack-sm">
+          <p className="max-w-measure text-sm text-ink-muted">{TABLE_INPUT_NOTE}</p>
+          {showResults ? <p className="max-w-measure text-sm text-ink-muted">{TABLE_COVERAGE_NOTE}</p> : null}
           <InputProvenance sources={tableInputs} subject={{ subjectId: dataSubjectId }} state={inputState}
             coverage={showResults ? browserCoverage(hits) : undefined} />
         </div> : null}
-        {showRegion ? <div data-slot="track-input-provenance" className="space-y-3">
-          <p className="text-sm text-ink-muted">{TRACK_INPUT_NOTE}</p>
+        {showRegion ? <div data-slot="track-input-provenance" className="rec-stack-sm">
+          <p className="max-w-measure text-sm text-ink-muted">{TRACK_INPUT_NOTE}</p>
           <InputProvenance sources={sourceFacts.filter((source) => source.fileId === active.id)} subject={{ subjectId: dataSubjectId }} />
         </div> : null}
       </div> : null}

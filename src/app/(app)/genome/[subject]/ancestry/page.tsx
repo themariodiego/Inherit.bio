@@ -9,11 +9,13 @@ import type { InputSourceView } from "@/lib/genome/input-sources";
  * the historical or seven-region presentation. Geometry is decoded on the
  * server and passed as plain data; nothing here recomputes an estimate.
  *
- * With no stored result, the page says why, in each panel: nothing has been
- * processed yet, or (own records only) a file has been processed and the
- * Ancestry choice is off, or it is on and no result has been generated yet.
- * The last two are read from the same "Choose your reports" section the
- * subject's Reports page renders, never inferred here.
+ * With no stored result, the page says why once, in the regions section:
+ * nothing has been processed yet, or (own records only) a file has been
+ * processed and the Ancestry choice is off, or it is on and no result has
+ * been generated yet. The last two are read from the same "Choose your
+ * reports" section the subject's Reports page renders, never inferred here.
+ * The two lines are then one ruled list under that empty state, each row
+ * its heading and its own state text, rather than two cards.
  *
  * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
  * Neanderthals, where this comes from). No segmented control renders while
@@ -213,38 +215,45 @@ export default async function AncestryPage(
   const regions = historical ? admixtureView(admix.result, admix.support_note ?? "", admix.basis, admix.coverageBasis) : null;
   const subjectParams = { subject: subject.routeSegment };
   const reportsHref = route("genome.reports", subjectParams);
+  // No result at all: the regions section states the absence and the two
+  // lines are one ruled list under it. With any stored row, the cards render.
+  const lineageRows = !admix && !mt && !y;
 
   return (
-    <div className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: domain.label, href: domain.href },
-          {
-            label: subject.displayLabel,
-            href: person
-              ? route("family.person", { person: subject.routeSegment })
-              : undefined,
-          },
-          { label: SECTION_LABEL },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-      <h1 className="display text-3xl">{H1}</h1>
-      {confirmationRequired ? <p role="status" data-slot="ancestry-sharing-confirmation" className="max-w-prose text-sm leading-relaxed text-ink">
-        {person!.displayLabel} needs to confirm ancestry sharing again. They can do this on their permissions page. Newer saved results can then appear here.
-      </p> : null}
-      {preparedUnavailable ? <p role="status" data-slot="ancestry-prepared-unavailable" className="max-w-prose text-sm leading-relaxed text-ink">
-        Ancestry from a prepared genome is not yet available in Family. Other authorized results are shown below.
-      </p> : null}
-      {person && rows.length === 0 ? <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">
-        No ancestry result is shared yet.
-      </p> : null}
-      {preparing ? (
-        <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{ANCESTRY_PREPARING}</p>
-      ) : null}
+    <div className="page-stack stack-blocks max-w-5xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: domain.label, href: domain.href },
+            {
+              label: subject.displayLabel,
+              href: person
+                ? route("family.person", { person: subject.routeSegment })
+                : undefined,
+            },
+            { label: SECTION_LABEL },
+          ]}
+        />
+        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+        <h1 className="display">{H1}</h1>
+      </div>
+      {confirmationRequired || preparedUnavailable || (person && rows.length === 0) || preparing ? <div className="max-w-measure space-y-3">
+        {confirmationRequired ? <p role="status" data-slot="ancestry-sharing-confirmation" className="surface-inset surface-pad-sm text-base leading-relaxed text-ink">
+          {person!.displayLabel} needs to confirm ancestry sharing again. They can do this on their permissions page. Newer saved results can then appear here.
+        </p> : null}
+        {preparedUnavailable ? <p role="status" data-slot="ancestry-prepared-unavailable" className="surface-inset surface-pad-sm text-base leading-relaxed text-ink">
+          Ancestry from a prepared genome is not yet available in Family. Other authorized results are shown below.
+        </p> : null}
+        {person && rows.length === 0 ? <p role="status" className="surface-inset surface-pad-sm text-base leading-relaxed text-ink">
+          No ancestry result is shared yet.
+        </p> : null}
+        {preparing ? (
+          <p role="status" className="surface-inset surface-pad-sm text-base leading-relaxed text-ink">{ANCESTRY_PREPARING}</p>
+        ) : null}
+      </div> : null}
 
       <section data-testid="admixture" aria-labelledby="regions-heading" className="space-y-4">
-        <h2 id="regions-heading" className="text-lg font-semibold text-ink">
+        <h2 id="regions-heading" className="title text-ink">
           {REGIONS_HEADING}
         </h2>
         {admix && admix.basis !== "modelled" ? <p data-slot="ancestry-unclassified-result" className="max-w-prose text-sm leading-relaxed text-ink">
@@ -270,10 +279,10 @@ export default async function AncestryPage(
           result={regions}
         />}
         {admix ? <InputProvenance nested sources={regionInputs} subject={{ subjectId: dataSubjectId }} /> : null}
-        {admix ? <p className="text-sm text-ink-muted">{storedModelLine(admix.model_id, admix.model_version)}</p> : null}
+        {admix ? <p className="caption max-w-measure">{storedModelLine(admix.model_id, admix.model_version)}</p> : null}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className={lineageRows ? "fam-lines max-w-measure" : "grid gap-6 lg:grid-cols-2"}>
         <LineageCard
           parent="mother"
           subjectId={dataSubjectId}
@@ -284,6 +293,7 @@ export default async function AncestryPage(
           modelRecord={mt ? { id: mt.model_id, version: mt.model_version } : undefined}
           absence={absence}
           reportsHref={reportsHref}
+          absenceStated={lineageRows}
         />
         <LineageCard
           parent="father"
@@ -295,6 +305,7 @@ export default async function AncestryPage(
           modelRecord={y ? { id: y.model_id, version: y.model_version } : undefined}
           absence={absence}
           reportsHref={reportsHref}
+          absenceStated={lineageRows}
         />
       </div>
 
@@ -312,12 +323,12 @@ export default async function AncestryPage(
       <NeanderthalCard />
 
       <section aria-labelledby="sources-heading" className="space-y-3">
-        <h2 id="sources-heading" className="text-lg font-semibold text-ink">
+        <h2 id="sources-heading" className="title text-ink">
           {SOURCES_HEADING}
         </h2>
-        <ul data-slot="ancestry-sources" className="space-y-2 text-sm leading-relaxed">
+        <ul data-slot="ancestry-sources" className="fam-rows max-w-measure border-t border-line text-sm leading-relaxed">
           {(historical ? SOURCES : REGIONAL_SOURCES).map((source) => (
-            <li key={source.id}>
+            <li key={source.id} className="py-3">
               <span className="font-medium text-ink">{source.title}</span>
               <span className="text-ink-muted">{` — ${source.detail}`}</span>
               {source.id.startsWith(DOI_PREFIX) ? (
@@ -327,7 +338,7 @@ export default async function AncestryPage(
                     href={`https://doi.org/${source.id.slice(DOI_PREFIX.length)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-ink-muted underline underline-offset-2"
+                    className="prose-link"
                   >
                     {source.id}
                   </a>
@@ -339,7 +350,7 @@ export default async function AncestryPage(
       </section>
 
       <footer className="text-sm">
-        <Link href={route("genome.data", subjectParams)} className="link-target underline underline-offset-2">
+        <Link href={route("genome.data", subjectParams)} className="link-target quiet-link">
           {DATA_AND_METHODS}
         </Link>
       </footer>

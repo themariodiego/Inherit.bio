@@ -67,22 +67,20 @@ export default async function FuturePersonClaimPage() {
   const claim = open ? await claimStatus() : null;
   const formToken = open && !claim ? (await headers()).get(CLAIM_FORM_TOKEN_HEADER) : null;
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <p className="eyebrow">{CLAIM_EYEBROW}</p>
-      <h1 className="display mt-4 text-4xl">{CLAIM_H1}</h1>
-      <section aria-labelledby="refusal-standard" className="mt-8 space-y-4 rounded-2xl border border-line bg-card p-6">
-        <h2 id="refusal-standard" className="font-medium">
+    <div className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head">
+        <p className="eyebrow">{CLAIM_EYEBROW}</p>
+        <h1 className="display display-lg">{CLAIM_H1}</h1>
+      </header>
+      <section aria-labelledby="refusal-standard" className="surface surface-pad mt-section max-w-3xl">
+        <h2 id="refusal-standard" className="title">
           {FUTURE_PERSON_CLAIM_COPY["future-person.claim.refusal-standard-heading"]}
         </h2>
-        <p className="text-sm leading-relaxed text-ink-muted">
-          {FUTURE_PERSON_CLAIM_COPY["future-person.claim.refusal-standard-body"]}
-        </p>
-        <p className="text-sm leading-relaxed text-ink-muted">
-          {FUTURE_PERSON_CLAIM_COPY["future-person.claim.no-profile-condition"]}
-        </p>
-        <p className="text-sm leading-relaxed text-ink-muted">
-          {FUTURE_PERSON_CLAIM_COPY["future-person.claim.no-profile-no-guess"]}
-        </p>
+        <div className="legal-prose mt-4">
+          <p>{FUTURE_PERSON_CLAIM_COPY["future-person.claim.refusal-standard-body"]}</p>
+          <p>{FUTURE_PERSON_CLAIM_COPY["future-person.claim.no-profile-condition"]}</p>
+          <p>{FUTURE_PERSON_CLAIM_COPY["future-person.claim.no-profile-no-guess"]}</p>
+        </div>
       </section>
       {claim?.status === "completed" ? (
         <section role="status" className="mt-8 space-y-4 rounded-2xl border border-line bg-card p-6">

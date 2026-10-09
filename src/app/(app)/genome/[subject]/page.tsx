@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
@@ -102,30 +103,68 @@ export default async function GenomePage(
       : []),
   ];
 
+  // No file in the record: the head draws the hills and carries the one
+  // forest action; the rows below are dashed and muted, with the record's
+  // state in the arrow's place, so a cropped screenshot never reads as
+  // "reports available" (round-1 M2, round-3 N12).
+  const empty = fileCount === 0;
+  // The head's forest "Add a file" is the page's one button: the bar's
+  // becomes a quiet link to the same place (round-2 M2).
+  const headAction = mine;
+
   return (
-    <div className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-      <h1 className="display text-3xl">{domain.label}</h1>
-      {preparing ? (
-        <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{HUB_PREPARING}</p>
-      ) : null}
-      <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">
-        {tiles.map((tile) => (
-          <article key={tile.href} className="flex">
-            <Link href={tile.href} aria-label={`Open ${tile.title}`} className="link-surface flex w-full flex-col rounded-2xl border border-line bg-card p-6">
-              <h2 className="flex items-center justify-between gap-4 text-lg font-semibold">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow size-5 shrink-0 text-forest" /></h2>
-              <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{tile.copy}</p>
-            </Link>
-          </article>
-        ))}
+    <div className="page-stack stack-blocks max-w-5xl">
+      <RecordHead
+        crumbs={<Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />}
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
+        title={domain.label}
+        empty={empty}
+        seed={3}
+        action={headAction ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
+        {preparing ? (
+          <p role="status" className="body-lg max-w-measure text-ink">{HUB_PREPARING}</p>
+        ) : mine && empty ? (
+          // The record's state in one sentence — the same sentence the files
+          // page says — so the head answers "what is here" before "what next".
+          <p className="body-lg max-w-measure text-ink">
+            No files yet. Upload a raw data export to get started — or grab a
+            provider from the directory first.
+          </p>
+        ) : null}
+      </RecordHead>
+      {/* The three destinations as ruled entry rows (app.css `.entry-rows`),
+          each row one link named "Open …"; the h2 inside stays the row's
+          label. */}
+      <section aria-label="Genome tools">
+        <ul className="entry-rows" data-state={empty ? "empty" : "ready"}>
+          {tiles.map((tile) => (
+            <li key={tile.href}>
+              <article>
+                <Link
+                  href={tile.href}
+                  aria-label={`Open ${tile.title}`}
+                  className="link-surface link-target entry-row text-ink"
+                >
+                  <h2 className="title">{tile.title}</h2>
+                  <p className="entry-row-copy text-sm text-ink-muted">{tile.copy}</p>
+                  {empty ? (
+                    // The state the head already states, in the arrow's place.
+                    <span className="entry-row-state caption">No files yet.</span>
+                  ) : (
+                    <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
+                  )}
+                </Link>
+              </article>
+            </li>
+          ))}
+        </ul>
       </section>
-      {mine ? (
-        <Button asChild>
-          <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
-        </Button>
-      ) : null}
-      <p className="max-w-prose text-sm text-ink-muted">{NOT_DIAGNOSTIC}</p>
+      <p className="caption max-w-measure">{NOT_DIAGNOSTIC}</p>
     </div>
   );
 }

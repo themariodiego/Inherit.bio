@@ -313,8 +313,14 @@ describe("AncestryAbsent, the regions section with no stored result", () => {
       const html = absent(absence);
       const svg = openingTags(html).find((tag) => tag.tag === "svg");
       expect(svg?.attrs["data-mode"]).toBe("grey");
-      expect(svg?.attrs["aria-label"]).toBe(REGIONAL_MAP_LABEL);
-      expect(html).toContain(REGIONAL_MAP_CAPTION);
+      // A grey map draws no shading: its caption is its name, not the shading
+      // caption, and that one figcaption names the svg (no duplicate aria-label).
+      expect(html).toMatch(new RegExp(`<figcaption[^>]*data-slot="map-caption"[^>]*>${REGIONAL_MAP_LABEL}</figcaption>`));
+      expect(svg?.attrs["aria-label"]).toBeUndefined();
+      const figcaption = openingTags(html).find((tag) => tag.tag === "figcaption");
+      expect(figcaption?.attrs.id).toBeTruthy();
+      expect(svg?.attrs["aria-labelledby"]).toBe(figcaption?.attrs.id);
+      expect(html).not.toContain(REGIONAL_MAP_CAPTION);
       expect(regionPaths(html)).toHaveLength(REGIONAL_REGIONS.length);
       expect(focusablePaths(html)).toHaveLength(0);
       expect(text(html)).not.toMatch(/\bfive\b/i);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EntryBoxGrid } from "@/components/overview/entry-box";
 import { ChromosomalSexControl } from "@/components/settings/chromosomal-sex-control";
 import { DigestToggle } from "@/components/settings/digest-toggle";
 import { JurisdictionForm } from "@/components/settings/jurisdiction-form";
@@ -22,11 +23,13 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Settings" };
 
+// The four sections as entry rows (round-1 M4, M10): the same ruled form
+// Overview's secondary domains use, each row one link named by its label.
 const sections = [
-  { href: route("settings.data"), title: "Data", copy: "Export or delete account data." },
-  { href: route("settings.copilot"), title: "Copilot", copy: "Choose a local or cloud model endpoint." },
-  { href: route("settings.people"), title: "People", copy: "Subject records and relationship authority." },
-  { href: route("settings.consents"), title: "Consents", copy: "Review and revoke grants by purpose." },
+  { id: "settings-data", href: route("settings.data"), label: "Data", description: "Export or delete account data." },
+  { id: "settings-copilot", href: route("settings.copilot"), label: "Copilot", description: "Choose a local or cloud model endpoint." },
+  { id: "settings-people", href: route("settings.people"), label: "People", description: "Subject records and relationship authority." },
+  { id: "settings-consents", href: route("settings.consents"), label: "Consents", description: "Review and revoke grants by purpose." },
 ] as const;
 
 export default async function SettingsPage({
@@ -66,47 +69,50 @@ export default async function SettingsPage({
       : null;
 
   return (
-    <div className="page-stack mx-auto max-w-3xl space-y-10">
-      <header className="space-y-2">
+    <div className="page-stack rec-column stack-sections">
+      <header className="rec-head">
         <p className="eyebrow">Account</p>
-        <h1 className="display text-3xl">Settings</h1>
-        <p className="text-base text-ink-muted">{user?.email}</p>
+        <h1 className="display">Settings</h1>
+        <p className="caption">{user?.email}</p>
       </header>
-      {user && attestation ? (
-        <JurisdictionForm
-          choices={declarationChoices(declaredCode)}
-          states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
-          current={declaredCode ? {
-            code: declaredCode,
-            name: jurisdictionName(declaredCode),
-            state: declaration.subdivision
-              ? { code: declaration.subdivision, name: subdivisionName(declaration.subdivision) }
-              : null,
-          } : null}
-          attestation={attestation}
-          next={next}
-        />
-      ) : null}
-      <nav aria-label="Settings sections" className="grid gap-4 sm:grid-cols-2">
-        {sections.map((section) => (
-          <Link key={section.href} href={section.href} className="link-surface rounded-2xl border border-line bg-card p-6 hover:border-forest">
-            <h2 className="font-medium">{section.title}</h2>
-            <p className="mt-2 text-sm text-ink-muted">{section.copy}</p>
-          </Link>
-        ))}
+      {/* The sections people come for lead; the declaration, a form most
+          people never touch again, follows them (round-1 M4). */}
+      <nav aria-label="Settings sections">
+        <EntryBoxGrid variant="rows" boxes={sections} />
       </nav>
-      {user ? (
-        <section className="space-y-4">
-          <h2 className="eyebrow">Email</h2>
-          <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
-        </section>
-      ) : null}
-      {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
-      <footer className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-sm text-ink-muted">
-        <Link href="/about#accessibility" className="link-target underline underline-offset-4 hover:text-ink">Accessibility</Link>
+      {/* One form for every preference after the rows: a plate with its
+          label in the head, the plates 48px apart (round-3 R3). */}
+      <div className="stack-blocks">
+        {user && attestation ? (
+          <JurisdictionForm
+            choices={declarationChoices(declaredCode)}
+            states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
+            current={declaredCode ? {
+              code: declaredCode,
+              name: jurisdictionName(declaredCode),
+              state: declaration.subdivision
+                ? { code: declaration.subdivision, name: subdivisionName(declaration.subdivision) }
+                : null,
+            } : null}
+            attestation={attestation}
+            next={next}
+          />
+        ) : null}
+        {user ? (
+          <section className="plate">
+            <div className="plate-head"><h2 className="eyebrow">Email</h2></div>
+            <div className="plate-body">
+              <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
+            </div>
+          </section>
+        ) : null}
+        {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
+      </div>
+      <footer className="rule flex flex-wrap gap-x-6 gap-y-2 pt-4 text-sm">
+        <Link href="/about#accessibility" className="link-target quiet-link">Accessibility</Link>
         {/* The third of the expert path's three entry points (brief §7.3); the
             other two are every report footer and the ancestry page. */}
-        <Link href={route("genome.data", { subject: "me" })} className="link-target underline underline-offset-4 hover:text-ink">
+        <Link href={route("genome.data", { subject: "me" })} className="link-target quiet-link">
           {DATA_AND_METHODS}
         </Link>
       </footer>

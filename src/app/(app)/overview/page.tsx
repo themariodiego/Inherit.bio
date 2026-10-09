@@ -285,26 +285,27 @@ export default async function OverviewPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="page-stack mx-auto max-w-6xl space-y-16 md:space-y-20 lg:space-y-24"
+      className="page-stack stack-sections max-w-6xl"
     >
-      <header className="space-y-3">
-        <h1 className="display text-4xl">{OVERVIEW_H1}</h1>
+      <header className="page-head">
+        <h1 className="display">{OVERVIEW_H1}</h1>
         {state === "A" && !needsReportChoice ? (
-          <p className="max-w-prose text-base leading-relaxed text-ink-muted">
-            {STATE_A_LEDE}
-          </p>
+          <p className="lede">{STATE_A_LEDE}</p>
         ) : null}
       </header>
 
       {state === "A" && !needsReportChoice ? <StartHere /> : null}
       {state === "A" && needsReportChoice ? (
-        <section aria-labelledby="prepared-reports-title" data-density-top-level-section
-          className="rounded-2xl border border-line bg-card p-5 sm:p-6">
-          <p id="prepared-reports-title" className="text-lg font-semibold">{PREPARED_REPORTS.title}</p>
-          <p className="mt-2 max-w-prose text-sm text-ink-muted">{PREPARED_REPORTS.description}</p>
-          <Button asChild size="lg" className="mt-4 min-h-11">
-            <Link href={route("genome.reports", { subject: "me" })}>{PREPARED_REPORTS.action}</Link>
-          </Button>
+        <section aria-labelledby="prepared-reports-title" data-density-top-level-section className="plate">
+          <div className="plate-head">
+            <p id="prepared-reports-title" className="eyebrow">{PREPARED_REPORTS.title}</p>
+          </div>
+          <div className="plate-body">
+            <p className="max-w-measure text-base text-ink">{PREPARED_REPORTS.description}</p>
+            <Button asChild size="lg" className="mt-5">
+              <Link href={route("genome.reports", { subject: "me" })}>{PREPARED_REPORTS.action}</Link>
+            </Button>
+          </div>
         </section>
       ) : null}
       {state === "B" && inFlight ? (
@@ -315,12 +316,16 @@ export default async function OverviewPage() {
         />
       ) : null}
 
-      {DOMAIN_SECTIONS.flatMap((section) => [
+      {DOMAIN_SECTIONS.flatMap((section, index) => [
+        // My Genome keeps its cards; the two domains beneath it are ruled
+        // rows, so the hub is not one card template nine times (round-1 M10).
         <DomainSection
           key={section.id}
           id={section.id}
+          index={index}
           heading={section.heading}
           boxes={boxesFor(section.id)}
+          variant={section.id === "my-genome" ? "cards" : "rows"}
         >
           {section.id === "my-genome" ? (
             hasReports ? (
@@ -340,7 +345,7 @@ export default async function OverviewPage() {
                       <Count value={estimateCount} layerClass="estimate" describedBy="overview-estimate-definition" className="font-medium" />{" "}
                       <span data-metric-note className="text-ink-muted">{SPLIT_NOTE}</span>
                     </summary>
-                    <p id="overview-estimate-definition" className="mt-2 max-w-prose text-sm leading-relaxed text-ink-muted">
+                    <p id="overview-estimate-definition" className="mt-2 max-w-measure text-sm text-ink-muted">
                       {ESTIMATE_DEFINITION}
                     </p>
                   </details>
@@ -351,7 +356,7 @@ export default async function OverviewPage() {
                       <Count value={variantCallCount} layerClass="variant-call" describedBy="overview-variant-call-definition" className="font-medium" />{" "}
                       <span data-metric-note className="text-ink-muted">{SPLIT_NOTE_VARIANT_CALL}</span>
                     </summary>
-                    <p id="overview-variant-call-definition" className="mt-2 max-w-prose text-sm leading-relaxed text-ink-muted">
+                    <p id="overview-variant-call-definition" className="mt-2 max-w-measure text-sm text-ink-muted">
                       {VARIANT_CALL_DEFINITION}
                     </p>
                   </details>
@@ -362,7 +367,7 @@ export default async function OverviewPage() {
                   </p>
                 ) : null}
                 {state === "C" || state === "D" ? (
-                  <Button asChild size="lg" className="mt-5 min-h-11">
+                  <Button asChild size="lg" className="mt-3">
                     <Link href={route("genome.reports", { subject: "me" })}>
                       {PRIMARY.openReports}
                     </Link>
@@ -371,10 +376,10 @@ export default async function OverviewPage() {
               </>
             ) : hasAncestry ? (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Your ancestry result is ready</h3>
+                <h3 className="title text-ink">Your ancestry result is ready</h3>
                 <p className="text-sm text-ink-muted">See the covered markers, broad regions and what remains unknown.</p>
                 {ancestryTooFew ? <p className="text-base leading-relaxed text-ink">{STATE_C.ancestryTooFew}</p> : null}
-                <Button asChild size="lg" className="min-h-11">
+                <Button asChild size="lg">
                   <Link href={route("genome.ancestry", { subject: "me" })}>View ancestry</Link>
                 </Button>
               </div>
@@ -391,7 +396,7 @@ export default async function OverviewPage() {
                   <p
                     role="status"
                     data-slot="carrier-jurisdiction"
-                    className="max-w-prose text-base leading-relaxed text-ink"
+                    className="max-w-measure text-base leading-relaxed text-ink"
                   >
                     {STATE_D.carrierUnavailable} {carrierRefusal}
                   </p>
@@ -404,7 +409,7 @@ export default async function OverviewPage() {
                   >
                     <Link
                       href={route("family.health-picture", { hash: CARRIER_MATCHES_ID })}
-                      className="text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+                      className="quiet-link"
                     >
                       {STATE_D.carrierMatches(line.count)}
                     </Link>{" "}
@@ -433,7 +438,7 @@ export default async function OverviewPage() {
                 value={STATE_E.notMeasured(embryoCounts.notMeasured)}
                 note={STATE_E.notMeasuredNote}
               />
-              <Button asChild size="lg" className="mt-5 min-h-11">
+              <Button asChild size="lg" className="mt-3">
                 <Link href={route("embryos.compare")}>{PRIMARY.compareEmbryos}</Link>
               </Button>
             </>
@@ -454,10 +459,7 @@ export default async function OverviewPage() {
         ) : null,
       ])}
 
-      <p
-        data-density-required-accuracy
-        className="max-w-prose text-sm leading-relaxed text-ink-muted"
-      >
+      <p data-density-required-accuracy className="caption max-w-measure">
         {NOT_DIAGNOSTIC}
       </p>
     </div>
