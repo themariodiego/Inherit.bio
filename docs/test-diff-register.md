@@ -1,3 +1,16 @@
+## 2026-10-09 — Bind QC seed records to the actual browser job in both allocation modes
+
+The complete hosted release run found that the QC seed recorder required a
+native Playwright shard, while the faster duration allocation uses a test list
+and leaves that setting null. The recorder now reads the current job's existing
+private setup record. Exactly one of the six registered records must match the
+checkout, run, attempt and hosted job. Native execution must match that record's
+index and total; duration execution requires the actual valid committed profile
+and a null native shard. Foreign, missing, duplicate, malformed and symbolic
+link records are refused. All project, spec, case, fixture, source and complete
+QC figure checks remain. The new regression cases cover both modes and their
+failure paths. No test case, assertion, retry or time limit is removed.
+
 ## 2026-10-09 — Use the four registered journeys in synthetic hosted coverage
 
 The hosted-result test fixture previously invented filenames for each browser
