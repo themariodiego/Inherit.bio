@@ -1,10 +1,11 @@
-import type { Browser } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 import { expect } from "./audited-test";
 import { signIn, SUPABASE_URL } from "./helpers";
 import { openLiveSession } from "../scripts/comprehension/live-browser";
-import { participantCPublication } from "../scripts/comprehension/participant-c-seed";
+import { participantCPublication, participantCNoModelSurface } from "../scripts/comprehension/participant-c-seed";
 import { EMBRYO_APP_PORT } from "../scripts/ci-browser-config";
 import { GATE_BUTTON } from "@/copy/embryos/gate";
+import { NO_ROWS_SENTENCE } from "@/copy/embryos/compare";
 
 /** One native rehearsal consumes the just-completed journey's credentials.
  * It never seeds or reuses a cohort across persona simulations. Its caller
@@ -14,6 +15,17 @@ export async function openParticipantCReadSession(options: {
   email: string; password: string; read: () => Promise<unknown>;
 }) {
   const current = async () => participantCPublication(await options.read(), options.ownerId, options.cohortId);
+  const noModelSurface = async (page: Page) => {
+    await expect(page.locator('[data-slot="no-rows"]').first()).toBeVisible();
+    await expect(page.locator('[data-slot="no-rows"]').first()).toHaveText(NO_ROWS_SENTENCE);
+    return participantCNoModelSurface({
+      notices: await page.locator('[data-slot="no-rows"]').allTextContents(),
+      conditionRows: await page.locator('[data-condition-id]').count(),
+      figures: await page.locator('[data-figure-kind]').evaluateAll(nodes => nodes.map(node => ({
+        kind: node.getAttribute("data-figure-kind"), class: node.getAttribute("data-figure-class"),
+      }))),
+    });
+  };
   await current();
   const origin = `http://localhost:${EMBRYO_APP_PORT}`;
   return openLiveSession({ browser: options.browser, sessionId: options.sessionId,
@@ -31,9 +43,15 @@ export async function openParticipantCReadSession(options: {
       }
       await expect(page.locator('[data-slot="result-gate"]')).toHaveCount(0);
       await current();
+      await noModelSurface(page);
     },
-    complete: async ({ paths }) => {
+    complete: async ({ paths, context }) => {
       await current();
+      if (paths.at(-1) === "/embryos/compare") {
+        const page = context.pages().find(candidate => new URL(candidate.url()).pathname === "/embryos/compare");
+        if (!page) throw new Error("Participant-c comparison read unavailable");
+        await noModelSurface(page);
+      }
       return paths[0] === "/overview" && paths.includes("/embryos/compare");
     },
   });

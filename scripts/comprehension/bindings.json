@@ -49,7 +49,7 @@
     },
     {
       "id": "participant-c",
-      "role": "The intending parent in T6 and T7, with one embryo file of two embryos loaded. T7 remains held because its required personal absolute risk has no approved producer.",
+      "role": "The intending parent in T6 and T7, with one embryo file of two embryos loaded. T7 reads the genuine no-calibrated-model comparison state; file quality is not personal risk.",
       "files": [
         "e2e/fixtures/embryo-pair-grch38.vcf"
       ],
@@ -274,13 +274,16 @@
       ],
       "templateSlugs": [],
       "requiresCapability": "embryo_analysis",
-      "figureSources": [
-        "src/components/embryo/compare/compare-cell.tsx"
-      ],
-      "success": "The participant reports an absolute figure with its denominator. A relative figure alone is the prohibited answer.",
+      "unavailableState": {
+        "selector": "[data-slot=\"no-rows\"]",
+        "copySource": "src/copy/embryos/compare.ts",
+        "copyExport": "NO_ROWS_SENTENCE",
+        "nativeRead": "participantCPublication and participantCNoModelSurface"
+      },
+      "success": "The participant says that no calibrated embryo model or condition risk is shown, so no personal risk difference can be given. The visible numbers measure file quality, not personal risk. Inventing a risk or calling quality a risk fails the blind rubric. A relative figure alone remains the prohibited answer.",
       "prohibitedClass": "T7",
-      "measuredConstraint": "Bound here and not to a My Genome report because, measured 2026-09-11, the report detail page renders exactly one figure kind — genotype — and no percentage at all; the only surface in the product that renders a personal absolute figure is the embryo comparison cell. The consequence is recorded in docs/comprehension-protocol.md rather than worked around: outside an environment where embryo_analysis is permitted, T7 has no bound surface.",
-      "fixtureBlockedBy": "No approved producer supplies the personal absolute risk figure and denominator required by T7. Measured QC or call-rate is not a personal risk and cannot replace that figure."
+      "measuredConstraint": "The current signed-parent publication has zero scores. Its comparison shows the exact no-calibrated-model sentence and only native file-quality figures. Under G3.2 this honest unavailable state is the bound answer; QC or call-rate is not a personal risk. No risk model or result is invented.",
+      "fixtureBlockedBy": "A fresh isolated signed-parent publication and actual no-model comparison read/action proof are required for every T7 simulation. The ordinary runner has no such native runtime per persona; skipped or unrun tasks remain unqualified."
     },
     {
       "id": "T8",

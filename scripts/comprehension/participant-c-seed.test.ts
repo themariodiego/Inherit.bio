@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 import bindings from "./bindings.json";
 import { bindingSkips, seedSkips } from "./conductor-inputs";
-import { participantCSeed, participantCPublication, publishedEmbryoFiles, taskSixTrace } from "./participant-c-seed";
+import { participantCSeed, participantCPublication, participantCNoModelSurface, publishedEmbryoFiles, taskSixTrace } from "./participant-c-seed";
+import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
 
 const current = bindings.accounts.find(account => account.id === "participant-c")!;
-describe("actual participant-c seed and independent unsupported risk hold", () => {
-  it("binds only the existing signed-parent VCF journey and preserves the T7 scientific refusal", () => {
+describe("actual participant-c seed and independent native runtime hold", () => {
+  it("binds only the existing signed-parent VCF journey and preserves the unrun T7 runtime refusal", () => {
     expect(participantCSeed(current).seed.project).toBe("embryo-ingest");
-    expect(bindingSkips(bindings)).toEqual([{ taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run: No approved producer/) }]);
+    expect(bindingSkips(bindings)).toEqual([{ taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run: A fresh isolated signed-parent publication/) }]);
     expect(seedSkips()).toEqual([
       { taskId: "T6", reason: expect.stringMatching(/^T6 cannot be run here: the ordinary comprehension runner/) },
-      { taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run: No approved producer/) },
+      { taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run: A fresh isolated signed-parent publication/) },
     ]);
   });
   it.each(["by", "runtime", "project", "email", "coParentEmail", "purposes", "readiness"])("refuses a changed %s seed binding", field => {
@@ -18,13 +19,13 @@ describe("actual participant-c seed and independent unsupported risk hold", () =
     Object.assign(changed.seed!, { [field]: "unproved" });
     expect(() => participantCSeed(changed)).toThrow();
   });
-  it("an absent account seed and scientific surface are both retained as refusal reasons", () => {
+  it("an absent account seed and missing native runtime are both retained as refusal reasons", () => {
     const changed = structuredClone(bindings);
     const account = changed.accounts.find(row => row.id === "participant-c")!;
     Object.assign(account, { seed: null, seedBlockedBy: "Genuine publication unavailable" });
     const skips = bindingSkips(changed);
     expect(skips.map(row => row.taskId)).toEqual(["T6", "T7"]);
-    expect(skips[1].reason).toContain("Genuine publication unavailable; T7 cannot be run: No approved producer");
+    expect(skips[1].reason).toContain("Genuine publication unavailable; T7 cannot be run: A fresh isolated signed-parent publication");
   });
   it("refuses a missing seed without a reason instead of silently enabling its tasks", () => {
     const changed = structuredClone(bindings);
@@ -34,7 +35,7 @@ describe("actual participant-c seed and independent unsupported risk hold", () =
   it("counts both original events and does not infer a figure from QC", () => {
     expect(taskSixTrace(JSON.stringify([{ event: "click", path: "/overview" },
       { event: "submit", path: "/embryos/compare" }]), 3).actions).toBe(2);
-    expect(bindings.tasks.find(row => row.id === "T7")!.fixtureBlockedBy).toContain("QC or call-rate is not a personal risk");
+    expect(bindings.tasks.find(row => row.id === "T7")!.measuredConstraint).toContain("QC or call-rate is not a personal risk");
   });
   it.each([null, "[]", "null", "broken", JSON.stringify([{ event: "click", path: "/settings" }]),
     JSON.stringify([{ event: "change", path: "/overview" }]),
@@ -43,6 +44,26 @@ describe("actual participant-c seed and independent unsupported risk hold", () =
   });
   it("does not relax the registered three-action ceiling", () => {
     expect(() => taskSixTrace('[{"event":"click","path":"/overview"}]', 4)).toThrow();
+  });
+});
+
+describe("genuine no-model comparison read (synthetic controls only)", () => {
+  const surface = { notices: [NO_ROWS_SENTENCE], conditionRows: 0,
+    figures: [{ kind: "coverage", class: "quality" }, { kind: "natural-frequency", class: "quality" }] };
+  it("accepts the actual unavailable copy and quality classes without inventing risk", () => {
+    expect(participantCNoModelSurface(surface)).toEqual(surface);
+    expect(bindings.tasks.find(row => row.id === "T7")!.prompt).toBe("For one condition, say how much difference this makes to an actual person, in plain numbers.");
+    expect(bindings.tasks.find(row => row.id === "T7")!.success).toContain("Inventing a risk or calling quality a risk fails");
+  });
+  it.each([
+    { ...surface, notices: [] }, { ...surface, notices: ["An invented risk is ready."] },
+    { ...surface, conditionRows: 1 }, { ...surface, figures: [] },
+    { ...surface, figures: [{ kind: "absolute", class: "estimate" }] },
+    { ...surface, figures: [{ kind: "absolute", class: "quality" }] },
+    { ...surface, figures: [{ kind: "natural-frequency", class: "estimate" }] },
+    { ...surface, absoluteRisk: 0.96 },
+  ])("refuses absent, invented or quality-as-risk presentation %#", changed => {
+    expect(() => participantCNoModelSurface(changed)).toThrow();
   });
 });
 

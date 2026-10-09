@@ -6,6 +6,8 @@ import { loadPatterns, normalise, prohibitedHit } from "./prohibited";
 import { REGIONAL_REGIONS, REGIONAL_COMBINED_NAME } from "../../src/lib/ancestry/regional-regions";
 import { sniff, sniffV2 } from "../../src/lib/genome/parsers/sniff";
 import { OWN_REPORT_PURPOSES } from "../../src/lib/uploads/own-report-purpose";
+import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
+import { taskRubric } from "./conductor-inputs";
 
 /**
  * G3.2 says a task must be bound to a named account, a named fixture and the
@@ -26,6 +28,7 @@ interface Task {
   templateSlugs: string[]; success: string; prohibitedClass: string | null;
   coverage?: Coverage[]; copyAnchors?: string[]; regionLabels?: string[]; regionSource?: string;
   figureSources?: string[]; maxActions?: number; requiresCapability?: string;
+  unavailableState?: { selector: string; copySource: string; copyExport: string; nativeRead: string };
   withheldVariant?: { prompt: string; when: string; routes: string[] };
 }
 interface Bindings {
@@ -203,6 +206,29 @@ describe("every comprehension task is bound to something that exists", () => {
         expect(text, `${task.id} -> ${source}`).toContain('kind: "absolute"');
       }
     }
+  });
+  it("resolves T7 to the actual no-model copy and native read rather than a fabricated risk figure", () => {
+    const task = bindings.tasks.find(row => row.id === "T7")!;
+    expect(task.figureSources).toBeUndefined();
+    expect(task.unavailableState).toEqual({ selector: '[data-slot="no-rows"]',
+      copySource: "src/copy/embryos/compare.ts", copyExport: "NO_ROWS_SENTENCE",
+      nativeRead: "participantCPublication and participantCNoModelSurface" });
+    expect(NO_ROWS_SENTENCE).toContain("no calibrated model registered");
+    expect(readFileSync(path.join(ROOT, task.unavailableState!.copySource), "utf8")).toContain(`export const ${task.unavailableState!.copyExport}`);
+    const adapter = readFileSync(path.join(ROOT, "e2e/participant-c-harness.ts"), "utf8");
+    expect(adapter).toContain("participantCNoModelSurface({");
+    expect(adapter).toContain("await current();");
+  });
+  it("keeps an honest unavailable answer outside the relative-only class and gives blind graders the risk-invention refusals", () => {
+    const klass = loadPatterns(ROOT).classes.find(row => row.id === "T7")!;
+    expect(prohibitedHit(klass, "There is no calibrated model, so it cannot give a personal risk difference. The numbers check file quality.")).toBeNull();
+    expect(prohibitedHit(klass, "It reduces the risk by 40%.")).not.toBeNull();
+    const rubric = taskRubric(readFileSync(path.join(ROOT, "scripts/comprehension/rubric.md"), "utf8"), "T7");
+    expect(rubric).toContain("The quality check is 96 in 100, so that is the person's disease risk.");
+    expect(rubric).toContain("Also fail an asserted numeric personal-risk finding");
+    expect(rubric).toContain("not a new prohibited-answer class");
+    expect((rubric.match(/^## T[0-9]+ —/gm) ?? [])).toHaveLength(1);
+    expect(rubric).not.toContain("participant-c@");
   });
 });
 

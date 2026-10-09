@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
 
 const seed = z.object({
   email: z.literal("participant-c@e2e.local"),
@@ -75,6 +76,17 @@ export function participantCPublication(value: unknown, ownerId: string, cohortI
   }
   publishedEmbryoFiles(current.files, { ownerId, publishedAt: current.cohort.uploaded_at, subjectIds: subjects });
   return current;
+}
+
+/** Read from the real comparison after the same native publication check.
+ * File-quality figures cannot supply or be relabelled as a personal risk. */
+export function participantCNoModelSurface(value: unknown) {
+  return z.object({
+    notices: z.array(z.literal(NO_ROWS_SENTENCE)).min(1),
+    conditionRows: z.literal(0),
+    figures: z.array(z.object({ kind: z.enum(["coverage", "natural-frequency", "measure"]),
+      class: z.literal("quality") }).strict()).min(1),
+  }).strict().parse(value);
 }
 
 /** Missing storage, foreign paths or events cannot turn into a zero-action pass. */
