@@ -49,13 +49,26 @@
     },
     {
       "id": "participant-c",
-      "role": "The intending parent in T6 and T10, with one embryo file of two embryos loaded.",
+      "role": "The intending parent in T6 and T7, with one embryo file of two embryos loaded. T7 remains held because its required personal absolute risk has no approved producer.",
       "files": [
         "e2e/fixtures/embryo-pair-grch38.vcf"
       ],
       "why": "One synthetic VCF carrying two distinct embryos as separate samples. The embryo-ingest contract refuses a cohort upload that resolves to exactly one sample (cohort_single_sample), so a laboratory sends a cohort's embryos in one file, and two embryos give the comparison surface something to compare. Owner decision, 28 September 2026.",
-      "seed": null,
-      "seedBlockedBy": "No embryo file path exists until the ingest slice lands (G2.6), and the owner's decision of 18 September 2026 closes a fixture-only seed path that would write the rows directly."
+      "seed": {
+        "email": "participant-c@e2e.local",
+        "by": "e2e/embryo-ingest-journey.spec.ts",
+        "fileTypes": [
+          "vcf"
+        ],
+        "purposes": [
+          "embryo.analysis"
+        ],
+        "coParentEmail": "participant-c-parent@e2e.local",
+        "project": "embryo-ingest",
+        "runtime": "exact-disposable-ci-native-partition",
+        "readiness": "real-signed-parent-upload-worker-publication-required",
+        "order": "The existing single embryo-ingest case signs both current parents, sends this exact file, runs the real isolated worker, verifies the whole publication and grants embryo.analysis separately through both parent UI flows. No prefilled rows or score results are a seed."
+      }
     },
     {
       "id": "no-account",
@@ -232,6 +245,7 @@
         "e2e/fixtures/embryo-pair-grch38.vcf"
       ],
       "routes": [
+        "/overview",
         "/embryos",
         "/embryos/compare"
       ],
@@ -265,7 +279,8 @@
       ],
       "success": "The participant reports an absolute figure with its denominator. A relative figure alone is the prohibited answer.",
       "prohibitedClass": "T7",
-      "measuredConstraint": "Bound here and not to a My Genome report because, measured 2026-09-11, the report detail page renders exactly one figure kind — genotype — and no percentage at all; the only surface in the product that renders a personal absolute figure is the embryo comparison cell. The consequence is recorded in docs/comprehension-protocol.md rather than worked around: outside an environment where embryo_analysis is permitted, T7 has no bound surface."
+      "measuredConstraint": "Bound here and not to a My Genome report because, measured 2026-09-11, the report detail page renders exactly one figure kind — genotype — and no percentage at all; the only surface in the product that renders a personal absolute figure is the embryo comparison cell. The consequence is recorded in docs/comprehension-protocol.md rather than worked around: outside an environment where embryo_analysis is permitted, T7 has no bound surface.",
+      "fixtureBlockedBy": "No approved producer supplies the personal absolute risk figure and denominator required by T7. Measured QC or call-rate is not a personal risk and cannot replace that figure."
     },
     {
       "id": "T8",

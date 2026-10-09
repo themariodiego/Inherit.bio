@@ -31,6 +31,8 @@ export const NOT_STATED_BY_SOURCE = "Not stated by the source laboratory";
 export const NOT_MEASURABLE_FROM_FILE = "not measurable from this file";
 
 /** Character-for-character (brief line 1402). */
+export const DROPOUT_NOT_MEASURED_NO_RANGE = "No estimate of missed DNA calls is available.";
+
 export const DROPOUT_NOT_MEASURED = "Not measured — the ranges below are wider because of this.";
 
 /** The one collapsible a result page may carry (brief line 414). */
@@ -42,7 +44,7 @@ export const NONE_WORD = "None";
 export const NO_IMPUTATION_WORD = NONE_WORD;
 
 /** The twenty QC fields, in plain words, in register order. */
-export const QC_FIELD_LABELS: Record<keyof QcDto, string> = {
+export const QC_FIELD_LABELS: Record<Exclude<keyof QcDto, "figure_basis">, string> = {
   source_facts: "File source",
   sites_expected: "Positions this check needs",
   sites_called: "Positions the file could read",
@@ -110,3 +112,5 @@ export const QC_REASON_SENTENCES: Record<QcReasonId, ReasonSentence> = {
 export function qcRunOn(date: string): string {
   return `Quality check run on ${date}.`;
 }
+
+export const QC_BASIS_NOT_RECORDED = "This record does not say how this number was made, so we cannot show it.";

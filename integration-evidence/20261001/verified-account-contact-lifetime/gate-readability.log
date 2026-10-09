@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:readability /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/readability-gate.ts
+
+readability gate passed: 3228 blocks, 1492 long, 1005 short-role, 709 sentence-capped, 1366 copy-registry

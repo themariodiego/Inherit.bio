@@ -8,8 +8,8 @@ import http from "node:http";
 import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
-import { startPreparedArtifactFixture } from "./prepared-artifact-fixture";
-import { createPreparedArtifactProofWriter } from "./prepared-artifact-proof";
+import { startCiArtifactGateway } from "./artifact-gateway-start";
+import { forwardProfileDiagnostics } from "./profile-diagnostic-filter";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
@@ -87,7 +87,7 @@ try {
       });
     }
     const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""]);
-    child.stdout?.pipe(process.stdout); child.stderr?.resume();
+    closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stderr.write(line+"\n")));
     child.stdin!.write(JSON.stringify(env) + "\n");
   } else {
     assert(process.getuid!() > 0);
@@ -127,15 +127,14 @@ try {
       input.on("line", line => { void (async () => {
         assert(!initialized && line.length < 65_536, "Single bounded app configuration required"); initialized = true;
         const env = checkedAppEnvironment(JSON.parse(line), port);
-        if (port === 3104) {
+        if (port === 3104 || port === 3105) {
           const signingKey = JSON.parse(env.INHERIT_UPLOAD_SIGNING_JWK);
           assert(signingKey.kty === "EC" && signingKey.crv === "P-256" && typeof signingKey.kid === "string",
             "Synthetic upload signer required");
           const publicKey = createPublicKey(createPrivateKey({ key: signingKey, format: "jwk" })).export({ format: "jwk" });
-          const artifacts = await startPreparedArtifactFixture({
+          const artifacts = await startCiArtifactGateway(port, {
             publicJwk: { kty: publicKey.kty, crv: publicKey.crv, x: publicKey.x, y: publicKey.y, kid: signingKey.kid },
             key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt"),
-            onChange: createPreparedArtifactProofWriter(),
           });
           closers.push(() => { void artifacts.close(); });
         }
@@ -168,8 +167,10 @@ try {
           cwd: "/app", env: { ...cleanEnv, ...env, NODE_ENV: "production", NODE_EXTRA_CA_CERTS: "/tls/fixture/ca.crt" },
           detached: true, stdio: ["ignore", "pipe", "pipe"],
         }));
-        // Drain app diagnostics without persisting request/provider secrets.
-        app.stdout?.resume(); app.stderr?.resume();
+        // Only complete, bounded, enum-only profile diagnostics cross either
+        // launcher hop. Playwright retains web-server stderr; stdout is ignored.
+        // Every other app log stays discarded.
+        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
         console.log(`Started isolated production app variant ${port}`);
       })().catch(() => { console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }

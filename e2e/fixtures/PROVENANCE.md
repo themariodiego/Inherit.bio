@@ -302,6 +302,27 @@ data. Public benchmark genotypes are also excluded from current test inputs.
 - Repository SHA-256:
   `111d6a009a686a5847c3c0645e6727ab634e6970bfabd32ecca95224add15cbb`.
 
+## embryo-pair-qc-b-grch38.vcf
+
+- Classification: independently invented second two-sample QC seed, describing
+  no real person. It retains every non-sample column and registered GRCh38
+  locus of `embryo-pair-grch38.vcf`; no genotype is taken from a person,
+  benchmark or reference sequence. Its REF letters remain parser inputs.
+- Deterministic derivation: enumerate the original 1,200 data rows from zero.
+  SAMPLE1 is `./.` when index modulo 100 is zero, otherwise `0/1` at even
+  indices and `0/0` at odd indices. SAMPLE2 is `./.` when index modulo 75 is
+  zero, otherwise `0/1` when index modulo 4 is zero and `1/1` elsewhere.
+  Only GT fields and the explanatory `##source` header change.
+- `scripts/ci-browser/embryo-qc-two-seed.test.ts` checks exact derived bytes
+  and non-sample columns, then runs the actual transport sanitiser and split
+  parser. It measures 1,188 / 1,184 called positions, both passing policy,
+  changed call rates and heterozygosity, and no depth or laboratory estimate.
+- The native second publication uses the actual signed-parent upload and
+  worker. Its fixed fixture hash must match the committed file in the final
+  same-run two-publication aggregate. Source authoring is not browser proof.
+- Repository SHA-256:
+  `892b7c6280b9558513fd73270a309d9539824c65de02f717653441c14ec303ab`.
+
 ## carrier-pair-grch38.vcf
 
 - Classification: synthetic single-sample GRCh38 VCF written by hand for the

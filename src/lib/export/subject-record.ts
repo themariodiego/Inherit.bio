@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { exportConsentRecipient } from "./consent-recipient";
 
 /**
  * The part of the free export that answers "who does this service say I am,
@@ -166,6 +167,15 @@ export async function subjectRecordOf(
       .eq("account_id", accountId).order("id").range(from, to)),
   ]);
   if (!subjects || !principals || !bindings || !consents || !grants) return null;
+  // The JSON column also stores credential and runtime fingerprints. Only
+  // the recorded destination fields leave; malformed history refuses the
+  // whole export rather than inventing a missing destination.
+  let exportedConsents: Row[];
+  try {
+    exportedConsents = consents.map((row) => ({ ...row, copilot_recipient: exportConsentRecipient(row.copilot_recipient) }));
+  } catch {
+    return null;
+  }
   // A second hop, because the declaration is keyed by subject rather than by
   // account. It runs on the ids the first query already scoped, so it cannot
   // reach a subject the export would not have carried anyway.
@@ -203,7 +213,7 @@ export async function subjectRecordOf(
     subject_demographics: demographics,
     subject_principals: principals,
     subject_account_bindings: bindings,
-    subject_consents: consents,
+    subject_consents: exportedConsents,
     provider_recipient_grants: grants,
     profiles,
     consent_signatures: signatures,

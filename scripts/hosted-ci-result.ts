@@ -133,7 +133,11 @@ export function hostedWorkflowContract(value: unknown) {
   const producer = (family: string, name: string, member: string) => {
     const matches = workflow.jobs[family].steps.filter(item => item.uses === "actions/upload-artifact@v4"
       && item.with?.name === name);
-    assert(matches.length === 1 && matches[0].with?.path === `test-results/${member}`
+    const declaredPath = matches[0]?.with?.path;
+    const exactSingleMember = declaredPath === `test-results/${member}`;
+    const exactQcSeedSidecar = family === "browser" && member === "ci-browser-shard.json"
+      && declaredPath === "test-results/ci-browser-shard.json\ntest-results/embryo-qc-seed.json\n";
+    assert(matches.length === 1 && (exactSingleMember || exactQcSeedSidecar)
       && matches[0].with?.["if-no-files-found"] === "error", "Unsupported coverage artifact producer");
   };
   producer("repository-checks", "browser-case-${{ github.run_attempt }}-manifest", "ci-browser-manifest.json");

@@ -39,7 +39,7 @@ export interface EmbryoRow {
   status: EmbryoStatus;
 }
 
-/** The `embryo_qc` row, as stored (the twenty projected fields plus its key). */
+/** The `embryo_qc` row, with its saved producer receipt and source facts. */
 export interface EmbryoQcRow extends Omit<QcDto, "source_facts"> {
   embryo_id: string;
   source_facts?: EmbryoInputFacts;
@@ -78,13 +78,14 @@ const QC_KEYS: readonly (keyof QcDto)[] = [
   "qc_verdict",
   "qc_reasons",
   "computed_at",
+  "figure_basis",
 ];
 
-/** Exactly the twenty projected fields, in register order; every number passes `displayedFigure` unchanged. */
+/** Exactly the registered fields; every number and saved receipt is preserved. */
 export function projectQc(row: EmbryoQcRow): QcDto {
   const qc = {} as Record<keyof QcDto, unknown>;
   for (const key of QC_KEYS) {
-    const value = row[key];
+    const value = key === "figure_basis" ? row.figure_basis ?? null : row[key];
     qc[key] = typeof value === "number" ? displayedFigure(value) : value;
   }
   qc.source_facts = row.source_facts ?? { ...UNKNOWN_EMBRYO_INPUT };

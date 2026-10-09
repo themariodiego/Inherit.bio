@@ -2639,6 +2639,7 @@ export type Database = {
           id: string
           ingest_revision: number
           matrix_fingerprint: string | null
+          purpose: string
           recipients: Json | null
           session_id: string | null
           state: string
@@ -2652,6 +2653,7 @@ export type Database = {
           id?: string
           ingest_revision: number
           matrix_fingerprint?: string | null
+          purpose?: string
           recipients?: Json | null
           session_id?: string | null
           state?: string
@@ -2665,6 +2667,7 @@ export type Database = {
           id?: string
           ingest_revision?: number
           matrix_fingerprint?: string | null
+          purpose?: string
           recipients?: Json | null
           session_id?: string | null
           state?: string
@@ -2793,6 +2796,7 @@ export type Database = {
       }
       embryo_qc: {
         Row: {
+          figure_basis: Json | null
           allelic_dropout_estimate: number | null
           allelic_dropout_interval_high: number | null
           allelic_dropout_interval_low: number | null
@@ -2816,6 +2820,7 @@ export type Database = {
           source_laboratory: string | null
         }
         Insert: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -2839,6 +2844,7 @@ export type Database = {
           source_laboratory?: string | null
         }
         Update: {
+          figure_basis?: Json | null
           allelic_dropout_estimate?: number | null
           allelic_dropout_interval_high?: number | null
           allelic_dropout_interval_low?: number | null
@@ -3097,6 +3103,7 @@ export type Database = {
       }
       encrypted_contact_references: {
         Row: {
+          account_mail_contact_revision: number | null
           authority_revision: number
           contact_ciphertext: string | null
           contact_hmac: string
@@ -3108,6 +3115,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          account_mail_contact_revision?: number | null
           authority_revision: number
           contact_ciphertext?: string | null
           contact_hmac: string
@@ -3119,6 +3127,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          account_mail_contact_revision?: number | null
           authority_revision?: number
           contact_ciphertext?: string | null
           contact_hmac?: string
@@ -3742,6 +3751,11 @@ export type Database = {
       }
       future_person_identity: {
         Row: {
+          profile_format_version: number | null
+          wrapped_profile_key: string | null
+          match_indexes: Json
+          fixed_expires_at: string | null
+          authority_snapshot: Json | null
           created_at: string
           embryo_id: string
           ended_at: string | null
@@ -3754,6 +3768,11 @@ export type Database = {
           state: string
         }
         Insert: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id: string
           ended_at?: string | null
@@ -3766,6 +3785,11 @@ export type Database = {
           state?: string
         }
         Update: {
+          profile_format_version?: number | null
+          wrapped_profile_key?: string | null
+          match_indexes?: Json
+          fixed_expires_at?: string | null
+          authority_snapshot?: Json | null
           created_at?: string
           embryo_id?: string
           ended_at?: string | null
@@ -3965,7 +3989,8 @@ export type Database = {
       }
       generated_exports: {
         Row: {
-          account_id: string
+          account_id: string | null
+          origin_kind: string
           archive_sha256: string | null
           byte_count: number | null
           completed_at: string | null
@@ -3989,7 +4014,8 @@ export type Database = {
           target_kind: string
         }
         Insert: {
-          account_id: string
+          account_id: string | null
+          origin_kind?: string
           archive_sha256?: string | null
           byte_count?: number | null
           completed_at?: string | null
@@ -4013,7 +4039,8 @@ export type Database = {
           target_kind: string
         }
         Update: {
-          account_id?: string
+          account_id?: string | null
+          origin_kind?: string
           archive_sha256?: string | null
           byte_count?: number | null
           completed_at?: string | null
@@ -4061,6 +4088,7 @@ export type Database = {
           cohort_id: string | null
           created_at: string
           error: string | null
+          export_content_revision: number
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id: string
           is_cohort_file: boolean
@@ -4104,6 +4132,7 @@ export type Database = {
           cohort_id?: string | null
           created_at?: string
           error?: string | null
+          export_content_revision?: number
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
@@ -4147,6 +4176,7 @@ export type Database = {
           cohort_id?: string | null
           created_at?: string
           error?: string | null
+          export_content_revision?: number
           file_type?: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
@@ -7618,6 +7648,67 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      embryo_disposition_controls_v1: {
+        Args: { p_account: string; p_session: string; p_after?: string | null }
+        Returns: Json
+      }
+      future_person_profile_controls_v1: { Args: { p_account: string; p_session: string; p_after?: string | null }; Returns: Json }
+      future_person_profile_context_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string | null }
+        Returns: Json
+      }
+      write_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_signature: string; p_expected: Json;
+          p_profile: string; p_ciphertext: string; p_wrapped_key: string; p_indexes: Json; p_nonce: string }
+        Returns: Json
+      }
+      delete_future_person_profile_v1: {
+        Args: { p_account: string; p_session: string; p_embryo: string; p_expected: Json; p_nonce: string }
+        Returns: undefined
+      }
+      purge_due_future_person_profiles_v1: { Args: Record<PropertyKey, never>; Returns: number }
+      future_person_export_request_v1: {
+        Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
+        Returns: Json
+      }
+      future_person_export_members_v1: {
+        Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_after_id?: string }
+        Returns: Json
+      }
+      future_person_export_source_v1: {
+        Args: { p_operation: string; p_session_hash: string; p_authority_receipt?: string; p_after_variant_id?: number }
+        Returns: Json
+      }
+      claim_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: Json }
+      check_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string }; Returns: boolean }
+      swap_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string; p_target: Json; p_identity: Json; p_bytes: number; p_sha256: string }; Returns: boolean }
+      fence_future_person_relocation_v1: { Args: { p_id: string; p_token_hash: string | null }; Returns: boolean }
+      claim_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string }; Returns: Json }
+      check_future_person_relocation_cleanup_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json }; Returns: boolean }
+      finish_future_person_relocation_v1: { Args: { p_attempt: string; p_token_hash: string; p_expected: Json; p_evidence: Json }; Returns: boolean }
+      future_person_relocation_work_v1: { Args: Record<PropertyKey, never>; Returns: Json }
+      export_archive_account_original_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_file_id: string; p_expected?: Json }; Returns: Json }
+      export_archive_account_graph_rows_v2: { Args: { p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind: string; p_after_key?: Json }; Returns: Json }
+      export_archive_account_path_b_v1: { Args: { p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id: string }; Returns: Json }
+      export_archive_account_graph_rows_v1: { Args: { p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind: string; p_after_key?: Json }; Returns: Json }
+      export_archive_account_classes_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind?: string; p_after_id?: string }; Returns: Json }
+      export_archive_account_inventory_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_kind?: string; p_after_id?: string }; Returns: Json }
+      export_archive_account_metadata_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_after_id?: string }; Returns: Json }
+      export_archive_account_content_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_payload?: Json }; Returns: Json }
+      export_archive_account_audit_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_seq?: number }; Returns: Json }
+      export_archive_account_members_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id?: string; p_after_id?: string }; Returns: Json }
+      read_embryo_qc_rows_v1: { Args: { p_cohort_id: string; p_embryo_ids: string[] }; Returns: Json }
+      export_archive_account_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_subject_id: string; p_expected?: Json }; Returns: Json }
+      export_archive_bound_source_v1: { Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_expected?: Json }; Returns: Json }
+      future_person_bound_source_manifest_v1: { Args: { p_subject: string }; Returns: Json }
+      check_future_person_bound_source_v1: { Args: { p_subject: string; p_expected: Json }; Returns: boolean }
+      future_person_binding_context_v1: { Args: { p_rights_session_hash: string }; Returns: Json }
+      bind_future_person_account_v1: { Args: { p_rights_session_hash: string; p_nonce: string; p_expected: Json }; Returns: boolean }
+
+      embryo_upload_account_live_v1: {
+        Args: { p_account_id: string; p_auth_session_id: string }
+        Returns: boolean
+      }
       finish_genome_file_deletion_v1: {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
         Returns: undefined
@@ -7741,6 +7832,10 @@ export type Database = {
           status: string
         }[]
       }
+      account_embryo_unwinds_v1: {
+        Args: { p_deletion_id: string; p_claim_token_hash: string }
+        Returns: Json
+      }
       claim_due_account_deletion_v1: {
         Args: { p_claim_token_hash: string; p_lease_seconds?: number }
         Returns: {
@@ -7776,6 +7871,188 @@ export type Database = {
       }
       purge_expired_rate_limit_buckets_v1: {
         Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      purge_future_person_claim_intakes_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      start_future_person_claim_v1: {
+        Args: {
+          p_form_nonce_hash: string
+          p_identifier_digests: Json
+          p_identity_ciphertext: string
+          p_key_hash: string | null
+          p_mode: string
+          p_network_digests: Json
+          p_session_hash: string
+          p_wrapped_data_key: string
+        }
+        Returns: string
+      }
+      claim_session_live_v1: {
+        Args: { p_session_hash: string }
+        Returns: boolean
+      }
+      claim_session_status_v1: {
+        Args: { p_session_hash: string }
+        Returns: Json
+      }
+      open_claim_review_receipt_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_nonce_hash: string }
+        Returns: Json
+      }
+      prepare_claim_review_chunk_receipt_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_sequence: number; p_expected_proof: string }
+        Returns: undefined
+      }
+      acknowledge_claim_review_chunk_v1: {
+        Args: { p_session_id: string; p_cookie_hash: string; p_sequence: number; p_proof: string; p_nonce_hash: string }
+        Returns: undefined
+      }
+      complete_future_person_claim_rotated_v1: {
+        Args: { p_birth_record_document_id: string; p_mode: string; p_nonce_hash: string;
+          p_photo_document_id: string; p_session_hash: string; p_successor_session_hash: string }
+        Returns: Json
+      }
+      open_claim_document_session_rotated_v1: {
+        Args: { p_claim_session_hash: string; p_successor_claim_session_hash: string; p_cookie_hash: string;
+          p_create_nonce_hash: string; p_document_kind: string; p_media_type: string;
+          p_sha256: string; p_size_bytes: number; p_wrapped_document_key: string }
+        Returns: Json
+      }
+      complete_future_person_claim_v1: {
+        Args: {
+          p_birth_record_document_id: string
+          p_mode: string
+          p_nonce_hash: string
+          p_photo_document_id: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
+      read_claim_review_case_v1: {
+        Args: { p_review_id: string }
+        Returns: Json
+      }
+      verify_keyless_claim_documents_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_verified_date_of_birth:string;
+          p_identity_hmac_set:Json;p_profile_hmac_set:Json}
+        Returns:Json
+      }
+      restore_future_person_claim_review_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
+          p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;
+          p_profile_hmac_set:Json|null;p_comparison_receipt_digest:string|null;
+          p_contact_reference_id:string;p_contact_ciphertext:string;p_contact_hmac_set:Json}
+        Returns:Json
+      }
+      open_claim_review_download_v1: {
+        Args: { p_cookie_hash: string; p_document_id: string }
+        Returns: Json
+      }
+      authorize_claim_review_chunk_v1: {
+        Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string }
+        Returns: Json
+      }
+      future_person_owner_objection_controls_v1: { Args: { p_after?: string | null }; Returns: Json }
+      future_person_owner_account_objection_scope_v1: { Args: { p_notice: string }; Returns: Json }
+      submit_future_person_account_objection_v1: {
+        Args: { p_notice: string; p_revision: number; p_nonce: string; p_statement_ciphertext: string; p_wrapped_statement_key: string }
+        Returns: Json
+      }
+      future_person_objection_view_v1: { Args: { p_session_hash: string }; Returns: Json }
+      future_person_objection_statement_scope_v1: { Args: { p_session_hash: string }; Returns: Json }
+      submit_future_person_owner_objection_v1: {
+        Args: { p_session_hash: string; p_nonce: string; p_notice_id: string; p_notice_revision: number;
+          p_statement_ciphertext: string; p_wrapped_statement_key: string }
+        Returns: Json
+      }
+      decide_keyless_objection_v1: { Args: { p_objection: string; p_objection_revision: number; p_review_revision: number;
+        p_notice_revision: number; p_decision: string; p_nonce_hash: string; p_reason_ciphertext: string }; Returns: Json }
+      read_keyless_review_operation_v1: { Args: { p_id: string; p_operation: string }; Returns: Json }
+      future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
+      issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
+      stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
+      purge_due_future_person_contacts_v1:{Args:Record<PropertyKey,never>;Returns:number}
+      shred_due_claim_working_keys_v1:{Args:Record<PropertyKey,never>;Returns:number}
+      decide_claim_review_attested_v1: {
+        Args:{p_review_id:string;p_review_revision:number;p_decision:string;p_nonce_hash:string;p_reason_ciphertext:string;
+          p_attestation_ciphertext:string|null;p_identity_hmac_set:Json|null;p_verified_date_of_birth:string|null;p_parent_link_confirmed:boolean;
+          p_contact_reference_id:string;p_contact_ciphertext:string;p_contact_hmac_set:Json}
+        Returns:Json
+      }
+      decide_claim_review_v1: {
+        Args: {
+          p_decision: string
+          p_nonce_hash: string
+          p_reason_ciphertext: string
+          p_review_id: string
+          p_review_revision: number
+        }
+        Returns: Json
+      }
+      close_due_claim_reviews_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      open_claim_document_session_v1: {
+        Args: {
+          p_claim_session_hash: string
+          p_cookie_hash: string
+          p_wrapped_document_key: string
+          p_create_nonce_hash: string
+          p_document_kind: string
+          p_media_type: string
+          p_sha256: string
+          p_size_bytes: number
+        }
+        Returns: Json
+      }
+      reserve_claim_document_chunk_v1: {
+        Args: { p_byte_count: number; p_cookie_hash: string; p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
+      }
+      settle_claim_document_chunk_v1: {
+        Args: { p_cookie_hash: string; p_sequence: number; p_session_id: string; p_written: boolean }
+        Returns: string
+      }
+      begin_claim_document_completion_v1: {
+        Args: { p_chunk_count: number; p_complete_nonce_hash: string; p_cookie_hash: string; p_session_id: string }
+        Returns: Json
+      }
+      finish_claim_document_completion_v1: {
+        Args: {
+          p_complete_nonce_hash: string
+          p_cookie_hash: string
+          p_object_key: string | null
+          p_outcome: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      claim_next_claim_document_scan_v1: {
+        Args: { p_lease_hash: string }
+        Returns: Json
+      }
+      record_claim_document_scan_v1: {
+        Args: {
+          p_document_id: string
+          p_lease_hash: string
+          p_outcome: string
+          p_scan_engine: string | null
+          p_scanned_sha256: string | null
+          p_signature_at: string | null
+          p_signature_version: number | null
+        }
+        Returns: string
+      }
+      claim_document_objects_due_v1: {
+        Args: { p_limit: number }
+        Returns: { object_key: string }[]
+      }
+      confirm_claim_document_objects_deleted_v1: {
+        Args: { p_object_keys: string[]; p_route_id: string }
         Returns: number
       }
       authorize_mail_submission_v1: {
@@ -7862,6 +8139,48 @@ export type Database = {
         Args: { p_sequence: number; p_session_id: string; p_sha256: string }
         Returns: Json
       }
+      complete_embryo_ingest_v1: {
+        Args: {
+          p_account: string
+          p_auth: string
+          p_session: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort: string
+          p_ingest_revision: number
+          p_chunk_count: number
+          p_nonce: string
+          p_test?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_issued_tokens_match_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_completion_nonce_hash: string
+          p_csrf_hash: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: boolean
+      }
+      fail_embryo_ingest_attempt_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_code: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
       complete_account_deletion_storage_batch_v1: {
         Args: {
           p_claim_token_hash: string
@@ -7873,6 +8192,10 @@ export type Database = {
       complete_account_deletion_storage_v1: {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: undefined
+      }
+      complete_embryo_ingest_unwind_v1: {
+        Args: { p_unwind_id: string }
+        Returns: Json
       }
       complete_embryo_terminal_mail_v1: {
         Args: {
@@ -7947,6 +8270,29 @@ export type Database = {
           required_principal_slots: string[]
         }[]
       }
+      create_embryo_cohort_draft_v2: {
+        Args: {
+          p_account_id: string
+          p_verified_auth_email: string
+          p_basis_case: string
+          p_contact_ciphertexts: string[]
+          p_contact_hmac_sets: Json
+          p_contact_hmacs: string[] | null
+          p_embryo_count: number
+          p_owner_contact_ciphertext: string
+          p_owner_contact_hmac: string | null
+          p_owner_contact_hmac_set: Json
+          p_session_id: string
+          p_test_jurisdiction: boolean
+          p_token_nonce: string
+          p_upload_situation: string
+        }
+        Returns: {
+          draft_id: string
+          expires_at: string
+          required_principal_slots: string[]
+        }[]
+      }
       create_embryo_draft_invitation_v1: {
         Args: {
           p_account_id: string
@@ -8009,8 +8355,16 @@ export type Database = {
         }
         Returns: Json
       }
+      embryo_ingest_unwind_work_v1: {
+        Args: { p_limit: number }
+        Returns: Json
+      }
       embryo_ingest_write_targets_v1: {
         Args: { p_sequence: number; p_session_id: string }
+        Returns: Json
+      }
+      embryo_parent_withdrawal_view_v1: {
+        Args: { p_session_hash: string }
         Returns: Json
       }
       enqueue_account_mail: {
@@ -8241,6 +8595,10 @@ export type Database = {
           p_action: string
           p_token_hash: string
         }
+        Returns: string
+      }
+      respond_embryo_parent_withdrawal_v1: {
+        Args: { p_action: string; p_nonce: string; p_session_hash: string }
         Returns: string
       }
       restrict_embryo_cohort_v1: {

@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
-import { assertCiRuntime, checkedGateway, checkedAppEnvironment, checkedCiLauncherEnvironment, checkedPolicyCounters, LOCAL_MODEL_ENV, PREPARED_APP_ENV } from "./ci-browser-config";
+import { createHash, randomBytes } from "node:crypto";
+import { assertCiRuntime, checkedGateway, checkedAppEnvironment, checkedCiLauncherEnvironment, checkedPolicyCounters, LOCAL_MODEL_ENV, PREPARED_APP_ENV, EMBRYO_APP_ENV } from "./ci-browser-config";
 const ci = { CI: "true", GITHUB_ACTIONS: "true", RUNNER_ENVIRONMENT: "github-hosted", INHERIT_DISPOSABLE_LOCAL_E2E: "true" };
 const gateway = { name: "/supabase_kong_sequence", project: "sequence", running: true,
   networks: { supabase_network_sequence: { IPAddress: "172.19.0.3" } } };
+const syntheticWebhookSecret = `whsec_${randomBytes(32).toString("base64")}`;
+const expectedVariantVerifier = syntheticWebhookSecret;
+const refusedOtherVariantVerifier = syntheticWebhookSecret;
+function expectAppIdentity(actual: Record<string, string>, expected: Record<string, string>) {
+  expect(actual.RESEND_WEBHOOK_SECRET === expected.RESEND_WEBHOOK_SECRET).toBe(true);
+  const withoutVerifier = (env: Record<string, string>) => Object.fromEntries(Object.entries(env).filter(([name]) => name !== "RESEND_WEBHOOK_SECRET"));
+  expect(withoutVerifier(actual)).toEqual(withoutVerifier(expected));
+}
 describe("isolated standard CI runtime boundaries", () => {
   it("requires a disposable Linux GitHub runner and closed fixture control", () => {
     expect(() => assertCiRuntime(ci, "linux")).not.toThrow();
@@ -26,9 +34,10 @@ describe("isolated standard CI runtime boundaries", () => {
     JOBS_SECRET: "EXAMPLE_SYNTHETIC", CRON_SECRET: "EXAMPLE_SYNTHETIC", EMAIL_FROM: "EXAMPLE_SYNTHETIC", RESEND_API_KEY: "EXAMPLE_SYNTHETIC",
     RESEND_BASE_URL: "http://127.0.0.1:8124", NEXT_PUBLIC_SITE_URL: `http://localhost:${port}`, NEXT_PUBLIC_APP_URL: `http://localhost:${port}`,
     INHERIT_TEST_JURISDICTION: port === 3101 ? "" : "1", INHERIT_CANONICAL_UPLOADS_PAUSED: port === 3102 ? "true" : "false",
-    ...(port === 3103 ? LOCAL_MODEL_ENV : {}), ...(port === 3104 ? PREPARED_APP_ENV : {}) });
+    ...(port === 3103 ? LOCAL_MODEL_ENV : {}),
+    ...(port === 3105 ? {...EMBRYO_APP_ENV,RESEND_WEBHOOK_SECRET:expectedVariantVerifier} : {}), ...(port === 3104 ? PREPARED_APP_ENV : {}) });
   it("preserves all five variants and refuses provider destinations, bypasses, missing signers and arbitrary environments", () => {
-    for (const port of [3100, 3101, 3102, 3103, 3104]) expect(checkedAppEnvironment(app(port), port)).toEqual(app(port));
+    for (const port of [3100, 3101, 3102, 3103, 3104, 3105]) expectAppIdentity(checkedAppEnvironment(app(port), port), app(port));
     for (const env of [{ ...app(3100), NODE_OPTIONS: "--inspect" }, { ...app(3100), ALLOW_LOCAL_MODEL_ENDPOINTS: "1" },
       { ...app(3100), RESEND_BASE_URL: "https://api.resend.com" }, { ...app(3100), NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co" },
       { ...app(3100), INHERIT_TEST_JURISDICTION: "" }, { ...app(3100), INHERIT_CANONICAL_UPLOADS_PAUSED: "true" },
@@ -47,9 +56,9 @@ describe("isolated standard CI runtime boundaries", () => {
     expect(() => checkedAppEnvironment(app(3103), 3100)).toThrow();
   });
   it("launches main, jurisdiction-off, paused and local-model servers with their actual distinct origins", () => {
-    for (const port of [3100, 3101, 3102, 3103, 3104]) {
+    for (const port of [3100, 3101, 3102, 3103, 3104, 3105]) {
       const env = { ...ci, ...app(port), INHERIT_CI_BROWSER_RUNTIME: "ready" };
-      expect(checkedCiLauncherEnvironment(env, port, "linux")).toEqual(app(port));
+      expectAppIdentity(checkedCiLauncherEnvironment(env, port, "linux"), app(port));
       expect(() => checkedCiLauncherEnvironment({ ...env, NEXT_PUBLIC_APP_URL: "http://localhost:3109" }, port, "linux")).toThrow();
       expect(() => checkedCiLauncherEnvironment({ ...env, INHERIT_CI_BROWSER_RUNTIME: "" }, port, "linux")).toThrow();
       expect(() => checkedCiLauncherEnvironment({ ...env, RUNNER_ENVIRONMENT: "self-hosted" }, port, "linux")).toThrow();
@@ -77,6 +86,27 @@ describe("isolated standard CI runtime boundaries", () => {
       expect(() => checkedAppEnvironment({ ...app(3104), INHERIT_PREPARED_R2_ORIGIN: origin }, 3104)).toThrow();
     for (const bucket of ["", "genomes", "inherit-prepared-other", "inherit-prepared-ci/"])
       expect(() => checkedAppEnvironment({ ...app(3104), INHERIT_PREPARED_R2_BUCKET: bucket }, 3104)).toThrow();
+  });
+  it("admits the exact embryo gateway only on its fixed app variant", () => {
+    expect(checkedAppEnvironment(app(3105), 3105)).toEqual(app(3105));
+    for (const name of Object.keys(EMBRYO_APP_ENV)) {
+      expect(() => checkedAppEnvironment(Object.fromEntries(Object.entries(app(3105)).filter(([key]) => key !== name)), 3105)).toThrow();
+      expect(() => checkedAppEnvironment({ ...app(3105), [name]: "changed" }, 3105)).toThrow();
+      for (const port of [3100, 3101, 3102, 3103, 3104])
+        expect(() => checkedAppEnvironment({ ...app(port), [name]: EMBRYO_APP_ENV[name as keyof typeof EMBRYO_APP_ENV] }, port)).toThrow();
+    }
+    for (const origin of ["http://embryo.fragments.test:8141", "https://embryo.fragments.test:8140", "https://embryo.fragments.test:8141/", "https://example.invalid:8141"])
+      expect(() => checkedAppEnvironment({ ...app(3105), INHERIT_EMBRYO_R2_ORIGIN: origin }, 3105)).toThrow();
+  });
+  it("keeps the ephemeral webhook verifier exclusive to the isolated TEST-LOCAL variant",()=>{
+    expect(expectedVariantVerifier===refusedOtherVariantVerifier).toBe(true);
+    expect(checkedAppEnvironment(app(3105),3105).RESEND_WEBHOOK_SECRET===syntheticWebhookSecret).toBe(true);
+    const omitted=Object.fromEntries(Object.entries(app(3105)).filter(([name])=>name!=="RESEND_WEBHOOK_SECRET"));
+    expect(()=>checkedAppEnvironment(omitted,3105)).toThrow();
+    for(const malformedWebhookVerifier of ["","whsec_not-a-key","whsec_"+"x".repeat(200)])
+      expect(()=>checkedAppEnvironment({...app(3105),RESEND_WEBHOOK_SECRET:malformedWebhookVerifier},3105)).toThrow();
+    for(const port of [3100,3101,3102,3103,3104])
+      expect(()=>checkedAppEnvironment({...app(port),RESEND_WEBHOOK_SECRET:refusedOtherVariantVerifier},port)).toThrow();
   });
   it("requires actual firewall drop counters, not just failed network attempts", () => {
     const ipv4 = "Chain OUTPUT (policy DROP 3 packets, 180 bytes)\n1 60 DROP all -- * * 0.0.0.0/0 127.0.0.11\n";

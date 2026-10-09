@@ -11,11 +11,12 @@ type ObserverWindow = Window & { __inheritNativeResponseObserver?: {
 
 /** Observe exact response bytes from the browser's real fetch. No request is
  * replayed, and the app receives the original response, headers and body. The
- * keys name anchored pathname regexes; each must match exactly one POST. */
-export async function observeNativeResponses(page: Page, paths: Record<string, string>) {
-  if (!Object.keys(paths).length || Object.values(paths).some(path => !path.startsWith("^") || !path.endsWith("$")))
+ * keys name anchored pathname regexes; each must match exactly one request
+ * of the selected method. Existing callers continue to observe POST. */
+export async function observeNativeResponses(page: Page, paths: Record<string, string>, method: "POST"|"PUT"|"DELETE"="POST") {
+  if (!["POST","PUT","DELETE"].includes(method)||!Object.keys(paths).length || Object.values(paths).some(path => !path.startsWith("^") || !path.endsWith("$")))
     throw new Error("Native response observations require named anchored paths");
-  await page.evaluate(paths => {
+  await page.evaluate(({paths,method:observedMethod}) => {
     const target = window as ObserverWindow;
     if (target.__inheritNativeResponseObserver) throw new Error("Native response observer already installed");
     const nativeFetch = window.fetch;
@@ -32,7 +33,7 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       const [input, init] = args;
       const url = new URL(input instanceof Request ? input.url : String(input), location.href);
       const method = init?.method ?? (input instanceof Request ? input.method : "GET");
-      const matches = url.origin === location.origin && !url.search && method.toUpperCase() === "POST"
+      const matches = url.origin === location.origin && !url.search && method.toUpperCase() === observedMethod
         ? Object.values(pending).filter(entry => entry.pattern.test(url.pathname)) : [];
       if (matches.length > 1) throw new Error("Ambiguous native response observation");
       const entry = matches[0];
@@ -90,7 +91,7 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       },
     };
     window.fetch = observedFetch;
-  }, paths);
+  }, {paths,method});
   return {
     read: (key: string) => page.evaluate(async key => {
       const observer = (window as ObserverWindow).__inheritNativeResponseObserver;
@@ -100,10 +101,19 @@ export async function observeNativeResponses(page: Page, paths: Record<string, s
       if (observer.matchCounts[key] !== 1) throw new Error("Duplicate native response observation");
       return response;
     }, key),
-    dispose: () => page.evaluate(() => {
-      const target = window as ObserverWindow, observer = target.__inheritNativeResponseObserver;
-      if (observer && window.fetch === observer.observedFetch) window.fetch = observer.nativeFetch;
-      observer?.cancel(); delete target.__inheritNativeResponseObserver;
-    }),
+    dispose: async () => {
+      // A disposed page has no remaining observer to restore. Preserve the
+      // original failure when Playwright closes it at the test deadline.
+      if (page.isClosed()) return;
+      try {
+        await page.evaluate(() => {
+          const target = window as ObserverWindow, observer = target.__inheritNativeResponseObserver;
+          if (observer && window.fetch === observer.observedFetch) window.fetch = observer.nativeFetch;
+          observer?.cancel(); delete target.__inheritNativeResponseObserver;
+        });
+      } catch (error) {
+        if (!page.isClosed()) throw error;
+      }
+    },
   };
 }

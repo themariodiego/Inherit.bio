@@ -19,6 +19,7 @@ export const COMPARE_H1 = "Compare embryos";
 
 export const SIDE_BY_SIDE_HEADING = "Side by side";
 export const QUALITY_CHECK_HEADING = "Quality check";
+export const QUALITY_CHECK_TABLE_LABEL = "Quality check table";
 /** Two of the six fixed report headings, from their one home. */
 export const HOW_SURE_HEADING = REPORT_HEADINGS[3];
 export const WHERE_FROM_HEADING = REPORT_HEADINGS[5];

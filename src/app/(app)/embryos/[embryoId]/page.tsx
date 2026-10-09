@@ -35,6 +35,7 @@ import { allowedConditions } from "@/lib/embryos/allowed-conditions";
 import { EmbryoReadError, rowsOrThrow, selectEmbryo } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -73,7 +74,7 @@ async function loadDetail(input: {
   const admin = createAdminClient();
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
   const [qcResult, scoreResult] = await Promise.all([
-    admin.from("embryo_qc").select("*").eq("embryo_id", input.embryo.id).maybeSingle(),
+    readEmbryoQcRows(admin, input.embryo.cohortId, [input.embryo.id]),
     registered.size > 0
       ? admin
           .from("embryo_scores")
@@ -84,7 +85,7 @@ async function loadDetail(input: {
   ]);
   // A failed read is the error state, never "Still checking the files" (R11).
   if (qcResult.error) throw new EmbryoReadError("embryo_qc", qcResult.error.message);
-  const qc = qcResult.data;
+  const qc = qcResult.data?.[0];
   const scoreRows = rowsOrThrow("embryo_scores", scoreResult);
   if (!qc) return null;
   return projectDetail({
@@ -203,6 +204,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
         body = <BlockingState state="processing">{STILL_CHECKING_STATUS}</BlockingState>;
         break;
       }
+      const hasRiskRanges = detail.findings.some((finding) => finding.finding?.kind === "absolute_risk");
       const notCovered = detail.findings.some((finding) => finding.coverage_state === "not_covered");
       const column = { id: detail.id, sample_ordinal: detail.sample_ordinal, display_label: detail.display_label, status: detail.status, qc: detail.qc };
       body = (
@@ -224,11 +226,11 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
             }
             howSureWeAre={
               <>
-                <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} />
+                <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} hasRiskRanges={hasRiskRanges} />
                 <details data-slot="qc-detail" className="fam-disclosure text-sm">
                   <summary>{FULL_QC_TABLE_SUMMARY}</summary>
                   <div className="mt-3">
-                    <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} />
+                    <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} riskRangeEmbryoIds={new Set(hasRiskRanges ? [detail.id] : [])} />
                   </div>
                 </details>
               </>

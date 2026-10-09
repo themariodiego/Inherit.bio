@@ -4211,6 +4211,27 @@ owner chose the recommended option on all four.
   review-status threshold and the conditions in scope, for approval before
   anything is imported. Carrier results stay withheld until then.
 
+## 2026-09-28 — Embryo terminal purge: three owner answers
+
+Asked in chat with options after safeguards unit 3. The owner chose the
+recommended option on all three.
+
+- **Retention control rows are kept.** The purge terminalizes the exact
+  `ingest-abandoned-no-source` phase and its retention row, and does not
+  delete them, as the register's zero-residual rule says.
+- **An approved single-parent review is kept.** The purge keeps an approved
+  `single_parent_basis` review unchanged as a retained human review decision.
+  The residual check and the unwind planner skip exactly that one named
+  reference, `legal_reviews.target_id` for an approved review of that kind
+  (`20260930131000_embryo_purge_retained_review.sql`). Any other review, or
+  any other column, that names a deleted row still stops the purge.
+- **Two current contacts give no notice address.** A recipient with more
+  than one current contact gets a `delivery_unavailable` slot, as built.
+- **Restriction deletes the sources** (asked after safeguards unit 4,
+  recommended option). Restricting or withdrawing a cohort deletes its
+  canonical sources in the same transaction. Their parts follow once their
+  disposal is proved.
+
 ## 2026-09-28 (later) — Carrier importer answers and parallel work streams
 
 Asked in chat as selectable choices, with the recommended option first. The
@@ -4544,6 +4565,42 @@ suites before a draft push.
 
 This policy changes where the complete test suites run before merge. It
 changes no test, workflow, time limit, production setting or release gate.
+## 2026-10-02 — Owner review tasks and external test services
+
+The owner answered seven clickable questions in chat. These choices set the
+work order and owners. They do not supply a scientific verdict, a legal
+signature, a carrier activation or a production release approval.
+
+- **Codex sets up test services with existing access.** Configure the test
+  file store, self-hosted document scanner and email service where access
+  exists. Give the owner the exact remaining setup steps. Keep restricted
+  flows in TEST-LOCAL and keep production jurisdiction access closed.
+- **Prepare CFTR first, then one carrier condition at a time.** The owner
+  remains the carrier reviewer. Each condition needs its completed written
+  review and separate activation approval. All imported conditions remain
+  inactive until those steps are complete.
+- **Owner setup date: Monday, 5 October 2026.** The owner plans to complete
+  their remaining service setup steps and start the carrier reviews then.
+  This is not a production release date or a completed review.
+- **The owner reviews scientific sources.** This covers report claims and
+  citations. It is separate from carrier-condition reviews. Prepare the
+  source worklist; do not invent quotations or human review verdicts.
+- **Prepare the legal pack while the owner finds a lawyer.** Include the
+  consent texts, unresolved legal wording and jurisdiction review contract.
+  No lawyer has been named. This choice does not authorize contact or
+  substitute for the required professional determinations and signatures.
+- **Give the credential setup guide now.** The comprehension credential
+  belongs in the operator's own shell, never chat, project files or hosting
+  settings. The existing US$50 ceiling and one shared spending journal remain
+  binding. The fixed smoke, calibration and full-run order remains binding.
+- **Delay the human comprehension study.** No facilitator, independent
+  grader, recruitment date or completed result is supplied by this choice.
+  The human study remains a launch requirement. Continue the authorized
+  engineering and automated verification work.
+
+The owner also asked for every further unresolved product-brief decision as
+its own clickable question. First reconcile the old proposal file with the
+dated decisions so that settled or declined choices are not asked again.
 
 ## 2026-10-02 — Laboratory-confirmation text also appears on Emerging reports
 

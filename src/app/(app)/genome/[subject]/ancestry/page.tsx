@@ -35,7 +35,7 @@ import { LineageCard, type LineageCall } from "@/components/results/ancestry/lin
 import { NeanderthalCard } from "@/components/results/ancestry/neanderthal-card";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
-import { H1, REGIONS_HEADING, SECTION_LABEL, SOURCES_HEADING, storedModelLine } from "@/copy/ancestry";
+import { H1, REGIONS_HEADING, SECTION_LABEL, SOURCES_HEADING, UNCLASSIFIED_ANCESTRY_RESULT, storedModelLine } from "@/copy/ancestry";
 import { NAV_LABELS } from "@/copy/navigation";
 import { ANCESTRY_PREPARING } from "@/copy/genome/preparation";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
@@ -114,7 +114,8 @@ function admixtureRanges(raw: unknown, proportions: Record<Pop, number>): Partia
 const RANGE_TOLERANCE = 0.005;
 
 /** The stored `AdmixtureResult`, checked field by field; anything else renders as no result. */
-function admixtureView(raw: unknown, supportNote: string): AncestryResultView | null {
+function admixtureView(raw: unknown, supportNote: string, basis: "modelled" | undefined, coverageBasis?: "observed"): AncestryResultView | null {
+  if (basis !== "modelled") return null;
   if (!isRecord(raw) || !isRecord(raw.proportions) || typeof raw.markersUsed !== "number") return null;
   const proportions = {} as Record<Pop, number>;
   for (const pop of POPS) {
@@ -124,7 +125,7 @@ function admixtureView(raw: unknown, supportNote: string): AncestryResultView | 
   }
   const markersUsed = raw.markersUsed;
   return {
-    markersUsed,
+    markersUsed, basis, coverageBasis,
     supportNote,
     shown: tierQualifies("continental", markersUsed),
     view: regionsView(presentShares({ proportions }, { ranges: admixtureRanges(raw.ranges, proportions) })),
@@ -211,7 +212,7 @@ export default async function AncestryPage(
   // The five-region presentation, its words and its sources are for a stored
   // historical result only; a page with no result draws the current map.
   const historical = admix !== undefined && !sevenRegion;
-  const regions = historical ? admixtureView(admix.result, admix.support_note ?? "") : null;
+  const regions = historical ? admixtureView(admix.result, admix.support_note ?? "", admix.basis, admix.coverageBasis) : null;
   const subjectParams = { subject: subject.routeSegment };
   const reportsHref = route("genome.reports", subjectParams);
   // No result at all: the regions section states the absence and the two
@@ -255,7 +256,9 @@ export default async function AncestryPage(
         <h2 id="regions-heading" className="title text-ink">
           {REGIONS_HEADING}
         </h2>
-        {!admix ? <AncestryAbsent
+        {admix && admix.basis !== "modelled" ? <p data-slot="ancestry-unclassified-result" className="max-w-prose text-sm leading-relaxed text-ink">
+          {UNCLASSIFIED_ANCESTRY_RESULT}
+        </p> : !admix ? <AncestryAbsent
           shapes={regionalMapShapes()}
           absence={absence}
           reportsHref={reportsHref}
@@ -265,6 +268,8 @@ export default async function AncestryPage(
           panel={SEVEN_ANCESTRY_PANEL}
           minMarkers={SEVEN_ANCESTRY_PANEL.minimumMarkers}
           reference={REGIONAL_REFERENCE}
+          basis={admix.basis!}
+          coverageBasis={admix.coverageBasis}
           result={sevenRegionResult(admix)}
         /> : <AncestryRegions
           subjectId={dataSubjectId}

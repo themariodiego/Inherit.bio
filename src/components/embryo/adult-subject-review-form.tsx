@@ -104,7 +104,7 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
         </div>
         {review.acceptanceBlockedBy === "sign-in" ? (
           <Button asChild size="lg">
-            <Link href="/auth/sign-in?next=%2Fwithdraw%2Fsession">Sign in to accept</Link>
+            <Link href={route("auth.sign-in", { query: { next: "/withdraw/session" } })}>Sign in to accept</Link>
           </Button>
         ) : review.acceptanceBlockedBy === "other-account" ? (
           <p role="status" className="max-w-measure text-base leading-relaxed text-ink-muted">

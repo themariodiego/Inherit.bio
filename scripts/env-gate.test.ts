@@ -129,10 +129,10 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // `keyedDigestSet`; all three are declared in the template and named in
     // the guide.
     expect(result.directReadKeyCount).toBe(21);
-    // The preserved scanner factory adds exactly INHERIT_CLAMD_ADDRESS and
-    // one default-process.env binding. Its production path remains unused.
     expect(result.boundReadKeyCount).toBe(17);
-    expect(result.boundBindingCount).toBe(8);
+    // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
+    // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
+    expect(result.boundBindingCount).toBe(9);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(38);
     expect(result.templateKeyCount).toBe(31);

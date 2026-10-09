@@ -1,0 +1,71 @@
+{
+  "status": "PASS",
+  "sequentialGates": {
+    "claims": {
+      "path": "gate-claims.log",
+      "sha256": "ae979507f2c07ad9bafc0a27910c13224b79136f076bd3b52fc0dd6f52d30dda",
+      "exitCode": 0
+    },
+    "env": {
+      "path": "gate-env.log",
+      "sha256": "b22ad75abb1d3e40946758414437e34e3da525773bcf395a961a31f4a243603c",
+      "exitCode": 0
+    },
+    "first-glance": {
+      "path": "gate-first-glance.log",
+      "sha256": "207a74a864a07e43298c1c91e30c5c3d313b1d349eb9cfc232875188b8e7b777",
+      "exitCode": 0
+    },
+    "legal": {
+      "path": "gate-legal.log",
+      "sha256": "7ae019ae2149c9065767d03d3251ffb06d44d3f7cedadb308c8cd3ef43d8a59b",
+      "exitCode": 0
+    },
+    "jurisdictions": {
+      "path": "gate-jurisdictions.log",
+      "sha256": "46378eef47a7646336108e1f4ff286d06d96b1520e1857dfe0878f50f98f9ae1",
+      "exitCode": 0
+    },
+    "names": {
+      "path": "gate-names.log",
+      "sha256": "b63252b839afaebbdd4eb2b0042073df0d7463b39544d004df16d61056794e63",
+      "exitCode": 0
+    },
+    "readability": {
+      "path": "gate-readability.log",
+      "sha256": "80b9e1a209d7149ca166c208e020b612e539434ca17b1a5d1ad63b20056904d0",
+      "exitCode": 0
+    },
+    "routes": {
+      "path": "gate-routes.log",
+      "sha256": "be2de495395603de0cd40bd739a8015bb8665ed8ece9511750774187573d1ccb",
+      "exitCode": 0
+    },
+    "secrets": {
+      "path": "gate-secrets.log",
+      "sha256": "b9989ffdda71186201178c25bf8cbd44b78a8ffeb8e6f1129c50476ca1ca45b1",
+      "exitCode": 0
+    },
+    "templates": {
+      "path": "gate-templates.log",
+      "sha256": "140c3436f0450b368c03a98aa280fcca7be27f46714d2fdf47404d79957554d0",
+      "exitCode": 0
+    }
+  },
+  "localNameComparator": "41-byte recovered nonproduction sentinel only; hosted private comparator remains unproven locally",
+  "focus": {
+    "tests": 9,
+    "files": 1,
+    "log": "include-focused.log",
+    "status": "PASS"
+  },
+  "trackedIncludeClosure": {
+    "files": 472,
+    "includes": 154,
+    "log": "sql-include-closure.log",
+    "status": "PASS"
+  },
+  "sql": "UNRUN; root owns actual rehearsal",
+  "compiler": "NOT RUN; no TypeScript changes",
+  "provider": "NOT RUN"
+}
