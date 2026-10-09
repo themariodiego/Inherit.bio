@@ -21,7 +21,7 @@ export const ciBrowserSetupTimingReceiptSchema = identity.extend({ schemaVersion
   ...browserSetupTimingSchema.shape }).strict();
 const specFile = z.string().regex(/^e2e\/[a-z0-9][a-z0-9._/-]*\.spec\.ts$/).refine(value => !value.includes(".."));
 const digest = z.string().regex(/^[0-9a-f]{64}$/);
-const allocationIdentity = z.object({ mode: z.literal("duration-v1"), profileSha256: digest, planSha256: digest }).strict();
+const allocationIdentity = z.object({ mode: z.enum(["duration-v1", "queue-v1"]), profileSha256: digest, planSha256: digest }).strict();
 const allocationSchema = allocationIdentity.extend({ parts: z.array(z.object({
   index: z.number().int().min(1).max(CI_BROWSER_SHARDS), cases: caseSet,
 }).strict()).length(CI_BROWSER_SHARDS) }).strict();

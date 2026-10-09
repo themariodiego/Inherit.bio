@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ACCESSIBILITY_SWEEP_FILES, verifyAccessibilitySweepPlacement } from "./ci-browser-balance";
-import { browserDurationPlan, browserDurationTestList, optionalBrowserDurationProfile, parseBrowserDurationProfile,
+import { browserDurationPlan, browserDurationTestList, DEFAULT_BROWSER_ALLOCATION_SHA256, optionalBrowserDurationProfile, parseBrowserDurationProfile,
   verifyBrowserDurationListings, verifyBrowserDurationPartitionListing } from "./ci-browser-duration-plan";
 import { browserManifest, browserShardReceipt, verifyBrowserShards } from "./ci-browser-shards";
 import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
@@ -200,5 +200,31 @@ describe("duration history schedules the complete current browser suite", () => 
     const wrongPlan = structuredClone(plan.allocation); wrongPlan.parts[0].cases = wrongPlan.parts[1].cases;
     expect(() => browserManifest(full, source, tracked, wrongPlan)).toThrow();
     expect(() => verifyBrowserShards(browserManifest(full, source, tracked), receipts, source)).toThrow();
+  });
+  it.each(["profiled", "absent-history"])("keeps all 601 current cases in six queue-isolated %s jobs", mode => {
+    const next = Math.max(...rows.map(row => row.n)) + 1;
+    const current = [...rows, ...Array.from({ length: 601 - rows.length }, (_, index) =>
+      ({ file: "ordinary-0.spec.ts", project: "chromium", n: next + index }))];
+    const full = listing(current), saved = mode === "profiled" ? profile() : null;
+    const plan = browserDurationPlan(full, saved);
+    expect(plan.allocation.mode).toBe(saved ? "duration-v1" : "queue-v1");
+    expect(plan.allocation.profileSha256).toBe(saved?.sha256 ?? DEFAULT_BROWSER_ALLOCATION_SHA256);
+    expect(plan.parts).toHaveLength(6);
+    const assignments = plan.parts.map(part => current.filter(row => part.files.some(group =>
+      group.file === row.file && group.project === row.project)));
+    expect(() => verifyBrowserDurationListings(full, assignments.map(values => listing(values)), plan)).not.toThrow();
+    const exclusive = plan.parts.map(part => part.files.filter(group => Object.hasOwn(QUEUE_EXCLUSIVE_BROWSER_FILES, group.file)));
+    expect(exclusive.flat()).toHaveLength(5);
+    expect(exclusive.every(files => files.length <= 1)).toBe(true);
+    const tracked = [...new Set(current.map(row => `e2e/${row.file}`))];
+    const manifest = browserManifest(full, source, tracked, plan.allocation);
+    const receipts = assignments.map((values, index) => browserShardReceipt(full, listing(values), listing(values, true),
+      source, index + 1, 1, { setupMs: 1, buildMs: 1, bootstrapMs: 1, browserMs: 1 }, tracked, plan.allocation));
+    expect(verifyBrowserShards(manifest, receipts, source)).toBe(601);
+    const omitted = assignments.map(values => [...values]); omitted[0].pop();
+    expect(() => verifyBrowserDurationListings(full, omitted.map(values => listing(values)), plan)).toThrow();
+    const wrongMode = { ...receipts[0], allocation: { ...receipts[0].allocation!, mode: saved ? "queue-v1" as const : "duration-v1" as const } };
+    expect(() => verifyBrowserShards(manifest, [wrongMode, ...receipts.slice(1)], source)).toThrow();
+    expect(browserDurationPlan(listing([...current].reverse()), saved).allocation).toEqual(plan.allocation);
   });
 });

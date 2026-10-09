@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { verifyNativeBrowserBalance } from "./ci-browser-balance";
+import { browserDurationPlan, verifyBrowserDurationListings } from "./ci-browser-duration-plan";
 import { assertEmbryoJourneyAudits, EMBRYO_BROWSER_JOURNEYS } from "./ci-browser-embryo-partitions";
-import { trackedBrowserSpecs } from "./ci-browser-shards-io";
+import { createBrowserDurationList, loadBrowserDurationProfile, trackedBrowserSpecs } from "./ci-browser-shards-io";
 import { browserDiscoveryInventory, CI_BROWSER_SHARDS } from "./ci-browser-shards";
 
 /** A listing process receives no provider keys, optional selectors or runtime
@@ -24,11 +24,13 @@ export function browserDiscoveryEnvironment(env: Readonly<Record<string, string 
     RESEND_API_KEY: "re_EXAMPLE_SYNTHETIC_DISCOVERY", RESEND_BASE_URL: "http://127.0.0.1:8124" };
 }
 
-export function browserDiscoveryArguments(cli: string, index: number | null): string[] {
+export function browserDiscoveryArguments(cli: string, index: number | null, testList: string | null = null): string[] {
   assert(index === null || (Number.isInteger(index) && index >= 1 && index <= CI_BROWSER_SHARDS),
     "Only complete discovery or a registered native partition is allowed");
+  assert(index === null || testList === null, "Do not shard an already assigned duration list");
   return [cli, "test", "--config=playwright.config.ts", "--list", "--reporter=json",
-    ...(index === null ? [] : [`--shard=${index}/${CI_BROWSER_SHARDS}`])];
+    ...(index === null ? [] : [`--shard=${index}/${CI_BROWSER_SHARDS}`]),
+    ...(testList === null ? [] : [`--test-list=${testList}`])];
 }
 
 /** Mandatory local prepush preflight. No browser, app, SQL or hosted receipt. */
@@ -37,16 +39,20 @@ export function checkBrowserDiscovery(): { cases: number; files: number } {
     .map(file => [file, readFileSync(path.join("e2e", file), "utf8")])));
   const cli = createRequire(import.meta.url).resolve("@playwright/test/cli");
   const env = browserDiscoveryEnvironment(process.env);
-  const discover = (index: number | null): unknown => {
-    const result = spawnSync(process.execPath, browserDiscoveryArguments(cli, index), {
+  const discover = (index: number | null, testList: string | null = null): unknown => {
+    const result = spawnSync(process.execPath, browserDiscoveryArguments(cli, index, testList), {
       env, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", maxBuffer: 32_000_000, timeout: 60_000,
     });
     assert(!result.error && result.status === 0, "Browser discovery preflight failed");
     return JSON.parse(result.stdout);
   };
   const full = discover(null), inventory = browserDiscoveryInventory(full, trackedBrowserSpecs());
-  const partitions = Array.from({ length: CI_BROWSER_SHARDS }, (_, index) => discover(index + 1));
-  verifyNativeBrowserBalance(full, partitions);
+  const plan = browserDurationPlan(full, loadBrowserDurationProfile());
+  const partitions = plan.parts.map(part => {
+    const list = createBrowserDurationList(plan, part.index);
+    try { return discover(null, list.path); } finally { list.cleanup(); }
+  });
+  verifyBrowserDurationListings(full, partitions, plan);
   return { cases: inventory.cases.length, files: inventory.files.length };
 }
 
@@ -54,7 +60,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     assert(process.argv.length === 2, "Browser discovery preflight takes no selectors");
     const inventory = checkBrowserDiscovery();
-    console.log(`Browser discovery only: ${inventory.cases} cases, ${inventory.files} ordinary files, six complete native partitions.`);
+    console.log(`Browser discovery only: ${inventory.cases} cases, ${inventory.files} ordinary files, six complete isolated partitions.`);
   } catch {
     // Playwright JSON embeds configuration; never copy it into logs/artifacts.
     console.error("Browser discovery preflight failed; private diagnostics suppressed.");

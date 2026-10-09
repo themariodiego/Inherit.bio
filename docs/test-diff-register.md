@@ -1,3 +1,15 @@
+## 2026-10-09 — Use the complete queue-aware browser plan for discovery
+
+The new third-party embryo journey exposed a native fallback collision: two
+publication journeys landed in shard 3. Discovery, hosted manifest, execution
+and aggregation now share the existing whole-file planner. Saved timing profiles
+retain their exact scheduling path. If both profiles are absent, explicit
+queue-v1 weights use current case counts, not fabricated timing history. Six
+jobs, every discovered case, accessibility placement, exclusive publication
+queues, zero retries and all time limits remain required. Malformed or unreadable
+history still refuses; neither a missing profile nor the new journey removes a
+test. The original failed discovery result is preserved.
+
 ## 2026-10-09 — Keep the appeal route and storage census exact
 
 The native appeal session document and completion endpoints, plus the evidence

@@ -9,7 +9,7 @@ import { createRequire } from "node:module";
 import AdmZip from "adm-zip";
 import { z } from "zod";
 import { decodeHistoricalZip } from "./ci-browser-duration-history-io";
-import { selectBrowserDurationProfile } from "./ci-browser-duration-plan";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
 import { hostedResultRequestSchema, hostedWorkflowContract, verifyHostedMetadata, coverageArtifacts,
   verifyArtifactBytes, verifyHostedCoverage, repositoryLogSummary, verifyCurrentChecks, commandLog,
   hashBytes, hostedGetArgv, type HostedResultRequest } from "./hosted-ci-result";
@@ -108,7 +108,8 @@ function sourceContract(request: HostedResultRequest) {
   const selected = selectBrowserDurationProfile(() => profile("data/ci/browser-duration-profile.json"),
     () => profile("data/ci/browser-duration-profile-v2.json"));
   return { workflow: hostedWorkflowContract(yaml.load(git(["show", `${request.testedHead}:${request.workflow}`]).toString())),
-    trackedSpecs: tracked.filter(file => file.startsWith("e2e/") && file.endsWith(".spec.ts")), profileSha256: selected?.sha256 ?? null,
+    trackedSpecs: tracked.filter(file => file.startsWith("e2e/") && file.endsWith(".spec.ts")),
+    profileSha256: selected?.sha256 ?? DEFAULT_BROWSER_ALLOCATION_SHA256,
     actualParents: git(["show", "-s", "--format=%P", request.testedHead]).toString().trim().split(/\s+/).filter(Boolean) };
 }
 type CaptureRecord = { name: string; argv: string[]; startedAt: string; finishedAt: string; elapsedMs: number;

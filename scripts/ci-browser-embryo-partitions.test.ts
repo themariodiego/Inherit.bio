@@ -37,11 +37,15 @@ describe("fresh native embryo partitions", () => {
   });
   it("checks native assignment before Playwright execution and during independent full inventory", () => {
     const run = readFileSync("scripts/run-e2e.ts", "utf8");
-    expect(run.indexOf("browserReportCases(assignedDiscovery, shard, false)")).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
+    const assignedGuard = "verifyBrowserDurationPartitionListing(assignedDiscovery, plan, shard)";
+    expect(run).toContain(assignedGuard);
+    expect(run.indexOf(assignedGuard)).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
     const inventory = readFileSync("scripts/ci-browser-shards.run.mts", "utf8");
-    expect(inventory).toContain("const native = discoverBrowserCases(index)");
-    expect(inventory).toContain("browserReportCases(native, index, false)");
-    expect(inventory.indexOf("discoverBrowserCases(index)")).toBeLessThan(inventory.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
+    expect(inventory).toContain("browserDurationPlan(full, profile)");
+    expect(inventory).toContain("discoverBrowserCases(null, list.path)");
+    expect(inventory).toContain("verifyBrowserDurationListings(full, assignments, plan)");
+    expect(inventory.indexOf("verifyBrowserDurationListings(full, assignments, plan)"))
+      .toBeLessThan(inventory.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
   });
 });
 
