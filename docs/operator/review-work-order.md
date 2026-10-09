@@ -1,6 +1,9 @@
 # Owner review work order
 
-Date: 2 October 2026. Owner setup and first review target: 5 October 2026.
+Prepared on 2 October 2026. Updated on 9 October 2026. The owner set 5 October
+for private setup and the first carrier review. The scientific source and
+lawyer consent review target is 12 October 2026. These are planning dates;
+each completed review still needs its own record and approval.
 
 ## Carrier conditions
 
@@ -35,4 +38,7 @@ their own determination. No real jurisdiction opens from this work order.
 
 Follow `docs/operator/comprehension-key-setup.md` for private setup now.
 The automated checks keep their fixed order and existing spending limit.
-The human study is delayed. It remains a launch requirement.
+Plan the human study after the automated tests pass, as approved on 3 October
+2026. The study needs 12 eligible participants and a separate grader. A passing
+human study remains a full-release requirement. This plan does not authorize
+contact with participants.
