@@ -39,13 +39,13 @@ export function FindingsSection({
         if (group.length === 0) return null;
         return (
           <div key={category} data-slot="finding-group" data-category={category} className="space-y-3">
-            <p data-slot="category-label" className="font-medium text-ink">
+            <p data-slot="category-label" className="eyebrow">
               {category}
             </p>
             <ul className="space-y-3">
               {group.map((finding) => (
                 <li key={finding.condition_id} data-condition-id={finding.condition_id} className="space-y-1">
-                  <p className="text-sm text-ink-muted">{finding.condition_name}</p>
+                  <p className="label text-ink">{finding.condition_name}</p>
                   <CompareCell finding={finding} subjectId={subjectId} />
                 </li>
               ))}

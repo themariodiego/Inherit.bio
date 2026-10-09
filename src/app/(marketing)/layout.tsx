@@ -11,7 +11,12 @@ export default function MarketingLayout({
     <>
       <SkipLink />
       <SiteHeader />
-      <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+      <main
+        id="main"
+        tabIndex={-1}
+        data-surface="marketing"
+        className="flex-1 focus:outline-none"
+      >
         {children}
       </main>
       <SiteFooter />

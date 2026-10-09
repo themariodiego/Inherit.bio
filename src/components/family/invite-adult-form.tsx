@@ -22,10 +22,10 @@ import {
 
 /**
  * Path A, the only path that exists (brief §5 §5.2): an address, an optional
- * note and one attestation. The invited person accepts in their own account,
- * adds their own file and grants from their side; nothing here touches their
- * data. The secondary Path B link is not rendered, because Path B has no
- * screen to link to.
+ * note and one attestation, on one surface with one primary action. The
+ * invited person accepts in their own account, adds their own file and
+ * grants from their side; nothing here touches their data. The secondary
+ * Path B link is not rendered, because Path B has no screen to link to.
  */
 export function InviteAdultForm() {
   const requestId = useRef(crypto.randomUUID());
@@ -35,16 +35,16 @@ export function InviteAdultForm() {
 
   if (complete) {
     return (
-      <div role="status" className="rounded-2xl border border-line bg-card p-6">
-        <h2 className="font-medium">{REQUESTED_HEADING}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">{REQUESTED_BODY}</p>
+      <div role="status" className="surface-inset surface-pad max-w-measure space-y-3">
+        <h2 className="title text-ink">{REQUESTED_HEADING}</h2>
+        <p className="text-base leading-relaxed text-ink">{REQUESTED_BODY}</p>
       </div>
     );
   }
 
   return (
     <form
-      className="space-y-5 rounded-2xl border border-line bg-card p-6"
+      className="surface surface-pad space-y-6"
       onSubmit={async (event) => {
         event.preventDefault();
         setPending(true);
@@ -72,20 +72,20 @@ export function InviteAdultForm() {
       }}
     >
       <div className="space-y-2">
-        <h2 className="font-medium">{INVITE_THEM_HEADING}</h2>
-        <p className="text-sm leading-relaxed text-ink-muted">{INVITE_THEM_BODY}</p>
+        <h2 className="title text-ink">{INVITE_THEM_HEADING}</h2>
+        <p className="max-w-measure text-base leading-relaxed text-ink-muted">{INVITE_THEM_BODY}</p>
       </div>
-      <div className="space-y-2">
+      <div className="max-w-md space-y-2">
         <Label htmlFor="adult-email">{EMAIL_LABEL}</Label>
         <Input id="adult-email" name="email" type="email" autoComplete="email" required />
       </div>
-      <div className="space-y-2">
+      <div className="max-w-measure space-y-2">
         <Label htmlFor="adult-note">{NOTE_LABEL}</Label>
         <Textarea id="adult-note" name="note" rows={3} maxLength={500} />
-        <p className="text-sm text-ink-muted">{NOTE_HINT}</p>
+        <p className="caption">{NOTE_HINT}</p>
       </div>
-      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
-        <input type="checkbox" name="adultAttestation" required className="mt-1 size-4" />
+      <label className="flex min-h-11 max-w-measure items-start gap-3 text-base leading-relaxed text-ink">
+        <input type="checkbox" name="adultAttestation" required className="mt-1.5 size-4 shrink-0 accent-forest" />
         <span>{ATTESTATION_LABEL}</span>
       </label>
       {error ? (
@@ -93,9 +93,11 @@ export function InviteAdultForm() {
           {error}
         </p>
       ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? SENDING_BUTTON : SEND_BUTTON}
-      </Button>
+      <div>
+        <Button type="submit" size="lg" disabled={pending}>
+          {pending ? SENDING_BUTTON : SEND_BUTTON}
+        </Button>
+      </div>
     </form>
   );
 }

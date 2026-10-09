@@ -1,6 +1,6 @@
 /**
  * <PeopleList> — the Family hub's list of adults (design §2.1). Server
- * component. One card each, in the graph's order (name alone), with no
+ * component. One ruled row each, in the graph's order (name alone), with no
  * count, no total and no comparison between them.
  */
 import { PersonCard, type PersonCardState } from "@/components/family/person-card";
@@ -21,7 +21,7 @@ export function PeopleList({
   viewerAccountId: string;
 }) {
   return (
-    <ul aria-label={PEOPLE_LIST_LABEL} data-slot="people-list" className="space-y-2">
+    <ul aria-label={PEOPLE_LIST_LABEL} data-slot="people-list" className="surface fam-rows">
       {entries.map(({ person, state, href }) => (
         <PersonCard
           key={person.handle.id}

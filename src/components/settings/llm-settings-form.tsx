@@ -62,7 +62,7 @@ export function LlmSettingsForm({
 
   return (
     <form
-      className="space-y-4"
+      className="surface surface-pad rec-stack"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
@@ -88,7 +88,7 @@ export function LlmSettingsForm({
         finally { setBusy(false); setApiKey(""); }
       }}
     >
-      <div className="space-y-1.5">
+      <div className="rec-stack-sm">
         <Label htmlFor="llm-provider">Provider</Label>
         <Select
           value={preset}
@@ -100,7 +100,7 @@ export function LlmSettingsForm({
             setModel(v === "anthropic" ? DEFAULT_ANTHROPIC_MODEL : v === "custom" ? "llama3.1" : "");
           }}
         >
-          <SelectTrigger id="llm-provider" className="w-full">
+          <SelectTrigger id="llm-provider" className="w-full max-w-md">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -112,14 +112,14 @@ export function LlmSettingsForm({
           </SelectContent>
         </Select>
         {preset === "custom" ? (
-          <p className="text-xs text-ink-muted">
+          <p className="caption max-w-measure">
             {localAvailable ? "This server can use the local model addresses set by its owner." : "This server can use external HTTPS providers. It cannot reach a model on your computer."}
           </p>
         ) : null}
         {guide ? (
-          <div className="space-y-2 rounded-xl border border-line bg-card p-4 text-sm">
+          <div className="surface-inset rec-stack-sm mt-2 max-w-measure p-4 text-sm text-ink">
             <p className="font-medium">{COPILOT_PRESET_GUIDE_HEADING}</p>
-            <ul className="list-disc space-y-1 pl-5 text-ink-muted">
+            <ul className="list-disc space-y-1 pl-5">
               <li>{guide.key}</li>
               <li>{guide.spending}</li>
               <li>{guide.subscription}</li>
@@ -130,7 +130,7 @@ export function LlmSettingsForm({
       </div>
 
       {provider === "openai_compatible" ? (
-        <div className="space-y-1.5">
+        <div className="rec-field">
           <Label htmlFor="llm-base-url">Base URL</Label>
           {presetUrl ? (
             <Input id="llm-base-url" value={presetUrl} readOnly aria-describedby="llm-base-url-preset" />
@@ -143,15 +143,15 @@ export function LlmSettingsForm({
             />
           )}
           {presetUrl ? (
-            <p id="llm-base-url-preset" className="text-xs text-ink-muted">{COPILOT_PRESET_ADDRESS_HINT}</p>
+            <p id="llm-base-url-preset" className="caption">{COPILOT_PRESET_ADDRESS_HINT}</p>
           ) : null}
-          <p className="text-xs text-ink-muted">
+          <p className="caption">
             The server verifies the destination. Saving does not grant permission to send your information.
           </p>
         </div>
       ) : null}
 
-      <div className="space-y-1.5">
+      <div className="rec-field">
         <Label htmlFor="llm-model">Model</Label>
         {provider === "anthropic" ? (
           <Select value={model} onValueChange={setModel}>
@@ -178,11 +178,11 @@ export function LlmSettingsForm({
           />
         )}
         {modelHint ? (
-          <p id="llm-model-hint" className="text-xs text-ink-muted">{modelHint}</p>
+          <p id="llm-model-hint" className="caption">{modelHint}</p>
         ) : null}
       </div>
 
-      <div className="space-y-1.5">
+      <div className="rec-field">
         <Label htmlFor="llm-key">
           API key{" "}
           {current?.key_last4 ? (
@@ -204,14 +204,14 @@ export function LlmSettingsForm({
           required={(preset === "openai" || preset === "xai") && !current?.key_last4}
           placeholder={current?.key_last4 ? "Enter to replace" : "sk-…"}
         />
-        <p className="text-xs text-ink-muted">
+        <p className="caption">
           We encrypt your key before storing it, using a key held on the server.
           We never log it or show it again. You can delete it below.
         </p>
       </div>
 
-      {message ? <p className="text-sm">{message}</p> : null}
-      <div className="flex gap-2">
+      {message ? <p className="max-w-measure text-sm">{message}</p> : null}
+      <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={busy}>
           Save provider
         </Button>

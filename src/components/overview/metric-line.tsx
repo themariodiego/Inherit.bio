@@ -19,7 +19,7 @@ export function MetricLine({
   }
   return (
     <p className={className ?? "text-base leading-relaxed"}>
-      <span data-metric-value className="font-medium text-ink">
+      <span data-metric-value className="tabular font-medium text-ink">
         {value}
       </span>{" "}
       <span data-metric-note className="text-ink-muted">

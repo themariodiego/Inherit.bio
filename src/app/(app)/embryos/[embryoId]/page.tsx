@@ -112,11 +112,13 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
     // cannot name the embryo; it renders the register's copy under the
     // domain heading.
     return (
-      <div data-surface="standard" className="page-stack mx-auto max-w-4xl space-y-8">
-        <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: DETAIL_SECTION_LABEL }]} />
-        <header className="space-y-3">
-          <h1 className="display text-3xl">{DETAIL_SECTION_LABEL}</h1>
-        </header>
+      <div data-surface="standard" className="page-stack stack-blocks max-w-4xl">
+        <div className="fam-head">
+          <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: DETAIL_SECTION_LABEL }]} />
+          <header>
+            <h1 className="display">{DETAIL_SECTION_LABEL}</h1>
+          </header>
+        </div>
         <EmbryoUnavailable decision={decision} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }} />
       </div>
     );
@@ -210,12 +212,12 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
             whatThisIs={
               <>
                 <StandingStatement />
-                <p className="max-w-prose text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
+                <p className="max-w-measure text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
               </>
             }
             yourResult={<FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />}
             whatThisDoesntMean={
-              <ul className="max-w-prose list-disc space-y-1 pl-5 text-base leading-relaxed text-ink">
+              <ul className="max-w-measure list-disc space-y-1 pl-5 text-base leading-relaxed text-ink">
                 <li>{NOT_ABOUT_ANY_CHILD}</li>
                 {notCovered ? <li>{WHAT_THIS_DOESNT_MEAN_NOT_COVERED}</li> : null}
               </ul>
@@ -223,8 +225,8 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
             howSureWeAre={
               <>
                 <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} />
-                <details data-slot="qc-detail" className="text-sm">
-                  <summary className="cursor-pointer text-ink-muted">{FULL_QC_TABLE_SUMMARY}</summary>
+                <details data-slot="qc-detail" className="fam-disclosure text-sm">
+                  <summary>{FULL_QC_TABLE_SUMMARY}</summary>
                   <div className="mt-3">
                     <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} />
                   </div>
@@ -232,18 +234,18 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
               </>
             }
             whatYouCanDo={
-              <p data-slot="no-action" className="max-w-prose text-base leading-relaxed text-ink">
+              <p data-slot="no-action" className="body-lg max-w-measure text-ink">
                 {NOTHING_SETS_APART}
               </p>
             }
             whereThisComesFrom={
               <>
-                <p className="max-w-prose text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
-                <p data-slot="registry-status" className="max-w-prose text-sm leading-relaxed text-ink">
+                <p className="max-w-measure text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
+                <p data-slot="registry-status" className="max-w-measure text-sm leading-relaxed text-ink">
                   {REGISTRY_EMPTY_SENTENCE}
                 </p>
                 {/* inherit-figure-exempt: the date the quality check ran is UI chrome */}
-                <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{qcRunOn(formatDate(detail.qc.computed_at))}</p>
+                <p className="caption max-w-measure">{qcRunOn(formatDate(detail.qc.computed_at))}</p>
               </>
             }
           />
@@ -254,12 +256,14 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
   }
 
   return (
-    <div data-surface="standard" className="page-stack mx-auto max-w-4xl space-y-8">
-      <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: embryo.displayLabel }]} />
-      <SubjectBar subject={subject} fileCount={null} viewerAccountId={user.id} />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{embryo.displayLabel}</h1>
-      </header>
+    <div data-surface="standard" className="page-stack stack-blocks max-w-4xl">
+      <div className="fam-head">
+        <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: embryo.displayLabel }]} />
+        <SubjectBar subject={subject} fileCount={null} viewerAccountId={user.id} />
+        <header>
+          <h1 className="display">{embryo.displayLabel}</h1>
+        </header>
+      </div>
       {body}
     </div>
   );

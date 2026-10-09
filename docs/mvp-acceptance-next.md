@@ -1,5 +1,18 @@
 # MVP-first acceptance sequence
 
+**D-081 source reconciliation, 8 October 2026.** The upcoming legacy
+rights-token route removal described in the dated snapshots below is superseded:
+PR #280 removed both legacy surfaces and their exception rows, and verified
+main `4eec89bb` retains that retirement. Canonical fragment/session rights remain.
+The retained 3 October GET/deployment evidence concerns older main `0711334e`
+only; it does not prove current-main deployment, a complete current browser
+run or final 13 October closure. The original immediate pre-merge Boolean raw
+receipt was not found, and saved success metadata is not the full original
+exact-head CI/report proof. The 13 October item is an evidence/documentation
+checkpoint, not another deletion task. See
+[the reconciliation](evidence/d081-retirement-reconciliation-20261003.md).
+G2.1 and G8.5 remain NO; every other obligation and the dated history remain.
+
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-18.
 Full-plan acceptance is **30/65**, after G5.3a closed on CI run 35327691091.
 The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;

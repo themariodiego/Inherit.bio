@@ -64,6 +64,37 @@ export function netBytes(value: string): number {
   return result;
 }
 
+/** Read-only metadata observation as the configured user of the exact owned scanner. */
+export function signatureAllocationCommand(id: string): string[] {
+  if (!/^[a-f0-9]{64}$/u.test(id)) throw new Error("owned_id_refused");
+  return ["exec", "--user", "clamav:clamav", id, "/usr/bin/find", "-P", "/signatures",
+    "-printf", "%y\t%n\t%b\t%s\t%P\\0"];
+}
+
+/** GNU find reports allocated 512-byte blocks without reading signature contents. */
+export function signatureAllocatedBytes(text: string): number {
+  if (Buffer.byteLength(text) > 4 * 1024 * 1024 || !text.endsWith("\0")) throw new Error("signature_metadata_refused");
+  const records = text.slice(0, -1).split("\0"), paths = new Set<string>();
+  if (!records.length || records.length > 8192) throw new Error("signature_metadata_refused");
+  let total = 0;
+  for (const record of records) {
+    const fields = record.split("\t");
+    if (fields.length !== 5) throw new Error("signature_metadata_refused");
+    const [type, links, blocks, size, relative] = fields;
+    if ((type !== "d" && type !== "f") || ![links, blocks, size].every(value => /^(?:0|[1-9][0-9]{0,15})$/u.test(value!))
+      || relative!.length > 1024 || /[\u0000-\u001f\u007f]/u.test(relative!)
+      || relative!.startsWith("/") || relative!.split("/").some(part => part === "." || part === "..")
+      || relative!.includes("//") || relative!.endsWith("/") || paths.has(relative!)
+      || !paths.size && (relative !== "" || type !== "d") || paths.size && relative === "") throw new Error("signature_metadata_refused");
+    const count = Number(links), allocated = Number(blocks) * 512, bytes = Number(size);
+    if (!Number.isSafeInteger(count) || count < 1 || type === "f" && count !== 1
+      || !Number.isSafeInteger(allocated) || !Number.isSafeInteger(bytes)) throw new Error("signature_file_shape_refused");
+    paths.add(relative!); total += allocated;
+    if (!Number.isSafeInteger(total) || total > 1024 ** 3) throw new Error("signature_budget_exceeded");
+  }
+  return total;
+}
+
 export interface CommandRecord {
   argv: string[]; startedAt: string; endedAt: string; elapsedMs: number;
   exit: number | null; signal: string | null; timedOut: boolean; commandError: string | null;

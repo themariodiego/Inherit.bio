@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { providerDisplayName } from "@/lib/llm";
 
@@ -33,29 +34,26 @@ export function ConsentList({
 
   if (grants.length === 0) {
     return (
-      <p className="text-sm text-ink-muted">
+      <EmptyState>
         No cloud-LLM consent grants. None are needed for local models.
-      </p>
+      </EmptyState>
     );
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="rec-list">
       {grants.map((g) => (
-        <li
-          key={g.id}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-card p-4"
-        >
-          <div>
-            <p className="text-sm font-medium">
+        <li key={g.id} className="rec-row">
+          <div className="rec-main">
+            <p className="rec-name">
               {providerDisplayName(g.provider_key)}
               {g.revoked_at ? (
-                <span className="ml-2 text-xs text-ink-muted">
+                <span className="caption ml-2">
                   revoked {new Date(g.revoked_at).toLocaleDateString()}
                 </span>
               ) : null}
             </p>
-            <p className="mt-0.5 text-xs text-ink-muted">
+            <p className="caption">
               Granted {new Date(g.granted_at).toLocaleDateString()} ·{" "}
               {g.data_classes.length} data classes
             </p>

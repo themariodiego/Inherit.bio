@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Uploader } from "./uploader";
 import { route } from "@/lib/primary-routes";
 import { OWN_UPLOAD_STATEMENTS } from "@/lib/uploads/own-consent";
@@ -19,7 +20,8 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (view.kind === "unavailable" || view.kind === "underage") {
-    return <p role="status">{view.kind === "underage" ? COPY.underage : COPY.unavailable}</p>;
+    return <p role="status" className="surface-inset surface-pad-sm max-w-measure text-ink">
+      {view.kind === "underage" ? COPY.underage : COPY.unavailable}</p>;
   }
   if (view.kind === "ready") return <Uploader subjectId={view.subjectId} limits={limits} />;
 
@@ -36,19 +38,22 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
     finally { setPending(false); }
   }
   if (view.kind === "account-completion") {
-    return <form className="space-y-4 rounded-2xl border border-line bg-card p-6" onSubmit={async event => {
+    return <form className="plate" onSubmit={async event => {
       event.preventDefault();
       const dateOfBirth = String(new FormData(event.currentTarget).get("dateOfBirth") ?? "");
       if (!isAdultOnUtcDate(dateOfBirth)) { setError(COPY.adultRequired); return; }
       await submit(route("api.account-completion"), { dateOfBirth, presentationToken: view.token }, view.token, true);
     }}>
-      <h2 className="display text-2xl">{COPY.accountHeading}</h2>
-      <p className="text-sm text-ink-muted">{COPY.accountDetail}</p>
-      <label className="block space-y-2"><span>{COPY.birthDateLabel}</span>
-        <Input type="date" name="dateOfBirth" autoComplete="bday" required disabled={pending || saved} />
-      </label>
-      {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-      <Button type="submit" disabled={pending || saved}>{pending ? COPY.saving : COPY.accountContinue}</Button>
+      <div className="plate-head"><h2 className="eyebrow">{COPY.accountHeading}</h2></div>
+      <div className="plate-body rec-stack">
+        <p className="max-w-measure text-sm text-ink-muted">{COPY.accountDetail}</p>
+        <div className="rec-field">
+          <Label htmlFor="own-date-of-birth">{COPY.birthDateLabel}</Label>
+          <Input id="own-date-of-birth" type="date" name="dateOfBirth" autoComplete="bday" required disabled={pending || saved} />
+        </div>
+        {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
+        <div><Button type="submit" disabled={pending || saved}>{pending ? COPY.saving : COPY.accountContinue}</Button></div>
+      </div>
     </form>;
   }
   // Both state variants above returned; this is one explicitly presented artifact.
@@ -83,19 +88,23 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
     artifactVersion: view.artifact.version, artifactPresentationToken: view.token, affirmed: true,
     statementKeys: [...OWN_UPLOAD_STATEMENTS[view.artifact.key]],
   }, view.token, true);
-  return <section className="space-y-5 rounded-2xl border border-line bg-card p-6">
-    <h2 className="display text-2xl">{own ? COPY.ownHeading : COPY.insuranceHeading}</h2>
-    <p className="text-sm text-ink-muted">Version {view.artifact.version}</p>
-    <p data-legal-summary className="text-sm">{view.artifact.summary}</p>
-    <div className="whitespace-pre-wrap text-sm leading-relaxed">{view.artifact.body}</div>
-    <label className="flex min-h-11 items-start gap-3"><input type="checkbox" checked={checked}
-      disabled={pending || saved} className="mt-1 size-5" onChange={event => {
-        setChecked(event.target.checked);
-        if (own && event.target.checked) void sign();
-      }} /><span>{own ? COPY.ownCheckbox : COPY.insuranceCheckbox}</span></label>
-    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-    {saved ? <p role="status" className="text-sm">{COPY.saved}</p> : null}
-    {own ? <Uploader subjectId={view.subjectId} limits={limits} disabled /> : <Button onClick={() => void sign()}
-      disabled={!checked || pending || saved}>{pending ? COPY.saving : COPY.insuranceContinue}</Button>}
+  return <section className="plate">
+    <div className="plate-head">
+      <h2 className="eyebrow">{own ? COPY.ownHeading : COPY.insuranceHeading}</h2>
+      <p className="caption rec-plate-meta">Version {view.artifact.version}</p>
+    </div>
+    <div className="plate-body rec-stack">
+      <p data-legal-summary className="max-w-measure text-sm">{view.artifact.summary}</p>
+      <div className="max-w-measure whitespace-pre-wrap text-sm leading-relaxed">{view.artifact.body}</div>
+      <label className="rec-choice"><input type="checkbox" checked={checked}
+        disabled={pending || saved} className="size-5 accent-forest" onChange={event => {
+          setChecked(event.target.checked);
+          if (own && event.target.checked) void sign();
+        }} /><span>{own ? COPY.ownCheckbox : COPY.insuranceCheckbox}</span></label>
+      {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
+      {saved ? <p role="status" className="text-sm">{COPY.saved}</p> : null}
+      {own ? <Uploader subjectId={view.subjectId} limits={limits} disabled framed={false} /> : <div><Button onClick={() => void sign()}
+        disabled={!checked || pending || saved}>{pending ? COPY.saving : COPY.insuranceContinue}</Button></div>}
+    </div>
   </section>;
 }

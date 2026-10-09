@@ -7,34 +7,44 @@ export const metadata: Metadata = { title: "Embryo Analysis" };
 
 export default function EmbryoAnalysisPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16">
-      <p className="eyebrow">Embryo Analysis</p>
-      <h1 className="display mt-4 text-4xl sm:text-5xl">A bounded record, held for a future person.</h1>
-      <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">
-        Inherit can explain supported findings on non-sex chromosomes. It does
-        not rank embryos, suggest which embryo to transfer, predict sex, or
-        guess when data is missing.
-      </p>
-      <section className="mt-10 rounded-2xl border border-line bg-card p-6">
-        <h2 className="font-medium">Not available in any production jurisdiction yet</h2>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Embryo tools need a review by a legal expert and a list of approved
-          conditions. Neither is ready, so these tools stay off on the hosted service.
+    <div className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head">
+        <p className="eyebrow">Embryo Analysis</p>
+        <h1 className="display display-lg">A bounded record, held for a future person.</h1>
+        <p className="lede reading-intro">
+          Inherit can explain supported findings on non-sex chromosomes. It does
+          not rank embryos, suggest which embryo to transfer, predict sex, or
+          guess when data is missing.
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Embryo scores that add up many small effects are for research only.
-          Inherit will not offer them as a service.
+      </header>
+      <div className="mt-section max-w-3xl stack-blocks">
+        <section className="surface surface-pad">
+          <h2 className="title">Not available in any production jurisdiction yet</h2>
+          <div className="legal-prose mt-4">
+            <p>
+              Embryo tools need a review by a legal expert and a list of approved
+              conditions. Neither is ready, so these tools stay off on the hosted service.
+            </p>
+            <p>
+              Embryo scores that add up many small effects are for research only.
+              Inherit will not offer them as a service.
+            </p>
+          </div>
+        </section>
+        <section className="surface-tint surface-pad">
+          <h2 className="title">If a child is born from this</h2>
+          <p className="mt-4 max-w-measure text-ink">
+            The record belongs to the future person. They retain rights to know,
+            not know, correct, export, restrict analysis, and delete it.
+          </p>
+          <p className="mt-2">
+            <Link href={route("legal.future-person")} className="link-target quiet-link text-sm">Read the Future Person Charter</Link>
+          </p>
+        </section>
+        <p>
+          <Button asChild variant="outline"><Link href={route("app.overview")}>Open Inherit</Link></Button>
         </p>
-      </section>
-      <section className="mt-6 rounded-2xl bg-tint p-6">
-        <h2 className="font-medium">If a child is born from this</h2>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          The record belongs to the future person. They retain rights to know,
-          not know, correct, export, restrict analysis, and delete it.
-        </p>
-        <Link href={route("legal.future-person")} className="mt-3 inline-flex min-h-11 items-center text-sm underline underline-offset-2">Read the Future Person Charter</Link>
-      </section>
-      <Button asChild variant="outline" className="mt-8"><Link href={route("app.overview")}>Open Inherit</Link></Button>
+      </div>
     </div>
   );
 }

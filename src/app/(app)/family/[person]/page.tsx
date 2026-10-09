@@ -6,6 +6,7 @@ import { cache } from "react";
 import { ResultGate } from "@/components/family/result-gate";
 import { isFixtureSlug } from "@/components/reports/library";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { EmptyState } from "@/components/site/empty-state";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { TermDefinition } from "@/components/figures/term-definition";
 import { NAV_LABELS } from "@/copy/navigation";
@@ -157,26 +158,27 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
   const subject = { ...person.handle, displayLabel: person.displayLabel };
 
   return (
-    <div data-surface="standard" className="page-stack mx-auto max-w-4xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: NAV_LABELS.family, href: route("family.index") },
-          { label: person.displayLabel },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{PERSON_H1}</h1>
-      </header>
+    <div data-surface="standard" className="page-stack stack-blocks max-w-4xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: NAV_LABELS.family, href: route("family.index") },
+            { label: person.displayLabel },
+          ]}
+        />
+        <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+        <header>
+          <h1 className="display">{PERSON_H1}</h1>
+        </header>
+      </div>
 
       {/* The states of §1.4, in the order a reader meets them. The Tier-2
           gate guards results, so it renders only where a result would: with
           nothing shared, or with sharing paused, there is nothing to gate
           and a wall would say less than the sentence does. */}
       {!allowed ? (
-        <section role="status" className="max-w-prose space-y-3 rounded-2xl border border-line bg-card p-6">
-          <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
+        <section role="status">
+          <EmptyState>{decision.userFacingCopy}</EmptyState>
         </section>
       ) : person.sharing === "paused" ? (
         // Two no-output branches one line apart, and they mean opposite
@@ -184,45 +186,39 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
         // below never consented at all. They are marked so a reader of the
         // DOM — and a browser test naming the state — can tell which is on
         // screen, exactly as `/family/portrait/[pairId]` marks its four.
-        <p
-          role="status"
-          data-slot="person-blocking"
-          data-state="consent-required"
-          className="max-w-prose text-base leading-relaxed text-ink"
-        >
-          {PAUSED_BODY}
-        </p>
+        <EmptyState>
+          <p role="status" data-slot="person-blocking" data-state="consent-required">
+            {PAUSED_BODY}
+          </p>
+        </EmptyState>
       ) : layers.length === 0 && !hasAncestry ? (
-        <p
-          role="status"
-          data-slot="person-blocking"
-          data-state="empty"
-          className="max-w-prose text-base leading-relaxed text-ink"
-        >
-          {nothingSharedYet(person.displayLabel)}
-        </p>
+        <EmptyState>
+          <p role="status" data-slot="person-blocking" data-state="empty">
+            {nothingSharedYet(person.displayLabel)}
+          </p>
+        </EmptyState>
       ) : gated ? (
         <ResultGate />
       ) : (
         <>
           {layers.length > 0 ? <section aria-labelledby="family-reports-heading" className="space-y-4">
-            <h2 id="family-reports-heading" className="text-lg font-semibold">
+            <h2 id="family-reports-heading" className="title text-ink">
               {REPORTS_HEADING}
             </h2>
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+            <p className="lede">
               {reportsLede(person.displayLabel)}
             </p>
             {!hasFile ? (
-              <p className="text-base leading-relaxed text-ink">
+              <EmptyState>
                 {hasCanonicalAccess ? "No completed result is shared yet." : noFileYet(person.displayLabel)}
-              </p>
+              </EmptyState>
             ) : (
               (["variant_call", "estimate"] as const).map((layer) =>
                 layers.includes(layer) ? (
-                  <div key={layer} data-layer={layer} className="space-y-2">
-                    <p className="text-base font-medium text-ink">{LAYER_LABELS[layer]}</p>
+                  <div key={layer} data-layer={layer} className="space-y-2 border-t border-line pt-4">
+                    <p className="label text-ink">{LAYER_LABELS[layer]}</p>
                     {(covered.get(layer) ?? []).length === 0 ? (
-                      <p className="text-sm leading-relaxed text-ink">
+                      <p className="max-w-measure text-base leading-relaxed text-ink">
                         {unavailableLayers.has(layer)
                           ? "A saved result is missing the source details needed to show it."
                           : !completedLayers.has(layer) ? "No completed result is shared for this result type yet."
@@ -237,7 +233,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
                               subject: person.handle.routeSegment,
                               slug: report.slug,
                             })}
-                            className="inline-flex min-h-11 items-center text-base text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+                            className="link-target quiet-link text-base"
                           >
                             {report.title}
                           </Link>
@@ -246,7 +242,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
                     </ul>
                   </div>
                 ) : (
-                  <p key={layer} className="text-sm leading-relaxed text-ink">
+                  <p key={layer} className="max-w-measure text-base leading-relaxed text-ink">
                     {notShared(person.displayLabel, layer)}
                   </p>
                 ),
@@ -254,20 +250,20 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
             )}
             {/* The mandated sentence renders verbatim; the retained term is
                 defined beside it on its first occurrence (X4, brief §2 §5.5). */}
-            <p data-density-required-accuracy className="max-w-prose text-sm leading-relaxed text-ink">
+            <p data-density-required-accuracy className="max-w-measure text-sm leading-relaxed text-ink">
               {BASELINE_ABSENT}
             </p>
-            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+            <p className="caption max-w-measure">
               <TermDefinition term="baseline" />
             </p>
           </section> : null}
 
           {hasAncestry ? (
             <section aria-labelledby="family-ancestry-heading" className="space-y-2">
-              <h2 id="family-ancestry-heading" className="text-lg font-semibold">
+              <h2 id="family-ancestry-heading" className="title text-ink">
                 <Link
                   href={route("genome.ancestry", { subject: person.handle.routeSegment })}
-                  className="underline-offset-4 hover:underline"
+                  className="link-target quiet-link"
                 >
                   {ANCESTRY_HEADING}
                 </Link>
@@ -278,23 +274,22 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
       )}
 
       <section aria-labelledby="family-permissions-heading" className="space-y-2">
-        <h2 id="family-permissions-heading" className="text-lg font-semibold">
+        <h2 id="family-permissions-heading" className="title text-ink">
           <Link
             href={route("family.permissions", { person: person.handle.routeSegment })}
-            className="underline-offset-4 hover:underline"
+            className="link-target quiet-link"
           >
             {PERMISSIONS_HEADING}
           </Link>
         </h2>
       </section>
 
-      <p
-        data-density-required-accuracy
-        className="max-w-prose text-sm leading-relaxed text-ink-muted"
-      >
-        {NOT_DIAGNOSTIC}
-      </p>
-      <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{COPILOT_LOCAL_ONLY}</p>
+      <div className="space-y-2">
+        <p data-density-required-accuracy className="caption max-w-measure">
+          {NOT_DIAGNOSTIC}
+        </p>
+        <p className="caption max-w-measure">{COPILOT_LOCAL_ONLY}</p>
+      </div>
     </div>
   );
 }

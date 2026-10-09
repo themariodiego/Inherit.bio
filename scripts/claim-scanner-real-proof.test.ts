@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { assertOwnedContainer, assertRealVerdict, boundedCommand, eicarBytes, netBytes,
+import { assertOwnedContainer, assertRealVerdict, boundedCommand, eicarBytes, netBytes, signatureAllocatedBytes, signatureAllocationCommand,
   PROOF_LABEL, sha256, syntheticPdf } from "./claim-scanner-real-proof";
 
 const temporary: string[] = [];
@@ -57,6 +57,28 @@ describe("real scanner proof boundary controls (not a real scanner verdict)", ()
     expect(netBytes("1 MiB")).toBe(1_048_576);
     expect(() => netBytes("unknown")).toThrow();
     expect(() => netBytes("-1 B")).toThrow();
+  });
+  it("observes private signature metadata only as the exact scanner user and owned id", () => {
+    expect(signatureAllocationCommand(id)).toEqual(["exec", "--user", "clamav:clamav", id,
+      "/usr/bin/find", "-P", "/signatures", "-printf", "%y\t%n\t%b\t%s\t%P\\0"]);
+    expect(signatureAllocationCommand(id).every(value => !value.includes("\0"))).toBe(true);
+    for (const invalid of ["", "scanner", `${id};other`, id.toUpperCase()])
+      expect(() => signatureAllocationCommand(invalid)).toThrow("owned_id_refused");
+  });
+  it("counts allocated blocks inside private directories without reading contents", () => {
+    expect(signatureAllocatedBytes("d\t3\t8\t4096\t\0d\t2\t8\t4096\ttmp.owned\0f\t1\t16\t7000\ttmp.owned/daily.cvd\0"))
+      .toBe(32 * 512);
+    expect(signatureAllocatedBytes(`d\t2\t0\t0\t\0f\t1\t${2 ** 21}\t1\tmain.cvd\0`)).toBe(1024 ** 3);
+    expect(() => signatureAllocatedBytes(`d\t2\t0\t0\t\0f\t1\t${2 ** 21 + 1}\t1\tmain.cvd\0`))
+      .toThrow("signature_budget_exceeded");
+  });
+  it.each([
+    "l\t1\t1\t10\tlink\0", "p\t1\t0\t0\tfifo\0", "f\t2\t1\t1\tmulti\0",
+    "f\t1\t-1\t1\tnegative\0", "f\t1\t1.5\t1\tdecimal\0", "f\t1\t9007199254740992\t1\tunsafe\0",
+    "f\t1\t1\t1\t../escape\0", "f\t1\t1\t1\t/absolute\0", "f\t1\t1\t1\tx//y\0",
+    "f\t1\t1\t1\tduplicate\0f\t1\t1\t1\tduplicate\0", "f\t1\t1\t1\tunterminated",
+  ])("refuses unsafe signature metadata %s", (record) => {
+    expect(() => signatureAllocatedBytes(`d\t2\t0\t0\t\0${record}`)).toThrow();
   });
   it("retains the first failed command and complete raw streams before refusing it", async () => {
     const output = await mkdtemp(path.join(tmpdir(), "scanner-proof-command-")); temporary.push(output);

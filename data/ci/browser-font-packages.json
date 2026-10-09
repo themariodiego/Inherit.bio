@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "distribution": "ubuntu",
+  "release": "24.04",
+  "codename": "noble",
+  "architecture": "amd64",
+  "playwrightVersion": "1.62.1",
+  "packages": [
+    { "name": "fonts-freefont-ttf", "version": "20211204+svn4273-2", "architecture": "all", "filename": "pool/main/f/fonts-freefont/fonts-freefont-ttf_20211204+svn4273-2_all.deb", "bytes": 5640794, "sha256": "c8283ec9ca390e6ad8d2114cb0942182db62bb97f5142c2f955218fc5f2027b4" },
+    { "name": "fonts-ipafont-gothic", "version": "00303-21ubuntu1", "architecture": "all", "filename": "pool/universe/f/fonts-ipafont/fonts-ipafont-gothic_00303-21ubuntu1_all.deb", "bytes": 3513360, "sha256": "71e63f0f88cca672fbb24ed27873d799d8c37233f001aa0bbcdc2f303b1b98a2" },
+    { "name": "fonts-tlwg-loma-otf", "version": "1:0.7.3-1", "architecture": "all", "filename": "pool/universe/f/fonts-tlwg/fonts-tlwg-loma-otf_0.7.3-1_all.deb", "bytes": 106786, "sha256": "888038637a15d11993e3a9ddd50f6391a704918b2e38fe75b2f4d74b4fcfda9a" },
+    { "name": "fonts-unifont", "version": "1:15.1.01-1build1", "architecture": "all", "filename": "pool/universe/u/unifont/fonts-unifont_15.1.01-1build1_all.deb", "bytes": 2993066, "sha256": "56c9d46ce8223fa29c28eaeb99cabfc3a3159d3eec58f0bbbea839953f4cf363" },
+    { "name": "fonts-wqy-zenhei", "version": "0.9.45-8", "architecture": "all", "filename": "pool/universe/f/fonts-wqy-zenhei/fonts-wqy-zenhei_0.9.45-8_all.deb", "bytes": 7471624, "sha256": "496969d65dc5664a3291e678d5cbef6815dc308ee5bf37b656c00af2cb490410" },
+    { "name": "xfonts-cyrillic", "version": "1:1.0.5+nmu1", "architecture": "all", "filename": "pool/universe/x/xfonts-cyrillic/xfonts-cyrillic_1.0.5+nmu1_all.deb", "bytes": 384312, "sha256": "d4a63d4da9f6d58467ccaa22b7b26c009ab46b07f0b1be2138d3bb037e74d2cb" },
+    { "name": "xfonts-encodings", "version": "1:1.0.5-0ubuntu2", "architecture": "all", "filename": "pool/main/x/xfonts-encodings/xfonts-encodings_1.0.5-0ubuntu2_all.deb", "bytes": 578092, "sha256": "3bac5ff1cba3b001aee1652e3af45d200c415b68e9b27932cb51fe9c464feb40" },
+    { "name": "xfonts-scalable", "version": "1:1.0.3-1.3", "architecture": "all", "filename": "pool/main/x/xfonts-scalable/xfonts-scalable_1.0.3-1.3_all.deb", "bytes": 304118, "sha256": "517f73a4f6e37332addffe6ff1795d5371f2f9c0863781efc31c4613f69993de" },
+    { "name": "xfonts-utils", "version": "1:7.7+6build3", "architecture": "amd64", "filename": "pool/main/x/xfonts-utils/xfonts-utils_7.7+6build3_amd64.deb", "bytes": 94438, "sha256": "8da5fccbc50005d50dd69ef558ae72673435026e1d3134d0c1cc836d22953c44" }
+  ],
+  "provenance": {
+    "observedAt": "2026-10-07",
+    "publishedDigests": "https://packages.ubuntu.com/noble/",
+    "authentication": "Fresh stock Ubuntu signed APT metadata must independently match every pin before use or publication. Published HTTPS digests alone do not admit a cache.",
+    "fontSet": "playwright-core 1.62.1 Ubuntu 24.04 Chromium dependencies; observed original CI run 37671849214"
+  }
+}

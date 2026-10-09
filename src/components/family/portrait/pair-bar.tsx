@@ -1,5 +1,5 @@
 /**
- * <PairBar> — the 44px identity bar of a joint surface (brief §2 §2.3, line
+ * <PairBar> — the 44px identity strip of a joint surface, a plate head (brief §2 §2.3, line
  * 211): both people's chips, in the pair's own order, so both viewers see
  * the same bar. Server component.
  *
@@ -26,7 +26,7 @@ export function PairBar({ people, viewerAccountId }: PairBarProps) {
       data-slot="pair-bar"
       role="group"
       aria-label={PAIR_BAR_LABEL}
-      className="flex min-h-11 min-w-0 flex-wrap items-center gap-x-8 gap-y-2 border-b border-line py-2 text-sm"
+      className="fam-strip min-w-0 text-sm"
     >
       {people.map((person) => (
         <span key={person.dataSubjectId} data-slot="pair-person" data-subject-id={person.dataSubjectId}>

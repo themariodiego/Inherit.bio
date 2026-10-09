@@ -41,6 +41,16 @@ is removed before scans. A CDN cooldown or failure stops the job. There is no
 curl fallback or update loop. A sampled watchdog limits download and disk
 growth; it does not claim a packet-exact network quota.
 
+The signature watchdog reads file metadata inside that exact owned container
+as its configured `clamav` user. FreshClam can create private temporary
+directories that the host runner cannot traverse. The observer uses allocated
+512-byte blocks, includes directory allocation and keeps the 1 GiB bound.
+It refuses links, special files, multiply linked files and unsafe metadata.
+The observer keeps its eight-second command limit. File permissions are not
+widened, signature contents are not read, and the final signature inventory
+still runs after the scanner stops. The first failed hosted artifact remains
+evidence of a watchdog failure; none of its four scanner cases ran.
+
 Raw command outcomes are saved before parsing or source checks. Complete source
 and original Docker inventories are saved before and after. Only resources
 with the proof's unique name, ID and label may be removed. Failure artifacts

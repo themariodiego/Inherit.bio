@@ -1,12 +1,14 @@
 /**
- * <SubjectBar> — the 44px identity bar rendered directly under the app
+ * <SubjectBar> — the 56px identity plate rendered directly under the app
  * header on every subject-derived route (brief §2 §2.3). Server component.
  *
- * (a) a 24px disc in the subject colour with the initial as text;
+ * (a) a 28px disc in the subject colour with the initial as text;
  * (b) the display name;
  * (c) the kind chip — exactly one of the KIND_CHIPS words;
  * (d) the file count as text, linking to /files;
- * (e) the persistent secondary action "Add a file" on self and adult bars.
+ * (e) the persistent secondary action "Add a file" on self and adult bars:
+ *     an outline button, or a quiet link where the page's record head already
+ *     carries the forest action (round-2 M2).
  *
  * Colour never carries identity alone (X2.4): the initial and the name are
  * text. The bar root carries data-subject-id.
@@ -87,10 +89,16 @@ export interface SubjectBarProps {
   fileCount: number | null;
   /** The signed-in account; decides whether an adult record is the viewer's own. */
   viewerAccountId?: string | null;
+  /**
+   * How "Add a file" renders: the outline button, or a quiet link (same href,
+   * same label) on a page whose record head carries the forest action, so the
+   * page has one button.
+   */
+  action?: "outline" | "quiet";
   className?: string;
 }
 
-export function SubjectBar({ subject, fileCount: files, viewerAccountId, className }: SubjectBarProps) {
+export function SubjectBar({ subject, fileCount: files, viewerAccountId, action = "outline", className }: SubjectBarProps) {
   const kind = subjectKind(subject, viewerAccountId);
   // An embryo carries no subject colour (X2.4; brief line 689): every
   // embryo's disc is identical, on the neutral ground, so no colour can read
@@ -107,7 +115,7 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
       data-subject-id={subject.id}
       data-subject-kind={kind ?? undefined}
       className={cn(
-        "flex h-11 min-w-0 items-center gap-3 border-b border-line text-sm",
+        "flex min-h-row min-w-0 items-center gap-3 rounded-sm bg-surface-inset px-3 text-sm sm:px-4",
         className,
       )}
     >
@@ -115,19 +123,24 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
         aria-hidden="true"
         data-slot="subject-disc"
         className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
-          colour === null ? "border border-line bg-tint text-ink" : `text-paper ${DISC_CLASSES[colour]}`,
+          "flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
+          colour === null ? "border border-line-strong bg-card text-ink" : `text-paper ${DISC_CLASSES[colour]}`,
         )}
       >
         {subjectInitial(subject.displayLabel)}
       </span>
-      <span data-slot="subject-name" className="truncate font-medium text-ink">
+      <span data-slot="subject-name" className="label truncate text-ink">
         {subject.displayLabel}
       </span>
       {kind ? (
+        // A chip that repeats the name ("You" beside "You") stays in the DOM
+        // for the slot's readers and leaves the row visually (round-1 m9).
         <span
           data-slot="subject-kind"
-          className="shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium leading-5 text-ink",
+            KIND_CHIPS[kind] === subject.displayLabel && "sr-only",
+          )}
         >
           {KIND_CHIPS[kind]}
         </span>
@@ -138,21 +151,28 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
           data-slot="subject-files"
           // "2 files" measured 29×20: a tap target on every genome surface and
           // the narrowest link in the bar, so it needs the width step as well
-          // as the height one (brief line 553; line 1053). Free vertically —
-          // the bar is already `h-11`, so a 44px child fills the row it is
-          // centred in and the bar's height does not move.
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-muted underline-offset-2 hover:underline"
+          // as the height one (brief line 553; line 1053). The row is already
+          // 56px, so a 44px child does not move it.
+          className="quiet-link flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1"
         >
           {fileCount(files)}
         </Link>
       )}
-      {canAddFile ? (
+      {!canAddFile ? null : action === "quiet" ? (
+        <Link
+          href={route("files.upload", { query: { subject: subject.routeSegment } })}
+          data-slot="subject-add-file"
+          className="quiet-link ml-auto flex min-h-11 shrink-0 items-center px-1"
+        >
+          {ADD_A_FILE}
+        </Link>
+      ) : (
         <Button asChild variant="outline" size="sm" className="ml-auto shrink-0">
           <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>
             {ADD_A_FILE}
           </Link>
         </Button>
-      ) : null}
+      )}
     </div>
   );
 }

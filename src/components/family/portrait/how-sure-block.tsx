@@ -25,10 +25,10 @@ export function HowSureBlock({ pattern, assumptions, checked = [], coverage, cha
     <section
       data-slot="how-sure"
       aria-label={HOW_SURE_HEADING}
-      className="space-y-2 border-t border-line pt-3 text-sm leading-relaxed text-ink"
+      className="surface-inset surface-pad-sm space-y-3 text-sm leading-relaxed text-ink"
     >
-      <p className="font-medium">{HOW_SURE_HEADING}</p>
-      <dl className="space-y-2">
+      <p className="label">{HOW_SURE_HEADING}</p>
+      <dl className="max-w-measure space-y-2">
         <div>
           <dt className="text-ink-muted">{HOW_SURE_LABELS.pattern}</dt>
           <dd data-slot="how-sure-pattern">{pattern}</dd>

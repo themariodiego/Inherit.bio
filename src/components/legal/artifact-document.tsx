@@ -10,6 +10,11 @@ export type ArtifactDocument = {
   summary_of_changes: string | null;
 };
 
+/**
+ * One committed legal artifact at one version: the reading head, the
+ * plain-language summary as a labelled plate, the signed body on the measure,
+ * and the integrity footer with the hash and the permanent link.
+ */
 export function LegalArtifactDocument({
   artifact,
   routeBase,
@@ -20,22 +25,38 @@ export function LegalArtifactDocument({
   versionPath?: "versions" | "v";
 }) {
   return (
-    <article className="mx-auto max-w-3xl px-6 py-16">
-      <p className="eyebrow">Versioned legal artifact</p>
-      <h1 className="display mt-4 break-words text-4xl">{artifact.artifact_key}</h1>
-      <p className="mt-4 text-sm text-ink-muted">
-        Version {artifact.version} · effective <time dateTime={artifact.effective_on}>{artifact.effective_on}</time>
-      </p>
-      <section data-legal-summary className="mt-8 rounded-2xl border border-line bg-card p-6">
-        <h2 className="font-medium">Plain-language summary</h2>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-muted">{artifact.summary_markdown}</p>
-      </section>
-      {artifact.summary_of_changes ? <p className="mt-5 text-sm text-ink-muted"><strong>Changes:</strong> {artifact.summary_of_changes}</p> : null}
-      <div className="legal-body mt-8 max-w-prose whitespace-pre-wrap border-t border-line pt-8">{artifact.body_markdown}</div>
-      <footer className="mt-10 space-y-2 border-t border-line pt-5 text-xs text-ink-muted">
-        <p className="break-all font-mono">sha256 {artifact.body_sha256}</p>
-        <Link href={`${routeBase}/${versionPath}/${artifact.version}`} className="underline underline-offset-2">Permanent link to this version</Link>
-      </footer>
+    <article className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head">
+        <p className="eyebrow">Versioned legal artifact</p>
+        <h1 className="display display-lg break-words">{artifact.artifact_key}</h1>
+        <p className="caption">
+          Version {artifact.version} · effective <time dateTime={artifact.effective_on}>{artifact.effective_on}</time>
+        </p>
+      </header>
+      <div className="mt-section max-w-3xl stack-blocks">
+        <section data-legal-summary className="plate">
+          <div className="plate-head">
+            <h2 className="label">Plain-language summary</h2>
+          </div>
+          <div className="plate-body">
+            <p className="body-lg max-w-measure whitespace-pre-wrap text-ink">{artifact.summary_markdown}</p>
+            {artifact.summary_of_changes ? (
+              <p className="mt-4 max-w-measure border-t border-line pt-4 text-sm text-ink">
+                <strong className="font-semibold">Changes:</strong> {artifact.summary_of_changes}
+              </p>
+            ) : null}
+          </div>
+        </section>
+        <div className="legal-prose whitespace-pre-wrap">{artifact.body_markdown}</div>
+        <footer className="border-t border-line pt-6">
+          <p className="caption mono break-all">sha256 {artifact.body_sha256}</p>
+          <p className="mt-2">
+            <Link href={`${routeBase}/${versionPath}/${artifact.version}`} className="link-target quiet-link text-sm">
+              Permanent link to this version
+            </Link>
+          </p>
+        </footer>
+      </div>
     </article>
   );
 }

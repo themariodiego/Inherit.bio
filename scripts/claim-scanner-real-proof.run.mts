@@ -6,7 +6,7 @@ import net from "node:net";
 import { clamdScanner } from "../src/lib/scan/clamd";
 import { MAXIMUM_SCANNED_BYTES } from "../src/lib/scan/malware-scanner";
 import { CLAMAV_IMAGE, PROOF_LABEL, assertOwnedContainer, assertRealVerdict, boundedCommand,
-  eicarBytes, netBytes, saveJson, sha256, syntheticPdf } from "./claim-scanner-real-proof";
+  eicarBytes, netBytes, saveJson, sha256, signatureAllocatedBytes, signatureAllocationCommand, syntheticPdf } from "./claim-scanner-real-proof";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePaths = ["AGENTS.md", "package.json", "pnpm-lock.yaml", ".github/workflows/claim-scanner-real-proof.yml",
@@ -118,12 +118,12 @@ async function main(): Promise<void> {
       "--tmpfs", "/tmp:rw,noexec,nosuid,size=128m,mode=1777", "--tmpfs", "/run:rw,noexec,nosuid,size=16m,mode=1777",
       "--entrypoint", "/bin/sh", CLAMAV_IMAGE, "-c", "trap 'exit 0' TERM INT; while :; do sleep 1; done"]);
     await own(); await docker(["start", id]);
-    const shape = await docker(["exec", id, "/bin/sh", "-c", "test \"$(id -u)\" = 1000 && test \"$(id -g)\" = 1000 && test -x /usr/bin/freshclam && test -x /usr/sbin/clamd && test -f /etc/clamav/freshclam.conf && test -f /etc/clamav/clamd.conf && test -d /etc/clamav/certs && /usr/bin/freshclam --version"]);
+    const shape = await docker(["exec", id, "/bin/sh", "-c", "test \"$(id -u)\" = 1000 && test \"$(id -g)\" = 1000 && test -x /usr/bin/freshclam && test -x /usr/sbin/clamd && test -x /usr/bin/find && test -f /etc/clamav/freshclam.conf && test -f /etc/clamav/clamd.conf && test -d /etc/clamav/certs && /usr/bin/freshclam --version"]);
     if (!/^ClamAV 1\.5\.4(?:\/|$)/u.test(shape)) throw new Error("official_packaged_shape_refused");
     await docker(["network", "connect", "bridge", id]);
     const bootstrapGuard = async () => {
-      const rows = await signatureRows(signatures);
-      if (rows.reduce((sum, row) => sum + row.allocated, 0) > 1024 ** 3) throw new Error("signature_budget_exceeded");
+      const metadata = await docker(signatureAllocationCommand(id!), 8);
+      signatureAllocatedBytes(metadata);
       const io = await docker(["stats", "--no-stream", "--format", "{{.NetIO}}", id!], 8);
       if (netBytes(io.split("/")[0]) > 1024 ** 3) throw new Error("network_budget_exceeded");
       const free = await statfs(output); if (free.bavail * free.bsize < 4 * 1024 ** 3) throw new Error("disk_budget_exceeded");

@@ -8,9 +8,9 @@ export default function ResetPasswordPage() {
   const router = useRouter();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h1 className="display text-2xl">Choose a new password</h1>
+        <h1 className="display">Choose a new password</h1>
       </div>
       <AuthForm
         fields={[
