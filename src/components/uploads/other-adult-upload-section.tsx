@@ -25,7 +25,8 @@ import { OtherAdultNewPersonForm, OtherAdultUploadCard } from "./other-adult-upl
  *
  * It is secondary to the person's own upload (brief §5.2: never at equal
  * prominence), so it stays closed until opened, and opens by itself once the
- * account has someone in it.
+ * account has someone in it. The disclosure is a plate: its summary is the
+ * plate's head, the forms its body.
  */
 export async function OtherAdultUploadSection() {
   const uploads = await prepareOtherAdultUploads().catch(() => null);
@@ -33,13 +34,13 @@ export async function OtherAdultUploadSection() {
   const limits = await readOwnUploadLimits().catch(() => null);
   return (
     <section aria-labelledby="other-adult-upload-heading" data-slot="other-adult-upload">
-      <details open={uploads.targets.length > 0} className="space-y-4">
-        <summary className="min-h-11 cursor-pointer">
-          <h2 id="other-adult-upload-heading" className="display inline text-2xl">{COPY.heading}</h2>
+      <details open={uploads.targets.length > 0} className="plate rec-disclosure">
+        <summary>
+          <h2 id="other-adult-upload-heading" className="title inline">{COPY.heading}</h2>
         </summary>
-        <div className="mt-4 space-y-4">
-          <p className="text-sm leading-relaxed text-ink-muted">{COPY.detail}</p>
-          <p role="note" className="text-sm">{COPY.testNote}</p>
+        <div className="plate-body rec-stack">
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{COPY.detail}</p>
+          <p role="note" className="max-w-measure text-sm">{COPY.testNote}</p>
           {uploads.targets.map(target => (
             <OtherAdultUploadCard key={`${target.subjectId}:${target.state}:${target.consent?.token ?? ""}`} target={target} limits={limits} />
           ))}
@@ -61,14 +62,14 @@ export async function HeldForYouRows() {
   const shown = (people ?? []).filter(person => person.files.length > 0);
   if (shown.length === 0) return null;
   return (
-    <section aria-labelledby="held-for-you-heading" className="space-y-3" data-slot="held-for-you">
-      <h2 id="held-for-you-heading" className="display text-2xl">{HELD.heading}</h2>
+    <section aria-labelledby="held-for-you-heading" className="rec-stack" data-slot="held-for-you">
+      <h2 id="held-for-you-heading" className="title">{HELD.heading}</h2>
       {shown.map((person, index) => (
-        <div key={index} className="rounded-xl border border-line bg-card p-4">
-          <p className="text-sm text-ink-muted">{HELD.name(person.label)}</p>
-          <ul className="mt-2 space-y-2">
+        <div key={index} className="surface surface-pad-sm rec-stack-sm">
+          <p className="caption">{HELD.name(person.label)}</p>
+          <ul className="rec-stack-sm">
             {person.files.map(file => (
-              <li key={`${file.addedOn}:${file.state}`}><p role="status" className="text-sm">{heldForYouLine(file)}</p></li>
+              <li key={`${file.addedOn}:${file.state}`}><p role="status" className="max-w-measure text-sm">{heldForYouLine(file)}</p></li>
             ))}
           </ul>
         </div>
@@ -114,12 +115,12 @@ export async function OtherAdultHeldRows() {
     href: route("genome.reports", { subject: `s-${row.subjectId}` }) }))];
   if (rows.length === 0) return null;
   return (
-    <ul className="space-y-3" data-slot="other-adult-held-rows">
+    <ul className="surface surface-pad-sm rec-ruled" data-slot="other-adult-held-rows">
       {rows.map(row => (
-        <li key={row.key} className="rounded-xl border border-line bg-card p-4">
-          <p role="status" className="text-sm">{row.text}</p>
-          {row.detail ? <p className="text-sm text-ink-muted">{row.detail}</p> : null}
-          {row.href ? <Link className="inline-flex min-h-11 items-center underline" href={row.href}>{CHOICES.openShared}</Link> : null}
+        <li key={row.key} className="rec-stack-sm">
+          <p role="status" className="max-w-measure text-sm">{row.text}</p>
+          {row.detail ? <p className="max-w-measure text-sm text-ink-muted">{row.detail}</p> : null}
+          {row.href ? <Link className="link-target quiet-link text-sm" href={row.href}>{CHOICES.openShared}</Link> : null}
         </li>
       ))}
     </ul>

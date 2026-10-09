@@ -20,7 +20,7 @@ export function Claim({ id, citationId, sourceIds }: {
       {claim.text_verbatim}
       {required.map((source) => (
         <sup key={source} data-citation-id={source} className="ml-1">
-          <a href={`#${claimSourceAnchor(source)}`} className="underline underline-offset-2"
+          <a href={`#${claimSourceAnchor(source)}`} className="prose-link"
             aria-label={`Source ${sourceIds.indexOf(source) + 1}`}>
             {sourceIds.indexOf(source) + 1}
           </a>

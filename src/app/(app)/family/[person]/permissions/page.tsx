@@ -289,40 +289,41 @@ export default async function FamilyPermissionsPage(
   );
 
   return (
-    <div data-surface="flow" className="page-stack mx-auto max-w-4xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: NAV_LABELS.family, href: route("family.index") },
-          {
-            label: person.displayLabel,
-            href: route("family.person", { person: person.handle.routeSegment }),
-          },
-          { label: PERMISSIONS_H1 },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={null} viewerAccountId={user.id} />
+    <div data-surface="flow" className="page-stack stack-blocks max-w-4xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: NAV_LABELS.family, href: route("family.index") },
+            {
+              label: person.displayLabel,
+              href: route("family.person", { person: person.handle.routeSegment }),
+            },
+            { label: PERMISSIONS_H1 },
+          ]}
+        />
+        <SubjectBar subject={subject} fileCount={null} viewerAccountId={user.id} />
+        <header>
+          <h1 className="display">{PERMISSIONS_H1}</h1>
+          {!mayGrant ? (
+            <p role="status" className="lede text-ink">
+              {decision.userFacingCopy}
+            </p>
+          ) : null}
+          {theySeeSomething && youSeeNothing ? (
+            <p data-slot="asymmetry" className="lede text-ink">
+              {asymmetryLine(person.displayLabel)}
+            </p>
+          ) : null}
+        </header>
+      </div>
       {ancestryConfirmation?.kind === "grant" ? <AncestrySharingConfirmation
         personName={person.displayLabel} request={ancestryConfirmation.request} /> : null}
-
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{PERMISSIONS_H1}</h1>
-        {!mayGrant ? (
-          <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">
-            {decision.userFacingCopy}
-          </p>
-        ) : null}
-        {theySeeSomething && youSeeNothing ? (
-          <p data-slot="asymmetry" className="max-w-prose text-sm leading-relaxed text-ink">
-            {asymmetryLine(person.displayLabel)}
-          </p>
-        ) : null}
-      </header>
 
       {stop ? (
         <section
           role="status"
           data-slot="sharing-tombstone"
-          className="max-w-prose space-y-2 rounded-2xl border border-line bg-card p-6"
+          className="surface-inset surface-pad max-w-measure space-y-2"
         >
           <p className="text-base leading-relaxed text-ink">
             {tombstoneStatus(
@@ -334,8 +335,8 @@ export default async function FamilyPermissionsPage(
               deletedCount,
             )}
           </p>
-          <p className="text-sm font-medium text-ink">{TOMBSTONE_ITEMS_HEADING}</p>
-          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink-muted">
+          <p className="label text-ink">{TOMBSTONE_ITEMS_HEADING}</p>
+          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
             {STOP_DELETES.map((item) => (
               <li key={item}>{item}</li>
             ))}

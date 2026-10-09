@@ -22,7 +22,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
           <main
             id="main"
             tabIndex={-1}
-            className="w-full max-w-prose rounded-2xl border border-line bg-card shadow-sm focus:outline-none"
+            className="surface w-full max-w-2xl focus:outline-none"
           >
             <ErrorContent reset={reset} />
           </main>

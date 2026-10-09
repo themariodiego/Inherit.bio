@@ -2,7 +2,7 @@
  * <RefusalsList> — `#not-shown`, the designed refusals screen (design §2.5;
  * brief line 358, §4 §5.4 lines 1357-1368). Server component.
  *
- * One card per refused item in the same visual language as the shown
+ * One ruled row per refused item in the same visual language as the shown
  * cards, each with `data-refusal-id`, one line and one reason, and no
  * figure of any kind: the §4 numbers are citations for the science page,
  * not for these cards. Server-rendered, non-collapsed, at least eight items
@@ -21,19 +21,19 @@ export function RefusalsList({ limitsHref }: { limitsHref: string }) {
       aria-labelledby="refusals-heading"
       className="space-y-4"
     >
-      <h2 id="refusals-heading" className="text-lg font-semibold">
+      <h2 id="refusals-heading" className="title text-ink">
         {REFUSALS_HEADING}
       </h2>
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="surface fam-rows">
         {REFUSALS.map((refusal) => (
           <li
             key={refusal.refusalId}
             data-refusal-id={refusal.refusalId}
             data-slot="refusal-card"
-            className="space-y-2 rounded-2xl border border-line bg-card p-4"
+            className="space-y-1 px-4 py-3 md:px-5"
           >
             <p className="font-medium text-ink">{refusal.line}</p>
-            <p data-slot="refusal-reason" className="text-sm leading-relaxed text-ink">
+            <p data-slot="refusal-reason" className="max-w-measure text-sm leading-relaxed text-ink">
               {refusal.reason}
             </p>
           </li>
@@ -41,7 +41,7 @@ export function RefusalsList({ limitsHref }: { limitsHref: string }) {
       </ul>
       <Link
         href={limitsHref}
-        className="inline-flex min-h-11 items-center text-sm text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+        className="link-target quiet-link text-sm"
       >
         {REFUSALS_LINK}
       </Link>

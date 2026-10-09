@@ -154,15 +154,15 @@ export function QcTable({
   subjectIds: ReadonlyMap<string, string>;
 }) {
   return (
-    <div className="overflow-x-auto">
-      <table data-slot="qc-table" data-card="true" data-compare-surface="true" className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm">
+    <div className="surface-inset overflow-x-auto">
+      <table data-slot="qc-table" data-card="true" data-compare-surface="true" className="fam-table text-sm">
         <thead>
           <tr>
-            <th scope="col" className="sticky left-0 z-10 border-b border-line bg-card px-3 py-2 text-left font-medium text-ink">
+            <th scope="col" className="sticky left-0 z-10 bg-surface-inset text-left font-medium text-ink">
               <span className="sr-only">{QUALITY_CHECK_HEADING}</span>
             </th>
             {embryos.map((embryo) => (
-              <th key={embryo.id} scope="col" data-embryo-id={embryo.id} className="min-w-[12rem] border-b border-line px-3 py-2 text-left font-medium text-ink">
+              <th key={embryo.id} scope="col" data-embryo-id={embryo.id} className="min-w-[12rem] text-left font-medium text-ink">
                 {embryo.display_label}
               </th>
             ))}
@@ -171,11 +171,11 @@ export function QcTable({
         <tbody>
           {QC_TABLE_ROWS.map((row) => (
             <tr key={row} data-qc-row={row}>
-              <th scope="row" className="sticky left-0 z-10 border-b border-line bg-card px-3 py-2 text-left align-top font-medium text-ink">
+              <th scope="row" className="sticky left-0 z-10 bg-surface-inset text-left font-medium text-ink">
                 {QC_FIELD_LABELS[row]}
               </th>
               {embryos.map((embryo) => (
-                <td key={embryo.id} className="border-b border-line px-3 py-2 align-top text-ink">
+                <td key={embryo.id} className="text-ink">
                   <QcValue row={row} qc={embryo.qc} embryoId={embryo.id} subjectId={subjectIds.get(embryo.id) ?? embryo.id} />
                 </td>
               ))}

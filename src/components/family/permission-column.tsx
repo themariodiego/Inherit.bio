@@ -42,13 +42,13 @@ export function PermissionColumn({
       data-slot="permission-column"
       data-settable={disabledReason ? "false" : "true"}
       aria-labelledby={headingId}
-      className="space-y-3 rounded-2xl border border-line bg-card p-6"
+      className="surface surface-pad-sm"
     >
-      <h2 id={headingId} className="font-medium">
+      <h2 id={headingId} className="title text-ink">
         {heading}
       </h2>
-      <p className="text-sm leading-relaxed text-ink-muted">{COLUMN_DEFAULT_NOTE}</p>
-      <ul className="mt-2">
+      <p className="caption mt-2 max-w-measure">{COLUMN_DEFAULT_NOTE}</p>
+      <ul className="fam-rows mt-4 border-t border-line">
         {PERMISSION_ROWS.map((row) => {
           const state = byId.get(row.id);
           const locked = disabledReason ?? state?.lockedReason;

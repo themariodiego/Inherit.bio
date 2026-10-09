@@ -32,7 +32,7 @@ export function TradeOffPanel({ tradeOffs, conditionNames, embryoCount }: TradeO
       data-slot="trade-off-panel"
       data-statement={tradeOffs.statement_copy_id}
       aria-label={NO_RANKING_STATEMENT}
-      className="max-w-prose space-y-2 rounded-2xl border border-line bg-card p-5 text-base leading-relaxed text-ink"
+      className="surface-inset surface-pad max-w-measure space-y-2 text-base leading-relaxed text-ink"
     >
       <p>{TRADEOFF_LINE_ONE}</p>
       <p data-slot="no-ranking-statement" className="font-medium">
@@ -53,7 +53,7 @@ export function TradeOffPanel({ tradeOffs, conditionNames, embryoCount }: TradeO
           ))}
         </ul>
       ) : null}
-      <p data-slot="availability-statement" className="text-sm text-ink-muted">
+      <p data-slot="availability-statement" className="text-sm text-ink">
         {availabilityStatement(embryoCount)}
       </p>
     </section>

@@ -1,4 +1,14 @@
 @import "tailwindcss";
+/* Surface partials: one per build area. Each is plain CSS over the tokens
+   below and may define shared patterns for its surfaces only. They are
+   unlayered, so a rule here or there beats a Tailwind utility of the same
+   property: shared patterns live in CSS, one-offs stay in JSX. */
+@import "./styles/marketing.css";
+@import "./styles/app.css";
+@import "./styles/reading.css";
+@import "./styles/reports.css";
+@import "./styles/records.css";
+@import "./styles/family.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -7,6 +17,11 @@
  * Observed reference: www.plus.bio — warm paper ground, green-biased ink,
  * deep forest accent, one soft yellow-green tint, Fraunces + Inter.
  * If Plus Bio supplies brand tokens (brand/ directory), those take precedence.
+ *
+ * The hues and the type pairing are frozen (G2.7, src/lib/design/tokens.test.ts).
+ * Everything after the subject colours is the 2026-10 renewal: a closed set of
+ * radii, one overlay shadow, a 68ch measure, a responsive section rhythm, a
+ * motion scale and the terrain inks, all derived from the frozen tokens.
  */
 :root {
   --paper: #f7f8f1;
@@ -32,23 +47,41 @@
   --subject-5: #245c5c;
   --subject-6: #7a3a55;
   --subject-7: #5a6155;
-  /* Control and stroke scale (brief line 553): a separate, closed scale from
-     the layout unit, because 44px targets are not multiples of it and must not
-     be forced into it. Every button, input, switch and tap target is
-     --size-control; line 706 deletes the 36px size outright rather than
-     carving it out, on the grounds that a second size violating the touch
-     minimum is not worth its complexity. These are sizes, not identity: the
-     frozen-identity test (src/lib/design/tokens.test.ts) pins colours and the
-     Fraunces/Inter pairing and no size at all, so this scale is new rather
-     than a change to something G2.7 froze. */
+  /* Control and stroke scale (brief §1.1): a separate, closed scale from the
+     layout unit, because 44px targets are not multiples of it. Every button,
+     input, switch and tap target is --size-control. */
   --size-control: 44px;
   --size-row: 56px;
   --size-navbar: 64px;
   --line-strong: #76857b;
   --surface-inset: #eef1e4;
-  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-feedback: 160ms;
-  --motion-reveal: 220ms;
+  /* Radii — exactly three (brief §1.4). */
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+  /* Elevation is the --card ground plus a --line edge. The one shadow is for
+     overlays: dialog, popover, toast, the search palette. */
+  --overlay-shadow: 0 8px 32px rgb(20 32 27 / 0.12);
+  /* Measure (brief §1.3): body copy never runs past 68ch. */
+  --measure: 68ch;
+  /* Vertical rhythm (brief §1.2): the gap between top-level sections grows
+     with the viewport; blocks inside a section sit 48px apart. */
+  --rhythm-section: 4rem;
+  --rhythm-block: 3rem;
+  /* Motion (brief §9): micro-feedback, element enter/exit, overlays. Nothing
+     a person waits for ever exceeds 400ms. */
+  --easing-settle: cubic-bezier(0.2, 0, 0, 1);
+  --easing-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-feedback: 120ms;
+  --motion-reveal: 200ms;
+  --motion-overlay: 260ms;
+  --motion-rise: 240ms; /* with four 40ms stagger steps the hero lands in 400ms */
+  /* The terrain: Inherit's hills, drawn from the forest ink at low strength
+     so they sit behind text without competing with it. */
+  --terrain-line: color-mix(in oklab, var(--forest) 34%, transparent);
+  --terrain-fill: color-mix(in oklab, var(--tint) 55%, var(--paper));
+  --terrain-glow: color-mix(in oklab, var(--tint) 70%, transparent);
+  --ring: var(--forest);
 }
 
 .dark {
@@ -73,6 +106,17 @@
   --subject-7: #a9b6ad;
   --line-strong: #6c7b73;
   --surface-inset: #1b241e;
+  --overlay-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
+  --terrain-line: color-mix(in oklab, var(--forest) 58%, transparent);
+  --terrain-fill: color-mix(in oklab, var(--tint) 55%, var(--paper));
+  --terrain-glow: color-mix(in oklab, var(--tint) 85%, transparent);
+}
+
+@media (min-width: 768px) {
+  :root { --rhythm-section: 5rem; }
+}
+@media (min-width: 1024px) {
+  :root { --rhythm-section: 6rem; }
 }
 
 @theme inline {
@@ -85,6 +129,8 @@
   --color-tint: var(--tint);
   --color-card: var(--card);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-surface-inset: var(--surface-inset);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
   --color-subject-0: var(--subject-0);
@@ -106,187 +152,320 @@
   --color-primary-foreground: var(--on-forest);
   --color-secondary: var(--tint);
   --color-secondary-foreground: var(--ink);
-  --color-muted: var(--tint);
+  --color-muted: var(--surface-inset);
   --color-muted-foreground: var(--ink-muted);
   --color-accent: var(--tint);
   --color-accent-foreground: var(--ink);
   --color-destructive: var(--danger);
   --color-destructive-foreground: var(--paper);
   --color-border: var(--line);
-  --color-input: var(--line);
+  --color-input: var(--line-strong);
   --color-ring: var(--forest);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 
+  --radius-sm: 10px;
+  --radius-lg: 20px;
   --radius-pill: 9999px;
+  --shadow-overlay: var(--overlay-shadow);
   --text-xs: 0.8125rem;
+  --spacing-control: var(--size-control);
+  --spacing-row: var(--size-row);
+  --spacing-navbar: var(--size-navbar);
+  --spacing-section: var(--rhythm-section);
+  --spacing-block: var(--rhythm-block);
+  --container-measure: var(--measure);
+  --ease-settle: var(--easing-settle);
+  --ease-out: var(--easing-out);
 }
 
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------- */
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
 }
 
-/* Two-tone Fraunces display headline: ink with a green .accent span */
+/* One anchor offset for the whole product: the 64px header plus 32px of air.
+   Targets add no scroll-margin of their own (round-1 F1). */
+html { scroll-padding-top: 6rem; }
+/* The marketing header wraps to two rows (110px) on phones, so anchors there
+   land with the same 32px of air under it. */
+@media (max-width: 767px) {
+  html:has([data-surface="marketing"]) { scroll-padding-top: calc(110px + 2rem); }
+}
+::selection { background: var(--tint); color: var(--ink); }
+main { overflow-wrap: break-word; }
+
+/* One focus ring for the whole product (brief §3.3): 3px of forest, 2px off
+   the edge, visible on paper and on card. Components do not add a second. */
+:focus-visible { outline: 3px solid var(--forest); outline-offset: 2px; }
+
+/* Headings balance, paragraphs avoid orphans. Both are progressive. */
+h1, h2, h3 { text-wrap: balance; }
+p, li, dd, figcaption { text-wrap: pretty; }
+
+@layer base {
+  /* <summary> is the control that opens its own <details>: it sits on the
+     44px control scale like every other tap target, and it is the one
+     progressive-disclosure mechanism the product has. */
+  summary {
+    min-height: var(--size-control);
+    align-content: center;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Type roles (brief §2). Two families, Fraunces on headlines and figures only.
+ * ------------------------------------------------------------------------- */
+
+/* Fraunces display: the optical size follows the rendered size, so the big
+   sizes stay fine and the small ones sturdy; one axis, one face. */
 .display {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1.05;
+  font-optical-sizing: auto;
 }
-.display .accent {
+.display .accent { color: var(--forest); }
+/* The italic accent: Fraunces's true italic, loaded only where it is used,
+   for the one phrase a headline leans into. Opt-in by class. */
+.display .accent-italic,
+.display em {
+  color: var(--forest);
+  font-family: var(--font-fraunces-italic), var(--font-fraunces), ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* display-1: every page h1. display-2: section h2 on hub and marketing
+   surfaces. display-lg: reading-page and inner marketing titles. display-hero:
+   the one landing headline. Explicit classes beat the Tailwind size utilities
+   an older page may still carry, so one scale holds across the product. */
+h1.display, .display-1 { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); line-height: 1.05; letter-spacing: -0.02em; }
+h2.display, h3.display, .display-2 { font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem); line-height: 1.15; letter-spacing: -0.015em; }
+h1.display-lg, .display-lg { font-size: clamp(2.5rem, 1.5rem + 3.8vw, 4.5rem); line-height: 1.02; letter-spacing: -0.025em; }
+/* The floor phones (320–359): one step down, so a five-word title sets on
+   three lines instead of leaving one word alone on the last. */
+@media (max-width: 359px) { h1.display-lg, .display-lg { font-size: 2.25rem; } }
+h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25rem); line-height: 0.98; letter-spacing: -0.03em; }
+/* The floor phones (320–339): one step down, so the italic phrase "Your
+   genome," holds one line in the 272px column in every renderer (round-5 N4). */
+@media (max-width: 339px) { h1.display-hero, .display-hero { font-size: 2.75rem; } }
+.display-figure {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+  font-size: clamp(2.25rem, 1.6rem + 2.4vw, 3rem);
+}
+
+/* Fraunces ordinal: the "01" of a numbered sequence, a page or step counter.
+   Decorative numerals, never a measured value. */
+.ordinal {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1;
   color: var(--forest);
 }
 
-/* Uppercase letter-spaced micro-eyebrow */
+/* Uppercase letter-spaced micro-eyebrow: 13px floor, 0.14em. */
 .eyebrow {
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  line-height: 1.2;
   color: var(--ink-muted);
 }
+/* On the inset and tint grounds the muted eyebrow is the product's lowest
+   pair (6.3:1 at 13px), so there it reads in ink. */
+.plate-head .eyebrow, .surface-inset .eyebrow, .surface-tint .eyebrow,
+.plate-head > summary, summary.eyebrow, .legal-toc-plate > summary { color: var(--ink); }
+.eyebrow-rule { display: flex; align-items: center; gap: 1rem; }
+.eyebrow-rule::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-/*
- * <summary> is the control that opens its own <details>, and nothing else in
- * the product gives it a box: it renders as one line of text, 20px tall,
- * against the 44px control scale that brief line 553 pins for "every button,
- * input, switch, tap target" and line 1053 restates as "Minimum target 44×44
- * CSS px". SC 2.5.8's Inline exception cannot reach it either — a summary is
- * `display: list-item`, never `inline`, and it is a heading for its section
- * rather than a word inside a sentence.
- *
- * Written here rather than at each call site because a disclosure is one
- * control wearing one element: the repository has a dozen <summary> tags and
- * no Disclosure primitive to hang the size on (brief §4.1 item 6 asks for
- * one; it does not exist yet). A base rule is the nearest thing to that
- * primitive, and it means a summary added tomorrow is 44px tall without
- * anyone remembering to say so.
- *
- * min-height only: a summary is block-level, so its width is its container's
- * and is already past 44 everywhere. `align-content` centres the label in the
- * taller box; where an engine ignores it on a block container the label sits
- * at the top and the target is still 44px, so the measurement never depends
- * on it.
- */
-@layer base {
-  summary {
-    min-height: var(--size-control);
-    align-content: center;
-  }
+.title { font-size: 1.125rem; font-weight: 600; line-height: 1.4; letter-spacing: -0.005em; }
+.lede { font-size: 1.0625rem; line-height: 1.65; color: var(--ink-muted); max-width: var(--measure); }
+.body-lg { font-size: 1.0625rem; line-height: 1.65; }
+.caption { font-size: 0.8125rem; line-height: 1.5; color: var(--ink-muted); }
+.label { font-size: 0.875rem; font-weight: 500; line-height: 1.4; letter-spacing: 0.01em; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.875rem; line-height: 1.5; }
+.measure { max-width: var(--measure); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------------------
+ * Surfaces (brief §1.4): one box, four tones, no shadow.
+ * ------------------------------------------------------------------------- */
+.surface { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.surface-inset { background: var(--surface-inset); border: 1px solid transparent; border-radius: var(--radius-lg); }
+.surface-tint { background: var(--tint); border: 1px solid transparent; border-radius: var(--radius-lg); }
+.surface-dashed { background: transparent; border: 1px dashed var(--line-strong); border-radius: var(--radius-lg); }
+.surface-pad { padding: 1.5rem; }
+@media (min-width: 768px) { .surface-pad { padding: 2rem; } }
+@media (min-width: 1024px) { .surface-pad { padding: 2.5rem; } }
+.surface-pad-sm { padding: 1rem; }
+@media (min-width: 768px) { .surface-pad-sm { padding: 1.5rem; } }
+
+/* A plate: a surface with a labelled edge — the caption bar of a field
+   guide. The head row is an eyebrow on the inset ground; the body is card. */
+.plate { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+.plate-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: var(--size-control); padding: 0.5rem 1.25rem;
+  background: var(--surface-inset); border-bottom: 1px solid var(--line);
+}
+.plate-body { padding: 1.25rem; }
+@media (min-width: 768px) { .plate-head { padding-inline: 1.5rem; } .plate-body { padding: 1.5rem; } }
+/* In dark the inset ground sits only 1.06:1 above card, so inside a card it
+   takes one more step of lift (derived from the frozen tokens, no new hue). */
+.dark .plate-head, .dark .plate .surface-inset, .dark .surface .surface-inset {
+  background: color-mix(in oklab, var(--surface-inset) 72%, var(--line));
 }
 
-/**
- * A link that stands alone — a footer entry, a breadcrumb, a back link, a nav
- * item — is a tap target under brief line 553 ("every button, input, switch,
- * tap target") and line 1053 ("Minimum target 44x44 CSS px"), so it carries
- * the control scale. Line 2575 makes the gate "deliberately stricter than
- * WCAG 2.2 AA's 24x24", which is precisely the bar that buys SC 2.5.8's
- * Inline exception: the brief declined that exception on purpose.
- *
- * `inline-flex` rather than padding because the gate measures the bounding
- * box, and padding on a non-replaced inline element does not grow its line
- * box. `min-height` alone would not work either, for the same reason it does
- * not apply to an inline box.
- *
- * NEVER put this on a link inside running prose. Such a link is exempt only
- * while its computed display is `inline`; blockifying it would REMOVE the
- * exemption rather than grant one, and would break the sentence it sits in.
- */
+/* Hairlines. `.rule-forest` is the one emphatic rule, for a section lead. */
+.rule { border: 0; border-top: 1px solid var(--line); }
+.rule-strong { border: 0; border-top: 1px solid var(--line-strong); }
+.rule-forest { border: 0; border-top: 2px solid var(--forest); }
+
+/* A linked surface: the outline wakes, the ground lifts, the arrow moves 3px.
+   Never a shadow, never a scale. */
+.link-surface { position: relative; transition: border-color var(--motion-feedback), background-color var(--motion-feedback); }
+.link-surface:hover { border-color: var(--forest); background: var(--surface-inset); }
+/* Keyboard focus: one ring around the whole surface, never a second one on the
+   label inside it (round-1 F8 / m6). */
+.link-surface:focus-within { outline: 3px solid var(--forest); outline-offset: 2px; }
+.link-surface :is(a, button):focus-visible { outline: none; }
+.link-surface .link-arrow { transition: transform var(--motion-reveal) var(--easing-settle); }
+.link-surface:hover .link-arrow, .link-surface:focus-within .link-arrow { transform: translate(3px, -3px); }
+
+/* A standalone link on the control scale (footer entry, back link, crumb).
+   NEVER on a link inside running prose — blockifying it removes SC 2.5.8's
+   Inline exemption and breaks the sentence. */
 @layer components {
-  .link-target {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--size-control);
-  }
+  .link-target { display: inline-flex; align-items: center; min-height: var(--size-control); }
 }
+/* The prose link: forest, underlined, the offset of a typeset rule. */
+.prose-link { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+.prose-link:hover { text-decoration-thickness: 2px; }
+/* The quiet in-page action link: ink with a forest rule, used where a button
+   would be too loud. */
+.quiet-link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--forest); text-decoration-thickness: 2px; text-underline-offset: 0.3em; }
+.quiet-link:hover { color: var(--forest); }
 
-/* Shared reading rhythm. The original colour and font identity stays intact. */
-html { scroll-padding-top: 10rem; }
-::selection { background: var(--tint); color: var(--ink); }
-:focus-visible { outline: 2px solid var(--forest); outline-offset: 4px; }
-main { overflow-wrap: break-word; }
-.app-content h1.display { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); }
-.app-content h2.display { line-height: 1.2; }
+/* ---------------------------------------------------------------------------
+ * Rhythm (brief §1.2)
+ * ------------------------------------------------------------------------- */
+.stack-sections { display: flex; flex-direction: column; gap: var(--rhythm-section); }
+.stack-blocks { display: flex; flex-direction: column; gap: var(--rhythm-block); }
 .page-stack > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
 .page-stack > [data-slot="breadcrumbs"] { margin-bottom: 0; }
 [data-slot="breadcrumbs"] ol { column-gap: 0.5rem; row-gap: 0; }
 [data-subject-bar] { min-height: 3.5rem; height: auto; padding-block: 0.25rem; }
-.app-rail { position: sticky; top: 0; height: 100dvh; overflow-y: auto; gap: 2rem; }
-.app-rail > * { flex-shrink: 0; }
-.app-nav-link { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 44px; }
-.app-nav-link::before {
-  content: ""; position: absolute; inset: 8px auto 8px -1px; width: 2px;
-  border-radius: 9999px; background: var(--forest); opacity: 0;
-  transform: scaleY(0.4); transition: opacity 160ms, transform 220ms var(--ease-settle);
+
+/* ---------------------------------------------------------------------------
+ * Terrain: the hills behind a headline, an empty state's ground.
+ * ------------------------------------------------------------------------- */
+/* The hills are 5% wider than their ground and drift 2.5% over a minute, so
+   the slow movement never shows an edge. The drift animates the <svg> box,
+   not a group inside it: a transform on SVG content repaints the whole
+   drawing on the main thread every frame, while the box is composited. */
+[data-slot="terrain"] {
+  display: block; width: 105%; height: 100%; margin-left: -2.5%; overflow: hidden;
+  animation: terrain-drift 60s var(--easing-out) infinite alternate; will-change: transform;
 }
-.app-nav-link[aria-current="page"]::before { opacity: 1; transform: scaleY(1); }
-.app-nav-link svg { stroke-width: 1.6; }
+[data-slot="terrain"] .terrain-line { fill: none; stroke: var(--terrain-line); stroke-width: 1.25; vector-effect: non-scaling-stroke; opacity: calc(0.45 + 0.55 * var(--depth, 1)); }
+[data-slot="terrain"] .terrain-fill { fill: var(--paper); }
+[data-slot="terrain"] .terrain-drift > g:last-child .terrain-fill, [data-slot="terrain"] .terrain-drift > g:nth-last-child(2) .terrain-fill { fill: var(--terrain-fill); }
+@keyframes terrain-drift { from { transform: translateX(0) } to { transform: translateX(-2.4%) } }
+/* A glow behind the headline, the hill at golden hour; pure decoration. */
+.terrain-glow { background: radial-gradient(60% 55% at 70% 60%, var(--terrain-glow), transparent 70%); }
+
+/* ---------------------------------------------------------------------------
+ * Motion (brief §9): calm, short, and only where it explains something.
+ * ------------------------------------------------------------------------- */
+/* Entrance on load: rise 12px and fade, 400ms, staggered by --i. Used on the
+   landing hero only; the app never animates in. */
+.rise { animation: rise var(--motion-rise) var(--easing-settle) both; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* No scroll-driven reveal: a block that fades in as it enters the viewport
+   stays invisible in any capture whose viewport never scrolls (full-page
+   screenshots, the density evidence), and the motion explained nothing. */
 .site-nav-link { position: relative; }
 .site-nav-link::after {
   content: ""; position: absolute; bottom: 6px; left: 0; right: 0; height: 1px;
   background: currentColor; transform: scaleX(0); transform-origin: left;
-  transition: transform var(--motion-reveal) var(--ease-settle);
+  transition: transform var(--motion-reveal) var(--easing-settle);
 }
-.site-nav-link:hover::after, .site-nav-link:focus-visible::after { transform: scaleX(1); }
+.site-nav-link:hover::after, .site-nav-link:focus-visible::after, .site-nav-link[aria-current="page"]::after { transform: scaleX(1); }
+/* The current entry reads in ink, so no hovered sibling outranks it. */
+.site-nav-link[aria-current="page"] { color: var(--ink); }
 
-/* React Bits Micro inspirations: Sling Button feedback, Refine Frame outlines,
-   Squish Switch thumb, and the gliding emphasis of Glide Select. CSS keeps
-   server rendering and native keyboard behaviour; it never delays an action. */
-[data-slot="button"] {
+/* App rail navigation: a 2px forest marker glides to the current row. */
+.app-rail { position: sticky; top: 0; height: 100dvh; overflow-y: auto; gap: 2rem; }
+.app-rail > * { flex-shrink: 0; }
+.app-nav-link { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 44px; }
+.app-nav-link::before {
+  content: ""; position: absolute; inset: 10px auto 10px -1px; width: 2px;
+  border-radius: 9999px; background: var(--forest); opacity: 0;
+  transform: scaleY(0.4); transition: opacity var(--motion-feedback), transform var(--motion-reveal) var(--easing-settle);
+}
+.app-nav-link[aria-current="page"]::before { opacity: 1; transform: scaleY(1); }
+.app-nav-link svg { stroke-width: 1.6; }
+
+/* Controls: every button is 44px tall and gives a 120ms press. */
+[data-control="button"] {
   max-width: 100%; min-height: 44px; height: auto; padding-block: 0.625rem;
   white-space: normal; text-align: center;
   transition: background-color var(--motion-feedback), border-color var(--motion-feedback),
-    color var(--motion-feedback), transform var(--motion-feedback) var(--ease-settle);
+    color var(--motion-feedback), transform var(--motion-feedback) var(--easing-settle);
 }
-[data-slot="button"][data-variant="outline"] { border-color: var(--line-strong); box-shadow: none; }
-[data-slot="button"]:active:not(:disabled) { transform: scale(0.98); }
+[data-control="button"]:active:not(:disabled) { transform: scale(0.98); }
+/* The bordered variant keeps the same 44px box: its 1px edge comes out of
+   the padding, not added to it (round-4 N4). */
+[data-control="button"][data-variant="outline"] { padding-block: calc(0.625rem - 1px); }
+/* A primary that is not yet available is a quiet inset button, not a faded
+   forest one: the page's one action turns forest the moment it can be taken. */
+[data-control="button"][data-variant="default"]:disabled {
+  background: var(--surface-inset); color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--line); opacity: 1;
+}
+.dark [data-control="button"][data-variant="default"]:disabled {
+  background: color-mix(in oklab, var(--surface-inset) 72%, var(--line));
+}
+input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+/* Focus moved to a heading by script (a step change) is announced by the
+   status line; it does not draw a box around a sentence. */
+h1[tabindex="-1"]:focus-visible, h2[tabindex="-1"]:focus-visible, h3[tabindex="-1"]:focus-visible { outline: none; }
+.app-nav-link[aria-current="page"]:focus-visible::before { opacity: 0; }
 [data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"] {
-  border-color: var(--line-strong); box-shadow: none;
-  transition: border-color var(--motion-feedback), outline-color var(--motion-feedback);
+  transition: border-color var(--motion-feedback), background-color var(--motion-feedback);
 }
-.link-surface {
-  position: relative; transition: border-color var(--motion-feedback), background-color var(--motion-feedback);
-}
-.link-surface:hover, .link-surface:focus-within { border-color: var(--forest); background: var(--surface-inset); }
-.link-surface .link-arrow { transition: transform var(--motion-reveal) var(--ease-settle); }
-.link-surface:hover .link-arrow, .link-surface:focus-within .link-arrow { transform: translateX(3px); }
-summary { cursor: pointer; border-radius: 0.625rem; }
-details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) var(--ease-settle); }
+details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) var(--easing-settle); }
 @keyframes disclosure-in { from { opacity: 0.5; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-.theme-toggle svg { animation: theme-turn 220ms var(--ease-settle); }
+/* The icon turns only when a person toggles the theme (data-turned is set by
+   the click), never on load. */
+.theme-toggle[data-turned] svg { animation: theme-turn 220ms var(--easing-settle); }
 @keyframes theme-turn { from { opacity: 0; transform: rotate(-25deg) scale(0.8); } to { opacity: 1; transform: none; } }
-[data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"] {
-  box-shadow: 0 8px 32px rgb(20 32 27 / 0.12);
+[data-slot="dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="global-search"] {
+  box-shadow: var(--overlay-shadow);
 }
 
-/* Marketing: an editorial guide, with clear steps and no invented results. */
-.landing-hero { display: grid; align-items: center; gap: 4rem; padding-block: 5rem; }
-.landing-hero h1 .accent { display: block; }
-.landing-hero h1 { font-size: clamp(2.75rem, 2rem + 3.4vw, 4.75rem); max-width: 12ch; }
-.genome-guide { border: 1px solid var(--line); border-radius: 1.25rem; background: var(--surface-inset); padding: 2rem; }
-.guide-row { display: flex; gap: 1rem; padding-block: 1.5rem; border-top: 1px solid var(--line); }
-.guide-row > svg { flex: none; color: var(--forest); stroke-width: 1.4; }
-.guide-row p { max-width: 30ch; }
-.process-step { border-top: 1px solid var(--line); padding-top: 1.5rem; }
-.process-number { font-variant-numeric: tabular-nums; color: var(--forest); font-size: 0.8125rem; letter-spacing: 0.08em; }
+/* ---------------------------------------------------------------------------
+ * Legacy hooks still read by older surfaces; the partials refine them.
+ * ------------------------------------------------------------------------- */
 .legal-body { font-size: 1rem; line-height: 1.75; }
-.legal-toc a { border-radius: 0.625rem; padding-inline: 0.75rem; transition: color 160ms, background-color 160ms; }
-.legal-toc a:hover, .legal-toc a:focus-visible { background: var(--surface-inset); color: var(--ink); }
-.legal-section { scroll-margin-top: 11rem; }
 .legal-section:target > h2 { color: var(--forest); }
-.auth-form-surface { border-radius: 1.25rem; border: 1px solid var(--line); background: var(--card); padding: 2rem; }
-.auth-form-surface h1 { font-size: 2rem; }
+.app-content h1.display { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.25rem); }
+.app-content h2.display { line-height: 1.15; }
 
-@media (min-width: 1024px) {
-  .landing-hero { grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr); padding-block: 4rem; }
-}
 @media (max-width: 767px) {
-  .landing-hero { gap: 3rem; padding-block: 3rem; }
-  .genome-guide { padding: 1.5rem; }
-  .auth-form-surface { padding: 1.5rem; }
   .app-content { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
   [data-subject-bar] { gap: 0.5rem; flex-wrap: wrap; }
   [data-subject-bar] [data-slot="subject-name"] { max-width: 10rem; }
@@ -296,11 +475,23 @@ details[open] > :not(summary) { animation: disclosure-in var(--motion-reveal) va
     animation: none !important; transition-duration: 0ms !important;
     scroll-behavior: auto !important;
   }
-  [data-slot="button"]:active:not(:disabled), .link-surface .link-arrow,
+  .rise, .reveal { opacity: 1; transform: none; }
+  [data-control="button"]:active:not(:disabled), .link-surface .link-arrow,
   .app-nav-link::before { transform: none; }
 }
 @media (forced-colors: active) {
-  :focus-visible { outline: 2px solid Highlight; }
+  :focus-visible { outline: 3px solid Highlight; }
   .app-nav-link[aria-current="page"] { outline: 1px solid Highlight; }
-  [data-slot="button"], input, textarea, select { border: 1px solid ButtonText; }
+  [data-control="button"], input, textarea, select { border: 1px solid ButtonText; }
+  [data-slot="terrain"] { display: none; }
+}
+
+/* Tailwind's transition-colors includes outline-color, which makes the focus
+   ring fade in over the element's colour transition; the ring must be
+   instant, so the utility is redefined without it. */
+@layer utilities {
+  .transition-colors {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke,
+      --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+  }
 }

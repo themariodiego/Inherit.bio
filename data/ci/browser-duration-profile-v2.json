@@ -1241,6 +1241,625 @@
           "durationMs": 93286
         }
       ]
+    },
+    {
+      "head": "575d9191227bae67323022cc3d46b6e4b3a8cd8b",
+      "workflowHead": "575d9191227bae67323022cc3d46b6e4b3a8cd8b",
+      "tree": "c75aa59249346e9e8fcee1c006107e4079122318",
+      "runId": "37725805440",
+      "runAttempt": "1",
+      "projects": [
+        "chromium",
+        "copilot-local",
+        "jurisdiction-off",
+        "prepared-source"
+      ],
+      "manifestSha256": "90b0f47a6c33fbef6d4707e13431b5abf2b55e8c7e5fa662e7f2fd1e4753a527",
+      "shards": [
+        {
+          "index": 1,
+          "sha256": "8ff3411a04eaf2eb2b77e53b1efe66ff263ab08a38ad9bec60144f02035e7c1d"
+        },
+        {
+          "index": 2,
+          "sha256": "9b5f8dcf29da71293d2d657e1f223f0a849d63fe741c2229d29f0703581db28c"
+        },
+        {
+          "index": 3,
+          "sha256": "e0cfd65adb892da79a65457ffb131453c85f0cf9e732a73f5b6cc7ebbc733da4"
+        },
+        {
+          "index": 4,
+          "sha256": "247356705cad459eed3ecaad6c02a93d7c3231df2e1bc3e12bffe4c0388da674"
+        },
+        {
+          "index": 5,
+          "sha256": "0ffe81154197fae3db251494efd9ce3487a2b48e96e8113e6febbe3cd4fb3f76"
+        },
+        {
+          "index": 6,
+          "sha256": "10c744a835d2aeb0d6f280a83dafbfb14e3f4e22e16214e89610ee88e6f7fb33"
+        }
+      ],
+      "metadata": {
+        "runSha256": "1e7bd429cf00759fd0130a85fcfd397ab50a9249e141baba28ee9dd7018f48ce",
+        "jobsSha256": "45316bb527634817bdc923a2e2df3d805ce934f7bfaa7c2fbe6d53d35605d4d3",
+        "testedCommitSha256": "96a8f4beaba6225a2253a551f8426143896d085e5ded404370ad27767d2e376f",
+        "artifactsSha256": "c20c693f77b16cbcf73f24b88391b9473786be7ece2978ea3031099da13f1b3c",
+        "captureReceiptSha256": "262d86cf1c8398f9293a71bc6e5593c1434a2f1bf8beb63288f99171a249a8e3"
+      },
+      "files": [
+        {
+          "file": "a11y.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 78,
+          "durationMs": 307822
+        },
+        {
+          "file": "accessible-authenticated-pages.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 161636
+        },
+        {
+          "file": "account-deletion-purge.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 11851
+        },
+        {
+          "file": "adult-subject-invitation.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 20323
+        },
+        {
+          "file": "ancestry-panel.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 9,
+          "durationMs": 3936
+        },
+        {
+          "file": "ancestry-regional.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 30755
+        },
+        {
+          "file": "ancestry-revocation.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 18632
+        },
+        {
+          "file": "ancestry.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 57163
+        },
+        {
+          "file": "auth-complete.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 1933
+        },
+        {
+          "file": "auth-processing.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 2764
+        },
+        {
+          "file": "auth.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 5042
+        },
+        {
+          "file": "behavior-study-scope.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 11266
+        },
+        {
+          "file": "canonical-copilot-invalidation.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 5,
+          "durationMs": 69854
+        },
+        {
+          "file": "co-parent-invitation.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 5,
+          "durationMs": 12391
+        },
+        {
+          "file": "comprehension-participants.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 20914
+        },
+        {
+          "file": "consent-versions.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 9390
+        },
+        {
+          "file": "control-target-size.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 45291
+        },
+        {
+          "file": "copilot-group-scopes.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 14745
+        },
+        {
+          "file": "copilot-output.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 64,
+          "durationMs": 75123
+        },
+        {
+          "file": "copilot-refusal.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 23164
+        },
+        {
+          "file": "copilot-scope-states.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 9002
+        },
+        {
+          "file": "copilot.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 17161
+        },
+        {
+          "file": "deletion-export.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 16000
+        },
+        {
+          "file": "embryo-analysis.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 568
+        },
+        {
+          "file": "embryos.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 14,
+          "durationMs": 96083
+        },
+        {
+          "file": "error-boundary.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 367
+        },
+        {
+          "file": "export-subject-scope.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 8051
+        },
+        {
+          "file": "family-ancestry.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 20359
+        },
+        {
+          "file": "family-coverage-states.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 27183
+        },
+        {
+          "file": "family-health-picture.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 15,
+          "durationMs": 340082
+        },
+        {
+          "file": "family-processing-states.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 63680
+        },
+        {
+          "file": "family.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 13,
+          "durationMs": 84757
+        },
+        {
+          "file": "figure-text-alternatives.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 48790
+        },
+        {
+          "file": "figures-cross-surface.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 11587
+        },
+        {
+          "file": "figures-two-seed.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 8,
+          "durationMs": 354956
+        },
+        {
+          "file": "file-deletion.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 22982
+        },
+        {
+          "file": "files-index.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 11521
+        },
+        {
+          "file": "first-glance.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 5789
+        },
+        {
+          "file": "genome-coverage-states.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 5,
+          "durationMs": 45755
+        },
+        {
+          "file": "genome-data-empty.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 7226
+        },
+        {
+          "file": "genome-data-processing.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 6,
+          "durationMs": 2581
+        },
+        {
+          "file": "genome-data.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 11,
+          "durationMs": 43914
+        },
+        {
+          "file": "jurisdiction-declaration.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 6,
+          "durationMs": 24970
+        },
+        {
+          "file": "legal-versions.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 6,
+          "durationMs": 3199
+        },
+        {
+          "file": "legal.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 29,
+          "durationMs": 16068
+        },
+        {
+          "file": "mail-expiry.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 6422
+        },
+        {
+          "file": "network-audit.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 6,
+          "durationMs": 14692
+        },
+        {
+          "file": "observed-reference-calls.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 15277
+        },
+        {
+          "file": "other-adult-upload.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 110246
+        },
+        {
+          "file": "overview-processing.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 12276
+        },
+        {
+          "file": "overview.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 28856
+        },
+        {
+          "file": "own-export-content.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 10182
+        },
+        {
+          "file": "own-file-controls.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 10957
+        },
+        {
+          "file": "own-genome-complete-journey.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 35493
+        },
+        {
+          "file": "own-genome-formats.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 21,
+          "durationMs": 207625
+        },
+        {
+          "file": "own-report-results.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 17093
+        },
+        {
+          "file": "own-source-provenance.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 10366
+        },
+        {
+          "file": "own-upload-consent.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 5580
+        },
+        {
+          "file": "own-upload-pause.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 7344
+        },
+        {
+          "file": "own-upload-positive.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 5724
+        },
+        {
+          "file": "own-upload-progress.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 4959
+        },
+        {
+          "file": "own-upload-transport.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 3989
+        },
+        {
+          "file": "page-reflow-accessibility.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 45618
+        },
+        {
+          "file": "portrait-no-file.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 41023
+        },
+        {
+          "file": "portrait-reviewed-carrier.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 36961
+        },
+        {
+          "file": "portrait.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 10,
+          "durationMs": 56954
+        },
+        {
+          "file": "providers.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 1326
+        },
+        {
+          "file": "public-pages-session-accessibility.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 297933
+        },
+        {
+          "file": "refused-invitation-cleanup.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 695
+        },
+        {
+          "file": "report-counts.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 16006
+        },
+        {
+          "file": "report-gate.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 6,
+          "durationMs": 73606
+        },
+        {
+          "file": "report-library-recovery.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 20145
+        },
+        {
+          "file": "report-previews.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 7,
+          "durationMs": 70179
+        },
+        {
+          "file": "report-skeleton.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 9,
+          "durationMs": 66285
+        },
+        {
+          "file": "research.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 5,
+          "durationMs": 2659
+        },
+        {
+          "file": "response-headers.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 2218
+        },
+        {
+          "file": "rls.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 8,
+          "durationMs": 1089
+        },
+        {
+          "file": "route-dispositions.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 2050
+        },
+        {
+          "file": "search.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 5,
+          "durationMs": 8939
+        },
+        {
+          "file": "settings.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 13,
+          "durationMs": 35238
+        },
+        {
+          "file": "synthetic-array.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 15680
+        },
+        {
+          "file": "task-depth.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 6,
+          "durationMs": 28105
+        },
+        {
+          "file": "tier2-upload.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 2,
+          "durationMs": 8603
+        },
+        {
+          "file": "ui-renewal.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 3,
+          "durationMs": 2359
+        },
+        {
+          "file": "upload-vcf.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 4,
+          "durationMs": 10510
+        },
+        {
+          "file": "viewport-keyboard-accessibility.spec.ts",
+          "project": "chromium",
+          "baselineCaseCount": 1,
+          "durationMs": 60208
+        },
+        {
+          "file": "copilot-family.spec.ts",
+          "project": "copilot-local",
+          "baselineCaseCount": 6,
+          "durationMs": 12730
+        },
+        {
+          "file": "copilot-redteam.spec.ts",
+          "project": "copilot-local",
+          "baselineCaseCount": 48,
+          "durationMs": 19703
+        },
+        {
+          "file": "copilot-group-scopes.nojurisdiction.spec.ts",
+          "project": "jurisdiction-off",
+          "baselineCaseCount": 3,
+          "durationMs": 6519
+        },
+        {
+          "file": "embryos.nojurisdiction.spec.ts",
+          "project": "jurisdiction-off",
+          "baselineCaseCount": 3,
+          "durationMs": 9915
+        },
+        {
+          "file": "family-hub.nojurisdiction.spec.ts",
+          "project": "jurisdiction-off",
+          "baselineCaseCount": 3,
+          "durationMs": 4971
+        },
+        {
+          "file": "family-invite.nojurisdiction.spec.ts",
+          "project": "jurisdiction-off",
+          "baselineCaseCount": 2,
+          "durationMs": 4838
+        },
+        {
+          "file": "genome-family.nojurisdiction.spec.ts",
+          "project": "jurisdiction-off",
+          "baselineCaseCount": 11,
+          "durationMs": 24723
+        },
+        {
+          "file": "jurisdiction-declaration.nojurisdiction.spec.ts",
+          "project": "jurisdiction-off",
+          "baselineCaseCount": 1,
+          "durationMs": 5344
+        },
+        {
+          "file": "own-prepared-genome-journey.spec.ts",
+          "project": "prepared-source",
+          "baselineCaseCount": 2,
+          "durationMs": 95578
+        }
+      ]
     }
   ]
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import type { AdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 import { route } from "@/lib/primary-routes";
 
@@ -62,10 +63,10 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
   if (receipt) return (
     <section className="mx-auto max-w-3xl px-6 py-16" role="status">
       <p className="eyebrow">Your rights</p>
-      <h1 className="display mt-4 text-4xl">{receipt.title}</h1>
-      <p className="mt-5 max-w-prose text-ink-muted">{receipt.body}</p>
+      <h1 className="display mt-4">{receipt.title}</h1>
+      <p className="lede mt-5">{receipt.body}</p>
       {status === "accepted" ? (
-        <Link href={route("settings.people")} className="mt-6 inline-block text-sm underline underline-offset-2">
+        <Link href={route("settings.people")} className="link-target quiet-link mt-4 text-sm">
           Open people settings
         </Link>
       ) : null}
@@ -76,19 +77,19 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
   return (
     <section className="mx-auto max-w-3xl px-6 py-16">
       <p className="eyebrow">Your rights</p>
-      <h1 className="display mt-4 text-4xl">Review invitation</h1>
-      <div className="mt-8 space-y-5 rounded-2xl border border-line bg-card p-6">
+      <h1 className="display mt-4">Review invitation</h1>
+      <div className="surface surface-pad mt-10 space-y-6">
         <div>
-          <h2 className="font-medium">No genetic data has been shared</h2>
-          <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+          <h2 className="title text-ink">No genetic data has been shared</h2>
+          <p className="mt-3 max-w-measure text-base leading-relaxed text-ink-muted">
             Accepting creates a reserved subject under your account. It does
             not give the sender access, permission to upload, or permission
             to analyse your genetic data.
           </p>
         </div>
-        <div className="rounded-xl border border-line p-5">
-          <h3 className="font-medium">What you agree to</h3>
-          <p className="mt-2 text-sm text-ink-muted">
+        <div className="surface-inset surface-pad-sm">
+          <h3 className="label text-ink">What you agree to</h3>
+          <p className="caption mt-2">
             Version {review.artifact.version} · effective {review.artifact.effectiveOn}
           </p>
           <p data-legal-summary className="mt-4 whitespace-pre-wrap text-sm leading-relaxed">
@@ -97,50 +98,38 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
           <div className="mt-4 whitespace-pre-wrap border-t border-line pt-4 text-sm leading-relaxed">
             {review.artifact.bodyMarkdown}
           </div>
-          <p className="mt-4 break-all font-mono text-xs text-ink-muted">
+          <p className="mono mt-4 break-all text-xs text-ink-muted">
             sha256 {review.artifact.bodySha256}
           </p>
         </div>
         {review.acceptanceBlockedBy === "sign-in" ? (
-          <Link
-            href="/auth/sign-in?next=%2Fwithdraw%2Fsession"
-            className="inline-flex min-h-11 items-center rounded-full bg-forest px-6 py-3 text-on-forest"
-          >
-            Sign in to accept
-          </Link>
+          <Button asChild size="lg">
+            <Link href="/auth/sign-in?next=%2Fwithdraw%2Fsession">Sign in to accept</Link>
+          </Button>
         ) : review.acceptanceBlockedBy === "other-account" ? (
-          <p role="status" className="text-sm leading-relaxed text-ink-muted">
+          <p role="status" className="max-w-measure text-base leading-relaxed text-ink-muted">
             This invitation was sent to a different address. Sign in with the
             address that received it to accept. You can still refuse or delete
             the reserved record from here.
           </p>
         ) : (
-          <button
-            type="button" disabled={busy} onClick={() => answer("confirm")}
-            className="min-h-11 rounded-full bg-forest px-6 py-3 text-on-forest disabled:opacity-60"
-          >
+          <Button type="button" size="lg" disabled={busy} onClick={() => answer("confirm")}>
             {busy ? "Saving your choice…" : "Accept through my account"}
-          </button>
+          </Button>
         )}
         <div className="flex flex-wrap gap-3 border-t border-line pt-5">
-          <button
-            type="button" disabled={busy} onClick={() => answer("refuse")}
-            className="min-h-11 rounded-full border border-line px-6 py-3 text-ink disabled:opacity-60"
-          >
+          <Button type="button" variant="outline" disabled={busy} onClick={() => answer("refuse")}>
             Refuse
-          </button>
-          <button
-            type="button" disabled={busy} onClick={() => answer("delete")}
-            className="min-h-11 rounded-full border border-line px-6 py-3 text-ink disabled:opacity-60"
-          >
+          </Button>
+          <Button type="button" variant="outline" disabled={busy} onClick={() => answer("delete")}>
             Delete reserved record
-          </button>
+          </Button>
         </div>
         {status === "failed" ? (
-          <p role="alert" className="text-sm leading-relaxed">
+          <p role="alert" className="max-w-measure text-sm leading-relaxed text-ink">
             We could not record your choice. This form may have expired, or the
             invitation may already have been answered.{" "}
-            <button type="button" onClick={() => window.location.reload()} className="min-h-11 underline underline-offset-2">
+            <button type="button" onClick={() => window.location.reload()} className="prose-link cursor-pointer">
               Check this invitation again
             </button>.
           </p>

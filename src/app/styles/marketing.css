@@ -1,0 +1,78 @@
+/* marketing surface styles. Owned by one surface agent; tokens come from globals.css.
+   Rules here are unlayered and beat Tailwind utilities: use them for shared
+   patterns, and Tailwind classes in JSX for one-offs. */
+
+/* ---------------------------------------------------------------------------
+ * Landing hero: the one terrain on the public surface. The glow is a layer
+ * under the whole hero; the hills are a band below the content, so the
+ * action row sits on clean paper and the ridges never cross it.
+ * ------------------------------------------------------------------------- */
+.hero { position: relative; overflow: hidden; }
+.hero-ground { position: absolute; inset: 0; pointer-events: none; }
+.hero-ground .terrain-glow { position: absolute; inset: 0; }
+.hero-content { position: relative; }
+/* The hills are drawn 1600×600, 5% wider than the hero for the drift, and
+   sliced bottom-up, so 26vw shows every ridge at any width without a line
+   cut at the band's top edge. From md the band is 19.4vw: the bottom 296 of
+   the 600 units, whose top edge falls in the clear gap between the second
+   ridge (ends at 296) and the third (starts at 314), so the two far ridges
+   drop out whole, the five near ones stay, and the hero ends near the fold
+   of a 1280×800 window. One rule from md to the widest desktop, so the band
+   never steps at lg; the one step sits at md with the hero's own padding
+   change. The height is fixed (not a flex minimum): a taller window must not
+   grow the band back into a ridge. */
+.hero-band { position: relative; height: max(26vw, 9rem); pointer-events: none; }
+@media (min-width: 768px) { .hero-band { height: max(19.4vw, 9rem); } }
+.hero-band [data-slot="terrain"] { position: absolute; inset: 0; }
+
+/* ---------------------------------------------------------------------------
+ * How it works: a ruled sequence. Each step opens with a hairline and an
+ * ordinal; the grid is 1 / 2 / 4 across.
+ * ------------------------------------------------------------------------- */
+.step { max-width: var(--measure); border-top: 1px solid var(--line); padding-top: 1.25rem; }
+.step .ordinal { display: block; font-size: 2rem; }
+/* Four across: the titles get a two-line box so the bodies start on one line
+   whether a title wraps or not. */
+@media (min-width: 1024px) { .step .title { min-height: 2.8em; } }
+
+/* ---------------------------------------------------------------------------
+ * Plain terms: a ruled list with a 10px forest disc. Rows sit on the control
+ * scale so each line has air; the list stays on the measure.
+ * ------------------------------------------------------------------------- */
+.candor { max-width: var(--measure); }
+.candor > li {
+  display: flex; align-items: flex-start; gap: 0.875rem;
+  min-height: var(--size-control); padding-block: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.candor > li::before {
+  content: ""; flex: none; width: 10px; height: 10px; margin-top: 0.5rem;
+  border-radius: var(--radius-pill); background: var(--forest);
+}
+
+/* ---------------------------------------------------------------------------
+ * Site chrome shared by every public page: the header rows and the footer's
+ * standalone links, both on the control scale. Below md the header is two
+ * rows: wordmark, theme and the one primary pill; then the nav with the
+ * quiet sign-in at its end.
+ * ------------------------------------------------------------------------- */
+.site-header-row { min-height: var(--size-navbar); }
+.site-header-nav-row { min-height: var(--size-control); }
+.site-footer-link {
+  display: flex; align-items: center; min-height: var(--size-control);
+  color: var(--ink-muted); transition: color var(--motion-feedback);
+}
+.site-footer-link:hover { color: var(--ink); }
+
+/* The provider directory's filter bar: a plate head that stacks the three
+   labelled controls and their note instead of the one-line eyebrow row. */
+.plate-head.filter-head { flex-direction: column; align-items: stretch; padding-block: 1rem; }
+@media (min-width: 768px) { .plate-head.filter-head { padding-block: 1.25rem; } }
+/* A provider's head below sm: the one-row `.plate-head` (centred, unlayered,
+   so it beats the utilities) stacks, and the name and "Ships to" keep the
+   full column with the availability reason under them. */
+@media (max-width: 639px) { .plate-head.provider-head { flex-direction: column; align-items: stretch; } }
+/* The directory's captions on the inset grounds (plate heads, product blocks)
+   read in ink: muted 13px on inset is the product's lowest pair at 6.3:1, and
+   `.caption` sets its own colour, so a utility cannot lift it. */
+.provider-directory .plate-head .caption, .provider-directory .surface-inset .caption { color: var(--ink); }

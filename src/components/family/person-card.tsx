@@ -1,11 +1,11 @@
 /**
- * <PersonCard> — one adult in the Family list (brief §2 §5.1): a 24px disc
- * with their initial, their name, the kind chip and exactly one state line.
- * Server component.
+ * <PersonCard> — one adult in the Family list (brief §2 §5.1): a 28px disc
+ * with their initial, their name, the kind chip and exactly one state line,
+ * as one ruled row linking to their page. Server component.
  *
  * Colour never carries identity alone (X2.4): the initial and the name are
- * text. The state line is the only thing the card says about them, and
- * "Reports ready" is shown only when a report layer is live, so a card
+ * text. The state line is the only thing the row says about them, and
+ * "Reports ready" is shown only when a report layer is live, so a row
  * reveals nothing about another adult's files before they share.
  *
  * Nobody is ranked, scored or ordered by anything but their name.
@@ -67,29 +67,28 @@ export function PersonCard({
   const colour = subjectColourIndex(person.handle);
   return (
     <li data-slot="person-card" data-subject-id={person.handle.id}>
-      <Link
-        href={href}
-        className="flex min-h-11 items-center gap-3 rounded-xl border border-line bg-card px-4 py-3 text-base hover:border-forest"
-      >
+      <Link href={href} className="fam-row fam-person text-base">
         <span
           aria-hidden="true"
           data-slot="subject-disc"
-          className={`flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none text-paper ${DISC_CLASSES[colour]}`}
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none text-paper ${DISC_CLASSES[colour]}`}
         >
           {subjectInitial(person.displayLabel)}
         </span>
-        <span data-slot="subject-name" className="truncate font-medium text-ink">
-          {person.displayLabel}
-        </span>
-        {kind ? (
-          <span
-            data-slot="subject-kind"
-            className="shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
-          >
-            {KIND_CHIPS[kind]}
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span data-slot="subject-name" className="truncate font-medium text-ink">
+            {person.displayLabel}
           </span>
-        ) : null}
-        <span data-slot="person-state" className="ml-auto shrink-0 text-sm text-ink-muted">
+          {kind ? (
+            <span
+              data-slot="subject-kind"
+              className="shrink-0 rounded-full border border-line px-2 py-0.5 text-sm text-ink-muted"
+            >
+              {KIND_CHIPS[kind]}
+            </span>
+          ) : null}
+        </span>
+        <span data-slot="person-state" className="text-sm text-ink-muted">
           {personCardLine(state, person.displayLabel)}
         </span>
       </Link>
