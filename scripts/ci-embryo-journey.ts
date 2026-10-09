@@ -4,6 +4,7 @@ import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { assertCiRuntime, CI_RUNTIME_CONTAINER } from "./ci-browser-config";
+import { ownedLinuxEnvironment, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 type Execute = (args: string[], input?: string, timeout?: number) => Promise<string>;
@@ -83,12 +84,13 @@ export async function runEmbryoWorkerInside(value: unknown, signal: AbortSignal,
   });
 }
 
-function defaultIo(env: Environment): EmbryoJourneyIo {
+function defaultIo(env: Environment, operator?: OwnedLinuxCapability): EmbryoJourneyIo {
   return {
     execute: async (args, input, timeout = 10_000) => {
       try {
         const child = promisify(execFile)("docker", args, { timeout, killSignal: "SIGKILL", maxBuffer: 32_768,
-          env: { NODE_ENV: "production", PATH: env.PATH ?? "/usr/bin:/bin", HOME: env.HOME ?? "/home/runner", LANG: "C.UTF-8" } });
+          env: { NODE_ENV: "production", PATH: env.PATH ?? "/usr/bin:/bin", HOME: env.HOME ?? "/home/runner", LANG: "C.UTF-8",
+            ...(operator ? ownedLinuxEnvironment(operator) : {}) } });
         child.child.stdin?.on("error", () => {});
         child.child.stdin?.end(input);
         return (await child).stdout.trim();
@@ -128,8 +130,9 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
   runtimeOwner: string;
   runWorker: (cohortId: string) => Promise<void>;
   proof: (cohortId: string) => Promise<unknown>;
-}) => Promise<T>, io = defaultIo(env), platform = process.platform): Promise<T> {
-  assertCiRuntime(env, platform);
+}) => Promise<T>, io?: EmbryoJourneyIo, platform = process.platform, operator?: OwnedLinuxCapability): Promise<T> {
+  assertCiRuntime(env, platform, operator);
+  io ??= defaultIo(env, operator);
   assert(env.INHERIT_CI_BROWSER_RUNTIME === "ready", "Isolated runtime preflight required");
   const owner = io.owner() as { owner?: unknown };
   assert(owner && Object.keys(owner).length === 1 && typeof owner.owner === "string" && UUID.test(owner.owner),

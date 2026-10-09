@@ -2,15 +2,24 @@ import assert from "node:assert/strict";
 import { isIP } from "node:net";
 import { localE2eProject } from "./local-e2e-project";
 import { assertLocalProviderEnvironment } from "./local-storage-browser-config";
+import { assertOwnedLinuxCapability, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 export const CI_RUNTIME_IMAGE = "inherit-ci-browser:local";
 export const CI_RUNTIME_CONTAINER = "inherit-ci-browser-runtime";
 export const CI_RUNTIME_LABEL = "inherit.ci-browser-runtime";
 export const CI_CONTROL_URL = "http://127.0.0.1:8130";
-export function assertCiRuntime(env: Environment, platform = process.platform) {
+export function assertCiRuntime(env: Environment, platform = process.platform, operator?: OwnedLinuxCapability) {
   assertLocalProviderEnvironment(env, true, []);
-  assertCiJob(env, platform);
+  if (operator) {
+    assertOwnedLinuxCapability(operator);
+    assert(platform === "linux" && !env.CI && !env.GITHUB_ACTIONS && !env.GITHUB_JOB && !env.RUNNER_ENVIRONMENT,
+      "Owned operator runtime must not claim a CI job");
+    localE2eProject(env);
+    assert(!env.DEBUG && !env.PWDEBUG && (env.INHERIT_LOCAL_E2E_PROJECT ?? "sequence") === "sequence"
+      && (!env.CANONICAL_COPILOT_CONTROL_URL || env.CANONICAL_COPILOT_CONTROL_URL === CI_CONTROL_URL),
+    "Exact owned operator scope required");
+  } else assertCiJob(env, platform);
 }
 function assertCiJob(env: Environment, platform: NodeJS.Platform) {
   localE2eProject(env);
@@ -108,8 +117,18 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
 
 /** Unlike job bootstrap, each server has its own exact app origin. Validate the
  * shared job identity first, then the actual scoped values without normalization. */
-export function checkedCiLauncherEnvironment(env: Environment, port: number, platform = process.platform) {
-  assertCiJob(env, platform);
+export function checkedCiLauncherEnvironment(env: Environment, port: number, platform = process.platform, operator?: OwnedLinuxCapability) {
+  if (operator) {
+    // Main-origin provider assertions belong to bootstrap; each app keeps its
+    // own exact original origin contract below.
+    assertOwnedLinuxCapability(operator);
+    assert(platform === "linux" && !env.CI && !env.GITHUB_ACTIONS && !env.GITHUB_JOB && !env.RUNNER_ENVIRONMENT
+      && !env.DEBUG && !env.PWDEBUG, "Owned operator runtime must not claim a CI job");
+    localE2eProject(env);
+    assert((env.INHERIT_LOCAL_E2E_PROJECT ?? "sequence") === "sequence"
+      && (!env.CANONICAL_COPILOT_CONTROL_URL || env.CANONICAL_COPILOT_CONTROL_URL === CI_CONTROL_URL),
+    "Exact owned operator launcher scope required");
+  } else assertCiJob(env, platform);
   assert(env.INHERIT_CI_BROWSER_RUNTIME === "ready", "Runtime preflight must pass first");
   return checkedAppEnvironment(Object.fromEntries(admittedAppEnvironmentNames(port).map(name => [name, env[name]])), port);
 }

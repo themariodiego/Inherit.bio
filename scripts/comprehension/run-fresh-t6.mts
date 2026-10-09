@@ -10,54 +10,72 @@ import { APP_ENV_NAMES, assertCiRuntime } from "../ci-browser-config";
 import { recordCiBuild } from "../ci-browser-runtime";
 import { bindingSkips, createLiveManifest, loadConductorInputs, repositoryRoot } from "./conductor-inputs";
 import { runLive } from "./conductor";
-import { isolatedProcesses, probeIsolation } from "./inference-isolation";
+import { isolatedProcesses, probeIsolation, type Environment } from "./inference-isolation";
 import { InstrumentJournal } from "./instrument-journal";
 import { inferenceOf, modelIdentifierOf, modelIdentityOf, workerProvider } from "./run-config";
 import { RECORD_ROOT, readRecordManifest, RunRecord, runSummary } from "./run-record";
-import { acquireFreshStack, actualResourceIO, infrastructureChildEnvironment, infrastructureReservation } from "./fresh-t6-resources";
+import { acquireFreshStack, actualResourceIO, createResourceIO, infrastructureChildEnvironment, infrastructureReservation } from "./fresh-t6-resources";
 import { taskIds } from "./conductor-contract";
 import { freshT6ConfigSchema } from "./fresh-t6-config";
 import { loadPrivateConfiguration } from "./private-run-config";
 import type { LiveSession } from "./live-browser";
-import { openFreshComprehensionBrowser } from "./fresh-t6-browser";
+import { createFreshComprehensionBrowser } from "./fresh-t6-browser";
+import { assertOwnedLinuxSource, bindOwnedRunRecord, type OwnedLinuxCapability } from "../owned-linux-runtime";
 
+/** Every operator invocation observes a fresh native bootstrap, even when only
+ * its immutable executable build is reused. Test IO cannot mint authority. */
+export async function prepareFreshInvocation(options: {
+  environment: Record<string, string | undefined>; bindObservedKeys: boolean; buildRequired: boolean;
+  acquire: () => Promise<Pick<Awaited<ReturnType<typeof acquireFreshStack>>, "keys" | "close">>;
+  build: () => Promise<void>;
+}) {
+  const stack = await options.acquire();
+  try {
+    if (options.bindObservedKeys) Object.assign(options.environment, stack.keys);
+    assert(Object.entries(stack.keys).every(([name, value]) => options.environment[name] === value),
+      "Fresh keys must match the configured build inputs");
+    if (options.buildRequired) await options.build();
+  } finally { await stack.close(); }
+}
 
-async function main() {
+export async function runFreshComprehension(configuration: unknown, options: { plan?: boolean; prepare?: boolean;
+  operator?: OwnedLinuxCapability; inferenceEnvironment?: Environment } = {}) {
   assertSqlFixtureIncludes();
-  const argv = process.argv.slice(2), file = argv.find(value => !value.startsWith("--"));
-  assert(file && path.isAbsolute(file) && argv.every(value => value === file || value === "--prepare" || value === "--plan"),
-    "Use an absolute private configuration and only --prepare or --plan");
-  const config = loadPrivateConfiguration(file, value => freshT6ConfigSchema.parse(value));
+  const config = freshT6ConfigSchema.parse(configuration);
   const run = config.run;
   const tasks = run.tasks ?? [...taskIds], personas = run.personas ?? 30;
-  if (argv.includes("--plan")) {
+  const operator = options.operator;
+  const io = operator ? createResourceIO(operator) : actualResourceIO;
+  const environment = () => infrastructureChildEnvironment(process.env, operator);
+  if (options.plan) {
     console.log(JSON.stringify({ tasks, personas, sessions: personas * tasks.length, freshStacks: personas * tasks.length + 1, productionBuilds: 1,
       infrastructureReservationMicroDollars: infrastructureReservation(run.personas ?? 30, config.maximumInfrastructureCostPerStackMicroDollars, run.limitMicroDollars - run.otherCostsMicroDollars, tasks.length),
-      qualifyingEvidence: false, hostedOwnershipRequired: true, nativeLifecycle: "unverified until the exact hosted smoke completes" })); return;
+      qualifyingEvidence: false, hostedOwnershipRequired: !operator, nativeLifecycle: "unverified until the exact owned native smoke completes" })); return;
   }
-  assertCiRuntime(process.env);
-  assert(process.env.GITHUB_JOB === "fresh-t6", "Separate fresh-t6 hosted job required; standard CI cannot launch inference");
+  assertCiRuntime(process.env, process.platform, operator);
+  if (!operator) assert(process.env.GITHUB_JOB === "fresh-t6", "Separate fresh-t6 hosted job required; standard CI cannot launch inference");
   const journal = await InstrumentJournal.open(run.effortDirectory, run.limitMicroDollars, run.otherCostsMicroDollars,
     run.provider.kind === "local-deterministic-stub" ? "dry" : "live");
   try {
     infrastructureReservation(run.personas ?? 30, config.maximumInfrastructureCostPerStackMicroDollars, journal.budget.remaining, tasks.length);
-    if (argv.includes("--prepare")) {
+    if (options.prepare || operator) {
       await journal.budget.reserve(`fresh-build-${randomUUID()}`, config.maximumInfrastructureCostPerStackMicroDollars);
-      const stack = await acquireFreshStack(new AbortController().signal);
-      try {
-        assert(Object.entries(stack.keys).every(([name, value]) => process.env[name] === value), "Fresh keys must match the configured build inputs");
-        const env = { ...infrastructureChildEnvironment(process.env), NEXT_TELEMETRY_DISABLED: "1",
-          ...Object.fromEntries(APP_ENV_NAMES.flatMap(name => process.env[name] ? [[name, process.env[name]!]] : [])) };
-        await actualResourceIO.command("pnpm", ["build"], { env, timeout: 600_000 });
-        recordCiBuild(infrastructureChildEnvironment(process.env));
-      } finally { await stack.close(); }
+      await prepareFreshInvocation({ environment: process.env, bindObservedKeys: Boolean(operator), buildRequired: Boolean(options.prepare),
+        acquire: () => acquireFreshStack(new AbortController().signal, io, operator),
+        build: async () => {
+          const env = { ...environment(), NEXT_TELEMETRY_DISABLED: "1",
+            ...Object.fromEntries(APP_ENV_NAMES.flatMap(name => process.env[name] ? [[name, process.env[name]!]] : [])) };
+          await io.command("pnpm", ["build"], { env, timeout: 600_000 });
+          recordCiBuild(environment(), operator);
+        } });
     }
     const inputs = loadConductorInputs();
-    const revision = await actualResourceIO.command("git", ["rev-parse", "HEAD"]);
-    assert(!(await actualResourceIO.command("git", ["status", "--porcelain", "--untracked-files=no"])), "Exact clean source required");
+    const revision = await io.command("git", ["rev-parse", "HEAD"]);
+    if (operator) assertOwnedLinuxSource(operator, environment());
+    else assert(!(await io.command("git", ["status", "--porcelain", "--untracked-files=no"])), "Exact clean source required");
     const buildId = readFileSync(path.join(repositoryRoot, ".next/BUILD_ID"), "utf8").trim();
     assert(buildId && buildId !== "development", "Production build required");
-    const isolation = await probeIsolation(workerProvider(run));
+    const isolation = await probeIsolation(workerProvider(run), options.inferenceEnvironment);
     const skipped = bindingSkips(JSON.parse(readFileSync(path.join(repositoryRoot, "scripts/comprehension/bindings.json"), "utf8")))
       .filter(skip => tasks.includes(skip.taskId));
     const blockers: string[] = [];
@@ -91,7 +109,9 @@ async function main() {
         build: { mode: "next start (production build)", buildIdVerified: false, testJurisdictionVerified: false },
         budget: { limitMicroDollars: run.limitMicroDollars, otherCostsMicroDollars: run.otherCostsMicroDollars,
           remainingAtStartMicroDollars: journal.budget.remaining }, calibration } });
+    if (operator && run.provider.kind !== "local-deterministic-stub") bindOwnedRunRecord(operator, record.directory);
     const sessions = new Map<string, LiveSession>();
+    const openFreshComprehensionBrowser = createFreshComprehensionBrowser(operator);
     const result = await runLive({ inputs, manifest, journal, modelIdentity: modelIdentityOf(run),
       environment: { kind: "live-local-build", openBrowser: async (input, signal) => {
         await journal.budget.reserve(`fresh-stack-${input.id}`, config.maximumInfrastructureCostPerStackMicroDollars);
@@ -101,7 +121,7 @@ async function main() {
         const session = await openFreshComprehensionBrowser(input, signal) as LiveSession;
         sessions.set(input.id, session);
         return session;
-      }, openProcess: isolatedProcesses(workerProvider(run)) },
+      }, openProcess: isolatedProcesses(workerProvider(run), options.inferenceEnvironment) },
       onSession: async outcome => {
         const session = sessions.get(outcome.sessionId); sessions.delete(outcome.sessionId);
         const diagnostics = session?.diagnostics();
@@ -113,6 +133,14 @@ async function main() {
     console.log(JSON.stringify(runSummary({ directory: record.directory, status: result.status, manifest, spend }), null, 2));
     if (result.status !== "completed") process.exitCode = 1;
   } finally { await journal.close(); }
+}
+
+async function main() {
+  const argv = process.argv.slice(2), file = argv.find(value => !value.startsWith("--"));
+  assert(file && path.isAbsolute(file) && argv.every(value => value === file || value === "--prepare" || value === "--plan"),
+    "Use an absolute private configuration and only --prepare or --plan");
+  const config = loadPrivateConfiguration(file, value => freshT6ConfigSchema.parse(value));
+  await runFreshComprehension(config, { prepare: argv.includes("--prepare"), plan: argv.includes("--plan") });
 }
 
 // Importing the schema in unit checks does not create resources or inference.

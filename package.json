@@ -39,6 +39,7 @@
     "seed:participants": "tsx scripts/run-upload-browser.mts --full -- comprehension-participants.spec.ts",
     "comprehension:run": "tsx scripts/comprehension/run.mts",
     "comprehension:fresh": "tsx scripts/comprehension/run-fresh-t6.mts",
+    "comprehension:owned-linux": "tsx scripts/comprehension/run-owned-linux.mts",
     "comprehension:records": "tsx scripts/comprehension/records.ts",
     "comprehension:human": "tsx scripts/comprehension/human-round.ts",
     "worker:embryo-split": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/embryo-split-worker.run.mts",

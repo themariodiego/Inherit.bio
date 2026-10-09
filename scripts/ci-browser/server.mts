@@ -3,7 +3,8 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createPrivateKey, createPublicKey } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { closeSync, createReadStream, readFileSync } from "node:fs";
+import { receiveOwnedLinuxChildProof, type OwnedLinuxCapability } from "../owned-linux-runtime";
 import http from "node:http";
 import net from "node:net";
 import { createInterface } from "node:readline";
@@ -51,10 +52,22 @@ function track(...items: net.Socket[]) {
 const cleanEnv = { NODE_ENV: "production" as const, PATH: "/usr/local/bin:/usr/bin:/bin", NEXT_TELEMETRY_DISABLED: "1" };
 try {
   if (mode === "host") {
-    const env = checkedCiLauncherEnvironment(process.env, port);
+    let operator: OwnedLinuxCapability | undefined;
+    if (process.env.INHERIT_OWNED_LINUX_RUNTIME_FD !== undefined) {
+      assert(process.env.INHERIT_OWNED_LINUX_RUNTIME_FD === "3", "Exact anonymous operator-control descriptor required");
+      const source = createReadStream("", { fd: 3, autoClose: false });
+      const chunks: Buffer[] = []; let size = 0;
+      const timer = setTimeout(() => source.destroy(new Error("Operator-control input timed out")), 10_000);
+      try {
+        for await (const chunk of source) { size += chunk.length; assert(size < 8192, "Bounded public operator-control proof required"); chunks.push(chunk); }
+        operator = receiveOwnedLinuxChildProof(Buffer.concat(chunks).toString("utf8").trim(), 3);
+      } finally { clearTimeout(timer); source.destroy(); closeSync(3); }
+    }
+    const env = checkedCiLauncherEnvironment(process.env, port, process.platform, operator);
     const user = `${process.env.INHERIT_CI_RUNTIME_UID}:${process.env.INHERIT_CI_RUNTIME_GID}`;
     assert(/^[1-9][0-9]*:[1-9][0-9]*$/.test(user), "Unprivileged runtime identity required");
-    const exec = (args: string[]) => own(spawn("docker", ["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER, "node", "--import", "tsx", "/app/scripts/ci-browser/server.mts", ...args], { stdio: ["pipe", "pipe", "pipe"] }));
+    const exec = (args: string[]) => own(spawn("docker", ["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER, "node", "--import", "tsx", "/app/scripts/ci-browser/server.mts", ...args],
+      { ...(operator ? { env: { ...cleanEnv, DOCKER_HOST: process.env.DOCKER_HOST } } : {}), stdio: ["pipe", "pipe", "pipe"] }));
     if (port === 3100) {
       const relay = exec(["mail"]);
       relay.stderr?.resume();

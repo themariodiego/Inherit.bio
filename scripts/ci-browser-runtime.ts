@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL, APP_PORTS } from "./ci-browser-config";
+import { assertOwnedLinuxSource, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 function ownerFile() {
   const directory = process.env.RUNNER_TEMP;
@@ -14,11 +15,12 @@ const docker = (args: string[], environment?: Record<string, string>) => {
   try { return execFileSync("docker", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, maxBuffer: 1_048_576, env: environment as NodeJS.ProcessEnv | undefined }).trim(); }
   catch { throw new Error("Isolated CI Docker operation failed; credential-bearing diagnostics suppressed"); }
 };
-function buildIdentity(environment?: Record<string, string>) {
-  assertCiRuntime(process.env);
+function buildIdentity(environment?: Record<string, string>, operator?: OwnedLinuxCapability) {
+  assertCiRuntime(process.env, process.platform, operator);
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined }).trim();
   assert(/^[0-9a-f]{40}$/.test(head), "Exact source revision required");
-  assert(execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined }).trim() === "",
+  if (operator) assertOwnedLinuxSource(operator, environment);
+  else assert(execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined }).trim() === "",
     "CI build must use unchanged tracked source");
   const publicConfiguration = [process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     process.env.NEXT_PUBLIC_SITE_URL, process.env.NEXT_PUBLIC_APP_URL];
@@ -27,13 +29,13 @@ function buildIdentity(environment?: Record<string, string>) {
     buildId: readFileSync(".next/BUILD_ID", "utf8").trim(), nodeMajor: process.versions.node.split(".")[0] };
 }
 /** Called immediately after the successful workflow build; contains no keys. */
-export function recordCiBuild(environment?: Record<string, string>) {
-  writeFileSync(".next/inherit-ci-build.json", JSON.stringify(buildIdentity(environment)) + "\n", { mode: 0o600 });
+export function recordCiBuild(environment?: Record<string, string>, operator?: OwnedLinuxCapability) {
+  writeFileSync(".next/inherit-ci-build.json", JSON.stringify(buildIdentity(environment, operator)) + "\n", { mode: 0o600 });
 }
-export async function startCiBrowserRuntime(environment?: Record<string, string>, disposableBuildCache = false): Promise<{ env: Record<string, string>; stop: () => void }> {
-  assertCiRuntime(process.env);
+export async function startCiBrowserRuntime(environment?: Record<string, string>, disposableBuildCache = false, operator?: OwnedLinuxCapability): Promise<{ env: Record<string, string>; stop: () => void }> {
+  assertCiRuntime(process.env, process.platform, operator);
   const runDocker = (args: string[]) => docker(args, environment);
-  assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")), buildIdentity(environment), "CI build receipt must match source and public configuration");
+  assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")), buildIdentity(environment, operator), "CI build receipt must match source and public configuration");
   const root = realpathSync(process.cwd());
   assert(root === process.cwd() && !root.includes(",") && !root.includes("\n"), "Exact checkout mount required");
   assert(!readdirSync(root).some(name => /^\.env(?:\.|$)/.test(name) && !name.endsWith(".example")), "Do not expose local environment files to the CI runtime");
@@ -115,7 +117,7 @@ export async function startCiBrowserRuntime(environment?: Record<string, string>
     checkedPolicyCounters(runDocker(["exec", CI_RUNTIME_CONTAINER, "iptables", "-L", "OUTPUT", "-v", "-n", "-x"]),
       runDocker(["exec", CI_RUNTIME_CONTAINER, "ip6tables", "-L", "OUTPUT", "-v", "-n", "-x"]));
     console.log(proof);
-    console.log(`PASS disposable CI runtime image ${image}; source ${buildIdentity(environment).head}; TLS keys stay in tmpfs.`);
+    console.log(`PASS disposable ${operator ? "owned Linux" : "CI"} runtime image ${image}; source ${buildIdentity(environment, operator).head}; TLS keys stay in tmpfs.`);
     return { env: { INHERIT_CI_BROWSER_RUNTIME: "ready", CANONICAL_COPILOT_CONTROL_URL: CI_CONTROL_URL,
       INHERIT_CI_RUNTIME_UID: String(uid), INHERIT_CI_RUNTIME_GID: String(gid), INHERIT_CI_GATEWAY: gateway.address }, stop };
   } catch (error) {

@@ -11,9 +11,10 @@
  * sibling session or an earlier run. `probeIsolation` spawns the same way and
  * reports what the child actually saw, and a live run records that report.
  *
- * The credential never crosses stdin, a file or a log: the parent reads the
- * named variable from the operator's own shell and hands it only to the child
- * environment. It is never deployment configuration and never in `src/`.
+ * The credential never crosses an inference payload, file or log. The parent
+ * receives it from the operator's shell (or the authenticated owned-Linux
+ * anonymous input) and hands it only to the isolated inference environment.
+ * It is never deployment configuration and never in `src/`.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtemp, realpath, rm } from "node:fs/promises";
