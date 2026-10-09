@@ -10,12 +10,15 @@ import {
   type LibraryCard,
   type LibraryGroup,
 } from "@/components/reports/report-library";
+import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
+import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
 import { REPORTS_PREPARING } from "@/copy/genome/preparation";
 import { EVIDENCE_PUBLIC_LABELS } from "@/copy/reports/evidence";
 import {
+  ADD_A_FILE,
   CANNOT_NUMBER_HREF,
   CANNOT_NUMBER_WHY,
   CATEGORY_DESCRIPTIONS,
@@ -117,7 +120,7 @@ export default async function ReportsPage(
   }
   const { user, subject, dataSubjectId, person, domain } = context;
   if (context.pathB?.direction === "uploader" && !await acknowledged(user)) {
-    return <section className="page-stack mx-auto max-w-prose space-y-4"><h1 className="display text-3xl">{REPORTS_TITLE}</h1><ResultGate /></section>;
+    return <section className="page-stack max-w-measure space-y-block"><h1 className="display">{REPORTS_TITLE}</h1><ResultGate /></section>;
   }
   // A layer another adult has not shared is not listed at all; with no layer
   // granted the record answers like an unknown one.
@@ -247,27 +250,45 @@ export default async function ReportsPage(
 
   const definitionId = `layer-${activeLayer}-definition`;
 
-  return (
-    <div className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: domain.label, href: domain.href },
-          {
-            label: subject.displayLabel,
-            href: person
-              ? route("family.person", { person: subject.routeSegment })
-              : undefined,
-          },
-          { label: REPORTS_TITLE },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+  // The head (round-1 M3): with no file it draws the hills and carries the
+  // one forest action; the operator fact about an unseeded library is a
+  // caption beneath it, not the page's second line.
+  const empty = fileCount === 0;
+  const canAddFile = !person && !context.pathB && subject.subjectClass === "self";
+  // One button on the page: where the head carries the forest action, the
+  // bar's "Add a file" is a quiet link to the same place (round-2 M2).
+  const headAction = empty && canAddFile;
 
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{REPORTS_TITLE}</h1>
-        {fileCount === 0 ? <p className="text-sm text-ink-muted">{shared?.access.some(access => access.kind === "canonical")
+  return (
+    <div className="page-stack max-w-5xl space-y-block">
+      <RecordHead
+        crumbs={
+          <Breadcrumbs
+            items={[
+              { label: domain.label, href: domain.href },
+              {
+                label: subject.displayLabel,
+                href: person
+                  ? route("family.person", { person: subject.routeSegment })
+                  : undefined,
+              },
+              { label: REPORTS_TITLE },
+            ]}
+          />
+        }
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
+        title={REPORTS_TITLE}
+        empty={empty}
+        seed={5}
+        action={headAction ? (
+          <Button asChild size="lg">
+            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+          </Button>
+        ) : undefined}
+      >
+        {fileCount === 0 ? <p className="body-lg max-w-measure text-ink">{shared?.access.some(access => access.kind === "canonical")
           ? "No completed result is shared yet." : LIST_NO_FILE}</p>
-          : preparing ? <p role="status" className="text-sm text-ink-muted">{REPORTS_PREPARING}</p> : null}
+          : preparing ? <p role="status" className="body-lg max-w-measure text-ink">{REPORTS_PREPARING}</p> : null}
         {/* One count line per non-empty layer, each carrying its own layer
             noun (G4.3), so a future variant_call layer is never described
             as estimates: the covered count, then the layer total. */}
@@ -297,30 +318,30 @@ export default async function ReportsPage(
             </>
           );
           return layer === activeLayer ? (
-            <p key={layer} className="text-sm">{counts}</p>
+            <p key={layer} className="text-ink">{counts}</p>
           ) : (
-            <details key={layer} className="text-sm">
-              <summary className="w-fit cursor-pointer">{counts}</summary>
-              <p id={describedBy} className="mt-2 max-w-prose text-ink-muted">
+            <details key={layer}>
+              <summary className="w-fit text-ink">{counts}</summary>
+              <p id={describedBy} className="mt-2 max-w-measure text-ink-muted">
                 {LAYER_DEFINITIONS[layer]}
               </p>
             </details>
           );
         })}
         {estimateCount > 0 ? (
-          <p className="text-sm text-ink-muted">
+          <p className="max-w-measure text-sm text-ink-muted">
             <Count value={estimateCount} layerClass="estimate" wording="unavailable"
               describedBy="layer-estimate-definition" />{" "}
-            <Link href={CANNOT_NUMBER_HREF} className="underline underline-offset-2">
+            <Link href={CANNOT_NUMBER_HREF} className="prose-link">
               {CANNOT_NUMBER_WHY}
             </Link>
           </p>
         ) : null}
-      </header>
+      </RecordHead>
       {!person && !context.pathB ? <OwnReportChoicesEntry subject={subject.routeSegment} /> : null}
 
       {nonEmptyLayers.length > 1 ? (
-        <nav aria-label="Report groups" className="flex gap-1 border-b border-line">
+        <nav aria-label="Report groups" className="flex flex-wrap gap-x-2 border-b border-line">
           {nonEmptyLayers.map((layer) => (
             <Link
               key={layer}
@@ -328,7 +349,7 @@ export default async function ReportsPage(
               aria-current={layer === activeLayer ? "page" : undefined}
               aria-describedby={`layer-${layer}-definition`}
               className={cn(
-                "-mb-px inline-flex min-h-11 items-center border-b-2 px-3 py-2 text-sm",
+                "-mb-px inline-flex min-h-control items-center border-b-2 px-4 text-sm transition-colors",
                 layer === activeLayer
                   ? "border-forest font-medium text-ink"
                   : "border-transparent text-ink-muted hover:text-ink",
@@ -344,13 +365,14 @@ export default async function ReportsPage(
         <section
           aria-labelledby={`layer-${activeLayer}-title`}
           data-layer={activeLayer}
-          className="space-y-6"
+          className="space-y-block"
         >
+          {/* The one lede of the page: the open layer's definition at measure. */}
           <div className="space-y-2">
-            <p id={`layer-${activeLayer}-title`} className="text-lg font-semibold text-ink">
+            <p id={`layer-${activeLayer}-title`} className="title text-ink">
               {LAYER_LABELS[activeLayer]}
             </p>
-            <p id={definitionId} className="max-w-prose text-sm text-ink-muted">
+            <p id={definitionId} className="lede">
               {LAYER_DEFINITIONS[activeLayer]}
             </p>
           </div>
@@ -363,11 +385,11 @@ export default async function ReportsPage(
           />
         </section>
       ) : (
-        <p className="text-sm text-ink-muted">{LIBRARY_EMPTY}</p>
+        <p className="caption max-w-measure">{LIBRARY_EMPTY}</p>
       )}
       {previews.size > 0 ? <section id="preview-input-provenance" data-slot="preview-input-provenance" className="space-y-4">
         <InputProvenance sources={previewInputs} subject={{ subjectId: dataSubjectId }} />
-        <ul className="space-y-2 text-sm text-ink-muted">
+        <ul className="max-w-measure space-y-2 text-sm text-ink-muted">
           {[...previewContributors].map(([slug, ids]) => {
             // A preview exists only for a template this page resolved, so the
             // lookup cannot miss; the coverage numbers come from the one

@@ -52,6 +52,10 @@ jobs:
           denylist_path="$RUNNER_TEMP/inherit-name-denylist.txt"
           printf '%s\n' "$PRIVATE_NAME_DENYLIST" > "$denylist_path"
           echo "NAME_DENYLIST_FILE=$denylist_path" >> "$GITHUB_ENV"
+      - name: APT admission unit tests
+        run: python3 -B -m unittest discover -s scripts -p test_ci_apt_mirror_priority.py
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Prepare exact font archive cache key
         id: fonts
         run: pnpm exec tsx scripts/ci-browser-font-cache.run.mts prepare
@@ -217,6 +221,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Prepare exact font archive cache key
         id: fonts
         run: pnpm exec tsx scripts/ci-browser-font-cache.run.mts prepare

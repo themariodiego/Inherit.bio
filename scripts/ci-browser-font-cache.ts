@@ -111,3 +111,63 @@ export function aptArchiveNames(manifest: FontManifest, printUris: string): Map<
   if (result.size !== manifest.packages.length) throw new Error("APT did not resolve all nine pinned font archives");
   return result;
 }
+
+// Publication runs in a fresh checks runner, unlike a consumer worker whose
+// admitted APT configuration already persists. These arguments own one service,
+// including root APT descendants, rather than timing out only its sudo client.
+export function publicationAptService(root: string, unit: string, remainingMs: number, runner: string[]) {
+  if (!path.isAbsolute(root) || path.normalize(root) !== root
+    || [...root].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 || char === "$" || char === "%")
+    || !/^inherit-font-apt-[a-f0-9]{32}\.service$/.test(unit)
+    || runner.length !== 4 || runner[0] !== "ubuntu24" || !/^\d{8}\.\d+\.\d+$/.test(runner[1])
+    || runner[2] !== "true" || runner[3] !== "github-hosted") throw new Error("unsupported publication runner/service arguments");
+  // Start/stop each have five seconds; fifteen more seconds remain for owned-unit
+  // observation and the catch path. The existing command cap stays 180 seconds.
+  const workSeconds = Math.min(155, Math.floor((remainingMs - 25_000) / 1_000));
+  if (!Number.isSafeInteger(remainingMs) || remainingMs > 210_000 || workSeconds < 1) throw new Error("insufficient publication supervision budget");
+  return { workSeconds, timeoutMs: Math.min(180_000, remainingMs - 15_000), args: [
+    "--non-interactive", "--", "/usr/bin/systemd-run", "--system", "--no-ask-password",
+    "--wait", "--pipe", "--collect", "--quiet", "--expand-environment=no", `--unit=${unit}`,
+    "--service-type=exec", `--property=RuntimeMaxSec=${workSeconds}s`,
+    "--property=TimeoutStartSec=5s", "--property=TimeoutStopSec=5s", "--property=KillMode=control-group",
+    "--property=SendSIGKILL=yes", "--property=Restart=no", "--property=RemainAfterExit=no",
+    "--property=User=root", "--property=Group=root", "--property=Slice=system.slice", "--property=Delegate=no",
+    `--property=Description=${unit}`, `--property=WorkingDirectory=${root}`,
+    "/usr/bin/python3", path.join(root, "scripts/ci_apt_mirror_priority.py"), ...runner,
+  ] };
+}
+
+export function admitAptSupervisorVersion(text: string): string {
+  const first = text.split("\n")[0];
+  if (text.length > 16_384 || !/^systemd 255(?:\s|$)/.test(first)) throw new Error("unsupported publication supervisor version");
+  return first;
+}
+
+function unitProperties(text: string, names: string[]) {
+  const rows = text.trim().split("\n").map(line => line.split("="));
+  if (rows.some(row => row.length !== 2) || new Set(rows.map(row => row[0])).size !== names.length
+    || JSON.stringify(rows.map(row => row[0]).sort()) !== JSON.stringify([...names].sort())) throw new Error("ambiguous publication unit observation");
+  return Object.fromEntries(rows);
+}
+
+export function admitClosedAptUnit(text: string, cgroupAbsent: boolean, before = false): void {
+  const state = unitProperties(text, ["LoadState", "ActiveState", "SubState"]);
+  if (!cgroupAbsent || state.ActiveState !== "inactive" || state.SubState !== "dead"
+    || !["not-found", ...(before ? [] : ["loaded"])].includes(state.LoadState)) throw new Error("publication unit/cgroup is not closed");
+}
+
+export function admitOwnedAptUnit(text: string, unit: string): void {
+  const state = unitProperties(text, ["Description", "Transient", "User", "Group", "Slice"]);
+  if (state.Description !== unit || state.Transient !== "yes" || state.User !== "root"
+    || state.Group !== "root" || state.Slice !== "system.slice") throw new Error("publication unit ownership differs");
+}
+
+export function admitFreshAptRefresh(text: string): void {
+  const line = text.trim().split("\n").at(-1) ?? "";
+  const terminal = JSON.parse(line) as Record<string, unknown>;
+  const keys = ["decision", "freshSignedMetadata", "fullPlaywrightInstallStillRequired", "originalDirectory"];
+  if (JSON.stringify(Object.keys(terminal).sort()) !== JSON.stringify(keys)
+    || keys.some(key => (line.match(new RegExp(`"${key}"[ \\t]*:`, "g")) ?? []).length !== 1)
+    || terminal.decision !== "PASS" || terminal.freshSignedMetadata !== true || terminal.fullPlaywrightInstallStillRequired !== true
+    || typeof terminal.originalDirectory !== "string" || !/^\/var\/tmp\/inherit-ci-apt-[a-z0-9_]+$/.test(terminal.originalDirectory)) throw new Error("fresh signed APT refresh receipt required");
+}

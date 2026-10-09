@@ -14,16 +14,18 @@
  * Shown mode: one focusable `<path>` per visible region in descending share
  * order, named as A.8 asks; hover and focus report to the parent, Enter,
  * Space and click activate. Grey mode: every region as a grey outline,
- * nothing focusable, no gradient.
+ * nothing focusable, no gradient. `quiet` draws the map without the plate
+ * for an empty state's ground: the caption sits under it, or, while the
+ * map is grey, the label does, since there is no shading to explain; that
+ * figcaption then names the svg (`aria-labelledby`), so the name is said once.
  *
  * The SVG carries `data-density-pixel-exclusion="map-tile"`: the density
  * measurement treats it as a map, not as ink.
  */
-import type { KeyboardEvent } from "react";
+import { useId, type KeyboardEvent } from "react";
 import type { MapShapes } from "@/lib/ancestry/geometry";
 import type { RegionRowView } from "@/lib/ancestry/view";
 import { VIEWBOX } from "@/lib/geo/project";
-import { cn } from "@/lib/utils";
 
 /** Where the feather starts, as a share of the gradient radius: the outer 30% fades. */
 export const FEATHER_START = 0.7;
@@ -49,13 +51,19 @@ export interface AncestryMapProps {
   onHover?: (code: string) => void;
   /** Click, Enter or Space: opens the panel and moves focus to its Close button. */
   onActivate?: (code: string) => void;
+  /** No plate chrome: the map and its caption alone, inside an empty state. */
+  quiet?: boolean;
 }
 
 export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover, onActivate,
-  label, caption }: AncestryMapProps) {
+  label, caption, quiet = false }: AncestryMapProps) {
   const shapeByCode = new Map(shapes.regions.map((shape) => [shape.code, shape]));
   const shown = mode === "shown";
   const stopStyle = { stopColor: "var(--forest)" };
+  // The quiet grey figure's caption is the map's name, so the svg is named
+  // by that one element instead of repeating it in an aria-label.
+  const captionId = useId();
+  const namedByCaption = quiet && !shown;
 
   function onKeyDown(event: KeyboardEvent<SVGPathElement>, code: string) {
     if (event.key === "Enter" || event.key === " ") {
@@ -64,16 +72,15 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
     }
   }
 
-  return (
-    <figure data-slot="ancestry-figure" className="m-0">
+  const svg = (
       <svg
         viewBox={VIEWBOX}
         role="group"
-        aria-label={label}
+        aria-label={namedByCaption ? undefined : label}
+        aria-labelledby={namedByCaption ? captionId : undefined}
         data-slot="ancestry-map"
         data-mode={mode}
         data-density-pixel-exclusion="map-tile"
-        className="h-auto w-full rounded-2xl border border-line bg-paper"
       >
         {shown ? (
           <defs>
@@ -122,10 +129,7 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
                   aria-label={row.accessibleName}
                   aria-haspopup="dialog"
                   aria-expanded={selected}
-                  className={cn(
-                    "cursor-pointer outline-none",
-                    "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-forest",
-                  )}
+                  className="cursor-pointer"
                   // Scrolling back from Close can put this path under a still
                   // pointer. Only actual pointer movement should reopen it.
                   onPointerMove={(event) => { if (event.pointerType === "mouse") onHover?.(row.code); }}
@@ -149,9 +153,32 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
               />
             ))}
       </svg>
-      <figcaption data-slot="map-caption" className="mt-2 text-sm text-ink-muted">
-        {caption}
-      </figcaption>
+  );
+  const figcaption = (
+    <figcaption id={namedByCaption ? captionId : undefined} data-slot="map-caption" className="caption">
+      {/* A grey map draws no shading, so the quiet figure carries the map's name, not the shading caption. */}
+      {namedByCaption ? label : caption}
+    </figcaption>
+  );
+
+  if (quiet) {
+    return (
+      <figure data-slot="ancestry-figure" className="fam-map-quiet">
+        {svg}
+        {figcaption}
+      </figure>
+    );
+  }
+  return (
+    <figure data-slot="ancestry-figure" className="plate fam-map m-0">
+      {/* The plate's label repeats the map's accessible name for the eye only. */}
+      <p aria-hidden="true" className="plate-head">
+        <span className="eyebrow">{label}</span>
+      </p>
+      <div className="plate-body">
+        <div className="fam-map-body">{svg}</div>
+        {figcaption}
+      </div>
     </figure>
   );
 }

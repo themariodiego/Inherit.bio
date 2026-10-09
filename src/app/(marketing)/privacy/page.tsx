@@ -91,7 +91,7 @@ export default function PrivacyPage() {
               <ul>
                 <li>
                   <strong>No street addresses.</strong> Location, where
-                  relevant at all, is the country you pick — nothing finer.
+                  relevant at all, is the country you pick&nbsp;— nothing finer.
                   One check uses your connection instead: to obey United
                   States sanctions law, the app reads the country and region
                   our hosting provider reports for each connection&rsquo;s
@@ -156,6 +156,11 @@ export default function PrivacyPage() {
         {
           id: "no-analytics",
           heading: "Zero third-party analytics",
+          headingDisplay: (
+            <>
+              Zero <span className="whitespace-nowrap">third-party analytics</span>
+            </>
+          ),
           body: (
             <>
               <p>
@@ -275,7 +280,7 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 Deletion is available self-serve in{" "}
-                <Link href={route("settings.index")}>Settings</Link> — no support ticket, no
+                <Link href={route("settings.index")}>Settings</Link>&nbsp;— no support ticket, no
                 retention phone call, no dark patterns.
               </p>
             </>
@@ -351,7 +356,7 @@ export default function PrivacyPage() {
                   <strong>Policy continuity or fresh consent.</strong> Any
                   successor is bound by this policy for data collected under
                   it. Weakening these commitments requires your new,
-                  affirmative consent — silence is not consent.
+                  affirmative consent&nbsp;— silence is not consent.
                 </li>
                 <li>
                   <strong>A structural escape hatch.</strong> Because Inherit

@@ -46,9 +46,9 @@ export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
       data-card="true"
       data-cohort-id={cohort.id}
       data-cohort-status={cohort.status}
-      className="space-y-4 rounded-2xl border border-line bg-card p-5"
+      className="surface surface-pad-sm space-y-4"
     >
-      <p data-slot="cohort-label" className="font-medium text-ink">
+      <p data-slot="cohort-label" className="title text-ink">
         {cohortLabel(formatDate(cohort.createdAt))}
       </p>
       {jurisdictionCopy ? (
@@ -65,9 +65,9 @@ export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
           {FILES_NOT_ADDED_SENTENCE}
         </p>
       ) : null}
-      <ul data-slot="embryo-list" className="space-y-2">
+      <ul data-slot="embryo-list" className="fam-rows border-t border-line">
         {cohort.embryos.map((embryo) => (
-          <li key={embryo.id} className="flex min-h-11 flex-wrap items-center gap-3">
+          <li key={embryo.id} className="flex min-h-12 flex-wrap items-center gap-3 py-1">
             <EmbryoChip
               embryo={{ id: embryo.id, displayLabel: embryo.displayLabel }}
               href={route("embryos.detail", { embryoId: embryo.id })}
@@ -87,21 +87,21 @@ export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
         <Link
           href={route("embryos.compare", { query: { cohort: cohort.id } })}
           data-slot="compare-link"
-          className="inline-flex min-h-11 items-center underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+          className="link-target quiet-link"
         >
           {COMPARE_THESE_LINK}
         </Link>
       </p>
-      <p data-slot="retention-line" className="text-sm leading-relaxed text-ink-muted">
+      <p data-slot="retention-line" className="caption max-w-measure">
         {RETENTION_SENTENCE}
       </p>
       {dispositions.has("donated") || dispositions.has("discarded") ? (
-        <p data-slot="retention-disposition" className="text-sm leading-relaxed text-ink-muted">
+        <p data-slot="retention-disposition" className="caption max-w-measure">
           {RETENTION_DONATED_OR_DISCARDED}
         </p>
       ) : null}
       {dispositions.has("transferred") ? (
-        <p data-slot="retention-disposition" className="text-sm leading-relaxed text-ink-muted">
+        <p data-slot="retention-disposition" className="caption max-w-measure">
           {RETENTION_TRANSFERRED}
         </p>
       ) : null}

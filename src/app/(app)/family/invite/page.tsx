@@ -19,6 +19,17 @@ export const metadata: Metadata = { title: INVITE_H1 };
  * and before anything is entered: comparing two people's DNA can say
  * something neither of them asked to know, and that cannot be taken back.
  */
+/**
+ * The frozen statement rendered character for character, with one hyphenated
+ * word held on a line: a hyphen is a legal break, and at 390px it fell
+ * between "un-" and "see".
+ */
+function unbreakable(text: string, word: string): React.ReactNode[] {
+  return text.split(word).flatMap((part, index) =>
+    index === 0 ? [part] : [<span key={index} className="whitespace-nowrap">{word}</span>, part],
+  );
+}
+
 export default async function FamilyInvitePage() {
   const supabase = await createClient();
   const {
@@ -38,23 +49,24 @@ export default async function FamilyInvitePage() {
   }
 
   return (
-    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: NAV_LABELS.family, href: route("family.index") },
-          { label: INVITE_H1 },
-        ]}
-      />
-      <header className="space-y-3">
-        <p className="eyebrow">{NAV_LABELS.family}</p>
-        <h1 className="display text-3xl">{INVITE_H1}</h1>
-        <p
-          data-slot="pre-consent-statement"
-          className="max-w-2xl text-base leading-relaxed text-ink"
-        >
-          {PRE_CONSENT_STATEMENT}
-        </p>
-      </header>
+    <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
+      <div className="fam-head">
+        <Breadcrumbs
+          items={[
+            { label: NAV_LABELS.family, href: route("family.index") },
+            { label: INVITE_H1 },
+          ]}
+        />
+        <header>
+          <h1 className="display">{INVITE_H1}</h1>
+          <p
+            data-slot="pre-consent-statement"
+            className="body-lg max-w-measure text-ink"
+          >
+            {unbreakable(PRE_CONSENT_STATEMENT, "un-see")}
+          </p>
+        </header>
+      </div>
       <InviteAdultForm />
     </div>
   );

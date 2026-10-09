@@ -17,14 +17,14 @@ function SignInInner() {
   const message = signInMessage(params);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h1 className="display text-2xl">Welcome back</h1>
+        <h1 className="display">Welcome back</h1>
       </div>
       {message ? (
         <p
           role={message.role}
-          className={`rounded-xl border border-line bg-card p-4 text-sm ${
+          className={`auth-note ${
             message.role === "alert" ? "text-danger" : "text-ink"
           }`}
         >
@@ -69,21 +69,15 @@ function SignInInner() {
       >
         Continue with GitHub
       </Button>
-      <div className="space-y-2 text-center text-sm text-ink-muted">
+      <div className="flex flex-col items-center gap-1 border-t border-line pt-4 text-center text-sm text-ink-muted">
         <p>
-          <Link
-            href="/auth/forgot-password"
-            className="inline-flex min-h-11 items-center underline underline-offset-2"
-          >
+          <Link href="/auth/forgot-password" className="link-target quiet-link">
             Forgot your password?
           </Link>
         </p>
-        <p>
+        <p className="py-2">
           New here?{" "}
-          <Link
-            href="/auth/sign-up"
-            className="text-forest underline underline-offset-2"
-          >
+          <Link href="/auth/sign-up" className="quiet-link">
             Create an account
           </Link>
         </p>

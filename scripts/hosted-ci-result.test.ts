@@ -14,14 +14,33 @@ import { reserveResultOutput, captureHostedGet } from "./hosted-ci-result.run.mj
 
 const require = createRequire(import.meta.url), localRequire = createRequire(require.resolve("eslint"));
 const yaml = localRequire("js-yaml") as { load(value: string): unknown };
-const contract = () => hostedWorkflowContract(yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")));
+type WorkflowFixture = { jobs: Record<string, { steps: { name?: string; uses?: string; run?: string; if?: string; with?: Record<string, unknown> }[] }> };
+const actualWorkflow = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as WorkflowFixture;
+// The actual workflow now consumes the source-declared cache steps. Retain the
+// publisher-only counterfactual by removing exactly those three declarations;
+// every original publisher assertion still applies to that fixture.
+const consumerSteps = () => JSON.parse(readFileSync(new URL("./fixtures/ci-font-consumer-steps.json", import.meta.url), "utf8")) as WorkflowFixture["jobs"][string]["steps"];
+const consumerWorkflow = actualWorkflow;
+function publisherWorkflow() {
+  const value = actualWorkflow(), declared = consumerSteps();
+  for (const family of ["repository-checks", "browser"]) {
+    for (const expected of declared) {
+      const at = value.jobs[family].steps.findIndex(step => step.name === expected.name);
+      expect(at).toBeGreaterThanOrEqual(0);
+      expect(value.jobs[family].steps[at]).toEqual(expected);
+      value.jobs[family].steps.splice(at, 1);
+    }
+  }
+  return value;
+}
+const contract = (consumer = false) => hostedWorkflowContract(consumer ? consumerWorkflow() : actualWorkflow());
 const oid = (value: string) => value.repeat(40);
 function request(): HostedResultRequest {
   return hostedResultRequestSchema.parse({ schemaVersion: 1, repository: "example/ci-fixture", runId: 123,
     runAttempt: 1, workflow: ".github/workflows/ci.yml", head: oid("a"), testedHead: oid("a"), tree: oid("d"), event: "push", branch: "main" });
 }
-function metadata(req = request()) {
-  const source = contract(), run = { id: req.runId, run_attempt: req.runAttempt, head_sha: req.head,
+function metadata(req = request(), consumer = false) {
+  const source = contract(consumer), run = { id: req.runId, run_attempt: req.runAttempt, head_sha: req.head,
     status: "completed", conclusion: "success", event: req.event, path: req.workflow,
     created_at: "2026-10-05T12:00:00Z", updated_at: "2026-10-05T12:02:01Z", repository: { full_name: req.repository } };
   const jobs = { total_count: source.names.length, jobs: source.jobs.flatMap(family => family.names.map((name, i) => ({
@@ -70,7 +89,78 @@ function repositoryLog(unitCases = 9) {
     + header("pnpm e2e:lighthouse") + rows.join("\n") + "\nLighthouse G1.14 passed: fixture\n";
 }
 
+describe("mandatory signed APT setup", () => {
+  it("refuses missing, optional, reordered or altered admission and incomplete installs", () => {
+    const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
+      jobs: Record<string, { steps: { name?: string; run?: string; if?: string; "continue-on-error"?: boolean }[] }>
+    };
+    for (const family of ["repository-checks", "browser"]) {
+      for (const mutation of ["missing", "conditional", "optional", "command", "order", "installer"]) {
+        const changed = source(), steps = changed.jobs[family].steps;
+        const index = steps.findIndex(item => item.name === "Admit signed Ubuntu APT mirror fallback");
+        expect(index).toBeGreaterThanOrEqual(0);
+        if (mutation === "missing") steps.splice(index, 1);
+        if (mutation === "conditional") steps[index].if = "always()";
+        if (mutation === "optional") steps[index]["continue-on-error"] = true;
+        if (mutation === "command") steps[index].run += " || true";
+        const installer = steps.findIndex(item => item.name === "Install Playwright Chromium");
+        expect(installer).toBeGreaterThanOrEqual(0);
+        if (mutation === "order") [steps[index], steps[installer]] = [steps[installer], steps[index]];
+        if (mutation === "installer") steps[installer].run = "pnpm exec playwright install chromium";
+        expect(() => hostedWorkflowContract(changed)).toThrow();
+      }
+    }
+  });
+});
+
 describe("source-bound hosted result readback", () => {
+  it("keeps the publisher-only fixture free of active restores and warm seeding", () => {
+    const workflow = publisherWorkflow(), source = hostedWorkflowContract(workflow);
+    expect(source.names).toEqual(expect.arrayContaining(["repository-checks", "checks", ...Array.from({ length: 6 }, (_, i) => `browser (${i + 1})`)]));
+    expect(source.names).toHaveLength(8);
+    for (const family of ["repository-checks", "browser"]) {
+      expect(workflow.jobs[family].steps.filter(step => step.uses?.startsWith("actions/cache/"))).toEqual([]);
+      expect(workflow.jobs[family].steps.filter(step => step.run?.includes("ci-browser-font-cache"))).toEqual([]);
+      expect(workflow.jobs[family].steps.find(step => step.name === "Install Playwright Chromium")).toEqual({ name: "Install Playwright Chromium", run: "pnpm exec playwright install --with-deps chromium" });
+      expect(source.jobs.find(job => job.family === family)!.fontCache).toEqual([]);
+    }
+    expect(source.jobs.find(job => job.family === "checks")!.fontCache).toHaveLength(4);
+  });
+  it("pins both actual consumers between mandatory APT admission and the full installer", () => {
+    const workflow = actualWorkflow(), declared = consumerSteps(), source = hostedWorkflowContract(workflow);
+    expect(source.names).toHaveLength(8);
+    expect(source.jobs.find(job => job.family === "checks")!.fontCache).toHaveLength(4);
+    for (const family of ["repository-checks", "browser"]) {
+      const steps = workflow.jobs[family].steps;
+      const admission = steps.findIndex(step => step.name === "Admit signed Ubuntu APT mirror fallback");
+      const installer = steps.findIndex(step => step.name === "Install Playwright Chromium");
+      expect(admission).toBeGreaterThanOrEqual(0);
+      const indexes = declared.map(expected => {
+        const index = steps.findIndex(step => step.name === expected.name);
+        expect(index).toBeGreaterThan(admission);
+        expect(index).toBeLessThan(installer);
+        expect(steps[index]).toEqual(expected);
+        expect(steps.filter(step => step.name === expected.name)).toHaveLength(1);
+        return index;
+      });
+      expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
+      expect(steps[installer]).toEqual({ name: "Install Playwright Chromium", run: "pnpm exec playwright install --with-deps chromium" });
+      expect(source.jobs.find(job => job.family === family)!.fontCache.map(step => step.name)).toEqual([
+        "Restore only the exact Ubuntu font archives", "Validate cached fonts against fresh authenticated Ubuntu metadata",
+      ]);
+    }
+  });
+  it("keeps actual consumer validation mandatory before the unchanged complete installer", () => {
+    const workflow = consumerWorkflow();
+    for (const family of ["repository-checks", "browser"]) {
+      const steps = workflow.jobs[family].steps;
+      expect(steps.findIndex(step => step.name === "Validate cached fonts against fresh authenticated Ubuntu metadata")).toBeLessThan(steps.findIndex(step => step.name === "Install Playwright Chromium"));
+    }
+    const v = metadata(request(), true);
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
+    v.jobs.jobs[0].steps.find(step => step.name === "Validate cached fonts against fresh authenticated Ubuntu metadata")!.conclusion = "skipped";
+    expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).toThrow(/Mandatory step/);
+  });
   it("refuses an unreviewed producer member or source step condition", () => {
     const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as {
       jobs: Record<string, { steps: { uses?: string; if?: string; with?: Record<string, unknown> }[] }> };
@@ -83,7 +173,7 @@ describe("source-bound hosted result readback", () => {
     expect(() => hostedWorkflowContract(wrongCondition)).toThrow();
   });
   it.each([false, true])("refuses ordinary job and step error-tolerance declarations %s", flag => {
-    const workflow = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, { "continue-on-error"?: boolean;
+    const workflow = consumerWorkflow() as { jobs: Record<string, { "continue-on-error"?: boolean;
       steps: { name?: string; "continue-on-error"?: boolean }[] }> };
     const source = hostedWorkflowContract(workflow);
     for (const [family, job] of Object.entries(workflow.jobs)) {
@@ -97,7 +187,7 @@ describe("source-bound hosted result readback", () => {
     }
   });
   it("refuses a mandatory step disguised as an optional font cache action", () => {
-    const workflow = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, { steps: {
+    const workflow = consumerWorkflow() as { jobs: Record<string, { steps: {
       name?: string; run?: string; "continue-on-error"?: boolean }[] }> };
     // Remove the legitimate cache step from this negative fixture so the forged
     // unit reaches shape validation rather than the duplicate-name guard.
@@ -167,19 +257,19 @@ describe("source-bound hosted result readback", () => {
     }
   });
   it("permits only the explicitly optional cache actions to fail", () => {
-    const v = metadata();
+    const v = metadata(request(), true);
     for (const job of v.jobs.jobs) {
       const source = v.source.jobs.find(source => source.names.includes(job.name))!;
       for (const cache of source.fontCache.filter(cache => cache.failure)) job.steps.find(step => step.name === cache.name)!.conclusion = "failure";
     }
     expect(() => verifyHostedMetadata(request(), v.source, v.run, v.jobs, v.commit, v.context)).not.toThrow();
     for (const name of ["Install Playwright Chromium", "Validate cached fonts against fresh authenticated Ubuntu metadata", "Unit tests", "Typecheck"]) {
-      const w = metadata(); w.jobs.jobs[0].steps.find(step => step.name === name)!.conclusion = "failure";
+      const w = metadata(request(), true); w.jobs.jobs[0].steps.find(step => step.name === name)!.conclusion = "failure";
       expect(() => verifyHostedMetadata(request(), w.source, w.run, w.jobs, w.commit, w.context)).toThrow(/Mandatory step/);
     }
   });
   it("refuses changed cache commands, prefix restores, relocated publication and a ninth job", () => {
-    const source = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, { steps: { name?: string; run?: string; if?: string; uses?: string; with?: Record<string, unknown> }[] }> };
+    const source = consumerWorkflow;
     const wrongCommand = source(); wrongCommand.jobs.checks.steps.find(step => step.name === "Download and authenticate the pinned official font archives")!.run += " --unreviewed";
     expect(() => hostedWorkflowContract(wrongCommand)).toThrow();
     const prefix = source(); prefix.jobs.browser.steps.find(step => step.name === "Restore only the exact Ubuntu font archives")!.with!["restore-keys"] = "font-debs-v1-";

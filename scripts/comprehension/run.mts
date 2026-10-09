@@ -11,20 +11,19 @@
  * the named variable is set in this shell.
  */
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { maximumTokenCost } from "./budget";
 import { taskIds } from "./conductor-contract";
 import { seedSkips } from "./conductor-inputs";
 import { InstrumentJournal } from "./instrument-journal";
-import { inferenceOf, runConfigSchema } from "./run-config";
+import { inferenceOf } from "./run-config";
+import { loadPrivateRunConfig } from "./private-run-config";
 
 const argv = process.argv.slice(2);
 const planOnly = argv.includes("--plan");
 const file = argv.find(argument => !argument.startsWith("--")) ?? process.env.INHERIT_COMPREHENSION_CONFIG;
 if (!file) throw new Error("Usage: pnpm comprehension:run <absolute path to run configuration> [--plan | --close-revision]");
-const configPath = path.resolve(file);
-const config = runConfigSchema.parse(JSON.parse(readFileSync(configPath, "utf8")));
+const configPath = file;
+const config = loadPrivateRunConfig(configPath);
 
 if (argv.includes("--close-revision")) {
   // Before full runs move to a new product revision, close the one they were

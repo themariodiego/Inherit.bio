@@ -15,14 +15,14 @@ export function NeanderthalCard() {
     <section
       id={NEANDERTHAL_SECTION_ID}
       aria-labelledby="neanderthal-heading"
-      className="space-y-3 rounded-2xl border border-line bg-card p-5"
+      className="surface surface-pad-sm space-y-3"
     >
       <p className="eyebrow">{NEANDERTHAL_EYEBROW}</p>
-      <h2 id="neanderthal-heading" className="text-lg font-semibold text-ink">
+      <h2 id="neanderthal-heading" className="title text-ink">
         {NEANDERTHAL_HEADING}
       </h2>
-      <p className="text-sm text-ink">{NEANDERTHAL_BODY}</p>
-      <p className="text-sm text-ink-muted">{DENISOVAN}</p>
+      <p className="max-w-measure text-base leading-relaxed text-ink">{NEANDERTHAL_BODY}</p>
+      <p className="caption max-w-measure">{DENISOVAN}</p>
     </section>
   );
 }

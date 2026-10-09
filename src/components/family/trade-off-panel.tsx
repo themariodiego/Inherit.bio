@@ -31,11 +31,11 @@ export function TradeOffPanel({ rows }: { rows: readonly TradeOffRow[] }) {
     <section
       data-trade-off-panel="true"
       aria-label={TRADE_OFF_PANEL_LABEL}
-      className="max-w-prose space-y-3 rounded-2xl border border-line bg-card p-6"
+      className="surface-inset surface-pad max-w-measure space-y-3 text-ink"
     >
-      <p className="text-base leading-relaxed text-ink">{NOTHING_PICKS_BETWEEN_PEOPLE}</p>
-      <p className="text-base leading-relaxed text-ink">{NO_RANKING_STATEMENT}</p>
-      <p className="text-base leading-relaxed text-ink">
+      <p className="body-lg">{NOTHING_PICKS_BETWEEN_PEOPLE}</p>
+      <p className="text-base leading-relaxed">{NO_RANKING_STATEMENT}</p>
+      <p className="text-base leading-relaxed">
         {/* inherit-figure-exempt: a count of the people who agreed, not a result */}
         {availabilityStatement(rows.length)}
       </p>
@@ -44,7 +44,7 @@ export function TradeOffPanel({ rows }: { rows: readonly TradeOffRow[] }) {
           <li
             key={row.dataSubjectId}
             data-slot="trade-off-row"
-            className="text-sm leading-relaxed text-ink-muted"
+            className="text-sm leading-relaxed"
           >
             {/* inherit-figure-exempt: a count of this person's own rows, not a result */}
             {perPersonTradeOff(row.displayLabel, row.results)}

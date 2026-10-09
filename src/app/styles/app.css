@@ -1,0 +1,95 @@
+/* app surface styles. Owned by one surface agent; tokens come from globals.css.
+   Rules here are unlayered and beat Tailwind utilities: use them for shared
+   patterns, and Tailwind classes in JSX for one-offs. */
+
+/* The page head: breadcrumbs → subject bar → h1 → lede, used by Overview
+   and the genome hub. The crumbs hug the bar; the headline gets its air. */
+.page-head > * + * { margin-top: 1rem; }
+.page-head > [data-slot="breadcrumbs"] { margin-bottom: 0; }
+.page-head > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
+.page-head > [data-subject-bar] + h1 { margin-top: 1.5rem; }
+
+/* Entry rows (round-1 M10): the ruled form of the entry box. Hairlines
+   between rows, the label in the title role beside its description, the
+   arrow at the end; the whole row is one link and, as a linked surface, it
+   takes the inset ground on hover. The row bleeds 12px past the column so
+   the text stays on the column's edge while the ground has a margin. Each
+   item insets its link 4px from the hairlines, so adjacent targets are 9px
+   apart while the list still reads as one ruled list (round-2 N2). */
+.entry-rows { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.entry-rows > li { padding-block: 0.25rem; }
+.entry-rows > li + li { border-top: 1px solid var(--line); }
+.entry-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; row-gap: 0.125rem;
+  align-items: baseline; width: calc(100% + 1.5rem); margin-inline: -0.75rem;
+  min-height: var(--size-row); padding: 0.875rem 0.75rem; border-radius: var(--radius-sm);
+}
+.entry-row > .title { grid-column: 1; }
+.entry-row > .link-arrow { grid-column: 2; grid-row: 1; align-self: center; }
+.entry-row > .entry-row-copy { grid-column: 1; }
+@media (min-width: 640px) {
+  .entry-row { grid-template-columns: 13rem minmax(0, 1fr) auto; column-gap: 1.5rem; }
+  .entry-row > .entry-row-copy { grid-column: 2; grid-row: 1; }
+  .entry-row > .link-arrow { grid-column: 3; }
+}
+/* A row that is only its label (the two navigations on Data and methods):
+   the label takes the row, the arrow at its end. */
+.entry-row[data-form="label"] { grid-template-columns: minmax(0, 1fr) auto; }
+.entry-row[data-form="label"] > .link-arrow { grid-column: 2; }
+/* An empty record (the genome hub with no file): the rows read as the
+   state, not a promise — dashed rules, muted labels and the record's state
+   in the arrow's place. Each row is still the link (round-3 N12). */
+.entry-rows[data-state="empty"] { border-style: dashed; border-color: var(--line-strong); }
+.entry-rows[data-state="empty"] > li + li { border-top-style: dashed; border-top-color: var(--line-strong); }
+.entry-rows[data-state="empty"] .entry-row > .title { color: var(--ink-muted); }
+.entry-row > .entry-row-state { grid-column: 2; grid-row: 1; align-self: center; white-space: nowrap; }
+@media (min-width: 640px) { .entry-row > .entry-row-state { grid-column: 3; } }
+
+/* The domain ordinal: a Fraunces "01" beside the section h2, the table of
+   contents of a field guide. Outside the heading, so the h2 text stays the
+   nav label. */
+.domain-head { display: flex; align-items: baseline; gap: 1rem; }
+.domain-head > .ordinal { flex: none; font-size: 1.25rem; }
+
+/* A ruled row that is a link: the whole row is the target, the text turns
+   forest and the arrow moves, exactly as a linked surface does. */
+.link-row { transition: color var(--motion-feedback); }
+.link-row .link-arrow { transition: transform var(--motion-reveal) var(--easing-settle); }
+.link-row:hover, .link-row:focus-visible { color: var(--forest); }
+.link-row:hover .link-arrow, .link-row:focus-visible .link-arrow { transform: translate(3px, -3px); }
+
+/* The processing sequence: ruled steps numbered "01" by a CSS counter, so
+   the ordinal is decoration — outside each item's text and, where the
+   alternative-text syntax is supported, outside the accessibility tree.
+   The ordinal is Fraunces (the `.ordinal` role), forest while reached. */
+.processing-steps { counter-reset: step; }
+.processing-steps > li {
+  counter-increment: step;
+  display: flex; align-items: baseline; gap: 1rem;
+  min-height: var(--size-control); padding-block: 0.625rem;
+  border-top: 1px solid var(--line);
+}
+.processing-steps > li:first-child { border-top: 0; padding-top: 0; }
+.processing-steps > li::before {
+  content: counter(step, decimal-leading-zero);
+  flex: 0 0 2rem;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 400; font-size: 1.25rem; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  color: var(--forest);
+}
+@supports (content: "a" / "b") {
+  .processing-steps > li::before { content: counter(step, decimal-leading-zero) / ""; }
+}
+.processing-steps > li[data-step="upcoming"]::before { color: var(--ink-muted); }
+
+/* The bottom bar: the ring hugs its cell's edge, in the 8px between cells
+   and the bar's 4px side padding, so it never crosses a label that fills its
+   cell and the first and last rings are never cut by the glass (round-5 T1).
+   Unlayered, so it beats the global 2px offset. */
+.app-bar > a:focus-visible { outline-offset: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .link-row .link-arrow { transform: none; }
+}

@@ -1,54 +1,96 @@
 # CI font archive cache
 
-The cache contains only nine Ubuntu 24.04 font package archives, totaling
-21,086,590 bytes. It contains no installed OS state, APT lists, browser binaries,
-database, application build or credentials. The exact package versions, sizes,
-archive paths and SHA-256 digests are in `data/ci/browser-font-packages.json`.
-The published digests were read from the official Ubuntu package download pages
-on 7 October 2026. Runtime admission additionally requires matching freshly
-authenticated stock Ubuntu APT metadata; HTTPS page provenance alone is not
-enough to use or publish the cache.
+The publisher precursor is retained. This consumer draft adds exact-key font
+archive restores and fresh authenticated warm admission in repository and browser
+jobs. The current protected-main publisher, signed APT admission and their
+bounded process ownership remain unchanged.
+Every job still runs the complete, unchanged
+`playwright install --with-deps chromium` command. No installed OS state, APT
+lists, browser binaries, database, application build or credentials are cached.
 
-Every repository and browser job still runs the complete, unchanged
-`playwright install --with-deps chromium` command. Before it, an exact cache
-restore can supply font archives to APT's ordinary archive directory. A miss,
-extra file, symlink, hardlink, corrupt digest, changed candidate version,
-unsupported platform or failed metadata refresh bypasses the cache before use.
-The complete official installation remains the fallback. A failure after
-privileged copying begins fails closed, including a mismatching destination
-digest. The helper never forces a downgrade, changes APT sources/trust settings
-or installs an OS snapshot.
+Publication runs only on a main push. The repository job and all six browser
+jobs must succeed, then the complete coverage aggregate must succeed inside
+`checks`. Its four maintenance steps follow that aggregate; the eighth job
+finishes after publication. PRs skip all four maintenance steps. The reader
+keeps the eight-job closure and every ordinary mandatory step strict.
 
-The key includes Linux, Noble, amd64, the reviewed Playwright version, the whole
-font manifest digest and the frozen dependency lock digest. There are no prefix
-restore keys or cross-OS restores. Restores are limited to one minute. Admission
-also requires the restore action's exact `cache-hit=true` result. A
-primary-key prefix match is ignored even if its archive bytes happen to match.
-Admission is limited to four minutes. A miss avoids the extra APT query. A warm
-hit performs a fresh `apt-get update --error-on=any`, checks each current candidate
-and signed package record, asks APT for its actual epoch-encoded archive names,
-and verifies copied bytes before the full installer starts.
+A one-minute publisher exact-key lookup skips maintenance, including signed
+refresh and downloads, if the entry already exists. This lookup does not restore
+an archive or seed a worker. Consumer warm admission is separate and always
+requires its existing fresh signed metadata refresh before seeding.
+Otherwise a four-minute population step uses a shared 210-second command budget
+for the admitted APT driver, current-candidate checks and stock APT downloads of
+the nine reviewed exact-version font packages. The fresh `checks` runner invokes
+the same driver used by the required workers, preserving source/key custody,
+official mirror priorities and a complete signed update with `--error-on=any`.
+Every package's
+version, architecture, archive path, size and SHA-256 must match authenticated
+Ubuntu metadata and the reviewed manifest. Candidate drift or unavailable
+metadata skips publication. The whole nine-file set must contain only regular,
+single-link, digest-verified archives before `save-ready=true`. Save is limited
+to one minute. Only the named lookup/population/save maintenance failures are
+optional; the existing ten-minute `checks` cap and complete suites stay required.
 
-Publication happens after the complete browser coverage aggregate in the
-existing `checks` job, only on a main push. It first makes a one-minute exact-key
-lookup without downloading. An existing key skips publication. On a miss, a
-four-minute step refreshes authenticated APT metadata and downloads those same
-nine official exact-version packages using stock APT. It verifies the complete
-archive set before a separately bounded one-minute save. PR runs skip all four
-publication steps. The helper shares a 210-second command budget across metadata
-and download work inside the four-minute step. Publication failures leave the complete checks result intact;
-the saved-result reader admits failures only for the named, source-bound cache
-maintenance steps, and keeps the eight existing jobs and every ordinary mandatory step
-strict. The existing ten-minute aggregate-job cap remains unchanged.
+Publication uses the existing system supervisor through `systemd-run --wait`.
+Its exact fresh transient root service owns all APT descendants, including
+children that start another process session. Only documented family 255 is
+admitted; each invocation records its actual version line. An unavailable or
+unsupported supervisor skips publication without a save.
+Service work is at most 155 seconds and shrinks with the shared budget. Five
+seconds each are reserved for start and root cgroup stop, followed by fifteen
+seconds for closure observation and the catch path. The existing 180-second
+per-command and four-minute outer caps are unchanged. Only a successful driver
+receipt and an inactive/dead unit with an absent cgroup can precede package
+admission. A failed client can stop only its exact verified transient root unit.
+Original driver output and closure observations remain in the job log.
 
-The observed PR294 run spent 187 seconds fetching OS archives on its critical
-browser shard, with repeated Azure mirror retries for fonts; other shards spent
-1–39 seconds. This is a download target, not evidence of a speed improvement.
-Cache restoration, hashing, an extra metadata refresh, and main publication also
-cost time. Exact-head complete hosted suites and actual cold/warm timing evidence
-are required before adoption or any speed claim. The existing setup timing
-receipt includes restore/admission time; API step timings separate restore,
-admission, full installation and final publication.
+The archives total 21,086,590 bytes. Their pins are in
+`data/ci/browser-font-packages.json`, based on official Ubuntu download records
+read on 7 October 2026. Published HTTPS digests alone do not admit a cache:
+freshly authenticated stock Ubuntu APT metadata must independently match them.
+The action is pinned to official v5 commit
+`caa296126883cff596d87d8935842f9db880ef25`.
+
+The exact key binds Linux, Noble, amd64, Playwright 1.62.1, the whole manifest
+and the frozen lockfile. The PR295 consumer uses the same key. There are no
+prefix restore keys or cross-OS restores. After a successful protected-main
+publication, the consumer must prove genuine `cache-hit=true` restores and fresh
+metadata/byte admission on its final exact head before adoption. The unchanged
+consumer logic rejects primary-key prefix matches, corruption, symlinks,
+hardlinks and version drift, and fails closed on post-copy integrity errors.
+The tests retain the publisher-only fixture and all its original assertions by
+removing exactly the three source-declared consumer steps from the combined
+workflow. The actual consumer workflow supplies the remaining reader controls.
+
+The observed PR294 critical shard spent 187 seconds downloading OS archives
+with font mirror retries. The historical main stall occurred in APT metadata
+acquisition before font downloads. The font archive cache itself does not repair
+that delay; the separately admitted APT driver supplies the reviewed priorities.
+Publication has its own wall cost, and cache restore/admission also costs time.
+Complete exact-head hosted suites and genuine cold/warm timing evidence remain
+required before active restores or any speed claim.
+
+## Consumer admission
+
+After mandatory signed Ubuntu APT admission, each installation job prepares the
+source-bound key, restores only that exact key within one minute, and validates
+the restored archives against fresh signed Ubuntu metadata within four minutes.
+Both consumer and publisher authentication explicitly select the existing
+transient root service. The helper has no default client-only refresh path.
+The same service work, shared deadline, exact-owner cleanup and absent-cgroup
+checks apply before signed metadata is admitted or an archive can be seeded.
+
+An exact `cache-hit=true` is required. A miss avoids the extra metadata query;
+corrupt bytes, prefix matches or candidate drift bypass seeding. Post-copy
+integrity failures remain fatal. All nine package version, size, architecture,
+path and SHA-256 pins stay unchanged. No installed OS state or browser binary is
+restored. The complete official installer remains mandatory on every path.
+
+The old PR295 run 37691992821 failed one Copilot unsupported-number browser case;
+its font setup steps succeeded. That original failure remains evidence. This
+current-main integration changes no refusal policy or browser assertion. All
+local quality checks, complete final-head hosted suites and genuine exact-key
+warm admission evidence remain required before adoption. No speedup is claimed.
 
 Primary references:
 
@@ -56,8 +98,6 @@ Primary references:
 - [APT authentication chain](https://manpages.ubuntu.com/manpages/noble/man8/apt-secure.8.html)
 - [Official cache restore/save documentation](https://github.com/actions/cache)
 - [Playwright browser-cache caveats](https://playwright.dev/docs/ci#caching-browsers)
-
-The cache action is pinned to the official v5 commit
-`caa296126883cff596d87d8935842f9db880ef25`. Browser binary caching remains excluded;
-Playwright notes that its restoration can cost as much as downloading, and Linux
-dependencies still require installation.
+- [Transient service wait and output behavior](https://raw.githubusercontent.com/systemd/systemd/v255/man/systemd-run.xml)
+- [Service runtime and shutdown bounds](https://raw.githubusercontent.com/systemd/systemd/v255/man/systemd.service.xml)
+- [Control-group termination](https://raw.githubusercontent.com/systemd/systemd/v255/man/systemd.kill.xml)

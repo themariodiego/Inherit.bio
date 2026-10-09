@@ -32,8 +32,8 @@ export function InputProvenance({ sources, sourceLabels, subject, coverage, stat
   state?: "recorded" | "noCall" | "conflict" | "absent";
   nested?: boolean;
 }) {
-  return <div data-slot="input-provenance" className="space-y-3 text-sm leading-relaxed text-ink-muted">
-    {nested ? <p className="font-medium text-ink">{COPY.heading}</p> : <h3 className="font-medium text-ink">{COPY.heading}</h3>}
+  return <div data-slot="input-provenance" className="max-w-measure space-y-3 text-sm leading-relaxed text-ink-muted">
+    {nested ? <p className="font-semibold text-ink">{COPY.heading}</p> : <h3 className="font-semibold text-ink">{COPY.heading}</h3>}
     <p>{COPY.external}</p>
     <p>{COPY.noImputation}</p>
     <p>{sources.length ? COPY[state] : COPY.noFiles}</p>

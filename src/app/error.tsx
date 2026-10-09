@@ -16,19 +16,19 @@ import { ErrorContent } from "@/components/site/error-content";
  */
 export default function RootError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12">
+    <div className="quiet-shell flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12">
       <header>
         <Wordmark />
       </header>
       <main
         id="main"
         tabIndex={-1}
-        className="w-full max-w-prose rounded-2xl border border-line bg-card shadow-sm focus:outline-none"
+        className="surface w-full max-w-2xl focus:outline-none"
       >
         <ErrorContent reset={reset} />
       </main>
-      <footer className="space-y-2 text-center">
-        <Attribution />
+      <footer className="text-center">
+        <Attribution className="caption" />
       </footer>
     </div>
   );

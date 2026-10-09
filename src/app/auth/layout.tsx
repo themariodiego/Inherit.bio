@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Terrain } from "@/components/site/terrain";
 import { Attribution, Wordmark } from "@/components/site/wordmark";
 
 /**
@@ -13,6 +14,11 @@ import { Attribution, Wordmark } from "@/components/site/wordmark";
  *
  * No skip link here on purpose: the only thing before the form is the
  * wordmark, so a skip control would add a focus stop rather than remove one.
+ *
+ * The terrain is a quiet ground under the column: lines on paper, behind a
+ * form that sits on its own surface, so no text crosses a hill. Below sm the
+ * card would cover it, so a short band above the card stands in (reading.css
+ * hides the ground there).
  */
 export default function AuthLayout({
   children,
@@ -20,21 +26,27 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12 md:py-20">
+    <div className="auth-shell flex min-h-screen flex-col items-center justify-start gap-8 bg-paper px-6 py-12 md:py-20">
+      <div aria-hidden="true" className="auth-terrain">
+        <Terrain variant="ground" seed={3} />
+      </div>
       <header>
         <Wordmark />
       </header>
+      <div aria-hidden="true" className="auth-band quiet-band sm:hidden">
+        <Terrain variant="band" seed={11} />
+      </div>
       <main
         id="main"
         tabIndex={-1}
-        className="auth-form-surface w-full max-w-md focus:outline-none"
+        className="auth-surface surface surface-pad focus:outline-none"
       >
         {children}
       </main>
-      <footer className="space-y-2 text-center">
-        <Attribution />
-        <p className="text-xs text-ink-muted">
-          <Link href="/" className="inline-flex min-h-11 items-center underline underline-offset-2">
+      <footer className="flex flex-col items-center gap-2 text-center">
+        <Attribution className="caption" />
+        <p className="text-sm">
+          <Link href="/" className="link-target quiet-link">
             Back to Inherit
           </Link>
         </p>

@@ -18,7 +18,7 @@ const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
 const require = createRequire(import.meta.url), localRequire = createRequire(require.resolve("eslint"));
 const yaml = localRequire("js-yaml") as { load(value: string): unknown };
 const maxJson = 16 * 1024 ** 2, maxLog = 32 * 1024 ** 2, maxZip = 10_000_000;
-const contractFiles = [".github/workflows/ci.yml", "scripts/ci-browser-shards.ts", "scripts/ci-browser-project-registry.ts",
+const contractFiles = [".github/workflows/ci.yml", "scripts/ci_apt_mirror_priority.py", "scripts/ci-browser-shards.ts", "scripts/ci-browser-project-registry.ts",
   "data/ci/browser-font-packages.json", "scripts/ci-browser-font-cache.ts", "scripts/ci-browser-font-cache.run.mts",
   "scripts/ci-browser-balance.ts", "scripts/ci-browser-queue-isolation.ts", "scripts/ci-browser-duration-plan.ts",
   "scripts/ci-browser-duration-history.ts", "scripts/ci-browser-duration-history-io.ts",

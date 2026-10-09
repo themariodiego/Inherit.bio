@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { RecordHead } from "@/components/records/record-head";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { ScorePanelResult } from "@/components/results/polygenic/score-panel-result";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -19,6 +20,7 @@ import {
   scoreInputLabel,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
+import { ADD_A_FILE } from "@/copy/reports/strings";
 import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
 import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { scorePanel } from "@/lib/genome/prs-panel";
@@ -112,41 +114,75 @@ export default async function GenomeDataPage(
   const inputSources = await loadInputSources(admin, dataSubjectId, scores.map(({ row }) => row.file_id),
     { kind: "report", purpose: "reports.polygenic" });
 
-  return (
-    <div data-surface="standard" className="page-stack mx-auto max-w-5xl space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: domain.label, href: domain.href },
-          { label: displayLabel },
-          { label: DATA_CRUMB },
-        ]}
-      />
-      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{DATA_H1}</h1>
-        <p className="max-w-prose text-base leading-relaxed text-ink-muted">{DATA_LEDE}</p>
-      </header>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Button asChild variant="outline" className="h-auto min-h-20">
-          <Link href={route("genome.browser", subjectParams)}>{BROWSE_VARIANTS}</Link>
-        </Button>
-        <Button asChild variant="outline" className="h-auto min-h-20">
-          <Link href={route("files.index")}>{MANAGE_FILES}</Link>
-        </Button>
-      </div>
+  // No prepared file: the head carries the coverage sentence and, on an own
+  // record, the one forest action, with the hills along its edge (round-1
+  // M3). The coverage section then has nothing to list and is absent rather
+  // than an empty heading. No eyebrow on this page: the crumb and the bar
+  // already say where the reader is.
+  const noFile = files.length === 0;
+  const canAddFile = person === null && subject.subjectClass === "self";
+  // One button on the page: where the head carries the forest action, the
+  // bar's "Add a file" is a quiet link to the same place (round-2 M2).
+  const headAction = fileCount === 0 && canAddFile;
 
-      <section aria-labelledby="score-panel-coverage" className="space-y-3">
-        <h2 id="score-panel-coverage" className="text-lg font-semibold text-ink">
+  return (
+    <div data-surface="standard" className="page-stack rec-sheet stack-sections">
+      <RecordHead
+        crumbs={
+          <Breadcrumbs
+            items={[
+              { label: domain.label, href: domain.href },
+              { label: displayLabel },
+              { label: DATA_CRUMB },
+            ]}
+          />
+        }
+        bar={<SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} action={headAction ? "quiet" : undefined} />}
+        title={DATA_H1}
+        empty={fileCount === 0}
+        seed={7}
+        action={
+          <>
+            {headAction ? (
+              <Button asChild size="lg">
+                <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+              </Button>
+            ) : null}
+            {/* The two quiet navigations follow the one forest action in the
+                same row, as the outline pair the data spec reads (round-3 N7,
+                round-4 S4: never above the primary). */}
+            <Button asChild variant="outline">
+              <Link href={route("genome.browser", subjectParams)}>{BROWSE_VARIANTS}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={route("files.index")}>{MANAGE_FILES}</Link>
+            </Button>
+          </>
+        }
+      >
+        {/* One voice in the head (round-3 N7): with no prepared file the
+            state sentence speaks and the lede is its caption; with one, the
+            lede alone. */}
+        {noFile ? (
+          <>
+            <p className="body-lg max-w-measure text-ink">
+              {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
+            </p>
+            <p className="caption max-w-measure">{DATA_LEDE}</p>
+          </>
+        ) : (
+          <p className="lede">{DATA_LEDE}</p>
+        )}
+      </RecordHead>
+
+      {noFile ? null : <section aria-labelledby="score-panel-coverage" className="rec-stack">
+        <h2 id="score-panel-coverage" className="title">
           {SCORE_COVERAGE_HEADING}
         </h2>
-        {files.length === 0 ? (
-          <p className="max-w-prose text-sm text-ink-muted">
-            {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
-          </p>
-        ) : scores.length === 0 ? (
-          <p className="max-w-prose text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
+        {scores.length === 0 ? (
+          <p className="max-w-measure text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="rec-list">
             {scores.map(({ row, meta }) => (
               <li key={`${row.file_id}:${row.pgs_id}`} data-slot="score-panel-result">
                 <ScorePanelResult
@@ -158,14 +194,14 @@ export default async function GenomeDataPage(
                   needed={meta.n_variants}
                 />
                 {/* inherit-figure-exempt: a source-record label, not a genetic quantity */}
-                <p data-slot="score-input-label" className="mt-2 text-sm text-ink-muted">
+                <p data-slot="score-input-label" className="caption mt-2">
                   {scoreInputLabel(inputSources.findIndex((source) => source.fileId === row.file_id) + 1)}
                 </p>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </section>}
       {scores.length ? <div data-slot="score-input-provenance">
         <InputProvenance sources={inputSources} subject={{ subjectId: dataSubjectId }} />
       </div> : null}

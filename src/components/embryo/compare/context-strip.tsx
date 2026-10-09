@@ -1,7 +1,8 @@
 /**
  * The context strip (brief line 393; register `qcProjection.contextStrip`):
  * three counts only, each with a note of 1–12 words, all derived from
- * `contextStrip()`. Counts are UI chrome, never figures. Server component.
+ * `contextStrip()`, on one plate-head strip. Counts are UI chrome, never
+ * figures. Server component.
  */
 import {
   CONTEXT_ANALYSED_NOTE,
@@ -20,14 +21,14 @@ export function ContextStrip({ counts }: { counts: ContextCountsDto }) {
     { id: "not-measurable", value: contextNotMeasurable(counts.not_measurable), note: CONTEXT_NOT_MEASURABLE_NOTE },
   ];
   return (
-    <ul data-slot="context-strip" className="grid gap-4 sm:grid-cols-3">
+    <ul data-slot="context-strip" className="fam-strip">
       {items.map((item) => (
-        <li key={item.id} data-context={item.id} className="rounded-2xl border border-line bg-card p-4">
+        <li key={item.id} data-context={item.id}>
           {/* inherit-figure-exempt: the context strip counts embryos, objects the reader can point at */}
-          <p data-metric-value="true" className="text-base font-medium text-ink">
+          <p data-metric-value="true" className="text-sm font-medium text-ink">
             {item.value}
           </p>
-          <p className="mt-1 text-sm text-ink-muted">{item.note}</p>
+          <p className="caption">{item.note}</p>
         </li>
       ))}
     </ul>

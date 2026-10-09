@@ -28,8 +28,8 @@ export function FileRowActions({
   const [preparationError, setPreparationError] = useState<BrowserPreparationError["code"] | null>(null);
 
   return (
-    <div className="flex flex-col items-end gap-1">
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-col items-end gap-2">
+    <div className="rec-actions">
       <Button asChild variant="outline" size="xs">
         <a href={`/api/files/${fileId}/download`}>Download</a>
       </Button>
@@ -49,7 +49,7 @@ export function FileRowActions({
               return;
             }
             // The route flips status to "parsing" as it starts; refresh
-            // early so the badge reflects that while the run continues.
+            // early so the status reflects that while the run continues.
             const earlyRefresh = setTimeout(() => router.refresh(), 1500);
             const res = await fetch(`/api/files/${fileId}/process`, {
               method: "POST",
@@ -107,8 +107,9 @@ export function FileRowActions({
         Delete
       </Button>
     </div>
-    {preparationError ? <PreparationRecovery code={preparationError} disabled={busy}
-      reportsHref={route("genome.reports", { subject: "me" })} /> : null}
+    {preparationError ? <div className="surface-inset surface-pad-sm max-w-measure text-sm">
+      <PreparationRecovery code={preparationError} disabled={busy}
+        reportsHref={route("genome.reports", { subject: "me" })} /></div> : null}
     {error ? (
       <p role="alert" className="max-w-xs text-right text-xs text-danger">
         {error}

@@ -19,7 +19,7 @@ export function StagedUploadRecovery({ message, disabled, retrying, onFinish }: 
   retrying?: boolean;
   onFinish: () => void;
 }) {
-  return <div>
+  return <div className="max-w-measure">
     <p role="alert" className="text-danger">{message}</p>
     <p className="mt-2 text-ink-muted">Your file already reached private storage. Finishing it does not send the file again.</p>
     {retrying ? <p className="mt-2 text-ink-muted">Trying again automatically. You can also try now.</p> : null}

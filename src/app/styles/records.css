@@ -1,0 +1,172 @@
+/* records surface styles. Owned by one surface agent; tokens come from globals.css.
+   Rules here are unlayered and beat Tailwind utilities: use them for shared
+   patterns, and Tailwind classes in JSX for one-offs.
+   Covers Files and upload, Settings, Copilot and the data sheet. Every class
+   is prefixed `rec-` so it cannot collide with another partial. */
+
+/* ---------------------------------------------------------------------------
+ * Columns. Forms and threads read in a single 44rem column; the files list
+ * needs room for its right-aligned actions; the data sheet keeps its width.
+ * ------------------------------------------------------------------------- */
+/* Left-aligned, never centred: the h1 shares the toolbar's left edge on
+   every route (round-1 M5). The widths stay. */
+.rec-column { width: 100%; max-width: 44rem; margin-inline: 0; }
+.rec-column-wide { width: 100%; max-width: 56rem; margin-inline: 0; }
+.rec-sheet { width: 100%; max-width: 64rem; margin-inline: 0; }
+
+/* Page head: eyebrow, the one display h1, a lede or caption beneath. With
+   breadcrumbs, they sit 1rem above the h1 as they do in `.page-head`. */
+.rec-head { display: flex; flex-direction: column; gap: 0.75rem; }
+.rec-head > .eyebrow { margin-bottom: 0.25rem; }
+.rec-head > [data-slot="breadcrumbs"] { margin-bottom: 0.25rem; }
+
+/* ---------------------------------------------------------------------------
+ * The record head (round-1 M2/M3/M7/m12): crumbs, the subject bar, then one
+ * card carrying the h1, the page's one state sentence and its one forest
+ * action. With no file the hills run along the card's bottom edge; the body
+ * reserves a clear band above the first ridge, and the card's edge crops the
+ * nearest hills as a window crops a horizon. One rhythm on every record route.
+ * ------------------------------------------------------------------------- */
+.rec-record-head > * + * { margin-top: 1.5rem; }
+.rec-record-head > [data-slot="breadcrumbs"] + [data-subject-bar] { margin-top: 0.5rem; }
+.rec-record-card { position: relative; overflow: hidden; }
+.rec-record-body { position: relative; display: flex; flex-direction: column; gap: 1rem; padding: 1.5rem; }
+.rec-record-body > h1 { margin-bottom: 0.25rem; }
+.rec-record-body > [data-slot="record-action"] { display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 0.5rem; }
+@media (min-width: 768px) { .rec-record-body { padding: 2rem; } }
+@media (min-width: 1024px) { .rec-record-body { padding: 2.5rem; } }
+/* With no file the terrain box carries the clear band, not the body's
+   padding: the body ends 8px under its last line or button (round-2 N8). */
+.rec-record-card[data-state="empty"] > .rec-record-body { padding-bottom: 0.5rem; }
+/* The hills. The box is always the card's width (`width: 100%`: with an
+   auto width the 13rem min-height transferred through the aspect ratio to a
+   555px min-width, and a phone card showed the left of a clipped drawing;
+   round-3 R4). At the drawn aspect (1600:600) the first ridge's crest sits
+   11.9% of the card's width below the box top, so from a ~605px card the
+   box rides up by that less 4.125rem and the clear band is ~74px (the seed
+   moves a crest a few px). In a narrower card the box holds 13rem and the
+   SVG's `slice` scales the hills to that height, showing the middle of the
+   drawing: bolder ridges, the near fill in view, the crest ~70px down, and
+   the box rides up 6px so the band is ~69–75px again. The top of the box
+   above the first ridge is transparent, so riding up over the body hides
+   nothing. The negative bottom margin lets the card's edge crop the nearest
+   slope, 8px to 40px with the width: ~200px of hills at 1280 and four
+   ridges at 320. */
+.rec-record-terrain { position: relative; width: 100%; aspect-ratio: 1600 / 600; min-height: 13rem; margin-top: calc(4.125rem - max(4.5rem, 11.9%)); margin-bottom: clamp(-2.5rem, -4.25%, -0.5rem); pointer-events: none; }
+.rec-record-terrain > [data-slot="terrain"] { position: absolute; inset: 0; }
+/* /files on a phone: the consent plate below is the page's action, so the
+   hills give up 46px there — three ridges, the same clear band (round-3 R1). */
+/* On /files the one state sentence is also the file list's only item, so the
+   index still states its absence in words; the list draws nothing of its own. */
+.rec-record-list { list-style: none; margin: 0; padding: 0; }
+
+/* Small stacks inside a surface; rows ruled by a hairline. */
+.rec-stack { display: flex; flex-direction: column; gap: 1rem; }
+.rec-stack-sm { display: flex; flex-direction: column; gap: 0.5rem; }
+.rec-ruled > * + * { border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 1rem; }
+
+/* A form field: label over control, on a sensible width. */
+.rec-field { display: flex; flex-direction: column; gap: 0.5rem; max-width: 28rem; }
+.rec-select {
+  display: block; width: 100%; min-height: var(--size-control);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--ink); padding: 0.5rem 0.875rem; font-size: 1rem;
+  transition: border-color var(--motion-feedback);
+}
+.rec-select:hover { border-color: var(--forest); }
+.rec-choice { display: flex; align-items: flex-start; gap: 0.75rem; min-height: var(--size-control); }
+.rec-choice > input { margin-top: 0.25rem; flex: none; }
+
+/* ---------------------------------------------------------------------------
+ * The ruled record list: one 56px line per record, hairlines above and
+ * below, the name at label weight, the meta line a caption, actions right.
+ * ------------------------------------------------------------------------- */
+.rec-list { border-top: 1px solid var(--line); }
+.rec-list > li { border-bottom: 1px solid var(--line); min-height: var(--size-row); padding-block: 1rem; }
+.rec-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; }
+.rec-main { min-width: 0; flex: 1 1 16rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.rec-name { font-size: 1rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.rec-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-left: auto; }
+.caption .mono { font-size: 0.8125rem; }
+
+/* ---------------------------------------------------------------------------
+ * Facts: a ruled definition list. One row per fact, the term at label
+ * weight, the value in ink; a single column on a phone.
+ * ------------------------------------------------------------------------- */
+.rec-facts { border-top: 1px solid var(--line); }
+.rec-facts > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.25rem 1.5rem; padding-block: 0.75rem; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+@media (min-width: 640px) { .rec-facts > div { grid-template-columns: minmax(12rem, 22rem) minmax(0, 1fr); align-items: baseline; } }
+.rec-facts dt { font-size: 0.875rem; font-weight: 500; line-height: 1.5; letter-spacing: 0.01em; }
+.rec-facts dd { color: var(--ink); }
+.rec-fact-line { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline; }
+
+/* ---------------------------------------------------------------------------
+ * Settings: 56px rows with the control on the right; section tiles.
+ * ------------------------------------------------------------------------- */
+.rec-settings-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; min-height: var(--size-row); padding: 0.75rem 1.25rem; }
+.rec-settings-text { flex: 1 1 12rem; min-width: 0; }
+/* A plate head's meta ("Version 1"): never wraps, never squeezed. */
+.rec-plate-meta { flex: none; white-space: nowrap; }
+.rec-settings-rows { min-inline-size: 0; }
+.rec-settings-rows > .rec-settings-row + .rec-settings-row { border-top: 1px solid var(--line); }
+/* The danger zone is told apart from the export card before its button: a
+   2px danger rule along the top edge, drawn between the corner arcs so it
+   never tapers into the grey sides (round-1 m18, round-2 N9). */
+.surface.rec-danger { position: relative; }
+.surface.rec-danger::before {
+  content: ""; position: absolute; top: -1px; inset-inline: calc(var(--radius-lg) - 1px);
+  height: 2px; background: var(--danger);
+}
+/* Inside a form, an inset note shares the fields' 28rem right edge. */
+form.rec-stack .surface-inset { max-width: 28rem; }
+/* Rows inside a plate body (round-3 R3): the plate is the box, so a single
+   row draws no padding of its own and a ruled group keeps hairlines only,
+   flush with the body's text. */
+.plate-body > .rec-settings-row { padding: 0; min-height: 0; }
+.plate-body > .rec-settings-rows { border-block: 1px solid var(--line); }
+.plate-body > .rec-settings-rows > .rec-settings-row { padding-inline: 0; }
+
+/* ---------------------------------------------------------------------------
+ * Upload: the dropzone inside a plate, the progress panel beneath it. The
+ * live region is always in the DOM; it takes the inset ground only once it
+ * has something to say, so an empty region never draws an empty box.
+ * ------------------------------------------------------------------------- */
+.rec-dropzone { padding: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; }
+@media (min-width: 768px) { .rec-dropzone { padding: 1.5rem; } }
+.rec-dropzone-text { flex: 1 1 18rem; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; max-width: var(--measure); }
+.rec-progress:not(:empty) {
+  margin-top: 1rem; padding: 0.875rem 1.25rem; border-radius: var(--radius-sm);
+  background: var(--surface-inset); color: var(--ink); font-size: 0.875rem; line-height: 1.5;
+}
+.rec-progress a { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2em; }
+
+/* A disclosure plate: the summary is the plate's head. */
+.rec-disclosure > summary {
+  min-height: var(--size-control); padding: 0.5rem 1.25rem; border-radius: 0;
+  background: var(--surface-inset); border-bottom: 1px solid transparent;
+}
+.rec-disclosure[open] > summary { border-bottom-color: var(--line); }
+@media (min-width: 768px) { .rec-disclosure > summary { padding-inline: 1.5rem; } }
+.plate > .plate-head:last-child { border-bottom: 0; }
+
+/* ---------------------------------------------------------------------------
+ * Copilot: a calm thread. The person's turn sits on the inset ground, the
+ * assistant's is plain under a hairline; the composer is one 44px row.
+ * ------------------------------------------------------------------------- */
+.rec-thread { display: flex; flex-direction: column; gap: 1.5rem; }
+.rec-message { font-size: 1rem; line-height: 1.6; color: var(--ink); }
+.rec-message > p { max-width: var(--measure); }
+.rec-message[data-role="user"] { background: var(--surface-inset); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+.rec-message[data-role="assistant"] { border-top: 1px solid var(--line); padding-top: 1.25rem; }
+.rec-composer { display: flex; align-items: flex-end; gap: 0.5rem; }
+.rec-composer [data-slot="textarea"] { flex: 1 1 auto; min-height: var(--size-control); resize: none; }
+
+/* The browser's search: a 44px field and its button on the inset ground. */
+.rec-search { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem; }
+.rec-search [data-slot="input"] { flex: 1 1 14rem; min-width: 0; }
+
+/* The confirmation statement under "How sure we are" is prose, so it keeps
+   the reading measure. Its markup is pinned byte for byte by
+   src/copy/reports/confirmation-policy.test.ts, so the measure is stated here
+   rather than as a class on the block. */
+[data-confirmation-block="true"] { max-width: var(--measure); }
