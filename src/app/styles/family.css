@@ -213,6 +213,16 @@ details[data-slot="raw-numbers"] { max-width: var(--measure); }
   mask-image: linear-gradient(to top, #000 calc(var(--fam-horizon) - 28px), transparent var(--fam-horizon));
 }
 @media (min-width: 360px) { [data-slot="empty-state-ground"] [data-slot="terrain"] { --fam-horizon: 68px; } }
+/* On a phone the pill takes most or all of the box's width, so the only
+   hills left are the strip under it. The box keeps a deeper foot there
+   (40px, the horizon following), so a whole ridge runs under the pill
+   instead of a tinted edge (round-5 N9). From 640px the pill is narrow
+   and the hills run beside it. */
+@media (max-width: 639px) {
+  [data-surface="hub"] [data-slot="empty-state"][data-ground],
+  [data-surface="hub"] .fam-ground > [data-slot="empty-state"] { padding-bottom: 2.5rem; }
+  [data-slot="empty-state-ground"] [data-slot="terrain"] { --fam-horizon: 84px; }
+}
 /* On the inset ground the far hills are hairlines only; the near two keep their tint. */
 [data-slot="empty-state-ground"] [data-slot="terrain"] .terrain-fill { fill: var(--surface-inset); }
 /* Dark: the ridge lines are drawn for the page ground; under body text on

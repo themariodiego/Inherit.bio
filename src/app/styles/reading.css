@@ -153,6 +153,10 @@
 /* The hills are drawn taller than the strip and anchored below it, so the
    strip shows the far ridges on paper with one near slope at the horizon. */
 .quiet-band [data-slot="terrain"] { position: absolute; left: 0; right: 0; bottom: -3.5rem; height: 15rem; }
+/* On a card (the root 404 and error pages) the hill bodies are the card's
+   surface, not paper, so in dark the band is not a paper panel with a hard
+   top edge inside the card; the two near slopes keep their tint (round-5 N3). */
+.surface .quiet-band .terrain-fill { fill: var(--card); }
 .quiet-column > .quiet-band + * { margin-top: 2rem; }
 .quiet-links { display: flex; flex-direction: column; gap: 0.5rem; }
 .quiet-links a { display: inline-flex; align-items: center; min-height: var(--size-control); }

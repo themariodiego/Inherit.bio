@@ -145,11 +145,13 @@ export function AppNav({
       <nav
         aria-label={NAV_LANDMARK_LABEL}
         // Five cells 8px apart (the separation rule) and 4px from the glass,
-        // so no ring or tint is cut by the viewport. At 390 the longest 13px
-        // label fits one line and the label box is one line, so the group
-        // centres in the cell; below 390 "My Genome" can wrap, so every cell
-        // keeps the same two-line box and the icons and first lines stay level.
-        className="app-bar grid h-navbar grid-cols-5 gap-2 px-1 py-1"
+        // so no ring or tint is cut by the viewport. The rows are shared by
+        // every cell (subgrid): an icon row, a label row and two equal
+        // spacers, so the group centres in each cell and, when one label
+        // wraps (narrow phones, a wider renderer), every cell's label row
+        // grows with it and the icons and first lines stay level. The box
+        // switches on the wrap itself, not on a viewport width.
+        className="app-bar grid h-navbar grid-cols-5 grid-rows-[minmax(0,1fr)_auto_auto_minmax(0,1fr)] gap-x-2 px-1 py-1"
       >
         {NAV_ITEMS.map((item) => {
           const Icon = ICONS[item.id];
@@ -160,14 +162,17 @@ export function AppNav({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-full min-h-11 flex-col items-center justify-center gap-0.5 rounded-sm px-0 text-center text-[13px] leading-4 tracking-[-0.05em] transition-colors",
+                "grid min-h-11 grid-rows-subgrid row-span-full justify-items-center rounded-sm px-0 text-center text-[13px] leading-4 tracking-[-0.05em] transition-colors",
                 active
                   ? "bg-tint font-medium text-ink"
                   : "text-ink-muted hover:text-ink",
               )}
             >
-              <Icon aria-hidden="true" className="size-5 shrink-0" />
-              <span className="min-h-4 max-[390px]:h-8">{item.label}</span>
+              <Icon
+                aria-hidden="true"
+                className="row-start-2 size-5 shrink-0"
+              />
+              <span className="row-start-3 min-h-4 pt-0.5">{item.label}</span>
             </Link>
           );
         })}

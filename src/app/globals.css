@@ -258,6 +258,9 @@ h1.display-lg, .display-lg { font-size: clamp(2.5rem, 1.5rem + 3.8vw, 4.5rem); l
    three lines instead of leaving one word alone on the last. */
 @media (max-width: 359px) { h1.display-lg, .display-lg { font-size: 2.25rem; } }
 h1.display-hero, .display-hero { font-size: clamp(2.875rem, 1.4rem + 6vw, 6.25rem); line-height: 0.98; letter-spacing: -0.03em; }
+/* The floor phones (320–339): one step down, so the italic phrase "Your
+   genome," holds one line in the 272px column in every renderer (round-5 N4). */
+@media (max-width: 339px) { h1.display-hero, .display-hero { font-size: 2.75rem; } }
 .display-figure {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;

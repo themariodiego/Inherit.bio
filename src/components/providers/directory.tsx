@@ -427,17 +427,22 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                     {/* Fixed layout with shared column widths, so the sixteen
                         tables read as one list: every column starts at the
                         same x in every card. The budget (10.5 / 9 / 12 / 14 /
-                        9 rem) is sized so no price token or domain splits
-                        mid-word and no row passes 120px; Product takes the
-                        slack and the min-width keeps it at 11rem or more,
-                        so below that the wrapper scrolls instead. */}
-                    <table className="w-full min-w-[65.5rem] table-fixed text-left text-sm">
+                        9 rem from 1280px) is sized so no price token or domain
+                        splits mid-word and no row passes 120px; Product takes
+                        the slack and the min-width keeps it at 11rem or more,
+                        so below that the wrapper scrolls instead. In the lg
+                        range (1024–1279px) the card is 926px wide, so a
+                        tighter budget (9 / 7 / 10 / 13 / 9 rem, Product 9.5rem)
+                        fits without a scroll region; the file and turnaround
+                        columns keep the width their longest token needs, so
+                        nothing splits mid-word there either (round-5 N1). */}
+                    <table className="w-full min-w-[57.5rem] table-fixed text-left text-sm xl:min-w-[65.5rem]">
                       <colgroup>
                         <col />
-                        <col className="w-42" />
-                        <col className="w-36" />
-                        <col className="w-48" />
-                        <col className="w-56" />
+                        <col className="w-36 xl:w-42" />
+                        <col className="w-28 xl:w-36" />
+                        <col className="w-40 xl:w-48" />
+                        <col className="w-52 xl:w-56" />
                         <col className="w-36" />
                       </colgroup>
                       <thead>
