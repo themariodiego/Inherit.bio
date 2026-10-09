@@ -1,3 +1,32 @@
+## 2026-10-09 — UI renewal: three test-side changes, no assertion weakened
+
+The UI renewal changes composition, scale, rhythm, surfaces and motion only;
+copy, routes, data, consent wording, APIs and schema are unchanged. Three test
+files move with it.
+
+`scripts/route-register-correspondence.test.ts` pins the source hash of the
+eleven client form files. Each changed only in class names, layout and, for the
+jurisdiction form, the save control staying disabled until the chosen value
+differs from the stored one; every method, action, fetch and submit handler is
+intact and the per-file form count is unchanged, so the eleven hashes are
+refreshed and nothing else in the registry moves.
+
+`src/components/results/ancestry/ancestry.test.ts`: the grey regional map that
+draws no shading is now named by its one figcaption through `aria-labelledby`
+instead of a duplicate `aria-label`. The absent-result case pins the figcaption
+id, the svg naming it, the absence of the shading caption on a map with no
+shading, and keeps the region-path count, the no-focusable-path check and the
+wording guard as they were.
+
+`src/components/subjects/subject-bar.test.ts` adds one case: the bar renders
+its add-a-file action as a quiet link with the same href and label when asked
+to. Every existing case, including the embryo bar hiding that action, is
+unchanged.
+
+No end-to-end spec, selector, timeout, retry, skip, coverage or gate threshold
+changes. Complete hosted unit, database and browser qualification on the exact
+final head remains required before merge.
+
 ## 2026-10-09 — Keep exact private comprehension file identities
 
 Private configuration admission uses BigInt file and directory identities.
