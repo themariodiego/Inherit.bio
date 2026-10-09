@@ -1,0 +1,49 @@
+name: Real isolated claim scanner proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/claim-scanner-real-proof.yml'
+      - 'scripts/claim-scanner-real-proof*'
+      - 'src/lib/scan/**'
+      - 'docs/claim-scanner-real-proof.md'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real-claim-scanner-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  real-scanner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      VERCEL_ENV: development
+      INHERIT_TEST_JURISDICTION: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exact locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Prove the real isolated scanner once
+        id: scanner
+        run: pnpm exec tsx scripts/claim-scanner-real-proof.run.mts
+      - name: Keep the original synthetic-only result and failure evidence
+        if: always() && steps.scanner.outputs.proof-output != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-claim-scanner-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.scanner.outputs.proof-output }}
+          retention-days: 14
+          if-no-files-found: error
