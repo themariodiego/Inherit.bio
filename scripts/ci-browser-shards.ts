@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { assertEmbryoJourneyPartition } from "./ci-browser-embryo-partitions";
 import { assertStandardCiBrowserProjects, STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
@@ -19,13 +20,29 @@ export const ciBrowserSetupTimingReceiptSchema = identity.extend({ schemaVersion
   index: z.number().int().min(1).max(CI_BROWSER_SHARDS), total: z.literal(CI_BROWSER_SHARDS),
   ...browserSetupTimingSchema.shape }).strict();
 const specFile = z.string().regex(/^e2e\/[a-z0-9][a-z0-9._/-]*\.spec\.ts$/).refine(value => !value.includes(".."));
+const digest = z.string().regex(/^[0-9a-f]{64}$/);
+const allocationIdentity = z.object({ mode: z.literal("duration-v1"), profileSha256: digest, planSha256: digest }).strict();
+const allocationSchema = allocationIdentity.extend({ parts: z.array(z.object({
+  index: z.number().int().min(1).max(CI_BROWSER_SHARDS), cases: caseSet,
+}).strict()).length(CI_BROWSER_SHARDS) }).strict();
+export type CiBrowserAllocation = z.infer<typeof allocationSchema>;
+export function browserAllocationHash(profileSha256: string, parts: CiBrowserAllocation["parts"]): string {
+  return createHash("sha256").update(JSON.stringify({ profileSha256: digest.parse(profileSha256),
+    parts: parts.map(part => ({ index: part.index, cases: sortedUnique(part.cases) })).sort((a, b) => a.index - b.index) })).digest("hex");
+}
+function verifyAllocation(value: CiBrowserAllocation, fullCases: string[]) {
+  const allocation = allocationSchema.parse(value);
+  assert.deepEqual(allocation.parts.map(part => part.index).sort(), [1, 2, 3, 4, 5, 6], "Every duration partition is required");
+  sameCases(allocation.parts.flatMap(part => part.cases), fullCases);
+  assert.equal(allocation.planSha256, browserAllocationHash(allocation.profileSha256, allocation.parts), "Duration plan hash differs");
+}
 const manifestSchema = identity.extend({ schemaVersion: z.literal(1), total: z.literal(CI_BROWSER_SHARDS), cases: caseSet,
-  files: z.array(specFile).min(1) }).strict();
+  files: z.array(specFile).min(1), allocation: allocationSchema.optional() }).strict();
 const receiptSchema = identity.extend({ schemaVersion: z.literal(1), total: z.literal(CI_BROWSER_SHARDS),
   index: z.number().int().min(1).max(CI_BROWSER_SHARDS), fullCases: caseSet, assignedCases: caseSet,
   executedCases: caseSet, providerUploads: z.number().int().nonnegative().safe(), fullFiles: z.array(specFile).min(1),
   timings: browserSetupTimingSchema.extend({ bootstrapMs: milliseconds, browserMs: milliseconds }).strict(),
-  files: z.array(fileTiming).min(1),
+  files: z.array(fileTiming).min(1), allocation: allocationIdentity.optional(),
 }).strict();
 export type CiBrowserManifest = z.infer<typeof manifestSchema>;
 export type CiBrowserShardReceipt = z.infer<typeof receiptSchema>;
@@ -68,7 +85,9 @@ function sameCases(actual: string[], expected: string[]) {
 }
 /** Raw Playwright JSON stays in memory. Only fixed case IDs are returned;
  * configuration, environments, errors, stdout and attachments are never copied. */
-export function browserReportCases(value: unknown, index: number | null, executed: boolean): string[] {
+export function browserReportCases(value: unknown, index: number | null, executed: boolean,
+  durationPartition = false): string[] {
+  assert(!durationPartition || index === null, "Duration reports use actual unsharded configuration");
   const report = reportSchema.parse(value);
   assertStandardCiBrowserProjects(report.config.projects.map(project => project.name));
   assert.deepEqual(report.config.shard, index === null ? null : { current: index, total: CI_BROWSER_SHARDS }, "Browser shard differs");
@@ -91,8 +110,8 @@ export function browserReportCases(value: unknown, index: number | null, execute
   // instead requires every discovered case to pass once and zero skips.
   assert.equal(report.stats.expected, executed ? cases.length : 0, "Browser expected-result count differs");
   assert.equal(report.stats.skipped, executed ? 0 : cases.length, "Browser skipped-result count differs");
-  if (index === null) assertStandardCiBrowserProjects([...new Set(cases.map(id => id.split(":")[1]))]);
-  assertEmbryoJourneyPartition(journeyRows, index === null);
+  if (index === null && !durationPartition) assertStandardCiBrowserProjects([...new Set(cases.map(id => id.split(":")[1]))]);
+  assertEmbryoJourneyPartition(journeyRows, index === null && !durationPartition);
   return sortedUnique(cases);
 }
 export const OPTIONAL_BROWSER_SPEC_FILES = Object.freeze([
@@ -119,16 +138,24 @@ export function browserDiscoveryInventory(value: unknown, trackedSpecs: string[]
   return { cases: browserReportCases(value, null, false),
     files: verifyBrowserSourceCensus(discoveredFiles(value), trackedSpecs) };
 }
-export function browserManifest(value: unknown, source: CiBrowserIdentity, trackedSpecs: string[]): CiBrowserManifest {
+export function browserManifest(value: unknown, source: CiBrowserIdentity, trackedSpecs: string[],
+  allocation?: CiBrowserAllocation): CiBrowserManifest {
+  const { cases, files } = browserDiscoveryInventory(value, trackedSpecs);
+  if (allocation) verifyAllocation(allocation, cases);
   return manifestSchema.parse({ ...identity.parse(source), schemaVersion: 1, total: CI_BROWSER_SHARDS,
-    ...browserDiscoveryInventory(value, trackedSpecs) });
+    cases, files, ...(allocation ? { allocation } : {}) });
 }
 export function browserShardReceipt(full: unknown, assigned: unknown, executed: unknown,
   source: CiBrowserIdentity, index: number, providerUploads: number,
-  timings: CiBrowserShardReceipt["timings"], trackedSpecs: string[]): CiBrowserShardReceipt {
+  timings: CiBrowserShardReceipt["timings"], trackedSpecs: string[], allocation?: CiBrowserAllocation): CiBrowserShardReceipt {
   const fullCases = browserReportCases(full, null, false);
-  const assignedCases = browserReportCases(assigned, index, false);
-  const executedCases = browserReportCases(executed, index, true);
+  const assignedCases = browserReportCases(assigned, allocation ? null : index, false, !!allocation);
+  const executedCases = browserReportCases(executed, allocation ? null : index, true, !!allocation);
+  if (allocation) {
+    verifyAllocation(allocation, fullCases);
+    const part = allocation.parts.find(part => part.index === index);
+    assert(part, "Duration partition is absent"); sameCases(assignedCases, part.cases);
+  }
   sameCases(executedCases, assignedCases);
   assert(assignedCases.every(id => fullCases.includes(id)), "Shard contains a case absent from full discovery");
   const files = new Map<string, z.infer<typeof fileTiming>>();
@@ -147,6 +174,8 @@ export function browserShardReceipt(full: unknown, assigned: unknown, executed: 
   visit(reportSchema.parse(executed).suites);
   return receiptSchema.parse({ ...identity.parse(source), schemaVersion: 1, total: CI_BROWSER_SHARDS,
     index, fullCases, assignedCases, executedCases, providerUploads, timings, files: [...files.values()],
+    ...(allocation ? { allocation: allocationIdentity.parse({ mode: allocation.mode,
+      profileSha256: allocation.profileSha256, planSha256: allocation.planSha256 }) } : {}),
     fullFiles: verifyBrowserSourceCensus(discoveredFiles(full), trackedSpecs) });
 }
 export function verifyBrowserShards(expected: unknown, values: unknown[], source: CiBrowserIdentity): number {
@@ -158,8 +187,14 @@ export function verifyBrowserShards(expected: unknown, values: unknown[], source
   }
   assert(receipts.length === CI_BROWSER_SHARDS && new Set(receipts.map(item => item.index)).size === CI_BROWSER_SHARDS,
     "Exactly one receipt for every registered browser shard is required");
+  if (manifest.allocation) verifyAllocation(manifest.allocation, manifest.cases);
   for (const receipt of receipts) {
     assertEmbryoJourneyPartition(receipt.files.map(row => ({ ...row, cases: row.cases.length })), false);
+    assert.deepEqual(receipt.allocation, manifest.allocation ? { mode: manifest.allocation.mode,
+      profileSha256: manifest.allocation.profileSha256, planSha256: manifest.allocation.planSha256 } : undefined,
+    "Browser allocation mode, profile or plan differs");
+    if (manifest.allocation) sameCases(receipt.assignedCases,
+      manifest.allocation.parts.find(part => part.index === receipt.index)!.cases);
     sameCases(receipt.fullCases, manifest.cases);
     sameCases(receipt.executedCases, receipt.assignedCases);
     sameCases(receipt.files.flatMap(file => file.cases), receipt.executedCases);

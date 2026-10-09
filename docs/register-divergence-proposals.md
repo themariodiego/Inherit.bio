@@ -28,12 +28,14 @@ section 1 shows the state after this pull request.
 
 ## 1. Where every recorded divergence stands
 
-**D-081 update, 3 October 2026.** The two D-081 rows below now describe the
-retained retirement evidence. Their 28 September status and closing text remain
-verbatim as history. PR #280 removed both surfaces and both exception rows;
-the immutable 1 October production deployment is recorded. The historical
-immediate pre-merge Boolean raw receipt was not found. See
-[the reconciliation](evidence/d081-retirement-reconciliation-20261003.md).
+**D-081 source reconciliation, 8 October 2026.** At verified main `4eec89bb`,
+PR #280 has removed both legacy surfaces and both exception rows. The two
+D-081 rows below preserve their 28 September status and closing text as history.
+The retained 3 October deployment/GET evidence concerns older main `0711334e`,
+not current-main deployment, complete current browser evidence or final
+13 October closure. The original immediate pre-merge Boolean raw receipt was
+not found; saved success metadata is not the full original exact-head CI/report
+proof. See [the reconciliation](evidence/d081-retirement-reconciliation-20261003.md).
 G2.1 and G8.5 remain NO; all other obligations and the original hard stop stay.
 
 The ledgers are `docs/route-divergence.json` (checked by
@@ -43,8 +45,8 @@ The ledgers are `docs/route-divergence.json` (checked by
 | Ledger row | Status after this change | What closes it |
 |---|---|---|
 | `storageBucketDivergence` `genomes-staging` | **Closed.** `20260930140000_drop_genomes_staging_bucket.sql` drops the bucket, and the row is removed. The lead applies the migration with the guarded process. | Nothing further. The two D-130 literals are kept in `allowlistedBucketNotCreated` (see section 7). |
-| `builtButNotRegistered` `/api/withdraw` (D-081) | **Retired in PR #280; production deployment recorded 1 October 2026.** The source exception row is absent. **Historical status, 28 September:** **Dated.** `deleteAfter: 2026-10-14`. After that date the correspondence test fails while the row exists. | No further D-081 route deletion is pending. The retained evidence and historical receipt gap are recorded in the reconciliation. **Historical closing, 28 September:** Delete the route, the `[token]` directory, the one e2e test on that path, and both rows (section 5). |
-| `permissiveDynamicSegment` `/withdraw/[token]` (D-081) | **Retired in PR #280; production deployment recorded 1 October 2026.** The source exception row is absent; the register pattern still pins the canonical `session` literal. **Historical status, 28 September:** **Dated**, the same way. | No further D-081 route deletion is pending. **Historical closing, 28 September:** Same change as the row above. |
+| `builtButNotRegistered` `/api/withdraw` (D-081) | **Retired in current source by PR #280.** The source exception row is absent; deployment/evidence limits are recorded in the reconciliation. **Historical status, 28 September:** **Dated.** `deleteAfter: 2026-10-14`. After that date the correspondence test fails while the row exists. | No further D-081 route deletion is pending. **Historical closing, 28 September:** Delete the route, the `[token]` directory, the one e2e test on that path, and both rows (section 5). |
+| `permissiveDynamicSegment` `/withdraw/[token]` (D-081) | **Retired in current source by PR #280.** The source exception row is absent; the register pattern still pins the canonical `session` literal. **Historical status, 28 September:** **Dated**, the same way. | No further D-081 route deletion is pending. **Historical closing, 28 September:** Same change as the row above. |
 | `methodDivergence` `api.account-delete` | **Decided: B** (2026-09-28, evening). Built on `claude/register-divergences-2`. The row stays here until that lands. | Brief X1.5, then the GET is deleted and the row goes stale. |
 | `api.export` delivery/response gap | **2026-10-01 NEXT-RELEASE partial source.** GET and POST now exist, so the obsolete method row is removed. The current-origin cookie poll and action consumer stay closed before create when generation is unconfigured. This is no delivery/acceptance proof. | Complete registered member/READY proof, public action presentation, provider delivery and open-ready; retire the unchanged no-cookie synchronous GET in the complete transition. Thirteen nonempty unsupported account classes still refuse the whole request. The export storage/delivery proposal is awaiting the owner's answer. |
 | `kindDivergence` `/withdraw/request` | **Closed.** The owner chose A on 2026-09-28 (evening). The register now names `/withdraw/request` as `rights.withdraw-request`, an HTML endpoint, and the row is removed. `kindDivergence` is empty and still checked in both directions. | Nothing further. |
@@ -502,13 +504,16 @@ that object is removed.
 
 ## 5. The D-081 date
 
-**Superseding update, 3 October 2026.** PR #280 merged on 1 October and
-the retained immutable production deployment is READY. The old surfaces and
-exception rows are already removed. The 13 October checkpoint concerns
-evidence and documentation; it is no longer an upcoming source deletion.
-The original hard stop is unchanged. The historical immediate pre-merge
-Boolean raw receipt was not found; a later GET cannot establish it.
-The dated rationale below is preserved verbatim.
+**Source reconciliation, 8 October 2026.** PR #280 is present in verified main
+`4eec89bb`; both legacy surfaces and exception rows are already removed.
+The 13 October item is an evidence/documentation checkpoint, not another
+source-deletion task. The original hard stop and `deleteAfter: 2026-10-14`
+remain unchanged. Saved older-main deployment/GET evidence does not prove
+current-main deployment, full current browser evidence or final closure.
+The original immediate pre-merge Boolean raw receipt was not found, and a
+later GET cannot establish it. Full original PR #280 exact-head CI/report
+proof remains unlocated in the reviewed packet. The dated rationale below
+is preserved verbatim; see [the reconciliation](evidence/d081-retirement-reconciliation-20261003.md).
 
 - #118 merged on 2026-09-13 at 13:10 UTC (`e06b0a9c`). From then on the adult
   invitation mail links to `/withdraw/request#<token>`.

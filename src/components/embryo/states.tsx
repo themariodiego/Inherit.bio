@@ -1,5 +1,8 @@
 /**
  * The honest states of the Embryo surfaces (design §1.4). Server components.
+ * Every empty or blocking state here is the product's one <EmptyState>
+ * (an inset surface, the sentence, at most one action); the wrappers keep
+ * the roles and `data-*` the browser suite names.
  *
  *   - <EmbryoUnavailable>: the jurisdiction refuses. The register's own
  *     `userFacingCopy` renders inside the frame with the future-person link;
@@ -11,9 +14,12 @@
  *     the page, and one action; never a value.
  *   - <EmbryoEmptyState>: brief line 930's four parts: a heading of at most
  *     six words, what would appear here, how to make it appear, one action.
+ *     The heading stays an h2 and is set in the title role, so the hub keeps
+ *     one display voice.
  */
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { FUTURE_PERSON_LINK } from "@/copy/embryos/index";
 import { route } from "@/lib/primary-routes";
@@ -46,15 +52,17 @@ export function EmbryoUnavailable({
       role="status"
       data-slot="jurisdiction-unavailable"
       data-jurisdiction-source={decision.source}
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
     >
-      <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
-      <p className="text-sm leading-relaxed">
-        <Link href={route("legal.future-person")} className="underline underline-offset-2">
-          {FUTURE_PERSON_LINK}
-        </Link>
-      </p>
-      {action ? <ActionLink action={action} /> : null}
+      <EmptyState action={action ? <ActionLink action={action} /> : undefined}>
+        <div className="space-y-3">
+          <p className="text-ink">{decision.userFacingCopy}</p>
+          <p className="text-sm">
+            <Link href={route("legal.future-person")} className="link-target quiet-link">
+              {FUTURE_PERSON_LINK}
+            </Link>
+          </p>
+        </div>
+      </EmptyState>
     </section>
   );
 }
@@ -70,14 +78,8 @@ export function BlockingState({
   action?: StateAction;
 }) {
   return (
-    <section
-      role="status"
-      data-slot="blocking-state"
-      data-state={state}
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
-    >
-      <p className="text-base leading-relaxed text-ink">{children}</p>
-      {action ? <ActionLink action={action} /> : null}
+    <section role="status" data-slot="blocking-state" data-state={state}>
+      <EmptyState action={action ? <ActionLink action={action} /> : undefined}>{children}</EmptyState>
     </section>
   );
 }
@@ -95,9 +97,9 @@ export function EmbryoErrorState({
     <section
       role="alert"
       data-slot="error-state"
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
+      className="surface surface-pad max-w-measure space-y-4"
     >
-      <h2 className="font-medium">{heading}</h2>
+      <h2 className="title text-ink">{heading}</h2>
       <p className="text-base leading-relaxed text-ink">{children}</p>
       <ActionLink action={action} />
     </section>
@@ -116,13 +118,18 @@ export function EmbryoEmptyState({
   action: StateAction;
 }) {
   return (
-    <section data-slot="empty-state" data-density-top-level-section className="max-w-prose space-y-4">
-      <h2 data-slot="empty-state-heading" className="text-lg font-semibold text-ink">
-        {heading}
-      </h2>
-      <p className="text-base leading-relaxed text-ink">{whatAppears}</p>
-      <p className="text-base leading-relaxed text-ink">{howToMakeItAppear}</p>
-      <ActionLink action={{ ...action, primary: true }} />
-    </section>
+    <EmptyState
+      title={
+        <h2 data-slot="empty-state-heading" className="title">
+          {heading}
+        </h2>
+      }
+      action={<ActionLink action={{ ...action, primary: true }} />}
+    >
+      <div className="space-y-2">
+        <p className="text-base leading-relaxed">{whatAppears}</p>
+        <p className="text-base leading-relaxed">{howToMakeItAppear}</p>
+      </div>
+    </EmptyState>
   );
 }

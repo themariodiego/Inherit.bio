@@ -1,0 +1,230 @@
+/* family surface styles. Owned by one surface agent; tokens come from globals.css.
+   Rules here are unlayered and beat Tailwind utilities: use them for shared
+   patterns, and Tailwind classes in JSX for one-offs.
+   Covers Family, Embryos and the ancestry result surfaces. Every class is
+   prefixed `fam-` so it cannot collide with another partial. */
+
+/* ---------------------------------------------------------------------------
+ * Head: breadcrumbs, subject bar and h1 as one tight group; the page's
+ * 48px block rhythm starts under it.
+ * ------------------------------------------------------------------------- */
+.fam-head { display: flex; flex-direction: column; gap: 0.5rem; }
+.fam-head > header, .fam-head > h1 { margin-top: 1rem; }
+.fam-head > header > * + * { margin-top: 1rem; }
+
+/* ---------------------------------------------------------------------------
+ * Ruled lists: rows on the 56px scale, a hairline between rows, the surface
+ * or the page carrying the outer edge.
+ * ------------------------------------------------------------------------- */
+.fam-rows { list-style: none; margin: 0; padding: 0; }
+.fam-rows > li + li { border-top: 1px solid var(--line); }
+.fam-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  min-height: var(--size-row); padding: 0.625rem 1rem;
+}
+@media (min-width: 768px) { .fam-row { padding-inline: 1.25rem; } }
+/* Rows inside a surface: the first and last hug the rounded edge. */
+.surface > .fam-rows > li:first-child > .fam-row { border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg); }
+.surface > .fam-rows > li:last-child > .fam-row { border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg); }
+a.fam-row { color: var(--ink); text-decoration: none; transition: background-color var(--motion-feedback); }
+a.fam-row:hover { background: var(--surface-inset); }
+
+/* The two parent lines with nothing to show: a ruled list on the page
+   ground, each row its heading in a label column and its own state text
+   beside it (under it on a phone), on the 56px row scale. */
+.fam-lines { border-top: 1px solid var(--line); }
+.fam-lines > * + * { border-top: 1px solid var(--line); }
+.fam-line { display: grid; gap: 0.25rem 1.5rem; align-items: baseline; min-height: var(--size-row); padding: 0.9375rem 0; }
+@media (min-width: 640px) { .fam-line { grid-template-columns: 10rem minmax(0, 1fr); } }
+
+/* The people list: a 28px disc, the name with its kind chip, one state line.
+   On a phone the state line sits under the name; from 640px it sits right. */
+.fam-person { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.75rem; row-gap: 0.125rem; align-items: center; }
+.fam-person [data-slot="subject-disc"] { grid-row: 1 / span 2; width: 1.75rem; height: 1.75rem; }
+.fam-person [data-slot="person-state"] { grid-column: 2; }
+@media (min-width: 640px) {
+  .fam-person { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .fam-person [data-slot="subject-disc"] { grid-row: auto; }
+  .fam-person [data-slot="person-state"] { grid-column: auto; text-align: right; }
+}
+
+/* A permission row: glyph, label and the state word on one line; the
+   consequence under it; the control at the right. The glyphs are the two
+   geometric rings Inter carries; "expired" is the empty ring struck through
+   here, so no glyph falls back to another face. */
+.fam-permission { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1rem; min-height: var(--size-row); padding: 0.875rem 0; }
+.fam-permission > div { flex: 1 1 18rem; min-width: 0; }
+.fam-permission [data-slot="permission-glyph"] { position: relative; display: inline-block; width: 1rem; text-align: center; }
+.fam-permission[data-permission-state="expired"] [data-slot="permission-glyph"]::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 0.9em; height: 1px;
+  background: currentColor; transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* ---------------------------------------------------------------------------
+ * A strip: a plate head standing alone (the pair bar, the context strip).
+ * ------------------------------------------------------------------------- */
+.fam-strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem;
+  min-height: var(--size-control); padding: 0.625rem 1.25rem;
+  background: var(--surface-inset); border: 1px solid var(--line); border-radius: var(--radius-lg);
+}
+.fam-strip > li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; }
+
+/* A claim block as a plate: the chips row is the head, everything after
+   sits in the body. Only the block's own padding is touched; the figures
+   inside render as they do everywhere. */
+.fam-plate-claim { padding: 0; overflow: hidden; }
+.fam-plate-claim > [data-slot="carrier-chips"] {
+  display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; min-height: var(--size-control);
+  padding: 0.625rem 1.25rem; background: var(--surface-inset); border-bottom: 1px solid var(--line);
+}
+.fam-plate-claim > :not([data-slot="carrier-chips"]) { margin-inline: 1.25rem; }
+.fam-plate-claim > [data-slot="carrier-chips"] + * { margin-top: 1.25rem; }
+.fam-plate-claim > :not([data-slot="carrier-chips"]) + :not([data-slot="carrier-chips"]) { margin-top: 0.75rem; }
+.fam-plate-claim > :last-child { margin-bottom: 1.25rem; }
+
+/* ---------------------------------------------------------------------------
+ * Tables on the row scale: 56px rows, hairlines, no outer edge of their own.
+ * Separate borders so a sticky first column keeps its hairline.
+ * ------------------------------------------------------------------------- */
+.fam-table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; }
+.fam-table caption { caption-side: top; text-align: left; padding: 1rem 1rem 0.5rem; }
+.fam-table th, .fam-table td { height: var(--size-row); padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.fam-table thead th, .fam-table thead td { vertical-align: bottom; font-weight: 500; }
+.fam-table th[scope="rowgroup"] { height: auto; padding-top: 1.5rem; padding-bottom: 0.5rem; }
+.fam-table tfoot th, .fam-table tfoot td { border-bottom: 0; }
+.fam-table tbody tr:last-child > * { border-bottom-color: var(--line); }
+.fam-table tfoot [data-slot="column-footer"] { vertical-align: top; }
+/* Figures in a cell stay quiet: the cell is the claim block's ground. */
+.fam-table [data-claim-block] { background: transparent; border: 0; border-radius: 0; padding: 0; }
+
+/* The region list behind the map: a ruled row per region. */
+.fam-regions th, .fam-regions td { height: var(--size-row); padding: 0.625rem 0.75rem 0.625rem 0; vertical-align: middle; }
+.fam-regions thead th { height: auto; padding-block: 0.5rem; }
+
+/* ---------------------------------------------------------------------------
+ * The map plate: the label in the head, the map full width in the body at
+ * its own aspect at every width (a 2:1 figure is never forced to 4:5).
+ * The quiet map is the same figure without the plate, for an empty state's
+ * inset ground.
+ * ------------------------------------------------------------------------- */
+.fam-map > .plate-body { padding: 0; }
+.fam-map-body { background: var(--paper); overflow: hidden; }
+.fam-map [data-slot="ancestry-map"], .fam-map-quiet [data-slot="ancestry-map"] { display: block; width: 100%; height: auto; }
+.fam-map figcaption { padding: 0.75rem 1.25rem 1rem; border-top: 1px solid var(--line); }
+@media (min-width: 768px) { .fam-map figcaption { padding-inline: 1.5rem; } }
+.fam-map-quiet { margin: 0; }
+/* Under the empty state's sentence the map is the ground, not the point:
+   its own aspect, no taller than ~260px, the caption 8px beneath and no
+   wider than the map (the figure is capped, so the caption takes its width). */
+.fam-map-quiet { max-width: 29rem; }
+.fam-map-quiet figcaption { margin-top: 0.5rem; }
+
+/* ---------------------------------------------------------------------------
+ * Disclosure rows: a 44px summary with a turning chevron, no dotted link.
+ * ------------------------------------------------------------------------- */
+.fam-disclosure > summary,
+details[data-slot="raw-numbers"] > summary,
+details[data-slot="regional-split"] > summary {
+  display: flex; align-items: center; gap: 0.625rem; min-height: var(--size-control);
+  padding: 0.5rem 0; color: var(--ink); font-weight: 500; list-style: none; cursor: pointer;
+}
+.fam-disclosure > summary::-webkit-details-marker,
+details[data-slot="raw-numbers"] > summary::-webkit-details-marker,
+details[data-slot="regional-split"] > summary::-webkit-details-marker { display: none; }
+.fam-disclosure > summary::before,
+details[data-slot="raw-numbers"] > summary::before,
+details[data-slot="regional-split"] > summary::before {
+  content: ""; flex: none; width: 0.5rem; height: 0.5rem; margin-top: -0.125rem;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg); transition: transform var(--motion-reveal) var(--easing-settle);
+}
+.fam-disclosure[open] > summary::before,
+details[data-slot="raw-numbers"][open] > summary::before,
+details[data-slot="regional-split"][open] > summary::before { transform: rotate(45deg); }
+.fam-disclosure > summary:hover,
+details[data-slot="raw-numbers"] > summary:hover,
+details[data-slot="regional-split"] > summary:hover { color: var(--forest); }
+.fam-disclosure > :not(summary),
+details[data-slot="raw-numbers"] > :not(summary),
+details[data-slot="regional-split"] > :not(summary) { padding-bottom: 0.75rem; }
+details[data-slot="raw-numbers"] { max-width: var(--measure); }
+/* The split row sits inside the region table: its summary is the row. */
+.fam-regions-split { height: auto; padding: 0 0 0.5rem; }
+
+/* ---------------------------------------------------------------------------
+ * Entry tiles: a linked surface whose whole box is the target, and a
+ * quiet arrow drawn in CSS so the copy stays as it is.
+ * ------------------------------------------------------------------------- */
+.fam-tile { position: relative; }
+.fam-tile h2 a::after, .fam-tile p a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.fam-tile .link-arrow { position: absolute; top: 1.125rem; right: 1.125rem; color: var(--forest); font-size: 1.125rem; line-height: 1; }
+@media (min-width: 768px) { .fam-tile .link-arrow { top: 1.375rem; right: 1.5rem; } }
+.fam-tile .link-arrow::after { content: "\2197"; }
+
+/* Outcome dots: the container only; the dots and the bar keep their markup. */
+[data-slot="outcome-dots"] { display: flex; flex-direction: column; gap: 1rem; }
+[data-slot="outcome-dot-grid"] { padding: 0.25rem 0; }
+
+/* Upload flow options: one column of rows, the whole row the control. */
+.fam-options { list-style: none; margin: 0; padding: 0; }
+.fam-options > li + li { border-top: 1px solid var(--line); }
+.fam-options button { width: 100%; display: flex; align-items: center; gap: 0.75rem; min-height: var(--size-row); padding: 0.75rem 0.25rem; text-align: left; color: var(--ink); cursor: pointer; transition: color var(--motion-feedback); }
+.fam-options button:hover { color: var(--forest); }
+.fam-options button svg { color: var(--ink-muted); }
+.fam-options button:hover svg { color: var(--forest); }
+
+/* The health picture's two "needs two people" paragraphs wrap the same way:
+   pretty, which keeps a count off a line of its own without balancing one
+   paragraph against the other's measure. */
+[data-slot="health-picture-blocking"][data-state="empty"] > p { text-wrap: pretty; }
+
+/* The invite form's two fields share one right edge, the measure. The form's
+   own markup is pinned; the email field is reached by its id. */
+[data-surface="flow"] form > div:has(> #adult-email) { max-width: var(--measure); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fam-disclosure > summary::before, details[data-slot="raw-numbers"] > summary::before, details[data-slot="regional-split"] > summary::before { transition: none; }
+}
+
+/* ---------------------------------------------------------------------------
+ * The hubs' empty state stands on the terrain: the hills are a layer under
+ * the sentence and the pill, clipped to the box and never adding height.
+ * The box spans the hub's column so it ends where the tiles end; the
+ * sentence keeps the measure inside it. /embryos cannot pass the layer
+ * through its pinned wrapper, so there the layer sits behind a clear box.
+ * ------------------------------------------------------------------------- */
+.fam-ground { position: relative; }
+.fam-ground > [data-slot="empty-state"] { position: relative; background: transparent; }
+[data-surface="hub"] [data-slot="empty-state"][data-ground],
+[data-surface="hub"] .fam-ground > [data-slot="empty-state"] { max-width: none; }
+/* The layer carries the ground itself: the terrain's sky is transparent, so
+   on /embryos (a clear box) the sage would otherwise stop at the far ridge
+   and the heading would stand on paper at phone widths. */
+[data-slot="empty-state-ground"] { background: var(--surface-inset); }
+/* The hills stay under the reading band: the drawing fades out from the
+   pill's top (pad + 44px from the box's foot) so no ridge line crosses the
+   sentence above it. The fade is on the svg, not the layer, so the ground
+   stays solid; it is vertical, so the drift never moves it. */
+[data-slot="empty-state-ground"] [data-slot="terrain"] {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 100%;
+  --fam-horizon: 60px;
+  -webkit-mask-image: linear-gradient(to top, #000 calc(var(--fam-horizon) - 28px), transparent var(--fam-horizon));
+  mask-image: linear-gradient(to top, #000 calc(var(--fam-horizon) - 28px), transparent var(--fam-horizon));
+}
+@media (min-width: 360px) { [data-slot="empty-state-ground"] [data-slot="terrain"] { --fam-horizon: 68px; } }
+/* On a phone the pill takes most or all of the box's width, so the only
+   hills left are the strip under it. The box keeps a deeper foot there
+   (40px, the horizon following), so a whole ridge runs under the pill
+   instead of a tinted edge (round-5 N9). From 640px the pill is narrow
+   and the hills run beside it. */
+@media (max-width: 639px) {
+  [data-surface="hub"] [data-slot="empty-state"][data-ground],
+  [data-surface="hub"] .fam-ground > [data-slot="empty-state"] { padding-bottom: 2.5rem; }
+  [data-slot="empty-state-ground"] [data-slot="terrain"] { --fam-horizon: 84px; }
+}
+/* On the inset ground the far hills are hairlines only; the near two keep their tint. */
+[data-slot="empty-state-ground"] [data-slot="terrain"] .terrain-fill { fill: var(--surface-inset); }
+/* Dark: the ridge lines are drawn for the page ground; under body text on
+   the inset they stay a hairline the sentence clears at 7:1. */
+.dark [data-slot="empty-state-ground"] { --terrain-line: color-mix(in oklab, var(--forest) 26%, transparent); }

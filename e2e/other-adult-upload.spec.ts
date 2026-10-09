@@ -36,6 +36,7 @@ import { PATH_B_CHOICES_COPY as CHOICES } from "../src/copy/upload/other-adult";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
 import { directUploadReceipt } from "../src/lib/uploads/subject-upload-contract";
+import { localE2eProject } from "../scripts/local-e2e-project";
 
 /**
  * Another adult's DNA under the register's Path B, "I have their file"
@@ -834,3 +835,149 @@ for (const arrayFixture of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ft
   } finally { await personContext.close(); }
   });
 }
+test("another adult's file under Path B: fixed 30-day expiry removes only the due held source and ends its notice/session authority", async ({ page, request }) => {
+  test.setTimeout(360_000);
+  const admin = adminClient();
+  const expiredPerson = { email: `path-b-expiry-${randomUUID()}@e2e.local`, name: "Synthetic Expiry" };
+  const survivingPerson = { email: `path-b-survivor-${randomUUID()}@e2e.local`, name: "Synthetic Survivor" };
+  const heldFiles: Awaited<ReturnType<typeof addFile>>[] = [];
+  for (const person of [expiredPerson, survivingPerson]) {
+    await signIn(page, UPLOADER.email, UPLOADER.password);
+    await pathBPerson(page, request, person);
+    await signOut(page);
+    await signIn(page, UPLOADER.email, UPLOADER.password);
+    heldFiles.push(await addFile(page, person));
+  }
+  const [held, survivor] = heldFiles;
+  const due = await admin.from("other_adult_held_uploads").select("held_at,fixed_deadline,state")
+    .eq("id", held.id).single();
+  expect(due.error).toBeNull();
+  expect(due.data?.state).toBe("pending");
+  expect(Date.parse(due.data!.fixed_deadline) - Date.parse(due.data!.held_at)).toBe(30 * 24 * 60 * 60 * 1_000);
+  const retention = await admin.from("retention_rows").select("id,fixed_deadline,state")
+    .eq("retention_id", "adult.unconfirmed-30d").eq("target_id", held.upload_session_id).single();
+  expect(retention.error).toBeNull();
+  expect(retention.data).toMatchObject({ fixed_deadline: due.data!.fixed_deadline, state: "scheduled" });
+  const phase = await admin.from("retention_due_phases")
+    .select("phase_id,phase_kind,phase_deadline,recipient_authority_kind,status")
+    .eq("retention_row_id", retention.data!.id).single();
+  expect(phase.error).toBeNull();
+  expect(phase.data).toEqual({ phase_id: "adult-unconfirmed-source-expiry", phase_kind: "compound-atomic",
+    phase_deadline: due.data!.fixed_deadline, recipient_authority_kind: "service-retention", status: "pending" });
+  const upload = await admin.from("upload_sessions").select("staging_object_name")
+    .eq("id", held.upload_session_id).single();
+  expect(upload.error).toBeNull();
+  const objectNames = [held.object_name, upload.data!.staging_object_name as string];
+  const heldObject = await admin.storage.from("genomes").download(held.object_name);
+  expect(heldObject.error, "the actual held source exists before expiry").toBeNull();
+  expect(Buffer.from(await heldObject.data!.arrayBuffer())).toEqual(BYTES);
+  // Successful finalization already removed staging before publishing the held
+  // revision. Expiry must remove the final source without recreating staging.
+  const stagingBefore = await admin.storage.from("genomes").list("", { search: objectNames[1] });
+  expect(stagingBefore.error).toBeNull();
+  expect(stagingBefore.data?.filter(object => object.name === objectNames[1])).toEqual([]);
+
+  const notice = await drainMailUntil(request, mailTo(expiredPerson.email, "A DNA file was added for you on Inherit"),
+    "the real expiry fixture's upload notice");
+  await signOut(page);
+  await openRightsLink(page, notice.html);
+  await expect(page.locator('[data-slot="adult-upload-revision"]').getByRole("heading", { name: REVISION.heading })).toBeVisible();
+  const candidate = await admin.from("token_candidates").select("id,state,purpose,target_id")
+    .eq("outbox_id", held.notice_outbox_id).single();
+  expect(candidate.error).toBeNull();
+  expect(candidate.data).toMatchObject({ state: "issued", purpose: "adult-upload-confirmation", target_id: held.id });
+  const rights = await admin.from("rights_sessions").select("id,status")
+    .eq("purpose", "adult-upload-confirmation").eq("target_id", held.id).single();
+  expect(rights.error).toBeNull();
+  expect(rights.data?.status).toBe("active");
+  const unchangedDeadline = await admin.from("other_adult_held_uploads").select("held_at,fixed_deadline,state")
+    .eq("id", held.id).single();
+  expect(unchangedDeadline.error).toBeNull();
+  expect(unchangedDeadline.data, "mail delivery and opening a session never renew the upload clock").toEqual(due.data);
+
+  await jobRan(await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } }),
+    "retention before either held revision is due");
+  const stillHeld = await admin.from("other_adult_held_uploads").select("state").eq("id", held.id).single();
+  expect(stillHeld.error).toBeNull();
+  expect(stillHeld.data?.state).toBe("pending");
+  const survivorBefore = await admin.from("other_adult_held_uploads")
+    .select("id,upload_session_id,state,analysis_state,held_at,fixed_deadline,object_name,raw_sha256,notice_outbox_id,terminal_at")
+    .eq("id", survivor.id).single();
+  expect(survivorBefore.error).toBeNull();
+  expect(survivorBefore.data?.state).toBe("pending");
+  expect(Date.parse(survivorBefore.data!.fixed_deadline)).toBeGreaterThan(Date.now());
+
+  // The existing local temporal-fixture convention ages only this synthetic
+  // upload's three clock records together. The production executor is unchanged.
+  // service_role intentionally cannot UPDATE the held table; no grant is added.
+  for (const id of [held.id, held.upload_session_id, retention.data!.id]) expect(id).toMatch(/^[0-9a-f-]{36}$/);
+  const shifted = await promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer,
+    "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1", "--command", `
+      with held as (
+        update public.other_adult_held_uploads
+        set held_at=held_at-interval '31 days', fixed_deadline=fixed_deadline-interval '31 days'
+        where id='${held.id}'::uuid and state='pending' returning fixed_deadline
+      ), retention as (
+        update public.retention_rows r set fixed_deadline=h.fixed_deadline from held h
+        where r.id='${retention.data!.id}'::uuid and r.retention_id='adult.unconfirmed-30d'
+          and r.target_id='${held.upload_session_id}'::uuid returning r.id
+      ), phase as (
+        update public.retention_due_phases p set phase_deadline=h.fixed_deadline from held h
+        where p.retention_row_id='${retention.data!.id}'::uuid and p.retention_id='adult.unconfirmed-30d'
+          and p.phase_id='adult-unconfirmed-source-expiry' and p.status='pending' returning p.retention_row_id
+      ) select json_build_object('held',(select count(*) from held),
+        'retention',(select count(*) from retention),'phase',(select count(*) from phase));
+    `], { timeout: 10_000, maxBuffer: 8192 });
+  expect(JSON.parse(shifted.stdout.trim())).toEqual({ held: 1, retention: 1, phase: 1 });
+  const shiftedClock = await admin.from("other_adult_held_uploads").select("held_at,fixed_deadline,state")
+    .eq("id", held.id).single();
+  expect(shiftedClock.error).toBeNull();
+  expect(Date.parse(shiftedClock.data!.fixed_deadline)).toBeLessThan(Date.now());
+  expect(Date.parse(shiftedClock.data!.fixed_deadline) - Date.parse(shiftedClock.data!.held_at)).toBe(30 * 24 * 60 * 60 * 1_000);
+  for (let run = 0; run < 10; run++) {
+    const remaining = await admin.from("upload_sessions").select("id", { count: "exact", head: true })
+      .eq("id", held.upload_session_id);
+    expect(remaining.error).toBeNull();
+    if (remaining.count === 0) break;
+    await jobRan(await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } }),
+      `the unchanged expiry/Storage cleanup executor, drain ${run + 1}`);
+  }
+  const completed = await admin.from("retention_due_phases").select("status,terminal_outcome_code,phase_deadline")
+    .eq("retention_row_id", retention.data!.id).eq("phase_id", "adult-unconfirmed-source-expiry").single();
+  expect(completed.error).toBeNull();
+  expect(completed.data).toEqual({ status: "succeeded", terminal_outcome_code: "adult_unconfirmed_source_expired",
+    phase_deadline: shiftedClock.data!.fixed_deadline });
+  const endedClock = await admin.from("retention_rows").select("state,fixed_deadline")
+    .eq("id", retention.data!.id).single();
+  expect(endedClock.error).toBeNull();
+  expect(endedClock.data).toEqual({ state: "complete", fixed_deadline: shiftedClock.data!.fixed_deadline });
+  const invalidated = await admin.from("token_candidates").select("state").eq("id", candidate.data!.id).single();
+  expect(invalidated.error).toBeNull(); expect(invalidated.data?.state).toBe("invalidated");
+  const tokens = await admin.from("token_hashes").select("id", { count: "exact", head: true })
+    .eq("candidate_id", candidate.data!.id).eq("status", "current");
+  expect(tokens.error).toBeNull(); expect(tokens.count).toBe(0);
+  const revoked = await admin.from("rights_sessions").select("status").eq("id", rights.data!.id).single();
+  expect(revoked.error).toBeNull(); expect(revoked.data?.status).toBe("revoked");
+  expect((await page.request.get("/withdraw/session")).status()).toBe(404);
+  await page.reload();
+  await expect(page.locator('[data-slot="adult-upload-revision"]')).toHaveCount(0);
+  for (const [table, column, value] of [
+    ["upload_sessions", "id", held.upload_session_id], ["upload_staging_objects", "upload_session_id", held.upload_session_id],
+    ["other_adult_held_uploads", "id", held.id], ["genome_files", "bucket_path", held.object_name],
+    ["worker_jobs", "subject_id", held.subject_id],
+  ] as const) {
+    const result = await admin.from(table).select("*", { count: "exact", head: true }).eq(column, value);
+    expect(result.error, table).toBeNull(); expect(result.count, `${table} after expiry`).toBe(0);
+  }
+  for (const name of objectNames) {
+    const listing = await admin.storage.from("genomes").list("", { search: name });
+    expect(listing.error).toBeNull(); expect(listing.data?.filter(object => object.name === name)).toEqual([]);
+    expect((await admin.storage.from("genomes").download(name)).error).not.toBeNull();
+  }
+  const survivorAfter = await admin.from("other_adult_held_uploads")
+    .select("id,upload_session_id,state,analysis_state,held_at,fixed_deadline,object_name,raw_sha256,notice_outbox_id,terminal_at")
+    .eq("id", survivor.id).single();
+  expect(survivorAfter.error).toBeNull(); expect(survivorAfter.data).toEqual(survivorBefore.data);
+  const survivingObject = await admin.storage.from("genomes").download(survivor.object_name);
+  expect(survivingObject.error).toBeNull(); expect(Buffer.from(await survivingObject.data!.arrayBuffer())).toEqual(BYTES);
+});

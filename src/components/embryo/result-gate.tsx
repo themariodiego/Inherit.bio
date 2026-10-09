@@ -34,27 +34,26 @@ export function EmbryoResultGate({
   const [failed, setFailed] = useState(false);
 
   return (
-    <section
-      data-slot="result-gate"
-      aria-labelledby="embryo-gate-heading"
-      className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
-    >
-      <h2 id="embryo-gate-heading" className="font-medium">
-        {GATE_HEADING}
-      </h2>
-      <p className="text-base leading-relaxed text-ink">{GATE_BODY}</p>
-      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+    <section data-slot="result-gate" aria-labelledby="embryo-gate-heading" className="plate">
+      <div className="plate-head">
+        <h2 id="embryo-gate-heading" className="title text-ink">
+          {GATE_HEADING}
+        </h2>
+      </div>
+      <div className="plate-body space-y-4">
+      <p className="body-lg max-w-measure text-ink">{GATE_BODY}</p>
+      <label className="flex min-h-11 max-w-measure items-start gap-3 text-base leading-relaxed text-ink">
         <input
           type="checkbox"
           name="tier2"
-          className="mt-1 size-4"
+          className="mt-1.5 size-4 shrink-0 accent-forest"
           checked={understood}
           onChange={(event) => setUnderstood(event.currentTarget.checked)}
         />
         <span>{GATE_CHECKBOX_LABEL}</span>
       </label>
-      <p className="text-sm text-ink-muted">{GATE_SESSION_NOTE}</p>
-      <p data-slot="counsellor-route" className="text-sm text-ink-muted">
+      <p className="caption max-w-measure">{GATE_SESSION_NOTE}</p>
+      <p data-slot="counsellor-route" className="caption max-w-measure">
         {COUNSELLOR_NO_ROUTE}
       </p>
       {failed ? (
@@ -62,8 +61,10 @@ export function EmbryoResultGate({
           {GATE_ERROR_STATUS}
         </p>
       ) : null}
+      <div>
       <Button
         type="button"
+        size="lg"
         disabled={!understood || pending}
         onClick={async () => {
           setPending(true);
@@ -84,6 +85,8 @@ export function EmbryoResultGate({
       >
         {GATE_BUTTON}
       </Button>
+      </div>
+      </div>
     </section>
   );
 }

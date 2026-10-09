@@ -6,7 +6,9 @@
  * genotype-to-phenotype table and no accuracy figure can be cited, so every
  * card states so in the mandated sentence and renders no figure, no claim
  * block and no chance. A registered entry would render its table's own
- * output; nothing here invents one (C5).
+ * output; nothing here invents one (C5). Until then the card is the "not
+ * yet" surface (dashed, muted title, the sentence as a caption) so five
+ * identical sentences do not outrank the lede above them.
  */
 import { TRAIT_HEADINGS, TRAIT_NAMES, unregisteredCard } from "@/copy/family/portrait";
 import type { TraitEntry } from "@/lib/family/traits";
@@ -18,10 +20,10 @@ export function TraitCard({ entry }: { entry: TraitEntry }) {
       data-trait={entry.key}
       data-trait-status={entry.status}
       aria-label={TRAIT_HEADINGS[entry.key]}
-      className="space-y-2 rounded-2xl border border-line bg-card p-4"
+      className="surface-dashed surface-pad-sm space-y-2"
     >
-      <p className="font-medium text-ink">{TRAIT_HEADINGS[entry.key]}</p>
-      <p data-slot="trait-status" className="text-sm leading-relaxed text-ink">
+      <p className="font-medium text-ink-muted">{TRAIT_HEADINGS[entry.key]}</p>
+      <p data-slot="trait-status" className="caption">
         {unregisteredCard(TRAIT_NAMES[entry.key])}
       </p>
     </article>

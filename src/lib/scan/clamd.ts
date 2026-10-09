@@ -53,6 +53,8 @@ export function parseClamdVersion(reply: string): ScanSignatures | null {
   if (!match) return null;
   const month = MONTHS.indexOf(match[3]!);
   if (month < 0) return null;
+  const hours = Number(match[5]), minutes = Number(match[6]), seconds = Number(match[7]);
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
   const publishedAt = new Date(Date.UTC(Number(match[8]), month, Number(match[4]), Number(match[5]),
     Number(match[6]), Number(match[7])));
   if (Number.isNaN(publishedAt.getTime()) || publishedAt.getUTCDate() !== Number(match[4])) return null;

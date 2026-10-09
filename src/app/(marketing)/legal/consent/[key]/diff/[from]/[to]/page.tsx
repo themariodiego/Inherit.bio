@@ -11,5 +11,21 @@ export default async function ConsentArtifactDiffPage(props: PageProps<"/legal/c
     getArtifactVersion(artifactKey, versions[1]),
   ]);
   if (!from || !to) notFound();
-  return <div className="mx-auto max-w-6xl px-6 py-16"><p className="eyebrow">Consent comparison</p><h1 className="display mt-4 text-4xl">{artifactKey}: v{versions[0]} → v{versions[1]}</h1><p className="mt-4 text-sm text-ink-muted">{to.summary_of_changes ?? "No change summary was recorded."}</p><div className="mt-10 grid gap-6 lg:grid-cols-2">{[from, to].map((artifact) => <section key={artifact.version} className="rounded-2xl border border-line bg-card p-5"><h2 className="font-medium">Version {artifact.version}</h2><div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-muted">{artifact.body_markdown}</div></section>)}</div></div>;
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head">
+        <p className="eyebrow">Consent comparison</p>
+        <h1 className="display display-lg break-words">{artifactKey}: v{versions[0]} → v{versions[1]}</h1>
+        <p className="lede reading-intro">{to.summary_of_changes ?? "No change summary was recorded."}</p>
+      </header>
+      <div className="mt-section grid gap-6 lg:grid-cols-2">
+        {[from, to].map((artifact) => (
+          <section key={artifact.version} className="plate min-w-0">
+            <div className="plate-head"><h2 className="label">Version {artifact.version}</h2></div>
+            <div className="plate-body"><div className="legal-prose whitespace-pre-wrap">{artifact.body_markdown}</div></div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
 }

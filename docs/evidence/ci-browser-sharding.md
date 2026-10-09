@@ -167,3 +167,139 @@ bottleneck.
 Six independent accessibility sweeps live in six semantic spec files. Each complete G1.13b measurement owns its own UUID account and setup closure, so sharing a serial worker cannot share its accumulated upload fixture. Their original bodies, assertions and limits are retained.
 
 The mandatory inventory discovers the actual complete suite and all six native partitions before publishing its manifest. It requires exact case equality and whole serial project/file groups, then requires all six complete Chromium accessibility sweeps across at least three jobs with no more than two sweeps per job. The required final aggregate repeats the sweep-placement guard after validating exact-source, same-run, same-attempt execution. Missing, duplicated, subdivided or concentrated sweeps fail the check even if ordinary coverage would still be complete. Scheduling changes must preserve this guard and be measured with actual full-suite timing receipts.
+
+
+## Duration profile scheduling · 4 October 2026
+
+The six jobs can now use `data/ci/browser-duration-profile.json`. It contains
+performance weights from complete successful run 37212933160, attempt 1, on
+checkout `7e068bc90148d0b80b1ebfe3fdd03d29520cd042`. Its provenance includes the
+saved sanitized manifest and six shard ZIP hashes. The 95 historical groups
+and 569 historical cases describe that run; they are never a current coverage
+baseline. Full current discovery and the tracked-source census remain required.
+The profile records its own historical project set. Every saved weight must
+match that set exactly. The current registry remains independently required in
+full native discovery. A new current project receives conservative fallback
+weights; an obsolete historical project cannot select or add a current case.
+
+Both the independent manifest job and each executing job read the same
+committed profile. The planner assigns the longest whole project/file group
+first, then the least loaded eligible job, with fixed project/file and job-index
+ties. Known file cost scales by its current case count. A new group receives at
+least the largest saved file cost and the largest saved mean per-case cost times its
+current count. Removed groups contribute no cases. Every current group is
+assigned once, with the existing complete accessibility-placement guard.
+
+Generated private test lists use only `[project] › file.spec.ts`, relative to
+the unchanged config's `./e2e` root. This is Playwright's documented whole-file
+selection format: no title or line selector is supplied. Playwright keeps
+source order within each file. Its actual report truthfully has `shard: null`.
+New allocation metadata binds the profile hash, complete plan hash and assigned
+case sets. All six official selected listings must match the independent plan
+before manifest publication. Each executing job checks its selected listing
+before running; final aggregation checks the same plan and exactly-once complete
+execution. Empty, stale, narrowed, skipped, retried or foreign evidence fails.
+
+Only an absent profile uses the original native case-based six-shard path. An
+invalid or unreadable profile fails. The workflow, six jobs, provider/bootstrap,
+worker count, four projects, tests, assertions, time limits and trace settings
+are unchanged. Local complete runs retain their current path.
+
+Refresh the profile manually after a complete exact-source hosted pass. Retain
+that run's sanitized manifest and all six same-attempt receipts, and verify them
+with the existing coverage and accessibility guards. Copy every verified
+receipt's file, project, case count and summed duration into the profile; record
+the checkout/run/attempt and actual seven ZIP hashes. Review the profile diff
+and commit it. Never update it automatically, infer missing durations, or use
+historical case identities to select current tests. A new or changed file is
+included even before a profile refresh.
+
+The saved 19m54 run supports a conservative replay model of about 16–17 minutes.
+That is an inference from one run, not a measured gain. Setup, queues, workers
+and execution order can vary; the later complete main run was 23m12. Compare
+complete runs on current source before claiming an improvement. Repository
+checks and the largest indivisible file still limit the full-run elapsed time.
+
+The four existing publication journeys also need separate fresh queues. Their
+exact filename/project/single-case mapping is a placement constraint, never a
+case source. Absent files create no tests. Each planned job, observed selected
+listing and final receipt permits at most one such journey, in addition to the
+existing accessibility capacity. The current case census and current project
+registry remain strict; timing history retains its independent saved registry.
+
+The six-project branches retain their original full-four and partial-at-most-one
+native guards. During composition, an unsharded duration subset uses the
+explicit partial predicate `index === null && !durationPartition`; complete
+discovery still requires every project and all four journeys. A permanent
+source control rejects a six-project composition that keeps the old predicate.
+Review and actual complete plus six selected listings on an isolated real
+six-project composition are required before merge. Four-project checks alone
+do not qualify that composition. Every existing native and aggregate guard,
+browser body, assertion and time limit remains required.
+
+### Proposed manual two-run calibration
+
+The proposed V2 history retains run 37212933160 and run 37226288862 as separate
+actual sources. Each source keeps all 95 raw file/project costs, its original
+case counts, historical projects, checkout/tree/run/attempt, seven ZIP digests
+and saved metadata/capture hashes. Current case discovery remains independent.
+Known costs use the maximum observed per-case ratio, with exact rational
+ceiling after current-count scaling. Unknown groups receive at least the
+largest saved file cost and a per-case cost of one millisecond before scaling.
+
+Both fixed paths are checked: `data/ci/browser-duration-profile.json` must be
+genuine V1, and `data/ci/browser-duration-profile-v2.json` must be closed V2.
+Any present malformed or unreadable input refuses execution. Valid V2 takes
+precedence; V1 is used only when V2 is absent. Native sharding is used only when
+both files are absent. There is no selection flag or environment switch.
+Allocation metadata binds the SHA256 of the bytes actually selected.
+
+After all aggregate coverage, source, provider, accessibility and queue checks
+pass, public timing fields compare estimates with actual body and browser time.
+A body cost above 1.5 times its estimate produces an informational refresh
+suggestion. It does not change qualification, collection, retries or limits.
+
+Manual offline refresh uses the existing stock ZIP reader on Node22:
+
+```text
+pnpm exec tsx scripts/ci-browser-duration-history.run.mts saved-capture1 saved-capture2 [saved-capture3] fresh-output-directory
+```
+
+The helper reads already retained successful metadata and seven sanitized ZIPs
+per run. It checks API digests, capture closure and complete historical case/file
+coverage through a separate pure historical validator. It never invokes current
+GitHub identity or discovery, fetches data, extracts ZIP files or accepts a
+baseline. ZIP member size and CRC are checked. Source/evidence aliases and
+existing outputs are rejected. Its private proposal and audit need ordinary
+source review before a manual profile update. Use at most three explicitly
+reviewed runs. No profile update runs automatically.
+
+For the hosted result reader's original `.raw` layout, use the explicit append
+path after the original capture pins and Node file identities have been reviewed:
+
+```text
+pnpm exec tsx scripts/ci-browser-duration-history.run.mts --raw-append /absolute/raw-append-plan.json exact-plan-sha256 /absolute/fresh-output-directory
+```
+
+The closed plan has `schemaVersion: 1`, `format: "hosted-reader-raw-v1"` and
+three `{path, bytes, sha256}` pins: `existingHistory`, `inputAdmission` and
+`captureAdmission`. The plan and admission files must be owned private files.
+`observeCurrentRawInput` records genuine Node file identities from the original
+directory and twelve independently pinned inputs; it does not confer approval.
+The semantic admission retains the original capture receipt pin, exact request,
+collector source vector and request input pin. The raw path checks original
+owned file descriptors, the complete directory inventory, all eight successful
+jobs, seven same-attempt authenticated archives, historical coverage, queues
+and sweeps. It never constructs a legacy capture receipt.
+
+Append requires exactly two existing sources and one distinct new run. It keeps
+both complete source objects and the exact maximum-per-case estimator. Only a
+fresh private proposal and audit are written; the tracked profiles remain
+unchanged. Review the complete proposal and qualify it on the current source
+before any manual profile update. A saved historical run supplies timing data,
+not current test discovery, current CI approval or measured speed improvement.
+
+This candidate is unqualified source. The two green runs support an in-sample
+calibration model, with no held-out speed proof. PR285 passed in 19m09 and the
+same-tree main run passed in 18m16; neither qualifies this new estimator. Current
+repository checks, setup variance and indivisible file groups remain limits.

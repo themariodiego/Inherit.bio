@@ -32,13 +32,16 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
     accountExportControls(),
   ]);
   return (
-    <div className="page-stack mx-auto max-w-2xl space-y-8">
-      <header className="space-y-2"><p className="eyebrow">Settings</p><h1 className="display text-3xl">Your data</h1></header>
-      <section className="rounded-2xl border border-line bg-card p-5">
-        <h2 className="font-medium">{DATA_EXPORT_HEADING}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_BODY}</p>
-        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_LEGAL_AUDIT}</p>
-        <Button asChild variant="outline" className="mt-4"><a href="/api/export">{DATA_EXPORT_BUTTON}</a></Button>
+    <div className="page-stack rec-column stack-sections">
+      <header className="rec-head">
+        <p className="eyebrow">Settings</p>
+        <h1 className="display">Your data</h1>
+      </header>
+      <section className="surface surface-pad rec-stack">
+        <h2 className="title">{DATA_EXPORT_HEADING}</h2>
+        <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_BODY}</p>
+        <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_LEGAL_AUDIT}</p>
+        <div><Button asChild variant="outline"><a href="/api/export">{DATA_EXPORT_BUTTON}</a></Button></div>
         <AccountExport control={exports}/>
       </section>
       <DangerZone deletion={deletion} />
@@ -68,7 +71,7 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
           {after?<Link href={route("settings.data")} className="inline-flex min-h-11 items-center text-sm underline underline-offset-2">Back to the first records</Link>:null}
         </>}
       </section>:null}
-      <Link href={route("settings.index")} className="text-sm underline underline-offset-2">← Settings</Link>
+      <p className="text-sm"><Link href={route("settings.index")} className="link-target quiet-link">← Settings</Link></p>
     </div>
   );
 }

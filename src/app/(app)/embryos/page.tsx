@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { CohortCard } from "@/components/embryo/cohort-card";
 import { StandingStatement } from "@/components/embryo/compare/standing-statement";
 import { EmbryoEmptyState } from "@/components/embryo/states";
+import { EmptyState } from "@/components/site/empty-state";
+import { Terrain } from "@/components/site/terrain";
 import {
   EMBRYOS_H1,
   EMPTY_HEADING,
@@ -19,15 +21,17 @@ import {
 import { cohortScopeSegment, copilotGroupScopes } from "@/lib/copilot/group-scopes";
 import { EMBRYO_ANALYSIS, cohortCapability, permits } from "@/lib/embryos/access";
 import { route } from "@/lib/primary-routes";
+import { cn } from "@/lib/utils";
 import { loadCohorts, loadViewer } from "./context";
 
 export const metadata: Metadata = { title: EMBRYOS_H1 };
 
 /**
  * `/embryos` — the domain landing (design §2.1; register embryos.index, hub,
- * 64rem, `product-result`). Order: the availability line, the h1, the empty
- * state or the cohort list, the three tiles, the standing statement and the
- * not-diagnostic line.
+ * 64rem, `product-result`). Order: the h1, the empty state or the cohort
+ * list, the three tiles, then the standing statement, the availability line
+ * and the not-diagnostic line as the hub's footnotes (the same place
+ * `/family` keeps them).
  *
  * The viewer's own jurisdiction is read before any cohort row: where it
  * refuses, the page renders the register's copy, blocks every tile and
@@ -66,32 +70,30 @@ export default async function EmbryosPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="page-stack mx-auto max-w-4xl space-y-12 md:space-y-16"
+      className="page-stack stack-sections max-w-4xl"
     >
-      {allowed ? (
-        <p data-slot="availability-line" className="text-sm leading-relaxed text-ink-muted">
-          <Link href={route("legal.where-inherit-works")} className="link-target underline underline-offset-2">
-            {WHERE_THIS_WORKS_LINK}
-          </Link>
-        </p>
-      ) : (
-        <div role="status" data-slot="jurisdiction-line" className="max-w-prose space-y-2 text-sm leading-relaxed">
-          <p className="text-ink">{decision.userFacingCopy}</p>
-          <p>
-            <Link href={route("legal.future-person")} className="link-target underline underline-offset-2">
-              {FUTURE_PERSON_LINK}
-            </Link>
-          </p>
+      <header className="fam-head">
+        <h1 className="display">{EMBRYOS_H1}</h1>
+      </header>
+
+      {allowed ? null : (
+        <div role="status" data-slot="jurisdiction-line">
+          <EmptyState>
+            <div className="space-y-3">
+              <p className="text-ink">{decision.userFacingCopy}</p>
+              <p className="text-sm">
+                <Link href={route("legal.future-person")} className="link-target quiet-link">
+                  {FUTURE_PERSON_LINK}
+                </Link>
+              </p>
+            </div>
+          </EmptyState>
         </div>
       )}
 
-      <header className="space-y-3">
-        <h1 className="display text-4xl">{EMBRYOS_H1}</h1>
-      </header>
-
       {!allowed ? null : cohorts.length > 0 ? (
-        <section data-density-top-level-section className="space-y-5">
-          <h2 className="text-lg font-semibold text-ink">{YOUR_EMBRYOS_HEADING}</h2>
+        <section data-density-top-level-section className="space-y-6">
+          <h2 className="display">{YOUR_EMBRYOS_HEADING}</h2>
           <ul data-slot="cohort-list" className="space-y-4">
             {cohorts.map((cohort) => {
               const cohortDecision = cohortDecisions.get(cohort.id)!;
@@ -106,15 +108,23 @@ export default async function EmbryosPage() {
           </ul>
         </section>
       ) : (
-        <EmbryoEmptyState
-          heading={EMPTY_HEADING}
-          whatAppears={EMPTY_WHAT_APPEARS}
-          howToMakeItAppear={EMPTY_HOW_TO_MAKE_IT_APPEAR}
-          action={{ label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") }}
-        />
+        // The hub's empty state stands on the terrain. <EmbryoEmptyState>
+        // takes strings only (src/components/embryo is pinned), so the
+        // ground is a layer behind it and the box goes clear (family.css).
+        <div data-slot="empty-state-ground-wrap" className="fam-ground">
+          <div aria-hidden="true" data-slot="empty-state-ground" className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
+            <Terrain variant="ground" seed={7} />
+          </div>
+          <EmbryoEmptyState
+            heading={EMPTY_HEADING}
+            whatAppears={EMPTY_WHAT_APPEARS}
+            howToMakeItAppear={EMPTY_HOW_TO_MAKE_IT_APPEAR}
+            action={{ label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") }}
+          />
+        </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {HUB_TILES.map((tile) => {
           const href = tileHref[tile.id];
           return (
@@ -122,17 +132,18 @@ export default async function EmbryosPage() {
               key={tile.id}
               data-slot="embryo-tile"
               data-tile={tile.id}
-              className="rounded-2xl border border-line bg-card p-5"
+              className={cn("surface-pad-sm", href ? "surface link-surface fam-tile" : "surface-dashed")}
             >
-              <p className="font-medium text-ink">
+              <p className={cn("title -my-3", href ? "pr-8 text-ink" : "text-ink-muted")}>
                 {href ? (
-                  <Link href={href} className="link-target underline-offset-4 hover:underline">
+                  <Link href={href} className="link-target">
                     {tile.label}
                   </Link>
                 ) : (
-                  tile.label
+                  <span className="link-target">{tile.label}</span>
                 )}
               </p>
+              {href ? <span aria-hidden="true" className="link-arrow" /> : null}
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">{tile.description}</p>
               {href ? null : (
                 <p data-slot="tile-blocked" className="mt-2 text-sm leading-relaxed text-ink">
@@ -144,11 +155,21 @@ export default async function EmbryosPage() {
         })}
       </div>
 
-      <StandingStatement />
-
-      <p data-density-required-accuracy className="max-w-prose text-sm leading-relaxed text-ink-muted">
-        {NOT_DIAGNOSTIC}
-      </p>
+      <div className="space-y-4">
+        <StandingStatement tone="quiet" />
+        <div className="space-y-2">
+          {allowed ? (
+            <p data-slot="availability-line" className="caption">
+              <Link href={route("legal.where-inherit-works")} className="link-target quiet-link">
+                {WHERE_THIS_WORKS_LINK}
+              </Link>
+            </p>
+          ) : null}
+          <p data-density-required-accuracy className="caption max-w-measure">
+            {NOT_DIAGNOSTIC}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

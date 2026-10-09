@@ -505,3 +505,10 @@ See `docs/requester-statement-archive-service.md` for the exact service contract
   P-256 private key. If the session succeeds and the browser's own upload to
   Storage is refused instead, the key is fine but the project does not yet
   accept tokens signed with it (see section 5).
+
+## Isolated scanner test
+
+The optional `INHERIT_CLAMD_ADDRESS` setting belongs to the scanner factory.
+Leave it unset here. This branch has no claim scan worker or app call to that
+factory. The separate draft CI proof calls the real adapter on a private local
+port and does not use this setting. See [the proof scope](claim-scanner-real-proof.md).

@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { loadAdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 import { AdultSubjectReviewForm } from "@/components/embryo/adult-subject-review-form";
 import { loadCoParentReview } from "@/lib/embryos/co-parent-review";
@@ -55,10 +56,14 @@ export default async function RightsSessionPage() {
   if (refusal.kind === "done") return <InvitationRefusalReceipt />;
   const review = await loadCoParentReview(request);
   if (!review || review.kind === "sign-in") return (
-    <section className="mx-auto max-w-5xl px-6 py-16">
-      <h1 className="display text-4xl">Sign in to review this invitation</h1>
-      <p className="mt-5 max-w-prose text-ink-muted">Use the email address that received the invitation. Signing in does not accept it.</p>
-      <Link href={route("auth.sign-in", { query: { next: "/withdraw/session" } })} className="mt-6 inline-block rounded-full bg-forest px-6 py-3 text-on-forest">Sign in</Link>
+    <section className="mx-auto max-w-6xl px-6 py-section">
+      <header className="reading-head">
+        <h1 className="display display-lg">Sign in to review this invitation</h1>
+        <p className="lede reading-intro">Use the email address that received the invitation. Signing in does not accept it.</p>
+      </header>
+      <p className="mt-8">
+        <Button asChild><Link href={route("auth.sign-in", { query: { next: "/withdraw/session" } })}>Sign in</Link></Button>
+      </p>
       <InvitationRefusalForm nonce={refusal.nonce} />
     </section>
   );

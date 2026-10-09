@@ -79,36 +79,41 @@ export function SensitiveGate({
     <section
       data-testid="sensitive-gate"
       aria-labelledby="sensitive-gate-title"
-      className="rounded-2xl border border-line bg-card p-6"
+      className="plate"
     >
-      <h2 id="sensitive-gate-title" className="font-medium">
-        Before you look
-      </h2>
-      <p className="mt-3 max-w-prose text-sm leading-relaxed text-ink-muted">
-        This report may show a serious health risk. You cannot unlearn a result
-        after you see it. It shows a link found across many people. It cannot
-        diagnose you or say if you will be affected. You may choose not to
-        know. Both choices are fair, and you can come back at any time.
-      </p>
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Button asChild data-testid="sensitive-gate-reveal">
-          <Link
-            href={revealHref}
-            prefetch={false}
-            scroll={false}
-            onClick={rememberChoice}
-          >
-            Show my result
-          </Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href={returnHref}>Not now</Link>
-        </Button>
+      {/* A labelled plate: the heading is its label, the choice its body. */}
+      <div className="plate-head">
+        <h2 id="sensitive-gate-title" className="title text-ink">
+          Before you look
+        </h2>
       </div>
-      <p className="mt-4 text-xs text-ink-muted">
-        Your choice applies to all {categoryLabel} reports and is remembered
-        on this device only.
-      </p>
+      <div className="plate-body space-y-5">
+        <p className="max-w-measure text-base leading-relaxed text-ink">
+          This report may show a serious health risk. You cannot unlearn a result
+          after you see it. It shows a link found across many people. It cannot
+          diagnose you or say if you will be affected. You may choose not to
+          know. Both choices are fair, and you can come back at any time.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button asChild data-testid="sensitive-gate-reveal">
+            <Link
+              href={revealHref}
+              prefetch={false}
+              scroll={false}
+              onClick={rememberChoice}
+            >
+              Show my result
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={returnHref}>Not now</Link>
+          </Button>
+        </div>
+        <p className="caption max-w-measure">
+          Your choice applies to all {categoryLabel} reports and is remembered
+          on this device only.
+        </p>
+      </div>
     </section>
   );
 }

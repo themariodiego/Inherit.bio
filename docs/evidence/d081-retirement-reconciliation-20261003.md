@@ -71,3 +71,62 @@ No new runtime, API, SQL, browser or test invocation was performed. The
 13 October checkpoint concerns the retained evidence/documentation limits;
 there is no remaining D-081 route deletion to schedule. D-083, D-103 and
 all broader rights, hierarchy and register obligations remain unchanged.
+
+## Current-source reconciliation, 8 October 2026
+
+The current-source comparison is limited to main
+`4eec89bbecf6db07fb82fe4965369e8dc42ab556`. The retirement commit above is an
+ancestor, both obsolete files and both exception rows are absent, and the
+four canonical request/activation/session files remain. The register pattern
+still pins `session`. The original browser case still requires GET 404,
+POST 404 and fragment-entry GET 200; this reconciliation did not execute it.
+
+The 3 October note above is retained byte for byte as historical evidence.
+Its deployment/GET proof is bound to older main `0711334e`, not current main.
+It establishes no current-main deployment, complete current browser run or
+final 13 October closure. Saved PR #280 metadata lists successful checks;
+the complete original exact-head run/log/report evidence has not been located
+in the reviewed packet. The original immediate pre-merge Boolean raw receipt
+also remains unlocated. No new Boolean or GET could reconstruct that past
+observation, and none was queried here.
+
+The 9 October documentation reconciliation and 13 October evidence checkpoint
+remain distinct. All 65 acceptance verdicts, including G2.1 and G8.5 NO, the
+owner's original hard stop, `deleteAfter: 2026-10-14`, and all dated histories
+are preserved. D-083, D-103 and the separate processing-state rationale remain
+outside this update. No route, test, issuance model, database or provider
+change, production query, test execution or release acceptance is claimed.
+
+## Later retained historical CI evidence, 8 October 2026
+
+After the current-source note above was prepared, a separate read-only search
+located the complete original PR #280 CI evidence. Run
+[36837473787, attempt 1](https://github.com/themariodiego/Inherit.bio/actions/runs/36837473787)
+tested source `448de06db38f356ffeafa0e3f98c0c5e43c20f9d` through merge checkout
+`38f959311dd75dbdb9f815795567ec9992ee0f45`, tree
+`c9254d5d37d2ea43ef98f07f6337be49fcc1e27b`. Its ordered parents are base
+`1c63e91620548629e7f7300079a3f04fade0135d` and that PR source head.
+All eight jobs succeeded by 09:01:35 UTC on 1 October 2026.
+
+The retained eight complete job logs and seven original uploaded report ZIPs
+support 7,451 unit cases in 448 files, 5,504 pgTAP assertions in 118 files,
+31 lock cases, and the exact 569 browser cases in 95 files, four projects and
+six shards. The original browser (1) log records the retired-withdrawal case
+passing. The original ZIP identities, CRCs and complete disjoint browser
+report union were reviewed in this historical source context.
+
+The separate packet is
+`integration-evidence/20261007/d081-pr280-historical-search-v1/`.
+Its `search-receipt.json` has SHA-256
+`e052abee3f3dd1709e66035be34c68c39f583581a66083438899d7135a42ba4c`;
+`root-historical-original-review-v1.json` has SHA-256
+`ccf7be06dc1592ca1d1dd96cb20ff574b2a423a09693ce4f8fc14956f2dae19e`.
+The earlier statement about evidence unlocated in its reviewed packet remains
+an accurate record of that earlier scope.
+
+The immediate pre-merge raw `no_unexpired_pre_cutover_invitations` Boolean
+receipt remains unlocated. No later query or hosted test reconstructs it.
+These historical originals establish no deployment or complete CI result for
+main `4eec89bbecf6db07fb82fe4965369e8dc42ab556` or any later main, and no final
+13 October closure. All 65 verdicts, including G2.1 and G8.5 NO, the owner hard
+stop, `deleteAfter: 2026-10-14`, and earlier dated entries remain unchanged.

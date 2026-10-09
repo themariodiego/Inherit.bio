@@ -225,3 +225,24 @@ describe("exact negative-test external-host declarations", () => {
     }
   });
 });
+
+describe("the registered isolated scanner instructions", () => {
+  it("admits the reviewed path while retaining unrelated-host and private-name refusals", () => {
+    const entry = allowedNames.entries.find(row => row.name === "ClamAV");
+    expect(entry).toBeDefined();
+    const allowed = [entry!];
+    const target = (suffix: string) => ["https", "://docs.clamav.net", suffix].join("");
+    const reviewed = target("/manual/Installing/Docker.html");
+    expect(scanExternalHosts(reviewed, "docs/claim-scanner-real-proof.md", allowed)).toEqual([]);
+    for (const suffix of ["", "/manual/Usage/Scanning.html", "/manual/Installing/Other.html"]) {
+      expect(scanExternalHosts(target(suffix), "src/fixture.test.ts", allowed)).toHaveLength(1);
+    }
+    const lookalike = ["https", "://docs.clamav.net", ".unreviewed.com/manual/Installing/Docker.html"].join("");
+    expect(scanExternalHosts(lookalike, "src/fixture.test.ts", allowed)).toHaveLength(1);
+    const denied = ["outside", "genome"].join("");
+    const text = `${reviewed}?note=${denied}`;
+    expect(scanExternalHosts(text, "src/fixture.test.ts", allowed)).toEqual([]);
+    expect(scanDenylist(text, "src/fixture.test.ts", [denied])).toHaveLength(1);
+    expect(scanDenylist(text, "<commit-message>", [denied], "a".repeat(40))).toHaveLength(1);
+  });
+});

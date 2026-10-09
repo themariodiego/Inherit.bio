@@ -9,6 +9,7 @@ import {
   NAV_LANDMARK_LABEL,
   type NavItemId,
 } from "@/copy/navigation";
+import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<NavItemId, typeof LayoutDashboard> = {
@@ -19,8 +20,17 @@ const ICONS: Record<NavItemId, typeof LayoutDashboard> = {
   settings: Settings,
 };
 
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+// Routes that belong to an item without living under its href: a person's
+// own files and copilot are their genome's, so "My Genome" stays current
+// there and the page is never without a "where am I" (round-1 M8).
+const ALSO_UNDER: Partial<Record<NavItemId, readonly string[]>> = {
+  "my-genome": [route("files.index"), route("copilot.scope", { scope: "me" })],
+};
+
+function isActive(pathname: string, item: { id: NavItemId; href: string }) {
+  return [item.href, ...(ALSO_UNDER[item.id] ?? [])].some(
+    (href) => pathname === href || pathname.startsWith(`${href}/`),
+  );
 }
 
 /**
@@ -29,10 +39,13 @@ function isActive(pathname: string, href: string) {
  * and label weight on the item matching the route (nested routes count,
  * e.g. /genome/me/reports marks "My Genome").
  *
- * - `sidebar`: vertical pill list for the md+ side rail (≥ 16px text,
- *   ≥ 12px gaps). `leading` renders inside the landmark before the list
- *   (the wordmark), so the whole rail is one navigation landmark.
- * - `mobile`: fixed 64px bottom bar below md — five icon-plus-label items,
+ * - `sidebar`: vertical list for the md+ side rail (16px text, 44px rows,
+ *   12px gaps). The current row keeps the tint ground and a 2px marker; an
+ *   inset highlight sets out from it to the hovered or focused row and
+ *   returns home when the pointer leaves, so the current page never loses
+ *   its signifier while another row is hovered. `leading` renders inside the landmark before
+ *   the list (the wordmark), so the whole rail is one navigation landmark.
+ * - `mobile`: fixed 64px bottom bar below md — five icon-plus-label cells,
  *   each ≥ 44px tall, labels always visible (≥ 13px). No hamburger, never
  *   icon-only. Hidden by CSS at md+, so only one "App" landmark is ever
  *   rendered at a given width.
@@ -46,9 +59,7 @@ export function AppNav({
 }) {
   const pathname = usePathname();
   const [highlighted, setHighlighted] = useState<number | null>(null);
-  const currentIndex = NAV_ITEMS.findIndex((item) =>
-    isActive(pathname, item.href),
-  );
+  const currentIndex = NAV_ITEMS.findIndex((item) => isActive(pathname, item));
   const highlightIndex = highlighted ?? currentIndex;
   const listRef = useRef<HTMLDivElement>(null);
   const glideRef = useRef<HTMLSpanElement>(null);
@@ -85,11 +96,20 @@ export function AppNav({
               ref={glideRef}
               aria-hidden="true"
               data-slot="nav-glide"
-              className="pointer-events-none absolute inset-x-0 -z-10 h-11 rounded-xl bg-tint transition-transform duration-200 ease-out motion-reduce:transition-none"
+              className={cn(
+                "pointer-events-none absolute inset-x-0 -z-10 h-11 rounded-sm bg-surface-inset transition-[transform,opacity] duration-200 ease-settle motion-reduce:transition-none",
+                highlighted === null ? "opacity-0" : "opacity-100",
+              )}
+              // The server cannot measure rows, so the first position comes
+              // from the row rhythm (44px rows, 12px gaps): the highlight
+              // rests, invisible, on the current item at first paint and
+              // never slides in on load. The layout effect then corrects for
+              // wrapped labels and moves it on hover, focus and route change.
+              style={{ transform: `translateY(${highlightIndex * 56}px)` }}
             />
           ) : null}
           {NAV_ITEMS.map((item, index) => {
-            const active = isActive(pathname, item.href);
+            const active = isActive(pathname, item);
             const Icon = ICONS[item.id];
             return (
               <Link
@@ -101,9 +121,9 @@ export function AppNav({
                 onFocus={() => setHighlighted(index)}
                 onBlur={() => setHighlighted(null)}
                 className={cn(
-                  "app-nav-link rounded-xl px-3 py-2 text-base transition-colors",
+                  "app-nav-link min-h-11 rounded-sm px-3 py-2 text-base transition-colors",
                   active
-                    ? "font-medium text-ink"
+                    ? "bg-tint font-medium text-ink"
                     : "text-ink-muted hover:text-ink",
                 )}
               >
@@ -122,24 +142,37 @@ export function AppNav({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <nav aria-label={NAV_LANDMARK_LABEL} className="grid h-16 grid-cols-5">
+      <nav
+        aria-label={NAV_LANDMARK_LABEL}
+        // Five cells 8px apart (the separation rule) and 4px from the glass,
+        // so no ring or tint is cut by the viewport. The rows are shared by
+        // every cell (subgrid): an icon row, a label row and two equal
+        // spacers, so the group centres in each cell and, when one label
+        // wraps (narrow phones, a wider renderer), every cell's label row
+        // grows with it and the icons and first lines stay level. The box
+        // switches on the wrap itself, not on a viewport width.
+        className="app-bar grid h-navbar grid-cols-5 grid-rows-[minmax(0,1fr)_auto_auto_minmax(0,1fr)] gap-x-2 px-1 py-1"
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = ICONS[item.id];
-          const active = isActive(pathname, item.href);
+          const active = isActive(pathname, item);
           return (
             <Link
               key={item.id}
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-11 flex-col items-center justify-center gap-1 px-1 text-center text-sm leading-tight transition-colors",
+                "grid min-h-11 grid-rows-subgrid row-span-full justify-items-center rounded-sm px-0 text-center text-[13px] leading-4 tracking-[-0.05em] transition-colors",
                 active
                   ? "bg-tint font-medium text-ink"
                   : "text-ink-muted hover:text-ink",
               )}
             >
-              <Icon aria-hidden="true" className="size-5 shrink-0" />
-              <span>{item.label}</span>
+              <Icon
+                aria-hidden="true"
+                className="row-start-2 size-5 shrink-0"
+              />
+              <span className="row-start-3 min-h-4 pt-0.5">{item.label}</span>
             </Link>
           );
         })}

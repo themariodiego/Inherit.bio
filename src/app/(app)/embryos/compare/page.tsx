@@ -136,14 +136,16 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
 
   const crumbs = <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: COMPARE_H1 }]} />;
   const heading = (
-    <header className="space-y-3">
-      <h1 className="display text-3xl">{COMPARE_H1}</h1>
+    <header>
+      <h1 className="display">{COMPARE_H1}</h1>
     </header>
   );
   const frame = (children: React.ReactNode, surface: "wide-data" | "standard" = "standard") => (
-    <div data-surface={surface} className={surface === "wide-data" ? "mx-auto max-w-[90rem] space-y-8" : "mx-auto max-w-4xl space-y-8"}>
-      {crumbs}
-      {heading}
+    <div data-surface={surface} className={surface === "wide-data" ? "page-stack stack-blocks max-w-[90rem]" : "page-stack stack-blocks max-w-4xl"}>
+      <div className="fam-head">
+        {crumbs}
+        {heading}
+      </div>
       {children}
     </div>
   );
@@ -238,15 +240,17 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
 
   return frame(
     <>
-      <StandingStatement text={comparison.standing_statement} />
-      {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
-        {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
-      </p> : null}
-      <ContextStrip counts={comparison.context_counts} />
+      <div className="space-y-6">
+        <StandingStatement text={comparison.standing_statement} />
+        {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
+          {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
+        </p> : null}
+        <ContextStrip counts={comparison.context_counts} />
+      </div>
       <TradeOffPanel tradeOffs={comparison.trade_offs} conditionNames={conditionNames} embryoCount={comparison.embryos.length} />
 
       <section aria-labelledby="side-by-side-heading" data-density-top-level-section className="space-y-6">
-        <h2 id="side-by-side-heading" className="text-lg font-semibold text-ink">
+        <h2 id="side-by-side-heading" className="title text-ink">
           {SIDE_BY_SIDE_HEADING}
         </h2>
         {(["variant_call", "estimate"] as const).map((layer) => (
@@ -255,37 +259,37 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
       </section>
 
       <section aria-labelledby="quality-check-heading" data-density-top-level-section className="space-y-4">
-        <h2 id="quality-check-heading" className="text-lg font-semibold text-ink">
+        <h2 id="quality-check-heading" className="title text-ink">
           {QUALITY_CHECK_HEADING}
         </h2>
         <QcTable embryos={comparison.embryos} subjectIds={subjectIds} riskRangeEmbryoIds={riskRangeEmbryoIds} />
       </section>
 
       <section aria-labelledby="how-sure-heading" data-density-top-level-section className="space-y-3">
-        <h2 id="how-sure-heading" className="text-lg font-semibold text-ink">
+        <h2 id="how-sure-heading" className="title text-ink">
           {HOW_SURE_HEADING}
         </h2>
         {comparison.result_rows.length > 0 ? (
-          <p className="max-w-prose text-sm leading-relaxed text-ink">{NO_RANGE_YET}</p>
+          <p className="max-w-measure text-base leading-relaxed text-ink">{NO_RANGE_YET}</p>
         ) : null}
-        <p data-density-required-accuracy className="max-w-prose text-sm leading-relaxed text-ink">
+        <p data-density-required-accuracy className="max-w-measure text-sm leading-relaxed text-ink">
           {NOT_DIAGNOSTIC}
         </p>
       </section>
 
       <section aria-labelledby="where-from-heading" data-density-top-level-section className="space-y-3">
-        <h2 id="where-from-heading" className="text-lg font-semibold text-ink">
+        <h2 id="where-from-heading" className="title text-ink">
           {WHERE_FROM_HEADING}
         </h2>
-        <p className="max-w-prose text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
+        <p className="max-w-measure text-base leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
         {registryIsEmpty() ? (
-          <p data-slot="registry-status" className="max-w-prose text-sm leading-relaxed text-ink">
+          <p data-slot="registry-status" className="max-w-measure text-sm leading-relaxed text-ink">
             {REGISTRY_EMPTY_SENTENCE}
           </p>
         ) : null}
         {computedAt ? (
           // inherit-figure-exempt: the date the quality check ran is UI chrome
-          <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{qcRunOn(formatDate(computedAt))}</p>
+          <p className="caption max-w-measure">{qcRunOn(formatDate(computedAt))}</p>
         ) : null}
       </section>
     </>,

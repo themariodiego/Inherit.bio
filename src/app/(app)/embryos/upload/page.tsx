@@ -17,8 +17,12 @@ import { loadViewer } from "../context";
 
 export const metadata: Metadata = { title: `${UPLOAD_H1} · ${EMBRYOS_H1}` };
 
-/** Five-step TEST-LOCAL upload, guarded before any private stage read.
- * Production keeps its unavailable terminal; every mutation rechecks authority. */
+/**
+ * `/embryos/upload` keeps the five-step flow behind its jurisdiction guard
+ * before any private stage read. Production shows the unavailable inset
+ * above step 1 and the remaining notice below the card. TEST-LOCAL resumes
+ * the server-verified stage; every mutation rechecks current authority.
+ */
 export default async function EmbryoUploadPage() {
   const viewer = await loadViewer();
   if (!viewer) redirect("/auth/sign-in");
@@ -29,19 +33,20 @@ export default async function EmbryoUploadPage() {
   const view = built && account ? await loadUploadStage({ accountId: account.user.id, sessionId: account.sessionId }) : null;
 
   return (
-    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
-      <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: UPLOAD_H1 }]} />
-      <header className="space-y-3">
-        <h1 className="display text-3xl">{UPLOAD_H1}</h1>
-      </header>
+    <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
+      <div className="fam-head">
+        <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: UPLOAD_H1 }]} />
+        <header>
+          <h1 className="display">{UPLOAD_H1}</h1>
+        </header>
+      </div>
       {!permits(decision) ? (
         <EmbryoUnavailable decision={decision} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }} />
       ) : (
-        <>
+        <div className="space-y-4">
           {built || EMBRYO_INGEST_AVAILABLE ? null : (
-            <div role="status" data-slot="ingest-availability" className="max-w-prose space-y-1 text-sm leading-relaxed">
-              <p className="font-medium text-ink">{INGEST_UNAVAILABLE_SENTENCE}</p>
-              <p className="text-ink-muted">{INGEST_UNAVAILABLE_LEDE}</p>
+            <div role="status" data-slot="ingest-availability" className="surface-inset flex min-h-11 items-center px-4 py-2">
+              <p className="max-w-measure text-base text-ink">{INGEST_UNAVAILABLE_SENTENCE}</p>
             </div>
           )}
           {built ? view ? view.kind === "reauthenticate" ? (<div className="space-y-3"><p role="status">{SIGN_IN_AGAIN_STATUS}</p><Link className="underline underline-offset-2" href={route("auth.sign-in", { query: { next: route("embryos.upload") } })}>{SIGN_IN_AGAIN_BUTTON}</Link></div>) : view.kind === "start" ? (
@@ -52,7 +57,8 @@ export default async function EmbryoUploadPage() {
               <UploadFlow initial={{ ...INITIAL_FLOW, ingest: true }} draftCsrfToken={view.draftCsrfToken} />
             </>
           ) : <UploadStage view={view} /> : <p role="alert" data-slot="stage-read-failed" className="max-w-prose text-sm text-ink">{STAGE_READ_FAILED_STATUS}</p> : <UploadFlow />}
-        </>
+          {built || EMBRYO_INGEST_AVAILABLE ? null : <p className="caption max-w-measure">{INGEST_UNAVAILABLE_LEDE}</p>}
+        </div>
       )}
     </div>
   );

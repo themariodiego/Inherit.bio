@@ -4536,6 +4536,35 @@ activate a condition: each still requires the owner's signed condition review
 and separate activation approval. No carrier result becomes visible through
 this import alone.
 
+## 2026-10-04 — Permanent complete hosted unit and database verification
+
+The owner approved the complete hosted database suite and then the complete
+hosted unit suite in clickable chat decisions. These extend the permanent
+hosted browser policy to all remaining and future branches. This entry
+supersedes earlier requirements to run the complete local unit and database
+suites before a draft push.
+
+- Before a draft push, local focused unit tests for each changed flow, type
+  checks, lint and all required repository quality gates must pass.
+- Before a merge or production change, the complete hosted unit, database
+  and browser suites must pass on the final version. The commands remain
+  `pnpm test`, the complete fresh-database pgTAP suite and the full browser
+  suite. Keep every assertion and test time limit.
+- Use the complete discovered inventory for the current version. Require
+  zero failures, skips and retries. Missing files, tests, reports, jobs or
+  coverage hold the change. A smaller selection cannot replace a full suite.
+  The required browser aggregate retains exact same-source, same-run and
+  same-attempt expected, assigned and executed coverage.
+- Keep complete local production migration rollback checks. Production still
+  needs exact predecessor checks, the dry-run sentinel, guarded apply and
+  read-only verification in the required order. A passing CI run does not
+  supply those proofs.
+- Keep actual failed and interrupted runs. A later hosted pass does not
+  change an earlier local failure into a pass. Scientific, carrier, legal
+  and human-study reviews remain required. TEST-only restrictions remain.
+
+This policy changes where the complete test suites run before merge. It
+changes no test, workflow, time limit, production setting or release gate.
 ## 2026-10-02 — Owner review tasks and external test services
 
 The owner answered seven clickable questions in chat. These choices set the

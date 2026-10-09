@@ -1,5 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { exportedMethods, migrationBuckets } from "./route-gate";
 
@@ -809,6 +811,288 @@ describe("every form posts somewhere the register describes", () => {
 
   it("accepts a computed action only when the register is what resolves it", () => {
     expect(actions.filter((form) => form.resolved === "unresolvable")).toEqual([]);
+  });
+});
+
+type FormSubmission = { file: string; routeId: string | null; method: "GET" | "POST" | null };
+
+/**
+ * Native forms default to GET. Submit controls can override both action and
+ * method, including controls associated by a literal `form` id. Read JSX
+ * attributes rather than an opening-tag regex so order, quotes and braces do
+ * not hide a method. Unresolved expressions, spreads and duplicate attributes
+ * require review; an invalid method is not silently accepted as browser GET.
+ */
+function nativeFormSubmissions(source: string, file: string, entries: Entry[]): FormSubmission[] {
+  const document = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  type Attribute = { present: boolean; value: string | ts.Expression | null };
+  const attribute = (opening: ts.JsxOpeningLikeElement, name: string): Attribute => {
+    const attributes = opening.attributes.properties;
+    const named = attributes.filter((property): property is ts.JsxAttribute =>
+      ts.isJsxAttribute(property) && property.name.getText(document) === name);
+    if (!named.length) return { present: false, value: null };
+    if (attributes.some(ts.isJsxSpreadAttribute) || named.length > 1) return { present: true, value: null };
+    const initializer = named[0].initializer;
+    if (initializer && ts.isStringLiteral(initializer)) return { present: true, value: initializer.text };
+    const expression = initializer && ts.isJsxExpression(initializer) ? initializer.expression : undefined;
+    if (expression && (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression))) {
+      return { present: true, value: expression.text };
+    }
+    return { present: true, value: expression ?? null };
+  };
+  const target = ({ value }: Attribute): string | null => {
+    if (typeof value === "string") return entries.find(entry => concretePaths(entry).includes(value))?.id ?? null;
+    if (value && ts.isCallExpression(value) && ts.isIdentifier(value.expression)
+      && value.expression.text === "route" && value.arguments[0] && ts.isStringLiteral(value.arguments[0])) {
+      const id = value.arguments[0].text;
+      return entries.find(entry => entry.id === id)?.id ?? null;
+    }
+    return null;
+  };
+  const method = (value: Attribute, inherited: FormSubmission["method"]): FormSubmission["method"] => {
+    if (!value.present) return inherited;
+    const literal = typeof value.value === "string" ? value.value.toUpperCase() : null;
+    return literal === "GET" || literal === "POST" ? literal : null;
+  };
+  const forms = new Map<ts.JsxOpeningLikeElement, FormSubmission>();
+  const ids = new Map<string, FormSubmission | null>();
+  const collect = (node: ts.Node) => {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      let submission: FormSubmission | null = null;
+      if (node.tagName.getText(document) === "form") {
+        const spread = node.attributes.properties.some(ts.isJsxSpreadAttribute);
+        submission = { file, routeId: target(attribute(node, "action")),
+          method: spread ? null : method(attribute(node, "method"), "GET") };
+        forms.set(node, submission);
+      }
+      const id = attribute(node, "id").value;
+      if (typeof id === "string") ids.set(id, ids.has(id) ? null : submission);
+    }
+    ts.forEachChild(node, collect);
+  };
+  collect(document);
+  const found: FormSubmission[] = [];
+  const walk = (node: ts.Node, owner?: FormSubmission) => {
+    const opening = ts.isJsxElement(node) ? node.openingElement : ts.isJsxSelfClosingElement(node) ? node : null;
+    if (opening) {
+      const spread = opening.attributes.properties.some(ts.isJsxSpreadAttribute);
+      if (forms.has(opening)) {
+        owner = forms.get(opening);
+        found.push(owner!);
+      } else if (attribute(opening, "formMethod").present || attribute(opening, "formAction").present
+        || (spread && (owner?.routeId || attribute(opening, "form").present)
+          && ["button", "input", "Button", "Input"].includes(opening.tagName.getText(document)))) {
+        const association = attribute(opening, "form");
+        const associated = association.present
+          ? typeof association.value === "string" ? ids.get(association.value) : null : owner;
+        const action = attribute(opening, "formAction");
+        found.push({ file, routeId: spread || !associated ? null : action.present ? target(action) : associated.routeId,
+          method: spread ? null : method(attribute(opening, "formMethod"), associated?.method ?? null) });
+      }
+      if (ts.isJsxElement(node)) node.children.forEach(child => walk(child, owner));
+      return;
+    }
+    ts.forEachChild(node, child => walk(child, owner));
+  };
+  walk(document);
+  return found;
+}
+
+function formMethodIssues(submissions: FormSubmission[], entries: Entry[]): string[] {
+  return submissions.flatMap(submission => {
+    const entry = entries.find(candidate => candidate.id === submission.routeId);
+    if (!entry) return [`${submission.file}: unresolved form target`];
+    if (!submission.method) return [`${submission.file}: unsupported or unresolved form method`];
+    const allowed = entry.kind === "page" ? ["GET"] : entry.methods ?? [];
+    return allowed.includes(submission.method) ? [] : [`${submission.file}: ${entry.id} does not allow ${submission.method}`];
+  });
+}
+
+type ClientFormReview = { file: string; forms: number; sha256: string };
+
+// The guarded embryo/future-person flows add ten client-handled forms. Keep
+// their complete-source review separate so the original fourteen-form
+// inventory remains checked alongside the complete integrated inventory.
+const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
+  { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
+  { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "e0f808dc171f8ff9ee9d0e06e4e11837969ad45f6f61533bd8d58e3292f6aed9" },
+  { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
+  { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
+  { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
+  { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
+  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "e8bb3c6be7c5d03113e867af7204b0d92e8ab6825f107699220db1e2f810f634" },
+  { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "44edb4bbd08e2d2ff567aa354b43e4c4f27a8b16d1f77882c9a78670f6169788" },
+];
+
+// These two published TEST-only intake forms cancel native submission before
+// reading their fields and send JSON to their separate registered POST doors.
+// Bind the complete sources and opening counts; keep the original core census.
+const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
+  { file: "src/components/future-person/appeal-intake-form.tsx", forms: 1, sha256: "dccc4b01bedb410696e2e69113041fa7e59224ce79055ebdd4b60fa71c267d2f" },
+  { file: "src/components/future-person/correction-request.tsx", forms: 1, sha256: "37cd036ad9371ed5fffaef46d844edd8b26b567ea38bef46be99144c0597b99c" },
+];
+
+/**
+ * These existing actionless client forms cancel default submission in their
+ * attached handlers. Their current-page targets remain unresolved here. Seal
+ * the explicit review to the complete source bytes and exact opening count;
+ * merely adding onSubmit is never an exemption. JS-disabled/hydration behavior
+ * and dynamically rendered interiors still need their own runtime evidence.
+ */
+const CLIENT_FORM_REVIEW: ClientFormReview[] = [
+  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "70b4566533287cedb070f9f4eda26c65132ef69b446e40dbdb687e83a2e875b5" },
+  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "77759a6b209673bef9ea9c5ca46e031a03e1cfb7a73f7e9e437ca519eb1dfdd1" },
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
+  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "8dcca90eb9444fa99ad954852df12f5fb406f62847a04d1280561befe9b7093b" },
+  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
+  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
+  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "0002fe0e675e8f4634b43bd92476f6d5672d62139f7b11924b31d099d2e2e280" },
+  ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
+  ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
+];
+
+function clientFormReviewIssues(submissions: FormSubmission[], reviews: ClientFormReview[], source: (file: string) => string): string[] {
+  const implicit = submissions.filter(form => form.routeId === null);
+  const issues = implicit.filter(form => form.method !== "GET" || !reviews.some(review => review.file === form.file))
+    .map(form => `${form.file}: unreviewed implicit or unresolved form`);
+  for (const review of reviews) {
+    if (implicit.filter(form => form.file === review.file).length !== review.forms) issues.push(`${review.file}: reviewed client form count changed`);
+    if (createHash("sha256").update(source(review.file)).digest("hex") !== review.sha256) issues.push(`${review.file}: reviewed client form source changed`);
+  }
+  return issues;
+}
+
+describe("native form methods match their registered targets", () => {
+  const entries = register();
+  const sample: Entry[] = [
+    { id: "genome.browser", path: "/genome/[subject]/data/browser", kind: "page" },
+    { id: "auth.sign-out", path: "/auth/sign-out", kind: "endpoint", methods: ["POST"] },
+  ];
+  const read = (source: string) => nativeFormSubmissions(source, "sample.tsx", sample);
+  const issues = (source: string) => formMethodIssues(read(source), sample);
+
+  it("checks the unchanged GET genome form and POST sign-out against the whole current register", () => {
+    const all = codeFiles().filter(file => file.endsWith(".tsx"))
+      .flatMap(file => nativeFormSubmissions(readFileSync(file, "utf8"), file, entries));
+    expect(clientFormReviewIssues(all, CLIENT_FORM_REVIEW, file => readFileSync(file, "utf8"))).toEqual([]);
+    const guardedFlowFiles = new Set(GUARDED_FLOW_CLIENT_FORM_REVIEW.map(review => review.file));
+    const futureIntakeFiles = new Set(FUTURE_INTAKE_CLIENT_FORM_REVIEW.map(review => review.file));
+    const coreForms = all.filter(form => !futureIntakeFiles.has(form.file));
+    expect(coreForms.filter(form => !guardedFlowFiles.has(form.file))).toHaveLength(14);
+    expect(coreForms).toHaveLength(24);
+    expect(all.filter(form => futureIntakeFiles.has(form.file))).toHaveLength(2);
+    expect(all).toHaveLength(26);
+    const submissions = all.filter(form => form.routeId !== null);
+    expect(submissions).toEqual([
+      { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx", routeId: "genome.browser", method: "GET" },
+      { file: "src/components/site/app-shell.tsx", routeId: "auth.sign-out", method: "POST" },
+    ]);
+    expect(formMethodIssues(submissions, entries)).toEqual([]);
+  });
+
+  it("defaults an omitted native method to GET and refuses it on a POST-only endpoint", () => {
+    expect(read('<form action={route("genome.browser", subjectParams)} />')[0].method).toBe("GET");
+    expect(issues('<form action={route("genome.browser", subjectParams)} />')).toEqual([]);
+    expect(issues('<form action="/auth/sign-out" />')).toEqual(["sample.tsx: auth.sign-out does not allow GET"]);
+  });
+
+  it("refuses explicit GET on sign-out and POST on the genome page", () => {
+    expect(issues('<form method="get" action="/auth/sign-out" />')).toEqual(["sample.tsx: auth.sign-out does not allow GET"]);
+    expect(issues('<form action={route("genome.browser", subjectParams)} method="post" />'))
+      .toEqual(["sample.tsx: genome.browser does not allow POST"]);
+  });
+
+  it("reads static JSX strings and both quote styles without depending on attribute order", () => {
+    expect(issues("<form method={'PoSt'} action='/auth/sign-out' />")).toEqual([]);
+    expect(read('<form method={`GET`} action={route("genome.browser", subjectParams)} />')[0].method).toBe("GET");
+  });
+
+  it("refuses unsupported, empty and dialog methods instead of assuming a registered request", () => {
+    for (const method of ["PUT", "DELETE", "", " post ", "dialog"]) {
+      expect(issues(`<form action="/auth/sign-out" method="${method}" />`), method)
+        .toEqual(["sample.tsx: unsupported or unresolved form method"]);
+    }
+  });
+
+  it("refuses computed methods and action expressions the static reader cannot resolve", () => {
+    expect(issues('<form action="/auth/sign-out" method={verb} />')).toEqual(["sample.tsx: unsupported or unresolved form method"]);
+    expect(issues('<form action={destination} method="post" />')).toEqual(["sample.tsx: unresolved form target"]);
+    expect(issues('<form action={route("missing", params)} method="get" />')).toEqual(["sample.tsx: unresolved form target"]);
+    expect(issues('<form action={enabled ? route("genome.browser", params) : other} />')).toEqual(["sample.tsx: unresolved form target"]);
+  });
+
+  it("refuses form spreads and duplicate methods that could replace the visible method", () => {
+    expect(issues('<form {...props} />')).toEqual(["sample.tsx: unresolved form target"]);
+    expect(issues('<form action="/auth/sign-out" method="post" {...props} />')).toEqual(["sample.tsx: unresolved form target"]);
+    expect(issues('<form action="/auth/sign-out" method="post" method="get" />'))
+      .toEqual(["sample.tsx: unsupported or unresolved form method"]);
+    for (const control of ["button", "input", "Button", "Input"]) {
+      expect(issues(`<form action="/auth/sign-out" method="post"><${control} {...props} /></form>`))
+        .toEqual(["sample.tsx: unresolved form target"]);
+    }
+  });
+
+  it("checks button and input method overrides against the inherited form target", () => {
+    for (const control of ['<button formMethod="get" />', '<input type="submit" formMethod="get" />', '<Button formMethod="get" />']) {
+      expect(issues(`<form action="/auth/sign-out" method="post">${control}</form>`))
+        .toEqual(["sample.tsx: auth.sign-out does not allow GET"]);
+    }
+    expect(issues('<form action="/auth/sign-out" method="post"><button formMethod="post" /></form>')).toEqual([]);
+    expect(issues('<form action="/auth/sign-out" method="post"><button formMethod={verb} /></form>'))
+      .toEqual(["sample.tsx: unsupported or unresolved form method"]);
+  });
+
+  it("uses submitter action overrides together with the effective inherited or overridden method", () => {
+    expect(issues('<form action={route("genome.browser", params)}><button formAction="/auth/sign-out" /></form>'))
+      .toEqual(["sample.tsx: auth.sign-out does not allow GET"]);
+    expect(issues('<form action={route("genome.browser", params)}><button formAction="/auth/sign-out" formMethod="post" /></form>')).toEqual([]);
+  });
+
+  it("resolves explicit same-file form owners and refuses unknown, computed or duplicated owners", () => {
+    const form = '<form id="logout" action="/auth/sign-out" method="post" />';
+    expect(issues(`<>${form}<button form="logout" formMethod="get" /></>`)).toEqual(["sample.tsx: auth.sign-out does not allow GET"]);
+    expect(issues(`<>${form}<button form="logout" formMethod="post" /></>`)).toEqual([]);
+    expect(issues(`<>${form}<button form="logout" {...props} /></>`)).toEqual(["sample.tsx: unresolved form target"]);
+    for (const owner of ['"missing"', '{owner}']) {
+      expect(issues(`<>${form}<button form=${owner} formMethod="post" /></>`)).toEqual(["sample.tsx: unresolved form target"]);
+      expect(issues(`<>${form}<button form=${owner} formAction="/auth/sign-out" formMethod="post" /></>`))
+        .toEqual(["sample.tsx: unresolved form target"]);
+    }
+    expect(issues(`<>${form}${form}<button form="logout" formMethod="post" /></>`)).toEqual(["sample.tsx: unresolved form target"]);
+  });
+
+  it("accounts for every missing-action form without assuming its current-page destination", () => {
+    for (const form of ['<form />', '<form method="post" />', '<form onSubmit={handler} />']) {
+      expect(read(form)).toHaveLength(1);
+      expect(issues(form)).toEqual(["sample.tsx: unresolved form target"]);
+    }
+    expect(issues('<form method="post"><button formAction="/auth/sign-out" formMethod="post" /></form>'))
+      .toEqual(["sample.tsx: unresolved form target"]);
+  });
+
+  it("refuses an explicit form owner id shared with a non-form element in either source order", () => {
+    const form = '<form id="logout" action="/auth/sign-out" method="post" />';
+    const control = '<button form="logout" formMethod="post" />';
+    for (const markup of [`<div id="logout" />${form}`, `${form}<div id="logout" />`]) {
+      expect(issues(`<>${markup}${control}</>`)).toEqual(["sample.tsx: unresolved form target"]);
+    }
+  });
+
+  it("admits implicit client forms only through exact reviewed counts and complete handler bytes", () => {
+    const source = '<form onSubmit={event => { event.preventDefault(); }} />';
+    const reviews = [{ file: "sample.tsx", forms: 1, sha256: createHash("sha256").update(source).digest("hex") }];
+    expect(clientFormReviewIssues(read(source), reviews, () => source)).toEqual([]);
+    const changed = source.replace("preventDefault", "stopPropagation");
+    expect(clientFormReviewIssues(read(changed), reviews, () => changed)).toEqual(["sample.tsx: reviewed client form source changed"]);
+    const added = `<>${source}<form method="post" /></>`;
+    expect(clientFormReviewIssues(read(added), reviews, () => added)).toContain("sample.tsx: unreviewed implicit or unresolved form");
+    expect(clientFormReviewIssues([], reviews, () => source)).toEqual(["sample.tsx: reviewed client form count changed"]);
+    expect(clientFormReviewIssues(read(source), [], () => source)).toEqual(["sample.tsx: unreviewed implicit or unresolved form"]);
   });
 });
 

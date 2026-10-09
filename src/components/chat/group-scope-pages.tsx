@@ -40,15 +40,17 @@ import { route } from "@/lib/primary-routes";
  */
 export function LocalTransportUnavailable() {
   return (
-    <div data-slot="copilot-local-unavailable" data-state="not-covered" className="page-stack mx-auto max-w-3xl space-y-6">
-      <header>
-        <p className="eyebrow mb-2">Copilot</p>
-        <h1 className="display text-3xl">{COPY_IDS["copilot.transport.local-unavailable.heading"]}</h1>
+    <div data-slot="copilot-local-unavailable" data-state="not-covered" className="page-stack rec-column stack-blocks">
+      <header className="rec-head">
+        <p className="eyebrow">Copilot</p>
+        <h1 className="display">{COPY_IDS["copilot.transport.local-unavailable.heading"]}</h1>
       </header>
-      <p className="max-w-prose leading-relaxed">{COPY_IDS["copilot.transport.local-unavailable.reason"]}</p>
-      <p className="max-w-prose leading-relaxed text-ink-muted">{COPY_IDS["copilot.transport.local-unavailable.requirement"]}</p>
+      <div className="rec-stack">
+        <p className="max-w-measure leading-relaxed">{COPY_IDS["copilot.transport.local-unavailable.reason"]}</p>
+        <p className="max-w-measure leading-relaxed text-ink-muted">{COPY_IDS["copilot.transport.local-unavailable.requirement"]}</p>
+      </div>
       <p>
-        <Link href={route("app.overview")} className="link-target underline underline-offset-2">
+        <Link href={route("app.overview")} className="link-target quiet-link">
           {COPY_IDS["actions.back"]}
         </Link>
       </p>
@@ -62,50 +64,54 @@ export async function FamilyCopilotPage() {
   if (!view) notFound();
   if (view.kind === "transport_unavailable") return <LocalTransportUnavailable />;
   const header = (
-    <header>
-      <p className="eyebrow mb-2">Copilot</p>
-      <h1 className="display text-3xl">Ask about {FAMILY_SCOPE_LABEL}</h1>
+    <header className="rec-head">
+      <p className="eyebrow">Copilot</p>
+      <h1 className="display">Ask about {FAMILY_SCOPE_LABEL}</h1>
     </header>
   );
   if (view.kind === "jurisdiction_unavailable") {
     return (
-      <div className="page-stack mx-auto max-w-3xl space-y-6" data-slot="copilot-family-jurisdiction">
+      <div className="page-stack rec-column stack-blocks" data-slot="copilot-family-jurisdiction">
         {header}
-        <p role="status" className="max-w-prose leading-relaxed">{view.copy}</p>
+        <p role="status" className="max-w-measure leading-relaxed">{view.copy}</p>
       </div>
     );
   }
   if (view.kind === "provider_required") {
     return (
-      <div className="page-stack mx-auto max-w-3xl space-y-6" data-slot="copilot-family-provider-required">
+      <div className="page-stack rec-column stack-blocks" data-slot="copilot-family-provider-required">
         {header}
-        <p className="max-w-prose leading-relaxed">{FAMILY_NEEDS_LOCAL_MODEL}</p>
-        <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{COPILOT_LOCAL_ONLY}</p>
-        <Link href={route("settings.copilot")} className="link-target underline underline-offset-2">{REVIEW_SETTINGS_BUTTON}</Link>
+        <div className="rec-stack">
+          <p className="max-w-measure leading-relaxed">{FAMILY_NEEDS_LOCAL_MODEL}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{COPILOT_LOCAL_ONLY}</p>
+        </div>
+        <p><Link href={route("settings.copilot")} className="link-target quiet-link">{REVIEW_SETTINGS_BUTTON}</Link></p>
       </div>
     );
   }
   return (
-    <div className="mx-auto flex min-h-[32rem] max-w-3xl flex-col gap-4" data-slot="copilot-family">
+    <div className="page-stack rec-column stack-blocks" data-slot="copilot-family">
       {header}
-      <p className="max-w-prose leading-relaxed">{FAMILY_COPILOT_LEDE}</p>
-      <p data-slot="copilot-local-only" className="max-w-prose text-sm leading-relaxed text-ink-muted">{COPILOT_LOCAL_ONLY}</p>
-      {view.members.length > 0 ? (
-        <section aria-labelledby="copilot-family-members" className="rounded-xl border border-line bg-card px-4 py-3 text-sm">
-          <h2 id="copilot-family-members" className="font-medium">{FAMILY_MEMBERS_HEADING}</h2>
-          <ul data-slot="copilot-family-members" className="mt-2 space-y-1">
-            {view.members.map((member, index) => (
-              <li key={index}>{familyMemberLine(member.displayLabel, member.layers)}</li>
-            ))}
-          </ul>
-        </section>
-      ) : (
-        <div data-slot="copilot-family-empty" className="space-y-3 rounded-xl border border-line bg-card p-5 text-sm">
-          <p role="status">{FAMILY_EMPTY_NOTE}</p>
-          <p className="text-ink-muted">{FAMILY_HOW_TO_TURN_ON}</p>
-          <Link href={route("family.index")} className="link-target underline underline-offset-2">{OPEN_FAMILY_BUTTON}</Link>
-        </div>
-      )}
+      <div className="rec-stack">
+        <p className="body-lg max-w-measure">{FAMILY_COPILOT_LEDE}</p>
+        <p data-slot="copilot-local-only" className="caption max-w-measure">{COPILOT_LOCAL_ONLY}</p>
+        {view.members.length > 0 ? (
+          <section aria-labelledby="copilot-family-members" className="surface surface-pad-sm text-sm">
+            <h2 id="copilot-family-members" className="text-base font-medium">{FAMILY_MEMBERS_HEADING}</h2>
+            <ul data-slot="copilot-family-members" className="rec-stack-sm mt-2">
+              {view.members.map((member, index) => (
+                <li key={index}>{familyMemberLine(member.displayLabel, member.layers)}</li>
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <div data-slot="copilot-family-empty" className="surface-inset surface-pad-sm rec-stack-sm max-w-measure text-sm text-ink">
+            <p role="status">{FAMILY_EMPTY_NOTE}</p>
+            <p>{FAMILY_HOW_TO_TURN_ON}</p>
+            <Link href={route("family.index")} className="link-target quiet-link">{OPEN_FAMILY_BUTTON}</Link>
+          </div>
+        )}
+      </div>
       {view.contextToken ? (
         <OwnChatPanel key={view.contextHash} contextToken={view.contextToken} info={view.providerInfo} chats={view.chats}
           displayLabel={FAMILY_SCOPE_LABEL} scopeKind="family" threadHint={FAMILY_THREAD_HINT} placeholder={FAMILY_PLACEHOLDER_LABEL} />

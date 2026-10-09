@@ -67,11 +67,11 @@ export function PortraitBlocking({ people, missing, consentsHref }: PortraitBloc
       aria-labelledby="portrait-blocking-heading"
       className="space-y-5"
     >
-      <h2 id="portrait-blocking-heading" className="text-lg font-semibold">
+      <h2 id="portrait-blocking-heading" className="title text-ink">
         {blockingHeading(names)}
       </h2>
-      <p className="max-w-prose text-base leading-relaxed text-ink">{BLOCKING_BODY}</p>
-      <ul data-slot="portrait-missing-steps" className="max-w-prose space-y-1">
+      <p className="body-lg max-w-measure text-ink">{BLOCKING_BODY}</p>
+      <ul data-slot="portrait-missing-steps" className="fam-rows surface max-w-measure">
         {people.flatMap((person) =>
           missing
             .filter((entry) => entry.subjectId === person.subjectId)
@@ -81,7 +81,7 @@ export function PortraitBlocking({ people, missing, consentsHref }: PortraitBloc
                 data-slot="portrait-missing-step"
                 data-subject-id={person.subjectId}
                 data-step={entry.step}
-                className="text-base leading-relaxed text-ink"
+                className="fam-row text-base leading-relaxed text-ink"
               >
                 {stepLine(person, entry.step)}
               </li>
@@ -91,9 +91,11 @@ export function PortraitBlocking({ people, missing, consentsHref }: PortraitBloc
       {viewer && viewerMustAcknowledge ? (
         <AcknowledgeForm subjectId={viewer.subjectId} consentsHref={consentsHref} />
       ) : (
-        <Button asChild variant="outline">
-          <Link href={consentsHref}>{OPEN_CONSENTS_BUTTON}</Link>
-        </Button>
+        <div>
+          <Button asChild variant="outline">
+            <Link href={consentsHref}>{OPEN_CONSENTS_BUTTON}</Link>
+          </Button>
+        </div>
       )}
     </section>
   );

@@ -105,10 +105,15 @@ describe("the signature database clamd reports", () => {
     });
     expect(parseClamdVersion("ClamAV 1.4.1/27400/Mon Sep  7 08:12:00 2026")?.publishedAt)
       .toEqual(new Date(Date.UTC(2026, 8, 7, 8, 12)));
+    expect(parseClamdVersion("ClamAV 1.4.1/27400/Mon Sep 28 23:59:59 2026")?.publishedAt)
+      .toEqual(new Date(Date.UTC(2026, 8, 28, 23, 59, 59)));
   });
 
   it.each(["ClamAV 1.4.1", "ClamAV 1.4.1/27400", "ClamAV 1.4.1/0/Mon Sep 28 08:12:00 2026",
-    "ClamAV 1.4.1/27400/Mon Foo 28 08:12:00 2026", "ClamAV 1.4.1/27400/Mon Feb 30 08:12:00 2026", "OK"])(
+    "ClamAV 1.4.1/27400/Mon Foo 28 08:12:00 2026", "ClamAV 1.4.1/27400/Mon Feb 30 08:12:00 2026",
+    "ClamAV 1.4.1/27400/Mon Sep 28 24:12:00 2026", "ClamAV 1.4.1/27400/Mon Sep 28 08:60:00 2026",
+    "ClamAV 1.4.1/27400/Mon Sep 28 08:99:00 2026", "ClamAV 1.4.1/27400/Mon Sep 28 08:12:60 2026",
+    "ClamAV 1.4.1/27400/Mon Sep 28 08:12:99 2026", "OK"])(
     "reads nothing from %s",
     (reply) => {
       expect(parseClamdVersion(reply)).toBeNull();
@@ -156,6 +161,14 @@ describe("the clamd scanner", () => {
     const server = await started({ version: "PONG" });
     expect(await clamdScanner({ address: server.address, now: () => NOW }).scan(Buffer.from("x")))
       .toEqual({ verdict: "UNAVAILABLE", reason: "protocol" });
+  });
+
+  it.each(["08:60:00", "08:12:60"])("refuses the malformed signature clock %s before streaming", async (clock) => {
+    const server = await started({ version: FRESH_VERSION.replace("08:12:00", clock) });
+    expect(await clamdScanner({ address: server.address, now: () => NOW }).scan(Buffer.from("%PDF-1.4")))
+      .toEqual({ verdict: "UNAVAILABLE", reason: "protocol" });
+    expect(server.commands).toEqual(["zVERSION"]);
+    expect(server.streamed).toEqual([]);
   });
 
   it("fails closed when clamd is unreachable", async () => {

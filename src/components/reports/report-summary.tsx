@@ -11,7 +11,7 @@ export function ReportInterpretation({ slug, rsid, genotype, text, sourceIds }: 
   return (
     <p data-slot="report-interpretation" data-claim-region="report-interpretation"
       data-claim-registration={claim ? "registered" : "unregistered"}
-      className="mt-3 text-sm leading-relaxed text-ink">
+      className="mt-3 max-w-measure text-base leading-relaxed text-ink">
       {claim ? <Claim id={claim.claim_id} citationId={claim.evidence[0].citation}
         sourceIds={sourceIds} /> : text}
     </p>
@@ -23,7 +23,7 @@ export function ReportSummary({ slug, text, sourceIds }: { slug: string; text: s
   return (
     <p data-slot="report-summary" data-claim-region="report-summary"
       data-claim-registration={claim ? "registered" : "unregistered"}
-      className="text-base leading-relaxed text-ink">
+      className="body-lg max-w-measure text-ink">
       {claim ? <Claim id={claim.claim_id} citationId={claim.evidence[0].citation}
         sourceIds={sourceIds} /> : text}
     </p>
@@ -35,7 +35,7 @@ export function ReportSummarySources({ sourceIds, existingIds }: { sourceIds: re
   if (!extraIds.length) return null;
   return (
     <section aria-labelledby="report-explanation-sources-heading" className="space-y-2">
-      <h3 id="report-explanation-sources-heading" className="font-medium text-ink">Position sources</h3>
+      <h3 id="report-explanation-sources-heading" className="font-semibold text-ink">Position sources</h3>
       <ClaimSources sourceIds={extraIds} start={sourceIds.indexOf(extraIds[0]) + 1} />
     </section>
   );
