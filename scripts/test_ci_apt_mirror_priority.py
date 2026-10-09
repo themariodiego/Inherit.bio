@@ -5,8 +5,8 @@ import stat
 from pathlib import Path
 import tempfile
 import unittest
-from ci_apt_mirror_priority import (STOCK, URIS, BOUNDS, SECURITY, admit_platform, admit_apt_version,
-    mirror_candidate, admit_sources, parse_config, admit_config, safe_read, replace_original,
+from ci_apt_mirror_priority import (STOCK, PRIORITIZED, NETWORK, URIS, BOUNDS, SECURITY, admit_platform, admit_apt_version,
+    mirror_candidate, admit_priority_state, admit_sources, parse_config, admit_config, safe_read, replace_original,
     component_diagnostics, config_diagnostics, security_representations, PREFLIGHT_DIRECTORIES, fixed_directory_diagnostics,
     KEYRING_PERMISSION_CHAIN, harden_original_keyring_permissions)
 
@@ -392,6 +392,35 @@ class AdmissionTests(unittest.TestCase):
                     STOCK.replace(b'archive.ubuntu.com/', b'user:secret@archive.ubuntu.com/')):
             with self.subTest(raw=raw), self.assertRaises(RuntimeError):
                 mirror_candidate(raw)
+
+    def test_exact_priority_operation_applies_twice_without_changing_owned_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve(); mirror = root / 'mirror'; strict = root / 'strict'
+            mirror.write_bytes(STOCK); mirror.chmod(0o600)
+            original, identity = safe_read(mirror, os.getuid())
+            candidate, repeated = admit_priority_state(original, None)
+            self.assertFalse(repeated)
+            replace_original(mirror, original, identity, candidate, os.getuid())
+            strict.write_bytes(NETWORK); strict.chmod(0o600)
+            first_mirror = safe_read(mirror, os.getuid()); first_strict = safe_read(strict, os.getuid())
+            second, repeated = admit_priority_state(first_mirror[0], first_strict[0])
+            self.assertTrue(repeated)
+            self.assertEqual(second, PRIORITIZED)
+            self.assertEqual(mirror_candidate(second), second)
+            self.assertEqual(safe_read(mirror, os.getuid()), first_mirror)
+            self.assertEqual(safe_read(strict, os.getuid()), first_strict)
+
+    def test_readmission_refuses_partial_spoofed_or_unpaired_states(self):
+        for mirror, strict in ((STOCK, NETWORK), (PRIORITIZED, None),
+                               (PRIORITIZED, NETWORK.replace(b'"1"', b'"2"', 1)),
+                               (PRIORITIZED, NETWORK + b'Acquire::AllowInsecureRepositories "true";\n'),
+                               (PRIORITIZED.replace(b'https:', b'http:'), NETWORK),
+                               (PRIORITIZED.replace(b'priority:2', b'priority:3'), NETWORK),
+                               (PRIORITIZED[:-1], NETWORK),
+                               (PRIORITIZED + PRIORITIZED.splitlines(keepends=True)[0], NETWORK),
+                               (PRIORITIZED.replace(b'archive.ubuntu.com/', b'user:secret@archive.ubuntu.com/'), NETWORK)):
+            with self.subTest(mirror=mirror, strict=strict), self.assertRaises(RuntimeError):
+                admit_priority_state(mirror, strict)
 
     def test_stock_source_and_signed_key_admitted(self):
         admit_sources(SOURCE)

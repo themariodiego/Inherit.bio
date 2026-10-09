@@ -77,6 +77,11 @@ source-bound key, restores only that exact key within one minute, and validates
 the restored archives against fresh signed Ubuntu metadata within four minutes.
 Both consumer and publisher authentication explicitly select the existing
 transient root service. The helper has no default client-only refresh path.
+The APT priority operation admits only the exact original stock mirror with no
+strict fragment, or its exact approved priority result paired with the exact
+strict fragment. A repeated invocation preserves both files, rechecks their
+original identities and all source/key/configuration rules, then performs a new
+complete signed update. It never treats an earlier update as fresh admission.
 The same service work, shared deadline, exact-owner cleanup and absent-cgroup
 checks apply before signed metadata is admitted or an archive can be seeded.
 
@@ -91,6 +96,13 @@ its font setup steps succeeded. That original failure remains evidence. This
 current-main integration changes no refusal policy or browser assertion. All
 local quality checks, complete final-head hosted suites and genuine exact-key
 warm admission evidence remain required before adoption. No speedup is claimed.
+
+Run 37876404789 passed all complete suites, but all seven exact-key warm restores
+refused the second priority invocation because it saw the already rewritten
+mirror. The unchanged full installers ran successfully. That real warm failure
+is retained; the strict repeated-state correction requires new exact-head hosted
+warm admission before adoption and supplies no speed or cache-seeding credit by
+itself.
 
 Primary references:
 

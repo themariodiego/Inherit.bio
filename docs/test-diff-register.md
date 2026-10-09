@@ -1,3 +1,17 @@
+## 2026-10-09 — Re-admit only the exact owned APT priority result
+
+PR295 run 37876404789 passed all suites, but all seven genuine exact-key font
+restores refused the owned second APT refresh after the mandatory first refresh
+had already rewritten the mirror. The priority operation now permits exactly
+its approved result paired with the exact strict configuration; every other
+URI, priority, format, partial-state and trust refusal stays. Both invocations
+still perform full source/key/configuration checks and a new signed update.
+The existing stock mutation and all previous assertions remain. New controls
+apply the operation twice to real synthetic files and require unchanged bytes
+and original identities, then reject malformed, spoofed and mismatched pairs.
+Original time limits, retries, supervisor closure and full installers remain.
+These local controls run no APT command and grant no hosted warm or speed credit.
+
 ## 2026-10-09 — Integrate the font archive consumer with current protected main
 
 The consumer draft retains current signed APT admission before its exact-key
