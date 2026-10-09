@@ -12,7 +12,16 @@
       "closing": "Nothing. This row is not a defect and is not waiting on anything \u2014 it records a deliberate choice so that the NEXT server action has to be argued for rather than merely added. If one is ever given durable writes or authority of its own, it belongs in the register as an endpoint instead of in this list."
     }
   ],
-  "methodDivergence": [],
+  "methodDivergence": [
+    {
+      "routeId": "api.appeal-review",
+      "declared": ["GET", "POST"],
+      "exported": ["GET"],
+      "file": "src/app/api/reviews/appeals/[id]/route.ts",
+      "why": "The disabled TEST slice implements the assigned reviewer's case read and separate document-only decisions. The registered final case disposition POST is not implemented; document acceptance grants no target access or restriction.",
+      "closing": "Implement and qualify the complete current native case disposition and registered authority checks before enabling final appeal decisions."
+    }
+  ],
   "methodDivergenceNote": "2026-10-01 NEXT-RELEASE: api.export now exports the registered GET and POST, so the former GET-only method row is stale and removed. This is verb correspondence only. The POST consumes actual current account operation/CSRF proof but refuses before create while the provider capability is unconfigured. Cookie-present GET performs the read-only current-origin check; no-cookie GET still performs the original synchronous export. Public action presentation, complete READY/member metadata, open-ready, delivery/provider proof and thirteen unsupported account classes remain unbuilt or explicitly refused. docs/account-archive-orchestration.md records the exact partial continuation; no G5.6 or acceptance credit follows from method equality.",
   "redirectStatusDivergence": [],
   "redirectStatusDivergenceNote": "Empty on purpose, and checked in both directions so it cannot stay empty through a regression. The register pins all ten legacy aliases to expectedStatus 308. Eight are pages calling permanentRedirect. /signup and /login were next.config.ts entries with permanent: false, which emits 307 \u2014 a 307 asks the browser back to the dead path every time, so the alias never retires. Both now read permanent: true.",
@@ -28,7 +37,7 @@
       "closing": "Created with the declared policies and the document-specific data key when evidence ingest is built."
     }
   ],
-  "provenRouteStatesNote": "The executable (route, state) pairs named in current audited browser test titles, out of the 161 the register requires. This is a static source contract, not a record of a successful run. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction; UNPROVEN_ROUTE_STATE_PAIRS holds the remaining source gaps. A title names the registered route path and state id as separate non-overlapping whole tokens. The three native embryo complete steps added on 2026-10-09 are prepared and still require full hosted execution on this exact source before acceptance. No partial/not-covered embryo pair is added: the empty approved registry cannot produce the required scientific finding states.",
+  "provenRouteStatesNote": "The executable (route, state) pairs named in current audited browser test titles, out of the 163 the register requires. The newly built appeal reviewer adds two unproved presentation states; all 155 existing source proofs and six scientific gaps remain unchanged. This is a static source contract, not a record of a successful run. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction; UNPROVEN_ROUTE_STATE_PAIRS holds the remaining source gaps. A title names the registered route path and state id as separate non-overlapping whole tokens. The three native embryo complete steps added on 2026-10-09 are prepared and still require full hosted execution on this exact source before acceptance. No partial/not-covered embryo pair is added: the empty approved registry cannot produce the required scientific finding states.",
   "provenRouteStates": [
     "/ complete",
     "/about complete",

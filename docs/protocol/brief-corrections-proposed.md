@@ -1221,7 +1221,7 @@ brief was read afterwards.
 
 ---
 
-## Where the 6 unproven pairs stand
+## Where the 8 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1251,8 +1251,8 @@ a new state and proved it in the same change.
 | Closed by a proof, 2026-09-19 | 2 | `/family/health-picture processing` and `/family/portrait/[pairId] processing` (`e2e/family-processing-states.spec.ts`: the sentence decided on 2026-09-18, evening, built on both pages and read through the real journey with the other adult's preparation request held open) |
 | Closed by a proof, 2026-09-28 | 2 | `/family/portrait/[pairId] complete` and `/family/portrait/[pairId] partial-coverage` (`e2e/portrait-reviewed-carrier.spec.ts`: the reviewed carrier rule, migration `20260929130000_carrier_assertions.sql`, gives a synthetic release a classified position to land on; the spec needs that migration, so its first run is CI's) |
 | Waived by owner decision, 2026-09-18 (evening) | 4 | `/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data not-covered`, `/family not-covered`, `/family partial-coverage` — the three findings below, put to the owner as a choice between a waiver and a new sentence; the owner chose the waivers, each with its reason in `notApplicableStates` |
-| **Genuinely open** | **6** | six scientific embryo coverage pairs await approved finding producers |
-| **Total unproven** | **6** | |
+| **Genuinely open** | **8** | six scientific embryo coverage pairs await approved finding producers; the new appeal reviewer complete and processing states also await genuine browser proof |
+| **Total unproven** | **8** | |
 
 **Nothing in this number is a register correction any more.** (The four
 waivers of 18 September, evening, are signed decisions about states the
@@ -1277,7 +1277,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 6 that are open, none waits on item 11 any more
+### And of the 8 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1291,8 +1291,8 @@ actually waits on.
 | --- | ---: | --- |
 | `not-covered` | 3 | the three embryo pairs need approved finding producers and genuine failure findings; native ingestion and file QC alone do not supply those; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
 | `partial-coverage` | 3 | the three embryo pairs need actual partial scientific findings from approved producers; file-quality coverage is not a substitute; `/family/portrait/[pairId]` was proven on 2026-09-28 over the reviewed carrier rule; `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
-| `complete` | 0 | the three native embryo completion assertions are now executable in the existing parent-authorized journey; full hosted execution on this exact source is still required before acceptance |
-| `processing` | 0 | the two Family pairs were a product branch that did not exist; the owner decided on 2026-09-18 (evening) that the sentence may be built (below), it was built, and both were proven on 2026-09-19 |
+| `complete` | 1 | the new appeal reviewer presentation awaits genuine browser proof; the three native embryo completion assertions are executable in the existing parent-authorized journey, with full hosted execution on this exact source still required before acceptance |
+| `processing` | 1 | the new appeal reviewer presentation awaits genuine browser proof; the two Family pairs were proven on 2026-09-19 after the approved product branch was built |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
 

@@ -23,7 +23,7 @@ import { exportedMethods, migrationBuckets } from "./route-gate";
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 29 of them remain unbuilt after the native appeal and evidence routes.
+ * yet; 27 of them remain unbuilt after the native appeal review and notice routes.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -211,7 +211,7 @@ describe("the route register and the App Router describe the same surface", () =
     const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
     // The four native appeal/evidence endpoints reduce the remaining backlog.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(29);
+    expect(unbuilt.length).toBe(27);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });

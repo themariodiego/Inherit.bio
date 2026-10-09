@@ -1,10 +1,11 @@
 import http from "node:http";
+import { createServerClient } from "@supabase/ssr";
 import crypto from "node:crypto";
 import path from "node:path";
 import type { BrowserContext } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { withEmbryoJourney } from "../scripts/ci-embryo-journey";
-import { adminClient, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn, SUPABASE_URL } from "./helpers";
+import { adminClient, ANON_KEY, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn, SUPABASE_URL } from "./helpers";
 import { signStatements } from "./embryo-signing-helpers";
 import { provePublishedQcCrossSurface } from "./helpers/embryo-qc-cross-surface";
 import { EMBRYO_PUBLISHED_FILE_SELECT, publishedEmbryoFiles } from "../scripts/comprehension/participant-c-seed";
@@ -13,6 +14,7 @@ import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, parentEm
   SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
+import { RECORD_KEY_PATTERN } from "@/lib/embryos/record-key-card-values";
 
 test.use({ baseURL: "http://localhost:3105" });
 const origin = "http://localhost:3105";
@@ -36,6 +38,80 @@ test.beforeAll(async () => {
   await new Promise<void>(resolve => mail.listen(8124, "127.0.0.1", resolve));
 });
 test.afterAll(async () => { mail?.closeAllConnections(); if (mail) await new Promise<void>(resolve => mail.close(() => resolve())); });
+
+/** Verify this browser's real Auth session; no claims or permission rows are fabricated. */
+async function actualSession(context: BrowserContext, accountId: string) {
+  const cookies = await context.cookies();
+  const auth = createServerClient(SUPABASE_URL, ANON_KEY, { cookies: { getAll: () => cookies,
+    setAll: () => { throw new Error("Card proof must not rotate browser credentials"); } } });
+  const verified = await auth.auth.getClaims();
+  if (verified.error || verified.data?.claims.sub !== accountId
+    || verified.data.claims.role !== "authenticated" || typeof verified.data.claims.session_id !== "string"
+    || !/^[0-9a-f-]{36}$/.test(verified.data.claims.session_id)) throw new Error("Actual card recipient session unavailable");
+  return verified.data.claims.session_id;
+}
+
+/** Native recipient delivery proof, separate from the uploader's browser receipt.
+ * This direct native assertion does not prove a parent card form.
+ * Only the real current parents' own live sessions can consume their own rights. */
+async function proveParentCards(admin: ReturnType<typeof adminClient>, cohortId: string, contexts: BrowserContext[],
+  parents: string[], principalIds: string[], uploaderContext: BrowserContext, uploader: string) {
+  const embryos = await admin.from("embryos").select("id,sample_ordinal").eq("cohort_id", cohortId).order("sample_ordinal");
+  expect(embryos.error).toBeNull(); expect(embryos.data).toHaveLength(2);
+  const embryoIds = embryos.data!.map(row => row.id);
+  const rights = async () => {
+    const result = await admin.from("future_person_record_key_print_rights")
+      .select("embryo_id,recipient_principal_id,status,delivery_kind").in("embryo_id", embryoIds);
+    expect(result.error).toBeNull(); expect(result.data).toHaveLength(4);
+    return result.data!;
+  };
+  expect((await rights()).every(row => principalIds.includes(row.recipient_principal_id)
+    && row.status === "unconsumed" && row.delivery_kind === "initial")).toBe(true);
+  const denied = await admin.rpc("deliver_embryo_record_key_cards_v1", { p_account_id: uploader,
+    p_session_id: await actualSession(uploaderContext, uploader), p_cohort_id: cohortId, p_token_nonce: crypto.randomUUID() });
+  expect(denied.error?.code).toBe("42501"); expect(denied.data).toBeNull();
+  expect((await rights()).every(row => row.status === "unconsumed")).toBe(true);
+  const keyHashes = new Set<string>();
+  for (const [index, accountId] of parents.entries()) {
+    const ownPrincipal = (await admin.from("subject_principals").select("id")
+      .in("id", principalIds).eq("account_id", accountId).single());
+    expect(ownPrincipal.error).toBeNull();
+    const principal = ownPrincipal.data!.id;
+    const args = { p_account_id: accountId, p_session_id: await actualSession(contexts[index], accountId),
+      p_cohort_id: cohortId, p_token_nonce: crypto.randomUUID() };
+    const delivered = await admin.rpc("deliver_embryo_record_key_cards_v1", args);
+    expect(delivered.error).toBeNull();
+    if (!delivered.data || delivered.data.length !== 1) throw new Error("Own parent delivery row unavailable");
+    const row = delivered.data![0];
+    expect(row.cohort_id).toBe(cohortId);
+    if (!Array.isArray(row.cards) || row.cards.length !== 2) throw new Error("Own parent cards unavailable");
+    const expected = new Map<string, string>();
+    for (const [ordinal, raw] of row.cards.entries()) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)
+        || typeof raw.record_key !== "string" || !RECORD_KEY_PATTERN.test(raw.record_key)
+        || raw.embryo_id !== embryoIds[ordinal] || raw.display_label !== `Embryo ${ordinal + 1}`
+        || raw.delivery_kind !== "initial" || raw.closing_date_state !== "provisional_until_terminal_ordinal_resolution")
+        throw new Error("Own parent card binding failed");
+      const hash = crypto.createHash("sha256").update(raw.record_key).digest("hex");
+      expected.set(embryoIds[ordinal], hash); keyHashes.add(hash);
+    }
+    const saved = await admin.from("future_person_record_key_hashes").select("embryo_id,key_hash")
+      .in("embryo_id", embryoIds).eq("recipient_principal_id", principal).eq("status", "current");
+    expect(saved.error).toBeNull();
+    expect(saved.data?.length === 2).toBe(true);
+    // Do not print raw keys or credential-derived values in assertion diagnostics.
+    expect(saved.data!.every(item => expected.get(item.embryo_id) === item.key_hash)).toBe(true);
+    const after = await rights();
+    expect(after.filter(item => item.recipient_principal_id === principal).every(item => item.status === "consumed")).toBe(true);
+    if (index === 0) expect(after.filter(item => item.recipient_principal_id !== principal).every(item => item.status === "unconsumed")).toBe(true);
+    const replay = await admin.rpc("deliver_embryo_record_key_cards_v1", args);
+    expect(replay.error?.code).toBe("23505"); expect(replay.data).toBeNull();
+    const reprint = await admin.rpc("deliver_embryo_record_key_cards_v1", { ...args, p_token_nonce: crypto.randomUUID() });
+    expect(reprint.error?.code).toBe("42501"); expect(reprint.data).toBeNull();
+  }
+  expect(keyHashes.size).toBe(4);
+  expect((await rights()).every(row => row.status === "consumed")).toBe(true);
+}
 
 test("a third-party embryo uploader obtains both genetic parents' native authority before real ingest, publication and parent-only analysis permission", async ({ page, browser }, testInfo) => {
   test.setTimeout(300_000);
@@ -139,9 +215,16 @@ test("a third-party embryo uploader obtains both genetic parents' native authori
         expect(signed.map(row => row.signer_principal_id).sort()).toEqual([...principalIds].sort());
       }
 
+      const finalizedResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/embryo-cohorts" && response.request().method() === "POST");
       await signStatements(page, FINALIZE_BUTTON, uploader, "Synthetic Uploader");
+      const response = await finalizedResponse;
+      expect(response.status()).toBe(201);
+      const receipt = await response.json();
+      expect(receipt.record_key_delivery.caller_state).toBe("not_a_card_recipient");
+      expect(Array.isArray(receipt.record_key_cards) && receipt.record_key_cards.length === 0).toBe(true);
       await expect(page.locator('[data-stage="file"]')).toBeVisible();
-      await expect(page.locator('[data-slot="record-key-card"]')).toHaveCount(2);
+      await expect(page.locator('[data-slot="record-key-card"]')).toHaveCount(0);
+      await proveParentCards(admin, receipt.cohort_id, contexts, parents, principalIds, page.context(), uploader);
       await page.getByLabel(FILE_INPUT_LABEL, { exact: true }).setInputFiles(path.resolve("e2e/fixtures/embryo-pair-grch38.vcf"));
       const completion = page.waitForResponse(response => /\/api\/embryo-ingest\/[^/]+\/complete$/.test(response.url()) && response.request().method() === "POST");
       await page.getByRole("button", { name: SEND_FILE_BUTTON }).click();

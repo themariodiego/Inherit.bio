@@ -159,7 +159,9 @@ describe("the route gate holds the register to the code", () => {
     // 159 -> 160: E0 is built under TEST-LOCAL; the actual draft/invitation pending state is required; authored case must run in full hosted CI.
     // 160 -> 161: the actual /legal/appeals TEST form adds only its processing pair.
     // Source census is exact; the controlled browser cases are UI-only and unrun here.
-    expect(result.requiredStateCount).toBe(161);
+    // 161 -> 163: the appeal reviewer adds complete and processing obligations;
+    // neither has an authored browser proof, and no previous proof is removed.
+    expect(result.requiredStateCount).toBe(163);
     // Three native complete steps are authored, not a hosted-result claim;
     // all six scientific partial/not-covered gaps remain required.
     expect(result.provenStateCount).toBe(155);
@@ -1140,8 +1142,8 @@ describe("the current rights session processing contract", () => {
       };
     } });
     const result = await runRouteGate(root);
-    // Exact current161 minus only the deliberately waived /withdraw/[token] processing pair.
-    expect(result.requiredStateCount).toBe(160);
+    // Exact current163 minus only the deliberately waived /withdraw/[token] processing pair.
+    expect(result.requiredStateCount).toBe(162);
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);
@@ -1164,7 +1166,7 @@ describe("native embryo completion leaves scientific coverage obligations intact
     for (const entry of register.routes) for (const state of register.stateProfiles[entry.stateProfile]?.supported ?? []) {
       if (!(state in (entry.notApplicableStates ?? {})) && !authored.has(`${entry.path} ${state}`)) pending.push(`${entry.path} ${state}`);
     }
-    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage"]);
+    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage", "/reviews/appeals/[id] complete", "/reviews/appeals/[id] processing"]);
     for (const state of ["not-covered", "partial-coverage"]) expect(titleProves(step, "/embryos/compare", state)).toBe(false);
   });
 });

@@ -620,7 +620,9 @@ const TASK_BINDINGS = "scripts/comprehension/bindings.json";
 // Three genuine native complete proofs are prepared in the all-pass journey.
 // The six scientific partial/not-covered pairs remain unconstructible while
 // no eligible finding producer is approved; file QC is not their substitute.
-const UNPROVEN_ROUTE_STATE_PAIRS = 6;
+// The newly built appeal reviewer adds two required presentation states.
+// Neither is claimed as browser-proven; all six old scientific gaps remain.
+const UNPROVEN_ROUTE_STATE_PAIRS = 6 + 2;
 
 /**
  * The register's task-depth ceilings, unmeasured. This is a ratchet in the

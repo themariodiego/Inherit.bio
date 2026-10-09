@@ -74,15 +74,15 @@ export function PublicAppealReview({ caseId }: { caseId: string }) {
    {loaded.value.evidence.map(doc => <section key={doc.documentId} className="space-y-3 rounded-xl border p-4"><h2>{names[doc.kind]}</h2>
     <p>Review: {doc.reviewState}.</p><button type="button" disabled={busy || doc.reviewState !== "pending"} onClick={() => void open(doc)}>Open file</button></section>)}
    {view && <section className="space-y-4">
-    {view.media === "application/pdf" ? <ReviewPdfDocument url={view.url} title="Review document" onRendered={rendered} onPending={pending} onFailure={failed} />
-     : <Image src={view.url} alt="Review document" width={500} height={600} unoptimized referrerPolicy="no-referrer" className="max-h-96 w-full object-contain"
+    {view.media === "application/pdf" ? <ReviewPdfDocument url={view.url} title="Review file" onRendered={rendered} onPending={pending} onFailure={failed} />
+     : <Image src={view.url} alt="Review file" width={500} height={600} unoptimized referrerPolicy="no-referrer" className="max-h-96 w-full object-contain"
       onLoad={event => { if (event.currentTarget.complete && event.currentTarget.naturalWidth > 0) setView(old => old ? { ...old, rendered: true } : null); }} onError={() => clear()} />}
     <label className="block"><input type="checkbox" checked={checked} disabled={!view.rendered || busy} onChange={event => setChecked(event.target.checked)} /> I read this file.</label>
-    <label className="block">Document decision<select value={decision} disabled={busy} onChange={event => setDecision(event.target.value as "approved" | "rejected")}>
-     <option value="approved">Approve document</option><option value="rejected">Refuse document</option></select></label>
+    <label className="block">File choice<select value={decision} disabled={busy} onChange={event => setDecision(event.target.value as "approved" | "rejected")}>
+     <option value="approved">Accept file</option><option value="rejected">Refuse file</option></select></label>
     <label className="block">Reason<textarea value={reason} maxLength={2000} disabled={busy} onChange={event => setReason(event.target.value)} /></label>
     <p>Record what you checked. Do not copy document content into the reason.</p>
-    <button type="button" onClick={() => void save()} disabled={busy || !view.rendered || !checked || reason.trim().length < 20}>Save decision</button>
+    <button type="button" onClick={() => void save()} disabled={busy || !view.rendered || !checked || reason.trim().length < 20}>Save choice</button>
    </section>}
   </>}
  </section>;
