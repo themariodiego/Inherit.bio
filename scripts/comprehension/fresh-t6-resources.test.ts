@@ -65,15 +65,27 @@ const config = { maximumInfrastructureCostPerStackMicroDollars: 100, run: { sche
   limitMicroDollars: 1000, otherCostsMicroDollars: 300, provider: { kind: "local-deterministic-stub" },
   settings: { temperature: 0, maxSteps: 8, maxAttempts: 1, timeoutMs: 60000, sessionSetupTimeoutMs: 900000,
     maximumInputTokens: 32000, maximumOutputTokens: 4000, price: { inputMicroDollarsPerMillion: 1, outputMicroDollarsPerMillion: 1 } } } };
-it("keeps T7, ordinary tasks, withheld fixtures and full-round claims out of this separate launcher", () => {
+it("plans all original tasks with full shared infrastructure accounting, never a duplicate or withheld fixture", () => {
   expect(freshT6ConfigSchema.safeParse(config).success).toBe(true);
-  for (const changed of [{ tasks: ["T7"] }, { tasks: ["T1", "T6"] }, { t6Variant: "withheld" }, { kind: "live-run" }, { limitMicroDollars: 599, otherCostsMicroDollars: 300 }])
+  for (const tasks of [["T7"], ["T1", "T6", "T7"], undefined])
+    expect(freshT6ConfigSchema.safeParse({ ...config, run: { ...config.run, tasks, limitMicroDollars: 10_000 } }).success).toBe(true);
+  for (const changed of [{ tasks: ["T6", "T6"] }, { t6Variant: "withheld" }, { limitMicroDollars: 599, otherCostsMicroDollars: 300 }])
     expect(freshT6ConfigSchema.safeParse({ ...config, run: { ...config.run, ...changed } }).success).toBe(false);
+  expect(infrastructureReservation(30, 100, 30100, 10)).toBe(30100);
+  expect(() => infrastructureReservation(30, 100, 30099, 10)).toThrow("fit");
+  expect(() => infrastructureReservation(30, 100, 100000, 11)).toThrow("Invalid");
+  const paid = { ...config, run: { ...config.run, kind: "live-run", tasks: undefined, personas: 30,
+    limitMicroDollars: 50000, calibration: "/private/actual-calibration",
+    provider: { kind: "openai-compatible-chat", label: "provider-a/config-1", endpoint: "https://gateway.invalid/v1",
+      modelIdentifier: "synthetic-placeholder-identifier", apiKeyVariable: "COMPREHENSION_MODEL_API_KEY" } } };
+  expect(freshT6ConfigSchema.safeParse(paid).success).toBe(true);
+  expect(freshT6ConfigSchema.safeParse({ ...paid, run: { ...paid.run, calibration: undefined } }).success).toBe(false);
 });
-it("manual workflow executes only the separate stub launcher with two personas and no paid key or ordinary CI hook", () => {
+it("manual workflow executes only the separate stub launcher with two tasks and two personas and no paid key or ordinary CI hook", () => {
   const workflow = readFileSync(".github/workflows/participant-c-smoke.yml", "utf8");
   expect(workflow).toContain("workflow_dispatch:"); expect(workflow).toContain("fresh-t6:");
   expect(workflow).toContain("run-fresh-t6.mts"); expect(workflow).not.toMatch(/secrets\.|COMPREHENSION_MODEL_API_KEY|run-upload-browser/);
+  expect(readFileSync("scripts/comprehension/fresh-t6-smoke-config.mts", "utf8")).toContain('tasks: ["T6", "T7"]');
   const ordinary = readFileSync(".github/workflows/ci.yml", "utf8");
   expect(ordinary).not.toContain("run-fresh-t6");
 });

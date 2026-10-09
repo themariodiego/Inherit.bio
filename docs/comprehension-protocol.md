@@ -161,9 +161,10 @@ The T6 action trace starts on the Overview after the seed's genuine permissions
 and result acknowledgement, and follows the visible comparison link to the
 exact no-ranking statement. That instrument is authored, not a scored round.
 Its completed publication supplies the native live-harness read adapter's
-credentials and current worker/source proof. The ordinary multi-persona runner
-still holds T6 until each simulation can own its fresh isolated embryo runtime;
-this single native rehearsal is never shared across personas.
+credentials and current worker/source proof. The ordinary shared-stack runner still holds T6. The separate exclusive
+all-task launcher now authors a fresh stack and native read/action session for
+each task/persona pair; execution of that lifecycle remains unrun. This single
+native rehearsal is never shared across personas.
 
 **T7 uses the brief's honest not-covered contract (G3.2).** Its original prompt
 is unchanged. On the current participant-c comparison, no calibrated model is
@@ -177,7 +178,10 @@ section, not the participant's page or account metadata.
 This binding requires the same genuine signed-parent upload/worker publication,
 its zero-score native read, the actual no-model sentence and quality-only
 figure classes, and a fresh read/action session for each persona. The ordinary
-runner still skips T7 because it cannot supply that isolated native runtime.
+shared-stack runner still skips T7 because it cannot supply that isolated native
+runtime. The exclusive launcher now supplies its callable source lifecycle,
+with real publication/currentness checks around reads, actions and completion.
+Its actual native qualification and model run remain pending.
 Such a skip, a source test or an unrun task is never qualifying evidence. No
 risk model or scientific approval is inferred. Outside a permitted
 `embryo_analysis` environment the capability remains unavailable; only the

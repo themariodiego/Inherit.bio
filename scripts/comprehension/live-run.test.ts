@@ -43,7 +43,7 @@ describe("a live run through the shared conductor", () => {
     const effort = await temporary("inherit-comprehension-effort-"), records = await temporary("inherit-comprehension-records-");
     const journal = await InstrumentJournal.open(effort, 1_000_000, 0, "dry");
     const skips = seedSkips().filter(skip => skip.taskId === "T7");
-    expect(skips[0].reason).toMatch(/^T7 cannot be run: A fresh isolated signed-parent publication/);
+    expect(skips[0].reason).toMatch(/^T7 cannot be run here: the ordinary comprehension runner/);
     const manifest = createLiveManifest(inputs, { kind: "calibration", runId: "calibration-a", revision: "a".repeat(40),
       samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T7"], personaIds: inputs.personas.slice(0, 2).map(persona => persona.id),
       inference: { label: STUB_LABEL, provider: "local-deterministic-stub" }, modelIdentity: "local-deterministic-stub", build,

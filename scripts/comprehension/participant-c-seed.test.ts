@@ -6,12 +6,12 @@ import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
 
 const current = bindings.accounts.find(account => account.id === "participant-c")!;
 describe("actual participant-c seed and independent native runtime hold", () => {
-  it("binds only the existing signed-parent VCF journey and preserves the unrun T7 runtime refusal", () => {
+  it("binds the genuine producer while retaining both ordinary shared-stack refusals", () => {
     expect(participantCSeed(current).seed.project).toBe("embryo-ingest");
-    expect(bindingSkips(bindings)).toEqual([{ taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run: A fresh isolated signed-parent publication/) }]);
+    expect(bindingSkips(bindings)).toEqual([]);
     expect(seedSkips()).toEqual([
       { taskId: "T6", reason: expect.stringMatching(/^T6 cannot be run here: the ordinary comprehension runner/) },
-      { taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run: A fresh isolated signed-parent publication/) },
+      { taskId: "T7", reason: expect.stringMatching(/^T7 cannot be run here: the ordinary comprehension runner/) },
     ]);
   });
   it.each(["by", "runtime", "project", "email", "coParentEmail", "purposes", "readiness"])("refuses a changed %s seed binding", field => {
@@ -25,7 +25,7 @@ describe("actual participant-c seed and independent native runtime hold", () => 
     Object.assign(account, { seed: null, seedBlockedBy: "Genuine publication unavailable" });
     const skips = bindingSkips(changed);
     expect(skips.map(row => row.taskId)).toEqual(["T6", "T7"]);
-    expect(skips[1].reason).toContain("Genuine publication unavailable; T7 cannot be run: A fresh isolated signed-parent publication");
+    expect(skips[1].reason).toBe("participant-c cannot be seeded: Genuine publication unavailable");
   });
   it("refuses a missing seed without a reason instead of silently enabling its tasks", () => {
     const changed = structuredClone(bindings);

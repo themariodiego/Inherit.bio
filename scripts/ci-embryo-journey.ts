@@ -87,7 +87,8 @@ function defaultIo(env: Environment): EmbryoJourneyIo {
   return {
     execute: async (args, input, timeout = 10_000) => {
       try {
-        const child = promisify(execFile)("docker", args, { timeout, killSignal: "SIGKILL", maxBuffer: 32_768 });
+        const child = promisify(execFile)("docker", args, { timeout, killSignal: "SIGKILL", maxBuffer: 32_768,
+          env: { NODE_ENV: "production", PATH: env.PATH ?? "/usr/bin:/bin", HOME: env.HOME ?? "/home/runner", LANG: "C.UTF-8" } });
         child.child.stdin?.on("error", () => {});
         child.child.stdin?.end(input);
         return (await child).stdout.trim();

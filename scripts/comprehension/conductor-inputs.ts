@@ -115,13 +115,14 @@ export function bindingSkips(value: unknown): { taskId: (typeof taskIds)[number]
 export function seedSkips(repository = root): { taskId: (typeof taskIds)[number]; reason: string }[] {
   const bindings = JSON.parse(readFileSync(path.join(repository, "scripts/comprehension/bindings.json"), "utf8"));
   const skips = bindingSkips(bindings);
-  // The ordinary runner gives every persona a fresh account on 3100. A native
-  // journey on 3105 does not supply thirty independent empty-queue runtimes.
-  // Its real read adapter is available only inside that single fresh journey.
-  const t6 = bindings.tasks.find((task: { id: string }) => task.id === "T6");
-  const account = bindings.accounts.find((account: { id: string }) => account.id === t6?.account);
-  if (account?.seed?.runtime === "exact-disposable-ci-native-partition" && !skips.some(skip => skip.taskId === "T6")) {
-    skips.push({ taskId: "T6", reason: "T6 cannot be run here: the ordinary comprehension runner has no fresh isolated embryo runtime per simulation. The real participant-c read adapter runs only inside its native signed-parent publication journey." });
+  // This ordinary entrypoint already owns its shared stack. The separate
+  // authenticated participant-c launcher owns a full fresh stack per T6/T7
+  // session; it never nests acquisition here or adopts this live stack.
+  for (const task of bindings.tasks.filter((task: { id: string }) => task.id === "T6" || task.id === "T7")) {
+    const account = bindings.accounts.find((account: { id: string }) => account.id === task.account);
+    if (account?.seed?.runtime === "exact-disposable-ci-native-partition" && !skips.some(skip => skip.taskId === task.id)) {
+      skips.push({ taskId: task.id, reason: `${task.id} cannot be run here: the ordinary comprehension runner owns a shared stack. Use the exclusive participant-c launcher for a fresh signed-parent publication and native read/action session.` });
+    }
   }
   return skips.sort((a, b) => a.taskId.localeCompare(b.taskId, undefined, { numeric: true }));
 }

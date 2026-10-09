@@ -528,6 +528,24 @@ remain required before merge. No active font cache or product policy changes.
 
 # Test diff register
 
+
+## 2026-10-10 — Exclusive comprehension session lifecycle (source and unit scope)
+
+T7's former binding-level runtime hold is replaced by a callable exclusive
+all-task bootstrap. Both T6 and T7 remain refused by the ordinary shared-stack
+entrypoint. Each original task/persona pair gets a distinct disposable native
+stack and read/action context; c follows the unchanged signed-parent upload and
+worker publication, while a/b and T9 reuse the original product paths. Every
+native observation/action/completion rechecks current publication. Uncertain
+cleanup prevents another acquisition. The existing Storage proxy is extracted
+for reuse with its denial, CORS, body, timeout and real-upload assertions intact.
+
+Pure lifecycle controls cover all 300 pairs and 30 blind regrades, identity
+reuse, overlap, cancellation, uncertain cleanup and publication drift. The
+manual credential-free instrument now authors T6/T7 for two personas. No prompt,
+rubric, threshold, time limit, retry, approved budget or standard six-job browser
+scope changes. No native/model/human result or G3.1/G3.3 acceptance is claimed.
+
 ## 2026-10-09 — Native embryo completion and exact route-state scope
 
 The upload stage previously returned to a new-upload form after real native publication. An active record with a positive native publication revision now shows “Files added”, links to its comparison and the embryo hub, and an explicit action to add another file. The existing both-parent journey tests this real completed screen, the permitted comparison and both individual reports in both themes, with native publication unchanged before/after, network/accessibility audits and all original QC/source/no-ranking assertions. No browser runtime has executed this new source yet.

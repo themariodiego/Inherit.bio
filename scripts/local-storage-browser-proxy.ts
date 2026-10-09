@@ -1,0 +1,227 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import http, { type IncomingMessage } from "node:http";
+import { createInterface } from "node:readline";
+import { localE2eProject } from "./local-e2e-project";
+import { localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
+import { verifyBrowserTransport } from "./local-storage-browser-transport";
+
+/** The existing actual installed-provider transport, shared by the ordinary
+ * browser bootstrap and exclusive comprehension stacks. No result rows, Auth
+ * keys, issuer, gateway policy or Storage capacity are replaced here. */
+export async function startLocalStorageProxy(project: string, publicJwk: Record<string, unknown>, environment?: Record<string, string>) {
+  const selectedProject = localE2eProject(process.env);
+  assert(project === selectedProject.projectId, "Exact local provider project required");
+// Provider credentials remain inside the container. Request Authorization is
+// forwarded unchanged: neither the proxy nor this child grants permission.
+const providerCode = String.raw`
+const readline=require('node:readline');
+const http=require('node:http');
+const lines=readline.createInterface({input:process.stdin});
+let app,origin;
+const emit=(id,result)=>process.stdout.write('INHERIT_BROWSER_PROVIDER:'+JSON.stringify({id,result})+'\n');
+lines.on('line',async line=>{
+ let message;
+ try{
+  message=JSON.parse(line);
+  if(message.init){
+   const prior=JSON.parse(process.env.JWT_JWKS||'{"keys":[]}');
+   process.env.JWT_JWKS=JSON.stringify({keys:[...prior.keys,message.init]});
+   process.env.LOG_LEVEL='silent';
+   process.env.PG_QUEUE_ENABLE='false';
+   app=require('/app/dist/app.js').default({logger:false});
+   origin=await app.listen({host:'127.0.0.1',port:0});
+   emit(message.id,{ready:true});return;
+  }
+  if(message.close){await app.close();emit(message.id,{closed:true});process.exit(0);}
+  if(!origin||!message.path.startsWith('/')||message.path.startsWith('//'))throw new Error('Invalid request');
+  const result=await new Promise((resolve,reject)=>{
+   const request=http.request(origin+message.path,{method:message.method,headers:message.headers},response=>{
+    const chunks=[];let size=0;
+    response.on('data',chunk=>{size+=chunk.length;if(size>67108864){response.destroy();reject(new Error('Response too large'));}else chunks.push(chunk);});
+    response.on('error',reject);
+    response.on('end',()=>resolve({status:response.statusCode,headers:response.headers,body:Buffer.concat(chunks).toString('base64')}));
+   });
+   request.on('error',reject);request.setTimeout(30000,()=>request.destroy(new Error('Request timed out')));
+   request.end(Buffer.from(message.body,'base64'));
+  });
+  emit(message.id,result);
+ }catch{emit(message?.id,{error:true});}
+});
+lines.on('close',async()=>{if(app)await app.close();process.exit(0);});
+`;
+const provider = spawn("docker", ["exec", "-i", `supabase_storage_${project}`, "node", "-e", providerCode],
+  { stdio: ["pipe", "pipe", "pipe"], env: environment as NodeJS.ProcessEnv | undefined });
+provider.stderr.resume(); // Never print provider logs or request credentials.
+const reader = createInterface({ input: provider.stdout });
+type ProviderResult = { ready?: boolean; closed?: boolean; error?: boolean;
+  status?: number; headers?: http.OutgoingHttpHeaders; body?: string };
+const pending = new Map<number, { resolve: (result: ProviderResult) => void;
+  reject: (error: Error) => void; timer: NodeJS.Timeout }>();
+let sequence = 0;
+reader.on("line", line => {
+  if (!line.startsWith("INHERIT_BROWSER_PROVIDER:")) return;
+  const { id, result } = JSON.parse(line.slice("INHERIT_BROWSER_PROVIDER:".length));
+  const request = pending.get(id);
+  if (request) { clearTimeout(request.timer); pending.delete(id); request.resolve(result); }
+});
+provider.on("error", () => {
+  for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error("Local provider failed to start")); }
+  pending.clear();
+});
+provider.stdin.on("error", () => {}); // No stdin/request payload in diagnostics.
+provider.on("close", () => {
+  for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error("Local provider exited")); }
+  pending.clear();
+});
+function requestProvider(message: Record<string, unknown>, timeout = 40_000): Promise<ProviderResult> {
+  return new Promise((resolve, reject) => {
+    if (!provider.stdin.writable || provider.stdin.destroyed) { reject(new Error("Local provider is unavailable")); return; }
+    const id = ++sequence;
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error("Local provider timeout")); }, timeout);
+    pending.set(id, { resolve, reject, timer });
+    provider.stdin.write(JSON.stringify({ id, ...message }) + "\n");
+  });
+}
+async function requestBytes(request: IncomingMessage): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const bytes of request) {
+    size += bytes.length;
+    assert(size <= 52_428_800, "Browser proof body exceeds local Storage capacity");
+    chunks.push(bytes);
+  }
+  return Buffer.concat(chunks);
+}
+function cleanHeaders(headers: http.IncomingHttpHeaders): http.OutgoingHttpHeaders {
+  const result = { ...headers };
+  for (const key of ["connection", "proxy-connection", "proxy-authorization", "keep-alive", "transfer-encoding", "upgrade"]) delete result[key];
+  return result;
+}
+async function gatewayCors(target: URL, origin: string, method: string, headers: http.IncomingHttpHeaders) {
+  // CORS belongs to the real local gateway, not Storage's internal app. Read
+  // its current preflight policy; do not invent a broader allowlist here.
+  const preflight = await fetch(target, { method: "OPTIONS", redirect: "error",
+    signal: AbortSignal.timeout(5000), headers: { Origin: origin,
+      "Access-Control-Request-Method": method,
+      "Access-Control-Request-Headers": Object.keys(headers).filter(name =>
+        !["host", "origin", "connection", "content-length", "accept", "accept-encoding", "accept-language", "user-agent", "referer"].includes(name)
+        && !name.startsWith("sec-")).join(","),
+    } });
+  assert(preflight.ok, "Local gateway preflight refused");
+  const result: http.OutgoingHttpHeaders = {};
+  for (const [name, value] of preflight.headers) {
+    if (name.startsWith("access-control-") || name === "vary") result[name] = value;
+  }
+  return result;
+}
+let forwardedUploads = 0;
+let forwardedTransportProbes = 0;
+const proxy = http.createServer(async (request, response) => {
+  try {
+    let target: URL;
+    try { target = localBrowserTarget(request.url ?? ""); } catch {
+      response.writeHead(403); response.end("Local test proxy destination refused"); return;
+    }
+    if (target.pathname.startsWith("/__inherit_transport_")) forwardedTransportProbes++;
+    const headers = cleanHeaders(request.headers);
+    if (target.origin === LOCAL_STORAGE_ORIGIN && target.pathname.startsWith("/storage/v1/") && request.method !== "OPTIONS") {
+      const bytes = await requestBytes(request);
+      headers["content-length"] = String(bytes.length);
+      const result = await requestProvider({ method: request.method,
+        path: target.pathname.slice("/storage/v1".length) + target.search,
+        headers, body: bytes.toString("base64") });
+      assert(!result.error && result.status && result.headers && result.body !== undefined,
+        "Installed provider did not return an HTTP response");
+      const output = Buffer.from(result.body, "base64");
+      const responseHeaders = cleanHeaders(result.headers as http.IncomingHttpHeaders);
+      if (request.headers.origin) {
+        Object.assign(responseHeaders, await gatewayCors(target, request.headers.origin, request.method ?? "GET", request.headers));
+      }
+      responseHeaders["content-length"] = String(output.length);
+      if (request.method === "POST" && /^\/storage\/v1\/object\/genomes\/[0-9a-f-]{36}$/.test(target.pathname)
+        && result.status >= 200 && result.status < 300) forwardedUploads++;
+      response.writeHead(result.status, responseHeaders); response.end(output);
+      return;
+    }
+    // Ordinary Auth, app and PostgREST traffic reaches its unchanged endpoint.
+    const upstream = http.request(target, { method: request.method, headers }, incoming => {
+      response.writeHead(incoming.statusCode ?? 502, incoming.headers);
+      incoming.pipe(response);
+    });
+    upstream.on("error", () => { if (!response.headersSent) response.writeHead(502); response.end(); });
+    const upstreamTimeout = localBrowserUpstreamTimeout(request.url ?? "", request.method, request.headers.origin);
+    upstream.setTimeout(upstreamTimeout, () => upstream.destroy());
+    if (upstreamTimeout === 300_000) {
+      // Socket activity must not extend this one route beyond its app budget.
+      const deadline = setTimeout(() => { upstream.destroy(); response.destroy(); }, upstreamTimeout);
+      deadline.unref();
+      const clearDeadline = () => clearTimeout(deadline);
+      upstream.once("error", clearDeadline);
+      upstream.once("close", clearDeadline);
+      response.once("finish", clearDeadline);
+      response.once("close", clearDeadline);
+    }
+    request.pipe(upstream);
+  } catch {
+    if (!response.headersSent) response.writeHead(502);
+    response.end("Local provider request failed");
+  }
+});
+proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, including external TLS. APIRequest stays direct.
+  let closing: Promise<void> | undefined;
+  const close = () => closing ??= (async () => {
+    proxy.closeAllConnections();
+    await new Promise<void>(resolve => proxy.close(() => resolve()));
+    try {
+      if (provider.exitCode === null && provider.signalCode === null) {
+        await requestProvider({ close: true }, 5000).catch(() => {});
+        provider.stdin.end();
+        if (provider.exitCode === null && provider.signalCode === null) {
+          await new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => { provider.kill("SIGKILL"); reject(new Error("Provider cleanup uncertain")); }, 5000);
+            provider.once("close", () => { clearTimeout(timer); resolve(); });
+            provider.kill("SIGTERM");
+          });
+        }
+      }
+    } finally { reader.close(); }
+  })();
+  try {
+  assert((await requestProvider({ init: publicJwk })).ready, "Installed provider did not start");
+  await new Promise<void>((resolve, reject) => {
+    proxy.once("error", reject); proxy.listen(0, "127.0.0.1", resolve);
+  });
+  const address = proxy.address();
+  assert(address && typeof address !== "string");
+  // Check the gateway boundary before paying for a production build. A
+  // deliberately invalid upload must remain refused by the actual provider,
+  // while its CORS response follows the unchanged gateway's policy.
+  for (const method of ["OPTIONS", "POST"]) {
+    const boundary = await new Promise<{ status: number; origin?: string; allowedHeaders?: string }>((resolve, reject) => {
+      const request = http.request({ hostname: "127.0.0.1", port: address.port, method,
+        path: `${selectedProject.apiOrigin}/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001`,
+        headers: { Origin: "http://localhost:3100", "Content-Length": "0",
+          "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "apikey,authorization,content-type,x-upsert" } }, response => {
+        response.resume(); response.on("end", () => resolve({ status: response.statusCode ?? 0,
+          origin: response.headers["access-control-allow-origin"] as string | undefined,
+          allowedHeaders: response.headers["access-control-allow-headers"] as string | undefined }));
+      });
+      request.on("error", reject); request.setTimeout(5000, () => request.destroy(new Error("Proxy boundary timeout"))); request.end();
+    });
+    assert(method === "OPTIONS" ? boundary.status === 200 : boundary.status >= 400 && boundary.status < 500,
+      "Proxy must preserve actual gateway/provider HTTP decisions");
+    const policy = await gatewayCors(new URL(`${selectedProject.apiOrigin}/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001`),
+      "http://localhost:3100", "POST", {});
+    assert.equal(boundary.origin, policy["access-control-allow-origin"], "Proxy must preserve gateway CORS policy");
+    if (method === "OPTIONS") {
+      const allowedHeaders = boundary.allowedHeaders?.toLowerCase().split(",").map(header => header.trim()) ?? [];
+      assert(allowedHeaders.includes("apikey") || allowedHeaders.includes("*"),
+        "The actual local gateway must allow the browser's public API-key header");
+    }
+  }
+  await verifyBrowserTransport(`http://127.0.0.1:${address.port}`, () => forwardedTransportProbes, environment);
+  console.log("PASS actual provider denial/CORS preflight and native/manual browser versus direct APIRequest/route.fetch transport; issuer and Auth keys unchanged.");
+    return { url: `http://127.0.0.1:${address.port}`, uploads: () => forwardedUploads, close };
+  } catch (error) { await close(); throw error; }
+}
