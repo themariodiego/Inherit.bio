@@ -1,3 +1,10 @@
+## 2026-10-09 — Keep both core release and real scanner controls after integration
+
+The current main merge retains all release privacy-name refusal cases and all
+real scanner name and clock refusal cases. The combined environment inventory
+keeps the existing seventeen bound keys and nine bindings, including the
+Future Person flag and scanner selector. Neither branch loses an assertion.
+
 ## 2026-10-09 — Bind QC seed records to the actual browser job in both allocation modes
 
 The complete hosted release run found that the QC seed recorder required a
@@ -31,6 +38,37 @@ assertion remains, and the complete inventory must contain exactly twenty-four
 forms. The registered genome GET and sign-out POST checks, unresolved-target,
 spread, override and invalid-method refusals remain unchanged. There is no
 general exemption for forms with a submit handler.
+
+## 2026-10-09 — Bind the real scanner to its native owned internal endpoint
+
+The preserved run 37901491886 completed FreshClam and detached the external
+bootstrap bridge. Its native Docker records then showed an empty actual
+published-port map, although the configured localhost mapping remained. All
+241 probes to that inactive host route were refused. The three saved daemon
+snapshots contain no observed wait status; no daemon exit or scanner case is
+credited, and no OOM cause is inferred.
+
+The proposed transport uses only the exact current owned internal IPv4 on
+port 3310, cross-bound between container and network inspection. Created
+network ID, nonce/name, sole membership, endpoint ID, canonical private IPv4
+and CIDR must agree. Missing, foreign or malformed native records, external
+networks, gateways, IPv6 and active published ports refuse. Readiness and the
+actual clamd adapter share that address; running cases and the owned stop
+recheck the binding and refuse drift. There is no arbitrary host or environment
+override. Docker's documented host access to an internal network leaves the
+original external bridge detached and scan egress closed.
+
+All previous tests and four real-case assertions remain exact. This entry is
+frozen before adding 31 unrun behavioral endpoint controls: three private IPv4
+bindings and 28 ownership, isolation, malformed-record or address refusals.
+The pinned ClamAV image, daemon and FreshClam configs, 4 GiB/no-extra-swap/one-CPU
+resources, 120-second absolute readiness window, three sampled diagnostics,
+command and case limits, 5000 ms test limits and zero retries stay unchanged.
+The full artifact member/byte refusals and existing source/UI/CI/register
+history stay intact. No worktree change or test/daemon execution is claimed.
+Current local focused checks, complete final-head hosted CI and all four genuine
+scanner outcomes remain required before merge. Activation, paid use,
+production and real documents remain off.
 
 ## 2026-10-09 — Admit the exact observed authenticated Ubuntu mirror transport
 
@@ -99,6 +137,68 @@ The original PR295 failure remains: one unsupported-number Copilot browser
 assertion in run 37691992821. No percent policy is changed. Current local and
 complete exact-final-head hosted checks, then genuine cold/warm evidence, remain
 required; this entry claims no execution or speed improvement.
+
+## 2026-10-09 — Retain sampled clamd startup originals inside the readiness window
+
+The preserved hosted scanner run reached official signatures and closed its
+bootstrap network, then failed the original two-minute readiness check before
+any scanner case. Its detached clamd acknowledgement omitted the daemon's
+stdout, stderr and wait status. No daemon cause or real-case success is inferred.
+
+The diagnostic proposal keeps those streams inside only the existing owned
+scanner tmpfs as the configured scanner user, and records a wait status only
+when the daemon's output descriptors have closed, before any owned stop. It
+samples at most three times, at least 40 seconds apart, inside the same absolute
+120-second window. TCP readiness still uses the original connection criterion,
+one-second probe and half-second poll. Command outcomes and raw-file readbacks,
+probe responses and unsampled intervals remain explicit. Image, daemon config,
+signatures, resources, cleanup, retries and all four scanner assertions stay as
+they were. The existing artifact member and byte refusals stay unchanged.
+
+All tests already on the branch remain exact. Two new, unrun diagnostic controls
+check the complete owned command arguments and reject unsafe container IDs,
+and preserve unobserved, zero, nonzero and signal-encoded wait statuses while
+refusing malformed status headers. The earlier unrun proposal's shell-substring
+assertions are replaced by these ownership and result boundary checks; they did
+not supply a runtime proof. This entry is frozen before those proposed test
+changes. Local checks, complete final-head hosted CI and all four original real
+scanner cases remain required before merge. Scanner activation, paid use,
+production and real-document actions remain off.
+
+## 2026-10-09 — Observe private FreshClam allocation as the scanner user
+
+The original real scanner attempt failed when the host UID could not traverse
+FreshClam's private temporary directory. Its four scanner cases did not run.
+The bounded watchdog now reads metadata inside only the exact owned container
+as its configured clamav user. It includes directory allocation and retains
+the 1 GiB budget, eight-second observer cap and one FreshClam operation.
+Symlinks, special files, multiply linked files, unsafe paths and malformed or
+overflowing counters still refuse. Permissions and signature contents do not
+change. The old final inventory, command records, scanner cases and limits
+remain intact.
+
+Added controls pin the actual read-only user/id command, private-directory
+allocation, the exact budget boundary and eleven malformed metadata cases.
+The command carries a literal find escape, with no NUL in its argument vector.
+All existing assertions remain. Local focused and quality checks and the
+complete final-head hosted suite plus all four real scanner cases are required
+before merge. No scanner activation or production action is approved here.
+
+## 2026-10-09 — Reject malformed scanner publication clocks before streaming
+
+The isolated scanner parser previously let Date.UTC normalize minutes or
+seconds of 60 within the same date. Explicit hour/minute/second bounds now
+refuse that malformed version reply before document bytes can be streamed.
+The valid 23:59:59 boundary is retained, and five added parser inputs plus two
+protocol cases require exact UNAVAILABLE/protocol with only zVERSION observed
+and no streamed bytes. Every old case, assertion and time limit remains.
+
+Current-main integration keeps the complete UI, CI and both register histories.
+The old real scanner run 37367357295 attempt 3 failed in the host signature
+watchdog on a private FreshClam temporary directory; it ran no scanner cases.
+That original failure remains separate from this parser correction. Source,
+focused quality checks and complete final-head hosted proof are still required.
+The scanner remains off, with no production, paid or real-document action.
 
 ## 2026-10-09 — UI renewal: three test-side changes, no assertion weakened
 
@@ -172,6 +272,73 @@ remain required before merge. No active font cache or product policy changes.
 
 # Test diff register
 
+## 2026-10-05 — Register only the official scanner instructions after the name gate stops
+
+The corrected scanner source passed all 149 focused cases in eight files,
+genuine Next type generation, full app types, strict lint, the legal gate and
+the first-glance gate. The name gate then stopped on the official ClamAV
+Docker guide linked by the new proof document. The complete original gate
+failure and source records are retained. No later gate ran in that sequence.
+
+The public dependency register now names ClamAV with only the reviewed
+manual/Installing/Docker.html path. It points to the proof document, workflow
+and runner as evidence. The gate code, private denylist rules and every old
+entry stay unchanged. One new check uses the actual register to admit that
+link, reject the bare host, unrelated paths and a lookalike host, and keep
+private-name rejection independent of the documentation permission. Every
+existing test body, assertion, retry and time limit is retained.
+
+Checks for this new source are pending. The local synthetic comparator file
+cannot prove the hosted private-name scan. The real scanner, complete hosted
+suites and complete user flows remain unproved.
+
+## 2026-10-05 — Retain the first scanner checks and fix the TEST command helper
+
+The first local check passed all 147 collected cases but could not load one
+unchanged local browser configuration test. The external check plan had set a
+hosted-environment hint on the Mac. That hint was removed from the local plan;
+the dedicated hosted scanner workflow keeps its original settings. The second
+focused run passed all 149 cases in eight files, with no failed or skipped case.
+Genuine Next type generation also passed. The full type check then stopped on
+four errors in the new command helper: a missing NODE_ENV and three nullable
+child references. Both original check failures and their raw reports are kept.
+
+The helper now sets NODE_ENV to test for its isolated child commands and keeps
+the returned child handle in a non-null local variable. The original command
+outcome, process cleanup and raw-file checks keep the same order and limits.
+No scanner protocol, image, signature rule, timeout, retry or test assertion
+changes. All eight focused files will run again on this corrected source, then
+full types, strict lint and all ten static main gates. These checks are pending.
+The real scanner, full hosted suites and complete user flows remain unproved.
+
+## 2026-10-05 — Isolated real ClamAV proof and exact scanner environment census
+
+The disposable hosted proof uses the actual ClamAV adapter with a pinned
+official image and current official signatures. It requires four separate
+results: a clean synthetic PDF, EICAR, the unchanged 20,000,000-byte refusal
+boundary, and a stopped scanner. It uses no claim worker, database, personal
+document, external storage or mail. All old scanner unit files are copied
+whole from the reviewed candidate. They remain stand-in evidence, not live
+scanner proof. New wrapper tests plant ownership, public-port, real-engine,
+byte-hash and freshness defects and preserve an actual failed child outcome.
+
+The original clamd unit file imports the exact scanner factory, so that factory
+and its original tests are also preserved. The complete source census has
+1,014 base modules and 1,019 candidate modules. The only new bound environment
+key is INHERIT_CLAMD_ADDRESS, read by that factory. Direct keys stay 21; bound
+keys move 16 to 17; bindings 7 to 8; the existing dynamic site stays 1. The complete
+registered read count moves 37 to 38, template keys 30 to 31 and documented guide
+keys 30 to 31 (all guide names 40 to 41). All six count assertions stay exact; the
+remaining assertions and all cases are unchanged. The new template setting is
+commented and empty, and the guide says to leave it unset. No product or worker
+starts. This is a source-derived census correction, not a change after a failed
+test. Source, local and hosted checks are pending.
+
+All existing time limits, retries, assertions, CI suites and quality gates stay
+required. A live scanner pass establishes this adapter scope only. Local guest
+memory is below the official minimum; no unrelated service is stopped and no
+Colima setting is changed. The prior Cloudflare workflow entry below is retained
+whole. No production or release readiness is claimed.
 ## 2026-10-08 — Integrate only the owner-approved Emerging confirmation change on current main
 
 Reuse the exact eight-path commit 2b36e720 delta against f2837f69 on accepted main 575d9191. Keep the original Emerging browser case, all 114 lines of the meaningful policy/source test, every original report-skeleton assertion, the report page and mandated warning strings unchanged. Preserve all current decisions and test-register history; repin only the route register brief hash. The older branch contains unrelated unmerged work and is not integrated. Its historical 122 focused passes do not qualify this current-main source. Current focused, type, lint, ten quality gates and complete final-head hosted unit/database/browser results are UNRUN here and remain required. No source, selector, timeout, retry, coverage or activation rule is weakened.
