@@ -208,7 +208,6 @@ it("reviews shared replacements across all six authored Path B migration stages"
     ...appealMailReplacements,
     `${appealEvidenceFile}|public.activate_rights_session_v1`,
     ...appealNoticeReplacements,
-    "20261009224500_public_appeal_matched_review.sql|private.other_adult_mitigation_v1",
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",
