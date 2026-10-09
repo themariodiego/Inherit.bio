@@ -7655,6 +7655,8 @@ export type Database = {
       // remain required before this disabled TEST slice is activated.
       read_public_appeal_decision_notice_v1: { Args: { p_session_hash:string }; Returns: Json };
       read_public_appeal_review_v1: { Args: { p_case:string }; Returns: Json };
+      read_public_appeal_case_context_v1: { Args: { p_case:string }; Returns: Json };
+      decide_public_appeal_case_v1: { Args: { p_case:string; p_decision:string; p_review_revision:number; p_evidence_revision:number; p_nonce_hash:string; p_reason_ciphertext:string }; Returns: Json };
       read_public_appeal_document_context_v1: { Args: { p_document:string }; Returns: Json };
       review_document_domain_v1: { Args: { p_document:string }; Returns: string };
       decide_public_appeal_document_v1: { Args: { p_document:string; p_sha256:string; p_review_revision:number; p_decision:string; p_nonce_hash:string; p_reason_ciphertext:string; p_reference_hash:string; p_reference_ciphertext:string }; Returns: Json };

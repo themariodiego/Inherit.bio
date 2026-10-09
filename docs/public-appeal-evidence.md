@@ -56,3 +56,25 @@ read. Terminal disposal removes its candidate, token, session and outbox rows
 before the original contact and key are shredded. Existing TEST/native config
 stays disabled. Native tests are authored; provider delivery and native runtime
 qualification are not established by focused source tests.
+
+## Final case rejection in TEST
+
+The registered reviewer endpoint now has a separate final rejection operation.
+The named reviewer's own live account session, recent MFA, current case and
+review/evidence revisions are rechecked by the native function. Its form nonce
+is specific to that account, session, case and both revisions. Incomplete or
+rejected evidence can be a reason to reject; it cannot become a complete
+documentary approval or a target match.
+
+The rejection records one coded outcome, clears only this case's provisional
+hold and uses the existing terminal disposal path. Case/contact/reason and
+independent document keys are erased; native object locators remain until real
+physical deletion acknowledgment. No target access, principal rotation,
+restriction or purge is inferred from a rejection. Production configuration
+stays disabled.
+
+The UI offers only this final rejection alongside the separate full-document
+review. Target-changing approvals, prior-decision reversal, requests for more
+information and contradiction dispositions remain unavailable until their
+registered native human evidence/target and delivery producers exist. Focused
+source checks do not establish native, browser or physical provider proof.

@@ -1,3 +1,24 @@
+## 10 October 2026 — registered final public appeal rejection
+
+The exact registered POST body is implemented only for final rejection. A
+separate native context admits incomplete evidence without changing the old
+complete documentary decoder. Focused regressions cover sealed case/reason
+bytes, own account/session/case and both-revision form binding, strict request
+and completion receipts, native stale/replay refusals, and the default-off UI.
+The review page uses this same separate native context so incomplete cases can
+reach rejection. Its loader regression uses real sealed fixture bytes and
+retains the old whole-document refusal, opaque native errors, expiry, foreign
+case, source expansion, closed flag and own-account checks.
+Native rollback probes retain the original intake/evidence assertions and add
+own-MFA incomplete and completed rejection, zero target changes, terminal key,
+credential and hold erasure, immutable coded outcome and API privilege refusal.
+Native/provider/browser qualification and every target-changing branch remain
+unproved by this source checkpoint.
+The new private final-decision table is classified excluded-protected in the
+existing complete export inventory and its generated native test block; a
+focused assertion forbids an export member for reviewer reasons, credentials
+or other case data. Original requester statements retain their separate scope.
+
 ## 2026-10-10 — Retain exact inventories after the notice/card integration
 
 The combined source-inventory run passed 395 cases and failed two strict integration checks. The complete Path B expected list had the same already-reviewed mitigation wrapper twice after the normal merge; only the duplicate entry is removed, keeping that actual replacement once and every other source entry. The accepted-invitation component now links to Your data, so its whole-source client-form review hash is updated to the independently reviewed component bytes. Its single form, handler, method and all native-form counts/refusal controls remain unchanged. The original failed run is retained; only the two failed files and previously unrun checks continue. No product authority, timeout or native assertion changes.

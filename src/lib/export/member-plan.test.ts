@@ -90,6 +90,14 @@ describe("the export member plan", () => {
       .toEqual(expect.arrayContaining(["canonical_projection", "authorization_fingerprint", "contributor_ids"]));
   });
 
+  it("keeps final appeal reviewer reasons, case credentials and other case records out of member exports", () => {
+    const entry = exportMemberPlan.tables["private.public_appeal_case_decisions"];
+    expect(entry?.disposition).toBe("excluded-protected");
+    expect(exportedTable("private.public_appeal_case_decisions")).toBeUndefined();
+    expect(entry?.reason).toContain("separately authorized original-statement reader");
+    expect(entry && "members" in entry).toBe(false);
+  });
+
   it("exports the legal audit ledger's own events, never the pseudonym or the chain hashes", () => {
     const ledger = exportedTable("public.legal_audit_log")!;
     expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit",
