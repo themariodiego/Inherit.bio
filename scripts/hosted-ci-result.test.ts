@@ -10,6 +10,8 @@ import { hostedResultRequestSchema, hostedWorkflowContract, verifyHostedMetadata
 import { decodeHistoricalZip } from "./ci-browser-duration-history-io";
 import { ACCESSIBILITY_SWEEP_FILES } from "./ci-browser-balance";
 import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
+import { browserAllocationHash } from "./ci-browser-shards";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256 } from "./ci-browser-duration-plan";
 import { QUEUE_EXCLUSIVE_BROWSER_FILES } from "./ci-browser-queue-isolation";
 import { reserveResultOutput, captureHostedGet } from "./hosted-ci-result.run.mjs";
 
@@ -61,7 +63,7 @@ function coverage() {
     && project !== "embryo-ingest" && project !== "embryo-mixed-qc").forEach((project, i) => {
     groups.push({ file: `fixture-${project}.spec.ts`, project, cases: [cases(i + 20, project)], durationMs: 20 });
   });
-  // Full coverage includes all four exact journeys; modulo placement below
+  // Full coverage includes all five exact journeys; modulo placement below
   // keeps each in a separate fresh shard without changing the native guard.
   Object.entries(QUEUE_EXCLUSIVE_BROWSER_FILES).forEach(([file, project], i) => {
     groups.push({ file, project, cases: [cases(i + 30, project)], durationMs: 20 });
@@ -327,6 +329,22 @@ describe("source-bound hosted result readback", () => {
     expect(() => verifyHostedCoverage(v.req, v.manifest, v.shards, v.tracked, null)).toThrow();
     const w = coverage(); expect(() => verifyHostedCoverage(w.req, w.manifest, w.shards, w.tracked.slice(1), null)).toThrow();
     expect(() => verifyHostedCoverage(w.req, w.manifest, w.shards, w.tracked, "f".repeat(64))).toThrow();
+  });
+  it("reads queue-v1 with its exact public default policy and refuses a mixed mode or missing policy", () => {
+    const v = coverage(), parts = v.shards.map(shard => ({ index: shard.index, cases: shard.assignedCases }));
+    const identity = { mode: "queue-v1" as const, profileSha256: DEFAULT_BROWSER_ALLOCATION_SHA256,
+      planSha256: browserAllocationHash(DEFAULT_BROWSER_ALLOCATION_SHA256, parts) };
+    const manifest = { ...v.manifest, allocation: { ...identity, parts } };
+    const shards = v.shards.map(shard => ({ ...shard, allocation: identity }));
+    expect(verifyHostedCoverage(v.req, manifest, shards, v.tracked, DEFAULT_BROWSER_ALLOCATION_SHA256).cases)
+      .toBe(v.manifest.cases.length);
+    expect(() => verifyHostedCoverage(v.req, manifest, shards, v.tracked, null)).toThrow();
+    const wrong = { ...identity, mode: "duration-v1" as const };
+    expect(() => verifyHostedCoverage(v.req, { ...manifest, allocation: { ...wrong, parts } },
+      shards.map(shard => ({ ...shard, allocation: wrong })), v.tracked, DEFAULT_BROWSER_ALLOCATION_SHA256))
+      .toThrow("scheduling mode");
+    expect(() => verifyHostedCoverage(v.req, manifest, [{ ...shards[0], allocation: wrong }, ...shards.slice(1)],
+      v.tracked, DEFAULT_BROWSER_ALLOCATION_SHA256)).toThrow();
   });
   it("uses exact timestamp offsets and refuses reversed time", () => {
     expect(elapsedMilliseconds("2026-10-05T12:00:00Z", "2026-10-05T14:00:00+02:00")).toBe(0);

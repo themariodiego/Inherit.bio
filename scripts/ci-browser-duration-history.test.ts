@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { historicalDurationSource, multiRunDurationEstimator, multiRunHistoryFromCaptures, parseMultiRunBrowserDurationProfile,
   type HistoricalCaptureInput, type MultiRunDurationHistory } from "./ci-browser-duration-history";
-import { parseBrowserDurationProfile, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256, parseBrowserDurationProfile, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
 
 const rawV1 = () => readFileSync("data/ci/browser-duration-profile.json", "utf8");
 const rawV2 = () => readFileSync("data/ci/browser-duration-profile-v2.json", "utf8");
@@ -144,6 +144,21 @@ describe("pure captured historical source contract", () => {
     const source = historicalDurationSource(fixture());
     expect(source.files).toHaveLength(6); expect(source.projects).toEqual(["chromium"]);
     expect(multiRunHistoryFromCaptures([fixture(2), fixture(1)]).sources.map(source => source.runId)).toEqual(["1", "2"]);
+  });
+  it.each(["duration-v1", "queue-v1"])("retains actual measured timings from complete %s receipts", mode => {
+    const input = fixture();
+    const parts = input.shards.map((zip, index) => ({ index: index + 1,
+      cases: (zip.value as { assignedCases: string[] }).assignedCases }));
+    const profileSha256 = mode === "queue-v1" ? DEFAULT_BROWSER_ALLOCATION_SHA256 : "d".repeat(64);
+    const identity = { mode, profileSha256, planSha256: hash(JSON.stringify({ profileSha256, parts })) };
+    Object.assign(input.manifest.value as object, { allocation: { ...identity, parts } });
+    input.shards.forEach(zip => Object.assign(zip.value as object, { allocation: identity }));
+    const source = historicalDurationSource(input);
+    expect(source.files).toHaveLength(6);
+    expect(source.files.every(file => file.durationMs === 100 && file.baselineCaseCount === 1)).toBe(true);
+    Object.assign(input.shards[0].value as object, { allocation: { ...identity,
+      mode: mode === "queue-v1" ? "duration-v1" : "queue-v1" } });
+    expect(() => historicalDurationSource(input)).toThrow("allocation identity");
   });
   it.each(["failed-run", "failed-step", "missing-job", "changed-api-artifact", "changed-zip", "mixed-head", "duplicate-case", "split-file", "missing-upload", "missing-sweep"])("rejects historical proof defect: %s", mode => {
     const input = fixture();

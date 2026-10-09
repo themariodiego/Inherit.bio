@@ -7,10 +7,10 @@ import { hostedWorkflowContract } from "./hosted-ci-result";
 const source = { head: "a".repeat(40), runId: "12345", runAttempt: "2" };
 const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source", "embryo-ingest", "embryo-mixed-qc"];
 function id(n: number) { return `${n.toString(16).padStart(20, "0")}-${n.toString(16).padStart(20, "0")}`; }
-const fileFor = (n: number) => n === 5 ? "embryo-ingest-journey.spec.ts" : n === 6 ? "embryo-mixed-qc-journey.spec.ts" : n === 7 ? "embryo-qc-second-seed-journey.spec.ts" : n === 8 ? "reviews-keyless-owner-notice-journey.spec.ts" : `synthetic-${n}.spec.ts`;
-const tracked = [1,2,3,4,5,6,7,8].map(n => `e2e/${fileFor(n)}`);
-const projectFor = (n: number) => n === 7 ? "chromium" : n === 8 ? "chromium" : projects[n - 1];
-const assignedFor = (index: number) => index === 1 ? [1, 7] : index === 4 ? [4, 8] : [index];
+const fileFor = (n: number) => n === 5 ? "embryo-ingest-journey.spec.ts" : n === 6 ? "embryo-mixed-qc-journey.spec.ts" : n === 7 ? "embryo-qc-second-seed-journey.spec.ts" : n === 8 ? "reviews-keyless-owner-notice-journey.spec.ts" : n === 9 ? "embryo-third-party-journey.spec.ts" : `synthetic-${n}.spec.ts`;
+const tracked = [1,2,3,4,5,6,7,8,9].map(n => `e2e/${fileFor(n)}`);
+const projectFor = (n: number) => n >= 7 ? "chromium" : projects[n - 1];
+const assignedFor = (index: number) => index === 1 ? [1, 7] : index === 2 ? [2, 9] : index === 4 ? [4, 8] : [index];
 const timings = { setupMs: 100, buildMs: 200, bootstrapMs: 300, browserMs: 400 };
 function report(cases: number[], shard: number | null = null, executed = false) {
   return { config: { workers: 1, fullyParallel: false, shard: shard === null ? null : { current: shard, total: 6 },
@@ -21,14 +21,14 @@ function report(cases: number[], shard: number | null = null, executed = false) 
     unexpected: 0, flaky: 0, skipped: executed ? 0 : cases.length } };
 }
 function evidence() {
-  const full = report([1, 2, 3, 4, 5, 6, 7, 8]);
+  const full = report([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   return { manifest: browserManifest(full, source, tracked), receipts: [1, 2, 3, 4, 5, 6].map(index =>
     browserShardReceipt(full, report(assignedFor(index), index), report(assignedFor(index), index, true), source, index, index, timings, tracked)) };
 }
 describe("mandatory browser coverage across isolated jobs", () => {
   it("requires the real native listing statistics and refuses declared skips or discovery executions", () => {
-    const cases = [1, 2, 3, 4, 5, 6, 7, 8];
-    expect(browserReportCases(report(cases), null, false)).toHaveLength(8);
+    const cases = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    expect(browserReportCases(report(cases), null, false)).toHaveLength(9);
     for (const stats of [{ expected: 0, skipped: 0 }, { expected: 0, skipped: 5 },
       { expected: 1, skipped: 6 }]) {
       const value = report(cases); Object.assign(value.stats, stats);
@@ -49,7 +49,7 @@ describe("mandatory browser coverage across isolated jobs", () => {
   });
   it("accepts exactly-once complete discovery/execution and copies no raw configuration or private evidence", () => {
     const { manifest, receipts } = evidence();
-    expect(verifyBrowserShards(manifest, receipts, source)).toBe(8);
+    expect(verifyBrowserShards(manifest, receipts, source)).toBe(9);
     const serialized = JSON.stringify({ manifest, receipts });
     expect(serialized).not.toMatch(/PRIVATE_FIXTURE|private fixture|webServer|stdout|attachments/);
   });
@@ -93,14 +93,14 @@ describe("mandatory browser coverage across isolated jobs", () => {
     }
   });
   it("refuses narrowed, mismatched or additional executed cases and negative provider receipt", () => {
-    const full = report([1, 2, 3, 4, 5, 6, 7, 8]);
+    const full = report([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     for (const executed of [report([2], 1, true), report([1, 2], 1, true), report([1], 2, true)])
       expect(() => browserShardReceipt(full, report([1], 1), executed, source, 1, 1, timings, tracked)).toThrow();
     expect(() => browserShardReceipt(full, report([1], 1), report([1], 1, true), source, 1, -1, timings, tracked)).toThrow();
   });
   it("keeps the whole-suite provider upload invariant with a legitimately upload-free shard", () => {
     const { manifest, receipts } = evidence();
-    expect(verifyBrowserShards(manifest, [{ ...receipts[0], providerUploads: 0 }, ...receipts.slice(1)], source)).toBe(8);
+    expect(verifyBrowserShards(manifest, [{ ...receipts[0], providerUploads: 0 }, ...receipts.slice(1)], source)).toBe(9);
     expect(() => verifyBrowserShards(manifest, receipts.map(r => ({ ...r, providerUploads: 0 })), source)).toThrow();
     expect(() => verifyBrowserShards(manifest, [{ ...receipts[0], providerUploads: -1 }, ...receipts.slice(1)], source)).toThrow();
   });

@@ -96,7 +96,7 @@ export function multiRunDurationEstimator(profile: MultiRunDurationProfile): (gr
 
 // Historical receipt validation deliberately uses EACH historical project set.
 // It never imports the current registry or current GitHub-only runner modules.
-const allocationIdentity = z.object({ mode: z.literal("duration-v1"), profileSha256: digest, planSha256: digest }).strict();
+const allocationIdentity = z.object({ mode: z.enum(["duration-v1", "queue-v1"]), profileSha256: digest, planSha256: digest }).strict();
 const allocation = allocationIdentity.extend({ parts: z.array(z.object({
   index: z.number().int().min(1).max(6), cases: caseSet,
 }).strict()).length(6) }).strict();

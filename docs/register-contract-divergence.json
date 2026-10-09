@@ -118,6 +118,10 @@
       "why": "The service transport of Future Person claim documents: create-only upload, read and remove, all under keys private.claim_document_* makes (legal-evidence-ingest-v1). Called by the evidence chunk and completion routes, the claim document scan worker and jobs.retention. No client ever receives a key or a URL for this bucket."
     },
     {
+      "site": "legal-evidence src/lib/future-person/claim-objects.ts",
+      "why": "The separate native anonymous-appeal transport uses the literal legal-evidence bucket for create-only sealed upload, read and removal. Keys come from native appeal evidence sessions, never an account or request-selected storage key. The exact callsite is source coverage; it does not establish that the production bucket or provider is ready."
+    },
+    {
       "site": "legal-evidence src/lib/embryos/refused-invitation-cleanup.ts",
       "why": "Removes evidence objects for a refused adult invitation. See liveCallSiteOnUncreatedBucket: this bucket does not exist."
     },
@@ -153,6 +157,14 @@
     }
   ],
   "liveCallSiteOnUncreatedBucket": [
+    {
+      "bucket": "legal-evidence",
+      "file": "src/lib/future-person/claim-objects.ts",
+      "reachedFrom": "src/app/api/evidence/[session]/chunks/[sequence]/route.ts",
+      "routeId": "api.evidence-chunk",
+      "why": "supabaseAppealObjectStore creates, reads and removes sealed native anonymous-appeal evidence in the registered legal-evidence namespace. No migration creates this bucket. TEST fixture availability and the disabled-by-default appeal flow do not prove production Storage/provider readiness. The exact live callsite must remain recorded until the native bucket and policies are qualified.",
+      "closing": "Qualify the registered private legal-evidence bucket and policies before enabling the provider-backed appeal flow; remove this row only when the migration bucket census genuinely observes it."
+    },
     {
       "bucket": "legal-evidence",
       "file": "src/lib/embryos/refused-invitation-cleanup.ts",

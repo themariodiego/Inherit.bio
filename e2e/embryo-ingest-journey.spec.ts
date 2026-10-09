@@ -10,7 +10,8 @@ import { auditPublishedEmbryoSurfaces } from "./helpers/embryo-published-audits"
 import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
 import { readTaskSixTrace, startTaskSixTrace } from "./embryo-task-depth";
 import { PRIMARY } from "@/copy/overview";
-import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
+import { availabilityStatement, CANNOT_HAVE_BEST_OF_EACH, NO_RANKING_STATEMENT,
+  TRADEOFF_LINE_ONE, TRADEOFFS_NONE_MEASURABLE } from "@/copy/embryos/tradeoffs";
 import { openParticipantCReadSession } from "./participant-c-harness";
 import { seedParticipantC } from "./participant-c-journey";
 import { viewSchema } from "../scripts/comprehension/conductor-contract";
@@ -57,6 +58,19 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
       await primaryCompare.click();
       await expect(page).toHaveURL(url => url.pathname === "/embryos/compare");
       await expect(page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
+      const tradeOffPanel = page.locator('[data-trade-off-panel]');
+      await expect(tradeOffPanel).toHaveCount(1);
+      await expect(tradeOffPanel).toBeVisible();
+      await expect(tradeOffPanel).toContainText(TRADEOFF_LINE_ONE);
+      await expect(tradeOffPanel).toContainText(CANNOT_HAVE_BEST_OF_EACH);
+      await expect(tradeOffPanel.locator('[data-slot="trade-off-statement"]')).toHaveText(TRADEOFFS_NONE_MEASURABLE);
+      await expect(tradeOffPanel.locator('[data-slot="availability-statement"]')).toHaveText(availabilityStatement(embryos.length));
+      await expect(page.locator('details [data-trade-off-panel]')).toHaveCount(0);
+      // This genuine published fixture has no approved result condition. It
+      // must explain the absent trade-off rather than invent a risk or rank.
+      await expect(tradeOffPanel.locator('[data-slot="trade-off-conflicts"]')).toHaveCount(0);
+      await expect(page.locator('[data-figure-kind="absolute"], [data-figure-kind="interval"]')).toHaveCount(0);
+      await expect(page.locator('[aria-sort], table th button')).toHaveCount(0);
       for (const role of ["button", "combobox", "checkbox", "radio"] as const) {
         await expect(page.getByRole(role, { name: /rank|best embryo|recommend/i })).toHaveCount(0);
       }

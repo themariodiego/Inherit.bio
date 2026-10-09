@@ -14,7 +14,8 @@ export function saveQcSeedReceipt(seed: "a" | "b", test: TestInfo, runtimeOwner:
   const registered = QC_SEEDS[seed], source = ciBrowserSourceIdentity();
   assert(test.project.name === registered.project && path.basename(test.file) === registered.spec,
     "Exact native QC project and spec required");
-  const index = qcSeedJobPartition(test.config.shard, source, loadBrowserDurationProfile() !== null);
+  const allocationMode = loadBrowserDurationProfile() ? "duration-v1" : "queue-v1";
+  const index = qcSeedJobPartition(test.config.shard, source, allocationMode);
   const receipt = checkedQcSeed({ schemaVersion: 1, seed, ...source, index, total: 6,
     caseId: `${test.testId}:${test.project.name}`, project: test.project.name, spec: registered.spec,
     fixture: registered.fixture, fixtureSha256: fixtureHash(registered.fixture), runtimeOwner,

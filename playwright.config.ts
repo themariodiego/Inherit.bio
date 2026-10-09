@@ -48,6 +48,7 @@ const MIXED_QC_JOURNEY = /embryo-mixed-qc-journey\.spec\.ts$/;
 const QC_SEED_JOURNEY = /embryo-qc-second-seed-journey\.spec\.ts$/;
 const EMBRYO_JOURNEY = /embryo-ingest-journey\.spec\.ts$/;
 const KEYLESS_NOTICE_JOURNEY = /reviews-keyless-owner-notice-journey\.spec\.ts$/;
+const THIRD_PARTY_EMBRYO_JOURNEY = /embryo-third-party-journey\.spec\.ts$/;
 const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
@@ -105,7 +106,7 @@ const config = defineConfig({
   },
   projects: [
     ...(includePreparedJourney ? [{ name: "embryo-mixed-qc", use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${EMBRYO_APP_PORT}` }, testMatch: MIXED_QC_JOURNEY }] : []),
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY, MIXED_QC_JOURNEY, ...(includePreparedJourney ? [] : [QC_SEED_JOURNEY, KEYLESS_NOTICE_JOURNEY])] },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY, COMPREHENSION_RUN, EMBRYO_JOURNEY, MIXED_QC_JOURNEY, ...(includePreparedJourney ? [] : [QC_SEED_JOURNEY, KEYLESS_NOTICE_JOURNEY, THIRD_PARTY_EMBRYO_JOURNEY])] },
     ...(comprehensionRun ? [{ name: "comprehension-run", use: { ...devices["Desktop Chrome"] }, testMatch: COMPREHENSION_RUN }] : []),
     {
       name: "jurisdiction-off",

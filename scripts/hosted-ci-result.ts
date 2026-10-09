@@ -7,6 +7,7 @@ import { CI_BROWSER_SHARDS, verifyBrowserShards, verifyBrowserSourceCensus,
 import { verifyAccessibilitySweepPlacement } from "./ci-browser-balance";
 import { verifyBrowserQueueIsolation } from "./ci-browser-queue-isolation";
 import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256 } from "./ci-browser-duration-plan";
 import { REPORT_SLUG, RUNS, THRESHOLDS } from "./lighthouse-contract.mjs";
 
 const sha = z.string().regex(/^[0-9a-f]{40}$/);
@@ -234,6 +235,9 @@ export function verifyHostedCoverage(request: HostedResultRequest, manifestValue
   same([...new Set(manifest.cases.map(value => value.split(":")[1]))], [...STANDARD_CI_BROWSER_PROJECTS],
     "Complete current browser project set differs");
   assert.equal(manifest.allocation?.profileSha256 ?? null, profileSha256, "Committed selected profile differs");
+  if (profileSha256 !== null) assert.equal(manifest.allocation?.mode,
+    profileSha256 === DEFAULT_BROWSER_ALLOCATION_SHA256 ? "queue-v1" : "duration-v1",
+    "Committed scheduling mode differs");
   const sweeps = verifyAccessibilitySweepPlacement(shards); verifyBrowserQueueIsolation(shards);
   return { cases: count, ordinaryFiles: manifest.files.length, wholeGroups: shards.reduce((n, item) => n + item.files.length, 0),
     assignments: [...shards].sort((a, b) => a.index - b.index).map(item => item.executedCases.length),

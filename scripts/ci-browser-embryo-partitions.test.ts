@@ -7,6 +7,7 @@ const journeys = [
   { project: "embryo-mixed-qc", file: "embryo-mixed-qc-journey.spec.ts", cases: 1 },
   { project: "chromium", file: "embryo-qc-second-seed-journey.spec.ts", cases: 1 },
   { project: "chromium", file: "reviews-keyless-owner-notice-journey.spec.ts", cases: 1 },
+  { project: "chromium", file: "embryo-third-party-journey.spec.ts", cases: 1 },
 ];
 describe("fresh native embryo partitions", () => {
   it("requires all inventoried journeys but permits only one in each fresh job", () => {
@@ -23,6 +24,10 @@ describe("fresh native embryo partitions", () => {
     expect(() => assertEmbryoJourneyPartition([{ ...journeys[3], project: "embryo-ingest" }], false)).toThrow();
     for (const earlier of journeys.slice(0, 3))
       expect(() => assertEmbryoJourneyPartition([earlier, journeys[3]], false)).toThrow("at most one");
+    expect(() => assertEmbryoJourneyPartition(journeys.slice(0, 4), true)).toThrow("at most one");
+    expect(() => assertEmbryoJourneyPartition([{ ...journeys[4], project: "embryo-ingest" }], false)).toThrow();
+    for (const earlier of journeys.slice(0, 4))
+      expect(() => assertEmbryoJourneyPartition([earlier, journeys[4]], false)).toThrow("at most one");
     expect(() => assertEmbryoJourneyPartition([{ project: "chromium", file: "ordinary.spec.ts", cases: 1 }], false)).not.toThrow();
   });
   it("refuses unsharded CI while preserving ordinary local behavior", () => {
@@ -32,11 +37,15 @@ describe("fresh native embryo partitions", () => {
   });
   it("checks native assignment before Playwright execution and during independent full inventory", () => {
     const run = readFileSync("scripts/run-e2e.ts", "utf8");
-    expect(run.indexOf("browserReportCases(assignedDiscovery, shard, false)")).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
+    const assignedGuard = "verifyBrowserDurationPartitionListing(assignedDiscovery, plan, shard)";
+    expect(run).toContain(assignedGuard);
+    expect(run.indexOf(assignedGuard)).toBeLessThan(run.indexOf('spawnSync(command, ["test"'));
     const inventory = readFileSync("scripts/ci-browser-shards.run.mts", "utf8");
-    expect(inventory).toContain("const native = discoverBrowserCases(index)");
-    expect(inventory).toContain("browserReportCases(native, index, false)");
-    expect(inventory.indexOf("discoverBrowserCases(index)")).toBeLessThan(inventory.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
+    expect(inventory).toContain("browserDurationPlan(full, profile)");
+    expect(inventory).toContain("discoverBrowserCases(null, list.path)");
+    expect(inventory).toContain("verifyBrowserDurationListings(full, assignments, plan)");
+    expect(inventory.indexOf("verifyBrowserDurationListings(full, assignments, plan)"))
+      .toBeLessThan(inventory.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
   });
 });
 

@@ -18,7 +18,7 @@ const ATTESTATION_KINDS: Record<string, string> = {
 
 /** Observe the native product requests and their exact committed signatures.
  * Completion is a real receipt, not an assumption about form unmounting. */
-export async function signStatements(page: Page, button: string, accountId: string) {
+export async function signStatements(page: Page, button: string, accountId: string, fullName = "Synthetic Parent") {
   const form = page.locator('[data-slot="signing-form"]');
   const artifacts = await form.locator("fieldset[data-artifact]").evaluateAll(fields => fields.map(field => {
     const key = field.getAttribute("data-artifact")!;
@@ -37,7 +37,7 @@ export async function signStatements(page: Page, button: string, accountId: stri
     expect(artifact.statements.length).toBeGreaterThan(0);
   }
   for (const box of await form.getByRole("checkbox").all()) await box.check();
-  await form.getByLabel("Full legal name").fill("Synthetic Parent");
+  await form.getByLabel("Full legal name").fill(fullName);
   const responses: Response[] = [];
   const observe = (response: Response) => {
     if (new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST") responses.push(response);

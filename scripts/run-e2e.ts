@@ -38,19 +38,13 @@ if (shard !== null) {
   fullDiscovery = discoverBrowserCases();
   browserReportCases(fullDiscovery, null, false);
   const profile = loadBrowserDurationProfile();
-  if (profile) {
-    const plan = browserDurationPlan(fullDiscovery, profile); allocation = plan.allocation;
-    durationList = createBrowserDurationList(plan, shard);
-    try {
-      assignedDiscovery = discoverBrowserCases(null, durationList.path);
-      verifyBrowserDurationPartitionListing(assignedDiscovery, plan, shard);
-    } catch (error) { durationList.cleanup(); throw error; }
-    args[1] = `--test-list=${durationList.path}`;
-  } else {
-    assignedDiscovery = discoverBrowserCases(shard);
-    browserReportCases(assignedDiscovery, shard, false);
-    args[1] = `--shard=${shard}/6`;
-  }
+  const plan = browserDurationPlan(fullDiscovery, profile); allocation = plan.allocation;
+  durationList = createBrowserDurationList(plan, shard);
+  try {
+    assignedDiscovery = discoverBrowserCases(null, durationList.path);
+    verifyBrowserDurationPartitionListing(assignedDiscovery, plan, shard);
+  } catch (error) { durationList.cleanup(); throw error; }
+  args[1] = `--test-list=${durationList.path}`;
   // Validate the current whole-source census before executing any selected case.
   try { browserManifest(fullDiscovery, ciBrowserSourceIdentity(), trackedBrowserSpecs(), allocation); }
   catch (error) { durationList?.cleanup(); throw error; }
