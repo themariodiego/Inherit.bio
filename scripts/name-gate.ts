@@ -461,21 +461,43 @@ function validateAllowlist(
   return { allowed, failures };
 }
 
-function scanCommitMessages(
+export function parseCommitMessageRecords(raw: string): {
+  commit: string; timestamp: number; message: string;
+}[] {
+  const fields = raw.split("\0");
+  if (fields.pop() !== "" || fields.length === 0 || fields.length % 3 !== 0) {
+    throw new Error("Malformed NUL-framed commit history");
+  }
+  const records = [], seen = new Set<string>();
+  for (let index = 0; index < fields.length; index += 3) {
+    const [commit, time, message] = fields.slice(index, index + 3);
+    const timestamp = Number(time);
+    if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(commit) || seen.has(commit)
+      || !/^-?\d+$/.test(time) || !Number.isSafeInteger(timestamp)) {
+      throw new Error("Malformed NUL-framed commit history");
+    }
+    seen.add(commit);
+    records.push({ commit, timestamp, message: message.trim() });
+  }
+  return records;
+}
+
+export function scanCommitMessages(
   repositoryRoot: string,
   baselineSha: string,
   denylist: string[],
   allowed: ResolvedAllowedName[],
 ): { findings: NameFinding[]; commitCount: number } {
   const baselineTimestamp = Number(git(repositoryRoot, "show", "-s", "--format=%ct", baselineSha));
-  const commits = git(repositoryRoot, "rev-list", "HEAD").split("\n").filter(Boolean);
+  // Traverse every HEAD ancestor, including clock-skewed merge parents.
+  // Filter the exact committer timestamp here instead of pruning with --since.
+  const commits = parseCommitMessageRecords(git(repositoryRoot, "log", "--full-history",
+    "--no-patch", "-z", "--format=%H%x00%ct%x00%B", "HEAD"));
   const findings: NameFinding[] = [];
   let commitCount = 0;
-  for (const commit of commits) {
-    const timestamp = Number(git(repositoryRoot, "show", "-s", "--format=%ct", commit));
+  for (const { commit, timestamp, message } of commits) {
     if (timestamp <= baselineTimestamp) continue;
     commitCount++;
-    const message = git(repositoryRoot, "show", "-s", "--format=%B", commit);
     findings.push(...scanDenylist(message, "<commit-message>", denylist, commit));
     for (const finding of scanExternalHosts(message, "<commit-message>", allowed)) {
       findings.push({ ...finding, commit });
