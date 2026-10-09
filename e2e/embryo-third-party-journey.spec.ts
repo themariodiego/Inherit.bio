@@ -15,6 +15,7 @@ import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, parentEm
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
 import { RECORD_KEY_PATTERN } from "@/lib/embryos/record-key-card-values";
+import { ROLE_BOTH_PARENTS, ROLE_OTHER_PARENT, waitingForResultsBody } from "@/copy/embryos";
 
 test.use({ baseURL: "http://localhost:3105" });
 const origin = "http://localhost:3105";
@@ -297,7 +298,9 @@ test("a third-party embryo uploader obtains both genetic parents' native authori
         subjectIds: embryos.data!.map(row => row.subject_id) })).toHaveLength(2);
 
       await page.goto(`/embryos/compare?cohort=${cohortId}`);
-      await expect(page.locator('[data-slot="consent-required"]')).toBeVisible();
+      const consentRequired = page.locator('[role="status"][data-slot="blocking-state"][data-state="consent-required"]');
+      await expect(consentRequired).toBeVisible();
+      await expect(consentRequired).toHaveText(waitingForResultsBody(ROLE_BOTH_PARENTS));
       await expect(page.locator('[data-slot="cohort-permission"], [data-figure-kind]')).toHaveCount(0);
       for (const [index, context] of contexts.entries()) {
         const parent = context.pages()[0];
@@ -307,7 +310,8 @@ test("a third-party embryo uploader obtains both genetic parents' native authori
         await expect(parent.locator('[data-slot="cohort-permission"]')).toHaveCount(0);
         if (index === 0) {
           await page.reload();
-          await expect(page.locator('[data-slot="consent-required"]')).toBeVisible();
+          await expect(consentRequired).toBeVisible();
+          await expect(consentRequired).toHaveText(waitingForResultsBody(ROLE_OTHER_PARENT));
           await expect(page.locator('[data-slot="cohort-permission"], [data-figure-kind]')).toHaveCount(0);
         }
       }
@@ -321,7 +325,7 @@ test("a third-party embryo uploader obtains both genetic parents' native authori
       await expect(gate).toBeVisible();
       await gate.getByRole("checkbox").check();
       await gate.getByRole("button", { name: GATE_BUTTON }).click();
-      await expect(page.locator('[data-slot="result-gate"], [data-slot="consent-required"], [data-slot="cohort-permission"]')).toHaveCount(0);
+      await expect(page.locator('[data-slot="result-gate"], [role="status"][data-slot="blocking-state"][data-state="consent-required"], [data-slot="cohort-permission"]')).toHaveCount(0);
       await expect(page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
       await expect(page.locator('[data-figure-kind="absolute"], [data-figure-kind="interval"]')).toHaveCount(0);
 

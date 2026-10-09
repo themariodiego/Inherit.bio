@@ -109,7 +109,9 @@ export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:str
   try{
    await reviewFixtureSql(`update public.appeal_intakes set state='withdrawn',decided_at=clock_timestamp()
     where id in(select id from private.new_public_appeal_intakes where reviewer_principal_id='${principal}'::uuid)
-     and state in('submitted','reviewing')`);
+     and state in('submitted','reviewing');
+    select private.shred_new_public_appeal_v1(id) from private.new_public_appeal_intakes
+     where reviewer_principal_id='${principal}'::uuid and state<>'closed'`);
   }finally{
    await reviewFixtureSql(`update private.new_public_appeal_reviewers set active=false where principal_id='${principal}'::uuid;
     update private.new_public_appeal_config set enabled=false where singleton;`);
