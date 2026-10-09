@@ -40,8 +40,9 @@ pnpm gate:env && pnpm gate:jurisdictions && pnpm gate:sql-includes
 ```
 
 The source-inventory command checks exact environment reads, TEST-only token
-readers, native function sites, rendered mail, routes and complete browser
-partition coverage. Run it when files, routes, environment reads, migrations,
+readers, native function sites, rendered mail, routes and the complete
+`scripts/ci-browser` source-contract test namespace, including partition,
+accessibility and queue placement. Run it when files, routes, environment reads, migrations,
 mail or test partitions change. A missing or stale inventory must fail before
 a draft push. Mail rendering requires a clean committed input tree; a local
 commit is allowed before these checks. Configure `NAME_DENYLIST_FILE` for the

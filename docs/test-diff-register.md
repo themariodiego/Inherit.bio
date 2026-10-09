@@ -10146,3 +10146,6 @@ byte exact. No importer, application migration, scientific guard or expected
 result changes. The new seven-suite runner must first match the complete actual
 application and installed dependency baseline. No application DDL or dependency
 recreation is proposed. Native proof, publication and acceptance remain held.
+## 2026-10-09 — Keep the browser scheduling guard tied to the actual planner
+
+Hosted run 37994748537 passed 10,457 unit cases and failed one stale manifest-wiring expectation that still named the previous native scheduling call. The regression now requires the actual whole-file plan and six official listings to be checked before manifest publication, and strict final coverage before accessibility placement. A real queue-v1 listing case rejects mixed native selectors and missing accessibility sweeps. All original native placement, omission, duplication and whole-file refusal cases remain. The source-inventory pre-push command selects the complete cheap `scripts/ci-browser` contract namespace instead of a fixed handful of filenames; its one worker and 5,000 ms default assertion timeout remain unchanged. No browser case, runtime scheduling guard or hosted assertion is removed.
