@@ -9,7 +9,7 @@
     "lint": "eslint --max-warnings=0",
     "typecheck": "node scripts/typecheck-requester-statement-worker.mjs && next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:source-inventories": "vitest run scripts/env-gate.test.ts scripts/mock-token-allowlist.test.ts scripts/path-b-future-rights-bridge.test.ts src/lib/claims/capture-emails.test.ts scripts/route-register-correspondence.test.ts scripts/cloudflare-hosting-config.test.ts scripts/ci-browser --maxWorkers=1 --testTimeout=5000",
+    "test:source-inventories": "vitest run scripts/env-gate.test.ts scripts/mock-token-allowlist.test.ts scripts/path-b-future-rights-bridge.test.ts src/lib/claims/capture-emails.test.ts src/lib/claims/capture-checkout.test.ts src/lib/export/member-plan.test.ts scripts/accessibility-sweep-fixtures.test.ts scripts/hosted-ci-result.test.ts scripts/route-register-correspondence.test.ts scripts/cloudflare-hosting-config.test.ts scripts/ci-browser --maxWorkers=1 --testTimeout=5000",
     "test:watch": "vitest",
     "worker:prepared": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/prepared-worker.run.mts",
     "worker:claim-scan": "node --conditions=react-server --import ./scripts/server-only-shim.mjs --import tsx scripts/claim-document-scan-worker.run.mts",

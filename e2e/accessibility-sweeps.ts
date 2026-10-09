@@ -160,6 +160,7 @@ export const NOT_FOUND_URLS: Record<string, string> = {
  */
 export const CHECKED_ELSEWHERE: Record<string, string> = {
   "/reviews/future-person/claims/[id]": "e2e/future-person-review.spec.ts, the genuine assigned case in both themes",
+  "/reviews/appeals/[id]": "e2e/future-person-review.spec.ts, the real encrypted incomplete appeal and assigned own-MFA reviewer in both themes",
   "/family": "e2e/family.spec.ts, the signed-in hub",
   "/withdraw/[token]": "e2e/family.spec.ts, the pinned /withdraw/session entry for its invitation",
   "/family/[person]": "e2e/family.spec.ts, past the Tier-2 gate with a shared layer showing",

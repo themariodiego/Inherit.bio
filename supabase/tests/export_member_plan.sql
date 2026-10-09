@@ -48,6 +48,86 @@ create temporary table export_member_plan as select $plan$
     }
   },
   "tables": {
+    "private.account_archive_r2_allocations": {
+      "disposition": "excluded-credential",
+      "reason": "Account archive object allocations, write/disposal claims and exact provider identity receipts. These authorize private storage work and remain retained cleanup evidence, never archive content."
+    },
+    "private.account_archive_r2_configuration": {
+      "disposition": "reference",
+      "reason": "Disabled account archive R2 provider selection and public configuration binding. The singleton contains no person data or provider credential."
+    },
+    "private.account_requester_statement_capsules": {
+      "disposition": "excluded-protected",
+      "reason": "Original case envelopes, wrapped keys and immutable authorship bindings stay private. The authorized native requester pager opens only the current author’s own statement; raw capsules, other people’s statements, contact data and reviewer notes are never archive rows."
+    },
+    "private.appeal_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed appeal identity/authority document fragments and reserved private object locators. Evidence bytes are excluded from member exports and retained only for actual cleanup."
+    },
+    "private.appeal_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Appeal evidence upload cookies, one-use nonce hashes, independent envelope keys and original deadlines. These credentials and private object locators never leave in an archive."
+    },
+    "private.appeal_documents": {
+      "disposition": "excluded-protected",
+      "reason": "Private appeal identity/authority evidence and bound scan verdicts. The export contracts exclude legal evidence documents, their locators and review copies."
+    },
+    "private.new_correction_intake_config": {
+      "disposition": "reference",
+      "reason": "Disabled TEST correction intake configuration. The singleton contains no person data and grants no correction or provider authority."
+    },
+    "private.new_correction_intakes": {
+      "disposition": "excluded-protected",
+      "reason": "Prepared correction case frames, original session/nonce bindings, wrapped case keys and private contact pointers. Only the separately authorized original own statement may enter a requester archive; these working envelopes and reviewer/contact data do not."
+    },
+    "private.new_correction_reviewers": {
+      "disposition": "out-of-scope",
+      "reason": "Operator-appointed correction reviewer principals and current purpose revisions. These are staff assignments, not the requester’s record."
+    },
+    "private.new_public_appeal_config": {
+      "disposition": "reference",
+      "reason": "Disabled anonymous appeal intake capacity and rate settings. This configuration contains no person data or account authority."
+    },
+    "private.new_public_appeal_evidence_state": {
+      "disposition": "excluded-internal",
+      "reason": "Native evidence collection/submission revision and original case state. This is temporary intake workflow, not an additional person export member."
+    },
+    "private.new_public_appeal_intakes": {
+      "disposition": "excluded-protected",
+      "reason": "Anonymous case frames, sealed statements and contact data, envelope keys and original delivery bindings. A random case principal is not adopted as an account; its protected case package is never an account archive row."
+    },
+    "private.new_public_appeal_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent public appeal form nonce hashes and their original expiry. They prevent replay and must never be archive content."
+    },
+    "private.new_public_appeal_reviewers": {
+      "disposition": "out-of-scope",
+      "reason": "Named human appeal reviewer assignments and purpose revisions. These are staff authority, not a requester’s genomic record."
+    },
+    "private.public_appeal_decision_notices": {
+      "disposition": "excluded-credential",
+      "reason": "Separate one-use decision-notice candidate/outbox identities and original recipient/case bindings. This is private credential and delivery machinery, not archive content."
+    },
+    "private.public_appeal_document_decisions": {
+      "disposition": "excluded-protected",
+      "reason": "Protected documentary review digests, encrypted reviewer reasons/references and private actor/session bindings. Reviewer notes and evidence decisions are withheld from account member exports."
+    },
+    "private.public_appeal_pending_reviews": {
+      "disposition": "out-of-scope",
+      "reason": "Named appeal reviewer assignments and exact current evidence-document membership. This is staff workflow, not the requester’s own archive content."
+    },
+    "private.public_appeal_provisional_targets": {
+      "disposition": "excluded-protected",
+      "reason": "Private contact-match and typed provisional target bindings. They confer no account authority and must not disclose another person or genetic target through an export."
+    },
+    "private.public_appeal_review_chunks": {
+      "disposition": "excluded-credential",
+      "reason": "Challenged review chunk proofs, acknowledgement nonces and private download membership. These authorize documentary decisions and never enter requester archives."
+    },
+    "private.public_appeal_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "Own-MFA reviewer delivery cookies, nonce/challenge and authenticated session/revision bindings. This document-read authority must never be exported."
+    },
     "private.account_owned_cohort_purges": {
       "disposition": "excluded-internal",
       "reason": "Exact current account-deletion cohort work plan and original deadline. It is worker control state, removed after cleanup, not a person\u2019s record."

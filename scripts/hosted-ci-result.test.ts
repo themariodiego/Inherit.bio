@@ -169,6 +169,40 @@ describe("early complete native migration startup", () => {
   });
 });
 
+describe("early native export table census", () => {
+  it("runs the exact complete census immediately after startup and keeps the later full suite", () => {
+    const workflow = actualWorkflow(), steps = workflow.jobs["repository-checks"].steps;
+    const startup = steps.findIndex(step => step.name === "Start local Supabase");
+    const census = steps.findIndex(step => step.name === "Native export table census preflight");
+    expect(census).toBe(startup + 1);
+    expect(steps[census]).toEqual({ name: "Native export table census preflight",
+      run: "pnpm exec supabase test db supabase/tests/export_member_plan.sql" });
+    expect(steps.filter(step => step.run === "pnpm exec supabase test db")).toHaveLength(1);
+    expect(hostedWorkflowContract(workflow).names).toHaveLength(8);
+  });
+  it.each(["missing", "duplicate", "conditional", "optional", "command", "before-startup", "after-units", "missing-full-suite"])(
+    "refuses %s census drift", mutation => {
+      const changed = actualWorkflow() as { jobs: Record<string, { steps: {
+        name?: string; run?: string; uses?: string; if?: string; "continue-on-error"?: boolean;
+      }[] }> };
+      const steps = changed.jobs["repository-checks"].steps;
+      const index = steps.findIndex(step => step.name === "Native export table census preflight");
+      expect(index).toBeGreaterThan(0);
+      if (mutation === "missing") steps.splice(index, 1);
+      if (mutation === "duplicate") steps.push({ name: "Second export census", run: steps[index].run });
+      if (mutation === "conditional") steps[index].if = "always()";
+      if (mutation === "optional") steps[index]["continue-on-error"] = true;
+      if (mutation === "command") steps[index].run += " || true";
+      if (mutation === "before-startup" || mutation === "after-units") {
+        const [item] = steps.splice(index, 1);
+        const target = steps.findIndex(step => step.run === (mutation === "before-startup" ? "pnpm exec supabase start" : "pnpm test"));
+        expect(target).toBeGreaterThan(0); steps.splice(target + (mutation === "after-units" ? 1 : 0), 0, item);
+      }
+      if (mutation === "missing-full-suite") steps.splice(steps.findIndex(step => step.run === "pnpm exec supabase test db"), 1);
+      expect(() => hostedWorkflowContract(changed)).toThrow();
+    });
+});
+
 describe("source-bound hosted result readback", () => {
   it("keeps the publisher-only fixture free of active restores and warm seeding", () => {
     const workflow = publisherWorkflow(), source = hostedWorkflowContract(workflow);

@@ -135,6 +135,7 @@ export function hostedWorkflowContract(value: unknown) {
   const startup = repositorySteps.filter(item => item.name === "Start local Supabase");
   const frozenInstall = repositorySteps.filter(item => item.run === "pnpm install --frozen-lockfile");
   const sqlPreflight = repositorySteps.filter(item => item.run === "pnpm gate:sql-includes");
+  const exportPreflight = repositorySteps.filter(item => item.name === "Native export table census preflight");
   const keyExport = repositorySteps.filter(item => item.name === "Export current local Supabase keys");
   const mandatory = (item: typeof repositorySteps[number]) => item.if === undefined
     && item["continue-on-error"] === undefined && item.uses === undefined;
@@ -150,6 +151,13 @@ export function hostedWorkflowContract(value: unknown) {
   assert(["pnpm test", "pnpm typecheck", "pnpm lint"].every(command => expensiveChecks.some(item => item.run === command))
     && expensiveChecks.every(item => repositorySteps.indexOf(startup[0]) < repositorySteps.indexOf(item)),
   "Native migration startup must precede unit, type, lint and quality checks");
+  assert(exportPreflight.length === 1 && mandatory(exportPreflight[0])
+    && exportPreflight[0].run === "pnpm exec supabase test db supabase/tests/export_member_plan.sql"
+    && repositorySteps.filter(item => item.run === exportPreflight[0].run).length === 1
+    && repositorySteps.indexOf(exportPreflight[0]) === repositorySteps.indexOf(startup[0]) + 1
+    && expensiveChecks.every(item => repositorySteps.indexOf(exportPreflight[0]) < repositorySteps.indexOf(item))
+    && repositorySteps.filter(item => item.run === "pnpm exec supabase test db").length === 1,
+  "Mandatory complete export table census must immediately follow startup; the full database suite remains required");
   assert(keyExport.length === 1 && mandatory(keyExport[0])
     && expensiveChecks.every(item => repositorySteps.indexOf(item) < repositorySteps.indexOf(keyExport[0])),
   "Local database keys must remain unavailable to unit and quality checks");

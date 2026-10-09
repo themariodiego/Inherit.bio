@@ -4,6 +4,7 @@ import {ANON_KEY,SUPABASE_URL,assertNoThirdParty,expectAxeClean,watchRequests} f
 import {expect,test} from "./audited-test";
 import {observeNativeResponses} from "./helpers/native-response-observer";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
+import {auditAssignedAppeal} from "./helpers/public-appeal-review-audit";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
@@ -126,6 +127,7 @@ test("/reviews/future-person/claims/[id] complete: full bytes, separate human re
     (select bool_and(s.wrapped_document_key is null and s.document_key_shredded_at is not null)
      from private.claim_document_sessions s where s.intake_id=r.id)
     from private.claim_reviews r join private.future_person_claim_intakes i on i.id=r.id where r.id='${claim}'::uuid`)).toBe("refused/true/true");
+  await auditAssignedAppeal(page,browser,reviewer);
 });
 
 test("/reviews/future-person/claims/[id] processing: a canceled second chunk cannot become a read",async({page,context,baseURL})=>{

@@ -47,6 +47,8 @@ jobs:
         run: pnpm gate:sql-includes
       - name: Start local Supabase
         run: pnpm exec supabase start
+      - name: Native export table census preflight
+        run: pnpm exec supabase test db supabase/tests/export_member_plan.sql
       - name: Prepare private comparator denylist
         env:
           PRIVATE_NAME_DENYLIST: ${{ secrets.NAME_DENYLIST }}

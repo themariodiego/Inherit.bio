@@ -39,6 +39,14 @@ pnpm gate:citations
 pnpm gate:env && pnpm gate:jurisdictions && pnpm gate:sql-includes
 ```
 
+New migration tables must also have an explicit disposition in
+`docs/export-member-plan.json`; regenerate its native test block with
+`pnpm exec tsx scripts/export-member-plan.ts`. The source inventory preflight
+checks literal new table declarations. Hosted CI then checks the complete
+actual database catalog immediately after fresh startup and repeats the
+unchanged full database suite later.
+
+
 The source-inventory command checks exact environment reads, TEST-only token
 readers, native function sites, rendered mail, routes and the complete
 `scripts/ci-browser` source-contract test namespace, including partition,
@@ -121,3 +129,5 @@ Inherit is [AGPL-3.0](LICENSE). By contributing, you agree that your
 contributions are licensed under the same terms.
 
 Before a fresh database reset or test, run `pnpm gate:sql-includes`. It checks the complete tracked SQL/fixture include graph without database access, resolving every literal relative include from its containing file. Missing, escaping, dynamic or cyclic paths refuse the run. CI and the native browser bootstrap enforce this preflight before starting their database.
+
+The focused source-inventory preflight also checks every kept page has an actual named accessibility audit. A new protected page needs a genuine authorized fixture; a 404 visit or an unexecuted coverage label does not satisfy its browser audit.

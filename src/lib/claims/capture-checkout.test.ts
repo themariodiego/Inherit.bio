@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { access, mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
+import { access, chmod, link, mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -12,7 +12,7 @@ async function checkout() {
   await mkdir(join(root, "src/lib/claims"), { recursive: true });
   await writeFile(join(root, "src/lib/claims/email-fixtures.ts"), "export const fixture = 'synthetic';\n");
   await writeFile(join(root, "src/lib/claims/corpus.ts"), "export const policy = 'synthetic';\n");
-  await writeFile(join(root, ".gitignore"), "node_modules/\n.next/\n*.local\n.env*\n/workers/requester-statement-archive/worker-configuration.d.ts\n/workers/requester-statement-archive/.wrangler/\n");
+  await writeFile(join(root, ".gitignore"), "node_modules/\n.next/\n*.local\n.env*\n/workers/requester-statement-archive/worker-configuration.d.ts\n/workers/requester-statement-archive/.wrangler/\nsupabase/.temp/\nsupabase/.branches/\n");
   const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
   git("init", "--quiet");
   git("add", ".");
@@ -43,6 +43,40 @@ describe("complete capture checkout binding", () => {
     expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).not.toThrow();
   });
 
+  it("allows only the two passive CLI markers from mandatory early local startup", async () => {
+    const f = await checkout();
+    await mkdir(join(f.root, "supabase/.temp"), { recursive: true });
+    await mkdir(join(f.root, "supabase/.branches"), { recursive: true });
+    await writeFile(join(f.root, "supabase/.temp/cli-latest"), "v2.120.0");
+    await writeFile(join(f.root, "supabase/.branches/_current_branch"), "main");
+    expect(f.git("ls-files", "--others", "--ignored", "--exclude-standard").split("\n").sort()).toEqual([
+      "supabase/.branches/_current_branch", "supabase/.temp/cli-latest",
+    ]);
+    expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).not.toThrow();
+  });
+
+  it.each([
+    ["supabase/.temp/cli-latest", "untrusted-source"],
+    ["supabase/.branches/_current_branch", "foreign-branch"],
+    ["supabase/.temp/cli-latest", "v2.120.0\nsource"],
+    ["supabase/.temp/cli-latest", "v" + "1".repeat(64)],
+  ])("refuses non-inert or unbounded CLI marker %s", async (file, value) => {
+    const f = await checkout();
+    await mkdir(join(f.root, file, ".."), { recursive: true });
+    await writeFile(join(f.root, file), value);
+    expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).toThrow("unsafe-cli-marker");
+  });
+
+  it.each(["symlink", "hardlink", "writable"])("refuses %s CLI marker ownership", async kind => {
+    const f = await checkout(), file = join(f.root, "supabase/.temp/cli-latest");
+    await mkdir(join(f.root, "supabase/.temp"), { recursive: true });
+    if (kind === "symlink" || kind === "hardlink") {
+      const target = join(f.directory, "synthetic-cli-version"); await writeFile(target, "v2.120.0");
+      if (kind === "symlink") await symlink(target, file); else await link(target, file);
+    } else { await writeFile(file, "v2.120.0"); await chmod(file, 0o666); }
+    expect(() => assertEmailCaptureCheckout(f.root, f.commit, f.output)).toThrow("unsafe-cli-marker");
+  });
+
   it.each(["email-fixtures.ts", "corpus.ts"])("refuses an uncommitted %s change before receipt publication", async (file) => {
     const f = await checkout();
     await writeFile(join(f.root, "src/lib/claims", file), "export const changed = 'synthetic';\n");
@@ -66,6 +100,9 @@ describe("complete capture checkout binding", () => {
     "workers/requester-statement-archive/.wrangler.local",
     "workers/requester-statement-archive/.wrangler/source.local",
     "workers/requester-statement-archive/.wrangler/cache/.env.local",
+    "supabase/.temp/project-ref", "supabase/.temp/pooler-url", "supabase/.temp/config.toml",
+    "supabase/.temp/.env.local", "supabase/.temp/source.local", "supabase/.temp/cli-latest.local",
+    "supabase/.branches/source.local", "supabase/.branches/_current_branch.local",
   ])("refuses ignored untracked input %s", async (file) => {
     const f = await checkout();
     await mkdir(join(f.root, file, ".."), { recursive: true });

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { realpathSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -20,6 +20,46 @@ export interface EmailCaptureOptions {
   resolveComputed: CorpusInput["resolveComputed"];
 }
 
+/** Only passive, bounded CLI output; never linked-project or environment data. */
+function assertPassiveLocalCliMarkers(root: string): void {
+  for (const [name, content] of [
+    ["supabase/.temp/cli-latest", /^v\d{1,3}\.\d{1,3}\.\d{1,3}$/u],
+    ["supabase/.branches/_current_branch", /^main$/u],
+  ] as const) {
+    const file = join(root, name);
+    let named: ReturnType<typeof lstatSync>;
+    try { named = lstatSync(file); } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+      throw error;
+    }
+    const parent = dirname(file), owner = process.getuid?.();
+    const directory = lstatSync(parent);
+    if (realpathSync(parent) !== parent || !directory.isDirectory() || directory.isSymbolicLink()
+      || directory.uid !== owner || !named.isFile() || named.isSymbolicLink() || named.uid !== owner
+      || named.nlink !== 1 || named.size < 1 || named.size > 32 || (named.mode & 0o022) !== 0) {
+      throw new Error("email-capture:unsafe-cli-marker");
+    }
+    const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const opened = fstatSync(fd);
+      if (opened.dev !== named.dev || opened.ino !== named.ino || opened.size !== named.size
+        || opened.uid !== owner || opened.nlink !== 1 || opened.mode !== named.mode) throw new Error("email-capture:unsafe-cli-marker");
+      const buffer = Buffer.alloc(33);
+      let length = 0;
+      while (length < buffer.length) {
+        const count = readSync(fd, buffer, length, buffer.length - length, length);
+        if (count === 0) break;
+        length += count;
+      }
+      const raw = buffer.subarray(0, length), after = fstatSync(fd), current = lstatSync(file);
+      if (raw.length !== named.size || !content.test(raw.toString("utf8"))
+        || [after, current].some(value => value.dev !== named.dev || value.ino !== named.ino
+          || value.size !== named.size || value.uid !== owner || value.nlink !== 1 || value.mode !== named.mode
+          || value.mtimeMs !== named.mtimeMs || value.ctimeMs !== named.ctimeMs)) throw new Error("email-capture:unsafe-cli-marker");
+    } finally { closeSync(fd); }
+  }
+}
+
 /** No growing list of source paths: every tracked or untracked input is bound. */
 export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha: string, outputDirectory: string): void {
   const root = realpathSync(projectRoot);
@@ -31,6 +71,7 @@ export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha
   const git = (args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
   // Includes unstaged changes, the index, deletions and all nonignored new files.
   if (git(["status", "--porcelain", "--untracked-files=all"]).trim()) throw new Error("email-capture:uncommitted-renderer-inputs");
+  assertPassiveLocalCliMarkers(root);
   // Ignore only known installation/build/test outputs, never arbitrary ignored
   // source or config files. In particular, ignored .env files are not attested.
   const generated = ["node_modules/**", "worker/node_modules/**", ".next/**", "out/**", "build/**", "coverage/**", "test-results/**", "playwright-report/**", "next-env.d.ts", "tsconfig.tsbuildinfo",
@@ -38,6 +79,10 @@ export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha
     // capture in CI. Other ignored files under workers remain unbound inputs.
     "workers/requester-statement-archive/worker-configuration.d.ts",
     "workers/requester-statement-archive/.wrangler/cache/cf.json",
+    // The mandatory early local startup writes only these passive CLI
+    // markers. Linked-project/config/env inputs remain refused below.
+    "supabase/.temp/cli-latest",
+    "supabase/.branches/_current_branch",
   ];
   if (git(["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", ".", ...generated.map((path) => `:(top,exclude)${path}`)])) {
     throw new Error("email-capture:untracked-ignored-inputs");
