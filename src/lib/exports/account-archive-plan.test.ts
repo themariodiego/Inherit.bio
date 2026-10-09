@@ -41,6 +41,32 @@ async function fixture(selected?:Parameters<typeof accountPartitionFixture>[1]){
 async function read(stream:ReadableStream<Uint8Array>){return Buffer.from(await new Response(stream).arrayBuffer());}
 afterEach(()=>{vi.restoreAllMocks();vi.useRealTimers();vi.unstubAllEnvs();vi.unstubAllGlobals();});
 describe("complete subject layout and actual ZIP byte fence",()=>{
+ it("retains a native-counted own-statement member for an ordinary owned subject",async()=>{
+  vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","1");
+  const f=await fixture(),name=`subjects/${f.self}/my-requester-statements.json`;
+  const ownStatements={version:"test-account-own-statements-v2" as const,corrections:1,appeals:0,membershipSha256:"a".repeat(64),
+   originalDeadline:new Date(Date.now()+60_000).toISOString(),partitions:[{subjectId:f.self,rows:1}],classes:{
+    correction_requests:{rows:1,membershipSha256:"b".repeat(64),partitions:[{subjectId:f.self,rows:1}]},
+    appeal_intakes:{rows:0,membershipSha256:"c".repeat(64),partitions:[]}}};
+  f.options.factories.push(fixed(name,{rows:[{correctionId:randomUUID(),statement:"My own synthetic statement."}]},1));
+  const plan=await prepareAccountArchivePlan({...f.options,ownStatements});
+  const descriptor=plan.descriptors.find(m=>m.name===name)!;expect(descriptor).toMatchObject({subjectId:f.self,rows:1});
+  const actual=await read(await plan.members.find(m=>m.name===name)!.open(f.abort.signal));
+  expect(createHash("sha256").update(actual).digest("hex")).toBe(descriptor.sha256);
+  expect(actual.byteLength).toBe(descriptor.sizeBytes);
+ });
+ it.each(["missing-census","foreign-subject","wrong-count","closed-test"])("refuses %s requester members before reading",async failure=>{
+  vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","1");
+  const f=await fixture(),subject=failure==="foreign-subject"?randomUUID():f.self;
+  const ownStatements={version:"test-account-own-statements-v2" as const,corrections:1,appeals:0,membershipSha256:"a".repeat(64),
+   originalDeadline:new Date(Date.now()+60_000).toISOString(),partitions:[{subjectId:subject,rows:1}],classes:{
+    correction_requests:{rows:1,membershipSha256:"b".repeat(64),partitions:[{subjectId:subject,rows:1}]},
+    appeal_intakes:{rows:0,membershipSha256:"c".repeat(64),partitions:[]}}};
+  const member=fixed(`subjects/${subject}/my-requester-statements.json`,{},failure==="wrong-count"?2:1),chunks=vi.fn(member.chunks);
+  f.options.factories.push({...member,chunks});if(failure==="closed-test")vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","");
+  await expect(prepareAccountArchivePlan({...f.options,ownStatements:failure==="missing-census"?undefined:ownStatements})).rejects.toThrow();
+  expect(chunks).not.toHaveBeenCalled();
+ });
  it("requires the entire independently registered A.11 subject member set",()=>{
   const registered=routeRegister.exportLayouts["subject-partitioned-archive-v1"].requiredArtifacts
    .filter(name=>name.startsWith("subjects/{subject_id}/")).map(name=>name.slice("subjects/{subject_id}/".length));

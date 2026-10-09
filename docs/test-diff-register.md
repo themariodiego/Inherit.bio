@@ -1,3 +1,85 @@
+## 2026-10-09 — Compose the approved private R2 TEST account export through READY
+
+The approved private R2 TEST flow now composes the existing due reader,
+complete account ZIP producer and dedicated account-native R2 writer with fresh
+tracked runtimes. Native READY follows complete manifest/allocation census,
+every same-version physical EOF/hash readback and current authority checks;
+the existing consumed open-ready grant authorizes sequential complete-manifest
+download. Regressions check the actual produced ZIP/member/manifest hashes and
+consumer buffer disposal, including setup refusal, missing data, source drift,
+unknown COMMIT and cancellation. Ordinary production generation remains null.
+Native SQL tests, real provider qualification, delivery and long retention/purge
+support are separate and are not claimed by source review.
+
+## 2026-10-09 — Connect NEW claimant corrections to the native statement producer
+
+The existing correction POST now has its three native prepare/read/commit
+functions. Preparation selects the actual current claimant session and named
+reviewer, fixes the original case scope and thirty-day clock, and binds the
+current source contact ciphertext. Read and commit revalidate the full frame,
+recipient purpose and native source under locks. Commit consumes the real
+nonce, inserts the original statement and working package, and immediately
+registers its own-statement capsule in that transaction. Private rows cannot
+reauthor the scope, original clock or recipient after preparation. Terminal
+state or expiry removes the NEW key, working package and independently cloned
+contact, preserving the shared original contact and coded metadata. The extra
+private row is included in the existing complete physical deletion graph.
+
+New native regressions use the actual synthetic approved claimant/release
+fixture, including missing/foreign authority, source substitution, nonce replay,
+reviewer revocation, contact drift, immutable deadline and terminal cleanup.
+These tests are newly authored and remain unrun until a separate native test
+allocation. No legacy row conversion, contact-derived account adoption, human
+approval, production/provider activation or remote-history erasure is claimed.
+The native configuration is disabled by default.
+
+## 2026-10-09 — Produce only the account requester's sealed correction and appeal statements
+
+A closed native capsule registration validates the original case ID, author,
+subject, first revision, submitted/deadline clocks and original ciphertext.
+Only the trusted native intake owner may register the original NEW envelope;
+the same-transaction xmin guard is not an INSERT-only provenance claim.
+Legacy opaque cases remain a whole-class refusal. The account census and
+32-row owned pager use the current subject binding and consumed account/session
+attempt, recheck the full receipt after each page, and omit reviewer assignments,
+notes, appeal contacts and working packages. The account reader now supports
+appeal statement-only envelopes alongside corrections and checks both class
+counts through complete EOF before generation and again during materialization.
+New tests cover foreign authors/accounts/sessions/subjects, extra notes/contact,
+missing members, regeneration, revoked authority and TEST/default closure.
+The existing native class test now expects the explicit fifth requester census
+field and these two requester modes; its opaque-case assertion still refuses
+the whole request with the precise format-unavailable error. Capsule erasure is
+registered in the existing physical deletion graph and source/terminal-state
+cleanup destroys its wrapped key. The account worker uses the supplied account
+writer and shared tracked memory cleanup rather than case-run authority.
+The separate account R2 adapter commits its native allocation before provider
+work, checks the exact account receipt through complete EOF/hash/version
+readback, refuses unknown reservation or write results, and records only its
+own R2 worker ACK. Disposal permanently fences current writes and awaits the
+actual response cancellation before recording evidence. Allocation metadata
+and history remain retained; this supplies no purge, READY or generation
+capability. The dedicated owner DSN and TEST flag stay outside local defaults.
+New R2 unit and native tests are source-authored, not physical provider proof.
+The environment gate found the account adapter's implicit environment reads.
+Explicit reads of its three declared variables now preserve the same defaults;
+a real default-environment negative proves missing account opt-in refuses
+before native work. All earlier failed and harness-refused originals remain.
+The first combined focused run exposed the missing assembly admission for the
+new own-statement filename. Assembly now requires its exact native census,
+owned partition and row count; legacy correction filename rules stay exact.
+New tests reject missing census, foreign partitions, count drift and closed
+TEST flags before reads. The disposal fixture now represents an empty marker
+as natural EOF rather than an invalid zero-length stream chunk; the existing
+strict full-EOF fence is unchanged. The failed original run remains preserved.
+The new worker regression now binds all three genuine row/empty-EOF passes:
+preflight, manifest measurement and actual ZIP materialization. Its initial
+four-call assumption omitted the manifest pass; content, writer, bytes-complete
+and cleanup assertions remain exact.
+Existing provider/generation and READY/download/mail activation stay closed.
+Native tests are authored here and remain unrun. Focused source validation is
+pending; no prior assertions or timeouts are removed.
+
 ## 2026-10-09 — Isolate the two-person Path B expiry fixture from report invitation quotas
 
 The full hosted future-flow run reached the native ten-per-hour invitation

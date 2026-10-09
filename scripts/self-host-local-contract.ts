@@ -111,7 +111,7 @@ export function localEnvironmentFile(template: string, values: Record<string, st
     "INHERIT_EMBRYO_R2_ORIGIN", "INHERIT_EMBRYO_R2_BUCKET",
     "INHERIT_TEST_STATEMENT_GATEWAY_URL", "INHERIT_TEST_STATEMENT_GATEWAY_KEY",
     "INHERIT_TEST_STATEMENT_R2_BUCKET", "INHERIT_TEST_STATEMENT_R2_BINDING_SHA256",
-    "INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE"]);
+    "INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE"]);
   const seen = new Set<string>();
   const lines = template.split("\n").flatMap(line => {
     if (!line.trim() || line.trim().startsWith("#")) return [line];

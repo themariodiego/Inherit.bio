@@ -11,7 +11,8 @@ type Query={retry:(enabled:false)=>{abortSignal:(signal:AbortSignal)=>PromiseLik
  * JWT, ambient archive writer, caller target, selector query or fake READY.
  * Each reader owns current consumed-request/attempt/source authority before
  * and after reads. Supabase range transport is the existing original store;
- * the explicit archive writer remains the owner's unresolved delivery choice. */
+ * the approved private R2 TEST writer is supplied separately; production
+ * generation awaits its full native/provider qualification. */
 export function accountArchiveExecution(write:Execution["write"]):Execution{
  if(typeof write!=="function")throw new Error("account_archive_unavailable");
  let admin:ReturnType<typeof createAdminClient>|undefined;

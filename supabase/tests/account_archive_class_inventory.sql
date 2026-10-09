@@ -46,8 +46,8 @@ create function pg_temp.classes(op text,kind text default null,after_id uuid def
 $$;
 create temporary table actual_class_context as select pg_temp.classes('context') value;
 select set_eq($$select k from actual_class_context,jsonb_object_keys(value)k$$,
- $$select k from(values('version'),('authorityReceipt'),('classes'),('boundSnapshots'))x(k)$$,
- 'the actual class context has exactly its four closed fields');
+ $$select k from(values('version'),('authorityReceipt'),('classes'),('boundSnapshots'),('ownStatements'))x(k)$$,
+ 'the actual class context has exactly its five closed fields including the native requester descriptor');
 select is((select value->>'authorityReceipt' from actual_class_context),(select capture->>'authorityReceipt' from actual_class_job),
  'class inventory is bound to the exact actually consumed request receipt');
 select is((select value->'boundSnapshots'->0 from actual_class_context),
@@ -59,9 +59,9 @@ select is((select jsonb_array_length(value->'classes') from actual_class_context
 select set_eq($$select c->>'kind' as kind,c->>'mode' as mode from actual_class_context,jsonb_array_elements(value->'classes')c$$,
  $$select * from(values
  ('ancestry_regions','unsupported'),
- ('appeal_intakes','unsupported'),
+ ('appeal_intakes','requester-statements'),
  ('attestation_contradictions','metadata'),
- ('correction_requests','unsupported'),
+ ('correction_requests','requester-statements'),
  ('directional_grants','metadata'),
  ('embryo_basis_bindings','graph'),
  ('embryo_cohorts','graph'),
@@ -181,7 +181,7 @@ select is((select count(*) from public.correction_requests where subject_id=(sel
  'the unproved producer refusal has an actual nonempty current row');
 set local role service_role;
 select throws_ok($$select public.export_archive_request_v1('capture',origin,'account','7b100000-0000-4000-8000-000000000001') from actual_class_job$$,
- '0A000','export_class_projection_unavailable','a nonempty unproved class refuses the whole request rather than silently omitting it');
+ '0A000','export_requester_statement_format_unavailable','a nonempty opaque requester class refuses the whole request rather than silently omitting it');
 reset role;rollback to nonempty_unproved_class;
 select is(jsonb_build_object(
  'export',(select to_jsonb(e) from public.generated_exports e where e.id=(select (created->>'exportId')::uuid from actual_class_job)),

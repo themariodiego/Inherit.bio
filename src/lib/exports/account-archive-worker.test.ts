@@ -1,3 +1,14 @@
+import {runTestAccountArchiveFlow} from "./account-archive-test-flow";
+import {readTestAccountArchiveChunk} from "./account-archive-test-publication";
+import {r2AllocationDigest} from "./archive-r2-current-fence";
+import type {RequesterStatementR2Gateway} from "./requester-statement-r2";
+const testNative=vi.hoisted(()=>({invoke:undefined as undefined|((sql:string,values:unknown[])=>Promise<unknown[]>)}));
+vi.mock("@/lib/uploads/normalization-database",()=>({normalizationDatabaseConfig:()=>({host:"synthetic",database:"synthetic",username:"postgres"})}));
+vi.mock("postgres",()=>({default:()=>({begin:async(work:(tx:(s:TemplateStringsArray,...v:unknown[])=>Promise<unknown[]>)=>Promise<unknown>)=>
+ work((s,...v)=>{const sql=s.join("?");if(sql.includes("current_user="))return Promise.resolve([{allowed:true}]);if(sql.includes("set_config"))return Promise.resolve([]);
+ if(!testNative.invoke)throw new Error("unexpected-native-door");return testNative.invoke(sql,v);}),end:async()=>{}})}));
+
+
 import {savedPathBFixture,savedPathBReply} from "./__fixtures__/account-path-b";
 import {projectAccountGraphRow} from "./account-graph-projection";
 import {createHash,randomUUID} from "node:crypto";
@@ -7,6 +18,8 @@ import {ACCOUNT_GRAPH_CLASSES} from "./account-graph-projection";
 import type {AccountRoutedGraphRpc} from "./account-routed-graph-rows";
 import type {AccountPathBRpc} from "./account-path-b-members";
 import {buildAccountArchive} from "./account-archive-worker";
+import {sealNewCorrection} from "../future-person/correction-case-envelope";
+import {createRequesterStatementRuntime} from "./requester-statement-runtime";
 import {ACCOUNT_SUBJECT_MEMBERS} from "./account-archive-plan";
 import {accountPartitionFixture} from "./__fixtures__/account-partitions";
 import {claimantArchiveFixture} from "./__fixtures__/claimant-archive";
@@ -113,8 +126,39 @@ async function fixture(bound=false,prepared=false){
   inventoryRpc:f.inventoryRpc,classRpc:f.classRpc,auditRpc,originalRpc,boundSourceRpc,graphRpc,pathBRpc,readOriginalRange,write:historical.options.write,signal:f.abort.signal};
  return {...f,options,historical,file,original,memberRpc,contentRpc,auditRpc,originalRpc,readOriginalRange,boundSourceRpc,report,event,raw,canonical,header,originalState,graphRpc,pathBRpc};
 }
-afterEach(()=>{vi.restoreAllMocks();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.useRealTimers();});
+afterEach(()=>{testNative.invoke=undefined;vi.restoreAllMocks();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.useRealTimers();});
 describe("complete consumed-account unpublished archive executor",()=>{
+ it("uses the supplied account writer for own statements and settles their shared buffers",async()=>{
+  vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","1");
+  vi.stubEnv("BYOK_ENCRYPTION_KEY",Buffer.alloc(32,71).toString("base64"));
+  const f=await fixture(),runtime=createRequesterStatementRuntime(),caseId=randomUUID(),principal=randomUUID();
+  const submitted=new Date().toISOString();
+  const scope={version:1 as const,caseKind:"correction" as const,caseId,originalAuthorPrincipalId:principal,initialStatementRevision:1 as const,
+   originalSubmittedAt:submitted,originalDeadline:new Date(Date.parse(submitted)+30*86400_000).toISOString(),requestedField:"display-label" as const,originalSubjectId:f.self};
+  const capture={version:"test-account-own-statements-v2",corrections:1,appeals:0,membershipSha256:"a".repeat(64),originalDeadline:scope.originalDeadline,
+   partitions:[{subjectId:f.self,rows:1}],classes:{correction_requests:{rows:1,membershipSha256:"b".repeat(64),partitions:[{subjectId:f.self,rows:1}]},
+    appeal_intakes:{rows:0,membershipSha256:"c".repeat(64),partitions:[]}}};
+  Object.assign(f.classContext,{ownStatements:capture});
+  for(const kind of ["correction_requests","appeal_intakes"] as const)Object.assign(f.classContext.classes.find(e=>e.kind===kind)!,
+   {mode:"requester-statements",...capture.classes[kind]});
+  const frame={scope,envelope:sealNewCorrection(scope,"My synthetic own statement, not reviewer notes."),binding:{
+   accountId:f.context.actor.accountId,sessionId:f.context.actor.sessionId,subjectId:f.self,principalId:principal,bindingId:randomUUID(),
+   accountAuthSessionRevision:1,sessionRevision:1,principalRevision:1,lifecycleRevision:1,bindingRevision:1,
+   sourceReceipt:f.options.job.authorityReceipt,caseHash:"d".repeat(64)}};
+  const previous=f.memberRpc.getMockImplementation()!;
+  f.memberRpc.mockImplementation(async(...args)=>args[1].p_operation==="own-statements"?{error:null,data:args[1].p_after_id===null?
+   {rows:[{id:caseId,frame}],count:1,nextAfterId:caseId}:{rows:[],count:0,nextAfterId:null}}:previous(...args));
+  await buildAccountArchive({...f.options,statementRuntime:runtime});runtime.assertSettled();
+  const zip=new AdmZip(Buffer.concat(f.historical.writes));
+  expect(JSON.parse(zip.readAsText(`subjects/${f.self}/my-requester-statements.json`)).rows)
+   .toEqual([{correctionId:caseId,statement:"My synthetic own statement, not reviewer notes."}]);
+  expect(f.historical.write).toHaveBeenCalled();
+  expect(f.historical.calls.some(c=>c.p_operation==="bytes-complete")).toBe(true);
+  // Preflight, manifest measurement and actual ZIP materialization each prove
+  // the complete row followed by empty EOF; no stale preflight data is reused.
+  expect(f.memberRpc.mock.calls.filter(([,args])=>args.p_operation==="own-statements").map(([,args])=>args.p_after_id))
+   .toEqual([null,caseId,null,caseId,null,caseId]);
+ });
  it("consumes seven routed inventories and saved own-subject Path B science into the complete ZIP without held originals or counterpart history",async()=>{
   const f=await fixture(),saved=savedPathBFixture(f.adult,"reports.polygenic");
   const projection=projectAccountGraphRow("family_pairs",{id:randomUUID(),subject_a_id:f.self,subject_b_id:f.foreign,
@@ -238,4 +282,111 @@ describe("complete consumed-account unpublished archive executor",()=>{
    return original(...args);});
   await expect(buildAccountArchive(f.options)).rejects.toThrow();expect(f.historical.calls.some(c=>c.p_operation==="bytes-complete")).toBe(false);
  });
+});
+
+it("runs the real due/account producer/R2 writer through full READY and sequential complete-manifest download",async()=>{
+ vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_ACCOUNT_ARCHIVE_R2","1");
+ const f=await fixture(),events:string[]=[],frames=new Map<number,Parameters<RequesterStatementR2Gateway["assertReady"]>[0]>();
+ const stored=new Map<number,Uint8Array>(),reserved=new Map<number,Record<string,unknown>>(),pages=new Map<number,Record<string,unknown>>();
+ let summary:Record<string,unknown>|undefined,ready:unknown,grant=false,nextSequence=0;
+ const readers={workerRpc:f.options.workerRpc,memberRpc:f.options.memberRpc,contentRpc:f.options.contentRpc,
+  metadataRpc:f.options.metadataRpc,inventoryRpc:f.options.inventoryRpc,classRpc:f.options.classRpc,
+  auditRpc:f.options.auditRpc,originalRpc:f.options.originalRpc,boundSourceRpc:f.options.boundSourceRpc,
+  graphRpc:f.options.graphRpc,pathBRpc:f.options.pathBRpc,readOriginalRange:f.options.readOriginalRange};
+ const previous=f.options.workerRpc;
+ readers.workerRpc=(name,args,options)=>{
+  const query=previous(name,args,options);return {retry:(retry:false)=>({abortSignal:async(signal:AbortSignal)=>{
+   const result=await query.retry(retry).abortSignal(signal);if(result.error===null){
+    if(args.p_operation==="reserve")reserved.set(Number(args.p_payload!.ordinal),structuredClone(args.p_payload!));
+    if(args.p_operation==="acknowledge")reserved.set(Number(args.p_payload!.ordinal),structuredClone(args.p_payload!));
+    if(args.p_operation==="page")pages.set(Number(args.p_payload!.page),structuredClone(args.p_payload!));
+    if(args.p_operation==="bytes-complete")summary=structuredClone(args.p_payload!);
+   }return result;
+  }})};
+ };
+ const frame=(ordinal:number)=>{
+  const segment=reserved.get(ordinal)!;if(!segment)throw new Error("not-reserved");
+  const locator={provider:"archive-r2-current-object-v1" as const,bucket:"inherit-export-test",objectKey:`export/${randomUUID()}`,
+   byteCount:Number(segment.sizeBytes),sha256:String(segment.sha256)};
+  const value={objectId:randomUUID(),writeIdentity:{purpose:"inherit-export-reservation-v1" as const,
+   exportId:f.options.job.exportId,attemptId:f.historical.calls.find(c=>c.p_operation==="begin")!.p_attempt_id,
+   ordinal,offset:Number(segment.offset),byteCount:Number(segment.sizeBytes),sha256:String(segment.sha256),logicalKey:String(segment.objectKey),
+   reservedAt:new Date().toISOString(),authorityReceipt:f.options.job.authorityReceipt,locator},
+   writeBindingSha256:"c".repeat(64),allocationSha256:r2AllocationDigest(locator.bucket,locator.objectKey),configurationSha256:"d".repeat(64),
+   originalDeadline:new Date(Date.now()+120_000).toISOString()};frames.set(ordinal,value);return value;
+ };
+ testNative.invoke=async(sql,values)=>{
+  const name=sql.match(/private\.([a-z0-9_]+)/u)?.[1];events.push(name!);
+  const ordinal=Number(values[1]);
+  if(name==="reserve_account_archive_r2_write_v1")return [{frame:frame(ordinal)}];
+  if(name==="current_account_archive_r2_write_v1")return [{frame:frames.get(ordinal)}];
+  if(name==="complete_account_archive_r2_write_v1")return [{id:frames.get(ordinal)!.objectId}];
+  if(name==="account_archive_test_manifest_page_v1"){
+   if(values.length===5&&!grant)throw new Error("grant-required");const page=pages.get(Number(values[2]))!;
+   return [{page:{...summary,page:Number(values[2]),segments:(page.segments as Record<string,unknown>[]).map(segment=>({segment,
+    frame:frames.get(Number(segment.ordinal)),providerVersion:"v1",providerEtag:"e1"}))}}];
+  }
+  if(name==="current_account_archive_test_object_v1"){
+   if(values.length===5&&(!grant||ordinal!==nextSequence))throw new Error("grant-sequence");
+   return [{entry:{frame:frames.get(ordinal),providerVersion:"v1",providerEtag:"e1"}}];
+  }
+  if(name==="complete_test_account_archive_v1"){
+   expect(stored.size).toBe(Number(summary!.segmentCount));const producer=JSON.parse(String(values[2]));
+   ready={status:"ready",exportId:f.options.job.exportId,attemptId:String(values[0]),...summary,
+    authorityReceipt:f.options.job.authorityReceipt,principalHash:f.options.job.principalHash,expiresAt:new Date(Date.now()+60_000).toISOString(),
+    memberCount:producer.memberCount,payloadBytes:producer.payloadBytes,memberSha256:producer.memberSha256,manifestMemberSha256:producer.manifestMemberSha256};return [{ready}];
+  }
+  if(name==="ack_test_account_archive_download_v1"){
+   if(!grant||ordinal!==nextSequence)throw new Error("grant-sequence");nextSequence++;return [{acknowledged:true}];
+  }
+  throw new Error("unexpected-native-door");
+ };
+ const gateway=():RequesterStatementR2Gateway=>({assertReady:async()=>{},createPayload:async(binding,bytes)=>{
+  events.push("physical-create");expect(stored.has(binding.writeIdentity.ordinal)).toBe(false);stored.set(binding.writeIdentity.ordinal,bytes.slice());
+  return {key:binding.writeIdentity.locator.objectKey,version:"v1",etag:"e1",size:bytes.byteLength,
+   customMetadata:{state:"owned-payload",allocationSha256:binding.allocationSha256,writeBindingSha256:binding.writeBindingSha256}};
+ },readPayload:async(binding)=>{
+  events.push("physical-read");const bytes=stored.get(binding.writeIdentity.ordinal)!.slice();return {
+   descriptor:{key:binding.writeIdentity.locator.objectKey,version:"v1",etag:"e1",size:bytes.byteLength,
+    customMetadata:{state:"owned-payload",allocationSha256:binding.allocationSha256,writeBindingSha256:binding.writeBindingSha256}},
+   body:new ReadableStream<Uint8Array>({start(c){c.enqueue(bytes);c.close();}})};
+ },disposalProvider:{assertReady:async()=>{},serializeExactKey:async(_b,_s,work)=>work(),headCurrent:async()=>null,
+  readCurrent:async()=>{throw new Error("not-selected");},replaceWithEmptyMarker:async()=>{throw new Error("not-selected");}}});
+ const env={INHERIT_TEST_JURISDICTION:"1",INHERIT_TEST_ACCOUNT_ARCHIVE_R2:"1"};
+ const result=await runTestAccountArchiveFlow({env,signal:f.abort.signal,assertReady:async()=>{},gateway,readers,
+  rpc:()=>async()=>({error:null,data:[f.options.job]})});
+ expect(result.completed).toBe(1);expect(result.ready).toHaveLength(1);
+ expect(events.filter(e=>e==="complete_test_account_archive_v1")).toHaveLength(1);
+ expect(events.filter(e=>e==="physical-read")).toHaveLength(stored.size*2);
+ expect(f.historical.calls.at(-1)?.p_operation).toBe("bytes-complete");
+ const value=result.ready[0];const blocked=createRequesterStatementRuntime();
+ await expect(readTestAccountArchiveChunk({ready:value,ordinal:0,downloadHash:"9".repeat(64),origin:{kind:"account",...f.context.actor},
+  gateway:gateway(),runtime:blocked,signal:f.abort.signal,env})).rejects.toThrow();
+ await blocked.settle(Date.parse(f.options.job.deadline));blocked.assertSettled();
+ // The native request/nonce/cookie grant is exercised in account_archive_test_completion.sql.
+ // This synthetic boundary supplies its exact already-consumed grant response.
+ grant=true;const chunks:Buffer[]=[];
+ for(let ordinal=0;ordinal<value.segmentCount;ordinal++){
+  const runtime=createRequesterStatementRuntime(),lease=await readTestAccountArchiveChunk({ready:value,ordinal,downloadHash:"9".repeat(64),
+   origin:{kind:"account",...f.context.actor},gateway:gateway(),runtime,signal:f.abort.signal,env});
+  chunks.push(Buffer.from(lease.bytes));await lease.release();expect(lease.bytes.every(b=>b===0)).toBe(true);
+ }
+ const bytes=Buffer.concat(chunks),zip=new AdmZip(bytes),manifest=JSON.parse(zip.readAsText("manifest.json"));
+ expect(hash(bytes)).toBe(value.sha256);expect(bytes.byteLength).toBe(value.sizeBytes);
+ expect(zip.getEntries()).toHaveLength(value.memberCount);expect(hash(zip.readFile("manifest.json")!)).toBe(value.manifestMemberSha256);
+ expect(hash(JSON.stringify(manifest.members))).toBe(value.memberSha256);
+ for(const member of manifest.members){const actual=zip.readFile(member.name)!;expect(actual.byteLength).toBe(member.sizeBytes);expect(hash(actual)).toBe(member.sha256);}
+ expect(zip.readAsText("legal-audit.json")).toContain(f.event.event_code);
+ expect(nextSequence).toBe(value.segmentCount);
+ for(const bytes of [...stored.values(),...chunks])bytes.fill(0);testNative.invoke=undefined;
+});
+
+it("clears the actual owned configuration buffer when TEST gateway setup refuses before producer admission",async()=>{
+ vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_ACCOUNT_ARCHIVE_R2","1");
+ const bytes=new Uint8Array([31,37,41]),failure=new Error("configuration-refused"),stop=new AbortController();
+ const job={exportId:randomUUID(),principalHash:"a".repeat(64),authorityReceipt:"b".repeat(64),
+  deadline:new Date(Date.now()+120_000).toISOString()};
+ await expect(runTestAccountArchiveFlow({signal:stop.signal,assertReady:async()=>{},
+  rpc:()=>async()=>({data:[job],error:null}),gateway:runtime=>{runtime.own(bytes);throw failure;}})).rejects.toBe(failure);
+ expect([...bytes]).toEqual([0,0,0]);expect(testNative.invoke).toBeUndefined();
 });

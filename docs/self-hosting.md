@@ -480,6 +480,14 @@ are `INHERIT_TEST_STATEMENT_GATEWAY_URL`, `INHERIT_TEST_STATEMENT_GATEWAY_KEY`,
 deployments. A URL, key or configuration digest is not provider qualification.
 See `docs/requester-statement-archive-service.md` for the exact service contract.
 
+The separate account archive writer uses `INHERIT_TEST_ACCOUNT_ARCHIVE_R2`,
+`INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE` and the optional public trust anchor
+`INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE_CA_CERT` only in private qualification.
+Leave the flag and owner database address empty in ordinary deployments. The
+account-native allocation, complete readback and current-object disposal paths
+do not enable account archive generation or prove late-write history removal.
+Those capabilities stay closed until their native and provider proofs pass.
+
 - **Fresh setup stops**: read the bounded error code and private startup log.
   Keep the generated files; do not rerun preparation, rotate keys or reset an
   existing stack to get past a refusal. If `.inherit-local/configure-attempt.json`

@@ -9,9 +9,14 @@ export type AccountArchiveGenerationCapability=Readonly<{
   * opt-in. Delivery/publication remain separate and are not authorized here. */
  assertReady:(signal:AbortSignal)=>Promise<void>;
  execution:Omit<Parameters<typeof buildAccountArchive>[0],"job"|"signal">;
+ /** A fresh sensitive runtime and writer are created for each consumed job. */
+ executionForJob?:(job:AccountArchiveJob,signal:AbortSignal)=>Promise<Omit<Parameters<typeof buildAccountArchive>[0],"job"|"signal">>;
+ /** Explicit closed TEST completion only; the default capability has none. */
+ completeBytes?:(job:AccountArchiveJob,result:Awaited<ReturnType<typeof buildAccountArchive>>,signal:AbortSignal)=>Promise<void>;
 }>;
-/** The owner has not selected/proved export delivery. No ambient Supabase/R2
- * writer is adopted from existing source readers or configuration variables. */
+/** Ordinary production generation awaits full native/provider qualification.
+ * The approved private R2 TEST composition is separate; no ambient writer is
+ * adopted from existing source readers or configuration variables. */
 export function approvedAccountArchiveGeneration():AccountArchiveGenerationCapability|null{return null;}
 
 /** Compose an internally approved writer with the actual consumed account
@@ -25,6 +30,7 @@ export function accountArchiveGenerationCapability(provider:{assertReady:Account
 }
 const job=z.object({exportId:z.uuid(),principalHash:z.string().regex(/^[a-f0-9]{64}$/u),
  authorityReceipt:z.string().regex(/^[a-f0-9]{64}$/u),deadline:z.iso.datetime({offset:true})}).strict();
+export type AccountArchiveJob=z.infer<typeof job>;
 export type AccountArchiveDueRpc=(name:"export_archive_account_due_v1",args:{p_after:string|null},signal:AbortSignal)
  =>PromiseLike<{data:unknown;error:unknown}>;
 const unavailable=()=>new Error("account_archive_generation_unavailable");
@@ -54,7 +60,10 @@ export async function runAccountArchiveGeneration(options:{capability:AccountArc
   // still hold before this fresh attempt, then every write has its own proof.
   await bounded(signal=>capability.assertReady(signal));
   if(options.signal.aborted||Date.now()>=Date.parse(value.deadline))throw unavailable();
-  await buildAccountArchive({...capability.execution,job:value,signal:options.signal});completed++;
+  const execution=capability.executionForJob?await bounded(signal=>capability.executionForJob!(value,signal)):capability.execution;
+  const result=await buildAccountArchive({...execution,job:value,signal:options.signal});
+  if(capability.completeBytes)await bounded(signal=>capability.completeBytes!(value,result,signal));
+  completed++;
  }
  return Object.freeze({completed});
 }

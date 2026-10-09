@@ -1,11 +1,8 @@
 import "server-only";
-import {configuredRequesterStatementGateway} from "./requester-statement-private-transport";
-import {createRequesterStatementRuntime} from "./requester-statement-runtime";
-import {randomBytes} from "node:crypto";
+import {createHash} from "node:crypto";
+import {createRequesterStatementRuntime,type RequesterStatementRuntime} from "./requester-statement-runtime";
 import {prepareAccountRequesterStatementMembers} from "./requester-statement-account-members";
 import {createRequesterStatementMemorySpool} from "./requester-statement-spool";
-import {ownStatementArchiveRunRpc,configuredStatementRunRpc} from "./requester-statement-run";
-import {createRequesterStatementR2Writer,type RequesterStatementR2Gateway} from "./requester-statement-r2";
 import {prepareAccountGraphMembers} from "./account-graph-members";
 import type {AccountRoutedGraphRpc} from "./account-routed-graph-rows";
 import {prepareAccountPathBMembers,type AccountPathBRpc} from "./account-path-b-members";
@@ -41,9 +38,9 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
  workerRpc:ArchiveWorkerRpc;memberRpc:AccountMemberRpc;contentRpc:AccountContentRpc;metadataRpc:AccountMetadataRpc;
  inventoryRpc:AccountInventoryRpc;classRpc:AccountClassRpc;auditRpc:AccountAuditRpc;originalRpc:AccountOriginalRpc;
  boundSourceRpc:AccountBoundSourceRpc;graphRpc:AccountRoutedGraphRpc;pathBRpc:AccountPathBRpc;readOriginalRange:NonNullable<Parameters<typeof prepareAccountOriginalSource>[0]["readRange"]>;
- ownStatementRunRpc?:Parameters<typeof ownStatementArchiveRunRpc>[0];statementGateway?:RequesterStatementR2Gateway;
+ statementRuntime?:RequesterStatementRuntime;
  write:ArchiveSegmentationOptions["write"];signal:AbortSignal}){
- const statementRuntime=createRequesterStatementRuntime();
+ const statementRuntime=options.statementRuntime??createRequesterStatementRuntime();
  const workerRpc:ArchiveWorkerRpc=(...args)=>({
     retry:enabled=>({
       abortSignal:signal=>statementRuntime.track("account-worker-rpc",()=>
@@ -62,8 +59,7 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
  const graphRpc:AccountRoutedGraphRpc=(...args)=>statementRuntime.track("account-graph-rpc",()=>options.graphRpc(...args));
  const pathBRpc:AccountPathBRpc=(...args)=>statementRuntime.track("account-path-b-rpc",()=>options.pathBRpc(...args));
  const readOriginalRange:typeof options.readOriginalRange=(...args)=>statementRuntime.track("account-original-range",()=>options.readOriginalRange(...args));
- let spool:Zip64Spool|undefined,statementWrite:ArchiveSegmentationOptions["write"]|undefined;
- let run:ReturnType<typeof ownStatementArchiveRunRpc>|undefined,runId:string|undefined,runNonce:string|undefined;
+ let spool:Zip64Spool|undefined,containsStatements=false;
  let attempt:ArchiveAttempt|undefined,plan:Awaited<ReturnType<typeof prepareAccountArchivePlan>>|undefined;
  let context:z.infer<typeof accountArchiveContextSchema>|undefined,workingSignal=options.signal;
  const active=()=>{if(options.signal.aborted||workingSignal.aborted||Date.now()>=persistence.job.deadline)throw unavailable();};
@@ -90,16 +86,14 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   const history=await prepareAccountHistoryInventory({...common,rpc:inventoryRpc});
   const classes=await prepareAccountClassInventory({...common,rpc:classRpc});
   const ownCapture=classes.inventory.ownStatements;
-  if(ownCapture&&ownCapture.corrections>0){
-   run=ownStatementArchiveRunRpc(options.ownStatementRunRpc??configuredStatementRunRpc(),statementRuntime);
-   const nonceBytes=statementRuntime.own(randomBytes(32));try{runNonce=nonceBytes.toString("hex");}finally{statementRuntime.clear(nonceBytes);}
-   runId=await run.begin(options.job,attempt.attemptId,runNonce,signal);spool=createRequesterStatementMemorySpool(statementRuntime);
-   statementWrite=createRequesterStatementR2Writer(options.statementGateway??configuredRequesterStatementGateway(process.env,statementRuntime),options.job.authorityReceipt,statementRuntime);
+  if(ownCapture&&ownCapture.corrections+ownCapture.appeals>0){
+   containsStatements=true;spool=createRequesterStatementMemorySpool(statementRuntime);
   }else spool=await createZip64FileSpool();
-  const own=ownCapture?await prepareAccountRequesterStatementMembers({capture:ownCapture,accountId:context.actor.accountId,
-   sessionId:context.actor.sessionId,subjects:context.partitions.filter(p=>p.class==="claimed-bound").map(p=>p.subjectId),signal,
-   check,sensitiveRuntime:runId?statementRuntime:undefined,call:(subject,after,current)=>member("own-statements",subject,after,current)}):undefined;
+  const own=containsStatements&&ownCapture?await prepareAccountRequesterStatementMembers({capture:ownCapture,accountId:context.actor.accountId,
+   sessionId:context.actor.sessionId,authorityReceipt:reference.authorityReceipt,subjects:context.partitions.map(p=>p.subjectId),signal,
+   check,sensitiveRuntime:containsStatements?statementRuntime:undefined,call:(subject,after,current)=>member("own-statements",subject,after,current)}):undefined;
   if(own)await classes.acceptRequesterStatementMembership(own.captured,signal);
+  else if(ownCapture)await classes.acceptRequesterStatementMembership(ownCapture,signal);
   const graph=await prepareAccountGraphMembers({...common,rpc:graphRpc});
   const pathB=await prepareAccountPathBMembers({...common,rpc:pathBRpc});
   await classes.acceptGraphMembership(graph.receipts,signal);
@@ -155,21 +149,23 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   // prove their content/EOF again. Repeating all factories' context reads for
   // every ZIP header/byte would multiply the same full-graph authorization.
   const current=check;
-  plan=await prepareAccountArchivePlan({context,resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories,runId!==undefined,statementRuntime),files,sources,signal,check:current,sensitiveRuntime:runId?statementRuntime:undefined});
+  plan=await prepareAccountArchivePlan({context,resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories,containsStatements,statementRuntime),files,sources,signal,check:current,sensitiveRuntime:containsStatements?statementRuntime:undefined,ownStatements:ownCapture});
  }
  try{
-  const summary=await storeArchiveSegments({sensitiveRuntime:statementRuntime,sensitiveBuffers:()=>runId!==undefined,exportId:options.job.exportId,principalHash:options.job.principalHash,
+  const summary=await storeArchiveSegments({sensitiveRuntime:statementRuntime,sensitiveBuffers:()=>containsStatements,exportId:options.job.exportId,principalHash:options.job.principalHash,
    authorityReceipt:options.job.authorityReceipt,deadline:persistence.job.deadline,signal:options.signal,checkAuthority:persistence.checkAuthority,
    beginAttempt:async(value,signal)=>{await persistence.beginAttempt(value,signal);attempt=value;},prepareSource:prepare,
-   reserve:persistence.reserve,acknowledge:persistence.acknowledge,appendPage:persistence.appendPage,write:(...args)=>(statementWrite??options.write)(...args),
+   reserve:persistence.reserve,acknowledge:persistence.acknowledge,appendPage:persistence.appendPage,write:options.write,
    source:signal=>{if(!plan||!context)throw unavailable();return createZip64Archive({members:(async function*(){yield* plan!.members;})(),
     expectedMemberCount:plan.members.length,expectedPayloadBytes:plan.payloadBytes,modifiedAt:Date.parse(context.capturedAt),
     deadline:persistence.job.deadline,signal,authorityReceipt:options.job.authorityReceipt,
-    checkAuthority:async current=>{await plan!.check(current);return options.job.authorityReceipt;},spool:spool!,sensitiveRuntime:runId?statementRuntime:undefined});}});
+    checkAuthority:async current=>{await plan!.check(current);return options.job.authorityReceipt;},spool:spool!,sensitiveRuntime:containsStatements?statementRuntime:undefined});}});
   if(!plan)throw unavailable();await persistence.recordBytesComplete(summary,options.signal);
-  return {summary,memberCount:plan.members.length,payloadBytes:plan.payloadBytes};
- }finally{await spool?.dispose();
-  if(run&&runId&&runNonce){await statementRuntime.settle(persistence.job.deadline);statementRuntime.assertSettled();await run.finish(runId,runNonce,AbortSignal.timeout(30_000));}
-  runNonce=undefined;
+  return {summary,memberCount:plan.members.length,payloadBytes:plan.payloadBytes,
+   completionProof:{version:"complete-account-zip64-producer-v1" as const,memberCount:plan.members.length,payloadBytes:plan.payloadBytes,
+    memberSha256:createHash("sha256").update(JSON.stringify(plan.descriptors)).digest("hex"),manifestMemberSha256:plan.manifestMemberSha256}};
+ }finally{try{await spool?.dispose();}finally{
+  await statementRuntime.settle(persistence.job.deadline);statementRuntime.assertSettled();
+ }
  }
 }

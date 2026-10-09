@@ -62,3 +62,26 @@ describe("exact account-origin worker scheduling",()=>{
   const cancelled=fixture();await expect(runAccountArchiveGeneration({...cancelled.options,signal:controller.signal})).rejects.toThrow();expect(cancelled.factory).not.toHaveBeenCalled();
  });
 });
+
+ it("creates a fresh execution for each due job and completes only its actual producer result",async()=>{
+  const f=fixture(2),events:string[]=[],results=new Map<string,unknown>();
+  const executionForJob=vi.fn(async(value:typeof f.jobs[number],signal:AbortSignal)=>{
+   signal.throwIfAborted();events.push(`factory:${value.exportId}`);
+   return {...f.capability.execution,write:vi.fn()};
+  });
+  execute.mockImplementation(async(options)=>{
+   events.push(`producer:${options.job.exportId}`);const result={summary:{state:"bytes-complete"},job:options.job.exportId};
+   results.set(options.job.exportId,result);return result;
+  });
+  const completeBytes=vi.fn(async(value:typeof f.jobs[number],result:unknown,signal:AbortSignal)=>{
+   signal.throwIfAborted();expect(result).toBe(results.get(value.exportId));events.push(`ready:${value.exportId}`);
+  });
+  expect(await runAccountArchiveGeneration({...f.options,capability:{...f.capability,executionForJob,completeBytes}})).toEqual({completed:2});
+  expect(events).toEqual(f.jobs.flatMap(value=>[`factory:${value.exportId}`,`producer:${value.exportId}`,`ready:${value.exportId}`]));
+  expect(execute.mock.calls[0][0].write).not.toBe(execute.mock.calls[1][0].write);
+ });
+ it("does not count, retry or proceed after a refused TEST completion",async()=>{
+  const f=fixture(2),failure=new Error("source-changed-before-ready"),completeBytes=vi.fn(async()=>{throw failure;});
+  await expect(runAccountArchiveGeneration({...f.options,capability:{...f.capability,completeBytes}})).rejects.toBe(failure);
+  expect(execute).toHaveBeenCalledTimes(1);expect(completeBytes).toHaveBeenCalledTimes(1);expect(f.rpc).toHaveBeenCalledTimes(1);
+ });

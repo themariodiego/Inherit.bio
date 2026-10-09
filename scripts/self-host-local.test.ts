@@ -289,15 +289,15 @@ describe("configure with synthetic command adapters", () => {
 describe("closed TEST provider settings in the local template", () => {
   const external = ["INHERIT_TEST_STATEMENT_GATEWAY_URL", "INHERIT_TEST_STATEMENT_GATEWAY_KEY",
     "INHERIT_TEST_STATEMENT_R2_BUCKET", "INHERIT_TEST_STATEMENT_R2_BINDING_SHA256",
-    "INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE"];
+    "INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE"];
   const template = "# Keep external TEST providers closed\n" + external.map(name => `${name}=placeholder`).join("\n")
     + "\nLOCAL_SETTING=placeholder\n";
-  it("omits only the five explicit external settings while retaining comments and reviewed local values", () => {
+  it("omits only the explicit external settings while retaining comments and reviewed local values", () => {
     const generated = localEnvironmentFile(template, { LOCAL_SETTING: "safe" });
     expect(generated).toBe("# Keep external TEST providers closed\nLOCAL_SETTING='safe'\n");
     for (const name of external) expect(generated).not.toContain(`${name}=`);
   });
-  it("still refuses an unknown sixth provider setting instead of supplying a default", () => {
+  it("still refuses an unknown provider setting instead of supplying a default", () => {
     expect(() => localEnvironmentFile(template + "INHERIT_TEST_UNREVIEWED_PROVIDER=placeholder\n", { LOCAL_SETTING: "safe" }))
       .toThrow("template_value");
   });

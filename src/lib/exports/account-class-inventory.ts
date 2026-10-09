@@ -43,7 +43,7 @@ const inventory=z.object({version:z.literal("account-class-inventory-v1"),author
  boundSnapshots:z.array(futurePersonExportSnapshot),ownStatements:accountOwnStatementCapture.optional()}).strict()
  .refine(v=>new Set(v.classes.map(e=>e.kind)).size===ACCOUNT_CLASS_KINDS.length)
  .refine(v=>v.classes.every(e=>(e.mode===mode(e.kind)||e.mode==="graph"&&(ACCOUNT_GRAPH_CLASSES as readonly string[]).includes(e.kind)
-  ||e.mode==="requester-statements"&&e.kind==="correction_requests"&&requesterStatementsOpen()&&v.ownStatements!==undefined
+  ||e.mode==="requester-statements"&&["correction_requests","appeal_intakes"].includes(e.kind)&&(e.rows===0||requesterStatementsOpen())&&v.ownStatements!==undefined
   ||e.mode==="path-b-results"&&e.kind==="path_b_report_bindings"||e.mode==="excluded"&&e.kind==="other_adult_held_uploads")&&new Set(e.partitions.map(p=>p.subjectId)).size===e.partitions.length));
 const page=z.object({version:z.literal("account-class-page-v1"),kind:z.enum(ACCOUNT_CLASS_KINDS),
  rows:z.array(z.object({id:uuid,subjectId:uuid.nullable(),rowText:text.max(8192)}).strict()).max(500),nextAfterId:uuid.nullable()}).strict();
@@ -143,13 +143,17 @@ export async function prepareAccountClassInventory(options:{reference:{exportId:
   await check(signal);proved.add("path_b_report_bindings");proved.add("other_adult_held_uploads");
  }
  async function acceptRequesterStatementMembership(value:unknown,signal:AbortSignal){
-  await check(signal);const expected=captured.classes.find(e=>e.kind==="correction_requests")!;
-  const actual=accountOwnStatementCapture.parse(value);
-  if(expected.mode!=="requester-statements"||JSON.stringify(actual)!==JSON.stringify(captured.ownStatements)
-   ||expected.rows!==actual.corrections||expected.membershipSha256!==actual.membershipSha256
-   ||JSON.stringify(expected.partitions)!==JSON.stringify(actual.partitions))throw unavailable();
-  proved.add("correction_requests");await check(signal);
+  await check(signal);const actual=accountOwnStatementCapture.parse(value);
+  if(JSON.stringify(actual)!==JSON.stringify(captured.ownStatements))throw unavailable();
+  const kinds=actual.version==="test-account-own-statements-v2"?["correction_requests","appeal_intakes"] as const:["correction_requests"] as const;
+  for(const kind of kinds){const expected=captured.classes.find(e=>e.kind===kind)!;
+   const observed=actual.version==="test-account-own-statements-v2"?actual.classes[kind]
+    :{rows:actual.corrections,membershipSha256:actual.membershipSha256,partitions:actual.partitions};
+   if(expected.mode!=="requester-statements"||expected.rows!==observed.rows||expected.membershipSha256!==observed.membershipSha256
+    ||JSON.stringify(expected.partitions)!==JSON.stringify(observed.partitions))throw unavailable();proved.add(kind);
+  }await check(signal);
  }
+
  return {inventory:captured,records,acceptRequesterStatementMembership,acceptBoundMembership,acceptGraphMembership,acceptPathBMembership,check,assertComplete:async(signal:AbortSignal)=>{
   if(proved.size!==ACCOUNT_CLASS_KINDS.length)throw unavailable();await check(signal);
  }};

@@ -1,5 +1,6 @@
 import "server-only";
 import {requesterStatementsOpen} from "@/lib/future-person/requester-statement";
+import {accountOwnStatementCapture} from "./requester-statement-account-members";
 import {accountPathBSourceSchema,type AccountPathBSource} from "./account-path-b-members";
 import {createHash} from "node:crypto";
 import {z} from "zod";
@@ -33,8 +34,10 @@ const unavailable=()=>new Error("account_archive_plan_unavailable"),encoder=new 
  * human JWT, publication/READY transition or alternate authority is created. */
 export async function prepareAccountArchivePlan(options:{context:z.infer<typeof accountArchiveContextSchema>;
  factories:FuturePersonMemberFactory[];files:AccountArchiveFile[];sources:AccountArchiveSourceMember[];resultSources?:AccountPathBSource[];
- signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>;sensitiveRuntime?:RequesterStatementRuntime}){
+ signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>;sensitiveRuntime?:RequesterStatementRuntime;
+ ownStatements?:z.infer<typeof accountOwnStatementCapture>}){
  const context=accountArchiveContextSchema.parse(options.context),files=options.files.map(f=>fileSchema.parse(f));
+ const ownStatements=options.ownStatements===undefined?undefined:accountOwnStatementCapture.parse(options.ownStatements);
  const resultSources=(options.resultSources??[]).map(value=>accountPathBSourceSchema.parse(value));
  if(new Set(resultSources.map(r=>`${r.fileId}:${r.purpose}:${r.bindingRevision}`)).size!==resultSources.length
   ||resultSources.some(r=>!context.partitions.some(p=>p.subjectId===r.subjectId&&p.class==="ordinary")
@@ -68,7 +71,11 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   if(input.has(factory.name)||!Number.isSafeInteger(factory.rows)||factory.rows<0||typeof factory.chunks!=="function")throw unavailable();
   const own=/^subjects\/([a-f0-9-]{36})\/my-correction-statements\.json$/u.exec(factory.name);
   if(own&&(!requesterStatementsOpen()||!context.partitions.some(p=>p.subjectId===own[1]&&p.class==="claimed-bound")))throw unavailable();
-  if(factory.name!=="legal-audit.json"&&!required.has(factory.name)&&!own){
+  const requester=/^subjects\/([a-f0-9-]{36})\/my-requester-statements\.json$/u.exec(factory.name);
+  if(requester&&(!requesterStatementsOpen()||ownStatements?.version!=="test-account-own-statements-v2"
+   ||!context.partitions.some(p=>p.subjectId===requester[1])
+   ||ownStatements.partitions.find(p=>p.subjectId===requester[1])?.rows!==factory.rows))throw unavailable();
+  if(factory.name!=="legal-audit.json"&&!required.has(factory.name)&&!own&&!requester){
    const match=/^(variants|canonical|observed)\/([a-f0-9-]{36})\.(csv|jsonl)$/u.exec(factory.name),file=match?fileById.get(match[2]):undefined;
    const sanitized=/^originals\/([a-f0-9-]{36})\/embryo-autosomal-source\.jsonl$/u.exec(factory.name);
    if(sanitized){if(fileById.get(sanitized[1])?.projection!=="sanitized-embryo")throw unavailable();}
@@ -177,5 +184,5 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  members.push({name:"manifest.json",sizeBytes:manifest.byteLength,open:async signal=>stream(verified(manifestFactory.chunks(signal),signal,
   {sizeBytes:manifest.byteLength,sha256:manifestSha256}),signal)});payloadBytes+=manifest.byteLength;
  if(!Number.isSafeInteger(payloadBytes))throw unavailable();members.sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:0);
- return {members,payloadBytes,descriptors,check};
+ return {members,payloadBytes,descriptors,check,manifestMemberSha256:manifestSha256};
 }
