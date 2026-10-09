@@ -262,7 +262,8 @@ opens no stack, journal, key or model process.
 
 `--prepare` builds once. Every subsequent task/persona pair acquires a distinct
 empty disposable Supabase stack, exact owned runtime container and browser,
-reusing only the immutable source/build/image. It seeds a/b through the original
+reusing the source/build/image read-only, with an owned bounded per-container
+Next cache. It seeds a/b through the original
 product upload/report choices, T9 through the real separate reserver invitation,
 and c through both genuine parent signatures, upload and isolated worker. A
 fresh read/action context follows setup; T6 and T7 never share an account or
@@ -290,6 +291,17 @@ unrun. A supplied full configuration is callable by the same exclusive launcher;
 completion and qualification require every actual session/cleanup and the
 original thresholds, never a source check or stub answer. No G3.1/G3.3 YES is
 claimed, and a full round's fit inside the unchanged job limit is unmeasured.
+
+**The paid operator path is not configured.** The current checked-in manual
+workflow runs the deterministic stub only; it has no paid secret/configuration
+input. A private key kept in the owner's Mac shell cannot be inherited by a
+GitHub-hosted Linux process, and this launcher requires genuine signed ownership
+of that hosted job. No authorized key/configuration transport to that job has
+been established. The complete factory is therefore callable source, not an
+executable paid round. Before calibration, a private execution and credential
+mechanism consistent with the ownership fence and shared US$50 ceiling must be
+explicitly established. Do not upload a private key to GitHub/hosting, fake CI
+ownership or relax the fence to make a run start.
 
 ## Spending boundary
 

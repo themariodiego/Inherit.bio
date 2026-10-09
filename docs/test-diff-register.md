@@ -540,6 +540,9 @@ native observation/action/completion rechecks current publication. Uncertain
 cleanup prevents another acquisition. The existing Storage proxy is extracted
 for reuse with its denial, CORS, body, timeout and real-upload assertions intact.
 
+The exclusive path also keeps the build read-only and uses a bounded disposable
+per-container Next cache; the ordinary runtime defaults remain unchanged.
+
 Pure lifecycle controls cover all 300 pairs and 30 blind regrades, identity
 reuse, overlap, cancellation, uncertain cleanup and publication drift. The
 manual credential-free instrument now authors T6/T7 for two personas. No prompt,

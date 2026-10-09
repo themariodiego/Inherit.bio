@@ -93,7 +93,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal):
       env: { ...infrastructureChildEnvironment(process.env), ...stack.keys }, timeout: 120_000 });
     const capacity = "insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,maximum_account_bytes,maximum_active_uploads) values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32) on conflict(singleton) do nothing;";
     await actualResourceIO.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", capacity], { signal });
-    runtime = await startCiBrowserRuntime(infrastructureChildEnvironment(process.env));
+    runtime = await startCiBrowserRuntime(infrastructureChildEnvironment(process.env), true);
     const pair = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
     const signer = JSON.stringify({ ...pair.privateKey.export({ format: "jwk" }), kid: randomUUID() });
     const publicJwk = { ...pair.publicKey.export({ format: "jwk" }), kid: JSON.parse(signer).kid, alg: "ES256", use: "sig" };

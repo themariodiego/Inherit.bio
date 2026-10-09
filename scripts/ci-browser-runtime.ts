@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL, APP_PORTS } from "./ci-browser-config";
 
@@ -30,13 +30,19 @@ function buildIdentity(environment?: Record<string, string>) {
 export function recordCiBuild(environment?: Record<string, string>) {
   writeFileSync(".next/inherit-ci-build.json", JSON.stringify(buildIdentity(environment)) + "\n", { mode: 0o600 });
 }
-export async function startCiBrowserRuntime(environment?: Record<string, string>): Promise<{ env: Record<string, string>; stop: () => void }> {
+export async function startCiBrowserRuntime(environment?: Record<string, string>, disposableBuildCache = false): Promise<{ env: Record<string, string>; stop: () => void }> {
   assertCiRuntime(process.env);
   const runDocker = (args: string[]) => docker(args, environment);
   assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")), buildIdentity(environment), "CI build receipt must match source and public configuration");
   const root = realpathSync(process.cwd());
   assert(root === process.cwd() && !root.includes(",") && !root.includes("\n"), "Exact checkout mount required");
   assert(!readdirSync(root).some(name => /^\.env(?:\.|$)/.test(name) && !name.endsWith(".example")), "Do not expose local environment files to the CI runtime");
+  if (disposableBuildCache) {
+    const cache = path.join(root, ".next/cache");
+    const cacheIdentity = existsSync(cache) ? lstatSync(cache) : undefined;
+    assert(cacheIdentity?.isDirectory() && !cacheIdentity.isSymbolicLink(),
+      "Disposable build cache requires the genuine build cache directory");
+  }
   // checkout must not persist its GitHub credential in the mounted repository.
   const gitConfig = execFileSync("git", ["config", "--local", "--name-only", "--list"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined });
   assert(!/extraheader|credential\./i.test(gitConfig), "CI checkout credentials must not be persisted");
@@ -76,7 +82,10 @@ export async function startCiBrowserRuntime(environment?: Record<string, string>
       "--tmpfs", "/tmp:rw,nosuid,nodev,size=128m,mode=1777",
       "--tmpfs", `/tls:rw,nosuid,nodev,noexec,size=4m,mode=0700,uid=${uid},gid=${gid}`,
       "--mount", `type=bind,src=${root},dst=/app,readonly`,
-      "--mount", `type=bind,src=${path.join(root, ".next")},dst=/app/.next`,
+      "--mount", `type=bind,src=${path.join(root, ".next")},dst=/app/.next${disposableBuildCache ? ",readonly" : ""}`,
+      // This container alone owns the mutable cache; container removal discards
+      // it. The exclusive launcher reuses built executable bytes readonly.
+      ...(disposableBuildCache ? ["--tmpfs", `/app/.next/cache:rw,nosuid,nodev,noexec,size=128m,mode=0700,uid=${uid},gid=${gid}`] : []),
       ...[...APP_PORTS, 8130].flatMap(port => ["--publish", `127.0.0.1:${port}:${port}`]),
       image, "sh", "/app/scripts/ci-browser/namespace.sh", gateway.address];
     runDocker(args); created = true;
