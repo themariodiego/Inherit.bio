@@ -122,6 +122,53 @@ describe("mandatory signed APT setup", () => {
   });
 });
 
+describe("early complete native migration startup", () => {
+  it("starts once after frozen install/includes, before checks, and exports database keys only later", () => {
+    const workflow = actualWorkflow(), steps = workflow.jobs["repository-checks"].steps;
+    const at = (run: string) => steps.findIndex(step => step.run === run);
+    const startup = steps.findIndex(step => step.name === "Start local Supabase");
+    const keys = steps.findIndex(step => step.name === "Export current local Supabase keys");
+    expect(at("pnpm install --frozen-lockfile")).toBeLessThan(at("pnpm gate:sql-includes"));
+    expect(at("pnpm gate:sql-includes")).toBeLessThan(startup);
+    for (const run of ["pnpm typecheck", "pnpm lint", "pnpm test"]) {
+      expect(startup).toBeLessThan(at(run)); expect(at(run)).toBeLessThan(keys);
+    }
+    expect(keys).toBeLessThan(at("pnpm exec supabase test db"));
+    expect(hostedWorkflowContract(workflow).names).toHaveLength(8);
+    expect(workflow.jobs.browser.steps.filter(step => step.run === "pnpm exec supabase start")).toHaveLength(1);
+  });
+  it.each(["missing", "duplicate", "conditional", "optional", "command", "before-install", "before-includes",
+    "after-units", "after-types", "after-lint", "after-gates", "early-key-export"])("refuses %s startup/context drift", mutation => {
+    const changed = actualWorkflow() as { jobs: Record<string, { steps: {
+      name?: string; run?: string; uses?: string; if?: string; "continue-on-error"?: boolean;
+    }[] }> };
+    const steps = changed.jobs["repository-checks"].steps;
+    const startup = steps.findIndex(step => step.name === "Start local Supabase");
+    expect(startup).toBeGreaterThan(0);
+    if (mutation === "missing") steps.splice(startup, 1);
+    if (mutation === "duplicate") steps.push({ name: "Second native startup", run: "pnpm exec supabase start" });
+    if (mutation === "conditional") steps[startup].if = "always()";
+    if (mutation === "optional") steps[startup]["continue-on-error"] = true;
+    if (mutation === "command") steps[startup].run += " || true";
+    if (mutation === "before-install" || mutation === "before-includes") {
+      const command = mutation === "before-install" ? "pnpm install --frozen-lockfile" : "pnpm gate:sql-includes";
+      const target = steps.findIndex(step => step.run === command); expect(target).toBeGreaterThan(0);
+      const [item] = steps.splice(startup, 1); steps.splice(target, 0, item);
+    }
+    if (mutation.startsWith("after-")) {
+      const command = ({ "after-units": "pnpm test", "after-types": "pnpm typecheck", "after-lint": "pnpm lint",
+        "after-gates": "pnpm gate:routes" } as Record<string, string>)[mutation];
+      const [item] = steps.splice(startup, 1), target = steps.findIndex(step => step.run === command);
+      expect(target).toBeGreaterThan(0); steps.splice(target + 1, 0, item);
+    }
+    if (mutation === "early-key-export") {
+      const keys = steps.findIndex(step => step.name === "Export current local Supabase keys");
+      expect(keys).toBeGreaterThan(startup); const [item] = steps.splice(keys, 1); steps.splice(startup + 1, 0, item);
+    }
+    expect(() => hostedWorkflowContract(changed)).toThrow();
+  });
+});
+
 describe("source-bound hosted result readback", () => {
   it("keeps the publisher-only fixture free of active restores and warm seeding", () => {
     const workflow = publisherWorkflow(), source = hostedWorkflowContract(workflow);

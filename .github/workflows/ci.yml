@@ -41,6 +41,12 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Compile the complete migration sequence before expensive checks. Keep
+      # key export below those checks so their synthetic environment is intact.
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
+      - name: Start local Supabase
+        run: pnpm exec supabase start
       - name: Prepare private comparator denylist
         env:
           PRIVATE_NAME_DENYLIST: ${{ secrets.NAME_DENYLIST }}
@@ -117,10 +123,6 @@ jobs:
         run: pnpm gate:env
       - name: Jurisdiction review gate
         run: pnpm gate:jurisdictions
-      - name: SQL fixture relative-include preflight
-        run: pnpm gate:sql-includes
-      - name: Start local Supabase
-        run: pnpm exec supabase start
       - name: Export current local Supabase keys
         run: |
           eval "$(pnpm exec supabase status -o env)"

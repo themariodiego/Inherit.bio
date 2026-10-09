@@ -131,6 +131,28 @@ export function hostedWorkflowContract(value: unknown) {
     return { family, names: family === "browser"
       ? Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`) : [family], named, failureUploads, fontCache };
   });
+  const repositorySteps = workflow.jobs["repository-checks"].steps;
+  const startup = repositorySteps.filter(item => item.name === "Start local Supabase");
+  const frozenInstall = repositorySteps.filter(item => item.run === "pnpm install --frozen-lockfile");
+  const sqlPreflight = repositorySteps.filter(item => item.run === "pnpm gate:sql-includes");
+  const keyExport = repositorySteps.filter(item => item.name === "Export current local Supabase keys");
+  const mandatory = (item: typeof repositorySteps[number]) => item.if === undefined
+    && item["continue-on-error"] === undefined && item.uses === undefined;
+  assert(startup.length === 1 && startup[0].run === "pnpm exec supabase start" && mandatory(startup[0])
+    && repositorySteps.filter(item => item.run === "pnpm exec supabase start").length === 1,
+  "Exactly one mandatory native migration startup required");
+  assert(frozenInstall.length === 1 && mandatory(frozenInstall[0]) && sqlPreflight.length === 1 && mandatory(sqlPreflight[0])
+    && repositorySteps.indexOf(frozenInstall[0]) < repositorySteps.indexOf(sqlPreflight[0])
+    && repositorySteps.indexOf(sqlPreflight[0]) < repositorySteps.indexOf(startup[0]),
+  "Native migration startup must follow frozen install and SQL include preflight");
+  const expensiveChecks = repositorySteps.filter(item => ["pnpm test", "pnpm typecheck", "pnpm lint"].includes(item.run ?? "")
+    || item.run?.startsWith("pnpm gate:") && item.run !== "pnpm gate:sql-includes");
+  assert(["pnpm test", "pnpm typecheck", "pnpm lint"].every(command => expensiveChecks.some(item => item.run === command))
+    && expensiveChecks.every(item => repositorySteps.indexOf(startup[0]) < repositorySteps.indexOf(item)),
+  "Native migration startup must precede unit, type, lint and quality checks");
+  assert(keyExport.length === 1 && mandatory(keyExport[0])
+    && expensiveChecks.every(item => repositorySteps.indexOf(item) < repositorySteps.indexOf(keyExport[0])),
+  "Local database keys must remain unavailable to unit and quality checks");
   const producer = (family: string, name: string, member: string) => {
     const matches = workflow.jobs[family].steps.filter(item => item.uses === "actions/upload-artifact@v4"
       && item.with?.name === name);
