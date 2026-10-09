@@ -51,9 +51,9 @@ async function actualSession(context: BrowserContext, accountId: string) {
   return verified.data.claims.session_id;
 }
 
-/** Native recipient delivery proof, separate from the uploader's browser receipt.
- * This direct native assertion does not prove a parent card form.
- * Only the real current parents' own live sessions can consume their own rights. */
+/** Real parent settings forms call the exact delivery API. Each response is
+ * checked against committed native own-recipient hashes and one-time rights.
+ * Raw keys and form proofs stay in memory, with no persisted trace or attachment. */
 async function proveParentCards(admin: ReturnType<typeof adminClient>, cohortId: string, contexts: BrowserContext[],
   parents: string[], principalIds: string[], uploaderContext: BrowserContext, uploader: string) {
   const embryos = await admin.from("embryos").select("id,sample_ordinal").eq("cohort_id", cohortId).order("sample_ordinal");
@@ -71,18 +71,60 @@ async function proveParentCards(admin: ReturnType<typeof adminClient>, cohortId:
     p_session_id: await actualSession(uploaderContext, uploader), p_cohort_id: cohortId, p_token_nonce: crypto.randomUUID() });
   expect(denied.error?.code).toBe("42501"); expect(denied.data).toBeNull();
   expect((await rights()).every(row => row.status === "unconsumed")).toBe(true);
+  const uploaderSettings = await uploaderContext.newPage();
+  try {
+    await uploaderSettings.goto("/settings/data");
+    await expect(uploaderSettings.locator('[data-slot="record-key-card-control"]')).toHaveCount(0);
+    await expect(uploaderSettings.locator('[data-slot="record-key-card"]')).toHaveCount(0);
+    expect((await rights()).every(row => row.status === "unconsumed")).toBe(true);
+  } finally { await uploaderSettings.close(); }
   const keyHashes = new Set<string>();
   for (const [index, accountId] of parents.entries()) {
     const ownPrincipal = (await admin.from("subject_principals").select("id")
       .in("id", principalIds).eq("account_id", accountId).single());
     expect(ownPrincipal.error).toBeNull();
     const principal = ownPrincipal.data!.id;
-    const args = { p_account_id: accountId, p_session_id: await actualSession(contexts[index], accountId),
-      p_cohort_id: cohortId, p_token_nonce: crypto.randomUUID() };
-    const delivered = await admin.rpc("deliver_embryo_record_key_cards_v1", args);
-    expect(delivered.error).toBeNull();
-    if (!delivered.data || delivered.data.length !== 1) throw new Error("Own parent delivery row unavailable");
-    const row = delivered.data![0];
+    const parent = contexts[index].pages()[0];
+    const sessionId = await actualSession(contexts[index], accountId);
+    await parent.goto("/settings/data");
+    const control = parent.locator(`[data-slot="record-key-card-control"][data-cohort-id="${cohortId}"]`);
+    await expect(control).toHaveCount(1);
+    await expect(parent.locator('[data-slot="record-key-card"]')).toHaveCount(0);
+    expect((await rights()).filter(item => item.recipient_principal_id === principal)
+      .every(item => item.status === "unconsumed")).toBe(true);
+    const reply = parent.waitForResponse(response => new URL(response.url()).pathname === `/api/embryo-cohorts/${cohortId}/record-key-cards`
+      && response.request().method() === "POST");
+    let row: { cohort_id: string; cards: Record<string, unknown>[] }, nonce: string;
+    try {
+      const [response] = await Promise.all([reply, control.getByRole("button", { name: "Show my cards", exact: true }).click()]);
+      expect(response.status()).toBe(200);
+      expect(response.headers()["cache-control"]).toMatch(/private.*no-store/u);
+      const delivery = await response.json();
+      if (!Array.isArray(delivery.record_key_cards) || delivery.record_key_cards.length !== 2
+        || delivery.record_key_cards.some((item: unknown) => !item || typeof item !== "object" || Array.isArray(item)))
+        throw new Error("Own parent API cards unavailable");
+      row = { cohort_id: delivery.cohort_id, cards: delivery.record_key_cards };
+      const body = response.request().postDataJSON();
+      if (!body || Object.keys(body).length !== 1 || typeof body.nonce !== "string")
+        throw new Error("Own parent form envelope unavailable");
+      const claims = JSON.parse(Buffer.from(body.nonce.split(".")[0], "base64url").toString("utf8"));
+      if (claims.accountId !== accountId || claims.sessionId !== sessionId || claims.operation !== "record_key_print"
+        || claims.targetKind !== "cohort" || claims.targetId !== cohortId || typeof claims.nonce !== "string"
+        || !/^[A-Za-z0-9_-]{16,256}$/.test(claims.nonce)) throw new Error("Own parent form binding failed");
+      nonce = claims.nonce;
+      // Compare credentials as booleans so a failed assertion cannot print them.
+      await control.locator('[data-slot="record-key-value"]').first().waitFor({ state: "visible" });
+      const rendered = await control.locator('[data-slot="record-key-value"]').allTextContents();
+      expect(rendered.length === 2 && row.cards.every((raw, ordinal) => !!raw && typeof raw === "object"
+        && "record_key" in raw && rendered[ordinal] === raw.record_key)).toBe(true);
+      await control.getByRole("button", { name: "Continue", exact: true }).click();
+      await expect(parent.locator(`[data-slot="record-key-card-control"][data-cohort-id="${cohortId}"]`)).toHaveCount(0);
+      await expect(parent.locator('[data-slot="record-key-card"]')).toHaveCount(0);
+    } finally {
+      // Even a failed card assertion leaves no raw-key DOM for error snapshots.
+      await parent.goto("/overview").catch(() => parent.close());
+    }
+    const args = { p_account_id: accountId, p_session_id: sessionId, p_cohort_id: cohortId, p_token_nonce: nonce! };
     expect(row.cohort_id).toBe(cohortId);
     if (!Array.isArray(row.cards) || row.cards.length !== 2) throw new Error("Own parent cards unavailable");
     const expected = new Map<string, string>();
@@ -172,6 +214,7 @@ test("a third-party embryo uploader obtains both genetic parents' native authori
         await parent.getByLabel("Full legal name").fill(`Synthetic Parent ${index + 1}`);
         await parent.getByRole("button", { name: "Sign and accept invitation" }).click();
         await expect(parent.getByRole("heading", { name: "You have accepted the invitation", exact: true })).toBeVisible();
+        await expect(parent.getByRole("link", { name: "Go to Your data", exact: true })).toHaveAttribute("href", "/settings/data");
         await parent.goto("/embryos/upload");
         await expect(parent.locator('[data-stage="co-parent-sign"]')).toBeVisible();
         await signStatements(parent, SIGN_BUTTON, parents[index], `Synthetic Parent ${index + 1}`);

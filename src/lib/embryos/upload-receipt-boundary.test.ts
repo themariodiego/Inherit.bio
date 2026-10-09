@@ -31,3 +31,14 @@ it("keeps the real card producer and private origin protected from a browser imp
   await expect(browserBundle("src/lib/embryos/record-key-cards.ts")).rejects.toThrow("server-only is forbidden");
   await expect(browserBundle("src/lib/app-origin.ts")).rejects.toThrow("server-only is forbidden");
 });
+
+it("bundles the own-card client without importing its private native control reader or origin generator", async () => {
+  const result = await browserBundle("src/components/settings/record-key-cards.tsx");
+  const inputs = Object.keys(result.metafile.inputs);
+  expect(inputs).toContain("src/lib/embryos/record-key-card-receipt.ts");
+  expect(inputs).toContain("src/lib/embryos/record-key-card-values.ts");
+  for (const source of ["src/lib/embryos/record-key-card-controls.ts", "src/lib/embryos/record-key-cards.ts", "src/lib/app-origin.ts",
+    "src/lib/embryos/operation-token.ts", "src/lib/supabase/admin.ts"])
+    expect(inputs).not.toContain(source);
+  expect(result.outputFiles.map(file => file.text).join("\n")).not.toMatch(/NEXT_PUBLIC_APP_URL|VERCEL_ENV|UNSET_APP_URL_MESSAGE/);
+});

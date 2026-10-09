@@ -18,6 +18,9 @@ import { deletionControlState } from "@/lib/account-deletion-state";
 import { route } from "@/lib/primary-routes";
 import {AccountExport} from "@/components/settings/account-export";
 import {accountExportControls} from "@/lib/exports/account-export-controls";
+import { RecordKeyCards } from "@/components/settings/record-key-cards";
+import { recordKeyCardControls } from "@/lib/embryos/record-key-card-controls";
+import { RECORD_KEY_CARDS_HEADING } from "@/copy/embryos/upload";
 
 export const metadata: Metadata = { title: "Data settings" };
 
@@ -27,9 +30,11 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
   const after=typeof query.profileAfter==="string"?query.profileAfter:query.profileAfter?"invalid":null;
   const dispositionAfter=typeof query.dispositionAfter==="string"?query.dispositionAfter:query.dispositionAfter?"invalid":null;
   const objectionAfter=typeof query.objectionAfter==="string"?query.objectionAfter:query.objectionAfter?"invalid":null;
-  const [deletion,profiles,dispositions,objections,exports] = await Promise.all([
+  const keyCardAfter=typeof query.keyCardAfter==="string"?query.keyCardAfter:query.keyCardAfter?"invalid":null;
+  const [deletion,profiles,dispositions,objections,exports,keyCards] = await Promise.all([
     deletionControlState(),identityProfileControls(after),embryoDispositionControls(dispositionAfter),ownerAccountObjectionControls(objectionAfter),
     accountExportControls(),
+    recordKeyCardControls(keyCardAfter),
   ]);
   return (
     <div className="page-stack rec-column stack-sections">
@@ -45,6 +50,15 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
         <AccountExport control={exports}/>
       </section>
       <DangerZone deletion={deletion} />
+      {keyCards ? <section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="record-key-cards-heading">
+        <h2 id="record-key-cards-heading" className="font-medium">{RECORD_KEY_CARDS_HEADING}</h2>
+        {keyCards.unavailable ? <p role="status" className="text-sm">Sign in again to check your cards. <Link href={route("auth.sign-in",{query:{next:route("settings.data")}})} className="underline underline-offset-2">Sign in</Link></p> : <>
+          {keyCards.items.map(control => <RecordKeyCards key={control.nonce} control={control}/>)}
+          {!keyCards.items.length ? <p className="text-sm">No cards on this page are waiting for you.</p> : null}
+          {keyCards.nextCursor ? <Button asChild variant="outline"><Link href={`${route("settings.data")}?keyCardAfter=${keyCards.nextCursor}`}>More</Link></Button> : null}
+          {keyCardAfter ? <Link href={route("settings.data")} className="inline-flex min-h-11 items-center text-sm underline underline-offset-2">Back to the first records</Link> : null}
+        </>}
+      </section> : null}
       {objections?<section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="claim-requests-heading">
         <h2 id="claim-requests-heading" className="font-medium">Review a claim</h2>
         {objections.unavailable?<p className="text-sm">Sign in again to review current claims. <Link href={route("auth.sign-in",{query:{next:route("settings.data")}})} className="underline underline-offset-2">Sign in</Link></p>:<>
