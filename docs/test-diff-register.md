@@ -23,7 +23,7 @@ notice uses the original verified consumed session without renewing its clock
 or upload authority. Unit tests cover closed fields, scope/revision substitution,
 reference/hash/ciphertext substitution and foreign authority; native tests are
 written but unrun. Late notice/replacement, final target disposition and genuine
-native/provider proof remain activation limits. No production flag is opened.
+native/provider proof remain activation limits. No production flag is opened. Native case and chunk reads also append the existing content-free legal audit events; native regressions check those exact read sites without treating the synthetic Storage callback as provider delivery.
 
 ## 2026-10-09 — G3.2 follows the actual native fixture proof
 

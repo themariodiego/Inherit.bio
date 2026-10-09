@@ -239,6 +239,8 @@ select throws_ok($$select public.read_public_appeal_review_v1((select (value#>>'
 select pg_temp.appeal_reviewer_jwt();
 select ok(public.read_public_appeal_review_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)) is not null,
  'own current named MFA reviewer reads only the assigned case');
+select is((select count(*) from public.legal_audit_log where event_code='appeal.review.read' and coded_context='{}'),1::bigint,
+ 'assigned case reading appends only a coded content-free audit event');
 select is(public.review_document_domain_v1((select id from private.appeal_documents where document_kind='appeal-photo-identity')),'appeal',
  'native domain classification requires the current own-MFA assigned complete document');
 select is((select count(*) from private.public_appeal_review_downloads),0::bigint,'classification cannot mint a download session');
@@ -252,6 +254,7 @@ begin
  select pending.review_revision into review_revision from private.public_appeal_pending_reviews pending where pending.case_id=doc.intake_id;
  opened:=public.open_claim_review_download_v1(doc.id,p_cookie);
  receipt:=public.open_claim_review_receipt_v1((opened->>'session')::uuid,p_cookie,p_nonce);
+ perform public.authorize_claim_review_chunk_v1((opened->>'session')::uuid,p_cookie,0);
  begin
   perform public.decide_public_appeal_document_v1(doc.id,doc.sha256,review_revision,p_decision,p_nonce,
    decode(repeat('ab',48),'hex'),repeat('f',64),decode(repeat('cd',76),'hex'));
@@ -269,6 +272,8 @@ select is(pg_temp.appeal_read_and_decide('appeal-photo-identity','approved',repe
  'whole native challenged delivery and own ACK permit only a documentary approval');
 select is(pg_temp.appeal_read_and_decide('appeal-subject-source-control','rejected',repeat('c',64),repeat('d',64))->>'decision','rejected',
  'whole native delivery binds the real source-control rejection producer');
+select is((select count(*) from public.legal_audit_log where event_code='appeal.document.chunk.read' and coded_context='{}'),2::bigint,
+ 'each separately authorized actual document chunk has a coded content-free read audit');
 select is((select count(*) from private.public_appeal_document_decisions),2::bigint,'each exact current document has one immutable native decision');
 select ok((select reason_ciphertext is not null and reference_ciphertext is not null from private.public_appeal_document_decisions where decision='rejected'),
  'private reason/reference are retained encrypted until original case disposition');
