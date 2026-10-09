@@ -16,16 +16,20 @@ const require = createRequire(import.meta.url), localRequire = createRequire(req
 const yaml = localRequire("js-yaml") as { load(value: string): unknown };
 type WorkflowFixture = { jobs: Record<string, { steps: { name?: string; uses?: string; run?: string; if?: string; with?: Record<string, unknown> }[] }> };
 const actualWorkflow = () => yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as WorkflowFixture;
-// These source-declared consumer steps are synthetic test inputs only. The
-// publisher workflow executes neither restore nor warm, while their mandatory
-// validation and exact-key refusals remain covered before later adoption.
-function consumerWorkflow() {
-  const value = actualWorkflow();
-  const steps = JSON.parse(readFileSync(new URL("./fixtures/ci-font-consumer-steps.json", import.meta.url), "utf8")) as WorkflowFixture["jobs"][string]["steps"];
+// The actual workflow now consumes the source-declared cache steps. Retain the
+// publisher-only counterfactual by removing exactly those three declarations;
+// every original publisher assertion still applies to that fixture.
+const consumerSteps = () => JSON.parse(readFileSync(new URL("./fixtures/ci-font-consumer-steps.json", import.meta.url), "utf8")) as WorkflowFixture["jobs"][string]["steps"];
+const consumerWorkflow = actualWorkflow;
+function publisherWorkflow() {
+  const value = actualWorkflow(), declared = consumerSteps();
   for (const family of ["repository-checks", "browser"]) {
-    const at = value.jobs[family].steps.findIndex(step => step.name === "Install Playwright Chromium");
-    if (at < 0) throw new Error("Complete official installer is missing from the synthetic consumer fixture");
-    value.jobs[family].steps.splice(at, 0, ...structuredClone(steps));
+    for (const expected of declared) {
+      const at = value.jobs[family].steps.findIndex(step => step.name === expected.name);
+      expect(at).toBeGreaterThanOrEqual(0);
+      expect(value.jobs[family].steps[at]).toEqual(expected);
+      value.jobs[family].steps.splice(at, 1);
+    }
   }
   return value;
 }
@@ -99,8 +103,10 @@ describe("mandatory signed APT setup", () => {
         if (mutation === "conditional") steps[index].if = "always()";
         if (mutation === "optional") steps[index]["continue-on-error"] = true;
         if (mutation === "command") steps[index].run += " || true";
-        if (mutation === "order") [steps[index], steps[index + 1]] = [steps[index + 1], steps[index]];
-        if (mutation === "installer") steps[index + 1].run = "pnpm exec playwright install chromium";
+        const installer = steps.findIndex(item => item.name === "Install Playwright Chromium");
+        expect(installer).toBeGreaterThanOrEqual(0);
+        if (mutation === "order") [steps[index], steps[installer]] = [steps[installer], steps[index]];
+        if (mutation === "installer") steps[installer].run = "pnpm exec playwright install chromium";
         expect(() => hostedWorkflowContract(changed)).toThrow();
       }
     }
@@ -108,8 +114,8 @@ describe("mandatory signed APT setup", () => {
 });
 
 describe("source-bound hosted result readback", () => {
-  it("keeps the actual publisher workflow free of active restores and warm seeding", () => {
-    const workflow = actualWorkflow(), source = hostedWorkflowContract(workflow);
+  it("keeps the publisher-only fixture free of active restores and warm seeding", () => {
+    const workflow = publisherWorkflow(), source = hostedWorkflowContract(workflow);
     expect(source.names).toEqual(expect.arrayContaining(["repository-checks", "checks", ...Array.from({ length: 6 }, (_, i) => `browser (${i + 1})`)]));
     expect(source.names).toHaveLength(8);
     for (const family of ["repository-checks", "browser"]) {
@@ -120,7 +126,31 @@ describe("source-bound hosted result readback", () => {
     }
     expect(source.jobs.find(job => job.family === "checks")!.fontCache).toHaveLength(4);
   });
-  it("keeps synthetic consumer validation mandatory before the unchanged complete installer", () => {
+  it("pins both actual consumers between mandatory APT admission and the full installer", () => {
+    const workflow = actualWorkflow(), declared = consumerSteps(), source = hostedWorkflowContract(workflow);
+    expect(source.names).toHaveLength(8);
+    expect(source.jobs.find(job => job.family === "checks")!.fontCache).toHaveLength(4);
+    for (const family of ["repository-checks", "browser"]) {
+      const steps = workflow.jobs[family].steps;
+      const admission = steps.findIndex(step => step.name === "Admit signed Ubuntu APT mirror fallback");
+      const installer = steps.findIndex(step => step.name === "Install Playwright Chromium");
+      expect(admission).toBeGreaterThanOrEqual(0);
+      const indexes = declared.map(expected => {
+        const index = steps.findIndex(step => step.name === expected.name);
+        expect(index).toBeGreaterThan(admission);
+        expect(index).toBeLessThan(installer);
+        expect(steps[index]).toEqual(expected);
+        expect(steps.filter(step => step.name === expected.name)).toHaveLength(1);
+        return index;
+      });
+      expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
+      expect(steps[installer]).toEqual({ name: "Install Playwright Chromium", run: "pnpm exec playwright install --with-deps chromium" });
+      expect(source.jobs.find(job => job.family === family)!.fontCache.map(step => step.name)).toEqual([
+        "Restore only the exact Ubuntu font archives", "Validate cached fonts against fresh authenticated Ubuntu metadata",
+      ]);
+    }
+  });
+  it("keeps actual consumer validation mandatory before the unchanged complete installer", () => {
     const workflow = consumerWorkflow();
     for (const family of ["repository-checks", "browser"]) {
       const steps = workflow.jobs[family].steps;

@@ -21,6 +21,7 @@ URIS = ('http://azure.archive.ubuntu.com/ubuntu/',
         'https://archive.ubuntu.com/ubuntu/',
         'https://security.ubuntu.com/ubuntu/')
 STOCK = ''.join(f'{uri}\tpriority:{n}\n' for n, uri in enumerate(URIS, 1)).encode()
+PRIORITIZED = ''.join(f'{uri}\tpriority:{n}\n' for uri, n in zip(URIS, (3, 1, 2))).encode()
 NETWORK = (b'Acquire::Retries "1";\nAcquire::http::Timeout "15";\n'
            b'Acquire::https::Timeout "15";\nAPT::Update::Error-Mode "any";\n')
 BOUNDS = {'Acquire::Retries': '1', 'Acquire::http::Timeout': '15',
@@ -61,14 +62,23 @@ def admit_apt_version(raw):
 
 
 def mirror_candidate(original):
-    # Exact stock bytes, including URI order, keep this deliberately limited to the image mechanism.
-    require(original == STOCK, 'Unsupported stock mirror URI, priority or format')
+    # Only the exact stock input and this operation's exact approved result are legal.
+    require(original in (STOCK, PRIORITIZED), 'Unsupported stock mirror URI, priority or format')
+    if original == PRIORITIZED:
+        return PRIORITIZED
     changed = original.replace(b'priority:1\n', b'priority:3\n', 1)
     changed = changed.replace(b'priority:2\n', b'priority:1\n', 1)
     # The security row is the only remaining original priority:3 row.
     prefix, security = changed.rsplit(b'\n', 2)[0:2]
     require(security == URIS[2].encode() + b'\tpriority:3', 'Unsupported security mirror')
     return prefix + b'\n' + security.replace(b'priority:3', b'priority:2') + b'\n'
+
+
+def admit_priority_state(mirror, strict):
+    candidate = mirror_candidate(mirror)
+    readmission = mirror == PRIORITIZED
+    require(strict == (NETWORK if readmission else None), 'Mirror and strict configuration state differ')
+    return candidate, readmission
 
 
 def component_diagnostics(tokens):
@@ -483,17 +493,19 @@ def main(argv):
     observe({'event': 'APT_VERSION_OBSERVED', 'installedAptVersion': apt_version})
     observe({'event': 'PUBLIC_APT_DIRECTORY_METADATA', 'directories': fixed_directory_diagnostics()})
     original, mirror_identity = safe_read(MIRROR)
-    candidate = mirror_candidate(original)
+    strict_input = safe_read(STRICT) if STRICT.exists() or STRICT.is_symlink() else None
+    candidate, readmission = admit_priority_state(original, strict_input[0] if strict_input else None)
     source, _ = safe_read(SOURCES)
     admit_sources(source, observe)
     config_raw, config = limited_config(observe)
-    require(not STRICT.exists() and not STRICT.is_symlink(), 'Strict config already exists')
+    if readmission:
+        admit_config(config, after=True)
     require(not Path('/etc/apt/apt.conf').exists() and not Path('/etc/apt/apt.conf').is_symlink(),
             'Unsupported main APT config override')
     config_dir = STRICT.parent
     require(config_dir.resolve(strict=True) == config_dir and config_dir.stat().st_uid == 0
             and config_dir.stat().st_mode & 0o022 == 0, 'Root-owned config directory required')
-    require(all(item.name < STRICT.name for item in config_dir.iterdir()),
+    require(all(item.name < STRICT.name or readmission and item == STRICT for item in config_dir.iterdir()),
             'Strict config must be the last original fragment')
     # Source/mirror/config admission precedes bounded permission repair; strict census then precedes APT mutation.
     output = Path(tempfile.mkdtemp(prefix='inherit-ci-apt-', dir='/var/tmp'))
@@ -511,14 +523,20 @@ def main(argv):
                  'runnerEnvironment': argv[3], 'installedAptVersion': apt_version,
                  'aptVersionOriginalSha256': hashlib.sha256(version_result.stdout).hexdigest(),
                  'mirrorOriginal': original.decode('ascii'), 'mirrorIdentity': mirror_identity,
+                 'priorityState': 'exact-prioritized-readmission' if readmission else 'original-stock',
                  'limitedConfig': config, 'sourceAndTrust': before, 'originalDirectory': str(output)}
     write_owned(output / 'admission.json', (json.dumps(admission, sort_keys=True) + '\n').encode())
     print(json.dumps(admission, sort_keys=True), flush=True)
-    write_owned(STRICT, NETWORK)
-    os.chmod(STRICT, 0o644)
+    if not readmission:
+        write_owned(STRICT, NETWORK)
+        os.chmod(STRICT, 0o644)
     strict_raw, strict_identity = safe_read(STRICT)
     require(strict_raw == NETWORK, 'Strict config custody differs')
-    replace_original(MIRROR, original, mirror_identity, candidate)
+    if readmission:
+        require((strict_raw, strict_identity) == strict_input
+                and safe_read(MIRROR) == (original, mirror_identity), 'Readmitted mirror/config drift')
+    else:
+        replace_original(MIRROR, original, mirror_identity, candidate)
     after_raw, after_config = limited_config(observe)
     admit_config(after_config, after=True)
     write_owned(output / 'limited-config.after', after_raw)
