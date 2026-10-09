@@ -1,3 +1,30 @@
+## 2026-10-09 — Connect the closed anonymous appeal no-match evidence journey
+
+The native TEST path now consumes the seven-day credential into a purpose-bound
+browser session, opens independently keyed documents and requires both complete
+current clean scan records before creating the named pending review. Contact
+HMAC potential matches remain refused; the random case principal gains no
+account or target authority. Added route, session, component and native cases
+check expiry, one-use operation tokens, CSRF, wrong document identity, stale
+reviewer authority and key erasure before physical cleanup. Existing assertions
+and time limits remain intact. Synthetic scan/deletion records do not prove
+physical provider work, and access-review, human decisions and activation remain
+closed. The source-inventory command is now part of focused pre-push checks.
+
+## 2026-10-09 — Keep complete CI inventories aligned with the new closed source
+
+The original af721 hosted unit run exposed nine strict inventory mismatches;
+its failure remains preserved. The environment census now includes the three
+declared account R2 reads, with missing-declaration negatives. The exact mock
+token inventory records only the gated account TEST reader composition (ADR
+0036). Shared Path B inventories explicitly include the new appeal mail and
+activation delegates; old entrypoints and all unknown-replacement refusals stay
+intact. The independently discovered appeal email adds one export and fixture,
+two body/subject surfaces, exact renderer hashes and missing-fixture refusal.
+All prior assertions, test timeouts, provenance refusals and disabled production
+generation remain unchanged. Counts reflect source coverage, not physical mail,
+native deployment, provider readiness or production activation.
+
 ## 2026-10-09 — Bind only the two rejected T6 ambient-verifier inputs
 
 The secret gate still detects the exact synthetic ambient verifier in both

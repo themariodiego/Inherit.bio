@@ -7,7 +7,8 @@ import { z } from "zod";
 import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { supabaseClaimObjectStore } from "@/lib/future-person/claim-objects";
+import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 import { drainStrandedFileDeletions } from "@/lib/uploads/file-deletion-backstop";
@@ -203,6 +204,26 @@ export async function POST(request: Request) {
     }
   } catch {
     failed++;
+  }
+
+  // Separate anonymous-case objects. The native drainer already disposes
+  // keys at the original deadline; physical removal never implies provider
+  // history purge and its acknowledgment cannot delete an active clean object.
+  if (testAppealIntakeOpen()) {
+    try {
+      const objects = supabaseAppealObjectStore(admin);
+      for (let batch = 0; batch < 10; batch++) {
+        const { data: due, error } = await admin.rpc("appeal_document_objects_due_v1", { p_limit: 100 });
+        if (error) { failed++; break; }
+        const keys = (Array.isArray(due) ? due : []).map(row => row.object_key).filter((key): key is string => typeof key === "string");
+        if (!keys.length) break;
+        await objects.remove(keys);
+        const { data: confirmed, error: confirmError } = await admin.rpc("confirm_appeal_document_objects_deleted_v1", { p_object_keys: keys, p_route_id: "jobs.retention" });
+        if (confirmError) { failed++; break; }
+        if (typeof confirmed === "number") processed += confirmed;
+        if (keys.length < 100) break;
+      }
+    } catch { failed++; }
   }
 
   // future-person.claim-intake-session-24h: an unfinished claim start is

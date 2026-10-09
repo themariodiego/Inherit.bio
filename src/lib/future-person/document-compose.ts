@@ -22,8 +22,9 @@ import { sniffDocumentType } from "./document-sniff";
 
 export const compositionPlan = z.object({
   status: z.literal("compose"),
+  storageKind: z.literal("appeal").optional(),
   documentId: z.uuid(),
-  documentKind: z.enum(["future-photo-identity", "future-birth-record"]),
+  documentKind: z.enum(["future-photo-identity", "future-birth-record", "appeal-photo-identity", "appeal-subject-source-control", "appeal-genetic-parent-authority", "appeal-decision-notice", "appeal-contradiction-counterevidence"]),
   mediaType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
   sizeBytes: z.number().int().min(1).max(20_000_000),
   sha256: z.string().regex(/^[0-9a-f]{64}$/u),
@@ -35,7 +36,7 @@ export const compositionPlan = z.object({
     byteCount: z.number().int().min(1).max(4_000_000),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
   }).strict()).min(1).max(5),
-}).strict();
+}).strict().refine(plan => plan.documentKind.startsWith("appeal-") === (plan.storageKind === "appeal"));
 export type CompositionPlan = z.infer<typeof compositionPlan>;
 
 export type CompositionOutcome = "composed" | "integrity" | "type" | "storage";

@@ -1,0 +1,214 @@
+begin;
+set local search_path=public,extensions;
+select no_plan();
+\ir fixtures/future_person_deletion_authority.inc
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select is(public.prepare_new_public_appeal_v1('subject-objection',repeat('a',64),repeat('b',64),
+ jsonb_build_object('1',repeat('c',64)),jsonb_build_object('1',repeat('d',64)),jsonb_build_object('1',repeat('e',64))),
+ null::jsonb,'native intake remains closed before quota/principal/case work');
+select is((select count(*) from private.new_public_appeal_intakes),0::bigint,'closed preparation creates no private case');
+select ok(has_function_privilege('service_role','public.prepare_new_public_appeal_v1(text,text,text,jsonb,jsonb,jsonb)','execute')
+ and not has_function_privilege('anon','public.prepare_new_public_appeal_v1(text,text,text,jsonb,jsonb,jsonb)','execute')
+ and not has_function_privilege('authenticated','public.commit_new_public_appeal_v1(jsonb,text,text,bytea,bytea,bytea,bytea,jsonb)','execute'),
+ 'only the actual server route can prepare and commit; a public browser has no native RPC grant');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only'])role_name
+ where has_table_privilege(role_name,'private.new_public_appeal_intakes','select,insert,update,delete')
+ or has_table_privilege(role_name,'private.new_public_appeal_reviewers','insert,update,delete')
+ or has_function_privilege(role_name,'private.shred_new_public_appeal_v1(uuid)','execute')),0::bigint,
+ 'API roles cannot forge a case/reviewer/key or dispose foreign evidence');
+update private.new_public_appeal_config set enabled=true where singleton;
+insert into public.subject_principals(id,account_id,principal_kind) values
+ ('86000000-0000-4000-8000-000000000001','7a000000-0000-0000-0000-000000000001','reviewer');
+insert into private.new_public_appeal_reviewers(principal_id,principal_revision,purpose_revision) values
+ ('86000000-0000-4000-8000-000000000001',1,1);
+create temporary table public_appeal_prepared as select public.prepare_new_public_appeal_v1('subject-objection',
+ repeat('a',64),repeat('b',64),jsonb_build_object('1',repeat('c',64)),jsonb_build_object('1',repeat('d',64)),
+ jsonb_build_object('1',repeat('e',64)))value;
+select ok((select value is not null from public_appeal_prepared),'real preparation binds a named active reviewer and complete frame');
+select is((select (value#>>'{frame,scope,originalDeadline}')::timestamptz
+ -(value#>>'{frame,scope,originalSubmittedAt}')::timestamptz from public_appeal_prepared),interval '30 days',
+ 'retry/reassignment cannot renew the original submission clock');
+select ok(not exists(select 1 from public.subject_principals actor where actor.id=
+ (select (value#>>'{frame,scope,originalAuthorPrincipalId}')::uuid from public_appeal_prepared)),
+ 'preparation reserves a random ID without manufacturing any principal or account');
+create temporary table public_appeal_quota as select jsonb_build_object('1',jsonb_build_object(
+ 'normalized-identifier',repeat('d',64),'source-network',repeat('e',64),'global-capacity',
+ encode(extensions.digest(convert_to('api.subject-access-request|global-capacity','UTF8'),'sha256'),'hex')))value;
+select throws_ok($$select public.commit_new_public_appeal_v1((select value||'{"accountId":"foreign"}'::jsonb
+ from public_appeal_prepared),repeat('a',64),repeat('b',64),decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),
+ decode(repeat('cd',48),'hex'),decode(repeat('de',48),'hex'),(select value from public_appeal_quota))$$,
+ '42501','not_found','an account/target field cannot be added to the complete native preparation');
+select throws_ok($$select public.commit_new_public_appeal_v1((select value from public_appeal_prepared),
+ repeat('f',64),repeat('b',64),decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),decode(repeat('cd',48),'hex'),
+ decode(repeat('de',48),'hex'),(select value from public_appeal_quota))$$,
+ '42501','not_found','a different original request cannot borrow the signature/nonce');
+select throws_ok($$select pg_temp.deletion_probe('update private.new_public_appeal_reviewers set active=false',
+ 'select public.commit_new_public_appeal_v1((select value from public_appeal_prepared),repeat(''a'',64),repeat(''b'',64),
+ decode(repeat(''ab'',72),''hex''),decode(repeat(''bc'',48),''hex''),decode(repeat(''cd'',48),''hex''),decode(repeat(''de'',48),''hex''),
+ (select value from public_appeal_quota))')$$,'42501','not_found','current reviewer revocation refuses before case writes');
+select is(public.commit_new_public_appeal_v1((select value from public_appeal_prepared),repeat('a',64),repeat('b',64),
+ decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),decode(repeat('cd',48),'hex'),decode(repeat('de',48),'hex'),
+ (select value from public_appeal_quota)),true,'actual complete case/contact/candidate inserts commit atomically');
+select ok((select actor.principal_kind='case_requester' and actor.account_id is null and actor.subject_id is null
+ from public.subject_principals actor where actor.id=(select (value#>>'{frame,scope,originalAuthorPrincipalId}')::uuid
+ from public_appeal_prepared)),'the principal is genuinely case-only and never contact-resolved to an account');
+select ok((select appeal.target_kind='public_case' and appeal.target_id=appeal.id and appeal.appellant_account_id is null
+ from public.appeal_intakes appeal where appeal.id=(select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)),
+ 'no source subject/claim/cohort authority or target hold was fabricated');
+select is((select count(*) from public.mail_outbox mail join public.token_candidates candidate on candidate.outbox_id=mail.id
+ where mail.purpose='appeal-evidence' and candidate.purpose='appeal-evidence' and candidate.state='pending'),1::bigint,
+ 'the same commit created exactly one non-authorizing delivery candidate');
+select ok((select candidate.expires_at=least(intake.deadline,intake.submitted_at+interval '7 days')
+ and mail.expires_at=candidate.expires_at and intake.deadline=intake.submitted_at+interval '30 days'
+ from private.new_public_appeal_intakes intake join public.mail_outbox mail on mail.id=intake.outbox_id
+ join public.token_candidates candidate on candidate.id=intake.candidate_id
+ where intake.id=(select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)),
+ 'the evidence credential and delivery end at7days while the original case deadline stays30days');
+select throws_ok($$select public.commit_new_public_appeal_v1((select value from public_appeal_prepared),repeat('a',64),repeat('b',64),
+ decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),decode(repeat('cd',48),'hex'),decode(repeat('de',48),'hex'),
+ (select value from public_appeal_quota))$$,'42501','not_found','a repeated completion cannot rewrite/adopt the original case');
+select throws_ok($$update public.subject_principals set account_id='7a000000-0000-0000-0000-000000000001'
+ where principal_kind='case_requester'$$,'42501','not_found','no later account adoption of the random case principal');
+select throws_ok($$update private.new_public_appeal_intakes set deadline=deadline+interval '1 day'$$,
+ '42501','not_found','native clock cannot be extended');
+select throws_ok($$update public.appeal_intakes set statement_ciphertext=decode(repeat('ff',48),'hex')
+ where target_kind='public_case'$$,'42501','not_found','the stored original statement cannot be silently rewritten');
+-- Synthetic ciphertext has shape only: this native test does not claim real
+-- cryptography/provider acceptance. The separate library test seals/opens it.
+create temporary table public_appeal_claim as select * from public.claim_mail_outbox();
+select is((select count(*) from public_appeal_claim),1::bigint,'dedicated worker claims one exact candidate');
+select is(length((select delivery_token from public_appeal_claim)),43,'native claim returns only a fresh one-use fragment candidate');
+select ok(public.authorize_mail_submission_v1((select outbox_id from public_appeal_claim),
+ (select attempt_ordinal from public_appeal_claim)),'fresh exact current source permits submission only');
+select is((select intake.deadline-candidate.expires_at from private.new_public_appeal_intakes intake
+ join public.token_candidates candidate on candidate.id=intake.candidate_id where intake.id=
+ (select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)),interval '23 days',
+ 'native token issuance never changes the original case clock');
+select is(pg_temp.deletion_probe('update public.mail_outbox set expires_at=clock_timestamp()-interval ''1 second'' where purpose=''appeal-evidence''',
+ 'select public.authorize_mail_submission_v1((select outbox_id from public_appeal_claim),(select attempt_ordinal from public_appeal_claim))'),
+ 'false','expired credential delivery refuses even while the case deadline remains open');
+select is((public.read_new_public_appeal_mail_contact_v1((select outbox_id from public_appeal_claim),
+ (select attempt_ordinal from public_appeal_claim))->>'contactCiphertextHex'),repeat('de',48),
+ 'dedicated reader returns only actual bound ciphertext and original wrapped key/scope');
+-- Authoritative producer/issued token above; no real provider delivery or
+-- physical scan is claimed by this native transaction test.
+create temporary table public_appeal_rights as select * from public.activate_rights_session_v1(
+ encode(extensions.digest(convert_to((select delivery_token from public_appeal_claim),'UTF8'),'sha256'),'hex'),
+ repeat('1',64),repeat('A',32));
+select is((select purpose from public_appeal_rights),'appeal-evidence','activation has exactly the appeal evidence purpose');
+select is((select target_kind from public_appeal_rights),'appeal-case','case credential cannot become subject/cohort/account authority');
+select is((select principal.account_id from public.subject_principals principal join public.rights_sessions rights
+ on rights.principal_id=principal.id where rights.session_hash=repeat('1',64)),null::uuid,'verified contact never adopts an account');
+select is((select count(*) from public.activate_rights_session_v1(
+ encode(extensions.digest(convert_to((select delivery_token from public_appeal_claim),'UTF8'),'sha256'),'hex'),repeat('2',64),repeat('B',32))),0::bigint,
+ 'the native activation token is consumed once');
+select ok((public.new_public_appeal_evidence_view_v1(repeat('1',64))->'documentKinds')=
+ '["appeal-photo-identity","appeal-subject-source-control"]'::jsonb,'server case kind selects the exact evidence set');
+select throws_ok($$select public.open_public_appeal_document_v1(repeat('1',64),repeat('C',32),'appeal-genetic-parent-authority',
+ 'application/pdf',20,repeat('a',64),repeat('3',64),decode(repeat('12',72),'hex'))$$,'42501','appeal unavailable',
+ 'wrong case kind never creates a session or spends its nonce');
+select throws_ok($$select public.open_public_appeal_document_v1(repeat('f',64),repeat('C',32),'appeal-photo-identity',
+ 'application/pdf',20,repeat('a',64),repeat('3',64),decode(repeat('12',72),'hex'))$$,'42501','appeal unavailable',
+ 'foreign/wrong purpose credential is opaque');
+create temporary table appeal_uploaded(id uuid,kind text,cookie text,nonce text,sha text,key_byte text);
+do $test$ declare kind text;ordinal integer:=0;opened jsonb;reserved jsonb;plan jsonb;scan jsonb;content text:='%PDF-1.7 synthetic';cookie text;nonce text;sha text;
+begin
+ for kind in select unnest(array['appeal-photo-identity','appeal-subject-source-control']) loop
+  ordinal:=ordinal+1;cookie:=repeat(ordinal::text,64);nonce:=repeat((ordinal+3)::text,64);
+  sha:=encode(extensions.digest(convert_to(content,'UTF8'),'sha256'),'hex');
+  opened:=public.open_public_appeal_document_v1(repeat('1',64),repeat(chr(67+ordinal),32),kind,'application/pdf',octet_length(content),sha,cookie,
+   decode(repeat(lpad(ordinal::text,2,'0'),72),'hex'));
+  reserved:=public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length(content),sha);
+  if reserved->>'storageKind'<>'appeal' then raise exception 'wrong native storage domain';end if;
+  perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
+  plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,1);
+  if plan->>'storageKind'<>'appeal' or plan->>'status'<>'compose' then raise exception 'missing complete source manifest';end if;
+  perform public.finish_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,'composed',plan->>'objectKey');
+  scan:=public.claim_next_appeal_document_scan_v1(repeat('e',64));
+  if scan->>'documentId' is distinct from plan->>'documentId' then raise exception 'wrong scan ownership';end if;
+  perform public.record_appeal_document_scan_v1((scan->>'documentId')::uuid,repeat('e',64),'OK',sha,'synthetic native test',1,clock_timestamp());
+  insert into appeal_uploaded values((plan->>'documentId')::uuid,kind,cookie,nonce,sha,lpad(ordinal::text,2,'0'));
+ end loop;
+end $test$;
+select is((select count(*) from private.appeal_documents where state='clean' and scanned_sha256=sha256),2::bigint,
+ 'both exact documents have the complete native positive verdict bound to declared hash');
+select throws_ok($$select public.confirm_appeal_document_objects_deleted_v1(
+ array[(select object_key from private.appeal_documents limit 1)],'jobs.retention')$$,'42501','appeal document deletion unavailable',
+ 'an active clean document cannot acquire a fake disposal acknowledgement');
+select throws_ok($$select public.complete_new_public_appeal_evidence_v1(repeat('1',64),repeat('Q',32),
+ jsonb_build_object('photoIdentityDocumentId',(select id from appeal_uploaded where kind='appeal-photo-identity'),
+ 'geneticParentAuthorityDocumentId',(select id from appeal_uploaded where kind='appeal-subject-source-control')),true)$$,
+ '42501','appeal unavailable','wrong server selected body refuses without assignment');
+select throws_ok($$select public.complete_new_public_appeal_evidence_v1(repeat('1',64),repeat('Q',32),
+ jsonb_build_object('photoIdentityDocumentId',(select id from appeal_uploaded where kind='appeal-photo-identity'),
+ 'subjectSourceControlDocumentId',(select id from appeal_uploaded where kind='appeal-photo-identity')),true)$$,
+ '42501','appeal unavailable','one document cannot stand for both proof standards');
+select is((select count(*) from private.public_appeal_pending_reviews),0::bigint,'invalid completion creates no review assignment');
+select throws_ok($$select pg_temp.deletion_probe('update private.new_public_appeal_reviewers set active=false',
+ 'select public.complete_new_public_appeal_evidence_v1(repeat(''1'',64),repeat(''Q'',32),jsonb_build_object(''photoIdentityDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true)')$$,'42501','appeal unavailable',
+ 'named reviewer revocation refuses completion atomically');
+-- A same-revision potential match is never silently downgraded to no-match.
+select throws_ok($$select pg_temp.deletion_probe(
+ 'insert into public.encrypted_contact_references(id,principal_id,contact_ciphertext,contact_hmac,key_revision,authority_revision)
+ values(''86000000-0000-4000-8000-000000000101'',''86000000-0000-4000-8000-000000000001'',decode(repeat(''ab'',48),''hex''),repeat(''c'',64),1,1);
+ insert into public.contact_hmac_indexes(contact_reference_id,contact_hmac,hmac_key_revision,status,expires_at)
+ values(''86000000-0000-4000-8000-000000000101'',repeat(''c'',64),1,''current'',clock_timestamp()+interval ''1 day'')',
+ 'select public.complete_new_public_appeal_evidence_v1(repeat(''1'',64),repeat(''Q'',32),jsonb_build_object(''photoIdentityDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
+ (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true)')$$,'42501','appeal unavailable',
+ 'a potential contact match cannot manufacture a target or silently omit its required typed hold');
+create temporary table appeal_target_before as select
+ (select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject)subjects,
+ (select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort)cohorts;
+create temporary table appeal_completion as select public.complete_new_public_appeal_evidence_v1(repeat('1',64),repeat('Q',32),
+ jsonb_build_object('photoIdentityDocumentId',(select id from appeal_uploaded where kind='appeal-photo-identity'),
+ 'subjectSourceControlDocumentId',(select id from appeal_uploaded where kind='appeal-subject-source-control')),true)value;
+select is((select value->>'status' from appeal_completion),'review_pending','whole no-match evidence set reaches named pending review');
+select is((select array_agg(key order by key) from appeal_completion,jsonb_object_keys(value)key),array['deadline','status'],
+ 'receipt contains no match/document/reviewer/account/genetic detail');
+select ok((select value->>'deadline' from appeal_completion)::timestamptz=(select deadline from private.new_public_appeal_intakes limit 1),
+ 'completion does not extend the original30day deadline');
+select ok((select subjects is not distinct from
+ (select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject)
+ and cohorts is not distinct from
+ (select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort) from appeal_target_before),
+ 'no-match submission changes no subject/cohort authority, lifecycle, result access or purge state');
+select ok((select reviewer_principal_id='86000000-0000-4000-8000-000000000001'::uuid and evidence_revision=1 and state='pending'
+ from private.public_appeal_pending_reviews),'assignment retains the exact current named reviewer and full evidence revision');
+select ok((select revision=2 and state='submitted' from private.new_public_appeal_evidence_state),'evidence revision rotates after submission');
+select is((select status from public.rights_sessions where session_hash=repeat('1',64)),'consumed','no completion or new upload can reuse the credential');
+select throws_ok($$select public.complete_new_public_appeal_evidence_v1(repeat('1',64),repeat('Q',32),
+ jsonb_build_object('photoIdentityDocumentId',(select id from appeal_uploaded where kind='appeal-photo-identity'),
+ 'subjectSourceControlDocumentId',(select id from appeal_uploaded where kind='appeal-subject-source-control')),true)$$,
+ '42501','appeal unavailable','submission cannot replay or reassign a completed set');
+create function pg_temp.stale_appeal_review_cleanup() returns boolean language plpgsql as $test$
+declare keys text[];result boolean;
+begin
+ begin
+  update private.new_public_appeal_reviewers set active=false;
+  select array_agg(object_key) into keys from public.appeal_document_objects_due_v1(100);
+  if (select count(*) from private.appeal_document_sessions where wrapped_document_key is not null)<>0 then
+   raise exception 'keys retained after revoked authority';end if;
+  -- Simulated physical ACK only: native tests do not claim Storage deletion.
+  perform public.confirm_appeal_document_objects_deleted_v1(keys,'jobs.retention');
+  result:=not exists(select 1 from private.public_appeal_pending_reviews) and not exists(select 1 from private.appeal_documents);
+  if not result then raise exception 'stale assignment blocked disposal';end if;
+  raise exception using errcode='P0002',message='rollback synthetic disposal';
+ exception when no_data_found then return result;
+ end;
+end $test$;
+select ok(pg_temp.stale_appeal_review_cleanup(),'revoked reviewer cleanup shreds keys first then confirms removal without a pending-review FK or current clean row');
+select is((select count(*) from private.public_appeal_pending_reviews),1::bigint,'the separate synthetic cleanup subtransaction restores the original pending review');
+update public.appeal_intakes set state='withdrawn',decided_at=clock_timestamp() where target_kind='public_case';
+select is((select count(*) from private.public_appeal_pending_reviews),0::bigint,'terminal disposition disposes the live assignment and document links');
+select is((select count(*) from private.appeal_document_sessions where wrapped_document_key is not null),0::bigint,
+ 'terminal case shreds every independent evidence key');
+select is((select count(*) from private.new_public_appeal_intakes where wrapped_case_key is not null),0::bigint,
+ 'original case key, contact and working package are disposed separately');
+select is((select count(*) from private.appeal_documents),2::bigint,'native object locators remain until real physical deletion acknowledgement');
+select ok(not has_table_privilege('service_role','private.public_appeal_pending_reviews','insert,update,delete')
+ and not has_function_privilege('authenticated','public.complete_new_public_appeal_evidence_v1(text,text,jsonb,boolean)','execute'),
+ 'neither browser nor server table client can forge a named review or document set');
+select finish();rollback;

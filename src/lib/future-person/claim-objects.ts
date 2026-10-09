@@ -48,3 +48,19 @@ export function supabaseClaimObjectStore(admin: SupabaseClient): ClaimObjectStor
     },
   };
 }
+
+/** Only native appeal evidence sessions choose this separate registered bucket. */
+export function supabaseAppealObjectStore(admin: SupabaseClient): ClaimObjectStore {
+  const bucket = () => admin.storage.from("legal-evidence");
+  return {
+    async create(key, sealed) {
+      const { data, error } = await bucket().upload(key, sealed, { upsert: false, contentType: "application/octet-stream", cacheControl: "0" });
+      if (error || !data || data.path !== key) throw new ClaimObjectError("create");
+    },
+    async read(key) {
+      const { data, error } = await bucket().download(key); if (error || !data) throw new ClaimObjectError("read");
+      return new Uint8Array(await data.arrayBuffer());
+    },
+    async remove(keys) { if (!keys.length) return; const { error } = await bucket().remove([...keys]); if (error) throw new ClaimObjectError("remove"); },
+  };
+}

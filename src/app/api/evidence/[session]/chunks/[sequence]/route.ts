@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { SENSITIVE_HEADERS, notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { readBoundedBytes } from "@/lib/future-person/bounded-body";
-import { supabaseClaimObjectStore } from "@/lib/future-person/claim-objects";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
+import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimDataKey, sealDocumentBytes } from "@/lib/future-person/document-envelope";
 import { readEvidenceRequest } from "@/lib/future-person/evidence-session";
@@ -30,10 +31,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const CHUNK_BYTES = 4_000_000;
 const SEQUENCE = /^(0|[1-4])$/u;
 
-const reserved = (value: unknown): value is { status: "reserved"; objectKey: string; wrappedDataKey: string } =>
+const reserved = (value: unknown): value is { status: "reserved"; objectKey: string; wrappedDataKey: string; storageKind?: "appeal" } =>
   typeof value === "object" && value !== null && (value as { status?: unknown }).status === "reserved"
   && typeof (value as { objectKey?: unknown }).objectKey === "string"
-  && typeof (value as { wrappedDataKey?: unknown }).wrappedDataKey === "string";
+  && typeof (value as { wrappedDataKey?: unknown }).wrappedDataKey === "string"
+  && ((value as { storageKind?: unknown }).storageKind === undefined || (value as { storageKind?: unknown }).storageKind === "appeal");
 
 function withoutReferrer(response: Response): Response {
   response.headers.set("Referrer-Policy", "no-referrer");
@@ -50,11 +52,10 @@ export async function PUT(request: Request, context: { params: Promise<{ session
 }
 
 async function putChunk(request: Request, session: string, sequence: string): Promise<Response> {
-  if (!futurePersonClaimsOpen()) return notFound();
+  if (!futurePersonClaimsOpen() && !testAppealIntakeOpen()) return notFound();
   const cookieHash = readEvidenceRequest(request, session, "application/octet-stream");
   if (!cookieHash || !SEQUENCE.test(sequence)) return notFound();
   const admin = createAdminClient();
-  const store = supabaseClaimObjectStore(admin);
   const body = await readBoundedBytes(request, CHUNK_BYTES);
   if (body.kind === "unreadable") return invalid("body");
   const byteCount = body.kind === "too_large" ? CHUNK_BYTES + 1 : body.bytes.length;
@@ -76,6 +77,8 @@ async function putChunk(request: Request, session: string, sequence: string): Pr
     if (body.kind === "too_large") return sensitiveJson({ error: "chunk_too_large" }, 413);
     if (!reserved(data)) return (data as { status?: unknown } | null)?.status === "invalid" ? invalid("size") : unavailable();
 
+    if (data.storageKind === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen()) return notFound();
+    const store = data.storageKind === "appeal" ? supabaseAppealObjectStore(admin) : supabaseClaimObjectStore(admin);
     let written = false;
     const key = claimDataKey(data.wrappedDataKey);
     try {

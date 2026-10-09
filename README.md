@@ -101,6 +101,12 @@ database and browser decisions. Before a merge or production change, the
 complete hosted unit, database and browser suites must pass on the final
 commit. The full hosted unit command remains `pnpm test`.
 
+Include `pnpm test:source-inventories` in that focused pre-push group whenever
+source files, environment reads, migrations or email templates change. It
+checks the complete environment, synthetic-marker path, migration-dispatcher
+and email-fixture inventories. Run it alongside the changed flow's tests;
+the complete hosted suites remain required on the final commit.
+
 Run the complete discovered unit inventory and keep the full test report.
 For commit `1493f4b`, the inventory is 599 files and at least 9,780 tests.
 Require zero failures, skips and retries. A missing file, test, report or job
