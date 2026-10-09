@@ -23,8 +23,8 @@ import { exportedMethods, migrationBuckets } from "./route-gate";
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 53 of them are unbuilt today and that is a backlog, not a defect. The
- * count is asserted loosely below only so a broken walker cannot pass.
+ * yet; 29 of them remain unbuilt after the native appeal and evidence routes.
+ * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
  * both directions: an unlisted one fails, and a listed one that no longer
@@ -209,8 +209,9 @@ describe("the route register and the App Router describe the same surface", () =
   it("leaves the unbuilt half of the register alone, but still measures it", () => {
     const builtUrls = new Set(built.map(route => route.url));
     const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
-    // A backlog, not a failure. The bound only catches a matcher that broke.
-    expect(unbuilt.length).toBeGreaterThan(30);
+    // The four native appeal/evidence endpoints reduce the remaining backlog.
+    // Keep the exact census: new implementations require an explicit review.
+    expect(unbuilt.length).toBe(29);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
@@ -594,6 +595,7 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     expect(prefixes.length).toBeGreaterThan(5);
     expect(sites.length).toBeGreaterThan(10);
     expect(sites).toContain("genomes src/lib/uploads/subject-upload-browser.ts");
+    expect(sites).toContain("legal-evidence src/lib/future-person/claim-objects.ts");
   });
 
   it("records every live storage call site with the bucket it names", () => {

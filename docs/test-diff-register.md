@@ -1,3 +1,33 @@
+## 2026-10-09 — Keep the appeal route and storage census exact
+
+The native appeal session document and completion endpoints, plus the evidence
+chunk and completion endpoints, are now built. The historical loose lower bound
+for unbuilt routes no longer describes this source: the complete walker now
+requires exactly 29 remaining entries. All registered/built, parameter, method,
+auth, success-contract and storage refusals remain unchanged. Both exact storage
+censuses now include the existing legal-evidence call in claim-objects.ts; the
+uncreated production bucket stays an explicit gap, not a provider readiness
+claim. The original failed route-census result is preserved.
+
+## 2026-10-09 — Prove joint-selection copy and the separate embryo uploader
+
+The existing published two-embryo journey now requires the permanent joint-
+selection, no-ranking, trade-off and availability statements. Its empty approved
+condition registry must honestly say that no trade-off is measurable; QC cannot
+be substituted for a risk, and ranking controls remain absent. Original native
+publication, two independent QC seeds and T6 action assertions stay unchanged.
+
+A fifth queue-isolated native journey follows the third-party embryo path with
+three separate synthetic accounts: the uploader signs only the uploader-class
+consent, both genetic parents accept actual invitations and sign their own
+authority, and neither file ingest nor finalization is offered after only one
+parent finishes. The real worker must publish both sources. Analysis remains
+blocked until both parents separately grant its purpose; the non-parent uploader
+gets no parent-signing control. Current QC must agree across comparison and both
+detail pages. Full CI inventories include the additional case without sharing
+its queue, changing the six jobs, retry zero or any existing time limit. This
+is prepared TEST coverage, not a claim of executed browser or provider proof.
+
 ## 2026-10-09 — Connect the closed anonymous appeal no-match evidence journey
 
 The native TEST path now consumes the seven-day credential into a purpose-bound

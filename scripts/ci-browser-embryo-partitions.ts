@@ -6,14 +6,16 @@ export const EMBRYO_BROWSER_JOURNEYS = Object.freeze({
   "embryo-mixed-qc": "embryo-mixed-qc-journey.spec.ts",
   "embryo-qc-seed": "embryo-qc-second-seed-journey.spec.ts",
   "future-person-keyless": "reviews-keyless-owner-notice-journey.spec.ts",
+  "embryo-third-party": "embryo-third-party-journey.spec.ts",
 });
 type FileCases = { project: string; file: string; cases: number };
 
-/** The four real journeys need an empty split queue. Native partitions must put
+/** The five real journeys need an empty split queue. Native partitions must put
  * them in separate fresh jobs; this never changes native case assignment. */
 export function assertEmbryoJourneyPartition(rows: readonly FileCases[], full: boolean): void {
   const projects = ["embryo-ingest", "embryo-mixed-qc"];
-  const chromiumJourneys: readonly string[] = [EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"], EMBRYO_BROWSER_JOURNEYS["future-person-keyless"]];
+  const chromiumJourneys: readonly string[] = [EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"],
+    EMBRYO_BROWSER_JOURNEYS["future-person-keyless"], EMBRYO_BROWSER_JOURNEYS["embryo-third-party"]];
   const files: string[] = Object.values(EMBRYO_BROWSER_JOURNEYS);
   const journeys = rows.filter(row => projects.includes(row.project) || files.includes(row.file));
   for (const row of journeys) {
