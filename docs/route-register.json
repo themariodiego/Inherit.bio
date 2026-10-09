@@ -4307,6 +4307,16 @@
             "create-recovery-key"
           ],
           "routes": "future-person-specific-only"
+        },
+        "appeal-decision-notice": {
+          "target": "original-verified-case-recipient-and-exact-immutable-native-document-decision",
+          "allowedActions": [
+            "read-decision-notice"
+          ],
+          "route": {
+            "const": "api.appeal-decision-notice"
+          },
+          "rule": "one-use-separate-notice-credential-with-seven-day-ceiling-clamped-at-the-original-thirty-day-case; sixty-minute-session-fifteen-minute-idle; never-upload-reopen-target-access-account-adoption-or-reviewer-note-read"
         }
       },
       "pageProjectionByPurpose": {
@@ -21799,7 +21809,7 @@
       "domain": "api",
       "auth": "token",
       "authRequirements": [
-        "original-verified-case-session-hash-cookie-even-after-evidence-consumption-read-only-with-original-sixty-minute-expiry-and-fifteen-minute-idle"
+        "original-verified-consumed-case-session-or-separate-one-use-native-decision-notice-session; sixty-minute-expiry-fifteen-minute-idle; same-original-verified-recipient-only"
       ],
       "methods": [
         "GET"

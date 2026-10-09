@@ -38,3 +38,21 @@ contact/working material and the live review assignment. Object locators stay
 until exact physical deletion acknowledgment. Retention removes only native-due
 objects; a storage outage cannot preserve their decryption keys. Remote provider
 history/purge proof and a completed human-review decision flow remain separate.
+
+## Later review notice in TEST
+
+A native document decision now queues one neutral message to the original
+verified case contact. A separate one-use notice credential can open the same
+private request page after the original evidence link expires. Its purpose
+reads only that decision's coded result and encrypted review reference; it
+never shows reviewer notes, contact matches or target data and cannot upload
+files or renew intake. The existing generic appeal email is reused.
+
+The notice credential has a seven-day ceiling from the decision, clamped at
+the unchanged original thirty-day case deadline. The new browser session has
+the existing sixty-minute absolute and fifteen-minute idle limits. Replaced
+recipient authority, stale same-kind decisions and case closure refuse the
+read. Terminal disposal removes its candidate, token, session and outbox rows
+before the original contact and key are shredded. Existing TEST/native config
+stays disabled. Native tests are authored; provider delivery and native runtime
+qualification are not established by focused source tests.

@@ -12,6 +12,8 @@ const noticeFile = "20261001022000_future_person_notice_provider_execution.sql";
 const notice = existsSync(path.join(directory, noticeFile)) ? readFileSync(path.join(directory, noticeFile), "utf8") : null;
 const noticeReplacements = notice ? [noticeFile] : [];
 const appealMailFile = "20261009200845_new_public_appeal_intake.sql";
+const appealNoticeFile = "20261009224501_public_appeal_decision_notice_continuation.sql";
+const appealNoticeReplacements = ["private.authorize_mail_submission_v1", "public.claim_mail_outbox", "public.activate_rights_session_v1"].map(name => `${appealNoticeFile}|${name}`);
 const appealEvidenceFile = "20261009204626_public_appeal_evidence_session.sql";
 const appealMailReplacements = ["private.authorize_mail_submission_v1", "public.claim_mail_outbox"].map(name => `${appealMailFile}|${name}`);
 const functionBody = (source: string, name: string): string => {
@@ -56,7 +58,7 @@ describe("the exact Path B bridge across shared rights dispatchers", () => {
   it("audits all actual later activation replacement sites", () => {
     const replacements = readdirSync(directory).sort().filter(file => readFileSync(path.join(directory,file),"utf8").match(/create (?:or replace )?function public\.activate_rights_session_v1\b/iu));
     const later = replacements.filter(file => file > "20260928150000_other_adult_held_upload.sql");
-    expect(later).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", ...(replacements.includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql"] : []), appealEvidenceFile]);
+    expect(later).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", ...(replacements.includes("20261001023000_future_person_owner_objection_prerequisite.sql") ? ["20261001023000_future_person_owner_objection_prerequisite.sql"] : []), appealEvidenceFile, appealNoticeFile]);
     if (replacements.includes("20261001023000_future_person_owner_objection_prerequisite.sql")) {
       const wrapper = readFileSync(path.join(directory,"20261001023000_future_person_owner_objection_prerequisite.sql"),"utf8");
       const exact = wrapper.match(/create function public\.activate_rights_session_v1\([^;]+?as \$\$([\s\S]*?)\$\$;/u)![1]!;
@@ -136,7 +138,7 @@ describe("held mail restoration behind the exact keyless notice wrappers", () =>
     for (const name of ["public.claim_mail_outbox", "private.authorize_mail_submission_v1"]) {
       const pattern = new RegExp(`create (?:or replace )?function ${name.replaceAll(".", "\\.")}\\b`, "iu");
       const files = readdirSync(directory).sort().filter(file => file > "20260928150000_other_adult_held_upload.sql" && pattern.test(readFileSync(path.join(directory,file),"utf8")));
-      expect(files).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", ...noticeReplacements, "20261001028000_future_person_keyless_human_decisions.sql", appealMailFile]);
+      expect(files).toEqual(["20260930232000_embryo_parent_withdrawal.sql", "20260930233000_future_person_claim_custody.sql", ...noticeReplacements, "20261001028000_future_person_keyless_human_decisions.sql", appealMailFile, appealNoticeFile]);
     }
   });
 });
@@ -178,6 +180,7 @@ it("closes the complete later Path B replacement inventory, including dynamic re
     "20261001028000_future_person_keyless_human_decisions.sql|public.claim_mail_outbox",
     ...appealMailReplacements,
     `${appealEvidenceFile}|public.activate_rights_session_v1`,
+    ...appealNoticeReplacements,
   ].sort());
   expect(patches).toEqual(["20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1"]);
 });
@@ -203,6 +206,8 @@ it("reviews shared replacements across all six authored Path B migration stages"
     "20261003030000_path_b_confirmed_array_normalization.sql|private.enqueue_path_b_normalization_v1",
     ...appealMailReplacements,
     `${appealEvidenceFile}|public.activate_rights_session_v1`,
+    ...appealNoticeReplacements,
+    "20261009224500_public_appeal_matched_review.sql|private.other_adult_mitigation_v1",
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",
@@ -281,4 +286,13 @@ end $predecessor$;`);
     expect(end).toBeLessThan(source.indexOf("create or replace function private.claim_worker_job_v2("));
     expect(source).not.toMatch(/(?:grant|revoke|alter function)[^;]*private\.claim_worker_job_v2/iu);
   });
+});
+
+
+it("preserves all prior dispatchers behind recipient-only notice delivery and activation", () => {
+ const source = readFileSync(path.join(directory, appealNoticeFile), "utf8");
+ expect(functionBody(source, "private.authorize_mail_submission_v1")).toContain("return private.authorize_mail_submission_before_appeal_notice_v1(p_outbox,p_attempt);");
+ expect(functionBody(source, "public.claim_mail_outbox")).toContain("if mail.id is null then return query select * from public.claim_mail_outbox_before_appeal_notice_v1();return;end if;");
+ expect(functionBody(source, "public.activate_rights_session_v1")).toContain("if selected_purpose is distinct from 'appeal-decision-notice' then\n  return query select * from public.activate_rights_before_appeal_notice_v1(p_token_hash,p_session_hash,p_form_nonce);return;end if;");
+ expect(source).not.toMatch(/grant execute[^;]*_before_appeal_notice_v1/iu);
 });

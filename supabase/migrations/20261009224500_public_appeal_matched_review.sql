@@ -1015,7 +1015,7 @@ begin
     'nonceHash',decision.nonce_hash,'documentId',decision.original_document_id,'referenceCiphertextHex',encode(decision.reference_ciphertext,'hex'),
     'referenceHash',decision.decision_reference_hash) order by decision.review_revision)
    from private.public_appeal_document_decisions decision where decision.case_id=intake.id
-    and decision.reference_ciphertext is not null),'[]')));
+    and decision.reference_ciphertext is not null),'[]'));
 end $$;
 revoke all on function public.read_public_appeal_decision_notice_v1(text) from public,anon,authenticated,service_role,inherit_upload_only;
 grant execute on function public.read_public_appeal_decision_notice_v1(text) to service_role;

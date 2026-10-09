@@ -48,7 +48,8 @@ function seedTuples(table: string, text = sql): string[][] {
   );
 }
 
-const seed: Row[] = seedTuples("private.rights_purpose_matrix").map(([purpose, kind, action, route]) => ({
+const seed: Row[] = readMigrations().filter(text => text.includes("insert into private.rights_purpose_matrix"))
+  .flatMap(text => seedTuples("private.rights_purpose_matrix", text)).map(([purpose, kind, action, route]) => ({
   purpose: purpose!,
   kind: kind || null,
   action: action!,

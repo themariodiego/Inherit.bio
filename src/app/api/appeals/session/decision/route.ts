@@ -10,6 +10,7 @@ export async function GET(request: Request) {
  if (result.error) return result.error.code === "42501" ? notFound() : unavailable();
  if (result.data === null) return notFound();
  const notice = openAppealDecisionNotice(result.data); if (!notice) return unavailable();
- // This is the original verified case's notice, never a source/account lookup.
+ // Native purpose selects either the original consumed evidence session or
+ // its separate recipient-bound notice. Neither is a source/account lookup.
  return Response.json(notice, { headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" } });
 }

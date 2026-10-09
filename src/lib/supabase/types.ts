@@ -8371,6 +8371,10 @@ export type Database = {
           recipient_set_revision: number
         }[]
       }
+      embryo_record_key_card_controls_v1: {
+        Args: { p_account: string; p_session: string; p_after?: string | null }
+        Returns: Json
+      }
       declare_chromosomal_sex_v1: {
         Args: {
           p_account_id: string

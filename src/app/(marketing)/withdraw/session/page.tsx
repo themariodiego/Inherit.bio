@@ -1,5 +1,7 @@
 import { loadPublicAppealSession } from "@/lib/future-person/public-appeal-session";
 import { PublicAppealDocuments } from "@/components/future-person/public-appeal-documents";
+import { loadPublicAppealDecisionNotice } from "@/lib/future-person/public-appeal-decision-notice";
+import { PublicAppealDecisionNotice } from "@/components/future-person/public-appeal-decision-notice";
 import { loadOwnerObjection } from "@/lib/future-person/owner-objection";
 import { OwnerObjection } from "@/components/future-person/owner-objection";
 import {loadAccountBinding} from "@/lib/future-person/account-binding";
@@ -37,6 +39,8 @@ export default async function RightsSessionPage() {
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
   // cookie can never reach another purpose screen.
+  const appealNotice = await loadPublicAppealDecisionNotice(request);
+  if (appealNotice) return <PublicAppealDecisionNotice notice={appealNotice} />;
   const appeal = await loadPublicAppealSession(request);
   if (appeal) return <PublicAppealDocuments {...appeal} />;
   const ownerNotice = await loadOwnerObjection(request);
