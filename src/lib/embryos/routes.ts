@@ -11,6 +11,8 @@ import {
   type EmbryoArtifactKey,
 } from "./basis";
 import { RECORD_KEY_PATTERN, transferCard, type TransferCard } from "./record-key-cards";
+import type { CohortDraftCreated } from "./cohort-draft-contract";
+export { COHORT_DRAFT_CREATED_KEYS, type CohortDraftCreated } from "./cohort-draft-contract";
 
 /**
  * The closed request bodies of the embryo routes (E0 contract §6) and the
@@ -114,25 +116,6 @@ export function draftRequestIssues(body: CohortDraftRequest, ownerEmail: string)
   }
   return [];
 }
-
-/** `cohort-draft-created-v1`; a type alias so it satisfies the closed-shape serializer's record constraint. */
-export type CohortDraftCreated = {
-  cohortDraftId: string;
-  state: "awaiting_uploader_artifacts";
-  next: "sign_uploader_artifacts";
-  requiredPrincipalSlots: string[];
-  optionalAttributionSlots: string[];
-  expiresAt: string;
-};
-
-export const COHORT_DRAFT_CREATED_KEYS = [
-  "cohortDraftId",
-  "state",
-  "next",
-  "requiredPrincipalSlots",
-  "optionalAttributionSlots",
-  "expiresAt",
-] as const satisfies readonly (keyof CohortDraftCreated)[];
 
 /** The 201 body from the draft RPC's row; the attribution slots are always empty in E0. */
 export function cohortDraftCreated(row: {

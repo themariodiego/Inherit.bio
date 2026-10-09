@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:routes /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/route-gate.ts
+
+route gate passed: 66 endpoint method contracts, 10 registered redirects, 129 route kinds, 34 pre-existing routes with a verified disposition, 4 declared storage buckets, 7 of 8 task-depth ceilings measured, 2 of 2 required headers read by the product, 149 of 158 route states proven by 395 browser tests (21 of them built by interpolation, which this static reader cannot resolve and does not guess at), and every one of the 43 proving specs runs the network audit

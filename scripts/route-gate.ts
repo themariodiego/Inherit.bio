@@ -667,7 +667,11 @@ const UNPROVEN_ROUTE_STATE_PAIRS = 9;
  * that day although `navigationContract.publicRightsReachability` required it.
  * T6 and T7 remain, and both wait for embryo ingest.
  */
-const UNINSTRUMENTED_TASK_DEPTH_TASKS = 2;
+// 2026-10-01: the existing native participant-c publication case now counts
+// T6 through real Overview navigation to the exact no-ranking statement.
+// This is authored instrumentation; full hosted execution remains pending.
+// T7 stays uninstrumented until its genuine personal absolute figure exists.
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 1;
 
 /** The register's task-depth contract, as much of it as this gate reads. */
 interface TaskDepthContract {
@@ -1119,28 +1123,6 @@ function browserSpecs(directory: string): BrowserSpec[] {
   };
   walk(directory);
   return specs;
-}
-
-function browserTestTitles(directory: string): string[] {
-  const titles: string[] = [];
-  const walk = (current: string) => {
-    for (const entry of readdirSync(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        walk(full);
-        continue;
-      }
-      if (!/\.spec\.ts$/.test(entry.name)) continue;
-      const source = readFileSync(full, "utf8");
-      for (const match of source.matchAll(
-        /\b(?:test|it)(?:\.\w+)*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/g,
-      )) {
-        titles.push(match[2]);
-      }
-    }
-  };
-  walk(directory);
-  return titles;
 }
 
 /**
@@ -1649,7 +1631,9 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
       required.add(`${entry.path} ${state}`);
     }
   }
-  const titles = browserTestTitles(path.join(repositoryRoot, BROWSER_TESTS));
+  // One fresh inventory per invocation supplies both titles and their audit provenance.
+  const specs = browserSpecs(path.join(repositoryRoot, BROWSER_TESTS));
+  const titles = specs.flatMap((spec) => spec.titles);
   // What this scan cannot see, counted rather than left to inflate the ratchet.
   // A title built with a template interpolation resolves at run time to
   // something this static reader never holds: `legal page ${route} is complete`
@@ -1686,7 +1670,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   // other states exist only inside the specs whose titles prove them, so a
   // proving spec that runs without the audit leaves that state unaudited.
   let stateProvingSpecCount = 0;
-  for (const spec of browserSpecs(path.join(repositoryRoot, BROWSER_TESTS))) {
+  for (const spec of specs) {
     const proves = spec.titles.some((title) => register.routes.some((entry) =>
       requiredStates(register, entry).some((state) => titleProves(title, entry.path, state))));
     if (!proves) continue;

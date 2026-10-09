@@ -373,6 +373,7 @@ network and the whole site shares that limit.
 | `INHERIT_PREPARED_WGS_ENABLED` | `false` for an ordinary self-host. The prepared-object path needs this flag *and* the database's own `own_preparation_config.enabled` gate; the operator-started preparation worker (`pnpm worker:prepared`, see `worker/README.md`) refuses to run without the flag. Setting it alone enables nothing. |
 | `INHERIT_PREPARED_R2_ORIGIN` | Empty unless the flag above is on. Then: the HTTPS origin of the signed artifact gateway — scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes the transport unavailable. |
 | `INHERIT_PREPARED_R2_BUCKET` | Empty unless the flag above is on. Then: the exact private bucket bound to that gateway and selected in the database configuration. A bucket that does not match this value is refused. |
+| `INHERIT_CLAMD_ADDRESS` | Read only by the claim document scan worker (`pnpm worker:claim-scan`). The clamd it scans with: `unix:/run/clamav/clamd.ctl` or `tcp:127.0.0.1:3310`. Unset or malformed, the worker refuses to start, and every Future Person claim document stays quarantined and unreadable. `test-double` is accepted only on a TEST-LOCAL, non-production build. See `docs/claim-document-scanning.md`. |
 | `INHERIT_EMBRYO_R2_ORIGIN` | Empty. Embryo upload is not available on any deployment yet. When it is, this is the HTTPS origin of the signed embryo fragment gateway (`workers/embryo-fragments/`): scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes fragment storage unavailable. |
 | `INHERIT_EMBRYO_R2_BUCKET` | Empty, for the same reason. Then: the exact `inherit-embryo-*` bucket bound to that gateway and selected in `private.embryo_ingest_object_config`. A fragment receipt naming any other bucket is refused. |
 
@@ -434,6 +435,7 @@ They are read under `src/`, they are deliberately absent from
 | `CI` | The CI runner. |
 | `INHERIT_TEST_JURISDICTION` | The acceptance fixtures. `next.config.ts` throws at startup if it is `1` in a production deployment. |
 | `INHERIT_LOCAL_E2E_PROJECT` | The browser suite, to pick which local test stack it targets. |
+| `INHERIT_TEST_REQUESTER_STATEMENTS` | The private TEST acceptance harness only. Operators must not enable it; production startup refuses it. |
 
 ### Generating the upload signing key
 
@@ -468,6 +470,15 @@ dedicated workflow above records that proof for the fresh local profile;
 it does not establish a hosted project's signer configuration.
 
 ## Troubleshooting
+
+The private TEST requester-statement archive is a source proposal. It stays closed
+until the native, worker and physical-disposal proofs pass. Its server-only settings
+are `INHERIT_TEST_STATEMENT_GATEWAY_URL`, `INHERIT_TEST_STATEMENT_GATEWAY_KEY`,
+`INHERIT_TEST_STATEMENT_R2_BUCKET`, `INHERIT_TEST_STATEMENT_R2_BINDING_SHA256`,
+`INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE` and the optional public trust anchor
+`INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE_CA_CERT`. Leave them empty in ordinary
+deployments. A URL, key or configuration digest is not provider qualification.
+See `docs/requester-statement-archive-service.md` for the exact service contract.
 
 - **Fresh setup stops**: read the bounded error code and private startup log.
   Keep the generated files; do not rerun preparation, rotate keys or reset an

@@ -3,14 +3,21 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { isAllowedFinding, scanText, validateAllowlist } from "./secret-gate";
 
 function readAllowlist() {
   return JSON.parse(fs.readFileSync("scripts/secret-allowlist.json", "utf8")) as Parameters<typeof validateAllowlist>[0];
 }
-const reviewedIds = ["browser-origin-credential-refusal", "storage-proxy-credential-refusal",
+const reviewedIds = ["historical-owned-target-unit-marker", "browser-origin-credential-refusal", "storage-proxy-credential-refusal",
   "model-endpoint-credential-refusal", "ready-origin-credential-refusal", "chat-token-deterministic-expression",
-  "prepared-storage-credential-refusal"];
+  "prepared-storage-credential-refusal", "isolated-webhook-generated-reference",
+  "isolated-webhook-malformed-reference", "isolated-webhook-cross-variant-reference"];
+const lineHash = (line: string) => createHash("sha256").update(line).digest("hex");
+function reviewedFinding(text: string, entry: ReturnType<typeof readAllowlist>["entries"][number]) {
+  return scanText(text, entry.paths[0]).find(item => item.value === entry.value
+    && lineHash(text.split(/\r?\n/u)[item.line - 1]) === entry.sourceLineSha256)!;
+}
 
 describe("secret gate detector", () => {
   it("detects provider keys, JWTs, private keys, and contextual assignments", () => {
@@ -58,6 +65,23 @@ describe("secret gate detector", () => {
     expect(scanText(text, ".env.example")).toEqual([]);
   });
 
+  it("distinguishes comparisons from assignments without hiding literal credentials", () => {
+    const secretName = ["SUPABASE", "_SERVICE_ROLE_KEY"].join("");
+    for (const operator of ["==", "==="]) {
+      expect(scanText(`typeof env.${secretName} ${operator} "string"`, "checks.ts")).toEqual([]);
+      expect(scanText(`env.${secretName} ${operator} candidate`, "checks.ts")).toEqual([]);
+    }
+    for (const operator of ["=", ":"]) {
+      expect(scanText(`${secretName} ${operator} "unsafe-value"`, "checks.ts")).toEqual([
+        { rule: "secret-assignment", path: "checks.ts", line: 1, value: "unsafe-value" },
+      ]);
+    }
+    const literal = `sb_${"secret"}_${"A".repeat(24)}`;
+    expect(scanText(`env.${secretName} === "${literal}"`, "checks.ts")).toEqual([
+      { rule: "supabase-platform-key", path: "checks.ts", line: 1, value: literal },
+    ]);
+  });
+
   it("reports the exact line and value for review", () => {
     const assignment = ["JOBS", "_SECRET=", "unsafe-value"].join("");
     const findings = scanText(`safe=true\n${assignment}\n`, "config.env");
@@ -94,7 +118,7 @@ describe("secret gate detector", () => {
     const { entries } = readAllowlist();
     const entry = entries.find(item => item.id === id)!;
     const text = fs.readFileSync(entry.paths[0], "utf8");
-    const finding = scanText(text, entry.paths[0]).find(item => item.value === entry.value)!;
+    const finding = reviewedFinding(text, entry);
     expect(finding).toBeDefined(); // The detector still reports the fixture.
     expect(isAllowedFinding(finding, entries, process.cwd())).toBe(true);
     expect(isAllowedFinding({ ...finding, path: "src/unapproved.test.ts" }, entries, process.cwd())).toBe(false);
@@ -128,7 +152,7 @@ describe("secret gate detector", () => {
       for (const id of reviewedIds) {
         const entry = entries.find(item => item.id === id)!;
         const original = fs.readFileSync(entry.paths[0], "utf8");
-        const sourceLine = original.split(/\r?\n/).find(line => line.includes(entry.value))!;
+        const sourceLine = original.split(/\r?\n/).find(line => lineHash(line) === entry.sourceLineSha256)!;
         const target = path.join(root, entry.paths[0]);
         fs.mkdirSync(path.dirname(target), { recursive: true });
         const changed = sourceLine.replace("Buffer.alloc(32, 9)", "Buffer.alloc(32, 10)") + " // changed context";
@@ -162,10 +186,61 @@ describe("secret gate detector", () => {
       const changed = git("rev-parse", "HEAD");
       for (const { entry, target, source } of records) {
         fs.writeFileSync(target, source);
-        const finding = scanText(source, entry.paths[0]).find(item => item.value === entry.value)!;
+        const finding = reviewedFinding(source, entry);
         expect(isAllowedFinding({ ...finding, commit: approved }, entries, root)).toBe(true);
         expect(isAllowedFinding({ ...finding, commit: changed }, entries, root)).toBe(false);
       }
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+  it("keeps three unique webhook expressions and refuses literal replacements in their actual reviewed contexts", () => {
+    const { entries } = readAllowlist();
+    const selected = entries.filter(entry => entry.id.startsWith("isolated-webhook-"));
+    expect(selected).toHaveLength(3);
+    expect(new Set(selected.map(entry => entry.value)).size).toBe(3);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "secret-gate-webhook-literal-"));
+    try {
+      for (const entry of selected) {
+        const source = fs.readFileSync(entry.paths[0], "utf8");
+        const original = source.split(/\r?\n/u).find(line => lineHash(line) === entry.sourceLineSha256)!;
+        const target = path.join(root, entry.paths[0]);fs.mkdirSync(path.dirname(target), { recursive: true });
+        const changed = original.replace(entry.value, '"unapproved-literal"');fs.writeFileSync(target, changed);
+        const findings = scanText(changed, entry.paths[0]);
+        expect(findings).toHaveLength(1);expect(findings[0].rule).toBe("secret-assignment");
+        expect(isAllowedFinding(findings[0], entries, root)).toBe(false);
+      }
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+  it("keeps the historical target marker bound to its exact pure unit-test context", () => {
+    const { entries } = readAllowlist();
+    const entry = entries.find(item => item.id === "historical-owned-target-unit-marker")!;
+    const source = fs.readFileSync(entry.paths[0], "utf8");
+    const original = source.split(/\r?\n/u).find(line => lineHash(line) === entry.sourceLineSha256)!;
+    expect(source).toContain("historicalAccountOwnedTarget(config, env)");
+    expect(entry.value).toBe("unit-marker");
+    expect(original).toContain(["NEXT_PUBLIC_SUPABASE", "_ANON_KEY: ", JSON.stringify(entry.value)].join(""));
+    expect(original).toContain(["BYOK", "_ENCRYPTION_KEY: ", JSON.stringify(entry.value)].join(""));
+    const frozen = "920cdbf9beb11eb677bd7fe4e30d1cad3ea5d514";
+    const historical = execFileSync("git", ["show", `${frozen}:${entry.paths[0]}`], { encoding: "utf8" });
+    const historicalFinding = reviewedFinding(historical, entry);
+    expect(historicalFinding).toBeDefined();
+    expect(isAllowedFinding({ ...historicalFinding, commit: frozen }, entries, process.cwd())).toBe(true);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "secret-gate-target-marker-"));
+    try {
+      const target = path.join(root, entry.paths[0]);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const copied = ["const unrelated = { BYOK", "_ENCRYPTION_KEY: ", JSON.stringify(entry.value), " };"].join("");
+      fs.writeFileSync(target, original + "\n" + copied);
+      const findings = scanText(fs.readFileSync(target, "utf8"), entry.paths[0]);
+      expect(findings).toHaveLength(2);
+      expect(isAllowedFinding(findings[0], entries, root)).toBe(true);
+      expect(isAllowedFinding(findings[1], entries, root)).toBe(false);
+      const replacement = original.replaceAll(entry.value, "unapproved-literal");
+      expect(replacement).not.toBe(original);
+      fs.writeFileSync(target, replacement);
+      const changed = scanText(replacement, entry.paths[0]);
+      expect(changed).toHaveLength(1);
+      expect(changed[0].rule).toBe("secret-assignment");
+      expect(isAllowedFinding(changed[0], entries, root)).toBe(false);
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   });
 });

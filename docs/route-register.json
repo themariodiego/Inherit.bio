@@ -752,7 +752,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "required": [
             "sites_expected",
@@ -775,7 +776,8 @@
             "qc_verdict",
             "qc_reasons",
             "computed_at",
-            "source_facts"
+            "source_facts",
+            "figure_basis"
           ],
           "children": {
             "source_facts": {
@@ -783,7 +785,7 @@
               "cardinality": "exactly-one"
             }
           },
-          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels",
+          "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels; figure_basis-is-null-only-for-unclassified-historical-QC-or-the-closed-version-1-embryo-split-calls-v1-receipt-with-observed-coverage-call_rate-and-null-or-observed-autosomal_het_rate-mean_depth-matching-present-fields-and-no-parent-dropout-contamination-input",
           "unknownFields": "reject"
         },
         "inputFacts": {
@@ -876,6 +878,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "metric",
             "measured_value",
             "required_minimum",
@@ -883,12 +887,18 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "metric",
             "measured_value",
             "required_minimum",
             "display_copy_id"
           ],
-          "children": {},
+          "children": {
+            "figure_basis": {
+              "shape": "resultBasis"
+            }
+          },
           "scalarConstraints": {
             "kind": {
               "const": "coverage_failure"
@@ -902,7 +912,11 @@
             },
             "display_copy_id": {
               "const": "embryo.result.insufficient-coverage"
-            }
+            },
+            "schema_version": {
+              "const": 2
+            },
+            "figure_basis": "version-1-result-basis-exactly-observed"
           },
           "semanticRule": "this-is-a-measured-eligibility-metric-and-never-a-risk-figure-score-rank-or-reportable-result",
           "unknownFields": "reject"
@@ -911,6 +925,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "risk_model",
             "score_coverage",
             "absolute_risk",
@@ -925,6 +941,8 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "risk_model",
             "score_coverage",
             "absolute_risk",
@@ -957,9 +975,12 @@
             "within_family": {
               "shape": "withinFamilyValidation",
               "cardinality": "exactly-one"
+            },
+            "figure_basis": {
+              "shape": "resultBasis"
             }
           },
-          "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero",
+          "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero; schema_version-exactly-2; figure_basis-version-1-exactly-modelled",
           "unknownFields": "reject"
         },
         "embryoRiskModelBinding": {
@@ -1106,6 +1127,8 @@
           "kind": "object",
           "keys": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "carrier_state",
             "inheritance_mode",
             "confirmation_required",
@@ -1113,12 +1136,18 @@
           ],
           "required": [
             "kind",
+            "schema_version",
+            "figure_basis",
             "carrier_state",
             "inheritance_mode",
             "confirmation_required",
             "display_copy_id"
           ],
-          "children": {},
+          "children": {
+            "figure_basis": {
+              "shape": "resultBasis"
+            }
+          },
           "scalarConstraints": {
             "kind": {
               "const": "carrier_status"
@@ -1132,7 +1161,11 @@
             },
             "confirmation_required": {
               "const": true
-            }
+            },
+            "schema_version": {
+              "const": 2
+            },
+            "figure_basis": "version-1-result-basis-exactly-observed"
           },
           "categoryRule": "permitted-only-for-Having-children-and-never-converted-into-a-disease-risk-rank-or-transfer-recommendation",
           "notReportableRule": "a-not-reportable-carrier-result-is-never-a-carrierFinding; the-parent-EmbryoFinding-must-have-finding-null-and-one-exact-not_covered_reason",
@@ -1864,6 +1897,31 @@
             }
           },
           "unknownFields": "reject"
+        },
+        "resultBasis": {
+          "kind": "object",
+          "keys": [
+            "version",
+            "basis"
+          ],
+          "required": [
+            "version",
+            "basis"
+          ],
+          "children": {},
+          "scalarConstraints": {
+            "version": {
+              "const": 1
+            },
+            "basis": {
+              "enum": [
+                "observed",
+                "modelled",
+                "exact"
+              ]
+            }
+          },
+          "unknownFields": "reject"
         }
       },
       "qcProjection": {
@@ -1937,6 +1995,9 @@
         },
         "computedMetricNullCopyId": {
           "const": "embryo.qc.not-measurable-from-file"
+        },
+        "dropoutNoRangeCopyId": {
+          "const": "embryo.qc.dropout-no-range"
         },
         "dropoutNotMeasuredCopyId": {
           "const": "embryo.qc.dropout-not-measured"
@@ -2035,7 +2096,8 @@
           },
           "approved-future-person-export-v1": {
             "root": "exportEmbryo",
-            "cardinality": "exactly-one-for-the-approved-embryo-subject"
+            "cardinality": "exactly-one-for-the-approved-embryo-subject",
+            "historicalEvidenceReader": "exportContracts.approved-future-person-export-v1.historicalEvidenceReader"
           }
         },
         "chat": {
@@ -2950,6 +3012,7 @@
         "rule": "for-every-authorizing-purpose-the-mail-worker-locks-the-exact-outbox-row-and-current-server-owned-authority-rows-rechecks-every-authorityRevisionBinding-immediately-before-creating-a-raw-token-and-again-immediately-before-provider-submission-then-creates-the-raw-token-only-in-bounded-memory-commits-only-its-hash-purpose-target-authority-revisions-and-expiry-constructs-the-link-from-issuance.link-and-zeroizes-the-raw-value-after-provider-submission; any-stale-terminal-mismatch-or-cancellation-writes-no-token-and-makes-no-provider-call"
       },
       "retry": "for-delivery-retries-of-the-same-authorizing-source-every-regeneration-creates-a-new-raw-token-and-new-hash-and-atomically-revokes-or-replaces-the-prior-hash-before-provider-submit-including-definitive-failure-uncertain-outcome-and-scheduled-reminder-reissue; the-public-rights-credential-reissue-v1-flow-is-the-only-exception-and-creates-a-separate-non-authorizing-recovery-delivery-candidate-that-does-not-revoke-any-live-source-or-session-until-successful-api.rights-activate; the-same-hash-can-never-correspond-to-a-new-token-and-no-durable-plaintext-is-required",
+      "providerAttemptKey": "the-provider-idempotency-key-binds-the-outbox-semantic-key-and-exact-attempt-ordinal-for-every-token-bearing-delivery; repeated-submission-of-one-attempt-retains-the-identical-key-and-payload-in-bounded-memory-but-regeneration-on-a-successor-attempt-uses-a-different-provider-key-and-new-raw-token-after-atomic-prior-hash-revocation; the-outbox-semantic-key-still-deduplicates-the-authorizing-event-and-neither-provider-payload-nor-raw-token-is-persisted-or-logged",
       "invitationReminderRotation": "the-single-invitation.reminder-7d-due-phase-may-only-lock-the-unchanged-invitation-authority-contact-and-fixed-expiry-and-atomically-enqueue-exactly-one-deduplicated-token-free-outbox-row-bound-to-those-immutable-revisions; only-jobs.mail-may-claim-that-row-create-one-new-raw-replacement-token-in-bounded-memory-and-immediately-before-provider-submit-atomically-revoke-and-replace-the-prior-live-hash-so-exactly-one-live-hash-remains-then-submit-zeroize-the-raw-value-and-record-the-coded-provider-outcome; the-prior-raw-value-is-never-read-or-reused-no-parallel-token-is-created-and-the-invitation-deadline-is-never-extended",
       "providerPayload": "contains-only-the-minimum-recipient-template-and-fixed-fragment-link; Resend-click-tracking-link-rewriting-and-template-analytics-wrappers-are-disabled-for-every-fragment-bearer-message-and-open-tracking-is-disabled; Resend-native-email-data-retention-is-hard-bounded-by-the-persisted-mail.resend-provider-payload-30d-deadline-from-docs/retention.md-or-a-shorter-contractually-enforced-Enterprise-setting-and-the-key-is-least-privilege-with-dashboard-access-restricted; an-expired-or-rotated-link-is-cryptographically-useless-even-while-provider-retained; application-logs-webhook-payload-storage-analytics-and-audit-never-contain-the-token-or-link",
       "claimObjectionCredential": "for-the-current-owner_user_id-only-create-or-refresh-one-objection-rights-credential-when-that-notice-delivery-is-committed-and-set-its-hard-absolute-expiry-equal-to-the-owner-notice-deadline-never-earlier-or-later; if-the-owner-has-an-account-an-equivalent-authenticated-session-bound-objection-action-remains-available-only-through-that-deadline; release-refusal-withdrawal-terminalization-or-objection-decision-atomically-invalidates-it-and-no-former-owner-parent-or-other-principal-is-notified",
@@ -3077,7 +3140,48 @@
       "contracts": [
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
-      ]
+      ],
+      "verifiedIdentityRotation": "the-human-verified-normalized-name-and-date-of-birth-HMAC-uses-a-purpose-separated-subkey-of-the-existing-outside-database-contact-root-revision-catalogue; the-server-sends-all-held-revisions-and-the-database-selects-the-active-revision; no-revision-used-by-a-current-claimed_unbound-identity-may-retire-until-its-approved-account-binding-or-explicit-claimant-deletion; contact-expiry-never-deletes-the-durable-HMAC",
+      "claimantDeletionPrivateExecutor": {
+        "retentionId": "future-person.claimant-reverification-until-request",
+        "trigger": "claimed-subject-deletion",
+        "manifestClass": "complete-retention",
+        "phaseId": "future-person-claimed-source-disposal",
+        "execution": "closed inline request continuation only; this private phase is not a source.revocation-7d scheduled worker phase and does not change D-126",
+        "originalDeadlines": {
+          "source": "request creation plus 7 days",
+          "charterCompletion": "same request creation plus 30 days",
+          "derived": "request creation plus 60 seconds"
+        },
+        "publishedSourceFence": "exact completed publication or exact immutable account235 receipt plus current approved detached custody; original still-live create-only capabilities are permanently fenced by verified empty markers",
+        "auditSelector": "new approved custody receives one random immutable audit principal through the closed issuer; existing NULL selectors remain NULL with no historical backfill; erase only matching current subject linkage and preserve the append-only chain",
+        "availability": "public claimant DELETE and deletion_accepted remain closed until complete registered-store graph cleanup and actual provider ACKs are proved"
+      }
+    },
+    "claim-review-receipt-v1": {
+      "purpose": "prove-complete-client-receipt-of-each-exact-clean-document-chunk-before-a-named-human-review-decision; receipt-is-not-the-human-documentary-attestation",
+      "open": "only-an-authorized-api.claim-review-receipt-POST-consumes-the-distinct-stateless-page-nonce-and-stores-random-challenges; GET-does-not-create-or-store-a-challenge-or-operation-nonce",
+      "proof": "SHA-256-of-32-byte-challenge-followed-by-the-exact-plaintext-chunk; challenge-is-bound-to-download-id-sequence-and-document-digest; public-whole-file-digest-is-insufficient",
+      "preparation": "only-service-role-transport-may-store-an-expected-proof-after-opening-and-verifying-the-exact-Storage-bytes; direct-reviewer-JWT-preparation-and-settlement-helper-access-are-denied",
+      "acknowledgement": "an-operation-specific-reviewer-JWT-door-rechecks-live-auth-MFA-current-account-session-review-and-assignment-revisions-current-download-cookie-and-clean-document; exact-proof-and-distinct-acknowledgement-nonce-settle-atomically-once",
+      "refusal": "unacknowledged-partial-canceled-corrupt-other-chunk-other-session-other-assignment-rotated-credential-or-replayed-proofs-do-not-satisfy-the-document-read-requirement",
+      "client": "read-every-exact-chunk-and-verify-full-size-and-sha256-before-acknowledging; cancellation-or-truncation-before-complete-assembly-sends-zero-acknowledgements",
+      "rawGet": "api.download-chunk-retains-the-exact-registered-raw-byte-body-and-closed-headers; challenges-and-acknowledgement-nonces-travel-only-in-the-authorized-receipt-POST-response"
+    },
+    "test-requester-own-correction-statement-v1": {
+      "status": "unbound-source-only",
+      "production": "closed",
+      "ownerDecision": "own appeal/correction statement only in TEST; no notes or foreign data; legal review remains required",
+      "implementedFormat": "reviewer-only-case-statement-v1",
+      "liveGET": "/api/future-person/claim/session/corrections/[id]/statement",
+      "liveAuthority": "same-origin existing rights cookie; current approved claimant export action; exact original author and subject; native checks before and after serialization",
+      "accountArchiveAuthority": "existing sensitive own-account Auth/session actor plus actual current claimed-bound binding and original subject principal",
+      "archiveProjection": "server complete census, current receipt and EOF; only correctionId plus literal statement; unsupported appeal/legacy class whole refusal",
+      "storage": "separate NEW R2 issuer/private HMAC transport/per-allocation Durable Object; native owner currentness; no production or legacy writer selector",
+      "disposal": "actual complete case/copy graph, cancellation, original expiry, permanent empty fence and native verified ACK; accepted/uncertain mail remains held",
+      "classification": "docs/requester-statement-reader-exception.json",
+      "tests": "authored and unrun; no browser/native/provider credit",
+      "release": "full exact source and policy/native/provider/browser/legal qualification required"
     }
   },
   "payloadBoundaryContract": {
@@ -4365,7 +4469,11 @@
             "retentionMaximumDays",
             "allowedActionIds"
           ],
-          "geneticData": "not-read-on-the-page-and-available-only-through-the-exact-operation-specific-export-route"
+          "geneticData": "not-read-on-the-page-and-available-only-through-the-exact-operation-specific-export-route",
+          "retentionMaximumDays": {
+            "const": null,
+            "meaning": "no-source-retention-deadline-for-a-claimed-record-kept-until-claimant-deletion; temporary-contact-expiry-is-separate"
+          }
         }
       },
       "pageProjectionRule": "select-exactly-one-server-purpose-case-before-any-target-read-fetch-only-that-closed-projection-and-serialize-no-unlisted-nested-field; raw-data-bytes-are-never-a-page-projection-and-require-the-explicit-export-create-and-chunk-contracts",
@@ -5370,7 +5478,26 @@
       },
       "crossSubjectRawWithoutGrant": "deny",
       "jointArtifacts": "include-only-while-every-other-contributor-to-that-exact-result-has-a-current-covering-grant-and-project-only-the-requesters-authorized-fields; otherwise omit-the-row-or-redact-every-other-contributor-field-so-no-value-remains-inferable",
-      "futureOrCohortProjection": "subject-partitioned-embryo-projections-only-with-no-parent-raw-rows"
+      "futureOrCohortProjection": "subject-partitioned-embryo-projections-only-with-no-parent-raw-rows",
+      "ordinarySubjectLedgerProjection": {
+        "policy": "owner-option-A-actor-only; existing ordinary ledger rows prove who acted but never recorded a subject target; no target inference or historical backfill",
+        "authority": "server-selected exact current ordinary own-subject partition under the real consumed account request and current writing attempt; actual Future custody or account-binding selectors refuse this ordinary reader",
+        "member": "subjects/{subject_id}/audit-log.json",
+        "shape": {
+          "schema_version": "legal-audit-v1",
+          "attribution": "unrecorded",
+          "attribution_started_at": null,
+          "note": "These audit records do not identify the subject of each action. Your recorded account actions are in legal-audit.json. This does not mean that nothing happened to this record.",
+          "events": []
+        },
+        "counts": "zero assigned subject events is not a count of historical actions; no historical event count is claimed",
+        "canonicalAccountMember": "all actual requester actor events plus exact genuinely assigned own bound-custody/binding events once in canonical ledger sequence in legal-audit.json; ordinary members never copy account actor events",
+        "privacy": "only six closed coded event fields; actor pseudonyms, chain hashes, account/session authority and unproved subject targets never leave",
+        "assignedBoundary": "claimed-bound and approved-unbound Future selectors retain their distinct reviewed exact event contracts; a new selector requires an explicit reviewed reader and never inherits ordinary unrecorded fallback",
+        "capture": "actual full graph receipt includes own canonical actor and genuine assigned Future audit membership/content; changed ledger or mapping refuses the whole request",
+        "reader": "service-only export_archive_account_audit_v1 with exact context, events and ordinary-subject operations; at most500 sequence-keyset events; current consumed job/attempt/source/actor authority before and after every call",
+        "release": "TEST-LOCAL source producer only; whole-account/non-self member completeness, public POST/status, READY and provider cleanup/delivery remain independently required"
+      }
     },
     "subject-export-v1": {
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
@@ -5403,6 +5530,49 @@
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "price": "free",
       "credential": "approved-rights-session-bound-to-one-exact-transferred-embryo-subject-after-human-review-and-any-required-owner-notice",
+      "ledgerProjection": {
+        "authority": "only-the-exact-non-NULL-newly-issued-custody-audit-selector-proved-by-the-current-unbound-claimant-subject-tuple; legacy-NULL-and-previously-unlinked-actors-remain-unassigned-with-no-backfill",
+        "source": "the-existing-public.legal_audit_log; no-second-audit-store; exact-six-coded-event-fields-seq-occurred_at-event_code-route_id-outcome_code-coded_context; actor-UUID-chain-hashes-and-envelopes-never-leave",
+        "eventContracts": [
+          {
+            "eventCode": "claimant.analysis_stopped",
+            "routeId": "api.future-person-analysis-stop",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deletion_requested",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "accepted",
+            "codedContext": {}
+          },
+          {
+            "eventCode": "claimant.deleted",
+            "routeId": "api.future-person-delete",
+            "outcomeCode": "purged",
+            "codedContext": {}
+          }
+        ],
+        "unsupported": "unknown-or-mismatched-event-route-outcome-context-or-unsafe-sequence-refuses-the-whole-export-with-no-silent-field-or-event-omission",
+        "capture": "legalAudit-metadata-has-exact-attribution-assigned-or-unrecorded-and-attributionStartedAt-the-existing-non-personal-private.legal_audit_attribution_config-reference-clock-or-null-for-unrecorded; membership.legalAuditEvents-is-the-exact-count; the-current-authority-receipt-binds-full-own-ledger-membership-order-content-and-metadata",
+        "members": [
+          "legal-audit.json",
+          "subjects/{subject_id}/audit-log.json",
+          "subjects/{subject_id}/reports.txt"
+        ],
+        "reader": "service-only-future_person_export_members_v1-operation-legal-audit; at-most-500-exact-sequence-keyset-rows-per-page; unchanged-current-receipt-writing-attempt-and-lease-checks-before-and-after-every-page",
+        "legacy": "zero-assigned-events-with-a-count-free-explanation-does-not-claim-that-nothing-happened; old-NULL-actors-are-never-retroattributed",
+        "release": "public-export-READY-provider-cleanup-and-all-account-publication-holds-remain-closed-until-complete-proof"
+      },
+      "historicalEvidenceReader": {
+        "scope": "only-immutable-own-records-bound-to-the-exact-captured-approved-claimant-source-and-current-authority-receipt",
+        "findingVersions": "the-original-closed-v1-body-has-neither-schema_version-nor-figure_basis-and-exports-with-figureBasis-null-and-classificationDisposition-unrecorded; a-body-containing-either-field-must-pass-the-current-closed-v2-contract-with-its-genuine-saved-classification-and-never-falls-back",
+        "qualityVersions": "the-original-closed-quality-shape-has-no-figure_basis; the-current-shape-preserves-its-actual-null-or-closed-embryo-split-calls-v1-receipt; absent-or-null-classification-remains-unrecorded",
+        "detailVersions": "each-child-must-pass-its-own-version-before-the-unchanged-closed-outer-detail-is-validated-and-bound-to-the-exact-embryo; mixed-genuine-historical-versions-are-permitted-with-no-rewrite",
+        "figureIdentity": "every-stored-figure-payload-must-equal-the-exact-historical-component-of-its-recorded-own-finding-version-before-any-member-bytes-are-written",
+        "currentProducerBoundary": "the-legacy-reader-is-server-only-and-export-only; current-RSC-API-chat-and-producer-contracts-still-require-current-saved-classifications-and-do-not-use-this-reader",
+        "validation": "src/lib/exports/historical-embryo-dto.ts; frozen-v1-closed-validator-src/lib/embryos/historical-policy-v1.ts"
+      },
       "layout": "subject-partitioned-archive-v1",
       "deliveryContract": "largeExportDeliveryContract",
       "subjectScope": "the-one-claimed-embryo-subject-only-with-no-sibling-parent-or-cohort-row-except-the-agreement-projection-below",
@@ -6278,7 +6448,13 @@
             "public.report_artifacts",
             "public.generated_exports",
             "public.download_sessions",
-            "public.model_contexts"
+            "public.model_contexts",
+            "private.export_archive_jobs",
+            "private.export_archive_attempts",
+            "private.export_archive_downloads",
+            "private.export_archive_manifest_pages",
+            "private.export_archive_segments",
+            "private.export_archive_nonce_uses"
           ],
           "joinRule": "select-only-by-the-exact-subject-cohort-file-export-purpose-pair-donor-attribution-draft-or-ingest-FK-and-its-current-immutable-revision-tuple; export-artifact-only-selects-one-generated-export-download-row-and-logical-archive-identity-and-raw-export-only-selects-only-the-exact-subject-account-raw-export-tuple; resolve-each-selected-export-only-to-its-exact-DB-joined-legacy-archive-handle-if-present-and-every-attempt-owned-reserved-key-and-recorded-manifest-object-under-largeExportDeliveryContract.archiveRepresentation-including-unacknowledged-uncertain-failed-and-expired-attempt-writes; never-prefix-selection",
           "manifestClasses": [
@@ -6337,9 +6513,11 @@
             "public.token_hashes",
             "public.token_candidates",
             "public.rights_sessions",
-            "public.rights_nonces"
+            "public.rights_nonces",
+            "public.future_person_claim_notices",
+            "public.future_person_claim_release_credentials"
           ],
-          "joinRule": "select-only-by-the-exact-retention-campaign-invitation-claim-review-export-subject-cohort-or-recipient-authority-FK-and-revision; independently-authorized-minimal-terminal-notice-rows-are-explicit-manifest-exclusions-until-their-own-retention-class-is-due; review-working-and-claim-working-select-only-case-bound-delivery-state-and-never-an-unrelated-notice",
+          "joinRule": "select-only-by-the-exact-retention-campaign-invitation-claim-review-export-subject-cohort-or-recipient-authority-FK-and-revision; independently-authorized-minimal-terminal-notice-rows-are-explicit-manifest-exclusions-until-their-own-retention-class-is-due; review-working-and-claim-working-select-only-case-bound-delivery-state-and-never-an-unrelated-notice; future-person.claimed-unbound-24mo selects only its exact claimant/contact/outbox/release revision and never durable claim approval, claimant principal, verified identity HMAC, Recovery Key, source, result or agreement slice",
           "manifestClasses": [
             "notice-contact-working",
             "invitation-working",
@@ -6362,9 +6540,7 @@
             "public.future_person_claim_documents",
             "public.future_person_claim_review_packages",
             "public.future_person_claim_assignments",
-            "public.future_person_claim_notices",
-            "public.future_person_claim_objections",
-            "public.future_person_claim_release_credentials"
+            "public.future_person_claim_objections"
           ],
           "joinRule": "select-only-the-exact-public.future_person_claims-row-and-claim-session-or-review-package-plus-its-document-object-references-contact-notice-objection-release-and-assignment-revisions; working-class-deletion-preserves-only-the-coded-resolution-timestamps-and-pseudonymized-audit-when-the-retention-authority-explicitly-requires-that-residue-and-never-selects-the-underlying-subject",
           "manifestClasses": [
@@ -7079,7 +7255,7 @@
         "migrationGate": "before-and-after-each-migration-introspect-pg_catalog-and-information_schema-including-partitions-and-view-dependencies-then-run-the-set-equality-and-store-target-class-edge-inverse-checks; a-migration-that-adds-renames-drops-or-reclassifies-a-store-without-updating-docs/schema-requirements.md-and-this-registry-fails-before-application-code-runs"
       },
       "schemaCoverage": "docs/schema-requirements.md-migrations-pg_catalog-and-Storage-metadata-are-compared-by-schemaIntrospectionValidation-with-exact-disjoint-set-equality; no-table-view-materialized-view-partition-object-class-reference-store-or-sensitive-edge-may-rely-on-a-name-heuristic-or-remain-unclassified",
-      "zeroResidualVerification": "after-each-batch-and-before-phase-completion-use-a-service-role-only-SECURITY-DEFINER-verifier-under-the-same-target-and-manifest-revision-to-count-every-prohibited-row-and-DB-joined-current-or-legacy-storage-object-across-all-orderedTargets; completion-requires-zero-for-every-applicable-targetId-and-a-nonzero-unknown-unclassified-or-unverifiable-count-fails-closed; only-after-that-proof-atomically-terminalize-but-do-not-delete-the-exact-active-retention-disposition-phase-manifest-and-worker-control-rows-with-coded-counts-for-crash-recovery-and-replay-defense; any-later-control-tombstone-cleanup-requires-a-separate-registered-nonauthorizing-housekeeping-retention-ID",
+      "zeroResidualVerification": "after-each-batch-and-before-phase-completion-use-a-service-role-only-SECURITY-DEFINER-verifier-under-the-same-target-and-manifest-revision-to-count-every-prohibited-row-and-DB-joined-current-or-legacy-storage-object-across-all-orderedTargets; completion-requires-zero-for-every-applicable-targetId-and-a-nonzero-unknown-unclassified-or-unverifiable-count-fails-closed; only-after-that-proof-atomically-terminalize-but-do-not-delete-the-exact-active-retention-disposition-phase-manifest-and-worker-control-rows-with-coded-counts-for-crash-recovery-and-replay-defense; any-later-control-tombstone-cleanup-requires-a-separate-registered-nonauthorizing-housekeeping-retention-ID; the-ingest-abandoned-no-source-verifier-skips-exactly-one-named-reference-public.legal_reviews.target_id-only-for-an-approved-single_parent_basis-review-which-is-a-retained-human-review-decision-(owner-2026-09-28;-supabase/migrations/20260930131000_embryo_purge_retained_review.sql)",
       "contracts": [
         "resource-authorization-v1",
         "embryo-autosomal-only-v1"
@@ -7821,7 +7997,20 @@
         "mail-token-delivery-v1",
         "retention-purge-v1",
         "sensitive-purge-target-registry-v1"
-      ]
+      ],
+      "affectedRecipientMail": {
+        "requestTemplate": "account-deletion-affected",
+        "requestPayload": {
+          "noticeEndsAt": "original-fixed-account-notice-deadline-ISO-datetime"
+        },
+        "cancellationTemplate": "account-deletion-affected-cancelled",
+        "cancellationPayload": {
+          "cancelledAt": "committed-cancellation-ISO-datetime"
+        },
+        "binding": "one-row-per-exact-current-principal-with-exactly-one-current-contact-and-matching-principal-authority-revision-no-newest-contact-fallback; original-cohort-and-recipient-bindings-are-saved-in-the-existing-account-retention-phase; a-due-owned-cohort-claim-requires-the-original-notice-outbox-envelope",
+        "privacy": "token-free-no-account-holder-cancel-or-export-link-no-name-contact-genetic-data-or-record-identifier",
+        "delivery": "jobs.mail-through-existing-claim-and-immediately-before-submit-current-principal-contact-authority-and-attempt-checks"
+      }
     },
     "family-sharing-state-v1": {
       "scope": "the-server-resolved-exact-adult-subject-and-every-grant-or-pair-output-visible-between-that-subject-and-the-acting-account",
@@ -8333,6 +8522,10 @@
         "targetSource": "current-record-key-claimant-recovery-key-or-keyless-claim-session-and-its-two-kind-bound-finalized-documents",
         "operation": "future-person-claim-complete"
       },
+      "api.future-person-documentary-verification": {
+        "targetSource": "current-own-JWT-named-keyless-review-assignment-and-current-two-kind-bound-clean-documents-with-full-byte-acknowledgements",
+        "operation": "read-only-human-verified-keyless-documentary-lookup"
+      },
       "api.future-person-claim-review": {
         "targetSource": "route-claim-current-review-revision-required-mode-specific-evidence-set-and-current-named-reviewer-assignment",
         "operation": "future-person-claim-review-read-or-decision"
@@ -8512,6 +8705,21 @@
         "targetSource": "rights-session-bound-withdrawal-target",
         "operation": "token-target-export",
         "authorization": "recompute-every-bound-subject-joint-contributor-grant-and-other-adult-mitigation-state-v1-before-generation-before-each-source-read-and-before-each-chunk; jurisdiction-is-bypassed-for-the-data-subjects-own-right-but-current-confirmation-and-lifecycle-remain-required"
+      },
+      "api.claim-review-receipt": {
+        "targetSource": "server-bound-download-row-review-document-and-current-named-assignment",
+        "operation": "claim-document-receipt",
+        "authorization": "claim-review-receipt-v1-current-live-reviewer-MFA-session-and-assignment"
+      },
+      "api.claim-review-chunk-acknowledgement": {
+        "targetSource": "server-bound-download-row-review-document-and-current-named-assignment",
+        "operation": "claim-document-receipt",
+        "authorization": "claim-review-receipt-v1-current-live-reviewer-MFA-session-and-assignment"
+      },
+      "api.future-person-own-correction-statement": {
+        "targetSource": "actual-current-approved-claimant-rights-session-plus-exact-original-case-author-and-subject",
+        "operation": "requester-own-NEW-correction-statement-read",
+        "authorization": "TEST-only; service-native proof before unwrap and after closed serialization; no reviewer, parent, uploader or case-ID substitute"
       }
     }
   },
@@ -8713,7 +8921,7 @@
       "approved-future-person-release-token": "7-days",
       "future-person-claim-objection": {
         "retentionId": "future-person.owner-notice-30d",
-        "clamp": "credential-and-every-derived-rights-session-expire-exactly-at-the-server-owned-notice-deadline-and-are-invalidated-earlier-on-release-refusal-withdrawal-terminalization-or-objection-decision"
+        "clamp": "credential-expires-exactly-at-server-owned-notice-deadline-derived-rights-sessions-have-60-minute-absolute-and-15-minute-idle-ceilings-both-clamped-at-notice-deadline-and-all-are-invalidated-earlier-on-release-refusal-withdrawal-terminalization-or-objection-decision"
       },
       "non-authorizing-candidate-cookie": "10-minutes",
       "active-rights-session": "60-minutes-and-never-beyond-the-source-token-or-claim-validity",
@@ -9044,7 +9252,8 @@
       "copilot.provider-policy",
       "copilot.transport-availability",
       "embryo.closed-schema-serialization",
-      "jurisdiction.capability-gate"
+      "jurisdiction.capability-gate",
+      "embryo.ingest-unwind-dispatch"
     ],
     "featureBlockedReasonIds": [
       "prohibited-intent",
@@ -9053,7 +9262,8 @@
       "transport-unavailable",
       "unsafe-embryo-response-shape",
       "jurisdiction-denied",
-      "missing-required-capability"
+      "missing-required-capability",
+      "unwind-dispatch-unavailable"
     ]
   },
   "observabilityEventTemplates": {
@@ -12274,7 +12484,19 @@
         "malware-clear",
         "fresh-envelope-encrypted-object",
         "fragment-deletion"
-      ]
+      ],
+      "scanning": {
+        "status": 202,
+        "contentType": "application/json",
+        "body": {
+          "status": {
+            "const": "scanning"
+          }
+        },
+        "retryAfterSeconds": 5,
+        "unknownFieldsRecursively": "forbidden",
+        "rule": "owner-decision-2026-09-28: while-the-composed-document-is-quarantined-awaiting-the-malware-scan-worker-the-route-answers-this-and-nothing-else; the-same-session-cookie-and-completion-nonce-may-repeat-the-request-to-read-the-outcome-and-the-201-is-returned-only-after-malware-clear"
+      }
     },
     "evidence-review-v1": {
       "status": 200,
@@ -12313,6 +12535,30 @@
       },
       "unknownFields": "forbidden",
       "noticeDeadlineSubjectCandidateCountContactDocumentFieldsOrRecordKey": "never-returned-on-the-decision-response"
+    },
+    "future-person-documentary-verification-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "reviewCase": "recursively-closed-responseContracts.future-person-claim-review-case-v1-body-for-this-assigned-keyless-review-only",
+        "verificationProof": "null-for-none-or-ambiguous-otherwise-opaque-purpose-separated-AES-GCM-receipt-at-most-1024-characters-bound-to-exact-current-reviewer-session-assignment-document-and-comparison-revisions-expiring-within-10-minutes"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "forbiddenFieldsAtAnyDepth": [
+        "contactEmail",
+        "candidateCount",
+        "otherCandidate",
+        "otherSubject",
+        "subjectId",
+        "profileId",
+        "embryoId",
+        "objectPath",
+        "bucket",
+        "releaseToken",
+        "ownerContact",
+        "parentContact"
+      ]
     },
     "future-person-claim-review-case-v1": {
       "status": 200,
@@ -13406,6 +13652,51 @@
         "effects": "the-same-attemptFailure-effects-as-buildUnknown"
       },
       "selection": "exactly-one-branch-per-request; the-header-build-is-decided-before-the-sample-count-and-no-branch-returns-any-submitted-line-or-count"
+    },
+    "claim-review-receipt-v1": {
+      "success": {
+        "status": 201,
+        "contentType": "application/json",
+        "body": {
+          "session": "current-download-UUID",
+          "chunks": "one-closed-sequence-challenge-and-distinct-nonce-object-for-each-server-recorded-chunk"
+        },
+        "unknownFieldsRecursively": "forbidden",
+        "headers": {
+          "X-Inherit-CSRF": "receipt-session-bound-CSRF-distinct-from-every-chunk-operation-nonce"
+        }
+      },
+      "objectPathUrlOrCredentialInBody": "forbidden-except-the-explicit-short-lived-acknowledgement-nonce"
+    },
+    "empty-acknowledgement-v1": {
+      "success": {
+        "status": 204,
+        "body": "empty"
+      },
+      "cache": "private-no-store",
+      "unknownFields": "forbidden"
+    },
+    "test-requester-own-correction-statement-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "correctionId": "opaque-server-id",
+        "statement": "only-literal-statement-from-exact-original-requester-owned-NEW-package"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer-attachment",
+      "forbiddenFieldsAtAnyDepth": [
+        "reviewerNotes",
+        "reason",
+        "contact",
+        "foreignStatement",
+        "scope",
+        "binding",
+        "envelope",
+        "wrappedCaseKeyHex",
+        "workingCiphertextHex",
+        "statementCiphertextHex"
+      ]
     }
   },
   "responseContractBindings": {
@@ -13781,6 +14072,10 @@
         "future-person-claim-acceptance-v1",
         "resource-not-found-v1"
       ],
+      "api.future-person-documentary-verification": [
+        "future-person-documentary-verification-v1",
+        "resource-not-found-v1"
+      ],
       "api.future-person-claim-review": [
         "future-person-claim-review-case-v1",
         "future-person-claim-review-v1",
@@ -13928,6 +14223,19 @@
       "api.file-delete": [
         "resource-not-found-v1",
         "capability-denied-api-v1"
+      ],
+      "api.claim-review-receipt": [
+        "claim-review-receipt-v1",
+        "resource-not-found-v1"
+      ],
+      "api.claim-review-chunk-acknowledgement": [
+        "empty-acknowledgement-v1",
+        "resource-not-found-v1"
+      ],
+      "api.future-person-own-correction-statement": [
+        "test-requester-own-correction-statement-v1",
+        "resource-not-found-v1",
+        "embryo-closed-schema-v1"
       ]
     }
   },
@@ -13943,7 +14251,7 @@
     "jurisdiction-unavailable"
   ],
   "stateDefinitions": {
-    "_note": "What each state id means, one sentence each, recorded 2026-09-14 on corrections item 11. Eight ids had no definition anywhere and precedent had supplied several meanings per name, which is why the ratchet's columns counted different achievements under one heading. These definitions were READ OUT OF the proofs rather than chosen: each existing test states in its header which reading it used, and no definition here contradicts a recorded proof. Where an id genuinely carries more than one reading, the readings are named rather than one being declared correct and the other retired \u2014 owner decision 2026-09-13, taken because both readings are already proven and a split would put every one of those proofs up for re-reading.",
+    "_note": "What each state id means, one sentence each, recorded 2026-09-14 on corrections item 11. Eight ids had no definition anywhere and precedent had supplied several meanings per name, which is why the ratchet's columns counted different achievements under one heading. These definitions were READ OUT OF the proofs rather than chosen: each existing test states in its header which reading it used, and no definition here contradicts a recorded proof. Where an id genuinely carries more than one reading, the readings are named rather than one being declared correct and the other retired — owner decision 2026-09-13, taken because both readings are already proven and a split would put every one of those proofs up for re-reading.",
     "empty": {
       "means": "The page has nothing to show, and there is no step this reader can take to change that.",
       "separatedFrom": {
@@ -13954,7 +14262,7 @@
     "processing": {
       "means": "Work the reader started is in flight, and the page says so rather than looking finished.",
       "overloaded": false,
-      "note": "The one id item 11 examined and found NOT overloaded: it means the same thing on every route that has claimed it (recorded in e2e/embryos.spec.ts). It is also the id most often found implemented-and-untitled \u2014 auth-flow's four, and five more measured in item 8 \u2014 so a zero in its proven column has never once meant the state was absent."
+      "note": "The one id item 11 examined and found NOT overloaded: it means the same thing on every route that has claimed it (recorded in e2e/embryos.spec.ts). It is also the id most often found implemented-and-untitled — auth-flow's four, and five more measured in item 8 — so a zero in its proven column has never once meant the state was absent."
     },
     "partial-coverage": {
       "means": "Some of what this page could show is absent, and the page names which part and why.",
@@ -13966,11 +14274,11 @@
         },
         {
           "reading": "permission",
-          "is": "one layer was granted and another was not, so cells read \u201cNot shared with you\u201d",
+          "is": "one layer was granted and another was not, so cells read “Not shared with you”",
           "where": "/family/[person] and /family/health-picture"
         }
       ],
-      "note": "Both readings are proven and both routes sit on the `product-result` profile, so recording the reading per PROFILE cannot separate them \u2014 which is why item 11's own proposal was insufficient and the owner chose to name both readings under one id instead. Nothing about a file's coverage differs between the two Family cases."
+      "note": "Both readings are proven and both routes sit on the `product-result` profile, so recording the reading per PROFILE cannot separate them — which is why item 11's own proposal was insufficient and the owner chose to name both readings under one id instead. Nothing about a file's coverage differs between the two Family cases."
     },
     "complete": {
       "means": "The page is showing everything it can honestly show for what was asked.",
@@ -13978,12 +14286,12 @@
         {
           "reading": "complete-for-the-question",
           "is": "the answer is complete for what was asked, which is all a search surface can claim",
-          "where": "/genome/[subject]/data/browser \u2014 the browser never claims the file covers the genome"
+          "where": "/genome/[subject]/data/browser — the browser never claims the file covers the genome"
         },
         {
           "reading": "permitted-and-able",
           "is": "everything the page is permitted AND able to show, with no cell absent for want of a permission or a source",
-          "where": "/family/health-picture \u2014 it cannot mean every report covered, because no real file covers the catalogue; /genome/[subject]/reports \u2014 both layers granted and generated, so no group is absent for want of a permission or a source"
+          "where": "/family/health-picture — it cannot mean every report covered, because no real file covers the catalogue; /genome/[subject]/reports — both layers granted and generated, so no group is absent for want of a permission or a source"
         },
         {
           "reading": "everything-it-has",
@@ -14003,7 +14311,7 @@
     },
     "error": {
       "means": "A fault a request can actually reach.",
-      "note": "Declared only where a fault is reachable. A route that answers bad input with notFound() does not declare it, and the reason may name that convention rather than a structural property \u2014 the one exception G2.2 allows to its own n/a rule (operator decision 2026-09-12, corrections item 4, which took this id off nine profiles)."
+      "note": "Declared only where a fault is reachable. A route that answers bad input with notFound() does not declare it, and the reason may name that convention rather than a structural property — the one exception G2.2 allows to its own n/a rule (operator decision 2026-09-12, corrections item 4, which took this id off nine profiles)."
     },
     "consent-required": {
       "means": "A recorded, revocable consent is missing; the page names the outstanding step and links to where it is given.",
@@ -14018,7 +14326,7 @@
       "separatedFrom": {
         "empty": "An empty page has nothing to show and no step this reader can take. This page has a prepared file and exactly one step, named and linked. Both render as a page with no results on it, which is why the id exists rather than the shape being folded into `empty`.",
         "processing": "Nothing is in flight. The preparation finished; what is waiting is a decision only the reader can make.",
-        "complete": "The page is not showing everything it can: it is showing that it can show nothing until a choice is made. /genome/[subject]/reports is the counter-case and the reason this id does not spread \u2014 its body IS the choosing surface, so it is `complete` whether or not anything has been chosen."
+        "complete": "The page is not showing everything it can: it is showing that it can show nothing until a choice is made. /genome/[subject]/reports is the counter-case and the reason this id does not spread — its body IS the choosing surface, so it is `complete` whether or not anything has been chosen."
       },
       "note": "Added 2026-09-14 on the owner's decision of 2026-09-13, taken after the shape was found unnamed rather than mis-named. Every reader who uploads a file passes through it and the ratchet could not see it. Reachable on /overview alone: `needsReportChoice` in overview/page.tsx is the only branch in the product whose whole body is a call to choose an analysis."
     }
@@ -14036,7 +14344,7 @@
         "not-covered": "A static public document renders no uploaded-file result.",
         "consent-required": "A public document is readable without a genetic-data consent.",
         "jurisdiction-unavailable": "Rights, legal and science documents are never jurisdiction-blocked.",
-        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "public-capability-marketing": {
@@ -14051,7 +14359,7 @@
         "partial-coverage": "The public branch renders no uploaded-file result.",
         "not-covered": "The public branch renders no uploaded-file result.",
         "consent-required": "The public restriction explanation is readable without genetic-data consent.",
-        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       },
       "jurisdictionUnavailable": "return-200-render-the-exact-fail-closed-capability-copy-and-future-person-rights-link-with-zero-user-result-cookie-or-subject-fetch"
     },
@@ -14067,7 +14375,7 @@
         "complete": "The page's one render is already proven as jurisdiction-unavailable. Counting the same render twice would inflate the proven column without proving anything. Corrections item 10, signed 2026-09-13.",
         "not-covered": "No file, no viewer, no coverage: the page describes the catalog, not a person. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
-        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       },
       "zeroUserDataRule": "every-state-is-a-public-educational-projection-selected-from-committed-copy-and-the-current-public-jurisdiction-catalog-with-zero-account-subject-file-result-cookie-or-genetic-data-fetch",
       "stateProjection": {
@@ -14086,13 +14394,13 @@
       ],
       "notApplicable": {
         "awaiting-choice": "A versioned public document has no reader's file and offers no analysis to choose.",
-        "empty": "All six routes were read end to end; each is between nine and fourteen lines. Every one renders a committed body or answers notFound(), and not one carries a branch that renders nothing. The diff pages render both versions side by side and fall back to \u201cNo change summary was recorded.\u201d for a missing summary field, which is a fallback inside a populated page rather than an empty state. Corrections item 8, signed 2026-09-13.",
+        "empty": "All six routes were read end to end; each is between nine and fourteen lines. Every one renders a committed body or answers notFound(), and not one carries a branch that renders nothing. The diff pages render both versions side by side and fall back to “No change summary was recorded.” for a missing summary field, which is a fallback inside a populated page rather than an empty state. Corrections item 8, signed 2026-09-13.",
         "processing": "A versioned document performs no asynchronous user-data processing.",
         "partial-coverage": "A versioned document renders no uploaded-file result.",
         "not-covered": "A versioned document renders no uploaded-file result.",
         "consent-required": "Public version history is readable without a genetic-data consent.",
         "jurisdiction-unavailable": "Public version history is never jurisdiction-blocked.",
-        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "auth-flow": {
@@ -14102,12 +14410,12 @@
       ],
       "notApplicable": {
         "awaiting-choice": "Signing in, signing up or resetting a password knows of no prepared file and offers no analysis, so there is nothing for this reader to choose here.",
-        "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders \u201cCheck your email\u201d, which is a complete shape. Corrections item 8, signed 2026-09-13.",
+        "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders “Check your email”, which is a complete shape. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "Authentication does not render an uploaded-file result.",
         "not-covered": "Authentication does not render an uploaded-file result.",
         "consent-required": "Authentication structurally precedes genetic-data consent.",
         "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
-        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "product-result": {
@@ -14122,7 +14430,7 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "own-product-result": {
@@ -14136,7 +14444,7 @@
       ],
       "notApplicable": {
         "awaiting-choice": "/files and /files/upload are about the file itself rather than what to make from it, and /copilot/[scope] answers questions about results that already exist. None of the three renders an invitation to choose an analysis.",
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table. On 2026-09-28 /copilot/[scope] moved to the product-result profile: its Family scope surfaces third_party_adult_analysis and family_heritability, so this declaration now covers /files and /files/upload only."
       }
     },
@@ -14152,7 +14460,7 @@
         "empty": "All four routes read 2026-09-12. /family/invite is a form. /family/[person]/permissions always renders both columns and all seven rows; its youSeeNothing branch gates a note beside the populated columns. /embryos/upload and /embryos/request-data always render. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
         "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
-        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "account-management": {
@@ -14162,27 +14470,27 @@
         "complete"
       ],
       "notApplicable": {
-        "awaiting-choice": "These pages manage the account itself \u2014 its settings, consents, Copilot model and own data \u2014 and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
+        "awaiting-choice": "These pages manage the account itself — its settings, consents, Copilot model and own data — and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
         "partial-coverage": "Account management does not render an uploaded-file result.",
         "not-covered": "Account management does not render an uploaded-file result.",
-        "error": "These settings pages parse no parameter and no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
-        "consent-required": "These pages manage the account itself \u2014 its settings, its consents, its Copilot model and its own data \u2014 and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
+        "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
         "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5."
       }
     },
     "public-rights-flow": {
       "supported": [
-        "complete"
+        "complete",
+        "processing"
       ],
       "notApplicable": {
         "awaiting-choice": "A rights request is about data already held. It offers no analysis to choose and does not read whether a file is prepared.",
-        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is \u201cClaims are not open yet\u201d, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its \u201cempty\u201d word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
-        "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
+        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim always shows the refusal standard and then either the claim form or, where claims are not open, “Claims are not open yet”, which is what the page is rather than an absence (re-read 2026-09-28). /withdraw/[token] renders an outcome or the invitation; its “empty” word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
         "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked.",
-        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The claim start added 2026-09-28 keeps to it: a stale or foreign form is notFound(), a malformed body marks its fields, and a start over a limit gets the one shared try-again answer; none of the three is a fault. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "redirect": {
@@ -14452,6 +14760,7 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "public-rights-flow",
+      "notApplicableStates": {},
       "policy": {
         "mode": "right",
         "jurisdictionBypass": true,
@@ -14807,7 +15116,7 @@
       "width": "72rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "disposition": "kept",
       "expectedStatus": 200
@@ -14823,7 +15132,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
         "partial-coverage": "The hub renders tiles, a file count and a link per tool. It never renders a result, so there is nothing that could be partly covered. Corrections item 10, signed 2026-09-13.",
         "not-covered": "The same: coverage is a property of a report against a file, and this page shows no report. Corrections item 10, signed 2026-09-13.",
         "empty": "It has no empty render. For an own record all three tiles are unconditional; for a relative's record resolveSubjectRoute refuses the page outright when nothing is granted (anyOf reports.monogenic, reports.polygenic, ancestry) rather than serving an empty hub, which is deliberate because an empty hub would confirm the record exists. Corrections item 10, signed 2026-09-13."
@@ -14851,7 +15160,7 @@
         }
       },
       "notApplicableStates": {
-        "awaiting-choice": "This IS the page where the choice is made. Its body is the report library, which renders in full whether or not anything has been chosen \u2014 so the shape here is `complete`, and an `awaiting-choice` declaration would claim a call-to-action page this route never becomes."
+        "awaiting-choice": "This IS the page where the choice is made. Its body is the report library, which renders in full whether or not anything has been chosen — so the shape here is `complete`, and an `awaiting-choice` declaration would claim a call-to-action page this route never becomes."
       },
       "stateProfile": "product-result",
       "policy": {
@@ -14875,7 +15184,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry. This route serves genetic findings, which is exactly why the measurement is recorded rather than assumed."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry. This route serves genetic findings, which is exactly why the measurement is recorded rather than assumed."
       },
       "policy": {
         "mode": "resolved",
@@ -14895,7 +15204,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "partial-coverage": "Not a state this page can render, measured 2026-09-18 (corrections document, \u2018Measured 2026-09-18\u2019). The seven-region panel's minimum is its whole panel (SEVEN_ANCESTRY_PANEL.minimumMarkers = 168), so any shortfall, one marker or 147, is the grey state already proven as /genome/[subject]/ancestry not-covered; the capture distinguishes result_state partial from not_covered, but the page says the same sentence for both and draws no map for either. The owner chose on 2026-09-18 to waive the state here rather than add a sentence saying shares were computed from a partial panel and withheld. Reopens if the page ever renders a partial panel differently from none."
+        "partial-coverage": "Not a state this page can render, measured 2026-09-18 (corrections document, ‘Measured 2026-09-18’). The seven-region panel's minimum is its whole panel (SEVEN_ANCESTRY_PANEL.minimumMarkers = 168), so any shortfall, one marker or 147, is the grey state already proven as /genome/[subject]/ancestry not-covered; the capture distinguishes result_state partial from not_covered, but the page says the same sentence for both and draws no map for either. The owner chose on 2026-09-18 to waive the state here rather than add a sentence saying shares were computed from a partial panel and withheld. Reopens if the page ever renders a partial panel differently from none."
       },
       "policy": {
         "mode": "resolved",
@@ -14915,7 +15224,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
         "not-covered": "The render this state would title is the one the route's complete proof was taken on (e2e/genome-data.spec.ts): this page's product is the account of methods and coverage, and a file that reads zero of every panel's positions renders the same three zero-of-N figures under a second title. The page's one statement of coverage is the figure itself, and the scorer's refusal of every palindromic pair means no file reads every position either, so complete cannot be re-anchored. Measured 2026-09-18; the owner chose on 2026-09-18 to waive the state here rather than add a sentence saying the file supplied none of the positions the panels need. partial-coverage stays declared and proven: a read count strictly between zero and the panel size is a render neither other title had."
       },
       "policy": {
@@ -14936,7 +15245,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
-        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it \u2014 there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "policy": {
         "mode": "resolved",
@@ -14957,12 +15266,12 @@
       "notApplicableStates": {
         "awaiting-choice": "The Family surfaces are about other people's shared results and about permissions. Nothing on any of them asks this reader to choose an analysis for their own file.",
         "consent-required": "Consent here is a property of a PERSON, not of this page: `familyPersonState` returns `paused` for one card and the hub renders every other card, tile and panel around it. The route-level refusal on this page is the jurisdiction one, which suppresses the whole surface and is proven. There is no account-level Family consent that could put the hub itself into this state. Read 2026-09-13; corrections item 13, signed.",
-        "not-covered": "Not a state the hub renders, measured 2026-09-18. Its card knows five things about a person (paused, waiting for a grant, ready, results awaited, no file) and nothing about what the shared file covers; the coverage reading has nothing on the hub to attach to, and the proven /family/[person] not-covered is where a shared file's coverage is said, past that page's own gate. Measuring this pair found D-129 (the card read \u2018No shared results yet\u2019 for a completed run that reaches no report), fixed by 20260918213000_shared_report_readiness_completed_runs.sql. The owner chose on 2026-09-18 to waive the state here rather than have a card name another adult's file coverage, which is a disclosure about that person's record.",
+        "not-covered": "Not a state the hub renders, measured 2026-09-18. Its card knows five things about a person (paused, waiting for a grant, ready, results awaited, no file) and nothing about what the shared file covers; the coverage reading has nothing on the hub to attach to, and the proven /family/[person] not-covered is where a shared file's coverage is said, past that page's own gate. Measuring this pair found D-129 (the card read ‘No shared results yet’ for a completed run that reaches no report), fixed by 20260918213000_shared_report_readiness_completed_runs.sql. The owner chose on 2026-09-18 to waive the state here rather than have a card name another adult's file coverage, which is a disclosure about that person's record.",
         "partial-coverage": "Waived by the owner on 2026-09-18 with /family not-covered, for the same reason. The permission reading of partial-coverage (one layer granted and the other not) is a per-person fact the card already carries as its own state, and the coverage reading has nothing on the hub to attach to: the card renders no result and no coverage."
       },
       "consentRequiredException": {
         "kind": "item-level",
-        "carriedBy": "/family/[person] consent-required, and the card's own \u201cSharing paused\u201d state"
+        "carriedBy": "/family/[person] consent-required, and the card's own “Sharing paused” state"
       },
       "policy": {
         "mode": "public-first-then-authenticated",
@@ -15298,7 +15607,7 @@
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "An embryo cohort's analysis is chosen in the request flow that creates it, not on any of the three cohort result routes, so none of them can render an invitation to choose one.",
-        "consent-required": "The same shape: the analysis grant is a property of a COHORT. `analysisConsent` already renders a waiting line per cohort, and `/embryos complete` was proven on a hub carrying a per-cohort jurisdiction line for exactly this reason \u2014 a per-item line is what the page HAS, not a state the page is in. Read 2026-09-13; corrections item 13, signed."
+        "consent-required": "The same shape: the analysis grant is a property of a COHORT. `analysisConsent` already renders a waiting line per cohort, and `/embryos complete` was proven on a hub carrying a per-cohort jurisdiction line for exactly this reason — a per-item line is what the page HAS, not a state the page is in. Read 2026-09-13; corrections item 13, signed."
       },
       "consentRequiredException": {
         "kind": "item-level",
@@ -15355,11 +15664,10 @@
       "width": "64rem",
       "stateProfile": "restricted-flow",
       "consentRequiredException": {
-        "kind": "reads-no-consent"
+        "kind": "consent-is-given-here"
       },
       "notApplicableStates": {
-        "consent-required": "TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs \u2014 `consent.upload-embryo` and `attestation.embryo-parentage` \u2014 are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.",
-        "processing": "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13."
+        "consent-required": "This is where the TEST-LOCAL uploader signs consent.upload-embryo and the required parentage and disposition statements against the current draft. The current loader checks each recorded signature against its published artifact, statement set, live principal and jurisdiction. The owner-sign and co-parent-sign stages give those statements here; the waiting stage names the other parent whose current signatures are missing and never offers the file before they are complete. Production retains its unavailable terminal. This is G2.2 consent-is-given-here, not the expired E0-not-built or reads-no-consent rationale. Source review 2026-10-03."
       },
       "policy": {
         "mode": "guarded",
@@ -15549,7 +15857,6 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
-        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own \u2014 read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
         "awaiting-choice": "A conversation answers questions about results that already exist; no scope renders an invitation to choose an analysis. Carried over unchanged from the own-product-result profile this route left on 2026-09-28."
       },
@@ -19065,9 +19372,9 @@
         },
         "clientRangeOffsetOrObjectPath": "forbidden",
         "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session",
-          "X-Inherit-Chunk-Nonce": "one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256"
-        }
+          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session"
+        },
+        "chunkAuthority": "owner-decision-2026-09-28: the-server-reserves-each-session-sequence-once-in-the-transaction-that-rechecks-the-session-principal-target-lifecycle-cumulative-bytes-and-the-server-computed-chunk-sha256; a-replayed-or-reused-sequence-is-refused-so-no-separate-one-time-chunk-nonce-is-required"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -19896,6 +20203,59 @@
       "disposition": "kept"
     },
     {
+      "id": "api.future-person-documentary-verification",
+      "path": "/api/reviews/future-person/claims/[id]/verify-documents",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "reviewer",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "id": "canonical-lowercase-UUID-bound-to-the-current-named-reviewer-assignment"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "authority": "reviewer-api-v1-own-JWT-current-named-assignment-recent-MFA-and-both-exact-clean-document-full-byte-acknowledgements",
+        "readOnly": "records-only-the-existing-coded-assigned-case-read-audit-no-approval-notice-claimant-retained-documentary-value-or-new-clock",
+        "documentaryLookup": "human-verified-normalized-name-and-DOB-HMAC-searches-current-claimed_unbound-first-zero-only-proceeds-to-the-encrypted-intake-place-and-parent-name-candidate-signals-with-the-human-verified-DOB-one-profile-never-proves-identity-or-parent-link",
+        "proof": "encrypted-stateless-read-receipt-bound-to-current-reviewer-session-assignment-document-and-comparison-revisions-within-the-existing-10-minute-ceiling-final-decision-rechecks-the-entire-current-lookup-and-atomically-consumes-its-distinct-existing-operation-nonce",
+        "positiveDecision": "remains-closed-until-the-real-registered-current-owner-provider-committed-30-day-notice-objection-and-separate-fresh-human-release-transaction-is-complete",
+        "contracts": [
+          "resource-authorization-v1",
+          "future-person-claim-intake-privacy-v1"
+        ]
+      },
+      "disposition": "kept",
+      "methodRequestContracts": {
+        "POST": {
+          "contentType": "application/json",
+          "body": {
+            "reviewRevision": "current-positive-integer",
+            "documentaryAttestation": {
+              "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+              "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+              "photoIdentityReviewed": {
+                "const": true
+              },
+              "birthRecordReviewed": {
+                "const": true
+              },
+              "adultAgeConfirmed": {
+                "const": true
+              }
+            },
+            "nonce": "purpose-separated-recent-page-proof-for-this-read-only-lookup-not-the-consumed-final-decision-nonce"
+          },
+          "unknownFields": "forbidden",
+          "unknownFieldsRecursively": "forbidden"
+        }
+      },
+      "methodSuccessResponseContracts": {
+        "POST": "future-person-documentary-verification-v1"
+      }
+    },
+    {
       "id": "api.future-person-claim-review",
       "path": "/api/reviews/future-person/claims/[id]",
       "kind": "endpoint",
@@ -19968,7 +20328,9 @@
           "embryo-autosomal-only-v1",
           "future-person-claim-intake-privacy-v1"
         ],
-        "GET": "operation-specific-assignment-RPC-decrypts-only-the-recursively-closed-future-person-claim-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read"
+        "GET": "operation-specific-assignment-RPC-decrypts-only-the-recursively-closed-future-person-claim-review-case-v1-fields-after-authorization-and-records-a-pseudonymized-audited-read",
+        "keylessVerificationResponse": "for-keyless-only-the-authorized-case-session-response-issues-x-inherit-keyless-lookup-nonce-as-a-stateless-10-minute-purpose-separated-reviewer-session-case-bound-read-only-lookup-proof-no-GET-stores-rotates-or-consumes-an-operation-nonce-final-decisions-retain-the-distinct-existing-one-use-review-nonce",
+        "recoveryTransaction": "subject-first-current-claimed_unbound-existing-approved-principal-only; freshly-compare-the-human-verified-name-DOB-HMAC-under-all-held-roots-and-both-complete-current-document-receipts; Recovery-Key-must-still-be-current-or-keyless-receipt-must-freshly-match-the-exact-prior-claimant-branch; consume-the-distinct-decision-nonce-once-revoke-old-keys-release-candidates-rights-and-downloads-increment-release-revision-and-queue-one-new-verified-contact-release; no-new-custody-parent-notice-subject-or-source-revision; replacement-Recovery-Key-is-shown-once-through-the-native-rights-door-for-that-new-release-revision"
       },
       "disposition": "kept",
       "methodRequestContracts": {
@@ -19984,7 +20346,23 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                },
+                "recordedParentLinkConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -19992,7 +20370,20 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                }
+              }
             },
             {
               "decision": {
@@ -20000,7 +20391,21 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                }
+              },
+              "verificationProof": "required-current-encrypted-documentary-lookup-receipt-bound-to-exact-own-reviewer-session-assignment-documents-and-verified-tuple-expiring-within-ten-minutes; separate-final-operation-nonce-is-consumed-atomically"
             },
             {
               "decision": {
@@ -20008,7 +20413,24 @@
               },
               "reviewRevision": "current-positive-integer",
               "reason": "required-20-through-2000-character-professional-basis",
-              "nonce": "required-recent-one-time-review-operation-nonce"
+              "nonce": "required-recent-one-time-review-operation-nonce",
+              "documentaryAttestation": {
+                "fullName": "reviewer-verified-NFC-trimmed-collapsed-whitespace-2-through-120-character-name",
+                "dateOfBirth": "reviewer-verified-valid-ISO-date-not-before-1900-and-adult-by-exact-18-calendar-years",
+                "photoIdentityReviewed": {
+                  "const": true
+                },
+                "birthRecordReviewed": {
+                  "const": true
+                },
+                "adultAgeConfirmed": {
+                  "const": true
+                },
+                "recordedParentLinkConfirmed": {
+                  "const": true
+                }
+              },
+              "verificationProof": "required-current-encrypted-documentary-lookup-receipt-bound-to-exact-own-reviewer-session-assignment-documents-and-verified-tuple-expiring-within-ten-minutes; separate-final-operation-nonce-is-consumed-atomically"
             },
             {
               "decision": {
@@ -20159,6 +20581,7 @@
         "mode": "right",
         "jurisdictionBypass": true,
         "actorRole": "the-exact-current-owner_user_id-notice-recipient-bound-by-the-active-future-person-claim-objection-rights-session-before-or-at-the-server-owned-owner-notice-deadline",
+        "accountEquivalent": "under-claimObjectionCredential-the-same-current-owner-may-use-independent-own-live-Auth-recent-reauthentication-and-configured-MFA-with-an-encrypted-ten-minute-form-proof-bound-to-that-account-session-exact-notice-and-current-revision; own-JWT-subject-first-authority-is-rechecked-at-write-and-a-link-cookie-or-service-actor-never-substitutes-for-account-authority",
         "expiry": "after-the-notice-deadline-or-any-release-refusal-withdrawal-terminalization-or-prior-objection-decision-return-resource-not-found-v1-with-zero-writes-and-atomically-invalidate-every-objection-credential-session-and-nonce",
         "effect": "atomically-suspend-only-the-current-release-enter-claim-release-objection-freeze-v1-persist-its-minimum-of-objection_at-plus-30-days-and-submission_at-plus-92-days-deadline-supersede-the-day-62-no-objection-transition-for-this-package-invalidate-any-pending-release-job-and-create-one-current-named-human-objection-reviewer-assignment-before-return; never-enter-generic-contradiction.freeze-and-never-delete-freeze-or-restrict-the-embryo-subject-source-or-results",
         "statementStorage": "application-envelope-encrypted-reviewer-only-no-log-no-analytics-and-purged-at-final-resolution-or-the-applicable-persisted-deadline-owned-by-retention-id-future-person.keyless-notice-release-62d-or-future-person.claim-objection-review-30d-leaving-only-a-coded-objection-outcome-and-pseudonymized-audit",
@@ -21176,6 +21599,136 @@
       },
       "disposition": "kept",
       "successResponseContract": "empty-provider-acknowledgement"
+    },
+    {
+      "id": "api.claim-review-receipt",
+      "path": "/api/downloads/[session]/receipt",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "reviewer",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "session": "canonical-lowercase-UUID-bound-to-the-current-download-cookie-and-named-reviewer"
+      },
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "nonce": "required-distinct-recent-stateless-page-token-bound-to-exact-document-reviewer-and-auth-session"
+        },
+        "requiredSignals": [
+          "Origin-exactly-canonical-origin",
+          "Sec-Fetch-Site-same-origin",
+          "X-Inherit-CSRF-distinct-from-the-operation-nonce"
+        ],
+        "unknownMissingInvalidOrAmbiguous": "resource-not-found-v1"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "reviewer",
+        "jurisdictionBypass": true,
+        "contracts": [
+          "resource-authorization-v1",
+          "claim-review-receipt-v1"
+        ],
+        "authority": "current-named-reviewer-assignment-live-MFA-and-recent-auth-session-revision"
+      },
+      "successResponseContract": "claim-review-receipt-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.claim-review-chunk-acknowledgement",
+      "path": "/api/downloads/[session]/chunks/[sequence]/acknowledge",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "reviewer",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "session": "canonical-lowercase-UUID-bound-to-the-current-download-cookie-and-named-reviewer",
+        "sequence": "canonical-integer-0-through-4-less-than-server-chunk-count"
+      },
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "proof": "64-lowercase-hex-SHA-256-challenge-and-exact-plaintext-chunk",
+          "nonce": "required-distinct-recent-per-chunk-token-from-the-receipt-POST"
+        },
+        "requiredSignals": [
+          "Origin-exactly-canonical-origin",
+          "Sec-Fetch-Site-same-origin",
+          "X-Inherit-CSRF-distinct-from-the-operation-nonce"
+        ],
+        "unknownMissingInvalidOrAmbiguous": "resource-not-found-v1"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "reviewer",
+        "jurisdictionBypass": true,
+        "contracts": [
+          "resource-authorization-v1",
+          "claim-review-receipt-v1"
+        ],
+        "authority": "current-named-reviewer-assignment-live-MFA-and-recent-auth-session-revision"
+      },
+      "successResponseContract": "empty-acknowledgement-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "reviews.future-person-claim",
+      "path": "/reviews/future-person/claims/[id]",
+      "kind": "page",
+      "domain": "rights",
+      "auth": "reviewer",
+      "surface": "standard",
+      "width": "64rem",
+      "stateProfile": "auth-flow",
+      "policy": {
+        "mode": "named-human-claim-review",
+        "resolver": "reviewer-api-v1",
+        "jurisdictionBypass": true,
+        "requires": "current-named-human-reviewer-assignment-own-JWT-live-session-and-recent-MFA-before-render-and-at-every-document-receipt-or-decision",
+        "byteRead": "complete-exact-size-and-SHA256-verified-document-before-any-acknowledgement-separate-explicit-human-attestation-no-local-storage-or-download",
+        "approvalScope": "record-key-only-other-approval-branches-remain-closed"
+      },
+      "disposition": "kept",
+      "expectedStatus": 200
+    },
+    {
+      "id": "api.future-person-own-correction-statement",
+      "path": "/api/future-person/claim/session/corrections/[id]/statement",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "token",
+      "methods": [
+        "GET"
+      ],
+      "parameterContract": {
+        "id": "canonical-UUID-case-identifier-is-not-authority"
+      },
+      "requestContract": {
+        "body": "forbidden",
+        "query": "forbidden",
+        "origin": "same-origin",
+        "cookie": "existing-current-approved-claimant-rights-session"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "jurisdictionBypass": false,
+        "actorRole": "approved-future-person-claimant",
+        "dataScope": "only-exact-current-requester-own-NEW-correction-statement",
+        "testScope": "both-server-TEST-switches-and-private-native-test-scope-required",
+        "contracts": [
+          "resource-authorization-v1",
+          "future-person-claimant-authority-v1",
+          "test-requester-own-correction-statement-v1"
+        ]
+      },
+      "successResponseContract": "test-requester-own-correction-statement-v1",
+      "disposition": "kept"
     }
   ],
   "storagePrefixes": [
@@ -21287,5 +21840,43 @@
       "disposition": "rejected-credential-interpretation",
       "reason": "Raw bearer values in a Vercel request path are exposed to platform proxy telemetry before application redaction. The registered patterns remain, but [token] accepts only non-secret request or session literals; issued links carry the raw token in the fragment and activation sends it in a closed POST body."
     }
-  ]
+  ],
+  "testRequesterOwnStatementSourceProposal": {
+    "status": "unbound-source-only",
+    "production": "closed",
+    "ownerDecision": "own appeal/correction statement only in TEST; no notes or foreign data; legal review remains required",
+    "implementedFormat": "reviewer-only-case-statement-v1",
+    "liveGET": "/api/future-person/claim/session/corrections/[id]/statement",
+    "liveAuthority": "same-origin existing rights cookie; current approved claimant export action; exact original author and subject; native checks before and after serialization",
+    "accountArchiveAuthority": "existing sensitive own-account Auth/session actor plus actual current claimed-bound binding and original subject principal",
+    "archiveProjection": "server complete census, current receipt and EOF; only correctionId plus literal statement; unsupported appeal/legacy class whole refusal",
+    "storage": "separate NEW R2 issuer/private HMAC transport/per-allocation Durable Object; native owner currentness; no production or legacy writer selector",
+    "disposal": "actual complete case/copy graph, cancellation, original expiry, permanent empty fence and native verified ACK; accepted/uncertain mail remains held",
+    "classification": "docs/requester-statement-reader-exception.json",
+    "tests": "authored and unrun; no browser/native/provider credit",
+    "release": "full exact source and policy/native/provider/browser/legal qualification required"
+  },
+  "testRequesterStatementArchiveService": {
+    "status": "unbound-source-proposal",
+    "production": "closed",
+    "workerConfig": "workers/requester-statement-archive/wrangler.json",
+    "workerModule": "workers/requester-statement-archive/src/private-transport.ts",
+    "privatePath": "/private/case-archive/v1",
+    "serviceAuthentication": "exact-raw-body-HMAC-SHA256-32-byte-secret-15-second-expiry-durable-per-allocation-nonce",
+    "domainAuthority": "none-from-service-signature; real-native-current-case-and-archive-locks-required-before-call",
+    "requiredBindings": [
+      "CASE_ARCHIVE_BUCKET",
+      "CASE_ARCHIVE_GATEWAYS"
+    ],
+    "defaultBindings": "none; no routes, bucket, namespace or automatic resource provisioning",
+    "configurationEvidence": "exact-existing-TEST-bucket-and-all-writer-gateway/final-commit/marker-retention/runtime-copy proof required before enablement",
+    "runtimeDisposition": "held until every actual mutable buffer and producer/read/member/serialization/cancel task settles and is cleared; immutable/platform/provider copies separately unqualified",
+    "typecheck": {
+      "project": "workers/requester-statement-archive/tsconfig.json",
+      "runner": "scripts/typecheck-requester-statement-worker.mjs",
+      "invokedBy": "package.json typecheck before Next typegen/tsc",
+      "runtimeTypes": "real pinned Wrangler 4.134.0 types generation from exact config; no fabricated declaration file",
+      "status": "source-authored-unrun"
+    }
+  }
 }

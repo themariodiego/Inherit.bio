@@ -153,9 +153,11 @@ Each (task, persona) pair gets:
   T8's deletion was scheduled, and T9 and T10's participant created no
   account.
 
-**T6 and T7 are skipped** until participant-c can be seeded (embryo ingest,
-G2.6). A skipped task is recorded with the binding's reason, counts as a
+**T7 remains skipped** because its personal absolute risk has no approved producer
+(G4.2). A skipped task is recorded with the binding's reason, counts as a
 failure of its task, and makes the run non-qualifying. It is never an answer.
+The ordinary runner also holds T6 until each simulation can own its fresh
+isolated embryo runtime; the single native journey is not shared across personas.
 
 ### Model identity
 
@@ -223,12 +225,44 @@ full suite, which must prove every run used the real Storage provider; a
 seeded account needs no upload. The two passing test lines above it are the
 seed's result.
 
-`participant-c` cannot be seeded yet: there is no embryo ingest path until
-G2.6 lands, as its `seedBlockedBy` records. Its file is ready for that path.
-`e2e/fixtures/embryo-pair-grch38.vcf` carries two synthetic embryos as separate
-samples, because the ingest contract refuses a single-sample cohort upload as
-`cohort_single_sample`. The two single-sample files it replaced could never
-have been loaded. G3.2 stays NO until the account can be built.
+`participant-c` is bound to the existing single `embryo-ingest` native case,
+`e2e/embryo-ingest-journey.spec.ts`. It consumes the bound one-file/two-embryo
+VCF and both bound synthetic parent accounts, signs the actual current
+artifacts, uploads through configure/chunks/complete, executes the real worker,
+checks whole publication and signs both analysis grants separately. It refuses
+old cohort rows and the runtime requires its exact fresh disposable native CI
+partition. The ordinary command above continues to seed only a/b; it cannot
+create c's isolated runtime. Use the existing full native CI partition that
+inventories the `embryo-ingest` project; no custom unsharded embryo execution or
+fixture-only result insertion is supported.
+
+The same real case records T6's click/submit trace from the Overview to the
+visible no-ranking statement after its genuine setup. Case counts, worker
+identity, native partition fences and all prior publication assertions remain.
+Full hosted proof of the authored seed/instrument is pending. This metadata is
+not an assertion that an arbitrary local stack already contains the seed.
+
+`e2e/participant-c-harness.ts` consumes the credentials and actual cohort ID
+from that completed journey. It opens the live harness's fresh browser context,
+signs in normally and checks the current publication, both subjects/files and
+the real worker's complete canonical-part proof before setup and completion.
+The same native case drives its real read/action/record interface without a
+model call. It refuses crossed identities, dirty or noncurrent parts, failed
+siblings, later publication revisions and any unsupported score. No password
+or browser storage state is written to its attachments.
+
+This bounded adapter supplies one genuine native rehearsal. The ordinary
+multi-persona runner still records T6's explicit runtime hold: every simulation
+needs its own independent account and fresh empty-queue native partition, whose
+orchestration is not supplied by this checkpoint. It never falls back to own-file
+upload, clones the seed or adopts another persona's cohort.
+
+T7 has its own explicit `fixtureBlockedBy`: no approved producer supplies the
+required personal absolute risk figure and denominator. Measured QC and
+call-rate do not answer it. `seedSkips()` keeps that task skipped independently
+of T6's runtime hold, records its actual reason and makes any full round
+non-qualifying. No raw comprehension run or acceptance verdict is created by
+these fixture changes.
 
 ## Spending boundary
 
@@ -382,7 +416,7 @@ cannot:
 | Production build under the test jurisdiction | Checked before every run: build id served, and a TEST-LOCAL-only capability visible. |
 | T9 fixture | Built: the owner's reserved-record invitation path, with the mail in an inbox beside the page. |
 | T10 fixture | None needed: T10 starts signed out on public routes, as bound. The Record Key Card path cannot be exercised until embryo ingest lands. |
-| T6 and T7 fixtures | Still blocked: participant-c cannot be seeded until embryo ingest (G2.6). Both are recorded as skipped, so no run can be clean. |
+| T6 and T7 fixtures | Participant-c/T6 use the authored real native upload/worker seed; full hosted proof is pending. T7 alone remains skipped for its unsupported personal absolute risk, so no full run can qualify. |
 | Provider token and cost bounds | Blocked on a credential. A calibration run measures them; a paid full run refuses to start without one. |
 
 No real participant, human review, clinical interpretation, expense or

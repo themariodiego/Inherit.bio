@@ -1,9 +1,13 @@
+import {requesterStatementsOpen} from "@/lib/future-person/requester-statement";
+import {configuredRequesterStatementGateway} from "@/lib/exports/requester-statement-private-transport";
+import {drainRequesterStatementCopies} from "@/lib/exports/requester-statement-copy-retention";
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { supabaseClaimObjectStore } from "@/lib/future-person/claim-objects";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 import { drainStrandedFileDeletions } from "@/lib/uploads/file-deletion-backstop";
@@ -11,6 +15,7 @@ import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-clean
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
 import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
 import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
+import { drainAccountEmbryoCleanup } from "@/lib/embryos/account-cleanup";
 import { machineJobDrained } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
@@ -81,6 +86,29 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+  if(requesterStatementsOpen()){
+    try{
+      const counts=await drainRequesterStatementCopies((name,signal)=>admin.rpc(name).abortSignal(signal),
+        configuredRequesterStatementGateway(),AbortSignal.timeout(150_000));
+      processed+=counts.disposed;failed+=counts.held+counts.failed;
+    }catch{failed++;}
+  // Original fixed correction phase; no request selector or external send.
+  try {
+    const due = await admin.rpc("drain_due_new_corrections_v1");
+    const counts = z.object({ shredded: z.number().int().nonnegative(), completed: z.number().int().nonnegative(),
+      held: z.number().int().nonnegative() }).strict().safeParse(due.data);
+    if (due.error || !counts.success) failed++;
+    else { processed += counts.data.completed; failed += counts.data.held; }
+  } catch { failed++; }
+  }
+  // Independent profile keys expire without a Storage or mail-provider call.
+  // The database selects the exact due profiles; no request selector or clock.
+  try {
+    const { data: erasedProfiles, error: profileError } = await admin.rpc("purge_due_future_person_profiles_v1");
+    if (profileError) failed++;
+    else if (typeof erasedProfiles === "number") processed += erasedProfiles;
+  } catch { failed++; }
+
   const preparedCleanupSignal = AbortSignal.timeout(150_000);
   try {
     const prepared = await drainPreparedScratch(admin, preparedCleanupSignal);
@@ -134,6 +162,58 @@ export async function POST(request: Request) {
   );
   if (rateLimitPurgeError) failed++;
   else if (typeof purgedBuckets === "number") processed += purgedBuckets;
+
+  // Claim documents (evidence.ingest-session-24h, future-person.claim-intake-
+  // session-24h): delete the objects the database lists as due (fragments,
+  // refused documents, everything of an ended claim) and confirm each batch,
+  // so the claim below can go with no object left behind it.
+  // future-person.claim-review: a review still open at its 30-day deadline
+  // closes without release, and its documents become due below.
+  const { data: closedReviews, error: reviewCloseError } = await admin.rpc("close_due_claim_reviews_v1");
+  if (reviewCloseError) failed++;
+  else if (typeof closedReviews === "number") processed += closedReviews;
+  // Erase due independent envelope keys before attempting Storage removal.
+  // A retryable Storage outage must not preserve decryption authority.
+  try {
+    const { data: shreddedKeys, error: keyShredError } = await admin.rpc("shred_due_claim_working_keys_v1");
+    if (keyShredError) failed++;
+    else if (typeof shreddedKeys === "number") processed += shreddedKeys;
+  } catch { failed++; }
+  try {
+    const objects = supabaseClaimObjectStore(admin);
+    for (let batch = 0; batch < 10; batch++) {
+      const { data: due, error: dueError } = await admin.rpc("claim_document_objects_due_v1", { p_limit: 100 });
+      if (dueError) { failed++; break; }
+      const keys = (Array.isArray(due) ? due : []).map((row: { object_key?: unknown }) => row.object_key).filter((key): key is string => typeof key === "string");
+      if (keys.length === 0) break;
+      await objects.remove(keys);
+      const { data: confirmed, error: confirmError } = await admin.rpc("confirm_claim_document_objects_deleted_v1", {
+        p_object_keys: keys, p_route_id: "jobs.retention",
+      });
+      if (confirmError) { failed++; break; }
+      if (typeof confirmed === "number") processed += confirmed;
+      if (keys.length < 100) break;
+    }
+  } catch {
+    failed++;
+  }
+
+  // future-person.claim-intake-session-24h: an unfinished claim start is
+  // deleted, with its sealed fields and their key, once its day or its idle
+  // half hour is over.
+  const { data: purgedIntakes, error: claimIntakePurgeError } = await admin.rpc(
+    "purge_future_person_claim_intakes_v1",
+  );
+  if (claimIntakePurgeError) failed++;
+  else if (typeof purgedIntakes === "number") processed += purgedIntakes;
+
+  // The claimant's temporary delivery material expires independently. This
+  // exact working-only manifest preserves durable custody and recovery.
+  try {
+    const {data: purgedContacts,error: claimantContactPurgeError}=await admin.rpc("purge_due_future_person_contacts_v1");
+    if(claimantContactPurgeError)failed++;
+    else if(typeof purgedContacts==="number")processed+=purgedContacts;
+  } catch { failed++; }
 
   // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
   // not prevent this already-due work from making progress.
@@ -229,6 +309,10 @@ export async function POST(request: Request) {
       if (!claim.database_already_purged) {
         if (!(await prepareAccountCleanup(admin, claim.deletion_id, claimToken, preparedCleanupSignal))) {
           throw new Error("prepared_cleanup_pending");
+        }
+        if (!(await drainAccountEmbryoCleanup({ rpc: admin.rpc.bind(admin) as unknown as import("@/lib/embryos/fragment-storage").EmbryoFragmentRpc,
+          deletionId: claim.deletion_id, claimToken, signal: preparedCleanupSignal }))) {
+          throw new Error("embryo_cleanup_pending");
         }
         const manifest = storageManifest.parse(claim.storage_objects);
         const byBucket = new Map<string, typeof manifest>();

@@ -20,6 +20,8 @@ export function appServerEnvironment(env: Environment, port: AppPort): Record<st
     NEXT_PUBLIC_SITE_URL: `http://localhost:${port}`,
     NEXT_PUBLIC_APP_URL: `http://localhost:${port}`,
     INHERIT_TEST_JURISDICTION: port === 3101 ? "" : "1",
+    // Existing flag on the existing paused TEST server only. It grants no native authority.
+    INHERIT_TEST_REQUESTER_STATEMENTS: port === 3102 ? "1" : "",
   };
   const entries = APP_ENV_NAMES.map((name): [AppEnvironmentName, string] => {
     const fixed = variant[name];

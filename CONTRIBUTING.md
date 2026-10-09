@@ -32,6 +32,7 @@ pnpm lint
 pnpm test                  # full unit suite
 pnpm gate:legal && pnpm gate:first-glance && pnpm gate:names && pnpm gate:templates
 pnpm gate:readability && pnpm gate:secrets && pnpm gate:routes && pnpm gate:claims
+pnpm gate:citations        # non-template scientific claim candidates
 pnpm gate:env && pnpm gate:jurisdictions
 pnpm exec supabase db reset && pnpm exec supabase test db   # fresh local database
 ```
@@ -51,6 +52,10 @@ production build and local Supabase stack. The owner approved hosted full-suite
 verification as the permanent pre-merge policy on 30 September 2026. The workflow
 and its coverage safeguards are described in
 [`docs/evidence/ci-browser-sharding.md`](docs/evidence/ci-browser-sharding.md).
+
+The [citation surface gate](docs/citation-surface-gate.md) complements
+`pnpm gate:claims`; passing either does not certify that the existing human
+source-review backlog is complete.
 
 ## What we are looking for
 
@@ -96,3 +101,5 @@ writing code. Decisions are reversible; they are just not reversible silently.
 
 Inherit is [AGPL-3.0](LICENSE). By contributing, you agree that your
 contributions are licensed under the same terms.
+
+Before a fresh database reset or test, run `pnpm gate:sql-includes`. It checks the complete tracked SQL/fixture include graph without database access, resolving every literal relative include from its containing file. Missing, escaping, dynamic or cyclic paths refuse the run. CI and the native browser bootstrap enforce this preflight before starting their database.

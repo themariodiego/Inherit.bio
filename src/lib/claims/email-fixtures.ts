@@ -3,6 +3,11 @@ import type { RequiredSurface } from "./corpus";
 
 /** Every production renderer must have an independently discovered component export. */
 export const EMAIL_RENDERERS = {
+  "account-deletion-affected": ["account-deletion-affected.tsx", "AccountDeletionAffectedEmail"],
+  "account-deletion-affected-cancelled": ["account-deletion-affected.tsx", "AccountDeletionAffectedCancelledEmail"],
+  "future-person-more-information": ["future-person-more-information.tsx", "FuturePersonMoreInformationEmail"],
+  "future-person-release":["future-person-release.tsx","FuturePersonReleaseEmail"],
+  "future-person-owner-notice": ["future-person-owner-notice.tsx", "FuturePersonOwnerNoticeEmail"],
   "report-ready": ["report-ready.tsx", "ReportReadyEmail"],
   "research-digest": ["research-digest.tsx", "ResearchDigestEmail"],
   "account-deletion-notice": ["account-deletion.tsx", "AccountDeletionNoticeEmail"],
@@ -41,6 +46,11 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
       requiresClaimWrapping: false, requiredClaimRegions: ["email-body",
         ...(mail.id === "research-digest" && mail.payload.entries.length ? ["research-digest-entries"] : [])] } });
   };
+  add("notice", { id: "account-deletion-affected", payload: { noticeEndsAt: "2026-10-07T12:00:00Z" } });
+  add("cancelled", { id: "account-deletion-affected-cancelled", payload: { cancelledAt: "2026-10-01T12:00:00Z" } });
+  add("request", { id: "future-person-more-information", payload: {} });
+  add("release",{id:"future-person-release",payload:{releaseUrl:`${url}#synthetic-release`}});
+  add("owner", { id: "future-person-owner-notice", payload: { objectionUrl: `${url}#synthetic-objection` } });
   for (const count of [0, 1, 162]) add(`count-${count}`, { id: "report-ready", payload: { reportCount: count, dashboardUrl: url } });
   const entries = [...catalog].sort((a, b) => a.slug.localeCompare(b.slug)).map((t) => ({ title: t.title, summary: t.summary, url: `${url}/${t.slug}` }));
   for (const [name, selected] of [["empty", []], ["single", entries.slice(0, 1)], ["public-catalog", entries]] as const) {
@@ -56,10 +66,12 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   });
   add("invitation", { id: "co-parent-invitation", payload: { invitationUrl: url } });
   for (const count of [1, 3]) for (const link of [false, true]) add(`count-${count}-${link ? "link" : "no-link"}`, {
-    id: "embryo-upload-notice", payload: { embryoCount: count, ...(link ? { withdrawUrl: url } : {}) },
+    id: "embryo-upload-notice", payload: { embryoCount: count, uploaderName: count === 1 ? "Alex Synthetic" : null,
+      uploadedBy: count === 1 ? "genetic-parent" : "someone-else", uploadDateIso: "2026-09-06",
+      uploadDateWords: "6 September 2026", retentionDays: 730, ...(link ? { withdrawUrl: url } : {}) },
   });
   add("date-changed", { id: "record-key-addendum", payload: { kind: "date-changed", displayLabel: "Embryo 1", closingDateIso: "2028-09-06", closingDateWords: "6 September 2028" } });
-  add("no-source", { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1" } });
+  add("no-source", { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1", closingDateIso: "2028-09-06", closingDateWords: "6 September 2028" } });
   for (const count of [1, 3]) add(`card-invalidated-${count}`, { id: "record-key-addendum", payload: { kind: "card-invalidated", embryoCount: count } });
   for (const disposition of ["stored", "transferred", "donated", "discarded"] as const) add(disposition, {
     id: "embryo-disposition-notice", payload: { displayLabel: "Embryo 1", disposition, effectiveAt: "2026-09-06T12:00:00Z", retentionExpiresAt: "2028-09-06T12:00:00Z" },

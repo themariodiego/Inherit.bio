@@ -10,6 +10,7 @@ import { hostedResultRequestSchema, hostedWorkflowContract, verifyHostedMetadata
 import { decodeHistoricalZip } from "./ci-browser-duration-history-io";
 import { ACCESSIBILITY_SWEEP_FILES } from "./ci-browser-balance";
 import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
+import { QUEUE_EXCLUSIVE_BROWSER_FILES } from "./ci-browser-queue-isolation";
 import { reserveResultOutput, captureHostedGet } from "./hosted-ci-result.run.mjs";
 
 const require = createRequire(import.meta.url), localRequire = createRequire(require.resolve("eslint"));
@@ -56,8 +57,14 @@ function metadata(req = request(), consumer = false) {
 function coverage() {
   const req = request(), cases = (i: number, project: string) => `${String(i).padStart(20, "0")}-${"0".repeat(20)}:${project}`;
   const groups = ACCESSIBILITY_SWEEP_FILES.map((file, i) => ({ file, project: "chromium", cases: [cases(i + 1, "chromium")], durationMs: 10 }));
-  STANDARD_CI_BROWSER_PROJECTS.filter(project => project !== "chromium").forEach((project, i) => {
+  STANDARD_CI_BROWSER_PROJECTS.filter(project => project !== "chromium"
+    && project !== "embryo-ingest" && project !== "embryo-mixed-qc").forEach((project, i) => {
     groups.push({ file: `fixture-${project}.spec.ts`, project, cases: [cases(i + 20, project)], durationMs: 20 });
+  });
+  // Full coverage includes all four exact journeys; modulo placement below
+  // keeps each in a separate fresh shard without changing the native guard.
+  Object.entries(QUEUE_EXCLUSIVE_BROWSER_FILES).forEach(([file, project], i) => {
+    groups.push({ file, project, cases: [cases(i + 30, project)], durationMs: 20 });
   });
   const fullCases = groups.flatMap(group => group.cases).sort(), fullFiles = groups.map(group => `e2e/${group.file}`).sort();
   const manifest = { head: req.testedHead, runId: String(req.runId), runAttempt: String(req.runAttempt),

@@ -33,7 +33,12 @@ export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha
   if (git(["status", "--porcelain", "--untracked-files=all"]).trim()) throw new Error("email-capture:uncommitted-renderer-inputs");
   // Ignore only known installation/build/test outputs, never arbitrary ignored
   // source or config files. In particular, ignored .env files are not attested.
-  const generated = ["node_modules/**", "worker/node_modules/**", ".next/**", "out/**", "build/**", "coverage/**", "test-results/**", "playwright-report/**", "next-env.d.ts", "tsconfig.tsbuildinfo"];
+  const generated = ["node_modules/**", "worker/node_modules/**", ".next/**", "out/**", "build/**", "coverage/**", "test-results/**", "playwright-report/**", "next-env.d.ts", "tsconfig.tsbuildinfo",
+    // The closed requester archive configuration generates these before unit
+    // capture in CI. Other ignored files under workers remain unbound inputs.
+    "workers/requester-statement-archive/worker-configuration.d.ts",
+    "workers/requester-statement-archive/.wrangler/cache/cf.json",
+  ];
   if (git(["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", ".", ...generated.map((path) => `:(top,exclude)${path}`)])) {
     throw new Error("email-capture:untracked-ignored-inputs");
   }

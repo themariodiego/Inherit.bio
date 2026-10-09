@@ -56,9 +56,16 @@ interface NameFixture {
   textParts: string[];
 }
 
+export interface ExternalHostFixture {
+  path: string;
+  url: string;
+  reason: string;
+}
+
 interface NameFixtures {
   schemaVersion: number;
   cases: NameFixture[];
+  externalHostFixtures?: ExternalHostFixture[];
 }
 
 export interface NameFinding {
@@ -226,6 +233,7 @@ export function scanExternalHosts(
   text: string,
   relativePath: string,
   allowed: ResolvedAllowedName[],
+  fixtures: ExternalHostFixture[] = [],
 ): NameFinding[] {
   const findings: NameFinding[] = [];
   const expression = /https?:\/\/([^\s/"'<>`)]+)/g;
@@ -247,7 +255,14 @@ export function scanExternalHosts(
       // Retain existing source-template handling; unparsed literal authorities
       // cannot borrow an allowed suffix after a backslash or invalid port.
       (!authority.includes("\\") && /[${}]/.test(authority)) ||
-      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed, lineText)))
+      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed, lineText))) ||
+      // Exact quoted negative-test literals only. Never an outbound permission
+      // or a public alias: other paths, URLs and commit messages still fail.
+      (parsed && fixtures.some(fixture =>
+        (fixture.path === relativePath || (relativePath === FIXTURES_PATH
+          && lineText.trim() === `"url": ${JSON.stringify(fixture.url)},`))
+        && text.slice((match.index ?? 0) - 1, (match.index ?? 0) + fixture.url.length + 1)
+          === JSON.stringify(fixture.url)))
     ) {
       continue;
     }
@@ -446,21 +461,43 @@ function validateAllowlist(
   return { allowed, failures };
 }
 
-function scanCommitMessages(
+export function parseCommitMessageRecords(raw: string): {
+  commit: string; timestamp: number; message: string;
+}[] {
+  const fields = raw.split("\0");
+  if (fields.pop() !== "" || fields.length === 0 || fields.length % 3 !== 0) {
+    throw new Error("Malformed NUL-framed commit history");
+  }
+  const records = [], seen = new Set<string>();
+  for (let index = 0; index < fields.length; index += 3) {
+    const [commit, time, message] = fields.slice(index, index + 3);
+    const timestamp = Number(time);
+    if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(commit) || seen.has(commit)
+      || !/^-?\d+$/.test(time) || !Number.isSafeInteger(timestamp)) {
+      throw new Error("Malformed NUL-framed commit history");
+    }
+    seen.add(commit);
+    records.push({ commit, timestamp, message: message.trim() });
+  }
+  return records;
+}
+
+export function scanCommitMessages(
   repositoryRoot: string,
   baselineSha: string,
   denylist: string[],
   allowed: ResolvedAllowedName[],
 ): { findings: NameFinding[]; commitCount: number } {
   const baselineTimestamp = Number(git(repositoryRoot, "show", "-s", "--format=%ct", baselineSha));
-  const commits = git(repositoryRoot, "rev-list", "HEAD").split("\n").filter(Boolean);
+  // Traverse every HEAD ancestor, including clock-skewed merge parents.
+  // Filter the exact committer timestamp here instead of pruning with --since.
+  const commits = parseCommitMessageRecords(git(repositoryRoot, "log", "--full-history",
+    "--no-patch", "-z", "--format=%H%x00%ct%x00%B", "HEAD"));
   const findings: NameFinding[] = [];
   let commitCount = 0;
-  for (const commit of commits) {
-    const timestamp = Number(git(repositoryRoot, "show", "-s", "--format=%ct", commit));
+  for (const { commit, timestamp, message } of commits) {
     if (timestamp <= baselineTimestamp) continue;
     commitCount++;
-    const message = git(repositoryRoot, "show", "-s", "--format=%B", commit);
     findings.push(...scanDenylist(message, "<commit-message>", denylist, commit));
     for (const finding of scanExternalHosts(message, "<commit-message>", allowed)) {
       findings.push({ ...finding, commit });
@@ -470,6 +507,47 @@ function scanCommitMessages(
     }
   }
   return { findings, commitCount };
+}
+
+export function validateExternalHostFixtures(value: unknown, repositoryRoot: string): {
+  fixtures: ExternalHostFixture[]; failures: string[];
+} {
+  if (value === undefined) return { fixtures: [], failures: [] };
+  if (!Array.isArray(value)) return { fixtures: [], failures: ["external-host fixtures must be an array"] };
+  const failures: string[] = [], fixtures: ExternalHostFixture[] = [], seen = new Set<string>();
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)
+      || Object.keys(entry).sort().join(",") !== "path,reason,url"
+      || typeof entry.path !== "string" || typeof entry.url !== "string" || typeof entry.reason !== "string") {
+      failures.push("external-host fixture must contain only path, url and reason strings"); continue;
+    }
+    const fixture = entry as ExternalHostFixture;
+    const key = `${fixture.path}\n${fixture.url}`;
+    const safePath = /^(?:scripts\/[a-z0-9-]+\.test\.ts|e2e\/[a-z0-9-]+\.spec\.ts)$/.test(fixture.path);
+    if (!safePath) {
+      failures.push("external-host fixture path must be one exact test file");
+    }
+    let canonical = false;
+    try {
+      const url = new URL(fixture.url);
+      canonical = url.protocol === "https:" && url.href === fixture.url && !url.username && !url.password
+        && !url.search && !url.hash && url.pathname !== "/";
+    } catch { /* malformed declarations fail below */ }
+    if (!canonical) failures.push("external-host fixture must be one canonical HTTPS URL with its exact path");
+    if (fixture.reason.trim().length < 20 || /[\r\n]/.test(fixture.reason)) {
+      failures.push("external-host fixture reason must be one substantive line");
+    }
+    if (seen.has(key)) failures.push("external-host fixtures must be unique");
+    seen.add(key);
+    const absolute = path.join(repositoryRoot, fixture.path);
+    if (safePath && (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()
+      || !fs.readFileSync(absolute, "utf8").includes(JSON.stringify(fixture.url)))) {
+      failures.push("external-host fixture must name an existing exact quoted test literal");
+    }
+    fixtures.push(fixture);
+  }
+  // An invalid register never grants even its otherwise valid entries.
+  return { fixtures: failures.length ? [] : fixtures, failures: [...new Set(failures)] };
 }
 
 function runFixtureSelfTest(fixtures: NameFixtures): string[] {
@@ -505,7 +583,8 @@ export function runNameGate(repositoryRoot: string) {
   ) as NameFixtures;
   const denylist = readDenylist(repositoryRoot);
   const validation = validateAllowlist(allowlist, providers, repositoryRoot);
-  const failures = [...denylist.failures, ...validation.failures, ...runFixtureSelfTest(fixtures)];
+  const externalFixtures = validateExternalHostFixtures(fixtures.externalHostFixtures, repositoryRoot);
+  const failures = [...denylist.failures, ...validation.failures, ...runFixtureSelfTest(fixtures), ...externalFixtures.failures];
   if (evaluative.schemaVersion !== 1 || evaluative.tokens.length === 0) {
     failures.push("evaluative token register is empty or invalid");
   }
@@ -523,7 +602,7 @@ export function runNameGate(repositoryRoot: string) {
     const text = buffer.toString("utf8");
     findings.push(...scanDenylist(relativePath, relativePath, denylist.entries));
     findings.push(...scanDenylist(text, relativePath, denylist.entries));
-    findings.push(...scanExternalHosts(text, relativePath, validation.allowed));
+    findings.push(...scanExternalHosts(text, relativePath, validation.allowed, externalFixtures.fixtures));
     findings.push(...scanOrganisationShapes(text, relativePath, validation.allowed));
     findings.push(
       ...scanEvaluativeProximity(
