@@ -1,3 +1,7 @@
+## 2026-10-09 — Admit the exact observed authenticated Ubuntu mirror transport
+
+The original hosted diagnostic resolver returned all nine pinned fonts through `mirror+file:/etc/apt/apt-mirrors.txt/pool/...`, plus two unchanged installer dependencies. Three URI filenames encode `+` as `%2b`. The direct-only parser refused this approved stock transport before seeding. The parser now admits only that fixed mirror file and decodes the URI filename once before the exact pinned filename comparison. All nine-package/version/size/uniqueness, signed metadata/candidate/hash and actual archive checks remain required. Every prior test and assertion remains. Three new behavioral cases cover the literal eleven-row original, all approved direct HTTP(S) hosts, and altered mirror authority, malformed/double/separator/control encodings, traversal, missing/duplicate rows and size changes. No time limit, retry, cache adoption or full-suite requirement changes.
+
 ## 2026-10-09 — Retain the original bounded public font resolver output
 
 PR295 run 37879756625 passed all complete suites, but every genuine warm restore

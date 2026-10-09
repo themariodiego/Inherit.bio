@@ -131,3 +131,8 @@ Primary references:
 - [Transient service wait and output behavior](https://raw.githubusercontent.com/systemd/systemd/v255/man/systemd-run.xml)
 - [Service runtime and shutdown bounds](https://raw.githubusercontent.com/systemd/systemd/v255/man/systemd.service.xml)
 - [Control-group termination](https://raw.githubusercontent.com/systemd/systemd/v255/man/systemd.kill.xml)
+
+
+### Original resolver route correction, 9 October 2026
+
+Diagnostic run `37885106841`, attempt 1, retained the exact public resolver command and streams. APT 2.8.3 returned nine pinned fonts and two installer dependencies through the already-admitted `mirror+file:/etc/apt/apt-mirrors.txt/pool/...` route. Three URI filenames use `%2b` for literal `+`. The direct-only parser refused these rows before cache seeding. The proposed parser admits this one stock mirror file, decodes only the URI filename once, and keeps every existing direct HTTP(S), signed metadata, candidate, nine-package, size, uniqueness and archive digest check. Malformed/double/separator encodings and altered mirror paths remain refused. The diagnostic proves this refusal cause; it does not prove cache use or a speed improvement. Merge still requires the full suite on the final head and seven genuine admitted warm results with unchanged complete installers.

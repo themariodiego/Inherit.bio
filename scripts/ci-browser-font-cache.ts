@@ -120,9 +120,19 @@ export function aptArchiveNames(manifest: FontManifest, printUris: string): Map<
     const row = line.match(/^'([^']+)' (\S+) (\d+) \S+$/);
     if (!row) continue;
     const url = new URL(row[1]);
-    const pin = manifest.packages.find((p) => url.pathname === `/ubuntu/${p.filename}`);
+    const mirrorPrefix = "/etc/apt/apt-mirrors.txt/";
+    const mirror = url.protocol === "mirror+file:";
+    // The owned signed refresh admits this one stock mirror file. APT prints
+    // its transport URI before choosing the already-admitted download host.
+    if (mirror && (row[1] !== `mirror+file:${url.pathname}` || !url.pathname.startsWith(`${mirrorPrefix}pool/`))) throw new Error("unexpected APT mirror route");
+    const encodedFilename = url.pathname.slice(url.pathname.lastIndexOf("/") + 1);
+    const decodedFilename = decodeURIComponent(encodedFilename);
+    if (/[%\\/\x00-\x20\x7f]/.test(decodedFilename) || /%(?:2f|5c)/i.test(url.pathname)) throw new Error("unsafe APT archive filename encoding");
+    const pathname = url.pathname.slice(0, -encodedFilename.length) + decodedFilename;
+    const pin = manifest.packages.find((p) => pathname === `${mirror ? mirrorPrefix : "/ubuntu/"}${p.filename}`);
     if (!pin) continue;
-    if (!["http:", "https:"].includes(url.protocol) || !["archive.ubuntu.com", "azure.archive.ubuntu.com", "security.ubuntu.com"].includes(url.hostname) || url.port || url.username || url.password || url.search || url.hash || Number(row[3]) !== pin.bytes || !/^[a-z0-9+._%~-]+\.deb$/.test(row[2]) || decodeURIComponent(row[2]) !== `${pin.name}_${pin.version}_${pin.architecture}.deb` || result.has(pin.name)) throw new Error(`unexpected APT archive route: ${pin.name}`);
+    const approvedRoute = mirror ? url.hostname === "" : ["http:", "https:"].includes(url.protocol) && ["archive.ubuntu.com", "azure.archive.ubuntu.com", "security.ubuntu.com"].includes(url.hostname);
+    if (!approvedRoute || url.port || url.username || url.password || url.search || url.hash || Number(row[3]) !== pin.bytes || !/^[a-z0-9+._%~-]+\.deb$/.test(row[2]) || decodeURIComponent(row[2]) !== `${pin.name}_${pin.version}_${pin.architecture}.deb` || result.has(pin.name)) throw new Error(`unexpected APT archive route: ${pin.name}`);
     result.set(pin.name, row[2]);
   }
   if (result.size !== manifest.packages.length) throw new Error("APT did not resolve all nine pinned font archives");

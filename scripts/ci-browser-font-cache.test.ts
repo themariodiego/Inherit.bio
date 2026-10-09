@@ -154,6 +154,57 @@ describe("font archive cache admission", () => {
     expect(() => aptResolverOutput(successful, () => { throw new Error("original recording unavailable"); }))
       .toThrow("original recording unavailable");
   });
+  it("admits the literal hosted mirror resolver rows with all nine fonts and unchanged dependencies", () => {
+    // Original diagnostic run 37885106841/a1, job 113673241670; public resolver stdout.
+    const captured = `'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-ipafont/fonts-ipafont-gothic_00303-21ubuntu1_all.deb' fonts-ipafont-gothic_00303-21ubuntu1_all.deb 3513360 MD5Sum:e55a9bae06be908db5c9bd471b011caf
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-ipafont/fonts-ipafont-mincho_00303-21ubuntu1_all.deb' fonts-ipafont-mincho_00303-21ubuntu1_all.deb 4723808 MD5Sum:2abaf43a330644ab620d882c66ea4c93
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/f/fonts-freefont/fonts-freefont-ttf_20211204%2bsvn4273-2_all.deb' fonts-freefont-ttf_20211204+svn4273-2_all.deb 5640794 MD5Sum:958074efbb58c46ead23be615e1c3502
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-tlwg/fonts-tlwg-loma-otf_0.7.3-1_all.deb' fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb 106786 MD5Sum:89b3ba8a40532ddf97a49c6d402f7054
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/f/fonts-tlwg/fonts-tlwg-loma_0.7.3-1_all.deb' fonts-tlwg-loma_1%3a0.7.3-1_all.deb 4102 MD5Sum:dfc40ffcd01f43749c311fe33613fa23
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/u/unifont/fonts-unifont_15.1.01-1build1_all.deb' fonts-unifont_1%3a15.1.01-1build1_all.deb 2993066 MD5Sum:74f019fdce045563f769a97c507b8108
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/f/fonts-wqy-zenhei/fonts-wqy-zenhei_0.9.45-8_all.deb' fonts-wqy-zenhei_0.9.45-8_all.deb 7471624 MD5Sum:63fcb8701d2a908e8e00842dbb317037
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/x/xfonts-encodings/xfonts-encodings_1.0.5-0ubuntu2_all.deb' xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb 578092 MD5Sum:b7e27ff04dca332645f9acfcc8492237
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/x/xfonts-utils/xfonts-utils_7.7%2b6build3_amd64.deb' xfonts-utils_1%3a7.7+6build3_amd64.deb 94438 MD5Sum:13b0675cc33bcd650f3e169c049cf670
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/universe/x/xfonts-cyrillic/xfonts-cyrillic_1.0.5%2bnmu1_all.deb' xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb 384312 MD5Sum:0638903c3bc4fad8019615e21d0e5b76
+'mirror+file:/etc/apt/apt-mirrors.txt/pool/main/x/xfonts-scalable/xfonts-scalable_1.0.3-1.3_all.deb' xfonts-scalable_1%3a1.0.3-1.3_all.deb 304118 MD5Sum:20641f16466ef2a37741e11bdcbfaad4`;
+    const names = aptArchiveNames(manifest, captured);
+    expect(names.size).toBe(9);
+    for (const pin of manifest.packages) {
+      expect(decodeURIComponent(names.get(pin.name)!)).toBe(`${pin.name}_${pin.version}_${pin.architecture}.deb`);
+    }
+    expect(names.has("fonts-ipafont-mincho")).toBe(false);
+    expect(names.has("fonts-tlwg-loma")).toBe(false);
+  });
+  it("keeps every approved direct HTTP(S) host and decodes its URI filename once", () => {
+    for (const protocol of ["http", "https"]) {
+      for (const host of ["archive.ubuntu.com", "azure.archive.ubuntu.com", "security.ubuntu.com"]) {
+        const direct = uris().replaceAll("http://azure.archive.ubuntu.com", `${protocol}://${host}`)
+          .replace("fonts-freefont-ttf_20211204+svn4273-2_all.deb'", "fonts-freefont-ttf_20211204%2bsvn4273-2_all.deb'");
+        expect(aptArchiveNames(manifest, direct).size).toBe(9);
+      }
+    }
+  });
+  it("refuses altered mirror authority, unsafe encodings and incomplete or duplicate pinned rows", () => {
+    const mirror = uris().replaceAll("http://azure.archive.ubuntu.com/ubuntu/", "mirror+file:/etc/apt/apt-mirrors.txt/");
+    for (const invalid of [
+      mirror.replace("/etc/apt/apt-mirrors.txt/", "/etc/apt/other-mirrors.txt/"),
+      mirror.replace("mirror+file:/etc/", "mirror+file://attacker.invalid/etc/"),
+      mirror.replace("mirror+file:/etc/", "mirror+file:///etc/"),
+      mirror.replace("apt-mirrors.txt/pool/", "apt-mirrors.txt/../apt-mirrors.txt/pool/"),
+      mirror.replace("apt-mirrors.txt/pool/", "apt-mirrors.txt/%2e%2e/apt-mirrors.txt/pool/"),
+      mirror.replace("20211204+svn4273", "20211204%svn4273"),
+      mirror.replace("20211204+svn4273", "20211204%252bsvn4273"),
+      mirror.replace("20211204+svn4273", "20211204%2fsvn4273"),
+      mirror.replace("20211204+svn4273", "20211204%5csvn4273"),
+      mirror.replace("20211204+svn4273", "20211204%00svn4273"),
+      mirror.replace("apt-mirrors.txt/pool/", "apt-mirrors.txt/pool%2f"),
+      mirror.replace("_all.deb'", "_all.deb?route=other'"),
+      mirror.replace("_all.deb'", "_all.deb#other'"),
+      mirror.replace("5640794 MD5Sum", "5640795 MD5Sum"),
+      mirror.split("\n").slice(1).join("\n"),
+      `${mirror}\n${mirror.split("\n")[0]}`,
+    ]) expect(() => aptArchiveNames(manifest, invalid)).toThrow();
+  });
   it("uses APT's actual epoch-encoded filenames and leaves dependency rows untouched", () => {
     const names = aptArchiveNames(manifest, `${uris()}\n'http://archive.ubuntu.com/ubuntu/pool/main/u/unrelated/unrelated.deb' unrelated.deb 42 MD5Sum:unused`);
     expect(names.size).toBe(9);
