@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { assertOwnedContainer, assertRealVerdict, boundedCommand, eicarBytes, netBytes, signatureAllocatedBytes, signatureAllocationCommand,
-  PROOF_LABEL, sha256, syntheticPdf } from "./claim-scanner-real-proof";
+  clamdDiagnosticCommands, parseClamdWaitStatus, PROOF_LABEL, sha256, syntheticPdf } from "./claim-scanner-real-proof";
 
 const temporary: string[] = [];
 afterEach(async () => { await Promise.all(temporary.splice(0).map((p) => rm(p, { recursive: true, force: true }))); });
@@ -79,6 +79,24 @@ describe("real scanner proof boundary controls (not a real scanner verdict)", ()
     "f\t1\t1\t1\tduplicate\0f\t1\t1\t1\tduplicate\0", "f\t1\t1\t1\tunterminated",
   ])("refuses unsafe signature metadata %s", (record) => {
     expect(() => signatureAllocatedBytes(`d\t2\t0\t0\t\0${record}`)).toThrow();
+  });
+  it("keeps daemon diagnostics inside the same owned tmpfs as the scanner user", () => {
+    const commands = clamdDiagnosticCommands(id);
+    const ownedExec = ["exec", "--user", "clamav:clamav", id, "/bin/sh", "-c"];
+    expect(commands.prepare.slice(0, -1)).toEqual(ownedExec);
+    expect(commands.snapshot.slice(0, -1)).toEqual(ownedExec);
+    expect(commands.start.slice(0, -1)).toEqual(["exec", "-d", ...ownedExec.slice(1)]);
+    for (const invalid of ["", "scanner", `${id};other`, id.toUpperCase()])
+      expect(() => clamdDiagnosticCommands(invalid)).toThrow("owned_id_refused");
+  });
+  it("preserves a startup wait result without inventing an exit for a running daemon", () => {
+    expect(parseClamdWaitStatus("daemon-wait-status:unobserved\nloading\n")).toBeNull();
+    expect(parseClamdWaitStatus("daemon-wait-status:1\noriginal failure\n")).toBe(1);
+    expect(parseClamdWaitStatus("daemon-wait-status:0\n")).toBe(0);
+    expect(parseClamdWaitStatus("daemon-wait-status:137\noriginal stderr is separate\n")).toBe(137);
+    for (const invalid of ["", "daemon-wait-status:-1\n", "daemon-wait-status:256\n", "daemon-wait-status:01\n",
+      "daemon-wait-status:1", "untrusted-prefix\ndaemon-wait-status:0\n"])
+      expect(() => parseClamdWaitStatus(invalid)).toThrow("daemon_status_observation_refused");
   });
   it("retains the first failed command and complete raw streams before refusing it", async () => {
     const output = await mkdtemp(path.join(tmpdir(), "scanner-proof-command-")); temporary.push(output);

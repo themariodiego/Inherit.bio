@@ -1,3 +1,30 @@
+## 2026-10-09 — Retain sampled clamd startup originals inside the readiness window
+
+The preserved hosted scanner run reached official signatures and closed its
+bootstrap network, then failed the original two-minute readiness check before
+any scanner case. Its detached clamd acknowledgement omitted the daemon's
+stdout, stderr and wait status. No daemon cause or real-case success is inferred.
+
+The diagnostic proposal keeps those streams inside only the existing owned
+scanner tmpfs as the configured scanner user, and records a wait status only
+when the daemon's output descriptors have closed, before any owned stop. It
+samples at most three times, at least 40 seconds apart, inside the same absolute
+120-second window. TCP readiness still uses the original connection criterion,
+one-second probe and half-second poll. Command outcomes and raw-file readbacks,
+probe responses and unsampled intervals remain explicit. Image, daemon config,
+signatures, resources, cleanup, retries and all four scanner assertions stay as
+they were. The existing artifact member and byte refusals stay unchanged.
+
+All tests already on the branch remain exact. Two new, unrun diagnostic controls
+check the complete owned command arguments and reject unsafe container IDs,
+and preserve unobserved, zero, nonzero and signal-encoded wait statuses while
+refusing malformed status headers. The earlier unrun proposal's shell-substring
+assertions are replaced by these ownership and result boundary checks; they did
+not supply a runtime proof. This entry is frozen before those proposed test
+changes. Local checks, complete final-head hosted CI and all four original real
+scanner cases remain required before merge. Scanner activation, paid use,
+production and real-document actions remain off.
+
 ## 2026-10-09 — Observe private FreshClam allocation as the scanner user
 
 The original real scanner attempt failed when the host UID could not traverse

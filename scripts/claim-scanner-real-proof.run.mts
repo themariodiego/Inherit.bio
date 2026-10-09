@@ -6,7 +6,7 @@ import net from "node:net";
 import { clamdScanner } from "../src/lib/scan/clamd";
 import { MAXIMUM_SCANNED_BYTES } from "../src/lib/scan/malware-scanner";
 import { CLAMAV_IMAGE, PROOF_LABEL, assertOwnedContainer, assertRealVerdict, boundedCommand,
-  eicarBytes, netBytes, saveJson, sha256, signatureAllocatedBytes, signatureAllocationCommand, syntheticPdf } from "./claim-scanner-real-proof";
+  clamdDiagnosticCommands, parseClamdWaitStatus, eicarBytes, netBytes, saveJson, sha256, signatureAllocatedBytes, signatureAllocationCommand, syntheticPdf } from "./claim-scanner-real-proof";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePaths = ["AGENTS.md", "package.json", "pnpm-lock.yaml", ".github/workflows/claim-scanner-real-proof.yml",
@@ -28,12 +28,20 @@ async function sourceSnapshot() {
   return rows;
 }
 
-async function portOpen(): Promise<boolean> {
+async function portOpen(timeoutMs = 1000, observe?: (value: Record<string, unknown>) => void): Promise<boolean> {
   return new Promise((resolve) => {
+    const startedAt = new Date().toISOString(), started = performance.now();
     const socket = net.createConnection({ host: "127.0.0.1", port: 45310 });
-    const done = (value: boolean) => { socket.destroy(); resolve(value); };
-    socket.setTimeout(1000, () => done(false));
-    socket.once("connect", () => done(true)); socket.once("error", () => done(false));
+    let settled = false;
+    const done = (value: boolean, response: string, error?: string) => {
+      if (settled) return; settled = true;
+      observe?.({ command: "TCP_CONNECT", host: "127.0.0.1", port: 45310, startedAt, endedAt: new Date().toISOString(),
+        elapsedMs: performance.now() - started, capMilliseconds: timeoutMs, connected: value, response, error: error ?? null });
+      socket.destroy(); resolve(value);
+    };
+    socket.setTimeout(timeoutMs, () => done(false, "timeout"));
+    socket.once("connect", () => done(true, "connected"));
+    socket.once("error", (error) => done(false, "error", (error as NodeJS.ErrnoException).code));
   });
 }
 
@@ -75,6 +83,7 @@ async function main(): Promise<void> {
   const cleanupErrors: string[] = [];
   let failure: string | null = null;
   const observations: Record<string, unknown> = {};
+  let readinessOriginal: { capSeconds: number; diagnosticSnapshotLimit: number; diagnosticSnapshotMinimumIntervalMs: number; startedAt: string; endedAt?: string; probes: Record<string, unknown>[]; snapshots: Record<string, unknown>[] } | null = null;
   const command = async (args: string[], timeout = 30, tick?: () => Promise<void>) =>
     (await boundedCommand(output, ++ordinal, args, timeout, tick)).stdout.trim();
   const docker = (args: string[], timeout = 30, tick?: () => Promise<void>) => command(["docker", ...args], timeout, tick);
@@ -132,12 +141,40 @@ async function main(): Promise<void> {
     await bootstrapGuard(); await docker(["network", "disconnect", "bridge", id]);
     const readyInfo = await own() as { NetworkSettings?: { Networks?: Record<string, unknown> } };
     if (Object.keys(readyInfo.NetworkSettings?.Networks ?? {}).join(",") !== network) throw new Error("scanner_egress_not_closed");
-    await docker(["exec", "-d", id, "/usr/sbin/clamd", "--config-file=/proof/clamd.conf", "--foreground"]);
     const readyUntil = performance.now() + 120_000;
-    while (!(await portOpen())) {
-      if (performance.now() > readyUntil) throw new Error("real_clamd_not_ready");
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    readinessOriginal = { capSeconds: 120, diagnosticSnapshotLimit: 3, diagnosticSnapshotMinimumIntervalMs: 40_000, startedAt: new Date().toISOString(), probes: [], snapshots: [] };
+    const remaining = () => {
+      const seconds = (readyUntil - performance.now()) / 1000;
+      if (seconds <= 0) throw new Error("real_clamd_not_ready");
+      return seconds;
+    };
+    const diagnostic = clamdDiagnosticCommands(id);
+    await docker(diagnostic.prepare, Math.min(30, remaining()));
+    await docker(diagnostic.start, Math.min(30, remaining()));
+    let nextDiagnosticAt = performance.now();
+    while (true) {
+      remaining();
+      if (readinessOriginal.snapshots.length < readinessOriginal.diagnosticSnapshotLimit
+        && performance.now() >= nextDiagnosticAt) {
+        nextDiagnosticAt = performance.now() + readinessOriginal.diagnosticSnapshotMinimumIntervalMs;
+        const snapshotOrdinal = ++ordinal;
+        const observation: Record<string, unknown> = { ordinal: snapshotOrdinal, sampledAt: new Date().toISOString(),
+          originalResult: `command-${snapshotOrdinal}.original-result.json`, rawReadback: `command-${snapshotOrdinal}.raw-readback.json`,
+          waitStatusObserved: false };
+        readinessOriginal.snapshots.push(observation);
+        const snapshot = await boundedCommand(output, snapshotOrdinal, ["docker", ...diagnostic.snapshot], Math.min(8, remaining()));
+        const waitStatus = parseClamdWaitStatus(snapshot.stdout);
+        Object.assign(observation, { waitStatusObserved: true, waitStatusBeforeAnyOwnedStop: waitStatus,
+          completeDaemonOutput: waitStatus !== null });
+        if (waitStatus !== null) throw new Error("real_clamd_exited_before_ready");
+      }
+      const connected = await portOpen(Math.min(1000, remaining() * 1000), (probe) => readinessOriginal!.probes.push(probe));
+      remaining(); // A delayed callback cannot earn readiness after the original deadline.
+      if (connected) break;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(500, remaining() * 1000)));
     }
+    readinessOriginal.endedAt = new Date().toISOString();
+    await saveJson(`${output}/readiness-original.json`, readinessOriginal);
     const scanner = clamdScanner({ address: { kind: "tcp", host: "127.0.0.1", port: 45310 } });
     const clean = syntheticPdf(), eicar = eicarBytes();
     const observe = async (caseName: string, bytes: Uint8Array) => {
@@ -175,6 +212,11 @@ async function main(): Promise<void> {
     await saveJson(`${output}/signature-inventory.json`, await signatureRows(signatures));
   } catch (error) { failure = String(error); await saveJson(`${output}/first-failure.json`, { error: failure, observations }); }
   finally {
+    if (readinessOriginal && !readinessOriginal.endedAt) {
+      readinessOriginal.endedAt = new Date().toISOString();
+      try { await saveJson(`${output}/readiness-original.json`, readinessOriginal); }
+      catch (error) { cleanupErrors.push(`readiness_original_custody_failed:${String(error)}`); }
+    }
     // Even an interrupted create is located only by the unique name, then its label and boundaries must match.
     try {
       if (!id) {

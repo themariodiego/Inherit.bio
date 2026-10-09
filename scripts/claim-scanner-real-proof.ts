@@ -95,6 +95,38 @@ export function signatureAllocatedBytes(text: string): number {
   return total;
 }
 
+
+/** Fixed output paths in the existing owned tmpfs; no new mounts or daemon settings. */
+export function clamdDiagnosticCommands(id: string): { prepare: string[]; start: string[]; snapshot: string[] } {
+  if (!/^[a-f0-9]{64}$/u.test(id)) throw new Error("owned_id_refused");
+  const directory = "/tmp/inherit-clamd-original";
+  const prepare = `umask 077; set -C; mkdir -m 700 ${directory} && : >${directory}/stdout && : >${directory}/stderr`;
+  const start = `umask 077; exec 3>>${directory}/stdout 4>>${directory}/stderr; `
+    + `/usr/sbin/clamd --config-file=/proof/clamd.conf --foreground >&3 2>&4; code=$?; `
+    + `exec 3>&- 4>&-; set -C; printf '%s\\n' "$code" >${directory}/exit; exit "$code"`;
+  const snapshot = `set -e; directory=${directory}; `
+    + `test "$(/usr/bin/find -P "$directory" -maxdepth 0 -printf '%y %U %m %n')" = 'd 1000 700 2'; `
+    + `for file in stdout stderr; do `
+    + `test "$(/usr/bin/find -P "$directory/$file" -maxdepth 0 -printf '%y %U %m %n')" = 'f 1000 600 1'; `
+    + `test "$(/usr/bin/find -P "$directory/$file" -maxdepth 0 -printf '%s')" -le 4194304; done; `
+    + `code=unobserved; if test -e "$directory/exit"; then `
+    + `test "$(/usr/bin/find -P "$directory/exit" -maxdepth 0 -printf '%y %U %m %n')" = 'f 1000 600 1'; `
+    + `test "$(/usr/bin/find -P "$directory/exit" -maxdepth 0 -printf '%s')" -le 4; `
+    + `if IFS= read -r value <"$directory/exit"; then code=$value; fi; fi; `
+    + `printf 'daemon-wait-status:%s\\n' "$code"; /bin/cat "$directory/stdout"; /bin/cat "$directory/stderr" >&2`;
+  const exec = ["exec", "--user", "clamav:clamav", id, "/bin/sh", "-c"];
+  return { prepare: [...exec, prepare], start: ["exec", "-d", ...exec.slice(1), start], snapshot: [...exec, snapshot] };
+}
+
+/** A shell wait result written after daemon descriptors close, observed before any owned stop. */
+export function parseClamdWaitStatus(stdout: string): number | null {
+  const header = stdout.slice(0, stdout.indexOf("\n") + 1);
+  if (header === "daemon-wait-status:unobserved\n") return null;
+  const value = /^daemon-wait-status:((?:0|[1-9][0-9]{0,2}))\n$/u.exec(header);
+  if (!value || Number(value[1]) > 255) throw new Error("daemon_status_observation_refused");
+  return Number(value[1]);
+}
+
 export interface CommandRecord {
   argv: string[]; startedAt: string; endedAt: string; elapsedMs: number;
   exit: number | null; signal: string | null; timedOut: boolean; commandError: string | null;
