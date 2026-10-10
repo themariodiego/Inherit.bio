@@ -1,3 +1,7 @@
+## 2026-10-10 — Register the existing hosted job fixture in its exact native mail unit-test path
+
+The first complete current-tree and history scan on the mail correction refused four occurrences: the two fixed hosted-fixture assertions in the new unit test, each found in the current tree and its introducing commit. ADR 0006 now documents this exact additional pure-test path for the already accepted job fixture. The existing value, classification, detectors, undeclared-path rejection and complete history baseline remain unchanged. No authorization assertion or native credential generation changed; the original refusal remains in the integration evidence.
+
 ## 2026-10-10 — Pass the current native mail-job credential to the parent invitation drain
 
 The owned launcher generates a fresh mail-job credential, while the parent invitation helper previously sent the fixed hosted-test credential. Source tracing proves that this mismatch would return 401 if the native invitation drain is reached; it does not identify the reached substage of the retained failed native run. The native seed now passes the selected embryo app's current credential explicitly at call time. Hosted callers retain their fixed configuration, and an explicitly empty credential refuses before mail I/O. Recipient selection, authorization, status-200 assertions, the forty-drain bound, fresh credential generation and all native ownership and cleanup requirements are unchanged.

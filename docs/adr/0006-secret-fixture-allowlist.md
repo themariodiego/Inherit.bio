@@ -111,6 +111,17 @@ loopback mail server at `http://127.0.0.1:8124`. Generated local app secrets rem
 ephemeral; the operator's model credential never enters this configuration.
 The fixture value, classification, detectors and historical baseline are unchanged.
 
+### Existing local job fixture in the native mail control (2026-10-10)
+
+The accepted `jobs-auth-fixture` value is also permitted in the exact path
+`scripts/comprehension/native-mail-drain.test.ts`. Its two occurrences check the
+unchanged hosted credential against a pure mocked mail endpoint. The native
+success case separately uses the selected app's different current credential;
+the fixed hosted value must still fail against that configuration. This test
+opens no server, database, provider or child process. The fixture value and
+classification, every detector, undeclared-path rejection, full current-tree
+and history scans, and historical baseline remain unchanged.
+
 ### Exact isolated webhook source-expression review packet (2026-10-01)
 
 - Secret-Allowlist-ID: isolated-webhook-generated-reference
