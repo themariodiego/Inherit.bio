@@ -4940,7 +4940,7 @@ begin
  if expected->>'reason'='sex_combined_model_unavailable' then
   result:=private.evaluate_embryo_test_fit_v1(p_embryo->'source',private.embryo_test_statistical_calls_v1(p_embryo),
    jsonb_build_object('callRate',p_embryo#>'{qc,call_rate}','contamination',p_embryo#>'{qc,contamination_estimate}',
-    'alleleDropout',p_embryo#>'{qc,allelic_dropout_estimate}));
+    'alleleDropout',p_embryo#>'{qc,allelic_dropout_estimate}'));
   if result->'ok' is distinct from 'true'::jsonb then raise exception using errcode='42501',message='embryo_test_statistical_fit_unavailable';end if;
  end if;
  return expected||jsonb_build_object('result',result->'result');

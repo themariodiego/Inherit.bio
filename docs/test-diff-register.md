@@ -1,3 +1,7 @@
+## 2026-10-10: correct the fitted TEST native function string
+
+The complete hosted run 38078940278 on be492 stopped all eight prerequisite jobs at fresh database setup. The new expected-fit function omitted the closing quote on its existing allele-dropout JSON path. This repair adds that one quote. The whole migration inverse retains every other byte. The complete failed logs are preserved. No test, expected value, fixture, guard, time limit, retry or release requirement changes. Corrected local checks and all complete hosted suites remain required.
+
 ## 2026-10-10: register the existing fitted TEST genome fixture
 
 The complete secret gate found that the new synthetic fitted fixture lacked its name and current SHA-256 in the fixture provenance file. The provenance now records the existing complete bytes, all 1,200 unchanged original rows, eight added invented panel calls, and the preserved twelve no-calls in SAMPLE2. The fixture, tests, expectations, scanner, allowlist and limits remain unchanged. The original failed gate output is preserved. Final checks remain required.
