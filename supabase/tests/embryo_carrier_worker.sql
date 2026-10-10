@@ -151,5 +151,69 @@ select is(public.current_embryo_carrier_hold_v1('7a000000-0000-0000-0000-0000000
 select is(public.current_embryo_carrier_hold_v1('7a000000-0000-0000-0000-000000000003',
  '7a000000-0000-4000-8000-0000000000c1',(select cohort from carrier_ids),true),null::jsonb,
  'an unrelated account learns no saved result or hold state');
+
+-- Separate coverage-only read from the very same real publication and worker
+-- save. The synthetic rollback review proves doors, not a human review,
+-- live registry activation, clinical interpretation or browser acceptance.
+select ok(not has_function_privilege('anon','public.current_embryo_carrier_library_coverage_v1(uuid,uuid,uuid,boolean)','execute')
+ and not has_function_privilege('authenticated','public.current_embryo_carrier_library_coverage_v1(uuid,uuid,uuid,boolean)','execute')
+ and not has_function_privilege('inherit_upload_only','public.current_embryo_carrier_library_coverage_v1(uuid,uuid,uuid,boolean)','execute')
+ and has_function_privilege('service_role','public.current_embryo_carrier_library_coverage_v1(uuid,uuid,uuid,boolean)','execute')
+ and not has_function_privilege('service_role','private.embryo_carrier_library_coverage_v1(jsonb,jsonb)','execute'),
+ 'only the service current-read door reaches coverage; no role can borrow its private projection');
+create temporary table carrier_library_read as select public.current_embryo_carrier_library_coverage_v1(
+ '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
+ (select cohort from carrier_ids),true) body;
+select is((select jsonb_array_length(body->'rows') from carrier_library_read),3,
+ 'the complete published cohort is returned, including both genuine QC refusals');
+select is((select body#>'{rows,0,coverage}' from carrier_library_read),jsonb_build_object(
+ 'version','embryo-carrier-library-coverage-v1','basis','distinct-grch38-reviewed-loci-v1',
+ 'conditionId','SYNTHETIC:1','conditionName','Synthetic carrier worker condition',
+ 'referenceReleaseId','synthetic-embryo-worker','checkedPositions',1,'requiredPositions',1,
+ 'coverageState','covered','unresolved','[]'::jsonb,'interpretationStatus','held','holdReason','scientific_disclosures_pending'),
+ 'the genuine own-call result reveals exact reviewed position coverage with interpretation still held');
+select ok((select bool_and(row->'coverage'='null'::jsonb and row->>'qualityReason'='embryo_call_rate')
+ from carrier_library_read cross join lateral jsonb_array_elements(body->'rows') with ordinality rows(row,n) where n>1),
+ 'both failed-quality ordinals remain unmeasurable, never zero scientific coverage');
+select ok((select body::text!~'observed_copies|genotype|carrier_state|absolute_risk|source_sha256|reviewer|assertion_measurements'
+ from carrier_library_read),'the service summary serializes no clinical observation, private call or review record');
+select is(public.current_embryo_carrier_library_coverage_v1('7a000000-0000-0000-0000-000000000003',
+ '7a000000-0000-4000-8000-0000000000c1',(select cohort from carrier_ids),true),null::jsonb,
+ 'an unrelated current account learns no position or reference count');
+select throws_ok($$select public.current_embryo_carrier_library_coverage_v1(
+ '7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
+ (select cohort from carrier_ids),false)$$,'42501','not_found','production policy cannot use the TEST coverage door');
+savepoint carrier_library_retirement;
+update public.clinical_assertion_releases set retired_at=clock_timestamp() where release_id='synthetic-embryo-worker';
+select is(public.current_embryo_carrier_library_coverage_v1('7a000000-0000-0000-0000-000000000001',
+ '7a000000-0000-4000-8000-0000000000a1',(select cohort from carrier_ids),true),null::jsonb,
+ 'retiring the exact current reference withholds a formerly valid count without a publication shortcut');
+rollback to carrier_library_retirement;
+
+-- Pure native projection controls use copies of the complete synthetic rule
+-- only as function inputs; they cannot become a current worker/public row.
+create temporary table carrier_library_projection as
+ select jsonb_set(body#>'{capture,conditions,0}','{assertions}',jsonb_build_array(
+  body#>'{capture,conditions,0,assertions,0}',
+  jsonb_set(body#>'{capture,conditions,0,assertions,0}','{assertion_id}','900001'),
+  jsonb_set(jsonb_set(body#>'{capture,conditions,0,assertions,0}','{assertion_id}','900002'),'{pos}','2000'))) c,
+ jsonb_build_array(
+  jsonb_build_object('assertion_id',body#>'{capture,conditions,0,assertions,0,assertion_id}','observed_copies',0,'reason',null),
+  jsonb_build_object('assertion_id',900001,'observed_copies',2,'reason',null),
+  jsonb_build_object('assertion_id',900002,'observed_copies',null,'reason','not_covered')) m from carrier_claim;
+select is((select private.embryo_carrier_library_coverage_v1(c,m)->'requiredPositions' from carrier_library_projection),'2'::jsonb,
+ 'three complete reviewed assertions at two distinct loci need two positions, not three');
+select is((select private.embryo_carrier_library_coverage_v1(c,m)->'checkedPositions' from carrier_library_projection),'1'::jsonb,
+ 'all undisputed own readings at one locus give one checked position regardless of doses');
+select is((select private.embryo_carrier_library_coverage_v1(c,m)->'unresolved' from carrier_library_projection),
+ '[{"reasons":["not_covered"],"positions":1}]'::jsonb,'the unread other locus retains its explicit cause');
+select is((select private.embryo_carrier_library_coverage_v1(c,jsonb_set(jsonb_set(m,'{1,observed_copies}','null'),
+ '{1,reason}','"source_call_disputed"'))->'checkedPositions' from carrier_library_projection),'0'::jsonb,
+ 'a disputed allele keeps its shared locus unresolved, without inferring the missing reading');
+select throws_ok($$select private.embryo_carrier_library_coverage_v1(c,m->0) from carrier_library_projection$$,
+ '22023','invalid_carrier_position_coverage','a partial or malformed measurement set cannot form a coverage figure');
+select throws_ok($$select private.embryo_carrier_library_coverage_v1(c,jsonb_set(m,'{2,reason}','null'))
+ from carrier_library_projection$$,'22023','invalid_carrier_position_coverage',
+ 'a missing reading without an explicit reason is refused rather than hidden by SQL null logic');
 select * from finish();
 rollback;

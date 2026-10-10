@@ -5,6 +5,7 @@ import { cache } from "react";
 import { QcTable } from "@/components/embryo/compare/qc-table";
 import { StandingStatement } from "@/components/embryo/compare/standing-statement";
 import { FindingsSection } from "@/components/embryo/detail/findings-section";
+import { CarrierLibraryCoverage } from "@/components/embryo/carrier-library-coverage";
 import { QcBlock } from "@/components/embryo/detail/qc-block";
 import { formatDate } from "@/components/embryo/format";
 import { EmbryoResultGate } from "@/components/embryo/result-gate";
@@ -37,6 +38,7 @@ import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
+import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -174,8 +176,11 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
       break;
     case "complete": {
       let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
+      let savedCoverage: Awaited<ReturnType<typeof loadSavedCarrierLibraryCoverage>>;
       try {
-        savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
+        savedCoverage = await loadSavedCarrierLibraryCoverage(user.id, cohort);
+        if (savedCoverage) savedHold = { status: "held", reason: "scientific_disclosures_pending" };
+        else savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
         detail = await loadDetail({
           embryo: {
             id: embryo.id,
@@ -226,6 +231,9 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
               {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
                 {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
               </p> : null}
+              {savedCoverage ? <CarrierLibraryCoverage rows={savedCoverage.filter(row => row.embryoId === embryo.id)}
+                subjectId={embryo.subjectId}
+                conditionNames={new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]))} /> : null}
               <FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />
             </>}
             whatThisDoesntMean={
