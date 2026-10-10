@@ -53,6 +53,7 @@ export type FigureBasis = (typeof FIGURE_BASES)[number];
  * spellings resolve, and a rename is a separate change from this one.
  */
 export const COMPUTED_MODULES = [
+  "embryos/carrier-library-coverage",
   "embryos/policy",
   "embryos/split-analysis",
   "family/carrier-pair",
