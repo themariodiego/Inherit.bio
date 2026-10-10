@@ -9,6 +9,7 @@ import { assertCiRuntime, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
 import { attestFreshT6Workflow } from "./fresh-t6-attestation";
 import { repositoryRoot } from "./conductor-inputs";
 import { assertOwnedLinuxSource, ownedLinuxEnvironment, ownedLinuxSourceIdentity, type OwnedLinuxCapability } from "../owned-linux-runtime";
+import { ciRuntimeFailureDiagnostic } from "../ci-browser-runtime-failure";
 
 export type Resource = { kind: "container" | "volume" | "network"; name: string; identity: string; project: string };
 export type ResourceIO = {
@@ -29,8 +30,8 @@ export function freshRuntimeCommandFailure(classification: CommandFailure, exitC
   return error;
 }
 export function freshRuntimeFailureClassification(error: unknown) {
-  const known = error instanceof Error ? commandFailures.get(error) : undefined;
-  return known ? { ...known } : { classification: "setup-refused" as const, exitCode: null, signal: null };
+  const known = error !== null && typeof error === "object" ? commandFailures.get(error as Error) : undefined;
+  return known ? { ...known } : ciRuntimeFailureDiagnostic(error) ?? { classification: "setup-refused" as const, exitCode: null, signal: null };
 }
 export function ownedStack(resources: Resource[]): Resource[] {
   assert(resources.length > 0, "Fresh stack identity is missing");

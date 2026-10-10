@@ -9,6 +9,7 @@ import { currentNativeReadSession, freshComprehensionSessions, type FreshCompreh
 import type { LiveSession } from "./live-browser";
 import { refuseFreshSetup } from "./fresh-t6-browser";
 import { freshRuntimeCommandFailure } from "./fresh-t6-resources";
+import { ciRuntimeCleanupFailure, ciRuntimeDockerFailure, ciRuntimeSetupFailure } from "../ci-browser-runtime-failure";
 
 // Pure injected lifetime controls only. No browser, Supabase, provider or model
 // is launched, and no synthetic answer is participant evidence.
@@ -32,6 +33,17 @@ describe("closed setup diagnosis preserves failed ownership outcomes", () => {
       classification: "exit-nonzero", exitCode: 7, signal: null, cleanup: "uncertain" }]);
     expect(lines.join()).not.toContain(canary);
     expect(lines[0].length).toBeLessThan(256);
+  });
+  it("serializes the precise runtime failure and separate uncertain cleanup without raw exceptions", async () => {
+    const operation = ciRuntimeSetupFailure("tls-bootstrap", ciRuntimeDockerFailure(Object.assign(new Error(canary), { status: 7, stderr: canary })));
+    const cleanup = ciRuntimeSetupFailure("cleanup-ownership", new Error(canary));
+    const lines: string[] = [];
+    await expect(refuseFreshSetup("runtime-preflight", ciRuntimeCleanupFailure(operation, cleanup),
+      async () => { throw cleanup; }, line => lines.push(line))).rejects.toBe(cleanup);
+    expect(lines.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "runtime-preflight",
+      runtimeStage: "tls-bootstrap", classification: "exit-nonzero", exitCode: 7, signal: null,
+      cleanupFailure: { runtimeStage: "cleanup-ownership", classification: "setup-refused", exitCode: null, signal: null }, cleanup: "uncertain" }]);
+    expect(lines.join()).not.toContain(canary);
   });
   it("still yields resource-unresolved, zero responses and no inference when fresh setup fails", async () => {
     const resource = await fixture();
