@@ -22,6 +22,16 @@ import type { LiveSession } from "./live-browser";
 import { createFreshComprehensionBrowser } from "./fresh-t6-browser";
 import { assertOwnedLinuxSource, bindOwnedRunRecord, type OwnedLinuxCapability } from "../owned-linux-runtime";
 
+/** Heap configuration is an authored build-child setting after ownership
+ * admission, never an ambient option or an app/inference runtime setting. */
+export function freshComprehensionBuildEnvironment(infrastructure: Readonly<Record<string, string>>,
+  parent: Readonly<Environment>, ownedOperator: boolean): Record<string, string> {
+  assert(!Object.hasOwn(infrastructure, "NODE_OPTIONS"), "Ambient Node options cannot configure a build");
+  return { ...infrastructure, NEXT_TELEMETRY_DISABLED: "1",
+    ...Object.fromEntries(APP_ENV_NAMES.flatMap(name => parent[name] ? [[name, parent[name]!]] : [])),
+    ...(ownedOperator ? { NODE_OPTIONS: "--max-old-space-size=4096" } : {}) };
+}
+
 /** Every operator invocation observes a fresh native bootstrap, even when only
  * its immutable executable build is reused. Test IO cannot mint authority. */
 export async function prepareFreshInvocation(options: {
@@ -63,8 +73,7 @@ export async function runFreshComprehension(configuration: unknown, options: { p
       await prepareFreshInvocation({ environment: process.env, bindObservedKeys: Boolean(operator), buildRequired: Boolean(options.prepare),
         acquire: () => acquireFreshStack(new AbortController().signal, io, operator),
         build: async () => {
-          const env = { ...environment(), NEXT_TELEMETRY_DISABLED: "1",
-            ...Object.fromEntries(APP_ENV_NAMES.flatMap(name => process.env[name] ? [[name, process.env[name]!]] : [])) };
+          const env = freshComprehensionBuildEnvironment(environment(), process.env, Boolean(operator));
           await io.command("pnpm", ["build"], { env, timeout: 600_000 });
           recordCiBuild(environment(), operator);
         } });
