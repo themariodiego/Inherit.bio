@@ -474,15 +474,17 @@ describe("the route gate holds the register to the code", () => {
 
   it("fails when a declared bucket that no migration creates is not recorded", async () => {
     const root = plant({
-      ledger: (ledger) => {
-        ledger.storageBucketDivergence = (
-          ledger.storageBucketDivergence as { bucket: string }[]
-        ).filter((known) => known.bucket !== "legal-evidence");
+      register: (register) => {
+        // The real legal-evidence bucket now exists. Plant the same missing
+        // declaration failure without retaining that closed source defect.
+        for (const prefix of register.storagePrefixes as { bucket: string }[]) {
+          if (prefix.bucket === "legal-evidence") prefix.bucket = "uncreated-evidence-fixture";
+        }
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created legal-evidence",
+      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created uncreated-evidence-fixture",
     );
   });
 
@@ -520,9 +522,8 @@ describe("the route gate holds the register to the code", () => {
           .filter((prefix) => prefix.bucket !== "exports");
       },
       ledger: (ledger) => {
-        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
-          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
-        }
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "legal-evidence",
+          direction: "declared-not-created", declaredBy: "storage.subject-v2" });
         (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "exports",
           direction: "created-not-declared", createdBy });
       },

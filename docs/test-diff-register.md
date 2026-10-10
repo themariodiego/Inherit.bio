@@ -1,3 +1,27 @@
+## 2026-10-10 — Preserve the new private bucket in complete hosted fixtures
+
+The exact PR316 run 38053631026, attempt 1, retained three concrete failures. Two native bucket censuses omitted the newly created legal-evidence bucket; they now require the complete four-bucket set plus the exact private sealed-byte configuration and absence of user Storage policies. The refused-invitation cleanup fixture's original synthetic bytes used text/plain, which the sealed-byte bucket correctly refused; only its MIME declaration now uses application/octet-stream, with all deletion, provider and retention assertions retained. The new evidence journey signed in its assigned reviewer with real Auth/MFA but granted the reviewer role only to the foreign account. Both genuine accounts now receive the existing owner-only reviewer assignment before the target snapshot and case creation. Original public intake, recipient, authority, scan, whole-byte, foreign-refusal and case-only cleanup checks remain. No production guard, test limit, retry or skip changes. These native and browser corrections require actual hosted execution; pure source and cleanup controls do not prove those flows.
+
+## 2026-10-10 — Register and preserve appeal evidence object paths
+
+G8.5 source correction creates private `legal-evidence`, makes new native appeal
+fragment/final reservations use the registered four segments, and explicitly
+retains three-segment ciphertext and already-planned completion under a legacy
+read/finish/delete contract. No key is moved: the envelope authenticates its
+exact path. Bucket-census exceptions are removed only for the newly created
+bucket; unrelated genome/endpoint gaps and G8.5 NO remain. Existing zero-document
+review tests stay unchanged. Added native/source/browser controls check real
+document quarantine, exact paths, current reviewer refusal, scan refusal and
+physical cleanup. New SQL and browser controls are authored, not executed proof.
+The route gate's two missing-bucket counterfactuals now plant an actually absent
+fixture bucket instead of relying on `legal-evidence` being absent. No gate or
+denial assertion is removed. The existing all-bucket Storage RLS journey derives
+its bucket set from migrations and will include this new private bucket.
+The first pure run passed 183 cases in eight whole files; its compiler refusal
+on the new cleanup callbacks is retained. Cleanup now validates the closed
+native locator result. Both genuine reviewer accounts are provisioned before
+the target snapshot, so account creation is not mistaken for an appeal effect.
+
 ## 2026-10-10 — Register the existing hosted job fixture in its exact native mail unit-test path
 
 The first complete current-tree and history scan on the mail correction refused four occurrences: the two fixed hosted-fixture assertions in the new unit test, each found in the current tree and its introducing commit. ADR 0006 now documents this exact additional pure-test path for the already accepted job fixture. The existing value, classification, detectors, undeclared-path rejection and complete history baseline remain unchanged. No authorization assertion or native credential generation changed; the original refusal remains in the integration evidence.

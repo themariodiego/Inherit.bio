@@ -8164,7 +8164,8 @@
       ],
       "prefixIds": [
         "storage.legal-evidence-v1",
-        "storage.future-person-identity-v1"
+        "storage.future-person-identity-v1",
+        "storage.legal-evidence-appeal-legacy"
       ],
       "anonAuthenticatedListSelectInsertUpdateDelete": "deny",
       "write": "service-only-after-an-evidence-ingest-session-v1-decision-bound-to-an-authenticated-uploader-claim-session-or-active-appeal-evidence-rights-session; each-fragment-and-final-object-is-application-envelope-encrypted-and-addressed-only-by-the-database-owned-key",
@@ -21874,13 +21875,28 @@
       "prefix": "{target_kind}/{target_id}/{document_id}/{server_filename}",
       "disposition": "kept",
       "access": "private-service-only-through-evidence-ingest-session-v1-bound-to-an-authenticated-uploader-claim-session-or-active-appeal-evidence-rights-session-or-through-a-current-named-human-reviewer-operation-specific-subject-draft-cohort-draft-claim-or-appeal-case-assignment-RPC; anon-and-authenticated-list-select-insert-update-delete-and-signed-URLs-forbidden",
-      "filenameContract": "server-generated-opaque-single-segment-name-derived-only-from-the-server-sniffed-allowlisted-format; original-filename-path-and-metadata-forbidden",
+      "filenameContract": "server-generated-opaque-single-segment-name; appeal fragments use opaque UUID plus .part; composed appeal files use opaque UUID plus .pdf/.jpg/.png fixed from the declared allowlisted media type and written only after the server independently sniffs the same format; original-filename-path-and-metadata-forbidden",
       "encryption": "application-envelope-encryption-with-a-document-specific-data-key-in-addition-to-provider-at-rest-encryption",
-      "authority": "The legal_evidence row owns the exact target kind target id document kind object key hash evidence revision review revision and retention deadline; an appeal document must target one random appeal-case principal and current case revision and no path inference client target claim contact address or reviewer request field is authoritative.",
+      "authority": "The legal_evidence row, or the dedicated private.appeal_document_sessions/fragments/documents row, owns the exact target kind, target id, document kind, object key, hash, evidence revision, review revision and retention deadline. New appeal objects use appeal-case/{case_id}/{document_id}/{opaque_filename}; the random case identity and current native case revision are authority, never path inference, client target, contact address or reviewer request fields.",
       "retentionIds": [
         "evidence.ingest-session-24h",
         "legal-evidence.adult-permission-24mo",
         "legal-evidence.embryo-basis",
+        "appeal.intake-review-30d"
+      ]
+    },
+    {
+      "id": "storage.legal-evidence-appeal-legacy",
+      "bucket": "legal-evidence",
+      "prefix": "{case_id}/{document_id}/{server_filename}",
+      "disposition": "kept",
+      "newWrites": "forbidden-except-completion-of-an-exact-already-persisted-legacy-plan; no-new-key-allocation",
+      "access": "private-service-only-through-the-exact-existing-native-appeal-evidence-session-plan-current-named-own-MFA-appeal-reviewer-assignment-or-native-due-retention; anon-and-authenticated-list-select-insert-update-delete-and-signed-URLs-forbidden",
+      "filenameContract": "existing opaque UUID filename remains byte-exact; no new three-segment reservation or final plan",
+      "encryption": "application-envelope-encryption-with-a-document-specific-data-key-in-addition-to-provider-at-rest-encryption",
+      "authority": "Only exact preexisting native appeal session/fragment/document keys may be read, completed from their already-persisted plan, or deleted under the same current reviewer/scan/retention authority. The full original key is AES-GCM AAD and is never renamed, moved or inferred from its prefix.",
+      "retentionIds": [
+        "evidence.ingest-session-24h",
         "appeal.intake-review-30d"
       ]
     },

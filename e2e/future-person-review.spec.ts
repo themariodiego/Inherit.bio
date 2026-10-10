@@ -5,6 +5,7 @@ import {expect,test} from "./audited-test";
 import {observeNativeResponses} from "./helpers/native-response-observer";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
 import {auditAssignedAppeal} from "./helpers/public-appeal-review-audit";
+import {appealDocumentStorageJourney} from "./helpers/appeal-document-storage-journey";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
@@ -173,4 +174,9 @@ test("/reviews/future-person/claims/[id] processing: a canceled second chunk can
     await expect(page.getByRole("button",{name:"Save choice",exact:true})).toBeDisabled();
     await expect(page.getByRole("checkbox")).toHaveCount(0);
   } finally {release();await page.unroute("**/api/downloads/*/chunks/1");}
+});
+
+// Separate actual document journey: the existing zero-document audit above is unchanged.
+test("Native appeal evidence uses private registered paths, scans real bytes and deletes only its ended case", async ({ page, browser }) => {
+  await appealDocumentStorageJourney(page, browser);
 });

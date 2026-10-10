@@ -107,3 +107,24 @@ production activation settings remain disabled.
 The named reviewer's own current MFA session may request a new evidence round. The native operation binds the exact current case and review/evidence revisions, consumes its one-use operation nonce, revokes the old requester session and independent keys, and creates one fresh credential for the original verified recipient. Its seven-day ceiling is clamped to the immutable original thirty-day case deadline. No recipient, account, target or source decision can be selected by the request.
 
 The requester returns to the existing purpose-specific page, supplies a new isolated complete file set, and submits only after genuine positive scan records. The reviewer must receive and acknowledge those whole current files again. The previous document decisions and physical cleanup evidence stay bound to their own round; none is silently carried into the new evidence approval. Native/provider/browser proof of this new round remains unrun in this source checkpoint.
+
+## Registered private storage paths
+
+The source now creates the private `legal-evidence` bucket with no browser-role
+Storage policy. New native reservations use
+`appeal-case/{case_id}/{document_id}/{opaque_uuid}.part`; completion plans use
+an opaque `.pdf`, `.jpg` or `.png` name. The application writes that final
+object only after authenticated whole-size/hash checks and an independent
+matching type sniff. Neither a filename nor a storage path comes from the caller.
+
+Existing three-segment objects and already-persisted final plans keep their
+exact paths. They have an explicit legacy register entry: no new legacy key is
+allocated. Changing those paths would break the encrypted envelope's AAD.
+Current native reviewer/scanner authority and exact due-object deletion cover
+both layouts; no migration relocates ciphertext or drops an object locator.
+
+The added browser journey is authored to use real intake, one-use activation,
+chunk upload, physical Storage composition, the existing TEST scanner, current
+reviewer receipt and retention deletion. The TEST scanner is a stand-in for a
+production malware provider. Source checks alone prove none of those runtime
+steps, and this slice does not close all of G8.5.

@@ -163,6 +163,18 @@ select throws_ok($$select public.open_public_appeal_document_v1(repeat('1',64),r
 select throws_ok($$select public.open_public_appeal_document_v1(repeat('f',64),repeat('C',32),'appeal-photo-identity',
  'application/pdf',20,repeat('a',64),repeat('3',64),decode(repeat('12',72),'hex'))$$,'42501','appeal unavailable',
  'foreign/wrong purpose credential is opaque');
+select ok(exists(select 1 from storage.buckets where id='legal-evidence' and name='legal-evidence'
+ and not public and file_size_limit=20000028 and allowed_mime_types=array['application/octet-stream']),
+ 'registered legal evidence bucket is private and admits only sealed maximum-size octet streams');
+select is((select count(*) from unnest(array['anon','authenticated','inherit_upload_only','service_role']) role_name
+ where has_function_privilege(role_name,'private.guard_appeal_object_key_v1()','execute')
+),0::bigint,
+ 'no API role can invoke the private object-key trigger directly');
+select ok(has_function_privilege('service_role','private.reserve_appeal_document_chunk_v1(uuid,text,integer,integer,text)','execute')
+ and has_function_privilege('service_role','private.begin_appeal_document_completion_v1(uuid,text,text,integer)','execute')
+ and not has_function_privilege('anon','private.reserve_appeal_document_chunk_v1(uuid,text,integer,integer,text)','execute')
+ and not has_function_privilege('authenticated','private.begin_appeal_document_completion_v1(uuid,text,text,integer)','execute'),
+ 'only the existing service transport retains reservation/completion EXECUTE and all native current-session checks');
 create temporary table appeal_uploaded(id uuid,kind text,cookie text,nonce text,sha text,key_byte text);
 do $test$ declare kind text;ordinal integer:=0;opened jsonb;reserved jsonb;plan jsonb;scan jsonb;content text:='%PDF-1.7 synthetic';cookie text;nonce text;sha text;
 begin
@@ -173,9 +185,23 @@ begin
    decode(repeat(lpad(ordinal::text,2,'0'),72),'hex'));
   reserved:=public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length(content),sha);
   if reserved->>'storageKind'<>'appeal' then raise exception 'wrong native storage domain';end if;
+  if split_part(reserved->>'objectKey','/',1)<>'appeal-case'
+   or split_part(reserved->>'objectKey','/',2)<>(select intake_id::text from private.appeal_document_sessions where id=(opened->>'session')::uuid)
+   or split_part(reserved->>'objectKey','/',3)<>(select document_id::text from private.appeal_document_sessions where id=(opened->>'session')::uuid)
+   or reserved->>'objectKey' !~ '/[0-9a-f-]{36}[.]part$' then raise exception 'wrong registered fragment key';end if;
+  begin
+   update private.appeal_document_sessions set planned_object_key=intake_id::text||'/'||document_id::text||'/'||gen_random_uuid()::text
+    where id=(opened->>'session')::uuid;
+   raise exception 'fresh legacy plan accepted';
+  exception when insufficient_privilege then null;end;
   perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
   plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,1);
   if plan->>'storageKind'<>'appeal' or plan->>'status'<>'compose' then raise exception 'missing complete source manifest';end if;
+  if split_part(plan->>'objectKey','/',1)<>'appeal-case'
+   or split_part(plan->>'objectKey','/',3)<>plan->>'documentId'
+   or plan->>'objectKey' !~ '/[0-9a-f-]{36}[.]pdf$'
+   or split_part(plan->>'objectKey','/',2)<>split_part(reserved->>'objectKey','/',2)
+   then raise exception 'wrong registered composed key';end if;
   perform public.finish_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,'composed',plan->>'objectKey');
   scan:=public.claim_next_appeal_document_scan_v1(repeat('e',64));
   if scan->>'documentId' is distinct from plan->>'documentId' then raise exception 'wrong scan ownership';end if;
