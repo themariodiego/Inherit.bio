@@ -8,6 +8,7 @@ import { embryoCarrierSourceSchema } from "./carrier-observation";
 import { preciseEmbryoQcRowSchema } from "./qc-reader";
 import { dropoutPermitsPolygenic, producesFigure, qcReasons } from "./qc-policy";
 import { measureEmbryoStatisticalCoverage, TEST_STATISTICAL_SCORE_PANEL } from "./statistical-coverage";
+import { attachFittedFailure, type FittedFailureOperation } from "./statistical-fit-diagnostic";
 import { canonicalStatisticalFitPackage, evaluateStatisticalFitResult, statisticalFitPackageDigest,
   statisticalFitArtifactSchema, statisticalFitPackageSchema, statisticalFitReferenceSchema, statisticalFitSaveRowSchema,
   type StatisticalFitSaveRow } from "./statistical-fit-contract";
@@ -150,6 +151,7 @@ export async function runNextEmbryoStatisticalFit(options: { signal?: AbortSigna
   if (!isTestJurisdictionEnabled()) refuse("worker_disabled");
   const controller = new AbortController();
   const signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal;
+  let lastOperation: FittedFailureOperation = "STARTUP";
   let timer: NodeJS.Timeout | undefined, claim: z.infer<typeof fitClaimSchema> | undefined;
   const measurements: StatisticalFitSaveRow[] = [], token = randomBytes(32).toString("hex");
   const admin = options.rpc ? null : createAdminClient();
@@ -160,6 +162,8 @@ export async function runNextEmbryoStatisticalFit(options: { signal?: AbortSigna
     if (response.error !== null) refuse("unavailable");return response.data;
   });
   const call = async (operation: Parameters<StatisticalFitWorkerRpc>[1]["p_operation"], payload: unknown = null) => {
+    lastOperation = operation === "claim" ? "CLAIM" : operation === "check" ? "CHECK" : operation === "read" ? "READ"
+      : operation === "save" ? "SAVE" : "FAIL";
     if (signal.aborted) refuse("aborted");if (!isTestJurisdictionEnabled()) refuse("worker_disabled");
     const value = await rpc("embryo_test_statistical_fit_worker_v1", { p_operation: operation,
       p_job_id: claim?.jobId ?? null, p_attempt: claim?.attempt ?? null, p_claim_token_hash: token,
@@ -168,10 +172,13 @@ export async function runNextEmbryoStatisticalFit(options: { signal?: AbortSigna
     if (cancelledSchema.safeParse(value).success || (claim && heldSchema.safeParse(value).success)) throw new Cancelled();
     return value;
   };
+  const observation = (code: "NOT_OBSERVED" | StatisticalWorkerError["code"], inner = "RPC_REFUSED" as const) =>
+    ({ outer: "NOT_OBSERVED" as const, inner, operation: lastOperation, code });
   try {
     const raw = await call("claim");
-    if (raw === null) return { status: "idle" } as const;
-    if (heldSchema.safeParse(raw).success) return { status: "held", reason: "synthetic_reference_unavailable" } as const;
+    if (raw === null) return attachFittedFailure({ status: "idle" } as const, { ...observation("NOT_OBSERVED"), inner: "WORK_TERMINAL_REFUSED" });
+    if (heldSchema.safeParse(raw).success) return attachFittedFailure({ status: "held", reason: "synthetic_reference_unavailable" } as const,
+      { ...observation("NOT_OBSERVED"), inner: "WORK_TERMINAL_REFUSED" });
     const parsed = fitClaimSchema.safeParse(raw);if (!parsed.success) refuse("invalid_response");claim = parsed.data;
     if (!isDeepStrictEqual(claim.capture.panel, TEST_STATISTICAL_SCORE_PANEL)
       || new Set(claim.capture.embryos.map(row => row.embryoId)).size !== claim.capture.embryos.length
@@ -203,6 +210,7 @@ export async function runNextEmbryoStatisticalFit(options: { signal?: AbortSigna
             || !TEST_STATISTICAL_SCORE_PANEL.variants.some(variant => variant.chrom === call.chrom && variant.pos === call.pos))) refuse("invalid_response");
         try {
           await check();
+          lastOperation = "RECOMPUTE";
           const observed = measureEmbryoStatisticalCoverage({ panel: TEST_STATISTICAL_SCORE_PANEL, source: embryo.source, calls: read.data.calls });
           if (!observed.ok) reason = "qc_review_required";
           else {
@@ -227,13 +235,15 @@ export async function runNextEmbryoStatisticalFit(options: { signal?: AbortSigna
       || saved.data.captureSha256 !== claim.captureSha256 || saved.data.saved !== measurements.length) refuse("invalid_response");
     return { status: "saved_fitted_test" } as const;
   } catch (error) {
-    if (error instanceof Cancelled) return { status: "cancelled" } as const;
-    if (signal.aborted) refuse("aborted");
-    if (error instanceof StatisticalWorkerError) throw error;
+    if (error instanceof Cancelled) return attachFittedFailure({ status: "cancelled" } as const,
+      { ...observation("NOT_OBSERVED"), inner: "WORK_CANCELLED" });
+    if (signal.aborted) throw attachFittedFailure(new StatisticalWorkerError("aborted"), observation("aborted"));
+    if (error instanceof StatisticalWorkerError) throw attachFittedFailure(error, observation(error.code));
     if (claim) {
-      try { if (isDeepStrictEqual(await call("fail"), { status: "failed" })) return { status: "failed" } as const; }
-      catch { if (signal.aborted) refuse("aborted"); }
+      try { if (isDeepStrictEqual(await call("fail"), { status: "failed" })) return attachFittedFailure({ status: "failed" } as const,
+        { ...observation("unavailable"), inner: "WORK_RETURNED_FAILURE" }); }
+      catch { if (signal.aborted) throw attachFittedFailure(new StatisticalWorkerError("aborted"), observation("aborted")); }
     }
-    return refuse("unavailable");
+    throw attachFittedFailure(new StatisticalWorkerError("unavailable"), observation("unavailable"));
   } finally { clearTimeout(timer);controller.abort();measurements.length = 0;claim = undefined; }
 }

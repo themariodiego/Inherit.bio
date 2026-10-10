@@ -1,18 +1,20 @@
 /** One TEST-LOCAL complete cohort. No reconciliation/retry or model call. */
 import { preparedWorkerOptions } from "../src/lib/uploads/prepared-worker-options";
+import { attachFittedFailure, encodeFittedFailure, fittedFailureFrom } from "../src/lib/embryos/statistical-fit-diagnostic";
+let fitted = false;
 const controller = new AbortController();
 const stop = () => controller.abort();
 process.once("SIGINT", stop);process.once("SIGTERM", stop);
 try {
   const args = process.argv.slice(2);
-  const fitted = args[0] === "--fit";
+  fitted = args[0] === "--fit";
   if (fitted && (args.length !== 2 || args[1] !== "--once")) throw new Error("invalid_options");
   const options = preparedWorkerOptions(fitted ? args.slice(1) : process.argv.slice(2));
   if (options.metrics || options.maximumIterations !== 1) throw new Error("invalid_options");
   if (fitted) {
     const { runNextEmbryoStatisticalFit } = await import("../src/lib/embryos/statistical-worker");
     const result = await runNextEmbryoStatisticalFit({ signal: controller.signal });
-    if (result.status !== "saved_fitted_test") throw new Error("unavailable");
+    if (result.status !== "saved_fitted_test") throw attachFittedFailure(new Error("unavailable"), fittedFailureFrom(result, "WORK_TERMINAL_REFUSED"));
     process.stdout.write("fitted_saved\n");
   } else {
   const { runNextEmbryoStatisticalCoverage } = await import("../src/lib/embryos/statistical-worker");
@@ -20,5 +22,8 @@ try {
   if (result.status !== "saved_coverage") throw new Error("unavailable");
   process.stdout.write("coverage_saved\n");
   }
-} catch { process.stderr.write("embryo_test_statistical_worker_unavailable\n");process.exitCode = 1; }
+} catch (error) {
+  process.stderr.write(fitted ? encodeFittedFailure(fittedFailureFrom(error)) + "\n" : "embryo_test_statistical_worker_unavailable\n");
+  process.exitCode = 1;
+}
 finally { controller.abort();process.removeListener("SIGINT", stop);process.removeListener("SIGTERM", stop); }
