@@ -325,6 +325,14 @@ data. Public benchmark genotypes are also excluded from current test inputs.
 - Repository SHA-256:
   `111d6a009a686a5847c3c0645e6727ab634e6970bfabd32ecca95224add15cbb`.
 
+## embryo-pair-fitted-partial-grch38.vcf
+
+- Classification: synthetic two-sample TEST fixture with two invented embryos. It contains no real person or private genome.
+- Derivation: retains all 1,200 complete data rows of `embryo-pair-grch38.vcf` without change and adds eight invented own panel calls. The original twelve no-calls in SAMPLE2 remain. SAMPLE1 has 1,208 calls from 1,208 loci; SAMPLE2 has 1,196 calls from 1,208 loci.
+- The file header states that the reference is invented and is not a clinical model. The fitted TEST journey uses the real signed-parent upload and worker. This record does not prove native publication or browser completion.
+- Repository SHA-256:
+  `4bc4ef39db9827b051060656caab81def3e618d63e80989f4a5ece2df5ab97d1`.
+
 ## embryo-pair-qc-b-grch38.vcf
 
 - Classification: independently invented second two-sample QC seed, describing

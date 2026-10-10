@@ -1,3 +1,7 @@
+## 2026-10-10: register the existing fitted TEST genome fixture
+
+The complete secret gate found that the new synthetic fitted fixture lacked its name and current SHA-256 in the fixture provenance file. The provenance now records the existing complete bytes, all 1,200 unchanged original rows, eight added invented panel calls, and the preserved twelve no-calls in SAMPLE2. The fixture, tests, expectations, scanner, allowlist and limits remain unchanged. The original failed gate output is preserved. Final checks remain required.
+
 ## 2026-10-10: fitted TEST report plain wording
 
 The complete readability gate found grade 9.7 above the existing limit 9 and three unregistered words in the new accessible label. The fitted TEST component now uses shorter sentences and existing plain words. Every invented-reference disclosure, OBSERVED/MODELLED basis, exact model warning, clinical hold, sibling hold, source attribution and figure value is preserved. The original first-sentence assertions and every browser/native/quality assertion remain unchanged. The old failed gate output is preserved. This entry records a wording correction; it is not a readability, native or browser pass. Actual final checks remain required.
