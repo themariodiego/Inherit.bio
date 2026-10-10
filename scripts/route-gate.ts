@@ -676,8 +676,11 @@ const UNPROVEN_ROUTE_STATE_PAIRS = 6;
 // 2026-10-01: the existing native participant-c publication case now counts
 // T6 through real Overview navigation to the exact no-ranking statement.
 // This is authored instrumentation; full hosted execution remains pending.
-// T7 stays uninstrumented until its genuine personal absolute figure exists.
-const UNINSTRUMENTED_TASK_DEPTH_TASKS = 1;
+// 2026-10-10: T7 instruments the registered honest no-model answer using
+// the same actual publication and a fresh read/action context. No personal
+// risk is supplied by QC. Browser execution and blind grading remain required.
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 0;
+const TASK_DEPTH_CEILING_IDS = ["T1", "T2", "T3", "T4", "T6", "T7", "T8", "T9"] as const;
 
 /** The register's task-depth contract, as much of it as this gate reads. */
 interface TaskDepthContract {
@@ -831,6 +834,14 @@ function checkTaskDepthContract(
   }
 
   const ceilingIds = Object.keys(ceilings);
+  // Once all tasks are measured, retiring a measured ceiling does not move
+  // the unmeasured ratchet. Keep the brief's complete named task set too.
+  if (JSON.stringify([...ceilingIds].sort()) !== JSON.stringify([...TASK_DEPTH_CEILING_IDS].sort())) {
+    failures.push(
+      `task depth: ceilings name [${[...ceilingIds].sort().join(", ")}] and the brief requires ` +
+        `[${TASK_DEPTH_CEILING_IDS.join(", ")}]. A measured task cannot lose its action bound.`,
+    );
+  }
   const measured = ceilingIds.filter((taskId) =>
     titles.some((title) => taskDepthProves(title, taskId)),
   );

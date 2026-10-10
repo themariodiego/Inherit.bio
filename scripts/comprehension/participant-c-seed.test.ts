@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import bindings from "./bindings.json";
 import { bindingSkips, seedSkips } from "./conductor-inputs";
-import { participantCSeed, participantCPublication, participantCNoModelSurface, publishedEmbryoFiles, taskSixTrace } from "./participant-c-seed";
+import { participantCSeed, participantCPublication, participantCNoModelSurface, publishedEmbryoFiles, taskSixTrace, taskSevenTrace } from "./participant-c-seed";
 import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
 
 const current = bindings.accounts.find(account => account.id === "participant-c")!;
@@ -44,6 +44,27 @@ describe("actual participant-c seed and independent native runtime hold", () => 
   });
   it("does not relax the registered three-action ceiling", () => {
     expect(() => taskSixTrace('[{"event":"click","path":"/overview"}]', 4)).toThrow();
+  });
+});
+
+describe("T7 browser action trace (pure controls, not participant evidence)", () => {
+  it("counts the genuine navigation's event shape and both registered event kinds", () => {
+    const click = { event: "click", path: "/overview" };
+    expect(taskSevenTrace(JSON.stringify([click]), 3)).toEqual({ trace: [click], actions: 1 });
+    const trace = [click, { event: "submit", path: "/embryos/compare" }];
+    expect(taskSevenTrace(JSON.stringify(trace), 3)).toEqual({ trace, actions: 2 });
+  });
+  it.each([null, "[]", "null", "broken",
+    JSON.stringify([{ event: "click", path: "/embryos/compare" }]),
+    JSON.stringify([{ event: "click", path: "/settings" }]),
+    JSON.stringify([{ event: "change", path: "/overview" }]),
+    JSON.stringify([{ event: "click", path: "/overview", actions: 0 }]),
+    JSON.stringify(Array.from({ length: 4 }, () => ({ event: "click", path: "/overview" }))),
+  ])("refuses absent, foreign, uncounted or fabricated trace %s", raw => {
+    expect(() => taskSevenTrace(raw, 3)).toThrow();
+  });
+  it.each([0, 2, 4])("refuses a changed registered ceiling %s", ceiling => {
+    expect(() => taskSevenTrace('[{"event":"click","path":"/overview"}]', ceiling)).toThrow();
   });
 });
 

@@ -97,3 +97,14 @@ export function taskSixTrace(raw: string | null, ceiling: number) {
   }).strict()).min(1).max(ceiling).parse(JSON.parse(raw));
   return { trace, actions: trace.length };
 }
+
+/** T7 starts after the current result gate, then counts real browser events.
+ * An empty, foreign or injected trace cannot stand in for that navigation. */
+export function taskSevenTrace(raw: string | null, ceiling: number) {
+  if (raw === null || ceiling !== 3) throw new Error("Task T7 action trace unavailable");
+  const trace = z.array(z.object({ event: z.enum(["click", "submit"]),
+    path: z.enum(["/overview", "/embryos/compare"]),
+  }).strict()).min(1).max(ceiling).parse(JSON.parse(raw));
+  if (trace[0].path !== "/overview") throw new Error("Task T7 did not start from Overview");
+  return { trace, actions: trace.length };
+}

@@ -28,6 +28,8 @@ interface Overrides {
   taskBindings?: (bindings: Record<string, unknown>) => void;
   /** A spec added to a real copy of `e2e/`, for the task-depth ratchet. */
   extraSpec?: string;
+  /** A planted change to an actual spec, without altering the live checkout. */
+  browserSpec?: { file: string; source: (source: string) => string };
   nextConfig?: string;
 }
 
@@ -44,11 +46,15 @@ function plant(overrides: Overrides): string {
   // `e2e` is symlinked so the title floor guard sees its true size. A test
   // that needs one extra title copies it instead, because a spec cannot be
   // added inside a symlink to the real directory.
-  if (overrides.extraSpec === undefined) {
+  if (overrides.extraSpec === undefined && overrides.browserSpec === undefined) {
     symlinkSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"));
   } else {
     cpSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"), { recursive: true });
-    writeFileSync(path.join(root, "e2e/planted.spec.ts"), overrides.extraSpec);
+    if (overrides.extraSpec !== undefined) writeFileSync(path.join(root, "e2e/planted.spec.ts"), overrides.extraSpec);
+    if (overrides.browserSpec) {
+      const file = path.join(root, "e2e", overrides.browserSpec.file);
+      writeFileSync(file, overrides.browserSpec.source(readFileSync(file, "utf8")));
+    }
   }
   mkdirSync(path.join(root, "scripts/comprehension"), { recursive: true });
   const taskBindings = JSON.parse(
@@ -865,15 +871,14 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     (register.navigationContract as { taskDepthActions: TaskDepth }).taskDepthActions;
   const tasksOf = (bindings: Record<string, unknown>) => bindings.tasks as BoundTask[];
 
-  it("reads the real contract: eight ceilinged tasks, six of them measured", async () => {
+  it("reads the real contract: all eight ceilinged tasks have authored measurements", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
     expect(result.taskDepthCeilingCount).toBe(8);
-    // T8, T4, T2, T1, T3 and T9 are measured by `e2e/task-depth.spec.ts`; T9
-    // since 2026-09-28, on the real path the owner chose, after the 22 September
-    // decision settled its ceiling. The two that remain, T6 and T7, are bound to
-    // embryo files no ingest path can produce yet.
-    expect(result.taskDepthMeasuredCount).toBe(7);
+    // T8, T4, T2, T1, T3 and T9 use `e2e/task-depth.spec.ts`. T6 and T7 use
+    // the actual signed-parent publication journey; T7 retains the bound
+    // honest no-model answer. This counts authored coverage, not execution.
+    expect(result.taskDepthMeasuredCount).toBe(8);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -952,31 +957,40 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     );
   });
 
-  it("fails when a task gains a measurement without the ratchet coming down", async () => {
+  it("fails when the actual T7 measurement disappears", async () => {
     const root = plant({
-      extraSpec: 'import { test } from "@playwright/test";\n'
-        + 'test("task depth T7 stays within its registered ceiling", async () => {});\n',
+      browserSpec: { file: "embryo-ingest-journey.spec.ts", source: source => {
+        expect(source.match(/task depth T7/g)).toHaveLength(1);
+        return source.replace("task depth T7", "task scope T7");
+      } },
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 0 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 1 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
-  // The deleted ceiling must be one nothing measures, and that is not a
-  // detail of this fixture. The ratchet counts what is UNMEASURED, so deleting
-  // a measured ceiling removes a ceiling and a measurement together and the
-  // count does not move — which is why this test named T4 until T4 was
-  // measured, and why it names T1 now. The blind spot is real and is left
-  // stated rather than papered over: the ratchet cannot see a measured ceiling
-  // being retired, only an unmeasured one. It named T4, then T1, and names T7
-  // now; each move happened because the previous fixture became measured.
-  it("fails when a ceiling disappears without the ratchet coming down", async () => {
+  // With all eight measured, the unmeasured count alone cannot see a retired
+  // ceiling. The exact brief-defined set keeps the existing negative strict.
+  it("fails when a measured task loses its registered ceiling", async () => {
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T7; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 0 of 7 ceilinged tasks are measured by no browser test",
+      "task depth: ceilings name [T1, T2, T3, T4, T6, T8, T9] and the brief requires " +
+        "[T1, T2, T3, T4, T6, T7, T8, T9]",
     );
+  });
+
+  it("refuses an invented measured ceiling even when its title leaves the unmeasured count at zero", async () => {
+    const root = plant({
+      register: register => { depthOf(register).ceilings!.T5 = 3; },
+      extraSpec: 'import { test } from "./audited-test";\n'
+        + 'test("task depth T5 is a planted extra task", async () => {});\n',
+    });
+    const result = await runRouteGate(root);
+    expect(result.taskDepthMeasuredCount).toBe(9);
+    expect(result.failures.join("\n")).toContain("and the brief requires [T1, T2, T3, T4, T6, T7, T8, T9]");
+    expect(result.failures.join("\n")).not.toContain("task depth ratchet:");
   });
 
   it("fails on an empty contract rather than reading it as nothing to enforce", async () => {
