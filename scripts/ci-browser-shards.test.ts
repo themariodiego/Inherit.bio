@@ -136,7 +136,7 @@ describe("mandatory browser coverage across isolated jobs", () => {
   it("keeps the default workflow's release check dependent on every job and sanitized coverage", () => {
     const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     const aggregate = workflow.slice(workflow.indexOf("\n  checks:"));
-    expect(aggregate).toContain("    if: always()\n    needs: [repository-checks, database-tests, browser]");
+    expect(aggregate).toContain("    if: always()\n    needs: [repository-checks, database-tests, browser, owned-keyfree-smoke]");
     expect(aggregate).toContain('test "$REPOSITORY_RESULT" = success');
     expect(aggregate).toContain('test "$DATABASE_RESULT" = success');
     expect(aggregate).toContain('test "$BROWSER_RESULT" = success');
@@ -159,8 +159,8 @@ describe("mandatory browser coverage across isolated jobs", () => {
     const doc = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, {
       if?: string; needs?: string[]; strategy?: { "fail-fast": boolean; "max-parallel": number; matrix: { shard: number[] } };
       "continue-on-error"?: boolean; steps: { uses?: string; run?: string; with?: Record<string, unknown> }[] }>; concurrency: Record<string, string> };
-    expect(Object.keys(doc.jobs).sort()).toEqual(["browser", "checks", "database-tests", "repository-checks"]);
-    expect(doc.jobs.checks.needs).toEqual(["repository-checks", "database-tests", "browser"]); expect(doc.jobs.checks.if).toBe("always()");
+    expect(Object.keys(doc.jobs).sort()).toEqual(["browser", "checks", "database-tests", "owned-keyfree-smoke", "repository-checks"]);
+    expect(doc.jobs.checks.needs).toEqual(["repository-checks", "database-tests", "browser", "owned-keyfree-smoke"]); expect(doc.jobs.checks.if).toBe("always()");
     expect(doc.jobs.browser.strategy).toEqual({ "fail-fast": false, "max-parallel": 6, matrix: { shard: [1, 2, 3, 4, 5, 6] } });
     expect(doc.jobs.browser.if).toBeUndefined(); expect(doc.jobs["repository-checks"].if).toBeUndefined();
     expect(doc.jobs["database-tests"].if).toBeUndefined(); expect(doc.jobs["database-tests"].needs).toBeUndefined();
