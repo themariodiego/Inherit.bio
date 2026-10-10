@@ -406,6 +406,15 @@ select ok((select count(*)=1 and bool_and(m.template_id='adult-upload-notice' an
  from public.other_adult_held_uploads h join public.mail_outbox m on m.id=h.notice_outbox_id and m.target_id=h.id
  where h.id=pg_temp.fxv('main','revision')::uuid),
  'the same commit queues the upload-time notice and its credential');
+select is((select m.template_payload->>'uploaderName' from public.other_adult_held_uploads h
+ join public.mail_outbox m on m.id=h.notice_outbox_id where h.id=pg_temp.fxv('main','revision')::uuid),
+ 'Synthetic uploader','the notice captures only the exact native uploader account display name');
+select is((select jsonb_agg(k order by k) from public.other_adult_held_uploads h
+ join public.mail_outbox m on m.id=h.notice_outbox_id, jsonb_object_keys(m.template_payload) k
+ where h.id=pg_temp.fxv('main','revision')::uuid),
+ '["deleteBy","fileKind","uploadedOn","uploaderName"]'::jsonb,
+ 'the upload notice carries no recipient address, signing ciphertext, identifier or genetic cell');
+
 select ok((select d.status='pending' and d.phase_deadline=h.fixed_deadline from public.retention_due_phases d
  join public.other_adult_held_uploads h on h.upload_session_id=d.target_id
  where d.retention_id='adult.unconfirmed-30d' and d.phase_id='adult-unconfirmed-source-expiry'
@@ -439,7 +448,7 @@ select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p
  'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, ' || case when to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
    then '' else 'private.assert_account_path_b_deletion_supported_v1, ' end || 'private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, ' || case when to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
    then '' else 'private.export_account_class_inventory_v1, ' end || case when to_regprocedure('private.export_account_path_b_snapshot_v1(jsonb,uuid)') is null then '' else 'private.export_account_path_b_snapshot_v1, ' end || 'private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, private.subject_held_files_v1, ' || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
-   then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || ', public.expire_due_other_adult_held_uploads_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+   then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || ', public.expire_due_other_adult_held_uploads_v1, public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
 select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
  where oid=coalesce(to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)'),
    to_regprocedure('public.activate_rights_session_v1(text,text,text)')))
@@ -690,8 +699,27 @@ select ok((select rs.purpose='adult-upload-confirmation' and rs.target_kind='adu
  where rs.session_hash=repeat('1',64) and h.id=pg_temp.fxv('main','revision')::uuid),
  'the session is bound to exactly this revision and the person''s principal');
 select is((select jsonb_agg(k order by k) from jsonb_object_keys(public.read_adult_upload_revision_v1(repeat('1',64))) k),
- '["addedOn","confirmedOn","deleteBy","fileKind","label","state"]'::jsonb,
+ '["addedOn","confirmedOn","deleteBy","fileKind","label","state","uploaderName"]'::jsonb,
  'the person''s read-only view is exactly the uploader''s own view: a name, a kind, dates and a state');
+select is(public.read_adult_upload_revision_v1(repeat('1',64))->>'uploaderName',
+ 'Synthetic uploader','the accountless view carries the same exact notice label');
+update public.profiles set display_name='changed@example.test' where id='0a5e0000-0000-4000-8000-000000000001';
+select is(public.read_adult_upload_revision_v1(repeat('1',64))->>'uploaderName',
+ 'Synthetic uploader','a later unsafe profile edit cannot change the notice''s captured uploader');
+create temporary table captured_notice_payload as select id,template_payload from public.mail_outbox
+ where id=(select notice_outbox_id from public.other_adult_held_uploads where id=pg_temp.fxv('main','revision')::uuid);
+update public.mail_outbox set template_payload=template_payload-'uploaderName'
+ where id=(select id from captured_notice_payload);
+select is(public.read_adult_upload_revision_v1(repeat('1',64))->'uploaderName','null'::jsonb,
+ 'an older notice without the added field keeps its honest anonymous fallback');
+update public.mail_outbox set template_payload=jsonb_set(template_payload,'{uploaderName}','"forged@example.test"'::jsonb)
+ where id=(select id from captured_notice_payload);
+select is(public.read_adult_upload_revision_v1(repeat('1',64))->'uploaderName','null'::jsonb,
+ 'even malformed stored display data cannot disclose a contact through the safe view');
+update public.mail_outbox m set template_payload=c.template_payload from captured_notice_payload c where m.id=c.id;
+select ok((select m.template_payload=c.template_payload from public.mail_outbox m join captured_notice_payload c on c.id=m.id),
+ 'legacy and malformed projection probes restore the whole original notice payload');
+
 select is(public.read_adult_upload_revision_v1(repeat('0',64)),null,'another session reads nothing');
 
 -- 12. Confirmation: this revision only, and still nothing reads it --------------------
@@ -718,6 +746,18 @@ select is((select coalesce(string_agg(distinct fn,', '),'') from reader_calls wh
 select is((select h->>'status' from (select pg_temp.hold('main-2',pg_temp.sid('main'),repeat('a',64)) h) x),'stored_quarantined',
  'the uploader adds a second file');
 select is(pg_temp.notice_session('main-2','2'),1::bigint,'its own notice opens its own session');
+select is((select m.template_payload->'uploaderName' from public.other_adult_held_uploads h
+ join public.mail_outbox m on m.id=h.notice_outbox_id where h.id=pg_temp.fxv('main-2','revision')::uuid),
+ 'null'::jsonb,'an unsafe uploader profile produces the honest anonymous notice fallback');
+select is(public.read_adult_upload_revision_v1(repeat('2',64))->'uploaderName','null'::jsonb,
+ 'the accountless view uses the same anonymous fallback without exposing that address');
+update public.profiles set display_name='Synthetic uploader' where id='0a5e0000-0000-4000-8000-000000000001';
+select ok(has_function_privilege('service_role','public.read_adult_upload_revision_v1(text)','execute')
+ and not has_function_privilege('anon','public.read_adult_upload_revision_v1(text)','execute')
+ and not has_function_privilege('authenticated','public.read_adult_upload_revision_v1(text)','execute')
+ and not has_function_privilege('inherit_upload_only','public.read_adult_upload_revision_v1(text)','execute'),
+ 'the expanded safe view retains its exact service-only RPC admission');
+
 select is((public.read_adult_upload_revision_v1(repeat('1',64))->>'state')||'/'||
  (public.read_adult_upload_revision_v1(repeat('2',64))->>'state'),'confirmed/pending',
  'each notice session is bound to its own revision');

@@ -162,16 +162,25 @@ describe("the person's Path B screens", () => {
     expect(text(html)).toContain(REQUEST.deleteButton);
     expect(text(html)).not.toMatch(/Sign in|account acceptance|Accept through/);
   });
-  const revision = { state: "pending" as const, label: "Synthetic Relative", fileKind: "vcf" as const,
+  const revision = { state: "pending" as const, uploaderName: "Alex Synthetic", label: "Synthetic Relative", fileKind: "vcf" as const,
     addedOn: "2026-09-28T11:00:00Z", deleteBy: "2026-10-28T11:00:00Z", confirmedOn: null };
   it("shows one file as the uploader sees it, with three answers and no account", () => {
     const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision } }));
     expect(html).toContain('data-slot="adult-upload-revision"');
     for (const line of [REVISION.heading, REVISION.added("28 September 2026", "vcf"), REVISION.seeHeading,
       REVISION.see("Synthetic Relative"), REVISION.nothingYet, REVISION.deadline("28 October 2026"),
-      REVISION.confirmButton, REVISION.refuseButton, REVISION.deleteButton, REVISION.deleteDetail]) {
+      REVISION.confirmButton, REVISION.refuseButton, REVISION.deleteButton, REVISION.deleteDetail,
+      REVISION.uploader("Alex Synthetic"), REVISION.contact]) {
       expect(text(html)).toContain(line);
     }
+  });
+  it("shows the anonymous uploader fallback and last-resort contact without identifiers", () => {
+    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40),
+      revision: { ...revision, uploaderName: null } } }));
+    expect(text(html)).toContain(REVISION.uploader(null));
+    expect(text(html)).toContain(REVISION.contact);
+    expect(html).not.toContain("Alex Synthetic");
+    expect(html).not.toContain("verified identity");
   });
   it("after a yes, keeps only the no and the delete", () => {
     const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40),

@@ -64,7 +64,7 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   add("with-note", { id: "adult-subject-invitation", payload: { invitationUrl: url, note: "Synthetic invitation note." } });
   add("esignature-request", { id: "adult-subject-invitation", payload: { invitationUrl: url, request: "esignature" } });
   for (const fileKind of ["array", "vcf"] as const) add(fileKind, {
-    id: "adult-upload-notice", payload: { fileKind, uploadedOn: "2026-09-28", deleteBy: "2026-10-28", reviewUrl: url },
+    id: "adult-upload-notice", payload: { fileKind, uploaderName: fileKind === "array" ? "Alex Synthetic" : null, uploadedOn: "2026-09-28", deleteBy: "2026-10-28", reviewUrl: url },
   });
   add("invitation", { id: "co-parent-invitation", payload: { invitationUrl: url } });
   for (const count of [1, 3]) for (const link of [false, true]) add(`count-${count}-${link ? "link" : "no-link"}`, {
