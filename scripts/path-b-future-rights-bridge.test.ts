@@ -77,6 +77,22 @@ describe("the exact Path B bridge across shared rights dispatchers", () => {
     expect(replacement).toContain("private.public_appeal_information_current_v1(request.candidate_id)");
     expect(source).not.toMatch(/grant execute[^;]*activate_rights_before_appeal_information_v1/iu);
   });
+  it("pins the native held activation check to the complete current information chain", () => {
+    const information = readFileSync(path.join(directory, appealInformationFile), "utf8");
+    const notice = readFileSync(path.join(directory, appealNoticeFile), "utf8");
+    const native = readFileSync(path.join(root, "supabase/tests/other_adult_held_upload.sql"), "utf8");
+    const currentHash = md5(functionBody(information, "public.activate_rights_session_v1"));
+    const noticeHash = md5(functionBody(notice, "public.activate_rights_session_v1"));
+    expect(currentHash).toBe("b9dcb56fbe06146e7b55e98f5f68a25b");
+    expect(noticeHash).toBe("7549c495723f36b9cd684c4bff8876e1");
+    expect(native).toContain(`md5(prosrc)='${currentHash}'`);
+    expect(native).toContain(`md5(prosrc)='${noticeHash}'`);
+    expect(native).toContain("where oid=coalesce(to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),\n        to_regprocedure('public.activate_rights_session_v1(text,text,text)')))");
+    expect(native).toContain("where has_function_privilege(r,to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),'execute')");
+    for (const hash of ["7c176e100123ecbdf9aedd8ee41b0539", "5f92f26f9e5f94f7593f833d17db7d6c", "3dfcbba9fe1f0cee01e1ae31390009e8"]) {
+      expect(native).toContain(`md5(prosrc)='${hash}'`);
+    }
+  });
   it("registers exactly the existing held-revision issuer without source grants or backfill", () => {
     expect(bridge).toContain("values('adult-upload-confirmation','adult-upload-confirmation',null,'adult_upload_revision')");
     expect(bridge).not.toMatch(/on conflict|create table|update public\.rights_sessions|disable trigger|grant execute/iu);

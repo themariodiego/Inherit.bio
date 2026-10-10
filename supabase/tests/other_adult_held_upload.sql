@@ -458,13 +458,19 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
       and (select md5(prosrc)='3dfcbba9fe1f0cee01e1ae31390009e8' from pg_proc
        where oid='public.activate_rights_before_appeal_notice_v1(text,text,text)'::regprocedure)
       and (select md5(prosrc)='7549c495723f36b9cd684c4bff8876e1' from pg_proc
-       where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
+       where oid=coalesce(to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),
+        to_regprocedure('public.activate_rights_session_v1(text,text,text)')))
+      and (to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)') is null
+       or ((select md5(prosrc)='b9dcb56fbe06146e7b55e98f5f68a25b' from pg_proc
+        where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
+        and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
+         where has_function_privilege(r,to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),'execute'))))
       and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
        cross join unnest(array[
         'public.activate_rights_session_before_public_appeal_v1(text,text,text)',
         'public.activate_rights_before_appeal_notice_v1(text,text,text)'])f
        where has_function_privilege(r,f,'execute')))))),
- 'the exact held, keyless, evidence and notice bodies form the reviewed service door; every preserved delegate remains API-denied');
+ 'the exact held, keyless, evidence, notice and information bodies form the reviewed service door; every preserved delegate remains API-denied');
 select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
  or ((select md5(prosrc)='6382fbb06d5525dc983806ecefebb629' from pg_proc
     where oid=to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'))
