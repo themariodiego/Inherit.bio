@@ -48,6 +48,10 @@
       "reason": "Synthetic embryo fixtures for the unit suite, describing no one (C7). Imported by tests only."
     },
     {
+      "path": "src/lib/exports/account-archive-test-flow.ts",
+      "reason": "Closed TEST account archive composition accepts an explicitly injected trusted synthetic reader; both TEST jurisdiction and the dedicated account R2 opt-in are required, and production generation remains null. ADR 0036 records this exact path."
+    },
+    {
       "path": "src/lib/family/roh.ts",
       "reason": "Comment only: explains that the browser-fixture generator checks a fixture with the real measure rather than a copy."
     },

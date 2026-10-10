@@ -85,3 +85,35 @@ export function sharedByLabel(name: string): string {
 export function sharedReportLabel(title: string, name: string): string {
   return `${title} (shared by ${name})`;
 }
+
+// ---------------------------------------------------------------------------
+// The Embryo (cohort) scope, under the TEST-LOCAL acceptance row only.
+// ---------------------------------------------------------------------------
+
+/** The cohort scope's first paragraph. */
+export const COHORT_COPILOT_LEDE =
+  "Copilot answers from these embryos' quality checks. It cannot read any genotype, and it will not rank embryos, pick one or say anything about sex.";
+
+/** The list of embryos this thread may read. */
+export const COHORT_EMBRYOS_HEADING = "What Copilot can read";
+
+/** One embryo in that list, with its status word. */
+export function cohortEmbryoLine(label: string, status: string): string {
+  return `${label}: ${status}`;
+}
+
+/** The composer's empty-thread hint. */
+export const COHORT_THREAD_HINT =
+  "Ask about these embryos' quality checks. There are no condition results to ask about yet.";
+
+/** The composer's placeholder. */
+export const COHORT_PLACEHOLDER_LABEL = "Ask about these embryos…";
+
+/** When this deployment can run a local model, but this account has not set one up and allowed it. */
+export const COHORT_NEEDS_LOCAL_MODEL = FAMILY_NEEDS_LOCAL_MODEL;
+
+/** An answer's first source: the cohort's compare page, by that page's own title. */
+export { COMPARE_H1 as COHORT_CITATION_LABEL } from "@/copy/embryos/compare";
+
+/** The page's one link back to the compare page, in the embryos pages' own words. */
+export { COMPARE_THESE_LINK as OPEN_COMPARISON_BUTTON } from "@/copy/embryos/index";

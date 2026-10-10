@@ -4211,6 +4211,27 @@ owner chose the recommended option on all four.
   review-status threshold and the conditions in scope, for approval before
   anything is imported. Carrier results stay withheld until then.
 
+## 2026-09-28 — Embryo terminal purge: three owner answers
+
+Asked in chat with options after safeguards unit 3. The owner chose the
+recommended option on all three.
+
+- **Retention control rows are kept.** The purge terminalizes the exact
+  `ingest-abandoned-no-source` phase and its retention row, and does not
+  delete them, as the register's zero-residual rule says.
+- **An approved single-parent review is kept.** The purge keeps an approved
+  `single_parent_basis` review unchanged as a retained human review decision.
+  The residual check and the unwind planner skip exactly that one named
+  reference, `legal_reviews.target_id` for an approved review of that kind
+  (`20260930131000_embryo_purge_retained_review.sql`). Any other review, or
+  any other column, that names a deleted row still stops the purge.
+- **Two current contacts give no notice address.** A recipient with more
+  than one current contact gets a `delivery_unavailable` slot, as built.
+- **Restriction deletes the sources** (asked after safeguards unit 4,
+  recommended option). Restricting or withdrawing a cohort deletes its
+  canonical sources in the same transaction. Their parts follow once their
+  disposal is proved.
+
 ## 2026-09-28 (later) — Carrier importer answers and parallel work streams
 
 Asked in chat as selectable choices, with the recommended option first. The
@@ -4544,6 +4565,42 @@ suites before a draft push.
 
 This policy changes where the complete test suites run before merge. It
 changes no test, workflow, time limit, production setting or release gate.
+## 2026-10-02 — Owner review tasks and external test services
+
+The owner answered seven clickable questions in chat. These choices set the
+work order and owners. They do not supply a scientific verdict, a legal
+signature, a carrier activation or a production release approval.
+
+- **Codex sets up test services with existing access.** Configure the test
+  file store, self-hosted document scanner and email service where access
+  exists. Give the owner the exact remaining setup steps. Keep restricted
+  flows in TEST-LOCAL and keep production jurisdiction access closed.
+- **Prepare CFTR first, then one carrier condition at a time.** The owner
+  remains the carrier reviewer. Each condition needs its completed written
+  review and separate activation approval. All imported conditions remain
+  inactive until those steps are complete.
+- **Owner setup date: Monday, 5 October 2026.** The owner plans to complete
+  their remaining service setup steps and start the carrier reviews then.
+  This is not a production release date or a completed review.
+- **The owner reviews scientific sources.** This covers report claims and
+  citations. It is separate from carrier-condition reviews. Prepare the
+  source worklist; do not invent quotations or human review verdicts.
+- **Prepare the legal pack while the owner finds a lawyer.** Include the
+  consent texts, unresolved legal wording and jurisdiction review contract.
+  No lawyer has been named. This choice does not authorize contact or
+  substitute for the required professional determinations and signatures.
+- **Give the credential setup guide now.** The comprehension credential
+  belongs in the operator's own shell, never chat, project files or hosting
+  settings. The existing US$50 ceiling and one shared spending journal remain
+  binding. The fixed smoke, calibration and full-run order remains binding.
+- **Delay the human comprehension study.** No facilitator, independent
+  grader, recruitment date or completed result is supplied by this choice.
+  The human study remains a launch requirement. Continue the authorized
+  engineering and automated verification work.
+
+The owner also asked for every further unresolved product-brief decision as
+its own clickable question. First reconcile the old proposal file with the
+dated decisions so that settled or declined choices are not asked again.
 
 ## 2026-10-02 — Laboratory-confirmation text also appears on Emerging reports
 
@@ -4561,3 +4618,82 @@ uncertainty, evidence definition, source attribution and safety statement stays.
 The 60% density rule and the declined redesign stay. Engineering records the
 brief and exact register hash together and adds real report-path assertions;
 focused source checks alone do not prove the full hosted browser result.
+
+
+## 2026-10-03 — Complete hosted database tests before merge
+
+- Owner decision: use the complete hosted database suite before every merge.
+- Local unit tests and quality checks must pass before a draft push. The complete hosted browser suite remains required. This extends the earlier hosted-browser policy to the complete fresh database suite.
+- The guarded production migration rehearsal, dry run, verification and exact-head merge requirements remain in force. No test may be skipped or weakened.
+
+## 2026-10-03 — Stop idle test services when needed
+
+- Owner decision: stop idle test services when local checks need more memory.
+- Preserve their data and existing volumes. Restart each service when needed. This does not authorize production service stops or volume removal.
+
+## 2026-10-03 — Complete production check time limits
+
+- Owner decision: use a 180-second SQL limit and a 190-second connection limit after full local rollback proof.
+- All predecessor, preservation and postchecks remain required. The existing 45-second candidate and its results remain recorded. The new bounded source must be reviewed and rehearsed before production use.
+
+## 2026-10-03 — Account export test file store
+
+- Owner decision: use the existing private R2 store for the account-export test flow.
+- This authorizes test implementation. It does not authorize paid setup or production activation. Current-object and deletion evidence must be established by actual provider operations; retained version history must not be assumed.
+
+## 2026-10-03 — Requester export of their own statement in tests
+
+- Owner decision: allow a requester to export only their own appeal or correction statement in the test flow.
+- Other people's data and reviewer notes remain excluded. This changes the reviewer-only test policy for the requester's own statement only.
+- Use a separately reviewed source successor. Preserve authority checks, original deadlines and legacy opaque fields. No production activation or legal approval follows from this decision.
+
+## 2026-10-03 — Human comprehension study planning
+
+- Owner decision: plan the study with 12 eligible people after the automated comprehension tests pass.
+- A separate person must grade the results. Full release requires the human study to pass.
+- This replaces the earlier instruction to delay study planning. It does not authorize contact with participants.
+
+## 2026-10-03 — Scientific and legal review target
+
+- Owner decision: target 12 October 2026 for the owner's scientific source review and the lawyer's consent review.
+- This is a planning date, not evidence of scientific or legal approval. The owner remains the scientific reviewer and will find the lawyer.
+
+## 2026-10-03 — Private comprehension credential setup target
+
+- Owner decision: complete private credential setup by 5 October 2026 using the supplied guide.
+- Keep the credential out of chat and project files. The spending limit remains US$50. Setup is not yet verified, and no paid run result is credited.
+
+## 2026-10-03 — Mac power for complete local tests
+
+- Owner decision: connect the Mac to power now and keep it connected during complete local tests.
+- Observe stable external power before the next long local run. A clicked answer is not evidence of an actual power connection.
+
+## 2026-10-04 — Permanent complete hosted unit verification
+
+The owner approved complete hosted unit verification in a clickable chat
+decision. This replaces the earlier requirement to pass the complete local
+unit suite before a draft push. It extends the permanent hosted browser and
+database policies to the complete unit suite.
+
+- Before a draft push, all local type checks, lint, twelve repository quality
+  gates and the focused unit tests for each changed flow must pass. Keep all
+  assertions and test time limits.
+- Before a merge or production change, the complete hosted unit, database
+  and browser suites must pass on the final commit. Run the complete discovered
+  unit inventory and preserve its full test report. For commit `1493f4b`, that
+  inventory is 599 files and at least 9,780 tests. Require zero failures, skips
+  and retries. A missing file, test, report or job means HOLD. Future commits
+  must use their complete discovered inventory, with no reduction used to
+  conceal a test.
+- The hosted unit command remains `pnpm test`. Keep the entire current CI
+  workflow and its required checks. This policy changes when the complete
+  unit suite must run; it does not change assertions, coverage or the required
+  result.
+- Keep the first local `1493f4b` result: 15 quality checks passed; 9,778 of
+  9,780 tests passed; two failed at their original 5,000 ms limit. Those two
+  failures remain open until the complete suite passes on the final commit.
+  No local full-suite PASS is claimed.
+- The complete local migration rollback proof remains required. Production
+  then needs the exact dry-run sentinel, guarded apply and read-only
+  verification. Scientific, carrier, legal and human-study approvals remain
+  separate. Draft pushes do not authorize a merge or production action.

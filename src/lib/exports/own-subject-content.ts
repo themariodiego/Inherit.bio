@@ -122,15 +122,18 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
       return pages("observed", snapshot, observationSchema);
     },
     async preparedRecords(snapshot: OwnExportSnapshot,
-      consume: (records: readonly CanonicalRecord[], signal: AbortSignal, header: OwnPreparedExportHeader) => Promise<void>) {
+      consume: (records: readonly CanonicalRecord[], signal: AbortSignal, header: OwnPreparedExportHeader) => Promise<void>,
+      signal?: AbortSignal) {
       const selected = ownExportSnapshotSchema.parse(snapshot);
       if (!selected.preparedSource || !selected.normalized || !selected.binding.normalizedAt) throw unavailable();
+      const current = signal && options.signal ? AbortSignal.any([signal, options.signal]) : signal ?? options.signal;
+      if (current?.aborted) throw unavailable();
       await check(selected);
       return exportOwnPreparedRecords(actor, { fileId: selected.file.id, subjectId: selected.file.subject_id,
         sourceRevision: selected.file.upload_revision, rawSha256: selected.file.sha256,
         decodedSha256: selected.file.source_sha256, preparedAt: selected.binding.normalizedAt,
         preparedSource: selected.preparedSource }, {
-        signal: options.signal, checkOperation: async signal => {
+        signal: current, checkOperation: async signal => {
           assertActive(); if (signal.aborted) throw unavailable(); await check(selected); assertActive();
           if (signal.aborted) throw unavailable();
         },

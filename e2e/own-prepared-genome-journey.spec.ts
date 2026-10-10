@@ -59,7 +59,7 @@ async function ask(page: Page, fixture: CopilotFixture, prompt: string, tool: Ca
 for (const compression of ["plain", "gzip"] as const) test(`own prepared ${compression === "gzip" ? "gzip " : ""}object: real source, chosen reports, ancestry, raw Copilot and revocation`, async ({ page }) => {
   test.setTimeout(300_000);
   await withPreparedR2Journey(process.env, async preparedFixture => {
-    const initialArtifacts = await preparedFixture.artifactProof();
+    const initialArtifacts = await test.step("Prepared fixture: initial artifact receipt", () => preparedFixture.artifactProof());
     expect(initialArtifacts).toMatchObject({ activeRequests: 0, payloadObjects: 0, payloadBytes: 0, rejected: 0 });
     expect(initialArtifacts.tombstones).toBe(initialArtifacts.objects);
     const scenario = { name: "aims-regional-merged-grch38.vcf", merged: true };
@@ -87,30 +87,30 @@ for (const compression of ["plain", "gzip"] as const) test(`own prepared ${compr
       expect(decoded.toString("utf8").trimEnd().split("\n").filter(line => !line.startsWith("#"))).toHaveLength(169);
       const bytes = compression === "gzip" ? gzipSync(decoded) : decoded;
       if (compression === "gzip") expect(gunzipSync(bytes)).toEqual(decoded);
-      await page.locator('input[type="file"]').setInputFiles({
+      await test.step("Prepared upload: send the original file", () => page.locator('input[type="file"]').setInputFiles({
         name: compression === "gzip" ? "synthetic.vcf.gz" : "synthetic.data",
         mimeType: compression === "gzip" ? "application/gzip" : "application/octet-stream", buffer: bytes,
-      });
-      const finalization = await finalized;
+      }));
+      const finalization = await test.step("Prepared upload: native finalization response", () => finalized);
       expect(finalization.status()).toBe(200);
-      const { fileId } = subjectFinalizationReceipt.parse(await finalization.json());
-      const queueResponse = await queued;
+      const { fileId } = subjectFinalizationReceipt.parse(await test.step("Prepared upload: finalization response body", () => finalization.json()));
+      const queueResponse = await test.step("Prepared upload: native queue response", () => queued);
       expect(queueResponse.status()).toBe(202);
-      const queueReceipt = subjectQueuedPreparationReceipt.parse(await queueResponse.json());
+      const queueReceipt = subjectQueuedPreparationReceipt.parse(await test.step("Prepared upload: queue response body", () => queueResponse.json()));
       expect(queueReceipt.fileId).toBe(fileId);
       const prepared = page.waitForResponse(response => response.url().endsWith(`/api/files/${fileId}/process`)
         && response.request().method() === "POST" && response.status() === 200);
       void prepared.catch(() => {});
-      await preparedFixture.runWorker(fileId);
-      const preparation = await prepared;
+      await test.step("Prepared upload: run the actual queued worker", () => preparedFixture.runWorker(fileId));
+      const preparation = await test.step("Prepared upload: native completed response", () => prepared);
       expect(preparation.status()).toBe(200);
-      expect(subjectNormalizationReceipt.parse(await preparation.json()).fileId).toBe(fileId);
-      await expect(page.getByText("Your file is stored and prepared. Reports have not been generated yet.", { exact: false })).toBeVisible();
-      const publishedProof = await preparedFixture.proof(fileId) as { artifacts: number };
+      expect(subjectNormalizationReceipt.parse(await test.step("Prepared upload: completed response body", () => preparation.json())).fileId).toBe(fileId);
+      await test.step("Prepared upload: unchanged stored and prepared message", () => expect(page.getByText("Your file is stored and prepared. Reports have not been generated yet.", { exact: false })).toBeVisible());
+      const publishedProof = await test.step("Prepared upload: published database receipt", () => preparedFixture.proof(fileId)) as { artifacts: number };
       expect(publishedProof).toEqual({ jobs: 1, manifests: 1, membersCurrent: true,
         normalizations: 0, observedCalls: 0, analysisRuns: 0, artifacts: expect.any(Number), allArtifactsCurrent: true });
       expect(publishedProof.artifacts).toBeGreaterThan(0);
-      const publishedArtifacts = await preparedFixture.artifactProof();
+      const publishedArtifacts = await test.step("Prepared upload: published artifact receipt", () => preparedFixture.artifactProof());
       expect(publishedArtifacts.activeRequests).toBe(0);
       expect(publishedArtifacts.rejected).toBe(0);
       expect(publishedArtifacts.objects - initialArtifacts.objects).toBe(publishedProof.artifacts);

@@ -1,3 +1,4 @@
+import { qcFigureBasisSchema, type QcFigureBasis } from "./qc-basis";
 /**
  * The embryo non-ranking and closed-shape policy — the runtime mirror of
  * `docs/route-register.json#policyContracts.embryo-autosomal-only-v1`
@@ -15,6 +16,7 @@
  *      `sample_ordinal` and result rows ascend by registry `condition_id`,
  *      with no sort control and no ordering by any computed quantity.
  */
+import { readResultBasis, resultBasisSchema, type ResultBasis } from "../figures/result-basis";
 import { QC_REASON_IDS, RESULT_NOT_REPORTABLE_REASON_IDS } from "./qc-policy";
 import { SOURCE_LABEL_FIELDS, isRegisteredSourceLabel } from "./source-labels";
 import type { EmbryoInputFacts } from "./input-facts";
@@ -105,7 +107,8 @@ export type ShapeName =
   | "naturalFrequency"
   | "comparatorFinding"
   | "withinFamilyValidation"
-  | "carrierFinding";
+  | "carrierFinding"
+  | "resultBasis";
 
 interface ChildRule {
   shape: ShapeName;
@@ -139,6 +142,7 @@ const QC_KEYS = [
   "qc_reasons",
   "computed_at",
   "source_facts",
+  "figure_basis",
 ] as const;
 
 export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
@@ -195,12 +199,12 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
     children: {},
   },
   coverageFailureFinding: {
-    keys: ["kind", "metric", "measured_value", "required_minimum", "display_copy_id"],
-    children: {},
+    keys: ["kind", "schema_version", "figure_basis", "metric", "measured_value", "required_minimum", "display_copy_id"],
+    children: { figure_basis: { shape: "resultBasis" } },
   },
   absoluteRiskFinding: {
     keys: [
-      "kind",
+      "kind", "schema_version", "figure_basis",
       "risk_model",
       "score_coverage",
       "absolute_risk",
@@ -214,6 +218,7 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
       "within_family",
     ],
     children: {
+      figure_basis: { shape: "resultBasis" },
       risk_model: { shape: "embryoRiskModelBinding" },
       matched_baseline: { shape: "matchedBaseline" },
       natural_frequency: { shape: "naturalFrequency" },
@@ -250,9 +255,10 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
     ],
     children: {},
   },
+  resultBasis: { keys: ["version", "basis"], children: {} },
   carrierFinding: {
-    keys: ["kind", "carrier_state", "inheritance_mode", "confirmation_required", "display_copy_id"],
-    children: {},
+    keys: ["kind", "schema_version", "figure_basis", "carrier_state", "inheritance_mode", "confirmation_required", "display_copy_id"],
+    children: { figure_basis: { shape: "resultBasis" } },
   },
 };
 
@@ -261,6 +267,7 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
 // ---------------------------------------------------------------------------
 
 export interface QcDto {
+  figure_basis: QcFigureBasis | null;
   source_facts: EmbryoInputFacts;
   sites_expected: number;
   sites_called: number;
@@ -364,6 +371,8 @@ export function citedWithinFamily(within: WithinFamilyValidation): CitedWithinFa
 }
 
 export interface AbsoluteRiskFinding {
+  schema_version: 2;
+  figure_basis: ResultBasis<"modelled">;
   kind: "absolute_risk";
   risk_model: EmbryoRiskModelBinding;
   score_coverage: number;
@@ -379,6 +388,8 @@ export interface AbsoluteRiskFinding {
 }
 
 export interface CarrierFinding {
+  schema_version: 2;
+  figure_basis: ResultBasis<"observed">;
   kind: "carrier_status";
   carrier_state: (typeof CARRIER_STATES)[number];
   inheritance_mode: string | null;
@@ -387,6 +398,8 @@ export interface CarrierFinding {
 }
 
 export interface CoverageFailureFinding {
+  schema_version: 2;
+  figure_basis: ResultBasis<"observed">;
   kind: "coverage_failure";
   metric: "score_coverage";
   measured_value: number;
@@ -577,6 +590,17 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       return { ok: true };
     }
     case "qc": {
+      if (value.figure_basis !== null) {
+        const receipt = qcFigureBasisSchema.safeParse(value.figure_basis);
+        if (!receipt.success) return fail(at("figure_basis"), "invalid QC producer receipt");
+        if (!(typeof value.sites_expected === "number" && value.sites_expected > 0 &&
+            value.call_rate === Number(value.sites_called) / value.sites_expected)) return fail(at("figure_basis"), "receipt needs the measured count ratio");
+        if ((receipt.data.autosomal_het_rate === null) !== (value.autosomal_het_rate === null) ||
+            (receipt.data.mean_depth === null) !== (value.mean_depth === null)) return fail(at("figure_basis"), "receipt disagrees with measured fields");
+        if (["parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "contamination_estimate"].some((key) => value[key] !== null)) {
+          return fail(at("figure_basis"), "called VCF producer has no estimate or parent input");
+        }
+      }
       if (!Number.isInteger(value.sites_expected) || (value.sites_expected as number) < 0) {
         return fail(at("sites_expected"), "must be a non-negative integer");
       }
@@ -666,7 +690,13 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       }
       return fail(at("finding.kind"), "unknown finding kind");
     }
+    case "resultBasis": {
+      return resultBasisSchema.safeParse(value).success ? { ok: true } : fail(path, "invalid result basis");
+    }
     case "coverageFailureFinding": {
+      if (value.schema_version !== 2) return fail(at("schema_version"), "must be finding version 2");
+      try { readResultBasis(value.figure_basis, "observed"); }
+      catch { return fail(at("figure_basis"), "invalid result basis for finding kind"); }
       if (value.kind !== "coverage_failure") return fail(at("kind"), "must be coverage_failure");
       if (value.metric !== "score_coverage") return fail(at("metric"), "must be score_coverage");
       if (value.required_minimum !== 0.8) return fail(at("required_minimum"), "must be the X10.4 floor 0.8");
@@ -677,6 +707,9 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       return { ok: true };
     }
     case "absoluteRiskFinding": {
+      if (value.schema_version !== 2) return fail(at("schema_version"), "must be finding version 2");
+      try { readResultBasis(value.figure_basis, "modelled"); }
+      catch { return fail(at("figure_basis"), "invalid result basis for finding kind"); }
       if (value.kind !== "absolute_risk") return fail(at("kind"), "must be absolute_risk");
       if (!isProbability(value.score_coverage) || value.score_coverage < 0.8) {
         return fail(at("score_coverage"), "an absolute-risk finding is permitted only at or above the floor");
@@ -761,6 +794,9 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       return { ok: true };
     }
     case "carrierFinding": {
+      if (value.schema_version !== 2) return fail(at("schema_version"), "must be finding version 2");
+      try { readResultBasis(value.figure_basis, "observed"); }
+      catch { return fail(at("figure_basis"), "invalid result basis for finding kind"); }
       if (value.kind !== "carrier_status") return fail(at("kind"), "must be carrier_status");
       if (!isEnum(value.carrier_state, CARRIER_STATES)) return fail(at("carrier_state"), "unknown carrier state");
       if (!isNullOrString(value.inheritance_mode)) return fail(at("inheritance_mode"), "must be null or a string");

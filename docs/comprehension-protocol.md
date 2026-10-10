@@ -10,11 +10,15 @@ thing only the operator can do. `docs/release-checklist.md` records that as
 launch-blocking. Where a round has been run, its per-task results belong in
 `docs/comprehension-results-<date>.md`, one file per round, and nowhere else.
 
-**As of 2026-09-28, G3.3 is not green.** The 30-persona harness now exists
+**As of 2026-10-01, G3.3 is not green.** The 30-persona harness now exists
 (`scripts/comprehension/README.md`) and has run end to end against the local
 build only with a deterministic stub, which is never evidence. No model
-credential exists, so `docs/comprehension-runs/` holds no run. T6 and T7
-cannot run until embryo ingest lands, so no run could be clean yet anyway.
+credential exists, so `docs/comprehension-runs/` holds no run. The existing
+isolated native embryo journey now authors a genuine participant-c
+seed and T6 action measurement. Full fresh-persona hosted execution is still
+pending. T7 is bound to the genuine no-calibrated-model comparison state, not
+to an invented personal risk. It remains unrun until each simulation has its
+own native publication and actual unavailable-state read/action proof.
 This document completes G3.4's own half, and G3.4 remains NO on the other
 half. That is recorded in `docs/acceptance-matrix.md` rather than smoothed
 over here.
@@ -147,15 +151,41 @@ pointed at the historical registry and would reject answers the current page
 actually shows. The binding test now compares the same display constants the
 current page uses; the legacy result renderer remains unchanged.
 
-**T7 carries a constraint worth reading before the round.** Measured
-2026-09-11: the My Genome report detail page renders exactly one figure kind —
-`genotype` — and no percentage at all. The only surface in the product that
-renders a personal absolute figure is the embryo comparison cell. So T7 is bound
-there, and **outside an environment where `embryo_analysis` is permitted, T7 has
-no bound surface at all.** Under `TEST-LOCAL` it runs. In production today it
-cannot, because no real jurisdiction has a signed review. This is recorded
-rather than worked around: binding T7 to a surface that shows no number would
-make every answer prohibited by construction, which would measure nothing.
+**Participant-c setup.** Its binding names the existing `embryo-ingest` native
+project. The exact fresh disposable partition must execute both current parent
+signatures, the bound VCF upload, the real isolated worker, whole publication
+and both separate analysis grants. The ordinary `pnpm seed:participants`
+command continues to build only participant-a/b; it does not create this
+isolated runtime or seed c. Never replace this setup with direct result rows.
+The T6 action trace starts on the Overview after the seed's genuine permissions
+and result acknowledgement, and follows the visible comparison link to the
+exact no-ranking statement. That instrument is authored, not a scored round.
+Its completed publication supplies the native live-harness read adapter's
+credentials and current worker/source proof. The ordinary shared-stack runner still holds T6. The separate exclusive
+all-task launcher now authors a fresh stack and native read/action session for
+each task/persona pair; execution of that lifecycle remains unrun. This single
+native rehearsal is never shared across personas.
+
+**T7 uses the brief's honest not-covered contract (G3.2).** Its original prompt
+is unchanged. On the current participant-c comparison, no calibrated model is
+registered and no condition row is shown; the visible numbers are file quality.
+The correct answer says a personal risk difference cannot be supplied. It must
+not invent a risk or call QC/call-rate a personal risk. A relative-only risk
+claim remains prohibited, exactly as before; absence of a numeric risk is not
+itself prohibited. The blind grader receives the shared rubric and the T7
+section, not the participant's page or account metadata.
+
+This binding requires the same genuine signed-parent upload/worker publication,
+its zero-score native read, the actual no-model sentence and quality-only
+figure classes, and a fresh read/action session for each persona. The ordinary
+shared-stack runner still skips T7 because it cannot supply that isolated native
+runtime. The exclusive launcher now supplies its callable source lifecycle,
+with real publication/currentness checks around reads, actions and completion.
+Its actual native qualification and model run remain pending.
+Such a skip, a source test or an unrun task is never qualifying evidence. No
+risk model or scientific approval is inferred. Outside a permitted
+`embryo_analysis` environment the capability remains unavailable; only the
+existing T6 withheld variant is implemented at this checkpoint.
 
 **Withheld variants.** Where a capability a task depends on is withheld, the
 task is replaced by its variant. Only T6 has one, and it is in `bindings.json`

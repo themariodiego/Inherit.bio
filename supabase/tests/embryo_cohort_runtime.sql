@@ -1,5 +1,5 @@
 begin;
-select plan(151);
+select plan(152);
 \ir fixtures/embryo_cohort_pre_finalize.inc
 
 create temporary table fin as
@@ -438,14 +438,30 @@ select throws_ok(
   'a restricted cohort cannot be restricted again');
 create temporary table nonces_before as
 select count(*) as n from public.embryo_operation_nonces;
+create function pg_temp.restricted_graph_snapshot() returns jsonb
+language sql stable as $$
+  select jsonb_build_object(
+    'cohorts', (select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text), '[]'::jsonb) from public.embryo_cohorts r),
+    'embryos', (select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text), '[]'::jsonb) from public.embryos r),
+    'proposals', (select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text), '[]'::jsonb) from public.embryo_disposition_proposals r),
+    'printRights', (select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text), '[]'::jsonb) from public.future_person_record_key_print_rights r),
+    'grants', (select coalesce(jsonb_agg(to_jsonb(r) order by to_jsonb(r)::text), '[]'::jsonb) from public.purpose_grants r)
+  );
+$$;
+create temporary table restricted_graph_before as
+select pg_temp.restricted_graph_snapshot() as graph;
 select throws_ok(
   $$select public.record_embryo_disposition_v1(
       '7a000000-0000-0000-0000-000000000002',
       '7a000000-0000-4000-8000-0000000000b1',
       (select id from emb where sample_ordinal = 1), 'propose', 'stored', null,
       'nonce-disp-0014-aaaaaaaaaaaa')$$,
-  '42501', 'cohort unavailable',
+  '42501', 'embryo unavailable',
   'no disposition on a restricted cohort');
+select is(
+  pg_temp.restricted_graph_snapshot(),
+  (select graph from restricted_graph_before),
+  'refused restricted disposition leaves every cohort, embryo, proposal, print right and grant byte-identical');
 select throws_ok(
   $$select * from public.deliver_embryo_record_key_cards_v1(
       '7a000000-0000-0000-0000-000000000002',
@@ -838,6 +854,9 @@ select throws_ok(
 select is(
   (select count(*) from pg_event_trigger where evtname = 'embryo_forbidden_columns_guard'),
   1::bigint, 'the forbidden-column guard exists');
+-- Run the real valid custody checks before DDL; pending deferred events must
+-- not mask the existing forbidden-column refusal.
+set constraints all immediate;
 select throws_ok(
   $$alter table public.embryos add column sex text$$,
   '42501', 'forbidden embryo column embryos.sex',

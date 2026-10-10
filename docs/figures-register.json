@@ -156,11 +156,75 @@
           "note": "One captured result per file and purpose — private.own_analysis_runs.result, written once at generation and immutable under capture_own_report_catalog_v1 — read by two readers: the side-by-side cell through health_picture_results_v1 (src/lib/family/health-picture-results.ts) and the report page through family_shared_report_results_v1 (src/lib/family/shared-report-results.ts). The cell renders one figure per genotype and the page one per genotyped position, so the comparison is of the sorted letters."
         }
       ],
-      "notCollected": "Portrait renders no figure in any reachable state and the two Embryo result pages render none until ingest ships (the census section records both), so nothing of theirs can repeat. The other adult's shared ancestry viewer is a different result under a different grant, not read in this journey because its fixtures carry no ancestry marker; e2e/family-ancestry.spec.ts already holds the five shares it renders equal to the owner's own ancestry page, which is that repeat's agreement."
+      "notCollected": "Portrait renders no figure in its empty state. The actual published Embryo compare/detail QC collection is independently registered in crossSurface.embryo and executed through its genuine native upload/worker journey before parent disposition. The other adult shared ancestry viewer is covered by e2e/family-ancestry.spec.ts, which holds its shares equal to the own ancestry page."
+    },
+    "embryo": {
+      "spec": "e2e/embryo-ingest-journey.spec.ts",
+      "fixture": "e2e/fixtures/embryo-pair-grch38.vcf",
+      "producer": "embryo-split-calls-v1",
+      "figuresPerEmbryo": {
+        "compare": 4,
+        "detail": 4
+      },
+      "repeated": [
+        {
+          "field": "coverage",
+          "key": "coverage|quality|observed|computed:embryos/split-analysis",
+          "sourceOfTruth": "src/lib/embryos/split-analysis.ts",
+          "compare": [
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "call_rate"
+            },
+            {
+              "location": "footer",
+              "count": 2,
+              "caption": "positions-read"
+            }
+          ],
+          "detail": [
+            {
+              "location": "block",
+              "count": 1,
+              "caption": "call_rate"
+            },
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "call_rate"
+            }
+          ]
+        },
+        {
+          "field": "autosomal_het_rate",
+          "key": "natural-frequency|quality|observed|computed:embryos/split-analysis",
+          "sourceOfTruth": "src/lib/embryos/split-analysis.ts",
+          "compare": [
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "autosomal_het_rate"
+            }
+          ],
+          "detail": [
+            {
+              "location": "block",
+              "count": 1,
+              "caption": "autosomal_het_rate"
+            },
+            {
+              "location": "table",
+              "count": 1,
+              "caption": "autosomal_het_rate"
+            }
+          ]
+        }
+      ]
     }
   },
   "census": {
-    "rule": "G8.3's completeness: every route whose page can put a figure on a surface — measured by scripts/figures-census.ts as an import path from the page to a figure component — is either differenced under two seeds by e2e/figures-two-seed.spec.ts, or recorded here with the reason no figure state of it can render today and the specs that assert zero figures on it. scripts/figures-census.test.ts holds this list to the built application in both directions.",
+    "rule": "G8.3's completeness: every route whose page can put a figure on a surface — measured by scripts/figures-census.ts as an import path from the page to a figure component — is either differenced under two seeds by e2e/figures-two-seed.spec.ts, or recorded here with its exact pending native-publication proof contract, or the reason no figure state can render and the specs that assert zero figures. A pending entry is not executed G8.3 evidence: the full native aggregation must prove both real publications before any acceptance closure. scripts/figures-census.test.ts holds this list to the built application in both directions.",
     "figureSources": [
       "src/components/figures/figure.tsx",
       "src/components/figures/relative-figure.tsx"
@@ -218,20 +282,35 @@
         ]
       },
       {
+        "route": "/embryos",
+        "status": "two-publication-proof-required",
+        "reason": "The hub can now render checked positions from the complete current reviewed library while clinical interpretation remains held. Its source contract and native/pure tests bind the whole current projection, but two independent fresh native publications and paired browser figure collection are still required. This entry is not hosted execution or acceptance credit. The compiled registry remains empty; QC seed receipts do not prove this library figure.",
+        "specs": [
+          "supabase/tests/embryo_carrier_worker.sql",
+          "src/lib/embryos/carrier-library-read.test.ts",
+          "src/components/embryo/carrier-library-coverage.test.ts"
+        ],
+        "proofContract": "src/lib/embryos/carrier-library-read.ts"
+      },
+      {
         "route": "/embryos/compare",
-        "status": "no-reachable-figure-state",
-        "reason": "The ingest slice is not shipped (G2.6; docs/capability-register.md): no path creates a cohort's quality rows or calls, so every cohort renders its blocking, unavailable or processing state and the compare table and QC table the page imports never receive a figure. e2e/embryos.spec.ts asserts no figure on each state it renders. This route becomes a differenced entry when the Embryos workstream lands, not before; the census test fails the day a figure can render here without one.",
-        "assertedBy": [
-          "e2e/embryos.spec.ts"
-        ]
+        "status": "two-publication-proof-required",
+        "reason": "Actual signed-parent upload/worker publication now makes observed QC figures reachable. The old whole-route zero-figure reason is invalid. Two independent fresh native jobs must upload the two exact committed synthetic call sets, retain current source receipts, collect the full figure census and prove every corresponding QC value changes. This authored contract is not hosted execution or acceptance credit.",
+        "specs": [
+          "e2e/embryo-ingest-journey.spec.ts",
+          "e2e/embryo-qc-second-seed-journey.spec.ts"
+        ],
+        "proofContract": "scripts/ci-browser/embryo-qc-two-seed.ts"
       },
       {
         "route": "/embryos/[embryoId]",
-        "status": "no-reachable-figure-state",
-        "reason": "The ingest slice is not shipped (G2.6; docs/capability-register.md): no path creates an embryo's quality rows or calls, so the detail page renders its blocking, unavailable or processing state and the QC block it imports never receives a figure. e2e/embryos.spec.ts asserts no figure on each state it renders. This route becomes a differenced entry when the Embryos workstream lands, not before; the census test fails the day a figure can render here without one.",
-        "assertedBy": [
-          "e2e/embryos.spec.ts"
-        ]
+        "status": "two-publication-proof-required",
+        "reason": "Actual signed-parent upload/worker publication now makes observed QC figures reachable. The old whole-route zero-figure reason is invalid. Two independent fresh native jobs must upload the two exact committed synthetic call sets, retain current source receipts, collect the full figure census and prove every corresponding QC value changes. This authored contract is not hosted execution or acceptance credit.",
+        "specs": [
+          "e2e/embryo-ingest-journey.spec.ts",
+          "e2e/embryo-qc-second-seed-journey.spec.ts"
+        ],
+        "proofContract": "scripts/ci-browser/embryo-qc-two-seed.ts"
       }
     ]
   }

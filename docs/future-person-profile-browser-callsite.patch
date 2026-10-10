@@ -1,0 +1,12 @@
+diff --git a/e2e/embryo-ingest-journey.spec.ts b/e2e/embryo-ingest-journey.spec.ts
+--- a/e2e/embryo-ingest-journey.spec.ts
++++ b/e2e/embryo-ingest-journey.spec.ts
+@@ -11,2 +11,3 @@
+ import { SIGN_BUTTON } from "@/copy/embryos/signing";
++import { proveNativeDispositionAndProfile } from "./helpers/embryo-profile-journey";
+ import { signStatements } from "./embryo-signing-helpers";
+@@ -126,2 +127,4 @@
+     }
++    await proveNativeDispositionAndProfile({owner:page,other,browser,cohortId,
++      embryoId:embryos.data![0].id,siblingId:embryos.data![1].id});
+   } finally { await otherContext.close(); }

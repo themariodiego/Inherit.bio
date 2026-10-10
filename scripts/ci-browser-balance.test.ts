@@ -1,15 +1,27 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ACCESSIBILITY_SWEEP_FILES, verifyAccessibilitySweepPlacement, verifyNativeBrowserBalance } from "./ci-browser-balance";
+import { browserDurationPlan, DEFAULT_BROWSER_ALLOCATION_SHA256, verifyBrowserDurationListings } from "./ci-browser-duration-plan";
+import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
 
-const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
+const projects = [...STANDARD_CI_BROWSER_PROJECTS];
+const ordinaryProjects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
 const id = (n: number) => `${n.toString(16).padStart(20, "0")}-${n.toString(16).padStart(20, "0")}`;
 function listing(numbers: number[], index: number | null = null) {
+  const journeys = [
+    { number: 120, project: "embryo-mixed-qc", file: "embryo-mixed-qc-journey.spec.ts", index: 1 },
+    { number: 121, project: "embryo-ingest", file: "embryo-ingest-journey.spec.ts", index: 6 },
+    { number: 122, project: "chromium", file: "embryo-qc-second-seed-journey.spec.ts", index: 5 },
+    { number: 123, project: "chromium", file: "reviews-keyless-owner-notice-journey.spec.ts", index: 3 },
+    { number: 124, project: "chromium", file: "embryo-third-party-journey.spec.ts", index: 2 },
+  ].filter(journey => projects.includes(journey.project) && (index === null || journey.index === index));
   return { config: { workers: 1, fullyParallel: false, shard: index === null ? null : { current: index, total: 6 },
     projects: projects.map(name => ({ name, retries: 0, repeatEach: 1 })) },
-  suites: [{ specs: numbers.map(n => ({ id: id(n), file: n <= 6 ? ACCESSIBILITY_SWEEP_FILES[n - 1] : `ordinary-${n}.spec.ts`,
-    tests: [{ projectName: n <= 6 ? "chromium" : projects[(n - 7) % 4], expectedStatus: "passed", results: [] }] })) }],
-  errors: [], stats: { expected: 0, unexpected: 0, flaky: 0, skipped: numbers.length } };
+  suites: [{ specs: [...numbers.map(n => ({ id: id(n), file: n <= 6 ? ACCESSIBILITY_SWEEP_FILES[n - 1] : `ordinary-${n}.spec.ts`,
+    tests: [{ projectName: n <= 6 ? "chromium" : ordinaryProjects[(n - 7) % 4], expectedStatus: "passed", results: [] }] })),
+    ...journeys.map(journey => ({ id: id(journey.number), file: journey.file,
+      tests: [{ projectName: journey.project, expectedStatus: "passed", results: [] }] }))] }],
+  errors: [], stats: { expected: 0, unexpected: 0, flaky: 0, skipped: numbers.length + journeys.length } };
 }
 function parts() {
   return ACCESSIBILITY_SWEEP_FILES.map((file, index) => ({ index: index + 1,
@@ -62,9 +74,33 @@ describe("permanent accessibility scheduling guard", () => {
   });
   it("runs the guard before publishing the manifest and after strict final coverage", () => {
     const cli = readFileSync(new URL("./ci-browser-shards.run.mts", import.meta.url), "utf8");
-    expect(cli).toContain("verifyNativeBrowserBalance(full");
-    expect(cli).toContain("verifyAccessibilitySweepPlacement(receipts)");
-    expect(cli.indexOf("verifyNativeBrowserBalance(full")).toBeLessThan(cli.indexOf('writeFileSync("test-results/ci-browser-manifest.json"'));
-    expect(cli.indexOf("verifyAccessibilitySweepPlacement(receipts)")).toBeGreaterThan(cli.indexOf("verifyBrowserShards(manifest, receipts, source)"));
+    const plan = "browserDurationPlan(full, profile)", listings = "verifyBrowserDurationListings(full, assignments, plan)";
+    const publish = 'writeFileSync("test-results/ci-browser-manifest.json"';
+    const coverage = "verifyBrowserShards(manifest, receipts, source)", placement = "verifyAccessibilitySweepPlacement(receipts)";
+    for (const call of [plan, listings, publish, coverage, placement]) expect(cli).toContain(call);
+    expect(cli.indexOf(plan)).toBeLessThan(cli.indexOf(listings));
+    expect(cli.indexOf(listings)).toBeLessThan(cli.indexOf(publish));
+    expect(cli.indexOf(placement)).toBeGreaterThan(cli.indexOf(coverage));
+  });
+  it("checks complete official queue-v1 listings without a native shard selector", () => {
+    const full = listing([1,2,3,4,5,6,7,8,9,10]);
+    const plan = browserDurationPlan(full, null);
+    const assigned = plan.parts.map(part => {
+      const report = structuredClone(full);
+      const cases = new Set(part.files.flatMap(file => file.cases));
+      report.suites[0].specs = report.suites[0].specs.filter(spec => cases.has(`${spec.id}:${spec.tests[0].projectName}`));
+      report.stats.skipped = report.suites[0].specs.length;
+      return report;
+    });
+    expect(plan.allocation).toMatchObject({ mode: "queue-v1", profileSha256: DEFAULT_BROWSER_ALLOCATION_SHA256 });
+    expect(() => verifyBrowserDurationListings(full, assigned, plan)).not.toThrow();
+    const mixed = structuredClone(assigned);
+    mixed[0].config.shard = { current: 1, total: 6 };
+    expect(() => verifyBrowserDurationListings(full, mixed, plan)).toThrow();
+    const missing = structuredClone(assigned);
+    const sweep = missing.find(part => part.suites[0].specs.some(spec => ACCESSIBILITY_SWEEP_FILES.includes(spec.file)))!;
+    sweep.suites[0].specs = sweep.suites[0].specs.filter(spec => !ACCESSIBILITY_SWEEP_FILES.includes(spec.file));
+    sweep.stats.skipped = sweep.suites[0].specs.length;
+    expect(() => verifyBrowserDurationListings(full, missing, plan)).toThrow();
   });
 });

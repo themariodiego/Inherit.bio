@@ -4,6 +4,7 @@
 // current-authority adapters mint the 30-second capabilities it accepts, and
 // their audience is not the prepared-object gateway's: neither gateway can
 // reach the other's objects. Not deployed; see README.md beside this file.
+import relocationGateway from "./relocation.mjs";
 const EMPTY_SHA = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 const MAX_FRAGMENT_BYTES = 4004096;
 const AUDIENCE = "inherit-embryo-fragment-v1";
@@ -67,6 +68,7 @@ const written = (object, created) => json({ providerVersion: object.version, eta
 
 const embryoFragmentGateway = {
   async fetch(request, env) {
+    if (new URL(request.url).pathname === "/relocation") return relocationGateway.fetch(request, env);
     let c;
     try {
       const url = new URL(request.url);

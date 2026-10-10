@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createdBuckets, droppedBuckets, exportedMethods, migrationBuckets, runRouteGate, takesAuditedTest, titleProves } from "./route-gate";
 
 /**
@@ -28,6 +28,8 @@ interface Overrides {
   taskBindings?: (bindings: Record<string, unknown>) => void;
   /** A spec added to a real copy of `e2e/`, for the task-depth ratchet. */
   extraSpec?: string;
+  /** A planted change to an actual spec, without altering the live checkout. */
+  browserSpec?: { file: string; source: (source: string) => string };
   nextConfig?: string;
 }
 
@@ -44,11 +46,15 @@ function plant(overrides: Overrides): string {
   // `e2e` is symlinked so the title floor guard sees its true size. A test
   // that needs one extra title copies it instead, because a spec cannot be
   // added inside a symlink to the real directory.
-  if (overrides.extraSpec === undefined) {
+  if (overrides.extraSpec === undefined && overrides.browserSpec === undefined) {
     symlinkSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"));
   } else {
     cpSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"), { recursive: true });
-    writeFileSync(path.join(root, "e2e/planted.spec.ts"), overrides.extraSpec);
+    if (overrides.extraSpec !== undefined) writeFileSync(path.join(root, "e2e/planted.spec.ts"), overrides.extraSpec);
+    if (overrides.browserSpec) {
+      const file = path.join(root, "e2e", overrides.browserSpec.file);
+      writeFileSync(file, overrides.browserSpec.source(readFileSync(file, "utf8")));
+    }
   }
   mkdirSync(path.join(root, "scripts/comprehension"), { recursive: true });
   const taskBindings = JSON.parse(
@@ -81,6 +87,38 @@ function plant(overrides: Overrides): string {
 }
 
 type Route = { id: string; kind: string; methods?: string[]; stateProfile?: string };
+
+describe.sequential("route reader invocation isolation", () => {
+  const neutral = 'import { test } from "./audited-test"; test("Synthetic reader check", () => {});';
+  let root: string;
+  let file: string;
+  let before: Awaited<ReturnType<typeof runRouteGate>>;
+  beforeAll(() => {
+    root = plant({ extraSpec: neutral });
+    file = path.join(root, "e2e/planted.spec.ts");
+  });
+  it("reads the original same-root input", async () => {
+    before = await runRouteGate(root);
+    expect(before.failures).toEqual([]);
+  });
+  it("reads changed titles and audit imports again at the same repository root", async () => {
+    writeFileSync(file, 'import { test } from "@playwright/test"; test("/future-person/claim complete", () => {});');
+    try {
+      const changed = await runRouteGate(root);
+      expect(changed.failures).toEqual([
+        "network audit: e2e/planted.spec.ts proves a registered (route, state) pair but takes `test` " +
+        "from @playwright/test instead of ./audited-test, so that state is never audited " +
+        "for third-party origins, tracker hosts or tracker globals (G1.7).",
+      ]);
+      expect(changed.stateProvingSpecCount).toBe(before.stateProvingSpecCount + 1);
+    } finally {
+      writeFileSync(file, neutral);
+    }
+  });
+  it("reads the restored same-root input with an exactly equal full result", async () => {
+    expect(await runRouteGate(root)).toEqual(before);
+  });
+});
 
 describe("the route gate holds the register to the code", () => {
   it("passes on this repository, having actually read all four inputs", async () => {
@@ -115,15 +153,41 @@ describe("the route gate holds the register to the code", () => {
     // register's jurisdiction refusal (awaiting-choice waived with its
     // reason), and the same change proves it (e2e/copilot-family.spec.ts), so
     // the unproven count does not move.
+    // 154 -> 155: Future Person intake adds its processing state on the
+    // public-rights-flow profile and proves it in future-person-claim.spec.ts.
+    // 155 -> 156: cohort Copilot renders not-covered, so its old waiver
+    // is removed; the merged Future Person processing state remains required.
     // Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(154);
+    // 156 -> 158: the named-reviewer page adds its complete and processing pairs. These
+    // authored titles are statically counted; hosted CI must execute them.
+    // 158 -> 159: the actual session-based adult form requires and proves its pending choice.
+    // 159 -> 160: E0 is built under TEST-LOCAL; the actual draft/invitation pending state is required; authored case must run in full hosted CI.
+    // 160 -> 161: the actual /legal/appeals TEST form adds only its processing pair.
+    // Source census is exact; the controlled browser cases are UI-only and unrun here.
+    // 161 -> 163: the appeal reviewer adds complete and processing obligations;
+    // their original native journey now authors both without removing any previous proof.
+    expect(result.requiredStateCount).toBe(163);
+    // Three native complete steps passed on 2def; two appeal steps are authored here;
+    // all six scientific partial/not-covered gaps remain required.
+    expect(result.provenStateCount).toBe(157);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
     // redirects, none gone. Pinned exactly, so a route quietly leaving the
     // ledger fails here rather than reading as a cleaner product.
     expect(result.preExistingRouteCount).toBe(34);
+  });
+
+  it("fails when the retired E0 processing waiver is restored after the actual upload pending proof", async () => {
+    const root = plant({ register: register => {
+      const entry = (register.routes as Route[]).find(route => route.id === "embryos.upload")!;
+      (entry as Route & { notApplicableStates: Record<string, string> }).notApplicableStates.processing = "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13.";
+    } });
+    const result = await runRouteGate(root);
+    expect(result.failures).toEqual([
+      "proven route state: recorded in docs/route-divergence.json but no longer present: /embryos/upload processing",
+    ]);
   });
 
   /**
@@ -479,10 +543,12 @@ describe("the route gate holds the register to the code", () => {
 
   it("fails when a method row names a file the route is not built in", async () => {
     const root = plant({
+      register: (register) => {
+        (register.routes as Route[]).find((entry) => entry.id === "api.export")!.methods = ["GET", "POST", "PUT"];
+      },
       ledger: (ledger) => {
-        for (const known of ledger.methodDivergence as Record<string, unknown>[]) {
-          if (known.routeId === "api.export") known.file = "src/app/api/export/moved/route.ts";
-        }
+        (ledger.methodDivergence as Record<string, unknown>[]).push({routeId:"api.export",
+          declared:["GET","POST","PUT"],exported:["GET","POST"],file:"src/app/api/export/moved/route.ts"});
       },
     });
     const { failures } = await runRouteGate(root);
@@ -805,15 +871,14 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     (register.navigationContract as { taskDepthActions: TaskDepth }).taskDepthActions;
   const tasksOf = (bindings: Record<string, unknown>) => bindings.tasks as BoundTask[];
 
-  it("reads the real contract: eight ceilinged tasks, six of them measured", async () => {
+  it("reads the real contract: all eight ceilinged tasks have authored measurements", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
     expect(result.taskDepthCeilingCount).toBe(8);
-    // T8, T4, T2, T1, T3 and T9 are measured by `e2e/task-depth.spec.ts`; T9
-    // since 2026-09-28, on the real path the owner chose, after the 22 September
-    // decision settled its ceiling. The two that remain, T6 and T7, are bound to
-    // embryo files no ingest path can produce yet.
-    expect(result.taskDepthMeasuredCount).toBe(6);
+    // T8, T4, T2, T1, T3 and T9 use `e2e/task-depth.spec.ts`. T6 and T7 use
+    // the actual signed-parent publication journey; T7 retains the bound
+    // honest no-model answer. This counts authored coverage, not execution.
+    expect(result.taskDepthMeasuredCount).toBe(8);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -892,10 +957,12 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     );
   });
 
-  it("fails when a task gains a measurement without the ratchet coming down", async () => {
+  it("fails when the actual T7 measurement disappears", async () => {
     const root = plant({
-      extraSpec: 'import { test } from "@playwright/test";\n'
-        + 'test("task depth T6 stays within its registered ceiling", async () => {});\n',
+      browserSpec: { file: "embryo-ingest-journey.spec.ts", source: source => {
+        expect(source.match(/task depth T7/g)).toHaveLength(1);
+        return source.replace("task depth T7", "task scope T7");
+      } },
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
@@ -903,20 +970,27 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     );
   });
 
-  // The deleted ceiling must be one nothing measures, and that is not a
-  // detail of this fixture. The ratchet counts what is UNMEASURED, so deleting
-  // a measured ceiling removes a ceiling and a measurement together and the
-  // count does not move — which is why this test named T4 until T4 was
-  // measured, and why it names T1 now. The blind spot is real and is left
-  // stated rather than papered over: the ratchet cannot see a measured ceiling
-  // being retired, only an unmeasured one. It named T4, then T1, and names T7
-  // now; each move happened because the previous fixture became measured.
-  it("fails when a ceiling disappears without the ratchet coming down", async () => {
+  // With all eight measured, the unmeasured count alone cannot see a retired
+  // ceiling. The exact brief-defined set keeps the existing negative strict.
+  it("fails when a measured task loses its registered ceiling", async () => {
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T7; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 1 of 7 ceilinged tasks are measured by no browser test",
+      "task depth: ceilings name [T1, T2, T3, T4, T6, T8, T9] and the brief requires " +
+        "[T1, T2, T3, T4, T6, T7, T8, T9]",
     );
+  });
+
+  it("refuses an invented measured ceiling even when its title leaves the unmeasured count at zero", async () => {
+    const root = plant({
+      register: register => { depthOf(register).ceilings!.T5 = 3; },
+      extraSpec: 'import { test } from "./audited-test";\n'
+        + 'test("task depth T5 is a planted extra task", async () => {});\n',
+    });
+    const result = await runRouteGate(root);
+    expect(result.taskDepthMeasuredCount).toBe(9);
+    expect(result.failures.join("\n")).toContain("and the brief requires [T1, T2, T3, T4, T6, T7, T8, T9]");
+    expect(result.failures.join("\n")).not.toContain("task depth ratchet:");
   });
 
   it("fails on an empty contract rather than reading it as nothing to enforce", async () => {
@@ -940,12 +1014,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("reads both shapes the register declares a required header in", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
-    // Both declared shapes still resolve to three names: the evidence chunk
-    // has a requiredHeaders map; other routes use requiredHeader prose.
-    expect(result.requiredHeaderCount).toBe(3);
+    // Both declared shapes still resolve, now to two names: the evidence chunk
+    // has a requiredHeaders map; other routes use requiredHeader prose. The
+    // owner removed `X-Inherit-Chunk-Nonce` from api.evidence-chunk on
+    // 2026-09-28 (the chunk reservation is the authority), so 3 -> 2.
+    expect(result.requiredHeaderCount).toBe(2);
     // `X-Inherit-CSRF` and `X-Inherit-Operation-Nonce` are both minted and
-    // verified in `operation-token.ts`; `X-Inherit-Chunk-Nonce` is named
-    // nowhere outside the register.
+    // verified in `operation-token.ts`, and both are read.
     expect(result.readRequiredHeaderCount).toBe(2);
   });
 
@@ -986,9 +1061,9 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails when the singular half of the register stops being read", async () => {
     const root = plant({ register: (register) => strip(register, "requiredHeader") });
     const { failures } = await runRouteGate(root);
-    // Two left: the evidence chunk route's two required headers.
+    // One left: the evidence chunk route's X-Inherit-CSRF.
     expect(failures.join("\n")).toContain(
-      "required header check found 2 declared headers across all routes, expected at least 8",
+      "required header check found 1 declared headers across all routes, expected at least 8",
     );
   });
 
@@ -1006,9 +1081,11 @@ describe("the route gate refuses a required header nothing reads", () => {
   });
 
   it("fails when the register stops declaring a header the ledger still records", async () => {
+    // The register no longer declares the chunk nonce (owner decision
+    // 2026-09-28), so a ledger row that still records it is stale.
     const root = plant({
-      register: (register) => {
-        delete headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"];
+      ledger: (ledger) => {
+        rowsOf(ledger).push({ routeId: "api.evidence-chunk", header: "X-Inherit-Chunk-Nonce" });
       },
     });
     const { failures } = await runRouteGate(root);
@@ -1019,9 +1096,13 @@ describe("the route gate refuses a required header nothing reads", () => {
   });
 
   it("fails when a recorded row names a route that does not declare it", async () => {
+    // An unread header declared on one route and recorded against another.
     const root = plant({
+      register: (register) => {
+        headersOf(register, "api.evidence-chunk")["X-Inherit-Chunk-Nonce"] = "a-token-no-module-mints";
+      },
       ledger: (ledger) => {
-        rowsOf(ledger)[0] = { ...rowsOf(ledger)[0], routeId: "api.embryo-ingest-complete" };
+        rowsOf(ledger).push({ routeId: "api.embryo-ingest-complete", header: "X-Inherit-Chunk-Nonce" });
       },
     });
     const { failures } = await runRouteGate(root);
@@ -1062,5 +1143,44 @@ describe("the route gate refuses a required header nothing reads", () => {
     expect(failures.join("\n")).toContain(
       "required header check found 0 declared header names, expected at least 2",
     );
+  });
+});
+
+
+describe("the current rights session processing contract", () => {
+  it("rejects restoring the removed plain-form processing exemption", async () => {
+    const root = plant({ register: (register) => {
+      const entry = (register.routes as Route[]).find(row => row.id === "rights.withdraw")!;
+      (entry as Route & { notApplicableStates: Record<string, string> }).notApplicableStates = {
+        processing: "PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs \u2014 a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Moved here from the public-rights-flow profile on 2026-09-28. Corrections item 8, signed 2026-09-13.",
+      };
+    } });
+    const result = await runRouteGate(root);
+    // Exact current163 minus only the deliberately waived /withdraw/[token] processing pair.
+    expect(result.requiredStateCount).toBe(162);
+    expect(result.failures).toEqual([
+      "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
+    ]);
+  });
+});
+
+
+describe("native embryo completion leaves scientific coverage obligations intact", () => {
+  it("names only the three completed native surfaces and still requires the exact six scientific pairs", () => {
+    const spec = readFileSync(path.join(REPOSITORY_ROOT, "e2e/embryo-ingest-journey.spec.ts"), "utf8");
+    const step = "/embryos/upload complete; /embryos/compare complete; /embryos/[embryoId] complete from native parent-authorized publication";
+    expect(spec).toContain(`test.step("${step}"`);
+    expect(spec).toContain("await auditPublishedEmbryoSurfaces({ page, ownerId: owner, cohortId, read: readPublication })");
+    expect(takesAuditedTest(spec)).toBe(true);
+    for (const route of ["/embryos/upload", "/embryos/compare", "/embryos/[embryoId]"]) expect(titleProves(step, route, "complete")).toBe(true);
+    const register = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-register.json"), "utf8"));
+    const ledger = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-divergence.json"), "utf8"));
+    const authored = new Set<string>(ledger.provenRouteStates);
+    const pending: string[] = [];
+    for (const entry of register.routes) for (const state of register.stateProfiles[entry.stateProfile]?.supported ?? []) {
+      if (!(state in (entry.notApplicableStates ?? {})) && !authored.has(`${entry.path} ${state}`)) pending.push(`${entry.path} ${state}`);
+    }
+    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage"]);
+    for (const state of ["not-covered", "partial-coverage"]) expect(titleProves(step, "/embryos/compare", state)).toBe(false);
   });
 });

@@ -14,8 +14,9 @@ import {
 
 /**
  * G8.3's completeness (see `scripts/figures-census.ts`): every page that can
- * render a figure is either differenced under two seeds or recorded with the
- * reason no figure state of it can render today, and nothing else is listed.
+ * render a figure is either differenced under two seeds, bound to an explicit
+ * pending native-publication proof, or recorded with a genuine zero-figure
+ * reachability reason. Pending source is not an executed differencing pass.
  *
  * Both directions, as the route gate compares its ledgers: an unlisted
  * figure-capable page fails, and so does an entry for a page that can no
@@ -32,7 +33,8 @@ const TWO_SEED_SPEC = "e2e/figures-two-seed.spec.ts";
 
 interface Differenced { route: string; status: "differenced"; surfaces: string[] }
 interface Unreachable { route: string; status: "no-reachable-figure-state"; reason: string; assertedBy: string[] }
-type CensusEntry = Differenced | Unreachable;
+interface PendingPublication { route: string; status: "two-publication-proof-required"; reason: string; specs: string[]; proofContract: string }
+type CensusEntry = Differenced | Unreachable | PendingPublication;
 interface Census { rule: string; figureSources: string[]; routes: CensusEntry[] }
 
 const register = JSON.parse(readFileSync(path.join(ROOT, REGISTER), "utf8")) as { census?: Census };
@@ -74,6 +76,31 @@ describe("figures census: which built pages can render a figure", () => {
     }
   });
 
+  it("reachable Embryo QC cannot use a whole-route zero-figure waiver", () => {
+    const entries = census!.routes.filter((entry): entry is PendingPublication => entry.status === "two-publication-proof-required"
+      && entry.proofContract === "scripts/ci-browser/embryo-qc-two-seed.ts");
+    expect(entries.map(row => row.route).sort()).toEqual(["/embryos/[embryoId]", "/embryos/compare"].sort());
+    for (const entry of entries) {
+      expect(entry.reason).toContain("not hosted execution or acceptance credit");
+      expect(entry.specs).toEqual(["e2e/embryo-ingest-journey.spec.ts", "e2e/embryo-qc-second-seed-journey.spec.ts"]);
+      expect(entry.proofContract).toBe("scripts/ci-browser/embryo-qc-two-seed.ts");
+      for (const file of [...entry.specs, entry.proofContract]) expect(existsSync(path.join(ROOT, file))).toBe(true);
+    }
+    expect(readFileSync("scripts/ci-browser-shards.run.mts", "utf8")).toContain("verifyQcSeedPublications(seedReceipts, clean, source)");
+  });
+  it("keeps the hub's reviewed-library figure pending without borrowing the QC publication proof", () => {
+    const pending = census!.routes.filter((entry): entry is PendingPublication => entry.status === "two-publication-proof-required");
+    expect(pending.map(row => row.route).sort()).toEqual(["/embryos", "/embryos/[embryoId]", "/embryos/compare"].sort());
+    const hub = pending.find(entry => entry.route === "/embryos")!;
+    expect(hub.reason).toContain("complete current reviewed library");
+    expect(hub.reason).toContain("clinical interpretation remains held");
+    expect(hub.reason).toContain("not hosted execution or acceptance credit");
+    expect(hub.reason).toContain("QC seed receipts do not prove this library figure");
+    expect(hub.specs).toEqual(["supabase/tests/embryo_carrier_worker.sql",
+      "src/lib/embryos/carrier-library-read.test.ts", "src/components/embryo/carrier-library-coverage.test.ts"]);
+    expect(hub.proofContract).toBe("src/lib/embryos/carrier-library-read.ts");
+    for (const file of [...hub.specs, hub.proofContract]) expect(existsSync(path.join(ROOT, file))).toBe(true);
+  });
   it("a route with no reachable figure state says why and names specs that assert zero figures on it", () => {
     const entries = census!.routes.filter((entry): entry is Unreachable => entry.status === "no-reachable-figure-state");
     for (const entry of entries) {
@@ -85,7 +112,7 @@ describe("figures census: which built pages can render a figure", () => {
       }
     }
     const statuses = new Set(census!.routes.map(entry => entry.status));
-    for (const status of statuses) expect(["differenced", "no-reachable-figure-state"]).toContain(status);
+    for (const status of statuses) expect(["differenced", "no-reachable-figure-state", "two-publication-proof-required"]).toContain(status);
   });
 });
 

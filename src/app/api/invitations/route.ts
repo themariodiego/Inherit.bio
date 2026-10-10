@@ -1,7 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { hmacSecret } from "@/lib/crypto";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
-import { invitationQuotaKeys } from "@/lib/invitation-quota";
+import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
 import {
   closedResponse,

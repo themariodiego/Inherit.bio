@@ -6,11 +6,13 @@ import { describe, expect, it } from "vitest";
 import { currentCaptureContext, type CurrentCaptureAdmission,
   type ValidatedHistoricalMetadata } from "./current-capture-adapter";
 
+import { historicalDurationSource } from "./ci-browser-duration-history";
+
 const hash = (raw: Buffer) => createHash("sha256").update(raw).digest("hex");
 const emptySha = hash(Buffer.alloc(0));
 const revision = (letter: string) => letter.repeat(40);
 const makePin = (path: string, bytes = 1, sha256 = "a".repeat(64)) => ({ path, bytes, sha256 });
-function fixture(event: "push" | "pull_request" = "push") {
+function fixture(event: "push" | "pull_request" = "push", jobCount: 8 | 9 | 10 = 8) {
   const directory = "/synthetic/capture";
   const head = revision("a"), tested = event === "push" ? head : revision("b"), tree = revision("c");
   const request = { schemaVersion: 1 as const, repository: "themariodiego/Inherit.bio" as const,
@@ -18,9 +20,9 @@ function fixture(event: "push" | "pull_request" = "push") {
     head, testedHead: tested, tree,
     ...(event === "push" ? { event, branch: "main" as const } : { event, pullRequest: 293, base: revision("d") }) };
   const metadata: ValidatedHistoricalMetadata = { runId: 9001, runAttempt: 1,
-    workflowHead: head, testedHead: tested, tree, event, jobIds: [1, 2, 3, 4, 5, 6, 7, 8],
+    workflowHead: head, testedHead: tested, tree, event, jobIds: Array.from({ length: jobCount }, (_, index) => index + 1),
     artifacts: ["manifest", ...Array.from({ length: 6 }, (_, i) => `shard-${i + 1}`)]
-      .map((name, i) => ({ name: `browser-case-1-${name}`, id: 101 + i })) };
+       .map((name, i) => ({ name: `browser-case-1-${name}`, id: 101 + i })).concat(jobCount === 10 ? [{ name: "owned-keyfree-smoke-1", id: 108 }] : []) };
   const prefix = ["gh", "api", "--method", "GET", "-H", "X-GitHub-Api-Version: 2022-11-28"];
   const base = "repos/themariodiego/Inherit.bio/";
   const rows: [string, string[]][] = [
@@ -103,4 +105,51 @@ describe("explicit current capture provenance (authored UNRUN)", () => {
   it.each(refusals)("refuses %s", (_name, mutate) => {
     const f = fixture(); mutate(f.value, f); expect(() => invoke(f.value, f)).toThrow();
   });
+});
+
+it.each([9, 10] as const)("binds the complete current %s-job capture without weakening the historical eight-job format", count => {
+  const f = fixture("pull_request", count);
+  expect(invoke(f.value, f).pins).toHaveLength(count === 10 ? 27 : 25);
+  for (const mode of ["missing", "foreign", "failed", "skipped", "extra"]) {
+    const changed = structuredClone(f.value);
+    if (mode === "missing") changed.records.pop();
+    if (mode === "foreign") changed.records.at(-1)!.name = "foreign-public-artifact";
+    if (mode === "failed" || mode === "skipped") Reflect.set(changed.records.at(-1)!, "exitCode", mode === "failed" ? 1 : null);
+    if (mode === "extra") changed.records.push(changed.records[0]);
+    expect(() => invoke(changed, f)).toThrow();
+  }
+});
+
+it("passes a complete ten-job raw capture through the genuine historical source adapter with all browser originals", () => {
+  const f = fixture("pull_request", 10), { head, testedHead, tree, runId, runAttempt } = f.value.request;
+  const names = ["accessible-authenticated-pages.spec.ts", "control-target-size.spec.ts", "figure-text-alternatives.spec.ts",
+    "page-reflow-accessibility.spec.ts", "public-pages-session-accessibility.spec.ts", "viewport-keyboard-accessibility.spec.ts"];
+  const cases = names.map((_, index) => `${String(index + 1).padStart(20, "0")}-${"1".repeat(20)}:chromium`);
+  const identity = { schemaVersion: 1, total: 6, head: testedHead, runId: String(runId), runAttempt: String(runAttempt) };
+  const manifest = { bytes: Buffer.from("synthetic-manifest"), value: { ...identity, cases, files: names.map(name => `e2e/${name}`) } };
+  const shards = names.map((file, index) => ({ bytes: Buffer.from(`synthetic-shard-${index}`), value: { ...identity,
+    index: index + 1, fullCases: cases, assignedCases: [cases[index]], executedCases: [cases[index]],
+    fullFiles: names.map(name => `e2e/${name}`), providerUploads: 1, timings: { setupMs: 1, buildMs: 1, bootstrapMs: 1, browserMs: 100 },
+    files: [{ file, project: "chromium", cases: [cases[index]], durationMs: 100 }] } }));
+  const json = (value: unknown) => Buffer.from(JSON.stringify(value));
+  const run = json({ id: runId, run_attempt: runAttempt, head_sha: head, status: "completed", conclusion: "success",
+    event: "pull_request", path: ".github/workflows/ci.yml" });
+  const jobs = json({ total_count: 10, jobs: ["repository-checks", "checks", "database-tests", "owned-keyfree-smoke",
+    ...Array.from({ length: 6 }, (_, index) => `browser (${index + 1})`)].map((name, index) => ({ id: index + 1, name,
+      run_id: runId, run_attempt: runAttempt, head_sha: head, status: "completed", conclusion: "success",
+      steps: [{ status: "completed", conclusion: "success" }] })) });
+  const zipBytes = [manifest.bytes, ...shards.map(shard => shard.bytes), Buffer.from("synthetic-owned-artifact")];
+  const artifacts = json({ total_count: 8, artifacts: f.metadata.artifacts.map((item, index) => ({ ...item,
+    size_in_bytes: zipBytes[index].length, digest: `sha256:${hash(zipBytes[index])}`, expired: false, workflow_run: { id: runId, head_sha: head } })) });
+  const testedCommit = json({ sha: testedHead, tree: { sha: tree } });
+  const outputs = new Map([["run", run], ["jobs", jobs], ["artifacts", artifacts], ["tested-commit", testedCommit],
+    ...f.metadata.artifacts.map((item, index) => [item.name, zipBytes[index]] as [string, Buffer])]);
+  for (const record of f.value.records) {
+    const bytes = outputs.get(record.name); if (!bytes) continue;
+    record.stdoutPin.bytes = bytes.length; record.stdoutPin.sha256 = hash(bytes); record.rawIdentities.stdout.size = bytes.length;
+  }
+  const captureReceipt = json(f.value);
+  const captureAdmission = { ...f.admissionBase, capturePin: makePin(`${f.directory}/capture-receipt.json`, captureReceipt.length, hash(captureReceipt)) };
+  expect(historicalDurationSource({ captureFormat: "hosted-reader-raw-v1", captureAdmission,
+    run, jobs, artifacts, testedCommit, captureReceipt, manifest, shards }).files).toHaveLength(6);
 });

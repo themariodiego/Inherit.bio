@@ -3,21 +3,18 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { expect, test, type Browser, type Page } from "@playwright/test";
-import bindings from "../scripts/comprehension/bindings.json";
-import { taskCompleted, type BoundTask } from "../scripts/comprehension/completion";
+import { expect, test } from "@playwright/test";
 import { runLive } from "../scripts/comprehension/conductor";
-import { taskIds, type LiveEnvironment, type TaskId } from "../scripts/comprehension/conductor-contract";
+import { taskIds, type LiveEnvironment } from "../scripts/comprehension/conductor-contract";
 import { createLiveManifest, loadConductorInputs, repositoryRoot, seedSkips } from "../scripts/comprehension/conductor-inputs";
 import { isolatedProcesses, probeIsolation } from "../scripts/comprehension/inference-isolation";
 import { InstrumentJournal } from "../scripts/comprehension/instrument-journal";
-import { openLiveSession, type InboxMessage, type LiveSession } from "../scripts/comprehension/live-browser";
+import { type LiveSession } from "../scripts/comprehension/live-browser";
 import { inferenceOf, modelIdentifierOf, modelIdentityOf, runConfigSchema, workerProvider } from "../scripts/comprehension/run-config";
 import { RECORD_ROOT, readRecordManifest, RunRecord, runSummary } from "../scripts/comprehension/run-record";
-import { OWN_REPORT_PURPOSES, type OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { EMAIL_LABEL } from "../src/copy/family/invite";
-import { adminClient, adultInvitationToken, adultInvitationUrl, createConfirmedUser, drainMailUntil, findUserByEmail, signIn, SUPABASE_URL } from "./helpers";
-import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
+import { openComprehensionAccountSession } from "./comprehension-account-session";
+import { createConfirmedUser, signIn } from "./helpers";
 
 /**
  * The comprehension harness's live run (G3.1). Never part of the browser
@@ -43,8 +40,10 @@ import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-r
  * participant's address and invites them in their own context, and the
  * participant starts signed out at the home page with that one email in an
  * inbox beside the browser. Opening it is an entry, never a counted action.
- * T6 and T7 are recorded as skipped with the binding's reason until
- * participant-c can be seeded; they are never recorded as answered.
+ * This shared-stack entrypoint holds T6/T7. The exclusive participant-c
+ * launcher supplies each task/persona a fresh signed-parent publication and
+ * native read/action context; it cannot adopt this already-running stack.
+ * Neither a shared-stack skip nor an unverified fresh lifecycle is evidence.
  *
  * The pinned model identifier is written only into the run record's
  * `manifest.json` (owner decision, 25 September 2026). Nothing here logs it,
@@ -54,28 +53,6 @@ const CONFIG = process.env.INHERIT_COMPREHENSION_CONFIG;
 const ENABLED = process.env.INHERIT_COMPREHENSION_RUN === "1";
 const PASSWORD = "e2e-comprehension-participant-pw";
 const BASE_URL = "http://localhost:3100";
-
-type Account = { id: string; files: string[]; seed?: { fileTypes: string[]; purposes: string[] } | null };
-const accounts = bindings.accounts as unknown as Account[];
-const boundTask = (id: TaskId) => bindings.tasks.find(task => task.id === id) as unknown as BoundTask;
-
-function purposesOf(purposes: string[]): [OwnReportPurpose, ...OwnReportPurpose[]] {
-  const chosen = purposes.filter((purpose): purpose is OwnReportPurpose => (OWN_REPORT_PURPOSES as readonly string[]).includes(purpose));
-  if (!chosen.length || chosen.length !== purposes.length) throw new Error("Bound report choices must be supported purposes");
-  return chosen as [OwnReportPurpose, ...OwnReportPurpose[]];
-}
-
-/** The same steps the named-account seed takes, for a session's own address. */
-async function seedAccount(page: Page, account: Account, email: string) {
-  await createConfirmedUser(email, PASSWORD);
-  await signIn(page, email, PASSWORD);
-  if (!account.files.length) return;
-  const purposes = purposesOf(account.seed?.purposes ?? []);
-  for (const [index, file] of account.files.entries()) {
-    const fileId = await uploadOwnFilePrepared(page, path.resolve(file), { fileType: account.seed!.fileTypes[index] });
-    await generateOwnFileWithChosenReports(page, fileId, purposes);
-  }
-}
 
 /** Mail the app sends through its configured provider, captured locally. */
 async function captureMail() {
@@ -95,9 +72,6 @@ async function captureMail() {
   await new Promise<void>(resolve => server.listen(8124, "127.0.0.1", resolve));
   return { captured, close: () => new Promise<void>(resolve => server.close(() => resolve())) };
 }
-
-const plain = (html = "") => html.replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<a [^>]*>[\s\S]*?<\/a>/gi, " ")
-  .replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim().slice(0, 1500);
 
 test("a comprehension run against the local production build under TEST-LOCAL", async ({ browser, request }) => {
   test.setTimeout(0);
@@ -181,54 +155,13 @@ test("a comprehension run against the local production build under TEST-LOCAL", 
     }
   };
   const openSession: LiveEnvironment["openBrowser"] = async ({ id, taskId, account: accountId }) => {
-    const account = accounts.find(candidate => candidate.id === accountId);
-    if (!account || account.id === "participant-c") throw new Error(`No seed for ${accountId}`);
-    const email = `cmp-${short}-${id.slice(0, 8)}@e2e.local`;
-    const task = boundTask(taskId);
-    let inbox: InboxMessage[] | undefined;
-    if (taskId === "T9") inbox = [await reserveAndInvite(browser, email, `cmp-${short}-${id.slice(0, 8)}-reserver@e2e.local`)];
-    const signedIn = account.id !== "no-account";
-    const session = await openLiveSession({ browser, sessionId: id, baseURL: BASE_URL, allowedOrigins: [BASE_URL, SUPABASE_URL],
-      startPath: signedIn ? "/overview" : "/", textLimit: 12_000, actionTimeoutMs: 10_000, inbox,
-      prepare: signedIn ? page => seedAccount(page, account, email) : undefined,
-      complete: async ({ paths, context, diagnostics }) => {
-        const admin = adminClient();
-        let accountDeletionScheduled: boolean | undefined, accountCreated: boolean | undefined;
-        if (taskId === "T8") {
-          const user = await findUserByEmail(admin, email);
-          const { data } = await admin.from("account_deletion_requests").select("id").eq("account_id", user?.id ?? "")
-            .in("state", ["notice_period", "delete_started"]).limit(1);
-          accountDeletionScheduled = Boolean(data?.length);
-        }
-        if (!signedIn) {
-          const cookies = await context.cookies();
-          const typed = await Promise.all(diagnostics.typedEmails.map(address => findUserByEmail(admin, address)));
-          accountCreated = cookies.some(cookie => /^sb-.*-auth-token/.test(cookie.name)) || typed.some(Boolean);
-        }
-        return taskCompleted(task, { paths, accountDeletionScheduled, accountCreated });
-      } });
+    if (accountId === "participant-c") throw new Error("The shared-stack runner cannot adopt participant-c; use the exclusive fresh launcher");
+    const session = await openComprehensionAccountSession({ browser, id, taskId, accountId,
+      email: `cmp-${short}-${id.slice(0, 8)}@e2e.local`, mail: mail.captured });
     sessions.set(id, session);
     return session;
   };
 
-  async function reserveAndInvite(browser_: Browser, invitee: string, reserverEmail: string): Promise<InboxMessage> {
-    const context = await browser_.newContext({ baseURL: BASE_URL });
-    const page = await context.newPage();
-    await createConfirmedUser(reserverEmail, PASSWORD);
-    await signIn(page, reserverEmail, PASSWORD);
-    await page.goto("/family/invite");
-    await page.getByLabel(EMAIL_LABEL).fill(invitee);
-    await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: "Send invitation" }).click();
-    await expect(page.getByRole("status")).toContainText("Invitation requested");
-    await context.close();
-    const message = await drainMailUntil(request, () => mail.captured.find(email =>
-      (Array.isArray(email.to) ? email.to : [email.to]).includes(invitee)), "T9's invitation");
-    const token = adultInvitationToken(message.html);
-    if (!token) throw new Error("T9's invitation carries no review link");
-    return { subject: message.subject ?? "(no subject)", text: plain(message.html),
-      links: [{ id: "m1", label: "The link in this email", url: adultInvitationUrl(token, BASE_URL) }] };
-  }
 
   try {
     const result = await runLive({ manifest, inputs, journal, modelIdentity: modelIdentityOf(config),

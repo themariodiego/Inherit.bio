@@ -4,7 +4,8 @@ type ToolName = "get_genotype" | "search_variants" | "list_reports" | "get_repor
 interface Message { role: string; content?: unknown; tool_call_id?: string }
 export interface CanonicalProviderPlan {
   prompt: string;
-  tool: { name: ToolName; arguments: Record<string, unknown> };
+  /** Absent for a scope with no tools (the embryo cohort): the plan then answers the prompt directly. */
+  tool?: { name: ToolName; arguments: Record<string, unknown> };
   answer: string;
   /** Before tool-call response, or after receiving the tool result but before
    * final answer. Neither claims to pause inside the app's tool executor. */
@@ -25,7 +26,8 @@ function send(response: ServerResponse, payload: unknown) {
 
 /** Controlled fake provider only. The application, tools, Storage, grants and
  * mutations remain real. Listens exclusively on loopback and never fetches.
- * Each plan makes exactly one chosen tool request and at most one completion.
+ * Each plan makes exactly one chosen tool request and at most one completion;
+ * a plan with no tool makes the completion alone.
  */
 export async function startCanonicalCopilotProvider(port: number) {
   let calls = 0, sequence = 0;
@@ -53,7 +55,9 @@ export async function startCanonicalCopilotProvider(port: number) {
       if (prompt !== current.plan.prompt) { response.writeHead(409).end(); return; }
       const last = parsed.messages.at(-1), stage = current.stage;
       if ((stage === "tool" && last?.role !== "user")
-        || (stage === "answer" && (last?.role !== "tool" || last.tool_call_id !== current.id))) {
+        || (stage === "answer" && (current.plan.tool
+          ? last?.role !== "tool" || last.tool_call_id !== current.id
+          : last?.role !== "user"))) {
         response.writeHead(409).end(); return;
       }
       requests.push({ prompt, stage, messages: structuredClone(parsed.messages) });
@@ -68,7 +72,7 @@ export async function startCanonicalCopilotProvider(port: number) {
       send(response, chunk({ role: "assistant", content: "" }));
       if (stage === "tool") {
         send(response, chunk({ tool_calls: [{ index: 0, id: current.id, type: "function",
-          function: { name: current.plan.tool.name, arguments: JSON.stringify(current.plan.tool.arguments) } }] }));
+          function: { name: current.plan.tool!.name, arguments: JSON.stringify(current.plan.tool!.arguments) } }] }));
         send(response, chunk({}, "tool_calls"));
       } else {
         // Character deltas preserve the output gate's whole-completion test boundary.
@@ -86,7 +90,7 @@ export async function startCanonicalCopilotProvider(port: number) {
     port: (server.address() as { port: number }).port,
     configure(plan: CanonicalProviderPlan) {
       active?.released.resolve();
-      active = { plan, id: `call_canonical_${++sequence}`, stage: "tool", reached: signal(), released: signal() };
+      active = { plan, id: `call_canonical_${++sequence}`, stage: plan.tool ? "tool" : "answer", reached: signal(), released: signal() };
     },
     calls: () => calls,
     requests: () => structuredClone(requests),

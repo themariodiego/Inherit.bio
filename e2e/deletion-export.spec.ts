@@ -281,7 +281,22 @@ test("account deletion schedules a seven-day hold and can be cancelled", async (
   await page.goto("/overview");
   await page.waitForURL((url) => url.pathname === "/settings/data");
 
+  const cancellation = page.waitForResponse(response =>
+    response.url().endsWith("/api/account/delete/cancel") && response.request().method() === "POST");
   await page.getByTestId("cancel-account-deletion").click();
+  const cancellationResponse = await cancellation;
+  expect(cancellationResponse.status()).toBe(200);
+  expect(cancellationResponse.headers()["cache-control"]).toContain("no-store");
+  // Cancellation revokes every pre-cancellation Auth session. The account
+  // becomes active, but this old browser session must not regain authority.
+  await expect(page).toHaveURL(url => url.pathname === "/auth/sign-in"
+    && url.searchParams.get("next") === "/settings/data");
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  expect(await page.evaluate(async () => (await fetch("/api/export")).status)).toBe(401);
+  // Re-enter through the actual password sign-in before the existing restored
+  // control and account/overview assertions; no fixture session is inserted.
+  await signIn(page, USER.email, USER.password);
+  await page.goto("/settings/data");
   await expect(
     page.getByRole("heading", { name: "Delete account" }),
   ).toBeVisible();

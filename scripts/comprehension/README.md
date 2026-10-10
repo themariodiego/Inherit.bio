@@ -153,9 +153,9 @@ Each (task, persona) pair gets:
   T8's deletion was scheduled, and T9 and T10's participant created no
   account.
 
-**T6 and T7 are skipped** until participant-c can be seeded (embryo ingest,
-G2.6). A skipped task is recorded with the binding's reason, counts as a
-failure of its task, and makes the run non-qualifying. It is never an answer.
+The ordinary `pnpm comprehension:run` entrypoint owns one shared active stack
+and therefore still refuses T6/T7 there. Use `pnpm comprehension:fresh` for the
+exclusive all-task lifecycle below. A shared-stack skip never becomes an answer.
 
 ### Model identity
 
@@ -188,15 +188,11 @@ participant calls, one grading call and, for a sampled answer or in a partial
 run, one re-grading call. A calibration run re-grades every session so that
 all three roles are priced.
 
-Planning arithmetic, not a measurement: a participant call carries about
-12,000 characters of page (roughly 3,000 tokens) plus the persona and
-instructions, so about 3,500 input tokens; a simulation of about eight steps
-and one grading call is then about 30,000 input and 1,000 output tokens. Two
-full runs of the 240 runnable sessions are about 15 million input tokens.
-At US$1 per million input tokens and US$5 per million output tokens that is
-about US$17 for two runs; at three times those prices two runs alone reach
-the cap, with nothing left to repeat a failed run. The calibration run
-replaces this arithmetic with a measured figure before any full run.
+A complete ten-task round has 300 independent simulations. A measured
+calibration replaces planning estimates before a paid full run, and the
+exclusive launcher also reserves every fresh native stack in that same shared
+journal. Neither a source plan nor a synthetic control establishes real
+hosting cost, model cost or elapsed time.
 
 ## Seeding the participant accounts
 
@@ -223,12 +219,89 @@ full suite, which must prove every run used the real Storage provider; a
 seeded account needs no upload. The two passing test lines above it are the
 seed's result.
 
-`participant-c` cannot be seeded yet: there is no embryo ingest path until
-G2.6 lands, as its `seedBlockedBy` records. Its file is ready for that path.
-`e2e/fixtures/embryo-pair-grch38.vcf` carries two synthetic embryos as separate
-samples, because the ingest contract refuses a single-sample cohort upload as
-`cohort_single_sample`. The two single-sample files it replaced could never
-have been loaded. G3.2 stays NO until the account can be built.
+`participant-c` is bound to the existing single `embryo-ingest` native case,
+`e2e/embryo-ingest-journey.spec.ts`. It consumes the bound one-file/two-embryo
+VCF and both bound synthetic parent accounts, signs the actual current
+artifacts, uploads through configure/chunks/complete, executes the real worker,
+checks whole publication and signs both analysis grants separately. It refuses
+old cohort rows and the runtime requires its exact fresh disposable native CI
+partition. The ordinary command above continues to seed only a/b; it cannot
+create c's isolated runtime. Use the existing full native CI partition that
+inventories the `embryo-ingest` project; no custom unsharded embryo execution or
+fixture-only result insertion is supported.
+
+The same real case records T6's click/submit trace from the Overview to the
+visible no-ranking statement after its genuine setup. Case counts, worker
+identity, native partition fences and all prior publication assertions remain.
+Full hosted proof of the authored seed/instrument is pending. This metadata is
+not an assertion that an arbitrary local stack already contains the seed.
+
+`e2e/participant-c-harness.ts` consumes the credentials and actual cohort ID
+from that completed journey. It opens the live harness's fresh browser context,
+signs in normally and checks the current publication, both subjects/files and
+the real worker's complete canonical-part proof before setup and completion.
+The same native case drives its real read/action/record interface without a
+model call. It refuses crossed identities, dirty or noncurrent parts, failed
+siblings, later publication revisions and any unsupported score. No password
+or browser storage state is written to its attachments.
+
+The native read adapter checks current publication before and after each
+observation, action and completion read. T7 uses G3.2's honest unavailable state:
+the real comparison says no calibrated model is registered and shows only file
+quality. The unchanged relative-only prohibition and blind rubric refuse risk
+invention or relabelling quality as personal risk.
+
+### Exclusive complete-round launcher (authored; native execution pending)
+
+`pnpm comprehension:fresh /absolute/private/run.json --plan` accepts the same
+private run settings nested as `run`, plus the existing
+`maximumInfrastructureCostPerStackMicroDollars` ceiling. Omitting `run.tasks`
+and `run.personas` plans all ten original tasks and thirty personas. The private
+file uses the same protected-file reader as the ordinary launcher; planning
+opens no stack, journal, key or model process.
+
+`--prepare` builds once. Every subsequent task/persona pair acquires a distinct
+empty disposable Supabase stack, exact owned runtime container and browser,
+reusing the source/build/image read-only, with an owned bounded per-container
+Next cache. It seeds a/b through the original
+product upload/report choices, T9 through the real separate reserver invitation,
+and c through both genuine parent signatures, upload and isolated worker. A
+fresh read/action context follows setup; T6 and T7 never share an account or
+publication with another simulation. The original provider proxy also checks
+real denial/CORS/transport and a's actual successful uploads. Close disposes the
+read context, browser, owned app children, provider and exact stack before the
+next acquisition. Changed authority/currentness, cancellation or uncertain
+cleanup stops the run; no adoption, reset, row cloning or model fallback exists.
+
+A complete plan has 300 fresh simulation stacks plus one build bootstrap,
+**not 300 builds**. All 301 infrastructure ceilings must fit the existing shared
+journal, and every attempted stack's maximum remains reserved even on failure.
+For a paid full run, the same completed calibration, model/settings match and
+25% projected-cost margin remain required, now alongside all remaining stack
+ceilings. These are conservative cost ceilings, not observed hosting cost or
+elapsed-time claims. The original 30-persona, regrade, two-run, stopping and
+budget policies are unchanged.
+
+The existing manual credential-free workflow now prepares two T6 and two T7
+sessions. Standard six-job CI still does not run this stochastic instrument.
+Its signed hosted workflow/checkout/run ownership fence, existing 45-minute job
+limit and all command/setup/inference limits remain unchanged. Full native
+execution, a measured calibration and actual authorized inference are still
+unrun. A supplied full configuration is callable by the same exclusive launcher;
+completion and qualification require every actual session/cleanup and the
+original thresholds, never a source check or stub answer. No G3.1/G3.3 YES is
+claimed, and a full round's fit inside the unchanged job limit is unmeasured.
+
+**The paid operator path is not configured.** The current checked-in manual
+workflow runs the deterministic stub only; it has no paid secret/configuration
+input. A private key kept in the owner's Mac shell cannot be inherited by a
+GitHub-hosted Linux process, and this launcher requires genuine signed ownership
+of that hosted job. No authorized key/configuration transport to that job has
+been established. The complete factory is therefore callable source, not an
+executable paid round. Before calibration, a private execution and credential
+mechanism consistent with the ownership fence and shared US$50 ceiling must be
+explicitly established. Do not upload a private key to GitHub/hosting, fake CI
+ownership or relax the fence to make a run start.
 
 ## Spending boundary
 
@@ -359,8 +432,25 @@ Unresolved browser/process acquisition or closure records a durable stop tied
 to the admitted resource identity. Finishing the run as stopped does not clear
 that marker: the history lock remains, replay refuses another run or revision
 closure, and no further inference is admitted. Disposal of a late handle does
-not silently clear this stop. Cleanup reconciliation is external work; this
-scaffold supplies no lock deletion or automatic recovery operation.
+not silently clear this stop. Normal journal admission never deletes a stale
+lock or automatically reconciles a resource.
+
+The explicit `run-manual-dry-reconciliation.mts` owner operation is limited to
+an unanswered, stopped, key-free native smoke in the **dry** ledger. A fresh
+authenticated Linux supervisor must prove the exact prior owner is dead, the
+same isolated daemon is completely empty, the preserved stack lock is absent,
+and no old or unknown owned-user process remains. The previous public nonce
+marker stays permanent. Exact public run/session/source and complete history
+prefix bindings are mandatory. Unfinished runs, answered tasks, any inference
+attempt in the target run, uncertain usage, a live ledger or spending lock
+refuse. See the [operator procedure](../../docs/comprehension-runs/owned-linux-operator.md#explicit-manual-key-free-dry-reconciliation).
+
+This operation appends and fsyncs one `resource-reconciled` event, then releases
+only the exact empty history lock after repeating native cleanup checks. It
+never opens or changes the spend journal, restores a reservation, rewrites the
+failed finish/trace or reuses a session identity. The prior failed smoke remains
+unqualified. A partial append or lost cleanup certainty retains the recovery
+guard and refuses normal opening; it does not automatically retry recovery.
 
 A different product revision cannot start until the previous revision is
 explicitly closed in the history. Closure uses its last two full runs on the
@@ -382,7 +472,7 @@ cannot:
 | Production build under the test jurisdiction | Checked before every run: build id served, and a TEST-LOCAL-only capability visible. |
 | T9 fixture | Built: the owner's reserved-record invitation path, with the mail in an inbox beside the page. |
 | T10 fixture | None needed: T10 starts signed out on public routes, as bound. The Record Key Card path cannot be exercised until embryo ingest lands. |
-| T6 and T7 fixtures | Still blocked: participant-c cannot be seeded until embryo ingest (G2.6). Both are recorded as skipped, so no run can be clean. |
+| T6 and T7 fixtures | The exclusive all-task launcher authors fresh per-simulation native publication and read/action lifetimes for both tasks. The ordinary shared-stack path still refuses them. Native full-round execution and inference qualification remain unrun. |
 | Provider token and cost bounds | Blocked on a credential. A calibration run measures them; a paid full run refuses to start without one. |
 
 No real participant, human review, clinical interpretation, expense or

@@ -43,6 +43,8 @@ export class InstrumentJournal {
     if (limit > 50_000_000) throw new Error("Instrument cap exceeds approved maximum");
     const names = ledgers[ledger];
     const lock = path.join(directory, names.lock), filename = path.join(directory, names.history);
+    try { await lstat(`${lock}.manual`); throw new Error("Manual reconciliation is active or uncertain"); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     await mkdir(lock, { mode: 0o700 });
     let file: FileHandle | undefined, budget: SpendJournal | undefined;
     try {
@@ -74,6 +76,7 @@ export class InstrumentJournal {
   }
 
   append(event: HistoryEvent): Promise<void> {
+    if (event.kind === "resource-reconciled") return Promise.reject(new Error("Explicit manual reconciliation required"));
     if (this.closing) return Promise.reject(new Error("Instrument journal is closing"));
     const operation = this.tail.then(async () => {
       if (this.closed || this.poisoned) throw new Error("Instrument journal unavailable");

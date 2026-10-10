@@ -3,13 +3,15 @@
 // as the held file and sent to the address the person's own record holds.
 // It says what was stored and what was not, the fixed deletion date, and
 // gives one link, with no account, to see what the uploader sees and to say
-// yes, say no, or delete everything. It never carries a name, an address, a
-// file name or anything read from the file.
+// yes, say no, or delete everything. Only the uploader's safe account display
+// name is shown; no recipient address, file name or genetic value is carried.
 import { Button, Text } from "@react-email/components";
 import { EmailLayout, brand } from "./base";
 
 export interface AdultUploadNoticeProps {
   fileKind: "array" | "vcf";
+  /** Captured by the native upload notice; absent on older queued notices. */
+  uploaderName?: string | null;
   /** The UTC day the file was added, as an ISO date. */
   uploadedOn: string;
   /** The fixed UTC day the file is deleted unless the person says yes. */
@@ -34,12 +36,16 @@ function words(isoDate: string): string {
   });
 }
 
-export function AdultUploadNoticeEmail({ fileKind, uploadedOn, deleteBy, reviewUrl }: AdultUploadNoticeProps) {
+export function AdultUploadNoticeEmail({ fileKind, uploaderName, uploadedOn, deleteBy, reviewUrl }: AdultUploadNoticeProps) {
   return (
     <EmailLayout heading="A DNA file was added for you">
       <Text style={paragraph}>
         On {words(uploadedOn)}, the person you gave permission to added a DNA
         file for you on Inherit. It is {fileKind === "array" ? "a raw data file" : "a VCF file"}.
+      </Text>
+      <Text style={paragraph}>
+        Who added it: {uploaderName ?? "Someone with an Inherit account"}.
+        {uploaderName ? " This is the name on their account." : ""}
       </Text>
       <Text style={paragraph}>
         Nothing is made from it unless you say yes. Even then, Inherit asks
@@ -54,6 +60,9 @@ export function AdultUploadNoticeEmail({ fileKind, uploadedOn, deleteBy, reviewU
         you say yes, say no, or delete everything.
       </Text>
       <Button href={reviewUrl} style={button}>Review the file</Button>
+      <Text style={paragraph}>
+        If the link does not work, or you did not expect this, write to privacy@inherit.bio.
+      </Text>
     </EmailLayout>
   );
 }

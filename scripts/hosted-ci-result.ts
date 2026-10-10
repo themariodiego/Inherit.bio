@@ -2,11 +2,14 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { verifyHostedSmokeArtifact } from "./comprehension/hosted-owned-smoke";
+export { verifyHostedSmokeArtifact };
 import { CI_BROWSER_SHARDS, verifyBrowserShards, verifyBrowserSourceCensus,
   type CiBrowserManifest, type CiBrowserShardReceipt } from "./ci-browser-shards";
 import { verifyAccessibilitySweepPlacement } from "./ci-browser-balance";
 import { verifyBrowserQueueIsolation } from "./ci-browser-queue-isolation";
 import { STANDARD_CI_BROWSER_PROJECTS } from "./ci-browser-project-registry";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256 } from "./ci-browser-duration-plan";
 import { REPORT_SLUG, RUNS, THRESHOLDS } from "./lighthouse-contract.mjs";
 
 const sha = z.string().regex(/^[0-9a-f]{40}$/);
@@ -43,7 +46,8 @@ const step = z.object({ name: z.string().optional(), if: z.string().optional(), 
   run: z.string().optional(), with: z.record(z.string(), z.unknown()).optional(), id: z.string().optional(),
   env: z.record(z.string(), z.unknown()).optional(),
   "continue-on-error": z.boolean().optional(), "timeout-minutes": id.optional() });
-const workflowJob = z.object({ steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
+const workflowJob = z.object({ if: z.string().optional(), needs: z.array(z.string()).optional(),
+  env: z.record(z.string(), z.unknown()).optional(), "runs-on": z.string().optional(), "timeout-minutes": id.optional(), steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
   matrix: z.object({ shard: z.array(id) }) }).optional() });
 export type HostedWorkflowContract = ReturnType<typeof hostedWorkflowContract>;
 const mainFontCondition = "github.event_name == 'push' && github.ref == 'refs/heads/main'";
@@ -89,10 +93,24 @@ function fontCacheStep(family: string, item: z.infer<typeof step>) {
 /** Only the existing job family and producer format. New shapes require review. */
 export function hostedWorkflowContract(value: unknown) {
   const workflow = z.object({ jobs: z.record(z.string(), workflowJob) }).parse(value);
-  same(Object.keys(workflow.jobs), ["repository-checks", "browser", "checks"], "Unsupported workflow job family");
+  same(Object.keys(workflow.jobs), ["repository-checks", "database-tests", "browser", "owned-keyfree-smoke", "checks"], "Unsupported workflow job family");
+  for (const family of ["repository-checks", "database-tests", "browser", "owned-keyfree-smoke"]) {
+    assert(workflow.jobs[family].if === undefined && workflow.jobs[family].needs === undefined,
+      "Required suites must run independently without a job condition");
+  }
+  const aggregate = workflow.jobs.checks;
+  assert(aggregate.if === "always()", "Aggregate must observe every terminal prerequisite");
+  assert.deepEqual(aggregate.needs, ["repository-checks", "database-tests", "browser", "owned-keyfree-smoke"], "Aggregate prerequisite graph differs");
+  const prerequisite = aggregate.steps[0];
+  assert(prerequisite.name === "Require every prerequisite job to succeed" && prerequisite.if === undefined
+    && prerequisite.run === 'test "$REPOSITORY_RESULT" = success\ntest "$DATABASE_RESULT" = success\ntest "$BROWSER_RESULT" = success\ntest "$OWNED_SMOKE_RESULT" = success\n'
+    && aggregate.env?.REPOSITORY_RESULT === "${{ needs.repository-checks.result }}"
+    && aggregate.env?.DATABASE_RESULT === "${{ needs.database-tests.result }}"
+    && aggregate.env?.BROWSER_RESULT === "${{ needs.browser.result }}"
+    && aggregate.env?.OWNED_SMOKE_RESULT === "${{ needs.owned-keyfree-smoke.result }}", "Aggregate must explicitly require every suite SUCCESS");
   assert.deepEqual(workflow.jobs.browser.strategy?.matrix.shard,
     Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => i + 1), "Unsupported browser matrix");
-  for (const family of ["repository-checks", "browser"]) {
+  for (const family of ["repository-checks", "browser", "owned-keyfree-smoke"]) {
     const steps = workflow.jobs[family].steps;
     const admission = steps.filter(item => item.name === "Admit signed Ubuntu APT mirror fallback");
     assert(admission.length === 1 && admission[0].if === undefined
@@ -104,6 +122,21 @@ export function hostedWorkflowContract(value: unknown) {
       && installer[0].run === "pnpm exec playwright install --with-deps chromium"
       && steps.indexOf(admission[0]) < steps.indexOf(installer[0]), "Complete mandatory installer differs");
   }
+  const smoke = workflow.jobs["owned-keyfree-smoke"];
+  assert(smoke["runs-on"] === "ubuntu-24.04" && smoke.strategy === undefined && smoke["timeout-minutes"] === 55, "One independent owned Linux smoke required");
+  assert.deepEqual(smoke.steps.map(item => item.uses ?? item.run), [
+    "actions/checkout@v4", "pnpm/action-setup@v4", "actions/setup-node@v4", "pnpm install --frozen-lockfile",
+    'sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"',
+    "pnpm exec playwright install --with-deps chromium",
+    "docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser",
+    "pnpm exec tsx scripts/comprehension/run-hosted-owned-smoke.mts", "actions/upload-artifact@v4",
+  ], "Complete owned smoke setup, fixed sender or artifact producer differs");
+  assert.deepEqual(smoke.steps[0].with, { "fetch-depth": 0, "persist-credentials": false });
+  assert.deepEqual(smoke.steps[2].with, { "node-version": 22, cache: "pnpm" });
+  assert(smoke.steps.slice(0, -1).every(item => item.if === undefined) && smoke.steps.at(-1)?.if === "always()"
+    && smoke.steps.at(-1)?.with?.name === "owned-keyfree-smoke-${{ github.run_attempt }}"
+    && smoke.steps.at(-1)?.with?.path === "${{ runner.temp }}/inherit-owned-keyfree/public-artifact/owned-keyfree-smoke.json"
+    && smoke.steps.at(-1)?.with?.["if-no-files-found"] === "error", "Exact mandatory public smoke artifact required");
   const jobs = Object.entries(workflow.jobs).map(([family, job]) => {
     assert(!("continue-on-error" in job), "Required jobs may not declare continue-on-error");
     const named = job.steps.map(item => item.name ?? `Run ${item.uses ?? item.run?.split("\n")[0]}`);
@@ -130,10 +163,56 @@ export function hostedWorkflowContract(value: unknown) {
     return { family, names: family === "browser"
       ? Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`) : [family], named, failureUploads, fontCache };
   });
+  const repositorySteps = workflow.jobs["repository-checks"].steps;
+  const startup = repositorySteps.filter(item => item.name === "Start local Supabase");
+  const frozenInstall = repositorySteps.filter(item => item.run === "pnpm install --frozen-lockfile");
+  const sqlPreflight = repositorySteps.filter(item => item.run === "pnpm gate:sql-includes");
+  const exportPreflight = repositorySteps.filter(item => item.name === "Native export table census preflight");
+  const keyExport = repositorySteps.filter(item => item.name === "Export current local Supabase keys");
+  const mandatory = (item: typeof repositorySteps[number]) => item.if === undefined
+    && item["continue-on-error"] === undefined && item.uses === undefined;
+  assert(startup.length === 1 && startup[0].run === "pnpm exec supabase start" && mandatory(startup[0])
+    && repositorySteps.filter(item => item.run === "pnpm exec supabase start").length === 1,
+  "Exactly one mandatory native migration startup required");
+  assert(frozenInstall.length === 1 && mandatory(frozenInstall[0]) && sqlPreflight.length === 1 && mandatory(sqlPreflight[0])
+    && repositorySteps.indexOf(frozenInstall[0]) < repositorySteps.indexOf(sqlPreflight[0])
+    && repositorySteps.indexOf(sqlPreflight[0]) < repositorySteps.indexOf(startup[0]),
+  "Native migration startup must follow frozen install and SQL include preflight");
+  const expensiveChecks = repositorySteps.filter(item => ["pnpm test", "pnpm typecheck", "pnpm lint"].includes(item.run ?? "")
+    || item.run?.startsWith("pnpm gate:") && item.run !== "pnpm gate:sql-includes");
+  assert(["pnpm test", "pnpm typecheck", "pnpm lint"].every(command => expensiveChecks.some(item => item.run === command))
+    && expensiveChecks.every(item => repositorySteps.indexOf(startup[0]) < repositorySteps.indexOf(item)),
+  "Native migration startup must precede unit, type, lint and quality checks");
+  assert(exportPreflight.length === 1 && mandatory(exportPreflight[0])
+    && exportPreflight[0].run === "pnpm exec supabase test db supabase/tests/export_member_plan.sql"
+    && repositorySteps.filter(item => item.run === exportPreflight[0].run).length === 1
+    && repositorySteps.indexOf(exportPreflight[0]) === repositorySteps.indexOf(startup[0]) + 1
+    && expensiveChecks.every(item => repositorySteps.indexOf(exportPreflight[0]) < repositorySteps.indexOf(item))
+    && repositorySteps.filter(item => item.run === "pnpm exec supabase test db").length === 0,
+  "Mandatory complete export table census must immediately follow startup; the full suite belongs to its independent job");
+  assert(keyExport.length === 1 && mandatory(keyExport[0])
+    && expensiveChecks.every(item => repositorySteps.indexOf(item) < repositorySteps.indexOf(keyExport[0])),
+  "Local database keys must remain unavailable to unit and quality checks");
+  const databaseJob = workflow.jobs["database-tests"], databaseSteps = databaseJob.steps;
+  assert(databaseJob["runs-on"] === "ubuntu-24.04" && databaseJob.strategy === undefined,
+    "Complete database suite needs one fresh Ubuntu job");
+  assert.deepEqual(databaseSteps.map(item => item.uses ?? item.run), [
+    "actions/checkout@v4", "pnpm/action-setup@v4", "actions/setup-node@v4", "pnpm install --frozen-lockfile",
+    "pnpm gate:sql-includes", "pnpm exec supabase start", keyExport[0].run,
+    "pnpm exec supabase test db", "pnpm exec supabase stop --no-backup",
+  ], "Independent full database setup, keys, command or cleanup differs");
+  assert.deepEqual(databaseSteps[0].with, { "fetch-depth": 0, "persist-credentials": false }, "Complete database source checkout required");
+  assert.deepEqual(databaseSteps[2].with, { "node-version": 22, cache: "pnpm" }, "Locked Node22 database dependencies required");
+  assert(databaseSteps.slice(0, -1).every(item => item.if === undefined)
+    && databaseSteps.at(-1)?.if === "always()", "Database startup/test must be mandatory and cleanup unconditional");
   const producer = (family: string, name: string, member: string) => {
     const matches = workflow.jobs[family].steps.filter(item => item.uses === "actions/upload-artifact@v4"
       && item.with?.name === name);
-    assert(matches.length === 1 && matches[0].with?.path === `test-results/${member}`
+    const declaredPath = matches[0]?.with?.path;
+    const exactSingleMember = declaredPath === `test-results/${member}`;
+    const exactQcSeedSidecar = family === "browser" && member === "ci-browser-shard.json"
+      && declaredPath === "test-results/ci-browser-shard.json\ntest-results/embryo-qc-seed.json\n";
+    assert(matches.length === 1 && (exactSingleMember || exactQcSeedSidecar)
       && matches[0].with?.["if-no-files-found"] === "error", "Unsupported coverage artifact producer");
   };
   producer("repository-checks", "browser-case-${{ github.run_attempt }}-manifest", "ci-browser-manifest.json");
@@ -216,6 +295,14 @@ export function coverageArtifacts(request: HostedResultRequest, value: unknown) 
     return { ...artifact, member: name.endsWith("manifest") ? "ci-browser-manifest.json" as const : "ci-browser-shard.json" as const };
   });
 }
+export function ownedSmokeArtifact(request: HostedResultRequest, value: unknown) {
+  const inventory = z.object({ total_count: z.number().int().nonnegative(), artifacts: z.array(artifactSchema) }).parse(value);
+  assert(inventory.total_count === inventory.artifacts.length);
+  const selected = inventory.artifacts.filter(item => item.name === `owned-keyfree-smoke-${request.runAttempt}`);
+  assert(selected.length === 1 && !selected[0].expired && selected[0].workflow_run.id === request.runId
+    && selected[0].workflow_run.head_sha === request.head, "One complete same-attempt native smoke artifact required");
+  return { ...selected[0], member: "owned-keyfree-smoke.json" as const };
+}
 export function verifyArtifactBytes(artifact: { size_in_bytes: number; digest: string }, bytes: Buffer): void {
   assert(bytes.length === artifact.size_in_bytes && artifact.digest === `sha256:${hashBytes(bytes)}`,
     "Archive differs from original API digest/size");
@@ -230,6 +317,9 @@ export function verifyHostedCoverage(request: HostedResultRequest, manifestValue
   same([...new Set(manifest.cases.map(value => value.split(":")[1]))], [...STANDARD_CI_BROWSER_PROJECTS],
     "Complete current browser project set differs");
   assert.equal(manifest.allocation?.profileSha256 ?? null, profileSha256, "Committed selected profile differs");
+  if (profileSha256 !== null) assert.equal(manifest.allocation?.mode,
+    profileSha256 === DEFAULT_BROWSER_ALLOCATION_SHA256 ? "queue-v1" : "duration-v1",
+    "Committed scheduling mode differs");
   const sweeps = verifyAccessibilitySweepPlacement(shards); verifyBrowserQueueIsolation(shards);
   return { cases: count, ordinaryFiles: manifest.files.length, wholeGroups: shards.reduce((n, item) => n + item.files.length, 0),
     assignments: [...shards].sort((a, b) => a.index - b.index).map(item => item.executedCases.length),
@@ -251,8 +341,9 @@ export function commandLog(raw: string, command: string): string {
 function single(text: string, expression: RegExp, message: string): RegExpMatchArray {
   const matches = [...text.matchAll(expression)]; assert(matches.length === 1, message); return matches[0];
 }
-export function repositoryLogSummary(raw: string) {
-  const unit = commandLog(raw, "pnpm test"), db = commandLog(raw, "pnpm exec supabase test db"),
+/** Repository summaries retain the independent complete pgTAP job's original log. */
+export function repositoryLogSummary(raw: string, databaseRaw: string) {
+  const unit = commandLog(raw, "pnpm test"), db = commandLog(databaseRaw, "pnpm exec supabase test db"),
     locks = commandLog(raw, "pnpm test:invitation-locks"), lighthouse = commandLog(raw, "pnpm e2e:lighthouse");
   const files = single(unit, /Test Files\s+(\d+) passed \((\d+)\)/g, "Ambiguous unit file summary"),
     cases = single(unit, /(?:^|\n)\s*Tests\s+(\d+) passed \((\d+)\)/g, "Ambiguous unit case summary");
@@ -310,7 +401,7 @@ export function verifyCurrentChecks(request: HostedResultRequest, role: "head" |
   assert.deepEqual(metadata.verifiedRequest, current, "Check role is not bound to the verified metadata request");
   assert(metadata.run.id === current.runId && metadata.run.run_attempt === current.runAttempt
     && metadata.run.head_sha === current.head && metadata.run.event === current.event, "Check metadata source differs");
-  same(metadata.jobs.map(job => job.name), ["repository-checks", "checks",
+  same(metadata.jobs.map(job => job.name), ["repository-checks", "database-tests", "owned-keyfree-smoke", "checks",
     ...Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`)], "Complete verified CI jobs required");
   assert(metadata.jobs.every(job => job.status === "completed" && job.conclusion === "success"
     && job.run_id === current.runId && job.run_attempt === current.runAttempt && job.head_sha === current.head), "Check metadata jobs differ");

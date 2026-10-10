@@ -39,7 +39,7 @@ const record = z.object({
 const receipt = z.object({ schemaVersion: z.literal(1), status: z.literal("CAPTURED_UNREVIEWED"),
   request, atUtc: z.string().datetime(), sourceBefore: z.array(pin).min(1).max(64),
   sourceAfter: z.array(pin).min(1).max(64), requestInputBefore: pin, requestInputAfter: pin,
-  records: z.array(record).length(24), firstError: z.null(),
+  records: z.array(record).min(24).max(27), firstError: z.null(),
 }).strict();
 export type CurrentCaptureRequest = z.infer<typeof request>;
 export type CurrentCaptureAdmission = Readonly<{
@@ -59,8 +59,8 @@ export type ValidatedHistoricalMetadata = Readonly<{
 }>;
 const metadataSchema = z.object({ runId: positive, runAttempt: positive,
   workflowHead: revision, testedHead: revision, tree: revision,
-  event: z.enum(["push", "pull_request"]), jobIds: z.array(positive).length(8),
-  artifacts: z.array(z.object({ id: positive, name: z.string().min(1) }).strict()).length(7),
+  event: z.enum(["push", "pull_request"]), jobIds: z.array(positive).min(8).max(10),
+  artifacts: z.array(z.object({ id: positive, name: z.string().min(1) }).strict()).min(7).max(8),
 }).strict();
 export type CaptureContext = Readonly<{
   runId: number; runAttempt: number; prHead: string; testedMerge: string;
@@ -100,12 +100,13 @@ export function currentCaptureContext(raw: Buffer, inputAdmission: CurrentCaptur
   assert.deepEqual(value.requestInputBefore, value.requestInputAfter, "Request source changed during capture");
   assert.deepEqual(value.requestInputBefore, pin.parse(admission.requestInputPin),
     "Request input pin differs from the reviewed original");
-  assert(metadata.jobIds.length === 8, "Full eight validated jobs required");
+  assert([8, 9, 10].includes(metadata.jobIds.length), "Exact historical or current validated job vector required");
   unique(metadata.jobIds, "Duplicate validated job");
   const prefix = `browser-case-${metadata.runAttempt}-`;
   const artifactNames = [prefix + "manifest", ...Array.from({ length: 6 }, (_, i) => prefix + `shard-${i + 1}`)];
+  if (metadata.jobIds.length === 10) artifactNames.push(`owned-keyfree-smoke-${metadata.runAttempt}`);
   assert.deepEqual(metadata.artifacts.map(item => item.name).sort(), artifactNames.sort(),
-    "Seven validated same-attempt artifacts required");
+    "Exact historical or current same-attempt artifacts required");
   unique(metadata.artifacts.map(item => item.id), "Duplicate validated artifact");
   const route = `repos/themariodiego/Inherit.bio/`;
   const api = ["gh", "api", "--method", "GET", "-H", "X-GitHub-Api-Version: 2022-11-28"];

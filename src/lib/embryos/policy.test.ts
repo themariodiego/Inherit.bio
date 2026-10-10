@@ -11,6 +11,7 @@ import {
   type RscEmbryoComparison,
 } from "./policy";
 import { syntheticAbsoluteFinding, syntheticCarrierFinding, syntheticCoverageFailure, syntheticNullFinding, syntheticQc } from "./synthetic";
+import { projectFinding } from "./projection";
 
 /**
  * The closed-shape validator and the two permitted orders (design §6.1;
@@ -21,7 +22,7 @@ import { syntheticAbsoluteFinding, syntheticCarrierFinding, syntheticCoverageFai
 
 function comparison(): RscEmbryoComparison {
   const embryos = [
-    { id: "e1", sample_ordinal: 0, display_label: "Embryo 1", status: "qc_pass" as const, qc: syntheticQc({ call_rate: 0.97 }) },
+    { id: "e1", sample_ordinal: 0, display_label: "Embryo 1", status: "qc_pass" as const, qc: syntheticQc({ call_rate: 0.97, sites_called: 970 }) },
     { id: "e2", sample_ordinal: 1, display_label: "Embryo 2", status: "qc_fail" as const, qc: syntheticQc({ call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate"] }) },
     { id: "e3", sample_ordinal: 2, display_label: "Embryo 3", status: "qc_pass" as const, qc: syntheticQc({ call_rate: 0.99 }) },
   ];
@@ -42,6 +43,34 @@ function comparison(): RscEmbryoComparison {
 }
 
 describe("closed shapes", () => {
+  it.each(["absolute", "carrier", "coverage"])("preserves a classified %s finding through the serialized real projection", kind => {
+    const finding = kind === "absolute" ? syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02)
+      : kind === "carrier" ? syntheticCarrierFinding("Embryo 1", "c-a", "carrier")
+      : syntheticCoverageFailure("Embryo 1", "c-a");
+    const saved = JSON.parse(JSON.stringify(finding));
+    const { embryo_label, ...row } = saved;
+    expect(projectFinding({ ...row, embryo_id: "synthetic-embryo" }, embryo_label)).toEqual(finding);
+    expect(saved.finding.schema_version).toBe(2);
+    expect(saved.finding.figure_basis).toEqual({ version: 1, basis: kind === "absolute" ? "modelled" : "observed" });
+  });
+  it.each(["missing_version", "old_version", "missing_basis", "unknown_basis_version", "observed_risk", "exact_risk", "extra"])("refuses %s without inventing a risk basis", fault => {
+    const finding = JSON.parse(JSON.stringify(syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02)));
+    if (fault === "missing_version") delete finding.finding.schema_version;
+    if (fault === "old_version") finding.finding.schema_version = 1;
+    if (fault === "missing_basis") delete finding.finding.figure_basis;
+    if (fault === "unknown_basis_version") finding.finding.figure_basis.version = 2;
+    if (fault === "observed_risk") finding.finding.figure_basis.basis = "observed";
+    if (fault === "exact_risk") finding.finding.figure_basis.basis = "exact";
+    if (fault === "extra") finding.finding.figure_basis.guessed = true;
+    expect(validateEmbryoDto("EmbryoFinding", finding).ok).toBe(false);
+    const { embryo_label, ...row } = finding;
+    expect(() => projectFinding({ ...row, embryo_id: "synthetic-embryo" }, embryo_label)).toThrow();
+  });
+  it("refuses a modelled carrier probability in an observed variant-call finding", () => {
+    const finding = JSON.parse(JSON.stringify(syntheticCarrierFinding("Embryo 1", "c-a", "carrier")));
+    finding.finding.figure_basis.basis = "modelled";
+    expect(validateEmbryoDto("EmbryoFinding", finding).ok).toBe(false);
+  });
   it("accepts every synthetic shape as written", () => {
     expect(validateEmbryoDto("rscEmbryoComparison", comparison())).toEqual({ ok: true });
     expect(validateEmbryoDto("EmbryoFinding", syntheticCarrierFinding("Embryo 1", "c-x", "carrier"))).toEqual({ ok: true });
@@ -55,7 +84,7 @@ describe("closed shapes", () => {
     expect([...SHAPES.EmbryoFinding.keys].sort()).toEqual([
       "citation_ids", "condition_id", "condition_name", "coverage_state", "embryo_label", "evidence_label", "finding", "not_covered_reason",
     ]);
-    expect(SHAPES.qc.keys).toHaveLength(21);
+    expect(SHAPES.qc.keys).toHaveLength(22);
     expect(SHAPES.inputFacts.keys).toEqual(["coordinate_conversion", "source_origin", "source_imputation", "call_observation"]);
     expect(SHAPES.rscEmbryoComparison.keys).toEqual(["cohort_id", "context_counts", "embryos", "result_rows", "trade_offs", "standing_statement"]);
     expect(SHAPES.tradeOffs.keys).toEqual(["statement_copy_id", "conflicts"]);

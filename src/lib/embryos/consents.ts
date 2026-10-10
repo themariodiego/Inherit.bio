@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { readArtifactPresentation, readCohortGrantPresentation } from "@/lib/family/grant-token";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enqueueCurrentEmbryoCarrier } from "./carrier-enqueue";
 import { invalidRequest, notFound, rpcErrorResponse, sensitiveJson, unavailable } from "./api";
 import { typedNameIsValid } from "./basis";
 import {
@@ -201,6 +202,7 @@ async function grantCohortPurpose(
   });
   if (error) return rpcErrorResponse(error);
   if (!grantId) return unavailable();
+  await enqueueCurrentEmbryoCarrier(body.cohortId, request.signal);
 
   return closedResponse(
     "api.consents",

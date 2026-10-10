@@ -11,13 +11,22 @@ const proportions = { AFR: 0.1, AMR: 0.009, CSA: 0.17, EAS: 0.08, EUR: 0.38, MID
 const result: RegionalAdmixtureResult = { proportions, markersUsed: 168, reporting: regionalReporting(proportions),
   note: REGIONAL_RANGE_NOTE, fit: { converged: true, iterations: 42 } };
 function render(value: RegionalAdmixtureResult | null, initialWellSupportedOnly = true) {
-  return renderToStaticMarkup(h(RegionalAncestryRegions, { subjectId: "synthetic-regional-subject", result: value,
+  return renderToStaticMarkup(h(RegionalAncestryRegions, { subjectId: "synthetic-regional-subject", result: value, basis: "modelled", coverageBasis: "observed",
     minMarkers: 168, shapes: regionalMapShapes(), panel: { markers: 168, version: manifest.referenceVersion },
     reference: manifest as RegionalReferenceFacts, initialWellSupportedOnly }));
 }
 const openingTags = (html: string) => [...html.matchAll(/<[a-z][^>]*>/g)].map(match => match[0]);
 
 describe("seven-region ancestry surface", () => {
+  it("preserves a historical modelled share without inventing a missing coverage receipt", () => {
+    const html = renderToStaticMarkup(h(RegionalAncestryRegions, { subjectId: "synthetic-regional-subject", result,
+      basis: "modelled", minMarkers: 168, shapes: regionalMapShapes(), panel: { markers: 168, version: manifest.referenceVersion },
+      reference: manifest as RegionalReferenceFacts }));
+    expect(html).toContain('data-figure-basis="modelled"');
+    expect(html).not.toContain('data-figure-kind="coverage"');
+    expect(html).not.toContain('data-figure-basis="observed"');
+    expect(html).toContain("168 usable ancestry markers");
+  });
   it("attributes every share to one block and the new estimator; no fabricated interval is shown", () => {
     const html = render(result), tags = openingTags(html);
     expect(tags.filter(tag => tag.includes('data-claim-block="true"'))).toHaveLength(1);

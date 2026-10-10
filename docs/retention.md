@@ -51,6 +51,17 @@ This is the sole authority for retention clocks, deletion clocks, notice clocks 
 | `appeal.intake-review-30d` | A valid public subject objection, genetic-parent objection or access/review appeal is submitted | Acknowledge within 5 business days and reach a final resolution within 30 days of submission. A request for more information, reassignment or retry does not restart or extend the deadline. | Store the claimant statement, name, contact reference, supplied decision/subject/cohort reference and reviewer reason only as application-envelope-encrypted case data. Access is limited to the current named human reviewer with MFA and recent authentication, with every read audited; plaintext is forbidden in URLs, responses after intake, logs, analytics and audit details. On final approval, refusal, withdrawal or the 30-day deadline, make the case data unreadable, crypto-shred its key and delete the statement, contact data, reviewer reason and delivery copies. Of the intake/review record, retain only the coded appeal kind and outcome, acknowledgement and resolution timestamps, review revision, pseudonymized reviewer/principal references and pseudonymized audit event. Any resulting operational restriction or correction persists only under its own authority. |
 | `future-person.correction-review-30d` | An approved Future Person claimant submits one correction request | Acknowledge within 5 business days and reach a final resolution within 30 days of submission. A request for more information, reviewer reassignment or retry does not restart or extend the deadline. | Store the correction statement and reviewer reason only as application-envelope-encrypted case data. Access is limited to the current named human correction reviewer with MFA and recent authentication, with every read audited; plaintext, proposed sensitive values and genetic identity are forbidden in URLs, responses after intake, logs, analytics and audit details. On final approval, rejection, withdrawal or the 30-day deadline, make the case data unreadable, crypto-shred its key and delete the statement, reviewer reason, contact/delivery copies and review working data. Of the intake/review record, retain only the coded versioned outcome, correction and review revisions, immutable provenance pointers and pseudonymized audit event. A separately authorised corrected domain record or reanalysis instruction may survive under its own authority; the intake prose never does. |
 
+Requester statement export retains a private encrypted envelope only for an
+original correction or appeal registered by its native intake transaction.
+`private.account_requester_statement_capsules` follows the original case's
+30-day deadline, is included in `appeal-and-correction-working-packages`, and
+its wrapped key is deleted when the source case is deleted or reaches a final
+state. It does not retain appeal contact data, reviewer assignments or notes.
+An account export requires the current original-author binding and complete
+consumed account/session receipt; opaque legacy cases are never converted.
+The requester TEST gate and account generation/provider activation remain
+separate requirements.
+
 ## Embryo and future-person records
 
 | ID | Disposition | Maximum and renewal | Notice and deletion |
@@ -180,3 +191,34 @@ retry accounting, zero derived residuals, original-source preservation and
 successful-phase observation. Fixture transaction delimiters replace the job's
 outer transaction boundaries for rollback safety. This establishes local SQL
 behavior, not hosted scheduler delivery.
+
+### NEW correction intake package
+
+`private.new_correction_intakes` records the native original scope, named
+reviewer and ten-minute preparation expiry. The accepted correction keeps its
+original thirty-day package deadline. Neither replay nor regeneration changes
+those fields. Its wrapped key, working data and separately cloned case contact
+are shredded on terminal disposition or original expiry; the shared original
+claimant contact is preserved. Coded intake metadata remains until the existing
+complete claimant-erasure graph disposes of its registered private row. Native
+cleanup supplies no remote-copy/history deletion proof or purge completion.
+The owner-only intake configuration is disabled by default; the server TEST
+requester gate and independent native opt-in must both be enabled separately.
+
+
+### Anonymous public appeal intake package
+
+The disabled-by-default native public intake reserves an original ten-minute
+preparation and a thirty-day case deadline. Its random `case_requester` has no
+account or subject; contact matching never supplies ownership. Terminal
+outcomes and due expiry erase the wrapped case key, working ciphertext, contact,
+local token/session and local delivery copies, leaving only coded case metadata.
+The expiry transition occurs before ciphertext erasure so the immutable
+statement guard permits only terminal blanking. A spent form nonce survives
+immediate closure until its original signed-form lifetime ends.
+
+This source slice creates an atomic evidence-mail candidate and a dedicated
+current-contact reader. Generic provider acceptance is not delivery or remote
+history/purge proof. The candidate grants no account or target authority.
+Appeal activation, evidence/session UI, reviewer completion and genuine provider
+delivery remain unqualified; native intake configuration stays disabled.

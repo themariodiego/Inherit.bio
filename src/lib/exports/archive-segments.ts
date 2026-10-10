@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
+import type {RequesterStatementRuntime} from "./requester-statement-runtime";
 
 /** Physical objects and download chunks share this boundary. This is decimal
  * bytes, as required by payloadBoundaryContract, not 4 MiB. */
@@ -51,6 +52,9 @@ export type StoredArchive = Readonly<{
   manifestSha256: string;
 }>;
 export type ArchiveSegmentationOptions = {
+  sensitiveRuntime?: RequesterStatementRuntime;
+  /** TEST own statements only; clear actual controlled mutable buffers. */
+  sensitiveBuffers?: () => boolean;
   exportId: string;
   principalHash: string;
   /** Captured by the exact database-authorized job claim, never client input.
@@ -65,6 +69,12 @@ export type ArchiveSegmentationOptions = {
   /** Durable INSERT-only attempt claim. Refuse an existing attempt, including
    * completed attempts. There is no recovery/adoption argument in this API. */
   beginAttempt: (attempt: ArchiveAttempt, signal: AbortSignal) => Promise<void>;
+  /** Orchestrate complete member planning after the bounded INSERT succeeds.
+   * Every individual source/RPC/transport must retain its existing operation
+   * limit and current-authority checks. The orchestration owns this attempt's
+   * signal and immutable whole-job deadline; it never renews source scope or
+   * writes provider bytes. Source acquisition waits for full successful proof. */
+  prepareSource?: (attempt: ArchiveAttempt, signal: AbortSignal) => Promise<void>;
   /** Created only after authority + attempt claim. Emit chunks <=4,000,000 B;
    * use a bounded producer highWaterMark. A producer error must propagate. */
   source: (signal: AbortSignal) => ReadableStream<Uint8Array>;
@@ -194,7 +204,8 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
     try {
       if (current.aborted) abort();
       // The microtask checks again so a synchronous abort cannot admit work.
-      const pending = Promise.resolve().then(() => { active(); if (current.aborted) fail("deadline"); return work(current); });
+      const execute = () => { active(); if (current.aborted) fail("deadline"); return work(current); };
+      const pending = options.sensitiveRuntime?.track(`segment-${code}`,execute)??Promise.resolve().then(execute);
       const result = await Promise.race([pending, cancelled]);
       active(); if (current.aborted) fail("deadline");
       return result;
@@ -212,17 +223,40 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
   async function mutation(work: (current: AbortSignal) => Promise<void>) {
     await check(); await operation("metadata", work); await check();
   }
-  const cancelReader = () => { try { void reader?.cancel().catch(() => {}); } catch { /* Never await an uncooperative producer. */ } };
+  let cancellation:Promise<void>|undefined;
+  const cancelReader = () => { if(!reader)return;
+    if(options.sensitiveRuntime&&options.sensitiveBuffers?.()){const selected=reader;cancellation??=options.sensitiveRuntime.cleanup("segment-source-cancel",()=>selected.cancel());void cancellation.catch(()=>{});}
+    else{try{void reader.cancel().catch(()=>{});}catch{/* Original unmarked cancellation. */}}
+  };
   signal.addEventListener("abort", cancelReader, { once: true });
+  let ownedBuffer:Uint8Array|undefined,ownedChunk:Uint8Array|undefined;
   try {
     await check();
     cleanupRequired = true; // A timed-out INSERT may still have committed.
     await operation("metadata", current => options.beginAttempt(attempt, current));
     await check();
+    if (options.prepareSource) {
+      // Planning is a sequence of separately bounded source operations, not
+      // part of the one 30-second durable beginAttempt INSERT. Cancellation or
+      // the original job deadline still closes the attempt even if a trusted
+      // planner ignores its signal; no later source or write may be admitted.
+      let abortPlanning = () => {};
+      const stopped = new Promise<never>((_, reject) => {
+        abortPlanning = () => reject(new ArchiveSegmentationError(Date.now() >= deadline ? "deadline" : "aborted", cleanupRequired));
+        signal.addEventListener("abort", abortPlanning, { once: true });
+      });
+      try {
+        active();
+        const execute=()=>{active();return options.prepareSource!(attempt,signal);};
+        const planning=options.sensitiveRuntime?.track("whole-member-planning",execute)??Promise.resolve().then(execute);
+        await Promise.race([planning, stopped]); active(); await check();
+      } finally { signal.removeEventListener("abort", abortPlanning); }
+    }
     reader = options.source(signal).getReader();
     const totalHash = createHash("sha256");
     const metadata = new ArchiveManifestPages(attempt, page => mutation(current => options.appendPage(attempt, page, current)));
-    let buffer = new Uint8Array(ARCHIVE_SEGMENT_BYTES), filled = 0;
+    let buffer = new Uint8Array(ARCHIVE_SEGMENT_BYTES), filled = 0;ownedBuffer=buffer;
+    if(options.sensitiveBuffers?.())options.sensitiveRuntime?.own(buffer);
     let sizeBytes = 0, segmentCount = 0;
     async function flushSegment() {
       if (!filled) return;
@@ -240,15 +274,21 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
       const stored = Object.freeze({ ...segment, objectId: ack.objectId });
       await mutation(current => options.acknowledge(attempt, stored, current));
       await metadata.push(stored); segmentCount += 1;
-      buffer = new Uint8Array(ARCHIVE_SEGMENT_BYTES); filled = 0;
+      if(options.sensitiveBuffers?.()){if(options.sensitiveRuntime)options.sensitiveRuntime.clear(buffer);else buffer.fill(0);}
+      buffer = new Uint8Array(ARCHIVE_SEGMENT_BYTES);ownedBuffer=buffer; filled = 0;
+      if(options.sensitiveBuffers?.())options.sensitiveRuntime?.own(buffer);
     }
     for (;;) {
       await check();
-      const next = await operation("invalid_source", () => reader!.read());
+      const next = await operation("invalid_source", async () => {
+        const value=await reader!.read();
+        if(!value.done&&value.value instanceof Uint8Array&&options.sensitiveBuffers?.())options.sensitiveRuntime?.own(value.value);
+        return value;
+      });
       await check();
       if (next.done) break;
       if (!(next.value instanceof Uint8Array) || !next.value.length || next.value.length > ARCHIVE_SEGMENT_BYTES) fail("invalid_source");
-      let offset = 0;
+      ownedChunk=next.value;let offset = 0;
       while (offset < next.value.length) {
         const count = Math.min(ARCHIVE_SEGMENT_BYTES - filled, next.value.length - offset);
         if (!Number.isSafeInteger(sizeBytes + count)) fail("invalid_source");
@@ -257,6 +297,7 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
         filled += count; sizeBytes += count; offset += count;
         if (filled === ARCHIVE_SEGMENT_BYTES) await flushSegment();
       }
+      if(options.sensitiveBuffers?.()){if(options.sensitiveRuntime)options.sensitiveRuntime.clear(ownedChunk);else ownedChunk.fill(0);}ownedChunk=undefined;
     }
     if (!sizeBytes) fail("invalid_source"); // Even an empty ZIP has an end record.
     await flushSegment();
@@ -272,8 +313,17 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
     return fail("invalid_source");
   } finally {
     clearTimeout(deadlineTimer); signal.removeEventListener("abort", cancelReader);
-    if (!completed) cancelReader();
-    try { reader?.releaseLock(); } catch { /* Pending cancellation remains detached. */ }
-    controller.abort();
+    try{
+      if (!completed||options.sensitiveRuntime&&options.sensitiveBuffers?.()) cancelReader();
+      if(cancellation&&options.sensitiveRuntime){
+        try{await options.sensitiveRuntime.wait(cancellation,deadline);}finally{try{reader?.releaseLock();}catch{/* Pending task stays tracked; no ACK. */}}
+      }else try { reader?.releaseLock(); } catch { /* Original unmarked path. */ }
+    }finally{
+      controller.abort();
+      if(options.sensitiveBuffers?.()){
+        if(ownedBuffer){if(options.sensitiveRuntime)options.sensitiveRuntime.clear(ownedBuffer);else ownedBuffer.fill(0);}
+        if(ownedChunk){if(options.sensitiveRuntime)options.sensitiveRuntime.clear(ownedChunk);else ownedChunk.fill(0);}
+      }
+    }
   }
 }
