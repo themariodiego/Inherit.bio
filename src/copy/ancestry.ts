@@ -272,7 +272,8 @@ export const LINEAGE_NO_BRANCH =
 export const XX_GLOSS =
   "In plain terms: this is expected when the file comes from someone without a Y chromosome, e.g. most women.";
 
-/** The true reason the card shows nothing yet; the capability is registered as withheld. */
+/** The true reason the card shows nothing yet; the capability is not shipped,
+ * and no evidenced-impossibility dossier establishes a withholding. */
 export const NEANDERTHAL_BODY =
   "We can’t show this yet. Inherit has not yet built and licence-checked the marker list this needs, and we will not guess. This page will say so until that changes.";
 

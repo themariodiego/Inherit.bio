@@ -10436,3 +10436,8 @@ byte exact. No importer, application migration, scientific guard or expected
 result changes. The new seven-suite runner must first match the complete actual
 application and installed dependency baseline. No application DDL or dependency
 recreation is proposed. Native proof, publication and acceptance remain held.
+## 2026-10-10 — Explain unsupported sequencing reads where the file is chosen
+
+The own-upload chooser previously listed supported formats but left the reason for refusing BAM/CRAM to the separate provider directory. It now names BAM, CRAM and FASTQ at the chooser, directs the person to ask their laboratory for a VCF, and explains that renaming a file cannot change its format. This 24-word disclosure is visible before choosing a file even when deployment limits are unavailable. The existing content-based refusal, exact registered error, no-issuance, no-upload and misdeclared-Storage cleanup assertions remain unchanged. No new format, computation, permission or admission is added.
+
+The existing Neanderthal component and not-covered browser cases now also require its actual short missing-marker/licence reason, no percentage and no figure. Their original heading, Denisovan text, theme and accessibility assertions remain. Two comments now correctly call this capability `not shipped`; they had incorrectly called it withheld despite the absence of an impossibility dossier. Existing status counts, all seven open capabilities and G7.4 remain unchanged. New browser assertions remain unrun until complete hosted qualification; source tests do not establish a Neanderthal estimate, a failed alternative design or production delivery.
