@@ -44,7 +44,8 @@ const step = z.object({ name: z.string().optional(), if: z.string().optional(), 
   run: z.string().optional(), with: z.record(z.string(), z.unknown()).optional(), id: z.string().optional(),
   env: z.record(z.string(), z.unknown()).optional(),
   "continue-on-error": z.boolean().optional(), "timeout-minutes": id.optional() });
-const workflowJob = z.object({ steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
+const workflowJob = z.object({ if: z.string().optional(), needs: z.array(z.string()).optional(),
+  env: z.record(z.string(), z.unknown()).optional(), "runs-on": z.string().optional(), steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
   matrix: z.object({ shard: z.array(id) }) }).optional() });
 export type HostedWorkflowContract = ReturnType<typeof hostedWorkflowContract>;
 const mainFontCondition = "github.event_name == 'push' && github.ref == 'refs/heads/main'";
@@ -90,7 +91,20 @@ function fontCacheStep(family: string, item: z.infer<typeof step>) {
 /** Only the existing job family and producer format. New shapes require review. */
 export function hostedWorkflowContract(value: unknown) {
   const workflow = z.object({ jobs: z.record(z.string(), workflowJob) }).parse(value);
-  same(Object.keys(workflow.jobs), ["repository-checks", "browser", "checks"], "Unsupported workflow job family");
+  same(Object.keys(workflow.jobs), ["repository-checks", "database-tests", "browser", "checks"], "Unsupported workflow job family");
+  for (const family of ["repository-checks", "database-tests", "browser"]) {
+    assert(workflow.jobs[family].if === undefined && workflow.jobs[family].needs === undefined,
+      "Required suites must run independently without a job condition");
+  }
+  const aggregate = workflow.jobs.checks;
+  assert(aggregate.if === "always()", "Aggregate must observe every terminal prerequisite");
+  assert.deepEqual(aggregate.needs, ["repository-checks", "database-tests", "browser"], "Aggregate prerequisite graph differs");
+  const prerequisite = aggregate.steps[0];
+  assert(prerequisite.name === "Require every prerequisite job to succeed" && prerequisite.if === undefined
+    && prerequisite.run === 'test "$REPOSITORY_RESULT" = success\ntest "$DATABASE_RESULT" = success\ntest "$BROWSER_RESULT" = success\n'
+    && aggregate.env?.REPOSITORY_RESULT === "${{ needs.repository-checks.result }}"
+    && aggregate.env?.DATABASE_RESULT === "${{ needs.database-tests.result }}"
+    && aggregate.env?.BROWSER_RESULT === "${{ needs.browser.result }}", "Aggregate must explicitly require every suite SUCCESS");
   assert.deepEqual(workflow.jobs.browser.strategy?.matrix.shard,
     Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => i + 1), "Unsupported browser matrix");
   for (const family of ["repository-checks", "browser"]) {
@@ -156,11 +170,23 @@ export function hostedWorkflowContract(value: unknown) {
     && repositorySteps.filter(item => item.run === exportPreflight[0].run).length === 1
     && repositorySteps.indexOf(exportPreflight[0]) === repositorySteps.indexOf(startup[0]) + 1
     && expensiveChecks.every(item => repositorySteps.indexOf(exportPreflight[0]) < repositorySteps.indexOf(item))
-    && repositorySteps.filter(item => item.run === "pnpm exec supabase test db").length === 1,
-  "Mandatory complete export table census must immediately follow startup; the full database suite remains required");
+    && repositorySteps.filter(item => item.run === "pnpm exec supabase test db").length === 0,
+  "Mandatory complete export table census must immediately follow startup; the full suite belongs to its independent job");
   assert(keyExport.length === 1 && mandatory(keyExport[0])
     && expensiveChecks.every(item => repositorySteps.indexOf(item) < repositorySteps.indexOf(keyExport[0])),
   "Local database keys must remain unavailable to unit and quality checks");
+  const databaseJob = workflow.jobs["database-tests"], databaseSteps = databaseJob.steps;
+  assert(databaseJob["runs-on"] === "ubuntu-24.04" && databaseJob.strategy === undefined,
+    "Complete database suite needs one fresh Ubuntu job");
+  assert.deepEqual(databaseSteps.map(item => item.uses ?? item.run), [
+    "actions/checkout@v4", "pnpm/action-setup@v4", "actions/setup-node@v4", "pnpm install --frozen-lockfile",
+    "pnpm gate:sql-includes", "pnpm exec supabase start", keyExport[0].run,
+    "pnpm exec supabase test db", "pnpm exec supabase stop --no-backup",
+  ], "Independent full database setup, keys, command or cleanup differs");
+  assert.deepEqual(databaseSteps[0].with, { "fetch-depth": 0, "persist-credentials": false }, "Complete database source checkout required");
+  assert.deepEqual(databaseSteps[2].with, { "node-version": 22, cache: "pnpm" }, "Locked Node22 database dependencies required");
+  assert(databaseSteps.slice(0, -1).every(item => item.if === undefined)
+    && databaseSteps.at(-1)?.if === "always()", "Database startup/test must be mandatory and cleanup unconditional");
   const producer = (family: string, name: string, member: string) => {
     const matches = workflow.jobs[family].steps.filter(item => item.uses === "actions/upload-artifact@v4"
       && item.with?.name === name);
@@ -289,8 +315,9 @@ export function commandLog(raw: string, command: string): string {
 function single(text: string, expression: RegExp, message: string): RegExpMatchArray {
   const matches = [...text.matchAll(expression)]; assert(matches.length === 1, message); return matches[0];
 }
-export function repositoryLogSummary(raw: string) {
-  const unit = commandLog(raw, "pnpm test"), db = commandLog(raw, "pnpm exec supabase test db"),
+/** Repository summaries retain the independent complete pgTAP job's original log. */
+export function repositoryLogSummary(raw: string, databaseRaw: string) {
+  const unit = commandLog(raw, "pnpm test"), db = commandLog(databaseRaw, "pnpm exec supabase test db"),
     locks = commandLog(raw, "pnpm test:invitation-locks"), lighthouse = commandLog(raw, "pnpm e2e:lighthouse");
   const files = single(unit, /Test Files\s+(\d+) passed \((\d+)\)/g, "Ambiguous unit file summary"),
     cases = single(unit, /(?:^|\n)\s*Tests\s+(\d+) passed \((\d+)\)/g, "Ambiguous unit case summary");
@@ -348,7 +375,7 @@ export function verifyCurrentChecks(request: HostedResultRequest, role: "head" |
   assert.deepEqual(metadata.verifiedRequest, current, "Check role is not bound to the verified metadata request");
   assert(metadata.run.id === current.runId && metadata.run.run_attempt === current.runAttempt
     && metadata.run.head_sha === current.head && metadata.run.event === current.event, "Check metadata source differs");
-  same(metadata.jobs.map(job => job.name), ["repository-checks", "checks",
+  same(metadata.jobs.map(job => job.name), ["repository-checks", "database-tests", "checks",
     ...Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`)], "Complete verified CI jobs required");
   assert(metadata.jobs.every(job => job.status === "completed" && job.conclusion === "success"
     && job.run_id === current.runId && job.run_attempt === current.runAttempt && job.head_sha === current.head), "Check metadata jobs differ");

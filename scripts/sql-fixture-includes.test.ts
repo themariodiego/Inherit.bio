@@ -41,7 +41,7 @@ describe("literal psql relative include closure", () => {
   });
   it("refuses absolute, lexical and symlink escapes rather than following host files", () => {
     const outside = plant({ "external.inc": "select 1;" });
-    const root = plant({ "a.sql": `\\ir ../external.inc\n\\ir ${outside}/external.inc\n\\ir link.inc\n` });
+    const root = plant({ "a.sql": `\\ir ../external.inc\n\\ir '${outside}/external.inc'\n\\ir link.inc\n` });
     symlinkSync(path.join(outside, "external.inc"), path.join(root, "link.inc"));
     expect(inspectPlanted(root, ["a.sql"]).failures.map(row => row.code)).toEqual(["escape", "escape", "escape"]);
     expect(inspectPlanted(root, ["link.inc"]).failures).toEqual([{ file: "link.inc", line: 1, code: "escape" }]);
@@ -76,7 +76,7 @@ describe("literal psql relative include closure", () => {
     const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     expect(workflow.indexOf("pnpm gate:sql-includes")).toBeGreaterThan(0);
     const freshJobs = workflow.split(/^  [a-z-]+:\n/m).filter(job => job.includes("run: pnpm exec supabase start"));
-    expect(freshJobs).toHaveLength(2);
+    expect(freshJobs).toHaveLength(3);
     for (const job of freshJobs) {
       expect(job.indexOf("pnpm gate:sql-includes")).toBeGreaterThan(0);
       expect(job.indexOf("pnpm gate:sql-includes")).toBeLessThan(job.indexOf("run: pnpm exec supabase start"));
@@ -89,10 +89,13 @@ describe("literal psql relative include closure", () => {
     const targetedCensus = repositoryJob.indexOf("run: pnpm exec supabase test db supabase/tests/export_member_plan.sql\n");
     const fullDatabaseSuite = repositoryJob.indexOf("run: pnpm exec supabase test db\n");
     const units = repositoryJob.indexOf("run: pnpm test\n");
-    for (const index of [targetedCensus, fullDatabaseSuite, units]) expect(index).toBeGreaterThan(0);
+    for (const index of [targetedCensus, units]) expect(index).toBeGreaterThan(0);
     expect(repositoryJob.indexOf("pnpm gate:sql-includes")).toBeLessThan(targetedCensus);
     expect(targetedCensus).toBeLessThan(units);
-    expect(units).toBeLessThan(fullDatabaseSuite);
+    expect(fullDatabaseSuite).toBe(-1);
+    const databaseJob = freshJobs.find(job => job.includes("- name: Database tests (pgTAP)"))!;
+    expect(databaseJob.indexOf("run: pnpm exec supabase test db\n")).toBeGreaterThan(databaseJob.indexOf("run: pnpm exec supabase start\n"));
+    expect(databaseJob.indexOf("Export current local Supabase keys")).toBeLessThan(databaseJob.indexOf("run: pnpm exec supabase test db\n"));
     const fresh = readFileSync("scripts/comprehension/run-fresh-t6.mts", "utf8");
     const entry = fresh.indexOf("export async function runFreshComprehension(");
     const includes = fresh.indexOf("assertSqlFixtureIncludes();", entry);

@@ -14,7 +14,7 @@ const json = (value: unknown) => Buffer.from(JSON.stringify(value));
 const names = ["accessible-authenticated-pages.spec.ts", "control-target-size.spec.ts", "figure-text-alternatives.spec.ts",
   "page-reflow-accessibility.spec.ts", "public-pages-session-accessibility.spec.ts", "viewport-keyboard-accessibility.spec.ts"];
 /** Synthetic decoded receipts test the pure validator; they are never saved-history authentication evidence. */
-function fixture(runId = 1): HistoricalCaptureInput {
+function fixture(runId = 1, independentDatabase = false): HistoricalCaptureInput {
   const head = "a".repeat(40), workflowHead = "b".repeat(40), tree = "c".repeat(40);
   const identity = { head, runId: String(runId), runAttempt: "1", schemaVersion: 1, total: 6 };
   const cases = names.map((_, index) => `${String(index + 1).padStart(20, "0")}-${"1".repeat(20)}:chromium`);
@@ -25,7 +25,7 @@ function fixture(runId = 1): HistoricalCaptureInput {
     timings: { setupMs: 1, buildMs: 1, bootstrapMs: 1, browserMs: 100 }, providerUploads: 1,
     files: [{ file, project: "chromium", cases: [cases[index]], durationMs: 100 }] } }));
   const run = json({ id: runId, run_attempt: 1, head_sha: workflowHead, status: "completed", conclusion: "success", event: "pull_request", path: ".github/workflows/ci.yml" });
-  const jobs = json({ total_count: 8, jobs: ["repository-checks", "checks", ...names.map((_, index) => `browser (${index + 1})`)].map((name, index) => ({
+  const jobs = json({ total_count: independentDatabase ? 9 : 8, jobs: ["repository-checks", "checks", ...(independentDatabase ? ["database-tests"] : []), ...names.map((_, index) => `browser (${index + 1})`)].map((name, index) => ({
     id: index + 1, name, run_id: runId, run_attempt: 1, head_sha: workflowHead, status: "completed", conclusion: "success", steps: [{ status: "completed", conclusion: "success" }] })) });
   const artifacts = json({ total_count: 7, artifacts: [manifest, ...shards].map((zip, index) => ({
     id: index + 1, name: `browser-case-1-${index ? `shard-${index}` : "manifest"}`, size_in_bytes: zip.bytes.length, digest: `sha256:${hash(zip.bytes)}`,
@@ -144,6 +144,22 @@ describe("pure captured historical source contract", () => {
     const source = historicalDurationSource(fixture());
     expect(source.files).toHaveLength(6); expect(source.projects).toEqual(["chromium"]);
     expect(multiRunHistoryFromCaptures([fixture(2), fixture(1)]).sources.map(source => source.runId)).toEqual(["1", "2"]);
+  });
+  it("retains eight-job historical originals and accepts only a complete successful nine-job source", () => {
+    expect(historicalDurationSource(fixture()).files).toHaveLength(6);
+    expect(historicalDurationSource(fixture(2, true)).files).toHaveLength(6);
+    for (const mode of ["missing", "foreign", "skipped", "failed", "incomplete-count"]) {
+      const input = fixture(3, true);
+      mutateJson(input, "jobs", value => {
+        const jobs = value.jobs as { name: string; conclusion: string }[];
+        const database = jobs.find(job => job.name === "database-tests")!;
+        if (mode === "missing") value.jobs = jobs.filter(job => job !== database);
+        if (mode === "foreign") database.name = "optional-probe";
+        if (mode === "skipped" || mode === "failed") database.conclusion = mode;
+        if (mode === "incomplete-count") value.total_count = 8;
+      });
+      expect(() => historicalDurationSource(input)).toThrow();
+    }
   });
   it.each(["duration-v1", "queue-v1"])("retains actual measured timings from complete %s receipts", mode => {
     const input = fixture();
