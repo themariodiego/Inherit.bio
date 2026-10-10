@@ -45,10 +45,28 @@ it("registers actual close before destroy and removes only its own listeners", a
   expect(source.listeners("error")).toEqual([retained]);
 });
 it("refuses a close error after settlement without retaining its private message", async () => {
-  const source = new PassThrough(); source.destroy(new Error("private-token"));
-  await expect(settleOwnedControlClose(source as unknown as ReadStream)).rejects.toThrow(/^Operator-control close unresolved$/);
-  expect(source.closed).toBe(true); expect(source.listenerCount("close")).toBe(0);
+  const source = new PassThrough(); let closeObserved = false;
+  source.once("close", () => { closeObserved = true; });
+  source.destroy(new Error("private-token"));
+  expect(source.closed).toBe(true); expect(closeObserved).toBe(false);
   expect(source.listenerCount("error")).toBe(0);
+  await expect(settleOwnedControlClose(source as unknown as ReadStream)).rejects.toThrow(/^Operator-control close unresolved$/);
+  expect(closeObserved).toBe(true); expect(source.closed).toBe(true);
+  expect(source.listenerCount("close")).toBe(0);
+  expect(source.listenerCount("error")).toBe(0);
+});
+it("refuses an already emitted failed close within the same five-second envelope", async () => {
+  const source = new PassThrough();
+  const closed = new Promise<void>(resolve => { source.once("error", () => {}); source.once("close", resolve); });
+  source.destroy(new Error("private-token")); await closed;
+  expect(source.closed).toBe(true); expect(source.errored).not.toBeNull();
+  vi.useFakeTimers();
+  let settled = false;
+  const outcome = settleOwnedControlClose(source as unknown as ReadStream).catch(error => { settled = true; return error; });
+  await vi.advanceTimersByTimeAsync(4999); expect(settled).toBe(false);
+  await vi.advanceTimersByTimeAsync(1);
+  expect((await outcome).message).toBe("Operator-control close unresolved");
+  expect(source.listenerCount("close")).toBe(0); expect(source.listenerCount("error")).toBe(0);
 });
 it("retains the original five-second settlement bound when actual close never occurs", async () => {
   vi.useFakeTimers();

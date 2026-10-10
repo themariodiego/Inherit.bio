@@ -4,10 +4,9 @@ import type { ReadStream } from "node:fs";
  * No child may start until that single asynchronous close has settled. */
 export async function settleOwnedControlClose(source: ReadStream): Promise<void> {
   const refused = () => new Error("Operator-control close unresolved");
-  if (source.closed) {
-    if (source.errored !== null) throw refused();
-    return;
-  }
+  // Node may mark a failed stream closed before its queued error/close events.
+  // Consume those events before refusing; the descriptor still has one owner.
+  if (source.closed && source.errored === null) return;
   await new Promise<void>((resolve, reject) => {
     let failed = source.errored !== null;
     const cleanup = () => {
