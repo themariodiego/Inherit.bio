@@ -141,14 +141,14 @@ export function historicalDurationSource(input: HistoricalCaptureInput): MultiRu
     : !("captureAdmission" in input), "Explicit raw admission only; legacy cannot carry an override");
   const run = z.object({ id: positive, run_attempt: positive, head_sha: head, status: z.literal("completed"),
     conclusion: z.literal("success"), event: z.enum(["pull_request", "push"]), path: z.literal(".github/workflows/ci.yml") }).parse(readJson(input.run));
-  const jobs = z.object({ total_count: z.union([z.literal(8), z.literal(9)]), jobs: z.array(z.object({ id: positive, name: z.string(), run_id: positive, run_attempt: positive,
+  const jobs = z.object({ total_count: z.union([z.literal(8), z.literal(9), z.literal(10)]), jobs: z.array(z.object({ id: positive, name: z.string(), run_id: positive, run_attempt: positive,
     head_sha: head, status: z.literal("completed"), conclusion: z.literal("success"),
-    steps: z.array(z.object({ status: z.literal("completed"), conclusion: z.enum(["success", "skipped"]) })) })).min(8).max(9) }).parse(readJson(input.jobs));
+    steps: z.array(z.object({ status: z.literal("completed"), conclusion: z.enum(["success", "skipped"]) })) })).min(8).max(10) }).parse(readJson(input.jobs));
   assert(jobs.total_count === jobs.jobs.length, "Incomplete historical job page");
   // Accepted eight-job originals remain valid. New nine-job sources must also
   // include the successful independent database job, never an arbitrary ninth.
   same(jobs.jobs.map(job => job.name), jobs.total_count === 8 ? historicalJobs
-    : [...historicalJobs, "database-tests"], "Complete mandatory job set differs");
+    : [...historicalJobs, "database-tests", ...(jobs.total_count === 10 ? ["owned-keyfree-smoke"] : [])], "Complete mandatory job set differs");
   unique(jobs.jobs.map(job => job.id), "Distinct actual jobs required");
   for (const job of jobs.jobs) assert(job.run_id === run.id && job.run_attempt === run.run_attempt && job.head_sha === run.head_sha,
     "Job belongs to another source/run/attempt");
@@ -167,13 +167,16 @@ export function historicalDurationSource(input: HistoricalCaptureInput): MultiRu
   const selected = artifacts.artifacts.filter(row => row.name.startsWith(prefix));
   same(selected.map(row => row.name), names, "Seven exact same-attempt case artifacts required");
   unique(selected.map(row => row.id), "Distinct actual artifacts required");
+  const owned = artifacts.artifacts.filter(item => item.name === `owned-keyfree-smoke-${run.run_attempt}`);
+  if (jobs.total_count === 10) assert(owned.length === 1 && owned[0].workflow_run.id === run.id
+    && owned[0].workflow_run.head_sha === run.head_sha, "Exact current owned artifact required");
   if (input.captureFormat === "hosted-reader-raw-v1") {
     // Stock run/jobs/commit/artifact schemas and exact complete inventories above
     // validate metadata before the pure original-receipt adapter enters here.
     const capture = currentCaptureContext(input.captureReceipt, input.captureAdmission, {
       runId: run.id, runAttempt: run.run_attempt, workflowHead: run.head_sha,
       testedHead: commit.sha, tree: commit.tree.sha, event: run.event,
-      jobIds: jobs.jobs.map(job => job.id), artifacts: selected.map(item => ({ id: item.id, name: item.name })),
+      jobIds: jobs.jobs.map(job => job.id), artifacts: [...selected, ...(jobs.total_count === 10 ? artifacts.artifacts.filter(item => item.name === `owned-keyfree-smoke-${run.run_attempt}`) : [])].map(item => ({ id: item.id, name: item.name })),
     });
     assert(capture.runId === run.id && capture.runAttempt === run.run_attempt && capture.prHead === run.head_sha
       && capture.testedMerge === commit.sha, "Retained capture source differs");
