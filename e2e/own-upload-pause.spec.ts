@@ -4,12 +4,18 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { z } from "zod";
 import { adminClient, createConfirmedUser, signIn, uploadOwnFileThroughUi, SUPABASE_URL } from "./helpers";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
 import { directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
+import { genomeKeyMatchesUpload } from "../src/lib/uploads/genome-object-key";
+import { genomeStagingStorageUrl } from "../scripts/genome-staging-storage-url";
 
 const PAUSED_ORIGIN = "http://localhost:3102";
 test.use({ trace: "off" }); // Never persist a restricted upload bearer or session.
+const directUploadLocatorReceipt = z.object({ uploadId: directUploadReceipt.shape.uploadId,
+  stagingKey: directUploadReceipt.shape.stagingKey, bucket: directUploadReceipt.shape.bucket,
+}).strip().refine(value => genomeKeyMatchesUpload(value.stagingKey, value.uploadId));
 
 async function chooseFixture(page: Page, fixture: string) {
   const picker = page.waitForEvent("filechooser");
@@ -130,14 +136,15 @@ test("canonical pause refuses new issuance while an acknowledged source finalize
     }, { times: 1 });
     const issuedResponse = page.waitForResponse(response => response.url().endsWith("/api/files/upload-session")
       && response.request().method() === "POST");
-    const storedResponse = page.waitForResponse(response => /\/storage\/v1\/object\/genomes\/[0-9a-f-]{36}$/.test(response.url())
+    const storedResponse = page.waitForResponse(response => genomeStagingStorageUrl(response.url(), SUPABASE_URL)
       && response.request().method() === "POST");
     for (const observation of [issuedResponse, storedResponse]) void observation.catch(() => {});
     await chooseFixture(page, resumedFixture);
     const issue = await issuedResponse;
     expect(issue.status()).toBe(201);
     // Keep only closed, nonsensitive receipt fields; never inspect/log the token.
-    const issued = directUploadReceipt.pick({ uploadId: true, stagingKey: true, bucket: true }).strip().parse(await issue.json());
+    const issued = directUploadLocatorReceipt.parse(await issue.json());
+    expect(genomeKeyMatchesUpload(issued.stagingKey, issued.uploadId, accountId)).toBe(true);
     const storageAck = await storedResponse;
     expect(storageAck.ok()).toBe(true);
     expect(storageAck.url()).toBe(`${SUPABASE_URL}/storage/v1/object/genomes/${issued.stagingKey}`);

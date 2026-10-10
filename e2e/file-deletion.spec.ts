@@ -27,7 +27,11 @@ async function storageResidue(objectName: string, accountId: string): Promise<st
     residue.push(...(exact.data ?? []).filter((entry) => entry.name === leaf).map(() => `${bucket}/${objectName}`));
     const prefix = await admin.storage.from(bucket).list(accountId);
     if (prefix.error) throw new Error(`service listing of ${bucket}/${accountId}: ${prefix.error.message}`);
-    residue.push(...(prefix.data ?? []).map((entry) => `${bucket}/${accountId}/${entry.name}`));
+    // Storage lists namespace folders with id=null. A folder can contain the
+    // separately retained file, whose complete bytes are checked below. Count
+    // actual legacy-prefix objects, together with the exact current source.
+    residue.push(...(prefix.data ?? []).filter((entry) => entry.id !== null)
+      .map((entry) => `${bucket}/${accountId}/${entry.name}`));
   }
   return residue.sort();
 }
