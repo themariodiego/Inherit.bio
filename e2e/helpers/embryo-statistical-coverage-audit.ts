@@ -4,6 +4,7 @@ import { axeViolations } from "../helpers";
 import { INSUFFICIENT_COVERAGE_INTRO } from "@/copy/embryos/compare";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
 import { TEST_STATISTICAL_SCORE_PANEL } from "@/lib/embryos/statistical-coverage";
+import { FITTED_JOURNEY_CALL_RATES } from "../../scripts/ci-embryo-journey";
 import type { StatisticalCoverageMeasurement } from "@/lib/embryos/statistical-coverage";
 
 /** Supplemental audits in the already genuine two-parent upload journey.
@@ -101,7 +102,8 @@ export async function auditNativeFittedStatisticalCoverage(input: { page: Page; 
       expect(receipt.reference_receipt.fit_artifact_sha256).toBe(STATISTICAL_FIT_ARTIFACT_SHA256);
       const measurement = receipt.measurement.measurement;
       expect(measurement).toMatchObject({ matchedVariants: 8, requiredVariants: 10, scoreCoverage: 0.8 });
-      const actual = value.calls[index];expect(actual.qc.call_rate).toBe(1);
+      const actual = value.calls[index];
+      expect(actual.qc.call_rate).toBe(FITTED_JOURNEY_CALL_RATES[input.embryos[index].sample_ordinal]);
       expect(actual.qc.contamination_estimate).toBeNull();expect(actual.qc.allelic_dropout_estimate).toBeNull();
       const evaluated = evaluateStatisticalFitResult({ source: measurement.source, calls: actual.calls,
         qc: { callRate: actual.qc.call_rate, contamination: actual.qc.contamination_estimate,

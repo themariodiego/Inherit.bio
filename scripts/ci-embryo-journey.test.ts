@@ -399,3 +399,98 @@ describe("fitted process safe refusal observations", () => {
     await result;expect(h.dependencies.kill).not.toHaveBeenCalled();
   });
 });
+
+
+import { embryoJourneyCommandFailure, isFittedNativeProofCommand } from "./ci-embryo-journey";
+
+async function fittedProofCommand() {
+  const h = fittedHarness(), native = h.io.execute;
+  const observed: Array<{ args: string[]; input?: string; timeout?: number; context?: "fitted-native-proof" }> = [];
+  const retained = { bindingsCurrent: true, wholeRowHashes: { jobs: [], scores: [] }, exactOutput: "synthetic-proof-output" };
+  h.io.execute = async (args, input, timeout, context) => {
+    observed.push({ args, input, timeout, context });
+    if (input?.startsWith("with capture as materialized")) return JSON.stringify(retained);
+    return native(args, input, timeout, context);
+  };
+  await originalThenFitted(h, async fitted => {
+    await fitted.runWorker(fittedCohort);await fitted.runStatisticalWorker(fittedCohort);
+    expect(await fitted.statisticalProof(fittedCohort)).toEqual(retained);
+  });
+  expect(h.current()).toEqual(original);
+  const selected = observed.filter(row => row.context !== undefined);
+  expect(selected).toHaveLength(1);
+  const command = selected[0];
+  expect(command).toMatchObject({ args: ["exec", "-i", "supabase_db_sequence", "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"],
+    timeout: 10_000, context: "fitted-native-proof" });
+  return { command, observed };
+}
+describe("exact fitted native proof diagnostic context", () => {
+  it("tags only the existing complete proof while retaining exact successful output and original restoration", async () => {
+    const { command, observed } = await fittedProofCommand();
+    expect(isFittedNativeProofCommand(command.args, command.input, command.timeout!, command.context)).toBe(true);
+    expect(command.input).toContain("private.embryo_test_fit_receipt_v1(j,e,c,m)");
+    expect(command.input).toContain("convert_to(to_jsonb(s)::text,'UTF8')");
+    expect(observed.filter(row => row.context !== undefined)).toHaveLength(1);
+    for (const row of observed.filter(row => row.context === undefined))
+      expect(isFittedNativeProofCommand(row.args, row.input, row.timeout ?? 10_000, row.context)).toBe(false);
+  });
+  it("refuses altered SQL, argv, cohort, context and deadline as diagnostic inputs without relaxing any command", async () => {
+    const { command } = await fittedProofCommand();
+    const matches = (args = command.args, input = command.input, timeout = command.timeout!, context: unknown = command.context) =>
+      isFittedNativeProofCommand(args, input, timeout, context);
+    for (const context of [undefined, null, "fitted-worker", { kind: "fitted-native-proof" }])
+      expect(isFittedNativeProofCommand(command.args, command.input, 10_000, context)).toBe(false);
+    for (const timeout of [9999, 10_001, 110_000]) expect(matches(command.args, command.input, timeout)).toBe(false);
+    for (let index = 0; index < command.args.length; index++)
+      expect(matches(command.args.map((value, ordinal) => ordinal === index ? "other" : value))).toBe(false);
+    expect(matches([...command.args, "extra"])).toBe(false);
+    for (const input of ["select true;", command.input! + "\nselect true;", command.input!.replace("'bindingsCurrent'", "'changed'"),
+      command.input!.replaceAll(fittedCohort, "cccccccc-cccc-1ccc-8ccc-cccccccccccc")])
+      expect(matches(command.args, input)).toBe(false);
+    expect(isFittedNativeProofCommand(command.args, undefined, 10_000, command.context)).toBe(false);
+  });
+  it.each([
+    { control: { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", killed: true, signal: "SIGKILL" }, outer: "COMMAND_OUTPUT_BOUND" },
+    { control: { killed: true, signal: "SIGKILL" }, outer: "COMMAND_TIMEOUT" },
+    { control: { code: 1 }, outer: "COMMAND_EXIT" },
+    { control: { code: "ENOENT" }, outer: "COMMAND_SPAWN_REFUSED" },
+    { control: { code: "EACCES" }, outer: "COMMAND_SPAWN_REFUSED" },
+    { control: { code: "EAGAIN" }, outer: "COMMAND_SPAWN_REFUSED" },
+    { control: { signal: "SIGTERM" }, outer: "COMMAND_SIGNAL" },
+    { control: { code: "synthetic-private-proof-canary" }, outer: "COMMAND_REFUSED" },
+    { control: { code: 0 }, outer: "COMMAND_REFUSED" },
+    { control: {}, outer: "COMMAND_REFUSED" },
+  ] as const)("retains proof failure with only its actual closed outer fields %#", async ({ control, outer }) => {
+    const { command } = await fittedProofCommand();
+    const error = Object.assign(new Error("synthetic-private-proof-canary"), control, {
+      stdout: "synthetic-private-proof-canary", stderr: encodeFittedFailure({ outer: "COMMAND_EXIT", inner: "RPC_REFUSED", operation: "SAVE", code: "unavailable" }),
+      sqlstate: "synthetic-private-proof-canary", payload: "synthetic-private-proof-canary" });
+    const failure = embryoJourneyCommandFailure(command.args, command.input, command.timeout!, command.context, error);
+    expect(failure).toBeInstanceOf(Error);
+    expect(failure.message).toBe(`Embryo journey fitted native proof command failed; ${encodeFittedFailure({
+      outer, inner: "NOT_OBSERVED", operation: "NOT_OBSERVED", code: "NOT_OBSERVED" })}`);
+    expect(failure.message).not.toContain("synthetic-private-proof-canary");
+    expect(failure.message).not.toMatch(/RPC_REFUSED|\|SAVE\||unavailable|sqlstate|payload/);
+  });
+  it("does not read error getters or forward unknown native text", async () => {
+    const { command } = await fittedProofCommand(), getter = vi.fn(() => { throw new Error("synthetic-private-proof-canary"); }), error = {};
+    for (const key of ["code", "killed", "signal", "stderr", "stdout", "message", "stack", "sqlstate"])
+      Object.defineProperty(error, key, { get: getter });
+    const refusal = embryoJourneyCommandFailure(command.args, command.input, 10_000, command.context, error);
+    expect(refusal.message).toBe("Embryo journey fitted native proof command failed; EMBRYO_FITTED_FAILURE_V1|COMMAND_REFUSED|NOT_OBSERVED|NOT_OBSERVED|NOT_OBSERVED");
+    expect(getter).not.toHaveBeenCalled();
+  });
+  it("retains opaque legacy proof errors and the original fitted-worker frame", async () => {
+    const { command } = await fittedProofCommand(), error = { code: 1, stderr: "synthetic-private-proof-canary" };
+    for (const context of [undefined, "wrong", {}])
+      expect(embryoJourneyCommandFailure(command.args, command.input, 10_000, context, error).message)
+        .toBe("Embryo journey fixed local command failed; diagnostics withheld");
+    expect(embryoJourneyCommandFailure(command.args, command.input! + "\nselect true;", 10_000, command.context, error).message)
+      .toBe("Embryo journey fixed local command failed; diagnostics withheld");
+    const frame = encodeFittedFailure({ outer: "NOT_OBSERVED", inner: "WORK_EXIT", operation: "CLAIM", code: "invalid_response" });
+    const args = ["exec", "-i", "--user", "1001:1001", "inherit-ci-browser-runtime", "node", "--import", "tsx", "/app/scripts/ci-browser/embryo-statistical-worker.mts"];
+    expect(embryoJourneyCommandFailure(args, JSON.stringify({ kind: "fitted-test", environment: worker }) + "\n", 110_000, undefined,
+      { code: 1, stderr: frame }).message)
+      .toBe("Embryo journey fitted command failed; EMBRYO_FITTED_FAILURE_V1|COMMAND_EXIT|WORK_EXIT|CLAIM|invalid_response");
+  });
+});
