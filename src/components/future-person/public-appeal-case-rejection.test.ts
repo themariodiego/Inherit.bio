@@ -3,6 +3,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { PublicAppealCaseRejection } from "./public-appeal-case-rejection";
 describe("separate final-case rejection control", () => {
+ it("keeps the exact visible reason label separate from the controlled textarea and associates each instance uniquely", () => {
+  const props = { caseId: "87000000-0000-4000-8000-000000000001", reviewRevision: 1,
+   csrf: "a".repeat(64), nonce: "synthetic-case-nonce", disabled: false, onResolved: vi.fn() };
+  const html = renderToStaticMarkup(createElement("div", null,
+   createElement(PublicAppealCaseRejection, props), createElement(PublicAppealCaseRejection, props)));
+  const labels = [...html.matchAll(/<label class="block" for="([^"]+)">Reason<\/label>/gu)];
+  expect(labels).toHaveLength(2);
+  expect(new Set(labels.map(label => label[1])).size).toBe(2);
+  for (const label of labels) expect(html).toContain(`<textarea id="${label[1]}"`);
+  expect(html).not.toMatch(/>Reason<textarea/u);
+ });
  it("requires a professional reason and explicit read confirmation, and offers no target-changing decision", () => {
   const html = renderToStaticMarkup(createElement(PublicAppealCaseRejection, { caseId: "87000000-0000-4000-8000-000000000001",
    reviewRevision: 1, csrf: "a".repeat(64), nonce: "synthetic-case-nonce", disabled: false, onResolved: vi.fn() }));

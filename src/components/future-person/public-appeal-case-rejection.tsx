@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
 
 const receipt = z.union([z.object({ caseId: z.uuid(), state: z.literal("resolved"), outcome: z.enum(["rejected", "upheld", "prior_decision_reversed"]),
@@ -8,6 +8,7 @@ const receipt = z.union([z.object({ caseId: z.uuid(), state: z.literal("resolved
 export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce, disabled, allowUphold = false, allowMoreInformation = false, reversal, onMoreInformation, onResolved }: {
  caseId: string; reviewRevision: number; csrf: string; nonce: string; disabled: boolean; allowUphold?: boolean; allowMoreInformation?: boolean; reversal?: { priorDecisionRevision: number; evidenceRevision: number }; onMoreInformation?: () => void; onResolved: (outcome?: string) => void;
 }) {
+ const reasonId = useId();
  const [reason, setReason] = useState(""); const [checked, setChecked] = useState(false);
  const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
  const [unconfirmed, setUnconfirmed] = useState(false); const inFlight = useRef(false);
@@ -37,8 +38,9 @@ export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce,
   <h2>Refuse this request</h2>
   {busy && <p role="status">Saving this choice.</p>}
   <p>This closes only this request. It does not give access or change anyone&apos;s data.</p>
-  <label className="block">Reason<textarea value={reason} maxLength={2000} disabled={disabled || busy || unconfirmed}
-   onChange={event => setReason(event.target.value)} /></label>
+  <label className="block" htmlFor={reasonId}>Reason</label>
+  <textarea id={reasonId} value={reason} maxLength={2000} disabled={disabled || busy || unconfirmed}
+   onChange={event => setReason(event.target.value)} />
   <p>Record what you checked. Do not copy file content into the reason.</p>
   <label className="block"><input type="checkbox" checked={checked} disabled={disabled || busy || unconfirmed}
    onChange={event => setChecked(event.target.checked)} /> I have read this request and the files that are here.</label>
