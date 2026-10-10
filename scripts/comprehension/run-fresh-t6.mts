@@ -40,7 +40,12 @@ export async function prepareFreshInvocation(options: {
   acquire: () => Promise<Pick<Awaited<ReturnType<typeof acquireFreshStack>>, "keys" | "close">>;
   build: () => Promise<void>;
 }) {
-  const stack = await options.acquire();
+  let stack: Awaited<ReturnType<typeof options.acquire>>;
+  try { stack = await options.acquire(); }
+  catch (error) {
+    emitHostedBootstrapFailure("bootstrap-stack-acquisition", freshRuntimeFailureClassification(error), "unreturned");
+    throw error;
+  }
   let diagnosticStage: "bootstrap-keys" | "production-build" = "bootstrap-keys";
   try {
     if (options.bindObservedKeys) Object.assign(options.environment, stack.keys);

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const HOSTED_BOOTSTRAP_PREFIX = "OWNED_BOOTSTRAP_FAILURE_V1|";
 const stages = ["host-admission", "source-attestation", "source-copy", "migration-copy",
-  "native-start", "native-inventory", "native-ledger", "native-keys", "bootstrap-keys",
+  "native-start", "native-inventory", "native-ledger", "native-keys", "bootstrap-stack-acquisition", "bootstrap-keys",
   "production-build", "bootstrap-cleanup", "session-stack-acquisition", "session-bootstrap-keys",
   "session-reference-seed", "session-upload-capacity", "session-runtime-preflight", "session-storage-proxy",
   "session-app-configuration", "session-mail-capture", "session-main-app-ready", "session-embryo-app-ready",

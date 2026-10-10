@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import type { ChildProcess } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { encodeFittedFailure, fittedFailureFrom } from "../src/lib/embryos/statistical-fit-diagnostic";
+import { encodeFittedFailure, fittedFailureFrom, fittedProofOverflowPipe } from "../src/lib/embryos/statistical-fit-diagnostic";
 import { checkedEmbryoWorkerEnvironment, EMBRYO_JOURNEY_ENV, EMBRYO_WORKER_ARGS, EMBRYO_WORKER_LIMIT_MS,
   runEmbryoWorkerInside, withEmbryoJourney, type EmbryoJourneyIo } from "./ci-embryo-journey";
 
@@ -401,7 +401,8 @@ describe("fitted process safe refusal observations", () => {
 });
 
 
-import { embryoJourneyCommandFailure, isFittedNativeProofCommand } from "./ci-embryo-journey";
+import { embryoJourneyCommandFailure, isFittedNativeProofCommand, fittedNativeProofSizeSql,
+  fittedNativeProofSizeFrame, observeFittedNativeProofSizeFailure } from "./ci-embryo-journey";
 
 async function fittedProofCommand() {
   const h = fittedHarness(), native = h.io.execute;
@@ -492,5 +493,128 @@ describe("exact fitted native proof diagnostic context", () => {
     expect(embryoJourneyCommandFailure(args, JSON.stringify({ kind: "fitted-test", environment: worker }) + "\n", 110_000, undefined,
       { code: 1, stderr: frame }).message)
       .toBe("Embryo journey fitted command failed; EMBRYO_FITTED_FAILURE_V1|COMMAND_EXIT|WORK_EXIT|CLAIM|invalid_response");
+  });
+});
+
+
+const proofSizeFields = ["bindingsCurrent", "fitPackage", "wholeRowHashes", "jobs", "scores", "calls"] as const;
+function proofSizeEnvelope() {
+  const fieldBytes = { bindingsCurrent: 4, fitPackage: 2048, wholeRowHashes: 256, jobs: 24_000, scores: 12_000, calls: 2048 };
+  return { version: "embryo-fitted-proof-size-v1", backendPid: 12345,
+    byteCount: Object.values(fieldBytes).reduce((sum, size) => sum + size, 0)
+      + proofSizeFields.reduce((sum, key) => sum + key.length + 6, 0), sha256: "a".repeat(64), fieldBytes };
+}
+describe("supplemental exact fitted proof buffer and size observations", () => {
+  it.each([
+    ["x".repeat(32_768), "", "STDOUT"], ["", "x".repeat(32_768), "STDERR"],
+    ["x".repeat(32_768), "y".repeat(32_768), "BOTH"], ["small", "small", "UNKNOWN"],
+    ["é".repeat(16_384), "", "STDOUT"], ["x".repeat(32_769), "", "UNKNOWN"],
+  ] as const)("classifies only own primitive retained UTF8 byte lengths %#", (stdout, stderr, expected) => {
+    expect(fittedProofOverflowPipe({ code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout, stderr })).toBe(expected);
+  });
+  it("never executes getters/coercion or adopts inherited/non-string/private output", () => {
+    const getter = vi.fn(() => { throw new Error("synthetic-private-size-canary"); });
+    const error = { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" };
+    for (const key of ["stdout", "stderr", "message"]) Object.defineProperty(error, key, { get: getter });
+    expect(fittedProofOverflowPipe(error)).toBe("UNKNOWN");expect(getter).not.toHaveBeenCalled();
+    expect(fittedProofOverflowPipe(Object.create({ code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout: "x".repeat(32_768), stderr: "" }))).toBe("UNKNOWN");
+    expect(fittedProofOverflowPipe({ code: 1, stdout: "x".repeat(32_768), stderr: "" })).toBe("UNKNOWN");
+    expect(fittedProofOverflowPipe({ code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout: Buffer.alloc(32_768), stderr: "" })).toBe("UNKNOWN");
+    expect(fittedProofOverflowPipe({ code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout: { toString: getter }, stderr: "" })).toBe("UNKNOWN");
+    expect(getter).not.toHaveBeenCalled();
+  });
+  it("materializes the complete original proof and changes only finite final emission", async () => {
+    const { command } = await fittedProofCommand(), diagnostic = fittedNativeProofSizeSql(command.args, command.input, 10_000, command.context)!;
+    const prefix = "with fitted_proof_size_value(proof) as materialized(\n", boundary = "\n)\n    select jsonb_build_object";
+    expect(diagnostic.slice(prefix.length, diagnostic.indexOf(boundary))).toBe(command.input!.slice(0, -1));
+    expect(diagnostic.startsWith(prefix)).toBe(true);expect(diagnostic).toContain("'backendPid',pg_backend_pid()");
+    expect(diagnostic).toContain("octet_length(convert_to(proof::text,'UTF8'))");
+    expect(diagnostic).toContain("extensions.digest(convert_to(proof::text,'UTF8'),'sha256')");
+    for (const key of proofSizeFields) expect(diagnostic).toContain(`'${key}',octet_length(convert_to((proof->'${key}')::text,'UTF8'))`);
+    expect(diagnostic).not.toMatch(/begin|read only|insert into|update |delete from|create |truncate /i);
+    expect(diagnostic).not.toContain("jsonb_each");
+    for (const [args, input, timeout, context] of [
+      [command.args, command.input! + "\nselect true;", 10_000, command.context],
+      [[...command.args, "extra"], command.input, 10_000, command.context],
+      [command.args, command.input, 10_001, command.context], [command.args, command.input, 10_000, undefined],
+    ] as const) expect(fittedNativeProofSizeSql(args, input, timeout, context)).toBeNull();
+  });
+  it("accepts only exact bounded whole native sizes and a fresh physical PID, never content", () => {
+    const row = proofSizeEnvelope(), frame = fittedNativeProofSizeFrame(JSON.stringify(row));
+    expect(frame).toBe(["EMBRYO_FITTED_PROOF_SIZE_V1", "OBSERVED", row.backendPid, row.byteCount, row.sha256,
+      ...proofSizeFields.map(key => row.fieldBytes[key])].join("|"));
+    expect(frame!.length).toBeLessThanOrEqual(256);expect(frame).toMatch(/^[\x20-\x7e]+$/);
+    const changed = [null, [], { ...row, extra: "synthetic-private-size-canary" }, { ...row, backendPid: 0 },
+      { ...row, backendPid: 2_147_483_648 }, { ...row, byteCount: row.byteCount + 1 }, { ...row, sha256: "not-a-digest" },
+      { ...row, fieldBytes: { ...row.fieldBytes, other: 1 } }, { ...row, fieldBytes: { ...row.fieldBytes, jobs: -1 } },
+      { ...row, fieldBytes: { ...row.fieldBytes, jobs: 1.5 } }, { ...row, version: "other" }];
+    for (const value of changed) expect(fittedNativeProofSizeFrame(JSON.stringify(value))).toBeNull();
+    expect(fittedNativeProofSizeFrame(JSON.stringify(row) + "\nsynthetic-private-size-canary")).toBeNull();
+    expect(fittedNativeProofSizeFrame("x".repeat(513))).toBeNull();
+  });
+  it("observes once only after the exact original buffer refusal and retains that Error identity", async () => {
+    const { command } = await fittedProofCommand(), failure = embryoJourneyCommandFailure(command.args, command.input, 10_000, command.context,
+      { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout: "x".repeat(32_768), stderr: "" }), originalMessage = failure.message;
+    const observe = vi.fn(async () => JSON.stringify(proofSizeEnvelope()));
+    await observeFittedNativeProofSizeFailure(command.args, command.input, 10_000, command.context, failure, observe);
+    expect(observe).toHaveBeenCalledTimes(1);
+    expect(observe.mock.calls[0]).toEqual([command.args, fittedNativeProofSizeSql(command.args, command.input, 10_000, command.context), 10_000]);
+    expect(failure.message.startsWith(originalMessage + "\n")).toBe(true);
+    expect(failure.message).toContain("EMBRYO_FITTED_PROOF_OVERFLOW_V1|STDOUT");
+    expect(failure.message).toContain("EMBRYO_FITTED_PROOF_SIZE_V1|OBSERVED|12345|");
+    await observeFittedNativeProofSizeFailure(command.args, command.input, 10_000, command.context, failure, observe);
+    expect(observe).toHaveBeenCalledTimes(1);expect(failure.message).not.toMatch(/success|complete/i);
+  });
+  it.each(["rejected", "malformed", "oversized"] as const)("keeps supplemental refusal opaque and preserves the original proof refusal %#", async kind => {
+    const { command } = await fittedProofCommand(), failure = embryoJourneyCommandFailure(command.args, command.input, 10_000, command.context,
+      { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" }), originalMessage = failure.message;
+    const observe = vi.fn(async () => {
+      if (kind === "rejected") throw new Error("synthetic-private-size-canary");
+      return kind === "malformed" ? '{"raw":"synthetic-private-size-canary"}' : "x".repeat(513);
+    });
+    await observeFittedNativeProofSizeFailure(command.args, command.input, 10_000, command.context, failure, observe);
+    expect(observe).toHaveBeenCalledTimes(1);expect(failure.message).toBe(originalMessage
+      + "\nEMBRYO_FITTED_PROOF_OVERFLOW_V1|UNKNOWN\nEMBRYO_FITTED_PROOF_SIZE_V1|NOT_OBSERVED");
+    expect(failure.message).not.toContain("synthetic-private-size-canary");
+  });
+  it("never probes another cause, changed context/argv/SQL/deadline or an unregistered private error", async () => {
+    const { command } = await fittedProofCommand(), observe = vi.fn(async () => JSON.stringify(proofSizeEnvelope()));
+    for (const error of [{ code: 1 }, { killed: true, signal: "SIGKILL" }, {}]) {
+      const failure = embryoJourneyCommandFailure(command.args, command.input, 10_000, command.context, error), message = failure.message;
+      await observeFittedNativeProofSizeFailure(command.args, command.input, 10_000, command.context, failure, observe);
+      expect(failure.message).toBe(message);
+    }
+    const failure = embryoJourneyCommandFailure(command.args, command.input, 10_000, command.context,
+      { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout: "", stderr: "x".repeat(32_768) }), message = failure.message;
+    for (const [args, input, timeout, context] of [
+      [[...command.args, "extra"], command.input, 10_000, command.context],
+      [command.args, command.input! + "\nselect true;", 10_000, command.context],
+      [command.args, command.input, 9999, command.context], [command.args, command.input, 10_000, undefined],
+    ] as const) await observeFittedNativeProofSizeFailure(args, input, timeout, context, failure, observe);
+    await observeFittedNativeProofSizeFailure(command.args, command.input, 10_000, command.context,
+      new Error("synthetic-private-size-canary"), observe);
+    expect(observe).not.toHaveBeenCalled();expect(failure.message).toBe(message);
+  });
+  it("still rejects the real helper callback, preserves first history and restores configuration after a size observation", async () => {
+    const h = fittedHarness(), native = h.io.execute, selected: Array<{ input?: string; timeout?: number; context?: string }> = [];
+    let failure: Error | undefined;
+    h.io.execute = async (args, input, timeout, context) => {
+      selected.push({ input, timeout, context });
+      if (context === "fitted-native-proof") {
+        failure = embryoJourneyCommandFailure(args, input, timeout!, context,
+          { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", stdout: "x".repeat(32_768), stderr: "" });
+        throw failure;
+      }
+      if (input?.startsWith("with fitted_proof_size_value")) return JSON.stringify(proofSizeEnvelope());
+      return native(args, input, timeout, context);
+    };
+    const result = await originalThenFitted(h, async fitted => {
+      await fitted.runWorker(fittedCohort);await fitted.runStatisticalWorker(fittedCohort);
+      await fitted.statisticalProof(fittedCohort);
+    }).then(() => null, error => error);
+    expect(result).toBe(failure);expect(result.message).toContain("COMMAND_OUTPUT_BOUND");
+    const supplement = selected.filter(row => row.input?.startsWith("with fitted_proof_size_value"));
+    expect(supplement).toHaveLength(1);expect(supplement[0]).toMatchObject({ timeout: 10_000, context: undefined });
+    expect(h.current()).toEqual(original);expect(h.statements.filter(sql => sql.startsWith("-- embryo-first-completed-history")).length).toBeGreaterThan(0);
   });
 });

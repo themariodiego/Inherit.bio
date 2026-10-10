@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { assertCiRuntime, CI_RUNTIME_CONTAINER } from "./ci-browser-config";
 import { ownedLinuxEnvironment, type OwnedLinuxCapability } from "./owned-linux-runtime";
 import { attachFittedFailure, decodeFittedFailure, encodeFittedFailure, fittedCommandFailure,
-  isFittedJourneyCommand, type FittedFailureInner } from "../src/lib/embryos/statistical-fit-diagnostic";
+  isFittedJourneyCommand, fittedProofOverflowPipe, type FittedFailureInner } from "../src/lib/embryos/statistical-fit-diagnostic";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 type ExecuteContext = "fitted-native-proof";
@@ -14,6 +14,10 @@ type Execute = (args: string[], input?: string, timeout?: number, context?: Exec
 export type EmbryoJourneyIo = { execute: Execute; owner: () => unknown; root: () => string };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const DB = "supabase_db_sequence";
+const proofBufferFailures = new WeakMap<object, { pipe: ReturnType<typeof fittedProofOverflowPipe>; message: string }>();
+const observedProofBufferFailures = new WeakSet<object>();
+const PROOF_SIZE_FIELDS = ["bindingsCurrent", "fitPackage", "wholeRowHashes", "jobs", "scores", "calls"] as const;
+const PROOF_SIZE_PREFIX = "EMBRYO_FITTED_PROOF_SIZE_V1";
 const SPLIT = "private.embryo_split_config";
 const OBJECTS = "private.embryo_ingest_object_config";
 const identityFormat = '{"name":{{json .Name}},"running":{{json .State.Running}},"project":{{json (index .Config.Labels "com.supabase.cli.project")}},"owner":{{json (index .Config.Labels "inherit.ci-browser-runtime")}},"network":{{json .HostConfig.NetworkMode}},"mounts":{{json .Mounts}}}';
@@ -205,13 +209,78 @@ export function isFittedNativeProofCommand(args: readonly string[], input: strin
   const cohort = /^with capture as materialized\(select private\.capture_embryo_test_statistical_fit_v1\('([0-9a-f-]{36})'::uuid,true\) a\),/.exec(input)?.[1];
   return cohort !== undefined && UUID.test(cohort) && input === fittedStatisticalProof(`'${cohort}'::uuid`);
 }
+/** Supplemental observation only. The entire original proof is materialized,
+ * including every equality/hash/authority expression. Only its emission changes.
+ * The SELECT retains autocommit and native row locks; it adds no data writes. */
+export function fittedNativeProofSizeSql(args: readonly string[], input: string | undefined,
+  timeout: number, context: unknown): string | null {
+  if (typeof input !== "string" || !isFittedNativeProofCommand(args, input, timeout, context)) return null;
+  const fields = PROOF_SIZE_FIELDS.map(name =>
+    `'${name}',octet_length(convert_to((proof->'${name}')::text,'UTF8'))`).join(",");
+  return `with fitted_proof_size_value(proof) as materialized(
+${input.slice(0, -1)}
+)
+    select jsonb_build_object('version','embryo-fitted-proof-size-v1','backendPid',pg_backend_pid(),
+      'byteCount',octet_length(convert_to(proof::text,'UTF8')),
+      'sha256',encode(extensions.digest(convert_to(proof::text,'UTF8'),'sha256'),'hex'),
+      'fieldBytes',jsonb_build_object(${fields})) from fitted_proof_size_value;`;
+}
+/** Strict finite native envelope, never proof content or arbitrary field names.
+ * Its PID belongs to this later physical connection, not the failed snapshot. */
+export function fittedNativeProofSizeFrame(output: unknown): string | null {
+  if (typeof output !== "string" || output.length > 512 || Buffer.byteLength(output, "utf8") > 512) return null;
+  try {
+    const value: unknown = JSON.parse(output);
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+    const row = value as Record<string, unknown>, fields = row.fieldBytes;
+    const keys = ["version", "backendPid", "byteCount", "sha256", "fieldBytes"];
+    const bounded = (number: unknown): number is number => typeof number === "number"
+      && Number.isInteger(number) && number >= 1 && number <= 2_147_483_647;
+    if (Object.keys(row).length !== keys.length || Object.keys(row).some(key => !keys.includes(key))
+      || row.version !== "embryo-fitted-proof-size-v1" || !bounded(row.backendPid) || !bounded(row.byteCount)
+      || typeof row.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(row.sha256)
+      || fields === null || typeof fields !== "object" || Array.isArray(fields)) return null;
+    const sizes = fields as Record<string, unknown>;
+    if (Object.keys(sizes).length !== PROOF_SIZE_FIELDS.length
+      || Object.keys(sizes).some(key => !(PROOF_SIZE_FIELDS as readonly string[]).includes(key))) return null;
+    const lengths = PROOF_SIZE_FIELDS.map(key => sizes[key]);
+    if (!lengths.every(bounded)) return null;
+    // jsonb's six fixed ASCII keys, ': ' separators, ', ' separators and braces.
+    const syntaxBytes = PROOF_SIZE_FIELDS.reduce((sum, key) => sum + key.length + 6, 0);
+    if (lengths.reduce((sum, number) => sum + number, 0) + syntaxBytes !== row.byteCount) return null;
+    const frame = [PROOF_SIZE_PREFIX, "OBSERVED", row.backendPid, row.byteCount, row.sha256, ...lengths].join("|");
+    return frame.length <= 256 ? frame : null;
+  } catch { return null; }
+}
+/** One size-only command after an actual exact-proof buffer refusal. Regardless
+ * of observation/refusal, the caller must throw the identical original Error.
+ * Raw exception/output is neither read nor forwarded. No success is supplied. */
+export async function observeFittedNativeProofSizeFailure(args: readonly string[], input: string | undefined,
+  timeout: number, context: unknown, error: unknown,
+  observe: (args: string[], statement: string, timeout: number) => Promise<string>): Promise<void> {
+  if (error === null || (typeof error !== "object" && typeof error !== "function")) return;
+  const failure = proofBufferFailures.get(error), statement = fittedNativeProofSizeSql(args, input, timeout, context);
+  if (!failure || statement === null || observedProofBufferFailures.has(error)) return;
+  observedProofBufferFailures.add(error);
+  let size = `${PROOF_SIZE_PREFIX}|NOT_OBSERVED`;
+  try { size = fittedNativeProofSizeFrame(await observe([...args], statement, 10_000)) ?? size; }
+  catch { /* supplemental refusal cannot replace the original proof failure */ }
+  try {
+    Object.defineProperty(error, "message", { value: `${failure.message}\nEMBRYO_FITTED_PROOF_OVERFLOW_V1|${failure.pipe}\n${size}`,
+      writable: true, configurable: true, enumerable: false });
+  } catch { /* an immutable refusal remains the original refusal */ }
+}
+
 export function embryoJourneyCommandFailure(args: readonly string[], input: string | undefined,
   timeout: number, context: unknown, error: unknown): Error {
   if (isFittedNativeProofCommand(args, input, timeout, context)) {
     // Native proof stderr is never interpreted as a fitted worker/RPC frame.
     const observed = fittedCommandFailure(error);
-    return new Error(`Embryo journey fitted native proof command failed; ${encodeFittedFailure({
+    const failure = new Error(`Embryo journey fitted native proof command failed; ${encodeFittedFailure({
       outer: observed.outer, inner: "NOT_OBSERVED", operation: "NOT_OBSERVED", code: "NOT_OBSERVED" })}`);
+    if (observed.outer === "COMMAND_OUTPUT_BOUND") proofBufferFailures.set(failure,
+      { pipe: fittedProofOverflowPipe(error), message: failure.message });
+    return failure;
   }
   if (isFittedJourneyCommand(args, input, CI_RUNTIME_CONTAINER))
     return new Error(`Embryo journey fitted command failed; ${encodeFittedFailure(fittedCommandFailure(error))}`);
@@ -299,7 +368,15 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
   const sql = async (statement: string, context?: ExecuteContext) => {
     await checkIdentity();
     const args = ["exec", "-i", DB, "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"];
-    return context === undefined ? io.execute(args, statement) : io.execute(args, statement, 10_000, context);
+    if (context === undefined) return io.execute(args, statement);
+    try { return await io.execute(args, statement, 10_000, context); }
+    catch (error) {
+      await observeFittedNativeProofSizeFailure(args, statement, 10_000, context, error,
+        async (selectedArgs, diagnostic, timeout) => {
+          await checkIdentity();return io.execute(selectedArgs, diagnostic, timeout);
+        });
+      throw error;
+    }
   };
   assert.deepEqual(JSON.parse(await sql(configuration)), ORIGINAL, "Never take over an enabled or configured embryo worker");
   assert(await sql(`select (not exists(select 1 from public.worker_jobs where kind='split_cohort_vcf')
