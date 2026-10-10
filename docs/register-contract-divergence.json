@@ -156,24 +156,7 @@
       "closing": "Addressed when largeExportDeliveryContract is built."
     }
   ],
-  "liveCallSiteOnUncreatedBucket": [
-    {
-      "bucket": "legal-evidence",
-      "file": "src/lib/future-person/claim-objects.ts",
-      "reachedFrom": "src/app/api/evidence/[session]/chunks/[sequence]/route.ts",
-      "routeId": "api.evidence-chunk",
-      "why": "supabaseAppealObjectStore creates, reads and removes sealed native anonymous-appeal evidence in the registered legal-evidence namespace. No migration creates this bucket. TEST fixture availability and the disabled-by-default appeal flow do not prove production Storage/provider readiness. The exact live callsite must remain recorded until the native bucket and policies are qualified.",
-      "closing": "Qualify the registered private legal-evidence bucket and policies before enabling the provider-backed appeal flow; remove this row only when the migration bucket census genuinely observes it."
-    },
-    {
-      "bucket": "legal-evidence",
-      "file": "src/lib/embryos/refused-invitation-cleanup.ts",
-      "reachedFrom": "src/app/api/jobs/retention/route.ts",
-      "routeId": "jobs.retention",
-      "why": "docs/route-divergence.json records legal-evidence as declared-not-created and gives the reason \"Nothing creates it because the claim and appeal surfaces it serves are unbuilt\". One live surface disagrees: drainRefusedInvitationCleanup, called by the registered POST /api/jobs/retention, issues admin.storage.from(\"legal-evidence\").remove(...) for every refused adult invitation draft whose purge manifest names evidence objects. No migration inserts that bucket - the two the migrations leave in place are genomes and exports - so that call addresses a bucket that does not exist. A SQL fence for it does exist (20260906064136_refused_evidence_write_fence.sql asserts every named object lives in bucket_id='legal-evidence'), which is what makes this a gap between two records rather than dead code. It cannot leak, because nothing is there to leak. It also does not fail silently: remove() on a missing bucket returns an error, the caller throws refusal_storage_delete_failed and the drain marks the draft failed - checked by reading the handler rather than assumed, because the first draft of this entry claimed the opposite. What is actually unfalsifiable is narrower and is the only case that occurs today: a manifest naming zero objects never enters the loop, so the storage step is a no-op that records success - and every manifest names zero objects, because nothing writes evidence while embryo ingest is unbuilt.",
-      "closing": "Either create the bucket with its declared policies, or drop the declaration and the fence together. The register's own storagePrefixes entry already describes what the bucket should be. Whichever way it goes, the two records must stop disagreeing: today the register declares it, a migration fences writes to it, live code removes from it, and nothing creates it."
-    }
-  ],
+  "liveCallSiteOnUncreatedBucket": [],
   "objectKeyShapeNotDescribedByAnyPrefix": [
     {
       "id": "genomes-bare-uuid-object",

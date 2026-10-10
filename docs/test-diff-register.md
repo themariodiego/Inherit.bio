@@ -1,3 +1,23 @@
+## 2026-10-10 — Register and preserve appeal evidence object paths
+
+G8.5 source correction creates private `legal-evidence`, makes new native appeal
+fragment/final reservations use the registered four segments, and explicitly
+retains three-segment ciphertext and already-planned completion under a legacy
+read/finish/delete contract. No key is moved: the envelope authenticates its
+exact path. Bucket-census exceptions are removed only for the newly created
+bucket; unrelated genome/endpoint gaps and G8.5 NO remain. Existing zero-document
+review tests stay unchanged. Added native/source/browser controls check real
+document quarantine, exact paths, current reviewer refusal, scan refusal and
+physical cleanup. New SQL and browser controls are authored, not executed proof.
+The route gate's two missing-bucket counterfactuals now plant an actually absent
+fixture bucket instead of relying on `legal-evidence` being absent. No gate or
+denial assertion is removed. The existing all-bucket Storage RLS journey derives
+its bucket set from migrations and will include this new private bucket.
+The first pure run passed 183 cases in eight whole files; its compiler refusal
+on the new cleanup callbacks is retained. Cleanup now validates the closed
+native locator result. Both genuine reviewer accounts are provisioned before
+the target snapshot, so account creation is not mistaken for an appeal effect.
+
 ## 2026-10-10 — Register the existing hosted job fixture in its exact native mail unit-test path
 
 The first complete current-tree and history scan on the mail correction refused four occurrences: the two fixed hosted-fixture assertions in the new unit test, each found in the current tree and its introducing commit. ADR 0006 now documents this exact additional pure-test path for the already accepted job fixture. The existing value, classification, detectors, undeclared-path rejection and complete history baseline remain unchanged. No authorization assertion or native credential generation changed; the original refusal remains in the integration evidence.

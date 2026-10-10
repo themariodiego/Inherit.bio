@@ -18,16 +18,7 @@
   "redirectStatusDivergenceNote": "Empty on purpose, and checked in both directions so it cannot stay empty through a regression. The register pins all ten legacy aliases to expectedStatus 308. Eight are pages calling permanentRedirect. /signup and /login were next.config.ts entries with permanent: false, which emits 307 \u2014 a 307 asks the browser back to the dead path every time, so the alias never retires. Both now read permanent: true.",
   "kindDivergence": [],
   "kindDivergenceNote": "Empty since 2026-09-28, and still checked in both directions. /withdraw/request was the one registered page literal served by a route.ts. The owner decided that evening that the register describes it as what it is: rights.withdraw-request, an HTML endpoint with its own response contract (rights-interstitial-v1), and rights.withdraw now pins its segment to session alone. Its one-script Content-Security-Policy is what makes the URL-fragment rule provable, which a React page cannot keep.",
-  "storageBucketDivergence": [
-    {
-      "bucket": "legal-evidence",
-      "direction": "declared-not-created",
-      "declaredBy": "storage.legal-evidence-v1",
-      "why": "Evidence for claim and appeal review, declared with service-only access and application envelope encryption on top of provider at-rest encryption. Nothing creates it because the claim and appeal surfaces it serves are unbuilt.",
-      "priority": "Priority 5 \u2014 future-person and claims",
-      "closing": "Created with the declared policies and the document-specific data key when evidence ingest is built."
-    }
-  ],
+  "storageBucketDivergence": [],
   "provenRouteStatesNote": "The executable (route, state) pairs named in current audited browser test titles, out of the 163 the register requires. This static source contract is separate from successful execution: saved exact-2def hosted run 38024298438 passed the three native embryo complete audits, leaving six scientific embryo pairs and two appeal pairs unqualified on that head. The new complete/processing appeal steps are authored through the same assigned native case and original held-then-released POST; their actual acceptance requires a complete new-head hosted run. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction; UNPROVEN_ROUTE_STATE_PAIRS holds only the remaining source gaps. A title names the registered route path and state id as separate non-overlapping whole tokens. No partial/not-covered embryo pair is added: the empty approved registry cannot produce the required scientific finding states.",
   "provenRouteStates": [
     "/ complete",
