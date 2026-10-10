@@ -6,7 +6,7 @@ import { chromium, expect, type Browser } from "@playwright/test";
 import { startCiBrowserRuntime } from "../ci-browser-runtime";
 import { withEmbryoJourney } from "../ci-embryo-journey";
 import { freshT6AppEnvironments } from "./fresh-t6-app-environment";
-import { acquireFreshStack, actualResourceIO, createResourceIO, infrastructureChildEnvironment } from "./fresh-t6-resources";
+import { acquireFreshStack, actualResourceIO, createResourceIO, freshRuntimeFailureClassification, infrastructureChildEnvironment } from "./fresh-t6-resources";
 import { ownedLinuxChildProof, type OwnedLinuxCapability } from "../owned-linux-runtime";
 import type { Writable } from "node:stream";
 import { repositoryRoot } from "./conductor-inputs";
@@ -21,6 +21,24 @@ import { startLocalStorageProxy } from "../local-storage-browser-proxy";
 import { chromiumStorageProxyArgs } from "../local-storage-browser-config";
 import { openParticipantCReadSession } from "../../e2e/participant-c-harness";
 import { seedParticipantC, participantCPassword } from "../../e2e/participant-c-journey";
+
+const setupStages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "upload-capacity", "runtime-preflight",
+  "storage-proxy", "app-configuration", "mail-capture", "main-app-ready", "embryo-app-ready", "chromium-launch",
+  "build-jurisdiction", "native-embryo-publication"] as const;
+type SetupStage = typeof setupStages[number];
+function setupDiagnostic(stage: SetupStage, error: unknown, cleanup: "complete" | "uncertain" | "unreturned") {
+  assert(setupStages.includes(stage), "Unregistered setup stage");
+  return JSON.stringify({ kind: "fresh-native-setup-failure", stage, ...freshRuntimeFailureClassification(error), cleanup });
+}
+/** Closed diagnostics supplement the original refusal. Cleanup uncertainty
+ * still throws and retains ownership; a completed cleanup is not success. */
+export async function refuseFreshSetup(stage: SetupStage, error: unknown, close: () => Promise<void>,
+  emit: (line: string) => void = line => { process.stderr.write(line + "\n"); }): Promise<never> {
+  try { await close(); }
+  catch (cleanupError) { emit(setupDiagnostic(stage, error, "uncertain")); throw cleanupError; }
+  emit(setupDiagnostic(stage, error, "complete"));
+  throw new Error("Fresh comprehension setup refused; no inference was started");
+}
 
 function startApp(port: 3100 | 3105, runtime: Record<string, string>, app: Record<string, string>, operator?: OwnedLinuxCapability) {
   const env = { ...infrastructureChildEnvironment(process.env, operator), ...app, ...runtime,
@@ -81,7 +99,10 @@ async function mailCapture() {
 async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, operator?: OwnedLinuxCapability): Promise<FreshComprehensionSimulation> {
   const io = operator ? createResourceIO(operator) : actualResourceIO;
   const environment = () => infrastructureChildEnvironment(process.env, operator);
-  const stack = await acquireFreshStack(signal, io, operator);
+  let stage: SetupStage = "stack-acquisition";
+  const stack = await acquireFreshStack(signal, io, operator).catch(error => {
+    process.stderr.write(setupDiagnostic(stage, error, "unreturned") + "\n"); throw error;
+  });
   let runtime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
   let browser: Browser | undefined;
   let storageProxy: Awaited<ReturnType<typeof startLocalStorageProxy>> | undefined;
@@ -96,23 +117,33 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
     await stack.close();
   })();
   try {
+    stage = "bootstrap-keys";
     assert(Object.entries(stack.keys).every(([name, value]) => process.env[name] === value), "Actual fresh bootstrap must match the built public configuration");
+    stage = "reference-seed";
     await io.command(process.execPath, ["--import", "tsx", "scripts/seed.ts"], { signal,
       env: { ...environment(), ...stack.keys }, timeout: 120_000 });
+    stage = "upload-capacity";
     const capacity = "insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,maximum_account_bytes,maximum_active_uploads) values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32) on conflict(singleton) do nothing;";
     await io.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", capacity], { signal });
+    stage = "runtime-preflight";
     runtime = await startCiBrowserRuntime(environment(), true, operator);
     const pair = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
     const signer = JSON.stringify({ ...pair.privateKey.export({ format: "jwk" }), kid: randomUUID() });
     const publicJwk = { ...pair.publicKey.export({ format: "jwk" }), kid: JSON.parse(signer).kid, alg: "ES256", use: "sig" };
+    stage = "storage-proxy";
     storageProxy = await startLocalStorageProxy("sequence", publicJwk, environment());
+    stage = "app-configuration";
     const appEnvironments = freshT6AppEnvironments(process.env, signer);
+    stage = "mail-capture";
     mail = await mailCapture();
-    for (const port of [3100, 3105] as const) { const app = startApp(port, runtime.env, appEnvironments[port], operator); apps.push(app); await ready(app, port, signal); }
+    for (const port of [3100, 3105] as const) { stage = port === 3100 ? "main-app-ready" : "embryo-app-ready";
+      const app = startApp(port, runtime.env, appEnvironments[port], operator); apps.push(app); await ready(app, port, signal); }
+    stage = "chromium-launch";
     browser = await chromium.launch({ args: chromiumStorageProxyArgs(storageProxy.url), env: environment() });
     // This build receipt was checked against source and public configuration
     // by startCiBrowserRuntime. Verify the actual served build and TEST-LOCAL
     // capability before a simulation or optional inference can begin.
+    stage = "build-jurisdiction";
     const probe = await browser.newContext({ baseURL: "http://localhost:3100", serviceWorkers: "block" });
     try {
       await probe.route("**/*", route => ["http://localhost:3100", SUPABASE_URL].includes(new URL(route.request().url()).origin) ? route.continue() : route.abort());
@@ -137,6 +168,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
         }
         return session;
       } };
+    stage = "native-embryo-publication";
     const context = await browser.newContext({ baseURL: "http://localhost:3105", serviceWorkers: "block" });
     await context.route("**/*", route => {
       const origin = new URL(route.request().url()).origin;
@@ -160,9 +192,8 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
             cohortId: seeded.cohortId, email: `cmp-t6-${input.id}@e2e.local`, password: participantCPassword, read: seeded.readPublication });
         } };
     } finally { await context.close(); }
-  } catch {
-    await close();
-    throw new Error("Fresh comprehension setup refused; no inference was started");
+  } catch (error) {
+    return refuseFreshSetup(stage, error, close);
   }
 }
 export function createFreshComprehensionBrowser(operator?: OwnedLinuxCapability): LiveEnvironment["openBrowser"] {

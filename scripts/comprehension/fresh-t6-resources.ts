@@ -15,6 +15,23 @@ export type ResourceIO = {
   inventory(): Promise<Resource[]>;
   command(file: string, args: string[], options?: { env?: Record<string, string>; signal?: AbortSignal; timeout?: number }): Promise<string>;
 };
+type CommandFailure = "spawn-refused" | "exit-nonzero" | "signal" | "timeout" | "output-limit";
+const commandFailures = new WeakMap<Error, { classification: CommandFailure; exitCode: number | null; signal: string | null }>();
+const signals = new Set(["SIGABRT", "SIGALRM", "SIGBUS", "SIGHUP", "SIGINT", "SIGKILL", "SIGPIPE", "SIGQUIT", "SIGSEGV", "SIGTERM", "SIGXCPU", "SIGXFSZ"]);
+/** Only closed process metadata survives; never argv, environment, output or a
+ * native error message. Unknown exceptions remain a generic setup refusal. */
+export function freshRuntimeCommandFailure(classification: CommandFailure, exitCode: number | null = null, signal: string | null = null) {
+  assert(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit"].includes(classification), "Unregistered command failure");
+  const error = new Error("Fresh runtime command failed; diagnostics suppressed");
+  commandFailures.set(error, { classification,
+    exitCode: Number.isInteger(exitCode) && exitCode! >= 0 && exitCode! <= 255 ? exitCode : null,
+    signal: signal && signals.has(signal) ? signal : null });
+  return error;
+}
+export function freshRuntimeFailureClassification(error: unknown) {
+  const known = error instanceof Error ? commandFailures.get(error) : undefined;
+  return known ? { ...known } : { classification: "setup-refused" as const, exitCode: null, signal: null };
+}
 export function ownedStack(resources: Resource[]): Resource[] {
   assert(resources.length > 0, "Fresh stack identity is missing");
   for (const item of resources) {
@@ -55,12 +72,14 @@ export function createResourceIO(operator?: OwnedLinuxCapability): ResourceIO {
     return new Promise((resolve, reject) => {
       const child = spawn(file, args, { cwd: repositoryRoot, env: { ...(options.env ?? infrastructureChildEnvironment(process.env, operator)), NODE_ENV: "production" },
         stdio: ["ignore", "pipe", "pipe"], signal: options.signal });
-      let output = "", failed = false;
-      const timer = setTimeout(() => { failed = true; child.kill("SIGKILL"); }, options.timeout ?? 60_000);
-      child.stdout.on("data", chunk => { output += chunk; if (output.length > 1_048_576) { failed = true; child.kill("SIGKILL"); } });
+      let output = "", failed: CommandFailure | undefined;
+      const timer = setTimeout(() => { failed ??= "timeout"; child.kill("SIGKILL"); }, options.timeout ?? 60_000);
+      child.stdout.on("data", chunk => { output += chunk; if (output.length > 1_048_576) { failed ??= "output-limit"; child.kill("SIGKILL"); } });
       child.stderr.resume();
-      child.once("error", () => { clearTimeout(timer); reject(new Error("Fresh runtime command refused; diagnostics suppressed")); });
-      child.once("exit", code => { clearTimeout(timer); if (code !== 0 || failed) reject(new Error("Fresh runtime command failed; diagnostics suppressed")); else resolve(output.trim()); });
+      child.once("error", () => { clearTimeout(timer); reject(freshRuntimeCommandFailure("spawn-refused")); });
+      child.once("exit", (code, signal) => { clearTimeout(timer);
+        if (code !== 0 || failed) reject(freshRuntimeCommandFailure(failed ?? (signal ? "signal" : "exit-nonzero"), code, signal));
+        else resolve(output.trim()); });
     });
   },
   async inventory() {

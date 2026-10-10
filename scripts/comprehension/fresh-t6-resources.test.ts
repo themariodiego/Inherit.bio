@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { assertEmptyHost, assertSameResources, disposeOwnedStack, infrastructureChildEnvironment,
-  infrastructureReservation, ownedStack, type Resource, type ResourceIO } from "./fresh-t6-resources";
+  infrastructureReservation, ownedStack, createResourceIO, freshRuntimeCommandFailure, freshRuntimeFailureClassification,
+  type Resource, type ResourceIO } from "./fresh-t6-resources";
 import { freshT6ConfigSchema } from "./fresh-t6-config";
 import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -15,6 +16,42 @@ const resources = (id: string): Resource[] => [
   { kind: "volume", name: "supabase_db_sequence", identity: `created-${id}`, project: "sequence" },
 ];
 const fakeIO = (snapshots: Resource[][]) => ({ inventory: vi.fn(async () => snapshots.shift()!), command: vi.fn(async () => "") } satisfies ResourceIO);
+
+describe("closed native command failures (local failure-injection children only)", () => {
+  const canary = "PRIVATE_CANARY_NEVER_PRINT";
+  it.each([
+    { script: `console.error('${canary}');process.exit(7)`, classification: "exit-nonzero", exitCode: 7, signal: null },
+    { script: `console.error('${canary}');process.kill(process.pid,'SIGTERM')`, classification: "signal", exitCode: null, signal: "SIGTERM" },
+    { script: `console.error('${canary}');setTimeout(()=>{},10000)`, timeout: 10, classification: "timeout", exitCode: null, signal: "SIGKILL" },
+    { script: `process.stdout.write('${canary}'.repeat(100000))`, classification: "output-limit", exitCode: null, signal: "SIGKILL" },
+  ])("retains $classification without command text/output or private stderr", async expected => {
+    const io = createResourceIO();
+    const error = await io.command(process.execPath, ["-e", expected.script], { timeout: expected.timeout ?? 2000 })
+      .catch(error => error);
+    expect(error).toBeInstanceOf(Error);
+    const metadata = freshRuntimeFailureClassification(error);
+    expect(metadata).toEqual({ classification: expected.classification, exitCode: expected.exitCode, signal: expected.signal });
+    expect(JSON.stringify(metadata)).not.toContain(canary);
+    expect(String(error)).not.toContain(canary);
+  });
+  it("keeps spawn failures closed and normal success unchanged", async () => {
+    const io = createResourceIO();
+    const error = await io.command(`/nonexistent/${canary}`, []).catch(error => error);
+    expect(freshRuntimeFailureClassification(error)).toEqual({ classification: "spawn-refused", exitCode: null, signal: null });
+    expect(String(error)).not.toContain(canary);
+    await expect(io.command(process.execPath, ["-e", "process.stdout.write('  ok  ')"])).resolves.toBe("ok");
+  });
+  it("does not inspect an unknown exception or admit forged metadata", () => {
+    const error = new Error(canary);
+    Object.defineProperty(error, "code", { get() { throw new Error(canary); } });
+    expect(freshRuntimeFailureClassification(error)).toEqual({ classification: "setup-refused", exitCode: null, signal: null });
+    expect(() => freshRuntimeCommandFailure(canary as "signal")).toThrow("Unregistered");
+    const known = freshRuntimeCommandFailure("signal", 999999, canary);
+    expect(freshRuntimeFailureClassification(known)).toEqual({ classification: "signal", exitCode: null, signal: null });
+    freshRuntimeFailureClassification(known).signal = canary;
+    expect(freshRuntimeFailureClassification(known).signal).toBeNull();
+  });
+});
 
 describe("fresh T6 exact resource ownership (synthetic IO only)", () => {
   it("closes one exact owned stack before allowing a distinct second persona stack", async () => {

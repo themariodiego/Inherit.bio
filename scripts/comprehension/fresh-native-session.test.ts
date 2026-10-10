@@ -7,10 +7,51 @@ import { environment, fixture, inputs, manifest } from "./conductor-fixtures";
 import { createLiveManifest } from "./conductor-inputs";
 import { currentNativeReadSession, freshComprehensionSessions, type FreshComprehensionSimulation, type ParticipantCInput } from "./fresh-native-session";
 import type { LiveSession } from "./live-browser";
+import { refuseFreshSetup } from "./fresh-t6-browser";
+import { freshRuntimeCommandFailure } from "./fresh-t6-resources";
 
 // Pure injected lifetime controls only. No browser, Supabase, provider or model
 // is launched, and no synthetic answer is participant evidence.
 const signal = () => new AbortController().signal;
+describe("closed setup diagnosis preserves failed ownership outcomes", () => {
+  const canary = "PRIVATE_CANARY_NEVER_PRINT";
+  it("reports the exact refused stage after successful cleanup without leaking raw failure values", async () => {
+    const close = vi.fn(async () => {}), lines: string[] = [];
+    await expect(refuseFreshSetup("bootstrap-keys", new Error(canary), close, line => lines.push(line)))
+      .rejects.toThrow("setup refused");
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(lines.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "bootstrap-keys",
+      classification: "setup-refused", exitCode: null, signal: null, cleanup: "complete" }]);
+    expect(lines.join()).not.toContain(canary);
+  });
+  it("retains command exit classification and cleanup uncertainty as separate facts", async () => {
+    const cleanupError = new Error(canary), lines: string[] = [];
+    await expect(refuseFreshSetup("reference-seed", freshRuntimeCommandFailure("exit-nonzero", 7),
+      async () => { throw cleanupError; }, line => lines.push(line))).rejects.toBe(cleanupError);
+    expect(lines.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "reference-seed",
+      classification: "exit-nonzero", exitCode: 7, signal: null, cleanup: "uncertain" }]);
+    expect(lines.join()).not.toContain(canary);
+    expect(lines[0].length).toBeLessThan(256);
+  });
+  it("still yields resource-unresolved, zero responses and no inference when fresh setup fails", async () => {
+    const resource = await fixture();
+    try {
+      const original = environment(), lines: string[] = [];
+      const pinned = manifest();
+      const live = createLiveManifest(inputs, { ...pinned, kind: "smoke", taskIds: ["T6"], personaIds: pinned.personaIds.slice(0, 1),
+        build: { baseUrl: "http://localhost:3100", buildId: "synthetic-control-build", jurisdiction: "TEST-LOCAL" },
+        inference: { label: "local/deterministic-stub", provider: "local-deterministic-stub" }, modelIdentity: "synthetic-control",
+        skipped: [], blockers: ["synthetic-lifecycle-control"] });
+      const result = await runLive({ inputs, manifest: live, journal: resource.journal, modelIdentity: "synthetic-control",
+        environment: { ...original.adapter, kind: "live-local-build", openBrowser: () => refuseFreshSetup("runtime-preflight",
+          new Error(canary), async () => {}, line => lines.push(line)) } });
+      expect(result).toMatchObject({ status: "stopped", failure: "resource-unresolved", qualifyingEvidence: false });
+      expect(result.run.responses).toEqual([]); expect(original.calls).toEqual([]);
+      expect(resource.journal.history.resourceStopRequired).toBe(true);
+      expect(lines.join()).not.toContain(canary);
+    } finally { await resource.cleanup(); }
+  });
+});
 const input = (taskId: ParticipantCInput["taskId"] = "T6"): ParticipantCInput => {
   const task = bindings.tasks.find(task => task.id === taskId)!;
   return { id: randomUUID(), taskId, account: task.account, fixtures: task.fixtures };
