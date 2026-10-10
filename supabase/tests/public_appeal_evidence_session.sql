@@ -1129,9 +1129,10 @@ create function pg_temp.appeal_reversal_clock_graph(p_case uuid) returns jsonb l
  'private.public_appeal_document_decisions',(select jsonb_agg(to_jsonb(r) order by r.id) from private.public_appeal_document_decisions r where r.case_id=p_case));
 $clock_graph$;
 
-create function pg_temp.appeal_reversal_clock_fixture(p_graph jsonb,p_past boolean) returns jsonb language plpgsql as $clock_fixture$
+create function pg_temp.appeal_reversal_clock_fixture(p_graph jsonb,p_expiring boolean) returns jsonb language plpgsql as $clock_fixture$
 declare table_name text;source_row jsonb;row_data jsonb;field_name text;rows jsonb;expected jsonb:='{}';
- shift_by interval:=case when p_past then interval '31 days' else interval '0 days' end;columns_list text;
+ shift_by interval:=case when p_expiring then (p_graph#>>'{private.new_public_appeal_intakes,0,deadline}')::timestamptz
+  -(date_trunc('milliseconds',clock_timestamp())+interval '10 seconds') else interval '0 days' end;columns_list text;
  tables text[]:=array['public.subject_principals','public.encrypted_contact_references','public.contact_hmac_indexes',
  'public.mail_outbox','public.token_candidates','public.token_hashes','private.new_public_appeal_intakes','public.appeal_intakes',
  'private.new_public_appeal_evidence_state','public.rights_sessions','private.appeal_document_sessions','private.appeal_document_fragments',
@@ -1153,7 +1154,7 @@ begin
     if row_data->>field_name is not null then
      row_data:=jsonb_set(row_data,array[field_name],to_jsonb((row_data->>field_name)::timestamptz-shift_by));end if;
    end loop;
-   if p_past and table_name='private.new_public_appeal_intakes' then
+   if p_expiring and table_name='private.new_public_appeal_intakes' then
     row_data:=jsonb_set(jsonb_set(row_data,'{frame,scope,originalSubmittedAt}',
      to_jsonb(to_char((row_data->>'submitted_at')::timestamptz at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))),
      '{frame,scope,originalDeadline}',to_jsonb(to_char((row_data->>'deadline')::timestamptz at time zone 'UTC',
@@ -1186,7 +1187,8 @@ end $clock_fixture$;
 
 create function pg_temp.appeal_reversal_deadline_probe() returns jsonb language plpgsql as $clock_probe$
 declare fixture jsonb;graph jsonb;expected jsonb;context jsonb;receipt jsonb;v_case uuid;binding jsonb;
- p_past boolean;before_outcomes jsonb;before_targets jsonb;result jsonb:='{}';
+ p_past boolean;expected_context jsonb;deadline_at timestamptz;wait_seconds double precision;
+ before_outcomes jsonb;before_targets jsonb;result jsonb:='{}';
 begin
  begin
   fixture:=pg_temp.prior_appeal_reverse_probe(false,false,false,true);
@@ -1201,7 +1203,9 @@ begin
   raise exception using errcode='PZ004',message='restore complete native clock snapshot';
  exception when sqlstate 'PZ004' then null;end;
  -- Both copies reuse the same exact real source outcome and reviewer/account
- -- independence. Their only difference is coherent clocks declared at INSERT.
+ -- independence. The expiry copy must first be live: inserting a real decision
+ -- issues its notice and correctly refuses an already-expired recipient. Its
+ -- coherent clocks are declared at INSERT, then its original deadline elapses.
  foreach p_past in array array[false,true] loop
   begin
    expected:=pg_temp.appeal_reversal_clock_fixture(graph,p_past);
@@ -1211,6 +1215,13 @@ begin
    select private.public_appeal_underlying_binding_v1(source.frame#>>'{underlyingDecision,decisionReferenceHash}',source.frame->'contactDigests')
     into binding from private.new_public_appeal_intakes source where source.id=v_case;
    if binding is distinct from context->'priorDecision' then raise exception 'otherwise-current original prior binding differs';end if;
+   expected_context:=context;
+   if p_past then
+    expected_context:=jsonb_set(jsonb_set(context,'{deadline}',expected#>'{private.new_public_appeal_intakes,0,deadline}'),
+     '{scope}',expected#>'{private.new_public_appeal_intakes,0,frame,scope}');end if;
+   if public.read_public_appeal_case_context_v1(v_case) is distinct from expected_context
+    or private.public_appeal_reversal_binding_v1(v_case) is distinct from binding then
+    raise exception 'otherwise-valid complete live clock control differs';end if;
    select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') into before_outcomes from private.public_appeal_case_decisions source;
    select jsonb_build_object('profiles',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.profiles source),
     'files',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.genome_files source),
@@ -1218,13 +1229,17 @@ begin
     'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.embryo_cohorts source),
     'prior',(select to_jsonb(source) from private.public_appeal_document_decisions source where source.id=(binding->>'decisionId')::uuid)) into before_targets;
    if not p_past then
-    if public.read_public_appeal_case_context_v1(v_case) is distinct from context then raise exception 'live complete control differs';end if;
     receipt:=public.reverse_public_appeal_prior_decision_v1(v_case,(binding->>'decisionRevision')::bigint,(context->>'reviewRevision')::bigint,
      (context->>'evidenceRevision')::bigint,repeat('7',64),decode(repeat('ab',48),'hex'));
     if receipt is distinct from jsonb_build_object('caseId',v_case,'state','resolved','outcome','prior_decision_reversed',
      'reviewRevision',(context->>'reviewRevision')::bigint+1) then raise exception 'live full control failed reversal';end if;
     result:=result||jsonb_build_object('liveCompleteReversal',true);
    else
+    deadline_at:=(expected#>>'{private.new_public_appeal_intakes,0,deadline}')::timestamptz;
+    wait_seconds:=extract(epoch from deadline_at-clock_timestamp());
+    if wait_seconds<=0 or wait_seconds>10 then raise exception 'complete expiry fixture was not live within its fixed clock bound';end if;
+    perform pg_sleep(wait_seconds);
+    if clock_timestamp()<deadline_at then raise exception 'original immutable deadline has not elapsed';end if;
     begin
      perform public.reverse_public_appeal_prior_decision_v1(v_case,(binding->>'decisionRevision')::bigint,(context->>'reviewRevision')::bigint,
       (context->>'evidenceRevision')::bigint,repeat('7',64),decode(repeat('ab',48),'hex'));
@@ -1248,7 +1263,7 @@ begin
 end $clock_probe$;
 create temporary table appeal_reversal_clock_result as select pg_temp.appeal_reversal_deadline_probe() value;
 select ok((value->>'liveCompleteReversal')::boolean,'otherwise-valid native originating evidence, independent reviewer and all three whole ACKs actually permit the live reversal') from appeal_reversal_clock_result;
-select ok((value->>'expiredCompleteRefusal')::boolean,'the identical complete pipeline with initially past immutable clocks refuses reversal and preserves every case row, outcome/nonce, original decision and target bag') from appeal_reversal_clock_result;
+select ok((value->>'expiredCompleteRefusal')::boolean,'the otherwise-live complete pipeline after its declared immutable deadline elapses refuses reversal and preserves every case row, outcome/nonce, original decision and target bag') from appeal_reversal_clock_result;
 
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role_name
  where has_table_privilege(role_name,'private.public_appeal_information_requests','select,insert,update,delete')
