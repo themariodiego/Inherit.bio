@@ -129,3 +129,85 @@ it("retains an uncertain cleanup error instead of treating its bootstrap as succ
     expect(lines.join("")).not.toContain("synthetic-private-cleanup-canary");
   } finally { stderr.mockRestore(); }
 });
+
+
+import { freshRuntimeCommandFailure } from "./fresh-t6-resources";
+import { createHostedBootstrapDiagnostics } from "./hosted-owned-diagnostics";
+
+it.each(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit"] as const)(
+  "reports the actual acquisition %s producer and rethrows its identical refusal", async kind => {
+    const failure = freshRuntimeCommandFailure(kind, kind === "exit-nonzero" ? 7 : null,
+      kind === "signal" ? "SIGTERM" : null);
+    const environment = { SYNTHETIC_SCOPE: "unchanged" }, build = vi.fn(async () => {});
+    const acquire = vi.fn(async () => { throw failure; });
+    const capture = createHostedBootstrapDiagnostics(), lines: string[] = [];
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(chunk => {
+      const line = String(chunk); lines.push(line); capture.push(Buffer.from(line)); return true;
+    });
+    try {
+      await expect(prepareFreshInvocation({ environment, acquire, build,
+        bindObservedKeys: true, buildRequired: true })).rejects.toBe(failure);
+      expect(acquire).toHaveBeenCalledTimes(1); expect(build).not.toHaveBeenCalled();
+      expect(environment).toEqual({ SYNTHETIC_SCOPE: "unchanged" });
+      expect(capture.finish()).toEqual([{ stage: "bootstrap-stack-acquisition", classification: kind,
+        exitCode: kind === "exit-nonzero" ? 7 : null, signal: kind === "signal" ? "SIGTERM" : null,
+        cleanup: "unreturned" }]);
+      expect(lines).toHaveLength(1); expect(Buffer.byteLength(lines[0])).toBeLessThanOrEqual(513);
+      expect(lines.join("")).not.toMatch(/"(?:message|stack|argv|stderr|credential|configuration)"\s*:/);
+    } finally { stderr.mockRestore(); }
+  });
+
+it("classifies an unknown acquisition refusal without reading its private or hostile getters", async () => {
+  const getter = vi.fn(() => { throw new Error("synthetic-private-acquisition-canary"); });
+  const failure = Object.defineProperties({}, Object.fromEntries(
+    ["message", "stack", "code", "signal", "credential", "role", "context"].map(name =>
+      [name, { enumerable: true, get: getter }])));
+  const lines: string[] = [], capture = createHostedBootstrapDiagnostics(), build = vi.fn(async () => {});
+  const stderr = vi.spyOn(process.stderr, "write").mockImplementation(chunk => {
+    const line = String(chunk); lines.push(line); capture.push(Buffer.from(line)); return true;
+  });
+  try {
+    await expect(prepareFreshInvocation({ environment: {}, acquire: async () => { throw failure; }, build,
+      bindObservedKeys: true, buildRequired: true })).rejects.toBe(failure);
+    expect(getter).not.toHaveBeenCalled(); expect(build).not.toHaveBeenCalled();
+    expect(capture.finish()).toEqual([{ stage: "bootstrap-stack-acquisition", classification: "setup-refused",
+      exitCode: null, signal: null, cleanup: "unreturned" }]);
+    expect(lines.join("")).not.toMatch(/synthetic-private-acquisition-canary|message|credential|role|context/);
+  } finally { stderr.mockRestore(); }
+});
+
+it("retains a synchronously thrown acquisition guard and does not enter build or key binding", async () => {
+  const failure = new Error("synthetic-private-lock-guard"), environment = { SYNTHETIC_SCOPE: "unchanged" };
+  const build = vi.fn(async () => {}), lines: string[] = [];
+  const stderr = vi.spyOn(process.stderr, "write").mockImplementation(chunk => { lines.push(String(chunk)); return true; });
+  try {
+    await expect(prepareFreshInvocation({ environment, acquire: () => { throw failure; }, build,
+      bindObservedKeys: true, buildRequired: true })).rejects.toBe(failure);
+    expect(build).not.toHaveBeenCalled(); expect(environment).toEqual({ SYNTHETIC_SCOPE: "unchanged" });
+    expect(lines).toEqual(['OWNED_BOOTSTRAP_FAILURE_V1|{"stage":"bootstrap-stack-acquisition","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"unreturned"}\n']);
+    expect(lines.join("")).not.toContain("synthetic-private-lock-guard");
+  } finally { stderr.mockRestore(); }
+});
+
+it("does not replace the original acquisition error when public diagnostic output refuses", async () => {
+  const failure = freshRuntimeCommandFailure("exit-nonzero", 3), build = vi.fn(async () => {});
+  const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => { throw new Error("synthetic-private-output-canary"); });
+  try {
+    await expect(prepareFreshInvocation({ environment: {}, acquire: async () => { throw failure; }, build,
+      bindObservedKeys: true, buildRequired: true })).rejects.toBe(failure);
+    expect(build).not.toHaveBeenCalled(); expect(stderr).toHaveBeenCalledTimes(1);
+  } finally { stderr.mockRestore(); }
+});
+
+it("preserves successful acquisition, key binding, build and actual close order without a failure frame", async () => {
+  const keys = { NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321", NEXT_PUBLIC_SUPABASE_ANON_KEY: "EXAMPLE_NO_REAL_ANON_CREDENTIAL",
+    SUPABASE_SERVICE_ROLE_KEY: "EXAMPLE_NO_REAL_SERVICE_CREDENTIAL" };
+  const environment: Record<string, string | undefined> = {}, order: string[] = [], lines: string[] = [];
+  const stderr = vi.spyOn(process.stderr, "write").mockImplementation(chunk => { lines.push(String(chunk)); return true; });
+  try {
+    await prepareFreshInvocation({ environment, bindObservedKeys: true, buildRequired: true,
+      acquire: async () => { order.push("acquire"); return { keys, close: async () => { order.push("close"); } }; },
+      build: async () => { order.push("build"); expect(environment).toEqual(keys); } });
+    expect(order).toEqual(["acquire", "build", "close"]); expect(lines).toEqual([]);
+  } finally { stderr.mockRestore(); }
+});

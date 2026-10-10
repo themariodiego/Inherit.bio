@@ -69,3 +69,15 @@ export function isFittedJourneyCommand(args: readonly string[], input: string | 
       && own(value, "kind") === "fitted-test";
   } catch { return false; }
 }
+
+/** Default execFile emits primitive UTF-8 strings. Observe their own retained
+ * byte lengths only; a stream at the cap is not proof of the other stream's
+ * causal overflow. Missing/accessor/non-string data is conservatively unknown. */
+export function fittedProofOverflowPipe(error: unknown): "STDOUT" | "STDERR" | "BOTH" | "UNKNOWN" {
+  if (own(error, "code") !== "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") return "UNKNOWN";
+  const stdout = own(error, "stdout"), stderr = own(error, "stderr");
+  if (typeof stdout !== "string" || typeof stderr !== "string"
+    || stdout.length > 32_768 || stderr.length > 32_768) return "UNKNOWN";
+  const out = Buffer.byteLength(stdout, "utf8") >= 32_768, err = Buffer.byteLength(stderr, "utf8") >= 32_768;
+  return out && err ? "BOTH" : out ? "STDOUT" : err ? "STDERR" : "UNKNOWN";
+}

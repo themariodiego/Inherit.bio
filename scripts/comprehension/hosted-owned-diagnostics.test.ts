@@ -131,3 +131,29 @@ it("refuses unknown data and hostile descriptor traps without a diagnostic frame
     expect(() => emitHostedBootstrapFailure("native-start", metadata, "retained", emit)).not.toThrow();
   expect(emit).not.toHaveBeenCalled();
 });
+
+
+it("admits only the fixed acquisition stage through the actual producer, emitter and fragmented collector", () => {
+  const failure = freshRuntimeCommandFailure("exit-nonzero", 6), capture = createHostedBootstrapDiagnostics(), lines: string[] = [];
+  emitHostedBootstrapFailure("bootstrap-stack-acquisition", freshRuntimeFailureClassification(failure), "unreturned", line => {
+    lines.push(line); expect(Buffer.byteLength(line)).toBeLessThanOrEqual(512);
+    for (const byte of Buffer.from(line + "\n")) capture.push(Uint8Array.of(byte));
+  });
+  expect(lines).toHaveLength(1);
+  expect(capture.finish()).toEqual([{ stage: "bootstrap-stack-acquisition", classification: "exit-nonzero",
+    exitCode: 6, signal: null, cleanup: "unreturned" }]);
+  expect(() => { throw failure; }).toThrow(failure);
+});
+
+it.each(["unknown-acquisition-stage", "private-extra", "false-cleanup"])(
+  "keeps the acquisition diagnostic closed against %s", kind => {
+    const frame: Record<string, unknown> = { stage: "bootstrap-stack-acquisition", classification: "setup-refused",
+      exitCode: null, signal: null, cleanup: "unreturned" };
+    if (kind === "unknown-acquisition-stage") frame.stage = "bootstrap-stack-acquisition-private-canary";
+    if (kind === "private-extra") frame.role = "synthetic-private-acquisition-canary";
+    if (kind === "false-cleanup") frame.cleanup = "cleanup-guessed-complete";
+    expect(hostedBootstrapDiagnosticLine(frame)).toBeNull();
+    const capture = createHostedBootstrapDiagnostics();
+    capture.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(frame) + "\n"));
+    expect(capture.finish()).toEqual([]);
+  });
