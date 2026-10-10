@@ -84,6 +84,52 @@ export async function runEmbryoWorkerInside(value: unknown, signal: AbortSignal,
   });
 }
 
+export const EMBRYO_STATISTICAL_WORKER_ARGS = Object.freeze(["--conditions=react-server", "--import", "/app/scripts/server-only-shim.mjs",
+  "--import", "tsx", "/app/scripts/embryo-statistical-worker.run.mts", "--once"]);
+
+export async function runEmbryoStatisticalWorkerInside(value: unknown, signal: AbortSignal, dependencies = {
+  spawn: (env: Record<string, string>) => spawn("node", [...EMBRYO_STATISTICAL_WORKER_ARGS], {
+    cwd: "/app", env: { NODE_ENV: "production", PATH: "/usr/local/bin:/usr/bin:/bin", ...env,
+      NODE_EXTRA_CA_CERTS: "/tls/fixture/ca.crt" },
+    detached: true, stdio: ["ignore", "pipe", "pipe"],
+  }) as ChildProcess,
+  kill: (pid: number, kind: NodeJS.Signals) => process.kill(-pid, kind),
+}): Promise<void> {
+  const env = checkedEmbryoWorkerEnvironment(value);
+  assert(!signal.aborted, "Embryo worker was cancelled before launch");
+  const child = dependencies.spawn(env);
+  let output = "", stopped = false, escalation: NodeJS.Timeout | undefined, terminal: NodeJS.Timeout | undefined;
+  await new Promise<void>((resolve, reject) => {
+    let finished = false;
+    const finish = (okay = false) => {
+      if (finished) return;
+      finished = true; clearTimeout(deadline); clearTimeout(escalation); clearTimeout(terminal);
+      signal.removeEventListener("abort", stop);
+      if (okay) resolve(); else reject(new Error("Embryo worker outcome was not a clean completion"));
+    };
+    const kill = (kind: NodeJS.Signals) => {
+      if (child.pid) { try { dependencies.kill(child.pid, kind); } catch { /* exit remains authoritative */ } }
+    };
+    const stop = () => {
+      if (stopped || finished) return;
+      stopped = true; kill("SIGTERM");
+      escalation = setTimeout(() => { kill("SIGKILL"); terminal = setTimeout(() => finish(), 1000); }, 5000);
+    };
+    const deadline = setTimeout(stop, EMBRYO_WORKER_LIMIT_MS);
+    signal.addEventListener("abort", stop, { once: true });
+    child.stdout?.on("data", chunk => {
+      if (stopped) return;
+      output += chunk.toString();
+      if (output.length > 512) { output = ""; stop(); }
+    });
+    child.stderr?.resume();
+    child.once("error", stop);
+    child.once("close", code => finish(!stopped && code === 0
+      && output === "coverage_saved\n"));
+    if (signal.aborted) stop();
+  });
+}
+
 function defaultIo(env: Environment, operator?: OwnedLinuxCapability): EmbryoJourneyIo {
   return {
     execute: async (args, input, timeout = 10_000) => {
@@ -129,6 +175,8 @@ function cohortLiteral(cohortId: string) {
 export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
   runtimeOwner: string;
   runWorker: (cohortId: string) => Promise<void>;
+  runStatisticalWorker: (cohortId: string) => Promise<void>;
+  statisticalProof: (cohortId: string) => Promise<unknown>;
   proof: (cohortId: string) => Promise<unknown>;
 }) => Promise<T>, io?: EmbryoJourneyIo, platform = process.platform, operator?: OwnedLinuxCapability): Promise<T> {
   assertCiRuntime(env, platform, operator);
@@ -168,7 +216,7 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
     and not exists(select 1 from private.embryo_ingest_write_intents)
     and not exists(select 1 from private.embryo_canonical_parts))::text;`) === "true",
   "Embryo journey requires an empty split and fragment queue");
-  let attempted = false;
+  let attempted = false, statisticalAttempted = false;
   try {
     assert(await sql(`-- embryo-fixture-activate
       do $$ begin ${configLocks}
@@ -199,7 +247,31 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
         JSON.stringify(worker) + "\n", EMBRYO_WORKER_LIMIT_MS + 20_000);
         assert(output === "EMBRYO_JOURNEY_WORKER_COMPLETE", "Worker did not prove one clean publication");
       },
-      proof: async cohortId => JSON.parse(await sql(embryoProof(cohortLiteral(cohortId)))),
+      runStatisticalWorker: async cohortId => {
+        const cohort = cohortLiteral(cohortId);
+        assert(!statisticalAttempted, "No duplicate or uncertain statistical worker attempt is permitted");
+        assert(await sql(`select (exists(select 1 from private.embryo_test_statistical_admission)
+          and (select count(*) from public.worker_jobs where output_kind='embryo.statistical-estimate')=0
+          and exists(select 1 from public.worker_jobs where cohort_id=${cohort} and kind='split_cohort_vcf'
+            and status='done' and attempts=1)
+          and exists(select 1 from public.embryo_cohorts where id=${cohort} and status='active' and publication_revision=1))::text;`) === "true",
+        "Only the actual fresh published cohort can enter synthetic statistical work");
+        statisticalAttempted = true;
+        const queued = JSON.parse(await sql(`select public.enqueue_embryo_test_statistical_v1(${cohort},true);`));
+        assert(queued.status === "queued" && typeof queued.jobId === "string", "Native statistical admission refused");
+        await checkIdentity();
+        const output = await io.execute(["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER,
+          "node", "--import", "tsx", "/app/scripts/ci-browser/embryo-statistical-worker.mts"],
+        JSON.stringify(worker) + "\n", EMBRYO_WORKER_LIMIT_MS + 20_000);
+        assert(output === "EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE", "Statistical worker must settle one complete native save");
+      },
+      statisticalProof: async cohortId => JSON.parse(await sql(`select jsonb_build_object(
+        'jobs',(select jsonb_agg(to_jsonb(j) order by j.id) from public.worker_jobs j
+          where j.cohort_id=${cohortLiteral(cohortId)} and j.output_kind='embryo.statistical-estimate'),
+        'scores',(select jsonb_agg(to_jsonb(s) order by e.sample_ordinal) from public.embryo_scores s
+          join public.embryos e on e.id=s.embryo_id where e.cohort_id=${cohortLiteral(cohortId)}
+          and s.computation_receipt->>'producer'='embryo-test-score-coverage-v1'));`)),
+      proof: async cohortId => JSON.parse(await sql(embryoProof(cohortLiteral(cohortId)))) ,
     });
   } finally {
     const restored = await sql(`-- embryo-fixture-restore

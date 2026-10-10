@@ -37,6 +37,8 @@ import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
+import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
+import { StatisticalCoverage } from "@/components/embryo/statistical-coverage";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -174,8 +176,10 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
       break;
     case "complete": {
       let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
+      let statisticalCoverage: Awaited<ReturnType<typeof loadSavedEmbryoStatisticalCoverage>>;
       try {
         savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
+        statisticalCoverage = await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id));
         detail = await loadDetail({
           embryo: {
             id: embryo.id,
@@ -227,6 +231,8 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
                 {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
               </p> : null}
               <FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />
+              {statisticalCoverage ? <StatisticalCoverage value={statisticalCoverage} embryoId={embryo.id}
+                subjectIds={new Map(cohort.embryos.map(embryo => [embryo.id, embryo.subjectId]))} /> : null}
             </>}
             whatThisDoesntMean={
               <ul className="max-w-measure list-disc space-y-1 pl-5 text-base leading-relaxed text-ink">

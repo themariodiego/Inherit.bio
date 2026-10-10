@@ -7,7 +7,7 @@ export const CI_RUNTIME_SETUP_STAGES = [
   "runtime-image", "owner-receipt", "runner-identity", "container-create", "owner-write", "container-start",
   "namespace-logs", "namespace-state", "namespace-running", "namespace-ready", "tls-bootstrap",
   "isolated-probe-command", "isolated-probe-proof", "policy-ipv4-read", "policy-ipv6-read", "policy-counters",
-  "final-source-identity", "cleanup-ownership", "cleanup-remove", "cleanup-receipt", "runtime-setup",
+  "statistical-reference-admission", "final-source-identity", "cleanup-ownership", "cleanup-remove", "cleanup-receipt", "runtime-setup",
 ] as const;
 type RuntimeStage = typeof CI_RUNTIME_SETUP_STAGES[number];
 type Classification = "guard-refused" | "invalid-response" | "setup-refused" | "spawn-refused"

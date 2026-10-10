@@ -25,11 +25,14 @@ import {
 import { analysisConsent } from "@/lib/embryos/access";
 import type { EmbryoCohortView } from "@/lib/embryos/cohorts";
 import { route } from "@/lib/primary-routes";
+import type { StatisticalCoverageRead } from "@/lib/embryos/statistical-read";
+import { StatisticalCoverage } from "./statistical-coverage";
 
 export interface CohortCardProps {
   cohort: EmbryoCohortView;
   /** The register's copy when this cohort's contributors refuse the capability; null when permitted. */
   jurisdictionCopy: string | null;
+  statisticalCoverage?: StatisticalCoverageRead | null;
 }
 
 /** The role word the analysis line names; nobody is named. */
@@ -37,7 +40,7 @@ export function analysisRole(cohort: EmbryoCohortView): string | null {
   return waitingRole(analysisConsent(cohort));
 }
 
-export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
+export function CohortCard({ cohort, jurisdictionCopy, statisticalCoverage }: CohortCardProps) {
   const role = analysisRole(cohort);
   const dispositions = new Set(cohort.embryos.map((embryo) => embryo.status));
   return (
@@ -83,6 +86,8 @@ export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
           {waitingForResultsStatus(role)}
         </p>
       ) : null}
+      {statisticalCoverage ? <StatisticalCoverage value={statisticalCoverage}
+        subjectIds={new Map(cohort.embryos.map(embryo => [embryo.id, embryo.subjectId]))} /> : null}
       <p className="text-sm">
         <Link
           href={route("embryos.compare", { query: { cohort: cohort.id } })}

@@ -6,6 +6,7 @@ import path from "node:path";
 import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL, APP_PORTS } from "./ci-browser-config";
 import { assertOwnedLinuxSource, type OwnedLinuxCapability } from "./owned-linux-runtime";
 import { ciRuntimeCleanupFailure, ciRuntimeDockerFailure, ciRuntimeNamespaceStep, ciRuntimeSetupFailure, ciRuntimeStep } from "./ci-browser-runtime-failure";
+import { installEmbryoTestStatisticalAdmission } from "./embryo-test-statistical-admission";
 
 function ownerFile() {
   const directory = process.env.RUNNER_TEMP;
@@ -135,6 +136,8 @@ export async function startCiBrowserRuntime(environment?: Record<string, string>
     const ipv4 = ciRuntimeStep("policy-ipv4-read", () => runDocker(["exec", CI_RUNTIME_CONTAINER, "iptables", "-L", "OUTPUT", "-v", "-n", "-x"]));
     const ipv6 = ciRuntimeStep("policy-ipv6-read", () => runDocker(["exec", CI_RUNTIME_CONTAINER, "ip6tables", "-L", "OUTPUT", "-v", "-n", "-x"]));
     ciRuntimeStep("policy-counters", () => checkedPolicyCounters(ipv4, ipv6));
+    if (operator || process.env.GITHUB_JOB === "browser") ciRuntimeStep("statistical-reference-admission", () =>
+      installEmbryoTestStatisticalAdmission(owner, gateway.network, environment, operator));
     console.log(proof);
     console.log(`PASS disposable ${operator ? "owned Linux" : "CI"} runtime image ${image}; source ${ciRuntimeStep("final-source-identity", () => buildIdentity(environment, operator)).head}; TLS keys stay in tmpfs.`);
     return { env: { INHERIT_CI_BROWSER_RUNTIME: "ready", CANONICAL_COPILOT_CONTROL_URL: CI_CONTROL_URL,

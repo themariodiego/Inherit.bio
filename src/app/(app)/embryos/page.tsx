@@ -23,6 +23,8 @@ import { EMBRYO_ANALYSIS, cohortCapability, permits } from "@/lib/embryos/access
 import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 import { loadCohorts, loadViewer } from "./context";
+import { acknowledged } from "@/lib/embryos/tier2";
+import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
 
 export const metadata: Metadata = { title: EMBRYOS_H1 };
 
@@ -53,6 +55,11 @@ export default async function EmbryosPage() {
   );
   // The newest cohort the viewer may actually open.
   const newest = cohorts.find((cohort) => permits(cohortDecisions.get(cohort.id)!)) ?? null;
+  const tier2 = allowed && await acknowledged(user);
+  const statisticalCoverage = new Map(await Promise.all(cohorts.map(async cohort => [cohort.id,
+    tier2 && cohort.status === "active" && permits(cohortDecisions.get(cohort.id)!)
+      ? await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id)) : null,
+  ] as const)));
 
   const tileHref: Record<(typeof HUB_TILES)[number]["id"], string | null> = {
     upload: allowed ? route("embryos.upload") : null,
@@ -102,6 +109,7 @@ export default async function EmbryosPage() {
                   key={cohort.id}
                   cohort={cohort}
                   jurisdictionCopy={permits(cohortDecision) ? null : cohortDecision.userFacingCopy}
+                  statisticalCoverage={statisticalCoverage.get(cohort.id)}
                 />
               );
             })}

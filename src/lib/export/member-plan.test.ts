@@ -83,6 +83,11 @@ describe("the export member plan", () => {
       "new native tables need an explicit export disposition").toEqual([]);
   });
 
+  it("excludes the immutable disposable statistical reference authority from requester archives", () => {
+    expect(exportMemberPlan.tables["private.embryo_test_statistical_admission"]?.disposition).toBe("excluded-protected");
+    expect(exportedTable("private.embryo_test_statistical_admission")).toBeUndefined();
+  });
+
   it("keeps raw requester envelopes, evidence and delivery authority out of archive rows", () => {
     const dispositions = {
       "excluded-protected": ["account_requester_statement_capsules", "new_correction_intakes", "new_public_appeal_intakes",
