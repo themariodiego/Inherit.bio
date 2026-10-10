@@ -1,6 +1,7 @@
 /** Separate hosted complete-round launcher. Never invoked by standard CI,
  * never sets CI ownership variables, never borrows an existing cohort. */
 import assert from "node:assert/strict";
+import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
 import { assertSqlFixtureIncludes } from "../sql-fixture-includes";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -14,7 +15,7 @@ import { isolatedProcesses, probeIsolation, type Environment } from "./inference
 import { InstrumentJournal } from "./instrument-journal";
 import { inferenceOf, modelIdentifierOf, modelIdentityOf, workerProvider } from "./run-config";
 import { RECORD_ROOT, readRecordManifest, RunRecord, runSummary } from "./run-record";
-import { acquireFreshStack, actualResourceIO, createResourceIO, infrastructureChildEnvironment, infrastructureReservation } from "./fresh-t6-resources";
+import { acquireFreshStack, actualResourceIO, createResourceIO, infrastructureChildEnvironment, infrastructureReservation, freshRuntimeFailureClassification } from "./fresh-t6-resources";
 import { taskIds } from "./conductor-contract";
 import { freshT6ConfigSchema } from "./fresh-t6-config";
 import { loadPrivateConfiguration } from "./private-run-config";
@@ -40,12 +41,21 @@ export async function prepareFreshInvocation(options: {
   build: () => Promise<void>;
 }) {
   const stack = await options.acquire();
+  let diagnosticStage: "bootstrap-keys" | "production-build" = "bootstrap-keys";
   try {
     if (options.bindObservedKeys) Object.assign(options.environment, stack.keys);
     assert(Object.entries(stack.keys).every(([name, value]) => options.environment[name] === value),
       "Fresh keys must match the configured build inputs");
-    if (options.buildRequired) await options.build();
-  } finally { await stack.close(); }
+    if (options.buildRequired) { diagnosticStage = "production-build"; await options.build(); }
+  } catch (error) {
+    emitHostedBootstrapFailure(diagnosticStage, freshRuntimeFailureClassification(error), "unreturned");
+    throw error;
+  } finally {
+    try { await stack.close(); } catch (error) {
+      emitHostedBootstrapFailure("bootstrap-cleanup", freshRuntimeFailureClassification(error), "uncertain");
+      throw error;
+    }
+  }
 }
 
 export async function runFreshComprehension(configuration: unknown, options: { plan?: boolean; prepare?: boolean;

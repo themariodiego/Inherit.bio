@@ -2,7 +2,7 @@
 -- current account, native source, admission, claim, score or read authority.
 -- The additive genuine upload/worker/read journey exercises those doors.
 begin;
-select plan(35);
+select plan(40);
 
 create function pg_temp.fit_source() returns jsonb language sql as $$
  select '{"cohort_id":"90000000-0000-4000-8000-000000000001","embryo_id":"90000000-0000-4000-8000-000000000002",
@@ -99,5 +99,20 @@ select is(private.evaluate_embryo_test_fit_v1(pg_temp.fit_source(),pg_temp.fit_c
 select ok((select result#>'{result,clinicalPublication}'='false'::jsonb
  and not((result->'result') ?| array['raw_score','risk_model_id','clinical_model_id','rank','recommendation','sibling_beta_ratio'])
  from fitted_evaluations where n=8),'no clinical or raw score output');
+-- PostgreSQL's actual oid JSON form differs from the unchanged strict DTO.
+-- These pure native projection controls grant no runtime admission or source.
+select is(jsonb_typeof(to_jsonb(5::oid)),'string','native oid baseline is a JSON string');
+select is(to_jsonb(5::oid),'"5"'::jsonb,'observed PostgreSQL oid wire form stays explicit');
+select is(jsonb_typeof(to_jsonb(5::bigint)),'number','fitted projection emits a JSON number');
+select ok((select projected->'database_oid'=to_jsonb(oid::bigint)
+ and projected-'database_oid'=baseline-'database_oid'
+ and (projected->>'database_oid')::oid=oid
+ from (select oid,baseline,baseline||jsonb_build_object('database_oid',(baseline->>'database_oid')::bigint) projected
+  from (select oid,jsonb_build_object('database_oid',oid,'nullable',null,'nested',jsonb_build_object('value','public control')) baseline
+   from pg_catalog.pg_database where datname=current_database()) native) checked),
+ 'actual database identity is numeric without dropping any other projected field');
+select is((select md5(prosrc) from pg_catalog.pg_proc
+ where oid=to_regprocedure('private.current_embryo_test_fit_admission_v1()')),
+ '7178d68f56115893c59e48c1fe6a2168','complete fitted admission body retains the exact reviewed identity guards and projection');
 select * from finish();
 rollback;

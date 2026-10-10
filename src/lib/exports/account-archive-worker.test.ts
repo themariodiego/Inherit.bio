@@ -259,8 +259,24 @@ describe("complete consumed-account unpublished archive executor",()=>{
  it("rechecks current durable authority after the actual write and denies later completion",async()=>{
   const f=await fixture(),write=f.historical.write.getMockImplementation()!;
   f.historical.write.mockImplementation(async(...args)=>{const result=await write(...args);f.historical.revoke();return result;});
-  await expect(buildAccountArchive(f.options)).rejects.toMatchObject({cleanupRequired:true});
+  // Exercise the actual archive/write/revocation path with the same controlled
+  // metadata-only spool as the uncertain-write control. Real file-spool I/O is
+  // independently covered by the unchanged complete ZIP64 file-spool tests.
+  const runtime=createRequesterStatementRuntime(),buffers:Uint8Array[]=[];
+  const observedRuntime={...runtime,own<T extends Uint8Array>(bytes:T):T{buffers.push(bytes);return runtime.own(bytes);}};
+  const memory=createRequesterStatementMemorySpool(observedRuntime),dispose=vi.fn(()=>memory.dispose());
+  vi.spyOn(zip64,"createZip64FileSpool").mockResolvedValue({...memory,dispose});
+  await expect(buildAccountArchive({...f.options,statementRuntime:observedRuntime})).rejects.toMatchObject({cleanupRequired:true});
   expect(f.historical.calls.some(c=>c.p_operation==="acknowledge"||c.p_operation==="bytes-complete")).toBe(false);
+  expect(f.historical.calls.some(c=>c.p_operation==="reserve")).toBe(true);
+  expect(f.historical.calls.at(-1)?.p_operation).toBe("renew");
+  expect(f.historical.write).toHaveBeenCalledTimes(1);expect(f.historical.writes).toHaveLength(1);
+  const bytes=f.historical.writes[0],segment=f.historical.write.mock.calls[0][1] as {ordinal:number;offset:number;sizeBytes:number;sha256:string};
+  expect(segment).toMatchObject({ordinal:0,offset:0,sizeBytes:bytes.byteLength,sha256:hash(bytes)});
+  const zip=new AdmZip(Buffer.from(bytes));expect(zip.getEntry("manifest.json")).not.toBeNull();
+  for(const part of f.context.partitions)for(const name of ACCOUNT_SUBJECT_MEMBERS)expect(zip.getEntry(`subjects/${part.subjectId}/${name}`)).not.toBeNull();
+  expect(dispose).toHaveBeenCalled();expect(buffers.length).toBeGreaterThan(0);
+  expect(buffers.every(bytes=>bytes.every(byte=>byte===0))).toBe(true);runtime.assertSettled();
  });
  it("refuses cancellation before begin or any source/write operation",async()=>{
   const f=await fixture();f.abort.abort();await expect(buildAccountArchive(f.options)).rejects.toThrow();

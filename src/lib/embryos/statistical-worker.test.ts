@@ -289,3 +289,36 @@ describe("fitted operation safe failure metadata", () => {
     expect(result).toEqual({ status: "saved_fitted_test" });expect(Object.getOwnPropertyNames(result)).toEqual(["status"]);
   });
 });
+
+
+describe("fitted native database OID wire contract", () => {
+  it.each([5, 4_294_967_295])("accepts canonical numeric OID %i through the whole fitted worker", async databaseOid => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");const f = await fittedFixture(8);
+    f.changeFit((operation, value) => {
+      if (operation !== "claim") return value;
+      const claim = value as { capture: { conditions: { reference_receipt: { database_oid: unknown } }[] } };
+      claim.capture.conditions[0].reference_receipt.database_oid = databaseOid;return claim;
+    });
+    expect(await runNextEmbryoStatisticalFit({ rpc: f.rpc })).toEqual({ status: "saved_fitted_test" });
+    expect(f.operations).toEqual(["claim", "check", "read", "check", "check", "read", "check", "check", "save"]);
+    expect(f.saved).toHaveLength(1);
+    const rows = (f.saved[0] as { measurements: unknown[] }).measurements.map(value => statisticalFitSaveRowSchema.parse(value));
+    expect(rows.map(row => row.measurement!.matchedVariants)).toEqual([8, 8]);
+    expect(rows.every(row => row.finding === null && row.result?.clinicalPublication === false)).toBe(true);
+  });
+  // The first value is the actual PostgreSQL 17 to_jsonb(5::oid) wire shape,
+  // observed independently. It must remain refused; the producer converts it.
+  it.each(["5", "05", "4294967295", 0, 4_294_967_296, 5.5])(
+    "refuses noncanonical/out-of-range database OID %s at CLAIM without coercion", async databaseOid => {
+      vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");const f = await fittedFixture(8);
+      f.changeFit((operation, value) => {
+        if (operation !== "claim") return value;
+        const claim = value as { capture: { conditions: { reference_receipt: { database_oid: unknown } }[] } };
+        claim.capture.conditions[0].reference_receipt.database_oid = databaseOid;return claim;
+      });
+      const error = await runNextEmbryoStatisticalFit({ rpc: f.rpc }).catch(value => value);
+      expect(error).toMatchObject({ code: "invalid_response", message: "invalid_response" });
+      expect(fittedFailureFrom(error)).toEqual({ outer: "NOT_OBSERVED", inner: "RPC_REFUSED", operation: "CLAIM", code: "invalid_response" });
+      expect(f.operations).toEqual(["claim"]);expect(f.saved).toEqual([]);
+    });
+});

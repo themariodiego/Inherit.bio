@@ -10,6 +10,7 @@ import { attestFreshT6Workflow } from "./fresh-t6-attestation";
 import { repositoryRoot } from "./conductor-inputs";
 import { assertOwnedLinuxSource, ownedLinuxEnvironment, ownedLinuxSourceIdentity, type OwnedLinuxCapability } from "../owned-linux-runtime";
 import { ciRuntimeFailureDiagnostic } from "../ci-browser-runtime-failure";
+import { emitHostedBootstrapFailure, type HostedBootstrapDiagnostic } from "./hosted-owned-diagnostics";
 
 export type Resource = { kind: "container" | "volume" | "network"; name: string; identity: string; project: string };
 export type ResourceIO = {
@@ -130,6 +131,7 @@ export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = ac
   await mkdir(lock, { mode: 0o700 }); // Exclusive across bootstrap and personas.
   let lease: Resource[] | undefined;
   let started = false;
+  let diagnosticStage: HostedBootstrapDiagnostic["stage"] = "host-admission";
   const directory = path.join(lock, randomUUID());
   try {
     assertEmptyHost(await io.inventory());
@@ -137,12 +139,15 @@ export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = ac
     else assert(!(await io.command("git", ["status", "--porcelain", "--untracked-files=no"])), "Fresh stack requires clean tracked source");
     const head = await io.command("git", ["rev-parse", "HEAD"]);
     assert(/^[a-f0-9]{40}$/.test(head), "Exact source head required");
+    diagnosticStage = "source-attestation";
     const attestation = operator ? ownedLinuxSourceIdentity(operator) : await attestFreshT6Workflow({ head, ref: process.env.GITHUB_REF!,
       runId: process.env.GITHUB_RUN_ID!, attempt: process.env.GITHUB_RUN_ATTEMPT! });
+    diagnosticStage = "source-copy";
     await mkdir(path.join(directory, "supabase"), { recursive: true, mode: 0o700 });
     await cp(path.join(repositoryRoot, "supabase/config.toml"), path.join(directory, "supabase/config.toml"));
     const config = await readFile(path.join(directory, "supabase/config.toml"), "utf8");
     assert(/^project_id = "sequence"$/m.test(config), "Exact registered fresh project required");
+    diagnosticStage = "migration-copy";
     await cp(path.join(repositoryRoot, "supabase/migrations"), path.join(directory, "supabase/migrations"), { recursive: true });
     try { await cp(path.join(repositoryRoot, "supabase/seed.sql"), path.join(directory, "supabase/seed.sql")); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
@@ -158,16 +163,20 @@ export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = ac
       job: process.env.GITHUB_JOB, runId: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT }), { flag: "wx", mode: 0o600 });
     signal.throwIfAborted();
     started = true;
+    diagnosticStage = "native-start";
     await io.command(path.join(repositoryRoot, "node_modules/.bin/supabase"), ["start", "--workdir", directory], { signal, timeout: 600_000 });
+    diagnosticStage = "native-inventory";
     lease = ownedStack(await io.inventory());
     for (const resource of lease) {
       const identity = `${resource.kind}:${resource.name}:${resource.identity}`;
       assert(!usedResourceIdentities.has(identity), "A persona cannot reuse a prior resource identity");
       usedResourceIdentities.add(identity);
     }
+    diagnosticStage = "native-ledger";
     const ledger = JSON.parse(await io.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", "select coalesce(json_agg(version order by version),'[]'::json) from supabase_migrations.schema_migrations;"], { signal }));
     assert.deepEqual(ledger, files.map(file => file.slice(0, 14)), "Fresh database must apply exactly the captured source migrations");
     await writeFile(path.join(lock, "resources.json"), JSON.stringify(lease), { flag: "wx", mode: 0o600 });
+    diagnosticStage = "native-keys";
     const env = JSON.parse(await io.command(path.join(repositoryRoot, "node_modules/.bin/supabase"), ["status", "--workdir", directory, "-o", "json"], { signal }));
     assert(env.API_URL === "http://127.0.0.1:54321" && typeof env.ANON_KEY === "string" && env.ANON_KEY
       && typeof env.SERVICE_ROLE_KEY === "string" && env.SERVICE_ROLE_KEY, "Fresh stack bootstrap unavailable");
@@ -185,10 +194,11 @@ export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = ac
     };
     return { source, keys: { NEXT_PUBLIC_SUPABASE_URL: env.API_URL as string,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: env.ANON_KEY as string, SUPABASE_SERVICE_ROLE_KEY: env.SERVICE_ROLE_KEY as string }, close };
-  } catch {
+  } catch (error) {
     // Pre-start refusals created no Docker resource and may release this lock.
     // An uncertain command never earns authority to delete what appeared.
     if (!started) await rm(lock, { recursive: true });
+    emitHostedBootstrapFailure(diagnosticStage, freshRuntimeFailureClassification(error), started ? "retained" : "not-started");
     throw new Error("Fresh stack acquisition refused; uncertain started resources retain their ownership receipt");
   }
 }

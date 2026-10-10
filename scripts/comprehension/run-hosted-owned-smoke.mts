@@ -1,5 +1,6 @@
 /** GitHub's fresh Linux job invokes the unchanged native owned supervisor. */
 import assert from "node:assert/strict";
+import { createHostedBootstrapDiagnostics } from "./hosted-owned-diagnostics";
 import { spawn, execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { closeSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
@@ -37,6 +38,7 @@ async function main() {
   let timedOut = false, closed = false, ready = false, refusal = false, groupAbsent = false;
   let line = "", inputTimer: ReturnType<typeof setTimeout> | undefined, readyTimer: ReturnType<typeof setTimeout> | undefined;
   let terminal: Record<string, unknown> | undefined;
+  const bootstrapDiagnostics = createHostedBootstrapDiagnostics();
   let killTimer: ReturnType<typeof setTimeout> | undefined;
   const kill = () => { if (child?.pid) try { process.kill(-child.pid, "SIGKILL"); } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ESRCH") refusal = true; } };
@@ -60,6 +62,7 @@ async function main() {
     child.stderr!.on("data", (chunk: Buffer) => {
       try {
       writeFileSync(fds[1], chunk);
+      bootstrapDiagnostics.push(chunk);
       if (fstatSync(fds[0]).size > limits.outputBytes || fstatSync(fds[1]).size > limits.outputBytes) { refusal = true; stop(); }
       if (!ready && !refusal) {
         line += chunk.toString("utf8");
@@ -93,7 +96,7 @@ async function main() {
       head, tree, uid: process.getuid!(), gid: process.getgid!(), bootId: owner.bootId, nonce: owner.nonce,
       corePins: HOSTED_OWNED_CORE_PINS, ready, exitCode, signal, timedOut, closed, groupAbsent, refusal,
       qualifyingEvidence: false, paidInference: false };
-    writeFileSync(path.join(directory, "public-artifact", "owned-keyfree-smoke.json"), JSON.stringify({ terminal, records: null, history: null, spend: null }) + "\n", { flag: "wx", mode: 0o600 });
+    writeFileSync(path.join(directory, "public-artifact", "owned-keyfree-smoke.json"), JSON.stringify({ terminal, records: null, history: null, spend: null, bootstrapDiagnostics: bootstrapDiagnostics.finish() }) + "\n", { flag: "wx", mode: 0o600 });
   }
   assert(ready && closed && exitCode === 0 && signal === null && !timedOut && !refusal && groupAbsent,
     "Owned smoke failed; native journals and original private output retained without automatic recovery");
