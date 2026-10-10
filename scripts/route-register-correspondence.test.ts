@@ -4,6 +4,7 @@ import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { exportedMethods, migrationBuckets } from "./route-gate";
+import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-contract-census";
 
 /**
  * `docs/route-register.json` is the binding response-contract authority: a
@@ -250,7 +251,7 @@ describe("the route register and the App Router describe the same surface", () =
  * describe in a ledger anchored to literal evidence in the files that produce
  * them.
  *
- * What a static walk cannot see, stated rather than assumed: two live call
+ * What a static walk cannot see, stated rather than assumed: three live call
  * sites choose their bucket from a database manifest at run time, so their
  * bucket is invisible here and the database's own check constraint is
  * compared instead; object keys almost always come from a database column, so
@@ -284,8 +285,8 @@ function registerDocument(): Register {
   return JSON.parse(readFileSync(REGISTER, "utf8")) as Register;
 }
 
-/** A bucket named by a database manifest rather than by a literal in the code. */
-const DATABASE_SELECTED = "(database-selected)";
+/** Retained ledger spelling; an unresolved expression is not proof of its provider. */
+const DATABASE_SELECTED = UNRESOLVED_STORAGE_BUCKET;
 
 /**
  * Next.js answers HEAD for any route exporting GET, so a contract keyed on
@@ -343,32 +344,16 @@ function codeFiles(): string[] {
  * Every place the code addresses a Storage bucket, as `bucket file`. Both
  * forms count: the client's `storage.from("genomes")` and the REST path
  * `/storage/v1/object/authenticated/genomes/<key>` the server and worker
- * build by hand. A `from()` whose argument is not a literal is recorded as
- * database-selected rather than dropped, because that is exactly the case a
- * static walk would otherwise lose in silence.
+ * build by hand. Exact local immutable string constants and explicit named
+ * import/export aliases resolve without loading a module. Every unresolved
+ * bucket retains the historical database-selected ledger spelling rather
+ * than being dropped; that spelling does not establish its actual provider.
  */
-function storageBucketsInSource(source: string): string[] {
-  const fromCall = /storage\s*\.\s*from\(\s*(?:"([A-Za-z0-9._-]+)"|'([A-Za-z0-9._-]+)')?/g;
-  // Consume a known REST operation first. Matching the bucket separately
-  // prevents optional-prefix backtracking from inventing an `info` bucket
-  // when the real bucket is a template expression.
-  const objectUrl = /\/storage\/v1\/object\/(?:upload\/sign\/|authenticated\/|public\/|sign\/|info\/)?/g;
-  const literalBucket = /^([A-Za-z0-9._-]+)(?=[/`'"$\s)])/;
-  const buckets = new Set<string>();
-  for (const match of source.matchAll(fromCall)) buckets.add(match[1] ?? match[2] ?? DATABASE_SELECTED);
-  for (const match of source.matchAll(objectUrl)) {
-    const argument = source.slice(match.index + match[0].length);
-    const literal = literalBucket.exec(argument);
-    if (literal) buckets.add(literal[1]);
-    else if (argument.startsWith("${")) buckets.add(DATABASE_SELECTED);
-  }
-  return [...buckets].sort();
-}
-
-function storageCallSites(): string[] {
+function storageCallSites(sources: ReadonlyMap<string, string> = new Map(codeFiles()
+  .map(file => [file, readFileSync(file, "utf8")] as const))): string[] {
   const sites = new Set<string>();
-  for (const file of codeFiles()) {
-    for (const bucket of storageBucketsInSource(readFileSync(file, "utf8"))) sites.add(`${bucket} ${file}`);
+  for (const [file, source] of sources) {
+    for (const bucket of storageBucketsInSource(source, file, sources)) sites.add(`${bucket} ${file}`);
   }
   return [...sites].sort();
 }
@@ -400,6 +385,79 @@ describe("storage call-site extraction", () => {
     }
     expect(storageBucketsInSource('client.storage.from(bucket).remove(keys)')).toEqual([DATABASE_SELECTED]);
     expect(storageBucketsInSource('client.info(key)')).toEqual([]);
+  });
+
+  it("resolves immutable local strings and named import/export aliases for SDK and REST key producers", () => {
+    const sources = new Map([
+      ["src/lib/provider.ts", 'const LOCAL = "unregistered-bucket"; export { LOCAL as BUCKET };'],
+      ["src/lib/alias.ts", 'export { BUCKET as STORED_BUCKET } from "./provider";'],
+      ["src/lib/keys.ts", 'export function key(id: string) { return `unregistered-prefix/${id}`; }'],
+      ["src/app/api/planted/route.ts", [
+        'import { STORED_BUCKET as selected } from "@/lib/alias";',
+        'import { key as produceKey } from "@/lib/keys";',
+        'const bucket = selected as const;',
+        'client.storage.from(bucket).upload(produceKey(id), bytes);',
+        '`/storage/v1/object/info/${bucket}/${produceKey(id)}`;',
+        '`/storage/v1/object/` + bucket + `/` + produceKey(id);',
+      ].join("\n")],
+    ]);
+    expect(storageCallSites(sources)).toEqual(["unregistered-bucket src/app/api/planted/route.ts"]);
+    expect(contractLedger.storageCallSites.map(site => site.site))
+      .not.toContain("unregistered-bucket src/app/api/planted/route.ts");
+    expect(registerDocument().storagePrefixes.map(prefix => prefix.bucket)).not.toContain("unregistered-bucket");
+  });
+
+  it("reads an imported constant REST prefix through its exact local alias", () => {
+    const sources = new Map([
+      ["src/lib/urls.ts", 'export const URL_PREFIX = "/storage/v1/object/public/new-provider/";'],
+    ]);
+    expect(storageBucketsInSource('import { URL_PREFIX as prefix } from "./urls"; fetch(prefix + key);',
+      "src/lib/caller.ts", sources)).toEqual(["new-provider"]);
+    expect(storageBucketsInSource('const bucket = ("new-" + "provider") as const; client["storage"]["from"](bucket).upload(key, bytes);'))
+      .toEqual(["new-provider"]);
+  });
+
+  it.each([
+    'import { BUCKET } from "./missing"; client.storage.from(BUCKET).upload(key, bytes);',
+    'import { BUCKET } from "provider-package"; client.storage.from(BUCKET).upload(key, bytes);',
+    'import * as provider from "./provider"; client.storage.from(provider.BUCKET).upload(key, bytes);',
+    'let BUCKET = "exports"; client.storage.from(BUCKET).upload(key, bytes);',
+    'const BUCKET = getBucket(); client.storage.from(BUCKET).upload(key, bytes);',
+    'const BUCKET = "exports"; function write(BUCKET: string) { client.storage.from(BUCKET).upload(key, bytes); }',
+    'const BUCKET = "exports"; const write = function BUCKET() { client.storage.from(BUCKET).upload(key, bytes); };',
+    'const BUCKET = "exports"; BUCKET = other; client.storage.from(BUCKET).upload(key, bytes);',
+    'client.storage[method]("exports").upload(key, bytes);',
+    '`/storage/v1/object/info/${getBucket()}/${key}`;',
+    '`/storage/v1/object/${"prefix-" + getBucket()}/${key}`;',
+  ])("retains a census refusal for an unresolved or dynamic producer: %s", source => {
+    expect(storageBucketsInSource(source)).toEqual([DATABASE_SELECTED]);
+  });
+
+  it("does not guess through mutable, duplicate, wildcard, cyclic or ambiguous exported providers", () => {
+    const caller = 'import { BUCKET as bucket } from "./provider"; client.storage.from(bucket).upload(key, bytes);';
+    for (const provider of ['export let BUCKET = "exports";', 'export const BUCKET = "exports"; export { BUCKET };',
+      'export * from "./leaf";', 'export { BUCKET } from "./cycle";']) {
+      expect(storageBucketsInSource(caller, "src/caller.ts", new Map([
+        ["src/provider.ts", provider], ["src/leaf.ts", 'export const BUCKET = "exports";'],
+        ["src/cycle.ts", 'export { BUCKET } from "./provider";'],
+      ]))).toEqual([DATABASE_SELECTED]);
+    }
+    expect(storageBucketsInSource(caller, "src/caller.ts", new Map([
+      ["src/provider.ts", 'export const BUCKET = "exports";'],
+      ["src/provider.tsx", 'export const BUCKET = "genomes";'],
+    ]))).toEqual([DATABASE_SELECTED]);
+  });
+
+  it("records a new unresolved imported provider at its actual file instead of dropping it", () => {
+    expect(storageCallSites(new Map([["src/new-key-producer.ts",
+      'import { BUCKET } from "unresolved-provider"; client.storage.from(BUCKET).upload(makeKey(), bytes);']])))
+      .toEqual([`${DATABASE_SELECTED} src/new-key-producer.ts`]);
+    expect(contractLedger.storageCallSites.map(site => site.site)).not.toContain(`${DATABASE_SELECTED} src/new-key-producer.ts`);
+  });
+
+  it("keeps oversized REST producers visible when bounded string resolution refuses", () => {
+    expect(storageBucketsInSource(JSON.stringify(`/storage/v1/object/new-provider/${"x".repeat(4096)}`)))
+      .toEqual([DATABASE_SELECTED]);
   });
 });
 
@@ -612,7 +670,7 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     const { buckets, constraints } = databaseBucketAllowlist();
     expect(constraints).toBeGreaterThan(1);
     expect(buckets.length).toBeGreaterThan(3);
-    // The two database-selected call sites take their bucket from a manifest
+    // The three database-selected call sites take their bucket from a manifest
     // this allowlist constrains, so it is the only authority a static walk
     // has for them. An undeclared name here is the same defect the route
     // ledger already records against the migrations that create the bucket.

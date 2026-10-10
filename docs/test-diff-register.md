@@ -1,3 +1,11 @@
+## 2026-10-10 — Resolve exact imported storage buckets without hiding dynamic producers
+
+The storage correspondence extractor previously classified both archive adapters' imported `ARCHIVE_BUCKET` as database-selected even though its exact local export is the immutable string `exports`. A bounded TypeScript source walk now follows explicit local named import/export aliases and immutable string expressions without executing modules or resolving packages. Mutable, missing, cyclic, ambiguous, shadowed and dynamic bindings remain unresolved census entries; the historical database-selected spelling is retained without claiming that every unresolved provider came from a database. SDK calls and complete REST key-producing templates or concatenations remain in the census, including metadata operations.
+
+All original extraction and correspondence assertions remain. Planted controls add an imported unregistered bucket with a separate key producer, alias and concatenation resolution, imported REST prefixes, dynamic methods and unresolved providers. Both archive sites now name `exports`; the false unaddressed-exports entry alone is retired. Manifest/route/provider readiness and every existing object-key, R2 and uncreated-bucket gap remain explicit. This source correction does not change product code, storage permissions, migration bytes, retention or G8.5's acceptance status.
+
+All 66 cases in the whole correspondence file, affected lint and the composed app/worker type check passed with natural exit 0 and settled process groups. The initial lint refusal is retained; its correction only renames two local module-resolution variables to satisfy the existing Next rule. Final source gates, history scanning and hosted qualification remain separate requirements. No native or provider execution is claimed.
+
 ## 2026-10-10 — Isolate production email rendering from live CLI output
 
 The retained PR313 hosted unit run passed 10,996 assertions, then the email capture suite refused at the initial passive CLI-marker metadata gate and left its six capture cases unrun. That original identifies a metadata refusal before content, renderer or browser work; it does not identify which marker property failed. No unit fixture writes those markers in the real checkout.
