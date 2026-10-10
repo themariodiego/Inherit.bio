@@ -941,7 +941,12 @@ begin
   if (select count(*) from private.public_appeal_information_requests source where source.case_id=v_case)<>1 then raise exception 'replay created a second request';end if;
   flags:=flags||jsonb_build_object('staleReplayAtomic',true);
   perform set_config('request.jwt.claims','{"role":"service_role"}',true);
-  select * into mail from public.claim_mail_outbox();
+  -- The real queue first invalidates an older documentary notice after the
+  -- evidence rotation. Only this exact new outbox may supply our credential.
+  for claim_attempt in 1..4 loop
+   select * into mail from public.claim_mail_outbox();
+   exit when mail.outbox_id=request.outbox_id;
+  end loop;
   if mail.outbox_id is distinct from request.outbox_id or not public.authorize_mail_submission_v1(mail.outbox_id,mail.attempt_ordinal)
    or public.read_new_public_appeal_mail_contact_v1(mail.outbox_id,mail.attempt_ordinal)->>'caseContactId' is distinct from before_intake->>'case_contact_id'
    then raise exception 'request did not use original recipient';end if;
