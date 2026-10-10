@@ -104,7 +104,10 @@ test("canonical two-file controls retain the other source and its useful finding
   await expect(removedRow).toHaveCount(0);
   await expect(retainedRow).toBeVisible();
   expect((await admin.storage.from("genomes").download(removed.bucket_path)).error).not.toBeNull();
-  const absentObject = await admin.storage.from("genomes").list("", { search: removed.bucket_path });
+  const split = removed.bucket_path.lastIndexOf("/");
+  const folder = removed.bucket_path.slice(0, split + 1).replace(/\/$/, "");
+  const leaf = removed.bucket_path.slice(split + 1);
+  const absentObject = await admin.storage.from("genomes").list(folder, { search: leaf });
   expect(absentObject.error).toBeNull();
   expect(absentObject.data).toEqual([]);
   for (const table of ["user_variants", "user_prs", "ancestry_results", "worker_jobs", "report_observed_calls"] as const) {

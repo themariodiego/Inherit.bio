@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { localE2eProject } from "../scripts/local-e2e-project";
 import { migrationBuckets } from "../scripts/storage-buckets";
+import { genomeOriginalKeySchema } from "../src/lib/uploads/genome-object-key";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import {
   adminClient,
@@ -79,12 +80,16 @@ test("due account deletion reaches a zero-residual terminal state", async ({
     .select("bucket_id,object_name")
     .eq("object_id", file!.storage_object_id!)
     .single();
-  expect(storageObject?.object_name).toMatch(/^[0-9a-f-]{36}$/);
+  const objectName = genomeOriginalKeySchema.parse(storageObject?.object_name);
+  if (objectName.includes("/")) expect(objectName.split("/").slice(0, 2)).toEqual([userId, file!.subject_id]);
+  const split = objectName.lastIndexOf("/");
+  const folder = objectName.slice(0, split + 1).replace(/\/$/, "");
+  const leaf = objectName.slice(split + 1);
   // The service-role listing sees the planted object before it may report
   // absence below, so the three-bucket residue check is never vacuous.
-  const planted = await admin.storage.from(storageObject!.bucket_id).list("", { search: storageObject!.object_name });
+  const planted = await admin.storage.from(storageObject!.bucket_id).list(folder, { search: leaf });
   expect(planted.error).toBeNull();
-  expect((planted.data ?? []).map((entry) => entry.name)).toContain(storageObject!.object_name);
+  expect((planted.data ?? []).map((entry) => entry.name)).toContain(leaf);
 
   await page.goto("/settings/data");
   await page.getByLabel(/Type/).fill("delete my genome");
@@ -214,9 +219,9 @@ test("due account deletion reaches a zero-residual terminal state", async ({
   // leave in place, for the exact object name and for the account's own prefix,
   // as the service role sees them.
   for (const bucket of [...migrationBuckets("supabase/migrations")].sort()) {
-    const exact = await admin.storage.from(bucket).list("", { search: storageObject!.object_name });
+    const exact = await admin.storage.from(bucket).list(folder, { search: leaf });
     expect(exact.error).toBeNull();
-    expect((exact.data ?? []).filter((entry) => entry.name === storageObject!.object_name), bucket).toEqual([]);
+    expect((exact.data ?? []).filter((entry) => entry.name === leaf), bucket).toEqual([]);
     const prefix = await admin.storage.from(bucket).list(userId);
     expect(prefix.error).toBeNull();
     expect(prefix.data, `${bucket}/${userId}`).toEqual([]);

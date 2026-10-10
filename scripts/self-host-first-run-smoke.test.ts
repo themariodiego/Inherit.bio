@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { checkConfigured, confirmationLink, requestFence, requireRemoteRunner, sampleAncestry, sampleGenotype } from "./self-host-first-run-smoke";
+import { checkConfigured, confirmationLink, requestFence, requireRemoteRunner, sampleAncestry, sampleGenotype, stockStorageUploadUrl } from "./self-host-first-run-smoke";
 
 const APP = "http://localhost:3000";
 const API = "http://127.0.0.1:54321";
@@ -50,6 +50,32 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
       [`${APP}/api/files/${ID}/process`, 2], [`${API}/storage/v1/object/genomes/${ID}`, 1]] as const) {
       for (let index = 0; index < count; index++) fence.admit(endpoint, "POST");
       expect(() => fence.admit(endpoint, "POST")).toThrow();
+    }
+  });
+  it.each([ID, `${ID}/${ID}/${ID}/original-${ID}.part`])("observes and admits the exact legacy/current staging URL %s once", key => {
+    const url = `${API}/storage/v1/object/genomes/${key}`, fence = requestFence();
+    expect(stockStorageUploadUrl(url)).toBe(true);
+    fence.admit(url, "OPTIONS"); fence.admit(url, "POST");
+    expect(fence.counts.storage).toBe(1);
+    expect(() => fence.admit(url, "POST")).toThrow();
+    for (const method of ["GET", "PUT", "DELETE"]) expect(() => requestFence().admit(url, method)).toThrow();
+  });
+  it.each([
+    `${ID}/${ID}/${ID}/${ID}.vcf`, `${ID}/${ID}/${ID}/original-${ID}.vcf`,
+    `${ID}/${ID}/original-${ID}.part`, `${ID}/${ID}/${ID}/original-${ID}.part/extra`,
+    `${ID}/${ID}/${ID}/original-${ID}.part?upsert=true`, `${ID}/${ID}/${ID}/original-${ID}.part#fragment`,
+    `${ID}/${ID}/${ID}/original-ABCDEF00-0000-4000-8000-000000000001.part`, `${ID}/${ID}/${ID}/original-${ID}.part%2fextra`,
+  ])("refuses embryo, final, malformed or extended storage locator %s", key => {
+    const url = `${API}/storage/v1/object/genomes/${key}`;
+    expect(stockStorageUploadUrl(url)).toBe(false);
+    expect(() => requestFence().admit(url, "POST")).toThrow();
+  });
+  it("does not move the admitted staging path to another origin or credential-bearing URL", () => {
+    const key = `${ID}/${ID}/${ID}/original-${ID}.part`;
+    for (const origin of ["https://example.invalid", APP, "http://EXAMPLE_USER:EXAMPLE_PASSWORD@127.0.0.1:54321"]) {
+      const url = `${origin}/storage/v1/object/genomes/${key}`;
+      expect(stockStorageUploadUrl(url)).toBe(false);
+      expect(() => requestFence().admit(url, "POST")).toThrow();
     }
   });
   it.each([

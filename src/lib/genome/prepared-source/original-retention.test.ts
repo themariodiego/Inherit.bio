@@ -65,7 +65,7 @@ describe("original retirement executor", () => {
 
 
 it("keeps exact namespaced original identity through current recheck, provider ACK and retirement", async () => {
-  const key = `${fileId}/${objectId}/${storageVersion}/${objectKey}.vcf`;
+  const key = `${fileId}/${objectId}/${storageVersion}/original-${objectKey}.vcf`;
   const claim = { ...makeClaim(), objectKey: key };
   const f = fixture({ claim_own_original_retirement_v1: claim, check_own_original_retirement_v1: claim });
   vi.mocked(fetch).mockResolvedValue(Response.json([{ ...object, name: key }]));

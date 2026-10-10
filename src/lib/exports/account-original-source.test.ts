@@ -139,7 +139,7 @@ describe("actual consumed ordinary original member",()=>{
 
 
 it("includes a namespaced original only through its exact current receipt and complete raw-byte archive",async()=>{
- const f=fixture(false,false,4096),key=`${f.context.actor.accountId}/${f.snapshot.file.subject_id}/${randomUUID()}/${randomUUID()}.vcf`;
+ const f=fixture(false,false,4096),key=`${f.context.actor.accountId}/${f.snapshot.file.subject_id}/${randomUUID()}/original-${randomUUID()}.vcf`;
  f.source.objectKey=key;f.snapshot.file.bucket_path=key;
  const result=await prepareAccountOriginalSource(f.options);
  expect(await collect(await result.member!.open(f.abort.signal))).toEqual(f.raw);

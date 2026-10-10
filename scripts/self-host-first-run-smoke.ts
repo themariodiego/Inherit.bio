@@ -12,6 +12,7 @@ import { regionalBelowMinimum } from "../src/copy/regional-ancestry";
 import { presentRegionalShares } from "../src/lib/ancestry/regional-present";
 import { estimateRegionalAdmixture, REGIONAL_AIMS } from "../src/lib/genome/regional-admixture";
 import { SEVEN_ANCESTRY_PANEL } from "../src/lib/uploads/own-ancestry-content-v3";
+import { genomeStagingKeySchema } from "../src/lib/uploads/genome-object-key";
 import { directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt,
   subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { checkedConfig, isRecord, LOCAL } from "./self-host-local-contract";
@@ -33,6 +34,13 @@ type Receipt = { version: 1; outcome: "running" | "passed" | "failed"; startedAt
 const sha = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
 function requireProof(value: unknown): asserts value { if (!value) throw new Error("first_run_proof_failed"); }
 function json(value: string): unknown { try { return JSON.parse(value); } catch { throw new Error("first_run_invalid_json"); } }
+
+/** Locator grammar only; the actual response remains bound to the issued key. */
+export function stockStorageUploadUrl(raw: string): boolean {
+  const url = new URL(raw), prefix = "/storage/v1/object/genomes/";
+  return url.origin === LOCAL.origin && !url.username && !url.password && !url.hash && !url.search
+    && url.pathname.startsWith(prefix) && genomeStagingKeySchema.safeParse(url.pathname.slice(prefix.length)).success;
+}
 
 export function requireRemoteRunner(env: Readonly<Record<string, string | undefined>>, platform: string, version: string, args: string[]): void {
   requireProof(platform === "linux" && version === "v22.17.0" && args.length === 0
@@ -89,7 +97,7 @@ export function requestFence() {
     }
     if (url.pathname === "/auth/v1/user" && ["OPTIONS", "GET"].includes(method) && !url.search) return;
     if (url.pathname === "/auth/v1/verify" && method === "GET") return once("verify", 1);
-    if (new RegExp(`^/storage/v1/object/genomes/${UUID}$`).test(url.pathname) && !url.search) {
+    if (stockStorageUploadUrl(raw)) {
       if (method === "OPTIONS") return;
       if (method === "POST") return once("storage", 1);
     }
@@ -191,9 +199,10 @@ async function confirmation(address: string): Promise<string> {
   }
   throw new Error("first_run_confirmation_timeout");
 }
-function observe(page: Page, endpoint: string | RegExp, timeout = OBSERVER_MS, method = "POST"): Promise<Response> {
+function observe(page: Page, endpoint: string | RegExp | ((url: string) => boolean), timeout = OBSERVER_MS, method = "POST"): Promise<Response> {
   const promise = page.waitForResponse(response => response.request().method() === method
-    && (typeof endpoint === "string" ? response.url() === endpoint : endpoint.test(response.url())), { timeout });
+    && (typeof endpoint === "string" ? response.url() === endpoint : typeof endpoint === "function"
+      ? endpoint(response.url()) : endpoint.test(response.url())), { timeout });
   void promise.catch(() => {}); return promise;
 }
 
@@ -292,7 +301,7 @@ export async function runFirstRunSmoke(): Promise<void> {
     const normalized = observe(page, new RegExp(`^${LOCAL.app}/api/files/${UUID}/process$`), 180_000);
     await step("stockStorageUpload", async () => {
       const issued = observe(page, `${LOCAL.app}/api/files/upload-session`);
-      const stored = observe(page, new RegExp(`^${LOCAL.origin}/storage/v1/object/genomes/${UUID}$`), 180_000);
+      const stored = observe(page, stockStorageUploadUrl, 180_000);
       await page.locator('input[type="file"]').setInputFiles(path.join(root, SAMPLE));
       const issueResponse = await issued; requireProof(issueResponse.status() === 201);
       const issuance = directUploadReceipt.parse(await responseJson(issueResponse));

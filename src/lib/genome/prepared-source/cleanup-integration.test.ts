@@ -22,6 +22,42 @@ describe("prepared cleanup integration", () => {
     const f = fixture(complete); expect(await prepareFileCleanup(f.admin, {})).toEqual({ error: null, original, complete: true });
     expect(f.rpc).toHaveBeenCalledWith("prepare_own_prepared_file_cleanup_v1", {}); expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
   });
+  it.each(["prepare_own_prepared_file_cleanup_v1", "prepare_own_prepared_file_cleanup_claimed_v1"] as const)(
+    "retains the complete current namespaced original selected by %s", async procedure => {
+      const name = `${id}/${id}/${id}/original-${id}.vcf.gz`;
+      expect(name.length).toBeGreaterThan(128);
+      const selected = { ...original, name }, f = fixture({ ...complete, original: selected });
+      expect(await prepareFileCleanup(f.admin, {}, undefined, procedure)).toEqual({ error: null, original: selected, complete: true });
+      expect(f.rpc).toHaveBeenCalledExactlyOnceWith(procedure, {});
+      expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
+    });
+  it.each(["prepare_own_prepared_file_cleanup_v1", "prepare_own_prepared_file_cleanup_claimed_v1"] as const)(
+    "reconfirms the same complete long-key original through %s after prepared cleanup", async procedure => {
+      const selected = { ...original, name: `${id}/${id}/${id}/original-${id}.vcf` };
+      const f = fixture({ ...pending, original: selected }, { ...complete, original: selected });
+      expect(await prepareFileCleanup(f.admin, {}, undefined, procedure)).toEqual({ error: null, original: selected, complete: true });
+      expect(f.rpc.mock.calls).toEqual([[procedure, {}], [procedure, {}]]);
+      expect(drainOwnPreparedCleanup).toHaveBeenCalledExactlyOnceWith(f.admin, { cleanupId: id, signal: undefined });
+    });
+  it.each(["x".repeat(129), `${id}/${id}/${id}/${id}.vcf`, `${id}/${id}/${id}/original-${id}.vcf/extra`])(
+    "refuses an unregistered over-limit original name before cleanup", async name => {
+      await expect(prepareFileCleanup(fixture({ ...complete, original: { ...original, name } }).admin, {})).rejects.toThrow();
+      expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
+    });
+  it("keeps whole receipt size and other string bounds despite a valid long original name", async () => {
+    const selected = { ...original, name: `${id}/${id}/${id}/original-${id}.vcf` };
+    for (const raw of [{ ...complete, original: selected, oversized: Array(4096).fill("bounded") },
+      { ...complete, original: selected, extra: "x".repeat(129) }]) {
+      await expect(prepareFileCleanup(fixture(raw).admin, {})).rejects.toThrow();
+      expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
+    }
+  });
+  it("refuses a changed complete long original on the confirming SQL read", async () => {
+    const selected = { ...original, name: `${id}/${id}/${id}/original-${id}.vcf` };
+    const f = fixture({ ...pending, original: selected }, { ...complete, original: { ...selected, name: selected.name.replace(/\.vcf$/, ".txt") } });
+    await expect(prepareFileCleanup(f.admin, {})).rejects.toThrow("file_delete_failed");
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(1);
+  });
   it("prepares a claimed stranded record through the claimed SQL twin and reconfirms through the same one", async () => {
     const args = { p_file_id: id, p_claim_token_hash: "c".repeat(64) };
     const f = fixture(pending, complete);
