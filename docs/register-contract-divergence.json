@@ -134,28 +134,20 @@
       "why": "The account-deletion purge groups a database manifest by bucketId and removes each group. Same limitation, same database allowlist."
     },
     {
-      "site": "(database-selected) src/lib/exports/archive-segment-read-storage.ts",
-      "why": "Measured 2026-10-01: the bounded archive reader uses the closed imported ARCHIVE_BUCKET constant, classified as database-selected by the static scanner. Whole-object GET and SDK metadata reads verify the same exact durable descriptor, version and ETag before and after EOF; the bounded outer reader additionally verifies length, digest and current authority. The REST info segment is a metadata operation, not another bucket. This adapter does not establish READY publication, provider cleanup or a new backend contract."
+      "site": "exports src/lib/exports/archive-segment-read-storage.ts",
+      "why": "Measured 2026-10-10: the scanner resolves the exact local named import ARCHIVE_BUCKET to the exported string exports. Whole-object GET and SDK metadata reads verify the same exact durable descriptor, version and ETag before and after EOF; the bounded outer reader additionally verifies length, digest and current authority. The REST info segment is a metadata operation, not another bucket. This source census does not establish READY publication, provider cleanup or a new backend contract."
     },
     {
-      "site": "(database-selected) src/lib/exports/archive-segment-storage.ts",
-      "why": "The static scanner classifies the nonliteral ARCHIVE_BUCKET argument as database-selected. The imported constant and closed attempt validator permit only exports. This create-only byte adapter is not yet wired to a route or worker; it requires exact server-owned reservation keys and does not establish database authorization or provider cleanup."
+      "site": "exports src/lib/exports/archive-segment-storage.ts",
+      "why": "The scanner resolves the exact local named import ARCHIVE_BUCKET to exports. The closed attempt validator, exact server-owned reservation keys and create-only byte adapter remain unchanged. Finding its Storage call does not establish product-route integration, database authorization, provider cleanup, the declared manifest namespace or export.generated-artifact-24h cleanup."
     },
     {
       "site": "(database-selected) src/lib/uploads/file-deletion-backstop.ts",
       "why": "The source.revocation-7d backstop (D-126) redoes a stranded self file deletion: it removes admin.storage.from(target.bucket) where the bucket and name come from the claimed private.genome_file_deletions record, whose check constraint pins the bucket to genomes. Same limitation as DELETE /api/files/[id], same database allowlist."
     }
   ],
-  "declaredPrefixBucketNotAddressed": [
-    {
-      "bucket": "exports",
-      "prefixIds": [
-        "storage.export-v1"
-      ],
-      "why": "The static scanner finds no literal exports bucket call. archive-segment-storage.ts now uses the closed imported ARCHIVE_BUCKET constant, which the scanner records separately as database-selected. That byte adapter has no product route or worker caller yet. The declared manifest namespace, authorization and export.generated-artifact-24h cleanup remain integration requirements; the existing POST /api/export is still unbuilt. This scanner category is not evidence that the byte adapter has no Storage call.",
-      "closing": "Addressed when largeExportDeliveryContract is built."
-    }
-  ],
+  "declaredPrefixBucketNotAddressedNote": "The exact exports callsites are now visible through their imported constant, so no declared bucket is unaddressed in this source census. This retires only the scanner's false absence. The archive adapters do not by themselves prove the declared manifest namespace, route integration, authorization, export.generated-artifact-24h cleanup or provider readiness. The real object-key, R2 location and uncreated-bucket divergences remain below; G8.5 is not closed by this precision correction.",
+  "declaredPrefixBucketNotAddressed": [],
   "liveCallSiteOnUncreatedBucket": [
     {
       "bucket": "legal-evidence",
@@ -242,7 +234,7 @@
       "blocker": "none known \u2014 the lifecycle is decided and described in policyContracts; only the storage location is undeclared."
     }
   ],
-  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The two database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
+  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The three database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
   "allowlistedBucketNotCreated": [
     {
       "bucket": "genomes-staging",
