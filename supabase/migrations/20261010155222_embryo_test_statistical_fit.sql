@@ -4878,7 +4878,9 @@ begin
   or a->'fit_package' is distinct from p
   or a->>'fit_package_digest' is distinct from private.embryo_test_fit_package_digest_v1(p) then
   raise exception using errcode='42501',message='embryo_test_statistical_fit_unavailable';end if;
- return a;
+ -- The native oid identity above remains exact; emit its bounded uint32
+ -- value as a JSON number for the unchanged strict fitted reference DTO.
+ return a||jsonb_build_object('database_oid',(a->>'database_oid')::bigint);
 end $fit_admission$;
 
 -- Original full admission, grant, source, publication and QC capture runs
