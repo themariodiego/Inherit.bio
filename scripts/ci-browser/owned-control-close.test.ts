@@ -25,7 +25,7 @@ it("settles one real anonymous FD3 close before reusing its descriptor", async (
   `;
   const value = await new Promise<{ code: number | null; stdout: string; stderrBytes: number }>((resolve, reject) => {
     const child = spawn(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code], {
-      env: { PATH: "/usr/bin:/bin" }, stdio: ["ignore", "pipe", "pipe", "pipe"],
+      env: { NODE_ENV: "test", PATH: "/usr/bin:/bin" }, stdio: ["ignore", "pipe", "pipe", "pipe"],
     });
     let stdout = "", stderrBytes = 0;
     const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new Error("Public descriptor control deadline")); }, 2000);
