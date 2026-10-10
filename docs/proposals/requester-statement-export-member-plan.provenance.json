@@ -5,7 +5,7 @@
     "file": "docs/export-member-plan.json",
     "bytes": 71856,
     "sha256": "76749aa78ecd1987fa242605be8c5e2a169e68a27322ebc05669275d21276953",
-    "sourceCommit": "876d4ab9d60d99c0d6e0664ac17f4da7047324b2"
+    "sourceCommit": "28e20c1af57c439c1dc356c899d9a90a01313305"
   },
   "proposal": {
     "file": "docs/proposals/requester-statement-export-member-plan.json",
