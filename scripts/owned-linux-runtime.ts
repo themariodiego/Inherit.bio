@@ -17,6 +17,10 @@ const proofSchema = ownedLinuxRequestSchema.extend({ uid: z.number().int().posit
   pid: z.number().int().positive(), processStart: z.string().regex(/^\d+$/), daemonId: z.string().min(1).max(256),
   createdAt: z.number().int(), publicKey: z.string().min(1).max(1024) }).strict();
 type Proof = z.infer<typeof proofSchema>;
+export const ownedLinuxPublicProofSchema = proofSchema;
+const challengeSchema = proofSchema.pick({ version: true, nonce: true, bootId: true, head: true, uid: true, createdAt: true });
+export const olderBootChallengeSchema = z.object({ kind: z.literal("older-boot-challenge"),
+  challenge: challengeSchema, scratch: exactPath }).strict();
 type Identity = { dev: number; ino: number; uid: number; gid: number; mode: number };
 export type OwnedLinuxCapability = Readonly<{ kind: "owned-linux"; proof: Proof }>;
 const admitted = new WeakMap<object, { receipt: Identity; socket: Identity; challenge: Identity; signingKey?: KeyObject; child: boolean; recordDirectory?: string }>();
@@ -42,6 +46,31 @@ export function retainChallengeUse(directory: string, nonce: string, publicConte
   const parent = openSync(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
   try { fsyncSync(parent); } finally { closeSync(parent); }
 }
+/** Public-only recovery evidence, retained independently of the daemon lease.
+ * A failed write refuses readiness; neither this file nor its challenge is removed. */
+export function retainPublicOwnerProof(directory: string, input: unknown) {
+  const proof = proofSchema.parse(input), content = JSON.stringify(proof);
+  assert(realpathSync(directory) === directory && Buffer.byteLength(content) < 4096, REFUSAL);
+  const stat = lstatSync(directory);
+  assert(stat.isDirectory() && stat.uid === proof.uid && (stat.mode & 0o7777) === 0o700, REFUSAL);
+  assert(readPublicReceipt(path.join(directory, `${proof.nonce}.used.json`), proof.uid) === challengeContent(proof), REFUSAL);
+  const descriptor = openSync(path.join(directory, `${proof.nonce}.owner.json`),
+    constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+  try { writeFileSync(descriptor, content); fsyncSync(descriptor); } finally { closeSync(descriptor); }
+  const parent = openSync(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try { fsyncSync(parent); } finally { closeSync(parent); }
+}
+
+/** Reboot proves old-process death without inventing a missing PID/start/key.
+ * This pure binding check grants no capability or journal access. */
+export function assertOlderBootChallengeBinding(currentInput: unknown, previousInput: unknown, marker: string) {
+  const current = proofSchema.parse(currentInput), previous = olderBootChallengeSchema.parse(previousInput);
+  const old = previous.challenge;
+  assert(marker === challengeContent(old) && old.bootId !== current.bootId && old.uid === current.uid
+    && old.nonce !== current.nonce && old.createdAt < current.createdAt, REFUSAL);
+  return createHash("sha256").update(marker).digest("hex");
+}
+
 function readPublicReceipt(file: string, uid: number) {
   const descriptor = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
@@ -193,6 +222,7 @@ export function establishOwnedLinuxRuntime(input: unknown, env: Readonly<Record<
     processStart: processStart(process.pid), daemonId, createdAt,
     publicKey: pair.publicKey.export({ type: "spki", format: "der" }).toString("base64") });
   retainChallengeUse(challengeDirectory(), proof.nonce, challengeContent(proof));
+  retainPublicOwnerProof(challengeDirectory(), proof);
   mkdirSync(lease(proof), { mode: 0o700 });
   writeFileSync(receipt(proof), JSON.stringify(proof), { flag: "wx", mode: 0o600 });
   const value = Object.freeze({ kind: "owned-linux" as const, proof: Object.freeze(proof) });
@@ -237,6 +267,89 @@ export function ownedLinuxSourceIdentity(value: OwnedLinuxCapability) {
   assertOwnedLinuxCapability(value);
   return { kind: value.kind, nonce: value.proof.nonce, bootId: value.proof.bootId, head: value.proof.head,
     daemonId: value.proof.daemonId, proofSha256: createHash("sha256").update(JSON.stringify(value.proof)).digest("hex") };
+}
+
+/** Process names only, never arguments or environment. A new manual owner may
+ * retain its SSH/tool ancestors and this one ps child, but no old workload. */
+export function assertManualCleanupProcesses(observation: string, supervisorPid: number) {
+  const rows = observation.trim().split("\n").map(line => {
+    const match = /^\s*(\d+)\s+(\d+)\s+(\S(?:.*\S)?)\s*$/.exec(line);
+    assert(match, "Unknown process inventory refuses manual cleanup");
+    const pid = Number(match[1]), ppid = Number(match[2]);
+    assert(Number.isSafeInteger(pid) && pid > 0 && Number.isSafeInteger(ppid) && ppid >= 0,
+      "Invalid process inventory refuses manual cleanup");
+    return { pid, ppid, name: match[3] };
+  });
+  const byPid = new Map(rows.map(row => [row.pid, row]));
+  assert(byPid.size === rows.length && byPid.has(supervisorPid), "Incomplete process inventory refuses manual cleanup");
+  const ancestors = new Set<number>();
+  for (let pid = supervisorPid; byPid.has(pid); pid = byPid.get(pid)!.ppid) {
+    assert(!ancestors.has(pid), "Cyclic process inventory refuses manual cleanup"); ancestors.add(pid);
+  }
+  assert(rows.every(row => ancestors.has(row.pid) || (row.ppid === supervisorPid && row.name === "ps")),
+    "Active or unknown owned-user process refuses manual cleanup");
+}
+
+/** Manual journal reconciliation grants no stack, inference or spending
+ * authority. A fresh authenticated supervisor must observe the same empty
+ * daemon and a definitively dead prior supervisor; public challenges survive.
+ * These checks run again immediately before the append and lock release. */
+export function assertOwnedLinuxManualCleanup(value: OwnedLinuxCapability, previousInput: unknown) {
+  assertOwnedLinuxSource(value);
+  assert(!admitted.get(value)!.child, "Only the actual owner may reconcile a dry journal");
+  const previous = proofSchema.parse(previousInput), current = value.proof;
+  assert(previous.uid === current.uid && previous.gid === current.gid && previous.root === current.root
+    && previous.daemonId === current.daemonId && previous.dockerSocket === current.dockerSocket
+    && previous.nonce !== current.nonce && previous.createdAt < current.createdAt,
+  "Exact prior owned runtime required for manual cleanup");
+  assert(readPublicReceipt(challengeFile(previous.nonce), previous.uid) === challengeContent(previous),
+    "Prior one-use challenge must remain permanent");
+  if (previous.bootId === current.bootId) {
+    try {
+      assert(processStart(previous.pid) !== previous.processStart, "Prior supervisor is still active");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+  assertManualNativeCleanup(current, [previous.scratch, current.scratch]);
+  return createHash("sha256").update(JSON.stringify(previous)).digest("hex");
+}
+
+/** Legacy recovery is explicitly limited to a retained challenge from another
+ * actual boot. Same-boot recovery still requires the complete original proof. */
+export function assertOwnedLinuxOlderBootManualCleanup(value: OwnedLinuxCapability, previousInput: unknown) {
+  assertOwnedLinuxSource(value);
+  assert(!admitted.get(value)!.child, "Only the actual owner may reconcile a dry journal");
+  const previous = olderBootChallengeSchema.parse(previousInput), current = value.proof;
+  const marker = readPublicReceipt(challengeFile(previous.challenge.nonce), current.uid);
+  const digest = assertOlderBootChallengeBinding(current, previous, marker);
+  assert(path.dirname(previous.scratch) === realpathSync(userInfo().homedir)
+    && path.basename(previous.scratch) === `inherit-native-smoke-${previous.challenge.nonce}`,
+  "Exact preserved older-boot smoke scratch required");
+  assertManualNativeCleanup(current, [previous.scratch, current.scratch]);
+  return digest;
+}
+
+function assertManualNativeCleanup(current: Proof, scratches: string[]) {
+  for (const scratch of new Set(scratches)) {
+    assert(realpathSync(scratch) === scratch, "Exact preserved scratch required");
+    const stat = lstatSync(scratch);
+    assert(stat.isDirectory() && stat.uid === current.uid && (stat.mode & 0o7777) === 0o700,
+      "Protected preserved scratch required");
+    try { lstatSync(path.join(scratch, "inherit-fresh-t6.lock")); throw new Error("Native stack cleanup is unresolved"); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+  }
+  const command = (args: string[]) => execFileSync("docker", args, { timeout: 10_000, maxBuffer: 1_048_576, encoding: "utf8",
+    env: { NODE_ENV: "production", PATH: process.env.PATH ?? "/usr/bin:/bin", DOCKER_HOST: `unix://${current.dockerSocket}`, LANG: "C.UTF-8" },
+    stdio: ["ignore", "pipe", "ignore"] }).trim();
+  assert(command(["info", "--format", "{{.ID}}"]) === current.daemonId
+    && command(["ps", "-aq"]) === "" && command(["volume", "ls", "-q"]) === "",
+  "Unknown native cleanup refuses manual reconciliation");
+  assert.deepEqual(command(["network", "ls", "--format", "{{.Name}}"])
+    .split(/\s+/).filter(Boolean).sort(), ["bridge", "host", "none"], "Unknown native networks refuse manual reconciliation");
+  assertManualCleanupProcesses(execFileSync("ps", ["-u", String(current.uid), "-o", "pid=,ppid=,comm="],
+    { timeout: 10_000, maxBuffer: 1_048_576, encoding: "utf8", env: { NODE_ENV: "production", PATH: process.env.PATH ?? "/usr/bin:/bin", LANG: "C.UTF-8" },
+      stdio: ["ignore", "pipe", "ignore"] }), current.pid);
 }
 
 /** A canonical JSON frame prevents duplicate-key aliases without ever printing

@@ -432,8 +432,25 @@ Unresolved browser/process acquisition or closure records a durable stop tied
 to the admitted resource identity. Finishing the run as stopped does not clear
 that marker: the history lock remains, replay refuses another run or revision
 closure, and no further inference is admitted. Disposal of a late handle does
-not silently clear this stop. Cleanup reconciliation is external work; this
-scaffold supplies no lock deletion or automatic recovery operation.
+not silently clear this stop. Normal journal admission never deletes a stale
+lock or automatically reconciles a resource.
+
+The explicit `run-manual-dry-reconciliation.mts` owner operation is limited to
+an unanswered, stopped, key-free native smoke in the **dry** ledger. A fresh
+authenticated Linux supervisor must prove the exact prior owner is dead, the
+same isolated daemon is completely empty, the preserved stack lock is absent,
+and no old or unknown owned-user process remains. The previous public nonce
+marker stays permanent. Exact public run/session/source and complete history
+prefix bindings are mandatory. Unfinished runs, answered tasks, any inference
+attempt in the target run, uncertain usage, a live ledger or spending lock
+refuse. See the [operator procedure](../../docs/comprehension-runs/owned-linux-operator.md#explicit-manual-key-free-dry-reconciliation).
+
+This operation appends and fsyncs one `resource-reconciled` event, then releases
+only the exact empty history lock after repeating native cleanup checks. It
+never opens or changes the spend journal, restores a reservation, rewrites the
+failed finish/trace or reuses a session identity. The prior failed smoke remains
+unqualified. A partial append or lost cleanup certainty retains the recovery
+guard and refuses normal opening; it does not automatically retry recovery.
 
 A different product revision cannot start until the previous revision is
 explicitly closed in the history. Closure uses its last two full runs on the
