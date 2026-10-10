@@ -15,7 +15,7 @@ import { availabilityStatement, CANNOT_HAVE_BEST_OF_EACH, NO_RANKING_STATEMENT,
 import { openParticipantCReadSession } from "./participant-c-harness";
 import { seedParticipantC } from "./participant-c-journey";
 import { viewSchema } from "../scripts/comprehension/conductor-contract";
-import { auditNativeStatisticalCoverage } from "./helpers/embryo-statistical-coverage-audit";
+import { auditNativeStatisticalCoverage, auditNativeFittedStatisticalCoverage } from "./helpers/embryo-statistical-coverage-audit";
 
 /** No product handler, consent, worker or stored result is replaced here.
  * The local mail receiver captures synthetic delivery only. The isolated
@@ -123,6 +123,18 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
       await testInfo.attach("native-statistical-coverage-audits", { contentType: "application/json", body: JSON.stringify(statisticalAudits) });
       await proveNativeDispositionAndProfile({ owner: page, other, browser, cohortId,
         embryoId: embryos[0].id, siblingId: embryos[1].id });
+      await runtime.withFittedJourney(cohortId, async fitted => {
+        const second = await seedParticipantC({ page, browser, ownerEmail: "fitted-test@e2e.local",
+          parentEmail: "fitted-test-parent@e2e.local", password, messages, runtime: fitted, fittedSeed: "partial" });
+        try {
+          await fitted.runStatisticalWorker(second.cohortId);
+          const fittedAudits = await test.step("invented fitted TEST partial coverage and MODELLED interval audits on the hub, comparison and individual embryo views", async () =>
+            await auditNativeFittedStatisticalCoverage({ page, cohortId: second.cohortId, embryos: second.embryos,
+              proof: () => fitted.statisticalProof(second.cohortId) }));
+          await testInfo.attach("native-fitted-test-statistical-audits", { contentType: "application/json",
+            body: JSON.stringify(fittedAudits) });
+        } finally { await second.closeCoParent(); }
+      });
     } finally { await closeCoParent(); }
   });
 });

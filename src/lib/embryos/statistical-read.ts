@@ -5,6 +5,7 @@ import { createAdminClient } from "../supabase/admin";
 import { isTestJurisdictionEnabled } from "../legal/jurisdictions";
 import { EmbryoReadError } from "./cohorts";
 import { QC_THRESHOLDS, QC_REASON_IDS, RESULT_NOT_REPORTABLE_REASON_IDS } from "./qc-policy";
+import { statisticalFittedReadSchema, type StatisticalFittedRead } from "./statistical-fit-contract";
 
 const failure = z.object({ schema_version: z.literal(2),
   figure_basis: z.object({ version: z.literal(1), basis: z.literal("observed") }).strict(),
@@ -32,8 +33,9 @@ export const statisticalCoverageReadSchema = z.object({ version: z.literal(1),
   captureSha256: z.string().regex(/^[0-9a-f]{64}$/), interpretation: z.literal("held"), rows: z.array(row).min(1).max(64),
 }).strict().refine(value => new Set(value.rows.map(row => row.embryoId)).size === value.rows.length
   && value.rows.every((row, index) => row.sampleOrdinal === index));
-export type StatisticalCoverageRead = z.infer<typeof statisticalCoverageReadSchema>;
-type Rpc = (name: "current_embryo_test_statistical_v1", args: { p_account: string; p_session: string; p_cohort: string; p_test: true }) => {
+export type StatisticalCoverageOnlyRead = z.infer<typeof statisticalCoverageReadSchema>;
+export type StatisticalCoverageRead = StatisticalCoverageOnlyRead | StatisticalFittedRead;
+type Rpc = (name: "current_embryo_test_statistical_v1" | "current_embryo_test_statistical_fit_v1", args: { p_account: string; p_session: string; p_cohort: string; p_test: true }) => {
   abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
 
 /** Separate fixed TEST DTO; never broaden the clinical condition registry or
@@ -49,8 +51,18 @@ export async function loadSavedEmbryoStatisticalCoverage(accountId: string, coho
   try {
     const admin = options.rpc ? null : createAdminClient();
     const rpc = options.rpc ?? admin!.rpc.bind(admin) as unknown as Rpc;
-    const result = await rpc("current_embryo_test_statistical_v1", { p_account: account.user.id,
-      p_session: account.sessionId, p_cohort: cohortId, p_test: true }).abortSignal(AbortSignal.timeout(30_000));
+    const args = { p_account: account.user.id, p_session: account.sessionId, p_cohort: cohortId, p_test: true as const };
+    const fitted = await rpc("current_embryo_test_statistical_fit_v1", args).abortSignal(AbortSignal.timeout(30_000));
+    if (!isTestJurisdictionEnabled() || fitted.error !== null) throw new Error("unavailable");
+    if (fitted.data !== null) {
+      const parsed = statisticalFittedReadSchema.safeParse(fitted.data);
+      if (!parsed.success || parsed.data.cohortId !== cohortId
+        || JSON.stringify(parsed.data.rows.map(row => row.embryoId)) !== JSON.stringify(expectedEmbryoIds)) throw new Error("invalid response");
+      return parsed.data;
+    }
+    // An absent fitted admission/result is the only fallback. A malformed or
+    // stale fitted response cannot be relabelled as a coverage-only result.
+    const result = await rpc("current_embryo_test_statistical_v1", args).abortSignal(AbortSignal.timeout(30_000));
     if (!isTestJurisdictionEnabled() || result.error !== null) throw new Error("unavailable");
     if (result.data === null) return null;
     const parsed = statisticalCoverageReadSchema.safeParse(result.data);

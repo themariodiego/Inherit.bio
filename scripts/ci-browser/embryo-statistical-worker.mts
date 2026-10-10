@@ -1,7 +1,7 @@
 /** Inside-only, unprivileged, fixed-command worker entry. Never log stdin. */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { runEmbryoStatisticalWorkerInside } from "../ci-embryo-journey";
+import { runEmbryoStatisticalWorkerInside, runEmbryoFittedStatisticalWorkerInside } from "../ci-embryo-journey";
 
 const controller = new AbortController();
 const stop = () => controller.abort();
@@ -21,8 +21,17 @@ try {
     process.stdin.once("error", () => { clearTimeout(timer); reject(new Error("Worker input unavailable")); });
     process.stdin.once("end", () => { clearTimeout(timer); resolve(text); });
   });
-  await runEmbryoStatisticalWorkerInside(JSON.parse(input), controller.signal);
-  process.stdout.write("EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE\n");
+  const value: unknown = JSON.parse(input);
+  if (value !== null && typeof value === "object" && !Array.isArray(value) && "kind" in value) {
+    const fitted = value as Record<string, unknown>;
+    assert(Object.keys(fitted).length === 2 && Object.keys(fitted).every(key => key === "kind" || key === "environment")
+      && fitted.kind === "fitted-test", "Exact fitted worker input required");
+    await runEmbryoFittedStatisticalWorkerInside(fitted.environment, controller.signal);
+    process.stdout.write("EMBRYO_STATISTICAL_FITTED_JOURNEY_WORKER_COMPLETE\n");
+  } else {
+    await runEmbryoStatisticalWorkerInside(JSON.parse(input), controller.signal);
+    process.stdout.write("EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE\n");
+  }
 } catch {
   process.stderr.write("embryo_statistical_journey_worker_unavailable\n");
   process.exitCode = 1;

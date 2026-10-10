@@ -57,6 +57,7 @@ export const COMPUTED_MODULES = [
   "embryos/policy",
   "embryos/split-analysis",
   "embryos/statistical-coverage",
+  "embryos/synthetic-statistical-fit",
   "family/carrier-pair",
   "family/distribution",
   "family/mendel",
