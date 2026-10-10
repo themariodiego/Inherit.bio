@@ -181,7 +181,8 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
         const seeded = await seedParticipantC({
           page,
           browser: browser!, ownerEmail: `cmp-t6-${input.id}@e2e.local`, parentEmail: `cmp-t6-${input.id}-parent@e2e.local`,
-          password: participantCPassword, messages: mail!.messages, runtime: { proof: fixture.proof, runWorker: async id => { signal.throwIfAborted(); await fixture.runWorker(id); } } });
+          password: participantCPassword, messages: mail!.messages, jobsSecret: appEnvironments[3105].JOBS_SECRET,
+          runtime: { proof: fixture.proof, runWorker: async id => { signal.throwIfAborted(); await fixture.runWorker(id); } } });
         await seeded.closeCoParent();
         return seeded;
       }, undefined, process.platform, operator);

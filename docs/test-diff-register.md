@@ -1,3 +1,9 @@
+## 2026-10-10 — Pass the current native mail-job credential to the parent invitation drain
+
+The owned launcher generates a fresh mail-job credential, while the parent invitation helper previously sent the fixed hosted-test credential. Source tracing proves that this mismatch would return 401 if the native invitation drain is reached; it does not identify the reached substage of the retained failed native run. The native seed now passes the selected embryo app's current credential explicitly at call time. Hosted callers retain their fixed configuration, and an explicitly empty credential refuses before mail I/O. Recipient selection, authorization, status-200 assertions, the forty-drain bound, fresh credential generation and all native ownership and cleanup requirements are unchanged.
+
+Pure controls exercise the real drain helper with distinct current, hosted and ambient values, refusal and the original finite bound; source checks bind the exact seed call chain. All eighteen cases across the three whole focused files and the composed type check passed with natural exit 0. No provider, guest, native mail or completed user flow is proved; composed source gates and actual native validation remain separate requirements.
+
 ## 2026-10-10 — Keep the public descriptor control's environment typed
 
 The combined source passed all 1,159 assertions, then the composed type check refused the public descriptor subprocess's environment because Next's ProcessEnv requires NODE_ENV. The isolated public-only test child now explicitly uses NODE_ENV=test and its existing fixed PATH. No application environment, provider, proof, guard, assertion or deadline is inherited or changed. The original type-check failure remains retained; complete combined qualification is required on this successor.
