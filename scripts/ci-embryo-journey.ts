@@ -9,7 +9,8 @@ import { attachFittedFailure, decodeFittedFailure, encodeFittedFailure, fittedCo
   isFittedJourneyCommand, type FittedFailureInner } from "../src/lib/embryos/statistical-fit-diagnostic";
 
 type Environment = Readonly<Record<string, string | undefined>>;
-type Execute = (args: string[], input?: string, timeout?: number) => Promise<string>;
+type ExecuteContext = "fitted-native-proof";
+type Execute = (args: string[], input?: string, timeout?: number, context?: ExecuteContext) => Promise<string>;
 export type EmbryoJourneyIo = { execute: Execute; owner: () => unknown; root: () => string };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const DB = "supabase_db_sequence";
@@ -39,6 +40,8 @@ export function checkedEmbryoWorkerEnvironment(value: unknown): Record<string, s
 export const EMBRYO_WORKER_ARGS = Object.freeze(["--conditions=react-server", "--import", "/app/scripts/server-only-shim.mjs",
   "--import", "tsx", "/app/scripts/embryo-split-worker.run.mts", "--once"]);
 export const EMBRYO_WORKER_LIMIT_MS = 90_000;
+/** Fixed authored fixture expectations, checked against its full real VCF parser. */
+export const FITTED_JOURNEY_CALL_RATES = Object.freeze([1, 1196 / 1208] as const);
 
 /** Fixed production split entrypoint with its one-iteration semantics. Its
  * own namespace timer survives a lost host docker-exec connection. Uncertain
@@ -191,9 +194,33 @@ export async function runEmbryoFittedStatisticalWorkerInside(value: unknown, sig
   });
 }
 
+/** Diagnostic selection only: the exact existing proof, argv and deadline.
+ * No flag admits a command or supplies native/clinical success authority. */
+export function isFittedNativeProofCommand(args: readonly string[], input: string | undefined,
+  timeout: number, context: unknown): boolean {
+  const expected = ["exec", "-i", DB, "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"];
+  if (context !== "fitted-native-proof" || timeout !== 10_000
+    || args.length !== expected.length || args.some((value, index) => value !== expected[index])
+    || typeof input !== "string") return false;
+  const cohort = /^with capture as materialized\(select private\.capture_embryo_test_statistical_fit_v1\('([0-9a-f-]{36})'::uuid,true\) a\),/.exec(input)?.[1];
+  return cohort !== undefined && UUID.test(cohort) && input === fittedStatisticalProof(`'${cohort}'::uuid`);
+}
+export function embryoJourneyCommandFailure(args: readonly string[], input: string | undefined,
+  timeout: number, context: unknown, error: unknown): Error {
+  if (isFittedNativeProofCommand(args, input, timeout, context)) {
+    // Native proof stderr is never interpreted as a fitted worker/RPC frame.
+    const observed = fittedCommandFailure(error);
+    return new Error(`Embryo journey fitted native proof command failed; ${encodeFittedFailure({
+      outer: observed.outer, inner: "NOT_OBSERVED", operation: "NOT_OBSERVED", code: "NOT_OBSERVED" })}`);
+  }
+  if (isFittedJourneyCommand(args, input, CI_RUNTIME_CONTAINER))
+    return new Error(`Embryo journey fitted command failed; ${encodeFittedFailure(fittedCommandFailure(error))}`);
+  return new Error("Embryo journey fixed local command failed; diagnostics withheld");
+}
+
 function defaultIo(env: Environment, operator?: OwnedLinuxCapability): EmbryoJourneyIo {
   return {
-    execute: async (args, input, timeout = 10_000) => {
+    execute: async (args, input, timeout = 10_000, context) => {
       try {
         const child = promisify(execFile)("docker", args, { timeout, killSignal: "SIGKILL", maxBuffer: 32_768,
           env: { NODE_ENV: "production", PATH: env.PATH ?? "/usr/bin:/bin", HOME: env.HOME ?? "/home/runner", LANG: "C.UTF-8",
@@ -202,9 +229,7 @@ function defaultIo(env: Environment, operator?: OwnedLinuxCapability): EmbryoJou
         child.child.stdin?.end(input);
         return (await child).stdout.trim();
       } catch (error) {
-        if (isFittedJourneyCommand(args, input, CI_RUNTIME_CONTAINER))
-          throw new Error(`Embryo journey fitted command failed; ${encodeFittedFailure(fittedCommandFailure(error))}`);
-        throw new Error("Embryo journey fixed local command failed; diagnostics withheld");
+        throw embryoJourneyCommandFailure(args, input, timeout, context, error);
       }
     },
     root: () => realpathSync(process.cwd()),
@@ -271,9 +296,10 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
       } else assert(item.project === "sequence", "Exact local project required");
     }
   };
-  const sql = async (statement: string) => {
+  const sql = async (statement: string, context?: ExecuteContext) => {
     await checkIdentity();
-    return io.execute(["exec", "-i", DB, "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"], statement);
+    const args = ["exec", "-i", DB, "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"];
+    return context === undefined ? io.execute(args, statement) : io.execute(args, statement, 10_000, context);
   };
   assert.deepEqual(JSON.parse(await sql(configuration)), ORIGINAL, "Never take over an enabled or configured embryo worker");
   assert(await sql(`select (not exists(select 1 from public.worker_jobs where kind='split_cohort_vcf')
@@ -424,7 +450,7 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
             statisticalProof: async cohortId => {
               const cohort = cohortLiteral(cohortId);assert(cohort === second && fitAttempted, "Exact second fitted proof required");
               await checkFirst();
-              return JSON.parse(await sql(fittedStatisticalProof(cohort)));
+              return JSON.parse(await sql(fittedStatisticalProof(cohort), "fitted-native-proof"));
             },
           });
           assert(second !== undefined && splitCompleted && fitCompleted,

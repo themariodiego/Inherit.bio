@@ -24,6 +24,7 @@ import { seedParticipantC, participantCPassword } from "../../e2e/participant-c-
 import { APP_LAUNCHER_DIAGNOSTIC_PREFIX, type AppLauncherDiagnostic } from "../ci-browser/app-launcher-diagnostic";
 import { forwardProfileDiagnostics } from "../ci-browser/profile-diagnostic-filter";
 import { OwnedAppReadinessFailure, waitForOwnedApp } from "./app-readiness";
+import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
 
 const setupStages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "upload-capacity", "runtime-preflight",
   "storage-proxy", "app-configuration", "mail-capture", "main-app-ready", "embryo-app-ready", "chromium-launch",
@@ -34,13 +35,27 @@ function setupDiagnostic(stage: SetupStage, error: unknown, cleanup: "complete" 
   return JSON.stringify({ kind: "fresh-native-setup-failure", stage, ...freshRuntimeFailureClassification(error), cleanup,
     ...(error instanceof OwnedAppReadinessFailure ? { appReadiness: error.observation } : {}) });
 }
+/** The owned selector receives only the registered five-field projection.
+ * Original setup JSON and refusal/cleanup outcomes remain independent. */
+export function emitOwnedFreshSetupFailure(stage: SetupStage, error: unknown,
+  cleanup: "complete" | "uncertain" | "unreturned", emit?: (line: string) => void) {
+  try {
+    emitHostedBootstrapFailure(`session-${stage}`, freshRuntimeFailureClassification(error), cleanup, emit);
+  } catch { /* Diagnostic failure cannot replace the original refusal. */ }
+}
 /** Closed diagnostics supplement the original refusal. Cleanup uncertainty
  * still throws and retains ownership; a completed cleanup is not success. */
 export async function refuseFreshSetup(stage: SetupStage, error: unknown, close: () => Promise<void>,
-  emit: (line: string) => void = line => { process.stderr.write(line + "\n"); }): Promise<never> {
+  emit: (line: string) => void = line => { process.stderr.write(line + "\n"); },
+  ownedEmit?: (line: string) => void): Promise<never> {
   try { await close(); }
-  catch (cleanupError) { emit(setupDiagnostic(stage, error, "uncertain")); throw cleanupError; }
+  catch (cleanupError) {
+    emit(setupDiagnostic(stage, error, "uncertain"));
+    if (ownedEmit) emitOwnedFreshSetupFailure(stage, error, "uncertain", ownedEmit);
+    throw cleanupError;
+  }
   emit(setupDiagnostic(stage, error, "complete"));
+  if (ownedEmit) emitOwnedFreshSetupFailure(stage, error, "complete", ownedEmit);
   throw new Error("Fresh comprehension setup refused; no inference was started");
 }
 
@@ -98,8 +113,13 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
   const io = operator ? createResourceIO(operator) : actualResourceIO;
   const environment = () => infrastructureChildEnvironment(process.env, operator);
   let stage: SetupStage = "stack-acquisition";
+  // Only this already-owned caller selects supplemental public setup fields.
+  // The callback supplies diagnostics, never resource admission or recovery.
+  const ownedEmit = operator ? (line: string) => { process.stderr.write(line + "\n"); } : undefined;
   const stack = await acquireFreshStack(signal, io, operator).catch(error => {
-    process.stderr.write(setupDiagnostic(stage, error, "unreturned") + "\n"); throw error;
+    process.stderr.write(setupDiagnostic(stage, error, "unreturned") + "\n");
+    if (ownedEmit) emitOwnedFreshSetupFailure(stage, error, "unreturned", ownedEmit);
+    throw error;
   });
   let runtime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
   let browser: Browser | undefined;
@@ -195,7 +215,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
         } };
     } finally { await context.close(); }
   } catch (error) {
-    return refuseFreshSetup(stage, error, close);
+    return refuseFreshSetup(stage, error, close, undefined, ownedEmit);
   }
 }
 export function createFreshComprehensionBrowser(operator?: OwnedLinuxCapability): LiveEnvironment["openBrowser"] {
