@@ -337,9 +337,40 @@ jobs:
 
   # Keep the existing required check name. A failed, skipped or cancelled job
   # family cannot turn this release gate green, even with stale artifacts.
+  # Fresh owned supervisor and signed FD3 proof; synthetic instrument only.
+  owned-keyfree-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Admit signed Ubuntu APT mirror fallback
+        run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Prepare credential-free runtime image
+        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+      - name: Run four owned key-free T6/T7 sessions
+        run: pnpm exec tsx scripts/comprehension/run-hosted-owned-smoke.mts
+      - name: Retain selected public synthetic smoke record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owned-keyfree-smoke-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/inherit-owned-keyfree/public-artifact/owned-keyfree-smoke.json
+          if-no-files-found: error
+
   checks:
     if: always()
-    needs: [repository-checks, database-tests, browser]
+    needs: [repository-checks, database-tests, browser, owned-keyfree-smoke]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
@@ -347,12 +378,14 @@ jobs:
       REPOSITORY_RESULT: ${{ needs.repository-checks.result }}
       DATABASE_RESULT: ${{ needs.database-tests.result }}
       BROWSER_RESULT: ${{ needs.browser.result }}
+      OWNED_SMOKE_RESULT: ${{ needs.owned-keyfree-smoke.result }}
     steps:
       - name: Require every prerequisite job to succeed
         run: |
           test "$REPOSITORY_RESULT" = success
           test "$DATABASE_RESULT" = success
           test "$BROWSER_RESULT" = success
+          test "$OWNED_SMOKE_RESULT" = success
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

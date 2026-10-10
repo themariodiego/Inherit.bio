@@ -14,7 +14,7 @@ const json = (value: unknown) => Buffer.from(JSON.stringify(value));
 const names = ["accessible-authenticated-pages.spec.ts", "control-target-size.spec.ts", "figure-text-alternatives.spec.ts",
   "page-reflow-accessibility.spec.ts", "public-pages-session-accessibility.spec.ts", "viewport-keyboard-accessibility.spec.ts"];
 /** Synthetic decoded receipts test the pure validator; they are never saved-history authentication evidence. */
-function fixture(runId = 1, independentDatabase = false): HistoricalCaptureInput {
+function fixture(runId = 1, independentDatabase = false, ownedSmoke = false): HistoricalCaptureInput {
   const head = "a".repeat(40), workflowHead = "b".repeat(40), tree = "c".repeat(40);
   const identity = { head, runId: String(runId), runAttempt: "1", schemaVersion: 1, total: 6 };
   const cases = names.map((_, index) => `${String(index + 1).padStart(20, "0")}-${"1".repeat(20)}:chromium`);
@@ -25,10 +25,10 @@ function fixture(runId = 1, independentDatabase = false): HistoricalCaptureInput
     timings: { setupMs: 1, buildMs: 1, bootstrapMs: 1, browserMs: 100 }, providerUploads: 1,
     files: [{ file, project: "chromium", cases: [cases[index]], durationMs: 100 }] } }));
   const run = json({ id: runId, run_attempt: 1, head_sha: workflowHead, status: "completed", conclusion: "success", event: "pull_request", path: ".github/workflows/ci.yml" });
-  const jobs = json({ total_count: independentDatabase ? 9 : 8, jobs: ["repository-checks", "checks", ...(independentDatabase ? ["database-tests"] : []), ...names.map((_, index) => `browser (${index + 1})`)].map((name, index) => ({
+  const jobs = json({ total_count: ownedSmoke ? 10 : independentDatabase ? 9 : 8, jobs: ["repository-checks", "checks", ...(independentDatabase ? ["database-tests"] : []), ...(ownedSmoke ? ["owned-keyfree-smoke"] : []), ...names.map((_, index) => `browser (${index + 1})`)].map((name, index) => ({
     id: index + 1, name, run_id: runId, run_attempt: 1, head_sha: workflowHead, status: "completed", conclusion: "success", steps: [{ status: "completed", conclusion: "success" }] })) });
-  const artifacts = json({ total_count: 7, artifacts: [manifest, ...shards].map((zip, index) => ({
-    id: index + 1, name: `browser-case-1-${index ? `shard-${index}` : "manifest"}`, size_in_bytes: zip.bytes.length, digest: `sha256:${hash(zip.bytes)}`,
+  const artifacts = json({ total_count: ownedSmoke ? 8 : 7, artifacts: [manifest, ...shards, ...(ownedSmoke ? [{ bytes: Buffer.from("synthetic-owned") }] : [])].map((zip, index) => ({
+    id: index + 1, name: index === 7 ? "owned-keyfree-smoke-1" : `browser-case-1-${index ? `shard-${index}` : "manifest"}`, size_in_bytes: zip.bytes.length, digest: `sha256:${hash(zip.bytes)}`,
     expired: false, workflow_run: { id: runId, head_sha: workflowHead } })) });
   const testedCommit = json({ sha: head, tree: { sha: tree } });
   const captureReceipt = json({ runId, runAttempt: 1, prHead: workflowHead, testedMerge: head,
@@ -200,4 +200,19 @@ describe("pure captured historical source contract", () => {
     }
     expect(() => historicalDurationSource(input)).toThrow();
   });
+});
+
+it("retains a complete ten-job historical source and refuses missing, foreign or failed owned smoke", () => {
+  expect(historicalDurationSource(fixture(10, true, true)).files).toHaveLength(6);
+  for (const mode of ["missing", "foreign", "failed", "skipped"]) {
+    const input = fixture(10, true, true);
+    mutateJson(input, "jobs", value => {
+      const jobs = value.jobs as { name: string; conclusion: string }[];
+      const owned = jobs.find(job => job.name === "owned-keyfree-smoke")!;
+      if (mode === "missing") value.jobs = jobs.filter(job => job !== owned);
+      if (mode === "foreign") owned.name = "optional-probe";
+      if (mode === "failed" || mode === "skipped") owned.conclusion = mode;
+    });
+    expect(() => historicalDurationSource(input)).toThrow();
+  }
 });

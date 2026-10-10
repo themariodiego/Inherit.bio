@@ -5,7 +5,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import AdmZip from "adm-zip";
 import { hostedResultRequestSchema, hostedWorkflowContract, verifyHostedMetadata, coverageArtifacts,
-  verifyArtifactBytes, verifyHostedCoverage, elapsedMilliseconds, repositoryLogSummary, commandLog,
+  verifyArtifactBytes, verifyHostedCoverage, ownedSmokeArtifact, elapsedMilliseconds, repositoryLogSummary, commandLog,
   hashBytes, verifyCurrentChecks, hostedGetArgv, type HostedResultRequest } from "./hosted-ci-result";
 import { decodeHistoricalZip } from "./ci-browser-duration-history-io";
 import { ACCESSIBILITY_SWEEP_FILES } from "./ci-browser-balance";
@@ -138,7 +138,7 @@ describe("early complete native migration startup", () => {
       expect(startup).toBeLessThan(at(run)); expect(at(run)).toBeLessThan(keys);
     }
     expect(at("pnpm exec supabase test db")).toBe(-1);
-    expect(hostedWorkflowContract(workflow).names).toHaveLength(9);
+    expect(hostedWorkflowContract(workflow).names).toHaveLength(10);
     expect(workflow.jobs.browser.steps.filter(step => step.run === "pnpm exec supabase start")).toHaveLength(1);
   });
   it.each(["missing", "duplicate", "conditional", "optional", "command", "before-install", "before-includes",
@@ -183,7 +183,7 @@ describe("early native export table census", () => {
       run: "pnpm exec supabase test db supabase/tests/export_member_plan.sql" });
     expect(steps.filter(step => step.run === "pnpm exec supabase test db")).toHaveLength(0);
     expect(workflow.jobs["database-tests"].steps.filter(step => step.run === "pnpm exec supabase test db")).toHaveLength(1);
-    expect(hostedWorkflowContract(workflow).names).toHaveLength(9);
+    expect(hostedWorkflowContract(workflow).names).toHaveLength(10);
   });
   it.each(["missing", "duplicate", "conditional", "optional", "command", "before-startup", "after-units", "missing-full-suite"])(
     "refuses %s census drift", mutation => {
@@ -255,7 +255,7 @@ describe("source-bound hosted result readback", () => {
   it("keeps the publisher-only fixture free of active restores and warm seeding", () => {
     const workflow = publisherWorkflow(), source = hostedWorkflowContract(workflow);
     expect(source.names).toEqual(expect.arrayContaining(["repository-checks", "database-tests", "checks", ...Array.from({ length: 6 }, (_, i) => `browser (${i + 1})`)]));
-    expect(source.names).toHaveLength(9);
+    expect(source.names).toHaveLength(10);
     for (const family of ["repository-checks", "browser"]) {
       expect(workflow.jobs[family].steps.filter(step => step.uses?.startsWith("actions/cache/"))).toEqual([]);
       expect(workflow.jobs[family].steps.filter(step => step.run?.includes("ci-browser-font-cache"))).toEqual([]);
@@ -266,7 +266,7 @@ describe("source-bound hosted result readback", () => {
   });
   it("pins both actual consumers between mandatory APT admission and the full installer", () => {
     const workflow = actualWorkflow(), declared = consumerSteps(), source = hostedWorkflowContract(workflow);
-    expect(source.names).toHaveLength(9);
+    expect(source.names).toHaveLength(10);
     expect(source.jobs.find(job => job.family === "checks")!.fontCache).toHaveLength(4);
     for (const family of ["repository-checks", "browser"]) {
       const steps = workflow.jobs[family].steps;
@@ -633,4 +633,41 @@ describe("private evidence output ownership", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+});
+
+describe("independent required owned key-free native smoke", () => {
+  it.each(["missing", "conditional", "dependent", "optional", "command", "node", "cap", "aggregate", "result", "artifact"])(
+    "refuses %s smoke scope drift", mode => {
+      const value = actualWorkflow(), job = value.jobs["owned-keyfree-smoke"];
+      if (mode === "missing") delete value.jobs["owned-keyfree-smoke"];
+      if (mode === "conditional") job.if = "always()";
+      if (mode === "dependent") job.needs = ["repository-checks"];
+      if (mode === "optional") job.steps[7]["continue-on-error"] = true;
+      if (mode === "command") job.steps[7].run += " --plan";
+      if (mode === "node") job.steps[2].with!["node-version"] = 20;
+      if (mode === "cap") (job as unknown as Record<string, unknown>)["timeout-minutes"] = 56;
+      if (mode === "aggregate") value.jobs.checks.needs!.pop();
+      if (mode === "result") delete value.jobs.checks.env!.OWNED_SMOKE_RESULT;
+      if (mode === "artifact") job.steps[8].with!.path = "${{ runner.temp }}/inherit-owned-keyfree/";
+      expect(() => hostedWorkflowContract(value)).toThrow();
+    });
+  it.each(["missing", "skipped", "failure"])("refuses %s owned job while all original jobs pass", mode => {
+    const value = metadata(), job = value.jobs.jobs.find(item => item.name === "owned-keyfree-smoke")!;
+    if (mode === "missing") { value.jobs.jobs = value.jobs.jobs.filter(item => item !== job); value.jobs.total_count--; }
+    else job.conclusion = mode;
+    expect(() => verifyHostedMetadata(request(), value.source, value.run, value.jobs, value.commit, value.context)).toThrow();
+  });
+});
+
+it("requires the same-attempt native smoke artifact even when all six browser artifacts exist", () => {
+  const value = artifactInventory();
+  expect(() => ownedSmokeArtifact(request(), value)).toThrow();
+  const row = { ...value.artifacts[0], id: 99, name: "owned-keyfree-smoke-1" };
+  value.artifacts.push(row); value.total_count++;
+  expect(ownedSmokeArtifact(request(), value).member).toBe("owned-keyfree-smoke.json");
+  for (const changed of [{ ...row, expired: true }, { ...row, workflow_run: { ...row.workflow_run, id: 124 } },
+    { ...row, workflow_run: { ...row.workflow_run, head_sha: "f".repeat(40) } }, { ...row, name: "owned-keyfree-smoke-2" }]) {
+    expect(() => ownedSmokeArtifact(request(), { total_count: 1, artifacts: [changed] })).toThrow();
+  }
+  expect(() => ownedSmokeArtifact(request(), { total_count: 2, artifacts: [row, row] })).toThrow();
 });

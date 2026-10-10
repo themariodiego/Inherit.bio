@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { verifyHostedSmokeArtifact } from "./comprehension/hosted-owned-smoke";
+export { verifyHostedSmokeArtifact };
 import { CI_BROWSER_SHARDS, verifyBrowserShards, verifyBrowserSourceCensus,
   type CiBrowserManifest, type CiBrowserShardReceipt } from "./ci-browser-shards";
 import { verifyAccessibilitySweepPlacement } from "./ci-browser-balance";
@@ -45,7 +47,7 @@ const step = z.object({ name: z.string().optional(), if: z.string().optional(), 
   env: z.record(z.string(), z.unknown()).optional(),
   "continue-on-error": z.boolean().optional(), "timeout-minutes": id.optional() });
 const workflowJob = z.object({ if: z.string().optional(), needs: z.array(z.string()).optional(),
-  env: z.record(z.string(), z.unknown()).optional(), "runs-on": z.string().optional(), steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
+  env: z.record(z.string(), z.unknown()).optional(), "runs-on": z.string().optional(), "timeout-minutes": id.optional(), steps: z.array(step).min(1), "continue-on-error": z.boolean().optional(), strategy: z.object({
   matrix: z.object({ shard: z.array(id) }) }).optional() });
 export type HostedWorkflowContract = ReturnType<typeof hostedWorkflowContract>;
 const mainFontCondition = "github.event_name == 'push' && github.ref == 'refs/heads/main'";
@@ -91,23 +93,24 @@ function fontCacheStep(family: string, item: z.infer<typeof step>) {
 /** Only the existing job family and producer format. New shapes require review. */
 export function hostedWorkflowContract(value: unknown) {
   const workflow = z.object({ jobs: z.record(z.string(), workflowJob) }).parse(value);
-  same(Object.keys(workflow.jobs), ["repository-checks", "database-tests", "browser", "checks"], "Unsupported workflow job family");
-  for (const family of ["repository-checks", "database-tests", "browser"]) {
+  same(Object.keys(workflow.jobs), ["repository-checks", "database-tests", "browser", "owned-keyfree-smoke", "checks"], "Unsupported workflow job family");
+  for (const family of ["repository-checks", "database-tests", "browser", "owned-keyfree-smoke"]) {
     assert(workflow.jobs[family].if === undefined && workflow.jobs[family].needs === undefined,
       "Required suites must run independently without a job condition");
   }
   const aggregate = workflow.jobs.checks;
   assert(aggregate.if === "always()", "Aggregate must observe every terminal prerequisite");
-  assert.deepEqual(aggregate.needs, ["repository-checks", "database-tests", "browser"], "Aggregate prerequisite graph differs");
+  assert.deepEqual(aggregate.needs, ["repository-checks", "database-tests", "browser", "owned-keyfree-smoke"], "Aggregate prerequisite graph differs");
   const prerequisite = aggregate.steps[0];
   assert(prerequisite.name === "Require every prerequisite job to succeed" && prerequisite.if === undefined
-    && prerequisite.run === 'test "$REPOSITORY_RESULT" = success\ntest "$DATABASE_RESULT" = success\ntest "$BROWSER_RESULT" = success\n'
+    && prerequisite.run === 'test "$REPOSITORY_RESULT" = success\ntest "$DATABASE_RESULT" = success\ntest "$BROWSER_RESULT" = success\ntest "$OWNED_SMOKE_RESULT" = success\n'
     && aggregate.env?.REPOSITORY_RESULT === "${{ needs.repository-checks.result }}"
     && aggregate.env?.DATABASE_RESULT === "${{ needs.database-tests.result }}"
-    && aggregate.env?.BROWSER_RESULT === "${{ needs.browser.result }}", "Aggregate must explicitly require every suite SUCCESS");
+    && aggregate.env?.BROWSER_RESULT === "${{ needs.browser.result }}"
+    && aggregate.env?.OWNED_SMOKE_RESULT === "${{ needs.owned-keyfree-smoke.result }}", "Aggregate must explicitly require every suite SUCCESS");
   assert.deepEqual(workflow.jobs.browser.strategy?.matrix.shard,
     Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => i + 1), "Unsupported browser matrix");
-  for (const family of ["repository-checks", "browser"]) {
+  for (const family of ["repository-checks", "browser", "owned-keyfree-smoke"]) {
     const steps = workflow.jobs[family].steps;
     const admission = steps.filter(item => item.name === "Admit signed Ubuntu APT mirror fallback");
     assert(admission.length === 1 && admission[0].if === undefined
@@ -119,6 +122,21 @@ export function hostedWorkflowContract(value: unknown) {
       && installer[0].run === "pnpm exec playwright install --with-deps chromium"
       && steps.indexOf(admission[0]) < steps.indexOf(installer[0]), "Complete mandatory installer differs");
   }
+  const smoke = workflow.jobs["owned-keyfree-smoke"];
+  assert(smoke["runs-on"] === "ubuntu-24.04" && smoke.strategy === undefined && smoke["timeout-minutes"] === 55, "One independent owned Linux smoke required");
+  assert.deepEqual(smoke.steps.map(item => item.uses ?? item.run), [
+    "actions/checkout@v4", "pnpm/action-setup@v4", "actions/setup-node@v4", "pnpm install --frozen-lockfile",
+    'sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"',
+    "pnpm exec playwright install --with-deps chromium",
+    "docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser",
+    "pnpm exec tsx scripts/comprehension/run-hosted-owned-smoke.mts", "actions/upload-artifact@v4",
+  ], "Complete owned smoke setup, fixed sender or artifact producer differs");
+  assert.deepEqual(smoke.steps[0].with, { "fetch-depth": 0, "persist-credentials": false });
+  assert.deepEqual(smoke.steps[2].with, { "node-version": 22, cache: "pnpm" });
+  assert(smoke.steps.slice(0, -1).every(item => item.if === undefined) && smoke.steps.at(-1)?.if === "always()"
+    && smoke.steps.at(-1)?.with?.name === "owned-keyfree-smoke-${{ github.run_attempt }}"
+    && smoke.steps.at(-1)?.with?.path === "${{ runner.temp }}/inherit-owned-keyfree/public-artifact/owned-keyfree-smoke.json"
+    && smoke.steps.at(-1)?.with?.["if-no-files-found"] === "error", "Exact mandatory public smoke artifact required");
   const jobs = Object.entries(workflow.jobs).map(([family, job]) => {
     assert(!("continue-on-error" in job), "Required jobs may not declare continue-on-error");
     const named = job.steps.map(item => item.name ?? `Run ${item.uses ?? item.run?.split("\n")[0]}`);
@@ -277,6 +295,14 @@ export function coverageArtifacts(request: HostedResultRequest, value: unknown) 
     return { ...artifact, member: name.endsWith("manifest") ? "ci-browser-manifest.json" as const : "ci-browser-shard.json" as const };
   });
 }
+export function ownedSmokeArtifact(request: HostedResultRequest, value: unknown) {
+  const inventory = z.object({ total_count: z.number().int().nonnegative(), artifacts: z.array(artifactSchema) }).parse(value);
+  assert(inventory.total_count === inventory.artifacts.length);
+  const selected = inventory.artifacts.filter(item => item.name === `owned-keyfree-smoke-${request.runAttempt}`);
+  assert(selected.length === 1 && !selected[0].expired && selected[0].workflow_run.id === request.runId
+    && selected[0].workflow_run.head_sha === request.head, "One complete same-attempt native smoke artifact required");
+  return { ...selected[0], member: "owned-keyfree-smoke.json" as const };
+}
 export function verifyArtifactBytes(artifact: { size_in_bytes: number; digest: string }, bytes: Buffer): void {
   assert(bytes.length === artifact.size_in_bytes && artifact.digest === `sha256:${hashBytes(bytes)}`,
     "Archive differs from original API digest/size");
@@ -375,7 +401,7 @@ export function verifyCurrentChecks(request: HostedResultRequest, role: "head" |
   assert.deepEqual(metadata.verifiedRequest, current, "Check role is not bound to the verified metadata request");
   assert(metadata.run.id === current.runId && metadata.run.run_attempt === current.runAttempt
     && metadata.run.head_sha === current.head && metadata.run.event === current.event, "Check metadata source differs");
-  same(metadata.jobs.map(job => job.name), ["repository-checks", "database-tests", "checks",
+  same(metadata.jobs.map(job => job.name), ["repository-checks", "database-tests", "owned-keyfree-smoke", "checks",
     ...Array.from({ length: CI_BROWSER_SHARDS }, (_, i) => `browser (${i + 1})`)], "Complete verified CI jobs required");
   assert(metadata.jobs.every(job => job.status === "completed" && job.conclusion === "success"
     && job.run_id === current.runId && job.run_attempt === current.runAttempt && job.head_sha === current.head), "Check metadata jobs differ");

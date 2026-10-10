@@ -11,7 +11,7 @@ import { z } from "zod";
 import { decodeHistoricalZip } from "./ci-browser-duration-history-io";
 import { DEFAULT_BROWSER_ALLOCATION_SHA256, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
 import { hostedResultRequestSchema, hostedWorkflowContract, verifyHostedMetadata, coverageArtifacts,
-  verifyArtifactBytes, verifyHostedCoverage, repositoryLogSummary, verifyCurrentChecks, commandLog,
+  verifyArtifactBytes, verifyHostedCoverage, ownedSmokeArtifact, verifyHostedSmokeArtifact, repositoryLogSummary, verifyCurrentChecks, commandLog,
   hashBytes, hostedGetArgv, type HostedResultRequest } from "./hosted-ci-result";
 
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -26,7 +26,8 @@ const contractFiles = [".github/workflows/ci.yml", "scripts/ci_apt_mirror_priori
   "scripts/ci-browser-shards.run.mts", "scripts/ci-browser-shards-io.ts",
   "scripts/ci-browser-config.ts", "scripts/ci-browser-setup-timings.ts", "scripts/ci-browser-setup-timings.run.mts",
   "scripts/run-upload-browser.mts", "scripts/lighthouse-contract.mjs", "scripts/lighthouse-check.ts",
-  "package.json", "pnpm-lock.yaml"];
+  "scripts/comprehension/hosted-owned-smoke.ts", "scripts/comprehension/run-hosted-owned-smoke.mts",
+  "scripts/comprehension/hosted-owned-pipe.py", "scripts/comprehension/run-owned-linux.mts", "scripts/owned-linux-runtime.ts", "package.json", "pnpm-lock.yaml"];
 const runtimeFiles = [...contractFiles, "scripts/hosted-ci-result.ts", "scripts/hosted-ci-result.run.mts"];
 const environment = () => ({ PATH: process.env.PATH, HOME: process.env.HOME, LANG: "C.UTF-8", TZ: "UTC", NODE_ENV: "test" as const,
   GH_TOKEN: process.env.GH_TOKEN, GITHUB_TOKEN: process.env.GITHUB_TOKEN, GH_CONFIG_DIR: process.env.GH_CONFIG_DIR });
@@ -238,7 +239,7 @@ function verifySaved(capture: string) {
   const contract = sourceContract(request), read = (name: string) => JSON.parse(readSaved(capture, name, receipt).toString("utf8")) as unknown;
   const metadata = verifyHostedMetadata(request, contract.workflow, read("run"), read("jobs"), read("tested-commit"), read("context"));
   assert.deepEqual(metadata.actualParents, contract.actualParents, "Actual API/Git parent vectors differ");
-  const inventory = coverageArtifacts(request, read("artifacts"));
+  const inventory = coverageArtifacts(request, read("artifacts")), nativeArtifact = ownedSmokeArtifact(request, read("artifacts"));
   const base = `repos/${request.repository}`, expectedRoutes: Record<string, string> = {
     run: `${base}/actions/runs/${request.runId}/attempts/${request.runAttempt}`,
     jobs: `${base}/actions/runs/${request.runId}/attempts/${request.runAttempt}/jobs?per_page=100`,
@@ -251,7 +252,7 @@ function verifySaved(capture: string) {
     expectedRoutes[`${prefix}-statuses`] = `${base}/commits/${revision}/status?per_page=100`;
   }
   for (const job of metadata.jobs) expectedRoutes[`job-${job.id}`] = `${base}/actions/jobs/${job.id}/logs`;
-  for (const artifact of inventory) expectedRoutes[artifact.name] = `${base}/actions/artifacts/${artifact.id}/zip`;
+  for (const artifact of [...inventory, nativeArtifact]) expectedRoutes[artifact.name] = `${base}/actions/artifacts/${artifact.id}/zip`;
   assert.deepEqual(receipt.records.map(record => record.name).sort(), Object.keys(expectedRoutes).sort(), "Capture record inventory differs");
   const expectedFiles = ["request.json", "capture-receipt.json", ...receipt.records.flatMap(record =>
     ["raw", "stderr", "original-command.json", "raw-readback.json"].map(suffix => `${record.name}.${suffix}`))].sort();
@@ -267,6 +268,10 @@ function verifySaved(capture: string) {
     const value = decodeHistoricalZip(bytes, artifact.member);
     members.push({ name: artifact.name, member: artifact.member, bytes: bytes.length, sha256: hashBytes(bytes) }); return value;
   });
+  const nativeBytes = readSaved(capture, nativeArtifact.name, receipt, maxZip);
+  verifyArtifactBytes(nativeArtifact, nativeBytes);
+  const ownedSmoke = verifyHostedSmokeArtifact(decodeHistoricalZip(nativeBytes, nativeArtifact.member), request.testedHead, request.tree);
+  members.push({ name: nativeArtifact.name, member: nativeArtifact.member, bytes: nativeBytes.length, sha256: hashBytes(nativeBytes) });
   const browser = verifyHostedCoverage(request, decoded[0], decoded.slice(1), contract.trackedSpecs, contract.profileSha256);
   const logs = (name: string) => readSaved(capture, `job-${metadata.jobs.find(job => job.name === name)!.id}`, receipt, maxLog).toString("utf8");
   const repository = repositoryLogSummary(logs("repository-checks"), logs("database-tests"));
@@ -280,7 +285,7 @@ function verifySaved(capture: string) {
     "Original complete aggregate signal differs");
   for (const role of ["head", "tested"] as const)
     verifyCurrentChecks(request, role, metadata, read(`${role}-checks`), read(`${role}-statuses`));
-  return { request, metadata, browser, repository, members, savedCaptureReceipt: filePin(path.join(capture, "capture-receipt.json")),
+  return { request, metadata, browser, repository, ownedSmoke, members, savedCaptureReceipt: filePin(path.join(capture, "capture-receipt.json")),
     boundaries: ["Saved original result calculation. Different-author review and fresh merge head/base checks remain required.",
       "No native, provider, clinical, feature journey or release admission. Summaries do not invent unsaved per-unit/TAP identities."] };
 }
@@ -316,7 +321,7 @@ async function capture(requestFile: string, directory: string) {
     const contract = sourceContract(request), values = (name: string) => parse(path.join(output.path, `${name}.raw`));
     const metadata = verifyHostedMetadata(request, contract.workflow, values("run"), values("jobs"), values("tested-commit"), values("context"));
     assert.deepEqual(metadata.actualParents, contract.actualParents, "Actual API/Git parent vectors differ");
-    const artifacts = coverageArtifacts(request, values("artifacts"));
+    const artifacts = [...coverageArtifacts(request, values("artifacts")), ownedSmokeArtifact(request, values("artifacts"))];
     assert(artifacts.reduce((n, item) => n + item.size_in_bytes, 0) <= maxZip, "Coverage archive total exceeds its bound");
     // Independent read-only downloads in one bounded wave; every original result stays retained.
     const queue = [...metadata.jobs.map(job => () => get(`job-${job.id}`, `${base}/actions/jobs/${job.id}/logs`, maxLog)),
