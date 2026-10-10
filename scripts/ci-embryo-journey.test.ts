@@ -129,6 +129,171 @@ describe("one real embryo worker in the owned disposable CI namespace", () => {
     expect(h.commands.filter(c => c.args.includes("/app/scripts/ci-browser/embryo-worker.mts"))).toHaveLength(1);
   });
 });
+
+import { runEmbryoFittedStatisticalWorkerInside, type FittedEmbryoJourney } from "./ci-embryo-journey";
+
+const fittedCohort = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const statisticalJob = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+function fittedHarness() {
+  const base = harness(), native = base.io.execute;
+  let complete = true, historyReads = 0, driftAt = Infinity;
+  let queue = true, fresh = true, publication = true, fittedOutput = "EMBRYO_STATISTICAL_FITTED_JOURNEY_WORKER_COMPLETE";
+  const io: EmbryoJourneyIo = { ...base.io, execute: async (args, input, timeout) => {
+    if (args.includes("psql") && (input!.startsWith("-- embryo-first-completed-history")
+      || input!.startsWith("-- embryo-fitted-") || input!.startsWith("select public.enqueue_embryo_test_statistical")
+      || input!.startsWith("select (exists(select 1 from private.embryo_test_statistical_admission)")
+      || input!.startsWith("with capture as materialized"))) {
+      base.commands.push({ args, input, timeout });base.statements.push(input!);
+      if (input!.startsWith("-- embryo-first-completed-history")) {
+        historyReads++;
+        return JSON.stringify({ complete, sha256: (historyReads >= driftAt ? "b" : "a").repeat(64) });
+      }
+      if (input!.startsWith("-- embryo-fitted-empty-queue")) return String(queue);
+      if (input!.startsWith("-- embryo-fitted-settled-queue")) return String(queue);
+      if (input!.startsWith("-- embryo-fitted-fresh-cohort")) return String(fresh);
+      if (input!.startsWith("-- embryo-fitted-current-publication")) return String(publication);
+      if (input!.startsWith("select public.enqueue_embryo_test_statistical"))
+        return JSON.stringify({ status: "queued", jobId: statisticalJob });
+      if (input!.startsWith("with capture as materialized")) return '{"bindingsCurrent":true}';
+      return "true";
+    }
+    if (args.includes("/app/scripts/ci-browser/embryo-statistical-worker.mts")) {
+      base.commands.push({ args, input, timeout });
+      return input!.includes('"kind":"fitted-test"') ? fittedOutput : "EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE";
+    }
+    return native(args, input, timeout);
+  } };
+  return { ...base, io, incomplete: () => { complete = false; }, drift: (at: number) => { driftAt = at; },
+    denyQueue: () => { queue = false; }, denyFresh: () => { fresh = false; }, denyPublication: () => { publication = false; },
+    output: (value: string) => { fittedOutput = value; } };
+}
+async function originalThenFitted(h: ReturnType<typeof fittedHarness>, work: (fixture: FittedEmbryoJourney) => Promise<void>) {
+  await withEmbryoJourney(env, async runtime => {
+    await runtime.runWorker(cohort);await runtime.runStatisticalWorker(cohort);
+    await runtime.withFittedJourney(cohort, work);
+  }, h.io, "linux");
+}
+
+describe("additive fitted journey after the unchanged original publication", () => {
+  it("runs one untouched signed-parent cohort, independently binds the native rows and restores both original configuration rows", async () => {
+    const h = fittedHarness();
+    await originalThenFitted(h, async fitted => {
+      await fitted.runWorker(fittedCohort);await fitted.runStatisticalWorker(fittedCohort);
+      expect(await fitted.statisticalProof(fittedCohort)).toEqual({ bindingsCurrent: true });
+      await expect(fitted.runWorker(fittedCohort)).rejects.toThrow("One distinct fresh");
+      await expect(fitted.runStatisticalWorker(fittedCohort)).rejects.toThrow("One fitted worker attempt");
+      await expect(fitted.proof(cohort)).rejects.toThrow("Exact second");
+    });
+    expect(h.current()).toEqual(original);
+    const fittedLaunch = h.commands.filter(row => row.input?.includes('"kind":"fitted-test"'));
+    expect(fittedLaunch).toEqual([{ args: ["exec", "-i", "--user", "1001:1001", "inherit-ci-browser-runtime",
+      "node", "--import", "tsx", "/app/scripts/ci-browser/embryo-statistical-worker.mts"],
+    input: JSON.stringify({ kind: "fitted-test", environment: worker }) + "\n", timeout: 110_000 }]);
+    const freshSql = h.statements.find(row => row.startsWith("-- embryo-fitted-fresh-cohort"))!;
+    expect(freshSql).toContain("and (select count(*) from public.worker_jobs where cohort_id='");
+    expect(freshSql).toContain("=1");expect(freshSql).toContain("w.status='queued' and w.attempts=0");
+    expect(freshSql).toContain("u.email='fitted-test@e2e.local'");
+    expect(freshSql).toContain("private.embryo_canonical_sources");
+    const queueSql = h.statements.find(row => row.startsWith("-- embryo-fitted-empty-queue"))!;
+    expect(queueSql).toContain("private.embryo_split_ordinals");expect(queueSql).toContain("private.embryo_split_variants");
+    expect(queueSql).toContain("private.embryo_ingest_write_intents where state<>'landed'");
+    expect(queueSql).toContain("private.embryo_canonical_parts where state<>'landed'");
+    const proof = h.statements.find(row => row.startsWith("with capture as materialized"))!;
+    expect(proof).toContain("private.capture_embryo_test_statistical_fit_v1");
+    expect(proof).toContain("(s).computation_receipt=private.embryo_test_fit_receipt_v1(j,e,c,m)");
+    expect(proof).toContain("convert_to(to_jsonb(j)::text,'UTF8')");
+    expect(proof).toContain("convert_to(to_jsonb(s)::text,'UTF8')");
+    expect(proof).toContain("private.expected_embryo_test_fit_measurement_v1(e,c)");
+    expect(h.statements.filter(row => /update /i.test(row))).toHaveLength(2);
+  });
+  it.each(["incomplete", "history-drift", "pending-queue"])("refuses %s before starting the second cohort and still restores configuration", async fault => {
+    const h = fittedHarness(), work = vi.fn();
+    if (fault === "incomplete") h.incomplete();
+    if (fault === "history-drift") h.drift(2);
+    if (fault === "pending-queue") h.denyQueue();
+    await expect(originalThenFitted(h, async fitted => {
+      work();await fitted.runWorker(fittedCohort);
+    })).rejects.toThrow();
+    if (fault !== "history-drift") expect(work).not.toHaveBeenCalled();
+    expect(h.commands.filter(row => row.args.includes("/app/scripts/ci-browser/embryo-worker.mts"))).toHaveLength(1);
+    expect(h.current()).toEqual(original);
+  });
+  it.each(["foreign-or-touched-cohort", "stale-publication", "uncertain-fit-output"])("refuses %s without a second fitted attempt and restores configuration", async fault => {
+    const h = fittedHarness();
+    if (fault === "foreign-or-touched-cohort") h.denyFresh();
+    if (fault === "stale-publication") h.denyPublication();
+    if (fault === "uncertain-fit-output") h.output("EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE");
+    await expect(originalThenFitted(h, async fitted => {
+      await fitted.runWorker(fittedCohort);
+      await expect(fitted.runStatisticalWorker(fittedCohort)).rejects.toThrow();
+      if (fault === "uncertain-fit-output") await expect(fitted.runStatisticalWorker(fittedCohort)).rejects.toThrow("One fitted worker attempt");
+      throw new Error("Refused fitted work");
+    })).rejects.toThrow();
+    expect(h.commands.filter(row => row.input?.includes('"kind":"fitted-test"'))).toHaveLength(fault === "uncertain-fit-output" ? 1 : 0);
+    expect(h.current()).toEqual(original);
+  });
+  it("retains a changed whole first-history refusal at the final bookend and never overwrites concurrent configuration", async () => {
+    const h = fittedHarness();
+    await expect(originalThenFitted(h, async fitted => {
+      await fitted.runWorker(fittedCohort);h.drift(4);
+    })).rejects.toThrow("Original whole journey history changed");
+    expect(h.current()).toEqual(original);
+    const drift = fittedHarness();
+    await expect(originalThenFitted(drift, async () => {
+      drift.configure({ split: { singleton: true, enabled: true }, objects: { singleton: true, provider: "r2", r2_bucket: "inherit-embryo-other" } });
+    })).rejects.toThrow("configuration drift");
+    expect(drift.current().objects.r2_bucket).toBe("inherit-embryo-other");
+  });
+  it("refuses an incomplete second journey or unsettled final queue instead of silently adopting prior work", async () => {
+    const missing = fittedHarness();
+    await expect(originalThenFitted(missing, async () => {})).rejects.toThrow("complete both actual worker attempts");
+    expect(missing.current()).toEqual(original);
+    const pending = fittedHarness();
+    await expect(originalThenFitted(pending, async fitted => {
+      await fitted.runWorker(fittedCohort);await fitted.runStatisticalWorker(fittedCohort);pending.denyQueue();
+    })).rejects.toThrow("left pending fragment work");
+    expect(pending.current()).toEqual(original);
+  });
+  it("refuses a caught uncertain fitted outcome rather than treating the attempted job as completed", async () => {
+    const h = fittedHarness();h.output("EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE");
+    await expect(originalThenFitted(h, async fitted => {
+      await fitted.runWorker(fittedCohort);
+      await expect(fitted.runStatisticalWorker(fittedCohort)).rejects.toThrow("settle completely");
+      await expect(fitted.runStatisticalWorker(fittedCohort)).rejects.toThrow("One fitted worker attempt");
+      // The callback has consumed the failure and returns normally. The outer
+      // successful result still requires accepted completion, without retry.
+    })).rejects.toThrow("complete both actual worker attempts");
+    expect(h.commands.filter(row => row.input?.includes('"kind":"fitted-test"'))).toHaveLength(1);
+    expect(h.current()).toEqual(original);
+  });
+});
+
+describe("fixed fitted worker terminal and limits", () => {
+  afterEach(() => vi.useRealTimers());
+  function childFixture() {
+    const child = Object.assign(new EventEmitter(), { pid: 12345, stdout: new PassThrough(), stderr: new PassThrough() });
+    return { child, dependencies: { spawn: vi.fn(() => child as unknown as ChildProcess), kill: vi.fn() } };
+  }
+  it("accepts only the fitted terminal on clean close", async () => {
+    const h = childFixture(), result = runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, h.dependencies);
+    h.child.stdout.write("fitted_saved\n");h.child.emit("close", 0);await result;
+    expect(h.dependencies.spawn).toHaveBeenCalledWith(worker);expect(h.dependencies.kill).not.toHaveBeenCalled();
+  });
+  it.each(["coverage_saved\n", "fitted_saved\nextra\n", "fitted_idle\n"])("refuses %s with all original guards", async output => {
+    const h = childFixture(), result = runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, h.dependencies);
+    h.child.stdout.write(output);h.child.emit("close", 0);await expect(result).rejects.toThrow("not a clean completion");
+  });
+  it("keeps the original finite deadline, TERM/5-second/KILL settlement and no launch after pre-cancellation", async () => {
+    vi.useFakeTimers();
+    const h = childFixture(), result = runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, h.dependencies);
+    const failed = expect(result).rejects.toThrow("not a clean completion");
+    await vi.advanceTimersByTimeAsync(EMBRYO_WORKER_LIMIT_MS);expect(h.dependencies.kill).toHaveBeenCalledWith(12345, "SIGTERM");
+    await vi.advanceTimersByTimeAsync(5000);expect(h.dependencies.kill).toHaveBeenCalledWith(12345, "SIGKILL");
+    await vi.advanceTimersByTimeAsync(1000);await failed;expect(vi.getTimerCount()).toBe(0);
+    const stopped = childFixture();await expect(runEmbryoFittedStatisticalWorkerInside(worker, AbortSignal.abort(), stopped.dependencies)).rejects.toThrow("cancelled");
+    expect(stopped.dependencies.spawn).not.toHaveBeenCalled();
+  });
+});
 describe("bounded embryo worker process lifecycle", () => {
   afterEach(() => vi.useRealTimers());
   function processFixture() {

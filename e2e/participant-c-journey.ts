@@ -16,17 +16,26 @@ export type ParticipantCMail = { to: string | string[]; html?: string };
 /** Same native producer used by the ordinary single journey. No result row,
  * signature, permission, job advancement or provider ACK is substituted. */
 export async function seedParticipantC(options: { page: Page; browser: Browser;
-  ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b";
+  ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b"; fittedSeed?: "partial";
   messages: ParticipantCMail[]; jobsSecret?: string;
   runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> } }) {
   const { page, browser, ownerEmail, parentEmail, password, messages, runtime } = options;
   if (options.qcSeed !== undefined && options.qcSeed !== "b") throw new Error("Unregistered QC seed");
+  if (options.fittedSeed !== undefined && (options.fittedSeed !== "partial" || options.qcSeed !== undefined))
+    throw new Error("Unregistered fitted TEST seed");
+  const fittedSeed = options.fittedSeed === "partial";
   const qcSeed = options.qcSeed === "b";
-  const fixture = qcSeed ? "e2e/fixtures/embryo-pair-qc-b-grch38.vcf" : defaultFixture;
+  const fixture = fittedSeed ? "e2e/fixtures/embryo-pair-fitted-partial-grch38.vcf"
+    : qcSeed ? "e2e/fixtures/embryo-pair-qc-b-grch38.vcf" : defaultFixture;
   const regular = ownerEmail ==="participant-c@e2e.local" && parentEmail ==="participant-c-parent@e2e.local";
   const fresh = ownerEmail.match(/^cmp-t6-([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})@e2e\.local$/);
+  if (fittedSeed) {
+    if (ownerEmail !== "fitted-test@e2e.local" || parentEmail !== "fitted-test-parent@e2e.local")
+      throw new Error("Exact fitted TEST parent pair required");
+  } else {
   if (qcSeed ? ownerEmail !== "qc-seed-b@e2e.local" || parentEmail !== "qc-seed-b-parent@e2e.local"
     : !regular && (!fresh || parentEmail !==`cmp-t6-${fresh[1]}-parent@e2e.local`)) throw new Error("Exact synthetic parent pair required");
+  }
   const owner = await createConfirmedUser(ownerEmail, password);
   const parentAccount = await createConfirmedUser(parentEmail, password);
   const held = await adminClient().from("embryo_cohorts").select("id").eq("owner_account_id", owner);

@@ -7,7 +7,7 @@ export const CI_RUNTIME_SETUP_STAGES = [
   "runtime-image", "owner-receipt", "runner-identity", "container-create", "owner-write", "container-start",
   "namespace-logs", "namespace-state", "namespace-running", "namespace-ready", "tls-bootstrap",
   "isolated-probe-command", "isolated-probe-proof", "policy-ipv4-read", "policy-ipv6-read", "policy-counters",
-  "final-source-identity", "cleanup-ownership", "cleanup-remove", "cleanup-receipt", "runtime-setup",
+  "statistical-reference-admission", "final-source-identity", "cleanup-ownership", "cleanup-remove", "cleanup-receipt", "runtime-setup",
   "storage-provider-ready", "storage-proxy-listen", "storage-gateway-options", "storage-provider-denial",
   "storage-gateway-policy", "storage-cors-preserved", "storage-browser-transport", "storage-proxy-cleanup",
   "transport-listen", "transport-cleanup", "transport-browser-launch", "transport-browser-page", "transport-browser-fetch", "transport-browser-headers",

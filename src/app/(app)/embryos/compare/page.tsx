@@ -54,6 +54,8 @@ import { EmbryoShapeError, type ComparisonResultRow, type RscEmbryoComparison } 
 import { projectComparison, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
+import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
+import { StatisticalCoverage } from "@/components/embryo/statistical-coverage";
 import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
@@ -199,11 +201,13 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
 
   let comparison: RscEmbryoComparison;
   let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
+  let statisticalCoverage: Awaited<ReturnType<typeof loadSavedEmbryoStatisticalCoverage>>;
   let savedCoverage: Awaited<ReturnType<typeof loadSavedCarrierLibraryCoverage>>;
   try {
     savedCoverage = await loadSavedCarrierLibraryCoverage(user.id, cohort);
     if (savedCoverage) savedHold = { status: "held", reason: "scientific_disclosures_pending" };
     else savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
+    statisticalCoverage = await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id));
     comparison = await loadComparison(cohort);
   } catch (error) {
     if (error instanceof EmbryoShapeError) {
@@ -253,6 +257,7 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
         <ContextStrip counts={comparison.context_counts} />
       </div>
       <TradeOffPanel tradeOffs={comparison.trade_offs} conditionNames={conditionNames} embryoCount={comparison.embryos.length} />
+      {statisticalCoverage ? <StatisticalCoverage value={statisticalCoverage} subjectIds={subjectIds} /> : null}
 
       <section aria-labelledby="side-by-side-heading" data-density-top-level-section className="space-y-6">
         <h2 id="side-by-side-heading" className="title text-ink">

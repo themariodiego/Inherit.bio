@@ -280,7 +280,7 @@ describe("the 2 October release integration preserves measured debt", () => {
   it("reads the current source without assigning a human review", () => {
     const result = runRepositoryGate(ROOT, "2026-10-02");
     expect(result.failures).toEqual([]);
-    expect(result.fileCount).toBe(117);
+    expect(result.fileCount).toBe(118);
     expect(result.candidates).toHaveLength(59);
     expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);
@@ -312,7 +312,8 @@ describe("the 2 October release integration preserves measured debt", () => {
     "src/components/embryo/embryo-withdrawal-form.tsx",
     "src/components/embryo/upload/draft-form.tsx",
     "src/components/embryo/upload/signing-form.tsx",
-    "src/components/embryo/upload/upload-stage.tsx"
+    "src/components/embryo/upload/upload-stage.tsx",
+    "src/components/embryo/statistical-coverage.tsx"
 ] as const;
   it("keeps each added mail and embryo source inside the existing scan", () => {
     const scanned = new Set(readRepositoryInputs(ROOT).files.map(file => file.path));
