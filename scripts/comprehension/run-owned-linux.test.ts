@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { ownedLinuxAppBootstrap, privateOperatorFrameSchema } from "./run-owned-linux.mjs";
-import { prepareFreshInvocation } from "./run-fresh-t6.mjs";
+import { freshComprehensionBuildEnvironment, prepareFreshInvocation } from "./run-fresh-t6.mjs";
+import { infrastructureChildEnvironment } from "./fresh-t6-resources";
+import { childEnvironment } from "./inference-isolation";
+import { APP_ENV_NAMES } from "../ci-browser-config";
+import { appServerEnvironment } from "../ci-browser-app-environment";
+import { assertOperatorHostEnvironment } from "../owned-linux-runtime";
 
 const configuration = { maximumInfrastructureCostPerStackMicroDollars: 100, run: {
   schemaVersion: 1, kind: "smoke", tasks: ["T6", "T7"], personas: 2,
@@ -10,6 +15,31 @@ const configuration = { maximumInfrastructureCostPerStackMicroDollars: 100, run:
     maxAttempts: 1, timeoutMs: 60_000, sessionSetupTimeoutMs: 900_000,
     maximumInputTokens: 32_000, maximumOutputTokens: 4_000,
     price: { inputMicroDollarsPerMillion: 1, outputMicroDollarsPerMillion: 1 } } } };
+
+describe("trusted owned-operator build heap only", () => {
+  const host = { PATH: "/usr/bin:/bin", HOME: "/home/operator", LANG: "C.UTF-8", NODE_ENV: "production" };
+  const ambient = { ...host, NODE_OPTIONS: "--require=untrusted-unit-module",
+    ...Object.fromEntries(APP_ENV_NAMES.map(name => [name, `synthetic-${name.toLowerCase()}`])) };
+  it("selects only the authored heap for an owned build and retains parent-option refusal", () => {
+    expect(() => assertOperatorHostEnvironment({ ...host, NODE_OPTIONS: ambient.NODE_OPTIONS })).toThrow();
+    const infrastructure = infrastructureChildEnvironment(ambient);
+    expect(infrastructure).not.toHaveProperty("NODE_OPTIONS");
+    expect(freshComprehensionBuildEnvironment(infrastructure, ambient, true).NODE_OPTIONS)
+      .toBe("--max-old-space-size=4096");
+    expect(freshComprehensionBuildEnvironment(infrastructure, ambient, false)).not.toHaveProperty("NODE_OPTIONS");
+    expect(() => freshComprehensionBuildEnvironment({ ...infrastructure, NODE_OPTIONS: "--max-old-space-size=8192" }, ambient, true))
+      .toThrow("Ambient Node options");
+  });
+  it("does not change the parent or leak the trusted build setting to infrastructure, app or inference children", () => {
+    const infrastructure = infrastructureChildEnvironment(ambient);
+    const build = freshComprehensionBuildEnvironment(infrastructure, ambient, true);
+    expect(ambient.NODE_OPTIONS).toBe("--require=untrusted-unit-module");
+    expect(infrastructure).not.toHaveProperty("NODE_OPTIONS");
+    expect(infrastructureChildEnvironment(build)).not.toHaveProperty("NODE_OPTIONS");
+    expect(appServerEnvironment(build, 3100)).not.toHaveProperty("NODE_OPTIONS");
+    expect(childEnvironment({ kind: "local-deterministic-stub" }, build)).toEqual({ PATH: host.PATH, LANG: "C.UTF-8" });
+  });
+});
 
 describe("owner anonymous input contract, never a runtime or model call", () => {
   it("generates fresh disposable app keys without introducing model or hosted identity", () => {

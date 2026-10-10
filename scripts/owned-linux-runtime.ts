@@ -142,6 +142,24 @@ export function assertOperatorHostEnvironment(env: Readonly<Record<string, strin
     && env.LANG === "C.UTF-8" && env.NODE_ENV === "production" && (!env.TZ || env.TZ === "UTC"),
   "Owned Linux starts with exact public environment only");
 }
+/** Fresh admission only: signed children must not recheck free memory while
+ * their already-owned native stack is live. Linux meminfo uses KiB. */
+export function assertOwnedLinuxInitialMemory(meminfo: string) {
+  const bytes = (name: "MemTotal" | "MemAvailable") => {
+    const lines = meminfo.split("\n").filter(line => line.startsWith(`${name}:`));
+    assert(lines.length === 1, "One actual Linux memory observation required");
+    const match = new RegExp(`^${name}:[\\t ]+(\\d+)[\\t ]+kB[\\t ]*$`).exec(lines[0]);
+    assert(match, "Actual Linux memory must use whole KiB");
+    const kibibytes = Number(match[1]), value = kibibytes * 1024;
+    assert(Number.isSafeInteger(kibibytes) && kibibytes > 0 && Number.isSafeInteger(value),
+      "Actual Linux memory observation refused");
+    return value;
+  };
+  const totalBytes = bytes("MemTotal"), availableBytes = bytes("MemAvailable");
+  assert(availableBytes <= totalBytes && totalBytes >= 5.5 * 1024 ** 3 && availableBytes >= 4 * 1024 ** 3,
+    "Owned Linux initial admission requires 5.5 GiB total and 4 GiB available memory");
+  return { totalBytes, availableBytes };
+}
 /** Only metadata and existing daemon inventory; this creates no native stack.
  * Expected boot/source/socket come from the independently authenticated host. */
 export function establishOwnedLinuxRuntime(input: unknown, env: Readonly<Record<string, string | undefined>> = process.env) {
@@ -149,6 +167,7 @@ export function establishOwnedLinuxRuntime(input: unknown, env: Readonly<Record<
   assertOperatorHostEnvironment(env);
   assert(env.HOME === userInfo().homedir, REFUSAL);
   assert(process.platform === "linux" && process.getuid!() > 0 && process.getgid!() > 0, REFUSAL);
+  assertOwnedLinuxInitialMemory(readFileSync("/proc/meminfo", "utf8"));
   assert(!env.CI && !env.GITHUB_ACTIONS && !env.GITHUB_JOB && !env.RUNNER_ENVIRONMENT && !env.DEBUG && !env.PWDEBUG, REFUSAL);
   assert(fstatSync(0).isFIFO() && /^pipe:\[\d+\]$/.test(readlinkSync("/proc/self/fd/0")), "One anonymous operator stdin pipe required");
   assert(bootId() === request.bootId && realpathSync(process.cwd()) === request.root, REFUSAL);

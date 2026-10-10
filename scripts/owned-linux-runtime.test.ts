@@ -4,12 +4,35 @@ import { randomUUID } from "node:crypto";
 import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { assertOperatorHostEnvironment, assertOwnedLinuxCapability, assertOwnedSourceStatus, ownedLinuxRequestSchema,
+import { assertOperatorHostEnvironment, assertOwnedLinuxCapability, assertOwnedLinuxInitialMemory, assertOwnedSourceStatus, ownedLinuxRequestSchema,
   parsePrivateOperatorFrame, retainChallengeUse, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 const directories: string[] = [];
 afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
 const scratch = () => { const directory = realpathSync(mkdtempSync(path.join(os.tmpdir(), "owned-linux-unit-"))); directories.push(directory); return directory; };
+describe("initial owned Linux memory admission", () => {
+  const memory = (total = "5767168", available = "4194304") =>
+    `MemTotal:       ${total} kB\nMemAvailable:   ${available} kB\nMemFree: 1 kB\n`;
+  it("admits both exact inclusive boundaries and the observed nominal six-GiB guest", () => {
+    expect(assertOwnedLinuxInitialMemory(memory())).toEqual({ totalBytes: 5.5 * 1024 ** 3, availableBytes: 4 * 1024 ** 3 });
+    expect(assertOwnedLinuxInitialMemory(memory("6052620", "5742032"))).toEqual({ totalBytes: 6_197_882_880, availableBytes: 5_879_840_768 });
+  });
+  it("refuses a four-GiB guest and either boundary one KiB short", () => {
+    for (const value of [memory("4194304"), memory("5767167"), memory("5767168", "4194303")])
+      expect(() => assertOwnedLinuxInitialMemory(value)).toThrow();
+  });
+  it("refuses absent or duplicate readings instead of inferring capacity from free or swap values", () => {
+    for (const value of ["MemTotal: 5767168 kB\nMemFree: 4194304 kB\nSwapFree: 9999999 kB\n",
+      "MemAvailable: 4194304 kB\n", `${memory()}MemTotal: 5767168 kB\n`,
+      `${memory()}MemAvailable: unknown kB\n`])
+      expect(() => assertOwnedLinuxInitialMemory(value)).toThrow();
+  });
+  it("refuses wrong units, partial numbers, overflow and impossible available memory", () => {
+    for (const value of [memory().replace("5767168 kB", "5767168 MB"), memory("5767168.0"), memory("-5767168"),
+      memory("9007199254740992"), memory("9007199254740991"), memory("5767168", "5767169")])
+      expect(() => assertOwnedLinuxInitialMemory(value)).toThrow();
+  });
+});
 describe("one-use public operator challenges", () => {
   it("retains a used challenge across a separate supervisor process and refuses reuse", () => {
     const root = scratch(), directory = path.join(root, "challenges"), nonce = randomUUID();
