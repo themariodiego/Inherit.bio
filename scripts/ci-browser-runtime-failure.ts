@@ -10,7 +10,7 @@ export const CI_RUNTIME_SETUP_STAGES = [
   "final-source-identity", "cleanup-ownership", "cleanup-remove", "cleanup-receipt", "runtime-setup",
   "storage-provider-ready", "storage-proxy-listen", "storage-gateway-options", "storage-provider-denial",
   "storage-gateway-policy", "storage-cors-preserved", "storage-browser-transport", "storage-proxy-cleanup",
-  "transport-browser-launch", "transport-browser-page", "transport-browser-fetch", "transport-browser-headers",
+  "transport-listen", "transport-cleanup", "transport-browser-launch", "transport-browser-page", "transport-browser-fetch", "transport-browser-headers",
   "transport-api-request", "transport-api-headers", "transport-route-fetch", "transport-route-headers",
   "transport-standalone-request", "transport-standalone-headers",
 ] as const;
