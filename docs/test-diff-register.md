@@ -1,3 +1,7 @@
+## 2026-10-10 — Preserve the new private bucket in complete hosted fixtures
+
+The exact PR316 run 38053631026, attempt 1, retained three concrete failures. Two native bucket censuses omitted the newly created legal-evidence bucket; they now require the complete four-bucket set plus the exact private sealed-byte configuration and absence of user Storage policies. The refused-invitation cleanup fixture's original synthetic bytes used text/plain, which the sealed-byte bucket correctly refused; only its MIME declaration now uses application/octet-stream, with all deletion, provider and retention assertions retained. The new evidence journey signed in its assigned reviewer with real Auth/MFA but granted the reviewer role only to the foreign account. Both genuine accounts now receive the existing owner-only reviewer assignment before the target snapshot and case creation. Original public intake, recipient, authority, scan, whole-byte, foreign-refusal and case-only cleanup checks remain. No production guard, test limit, retry or skip changes. These native and browser corrections require actual hosted execution; pure source and cleanup controls do not prove those flows.
+
 ## 2026-10-10 — Register and preserve appeal evidence object paths
 
 G8.5 source correction creates private `legal-evidence`, makes new native appeal

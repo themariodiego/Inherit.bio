@@ -28,7 +28,8 @@ export async function appealDocumentStorageJourney(page: Page, browser: Browser)
   try {
     const reviewer = await signInReviewer(reviewerContext, ORIGIN);
     const foreignReviewer = await signInReviewer(foreignContext, ORIGIN);
-    await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${foreignReviewer}')`);
+    await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewer}');
+      select private.grant_claim_reviewer_v1('${foreignReviewer}')`);
     // Real Auth account provisioning legitimately creates its own subject.
     // Capture all target rows after both identities exist, before the case.
     const targetsBefore = await reviewFixtureSql(targetBag);

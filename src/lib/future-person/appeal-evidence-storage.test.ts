@@ -42,6 +42,32 @@ describe("the registered appeal storage producer", () => {
     expect(migration).toContain("revoke all on function private.guard_appeal_object_key_v1() from public,anon,authenticated,inherit_upload_only,service_role;");
   });
 
+  it("keeps both native bucket censuses complete and the existing retention bytes under the sealed MIME policy", () => {
+    for (const file of ["drop_generated_artifacts_bucket.sql", "drop_genomes_staging_bucket.sql"]) {
+      const fixture = readFileSync(`supabase/tests/${file}`, "utf8");
+      expect(fixture).toContain("array['genomes','exports','future-person-identity','legal-evidence']");
+      expect(fixture).toContain("not public and name='legal-evidence' and file_size_limit=20000028");
+      expect(fixture).toContain("allowed_mime_types=array['application/octet-stream']");
+      expect(fixture).toContain("schemaname='storage' and tablename='objects'");
+      expect(fixture).toContain("like '%legal-evidence%'");
+    }
+    const cleanup = readFileSync("e2e/refused-invitation-cleanup.spec.ts", "utf8");
+    expect(cleanup).toContain('Buffer.from("Synthetic legal evidence only")');
+    expect(cleanup).toContain('contentType: "application/octet-stream", upsert: false');
+  });
+
+  it("assigns both genuine reviewers before capturing the native target graph", () => {
+    const journey = readFileSync("e2e/helpers/appeal-document-storage-journey.ts", "utf8");
+    const signedIn = journey.indexOf("const reviewer = await signInReviewer(reviewerContext, ORIGIN)");
+    const assigned = journey.indexOf("private.grant_claim_reviewer_v1('${reviewer}')");
+    const foreignAssigned = journey.indexOf("private.grant_claim_reviewer_v1('${foreignReviewer}')");
+    const targets = journey.indexOf("const targetsBefore = await reviewFixtureSql(targetBag)");
+    expect(signedIn).toBeGreaterThan(-1);
+    expect(assigned).toBeGreaterThan(signedIn);
+    expect(foreignAssigned).toBeGreaterThan(assigned);
+    expect(targets).toBeGreaterThan(foreignAssigned);
+  });
+
   it("preserves old ciphertext locators but guards fresh legacy plans/fragments and exact old completion", () => {
     expect(migration).toContain("changed:=new.planned_object_key is distinct from old.planned_object_key");
     expect(migration).toContain("new.object_key is distinct from old.object_key");

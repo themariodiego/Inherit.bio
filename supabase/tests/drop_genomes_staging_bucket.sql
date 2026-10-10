@@ -7,8 +7,14 @@ select no_plan();
 -- bucket holds anything, so on a fresh database this is its whole effect.
 
 select is((select count(*) from storage.buckets where id='genomes-staging'),0::bigint,'the genomes-staging bucket is gone');
-select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity'],
- 'the exact surviving buckets are genomes, exports and private claim identity');
+select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity','legal-evidence'],
+ 'the exact surviving buckets include private claim identity and sealed legal evidence');
+select ok((select not public and name='legal-evidence' and file_size_limit=20000028
+ and allowed_mime_types=array['application/octet-stream'] from storage.buckets
+ where id='legal-evidence'),'legal evidence stays private with its exact sealed-byte configuration');
+select is_empty($$select policyname from pg_policies where schemaname='storage' and tablename='objects'
+ and (coalesce(qual,'')||coalesce(with_check,'')) like '%legal-evidence%'$$,
+ 'no user Storage policy grants access to legal evidence');
 select is((select column_default from information_schema.columns where table_schema='public' and table_name='upload_sessions'
  and column_name='storage_bucket'),'''genomes''::text','a session that omits its bucket names genomes, which exists');
 select ok((select allowed_mime_types is null and not public from storage.buckets where id='genomes'),'genomes is unchanged');
