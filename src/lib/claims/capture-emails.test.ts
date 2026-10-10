@@ -1,11 +1,12 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, readdir, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { renderMail, mailSubject } from "../email";
-import { captureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
+import { captureEmailClaims as sourceCaptureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
 import { EMAIL_RENDERERS, emailFixtures } from "./email-fixtures";
 import { assertEmailFixtureCoverage, discoverEmailExports, readEmailInventory, readPublicDigestCatalog } from "./email-inventory";
 
@@ -70,15 +71,42 @@ describe("independent production email fixture inventory", () => {
 });
 
 describe("actual production email HTML and envelope capture", () => {
-  let outputDirectory: string, result: EmailCaptureResult;
+  let outputDirectory: string, fixtureRoot: string, sourceHead: string, sourceTree: string, result: EmailCaptureResult;
+  let captureEmailClaims: typeof sourceCaptureEmailClaims;
   beforeAll(async () => {
-    outputDirectory = join(await mkdtemp(join(tmpdir(), "inherit-email-capture-test-")), "capture");
+    const directory = await mkdtemp(join(tmpdir(), "inherit-email-capture-test-"));
+    outputDirectory = join(directory, "capture");
+    fixtureRoot = join(directory, "repo");
+    const git = async (args: string[], cwd = projectRoot) => (await promisify(execFile)("git",
+      ["-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=false", ...args], { cwd, timeout: 15_000 })).stdout.trim();
+    sourceHead = await git(["rev-parse", "HEAD"]);
+    sourceTree = await git(["rev-parse", "HEAD^{tree}"]);
+    // Render the exact committed source, isolated from the live checkout's
+    // early CLI outputs and parallel tests. The production checkout guard is
+    // unchanged and still executes before and after this real capture.
+    await git(["clone", "--quiet", "--shared", "--no-checkout", "--", projectRoot, fixtureRoot]);
+    await git(["checkout", "--quiet", "--detach", sourceHead], fixtureRoot);
+    expect(await git(["rev-parse", "HEAD"], fixtureRoot)).toBe(sourceHead);
+    expect(await git(["rev-parse", "HEAD^{tree}"], fixtureRoot)).toBe(sourceTree);
+    await mkdir(join(fixtureRoot, "node_modules"));
+    for (const name of await readdir(join(projectRoot, "node_modules")))
+      await symlink(join(projectRoot, "node_modules", name), join(fixtureRoot, "node_modules", name));
+    expect(await git(["status", "--porcelain", "--untracked-files=all"], fixtureRoot)).toBe("");
+    captureEmailClaims = (await import(pathToFileURL(join(fixtureRoot, "src/lib/claims/capture-emails.ts")).href)).captureEmailClaims;
     const fetch = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("No outbound request allowed"));
     try {
       result = await captureEmailClaims({ outputDirectory, ...resolvers });
       expect(fetch).not.toHaveBeenCalled();
     } finally { fetch.mockRestore(); }
   }, 60_000);
+
+  it("binds the isolated renderer to the exact source HEAD without consuming live CLI markers", async () => {
+    expect(result.contentCommitSha).toBe(sourceHead);
+    for (const file of ["src/lib/claims/capture-emails.ts", "src/lib/claims/collect-dom.ts"])
+      expect(await readFile(join(fixtureRoot, file))).toEqual(await readFile(join(projectRoot, file)));
+    for (const file of ["supabase/.temp/cli-latest", "supabase/.branches/_current_branch"])
+      await expect(access(join(fixtureRoot, file))).rejects.toMatchObject({ code: "ENOENT" });
+  });
 
   it("retains every expected fixture before reporting actual annotation failures", () => {
     expect(result.receipts).toHaveLength(39);
@@ -142,7 +170,7 @@ describe("actual production email HTML and envelope capture", () => {
         registry: { resolveCitation: () => undefined, resolveClaim: () => undefined },
         resolveSeed: () => false, resolveComputed: () => false });
         console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
-    const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: projectRoot, timeout: 30_000 });
+    const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: fixtureRoot, timeout: 30_000 });
     expect(JSON.parse(output.stdout)).toEqual({ receipts: 39, observations: 78, ok: false });
     const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
     expect(retained.observations).toEqual(result.observations);
