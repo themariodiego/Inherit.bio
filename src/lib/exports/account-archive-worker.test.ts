@@ -20,6 +20,8 @@ import type {AccountPathBRpc} from "./account-path-b-members";
 import {buildAccountArchive} from "./account-archive-worker";
 import {sealNewCorrection} from "../future-person/correction-case-envelope";
 import {createRequesterStatementRuntime} from "./requester-statement-runtime";
+import {createRequesterStatementMemorySpool} from "./requester-statement-spool";
+import * as zip64 from "./archive-zip64";
 import {ACCOUNT_SUBJECT_MEMBERS} from "./account-archive-plan";
 import {accountPartitionFixture} from "./__fixtures__/account-partitions";
 import {claimantArchiveFixture} from "./__fixtures__/claimant-archive";
@@ -240,9 +242,19 @@ describe("complete consumed-account unpublished archive executor",()=>{
  });
  it("holds the uncertain write for cleanup and never records complete bytes after a writer failure",async()=>{
   const f=await fixture();f.historical.write.mockRejectedValue(new Error("unknown write outcome"));
-  await expect(buildAccountArchive(f.options)).rejects.toMatchObject({cleanupRequired:true});
+  // This unit exercises the real complete producer and uncertain writer result.
+  // The metadata spool has a controlled lifecycle; native file I/O is covered
+  // separately by the unchanged ZIP64 file-spool tests.
+  const runtime=createRequesterStatementRuntime(),buffers:Uint8Array[]=[];
+  const observedRuntime={...runtime,own<T extends Uint8Array>(bytes:T):T{buffers.push(bytes);return runtime.own(bytes);}};
+  const memory=createRequesterStatementMemorySpool(observedRuntime),dispose=vi.fn(()=>memory.dispose());
+  vi.spyOn(zip64,"createZip64FileSpool").mockResolvedValue({...memory,dispose});
+  await expect(buildAccountArchive({...f.options,statementRuntime:observedRuntime})).rejects.toMatchObject({cleanupRequired:true});
   expect(f.historical.calls.some(c=>c.p_operation==="reserve")).toBe(true);
   expect(f.historical.calls.some(c=>c.p_operation==="bytes-complete")).toBe(false);
+  expect(f.historical.write).toHaveBeenCalledTimes(1);
+  expect(dispose).toHaveBeenCalled();expect(buffers.length).toBeGreaterThan(0);
+  expect(buffers.every(bytes=>bytes.every(byte=>byte===0))).toBe(true);runtime.assertSettled();
  });
  it("rechecks current durable authority after the actual write and denies later completion",async()=>{
   const f=await fixture(),write=f.historical.write.getMockImplementation()!;

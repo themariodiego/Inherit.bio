@@ -269,7 +269,7 @@ function verifySaved(capture: string) {
   });
   const browser = verifyHostedCoverage(request, decoded[0], decoded.slice(1), contract.trackedSpecs, contract.profileSha256);
   const logs = (name: string) => readSaved(capture, `job-${metadata.jobs.find(job => job.name === name)!.id}`, receipt, maxLog).toString("utf8");
-  const repository = repositoryLogSummary(logs("repository-checks"));
+  const repository = repositoryLogSummary(logs("repository-checks"), logs("database-tests"));
   for (let index = 1; index <= browser.assignments.length; index++) {
     const part = commandLog(logs(`browser (${index})`), `pnpm exec tsx scripts/run-upload-browser.mts --ci-shard=${index}/6`);
     const sentence = `E2E contract passed: ${browser.assignments[index - 1]} result(s), no skips, no retries.`;

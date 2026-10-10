@@ -136,8 +136,9 @@ describe("mandatory browser coverage across isolated jobs", () => {
   it("keeps the default workflow's release check dependent on every job and sanitized coverage", () => {
     const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     const aggregate = workflow.slice(workflow.indexOf("\n  checks:"));
-    expect(aggregate).toContain("    if: always()\n    needs: [repository-checks, browser]");
+    expect(aggregate).toContain("    if: always()\n    needs: [repository-checks, database-tests, browser]");
     expect(aggregate).toContain('test "$REPOSITORY_RESULT" = success');
+    expect(aggregate).toContain('test "$DATABASE_RESULT" = success');
     expect(aggregate).toContain('test "$BROWSER_RESULT" = success');
     expect(aggregate).toContain("scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage");
     expect(workflow).toContain("shard: [1, 2, 3, 4, 5, 6]");
@@ -158,10 +159,11 @@ describe("mandatory browser coverage across isolated jobs", () => {
     const doc = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, {
       if?: string; needs?: string[]; strategy?: { "fail-fast": boolean; "max-parallel": number; matrix: { shard: number[] } };
       "continue-on-error"?: boolean; steps: { uses?: string; run?: string; with?: Record<string, unknown> }[] }>; concurrency: Record<string, string> };
-    expect(Object.keys(doc.jobs).sort()).toEqual(["browser", "checks", "repository-checks"]);
-    expect(doc.jobs.checks.needs).toEqual(["repository-checks", "browser"]); expect(doc.jobs.checks.if).toBe("always()");
+    expect(Object.keys(doc.jobs).sort()).toEqual(["browser", "checks", "database-tests", "repository-checks"]);
+    expect(doc.jobs.checks.needs).toEqual(["repository-checks", "database-tests", "browser"]); expect(doc.jobs.checks.if).toBe("always()");
     expect(doc.jobs.browser.strategy).toEqual({ "fail-fast": false, "max-parallel": 6, matrix: { shard: [1, 2, 3, 4, 5, 6] } });
     expect(doc.jobs.browser.if).toBeUndefined(); expect(doc.jobs["repository-checks"].if).toBeUndefined();
+    expect(doc.jobs["database-tests"].if).toBeUndefined(); expect(doc.jobs["database-tests"].needs).toBeUndefined();
     const browserCommands = doc.jobs.browser.steps.flatMap(step => step.run ?? []).join("\n");
     expect(browserCommands).toContain('scripts/ci-browser-setup-timings.run.mts "$build_start" "${{ matrix.shard }}"');
     expect(browserCommands).toContain('process.env.RUNNER_TEMP+"/inherit-ci-setup-start-"');
@@ -176,9 +178,11 @@ describe("mandatory browser coverage across isolated jobs", () => {
       expect(checkout.with).toEqual({ "fetch-depth": 0, "persist-credentials": false });
     }
     const foundation = doc.jobs["repository-checks"].steps.flatMap(step => step.run ?? []).join("\n");
-    for (const command of ["pnpm typecheck", "pnpm lint", "pnpm test", "pnpm exec supabase test db", "pnpm test:invitation-locks",
+    for (const command of ["pnpm typecheck", "pnpm lint", "pnpm test", "pnpm test:invitation-locks",
       "pnpm gate:catalog-drift", "SERVER_URL=http://127.0.0.1:3199 pnpm gate:legal", "pnpm e2e:lighthouse"])
       expect(foundation).toContain(command);
+    expect(doc.jobs["repository-checks"].steps.filter(step => step.run === "pnpm exec supabase test db")).toEqual([]);
+    expect(doc.jobs["database-tests"].steps.filter(step => step.run === "pnpm exec supabase test db")).toHaveLength(1);
     for (const gate of ["legal", "first-glance", "names", "templates", "readability", "secrets", "routes", "claims", "env", "jurisdictions"])
       expect(foundation).toContain(`pnpm gate:${gate}`);
   });

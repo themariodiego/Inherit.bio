@@ -131,8 +131,6 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
-      - name: Database tests (pgTAP)
-        run: pnpm exec supabase test db
       - name: Plan the actual browser claim review read proof against current schema
         run: pnpm test:claim-review-fixture-sql
       - name: Source file privacy under chronological and deployed migration order
@@ -206,6 +204,36 @@ jobs:
         env:
           INHERIT_DISPOSABLE_LOCAL_E2E: "true"
         run: pnpm exec tsx scripts/ci-browser-runtime.run.mts cleanup
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
+
+  # Full pgTAP feedback is independent of repository unit/type/gate failures.
+  database-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: SQL fixture relative-include preflight
+        run: pnpm gate:sql-includes
+      - name: Start local Supabase
+        run: pnpm exec supabase start
+      - name: Export current local Supabase keys
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Database tests (pgTAP)
+        run: pnpm exec supabase test db
       - name: Stop local Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
@@ -311,17 +339,19 @@ jobs:
   # family cannot turn this release gate green, even with stale artifacts.
   checks:
     if: always()
-    needs: [repository-checks, browser]
+    needs: [repository-checks, database-tests, browser]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       INHERIT_DISPOSABLE_LOCAL_E2E: "true"
       REPOSITORY_RESULT: ${{ needs.repository-checks.result }}
+      DATABASE_RESULT: ${{ needs.database-tests.result }}
       BROWSER_RESULT: ${{ needs.browser.result }}
     steps:
       - name: Require every prerequisite job to succeed
         run: |
           test "$REPOSITORY_RESULT" = success
+          test "$DATABASE_RESULT" = success
           test "$BROWSER_RESULT" = success
       - uses: actions/checkout@v4
         with:
