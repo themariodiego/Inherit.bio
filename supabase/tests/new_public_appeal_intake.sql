@@ -101,7 +101,7 @@ insert into public.subject_principals(id,principal_kind) values
 insert into public.appeal_intakes
  select (jsonb_populate_record(null::public.appeal_intakes,to_jsonb(appeal)||jsonb_build_object(
  'id','86000000-0000-4000-8000-000000000010','target_id','86000000-0000-4000-8000-000000000010',
- 'appellant_principal_id','86000000-0000-4000-8000-000000000011','submitted_at',original_clock.submitted'))).*
+ 'appellant_principal_id','86000000-0000-4000-8000-000000000011','submitted_at',original_clock.submitted))).*
  from public.appeal_intakes appeal cross join public_appeal_expired_clock original_clock where appeal.id=(select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared);
 insert into private.new_public_appeal_intakes
  select (jsonb_populate_record(null::private.new_public_appeal_intakes,to_jsonb(intake)||jsonb_build_object(

@@ -211,7 +211,7 @@ select lives_ok($$select pg_temp.deletion_probe(
  'select public.complete_new_public_appeal_evidence_v1(repeat(''1'',64),repeat(''Q'',32),jsonb_build_object(''photoIdentityDocumentId'',
  (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
  (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true); do $probe$ begin if (select match_state from private.public_appeal_pending_reviews limit 1)<>''unresolved-potential''
-  or exists(select 1 from private.public_appeal_provisional_targets) then raise exception ''unresolved match gained authority'';end if;end $probe$')$$,
+  or exists(select 1 from private.public_appeal_provisional_targets) then raise exception ''unresolved match gained authority'';end if;end $probe$; select true')$$,
  'an unbound potential match remains privately unresolved and creates no target hold or account authority');
 -- Real Path B invitation/confirmation supplies the typed target; no account is inferred from contact.
 select lives_ok($$select pg_temp.deletion_probe(
@@ -224,7 +224,7 @@ select lives_ok($$select pg_temp.deletion_probe(
  or not private.public_appeal_target_held_v1(''subject'',pg_temp.sid(''appeal-match''))
  or (select match_state from private.public_appeal_pending_reviews limit 1)<>''unique-current''
  or exists(select 1 from private.new_public_appeal_intakes i join public.subject_principals actor on actor.id=i.author_principal_id where actor.account_id is not null)
- then raise exception ''exact current target not held or case adopted an account'';end if;end $probe$')$$,
+ then raise exception ''exact current target not held or case adopted an account'';end if;end $probe$; select true')$$,
  'genuine current subject confirmation places only an original-deadline provisional hold without account adoption');
 select lives_ok($$select pg_temp.deletion_probe(
  'select pg_temp.requested(''appeal-stale'',''a'',repeat(''c'',64));
@@ -234,7 +234,7 @@ select lives_ok($$select pg_temp.deletion_probe(
  (select id from appeal_uploaded where kind=''appeal-photo-identity''),''subjectSourceControlDocumentId'',
  (select id from appeal_uploaded where kind=''appeal-subject-source-control'')),true);
  do $probe$ begin if exists(select 1 from private.public_appeal_provisional_targets)
- or (select match_state from private.public_appeal_pending_reviews limit 1)<>''unresolved-potential'' then raise exception ''stale match became no-match or hold'';end if;end $probe$')$$,
+ or (select match_state from private.public_appeal_pending_reviews limit 1)<>''unresolved-potential'' then raise exception ''stale match became no-match or hold'';end if;end $probe$; select true')$$,
  'stale contact authority is retained as unresolved and never becomes no-match or a hold');
 create temporary table appeal_target_before as select
  (select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject)subjects,
@@ -285,12 +285,14 @@ create function pg_temp.appeal_reviewer_jwt() returns void language sql as $test
  'iss','http://127.0.0.1:54321/auth/v1','aud','authenticated','exp',extract(epoch from clock_timestamp())::bigint+3600,
  'amr',jsonb_build_array(jsonb_build_object('method','totp','timestamp',extract(epoch from clock_timestamp())::bigint-60)))::text,true);
 $test$;
+create temporary table appeal_review_audit_before as select coalesce(max(seq),0)seq from public.legal_audit_log;
 select throws_ok($$select public.read_public_appeal_review_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared))$$,
  '42501','appeal unavailable','service authority cannot replace the named reviewer own MFA session');
 select pg_temp.appeal_reviewer_jwt();
 select ok(public.read_public_appeal_review_v1((select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)) is not null,
  'own current named MFA reviewer reads only the assigned case');
-select is((select count(*) from public.legal_audit_log where event_code='appeal.review.read' and coded_context='{}'),1::bigint,
+select ok((select count(*)=1 and bool_and(event_code='appeal.review.read' and coded_context='{}')
+ from public.legal_audit_log where seq>(select seq from appeal_review_audit_before)),
  'assigned case reading appends only a coded content-free audit event');
 select is(public.review_document_domain_v1((select id from private.appeal_documents where document_kind='appeal-photo-identity')),'appeal',
  'native domain classification requires the current own-MFA assigned complete document');
