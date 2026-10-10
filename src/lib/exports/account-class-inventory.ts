@@ -45,6 +45,7 @@ const inventory=z.object({version:z.literal("account-class-inventory-v1"),author
  .refine(v=>v.classes.every(e=>(e.mode===mode(e.kind)||e.mode==="graph"&&(ACCOUNT_GRAPH_CLASSES as readonly string[]).includes(e.kind)
   ||e.mode==="requester-statements"&&["correction_requests","appeal_intakes"].includes(e.kind)&&(e.rows===0||requesterStatementsOpen())&&v.ownStatements!==undefined
   ||e.mode==="path-b-results"&&e.kind==="path_b_report_bindings"||e.mode==="excluded"&&e.kind==="other_adult_held_uploads")&&new Set(e.partitions.map(p=>p.subjectId)).size===e.partitions.length));
+export const accountClassInventorySchema=inventory;
 const page=z.object({version:z.literal("account-class-page-v1"),kind:z.enum(ACCOUNT_CLASS_KINDS),
  rows:z.array(z.object({id:uuid,subjectId:uuid.nullable(),rowText:text.max(8192)}).strict()).max(500),nextAfterId:uuid.nullable()}).strict();
 export type AccountClassRpc=(name:"export_archive_account_classes_v1",args:{p_operation:"context"|"metadata";

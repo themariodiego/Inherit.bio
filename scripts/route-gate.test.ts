@@ -1014,14 +1014,11 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("reads both shapes the register declares a required header in", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
-    // Both declared shapes still resolve, now to two names: the evidence chunk
-    // has a requiredHeaders map; other routes use requiredHeader prose. The
-    // owner removed `X-Inherit-Chunk-Nonce` from api.evidence-chunk on
-    // 2026-09-28 (the chunk reservation is the authority), so 3 -> 2.
-    expect(result.requiredHeaderCount).toBe(2);
-    // `X-Inherit-CSRF` and `X-Inherit-Operation-Nonce` are both minted and
-    // verified in `operation-token.ts`, and both are read.
-    expect(result.readRequiredHeaderCount).toBe(2);
+    // Both declared shapes resolve to three actual read names. The evidence
+    // chunk retains X-Inherit-CSRF, embryo completion X-Inherit-Operation-Nonce,
+    // and the TEST account worker its fixed X-Inherit-Account-Export-Operation.
+    expect(result.requiredHeaderCount).toBe(3);
+    expect(result.readRequiredHeaderCount).toBe(3);
   });
 
   it("resolves a header name out of the prose the singular form carries", async () => {
@@ -1061,9 +1058,10 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails when the singular half of the register stops being read", async () => {
     const root = plant({ register: (register) => strip(register, "requiredHeader") });
     const { failures } = await runRouteGate(root);
-    // One left: the evidence chunk route's X-Inherit-CSRF.
+    // The two mapped declarations remain: evidence CSRF and the account
+    // worker's fixed operation. Removing singular declarations still fails.
     expect(failures.join("\n")).toContain(
-      "required header check found 1 declared headers across all routes, expected at least 8",
+      "required header check found 2 declared headers across all routes, expected at least 8",
     );
   });
 

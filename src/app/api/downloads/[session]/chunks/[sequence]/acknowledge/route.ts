@@ -8,11 +8,14 @@ import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { downloadCookieHash,isCanonicalId } from "@/lib/future-person/review";
 import { readReceiptAckNonce,receiptCsrfMatches } from "@/lib/future-person/review-receipt";
 import { createClient } from "@/lib/supabase/server";
+import {acknowledgeAccountArchiveChunk,accountArchiveChunkDependencies} from "@/lib/exports/account-archive-chunk-http";
 
 const body=z.object({ proof:z.string().regex(/^[0-9a-f]{64}$/u),nonce:z.string().min(1).max(2048) }).strict();
 /** A complete proof settles once, under current MFA, assignment, session and clean-document authority. */
 export async function POST(request:Request,context:{ params:Promise<{session:string;sequence:string}> }) {
   const {session,sequence}=await context.params;
+  const archive=await acknowledgeAccountArchiveChunk(request,{session,sequence},accountArchiveChunkDependencies());
+  if(archive)return archive;
   const url=new URL(request.url);
   if (!(futurePersonClaimsOpen() || testAppealIntakeOpen()) || !isCanonicalId(session) || !/^(0|[1-4])$/u.test(sequence) || url.search!==""
     || request.headers.get("origin")!==url.origin || request.headers.get("sec-fetch-site")!=="same-origin"

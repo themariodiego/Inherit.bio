@@ -25,6 +25,9 @@ import {boundSourceManifestSchema} from "@/lib/future-person/bound-source-reader
 import {accountArchiveContextSchema,type AccountMemberRpc,type AccountBoundSourceRpc} from "./bound-account-archive-worker";
 import {composeAccountMemberFactories,bufferAccountMemberFactories} from "./account-member-composition";
 import {prepareAccountArchivePlan,type AccountArchiveFile,type AccountArchiveSourceMember} from "./account-archive-plan";
+import {prepareAccountCompleteReader,type AccountCompleteRpc} from "./account-complete-reader";
+import {prepareAccountCompleteMembers} from "./account-complete-members";
+import {prepareAccountCompleteFiles} from "./account-complete-files";
 import {z} from "zod";
 const unavailable=()=>new Error("account_archive_unavailable");
 
@@ -38,6 +41,7 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
  workerRpc:ArchiveWorkerRpc;memberRpc:AccountMemberRpc;contentRpc:AccountContentRpc;metadataRpc:AccountMetadataRpc;
  inventoryRpc:AccountInventoryRpc;classRpc:AccountClassRpc;auditRpc:AccountAuditRpc;originalRpc:AccountOriginalRpc;
  boundSourceRpc:AccountBoundSourceRpc;graphRpc:AccountRoutedGraphRpc;pathBRpc:AccountPathBRpc;readOriginalRange:NonNullable<Parameters<typeof prepareAccountOriginalSource>[0]["readRange"]>;
+ completeRpc?:AccountCompleteRpc;
  statementRuntime?:RequesterStatementRuntime;
  write:ArchiveSegmentationOptions["write"];signal:AbortSignal}){
  const statementRuntime=options.statementRuntime??createRequesterStatementRuntime();
@@ -79,8 +83,11 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   if(!attempt||currentAttempt.attemptId!==attempt.attemptId)throw unavailable();
   workingSignal=AbortSignal.any([options.signal,signal]);
   const reference={exportId:options.job.exportId,attemptId:attempt.attemptId,authorityReceipt:options.job.authorityReceipt};
+  const complete=options.completeRpc?await prepareAccountCompleteReader({reference,rpc:options.completeRpc,
+   signal:workingSignal,deadline:options.job.deadline,check,runtime:statementRuntime}):undefined;
   const reader=await createAccountContentReader({reference,deadline:options.job.deadline,memberRpc:memberRpc,
    contentRpc:contentRpc,signal:workingSignal,check});context=reader.context;
+  if(complete&&JSON.stringify(complete.context.legacyCapture.context)!==JSON.stringify(context))throw unavailable();
   const common={reference,context,signal:workingSignal,check};
   const metadata=await prepareAccountArchiveMetadata({...common,files:reader.files,rpc:metadataRpc});
   const history=await prepareAccountHistoryInventory({...common,rpc:inventoryRpc});
@@ -144,12 +151,17 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
    // account scope; retained subject events keep their exact custody selector.
    {kind:"retained-custody",factories:retained.flatMap(p=>p.factories.filter(f=>f.name.startsWith("subjects/")||f.name.startsWith("variants/")||f.name.startsWith("originals/")))},
   ]);
+  if(complete){
+   const foreign=await prepareAccountCompleteFiles({reader:complete,reference,signal:workingSignal,runtime:statementRuntime,readRange:readOriginalRange});
+   files.push(...foreign.files);sources.push(...foreign.sources);
+   factories.push(...prepareAccountCompleteMembers(complete).factories,...foreign.factories);
+  }
   // The durable current reader recomputes the exact complete graph receipt,
   // including every source/member/class frame. Factory reads independently
   // prove their content/EOF again. Repeating all factories' context reads for
   // every ZIP header/byte would multiply the same full-graph authorization.
-  const current=check;
-  plan=await prepareAccountArchivePlan({context,resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories,containsStatements,statementRuntime),files,sources,signal,check:current,sensitiveRuntime:containsStatements?statementRuntime:undefined,ownStatements:ownCapture});
+  const current=complete?async(current:AbortSignal)=>{await check(current);await complete.check(current);}:check;
+  plan=await prepareAccountArchivePlan({context,...(complete?{completeContext:complete.context}:{}),resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories,containsStatements,statementRuntime),files,sources,signal,check:current,sensitiveRuntime:containsStatements?statementRuntime:undefined,ownStatements:ownCapture});
  }
  try{
   const summary=await storeArchiveSegments({sensitiveRuntime:statementRuntime,sensitiveBuffers:()=>containsStatements,exportId:options.job.exportId,principalHash:options.job.principalHash,

@@ -34,6 +34,7 @@ const inventory=z.object({version:z.literal("account-history-inventory-v1"),auth
  classes:z.array(z.object({kind:z.enum(ACCOUNT_HISTORY_KINDS),rows:count,membershipSha256:hash}).strict())
   .length(ACCOUNT_HISTORY_KINDS.length)}).strict()
  .refine(value=>new Set(value.classes.map(row=>row.kind)).size===ACCOUNT_HISTORY_KINDS.length);
+export const accountHistoryInventorySchema=inventory;
 const page=z.object({version:z.literal("account-history-page-v1"),kind:z.enum(ACCOUNT_HISTORY_KINDS),
  rows:z.array(z.object({id:uuid,rowText:text}).strict()).max(500),nextAfterId:uuid.nullable()}).strict();
 export type AccountInventoryRpc=(name:"export_archive_account_inventory_v1",args:{p_operation:"context"|"history";

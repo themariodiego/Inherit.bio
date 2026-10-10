@@ -65,7 +65,8 @@ export function configuredRequesterStatementGateway(env:Readonly<Record<string,s
    beginCleanup:claim=>call(allocation,"beginCleanup",[claim]) as Promise<boolean>,endCleanup:claim=>call(allocation,"endCleanup",[claim]) as Promise<boolean>,
    head:(claim,key)=>call(allocation,"head",[claim,key]),
    get:(claim,key,headers)=>call(allocation,"get",[claim,key,Array.from(headers.entries())]),
-   putEmpty:(claim,key,headers)=>call(allocation,"putEmpty",[claim,key,Array.from(headers.entries())])};
+   putEmpty:(claim,key,headers)=>call(allocation,"putEmpty",[claim,key,Array.from(headers.entries())]),
+   deleteCurrent:(claim,key,expected)=>call(allocation,"deleteCurrent",[claim,key,expected])};
  }};
  try{return createRequesterStatementGateway(namespace,expected,env,runtime);}
  catch(error){if(runtime)runtime.clear(secret);else secret.fill(0);throw error;}

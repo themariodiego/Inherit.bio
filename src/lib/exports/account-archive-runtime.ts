@@ -13,7 +13,8 @@ type Query={retry:(enabled:false)=>{abortSignal:(signal:AbortSignal)=>PromiseLik
  * and after reads. Supabase range transport is the existing original store;
  * the approved private R2 TEST writer is supplied separately; production
  * generation awaits its full native/provider qualification. */
-export function accountArchiveExecution(write:Execution["write"]):Execution{
+export function accountArchiveExecution(write:Execution["write"],mode?:"complete-test"):Execution{
+ if(mode!==undefined&&mode!=="complete-test")throw new Error("account_archive_unavailable");
  if(typeof write!=="function")throw new Error("account_archive_unavailable");
  let admin:ReturnType<typeof createAdminClient>|undefined;
  function query(name:string,args:unknown,signal?:AbortSignal){
@@ -38,5 +39,6 @@ export function accountArchiveExecution(write:Execution["write"]):Execution{
   classRpc:reader("export_archive_account_classes_v1"),auditRpc:reader("export_archive_account_audit_v1"),
   originalRpc:reader("export_archive_account_original_v1"),boundSourceRpc:reader("export_archive_account_bound_source_v1"),
   graphRpc:reader("export_archive_account_graph_rows_v2"),pathBRpc:reader("export_archive_account_path_b_v1"),
+  ...(mode==="complete-test"?{completeRpc:reader("export_archive_account_complete_v1")}:{}),
   readOriginalRange:readConfiguredOriginalRange,write};
 }

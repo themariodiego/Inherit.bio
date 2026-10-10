@@ -1,6 +1,6 @@
 import {beforeEach,describe,expect,it,vi} from "vitest";
 import {createHash} from "node:crypto";
-import {createAccountArchiveR2Writer,disposeAccountArchiveR2Segment} from "./account-archive-r2";
+import {createAccountArchiveR2Writer,disposeAccountArchiveR2Segment,disposeAccountArchiveR2Object} from "./account-archive-r2";
 import {r2AllocationDigest,type R2CurrentReservation,type R2CurrentDescriptor} from "./archive-r2-current-fence";
 import {createRequesterStatementRuntime} from "./requester-statement-runtime";
 import {approvedAccountArchiveGeneration} from "./account-archive-generation";
@@ -8,7 +8,7 @@ import type {ArchiveAttempt} from "./archive-segments";
 import type {RequesterStatementR2Gateway} from "./requester-statement-r2";
 
 const db=vi.hoisted(()=>({events:[] as string[],frame:null as unknown,current:null as unknown,reservation:null as unknown,
- completeId:"",failCommit:0,commits:0,failClose:false,drift:false}));
+ completeId:"",failCommit:0,commits:0,failClose:false,drift:false,absenceAcknowledged:true}));
 vi.mock("@/lib/uploads/normalization-database",()=>({normalizationDatabaseConfig:()=>({host:"synthetic",database:"synthetic",username:"postgres"})}));
 vi.mock("postgres",()=>({default:()=>({
  begin:async(work:(tx:(strings:TemplateStringsArray,...values:unknown[])=>Promise<unknown[]>)=>Promise<unknown>)=>{
@@ -23,6 +23,7 @@ vi.mock("postgres",()=>({default:()=>({
    if(name==="claim_account_archive_r2_disposal_v1")return [{frame:db.reservation}];
    if(name==="check_account_archive_r2_disposal_v1")return [{frame:db.drift?{...db.reservation as object,authorityReceipt:"f".repeat(64)}:db.reservation}];
    if(name==="ack_account_archive_r2_disposal_v1")return [{acknowledged:true}];
+   if(name==="ack_account_archive_r2_object_absence_v1")return [{acknowledged:db.absenceAcknowledged}];
    throw new Error("unexpected-native-door");
   });
   db.commits++;if(db.commits===db.failCommit)throw new Error("unknown-commit-response");
@@ -54,7 +55,7 @@ function fixture(){
  const write=(selected=gateway)=>createAccountArchiveR2Writer({gateway:selected,authorityReceipt:receipt,deadline,runtime,env});
  return {bytes,chunk,runtime,stop,deadline,attempt,segment,frame,descriptor,gateway,write};
 }
-beforeEach(()=>{Object.assign(db,{events:[],frame:null,current:null,reservation:null,completeId:"",failCommit:0,commits:0,failClose:false,drift:false});});
+beforeEach(()=>{Object.assign(db,{events:[],frame:null,current:null,reservation:null,completeId:"",failCommit:0,commits:0,failClose:false,drift:false,absenceAcknowledged:true});});
 // These exercise the actual adapter, complete reader, mutable-buffer runtime
 // and current-object fence with synthetic native/provider responses. Native SQL
 // authority is checked separately by account_archive_r2_reservations.sql.
@@ -139,7 +140,15 @@ function disposal(){
    byteCount:0,allocationSha256:reservation.allocationSha256,kind:"permanent-empty-fence",writeBindingSha256:null};payload=new Uint8Array();return current;}};
  const run=()=>disposeAccountArchiveR2Segment({attemptId:f.attempt.attemptId,ordinal:0,gateway:{...f.gateway,disposalProvider:provider},
   runtime:f.runtime,signal:f.stop.signal,env});
- return {...f,run,setPayload:(bytes:Uint8Array)=>{payload=bytes;},failUnreadCancel:()=>{malformedRead=true;cancelFails=true;}};
+ const erase=vi.fn(async(_binding:R2CurrentReservation,marker:Extract<R2CurrentDescriptor,{kind:"permanent-empty-fence"}>)=>{
+  expect(marker).toEqual(current);expect(marker.byteCount).toBe(0);db.events.push("physical-delete");
+  return {version:"account-archive-r2-object-absent-v1" as const,reservationSha256:reservation.reservationSha256,
+   allocationSha256:reservation.allocationSha256,disposition:"current-object-absent" as const,historyScope:"current-object-only" as const,
+   terminal:true as const,absent:true as const};
+ });
+ const runPhysical=()=>disposeAccountArchiveR2Object({attemptId:f.attempt.attemptId,ordinal:0,
+  gateway:{...f.gateway,disposalProvider:provider,assertConfiguration:async()=>{},eraseCurrent:erase},runtime:f.runtime,signal:f.stop.signal,env});
+ return {...f,run,runPhysical,erase,reservation,setPayload:(bytes:Uint8Array)=>{payload=bytes;},failUnreadCancel:()=>{malformedRead=true;cancelFails=true;}};
 }
 describe("account-owned permanent disposal",()=>{
  it("rechecks the exact native claim, verifies payload and empty EOF before native disposal ACK",async()=>{
@@ -159,5 +168,27 @@ describe("account-owned permanent disposal",()=>{
   const f=disposal();f.failUnreadCancel();await expect(f.run()).rejects.toThrow();
   expect(db.events).not.toContain("ack_account_archive_r2_disposal_v1");
   await expect(f.runtime.settle(f.deadline)).rejects.toThrow("statement_runtime_disposition_held");
+ });
+ it("requires permanent payload/empty EOF fences and actual current-object absence before its distinct native ACK",async()=>{
+  const f=disposal();await f.runPhysical();
+  expect(f.erase).toHaveBeenCalledTimes(1);expect(db.events.indexOf("marker")).toBeLessThan(db.events.indexOf("physical-delete"));
+  expect(db.events.indexOf("physical-delete")).toBeLessThan(db.events.indexOf("ack_account_archive_r2_object_absence_v1"));
+  expect(db.events).not.toContain("ack_account_archive_r2_disposal_v1");await f.runtime.settle(f.deadline);f.runtime.assertSettled();
+ });
+ it.each(["foreign-reservation","foreign-allocation","not-terminal","not-absent","lost-delete","revoked","ack-refused"])("keeps %s physically uncertain rather than ACKing a completed disposal",async fault=>{
+  const f=disposal(),original=f.erase.getMockImplementation()!;
+  f.erase.mockImplementation(async(...args)=>{
+   const value=await original(...args);
+   if(fault==="lost-delete")throw new Error("synthetic-lost-delete");
+   if(fault==="foreign-reservation")return {...value,reservationSha256:"f".repeat(64)};
+   if(fault==="foreign-allocation")return {...value,allocationSha256:"f".repeat(64)};
+   if(fault==="not-terminal")return {...value,terminal:false} as never;
+   if(fault==="not-absent")return {...value,absent:false} as never;
+   if(fault==="revoked")db.drift=true;
+   if(fault==="ack-refused")db.absenceAcknowledged=false;return value;
+  });
+  await expect(f.runPhysical()).rejects.toThrow();expect(f.erase).toHaveBeenCalledTimes(1);
+  expect(db.events).not.toContain("ack_account_archive_r2_disposal_v1");
+  expect(db.events.filter(n=>n==="ack_account_archive_r2_object_absence_v1")).toHaveLength(fault==="ack-refused"?1:0);
  });
 });

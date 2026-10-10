@@ -5,6 +5,8 @@ type Env = { CASE_ARCHIVE_BUCKET: R2Bucket; CASE_ARCHIVE_BUCKET_NAME: string; CA
  CASE_ARCHIVE_TEST_ENABLED: string };
 type Claim = { allocationSha256: string; token: string; expiresAt: number };
 type State = { allocationSha256: string; writeStarted: boolean; terminal: boolean; claim: Claim | null };
+type Marker={kind:"permanent-empty-fence";objectKey:string;version:string;etag:string;byteCount:0;
+ allocationSha256:string;writeBindingSha256:null};
 type Frame = { allocationSha256: string; writeBindingSha256: string; configurationSha256: string; originalDeadline: string;
  writeIdentity: { byteCount: number; sha256: string; locator: { bucket: string; objectKey: string } } };
 const fail = () => { throw new Error("case_archive_gateway_unavailable"); };
@@ -15,7 +17,9 @@ async function sha(bytes: Uint8Array) {
 /** One Durable Object per native random allocation digest. R2 access is held
  * ONLY by this binding. Deployment credentials, lifecycle rules, all-write
  * exclusion and final-commit conditional behavior still require real evidence.
- * No HTTP fetch handler, public endpoint, namespace selector or delete exists. */
+ * No public endpoint or namespace selector exists. The private deletion door
+ * accepts only a current permanent empty marker under the same terminal claim;
+ * durable all-writer fencing survives deletion of that R2 current object. */
 export class RequesterStatementArchiveGateway extends DurableObject<Env> {
  async consumeTransportNonce(allocation:string,nonce:string,expiresAt:number){
   return this.ctx.blockConcurrencyWhile(async()=>{
@@ -123,6 +127,26 @@ export class RequesterStatementArchiveGateway extends DurableObject<Env> {
    const object = await this.env.CASE_ARCHIVE_BUCKET.put(key,new Uint8Array(),{onlyIf,
     customMetadata:{state:"permanent-empty-fence",allocationSha256:claim.allocationSha256},httpMetadata:{cacheControl:"no-store"}});
    this.validClaim(stored,claim);if (object===null) fail();return this.describe(object!);
+  });
+ }
+ /** Account TEST disposal removes the payload marker only after its existing
+  * full EOF fence. The permanent all-writer terminal fact stays in this DO;
+  * deleting the object never permits a later CREATE, even after restart.
+  * This proves current-object absence only, not platform backup/history policy. */
+ async deleteCurrent(claim:Claim,key:string,expected:Marker){
+  return this.ctx.blockConcurrencyWhile(async()=>{
+   const stored=await this.state(claim.allocationSha256);this.validClaim(stored,claim);
+   await this.exactKey(claim.allocationSha256,key);
+   const object=await this.env.CASE_ARCHIVE_BUCKET.head(key);this.validClaim(stored,claim);
+   if(!object||expected.kind!=="permanent-empty-fence"||expected.objectKey!==key
+    ||expected.allocationSha256!==claim.allocationSha256||expected.byteCount!==0||expected.writeBindingSha256!==null
+    ||object.key!==key||object.size!==0||object.version!==expected.version||object.etag!==expected.etag
+    ||Object.keys(object.customMetadata??{}).length!==2
+    ||object.customMetadata?.state!=="permanent-empty-fence"||object.customMetadata?.allocationSha256!==claim.allocationSha256)fail();
+   await this.env.CASE_ARCHIVE_BUCKET.delete(key);this.validClaim(stored,claim);
+   if(await this.env.CASE_ARCHIVE_BUCKET.head(key)!==null)fail();this.validClaim(stored,claim);
+   if(await this.env.CASE_ARCHIVE_BUCKET.head(key)!==null)fail();this.validClaim(stored,claim);
+   return {terminal:true as const,absent:true as const};
   });
  }
 }

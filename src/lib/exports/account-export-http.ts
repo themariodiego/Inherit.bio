@@ -9,6 +9,10 @@ import {mintExportOperation,verifyExportOperation,EXPORT_OPERATION_TOKEN_MAX_LEN
 import {accountExportActor,mintAccountExportCsrf,verifyAccountExportCsrf,createAccountExportCookie,
  readAccountExportCookie,type AccountExportActor} from "./account-export-session";
 import {approvedAccountArchiveGeneration,type AccountArchiveGenerationCapability} from "./account-archive-generation";
+import {randomBytes,createHash} from "node:crypto";
+import {currentAccountExportReady,publicAccountExportReady,type AccountExportDeliveryCapability} from "./account-export-delivery";
+import {ACCOUNT_ARCHIVE_CHUNK_BYTES,ACCOUNT_ARCHIVE_FILENAME,accountExportDownload} from "./account-export-delivery-contract";
+import {configuredTestAccountArchive} from "./account-archive-test-capabilities";
 
 const uuid=z.uuid(),hash=z.string().regex(/^[a-f0-9]{64}$/u),revision=z.number().int().positive().safe();
 const captureSchema=z.object({principalId:uuid,principalHash:hash,originBinding:hash,authorityReceipt:hash,
@@ -19,12 +23,12 @@ const createSchema=z.object({exportId:uuid,exportRevision:revision,status:z.lite
 const statusSchema=z.object({exportId:uuid,exportRevision:revision,
  status:z.enum(["queued","building","ready","failed","revoked","expired","purged"]),expiresAt:z.iso.datetime({offset:true}).nullable()}).strict();
 const bodySchema=z.object({operation:z.enum(["create","open-ready"]),nonce:z.string().min(1).max(EXPORT_OPERATION_TOKEN_MAX_LENGTH)}).strict();
-export type AccountExportRequestRpc=(name:"export_archive_request_v1",args:{p_operation:"capture"|"create"|"check";
+export type AccountExportRequestRpc=(name:"export_archive_request_v1",args:{p_operation:"capture"|"create"|"check"|"open-ready";
  p_origin:{kind:"account";accountId:string;sessionId:string};p_target_kind:"account";p_target_id:string;
  p_payload:unknown;p_csrf_binding:string|null},options:{get:false;head:false})=>{
  retry:(enabled:false)=>{abortSignal:(signal:AbortSignal)=>PromiseLike<{data:unknown;error:{code?:string}|null}>}};
 export type AccountExportHttpDependencies={actor:()=>Promise<AccountExportActor|null>;origin:()=>string;rpc:()=>AccountExportRequestRpc;
- generation:AccountArchiveGenerationCapability|null};
+ generation:AccountArchiveGenerationCapability|null;delivery?:AccountExportDeliveryCapability|null};
 const unavailable=()=>ownUploadJson({error:"unavailable"},503);
 const notFound=()=>ownUploadJson({error:"not_found"},404);
 const forbidden=()=>ownUploadJson({error:"request_forbidden"},403);
@@ -47,8 +51,9 @@ export async function currentAccountExportActor():Promise<AccountExportActor|nul
  const parsed=accountExportActor.safeParse({accountId:jwt.sub,sessionId:jwt.session_id});return parsed.success?parsed.data:null;
 }
 export function accountExportHttpDependencies():AccountExportHttpDependencies{
+ const test=configuredTestAccountArchive();
  return {actor:currentAccountExportActor,origin:applicationOrigin,rpc:()=>{const admin=createAdminClient();return admin.rpc.bind(admin) as unknown as AccountExportRequestRpc;},
-  generation:approvedAccountArchiveGeneration()};
+  generation:approvedAccountArchiveGeneration()??test?.generation??null,delivery:test?.delivery??null};
 }
 async function bounded<T>(signal:AbortSignal,work:(signal:AbortSignal)=>PromiseLike<T>,milliseconds=30_000):Promise<T>{
  const stop=new AbortController(),current=AbortSignal.any([signal,stop.signal]);let interrupt=()=>{};
@@ -59,7 +64,7 @@ async function bounded<T>(signal:AbortSignal,work:(signal:AbortSignal)=>PromiseL
  }finally{clearTimeout(timer);current.removeEventListener("abort",interrupt);stop.abort();}
 }
 function origin(actor:AccountExportActor){return {kind:"account" as const,...actor};}
-async function invoke(rpc:AccountExportRequestRpc,actor:AccountExportActor,operation:"capture"|"create"|"check",
+async function invoke(rpc:AccountExportRequestRpc,actor:AccountExportActor,operation:"capture"|"create"|"check"|"open-ready",
  signal:AbortSignal,payload:unknown=null,csrf:string|null=null){
  return bounded(signal,async current=>{
   const result=await rpc("export_archive_request_v1",{p_operation:operation,p_origin:origin(actor),p_target_kind:"account",
@@ -80,6 +85,23 @@ export async function presentAccountExportCreate(deps:AccountExportHttpDependenc
  const csrf=mintAccountExportCsrf({actor,originBinding:capture.originBinding,authorityReceipt:capture.authorityReceipt,operation:"create"});
  const operation=mintExportOperation(operationContext(actor,capture,csrf.binding));
  return Object.freeze({operation:"create" as const,nonce:operation.token,csrf:csrf.token});
+}
+/** Only an explicit server-rendered presentation mints the distinct open proof.
+ * The status poll returns metadata and can never issue this action/CSRF pair. */
+export async function presentAccountExportOpen(request:Request,deps:AccountExportHttpDependencies,signal:AbortSignal){
+ if(!deps.delivery||signal.aborted)return null;
+ const actor=await deps.actor();if(!actor)return null;
+ const cookie=readAccountExportCookie(request,actor);if(!cookie)return null;
+ const rpc=deps.rpc(),capture=captureSchema.parse(await invoke(rpc,actor,"capture",signal));
+ const status=statusSchema.parse(await invoke(rpc,actor,"check",signal,{exportId:cookie.exportId,exportCookieHash:cookie.hash}));
+ if(status.exportId!==cookie.exportId||status.status!=="ready")return null;
+ const ready=await bounded(signal,current=>currentAccountExportReady({delivery:deps.delivery!,actor,
+  exportId:cookie.exportId,exportCookieHash:cookie.hash,signal:current}));
+ if(ready.authorityReceipt!==capture.authorityReceipt)return null;
+ const csrf=mintAccountExportCsrf({actor,originBinding:capture.originBinding,authorityReceipt:capture.authorityReceipt,operation:"open-ready"});
+ const action=mintExportOperation({...operationContext(actor,capture,csrf.binding),operation:"open-ready",
+  exportId:status.exportId,exportRevision:status.exportRevision});
+ return Object.freeze({...publicAccountExportReady(ready),operation:"open-ready" as const,nonce:action.token,csrf:csrf.token});
 }
 async function readBody(request:Request){
  if(!request.body)return null;const reader=request.body.getReader();let chunks:Uint8Array[]=[];let length=0;
@@ -106,9 +128,26 @@ export async function postAccountExport(request:Request,deps:AccountExportHttpDe
    if(status.exportId!==cookie.exportId||status.status!=="ready")return notFound();
    const verified=verifyExportOperation(body.data.nonce,{...operationContext(actor,capture,csrf),operation:"open-ready",
     exportId:status.exportId,exportRevision:status.exportRevision});if(!verified)return notFound();
-   // Current authority, distinct action and CSRF are still required even while
-   // provider publication is closed. No open-ready write or create fallback.
-   return unavailable();
+   if(!deps.delivery)return unavailable();
+   const ready=await bounded(request.signal,current=>currentAccountExportReady({delivery:deps.delivery!,actor,
+    exportId:cookie.exportId,exportCookieHash:cookie.hash,signal:current}));
+   if(ready.authorityReceipt!==capture.authorityReceipt)throw new RequestFailure();
+   // One random secret is submitted once. An uncertain native response never
+   // rotates the cookie, opens a replacement session or retries the operation.
+   const secretBytes=randomBytes(32);let secret:string;
+   try{secret=secretBytes.toString("base64url");}finally{secretBytes.fill(0);}
+   const downloadHash=createHash("sha256").update(secret).digest("hex");
+   const opened=z.object({downloadSessionId:uuid,expiresAt:z.iso.datetime({offset:true}),
+    chunkBytes:z.literal(ACCOUNT_ARCHIVE_CHUNK_BYTES),sizeBytes:z.number().int().positive().safe(),sha256:hash}).strict()
+    .parse(await invoke(rpc,actor,"open-ready",request.signal,{exportId:cookie.exportId,envelope:verified,
+     downloadCookieHash:downloadHash,exportCookieHash:cookie.hash},csrf));
+   if(opened.sizeBytes!==ready.sizeBytes||opened.sha256!==ready.sha256||Date.parse(opened.expiresAt)<=Date.now()
+    ||Date.parse(opened.expiresAt)>Date.parse(ready.expiresAt)||Date.parse(opened.expiresAt)>Date.now()+3_600_000)throw new RequestFailure();
+   const response=ownUploadJson(accountExportDownload.parse({session:opened.downloadSessionId,filename:ACCOUNT_ARCHIVE_FILENAME,
+    sizeBytes:opened.sizeBytes,sha256:opened.sha256,chunkBytes:opened.chunkBytes,chunkCount:ready.segmentCount,
+    chunkRoute:`/api/downloads/${opened.downloadSessionId}/chunks/{sequence}`}),200);
+   response.headers.set("set-cookie",`__Host-inherit-download=${secret}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=${Math.max(1,Math.floor((Date.parse(opened.expiresAt)-Date.now())/1000))}`);
+   return response;
   }
   const envelope=verifyExportOperation(body.data.nonce,operationContext(actor,capture,csrf));if(!envelope)return notFound();
   if(!deps.generation)return unavailable();
@@ -134,8 +173,10 @@ export async function pollAccountExport(request:Request,deps:AccountExportHttpDe
   const status=statusSchema.parse(await invoke(deps.rpc(),actor,"check",request.signal,{exportId:cookie.exportId,exportCookieHash:cookie.hash}));
   if(status.exportId!==cookie.exportId)throw new RequestFailure();
   if(status.status==="queued"||status.status==="building")return ownUploadJson({status:"preparing",exportId:status.exportId},202);
-  // Existing check intentionally returns no size/hash/member-complete proof.
-  // Never fabricate a ready DTO or issue a download from status alone.
-  return status.status==="ready"?unavailable():notFound();
+  if(status.status!=="ready")return notFound();
+  if(!deps.delivery)return unavailable();
+  const ready=await bounded(request.signal,current=>currentAccountExportReady({delivery:deps.delivery!,actor,
+   exportId:cookie.exportId,exportCookieHash:cookie.hash,signal:current}));
+  return ownUploadJson(publicAccountExportReady(ready),200);
  }catch(error){return errorResponse(error);}
 }

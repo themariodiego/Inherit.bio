@@ -1,6 +1,6 @@
 import {randomUUID} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
-import {presentAccountExportCreate,postAccountExport,pollAccountExport,currentAccountExportActor,
+import {presentAccountExportCreate,presentAccountExportOpen,postAccountExport,pollAccountExport,currentAccountExportActor,
  type AccountExportHttpDependencies,type AccountExportRequestRpc} from "./account-export-http";
 import {ACCOUNT_EXPORT_COOKIE,accountExportCookieHash,createAccountExportCookie,mintAccountExportCsrf} from "./account-export-session";
 import {mintExportOperation} from "./export-operation-token";
@@ -13,7 +13,7 @@ function fixture(){
  const capture={principalId:randomUUID(),principalHash:"a".repeat(64),originBinding:"b".repeat(64),authorityReceipt:"c".repeat(64),
   accountRevision:1,lifecycleRevision:1,principalGraphRevision:1,subjectPartitions:[randomUUID()],fileCount:0};
  let status="queued",cookieHash="",consumed=false;
- const response=vi.fn(async(args:Parameters<AccountExportRequestRpc>[1])=>{
+ const response=vi.fn(async(args:Parameters<AccountExportRequestRpc>[1]):Promise<{data:unknown;error:{code:string}|null}>=>{
   if(args.p_origin.accountId!==actor.accountId||args.p_origin.sessionId!==actor.sessionId)return {data:null,error:{code:"42501"}};
   if(args.p_operation==="capture")return {data:structuredClone(capture),error:null};
   const payload=args.p_payload as Record<string,unknown>;
@@ -152,5 +152,64 @@ describe("consumed account export HTTP source",()=>{
   const response=await postAccountExport(post({operation:"create",nonce:nonce.token,csrf:csrf.token},{cookie},{operation:"open-ready",nonce:nonce.token}),f.deps);
   expect(response.status).toBe(503);expect(response.headers.has("set-cookie")).toBe(false);
   expect(f.rpc.mock.calls.slice(before).every(([,a])=>["capture","check"].includes(a.p_operation))).toBe(true);
+ });
+});
+
+describe("controlled complete TEST archive delivery",()=>{
+ function deliverable(f:ReturnType<typeof fixture>){
+  const ready={status:"ready" as const,exportId:f.exportId,attemptId:randomUUID(),sizeBytes:4_000_017,
+   sha256:"d".repeat(64),manifestSha256:"e".repeat(64),expiresAt:new Date(Date.now()+120_000).toISOString(),
+   authorityReceipt:f.capture.authorityReceipt,principalHash:f.capture.principalHash,segmentCount:2,pageCount:1,
+   memberCount:12,payloadBytes:4_000_000,memberSha256:"f".repeat(64),manifestMemberSha256:"1".repeat(64)};
+  f.deps.delivery={assertReady:vi.fn(async signal=>signal.throwIfAborted()),ready:vi.fn(async()=>structuredClone(ready))};
+  return ready;
+ }
+ it("polls complete native READY read-only and presents an independent open action only on the page",async()=>{
+  const f=fixture(),cookie=await queued(f),ready=deliverable(f);f.setStatus("ready");f.rpc.mockClear();
+  const request=new Request("https://test.e2e.local/api/export",{headers:{cookie}});
+  const result=await pollAccountExport(request,f.deps);
+  expect(result.status).toBe(200);expect(await result.json()).toEqual({status:"ready",exportId:f.exportId,
+   filename:"inherit-account-export.zip",sizeBytes:ready.sizeBytes,sha256:ready.sha256,openAction:{method:"POST",operation:"open-ready"}});
+  expect(result.headers.has("set-cookie")).toBe(false);expect(result.headers.has("location")).toBe(false);
+  expect(f.rpc.mock.calls.map(([,args])=>args.p_operation)).toEqual(["check"]);
+  const open=await presentAccountExportOpen(request,f.deps,new AbortController().signal);
+  expect(open).toMatchObject({operation:"open-ready",exportId:f.exportId,sha256:ready.sha256});
+  expect(open!.csrf).not.toBe(open!.nonce);
+  expect(f.rpc.mock.calls.map(([,args])=>args.p_operation)).toEqual(["check","capture","check"]);
+ });
+ it("opens once with the exact native envelope, current cookie and separate download secret",async()=>{
+  const f=fixture(),cookie=await queued(f),ready=deliverable(f),session=randomUUID();f.setStatus("ready");
+  const base=f.response.getMockImplementation()!;
+  f.response.mockImplementation(async args=>args.p_operation==="open-ready"?{data:{downloadSessionId:session,
+   expiresAt:new Date(Date.now()+60_000).toISOString(),chunkBytes:4_000_000,sizeBytes:ready.sizeBytes,sha256:ready.sha256},error:null}:base(args));
+  const open=(await presentAccountExportOpen(new Request("https://test.e2e.local/api/export",{headers:{cookie}}),f.deps,new AbortController().signal))!;
+  const response=await postAccountExport(post({operation:"create",nonce:open.nonce,csrf:open.csrf},{cookie},{operation:"open-ready",nonce:open.nonce}),f.deps);
+  expect(response.status).toBe(200);expect(await response.json()).toEqual({session,filename:"inherit-account-export.zip",
+   sizeBytes:ready.sizeBytes,sha256:ready.sha256,chunkBytes:4_000_000,chunkCount:2,chunkRoute:`/api/downloads/${session}/chunks/{sequence}`});
+  const downloadCookie=response.headers.get("set-cookie")!;
+  expect(downloadCookie).toMatch(/^__Host-inherit-download=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Strict; Max-Age=\d+$/u);
+  const payload=f.rpc.mock.calls.filter(([,args])=>args.p_operation==="open-ready").map(([,args])=>args.p_payload);
+  expect(payload).toHaveLength(1);expect(Object.keys(payload[0] as object).sort()).toEqual(["downloadCookieHash","envelope","exportCookieHash","exportId"]);
+  expect(JSON.stringify(payload)).not.toContain(downloadCookie.split(";")[0].split("=")[1]);
+  expect(f.generation.assertReady).toHaveBeenCalledTimes(1); // No generation/create fallback while opening.
+ });
+ it.each(["foreign-export","expired","wrong-count","missing-member-proof","extra-field"])("refuses %s complete READY before open issuance",async fault=>{
+  const f=fixture(),cookie=await queued(f),ready=deliverable(f);f.setStatus("ready");
+  const bad:Record<string,unknown>={...ready};
+  if(fault==="foreign-export")bad.exportId=randomUUID();if(fault==="expired")bad.expiresAt=new Date(0).toISOString();
+  if(fault==="wrong-count")bad.segmentCount=1;if(fault==="missing-member-proof")delete bad.manifestMemberSha256;
+  if(fault==="extra-field")bad.url="https://private.e2e.local/object";
+  f.deps.delivery={...f.deps.delivery!,ready:vi.fn(async()=>bad)};
+  const response=await pollAccountExport(new Request("https://test.e2e.local/api/export",{headers:{cookie}}),f.deps);
+  expect(response.status).toBe(503);expect(response.headers.has("set-cookie")).toBe(false);
+  expect(f.rpc.mock.calls.some(([,args])=>args.p_operation==="open-ready")).toBe(false);
+ });
+ it("refuses a lost native open response without retrying, replacing the secret or returning credentials",async()=>{
+  const f=fixture(),cookie=await queued(f);deliverable(f);f.setStatus("ready");const base=f.response.getMockImplementation()!;
+  f.response.mockImplementation(async args=>args.p_operation==="open-ready"?{data:null,error:{code:"08006"}}:base(args));
+  const open=(await presentAccountExportOpen(new Request("https://test.e2e.local/api/export",{headers:{cookie}}),f.deps,new AbortController().signal))!;
+  const response=await postAccountExport(post({operation:"create",nonce:open.nonce,csrf:open.csrf},{cookie},{operation:"open-ready",nonce:open.nonce}),f.deps);
+  expect(response.status).toBe(503);expect(await response.json()).toEqual({error:"unavailable"});expect(response.headers.has("set-cookie")).toBe(false);
+  expect(f.rpc.mock.calls.filter(([,args])=>args.p_operation==="open-ready")).toHaveLength(1);
  });
 });

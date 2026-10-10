@@ -13774,6 +13774,9 @@
       "endpoint": "resource-not-found-v1"
     },
     "routes": {
+      "jobs.account-export-test": [
+        "empty-acknowledgement-v1"
+      ],
       "public.security": [
         "security-text-v1"
       ],
@@ -21599,6 +21602,38 @@
           "execution": "refuse-405-before-delegation"
         }
       }
+    },
+    {
+      "id": "jobs.account-export-test",
+      "path": "/api/jobs/account-export",
+      "kind": "endpoint",
+      "domain": "jobs",
+      "auth": "jobs-secret",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": "forbidden",
+        "requiredHeaders": {
+          "X-Inherit-Account-Export-Operation": "exact-generation-or-disposal"
+        },
+        "accountSubjectSourceProviderAllocationRowsDeadlineOrLimitInput": "forbidden"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "controlled-TEST-account-archive-only",
+        "workerBinding": "workerExecutionBindings.export-generation",
+        "configuration": "TEST-jurisdiction-and-account-archive-flag-plus-actual-owner-only-enabled-native-configuration-and-matching-private-gateway-inspection-before-either-worker; ordinary-approved-generation-remains-null",
+        "generation": "invoke-only-the-existing-real-consumed-account-generation-worker; full-current-source-membership-byte-custody-and-EOF-checks-remain-required",
+        "disposal": "invoke-only-the-account-owned-original-due-and-stop-transition-then-exact-reserved-R2-allocations-permanent-all-writer-fence-actual-current-object-delete-two-absence-checks-and-native-ACK; live-ready-objects-are-never-disposed-on-poll-or-download",
+        "contracts": [
+          "resource-authorization-v1"
+        ],
+        "qualification": "TEST-source-only-until-genuine-native-private-provider-and-browser-proof; no-production-provider-or-G5.6-acceptance"
+      },
+      "successResponseContract": "empty-acknowledgement-v1",
+      "disposition": "kept"
     },
     {
       "id": "jobs.mail",

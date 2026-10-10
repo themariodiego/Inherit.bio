@@ -65,4 +65,13 @@ describe("real consumed account SDK composition",()=>{
     "Accept-Encoding":"identity",Range:"bytes=0-0"}});
   expect(f.write).not.toHaveBeenCalled();expect(sdk.create).not.toHaveBeenCalled();
  });
+ it("selects the distinct complete TEST door explicitly without changing legacy doors or exposing a human credential",async()=>{
+  const f=fixture();expect(f.execution.completeRpc).toBeUndefined();
+  const complete=accountArchiveExecution(f.write,"complete-test"),args={p_export_id:randomUUID(),p_attempt_id:randomUUID(),
+   p_authority_receipt:"b".repeat(64),p_operation:"context" as const,p_kind:null,p_after_key:null};
+  await complete.completeRpc!("export_archive_account_complete_v1",args,f.signal);
+  expect(sdk.rpc.mock.calls).toEqual([["export_archive_account_complete_v1",args,{get:false,head:false}]]);
+  expect(sdk.retry.mock.calls).toEqual([[false]]);expect(sdk.abort.mock.calls).toEqual([[f.signal]]);
+  expect(()=>accountArchiveExecution(f.write,"inherited" as never)).toThrow();
+ });
 });

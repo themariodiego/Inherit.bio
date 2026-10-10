@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { syntheticAbsoluteFinding, syntheticQc } from "@/lib/embryos/synthetic";
-import { projectHistoricalClaimantFigure, projectHistoricalClaimantQc, projectHistoricalClaimantReport } from "./future-person-historical-members";
+import { projectHistoricalClaimantFigure, projectHistoricalClaimantQc, projectHistoricalClaimantReport, historicalClaimantScore, historicalClaimantFigure } from "./future-person-historical-members";
 
 const id="68000000-0000-4000-8000-000000000001", other="68000000-0000-4000-8000-000000000002", hash="a".repeat(64), date="2026-09-30T20:00:00.000Z";
 function figure(kind="absolute_risk") {
@@ -66,4 +66,39 @@ describe("closed historical report and figure evidence",()=>{
   it("refuses an unknown artifact shape without silently omitting its row",()=>{
     expect(()=>projectHistoricalClaimantReport(report({uninterpreted_result:"synthetic"}))).toThrow("export unavailable");
   });
+});
+
+describe("closed claimed score archive transport",()=>{
+  it("retains the exact thirteen-field historical finding and source provenance contract",()=>{
+    const stored=figure(),score=stored.findingRecord;
+    expect(Object.keys(score).sort()).toEqual(["id","condition_id","condition_name","finding","evidence_label","coverage_state",
+      "citation_ids","not_covered_reason","model_id","model_version","source_binding_fingerprint","computation_revision","computed_at"].sort());
+    expect(historicalClaimantScore.parse(score)).toEqual(score);
+    expect(historicalClaimantFigure.parse(stored)).toEqual(stored);
+    expect(projectHistoricalClaimantFigure(stored)).toMatchObject({findingRevision:score.computation_revision,
+      sourceBindingFingerprint:score.source_binding_fingerprint,modelId:score.model_id,modelVersion:score.model_version,recordedAt:stored.created_at});
+  });
+  it.each([
+    {name:"nullable original column",receipt:null},
+    {name:"carrier receipt",receipt:{version:1,producer:"embryo-carrier-v1",reference_receipt:{privateControl:"public-canary-only"}}},
+    {name:"coverage-only receipt",receipt:{version:1,producer:"embryo-test-statistical-v1",reference_receipt:{runtime_binding:{owner:"public-canary-only"}}}},
+    {name:"fitted receipt",receipt:{version:1,producer:"embryo-test-statistical-fit-v1",reference_receipt:{
+      system_identifier:"public-canary-only",database_name:"public-canary-only",database_oid:1,server_version:170006,
+      runtime_binding:{owner:"public-canary-only",runtimeIdentity:"public-canary-only"},installed_at:date,
+      fit_artifact:{inventedControl:true},fit_package:{inventedControl:true},fit_package_digest:hash}}},
+  ])("refuses $name as an extra emitted field for both score and figure frames",({receipt})=>{
+    const stored=figure(),rawScore={...stored.findingRecord,computation_receipt:receipt};
+    expect(historicalClaimantScore.safeParse(rawScore).success).toBe(false);
+    const rawFigure={...stored,findingRecord:rawScore};
+    expect(historicalClaimantFigure.safeParse(rawFigure).success).toBe(false);
+    expect(()=>projectHistoricalClaimantFigure(rawFigure)).toThrow();
+    // These public planted values are rejection controls, not native receipts.
+    expect(stored.findingRecord).not.toHaveProperty("computation_receipt");
+  });
+  it.each(["system_identifier","database_name","database_oid","server_version","runtime_binding","installed_at"])(
+    "refuses a directly planted %s while preserving recorded scientific fields",field=>{
+      const stored=figure(),rawScore={...stored.findingRecord,[field]:"public-canary-only"};
+      expect(historicalClaimantScore.safeParse(rawScore).success).toBe(false);
+      expect(()=>projectHistoricalClaimantFigure({...stored,findingRecord:rawScore})).toThrow();
+    });
 });

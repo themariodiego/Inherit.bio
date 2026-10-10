@@ -13,6 +13,9 @@ insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
 create temporary table completion_fixture(origin jsonb,capture jsonb,created jsonb,frame jsonb,ready jsonb);
 insert into completion_fixture(origin) values(jsonb_build_object('kind','account','accountId','79800000-0000-4000-8000-000000000001',
  'sessionId','79800000-0000-4000-8000-000000000010'));
+-- Native TEST configuration precedes the durable complete capture; a later
+-- enablement must never adopt a prior legacy request or its authority receipt.
+update private.account_archive_r2_configuration set enabled=true,bucket='inherit-export-test',binding_sha256=repeat('2',64);
 update completion_fixture set capture=public.export_archive_request_v1('capture',origin,'account','79800000-0000-4000-8000-000000000001');
 create function pg_temp.envelope(op text,nonce text) returns jsonb language sql as $$
  select jsonb_build_object('routeId','api.export','origin','authenticated','principalId',capture->>'principalId',
@@ -34,7 +37,6 @@ create function pg_temp.segment() returns jsonb language sql as $$
 $$;
 select is(pg_temp.worker('begin')->>'attemptId','79800000-0000-4000-8000-000000000030','existing consumed account attempt starts');
 select is(pg_temp.worker('reserve',pg_temp.segment())->>'ordinal','0','ordinary native reservation precedes allocation');
-update private.account_archive_r2_configuration set enabled=true,bucket='inherit-export-test',binding_sha256=repeat('2',64);
 update completion_fixture set frame=private.reserve_account_archive_r2_write_v1('79800000-0000-4000-8000-000000000030',0,capture->>'authorityReceipt',repeat('1',64));
 select is(private.complete_account_archive_r2_write_v1('79800000-0000-4000-8000-000000000030',0,
  (select capture->>'authorityReceipt' from completion_fixture),repeat('1',64),(select frame from completion_fixture),'version1','etag1'),
@@ -95,6 +97,75 @@ select throws_ok($$select private.current_account_archive_test_object_v1('798000
  '42501','account_archive_test_unavailable','foreign actor cannot use download');
 select is(private.current_account_archive_test_object_v1('79800000-0000-4000-8000-000000000030',0,
  (select capture->>'authorityReceipt' from completion_fixture),repeat('8',64),(select origin from completion_fixture))->>'providerVersion','version1','native grant binds exact stored provider version');
+-- Additive native protocol controls only. The existing synthetic owner callback
+-- supplies metadata, not provider bytes or a complete ZIP. Rollback restores
+-- every download field before the unchanged legacy ACK assertions below.
+create temporary table new_chunk_contract_before as select to_jsonb(d) value
+ from private.export_archive_downloads d where cookie_hash=repeat('8',64);
+select is(private.account_archive_test_ready_v1((select origin from completion_fixture),
+ (select(created->>'exportId')::uuid from completion_fixture),repeat('9',64)),
+ (select ready from completion_fixture),'new polling READY returns the exact immutable15-field completion without minting an action');
+select throws_ok($$select private.account_archive_test_ready_v1((select origin from completion_fixture),
+ (select(created->>'exportId')::uuid from completion_fixture),repeat('7',64))$$,
+ '42501','account_archive_test_unavailable','new READY independently refuses the wrong export cookie');
+savepoint new_ready_non_test;
+update public.profiles set jurisdiction_code='XX' where id='79800000-0000-4000-8000-000000000001';
+select throws_ok($$select private.account_archive_test_ready_v1((select origin from completion_fixture),
+ (select(created->>'exportId')::uuid from completion_fixture),repeat('9',64))$$,
+ '42501','account_archive_test_unavailable','a real ready account cannot use the new native TEST door outside TEST');
+rollback to new_ready_non_test;
+savepoint new_chunk_contract;
+create function pg_temp.new_chunk_context(cookie text default repeat('8',64),origin jsonb default null) returns jsonb language sql as $$
+ select private.account_archive_test_delivery_context_v1((select id from private.export_archive_downloads where cookie_hash=repeat('8',64)),
+ cookie,coalesce(origin,(select origin from completion_fixture))); $$;
+create function pg_temp.new_chunk_receipt(op text,ordinal bigint default 0,challenge text default repeat('6',64),
+ sha text default repeat('d',64),bytes bigint default 3,cookie text default repeat('8',64),origin jsonb default null)
+ returns boolean language plpgsql as $$
+ declare did uuid;o jsonb;
+ begin
+  select id into did from private.export_archive_downloads where cookie_hash=repeat('8',64);
+  o:=coalesce(origin,(select completion_fixture.origin from completion_fixture));
+  if op='issue' then return private.issue_account_archive_test_chunk_v1(did,cookie,o,ordinal,challenge,sha,bytes);
+  elsif op='ack' then return private.ack_account_archive_test_chunk_v1(did,cookie,o,ordinal,challenge,sha,bytes);
+  else raise exception 'invalid synthetic control operation';end if;
+ end $$;
+select is(pg_temp.new_chunk_context()->'ready',(select ready from completion_fixture),
+ 'current delivery context cross-binds the original cookie/account/session and entire READY');
+select throws_ok($$select pg_temp.new_chunk_context(repeat('7',64))$$,
+ '42501','account_archive_test_unavailable','an existing account download with wrong cookie refuses instead of falling through');
+select throws_ok($$select pg_temp.new_chunk_context(origin=>'{}'::jsonb)$$,
+ '42501','account_archive_test_unavailable','an existing account download with wrong origin refuses instead of falling through');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack')$$,
+ '42501','account_archive_test_unavailable','a browser ACK cannot precede actual native chunk issuance');
+select throws_ok($$select pg_temp.new_chunk_receipt('issue',sha=>repeat('e',64))$$,
+ '42501','account_archive_test_unavailable','issue cannot substitute a different native segment digest');
+select throws_ok($$select pg_temp.new_chunk_receipt('issue',bytes=>4)$$,
+ '42501','account_archive_test_unavailable','issue cannot substitute a different native segment byte count');
+select ok(pg_temp.new_chunk_receipt('issue'),'new issue records only the exact current native segment tuple');
+select is((select next_sequence from private.export_archive_downloads where cookie_hash=repeat('8',64)),0::bigint,
+ 'provider read/issue alone does not advance the browser delivery sequence');
+select throws_ok($$select pg_temp.new_chunk_receipt('issue')$$,
+ '42501','account_archive_test_unavailable','an issued but unacknowledged native chunk cannot be issued again');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack',challenge=>repeat('7',64))$$,
+ '42501','account_archive_test_unavailable','ACK independently requires the exact once-issued challenge hash');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack',sha=>repeat('e',64))$$,
+ '42501','account_archive_test_unavailable','ACK independently requires the exact whole digest');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack',bytes=>4)$$,
+ '42501','account_archive_test_unavailable','ACK independently requires the exact byte count');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack',ordinal=>1)$$,
+ '42501','account_archive_test_unavailable','ACK independently requires the exact sequential ordinal');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack',cookie=>repeat('7',64))$$,
+ '42501','account_archive_test_unavailable','ACK independently requires the original download cookie');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack',origin=>'{}'::jsonb)$$,
+ '42501','account_archive_test_unavailable','ACK independently requires the original complete account origin');
+select ok(pg_temp.new_chunk_receipt('ack'),'only the exact browser receipt advances the new native delivery sequence');
+select is((select next_sequence from private.export_archive_downloads where cookie_hash=repeat('8',64)),1::bigint,
+ 'one consumed receipt advances exactly once');
+select throws_ok($$select pg_temp.new_chunk_receipt('ack')$$,
+ '42501','account_archive_test_unavailable','a consumed exact receipt cannot replay');
+rollback to new_chunk_contract;
+select is((select to_jsonb(d) from private.export_archive_downloads d where cookie_hash=repeat('8',64)),
+ (select value from new_chunk_contract_before),'all new receipt controls restore the entire exact legacy download row');
 select ok(private.ack_test_account_archive_download_v1('79800000-0000-4000-8000-000000000030',0,
  (select capture->>'authorityReceipt' from completion_fixture),repeat('8',64),(select origin from completion_fixture)),'exact sequential native download ACK');
 select throws_ok($$select private.current_account_archive_test_object_v1('79800000-0000-4000-8000-000000000030',0,

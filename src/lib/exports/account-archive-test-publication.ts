@@ -22,9 +22,10 @@ const pageSchema=z.object({page:count,sizeBytes:count.positive(),segmentCount:co
 const objectSchema=z.object({frame:frameSchema,providerVersion:providerId,providerEtag:providerId}).strict();
 export const accountArchiveProducerCompletion=z.object({version:z.literal("complete-account-zip64-producer-v1"),
  memberCount:count.positive(),payloadBytes:count.positive(),memberSha256:hash,manifestMemberSha256:hash}).strict();
-const readySchema=z.object({status:z.literal("ready"),exportId:uuid,attemptId:uuid,sizeBytes:count.positive(),sha256:hash,
+export const accountArchiveReadySchema=z.object({status:z.literal("ready"),exportId:uuid,attemptId:uuid,sizeBytes:count.positive(),sha256:hash,
  manifestSha256:hash,expiresAt:z.iso.datetime({offset:true}),authorityReceipt:hash,principalHash:hash,segmentCount:count.positive(),pageCount:count.positive(),
  memberCount:count.positive(),payloadBytes:count.positive(),memberSha256:hash,manifestMemberSha256:hash}).strict();
+const readySchema=accountArchiveReadySchema;
 export type TestAccountArchiveReady=z.infer<typeof readySchema>;
 type Environment=Readonly<Record<string,string|undefined>>;
 const unavailable=()=>new Error("test_account_archive_publication_unavailable");
@@ -107,9 +108,13 @@ export async function completeTestAccountArchive(options:{job:AccountArchiveJob;
  * consumer finishes; this is not a production HTTP lifetime/disposal claim. */
 export async function readTestAccountArchiveChunk(options:{ready:TestAccountArchiveReady;ordinal:number;
  downloadHash:string;origin:{kind:"account";accountId:string;sessionId:string};gateway:RequesterStatementR2Gateway;
- runtime:RequesterStatementRuntime;signal:AbortSignal;env:Environment}){
+ runtime:RequesterStatementRuntime;signal:AbortSignal;env:Environment;
+ /** HTTP delivery issues a one-use challenge after verified EOF; sequence ACK
+  * is deferred until the browser's separate verified-write receipt. */
+ receiptIssue?:{downloadId:string;challengeHash:string}}){
  const ready=readySchema.parse(options.ready),origin=z.object({kind:z.literal("account"),accountId:uuid,sessionId:uuid}).strict().parse(options.origin);
  const {gateway,runtime,signal,env}=options,downloadHash=hash.parse(options.downloadHash),ordinal=count.parse(options.ordinal);
+ const issue=options.receiptIssue?z.object({downloadId:uuid,challengeHash:hash}).strict().parse(options.receiptIssue):null;
  if(signal.aborted||ordinal>=ready.segmentCount||Date.parse(ready.expiresAt)<=Date.now()
   ||ready.segmentCount!==Math.ceil(ready.sizeBytes/ARCHIVE_SEGMENT_BYTES)
   ||ready.pageCount!==Math.ceil(ready.segmentCount/ARCHIVE_METADATA_PAGE_SEGMENTS))throw unavailable();
@@ -147,8 +152,11 @@ export async function readTestAccountArchiveChunk(options:{ready:TestAccountArch
    const actual=await readRequesterStatementWholeObject(gateway,entry.frame,signal,runtime);bytes=actual.bytes;
    if(actual.metadata.version!==entry.providerVersion||actual.metadata.etag!==entry.providerEtag)throw unavailable();
    same(await current(),{frame:entry.frame,providerVersion:entry.providerVersion,providerEtag:entry.providerEtag});
-   const rows=await tx<{acknowledged:boolean}[]>`select private.ack_test_account_archive_download_v1(${attempt.attemptId}::uuid,
-    ${ordinal},${ready.authorityReceipt},${downloadHash},${JSON.stringify(origin)}::jsonb) as acknowledged`;
+   const rows=issue
+    ?await tx<{acknowledged:boolean}[]>`select private.issue_account_archive_test_chunk_v1(${issue.downloadId}::uuid,
+     ${downloadHash},${JSON.stringify(origin)}::jsonb,${ordinal},${issue.challengeHash},${entry.segment.sha256},${entry.segment.sizeBytes}) as acknowledged`
+    :await tx<{acknowledged:boolean}[]>`select private.ack_test_account_archive_download_v1(${attempt.attemptId}::uuid,
+     ${ordinal},${ready.authorityReceipt},${downloadHash},${JSON.stringify(origin)}::jsonb) as acknowledged`;
    if(rows.length!==1||rows[0]?.acknowledged!==true||signal.aborted)throw unavailable();
   });
   if(!bytes||signal.aborted)throw unavailable();const owned=bytes;let settlement:Promise<void>|undefined;

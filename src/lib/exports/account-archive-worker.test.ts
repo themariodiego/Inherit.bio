@@ -18,6 +18,8 @@ import {ACCOUNT_GRAPH_CLASSES} from "./account-graph-projection";
 import type {AccountRoutedGraphRpc} from "./account-routed-graph-rows";
 import type {AccountPathBRpc} from "./account-path-b-members";
 import {buildAccountArchive} from "./account-archive-worker";
+import {accountCompleteContextSchema,type AccountCompleteContext} from "./account-complete-context";
+import type {AccountCompleteRpc} from "./account-complete-reader";
 import {sealNewCorrection} from "../future-person/correction-case-envelope";
 import {createRequesterStatementRuntime} from "./requester-statement-runtime";
 import {createRequesterStatementMemorySpool} from "./requester-statement-spool";
@@ -130,6 +132,60 @@ async function fixture(bound=false,prepared=false){
 }
 afterEach(()=>{testNative.invoke=undefined;vi.restoreAllMocks();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.useRealTimers();});
 describe("complete consumed-account unpublished archive executor",()=>{
+
+ it("composes the complete native supplement with the original nonempty own report and raw bytes in one exact archive",async()=>{
+  const f=await fixture(),identity=randomUUID(),rowText=JSON.stringify({id:identity,region_id:"invented-complete-control",percentage:12.5});
+  const routed=hash(Buffer.concat([Buffer.from(hash("account-complete-routed-v1|ancestry_regions"),"hex"),Buffer.from(`${identity}:${f.self}:${rowText}\n`)]));
+  const classes=f.classContext.classes.map(old=>{
+   const extra={rows:old.kind==="ancestry_regions"?1:0,membershipSha256:old.kind==="ancestry_regions"?routed:hash(`account-complete-routed-v1|${old.kind}`),
+    partitions:old.kind==="ancestry_regions"?[{subjectId:f.self,rows:1}]:[]};
+   const emitted=old.mode==="excluded"?{rows:0,partitions:[]}:old;
+   const partitions=new Map<string,number>();for(const part of [...emitted.partitions,...extra.partitions])partitions.set(part.subjectId,(partitions.get(part.subjectId)??0)+part.rows);
+   return {kind:old.kind,rows:emitted.rows+extra.rows,membershipSha256:hash(`account-complete-class-v1|${old.kind}\n${old.rows}:${old.membershipSha256}\n${extra.rows}:${extra.membershipSha256}\n`),
+    partitions:[...partitions].map(([subjectId,rows])=>({subjectId,rows})),
+    legacy:{rows:old.rows,membershipSha256:old.membershipSha256,partitions:old.partitions},routed:extra};
+  });
+  const dispositions=classes.flatMap(value=>{
+   const own:AccountCompleteContext["dispositions"]=f.context.partitions.map(part=>{const rows=value.partitions.find(p=>p.subjectId===part.subjectId)?.rows??0;
+    return {subjectId:part.subjectId,kind:value.kind,sourceRows:rows,exportRows:rows,status:"permitted" as const,reason:"own-subject" as const,authoritySha256:"c".repeat(64)};});
+   const accountRows=value.rows-own.reduce((n,item)=>n+item.exportRows,0);
+   return accountRows?[...own,{subjectId:null,kind:value.kind,sourceRows:accountRows,exportRows:accountRows,status:"permitted" as const,
+    reason:"requester-metadata" as const,authoritySha256:"c".repeat(64)}]:own;
+  });
+  const context=accountCompleteContextSchema.parse({...f.context,version:"account-complete-members-v1",
+   legacyCapture:{context:f.context,classes:f.classContext,inventory:f.historyContext},
+   completeReceipt:{version:"account-complete-capture-receipt-v1",captureSha256:"b".repeat(64),subjectCount:f.context.partitions.length,
+    fileCount:f.context.fileCount,classes,members:[],files:[],history:f.historyContext.classes.map(old=>{
+     const extra=hash(`account-complete-history-routed-v1|${old.kind}`);
+     return {kind:old.kind,legacy:{rows:old.rows,membershipSha256:old.membershipSha256},routed:{rows:0,membershipSha256:extra,partitions:[]},rows:old.rows,
+      membershipSha256:hash(`account-complete-history-v1|${old.kind}\n${old.rows}:${old.membershipSha256}\n0:${extra}\n`)};
+    })},dispositions});
+  const completeRpc=vi.fn<AccountCompleteRpc>(async(name,args)=>{
+   expect(name).toBe("export_archive_account_complete_v1");expect(args.p_export_id).toBe(f.options.job.exportId);
+   expect(args.p_authority_receipt).toBe(f.options.job.authorityReceipt);
+   expect(args.p_attempt_id).toBe(f.historical.calls.find(call=>call.p_operation==="begin")!.p_attempt_id);
+   if(args.p_operation==="context")return {data:structuredClone(context),error:null};
+   if(args.p_operation==="rows"||args.p_operation==="history-rows")return {data:{version:"account-complete-page-v1",kind:args.p_kind,
+    rows:args.p_operation==="rows"&&args.p_kind==="ancestry_regions"&&args.p_after_key===null?
+     [{identity,key:[f.self,identity],subjectId:f.self,scope:"subject",rowText,rowSource:null}]:[],nextAfterKey:null},error:null};
+   throw new Error("unexpected-complete-unit-operation");
+  });
+  const result=await buildAccountArchive({...f.options,completeRpc}),zip=new AdmZip(Buffer.concat(f.historical.writes));
+  const manifest=JSON.parse(zip.readAsText("manifest.json"));
+  expect(result.summary.state).toBe("bytes-complete");expect(manifest.completeReceipt).toEqual(context.completeReceipt);
+  expect(manifest.dispositions).toEqual(context.dispositions);expect(manifest.subjectPartitions).toEqual(f.context.partitions.map(p=>p.subjectId));
+  for(const part of f.context.partitions)for(const member of ACCOUNT_SUBJECT_MEMBERS)expect(zip.getEntry(`subjects/${part.subjectId}/${member}`)).not.toBeNull();
+  expect(JSON.parse(zip.readAsText("complete/classes/ancestry_regions.json")).rows)
+   .toEqual([{identity,subjectId:f.self,row:JSON.parse(rowText)}]);
+  expect(zip.readAsText(`subjects/${f.self}/reports.txt`)).toContain("Original saved finding");
+  expect(zip.readFile(`originals/${f.file.file.id}/original.vcf`)).toEqual(Buffer.from("ABC"));
+  expect(zip.readAsText(`variants/${f.file.file.id}.csv`)).toContain("A/G");
+  expect(manifest.members.filter((m:{name:string})=>m.name.startsWith("complete/classes/"))).toHaveLength(29);
+  expect(manifest.members.filter((m:{name:string})=>m.name.startsWith("complete/history/"))).toHaveLength(9);
+  for(const member of manifest.members){const raw=zip.readFile(member.name)!;expect(raw.byteLength).toBe(member.sizeBytes);expect(hash(raw)).toBe(member.sha256);}
+  expect(hash(Buffer.from(JSON.stringify(manifest.members)))).toBe(result.completionProof.memberSha256);
+  expect(completeRpc.mock.calls.filter(([,args])=>args.p_operation==="rows"&&args.p_kind==="ancestry_regions").length).toBeGreaterThan(1);
+ });
  it("uses the supplied account writer for own statements and settles their shared buffers",async()=>{
   vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","1");
   vi.stubEnv("BYOK_ENCRYPTION_KEY",Buffer.alloc(32,71).toString("base64"));

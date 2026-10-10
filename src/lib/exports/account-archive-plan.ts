@@ -8,17 +8,21 @@ import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import type {Zip64Member} from "./archive-zip64";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
+import {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
+import {accountCompleteContextSchema,type AccountCompleteContext} from "./account-complete-context";
+import {ACCOUNT_COMPLETE_VARIANT_COLUMNS} from "./account-complete-variant-csv";
 
-export const ACCOUNT_SUBJECT_MEMBERS=["subject.json","consents.json","legacy-consents.json","attestations.json","audit-log.json",
- "reports.json","reports.txt","prs.json","ancestry.json","chats.json","portrait.json","embryos.json"] as const;
+export {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
 const indexes=["subjects","consents","legacy-consents","attestations","audit-log","portrait","embryos"] as const;
 const uuid=z.uuid(),hash=z.string().regex(/^[a-f0-9]{64}$/u),count=z.number().int().nonnegative().safe();
 const part=z.object({name:z.string(),sequence:z.number().int().min(0).max(49),partId:uuid,sizeBytes:count.positive(),sha256:hash}).strict();
-const fileSchema=z.object({fileId:uuid,subjectId:uuid,projection:z.enum(["own-upload","sanitized-embryo"]),
+const fileSchema=z.object({fileId:uuid,subjectId:uuid,projection:z.enum(["own-upload","sanitized-embryo","consent-covered-upload"]),
  byte_identical_to_upload:z.boolean(),originalRetired:z.boolean(),sourceSha256:hash,decodedSha256:hash.optional(),
  membershipSha256:hash.optional(),publicationRevision:z.number().int().positive().safe().optional(),
+ rawAuthoritySha256:hash.optional(),
+ contentBackend:z.enum(["database-v1","prepared-object-v1"]).optional(),variantColumns:z.array(z.string()).length(6).optional(),
  currentParts:z.array(part).min(1).max(50).optional()}).strict()
- .refine(f=>f.projection==="own-upload"?f.byte_identical_to_upload===!f.originalRetired&&f.currentParts===undefined:
+ .refine(f=>f.projection!=="sanitized-embryo"?f.byte_identical_to_upload===!f.originalRetired&&f.currentParts===undefined:
   !f.byte_identical_to_upload&&!f.originalRetired&&f.membershipSha256!==undefined&&f.publicationRevision!==undefined
    &&f.currentParts!==undefined&&new Set(f.currentParts.map(p=>p.partId)).size===f.currentParts.length
    &&f.currentParts.every((p,i)=>p.sequence===i&&p.name===`originals/${f.fileId}/canonical-part-${String(i).padStart(4,"0")}.vcf`));
@@ -33,10 +37,14 @@ const unavailable=()=>new Error("account_archive_plan_unavailable"),encoder=new 
  * retains descriptors only, and rereads each member at ZIP open. No provider,
  * human JWT, publication/READY transition or alternate authority is created. */
 export async function prepareAccountArchivePlan(options:{context:z.infer<typeof accountArchiveContextSchema>;
+ completeContext?:AccountCompleteContext;
  factories:FuturePersonMemberFactory[];files:AccountArchiveFile[];sources:AccountArchiveSourceMember[];resultSources?:AccountPathBSource[];
  signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>;sensitiveRuntime?:RequesterStatementRuntime;
  ownStatements?:z.infer<typeof accountOwnStatementCapture>}){
- const context=accountArchiveContextSchema.parse(options.context),files=options.files.map(f=>fileSchema.parse(f));
+ const legacyContext=accountArchiveContextSchema.parse(options.context);
+ const complete=options.completeContext===undefined?undefined:accountCompleteContextSchema.parse(options.completeContext);
+ if(complete&&JSON.stringify(complete.legacyCapture.context)!==JSON.stringify(legacyContext))throw unavailable();
+ const context=complete??legacyContext,files=options.files.map(f=>fileSchema.parse(f));
  const ownStatements=options.ownStatements===undefined?undefined:accountOwnStatementCapture.parse(options.ownStatements);
  const resultSources=(options.resultSources??[]).map(value=>accountPathBSourceSchema.parse(value));
  if(new Set(resultSources.map(r=>`${r.fileId}:${r.purpose}:${r.bindingRevision}`)).size!==resultSources.length
@@ -46,7 +54,15 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||files.length!==context.fileCount
   ||new Set(files.map(f=>f.fileId)).size!==context.fileCount||files.some(f=>fileSubjects.get(f.fileId)!==f.subjectId
    ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class==="claimed-bound"&&f.projection!=="sanitized-embryo"
-   ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class==="ordinary"&&f.projection!=="own-upload"))throw unavailable();
+   ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class==="ordinary"&&f.projection!=="own-upload"
+   ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class==="consent-covered"&&(f.projection!=="consent-covered-upload"||f.rawAuthoritySha256===undefined||f.contentBackend===undefined||f.variantColumns===undefined)
+   ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class!=="consent-covered"&&(f.rawAuthoritySha256!==undefined||f.contentBackend!==undefined||f.variantColumns!==undefined)))throw unavailable();
+ for(const value of complete?.completeReceipt.files??[]){
+  const file=files.find(f=>f.fileId===value.fileId);
+  if(!file||file.subjectId!==value.subjectId||file.originalRetired!==value.originalRetired||file.sourceSha256!==value.rawSha256
+   ||file.decodedSha256!==value.decodedSha256||file.rawAuthoritySha256!==value.rawAuthoritySha256||file.contentBackend!==value.content.backend
+   ||JSON.stringify(file.variantColumns)!==JSON.stringify(value.content.backend==="database-v1"?ACCOUNT_COMPLETE_VARIANT_COLUMNS:["rsid","chrom","pos","ref","alt","genotype"]))throw unavailable();
+ }
  const fileById=new Map(files.map(f=>[f.fileId,f]));
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){
   const remaining=Date.parse(context.deadline)-Date.now();if(options.signal.aborted||signal.aborted||remaining<=0||remaining>86_400_000)throw unavailable();
@@ -67,6 +83,15 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  const check=(signal:AbortSignal)=>bounded(signal,current=>options.check(current));
  const input=new Map<string,FuturePersonMemberFactory>(),sourceNames=new Set<string>();
  const required=new Set(context.partitions.flatMap(p=>ACCOUNT_SUBJECT_MEMBERS.map(name=>`subjects/${p.subjectId}/${name}`)));
+ const completeMembers=new Map<string,number>(complete?[...complete.completeReceipt.classes.map(c=>[`complete/classes/${c.kind}.json`,c.routed.rows] as const),
+  ...complete.completeReceipt.history.map(h=>[`complete/history/${h.kind}.json`,h.routed.rows] as const)]:[]);
+ const completeRawMembers=new Map<string,number>();
+ for(const file of complete?.completeReceipt.files??[]){
+  const counts=file.content.backend==="database-v1"?Object.fromEntries(file.content.receipts.map(r=>[r.kind,r.rows])):
+   {variants:file.content.source.summary.variantCount,observed:file.content.source.summary.sourceObservedCount,
+    canonical:file.content.source.summary.sourceVariantCount+file.content.source.summary.sourceObservedCount+file.content.source.summary.sourceReferenceCount};
+  for(const kind of ["variants","observed","canonical"] as const)completeRawMembers.set(kind==="variants"?`variants/${file.fileId}.csv`:`${kind}/${file.fileId}.jsonl`,counts[kind]);
+ }
  for(const factory of options.factories){
   if(input.has(factory.name)||!Number.isSafeInteger(factory.rows)||factory.rows<0||typeof factory.chunks!=="function")throw unavailable();
   const own=/^subjects\/([a-f0-9-]{36})\/my-correction-statements\.json$/u.exec(factory.name);
@@ -75,7 +100,11 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   if(requester&&(!requesterStatementsOpen()||ownStatements?.version!=="test-account-own-statements-v2"
    ||!context.partitions.some(p=>p.subjectId===requester[1])
    ||ownStatements.partitions.find(p=>p.subjectId===requester[1])?.rows!==factory.rows))throw unavailable();
-  if(factory.name!=="legal-audit.json"&&!required.has(factory.name)&&!own&&!requester){
+  if(completeMembers.has(factory.name)){
+   if(factory.rows!==completeMembers.get(factory.name))throw unavailable();
+  }else if(completeRawMembers.has(factory.name)){
+   if(factory.rows!==completeRawMembers.get(factory.name))throw unavailable();
+  }else if(factory.name!=="legal-audit.json"&&!required.has(factory.name)&&!own&&!requester){
    const match=/^(variants|canonical|observed)\/([a-f0-9-]{36})\.(csv|jsonl)$/u.exec(factory.name),file=match?fileById.get(match[2]):undefined;
    const sanitized=/^originals\/([a-f0-9-]{36})\/embryo-autosomal-source\.jsonl$/u.exec(factory.name);
    if(sanitized){if(fileById.get(sanitized[1])?.projection!=="sanitized-embryo")throw unavailable();}
@@ -83,7 +112,8 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   }
   input.set(factory.name,factory);
  }
- if(!input.has("legal-audit.json")||[...required].some(name=>!input.has(name)))throw unavailable();
+ if(!input.has("legal-audit.json")||[...required,...completeMembers.keys(),...completeRawMembers.keys()].some(name=>!input.has(name))
+  ||complete?.completeReceipt.members.some(m=>input.get(`subjects/${m.subjectId}/${m.member}`)?.rows!==m.rows))throw unavailable();
  if(files.some(file=>file.originalRetired&&!input.has(`canonical/${file.fileId}.jsonl`)))throw unavailable();
  if(files.some(file=>file.projection==="sanitized-embryo"
   &&(!input.has(`variants/${file.fileId}.csv`)||!input.has(`originals/${file.fileId}/embryo-autosomal-source.jsonl`))))throw unavailable();
@@ -97,7 +127,7 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   sourceNames.add(source.fileId);sources.set(source.member.name,source);
  }
  if(files.some(file=>!file.originalRetired&&!sourceNames.has(file.fileId)))throw unavailable();
- if(files.some(file=>file.projection==="own-upload"&&!file.originalRetired
+ if(files.some(file=>file.projection!=="sanitized-embryo"&&!file.originalRetired
   &&[...sources.values()].filter(source=>source.fileId===file.fileId).length!==1))throw unavailable();
  if(files.some(file=>file.projection==="sanitized-embryo"&&file.currentParts!.some(part=>!sources.has(part.name))))throw unavailable();
  // All top-level indexes are generated here from the exact selected subjects;
@@ -168,7 +198,7 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   const raw=/^(?:(?:variants|canonical|observed)\/([a-f0-9-]{36})\.|originals\/([a-f0-9-]{36})\/)/u.exec(name),subject=/^subjects\/([a-f0-9-]{36})\//u.exec(name);
   const fileId=source?.fileId??raw?.[1]??raw?.[2]??null,subjectId=source?.subjectId??subject?.[1]??(fileId?fileSubjects.get(fileId)!:null);
   const descriptor={name,sizeBytes,sha256:digest.digest("hex"),rows:factory?.rows??0,fileId,subjectId};
-  if(source&&fileById.get(source.fileId)!.projection==="own-upload"&&descriptor.sha256!==fileById.get(source.fileId)!.sourceSha256)throw unavailable();
+  if(source&&fileById.get(source.fileId)!.projection!=="sanitized-embryo"&&descriptor.sha256!==fileById.get(source.fileId)!.sourceSha256)throw unavailable();
   if(source&&fileById.get(source.fileId)!.projection==="sanitized-embryo"
    &&descriptor.sha256!==fileById.get(source.fileId)!.currentParts!.find(p=>p.name===name)!.sha256)throw unavailable();
   descriptors.push(descriptor);
@@ -177,7 +207,8 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  }
  await check(options.signal);
  const manifest=encoder.encode(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",capturedAt:context.capturedAt,
-  subjectPartitions:context.partitions.map(p=>p.subjectId),files,...(resultSources.length?{resultSources}:{}),members:descriptors})+"\n");
+  subjectPartitions:context.partitions.map(p=>p.subjectId),files,...(resultSources.length?{resultSources}:{}),
+  ...(complete?{completeReceipt:complete.completeReceipt,dispositions:complete.dispositions}:{}),members:descriptors})+"\n");
  options.sensitiveRuntime?.own(manifest);
  const manifestFactory:FuturePersonMemberFactory={name:"manifest.json",rows:descriptors.length,chunks:async function*(signal){await check(signal);yield manifest;await check(signal);}};
  const manifestSha256=createHash("sha256").update(manifest).digest("hex");

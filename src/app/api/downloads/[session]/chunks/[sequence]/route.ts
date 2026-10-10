@@ -10,6 +10,7 @@ import { CHUNK_BYTES, downloadCookieHash, isCanonicalId } from "@/lib/future-per
 import { chunkReceiptProof } from "@/lib/future-person/review-receipt";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {getAccountArchiveChunk,accountArchiveChunkDependencies} from "@/lib/exports/account-archive-chunk-http";
 
 /**
  * `GET /api/downloads/[session]/chunks/[sequence]` (register
@@ -30,6 +31,8 @@ const SEQUENCE = /^(0|[1-4])$/u;
 
 export async function GET(request: Request, context: { params: Promise<{ session: string; sequence: string }> }) {
   const { session, sequence } = await context.params;
+  const archive=await getAccountArchiveChunk(request,{session,sequence},accountArchiveChunkDependencies());
+  if(archive)return archive;
   const response = await chunk(request, session, sequence);
   response.headers.set("Referrer-Policy", "no-referrer");
   return response;

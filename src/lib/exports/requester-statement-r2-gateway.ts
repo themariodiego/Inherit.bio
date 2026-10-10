@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { createR2CurrentDisposalBinding, type R2CurrentBucketPort } from "./archive-r2-current-binding";
-import type { R2CurrentReservation } from "./archive-r2-current-fence";
+import {r2CurrentReservationSchema,r2CurrentDescriptorSchema,type R2CurrentReservation,type R2CurrentMarker} from "./archive-r2-current-fence";
 import { requesterStatementsOpen } from "@/lib/future-person/requester-statement";
 import type { RequesterStatementR2Gateway } from "./requester-statement-r2";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
@@ -15,14 +15,22 @@ type Stub = {
  head(claim: Claim,key: string): Promise<unknown | null>;
  get(claim: Claim,key: string,headers: Headers): Promise<unknown | null>;
  putEmpty(claim: Claim,key: string,headers: Headers): Promise<unknown | null>;
+ deleteCurrent?(claim:Claim,key:string,expected:R2CurrentMarker):Promise<unknown>;
 };
 /** Actual service binding, not a browser URL or public HTTP transport. */
 export type RequesterStatementGatewayNamespace = { idFromName(allocation: string): unknown;get(id: unknown): Stub };
 const config = z.object({ bucket:z.string().regex(/^inherit-export-[a-z0-9-]{1,40}$/u),
  bindingSha256:z.string().regex(/^[0-9a-f]{64}$/u),protocol:z.literal("r2-current-object-qualified-all-writer-gateway-v1") }).strict();
 const unavailable=()=>new Error("requester_statement_gateway_unavailable");
+export type AccountArchiveGateway=RequesterStatementR2Gateway&Readonly<{
+ assertConfiguration(expected:{bucket:string;bindingSha256:string;protocol:"r2-current-object-qualified-all-writer-gateway-v1"},signal:AbortSignal):Promise<void>;
+ eraseCurrent(binding:R2CurrentReservation,marker:R2CurrentMarker,signal:AbortSignal):Promise<{
+  version:"account-archive-r2-object-absent-v1";reservationSha256:string;allocationSha256:string;
+  disposition:"current-object-absent";historyScope:"current-object-only";terminal:true;absent:true;
+ }>;
+}>;
 export function createRequesterStatementGateway(namespace: RequesterStatementGatewayNamespace,
- expected: z.infer<typeof config>, env: Readonly<Record<string,string|undefined>>=process.env,runtime?:RequesterStatementRuntime): RequesterStatementR2Gateway {
+ expected: z.infer<typeof config>, env: Readonly<Record<string,string|undefined>>=process.env,runtime?:RequesterStatementRuntime): AccountArchiveGateway {
  if(!requesterStatementsOpen(env))throw unavailable();const pinned=config.parse(expected);
  let exclusive:{reservation:R2CurrentReservation;claim:Claim;stub:Stub}|undefined;
  const stub=(allocation:string)=>namespace.get(namespace.idFromName(allocation));
@@ -49,6 +57,34 @@ export function createRequesterStatementGateway(namespace: RequesterStatementGat
   },
  });
  return Object.freeze({disposalProvider,
+  async assertConfiguration(expectedConfiguration:z.infer<typeof config>,signal:AbortSignal){
+   const value=config.parse(expectedConfiguration);
+   if(value.bucket!==pinned.bucket||value.bindingSha256!==pinned.bindingSha256||value.protocol!==pinned.protocol)throw unavailable();
+   // This is configuration inspection only, not an invented archive frame or
+   // reservation. It grants no allocation/content/native authority.
+   await ready(stub(pinned.bindingSha256),pinned.bucket,signal);
+  },
+  async eraseCurrent(raw:R2CurrentReservation,rawMarker:R2CurrentMarker,signal:AbortSignal){
+   const binding=r2CurrentReservationSchema.parse(raw),marker=r2CurrentDescriptorSchema.parse(rawMarker);
+   if(exclusive||signal.aborted||marker.kind!=="permanent-empty-fence"||marker.objectKey!==binding.locator.objectKey
+    ||marker.allocationSha256!==binding.allocationSha256||Date.parse(binding.claimExpiresAt)<=Date.now())throw unavailable();
+   const selected=stub(binding.allocationSha256);await ready(selected,binding.locator.bucket,signal);
+   if(typeof selected.deleteCurrent!=="function")throw unavailable();
+   const tokenBytes=randomBytes(32);runtime?.own(tokenBytes);let token:string;
+   try{token=tokenBytes.toString("hex");}finally{if(runtime)runtime.clear(tokenBytes);else tokenBytes.fill(0);}
+   const claim={allocationSha256:binding.allocationSha256,token,expiresAt:Date.parse(binding.claimExpiresAt)};
+   if(await selected.beginCleanup(claim)!==true||signal.aborted)throw unavailable();
+   exclusive={reservation:binding,claim,stub:selected};
+   try{
+    const result=z.object({terminal:z.literal(true),absent:z.literal(true)}).strict()
+     .parse(await selected.deleteCurrent(claim,binding.locator.objectKey,marker));
+    if(signal.aborted||Date.now()>=claim.expiresAt)throw unavailable();
+    await ready(selected,binding.locator.bucket,signal);
+    return {version:"account-archive-r2-object-absent-v1" as const,reservationSha256:binding.reservationSha256,
+     allocationSha256:binding.allocationSha256,disposition:"current-object-absent" as const,
+     historyScope:"current-object-only" as const,...result};
+   }finally{exclusive=undefined;if(await selected.endCleanup(claim)!==true)throw unavailable();}
+  },
   async assertReady(frame:Frame,signal:AbortSignal){
    if(frame.configurationSha256!==pinned.bindingSha256)throw unavailable();await ready(stub(frame.allocationSha256),frame.writeIdentity.locator.bucket,signal);
   },

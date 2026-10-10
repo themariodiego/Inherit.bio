@@ -38,6 +38,10 @@ const memberSchema = z.object({ version: z.literal("own-prepared-member-v1"), ma
   membershipSha256: hash, member: stored }).strict();
 const rootSchema = z.object({ version: z.literal("prepared-genome-root-v1"), state: z.literal("provisional"),
   binding: canonicalBindingSchema, canonical: stored, rsid: stored, rsidPointerSha256: hash, summary: summarySchema }).strict();
+// Integrity schemas only. Exporting these gives no source or member authority;
+// complete-account exports use their distinct current native recipient guard.
+export { sourceSchema as publishedPreparedSourceSchema, memberSchema as publishedPreparedMemberSchema,
+  rootSchema as publishedPreparedRootSchema };
 export class PublishedSourceReadError extends Error {
   constructor(readonly code: "invalid_request" | "integrity_mismatch" | "unavailable" | "aborted") {
     super(code); this.name = "PublishedSourceReadError";

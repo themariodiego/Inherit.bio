@@ -9,6 +9,7 @@ import {fenceR2CurrentReservation,r2AllocationDigest,r2CurrentReservationSchema}
 import type {RequesterStatementR2Gateway} from "./requester-statement-r2";
 import {readRequesterStatementWholeObject,verifyRequesterStatementObject} from "./requester-statement-r2-read";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
+import type {AccountArchiveGateway} from "./requester-statement-r2-gateway";
 
 const hash=z.string().regex(/^[0-9a-f]{64}$/u),uuid=z.uuid();
 const frameSchema=z.object({objectId:uuid,writeIdentity:r2CurrentReservationSchema.shape.writeIdentity,
@@ -104,7 +105,9 @@ export function createAccountArchiveR2Writer(options:{gateway:RequesterStatement
  * gateway, verifies complete payload/empty-marker EOF and only then ACKs it.
  * Current-object fencing supplies no history/delete or READY capability. */
 export async function disposeAccountArchiveR2Segment(options:{attemptId:string;ordinal:number;
- gateway:RequesterStatementR2Gateway;runtime:RequesterStatementRuntime;signal:AbortSignal;env?:Environment}){
+ gateway:RequesterStatementR2Gateway;runtime:RequesterStatementRuntime;signal:AbortSignal;env?:Environment;
+ /** Only the separate TEST physical disposal caller supplies this capability. */
+ physicalDeletion?:AccountArchiveGateway}){
  uuid.parse(options.attemptId);z.number().int().min(0).max(2_251_799_813).parse(options.ordinal);
  const {runtime,signal,gateway}=options,env=options.env??defaultEnvironment();
  const nonce=runtime.own(randomBytes(32));let claim:string;
@@ -149,9 +152,35 @@ export async function disposeAccountArchiveR2Segment(options:{attemptId:string;o
    if(rows.length!==1)throw unavailable();return rows[0]?.frame;
   })}));
  await runtime.wait(Promise.all(dispositions),Date.parse(reservation.claimExpiresAt));
+ if(options.physicalDeletion){
+  const current=async()=>withAccountArchiveR2Owner(env,signal,runtime,async tx=>{
+   const rows=await tx<{frame:unknown}[]>`select private.check_account_archive_r2_disposal_v1(${options.attemptId}::uuid,
+    ${options.ordinal},${claim},${JSON.stringify(reservation)}::jsonb) as frame`;
+   if(rows.length!==1||JSON.stringify(r2CurrentReservationSchema.parse(rows[0]?.frame))!==JSON.stringify(reservation))throw unavailable();
+  });
+  await current();
+  const absence=z.object({version:z.literal("account-archive-r2-object-absent-v1"),reservationSha256:hash,allocationSha256:hash,
+   disposition:z.literal("current-object-absent"),historyScope:z.literal("current-object-only"),terminal:z.literal(true),absent:z.literal(true)}).strict()
+   .parse(await runtime.track("account-r2-physical-delete",()=>options.physicalDeletion!.eraseCurrent(reservation,evidence.marker,signal)));
+  if(absence.reservationSha256!==reservation.reservationSha256||absence.allocationSha256!==reservation.allocationSha256)throw unavailable();
+  await current();
+  await withAccountArchiveR2Owner(env,signal,runtime,async tx=>{
+   const rows=await tx<{acknowledged:boolean}[]>`select private.ack_account_archive_r2_object_absence_v1(${options.attemptId}::uuid,
+    ${options.ordinal},${claim},${JSON.stringify(reservation)}::jsonb,${JSON.stringify(absence)}::jsonb) as acknowledged`;
+   if(rows.length!==1||rows[0]?.acknowledged!==true)throw unavailable();
+  });
+  return;
+ }
  await withAccountArchiveR2Owner(env,signal,runtime,async tx=>{
   const rows=await tx<{acknowledged:boolean}[]>`select private.ack_account_archive_r2_disposal_v1(${options.attemptId}::uuid,
    ${options.ordinal},${claim},${JSON.stringify(reservation)}::jsonb,${JSON.stringify(evidence)}::jsonb) as acknowledged`;
   if(rows.length!==1||rows[0]?.acknowledged!==true)throw unavailable();
  });
+}
+
+/** One permanent all-writer terminal fence, followed by actual current-object
+ * removal and two provider absence checks. History/platform copies remain a
+ * separately qualified policy; this cannot activate ordinary production. */
+export function disposeAccountArchiveR2Object(options:Omit<Parameters<typeof disposeAccountArchiveR2Segment>[0],"gateway"|"physicalDeletion">&{gateway:AccountArchiveGateway}){
+ return disposeAccountArchiveR2Segment({...options,physicalDeletion:options.gateway});
 }
