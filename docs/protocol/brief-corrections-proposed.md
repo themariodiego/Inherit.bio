@@ -1221,9 +1221,9 @@ brief was read afterwards.
 
 ---
 
-## Where the 9 unproven pairs stand
+## Where the 6 unproven pairs stand
 
-Counted from `docs/route-register.json` against `docs/route-divergence.json`.
+Counted from `docs/route-register.json` against `docs/route-divergence.json`. This is the authored source gap count, not the executed acceptance count. Saved exact-2def run 38024298438 proved the three native embryo complete steps; six scientific pairs and two appeal pairs remained unqualified on that head. This successor authors the two appeal steps without claiming their execution or changing any matrix verdict.
 The first version of this table claimed it "moves on its own as the ratchet
 does", which was not true of numbers typed into markdown: two proofs later it
 was already stale. `scripts/route-gate.test.ts` now recomputes the total and
@@ -1251,8 +1251,8 @@ a new state and proved it in the same change.
 | Closed by a proof, 2026-09-19 | 2 | `/family/health-picture processing` and `/family/portrait/[pairId] processing` (`e2e/family-processing-states.spec.ts`: the sentence decided on 2026-09-18, evening, built on both pages and read through the real journey with the other adult's preparation request held open) |
 | Closed by a proof, 2026-09-28 | 2 | `/family/portrait/[pairId] complete` and `/family/portrait/[pairId] partial-coverage` (`e2e/portrait-reviewed-carrier.spec.ts`: the reviewed carrier rule, migration `20260929130000_carrier_assertions.sql`, gives a synthetic release a classified position to land on; the spec needs that migration, so its first run is CI's) |
 | Waived by owner decision, 2026-09-18 (evening) | 4 | `/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data not-covered`, `/family not-covered`, `/family partial-coverage` — the three findings below, put to the owner as a choice between a waiver and a new sentence; the owner chose the waivers, each with its reason in `notApplicableStates` |
-| **Genuinely open** | **9** | test work: nine embryo pairs on ingest |
-| **Total unproven** | **9** | |
+| **Genuinely open** | **6** | six scientific embryo coverage pairs await approved finding producers; the two appeal assertions are authored, with actual hosted acceptance still pending |
+| **Total unproven** | **6** | |
 
 **Nothing in this number is a register correction any more.** (The four
 waivers of 18 September, evening, are signed decisions about states the
@@ -1277,7 +1277,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 9 that are open, none waits on item 11 any more
+### And of the 6 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1289,12 +1289,14 @@ actually waits on.
 
 | state | open | what it waits on |
 | --- | ---: | --- |
-| `not-covered` | 3 | three embryo pairs wait on ingest; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
-| `partial-coverage` | 3 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` was proven on 2026-09-28 over the reviewed carrier rule; `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
-| `complete` | 3 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` was proven on 2026-09-28 over the reviewed carrier rule |
-| `processing` | 0 | the two Family pairs were a product branch that did not exist; the owner decided on 2026-09-18 (evening) that the sentence may be built (below), it was built, and both were proven on 2026-09-19 |
+| `not-covered` | 3 | the three embryo pairs need approved finding producers and genuine failure findings; native ingestion and file QC alone do not supply those; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
+| `partial-coverage` | 3 | the three embryo pairs need actual partial scientific findings from approved producers; file-quality coverage is not a substitute; `/family/portrait/[pairId]` was proven on 2026-09-28 over the reviewed carrier rule; `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
+| `complete` | 0 | the assigned appeal step is now authored and awaits full new-head hosted execution; the three native embryo completion steps passed in saved exact-2def run 38024298438 |
+| `processing` | 0 | the assigned appeal step holds and releases its original POST with actual busy/disabled/native-state assertions; it awaits full new-head hosted execution; the two Family pairs were proven on 2026-09-19 |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
+
+**2026-10-09 source update:** The source contract now names native upload, comparison and detail completion in the existing all-pass journey, with both-theme network/accessibility audits and unchanged producer proof. These three steps are prepared, not yet executed on this source. No state waiver or matrix YES changed. The six remaining pairs are `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` in `partial-coverage` and `not-covered`; the approved result registry is empty. Missing scientific results are stated honestly but are not counted as a produced `coverageFailureFinding`.
 
 ### Measured 2026-09-18: six proven, and two of the nineteen are findings rather than test work
 
@@ -1345,7 +1347,7 @@ than proven on a render that already carries another state's title:
   proven regardless, because a read count strictly between zero and the panel
   size is a render neither of the other two titles ever had.
 
-The rest is as the table says: nine embryo pairs wait on ingest, the two
+At that 2026-09-18 checkpoint, nine embryo pairs waited on ingest, the two
 `processing` pairs on the disclosure ruling above, and the two Portrait pairs
 on a classified position.
 

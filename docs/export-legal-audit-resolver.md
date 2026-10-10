@@ -214,3 +214,24 @@ That is a separate decision.
   It then checks that `legal-audit.json` holds exactly the events the ledger
   attributes to one actor, including that grant.
 
+
+## 1 October 2026 ordinary subject targeting clarification
+
+The owner-approved A slice identifies the actor, not the target of an ordinary
+subject event. The existing account reader remains account-only. An ordinary
+`subjects/{subject_id}/audit-log.json` therefore has the exact registered
+`legal-audit-v1` unrecorded metadata and count-free explanation. Its empty
+assigned-event array is not a claim that no historical actions occurred. All
+actual requester actor events stay once in the canonical `legal-audit.json`.
+No event is copied under a guessed subject, and no actor is backfilled.
+
+The new consumed-job/current-attempt worker reader also includes only genuinely
+issued own Future custody/binding events in that canonical ledger, once by
+sequence. Each genuinely assigned Future subject keeps its existing exact
+subject ledger. The ordinary door refuses actual custody/account-binding
+selectors and any unproved current partition. This implements A; it does not
+adopt the unapproved events-about-the-person policy B.
+
+This is a TEST-LOCAL producer clarification. It supplies no READY transition,
+public route or provider delivery, and does not finish the remaining whole
+account/non-self/cohort/joint member inventory.

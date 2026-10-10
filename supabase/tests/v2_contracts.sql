@@ -1,10 +1,14 @@
 begin;
-select plan(24);
+select plan(25);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
-select is((select count(*) from public.retention_phase_registry), 53::bigint,
-  '52 scheduled phases plus the canonical own-report revocation phase are registered');
+select is((select count(*) from public.retention_phase_registry), 54::bigint,
+  '52 scheduled phases, own-report revocation and claimed-source disposal are registered exactly');
+select ok(exists(select 1 from public.retention_phase_registry
+  where retention_id='future-person.claimant-reverification-until-request'
+    and phase_id='future-person-claimed-source-disposal' and phase_kind='purge'),
+  'the exact existing claimed-source disposal phase accounts for the additional registered phase');
 select is((select count(*) from public.purge_manifest_classes), 25::bigint,
   'all 25 purge manifest classes are registered');
 select is((select count(*) from public.purge_targets), 33::bigint,
@@ -18,8 +22,9 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- account-to-pseudonym link deleted with the account (20260928160000).
 -- The embryo-ingest write fence adds its write intents and session fences,
 -- and the unwind's exact storage disposals add one more.
-select is((select count(*) from public.purge_target_stores), 131::bigint,
-  'all 131 purge stores, including private prepared-object and embryo write-fence working state, the unwind storage disposals the legal audit account link and Path B held uploads and exact queued report bindings, are classified');
+-- Both complete embryo and Future Person working-store dependencies.
+select is((select count(*) from public.purge_target_stores), 174::bigint,
+  'all 174 purge stores, including Path B held uploads and report bindings, embryo withdrawal and Future Person working packages and receipts, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');
@@ -85,18 +90,23 @@ select is(private.valid_embryo_findings(
   '[{"embryo_label":"Embryo 1","condition_id":"fixture","condition_name":"Fixture","finding":null,"evidence_label":"preliminary","coverage_state":"not_covered","citation_ids":[],"not_covered_reason":"model_unavailable","sex":"XX"}]'::jsonb
 ), false, 'an extra sex field is rejected from the embryo finding leaf');
 
+-- Fresh migrations may have already recorded public metadata events. The
+-- next two exact allocations must extend the retained ledger/checkpoint.
+create temporary table audit_start as select greatest(
+ coalesce((select max(seq) from public.legal_audit_log),0),
+ coalesce((select max(removed_through_seq) from public.legal_audit_retention_checkpoints),0)) seq;
 select is((private.append_legal_audit_event(
   'test.first', null, null, 'completed', '{"code":"first"}'::jsonb
-)).seq, 1::bigint, 'the database allocates the first audit sequence');
+ )).seq, (select seq+1 from audit_start), 'the database allocates exactly the next audit sequence');
 select is((private.append_legal_audit_event(
   'test.second', null, null, 'completed', '{"code":"second"}'::jsonb
-)).seq, 2::bigint, 'the database allocates the next audit sequence');
+ )).seq, (select seq+2 from audit_start), 'the next event advances the audit sequence exactly once');
 select ok((select bool_and(b.occurred_at >= a.occurred_at)
   from public.legal_audit_log a
   join public.legal_audit_log b on b.seq = a.seq + 1),
   'audit timestamps are monotonic');
 select throws_ok(
-  $$delete from public.legal_audit_log where seq = 1$$,
+  $$delete from public.legal_audit_log where seq = (select seq+1 from audit_start)$$,
   '42501', 'legal audit ledger is append-only',
   'direct audit deletion is denied'
 );

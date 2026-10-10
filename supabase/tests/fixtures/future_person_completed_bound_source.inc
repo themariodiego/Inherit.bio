@@ -1,0 +1,2 @@
+\ir future_person_binding_authority.inc
+\ir future_person_completed_bound_relocation.inc

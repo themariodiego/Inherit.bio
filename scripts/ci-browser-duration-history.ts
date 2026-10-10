@@ -96,7 +96,7 @@ export function multiRunDurationEstimator(profile: MultiRunDurationProfile): (gr
 
 // Historical receipt validation deliberately uses EACH historical project set.
 // It never imports the current registry or current GitHub-only runner modules.
-const allocationIdentity = z.object({ mode: z.literal("duration-v1"), profileSha256: digest, planSha256: digest }).strict();
+const allocationIdentity = z.object({ mode: z.enum(["duration-v1", "queue-v1"]), profileSha256: digest, planSha256: digest }).strict();
 const allocation = allocationIdentity.extend({ parts: z.array(z.object({
   index: z.number().int().min(1).max(6), cases: caseSet,
 }).strict()).length(6) }).strict();
@@ -128,7 +128,7 @@ function binding(pins: z.infer<typeof capturePin>[], bytes: Buffer): void {
 }
 const apiArtifact = z.object({ id: positive, name: z.string(), size_in_bytes: positive, digest: z.string().regex(/^sha256:[0-9a-f]{64}$/),
   expired: z.literal(false), workflow_run: z.object({ id: positive, head_sha: head }) });
-const mandatoryJobs = ["repository-checks", "checks", ...Array.from({ length: 6 }, (_, index) => `browser (${index + 1})`)];
+const historicalJobs = ["repository-checks", "checks", ...Array.from({ length: 6 }, (_, index) => `browser (${index + 1})`)];
 // Historical equivalent of the source-pinned six canonical sweep policy;
 // importing the current balance module would import current registry validation.
 const historicalSweeps = ["accessible-authenticated-pages.spec.ts", "control-target-size.spec.ts", "figure-text-alternatives.spec.ts",
@@ -141,10 +141,14 @@ export function historicalDurationSource(input: HistoricalCaptureInput): MultiRu
     : !("captureAdmission" in input), "Explicit raw admission only; legacy cannot carry an override");
   const run = z.object({ id: positive, run_attempt: positive, head_sha: head, status: z.literal("completed"),
     conclusion: z.literal("success"), event: z.enum(["pull_request", "push"]), path: z.literal(".github/workflows/ci.yml") }).parse(readJson(input.run));
-  const jobs = z.object({ total_count: z.literal(8), jobs: z.array(z.object({ id: positive, name: z.string(), run_id: positive, run_attempt: positive,
+  const jobs = z.object({ total_count: z.union([z.literal(8), z.literal(9)]), jobs: z.array(z.object({ id: positive, name: z.string(), run_id: positive, run_attempt: positive,
     head_sha: head, status: z.literal("completed"), conclusion: z.literal("success"),
-    steps: z.array(z.object({ status: z.literal("completed"), conclusion: z.enum(["success", "skipped"]) })) })).length(8) }).parse(readJson(input.jobs));
-  same(jobs.jobs.map(job => job.name), mandatoryJobs, "Complete mandatory job set differs");
+    steps: z.array(z.object({ status: z.literal("completed"), conclusion: z.enum(["success", "skipped"]) })) })).min(8).max(9) }).parse(readJson(input.jobs));
+  assert(jobs.total_count === jobs.jobs.length, "Incomplete historical job page");
+  // Accepted eight-job originals remain valid. New nine-job sources must also
+  // include the successful independent database job, never an arbitrary ninth.
+  same(jobs.jobs.map(job => job.name), jobs.total_count === 8 ? historicalJobs
+    : [...historicalJobs, "database-tests"], "Complete mandatory job set differs");
   unique(jobs.jobs.map(job => job.id), "Distinct actual jobs required");
   for (const job of jobs.jobs) assert(job.run_id === run.id && job.run_attempt === run.run_attempt && job.head_sha === run.head_sha,
     "Job belongs to another source/run/attempt");

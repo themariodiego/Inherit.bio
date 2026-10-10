@@ -1,12 +1,89 @@
-import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import externalFixturesRegister from "./name-gate-fixtures.json";
 import allowedNames from "../data/allowed-external-names.json";
 import {
   containsName,
   foldWords,
+  parseCommitMessageRecords,
+  scanCommitMessages,
   scanDenylist,
   scanEvaluativeProximity,
   scanExternalHosts,
+  validateExternalHostFixtures,
 } from "./name-gate";
+
+describe("complete batched commit history", () => {
+  const repositories: string[] = [];
+  afterEach(() => {
+    for (const repository of repositories.splice(0)) {
+      fs.rmSync(repository, { recursive: true, force: true });
+    }
+  });
+  const frame = (commit: string, time: string, message: string) =>
+    [commit, time, message, ""].join("\0");
+
+  it("retains complete multiline messages and the original trim semantics", () => {
+    const message = " \tSubject\n\nSecond paragraph\n\nLast line \n\t";
+    expect(parseCommitMessageRecords(frame("a".repeat(40), "123", message)))
+      .toEqual([{ commit: "a".repeat(40), timestamp: 123, message: message.trim() }]);
+  });
+
+  it.each([
+    "", frame("a".repeat(40), "123", "message").slice(0, -1), frame("invalid", "123", "message"),
+    frame("a".repeat(40), "not-a-time", "message"),
+    frame("a".repeat(40), "9007199254740992", "message"),
+    frame("a".repeat(40), "123", "message") + "extra\0",
+    frame("a".repeat(40), "123", "message").repeat(2),
+  ])("refuses malformed or duplicate history framing", raw => {
+    expect(() => parseCommitMessageRecords(raw)).toThrow("Malformed NUL-framed commit history");
+  });
+
+  it("keeps merge ancestry beyond an old timestamp and the exact baseline cutoff", () => {
+    const repository = fs.mkdtempSync(path.join(os.tmpdir(), "inherit-name-history-"));
+    repositories.push(repository);
+    const run = (args: string[], input?: string, timestamp = 100) =>
+      execFileSync("git", ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null",
+        "-c", "gc.auto=0", "-c", "maintenance.auto=false", ...args], {
+        cwd: repository, encoding: "utf8", input,
+        env: { ...process.env, GIT_AUTHOR_NAME: "Synthetic fixture", GIT_COMMITTER_NAME: "Synthetic fixture",
+          GIT_AUTHOR_EMAIL: "fixture@example.invalid", GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+          GIT_AUTHOR_DATE: "@" + timestamp + " +0000", GIT_COMMITTER_DATE: "@" + timestamp + " +0000" },
+      }).trim();
+    run(["init", "-q"]);
+    const tree = run(["mktree"], "");
+    const commit = (parents: string[], timestamp: number, message: string) =>
+      run(["commit-tree", tree, ...parents.flatMap(parent => ["-p", parent])], message, timestamp);
+    const denied = ["outside", "genome"].join("");
+    const baseline = commit([], 100, denied + "\n");
+    const atCutoff = commit([baseline], 100, denied + "\n");
+    const ancestor = commit([atCutoff], 150, ["Subject", "", denied, "Last paragraph", ""].join("\n"));
+    const oldParent = commit([ancestor], 90, denied + "\n");
+    const target = ["https", "://unreviewed.com/path"].join("");
+    const side = commit([baseline], 160, ["Side subject", "", target, "Last paragraph", ""].join("\n"));
+    const organisation = ["Synthetic Research", " Institute"].join("");
+    const merge = commit([oldParent, side], 170, ["Merge subject", "", organisation, ""].join("\n"));
+    run(["update-ref", "HEAD", merge]);
+
+    const records = parseCommitMessageRecords(run(["log", "--full-history", "--no-patch",
+      "-z", "--format=%H%x00%ct%x00%B", "HEAD"]));
+    expect(new Set(records.map(record => record.commit)))
+      .toEqual(new Set([baseline, atCutoff, ancestor, oldParent, side, merge]));
+    expect(records.find(record => record.commit === ancestor)?.message)
+      .toBe(run(["show", "-s", "--format=%B", ancestor]));
+    const result = scanCommitMessages(repository, baseline, [denied], []);
+    expect(result.commitCount).toBe(3);
+    expect(result.findings).toHaveLength(3);
+    expect(result.findings).toEqual(expect.arrayContaining([
+      { rule: "denylist", path: "<commit-message>", line: 3, value: denied, commit: ancestor },
+      { rule: "external-host", path: "<commit-message>", line: 3, value: "unreviewed.com", commit: side },
+      { rule: "organisation-shape", path: "<commit-message>", line: 3, value: organisation, commit: merge },
+    ]));
+  });
+});
 
 describe("name gate normalization", () => {
   it("finds lowercase domain fragments", () => {
@@ -158,6 +235,71 @@ describe("external hostname classification", () => {
   });
 });
 
+
+describe("exact negative-test external-host declarations", () => {
+  const fixtures = externalFixturesRegister.externalHostFixtures;
+  const declaredPath = "scripts/keyless-review-origin-audit.test.ts";
+  const scan = (text: string, file = declaredPath) => scanExternalHosts(text, file, [], fixtures);
+
+  it("registers only the two genuine unchanged privacy refusal literals", () => {
+    expect(fixtures).toHaveLength(2);
+    expect(fixtures.map(row => row.path)).toEqual([declaredPath, declaredPath]);
+    expect(fixtures.map(row => new URL(row.url).pathname)).toEqual(["/collect", "/pay"]);
+    expect(validateExternalHostFixtures(fixtures, process.cwd())).toEqual({ fixtures, failures: [] });
+  });
+
+  it.each(fixtures)("classifies only the exact quoted test literal $url", fixture => {
+    expect(scan(`push(${JSON.stringify(fixture.url)});`)).toEqual([]);
+    expect(scan(`<form action=${JSON.stringify(fixture.url)}></form>`)).toEqual([]);
+    for (const file of ["src/privacy.ts", "e2e/network-audit.spec.ts", "scripts/another.test.ts",
+      "docs/review.md", "<commit-message>", `${declaredPath}.bak`]) {
+      expect(scan(JSON.stringify(fixture.url), file)).toHaveLength(1);
+    }
+    const url = new URL(fixture.url);
+    for (const other of [url.origin, `${fixture.url}/other`, `${fixture.url}?query=1`, `${fixture.url}#fragment`,
+      fixture.url.replace(url.hostname, `sub.${url.hostname}`), fixture.url.replace(url.hostname, `${url.hostname}.unreviewed.com`),
+      fixture.url.replace(url.hostname, `${url.hostname}@unreviewed.com`), fixture.url.replace("https:", "http:")]) {
+      expect(scan(JSON.stringify(other))).toHaveLength(1);
+    }
+    expect(scan(fixture.url)).toHaveLength(1);
+    expect(scan(`'${fixture.url}'`)).toHaveLength(1);
+    expect(scanExternalHosts(JSON.stringify(fixture.url), declaredPath, [])).toHaveLength(1);
+  });
+
+  it("permits only the exact structured declaration line in the fixture register", () => {
+    for (const fixture of fixtures) {
+      expect(scan(`      "url": ${JSON.stringify(fixture.url)},`, "scripts/name-gate-fixtures.json")).toEqual([]);
+      expect(scan(`"reason": ${JSON.stringify(fixture.url)},`, "scripts/name-gate-fixtures.json")).toHaveLength(1);
+      expect(scan(`push(${JSON.stringify(fixture.url)});`, "scripts/name-gate-fixtures.json")).toHaveLength(1);
+    }
+  });
+
+  it("retains the private denylist for each declared literal, path and commit", () => {
+    for (const fixture of fixtures) {
+      const denied = new URL(fixture.url).hostname;
+      const text = JSON.stringify(fixture.url);
+      expect(scan(text)).toEqual([]);
+      expect(scanDenylist(text, declaredPath, [denied])).toHaveLength(1);
+      expect(scanDenylist(text, "<commit-message>", [denied], "a".repeat(40))).toHaveLength(1);
+    }
+  });
+
+  it("fails closed on missing, malformed, broad, duplicate and orphan declarations", () => {
+    expect(validateExternalHostFixtures(undefined, process.cwd())).toEqual({ fixtures: [], failures: [] });
+    const valid = fixtures[0];
+    for (const malformed of [null, {}, "*", [null], [{}], [{ ...valid, extra: "allowed" }],
+      [{ ...valid, path: "src/privacy.ts" }], [{ ...valid, path: "scripts/*.test.ts" }],
+      [{ ...valid, path: "../outside.test.ts" }], [{ ...valid, path: "scripts/nonexistent.test.ts" }],
+      [{ ...valid, url: new URL(valid.url).origin }], [{ ...valid, url: `${valid.url}?query=1` }],
+      [{ ...valid, url: valid.url.replace("https:", "http:") }], [{ ...valid, reason: "short" }],
+      [{ ...valid, reason: "substantive reason\nwith second line" }], [valid, valid],
+      [valid, { ...valid, url: `${valid.url}/missing-literal` }]]) {
+      const result = validateExternalHostFixtures(malformed, process.cwd());
+      expect(result.failures.length).toBeGreaterThan(0);
+      expect(result.fixtures).toEqual([]);
+    }
+  });
+});
 
 describe("the registered isolated scanner instructions", () => {
   it("admits the reviewed path while retaining unrelated-host and private-name refusals", () => {

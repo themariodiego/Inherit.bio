@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { applicationOrigin } from "@/lib/app-origin";
-import { decryptSecret, hmacSecret } from "@/lib/crypto";
+import { hmacSecret } from "@/lib/crypto";
+import { openMailContact } from "@/lib/future-person/claimant-contact";
+import { readNewPublicAppealMailContact } from "@/lib/future-person/new-public-appeal-mail";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
@@ -38,6 +40,9 @@ const accountDeletionCancelledPayload = z
   })
   .strict();
 
+const accountDeletionAffectedPayload = z.object({ noticeEndsAt: z.iso.datetime({ offset: true }) }).strict();
+const accountDeletionAffectedCancelledPayload = z.object({ cancelledAt: z.iso.datetime({ offset: true }) }).strict();
+
 const adultSubjectInvitationPayload = z
   .object({
     // The optional note the inviter wrote (brief §5 §5.2); plain words only.
@@ -70,7 +75,15 @@ const embryoCount = z.number().int().min(1).max(64);
 
 const coParentInvitationPayload = z.object({}).strict();
 
-const embryoUploadNoticePayload = z.object({ embryoCount }).strict();
+// The safe display name the database lets through, or null.
+const embryoUploadNoticePayload = z.object({
+  embryoCount,
+  uploaderName: z.string().regex(/^\p{L}[\p{L} .'-]{0,59}$/u).nullable(),
+  uploadedBy: z.enum(["genetic-parent", "someone-else"]),
+  uploadDateIso: z.iso.date(),
+  uploadDateWords: z.string().trim().min(1).max(40),
+  retentionDays: z.number().int().min(1).max(3660),
+}).strict();
 
 const recordKeyAddendumPayload = z.discriminatedUnion("kind", [
   z
@@ -81,7 +94,14 @@ const recordKeyAddendumPayload = z.discriminatedUnion("kind", [
       closingDateWords: z.string().trim().min(1).max(40),
     })
     .strict(),
-  z.object({ kind: z.literal("no-source"), displayLabel }).strict(),
+  z
+    .object({
+      kind: z.literal("no-source"),
+      displayLabel,
+      closingDateIso: z.iso.date(),
+      closingDateWords: z.string().trim().min(1).max(40),
+    })
+    .strict(),
   z.object({ kind: z.literal("card-invalidated"), embryoCount }).strict(),
 ]);
 
@@ -122,6 +142,29 @@ function parseMail(
   payload: unknown,
   deliveryToken?: string | null,
 ): MailTemplate {
+  if (templateId === "appeal-evidence") {
+    z.object({}).strict().parse(payload);
+    return {id:templateId,payload:{continueUrl:fragmentUrl(deliveryToken)}};
+  }
+  if (templateId === "future-person-more-information") {
+    z.object({}).strict().parse(payload);
+    if (deliveryToken != null) throw new Error("mail_token_forbidden");
+    return { id: templateId, payload: {} };
+  }
+  if (templateId === "future-person-owner-notice") {
+    z.object({}).strict().parse(payload);
+    return { id: templateId, payload: { objectionUrl: fragmentUrl(deliveryToken) } };
+  }
+  if (templateId === "account-deletion-affected") {
+    return { id: templateId, payload: accountDeletionAffectedPayload.parse(payload) };
+  }
+  if (templateId === "account-deletion-affected-cancelled") {
+    return { id: templateId, payload: accountDeletionAffectedCancelledPayload.parse(payload) };
+  }
+  if(templateId==="future-person-release") {
+    z.object({}).strict().parse(payload);
+    return {id:templateId,payload:{releaseUrl:fragmentUrl(deliveryToken)}};
+  }
   if (templateId === "report-ready") {
     return { id: templateId, payload: reportReadyPayload.parse(payload) };
   }
@@ -185,7 +228,7 @@ function parseMail(
     return {
       id: templateId,
       payload: {
-        embryoCount: parsed.embryoCount,
+        ...parsed,
         withdrawUrl: deliveryToken ? fragmentUrl(deliveryToken) : undefined,
       },
     };
@@ -289,7 +332,12 @@ async function drainMail() {
     let accepted = false;
     try {
       const ciphertextHex = row.contact_ciphertext.replace(/^\\x/, "");
-      recipient = decryptSecret(Buffer.from(ciphertextHex, "hex"));
+      if(row.template_id==="appeal-evidence") {
+        recipient=await readNewPublicAppealMailContact(admin,row.outbox_id,row.attempt_ordinal,ciphertextHex,AbortSignal.timeout(30_000));
+      } else {
+        const ciphertext=Buffer.from(ciphertextHex,"hex");
+        try{recipient=openMailContact(ciphertext);}finally{ciphertext.fill(0);}
+      }
       const mail = parseMail(
         row.template_id,
         row.template_payload,

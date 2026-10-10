@@ -3,12 +3,12 @@
   "universe": "Every ordinary table in the public and private schemas. Set equality between this list and the database catalog is checked by supabase/tests/export_member_plan.sql, so a new table fails CI until it has an entry here.",
   "personScoped": "A table is person-scoped when a column is named user_id or account_id or ends in _user_id or _account_id, when it has a foreign key to auth.users or public.audit_principals, or when it has a foreign key to a person-scoped table. A person-scoped table may never be classified reference.",
   "dispositions": {
-    "exported": "The requester's own rows leave in the export. columns and withheld classify every column; withheld columns never leave. A member named archive: is a member of the synchronous archive; one named reader: is an asynchronous reader class whose rows become archive content.",
-    "excluded-credential": "A credential, key, token, nonce or session, or its hash. Exporting it would be a security defect.",
-    "excluded-protected": "A contact value, identity HMAC, evidence document or other ciphertext the export contracts always exclude.",
-    "excluded-internal": "Processing, delivery, retention or security machinery. It is not the person's record.",
-    "out-of-scope": "About a person, but not the requester's own record: a short-lived draft about someone else, or staff workflow.",
     "deferred": "Belongs in a complete export under a registered contract, but no reader exists yet. These are the open gaps.",
+    "excluded-credential": "A credential, key, token, nonce or session, or its hash. Exporting it would be a security defect.",
+    "excluded-internal": "Processing, delivery, retention or security machinery. It is not the person's record.",
+    "excluded-protected": "A contact value, identity HMAC, evidence document or other ciphertext the export contracts always exclude.",
+    "exported": "The requester's own rows leave in the export. columns and withheld classify every column; withheld columns never leave. A member named archive: is a member of the synchronous archive; one named reader: is an asynchronous reader class whose rows become archive content.",
+    "out-of-scope": "About a person, but not the requester's own record: a short-lived draft about someone else, or staff workflow.",
     "reference": "Holds no person's data: catalogs, registries and service configuration."
   },
   "objects": {
@@ -28,6 +28,162 @@
     }
   },
   "tables": {
+    "private.account_archive_r2_allocations": {
+      "disposition": "excluded-credential",
+      "reason": "Account archive object allocations, write/disposal claims and exact provider identity receipts. These authorize private storage work and remain retained cleanup evidence, never archive content."
+    },
+    "private.account_archive_r2_configuration": {
+      "disposition": "reference",
+      "reason": "Disabled account archive R2 provider selection and public configuration binding. The singleton contains no person data or provider credential."
+    },
+    "private.account_requester_statement_capsules": {
+      "disposition": "excluded-protected",
+      "reason": "Original case envelopes, wrapped keys and immutable authorship bindings stay private. The authorized native requester pager opens only the current author’s own statement; raw capsules, other people’s statements, contact data and reviewer notes are never archive rows."
+    },
+    "private.appeal_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed appeal identity/authority document fragments and reserved private object locators. Evidence bytes are excluded from member exports and retained only for actual cleanup."
+    },
+    "private.appeal_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Appeal evidence upload cookies, one-use nonce hashes, independent envelope keys and original deadlines. These credentials and private object locators never leave in an archive."
+    },
+    "private.appeal_documents": {
+      "disposition": "excluded-protected",
+      "reason": "Private appeal identity/authority evidence and bound scan verdicts. The export contracts exclude legal evidence documents, their locators and review copies."
+    },
+    "private.new_correction_intake_config": {
+      "disposition": "reference",
+      "reason": "Disabled TEST correction intake configuration. The singleton contains no person data and grants no correction or provider authority."
+    },
+    "private.new_correction_intakes": {
+      "disposition": "excluded-protected",
+      "reason": "Prepared correction case frames, original session/nonce bindings, wrapped case keys and private contact pointers. Only the separately authorized original own statement may enter a requester archive; these working envelopes and reviewer/contact data do not."
+    },
+    "private.new_correction_reviewers": {
+      "disposition": "out-of-scope",
+      "reason": "Operator-appointed correction reviewer principals and current purpose revisions. These are staff assignments, not the requester’s record."
+    },
+    "private.new_public_appeal_config": {
+      "disposition": "reference",
+      "reason": "Disabled anonymous appeal intake capacity and rate settings. This configuration contains no person data or account authority."
+    },
+    "private.new_public_appeal_evidence_state": {
+      "disposition": "excluded-internal",
+      "reason": "Native evidence collection/submission revision and original case state. This is temporary intake workflow, not an additional person export member."
+    },
+    "private.new_public_appeal_intakes": {
+      "disposition": "excluded-protected",
+      "reason": "Anonymous case frames, sealed statements and contact data, envelope keys and original delivery bindings. A random case principal is not adopted as an account; its protected case package is never an account archive row."
+    },
+    "private.new_public_appeal_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent public appeal form nonce hashes and their original expiry. They prevent replay and must never be archive content."
+    },
+    "private.new_public_appeal_reviewers": {
+      "disposition": "out-of-scope",
+      "reason": "Named human appeal reviewer assignments and purpose revisions. These are staff authority, not a requester’s genomic record."
+    },
+    "private.public_appeal_decision_notices": {
+      "disposition": "excluded-credential",
+      "reason": "Separate one-use decision-notice candidate/outbox identities and original recipient/case bindings. This is private credential and delivery machinery, not archive content."
+    },
+    "private.public_appeal_document_decisions": {
+      "disposition": "excluded-protected",
+      "reason": "Protected documentary review digests, encrypted reviewer reasons/references and private actor/session bindings. Reviewer notes and evidence decisions are withheld from account member exports."
+    },
+    "private.public_appeal_pending_reviews": {
+      "disposition": "out-of-scope",
+      "reason": "Named appeal reviewer assignments and exact current evidence-document membership. This is staff workflow, not the requester’s own archive content."
+    },
+    "private.public_appeal_provisional_targets": {
+      "disposition": "excluded-protected",
+      "reason": "Private contact-match and typed provisional target bindings. They confer no account authority and must not disclose another person or genetic target through an export."
+    },
+    "private.public_appeal_review_chunks": {
+      "disposition": "excluded-credential",
+      "reason": "Challenged review chunk proofs, acknowledgement nonces and private download membership. These authorize documentary decisions and never enter requester archives."
+    },
+    "private.public_appeal_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "Own-MFA reviewer delivery cookies, nonce/challenge and authenticated session/revision bindings. This document-read authority must never be exported."
+    },
+    "private.account_owned_cohort_purges": {
+      "disposition": "excluded-internal",
+      "reason": "Exact current account-deletion cohort work plan and original deadline. It is worker control state, removed after cleanup, not a person\u2019s record."
+    },
+    "private.public_appeal_information_requests": {
+      "disposition": "excluded-protected",
+      "reason": "Private nonfinal appeal review workflow binds the original verified recipient, sealed reviewer reason, one-use nonce and bounded evidence candidate. Reviewer notes, credentials and other case data never leave in requester exports. All local delivery/credential rows are removed before terminal case-key disposal."
+    },
+    "private.public_appeal_case_decisions": {
+      "disposition": "excluded-protected",
+      "reason": "Final appeal review workflow holds coded outcomes, reviewer/session and nonce bindings, and a sealed professional basis erased at terminal closure. Private reviewer reasons, credentials and other case data never leave in member exports; requester own statements use only their separately authorized original-statement reader."
+    },
+    "private.claim_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed pieces of an identity document in upload, deleted once composed or refused. The export contracts always exclude identity documents and evidence bytes."
+    },
+    "private.claim_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Claim document upload sessions: an evidence cookie hash, one-time nonce hashes and a hard expiry. Exporting it would be a security defect, not completeness."
+    },
+    "private.claim_documents": {
+      "disposition": "excluded-protected",
+      "reason": "A claimant's sealed identity documents and their scan verdicts. The export contracts always exclude identity documents and evidence bytes, and no account holds one."
+    },
+    "private.claim_review_assignments": {
+      "disposition": "out-of-scope",
+      "reason": "Named staff assignments for a temporary claim review. This is review workflow, not the requester\u2019s genomics record."
+    },
+    "private.claim_review_chunk_receipts": {
+      "disposition": "excluded-internal",
+      "reason": "Ephemeral expected delivery proofs and receipt acknowledgements; never exported."
+    },
+    "private.claim_review_decisions": {
+      "disposition": "excluded-protected",
+      "reason": "Temporary claimant document digests and the sealed professional basis of a review decision. Claim evidence and private reviewer notes never leave in member exports."
+    },
+    "private.claim_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "Reviewer download cookie hashes, originating authenticated session and revision bindings. Exporting this credential machinery would be a security defect."
+    },
+    "private.claim_review_reads": {
+      "disposition": "excluded-internal",
+      "reason": "Temporary staff read receipts used to authorize a claim decision. This is authorization and review machinery, not a member export class."
+    },
+    "private.claim_review_receipt_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Short-lived challenge and consumed receipt operation nonce bindings; never exported."
+    },
+    "private.claim_reviewers": {
+      "disposition": "out-of-scope",
+      "reason": "Operator-appointed reviewers and their revocation state. This is staff authorization, not the requester\u2019s genomics record."
+    },
+    "private.claim_reviews": {
+      "disposition": "excluded-protected",
+      "reason": "Temporary claimant identity case bindings and document digests. Claim-review working packages and identity evidence are always withheld from member exports."
+    },
+    "private.claimed_embryo_ingest_receipts": {
+      "disposition": "deferred",
+      "reason": "Minimum immutable split-session provenance retained for an already-detached claimed source. No account, contact or credential remains; approved-future-person-export-v1 requires its claimant reader."
+    },
+    "private.claimed_embryo_job_receipts": {
+      "disposition": "deferred",
+      "reason": "Minimum immutable completed split-job provenance retained for an already-detached claimed source. No full job payload, authority or credential remains; approved-future-person-export-v1 requires its claimant reader."
+    },
+    "private.embryo_canonical_parts": {
+      "disposition": "excluded-internal",
+      "reason": "Reserved object identities and copy receipts used to verify and dispose canonical embryo parts. This is internal storage and cleanup machinery."
+    },
+    "private.embryo_canonical_source_parts": {
+      "disposition": "excluded-internal",
+      "reason": "The canonical source-to-part membership index. It is internal storage machinery, not an additional person-scoped export record."
+    },
+    "private.embryo_canonical_sources": {
+      "disposition": "excluded-internal",
+      "reason": "Canonical source publication identity and membership digests. This indexes the embryo file and variants, whose person-scoped export classes remain deferred."
+    },
     "private.embryo_ingest_object_config": {
       "disposition": "reference",
       "reason": "The operator's embryo fragment storage backend selection: provider, bucket and gateway audience. It holds no person's data."
@@ -43,6 +199,22 @@
     "private.embryo_ingest_write_intents": {
       "disposition": "excluded-internal",
       "reason": "Embryo ingest write intents: fenced object names, reserved sizes and landing state. It is machinery, not the person's record."
+    },
+    "private.embryo_split_config": {
+      "disposition": "reference",
+      "reason": "The operator's split-worker enablement and capacity settings; they hold no person's data."
+    },
+    "private.embryo_split_ordinals": {
+      "disposition": "excluded-internal",
+      "reason": "Attempt-owned ordinal progress and pending QC; publication writes the durable embryo and QC records. This is worker machinery."
+    },
+    "private.embryo_split_variants": {
+      "disposition": "excluded-internal",
+      "reason": "Attempt-owned pending embryo variants, removed at terminal publication or failure. Published embryo variants have their own deferred export class."
+    },
+    "private.embryo_withdrawal_credentials": {
+      "disposition": "excluded-credential",
+      "reason": "The binding of each upload-time notice's withdrawal credential. Exporting it would be a security defect, not completeness."
     },
     "private.export_archive_attempts": {
       "disposition": "excluded-internal",
@@ -79,6 +251,30 @@
     "private.family_report_grant_snapshots": {
       "disposition": "excluded-internal",
       "reason": "Grant endpoint snapshots for family reports. It is machinery, not the person's record."
+    },
+    "private.future_person_account_bindings": {
+      "disposition": "excluded-credential",
+      "reason": "Exact claimant account/session authorization revisions and binding receipt; never an export member or a retroactive identity attribution."
+    },
+    "private.future_person_binding_config": {
+      "disposition": "reference",
+      "reason": "Closed service configuration for verified TEST-LOCAL claimant account binding; no person data."
+    },
+    "private.future_person_claim_intakes": {
+      "disposition": "excluded-protected",
+      "reason": "Unfinished Future Person claim starts: sealed identity and contact ciphertext, a key hash and keyed digests, deleted within 24 hours. The export contracts always exclude contact values and identity. No account holds one."
+    },
+    "private.future_person_custody_slices": {
+      "disposition": "deferred",
+      "reason": "The exact claimed subject\u2019s immutable autosomal source provenance and minimum historical agreement slice, preserved against parent restriction; approved-future-person-export-v1 requires its own claimant reader."
+    },
+    "private.future_person_object_relocations": {
+      "disposition": "excluded-credential",
+      "reason": "Exact claimed-source relocation locators, worker claim token hash and transient source-version authority; excluded from person archives."
+    },
+    "private.future_person_relocation_attempts": {
+      "disposition": "excluded-credential",
+      "reason": "Exact relocation attempt claims, current and retired private object locators, provider acknowledgements and cleanup credentials. This is internal authority machinery, never export content."
     },
     "private.genome_file_deletions": {
       "disposition": "excluded-credential",
@@ -209,6 +405,14 @@
     "private.path_b_report_bindings": {
       "disposition": "deferred",
       "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
+    },
+    "private.rights_purpose_matrix": {
+      "disposition": "reference",
+      "reason": "The rights-purpose matrix the database enforces: purposes, actions and routes. It holds no person's data."
+    },
+    "private.rights_session_purposes": {
+      "disposition": "excluded-credential",
+      "reason": "The purposes a rights session may be issued under, and the target kind each binds. It is rights-session credential machinery and holds no person's data."
     },
     "private.upload_authorization_config": {
       "disposition": "reference",
@@ -610,7 +814,7 @@
     },
     "public.embryo_scores": {
       "disposition": "deferred",
-      "reason": "Embryo scores. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryo scores, including nullable computation_receipt: the embryo’s own closed observed-source/reference/attempt receipt and separate public-disclosure hold, never the other principals’ complete authorization snapshot. Authorized whole-subject and own-account archive members preserve whole score rows; the public cohort projection remains deferred. Complete authority capture stays in credential-excluded worker_jobs.payload. Existing whole-row erasure removes the receipt. No production embryo ingest runs today."
     },
     "public.embryo_terminal_mail": {
       "disposition": "excluded-protected",
@@ -661,8 +865,8 @@
       "reason": "Claim release credential hashes. Exporting it would be a security defect, not completeness."
     },
     "public.future_person_claim_review_packages": {
-      "disposition": "excluded-internal",
-      "reason": "Claim review packages. It is machinery, not the person's record."
+      "disposition": "excluded-protected",
+      "reason": "Temporary encrypted documentary comparison and independently erasable key. Identity/profile fields, review evidence and claimant contact are always withheld from member exports."
     },
     "public.future_person_claim_sessions": {
       "disposition": "excluded-credential",
@@ -757,7 +961,8 @@
         "input_provenance",
         "input_source_sha256",
         "processing_run_id",
-        "normalization_source_revision"
+        "normalization_source_revision",
+        "export_content_revision"
       ]
     },
     "public.genome_storage_objects": {
@@ -779,10 +984,13 @@
     "public.legal_audit_log": {
       "disposition": "exported",
       "reason": "L-34 and the owner's decision of 28 Sep 2026 (docs/export-legal-audit-resolver.md, option A): the events a person caused themselves. An event names who acted only when the transaction proved it, by a consumed session-bound nonce or the person's own JWT, and only on the closed list of events a person causes; events written before attribution began (20260928160000) name no one and never leave. Never the pseudonym or the chain hashes.",
-      "scope": "audit_principal_id is the requesting account's own pseudonym (private.legal_audit_account_principals). Account exports only: an event records no subject.",
+      "scope": "The requesting account's own audit pseudonym through private.legal_audit_account_principals, or only the approved unbound claimant's exact newly issued custody audit selector through private.future_person_audit_selector_v1. Existing NULL or unlinked actors remain unassigned; no event subject or old actor is inferred. The bound own-account producer uses only its exact immutable custody/account-binding selectors. A complete account actor ledger is emitted once globally; ordinary subject targeting is explicitly unrecorded under the reviewed owner-A contract and never copies or infers those account events.",
       "members": [
         "archive:legal-audit.json",
-        "reader:history.legal-audit"
+        "reader:history.legal-audit",
+        "archive:subjects/{subject_id}/audit-log.json",
+        "archive:subjects/{subject_id}/reports.txt",
+        "reader:claimant.legal-audit"
       ],
       "columns": [
         "seq",
@@ -1194,7 +1402,7 @@
     },
     "public.subjects": {
       "disposition": "exported",
-      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account.",
+      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account. Claimant authority, verified-age timing and the analysis-stop control are withheld until their separate typed Future Person projection is implemented.",
       "scope": "subject_account_id = the requesting account (synchronous); the captured partitions, which are the same subjects (reader).",
       "members": [
         "archive:subject-record.json",
@@ -1216,7 +1424,10 @@
       ],
       "withheld": [
         "owner_account_id",
-        "cohort_id"
+        "cohort_id",
+        "claimant_principal_id",
+        "earliest_claim_at",
+        "analysis_stopped_at"
       ]
     },
     "public.suppressions": {

@@ -36,9 +36,9 @@ import { describe, expect, it } from "vitest";
  * A second read is permitted (owner decision, 28 September 2026, for the
  * register's per-network invitation limit): `sourceNetwork` in
  * `src/lib/source-network.ts` hands the two client-address headers to
- * `normalizedSourceNetwork` in one call, and only
- * `src/lib/invitation-quota.ts` may import it, where the result goes straight
- * into a keyed digest. The bucket is purged within 24 hours and decides
+ * `normalizedSourceNetwork` in one call, and only `src/lib/rate-limit-keys.ts`
+ * may import it, where `networkBucketDigests` puts the result straight into a
+ * keyed digest for a closed list of registered operations. The bucket is purged within 24 hours and decides
  * nothing about a jurisdiction. The same rules apply: that exact call is
  * removed before the scan, it must occur exactly once, a second read in the
  * same file still fails, and so does a new importer.
@@ -64,8 +64,8 @@ const NETWORK_LIMIT_READ = {
   file: path.join("src", "lib", "source-network.ts"),
   call: /normalizedSourceNetwork\(headers\.get\("x-real-ip"\), headers\.get\("x-forwarded-for"\)\)/g,
   /** The only module allowed to import the reader, and the only call it may make. */
-  importer: path.join("src", "lib", "invitation-quota.ts"),
-  use: /keyedDigestSet\("rate-limit", `\$\{INVITATION_ATTEMPT_OPERATION\}\|source-network\|\$\{sourceNetwork\(headers\)\}`\)/g,
+  importer: path.join("src", "lib", "rate-limit-keys.ts"),
+  use: /keyedDigestSet\("rate-limit", `\$\{operation\}\|source-network\|\$\{sourceNetwork\(headers\)\}`\)/g,
 };
 
 const EXCEPTIONS = [SANCTIONS_READ, NETWORK_LIMIT_READ];
@@ -136,7 +136,7 @@ describe("jurisdiction is declared, never inferred", () => {
     expect(found).toEqual([]);
   });
 
-  it("lets only the invitation quota use the network reader, and only inside a keyed digest", () => {
+  it("lets only the rate-limit key module use the network reader, and only inside a keyed digest", () => {
     const importers = sources
       .filter(({ source }) => /from\s+["'](?:@\/lib\/source-network|\.{1,2}\/(?:[\w-]+\/)*source-network)["']/.test(source))
       .map(({ file }) => file);

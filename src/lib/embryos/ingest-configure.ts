@@ -94,7 +94,7 @@ export function zeroizeEvidence(body: { buildEvidence: string[] } | null | undef
  * bound, so the actual bytes are counted; an overflow cancels the stream and
  * zero-fills what was already read.
  */
-async function readBounded(request: Request, limit: number): Promise<Uint8Array | null> {
+export async function readBounded(request: Request, limit: number): Promise<Uint8Array | null> {
   const declared = request.headers.get("content-length");
   if (declared !== null && (!/^[0-9]+$/.test(declared) || Number(declared) > limit)) return null;
   if (!request.body) return null;
