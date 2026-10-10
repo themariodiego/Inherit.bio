@@ -102,4 +102,48 @@ The receiver prints only the public ready nonce before it reads private input. O
 
 Only the isolated inference child receives the credential. Infrastructure, database, app, mail, Storage proxy, build and browser children receive explicit scrubbed environment maps. The input credential remains in supervisor memory while needed; no byte-erasure claim is made for immutable strings. A real run still writes raw responses/verdicts only under its required `docs/comprehension-runs/<date>/<runId>` directory. After creation, exact source checks admit only that current producer's five fixed inert record/temp filenames; any other untracked path, executable, symlink, nested file or tracked change refuses. Calibration records must be reviewed/committed before admitting the next exact clean source revision.
 
+## Explicit manual key-free dry reconciliation
+
+This source operation requires a separate, explicit owner action after review
+of the original failed run and genuine cleanup. It is never part of ordinary
+run admission or a failed-run handler. It recovers only an unanswered, stopped
+local-stub smoke's browser-resource marker in the dry ledger; it cannot recover
+a paid/live run, an unfinished run, inference uncertainty or a spending lock.
+No actual recovery is qualified by the source or unit tests.
+
+Prepare the public request from the preserved original owner proof, exact
+failed run/session IDs, SHA-256 of the complete original dry-history prefix,
+and SHA-256 of the reviewed public cleanup original. That cleanup must establish
+the old supervisor's boot/PID/start identity is dead, the exact isolated daemon
+has no containers or volumes and only its three default networks, and the
+preserved scratch has no stack lock. Preserve its original native terminal
+outcome, zero responses/no inference, every reservation and one-use nonce.
+Never infer a zero charge from an empty daemon. Do not read a private key,
+configuration or expense-journal value to prepare this request.
+
+Use the existing strict pinned SSH and canonical anonymous-pipe handoff above,
+with a new public owner nonce, the exact clean recovery source revision and
+protected scratch. Replace only the remote entrypoint with
+`scripts/comprehension/run-manual-dry-reconciliation.mts --owner <base64url-public-owner>`
+and require `OWNED_LINUX_RECONCILIATION_READY:<new-nonce>` before sending this
+one canonical JSON frame, followed by EOF within the unchanged 10-second/64 KiB
+input bound:
+
+```text
+{"version":1,"ledger":"dry","directory":"<canonical-protected-effort-directory>","runId":"<original-run>","sessionId":"<original-session>","historyPrefixSha256":"<exact-prefix-sha256>","publicCleanupSha256":"<reviewed-public-cleanup-sha256>","previousOwner":<complete-original-public-owner-proof>}
+```
+
+The operator checks actual authority and cleanup around the durable append.
+It permits only its SSH/tool ancestors and its own process-inventory child,
+refusing other owned-user work. Only one closure is appended; the original
+failed finish and traces remain byte-exact. The spend file is checked by
+identity metadata only and never opened, hashed, settled or reset. Both old and
+new one-use challenges and scratch survive. A new run needs a new identity and
+its own reservations; recovery neither retries nor qualifies the old smoke.
+
+If any append/sync or later cleanup check is uncertain, retain the existing
+history/recovery guard and all originals. Do not delete either lock or repeat
+the operation automatically. The printed fixed result is not a native smoke,
+cost or scientific qualification.
+
 No actual operator credential has been supplied, no provider call has been made, and no native/full-round result is credited by this guide. The remaining setup is the isolated Linux profile, authenticated public host identity, exact Linux tools/build and key-free native lifecycle proof, followed by the existing owner-shell key and provider cap when the owner actually supplies them. This is separate from mandatory complete hosted unit/database/browser qualification of the changed source.

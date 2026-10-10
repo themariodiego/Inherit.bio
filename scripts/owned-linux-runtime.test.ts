@@ -4,12 +4,28 @@ import { randomUUID } from "node:crypto";
 import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { assertOperatorHostEnvironment, assertOwnedLinuxCapability, assertOwnedLinuxInitialMemory, assertOwnedSourceStatus, ownedLinuxRequestSchema,
+import { assertManualCleanupProcesses, assertOperatorHostEnvironment, assertOwnedLinuxCapability, assertOwnedLinuxInitialMemory, assertOwnedSourceStatus, ownedLinuxRequestSchema,
   parsePrivateOperatorFrame, retainChallengeUse, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 const directories: string[] = [];
 afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
 const scratch = () => { const directory = realpathSync(mkdtempSync(path.join(os.tmpdir(), "owned-linux-unit-"))); directories.push(directory); return directory; };
+describe("manual cleanup process certainty", () => {
+  const clean = " 100 1 sshd\n 101 100 sh\n 102 101 node\n 103 102 ps\n";
+  it("allows only the authenticated supervisor, its ancestors and its exact inventory child", () => {
+    expect(() => assertManualCleanupProcesses(clean, 102)).not.toThrow();
+    expect(() => assertManualCleanupProcesses(clean.replace(" 103 102 ps\n", ""), 102)).not.toThrow();
+  });
+  it("refuses surviving workload, unknown processes and a ps outside the supervisor", () => {
+    for (const extra of ["104 1 node\n", "104 102 chrome\n", "104 101 ps\n", "104 102 unknown\n"])
+      expect(() => assertManualCleanupProcesses(clean + extra, 102)).toThrow();
+  });
+  it("refuses absent, duplicated, cyclic, malformed and overflowing identity observations", () => {
+    for (const value of ["", "100 1 sshd\n", clean + "102 101 node\n", clean.replace("101 100", "101 102"),
+      clean + "broken\n", clean + "9007199254740992 102 ps\n", clean.replace("103 102 ps", "103 -1 ps")])
+      expect(() => assertManualCleanupProcesses(value, 102)).toThrow();
+  });
+});
 describe("initial owned Linux memory admission", () => {
   const memory = (total = "5767168", available = "4194304") =>
     `MemTotal:       ${total} kB\nMemAvailable:   ${available} kB\nMemFree: 1 kB\n`;
