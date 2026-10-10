@@ -14,8 +14,10 @@ export const historyEventSchema = z.discriminatedUnion("kind", [
     resource: z.enum(["browser", "process"]) }).strict(),
   z.object({ kind: z.literal("resource-reconciled"), runId: opaque, id: opaque,
     resource: z.literal("browser"), reason: z.literal("manual-key-free-native-cleanup"),
-    historyPrefixSha256: digest, previousOwnerSha256: digest, publicCleanupSha256: digest,
-    ownerNonce: z.string().uuid(), bootId: z.string().uuid(), daemonId: z.string().min(1).max(256) }).strict(),
+    historyPrefixSha256: digest, previousOwnerSha256: digest.optional(), previousChallengeSha256: digest.optional(), publicCleanupSha256: digest,
+    ownerNonce: z.string().uuid(), bootId: z.string().uuid(), daemonId: z.string().min(1).max(256) }).strict()
+    .refine(value => (value.previousOwnerSha256 === undefined) !== (value.previousChallengeSha256 === undefined),
+      "Exactly one honestly named prior ownership digest required"),
   z.object({ kind: z.literal("session-open"), runId: opaque, sessionId: opaque, personaId: opaque,
     taskId: z.enum(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"]) }).strict(),
   z.object({ kind: z.literal("trace"), runId: opaque, sessionId: opaque,

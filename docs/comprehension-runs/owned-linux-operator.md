@@ -111,6 +111,13 @@ local-stub smoke's browser-resource marker in the dry ledger; it cannot recover
 a paid/live run, an unfinished run, inference uncertainty or a spending lock.
 No actual recovery is qualified by the source or unit tests.
 
+Every new owner admission first durably writes its complete public proof to
+`~/.inherit-comprehension-challenges/<nonce>.owner.json`, using an exclusive
+owner-only file and file/directory synchronization, before readiness or input.
+Lease release retains this companion and the permanent `<nonce>.used.json`
+challenge. A persistence failure refuses readiness and consumes that challenge;
+never replace or adopt its partial output. Neither file contains a private key.
+
 Prepare the public request from the preserved original owner proof, exact
 failed run/session IDs, SHA-256 of the complete original dry-history prefix,
 and SHA-256 of the reviewed public cleanup original. That cleanup must establish
@@ -132,6 +139,26 @@ input bound:
 ```text
 {"version":1,"ledger":"dry","directory":"<canonical-protected-effort-directory>","runId":"<original-run>","sessionId":"<original-session>","historyPrefixSha256":"<exact-prefix-sha256>","publicCleanupSha256":"<reviewed-public-cleanup-sha256>","previousOwner":<complete-original-public-owner-proof>}
 ```
+
+If a legacy run lost its complete public proof, the explicit older-boot-only
+alternative replaces `previousOwner` with this public object (never both):
+
+```text
+"previousChallenge":{"kind":"older-boot-challenge","challenge":{"version":1,"nonce":"<original-nonce>","bootId":"<original-boot>","head":"<original-source-head>","uid":<original-uid>,"createdAt":<original-created-at>},"scratch":"<actual-home>/inherit-native-smoke-<original-nonce>"}
+```
+
+The protected permanent challenge must match these exact canonical bytes. Its
+boot must differ from the actual current kernel boot, proving old-process death
+without inventing a PID, start time or public key. Its source must match the
+original run in the complete preserved history prefix. The nonce-specific old
+scratch and records stay present and protected; its native stack lock must be
+absent. Current authenticated source, daemon/socket, full empty inventory and
+absence of other owned work are checked exactly as for the full-proof path.
+Same-boot recovery still requires the complete original proof. A closure uses
+`previousChallengeSha256` for the retained-marker bytes, or
+`previousOwnerSha256` for the complete proof; the former is not a full-proof
+digest. Both alternatives retain every dry-only, unanswered, finished,
+no-inference-uncertainty and accounting refusal.
 
 The operator checks actual authority and cleanup around the durable append.
 It permits only its SSH/tool ancestors and its own process-inventory child,

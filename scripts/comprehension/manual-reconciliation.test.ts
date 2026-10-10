@@ -9,10 +9,10 @@ import { InstrumentJournal } from "./instrument-journal";
 import { reconcileKeyFreeDryJournal } from "./manual-reconciliation";
 import type { OwnedLinuxCapability } from "../owned-linux-runtime";
 
-const native = vi.hoisted(() => ({ cleanup: vi.fn() }));
+const native = vi.hoisted(() => ({ cleanup: vi.fn(), olderCleanup: vi.fn() }));
 const fileIO = vi.hoisted(() => ({ failHistoryClose: false, opened: [] as string[] }));
 vi.mock("../owned-linux-runtime", async importOriginal => ({
-  ...await importOriginal<typeof import("../owned-linux-runtime")>(), assertOwnedLinuxManualCleanup: native.cleanup,
+  ...await importOriginal<typeof import("../owned-linux-runtime")>(), assertOwnedLinuxManualCleanup: native.cleanup, assertOwnedLinuxOlderBootManualCleanup: native.olderCleanup,
 }));
 vi.mock("node:fs/promises", async importOriginal => {
   const original = await importOriginal<typeof import("node:fs/promises")>();
@@ -27,7 +27,7 @@ vi.mock("node:fs/promises", async importOriginal => {
 });
 const directories: string[] = [];
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
-beforeEach(() => { native.cleanup.mockReset().mockReturnValue("2".repeat(64)); fileIO.failHistoryClose = false; fileIO.opened = []; });
+beforeEach(() => { native.cleanup.mockReset().mockReturnValue("2".repeat(64)); native.olderCleanup.mockReset().mockReturnValue("4".repeat(64)); fileIO.failHistoryClose = false; fileIO.opened = []; });
 afterEach(async () => { for (const directory of directories.splice(0)) await rm(directory, { recursive: true, force: true }); });
 
 /** Only synthetic local journal bytes. Native authority is explicitly mocked;
@@ -67,6 +67,13 @@ async function fixture(options: { unfinished?: boolean; provider?: "local-determ
       historyPrefixSha256: hash(before), publicCleanupSha256: "3".repeat(64), previousOwner } };
 }
 
+function olderBootRequest(request: Awaited<ReturnType<typeof fixture>>["request"]) {
+  const { previousOwner, ...base } = request;
+  return { ...base, previousChallenge: { kind: "older-boot-challenge", scratch: previousOwner.scratch,
+    challenge: { version: 1, nonce: previousOwner.nonce, bootId: previousOwner.bootId, head: previousOwner.head,
+      uid: previousOwner.uid, createdAt: previousOwner.createdAt } } };
+}
+
 describe("explicit manual key-free dry journal reconciliation", () => {
   it("does not expose reconciliation through ordinary journal append", async () => {
     const value = await fixture();
@@ -96,12 +103,42 @@ describe("explicit manual key-free dry journal reconciliation", () => {
     expect(await readFile(value.historyFile)).toEqual(after);
   });
 
+  it("uses the explicit older-boot path and names its retained-challenge digest honestly", async () => {
+    const value = await fixture(), request = olderBootRequest(value.request);
+    fileIO.opened = [];
+    expect(await reconcileKeyFreeDryJournal(value.owner, request)).toMatchObject({ status: "reconciled", spendChanged: false });
+    expect(native.cleanup).not.toHaveBeenCalled(); expect(native.olderCleanup).toHaveBeenCalledTimes(3);
+    const after = await readFile(value.historyFile); expect(after.subarray(0, value.before.length)).toEqual(value.before);
+    const closure = JSON.parse(after.subarray(value.before.length).toString());
+    expect(closure.previousChallengeSha256).toBe("4".repeat(64)); expect(closure).not.toHaveProperty("previousOwnerSha256");
+    expect(fileIO.opened).not.toContain(value.spendFile); expect(await readFile(value.spendFile)).toEqual(value.spend);
+    const reopened = await InstrumentJournal.open(value.directory, 1000, 0);
+    expect(reopened.budget.remaining).toBe(680); expect(reopened.history.resourceStopRequired).toBe(false); await reopened.close();
+  });
+
+  it("refuses ambiguous or unbound old ownership and retains locks on older-boot cleanup uncertainty", async () => {
+    const value = await fixture(), request = olderBootRequest(value.request);
+    const previousChallenge = request.previousChallenge, base = { ...request, previousChallenge: undefined };
+    for (const request of [base, { ...value.request, previousChallenge },
+      { ...base, previousChallenge: { ...previousChallenge, challenge: { ...previousChallenge.challenge, head: "b".repeat(40) } } }])
+      await expect(reconcileKeyFreeDryJournal(value.owner, request)).rejects.toThrow("refused");
+    expect(await readFile(value.historyFile)).toEqual(value.before);
+    native.olderCleanup.mockReturnValueOnce("4".repeat(64)).mockReturnValueOnce("4".repeat(64))
+      .mockImplementationOnce(() => { throw new Error("MUST_NOT_PRINT_SYNTHETIC_CANARY"); });
+    await expect(reconcileKeyFreeDryJournal(value.owner, { ...base, previousChallenge })).rejects.toThrow("refused");
+    for (const name of ["dry-history.lock", "dry-history.lock.manual"])
+      expect((await lstat(path.join(value.directory, name))).isDirectory()).toBe(true);
+    expect(await readFile(value.spendFile)).toEqual(value.spend);
+  });
+
   it.each([{ unfinished: true }, { provider: "openai-compatible-chat" as const },
     { inference: "pending" as const }, { inference: "unknown" as const }, { unresolved: false }, { answered: true }])(
     "refuses unfinished, live-provider or inferred cleanup histories: %j", async options => {
-      const value = await fixture(options);
-      await expect(reconcileKeyFreeDryJournal(value.owner, value.request)).rejects.toThrow("refused");
-      expect(await readFile(value.historyFile)).toEqual(value.before); expect(await readFile(value.spendFile)).toEqual(value.spend);
+      for (const legacy of [false, true]) {
+        const value = await fixture(options);
+        await expect(reconcileKeyFreeDryJournal(value.owner, legacy ? olderBootRequest(value.request) : value.request)).rejects.toThrow("refused");
+        expect(await readFile(value.historyFile)).toEqual(value.before); expect(await readFile(value.spendFile)).toEqual(value.spend);
+      }
     });
 
   it("requires exact public prefix/run/session/source bindings and refuses a live ledger input", async () => {

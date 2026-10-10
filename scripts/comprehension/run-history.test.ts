@@ -155,3 +155,19 @@ describe("chronological instrument history", () => {
     expect(history.events).toHaveLength(1);
   });
 });
+
+
+describe("manual ownership digest distinction", () => {
+  it("requires exactly one full-proof or retained-challenge digest without relabeling old records", async () => {
+    const { historyEventSchema } = await import("./run-history");
+    const base = { kind: "resource-reconciled", runId: "unit-run", id: "unit-session", resource: "browser",
+      reason: "manual-key-free-native-cleanup", historyPrefixSha256: "1".repeat(64), publicCleanupSha256: "3".repeat(64),
+      ownerNonce: "00000000-0000-4000-8000-000000000001", bootId: "00000000-0000-4000-8000-000000000002", daemonId: "unit" };
+    const old = { ...base, previousOwnerSha256: "2".repeat(64) };
+    expect(historyEventSchema.parse(old)).toEqual(old);
+    const legacy = { ...base, previousChallengeSha256: "4".repeat(64) };
+    expect(historyEventSchema.parse(legacy)).toEqual(legacy);
+    expect(() => historyEventSchema.parse(base)).toThrow();
+    expect(() => historyEventSchema.parse({ ...old, previousChallengeSha256: "4".repeat(64) })).toThrow();
+  });
+});

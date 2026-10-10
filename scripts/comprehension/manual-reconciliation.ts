@@ -6,7 +6,7 @@ import { constants } from "node:fs";
 import { lstat, mkdir, open, readdir, realpath, rmdir } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { assertOwnedLinuxManualCleanup, ownedLinuxPublicProofSchema, type OwnedLinuxCapability } from "../owned-linux-runtime";
+import { assertOwnedLinuxManualCleanup, assertOwnedLinuxOlderBootManualCleanup, olderBootChallengeSchema, ownedLinuxPublicProofSchema, type OwnedLinuxCapability } from "../owned-linux-runtime";
 import { digest, opaque } from "./conductor-contract";
 import { privateDirectory } from "./instrument-journal";
 import { RunHistory } from "./run-history";
@@ -14,7 +14,9 @@ import { RunHistory } from "./run-history";
 export const manualDryReconciliationSchema = z.object({ version: z.literal(1), ledger: z.literal("dry"),
   directory: z.string().refine(value => path.isAbsolute(value) && path.resolve(value) === value),
   runId: opaque, sessionId: opaque, historyPrefixSha256: digest, publicCleanupSha256: digest,
-  previousOwner: ownedLinuxPublicProofSchema }).strict();
+  previousOwner: ownedLinuxPublicProofSchema.optional(), previousChallenge: olderBootChallengeSchema.optional() }).strict()
+  .refine(value => (value.previousOwner === undefined) !== (value.previousChallenge === undefined),
+    "Exactly one prior owner proof or explicit older-boot challenge required");
 
 const refusal = "Manual key-free journal reconciliation refused; prior history and accounting retained";
 async function absent(file: string) {
@@ -43,7 +45,11 @@ export async function reconcileKeyFreeDryJournal(owner: OwnedLinuxCapability, in
   let descriptor: Awaited<ReturnType<typeof open>> | undefined;
   try {
     const request = manualDryReconciliationSchema.parse(input);
-    const previousOwnerSha256 = assertOwnedLinuxManualCleanup(owner, request.previousOwner);
+    const cleanup = () => request.previousOwner
+      ? assertOwnedLinuxManualCleanup(owner, request.previousOwner)
+      : assertOwnedLinuxOlderBootManualCleanup(owner, request.previousChallenge!);
+    const previousSha256 = cleanup();
+    const previousHead = request.previousOwner?.head ?? request.previousChallenge!.challenge.head;
     await privateDirectory(request.directory);
     assert(await realpath(request.directory) === request.directory, refusal);
     const historyFile = path.join(request.directory, "dry-history.jsonl"), lock = path.join(request.directory, "dry-history.lock");
@@ -72,20 +78,21 @@ export async function reconcileKeyFreeDryJournal(owner: OwnedLinuxCapability, in
       history.apply(event);
     }
     assert(history.events.some(event => event.kind === "start" && event.manifest.runId === request.runId
-      && event.manifest.revision === request.previousOwner.head), refusal);
+      && event.manifest.revision === previousHead), refusal);
     const closure = history.apply({ kind: "resource-reconciled", runId: request.runId, id: request.sessionId,
       resource: "browser", reason: "manual-key-free-native-cleanup", historyPrefixSha256: request.historyPrefixSha256,
-      previousOwnerSha256, publicCleanupSha256: request.publicCleanupSha256, ownerNonce: owner.proof.nonce,
+      ...(request.previousOwner ? { previousOwnerSha256: previousSha256 } : { previousChallengeSha256: previousSha256 }),
+      publicCleanupSha256: request.publicCleanupSha256, ownerNonce: owner.proof.nonce,
       bootId: owner.proof.bootId, daemonId: owner.proof.daemonId });
     assert(!history.resourceStopRequired && !history.unfinished, refusal);
-    assertOwnedLinuxManualCleanup(owner, request.previousOwner);
+    cleanup();
     assert.deepEqual(identity(await descriptor.stat({ bigint: true })), identity(before), refusal);
     assert.deepEqual(identity(await protectedFile(historyFile)), identity(before), refusal);
     assert.deepEqual(identity(await protectedFile(spendFile)), identity(spendBefore), refusal);
     uncertain = true; // A partial append/fsync failure retains BOTH recovery locks.
     await descriptor.writeFile(JSON.stringify(closure) + "\n"); await descriptor.sync();
     await syncDirectory(request.directory);
-    assertOwnedLinuxManualCleanup(owner, request.previousOwner);
+    cleanup();
     assert.deepEqual(identity(await protectedFile(spendFile)), identity(spendBefore), refusal);
     await absent(`${spendFile}.lock`);
     assert.deepEqual(identity(await lstat(lock, { bigint: true })), identity(lockBefore), refusal);

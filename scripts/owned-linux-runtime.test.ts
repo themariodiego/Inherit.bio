@@ -1,13 +1,21 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { assertManualCleanupProcesses, assertOperatorHostEnvironment, assertOwnedLinuxCapability, assertOwnedLinuxInitialMemory, assertOwnedSourceStatus, ownedLinuxRequestSchema,
-  parsePrivateOperatorFrame, retainChallengeUse, type OwnedLinuxCapability } from "./owned-linux-runtime";
+  assertOlderBootChallengeBinding, parsePrivateOperatorFrame, retainChallengeUse, retainPublicOwnerProof, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 const directories: string[] = [];
+const persistence = vi.hoisted(() => ({ failSync: false }));
+vi.mock("node:fs", async importOriginal => {
+  const original = await importOriginal<typeof import("node:fs")>();
+  return { ...original, fsyncSync: (...args: Parameters<typeof original.fsyncSync>) => {
+    if (persistence.failSync) throw new Error("synthetic public persistence failure");
+    return original.fsyncSync(...args);
+  } };
+});
 afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
 const scratch = () => { const directory = realpathSync(mkdtempSync(path.join(os.tmpdir(), "owned-linux-unit-"))); directories.push(directory); return directory; };
 describe("manual cleanup process certainty", () => {
@@ -69,6 +77,68 @@ describe("one-use public operator challenges", () => {
     const target = path.join(directory, `${nonce}.used.json`); symlinkSync(path.join(root, "absent"), target);
     expect(() => retainChallengeUse(directory, nonce, "public")).toThrow();
     expect(lstatSync(target).isSymbolicLink()).toBe(true);
+  });
+});
+const publicOwner = () => ({ version: 1 as const, nonce: randomUUID(), bootId: randomUUID(), head: "a".repeat(40),
+  root: "/home/unit/source", scratch: "/home/unit/current", dockerSocket: "/run/docker.sock", uid: process.getuid!(),
+  gid: process.getgid!(), pid: 12345, processStart: "42", daemonId: "unit-daemon", createdAt: 2, publicKey: "unit-public-key" });
+const challenge = (owner: ReturnType<typeof publicOwner>) => ({ version: 1 as const, nonce: owner.nonce,
+  bootId: owner.bootId, head: owner.head, uid: owner.uid, createdAt: owner.createdAt });
+describe("permanent public owner proof", () => {
+  it("retains the complete public proof independently of the lease and refuses replacement in another process", () => {
+    const root = scratch(), directory = path.join(root, "challenges"), owner = publicOwner();
+    retainChallengeUse(directory, owner.nonce, JSON.stringify(challenge(owner)));
+    retainPublicOwnerProof(directory, owner);
+    const file = path.join(directory, `${owner.nonce}.owner.json`), before = readFileSync(file, "utf8");
+    expect(JSON.parse(before)).toEqual(owner); expect(lstatSync(file).mode & 0o7777).toBe(0o600);
+    const code = `import { retainPublicOwnerProof } from ${JSON.stringify(path.resolve("scripts/owned-linux-runtime.ts"))};
+      try { retainPublicOwnerProof(${JSON.stringify(directory)}, ${JSON.stringify(owner)}); process.exitCode = 1; }
+      catch (error) { if (error.code !== "EEXIST") throw error; }`;
+    expect(() => execFileSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code],
+      { timeout: 10_000, stdio: "pipe", env: { NODE_ENV: "test", PATH: process.env.PATH, LANG: "C.UTF-8" } })).not.toThrow();
+    expect(readFileSync(file, "utf8")).toBe(before);
+    expect(readFileSync(path.join(directory, `${owner.nonce}.used.json`), "utf8")).toBe(JSON.stringify(challenge(owner)));
+  });
+  it("refuses incomplete durable persistence and keeps the one-use challenge consumed", () => {
+    const root = scratch(), directory = path.join(root, "challenges"), owner = publicOwner();
+    expect(() => retainPublicOwnerProof(root, owner)).toThrow();
+    retainChallengeUse(directory, owner.nonce, JSON.stringify(challenge(owner)));
+    persistence.failSync = true;
+    try { expect(() => retainPublicOwnerProof(directory, owner)).toThrow("synthetic public persistence failure"); }
+    finally { persistence.failSync = false; }
+    expect(readFileSync(path.join(directory, `${owner.nonce}.used.json`), "utf8")).toBe(JSON.stringify(challenge(owner)));
+    expect(() => retainPublicOwnerProof(directory, owner)).toThrow();
+    // Readiness can follow only a completed persistence call; a failed write is never retried/adopted.
+  });
+  it("refuses mismatched, linked and nonprivate evidence without retaining a private field", () => {
+    const root = scratch(), directory = path.join(root, "challenges"), owner = publicOwner();
+    retainChallengeUse(directory, owner.nonce, JSON.stringify(challenge(owner)));
+    for (const change of [{ head: "b".repeat(40) }, { privateKey: "MUST_NOT_PRINT_SYNTHETIC_CANARY" }])
+      expect(() => retainPublicOwnerProof(directory, { ...owner, ...change })).toThrow();
+    const file = path.join(directory, `${owner.nonce}.owner.json`);
+    symlinkSync(path.join(root, "absent"), file); expect(() => retainPublicOwnerProof(directory, owner)).toThrow();
+    expect(lstatSync(file).isSymbolicLink()).toBe(true); rmSync(file);
+    chmodSync(path.join(directory, `${owner.nonce}.used.json`), 0o644);
+    expect(() => retainPublicOwnerProof(directory, owner)).toThrow(); expect(existsSync(file)).toBe(false);
+  });
+});
+describe("explicit older-boot challenge binding", () => {
+  it("accepts exact retained challenge bytes from a different boot without reconstructing a PID/start/key", () => {
+    const current = publicOwner(), prior = { ...challenge(current), nonce: randomUUID(), bootId: randomUUID(), createdAt: 1 };
+    const input = { kind: "older-boot-challenge", challenge: prior, scratch: `/home/unit/inherit-native-smoke-${prior.nonce}` };
+    expect(assertOlderBootChallengeBinding(current, input, JSON.stringify(prior))).toMatch(/^[0-9a-f]{64}$/);
+    for (const name of ["pid", "processStart", "publicKey"]) expect(prior).not.toHaveProperty(name);
+  });
+  it("refuses same boot, current nonce, foreign owner, nonolder chronology and every marker mismatch", () => {
+    const current = publicOwner(), prior = { ...challenge(current), nonce: randomUUID(), bootId: randomUUID(), createdAt: 1 };
+    const input = { kind: "older-boot-challenge", challenge: prior, scratch: "/home/unit/prior" };
+    for (const change of [{ bootId: current.bootId }, { nonce: current.nonce }, { uid: current.uid + 1 }, { createdAt: current.createdAt }]) {
+      const altered = { ...prior, ...change };
+      expect(() => assertOlderBootChallengeBinding(current, { ...input, challenge: altered }, JSON.stringify(altered))).toThrow();
+    }
+    for (const marker of [JSON.stringify({ ...prior, head: "b".repeat(40) }), JSON.stringify({ ...prior, createdAt: 0 }),
+      JSON.stringify(prior) + "\n", JSON.stringify({ ...prior, pid: 999 }), "MUST_NOT_PRINT_SYNTHETIC_CANARY"])
+      expect(() => assertOlderBootChallengeBinding(current, input, marker)).toThrow();
   });
 });
 describe("exact owned source admission", () => {
