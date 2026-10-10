@@ -7,7 +7,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { repositoryRoot } from "./conductor-inputs";
-import { loadPrivateRunConfig, PRIVATE_CONFIG_MAX_BYTES, PRIVATE_CONFIG_REFUSAL } from "./private-run-config";
+import { freshT6ConfigSchema } from "./fresh-t6-config";
+import { loadPrivateConfiguration, loadPrivateRunConfig, PRIVATE_CONFIG_MAX_BYTES, PRIVATE_CONFIG_REFUSAL } from "./private-run-config";
 
 const controls = vi.hoisted(() => ({ duringRead: undefined as (() => void) | undefined,
   buffers: [] as Buffer[], rejectClose: false,
@@ -75,6 +76,33 @@ describe("private comprehension configuration admission", () => {
     expect(existsSync(path.join(root, "effort"))).toBe(false);
     expect(existsSync(path.join(root, "records"))).toBe(false);
     clearedReadBytes();
+  });
+
+  it("uses the same closed admission for the exclusive schema, clearing bytes on parser refusal", () => {
+    const root = directory(), input = file(root);
+    const value = { run: config(root), maximumInfrastructureCostPerStackMicroDollars: 10 };
+    writeFileSync(input, JSON.stringify(value));
+    expect(loadPrivateConfiguration(input, value => freshT6ConfigSchema.parse(value))).toMatchObject(value);
+    clearedReadBytes();
+    controls.buffers = [];
+    expect(() => loadPrivateConfiguration(input, () => { throw new Error("Private parser detail"); })).toThrow(PRIVATE_CONFIG_REFUSAL);
+    clearedReadBytes();
+    expect(existsSync(path.join(root, "effort"))).toBe(false);
+  });
+
+  it("plans the complete ten-task 300-pair round and 301 stack reservations without opening native or inference resources", async () => {
+    const root = directory(), input = file(root), runtime = path.join(root, "tmp"); mkdirSync(runtime, { mode: 0o700 });
+    const defaults = { ...config(root), tasks: undefined, personas: undefined };
+    writeFileSync(input, JSON.stringify({ run: defaults, maximumInfrastructureCostPerStackMicroDollars: 10 }));
+    const { stdout, stderr } = await promisify(execFile)(process.execPath,
+      ["--import", "tsx", "scripts/comprehension/run-fresh-t6.mts", input, "--plan"],
+      { cwd: repositoryRoot, timeout: 4_000, env: { PATH: process.env.PATH, NODE_ENV: "test", TMPDIR: runtime } });
+    expect(JSON.parse(stdout)).toMatchObject({ tasks: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"],
+      personas: 30, sessions: 300, freshStacks: 301, productionBuilds: 1, infrastructureReservationMicroDollars: 3010,
+      qualifyingEvidence: false, hostedOwnershipRequired: true });
+    expect(stderr).toBe(""); expect(stdout).not.toContain(input);
+    expect(existsSync(path.join(root, "effort"))).toBe(false);
+    expect(existsSync(path.join(root, "records"))).toBe(false);
   });
 
   it("accepts the exact byte ceiling and refuses one extra byte before parsing", () => {

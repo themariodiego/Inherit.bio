@@ -9,7 +9,7 @@ import { createRequire } from "node:module";
 import AdmZip from "adm-zip";
 import { z } from "zod";
 import { decodeHistoricalZip } from "./ci-browser-duration-history-io";
-import { selectBrowserDurationProfile } from "./ci-browser-duration-plan";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
 import { hostedResultRequestSchema, hostedWorkflowContract, verifyHostedMetadata, coverageArtifacts,
   verifyArtifactBytes, verifyHostedCoverage, repositoryLogSummary, verifyCurrentChecks, commandLog,
   hashBytes, hostedGetArgv, type HostedResultRequest } from "./hosted-ci-result";
@@ -108,7 +108,8 @@ function sourceContract(request: HostedResultRequest) {
   const selected = selectBrowserDurationProfile(() => profile("data/ci/browser-duration-profile.json"),
     () => profile("data/ci/browser-duration-profile-v2.json"));
   return { workflow: hostedWorkflowContract(yaml.load(git(["show", `${request.testedHead}:${request.workflow}`]).toString())),
-    trackedSpecs: tracked.filter(file => file.startsWith("e2e/") && file.endsWith(".spec.ts")), profileSha256: selected?.sha256 ?? null,
+    trackedSpecs: tracked.filter(file => file.startsWith("e2e/") && file.endsWith(".spec.ts")),
+    profileSha256: selected?.sha256 ?? DEFAULT_BROWSER_ALLOCATION_SHA256,
     actualParents: git(["show", "-s", "--format=%P", request.testedHead]).toString().trim().split(/\s+/).filter(Boolean) };
 }
 type CaptureRecord = { name: string; argv: string[]; startedAt: string; finishedAt: string; elapsedMs: number;
@@ -268,7 +269,7 @@ function verifySaved(capture: string) {
   });
   const browser = verifyHostedCoverage(request, decoded[0], decoded.slice(1), contract.trackedSpecs, contract.profileSha256);
   const logs = (name: string) => readSaved(capture, `job-${metadata.jobs.find(job => job.name === name)!.id}`, receipt, maxLog).toString("utf8");
-  const repository = repositoryLogSummary(logs("repository-checks"));
+  const repository = repositoryLogSummary(logs("repository-checks"), logs("database-tests"));
   for (let index = 1; index <= browser.assignments.length; index++) {
     const part = commandLog(logs(`browser (${index})`), `pnpm exec tsx scripts/run-upload-browser.mts --ci-shard=${index}/6`);
     const sentence = `E2E contract passed: ${browser.assignments[index - 1]} result(s), no skips, no retries.`;

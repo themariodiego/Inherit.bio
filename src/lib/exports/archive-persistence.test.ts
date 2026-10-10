@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { getEventListeners } from "node:events";
 import { createClient } from "@supabase/supabase-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ArchivePersistenceError, createArchivePersistence, type ArchiveWorkerRpc } from "./archive-persistence";
@@ -88,6 +89,113 @@ describe("archive worker persistence boundary", () => {
     await expect(f.bridge.checkAuthority(attempt, f.abort.signal)).rejects.toMatchObject({ code: "unavailable", cleanupRequired: false });
     await expect(f.bridge.beginAttempt(attempt, f.abort.signal)).rejects.toThrow("unavailable");
     expect(f.calls.map(c => c.p_operation)).toEqual(["preflight"]);
+  });
+
+  it("closes every successful transport with one immutable native cleanup reason without caching authority", async () => {
+    const f = fixture(); await f.begin();
+    expect(await f.bridge.checkAuthority(attempt, f.abort.signal)).toBe(RECEIPT);
+    expect(await f.bridge.checkAuthority(attempt, f.abort.signal)).toBe(RECEIPT);
+    expect(f.calls.map(call => call.p_operation)).toEqual(["preflight", "begin", "renew", "renew"]);
+    expect(f.signals).toHaveLength(4);
+    const native = new AbortController(); native.abort();
+    const reason = f.signals[0].reason;
+    expect(reason).toBeInstanceOf(DOMException);
+    expect(reason.name).toBe(native.signal.reason.name);
+    expect(reason.message).toBe(native.signal.reason.message);
+    expect(Object.isFrozen(reason)).toBe(true);
+    expect(f.signals.every(signal => signal.aborted && signal.reason === reason)).toBe(true);
+    expect(f.abort.signal.aborted).toBe(false);
+    const separate = fixture(); await separate.bridge.checkAuthority(attempt, separate.abort.signal);
+    expect(separate.signals[0].reason).not.toBe(reason);
+  });
+
+  it("preserves the actual caller cancellation reason after successful cleanup and admits no late value", async () => {
+    const f = fixture(); await f.begin();
+    const cleanup = f.signals[0].reason, wait = deferred<{ data: unknown; error: null }>();
+    f.respond.mockReturnValue(wait.promise);
+    const running = f.bridge.checkAuthority(attempt, f.abort.signal);
+    const rejected = expect(running).rejects.toMatchObject({ code: "aborted", cleanupRequired: true });
+    await vi.waitFor(() => expect(f.calls).toHaveLength(3));
+    const callerReason = Object.freeze({ purpose: "caller-cancelled" });
+    f.abort.abort(callerReason); await rejected;
+    expect(f.signals[2].reason).toBe(callerReason);
+    expect(f.signals[2].reason).not.toBe(cleanup);
+    wait.resolve({ data: f.reply(f.calls[2]), error: null }); await Promise.resolve();
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
+  });
+
+  it("keeps a real operation deadline's native reason distinct from successful cleanup", async () => {
+    vi.useFakeTimers(); const f = fixture(); await f.begin();
+    const cleanup = f.signals[0].reason, wait = deferred<{ data: unknown; error: null }>();
+    f.respond.mockReturnValue(wait.promise);
+    const running = f.bridge.checkAuthority(attempt, f.abort.signal);
+    const rejected = expect(running).rejects.toMatchObject({ code: "deadline", cleanupRequired: true });
+    await vi.advanceTimersByTimeAsync(30_000); await rejected;
+    expect(f.signals[2].aborted).toBe(true);
+    expect(f.signals[2].reason).toBeInstanceOf(DOMException);
+    expect(f.signals[2].reason.name).toBe("AbortError");
+    expect(f.signals[2].reason).not.toBe(cleanup);
+    wait.resolve({ data: f.reply(f.calls[2]), error: null }); await Promise.resolve();
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
+  });
+
+  it("disposes every caller abort link after success without retaining prior transport dependencies", async () => {
+    const f = fixture(), baseline = getEventListeners(f.abort.signal, "abort").length;
+    await f.begin();
+    for (let index = 0; index < 32; index++) {
+      expect(await f.bridge.checkAuthority(attempt, f.abort.signal)).toBe(RECEIPT);
+      expect(getEventListeners(f.abort.signal, "abort")).toHaveLength(baseline);
+    }
+    expect(f.calls.map(call => call.p_operation)).toEqual(["preflight", "begin", ...Array(32).fill("renew")]);
+    expect(f.signals.every(signal => signal.aborted)).toBe(true);
+    f.abort.abort(new DOMException("later caller abort", "AbortError"));
+    expect(f.signals.every(signal => signal.reason === f.signals[0].reason)).toBe(true);
+  });
+
+  it("propagates real caller cancellation even when an earlier listener stops event propagation", async () => {
+    const f = fixture(); await f.begin();
+    f.abort.signal.addEventListener("abort", event => event.stopImmediatePropagation(), { once: true });
+    const baseline = getEventListeners(f.abort.signal, "abort").length;
+    const wait = deferred<{ data: unknown; error: null }>(); f.respond.mockReturnValue(wait.promise);
+    const running = f.bridge.checkAuthority(attempt, f.abort.signal);
+    const rejected = expect(running).rejects.toMatchObject({ code: "aborted", cleanupRequired: true });
+    await vi.waitFor(() => expect(f.calls).toHaveLength(3));
+    expect(getEventListeners(f.abort.signal, "abort")).toHaveLength(baseline + 1);
+    const reason = new DOMException("synthetic actual cancellation", "AbortError");
+    f.abort.abort(reason); await rejected;
+    expect(f.signals[2].reason).toBe(reason);
+    expect(getEventListeners(f.abort.signal, "abort")).toHaveLength(0);
+    wait.resolve({ data: f.reply(f.calls[2]), error: null }); await Promise.resolve();
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
+  });
+
+  it("disposes its caller abort link after a real deadline and admits no later response", async () => {
+    vi.useFakeTimers(); const f = fixture(); await f.begin();
+    const baseline = getEventListeners(f.abort.signal, "abort").length;
+    const wait = deferred<{ data: unknown; error: null }>(); f.respond.mockReturnValue(wait.promise);
+    const running = f.bridge.checkAuthority(attempt, f.abort.signal);
+    const rejected = expect(running).rejects.toMatchObject({ code: "deadline", cleanupRequired: true });
+    await vi.advanceTimersByTimeAsync(30_000); await rejected;
+    expect(getEventListeners(f.abort.signal, "abort")).toHaveLength(baseline);
+    expect(f.signals[2].aborted).toBe(true);
+    wait.resolve({ data: f.reply(f.calls[2]), error: null }); await Promise.resolve();
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
+  });
+
+  it.each(["schema", "rpc-error", "thrown"])("disposes caller abort links on %s refusal and cannot continue", async fault => {
+    const f = fixture(); await f.begin();
+    const baseline = getEventListeners(f.abort.signal, "abort").length;
+    if (fault === "thrown") f.respond.mockRejectedValue(new Error("synthetic unavailable transport"));
+    else f.respond.mockResolvedValue({ data: null, error: fault === "rpc-error" ? { code: "42501" } : null });
+    await expect(f.bridge.checkAuthority(attempt, f.abort.signal)).rejects.toMatchObject({ code: "unavailable", cleanupRequired: true });
+    expect(getEventListeners(f.abort.signal, "abort")).toHaveLength(baseline);
+    expect(f.signals[2].aborted).toBe(true);
+    await expect(f.bridge.checkAuthority(attempt, new AbortController().signal)).rejects.toThrow("unavailable");
+    expect(f.calls).toHaveLength(3);
   });
 
   it("copies discovery so a caller cannot replace the receipt or extend its deadline", async () => {

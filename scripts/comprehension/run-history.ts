@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { freeze, opaque, type Settings } from "./conductor-contract";
+import { digest, freeze, opaque, type Settings } from "./conductor-contract";
 import { expectedSessions, isFullRun, liveManifestSchema, manifestSchema, type AnyManifest } from "./conductor-inputs";
 
 const finishSchema = z.object({ kind: z.literal("finish"), runId: opaque,
@@ -12,6 +12,12 @@ export const historyEventSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("usage"), runId: opaque, id: opaque, certain: z.boolean(), actual: z.number().int().nonnegative().safe().nullable() }).strict(),
   z.object({ kind: z.literal("resource-unresolved"), runId: opaque, id: opaque,
     resource: z.enum(["browser", "process"]) }).strict(),
+  z.object({ kind: z.literal("resource-reconciled"), runId: opaque, id: opaque,
+    resource: z.literal("browser"), reason: z.literal("manual-key-free-native-cleanup"),
+    historyPrefixSha256: digest, previousOwnerSha256: digest.optional(), previousChallengeSha256: digest.optional(), publicCleanupSha256: digest,
+    ownerNonce: z.string().uuid(), bootId: z.string().uuid(), daemonId: z.string().min(1).max(256) }).strict()
+    .refine(value => (value.previousOwnerSha256 === undefined) !== (value.previousChallengeSha256 === undefined),
+      "Exactly one honestly named prior ownership digest required"),
   z.object({ kind: z.literal("session-open"), runId: opaque, sessionId: opaque, personaId: opaque,
     taskId: z.enum(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"]) }).strict(),
   z.object({ kind: z.literal("trace"), runId: opaque, sessionId: opaque,
@@ -69,6 +75,23 @@ export class RunHistory {
         this.currentRevision = event.manifest.revision;
       }
       this.runs.set(event.manifest.runId, { manifest: event.manifest, keys: new Set() });
+    } else if (event.kind === "resource-reconciled") {
+      const run = this.runs.get(event.runId), session = this.sessions.get(event.id);
+      // Explicit manual closure is narrower than a retry: only a failed,
+      // unanswered native smoke using the key-free provider may be reconciled.
+      // Its original finish, ended trace and identity remain untouched.
+      if (this.unfinished || !run?.finish || run.finish.status !== "stopped"
+        || run.finish.failure !== "resource-unresolved" || run.finish.instrumentClean
+        || run.manifest.kind !== "smoke" || run.manifest.inference.provider !== "local-deterministic-stub"
+        || run.manifest.qualifyingEvidence || run.keys.size !== 0
+        || !session?.ended || session.runId !== event.runId || !this.unresolvedResources.has(event.id)
+        || this.recorded.some(record => record.kind === "trace" && record.runId === event.runId
+          && ["answer", "grader", "regrader"].includes(record.phase))
+        || [...this.calls.values()].some(call => call.runId === event.runId || !call.done)
+        || [...this.slots.values()].some(slot => slot.certain !== true)) {
+        throw new Error("Manual key-free resource reconciliation refused");
+      }
+      this.unresolvedResources.delete(event.id);
     } else if (event.kind === "close-revision") {
       // Calibration and smoke runs are recorded but never count toward the
       // two-consecutive-clean-runs rule.

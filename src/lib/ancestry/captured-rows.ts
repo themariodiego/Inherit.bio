@@ -1,5 +1,6 @@
 import type { OwnAncestryContentV2 } from "../uploads/own-ancestry-content";
 import type { OwnAncestryCapturedContent } from "../uploads/own-ancestry-captured-content";
+import { readResultBasis } from "../figures/result-basis";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_UNREADABLE } from "@/copy/ancestry";
 
 export interface AncestryResultRow {
@@ -10,6 +11,9 @@ export interface AncestryResultRow {
   model_id: string | null;
   model_version: string | null;
   created_at: string;
+  /** Only supplied by a validated captured result; absent on unclassified legacy rows. */
+  basis?: "modelled";
+  coverageBasis?: "observed";
 }
 export const UNCOMPUTED_LINEAGE = "Lineage has not been computed from this file.";
 
@@ -41,6 +45,8 @@ export function capturedAncestryRows(content: OwnAncestryCapturedContent, comple
   const fileId = content.source.fileId;
   const rows: AncestryResultRow[] = [];
       rows.push({ kind: "admixture", result: content.admixture.result,
+        basis: content.schemaVersion === 4 ? readResultBasis(content.figureBasis.shares, content.admixture.basis) : content.admixture.basis,
+        ...(content.schemaVersion === 4 ? { coverageBasis: readResultBasis(content.figureBasis.coverage, "observed") } : {}),
         support_note: content.admixture.support_note, file_id: fileId,
         model_id: content.admixture.model_id, model_version: content.admixture.model_version, created_at: completedAt });
       for (const lineage of content.schemaVersion !== 1 ? content.lineages : [])

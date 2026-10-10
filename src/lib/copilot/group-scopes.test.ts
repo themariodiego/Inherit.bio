@@ -37,17 +37,18 @@ describe("group scope availability", () => {
   // The owner turned the Family scope on everywhere on 2026-09-28 (PR #260).
   // Whether it can RUN is the transport's and the jurisdiction's question,
   // never this flag's, so the answer must not follow the TEST-LOCAL flag or
-  // any deployment variable.
-  it("builds the Family scope on every deployment, and the cohort scope nowhere", () => {
-    for (const env of [
-      { INHERIT_TEST_JURISDICTION: "1" },
-      {},
-      { INHERIT_TEST_JURISDICTION: "true" },
-      { INHERIT_TEST_JURISDICTION: "", VERCEL: "1", VERCEL_ENV: "production" },
-    ]) {
+  // any deployment variable. The cohort scope is built under the TEST-LOCAL
+  // acceptance row only (2026-09-28), and exactly the value "1" turns it on.
+  it("builds the Family scope on every deployment, and the cohort scope under TEST-LOCAL only", () => {
+    for (const [env, cohort] of [
+      [{ INHERIT_TEST_JURISDICTION: "1" }, true],
+      [{ INHERIT_TEST_JURISDICTION: "" }, false],
+      [{ INHERIT_TEST_JURISDICTION: "true" }, false],
+      [{ INHERIT_TEST_JURISDICTION: "", VERCEL: "1", VERCEL_ENV: "production" }, false],
+    ] as const) {
       vi.unstubAllEnvs();
       for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
-      expect(copilotGroupScopes(), JSON.stringify(env)).toEqual({ family: true, cohort: false });
+      expect(copilotGroupScopes(), JSON.stringify(env)).toEqual({ family: true, cohort });
     }
     vi.unstubAllEnvs();
   });

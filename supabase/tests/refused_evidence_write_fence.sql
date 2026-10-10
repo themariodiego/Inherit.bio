@@ -12,8 +12,9 @@ insert into public.embryo_cohorts(id,draft_id,owner_account_id,upload_class,basi
  participant_set_revision,donor_attribution_revision,embryo_count,retention_expires_at)
 select '9a000000-0000-4000-8000-0000000000b2',id,owner_account_id,upload_class,basis_case,1,1,1,1,
  clock_timestamp()+interval '1 day' from public.embryo_cohort_drafts where id='9a000000-0000-4000-8000-0000000000b1';
-insert into public.subjects(id,subject_class,upload_class,display_label,cohort_id)
-values('9a000000-0000-4000-8000-0000000000b3','embryo','embryo_own','Embryo 1','9a000000-0000-4000-8000-0000000000b2');
+insert into public.subjects(id,subject_class,upload_class,display_label,cohort_id,owner_account_id)
+select '9a000000-0000-4000-8000-0000000000b3','embryo','embryo_own','Embryo 1',id,owner_account_id
+from public.embryo_cohorts where id='9a000000-0000-4000-8000-0000000000b2';
 insert into public.embryos(id,cohort_id,subject_id,sample_ordinal,retention_expires_at)
 values('9a000000-0000-4000-8000-0000000000b4','9a000000-0000-4000-8000-0000000000b2',
  '9a000000-0000-4000-8000-0000000000b3',0,clock_timestamp()+interval '1 day');

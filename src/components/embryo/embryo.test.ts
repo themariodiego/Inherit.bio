@@ -1,6 +1,8 @@
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { chromium } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { FUTURE_PERSON_LINK } from "@/copy/family/index";
 import { GATE_BUTTON, GATE_CHECKBOX_LABEL, GATE_SESSION_NOTE } from "@/copy/embryos/gate";
 import {
@@ -8,6 +10,8 @@ import {
   EMBRYO_LAYER_DEFINITIONS,
   NO_ROWS_SENTENCE,
   NOT_MEASURED_COMPARISON,
+  QUALITY_CHECK_HEADING,
+  QUALITY_CHECK_TABLE_LABEL,
   STANDING_STATEMENT,
   WITHIN_FAMILY_NOT_TESTED,
   withinFamilyInconclusive,
@@ -16,12 +20,13 @@ import { NO_RESULTS_SENTENCE } from "@/copy/embryos/detail";
 import { EMBRYO_STATUS, RETENTION_SENTENCE } from "@/copy/embryos/index";
 import {
   DROPOUT_NOT_MEASURED,
+  DROPOUT_NOT_MEASURED_NO_RANGE,
   NOT_MEASURABLE_FROM_FILE,
   NOT_STATED_BY_SOURCE,
   QC_FAILED_CHIP,
 } from "@/copy/embryos/qc";
 import { NO_RANKING_STATEMENT, TRADEOFFS_EXISTS, TRADEOFFS_NONE_MEASURABLE } from "@/copy/embryos/tradeoffs";
-import { BASIS_OPTIONS, PDF_REFUSAL } from "@/copy/embryos/upload";
+import { BASIS_OPTIONS, PDF_REFUSAL, UPLOAD_COMPLETE_HEADING, UPLOAD_COMPLETE_SENTENCE, ADD_MORE_EMBRYOS_BUTTON } from "@/copy/embryos/upload";
 import type { FlowState } from "@/lib/embryos/upload-flow";
 import { MODELLED_MARKER } from "@/lib/figures/contract";
 import type { EmbryoCohortView } from "@/lib/embryos/cohorts";
@@ -46,6 +51,7 @@ const { QcTable } = await import("./compare/qc-table");
 const { QcBlock } = await import("./detail/qc-block");
 const { FindingsSection } = await import("./detail/findings-section");
 const { UploadFlow } = await import("./upload/upload-flow");
+const { UploadComplete } = await import("./upload/upload-stage");
 const { INITIAL_FLOW, MAXIMUM_INTERACTIVES_PER_SCREEN, SCREEN_BUDGET, SHELL_INTERACTIVES } = await import("@/lib/embryos/upload-flow");
 
 /**
@@ -63,7 +69,7 @@ const E = (n: number) => `0e000000-0000-4000-8000-00000000000${n}`;
 function embryos(): ComparisonEmbryo[] {
   return [
     { id: E(1), sample_ordinal: 0, display_label: "Embryo 1", status: "qc_pass", qc: syntheticQc({ call_rate: 0.97, sites_called: 970 }) },
-    { id: E(2), sample_ordinal: 1, display_label: "Embryo 2", status: "qc_fail", qc: syntheticQc({ call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate", "unknown_reason"], parent_a_concordance: 0.8 }) },
+    { id: E(2), sample_ordinal: 1, display_label: "Embryo 2", status: "qc_fail", qc: syntheticQc({ call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate", "unknown_reason"] }) },
     { id: E(3), sample_ordinal: 2, display_label: "Embryo 3", status: "qc_pass", qc: syntheticQc({ call_rate: 0.99, sites_called: 990 }) },
   ];
 }
@@ -118,6 +124,16 @@ describe("CompareTable", () => {
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(3);
   });
 
+  it("links only the exact passing result columns while preserving the failed QC column", () => {
+    const links = [...html.matchAll(/<a href="\/embryos\/([^"]+)"/g)].map(match => match[1]);
+    expect(links).toEqual([E(1), E(3)]);
+    const start = html.indexOf(`data-embryo-id="${E(2)}"`);
+    const failedHeader = html.slice(start, html.indexOf("</th>", start));
+    expect(failedHeader).toContain("Embryo 2");
+    expect(failedHeader).toContain(QC_FAILED_CHIP);
+    expect(failedHeader).not.toContain("<a ");
+  });
+
   it("renders the honest sentence in place of the rows and no risk figure", () => {
     expect(html).toContain(NO_ROWS_SENTENCE);
     expect(html).not.toMatch(/data-figure-kind="(absolute|relative|percentile)"/);
@@ -141,6 +157,11 @@ describe("CompareTable", () => {
 });
 
 describe("CompareCell", () => {
+  it.each(["observed", "exact"])("refuses a serialized modelled risk relabelled %s", basis => {
+    const finding = JSON.parse(JSON.stringify(syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02)));
+    finding.finding.figure_basis.basis = basis;
+    expect(() => renderToStaticMarkup(h(CompareCell, { finding, subjectId: S(1) }))).toThrow("invalid_result_basis");
+  });
   it("renders an absolute-risk finding as one block with the modelled marker once and the untested sentence", () => {
     const html = renderToStaticMarkup(h(CompareCell, { finding: syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02), subjectId: S(1) }));
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(1);
@@ -323,6 +344,29 @@ describe("ContextStrip", () => {
 });
 
 describe("QcTable and QcBlock", () => {
+  it("keeps the quality section and keyboard-scrollable table as distinctly named landmarks", async () => {
+    const html = renderToStaticMarkup(h("section", { "aria-labelledby": "quality-check-heading" },
+      h("h2", { id: "quality-check-heading" }, QUALITY_CHECK_HEADING),
+      h(QcTable, { embryos: embryos(), subjectIds }),
+    ));
+    const browser = await chromium.launch();
+    try {
+      const context = await browser.newContext({ viewport: { width: 320, height: 844 } });
+      const page = await context.newPage();
+      await page.setContent(`<html lang="en"><head><title>Quality check</title></head><body><main><h1>Compare embryos</h1>${html}</main></body></html>`);
+      expect(await page.getByRole("region").count()).toBe(2);
+      expect(await page.getByRole("region", { name: QUALITY_CHECK_HEADING, exact: true }).count()).toBe(1);
+      const tableRegion = page.getByRole("region", { name: QUALITY_CHECK_TABLE_LABEL, exact: true });
+      expect(await tableRegion.count()).toBe(1);
+      expect(await tableRegion.getAttribute("tabindex")).toBe("0");
+      expect(await tableRegion.getAttribute("class")).toContain("overflow-x-auto");
+      await tableRegion.focus();
+      expect(await tableRegion.evaluate(element => document.activeElement === element)).toBe(true);
+      expect((await new AxeBuilder({ page }).withRules(["landmark-unique"]).analyze()).violations).toEqual([]);
+    } finally {
+      await browser.close();
+    }
+  });
   it("shows each embryo's closed source facts in compare and detail without a disclosure", () => {
     const rows = embryos();
     rows[0].qc.source_facts = { coordinate_conversion: "converted", source_origin: "external-unverified", source_imputation: "not-recorded", call_observation: "not-recorded" };
@@ -343,7 +387,8 @@ describe("QcTable and QcBlock", () => {
     const html = renderToStaticMarkup(h(QcTable, { embryos: embryos(), subjectIds }));
     expect(html.match(new RegExp(NOT_STATED_BY_SOURCE, "g"))!.length).toBeGreaterThanOrEqual(12);
     expect(html).toContain(NOT_MEASURABLE_FROM_FILE);
-    expect(html).toContain(DROPOUT_NOT_MEASURED);
+    expect(html).toContain(DROPOUT_NOT_MEASURED_NO_RANGE);
+    expect(html).not.toContain(DROPOUT_NOT_MEASURED);
     expect(html).toMatch(/data-figure-kind="coverage"/);
     expect(html).toContain(QC_FAILED_CHIP);
     expect(html).not.toContain("—</");
@@ -373,35 +418,32 @@ describe("QcTable and QcBlock", () => {
     expect(table).not.toMatch(/your DNA|your file|spots in your|effects from your/i);
   });
 
-  // Every QC number is a stored laboratory field handed on by
-  // src/lib/embryos/policy.ts (`displayedFigure`); qc-policy.ts holds the
-  // thresholds and never produces one, and no src/lib/embryos/qc.ts exists.
-  it("attributes every QC figure to the module its value passes through, and the dropout interval to its row", () => {
+  // Saved called-VCF measurements resolve to the actual split-analysis
+  // producer. qc-policy.ts supplies gates, not measured values.
+  it("attributes only classified measured QC figures and withholds an unproduced dropout interval", () => {
     const qc = syntheticQc({
       mean_depth: 31.26,
-      allelic_dropout_estimate: 0.02,
-      allelic_dropout_interval_low: 0.01,
-      allelic_dropout_interval_high: 0.03,
     });
     const html = renderToStaticMarkup(h(QcBlock, { qc, embryoId: E(1), subjectId: S(1) }));
-    expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-provenance="computed:embryos\/policy"/);
-    expect(html).toMatch(/data-figure-kind="natural-frequency"[^>]*data-provenance="computed:embryos\/policy"/);
-    expect(html).toMatch(new RegExp(`data-figure-kind="interval"[^>]*data-provenance="seed:embryo_qc/${E(1)}"`));
+    expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-provenance="computed:embryos\/split-analysis"/);
+    expect(html).toMatch(/data-figure-kind="natural-frequency"[^>]*data-provenance="computed:embryos\/split-analysis"/);
+    expect(html).not.toContain('data-figure-kind="interval"');
     expect(html).not.toContain("embryos/qc");
     const rows = embryos();
     rows[0] = { ...rows[0], qc };
     const table = renderToStaticMarkup(h(QcTable, { embryos: rows, subjectIds }));
-    expect(table).toMatch(/data-figure-kind="measure"[^>]*data-provenance="computed:embryos\/policy"/);
+    expect(table).toMatch(/data-figure-kind="measure"[^>]*data-provenance="computed:embryos\/split-analysis"/);
     expect(table).not.toContain("embryos/qc");
   });
 
   it("renders one attributed block on the detail page with the coverage figure and the dropout sentence", () => {
-    const html = renderToStaticMarkup(h(QcBlock, { qc: syntheticQc({ contamination_estimate: 0.01 }), embryoId: E(1), subjectId: S(1) }));
+    const html = renderToStaticMarkup(h(QcBlock, { qc: syntheticQc(), embryoId: E(1), subjectId: S(1) }));
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(1);
     expect(html).toContain(`data-subject-id="${S(1)}"`);
     expect(html).toContain('data-density-primary-claim="true"');
     expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-figure-class="quality"[^>]*data-figure-basis="observed"/);
-    expect(html).toContain(DROPOUT_NOT_MEASURED);
+    expect(html).toContain(DROPOUT_NOT_MEASURED_NO_RANGE);
+    expect(html).not.toContain(DROPOUT_NOT_MEASURED);
     expect(html).toContain(NOT_STATED_BY_SOURCE);
     expect(html).not.toContain(MODELLED_MARKER);
   });
@@ -574,5 +616,25 @@ describe("<UploadFlow>", () => {
     );
     expect(donor).toContain(BASIS_OPTIONS[1].sentence);
     expect(donor).toContain(`>${BASIS_OPTIONS[1].label}<`);
+  });
+});
+
+
+describe("completed real upload presentation", () => {
+  it("shows completion, real cohort navigation and an explicit new-upload action without another file form", () => {
+    const html = renderToStaticMarkup(h(UploadComplete, { view: { kind: "complete", cohortId: E(1), draftCsrfToken: "synthetic-bound-new-draft" } }));
+    expect(html).toContain('data-state="complete"');
+    expect(html).toContain(`data-cohort-id="${E(1)}"`);
+    expect(html).toContain(UPLOAD_COMPLETE_HEADING);
+    expect(html).toContain(UPLOAD_COMPLETE_SENTENCE);
+    expect(html).toContain(`href="/embryos/compare?cohort=${E(1)}"`);
+    expect(html).toContain('href="/embryos"');
+    expect(html).toContain(ADD_MORE_EMBRYOS_BUTTON);
+    expect(html.match(/<a /g)).toHaveLength(2);
+    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html).not.toContain('data-slot="upload-flow"');
+    expect(html).not.toContain('data-slot="file-form"');
+    expect(html).not.toContain('data-figure-kind');
+    expect(html).not.toContain("synthetic-bound-new-draft");
   });
 });

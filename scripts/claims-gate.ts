@@ -617,8 +617,32 @@ function resolveImport(repositoryRoot: string, from: string, specifier: string):
   return null;
 }
 
-/** Whether the module graph rooted at `entry` reaches `target`. */
-export function importsReach(repositoryRoot: string, entry: string, target: string): boolean {
+/** Parsed edges are shared only within the traversal/gate that creates this reader. */
+function importReader(
+  repositoryRoot: string,
+  readSource: (file: string) => string = (file) => readFileSync(file, "utf8"),
+): (file: string) => string[] {
+  const edges = new Map<string, string[]>();
+  return (file) => {
+    const known = edges.get(file);
+    if (known) return known;
+    let source: string;
+    try {
+      source = readSource(file);
+    } catch {
+      return [];
+    }
+    const resolved: string[] = [];
+    for (const match of source.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)) {
+      const imported = resolveImport(repositoryRoot, file, match[1]);
+      if (imported) resolved.push(imported);
+    }
+    edges.set(file, resolved);
+    return resolved;
+  };
+}
+
+function graphReaches(entry: string, target: string, readImports: (file: string) => string[]): boolean {
   const seen = new Set<string>();
   const stack = [entry];
   while (stack.length) {
@@ -626,18 +650,16 @@ export function importsReach(repositoryRoot: string, entry: string, target: stri
     if (seen.has(file)) continue;
     seen.add(file);
     if (file === target) return true;
-    let source: string;
-    try {
-      source = readFileSync(file, "utf8");
-    } catch {
-      continue;
-    }
-    for (const match of source.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)) {
-      const resolved = resolveImport(repositoryRoot, file, match[1]);
-      if (resolved && !seen.has(resolved)) stack.push(resolved);
+    for (const resolved of readImports(file)) {
+      if (!seen.has(resolved)) stack.push(resolved);
     }
   }
   return false;
+}
+
+/** Whether the module graph rooted at `entry` reaches `target`, reading this invocation's disk. */
+export function importsReach(repositoryRoot: string, entry: string, target: string): boolean {
+  return graphReaches(entry, target, importReader(repositoryRoot));
 }
 
 /** The URL each `page` file in the App Router serves, route groups erased. */
@@ -779,8 +801,17 @@ export function runClaimsGate(
   const failures: string[] = [];
   const compare = (label: string, present: string[]) =>
     compareLedger(ledger, label, present, failures);
-  const read = (relativePath: string) =>
-    readFileSync(path.join(repositoryRoot, relativePath), "utf8");
+  // No state survives this call: a subsequent gate must see newly planted inputs.
+  const sourceByPath = new Map<string, string>();
+  const readSource = (file: string): string => {
+    const known = sourceByPath.get(file);
+    if (known !== undefined) return known;
+    const source = readFileSync(file, "utf8");
+    sourceByPath.set(file, source);
+    return source;
+  };
+  const read = (relativePath: string) => readSource(path.join(repositoryRoot, relativePath));
+  const readImports = importReader(repositoryRoot, readSource);
   const citations = JSON.parse(read(CITATIONS)) as Citation[];
   const claims = JSON.parse(read(CLAIMS)) as CanonicalClaim[];
   const register = JSON.parse(read(REGISTER)) as {
@@ -957,13 +988,13 @@ export function runClaimsGate(
   const migrationDirectory = path.join(repositoryRoot, MIGRATIONS);
   const migrationFiles = readdirSync(migrationDirectory).filter((name) => name.endsWith(".sql"));
   const tables = new Set(
-    migrationFiles.flatMap((name) => createdTables(readFileSync(path.join(migrationDirectory, name), "utf8"))),
+    migrationFiles.flatMap((name) => createdTables(readSource(path.join(migrationDirectory, name)))),
   );
   const provenanceFindings: string[] = [];
   let provenanceLiteralCount = 0;
   for (const file of markupFiles) {
     const relative = path.relative(repositoryRoot, file).split(path.sep).join("/");
-    for (const value of provenanceLiterals(readFileSync(file, "utf8"))) {
+    for (const value of provenanceLiterals(readSource(file))) {
       provenanceLiteralCount += 1;
       const [kind, rest] = [value.slice(0, value.indexOf(":")), value.slice(value.indexOf(":") + 1)];
       const unresolvable = (what: string) =>
@@ -1018,7 +1049,7 @@ export function runClaimsGate(
   let chromeElementCount = 0;
   for (const file of markupFiles.filter((name) => name.endsWith(".tsx"))) {
     const relative = path.relative(repositoryRoot, file).split(path.sep).join("/");
-    for (const element of elementTags(readFileSync(file, "utf8"))) {
+    for (const element of elementTags(readSource(file))) {
       const claimed = CLAIM_ATTRIBUTES.filter((name) => hasAttribute(element.attributes, name));
       const figure = hasAttribute(element.attributes, FIGURE_ATTRIBUTE);
       const chrome = hasAttribute(element.attributes, CHROME_ATTRIBUTE);
@@ -1133,7 +1164,7 @@ export function runClaimsGate(
       continue;
     }
     if (surface.rendersMarkup && rendered.length > 0) {
-      const unreached = rendered.filter((file) => !importsReach(repositoryRoot, file, claimComponent));
+      const unreached = rendered.filter((file) => !graphReaches(file, claimComponent, readImports));
       if (unreached.length > 0) {
         surfaceStatus.push(
           designatedSurfaceFinding({
@@ -1171,7 +1202,7 @@ export function runClaimsGate(
   const archaicSources: ArchaicSource[] = [
     ...markupFiles.map((file) => ({
       path: path.relative(repositoryRoot, file),
-      text: readFileSync(file, "utf8"),
+      text: readSource(file),
     })),
     ...templateFiles.map((name) => ({
       path: path.join(TEMPLATES, name),

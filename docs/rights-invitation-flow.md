@@ -53,7 +53,7 @@ bucket; the service role keeps read access only.
 **The source network** (owner decision, 28 September 2026). The platform's
 client address is read once, in `sourceNetwork` in
 `src/lib/source-network.ts`: IPv4 whole, IPv6 by /64, anything unreadable as
-one shared `unknown`. Only `src/lib/invitation-quota.ts` may import it, and it
+one shared `unknown`. Only `src/lib/rate-limit-keys.ts` may import it, and it
 passes the value straight into a keyed digest; the bucket is purged within 24
 hours and never decides a jurisdiction. `scripts/jurisdiction-inference.test.ts`
 allows exactly that one call, as it allows the sanctions check, and fails a
@@ -98,6 +98,110 @@ migrations applied inside each probe's transaction.
 4. Remove a retired revision's secret from `INHERIT_HMAC_KEYRING`. Revision 1
    has no separate secret: it is derived from `BYOK_ENCRYPTION_KEY`, and
    retiring it only stops the database from matching it.
+
+## Rights-purpose matrix and the Future Person claim start (2026-09-28, local, not released)
+
+**The matrix** (`policyResolvers.withdrawal-target-v1.purposeMatrix`).
+Migration `20260929150000_rights_purpose_matrix.sql` stores the register's ten
+purposes, their actions and the route each action reaches, in
+`private.rights_purpose_matrix`. `scripts/rights-purpose-matrix.test.ts` fails
+if the seed and the register differ in either direction.
+
+- `private.rights_session_purposes` lists the purposes a credential is
+  actually stored under, with the one target kind each binds. Today that is
+  the two invitation kinds. A matrix purpose with no row there has no issuer,
+  so no session of it can exist.
+- A trigger on `public.rights_sessions` refuses an insert, or a change of
+  purpose or target kind, that is not one registered pair
+  (`databaseConstraint`).
+- `private.rights_action_permitted_v1(purpose, action, route)` is the one
+  gate a new rights route asks. No future-person purpose reaches
+  `api.withdraw` or token-target export.
+
+**The claim start** (`api.future-person-claim`, `rights.future-person-claim`).
+
+- The page is public, reads no account and is never jurisdiction-blocked. It
+  shows the refusal standard and the no-guess rule before its first control.
+  It offers the form only where a record can exist, which today is TEST-LOCAL
+  (`src/lib/future-person/claims-open.ts`); everywhere else it says claims are
+  not open and collects nothing.
+- `src/proxy.ts` gives each page view a ten-minute form cookie and a sealed
+  token bound to it. The POST must send both, from the exact origin. A
+  browser that already holds the cookie keeps it, because Next.js prefetches
+  the page it is showing; a new cookie there would strand the served token.
+- A Record Key, a Recovery Key and a keyless start all get the same 202 and
+  the same kind of claim-session cookie. Nothing on the path looks for a
+  record, so the answer cannot depend on one.
+- The identity and contact fields are sealed in the application under a key
+  made for the one claim, and that key is sealed with the deployment key. The
+  database holds both as ciphertext and cannot open either. A key is kept only
+  as its SHA-256. The claim session is kept only as the SHA-256 of its cookie.
+- `private.start_future_person_claim_v1` counts every limit before it writes:
+  per network 10 in 15 minutes, 40 a UTC day and three live; per key or
+  contact one live and three a day; 500 live in all. A refused start is the
+  shared 429 with no cookie and no row but its counters. A replayed form is
+  the opaque 404.
+- An intake lives 24 hours from its start, ends after 30 idle minutes, and is
+  never extended. The retention job deletes it
+  (`purge_future_person_claim_intakes_v1`), and the deleted row takes its
+  sealed key with it.
+- A rate-limit key revision cannot retire while an intake written under it is
+  unexpired, so a rotation cannot lift the one-live limit early.
+
+**The documents step** (2026-09-28, local, not released). Migration
+`20260929151000_future_person_claim_documents.sql` builds
+`legal-evidence-ingest-v1` for the two claim document kinds, and the owner's
+choice of scanner, self-hosted ClamAV, runs in the scan worker
+(`docs/claim-document-scanning.md`).
+
+- A browser holding a live claim sees the documents step. The page renders a
+  one-time nonce bound to the claim cookie, and
+  `POST /api/future-person/claim/session/documents` opens one evidence
+  session for one document: its kind, declared type, size and SHA-256, a
+  hash-only evidence cookie and an expiry no later than the claim's. At most
+  three open sessions per claim, and three documents per kind.
+- `PUT /api/evidence/[session]/chunks/[sequence]` takes at most five chunks of
+  at most 4,000,000 bytes. The database reserves each sequence once, under a
+  key it makes in the private `future-person-identity` bucket. The server
+  hashes the bytes itself, seals them under the claim's data key with the key
+  as authenticated data, and writes them create-only. Too many bytes, a body
+  over the chunk limit or a failed write ends the session.
+- `POST /api/evidence/[session]/complete` spends the one-time completion
+  nonce, checks the chunks are exactly 0 to n-1 and add up to the declared
+  size, and composes one sealed object only if the SHA-256 and the type read
+  from the bytes match. The document is then **quarantined**. The route says
+  `202 {"status":"scanning"}` until the scan has answered, then `201
+  review_pending` or one closed refusal. evidence-complete-v1 promises only
+  the 201; the interim 202 is this build's answer to a scan that runs in a
+  worker, and is not yet in the register.
+- Only `private.record_claim_document_scan_v1` can mark a document clean: a
+  literal `OK`, bound to the document's SHA-256, under signatures at most 24
+  hours old. A trigger refuses any other path to clean. Infected,
+  unscannable and oversize documents are refused at once, their objects
+  deleted, and the ledger records the reason and nothing else.
+- `private.claim_document_review_object_v1` is the read gate the reviewer
+  routes will call. It returns nothing before a clean verdict, and nothing
+  after the claim ends. No API role can call it.
+- `jobs.retention` deletes fragments, refused documents and everything of an
+  ended claim, and the claim is purged only once no object is left behind it.
+
+**Not built.** The named-human review with MFA, the claim completion
+(`api.future-person-claim-complete`), the release, the claimant rights routes
+and keyless notice release. The register's one-time chunk-nonce header is
+not read; the fragment reservation stands in for it, pending an owner
+decision (`docs/route-divergence.json`). The older
+`public.future_person_claim_sessions` and `public.future_person_claim_documents`
+tables are left alone: the first requires an embryo id, and the second hangs
+off `public.future_person_claims`, which does too. A public claim must never
+learn one.
+
+## Local reviewer document display contract · 30 September 2026
+
+The named-reviewer page is `/reviews/future-person/claims/[id]`. A current own-JWT named assignment and recent MFA are required before it renders a case, and its fresh browser GET rechecks that authority. A complete document is fetched through the existing closed raw chunk GET bodies and headers, with the declared whole size and SHA-256 checked before any acknowledgement. Each authorized download-session POST issues its own exact session/chunk/digest proof; GET creates no operation nonce, challenge or read receipt. Service preparation of the proof remains inaccessible to the reviewer JWT. The reviewer's replay-safe acknowledgement rechecks current authority and is distinct from the explicit human read and documentary attestation.
+
+Byte receipt alone does not enable the human read confirmation. PNG and JPG must decode successfully in a native image. PDFs use local pinned PDF.js 6.3.289 in a dedicated worker, rendering only to canvas. There is no annotation HTML, active link, scripting manager or remote document URL, and document-selected asset names cannot leave the exact packaged local filename/size inventory. Every full PDF page must successfully render before the separate human checkbox appears. Previous/next page and 1–3-times page size controls retain the entire page in a scrollable view. Each loading, asset-read or page-render step is bounded to 20 seconds; documents over 200 pages or a page canvas above 16 million pixels are refused as a whole, with no read confirmation. Errors, cancellation and decision completion terminate the worker and clear the document view. These display bounds do not change the registered 20-million-byte upload limit or the PNG/JPG/PDF type support.
+
+The real loopback renderer check proves exact nonblank pages and inert planted links/actions without app or database access. The two full application journeys are authored with their correct complete/processing route titles and remain unexecuted until full CI passes. No G5.4 acceptance row is changed. Release of export, binding, correction, claimant deletion and recovery/keyless notice transfer remains closed pending implementation and verification.
 
 ## Release receipt (2026-09-06)
 

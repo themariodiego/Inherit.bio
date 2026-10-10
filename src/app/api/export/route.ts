@@ -24,6 +24,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "@/lib/exports/own-subject-content";
 import { ownSubjectPurposeGranted } from "@/lib/genome/own-analysis-access";
+import {accountExportHttpDependencies,postAccountExport,pollAccountExport} from "@/lib/exports/account-export-http";
+import {hasAccountExportCookie} from "@/lib/exports/account-export-session";
 
 /** The two report selections the legacy half of this archive answers to (D-099). */
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
@@ -354,7 +356,10 @@ function renderReportsTxt(
 // report results + polygenic scores + ancestry + consents + chat history,
 // as a ZIP stream. Free, forever — there is deliberately no billing,
 // quota, or fee code path here, and never will be (see /terms).
-export async function GET() {
+export async function POST(request:Request){return postAccountExport(request,accountExportHttpDependencies());}
+
+export async function GET(request?:Request) {
+  if(request&&hasAccountExportCookie(request))return pollAccountExport(request,accountExportHttpDependencies());
   const supabase = await createClient();
   const {
     data: { user },

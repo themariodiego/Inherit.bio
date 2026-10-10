@@ -44,10 +44,14 @@ yarn-error.log*
 next-env.d.ts
 e2e/fixtures/tiny.bam
 worker/node_modules
+# Generated from the exact closed Worker configuration before each typecheck.
+/workers/requester-statement-archive/worker-configuration.d.ts
+/workers/requester-statement-archive/.wrangler/
 
 # playwright
 /test-results
 /playwright-report
+/public/review-document-assets/
 
 # ancestry-resolution research byproducts
 # Reference allele frequencies fetched at run time, and the rows a measurement

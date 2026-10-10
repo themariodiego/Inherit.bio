@@ -29,6 +29,7 @@ function paramNames(pattern: string): string[] {
 }
 
 const EXPECTED_IDS: readonly RouteId[] = [
+  "auth.sign-in",
   "app.overview",
   "genome.subject",
   "genome.reports",
@@ -61,7 +62,11 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "api.file-upload-session",
   "api.file-finalize",
   "api.file-process",
+  "api.embryo-cohort-drafts",
+  "api.embryo-cohorts",
   "api.embryo-ingest-configure",
+  "api.embryo-ingest-chunk",
+  "api.embryo-ingest-complete",
   "marketing.providers",
   "science.index",
   "legal.index",

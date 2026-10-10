@@ -7,8 +7,10 @@ import { startCanonicalCopilotProvider } from "./canonical-copilot-provider";
 const portSchema = z.union([z.literal(8123), z.literal(8125), z.literal(8126), z.literal(8127)]);
 const plan = z.object({ prompt: z.string().min(1).max(8000),
   tool: z.object({ name: z.enum(["get_genotype", "search_variants", "list_reports", "get_report", "get_prs"]),
-    arguments: z.record(z.string(), z.unknown()) }).strict(),
-  answer: z.string().max(100000), pauseBefore: z.enum(["tool", "answer"]).optional() }).strict();
+    arguments: z.record(z.string(), z.unknown()) }).strict().optional(),
+  answer: z.string().max(100000), pauseBefore: z.enum(["tool", "answer"]).optional() }).strict()
+  // A plan with no tool (the embryo cohort scope) cannot pause before one.
+  .refine(value => value.tool !== undefined || value.pauseBefore !== "tool", { message: "no tool to pause before" });
 const command = z.discriminatedUnion("action", [
   z.object({ action: z.literal("start"), port: portSchema }).strict(),
   z.object({ action: z.literal("configure"), port: portSchema, plan }).strict(),

@@ -282,6 +282,19 @@ function preparedSnapshot(): OwnExportSnapshot {
     manifestId: id(80), membershipSha256: "c".repeat(64), rootArtifactId: id(81), rootSha256: "d".repeat(64) } };
 }
 describe("prepared-object export snapshot dispatch", () => {
+  it("combines the actual archive lifetime and member cancellation without retaining a preparation timeout", async () => {
+    preparedExport.mockReset(); const selected = preparedSnapshot(), rpc = db(() => selected);
+    const lifetime = new AbortController(), member = new AbortController(); let current: AbortSignal | undefined;
+    preparedExport.mockImplementation(async (_actor, _selection, options) => {
+      current = options.signal; await options.checkOperation(current);
+      return { recordCount: 3, variantCount: 1 };
+    });
+    await ownSubjectExportContent(rpc, actor, () => {}, { signal: lifetime.signal }).preparedRecords(selected, async () => {}, member.signal);
+    expect(current!.aborted).toBe(false); member.abort(); expect(current!.aborted).toBe(true);
+    const cancelled = new AbortController(); cancelled.abort(); const before = preparedExport.mock.calls.length;
+    await expect(ownSubjectExportContent(rpc, actor).preparedRecords(selected, async () => {}, cancelled.signal)).rejects.toThrow("export unavailable");
+    expect(preparedExport.mock.calls.length).toBe(before);
+  });
   it("passes the exact captured source and current export checker to the streaming transport", async () => {
     preparedExport.mockReset(); const selected = preparedSnapshot(), rpc = db(() => selected), consume = vi.fn();
     preparedExport.mockImplementation(async (_actor, selection, options) => {

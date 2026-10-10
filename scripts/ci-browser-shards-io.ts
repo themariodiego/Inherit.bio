@@ -23,7 +23,7 @@ export function ciBrowserSourceIdentity(): CiBrowserIdentity {
   assert(/^[1-9][0-9]*$/.test(runId) && /^[1-9][0-9]*$/.test(runAttempt), "Actual GitHub run identity required");
   return { head, runId, runAttempt };
 }
-/** Absence keeps native sharding; malformed history always fails closed. */
+/** Absence uses public queue-aware weights; malformed history always fails closed. */
 export function loadBrowserDurationProfile(): SelectedBrowserDurationProfile | null {
   return selectBrowserDurationProfile(
     () => readFileSync("data/ci/browser-duration-profile.json", "utf8"),

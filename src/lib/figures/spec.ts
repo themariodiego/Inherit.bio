@@ -43,9 +43,14 @@ export type CoverageSpec = FigureCommon & {
   kind: "coverage";
   read: number;
   needed: number;
+} & ({
   /** Source-file call counts use listed records, not positions a report needs. */
   wording?: "listed-calls";
-};
+} | {
+  /** The complete current reviewed condition library; its scope stays beside the figure. */
+  wording: "reviewed-condition";
+  condition: string;
+});
 
 export type IntervalSpec = FigureCommon & {
   kind: "interval";
