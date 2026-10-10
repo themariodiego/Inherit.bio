@@ -57,6 +57,7 @@ import { MODELLED_MARKER } from "@/lib/figures/contract";
 import { readFileSync } from "node:fs";
 import { embryoVcfChunks, validateEmbryoVcfChunk } from "@/lib/embryos/vcf-transport";
 import { analyseEmbryoFragment, embryoOrdinalOutcome, type EmbryoSplitRow } from "@/lib/embryos/split-analysis";
+import { FITTED_JOURNEY_CALL_RATES } from "../../../scripts/ci-embryo-journey";
 
 function fittedFixture(matched = 8, held = false) {
   const source = { cohort_id: id(1), embryo_id: id(10), subject_id: id(20), file_id: id(30), canonical_build: "GRCh38",
@@ -117,6 +118,9 @@ describe("separate native-current fitted TEST display", () => {
       const sitesCalled = [1208, 1196][fragment.ordinal];
       expect(qc.outcome).toBe("passed");expect(qc.qc).toMatchObject({ sites_expected: 1208, sites_called: sitesCalled,
         call_rate: sitesCalled / 1208, qc_verdict: "pass", qc_reasons: [] });
+      // The browser audit consumes this exact expectation; prove it against
+      // the full original/fitted parser, including the second sample no-calls.
+      expect(qc.qc.call_rate).toBe(FITTED_JOURNEY_CALL_RATES[fragment.ordinal]);
       const source = fittedFixture().rows[0].receipt.source!;
       const calls = own.filter(row => TEST_STATISTICAL_SCORE_PANEL.variants.some(variant => variant.chrom === row[0] && variant.pos === row[1]))
         .map(([chrom, pos, ref, alt, genotype]) => ({ fileId: source.file_id, chrom, pos, ref, alt, genotype }));
